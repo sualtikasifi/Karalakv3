@@ -1,0 +1,15 @@
+package com.sualtikasifi.cizimhafiza.domain.repository
+
+import com.sualtikasifi.cizimhafiza.domain.model.LevelProgress
+import kotlinx.coroutines.flow.Flow
+
+interface LevelProgressRepository {
+    fun observeAllProgress(): Flow<List<LevelProgress>>
+    fun observeWorldProgress(worldId: Int): Flow<List<LevelProgress>>
+
+    /** Records a finished level attempt (best stars/score kept via max) and returns this attempt's star count. */
+    suspend fun recordLevelResult(worldId: Int, levelIndex: Int, correctCount: Int, totalWords: Int, score: Int): Int
+
+    /** Best star count already stored for a level (0 if never played) — read BEFORE [recordLevelResult] to tell an improvement from a replay. */
+    suspend fun previousBestStars(worldId: Int, levelIndex: Int): Int = 0
+}

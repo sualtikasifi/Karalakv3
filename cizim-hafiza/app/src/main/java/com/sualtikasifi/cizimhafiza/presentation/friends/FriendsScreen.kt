@@ -1,0 +1,480 @@
+package com.sualtikasifi.cizimhafiza.presentation.friends
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SportsMma
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import com.sualtikasifi.cizimhafiza.domain.model.FriendRequest
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.domain.model.BlockedUser
+import com.sualtikasifi.cizimhafiza.domain.model.Friend
+import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
+import com.sualtikasifi.cizimhafiza.presentation.common.EmptyState
+import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
+import com.sualtikasifi.cizimhafiza.presentation.common.RaisedIconButton
+import com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton
+import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
+import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
+import com.sualtikasifi.cizimhafiza.presentation.common.TintedBadge
+import com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance
+import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
+import com.sualtikasifi.cizimhafiza.util.InviteShareUtil
+import com.sualtikasifi.cizimhafiza.util.UiText
+import com.sualtikasifi.cizimhafiza.util.asString
+
+@Composable
+fun FriendsScreen(
+    onNavigateToWaitingRoom: (roomCode: String) -> Unit,
+    onBack: () -> Unit,
+    onDuel: (opponentUid: String, opponentName: String) -> Unit,
+    onDuelList: () -> Unit,
+    viewModel: FriendsViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(uiState.navigateToWaitingRoomCode) {
+        uiState.navigateToWaitingRoomCode?.let { roomCode ->
+            onNavigateToWaitingRoom(roomCode)
+            viewModel.onNavigatedToWaitingRoom()
+        }
+    }
+
+    uiState.confirmRemove?.let { friend ->
+        AlertDialog(
+            onDismissRequest = viewModel::dismissRemoveConfirm,
+            title = { Text(stringResource(R.string.friends_remove_confirm_title)) },
+            text = { Text(stringResource(R.string.friends_remove_confirm_message, friend.nickname)) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.removeFriend(friend) }) {
+                    Text(stringResource(R.string.friends_remove_confirm_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissRemoveConfirm) {
+                    Text(stringResource(R.string.friends_remove_confirm_cancel))
+                }
+            }
+        )
+    }
+
+    uiState.confirmBlock?.let { friend ->
+        AlertDialog(
+            onDismissRequest = viewModel::dismissBlockConfirm,
+            title = { Text(stringResource(R.string.friends_block_confirm_title)) },
+            text = { Text(stringResource(R.string.friends_block_confirm_message, friend.nickname)) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.blockFriend(friend) }) {
+                    Text(stringResource(R.string.friends_block_confirm_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissBlockConfirm) {
+                    Text(stringResource(R.string.friends_block_confirm_cancel))
+                }
+            }
+        )
+    }
+
+    // No title bar: the back button (and duel-list action) float directly on
+    // the page's own background instead of sitting in a separate,
+    // differently-colored strip.
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
+        Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .screenBackground()
+                .padding(padding).padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            // Clears the floating back button (see ScreenTopActions).
+            contentPadding = PaddingValues(top = TopActionsClearance, bottom = 16.dp)
+        ) {
+            item {
+                MyCodeCard(
+                    code = uiState.myFriendCode,
+                    onShare = { code -> InviteShareUtil.shareFriendCode(context, code) }
+                )
+            }
+
+            // Always available: entering a friend's code sends them a friend request.
+            // (Referral attribution comes from the invite LINK only, never from this field.)
+            item { AddFriendSection(uiState = uiState, viewModel = viewModel) }
+
+            uiState.errorMessage?.let { message ->
+                item {
+                    Text(
+                        text = message.asString(),
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            item { InfoMessageRow(message = uiState.infoMessage) }
+
+            // Above the friends list, because it is the one thing on this
+            // screen that is waiting on the player rather than the other way
+            // around — and because a request that scrolls below a long
+            // friends list is a request nobody answers.
+            if (uiState.friendRequests.isNotEmpty()) {
+                item {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.friends_requests_title),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        TintedBadge(text = uiState.friendRequests.size.toString())
+                    }
+                }
+                items(uiState.friendRequests, key = { "request-" + it.uid }) { request ->
+                    FriendRequestRow(
+                        request = request,
+                        busy = uiState.answeringRequestUid == request.uid,
+                        onAccept = { viewModel.acceptFriendRequest(request) },
+                        onDecline = { viewModel.declineFriendRequest(request) }
+                    )
+                }
+                item { Spacer(modifier = Modifier.height(6.dp)) }
+            }
+
+            item {
+                Text(text = stringResource(R.string.friends_list_title), style = MaterialTheme.typography.titleLarge)
+            }
+
+            if (uiState.friends.isEmpty()) {
+                item {
+                    EmptyState(
+                        emoji = "🤝",
+                        message = stringResource(R.string.friends_empty),
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            } else {
+                items(uiState.friends, key = { it.uid }) { friend ->
+                    FriendRow(
+                        friend = friend,
+                        inviting = uiState.invitingFriendUid == friend.uid,
+                        busy = uiState.removingFriendUid == friend.uid || uiState.blockingFriendUid == friend.uid,
+                        onInvite = { viewModel.inviteFriend(friend) },
+                        onRemove = { viewModel.confirmRemoveFriend(friend) },
+                        onBlock = { viewModel.confirmBlockFriend(friend) },
+                        onDuel = { onDuel(friend.uid, friend.nickname) }
+                    )
+                }
+            }
+
+            if (uiState.blockedUsers.isNotEmpty()) {
+                item {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(text = stringResource(R.string.friends_blocked_section_title), style = MaterialTheme.typography.titleLarge)
+                }
+                items(uiState.blockedUsers, key = { it.uid }) { blocked ->
+                    BlockedUserRow(
+                        blocked = blocked,
+                        unblocking = uiState.unblockingUid == blocked.uid,
+                        onUnblock = { viewModel.unblockUser(blocked) }
+                    )
+                }
+            }
+        }
+        ScreenTopActions(
+            onBack = onBack,
+            modifier = Modifier.align(Alignment.TopStart),
+            title = stringResource(R.string.online_friends_entry)
+        ) {
+            RaisedIconButton(
+                icon = Icons.Filled.SportsMma,
+                contentDescription = stringResource(R.string.duel_list_title),
+                onClick = onDuelList
+            )
+        }
+        }
+    }
+}
+
+@Composable
+private fun MyCodeCard(code: String?, onShare: (String) -> Unit) {
+    // Orange, not the default white face: a plain white card read as flat
+    // against the textured collage background, and this code is the
+    // screen's single most important piece of content — the same "hero
+    // card" treatment as the main menu's level/daily-challenge cards.
+    RaisedCard(
+        corner = 26.dp,
+        face = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        raise = 7.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth().padding(20.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.friends_my_code_label),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            // The reward pitch, not just the code — see
+            // FriendRepositoryImpl.recordReferralIfEligible and
+            // functions/src/index.ts's runGrantReferralRewards for how a
+            // friend reaching level 5 after opening this code's link
+            // actually pays out.
+            Text(
+                text = stringResource(R.string.friends_invite_reward_hint),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            if (code != null) {
+                Text(
+                    text = code,
+                    style = MaterialTheme.typography.displaySmall.copy(letterSpacing = 6.sp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                SecondaryButton(
+                    text = stringResource(R.string.friends_share_code),
+                    onClick = { onShare(code) },
+                    icon = Icons.Filled.Share
+                )
+            } else {
+                CircularProgressIndicator(modifier = Modifier.size(32.dp))
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun AddFriendSection(uiState: FriendsUiState, viewModel: FriendsViewModel) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    Column {
+        Text(text = stringResource(R.string.friends_add_friend_label), style = MaterialTheme.typography.titleLarge)
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            AppTextField(
+                value = uiState.addFriendCodeInput,
+                onValueChange = viewModel::setAddFriendCodeInput,
+                placeholder = stringResource(R.string.friends_add_friend_hint),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                modifier = Modifier.weight(1f)
+            )
+            if (uiState.isAddingFriend) {
+                CircularProgressIndicator(modifier = Modifier.size(32.dp))
+            } else {
+                PrimaryButton(
+                    text = stringResource(R.string.friends_add_button),
+                    onClick = {
+                        focusManager.clearFocus(force = true)
+                        keyboardController?.hide()
+                        viewModel.addFriend()
+                    },
+                    enabled = uiState.addFriendCodeInput.length == 6
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Fades out over ~1s once [message] clears (see FriendsViewModel.addFriend's
+ * self-clearing infoMessage) instead of just vanishing — the text itself is
+ * remembered across that fade so it doesn't blank out mid-animation.
+ */
+@Composable
+private fun InfoMessageRow(message: UiText?) {
+    var lastMessage by remember { mutableStateOf<UiText?>(null) }
+    LaunchedEffect(message) {
+        if (message != null) lastMessage = message
+    }
+    AnimatedVisibility(visible = message != null, exit = fadeOut(tween(800))) {
+        // A filled badge rather than a bare line of orange text: this is a
+        // status the player is actively waiting on ("request sent, waiting
+        // for an answer"), and as plain text over the page artwork it was
+        // the easiest thing on the screen to miss.
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            TintedBadge(text = lastMessage?.asString().orEmpty())
+        }
+    }
+}
+
+@Composable
+private fun FriendRow(
+    friend: Friend,
+    inviting: Boolean,
+    busy: Boolean,
+    onInvite: () -> Unit,
+    onRemove: () -> Unit,
+    onBlock: () -> Unit,
+    onDuel: () -> Unit
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    RaisedCard(
+        corner = 20.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(Icons.Filled.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Text(text = friend.nickname, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+            if (inviting || busy) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            } else {
+                SecondaryButton(text = stringResource(R.string.friends_invite_action), onClick = onInvite)
+                Box {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(
+                            Icons.Filled.MoreVert,
+                            contentDescription = stringResource(R.string.friends_row_more_actions),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.duel_challenge_action)) },
+                            leadingIcon = { Icon(Icons.Filled.SportsMma, contentDescription = null) },
+                            onClick = { menuExpanded = false; onDuel() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.friends_remove_action)) },
+                            leadingIcon = { Icon(Icons.Filled.PersonRemove, contentDescription = null) },
+                            onClick = { menuExpanded = false; onRemove() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.friends_block_action)) },
+                            leadingIcon = { Icon(Icons.Filled.Block, contentDescription = null) },
+                            onClick = { menuExpanded = false; onBlock() }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * One pending request, with both answers on the row itself.
+ *
+ * Accept is the primary button and decline is a plain text action rather
+ * than a matching pair: saying yes is what this row exists for, and giving
+ * "Reddet" equal visual weight makes an ordinary friend request read like a
+ * warning to be dismissed.
+ */
+@Composable
+private fun FriendRequestRow(
+    request: FriendRequest,
+    busy: Boolean,
+    onAccept: () -> Unit,
+    onDecline: () -> Unit
+) {
+    RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(Icons.Filled.PersonAdd, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Text(
+                text = request.nickname,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            if (busy) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            } else {
+                TextButton(onClick = onDecline) {
+                    Text(
+                        text = stringResource(R.string.friends_request_decline),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                SecondaryButton(text = stringResource(R.string.friends_request_accept), onClick = onAccept)
+            }
+        }
+    }
+}
+
+@Composable
+private fun BlockedUserRow(blocked: BlockedUser, unblocking: Boolean, onUnblock: () -> Unit) {
+    RaisedCard(
+        corner = 20.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(Icons.Filled.Block, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = blocked.nickname, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+            if (unblocking) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            } else {
+                SecondaryButton(text = stringResource(R.string.friends_unblock_action), onClick = onUnblock)
+            }
+        }
+    }
+}

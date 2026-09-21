@@ -1,0 +1,73 @@
+name: Deploy Firestore rules and indexes
+
+# The repo's firestore.rules and the rules actually live in the Firebase
+# console drifted apart once already: botTrainingIndex had a read rule
+# committed here that was never published, and every player hit
+# PERMISSION_DENIED on the Bot Eğitim screen as a result. Deploying from CI
+# is what stops that recurring — the committed file becomes the only source
+# of truth.
+#
+# Functions are deliberately NOT deployed here: Cloud Functions require the
+# Blaze (pay-as-you-go) plan regardless of deploy method, and this project
+# stays on Spark. The three schedule-based functions run instead as plain
+# scripts on a GitHub Actions cron — see league-scheduler.yml and
+# functions/DEPLOY.md. onInviteCreated and clampImpossibleScores are
+# genuinely event-triggered (they react to a live Firestore write) and have
+# no such substitute; they stay defined in functions/src/index.ts but
+# undeployed and inactive unless this project ever moves to Blaze.
+#
+# One-time setup: create a service account with the "Firebase Rules Admin"
+# role, then store its JSON key as the FIREBASE_SERVICE_ACCOUNT repository
+# secret (also reused by league-scheduler.yml).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cizim-hafiza/firestore.rules"
+      - "cizim-hafiza/firestore.indexes.json"
+      - "cizim-hafiza/functions/**"
+      - "cizim-hafiza/firebase.json"
+      - "cizim-hafiza/hosting/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cizim-hafiza
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: cizim-hafiza/functions/package-lock.json
+
+      - name: Install function dependencies
+        run: npm ci
+        working-directory: cizim-hafiza/functions
+
+      - name: Type-check functions
+        run: npx tsc --noEmit
+        working-directory: cizim-hafiza/functions
+
+      - name: Write service account credentials
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$GITHUB_WORKSPACE/service-account.json"
+
+      # Indexes travel with the rules for the same reason the rules travel
+      # with the code: a query whose composite index was never created fails
+      # at runtime with a PERMISSION_DENIED-shaped error that looks exactly
+      # like a rules problem, and the two then get debugged against each
+      # other. Deploying only creates missing indexes — nothing is dropped.
+      # Hosting carries app-ads.txt (AdMob's fraud-prevention file, must sit
+      # at the developer website's domain root — see hosting/app-ads.txt)
+      # and a minimal landing page, on the project's own *.web.app domain
+      # rather than a GitHub Pages project site: a project site's app-ads.txt
+      # would live under a /repo-name/ path, and ad-fraud crawlers check the
+      # bare domain root, never a subpath.
+      - name: Deploy rules, indexes and hosting
+        run: npx firebase-tools@latest deploy --only firestore:rules,firestore:indexes,hosting --project karalak-b6e11 --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/service-account.json

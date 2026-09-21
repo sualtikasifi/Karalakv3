@@ -1,0 +1,1182 @@
+package com.sualtikasifi.cizimhafiza.presentation.game
+
+import android.app.Activity
+import android.content.Context
+import android.os.SystemClock
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.sualtikasifi.cizimhafiza.ads.AdManager
+import com.sualtikasifi.cizimhafiza.ads.RewardedOutcome
+import com.sualtikasifi.cizimhafiza.data.local.WordPoolSynchronizer
+import com.sualtikasifi.cizimhafiza.data.local.WordSeeder
+import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
+import com.sualtikasifi.cizimhafiza.domain.model.DailyChallenge
+import com.sualtikasifi.cizimhafiza.domain.model.Difficulty
+import com.sualtikasifi.cizimhafiza.domain.model.DrawingResult
+import com.sualtikasifi.cizimhafiza.domain.model.DrawingStroke
+import com.sualtikasifi.cizimhafiza.domain.model.GameMode
+import com.sualtikasifi.cizimhafiza.domain.model.LevelCatalog
+import com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState
+import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
+import com.sualtikasifi.cizimhafiza.domain.model.ResultItem
+import com.sualtikasifi.cizimhafiza.domain.model.BotGhostRuns
+import com.sualtikasifi.cizimhafiza.domain.model.DrawingReportReason
+import com.sualtikasifi.cizimhafiza.domain.model.Word
+import com.sualtikasifi.cizimhafiza.domain.model.XpAwards
+import com.sualtikasifi.cizimhafiza.domain.model.GhostRun
+import com.sualtikasifi.cizimhafiza.domain.model.GhostRunWord
+import com.sualtikasifi.cizimhafiza.domain.model.GhostRuns
+import com.sualtikasifi.cizimhafiza.domain.repository.AuthRepository
+import com.sualtikasifi.cizimhafiza.domain.repository.GhostRunRepository
+import com.sualtikasifi.cizimhafiza.domain.repository.DrawingReportRepository
+import com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState
+import com.sualtikasifi.cizimhafiza.domain.repository.DuelRepository
+import com.sualtikasifi.cizimhafiza.domain.repository.LevelProgressRepository
+import com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository
+import com.sualtikasifi.cizimhafiza.domain.usecase.GetWordsByIdsUseCase
+import com.sualtikasifi.cizimhafiza.domain.usecase.GetWordsForGameUseCase
+import com.sualtikasifi.cizimhafiza.domain.usecase.SaveGameSessionUseCase
+import com.sualtikasifi.cizimhafiza.domain.usecase.SubmitGuessUseCase
+import com.sualtikasifi.cizimhafiza.presentation.navigation.Screen
+import com.sualtikasifi.cizimhafiza.util.AnswerMatcher
+import com.sualtikasifi.cizimhafiza.util.DailyChallengeRepository
+import com.sualtikasifi.cizimhafiza.util.GameConstants
+import com.sualtikasifi.cizimhafiza.util.PausableTicker
+import com.sualtikasifi.cizimhafiza.util.PostMatchPrompts
+import com.sualtikasifi.cizimhafiza.util.SettingsRepository
+import com.sualtikasifi.cizimhafiza.util.SoundManager
+import com.sualtikasifi.cizimhafiza.util.VibratorHelper
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import java.time.LocalDate
+import javax.inject.Inject
+
+/** SavedStateHandle key for [GameViewModel]'s process-death recovery checkpoint. */
+private const val RECOVERY_KEY = "game_recovery"
+
+/**
+ * Which sub-phase an in-progress (not yet finished) match was checkpointed
+ * in — see [GameViewModel]'s recovery snapshot. Deliberately excludes
+ * Loading (nothing worth resuming yet) and Result (checkpointed separately,
+ * as the already-computed [GamePhase.Result] itself — see [GameRecovery]).
+ */
+@Serializable
+private enum class RecoveryStage { DRAWING, BREAK, GUESSING }
+
+/**
+ * Everything needed to resume a not-yet-finished match after process death,
+ * without recomputing anything already decided (word list, past answers,
+ * spent hints) — see [GameViewModel.saveActiveSnapshot]/[GameViewModel.resumeFrom].
+ */
+@Serializable
+private data class ActiveMatchSnapshot(
+    val words: List<Word>,
+    val drawingIndex: Int,
+    val results: List<DrawingResult>,
+    val inProgressStrokes: List<DrawingStroke>,
+    val guessOrder: List<Int>,
+    val guessPos: Int,
+    val stage: RecoveryStage,
+    val hintUsedThisMatch: Boolean,
+    val revealedHintLetter: String?,
+    val drawingHintUsedThisMatch: Boolean,
+    val currentGuessTotal: Int,
+    val currentDrawingTotal: Int
+)
+
+/**
+ * The full checkpoint written to [SavedStateHandle]: either a not-yet-done
+ * match ([active]) or an already-finished one still sitting on the result
+ * screen ([result]) — never both. A finished match's score/XP/streak were
+ * already persisted by finishGame() the moment [result] was captured, so
+ * restoring it is pure redisplay, never a recomputation.
+ */
+@Serializable
+private data class GameRecovery(
+    val active: ActiveMatchSnapshot? = null,
+    val result: GamePhase.Result? = null
+)
+
+@HiltViewModel
+class GameViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
+    private val getWordsForGameUseCase: GetWordsForGameUseCase,
+    private val getWordsByIdsUseCase: GetWordsByIdsUseCase,
+    private val submitGuessUseCase: SubmitGuessUseCase,
+    private val saveGameSessionUseCase: SaveGameSessionUseCase,
+    private val levelProgressRepository: LevelProgressRepository,
+    private val dailyChallengeRepository: DailyChallengeRepository,
+    private val duelRepository: DuelRepository,
+    private val ghostRunRepository: GhostRunRepository,
+    private val drawingReportRepository: DrawingReportRepository,
+    private val settingsRepository: SettingsRepository,
+    private val authRepository: AuthRepository,
+    private val vibratorHelper: VibratorHelper,
+    private val soundManager: SoundManager,
+    private val adManager: AdManager,
+    private val wordPoolSynchronizer: WordPoolSynchronizer,
+    private val xpEventRepository: XpEventRepository,
+    @ApplicationContext private val context: Context
+) : ViewModel() {
+
+    private val wordCount: Int = savedStateHandle.get<String>(Screen.ArgWordCount)?.toIntOrNull() ?: 10
+    private val category: String? = savedStateHandle.get<String>(Screen.ArgCategory)
+        ?.takeUnless { it == Screen.AllCategoriesArg }
+    private val difficulty: Difficulty? = savedStateHandle.get<String>(Screen.ArgDifficulty)
+        ?.takeUnless { it == Screen.AllDifficultiesArg }
+        ?.let { runCatching { Difficulty.valueOf(it) }.getOrNull() }
+    private val mode: GameMode = savedStateHandle.get<String>(Screen.ArgMode)
+        ?.let { runCatching { GameMode.valueOf(it) }.getOrNull() }
+        ?: GameMode.NORMAL
+    private val worldId: Int? = savedStateHandle.get<String>(Screen.ArgWorldId)?.toIntOrNull()
+    private val levelIndex: Int? = savedStateHandle.get<String>(Screen.ArgLevelIndex)?.toIntOrNull()
+    private val isDaily: Boolean = savedStateHandle.get<String>(Screen.ArgDaily)?.toBoolean() == true
+    // See Screen.duelChallengeRoute — present only when this round's own
+    // result should also become a duel challenge for a friend (see C2),
+    // on top of (not instead of) the normal session save/XP/streak below.
+    private val duelOpponentUid: String? = savedStateHandle.get<String>(Screen.ArgDuelOpponentUid)
+        ?.let { runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrNull() }
+    private val duelOpponentName: String? = savedStateHandle.get<String>(Screen.ArgDuelOpponentName)
+        ?.let { runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrNull() }
+    // See Screen.quickMatchGameRoute — the recorded round this one is being
+    // played against, carried whole in the route so setting the match up
+    // needs no lookup of its own.
+    private val ghost: GhostRun? = Screen.decodeGhost(savedStateHandle.get<String>(Screen.ArgGhost))
+
+    // True only for a quick match (ghost != null) whose day hasn't paid its
+    // 2x-XP bonus yet — decided once, at construction, so every word this
+    // round pays the same rate regardless of when during the match midnight
+    // might tick over. Doesn't touch SettingsRepository's stored day itself;
+    // see claimQuickMatchDailyBonus() in finishGame() for that.
+    private val quickMatchDailyBonusPending: Boolean =
+        ghost != null && settingsRepository.lastQuickMatchEpochDay != LocalDate.now().toEpochDay()
+
+    // The live XP-event multiplier (see XpEventRepository / Developer Panel)
+    // times this round's own Quick Match daily bonus — fixed once fetched in
+    // init() so every XP grant this round (live per-word, level-completion,
+    // daily-challenge total) pays the same rate; re-reading mid-round would
+    // let an event starting or ending during play pay some words differently
+    // from others. Starts at 1 (no bonus) so a grant fired before the fetch
+    // resolves — possible but unlikely, given the Loading phase ahead of it —
+    // is never wrong, only occasionally short.
+    private var effectiveXpMultiplier: Int = 1
+
+    /** Just the XP-event half of [effectiveXpMultiplier], for the Result screen's badge. */
+    private var xpEventMultiplierOnly: Int = 1
+
+    /** The soundtrack switch, mirrored here so the in-game speaker button can drive it. */
+    /** True for a Hızlı Eşleş round — leaving one half-way costs XP. */
+    val isQuickMatch: Boolean = ghost != null
+
+    fun abandonQuickMatch() {
+        if (ghost != null) settingsRepository.applyQuickMatchAbandonPenalty()
+    }
+
+    val musicEnabled: StateFlow<Boolean> = settingsRepository.musicEnabled
+
+    fun toggleMusic() = settingsRepository.setMusicEnabled(!settingsRepository.musicEnabled.value)
+
+    /**
+     * A one-shot notice that a rewarded ad could not be shown.
+     *
+     * Skipping an ad on purpose stays silent; only "there was no ad to
+     * show" surfaces. The screen also needs it to un-stick its own button —
+     * before this, an ad that never loaded left the hint reading
+     * "Yükleniyor…", disabled, for the rest of the word.
+     */
+    private val _adUnavailable = MutableStateFlow(false)
+    val adUnavailable: StateFlow<Boolean> = _adUnavailable.asStateFlow()
+
+    fun consumeAdUnavailable() { _adUnavailable.value = false }
+
+    private fun reportAdUnavailable() { _adUnavailable.value = true }
+
+    private val _phase = MutableStateFlow<GamePhase>(GamePhase.Loading)
+    val phase: StateFlow<GamePhase> = _phase.asStateFlow()
+
+    // Backs the live level badge on GuessScreen — since addXp updates this
+    // StateFlow the instant a word is scored (see submitGuess), the badge's
+    // progress bar visibly moves on every correct answer without GuessScreen
+    // needing any per-word plumbing beyond observing it.
+    val levelProgress: StateFlow<LevelProgressState> = settingsRepository.lifetimeXp
+        .map { LevelProgressState.forXp(it) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = LevelProgressState.forXp(settingsRepository.lifetimeXp.value)
+        )
+
+    // The player's own chosen ring for the live badge (see AvatarFrame.resolve)
+    // — reacts to both a level-up mid-match and a frame change made earlier
+    // on StatisticsScreen, same live-update reasoning as levelProgress above.
+    val selectedFrame: StateFlow<AvatarFrame> = combine(
+        settingsRepository.selectedAvatarFrameId,
+        settingsRepository.lifetimeXp
+    ) { selectedId, xp -> AvatarFrame.resolve(selectedId, LevelProgressState.forXp(xp).level) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = AvatarFrame.resolve(
+                settingsRepository.selectedAvatarFrameId.value,
+                LevelProgressState.forXp(settingsRepository.lifetimeXp.value).level
+            )
+        )
+
+
+    /**
+     * The player's chosen cosmetic pen (see domain.model.PenSkin). Resolved
+     * against the live level for the same reason selectedFrame is: the stored
+     * name is only a preference, not proof the pen has been earned.
+     */
+    val selectedPen: StateFlow<PenSkin> = combine(
+        settingsRepository.selectedPenSkinId,
+        settingsRepository.lifetimeXp
+    ) { selectedId, xp -> PenSkin.resolve(selectedId, LevelProgressState.forXp(xp).level) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = PenSkin.resolve(
+                settingsRepository.selectedPenSkinId.value,
+                LevelProgressState.forXp(settingsRepository.lifetimeXp.value).level
+            )
+        )
+
+    private var words: List<Word> = emptyList()
+    private var drawingIndex = 0
+    private val results = mutableListOf<DrawingResult>()
+    private var currentStrokes = mutableListOf<DrawingStroke>()
+
+    // Latest in-progress (not-yet-lifted-finger) stroke, reported live by
+    // DrawableCanvas. Folded into the word's saved strokes if the timer
+    // expires (or "next word" is tapped) mid-drag, so nothing drawn is lost.
+    private var pendingStroke: DrawingStroke = emptyList()
+
+    private var guessOrder: List<Int> = emptyList()
+    private var guessPos = 0
+    private var guessShownAtMillis = 0L
+
+    // One rewarded-ad hint per whole match (not per word) — see useHint().
+    private var hintUsedThisMatch = false
+    private var revealedHintLetter: String? = null
+    private var revealedLetterCount: Int? = null
+    private var timeJokerUsedThisWord = false
+    // Grows by HINT_BONUS_SECONDS the moment a hint is earned, so the ring's
+    // secondsLeft/totalSeconds stay proportionate instead of overshooting 100%.
+    private var currentGuessTotal = GameConstants.GUESS_DURATION_SECONDS
+
+    // Separate one-per-match rewarded-ad budget for the drawing phase — see
+    // useDrawingHint(). Independent of hintUsedThisMatch above.
+    private var drawingHintUsedThisMatch = false
+    private var currentDrawingTotal = 0
+
+    private var timerJob: Job? = null
+
+    /**
+     * Drives every countdown in this ViewModel, and stops them while the app
+     * is backgrounded — see [PausableTicker]. Single-player only: the online
+     * ViewModel deliberately keeps ticking, since real opponents are waiting
+     * and pausing would hand anyone who backgrounds the app free thinking
+     * time.
+     */
+    private val ticker = PausableTicker()
+
+    private val recoveryJson = Json { ignoreUnknownKeys = true }
+
+    init {
+        viewModelScope.launch {
+            xpEventMultiplierOnly = xpEventRepository.currentMultiplier()
+            effectiveXpMultiplier = xpEventMultiplierOnly *
+                if (quickMatchDailyBonusPending) GameConstants.QUICK_MATCH_DAILY_BONUS_MULTIPLIER else 1
+        }
+
+        // A killed-and-restarted process hands the same SavedStateHandle
+        // back (that's the whole point of it) — so a checkpoint written
+        // before death means resuming exactly where the player left off
+        // instead of silently restarting the whole match from scratch.
+        val recovery = savedStateHandle.get<String>(RECOVERY_KEY)?.let {
+            runCatching { recoveryJson.decodeFromString<GameRecovery>(it) }.getOrNull()
+        }
+        when {
+            recovery?.result != null -> {
+                _phase.value = recovery.result
+                // The opponent's drawings were never in the checkpoint (see
+                // GhostMatchSummary), so a result screen that survived a
+                // process death comes back without them. One document read
+                // to put them back.
+                recovery.result.ghost?.let { loadGhostItems(it.runId) }
+            }
+            recovery?.active != null -> resumeFrom(recovery.active)
+            else -> startSession()
+        }
+    }
+
+    /**
+     * The opponent's drawings for a finished quick match, empty until they
+     * arrive and empty for good if they never do.
+     *
+     * A failure here costs the "look at what they drew" half of the result
+     * screen and nothing else — the scores, the winner and the player's own
+     * drawings are all already on screen — so it stays silent rather than
+     * putting an error in front of somebody who just won a match.
+     */
+    private val _ghostItems = MutableStateFlow<List<ResultItem>>(emptyList())
+    val ghostItems: StateFlow<List<ResultItem>> = _ghostItems.asStateFlow()
+
+    private val _reportState = MutableStateFlow(ReportSendState.Idle)
+    val reportState: StateFlow<ReportSendState> = _reportState.asStateFlow()
+
+    /**
+     * Reports one of the opponent's drawings from this quick match.
+     *
+     * Only ever the OPPONENT's: the caller offers this from the opponent
+     * gallery, and reporting your own round would mean reporting yourself.
+     * Two distinct players reporting the same round is what takes it out of
+     * the pool — see DrawingReports.REPORTS_TO_RETIRE.
+     */
+    fun reportOpponentDrawing(item: ResultItem, reason: DrawingReportReason) {
+        val opponent = ghost ?: return
+        if (_reportState.value == ReportSendState.Sending) return
+        // A synthesized opponent has no author to report and no stored round
+        // to retire — see BotGhostRuns. Answering as if it were sent keeps
+        // the player from tapping at something that can never work.
+        if (BotGhostRuns.isBotRun(opponent.id)) {
+            _reportState.value = ReportSendState.Sent
+            return
+        }
+        _reportState.value = ReportSendState.Sending
+        viewModelScope.launch {
+            val sent = drawingReportRepository.reportRunDrawing(
+                runId = opponent.id,
+                reportedUid = opponent.uid,
+                word = item.word,
+                strokes = item.strokes,
+                reason = reason
+            ).isSuccess
+            _reportState.value = if (sent) ReportSendState.Sent else ReportSendState.Failed
+        }
+    }
+
+    fun dismissReport() { _reportState.value = ReportSendState.Idle }
+
+    private fun loadGhostItems(runId: String) {
+        viewModelScope.launch {
+            ghostRunRepository.loadItems(runId).onSuccess { _ghostItems.value = it }
+        }
+    }
+
+    /** Rebuilds every in-memory field from a checkpoint and resumes the exact sub-phase it was taken in. */
+    private fun resumeFrom(snapshot: ActiveMatchSnapshot) {
+        words = snapshot.words
+        drawingIndex = snapshot.drawingIndex
+        results.clear()
+        results.addAll(snapshot.results)
+        currentStrokes = snapshot.inProgressStrokes.toMutableList()
+        pendingStroke = emptyList()
+        guessOrder = snapshot.guessOrder
+        guessPos = snapshot.guessPos
+        hintUsedThisMatch = snapshot.hintUsedThisMatch
+        revealedHintLetter = snapshot.revealedHintLetter
+        drawingHintUsedThisMatch = snapshot.drawingHintUsedThisMatch
+        currentGuessTotal = snapshot.currentGuessTotal
+        currentDrawingTotal = snapshot.currentDrawingTotal
+
+        val word = words.getOrNull(drawingIndex)
+        when (snapshot.stage) {
+            RecoveryStage.DRAWING -> {
+                if (word == null) { startSession(); return }
+                if (mode == GameMode.RELAXED) {
+                    _phase.value = GamePhase.Drawing(
+                        word = word,
+                        wordNumber = drawingIndex + 1,
+                        totalWords = words.size,
+                        secondsLeft = 0,
+                        totalSeconds = 0,
+                        isWarning = false,
+                        strokes = currentStrokes.toList(),
+                        isUntimed = true
+                    )
+                } else {
+                    val startSecondsLeft = currentDrawingTotal.takeIf { it > 0 }
+                        ?: GameConstants.drawingDurationSeconds(word.difficulty)
+                    runDrawingCountdown(word, startSecondsLeft = startSecondsLeft)
+                }
+            }
+            RecoveryStage.BREAK -> runBreak()
+            RecoveryStage.GUESSING -> {
+                if (guessPos !in guessOrder.indices) {
+                    viewModelScope.launch { finishGame() }
+                    return
+                }
+                guessShownAtMillis = SystemClock.elapsedRealtime()
+                val startSecondsLeft = currentGuessTotal.takeIf { it > 0 } ?: GameConstants.GUESS_DURATION_SECONDS
+                runGuessCountdown(startSecondsLeft = startSecondsLeft)
+            }
+        }
+    }
+
+    private fun saveActiveSnapshot(stage: RecoveryStage) {
+        val snapshot = ActiveMatchSnapshot(
+            words = words,
+            drawingIndex = drawingIndex,
+            results = results.toList(),
+            inProgressStrokes = currentStrokes.toList(),
+            guessOrder = guessOrder,
+            guessPos = guessPos,
+            stage = stage,
+            hintUsedThisMatch = hintUsedThisMatch,
+            revealedHintLetter = revealedHintLetter,
+            drawingHintUsedThisMatch = drawingHintUsedThisMatch,
+            currentGuessTotal = currentGuessTotal,
+            currentDrawingTotal = currentDrawingTotal
+        )
+        savedStateHandle[RECOVERY_KEY] = recoveryJson.encodeToString(GameRecovery(active = snapshot))
+    }
+
+    private fun saveResultSnapshot(result: GamePhase.Result) {
+        savedStateHandle[RECOVERY_KEY] = recoveryJson.encodeToString(GameRecovery(result = result))
+    }
+
+    private fun clearRecoverySnapshot() {
+        savedStateHandle.remove<String>(RECOVERY_KEY)
+    }
+
+    /** Called from the Screen's lifecycle observer — see GameScreen. */
+    fun onEnterBackground() = ticker.pause()
+
+    fun onEnterForeground() = ticker.resume()
+
+    /**
+     * Loads this session's word list. Level-map sessions and free-play
+     * sessions ask for completely different things, so this is the single
+     * place that decides which — [restart] goes through it too, or replaying
+     * a level would silently fall back to the free-play query and hand the
+     * player a different set of words than the level actually specifies.
+     */
+    private suspend fun loadWords(): List<Word> {
+        // Every mode below reads WordDao by id, sooner or later — this is
+        // the single funnel they all go through, so it is also the single
+        // place to make sure the current language's rows are actually in
+        // Room before any of them run. See WordPoolSynchronizer.ensureSynced.
+        wordPoolSynchronizer.ensureSynced()
+        return if (ghost != null) {
+            // Exactly the words the opponent drew, in the order they drew
+            // them — a comparison of two scores only means anything if both
+            // rounds asked the same questions.
+            getWordsByIdsUseCase(ghost.wordIds)
+        } else if (isDaily) {
+            // Derived from the date, never queried at random — that's what
+            // makes it the same round for every player (see DailyChallenge).
+            DailyChallenge.wordsFor(
+                epochDay = LocalDate.now().toEpochDay(),
+                languageTag = WordSeeder.currentLanguage(context),
+                pool = getWordsForGameUseCase.getAllApprovedWords()
+            )
+        } else if (worldId != null && levelIndex != null) {
+            // The route's path-encoded wordCount/difficulty/category segments
+            // are placeholders (a level can be a two-difficulty mix, which
+            // can't be represented as a single Difficulty path segment, and
+            // every level now draws from every category at once) — the real,
+            // authoritative config is always recomputed from worldId+levelIndex.
+            // See LevelCatalog: worlds are difficulty tiers only, not
+            // category-scoped, so this passes no category through at all —
+            // the same "Tümü" (null-category) query path free play uses.
+            val config = LevelCatalog.levelConfig(worldId, levelIndex)
+            getWordsForGameUseCase(null, config.difficultyMix)
+        } else {
+            getWordsForGameUseCase(wordCount, category, difficulty)
+        }
+    }
+
+    private fun startSession() {
+        viewModelScope.launch {
+            words = runCatching { loadWords() }.getOrDefault(emptyList())
+            if (words.isEmpty()) {
+                // No words matched (an over-narrow filter, or a word pool
+                // still mid-reseed): fall straight through to an empty result
+                // rather than sitting on the loading spinner forever.
+                val emptyResult = GamePhase.Result(0, 0, 0, null, emptyList())
+                _phase.value = emptyResult
+                saveResultSnapshot(emptyResult)
+            } else {
+                runDrawingTurn()
+            }
+        }
+    }
+
+    // --- Drawing phase ---
+
+    // wordId is the id the originating DrawableCanvas instance was created
+    // for (see DrawingScreen's key(state.word.id) block) — a stale callback
+    // from a canvas Compose hasn't torn down yet (the user's finger was
+    // still down when the turn advanced) would otherwise silently attach a
+    // leftover drag to whichever word is now current. Ignoring anything
+    // that doesn't match the actual current word closes that race.
+    fun onStrokeFinished(wordId: Int, stroke: DrawingStroke) {
+        if (words.getOrNull(drawingIndex)?.id != wordId) return
+        currentStrokes.add(stroke)
+        pendingStroke = emptyList()
+        (_phase.value as? GamePhase.Drawing)?.let { current ->
+            _phase.value = current.copy(strokes = currentStrokes.toList())
+        }
+        // Checkpointed per finished stroke (not per drag-frame — see
+        // onStrokeProgress) so a process death mid-drawing loses at most the
+        // one stroke still under the player's finger.
+        saveActiveSnapshot(RecoveryStage.DRAWING)
+    }
+
+    fun onStrokeProgress(wordId: Int, points: DrawingStroke) {
+        if (words.getOrNull(drawingIndex)?.id != wordId) return
+        pendingStroke = points
+    }
+
+    fun onClearCanvas() {
+        currentStrokes.clear()
+        pendingStroke = emptyList()
+        (_phase.value as? GamePhase.Drawing)?.let { current ->
+            _phase.value = current.copy(strokes = emptyList())
+        }
+        saveActiveSnapshot(RecoveryStage.DRAWING)
+    }
+
+    /** Eraser tool: removes one whole stroke the player dragged over (see DrawableCanvas). */
+    fun onEraseStroke(stroke: DrawingStroke) {
+        if (!currentStrokes.remove(stroke)) return
+        (_phase.value as? GamePhase.Drawing)?.let { current ->
+            _phase.value = current.copy(strokes = currentStrokes.toList())
+        }
+        saveActiveSnapshot(RecoveryStage.DRAWING)
+    }
+
+    fun onUndoLastStroke() {
+        if (currentStrokes.isEmpty()) return
+        currentStrokes.removeAt(currentStrokes.lastIndex)
+        (_phase.value as? GamePhase.Drawing)?.let { current ->
+            _phase.value = current.copy(strokes = currentStrokes.toList())
+        }
+        saveActiveSnapshot(RecoveryStage.DRAWING)
+    }
+
+    private fun runDrawingTurn() {
+        timerJob?.cancel()
+        currentStrokes = mutableListOf()
+        pendingStroke = emptyList()
+        val word = words[drawingIndex]
+
+        if (mode == GameMode.RELAXED) {
+            // No countdown at all — just show the word and wait for
+            // advanceRelaxedDrawing() (triggered by a "next word" button).
+            _phase.value = GamePhase.Drawing(
+                word = word,
+                wordNumber = drawingIndex + 1,
+                totalWords = words.size,
+                secondsLeft = 0,
+                totalSeconds = 0,
+                isWarning = false,
+                strokes = currentStrokes.toList(),
+                isUntimed = true
+            )
+            saveActiveSnapshot(RecoveryStage.DRAWING)
+            return
+        }
+
+        currentDrawingTotal = GameConstants.drawingDurationSeconds(word.difficulty)
+        timeJokerUsedThisWord = false
+        runDrawingCountdown(word, startSecondsLeft = currentDrawingTotal)
+    }
+
+    /**
+     * Runs (or resumes) the drawing countdown from [startSecondsLeft] down
+     * to 1. Split out from [runDrawingTurn] so [useDrawingHint] can pause
+     * this loop for the whole rewarded-ad flow and resume it afterward —
+     * same reasoning as [runGuessCountdown] for the guessing phase.
+     */
+    private fun runDrawingCountdown(word: Word, startSecondsLeft: Int) {
+        timerJob?.cancel()
+        saveActiveSnapshot(RecoveryStage.DRAWING)
+        // Sum of every remaining word's OWN drawing time (not this word's
+        // break/guess phases, and not later words' break/guess either) —
+        // the header clock counts down to when the last drawing finishes,
+        // not to when the whole match (guessing included) finishes. Fixed
+        // regardless of this word's own bonus: matchSecondsRemaining is
+        // derived from secondsLeft below, so a drawing-hint bonus flows
+        // through automatically without adjusting this sum separately.
+        val laterWordsSeconds = words.drop(drawingIndex + 1).sumOf { GameConstants.drawingDurationSeconds(it.difficulty) }
+
+        timerJob = viewModelScope.launch {
+            for (secondsLeft in startSecondsLeft downTo 1) {
+                val isWarning = secondsLeft <= GameConstants.WARNING_THRESHOLD_SECONDS
+                if (isWarning && secondsLeft == GameConstants.WARNING_THRESHOLD_SECONDS) {
+                    vibratorHelper.vibrateCountdownWarning()
+                    soundManager.playCountdownTick()
+                }
+                _phase.value = GamePhase.Drawing(
+                    word = word,
+                    wordNumber = drawingIndex + 1,
+                    totalWords = words.size,
+                    secondsLeft = secondsLeft,
+                    totalSeconds = currentDrawingTotal,
+                    isWarning = isWarning,
+                    strokes = currentStrokes.toList(),
+                    matchSecondsRemaining = secondsLeft + laterWordsSeconds,
+                    hintUsed = drawingHintUsedThisMatch,
+                    jokerTimeUsed = timeJokerUsedThisWord
+                )
+                ticker.awaitTick()
+            }
+            finishDrawingTurn(word)
+        }
+    }
+
+    /**
+     * Watches a rewarded ad for this match's one-time "+time" drawing hint —
+     * a separate budget from [useHint]'s guessing-phase letter reveal.
+     * Pauses the drawing countdown for the whole ad flow, then resumes with
+     * a +[GameConstants.DRAWING_TIME_BONUS_SECONDS] bonus if it was watched.
+     */
+    fun useDrawingHint(activity: Activity) {
+        if (drawingHintUsedThisMatch) return
+        val current = _phase.value as? GamePhase.Drawing ?: return
+        if (current.isUntimed) return // RELAXED mode has no timer to extend
+        timerJob?.cancel()
+        val pausedSecondsLeft = current.secondsLeft
+        val word = words[drawingIndex]
+        adManager.maybeShowRewarded(activity) { outcome ->
+            val earned = outcome == RewardedOutcome.EARNED
+            if (outcome == RewardedOutcome.UNAVAILABLE) reportAdUnavailable()
+            if (earned) {
+                drawingHintUsedThisMatch = true
+                currentDrawingTotal += GameConstants.DRAWING_TIME_BONUS_SECONDS
+                runDrawingCountdown(word, startSecondsLeft = pausedSecondsLeft + GameConstants.DRAWING_TIME_BONUS_SECONDS)
+            } else {
+                runDrawingCountdown(word, startSecondsLeft = pausedSecondsLeft)
+            }
+        }
+    }
+
+    /** RELAXED mode only: called when the user taps "next word" instead of a timer expiring. */
+    fun advanceRelaxedDrawing() {
+        val current = _phase.value as? GamePhase.Drawing ?: return
+        if (!current.isUntimed) return
+        finishDrawingTurn(current.word)
+    }
+
+    private fun finishDrawingTurn(word: Word) {
+        // Fold in whatever was mid-stroke (finger still down) at the exact
+        // moment the turn ended, so a timeout mid-drag doesn't lose that
+        // partial line or leave it to bleed into the next word's canvas.
+        val finalStrokes = currentStrokes.toList() +
+            listOfNotNull(pendingStroke.takeIf { it.size >= 2 })
+        pendingStroke = emptyList()
+
+        results.add(
+            DrawingResult(
+                sessionId = 0L,
+                wordId = word.id,
+                word = word,
+                strokes = finalStrokes
+            )
+        )
+        drawingIndex++
+        if (drawingIndex < words.size) {
+            runDrawingTurn()
+        } else {
+            runBreak()
+        }
+    }
+
+    // --- Break phase ---
+
+    private fun runBreak() {
+        timerJob?.cancel()
+        saveActiveSnapshot(RecoveryStage.BREAK)
+        timerJob = viewModelScope.launch {
+            val total = GameConstants.BREAK_DURATION_SECONDS
+            for (secondsLeft in total downTo 1) {
+                _phase.value = GamePhase.Break(secondsLeft = secondsLeft, totalSeconds = total)
+                ticker.awaitTick()
+            }
+            startGuessPhase()
+        }
+    }
+
+    // --- Guessing phase ---
+
+    private fun startGuessPhase() {
+        guessOrder = results.indices.shuffled()
+        guessPos = 0
+        showCurrentGuess()
+    }
+
+    private fun showCurrentGuess() {
+        guessShownAtMillis = SystemClock.elapsedRealtime()
+        revealedHintLetter = null
+        revealedLetterCount = null
+        currentGuessTotal = GameConstants.GUESS_DURATION_SECONDS
+        runGuessCountdown(startSecondsLeft = currentGuessTotal)
+    }
+
+    /**
+     * Runs (or resumes) the guess countdown from [startSecondsLeft] down to 1.
+     * Split out from [showCurrentGuess] so [useHint] can pause this loop for
+     * the whole rewarded-ad flow and resume it afterward — without this, the
+     * countdown kept ticking underneath the ad and the word had already
+     * moved on by the time the player got back, making the hint pointless.
+     */
+    private fun runGuessCountdown(startSecondsLeft: Int) {
+        timerJob?.cancel()
+        saveActiveSnapshot(RecoveryStage.GUESSING)
+        val result = results[guessOrder[guessPos]]
+        timerJob = viewModelScope.launch {
+            for (secondsLeft in startSecondsLeft downTo 1) {
+                val isWarning = secondsLeft <= GameConstants.WARNING_THRESHOLD_SECONDS
+                if (isWarning && secondsLeft == GameConstants.WARNING_THRESHOLD_SECONDS) {
+                    vibratorHelper.vibrateCountdownWarning()
+                    soundManager.playCountdownTick()
+                }
+                _phase.value = GamePhase.Guessing(
+                    guessNumber = guessPos + 1,
+                    totalGuesses = results.size,
+                    strokes = result.strokes,
+                    feedback = null,
+                    secondsLeft = secondsLeft,
+                    totalSeconds = currentGuessTotal,
+                    isWarning = isWarning,
+                    hintUsed = hintUsedThisMatch,
+                    hintLetter = revealedHintLetter,
+                    letterCount = revealedLetterCount
+                )
+                ticker.awaitTick()
+            }
+            submitGuess("") // time's up — counts the same as tapping "Atla"
+        }
+    }
+
+    /**
+     * Watches a rewarded ad for this match's one-time hint: the current
+     * word's first letter. The countdown is paused (not just visually — the
+     * timer coroutine itself is cancelled) the instant this is called, for
+     * the whole ad load+watch, and only resumes once the ad flow is fully
+     * done — plus a +[GameConstants.HINT_BONUS_SECONDS] bonus if the ad was
+     * actually watched, so getting the hint at the last second is still
+     * useful instead of an instant auto-skip.
+     */
+    fun useHint(activity: Activity) {
+        if (hintUsedThisMatch) return
+        val current = _phase.value as? GamePhase.Guessing ?: return
+        if (current.feedback != null) return // already answered
+        timerJob?.cancel()
+        val pausedSecondsLeft = current.secondsLeft
+        val adStartedAt = SystemClock.elapsedRealtime()
+        adManager.maybeShowRewarded(activity) { outcome ->
+            val earned = outcome == RewardedOutcome.EARNED
+            if (outcome == RewardedOutcome.UNAVAILABLE) reportAdUnavailable()
+            // The ad's own load+watch time is pushed out of the answer clock:
+            // guessShownAtMillis is the origin responseTimeMs is measured
+            // from, and leaving it alone billed the player ~30s of ad for a
+            // word they had not been allowed to answer yet — which put every
+            // hinted word past SPEED_BONUS_THRESHOLD_MS and, online, wrecked
+            // the fastestCorrectMs stat shown to opponents. Watching an ad
+            // must never cost points.
+            guessShownAtMillis += SystemClock.elapsedRealtime() - adStartedAt
+            if (earned) {
+                hintUsedThisMatch = true
+                revealedHintLetter = results[guessOrder[guessPos]].word.text.take(1)
+                currentGuessTotal += GameConstants.HINT_BONUS_SECONDS
+                runGuessCountdown(startSecondsLeft = pausedSecondsLeft + GameConstants.HINT_BONUS_SECONDS)
+            } else {
+                runGuessCountdown(startSecondsLeft = pausedSecondsLeft)
+            }
+        }
+    }
+
+    /** Called on every keystroke; auto-submits the moment the typed text exactly matches the word. */
+    fun onAnswerChanged(text: String) {
+        val current = _phase.value as? GamePhase.Guessing ?: return
+        if (current.feedback != null) return
+        if (text.isBlank()) return
+        val result = results[guessOrder[guessPos]]
+        if (AnswerMatcher.normalize(text) == AnswerMatcher.normalize(result.word.text)) {
+            submitGuess(text)
+        }
+    }
+
+    fun submitGuess(answer: String) {
+        val current = _phase.value as? GamePhase.Guessing ?: return
+        if (current.feedback != null) return // already answered (guards a timeout/manual-submit race)
+        timerJob?.cancel()
+        val responseTimeMs = SystemClock.elapsedRealtime() - guessShownAtMillis
+        val result = results[guessOrder[guessPos]]
+        val outcome = submitGuessUseCase(answer, result.word.text, responseTimeMs, result.word.difficulty)
+
+        result.userAnswer = answer
+        result.isCorrect = outcome.isCorrect
+        result.responseTimeMs = responseTimeMs
+        result.pointsAwarded = outcome.pointsAwarded
+
+        // Granted the instant the word is answered, not saved up for
+        // finishGame — that's what makes the level bar on screen move on
+        // every correct word instead of jumping once at the very end. The
+        // daily challenge is the one exception: it pays its own
+        // completion+streak reward there instead (see finishGame), so
+        // granting this too would pay the same round twice.
+        val liveXp = if (outcome.isCorrect && !isDaily) outcome.xpAwarded * effectiveXpMultiplier else 0
+        if (liveXp > 0) {
+            settingsRepository.addXp(liveXp)
+            // Totalled for the result screen's "double it" ad — that offer
+            // has to pay exactly what the round paid, and the per-word
+            // grants above are the only place that number exists.
+            roundXpEarned += liveXp
+        }
+
+        // Advanced (and checkpointed) right away, not after the feedback
+        // delay below — liveXp above is already an irreversible side
+        // effect, so the checkpoint must move past this word immediately or
+        // a process death during the delay would resume by re-asking an
+        // already-scored word and grant its XP a second time. Resetting the
+        // per-word hint fields here mirrors what showCurrentGuess() does for
+        // whatever word comes next, so a resumed match doesn't inherit this
+        // word's spent hint bonus.
+        guessPos++
+        revealedHintLetter = null
+        revealedLetterCount = null
+        currentGuessTotal = GameConstants.GUESS_DURATION_SECONDS
+        saveActiveSnapshot(RecoveryStage.GUESSING)
+
+        _phase.value = current.copy(
+            feedback = GuessFeedback(isCorrect = outcome.isCorrect, correctAnswer = result.word.text, xpAwarded = liveXp)
+        )
+
+        if (outcome.isCorrect) {
+            soundManager.playCorrectGuess()
+            vibratorHelper.vibrateSuccess()
+        } else {
+            soundManager.playWrongGuess()
+            vibratorHelper.vibrateError()
+        }
+
+        viewModelScope.launch {
+            delay(1_200) // let the correct/wrong feedback animation show briefly
+            if (guessPos < guessOrder.size) {
+                showCurrentGuess()
+            } else {
+                finishGame()
+            }
+        }
+    }
+
+    // --- Result phase ---
+
+    private suspend fun finishGame() {
+        val totalScore = results.sumOf { it.pointsAwarded }
+        // Return value (newly unlocked achievements) isn't needed here — the
+        // MainMenu badge + StatisticsScreen shimmer read persisted
+        // unseen/seen state straight from AchievementDao instead of a
+        // per-match snapshot (see StatisticsViewModel).
+        val newlyUnlocked = saveGameSessionUseCase(results)
+        soundManager.playGameOver()
+        // Gold earned by playing (not only by winning chests): achievements,
+        // improving a level's stars, and the daily challenge. Paid once, below.
+        var goldEarned = newlyUnlocked.size * GameConstants.ACHIEVEMENT_GOLD
+
+        // Spends today's Quick Match bonus only now that the round actually
+        // finished — see quickMatchDailyBonusPending, decided at
+        // construction and already baked into every XP grant above via
+        // effectiveXpMultiplier. A quit-before-finish round never reaches
+        // here, so it never spends the day's bonus.
+        if (quickMatchDailyBonusPending) settingsRepository.claimQuickMatchDailyBonus()
+
+        val correctCount = results.count { it.isCorrect }
+        val previousBestStars = if (worldId != null && levelIndex != null) {
+            levelProgressRepository.previousBestStars(worldId, levelIndex)
+        } else 0
+        val stars = if (worldId != null && levelIndex != null) {
+            levelProgressRepository.recordLevelResult(
+                worldId = worldId,
+                levelIndex = levelIndex,
+                correctCount = correctCount,
+                totalWords = results.size,
+                score = totalScore
+            )
+        } else null
+
+        // On top of the per-word XP already granted live in submitGuess —
+        // finishing the level itself is worth something beyond the words in
+        // it, scaled by how well (stars), same as the star count itself is.
+        stars?.let {
+            val bonus = XpAwards.levelCompletionBonus(it) * effectiveXpMultiplier
+            settingsRepository.addXp(bonus)
+            roundXpEarned += bonus
+            // Gold only for stars beyond the best already earned — replaying a cleared level pays none.
+            goldEarned += (it - previousBestStars).coerceAtLeast(0) * GameConstants.LEVEL_GOLD_PER_NEW_STAR
+        }
+
+        // Bookkeeping for today's challenge: streak, freezes and the XP that
+        // makes turning up daily out-earn grinding solo rounds. Guarded on
+        // isAvailableToday so a replay (or a process death mid-round) can't
+        // pay out or advance the streak twice.
+        val dailySummary = if (isDaily && dailyChallengeRepository.state.value.isAvailableToday) {
+            var xpAwarded = 0
+            val updated = dailyChallengeRepository.recordCompletion(
+                correctFlags = results.map { it.isCorrect },
+                score = totalScore,
+                // Called with the streak recordCompletion actually settles
+                // on — after any freeze/reset — so the multiplier below
+                // can't be paid for a streak day never actually reached.
+                xpForStreak = { finalStreak ->
+                    (XpAwards.dailyChallengeTotal(correctCount = correctCount, streakDays = finalStreak) * effectiveXpMultiplier)
+                        .also { xpAwarded = it }
+                }
+            )
+            settingsRepository.addXp(xpAwarded)
+            roundXpEarned += xpAwarded
+            goldEarned += GameConstants.dailyChallengeGold(updated.currentStreak)
+            DailyResultSummary(
+                streak = updated.currentStreak,
+                xpEarned = xpAwarded,
+                streakMultiplierIncreased = XpAwards.dailyStreakMultiplierJustIncreased(updated.currentStreak),
+                streakMultiplier = XpAwards.dailyStreakMultiplier(updated.currentStreak)
+            )
+        } else if (isDaily) {
+            dailyChallengeRepository.state.value.todayResult?.let {
+                DailyResultSummary(
+                    streak = it.streakAfter,
+                    xpEarned = it.xpEarned,
+                    streakMultiplierIncreased = XpAwards.dailyStreakMultiplierJustIncreased(it.streakAfter),
+                    streakMultiplier = XpAwards.dailyStreakMultiplier(it.streakAfter)
+                )
+            }
+        } else null
+
+        val fastest = results.filter { it.isCorrect }.minOfOrNull { it.responseTimeMs }
+        val resultItems = results.map { ResultItem(it.word.text, it.isCorrect, it.strokes) }
+
+        // Left behind as an opponent for somebody else's "Hızlı Eşleş"
+        // (see GhostRuns for which rounds qualify and why). The player is
+        // told nothing and gets nothing from it directly — this is the pool
+        // filling itself, quietly, so that the matching phase opens onto a
+        // stocked pool instead of an empty one.
+        if (GhostRuns.isWorthRecording(
+                mode = mode,
+                isDailyChallenge = isDaily
+            )
+        ) {
+            // The totals are not passed along: a longer round is recorded as
+            // its first RUN_WORD_COUNT words only, so its score has to be
+            // recomputed over those rather than inherited (see recordableSlice).
+            ghostRunRepository.record(
+                wordIds = results.map { it.wordId },
+                mode = mode,
+                perWord = results.map {
+                    GhostRunWord(
+                        wordId = it.wordId,
+                        isCorrect = it.isCorrect,
+                        responseTimeMs = it.responseTimeMs,
+                        pointsAwarded = it.pointsAwarded
+                    )
+                },
+                items = resultItems,
+                xpEarned = roundXpEarned
+            )
+        }
+
+        // On top of the normal session save/XP/streak above — a duel
+        // challenge is still a full, real round for the player who played
+        // it, this just ALSO turns its outcome into a challenge for a
+        // friend (see Screen.duelChallengeRoute). Silently best-effort, same
+        // as every other fire-and-forget Firestore write in this app: a
+        // failed challenge send is disappointing, not something worth
+        // blocking the result screen over.
+        duelOpponentUid?.let { opponentUid ->
+            duelRepository.createDuel(
+                opponentUid = opponentUid,
+                opponentName = duelOpponentName.orEmpty(),
+                items = resultItems,
+                challengerScore = totalScore,
+                challengerCorrectCount = correctCount
+            )
+        }
+
+        if (goldEarned > 0) settingsRepository.earnGold(goldEarned)
+        val quickMatchWon = ghost != null && totalScore > ghost.totalScore
+        val chestWon = if (quickMatchWon) settingsRepository.awardChestForWin() else null
+
+        val resultPhase = GamePhase.Result(
+            totalScore = totalScore,
+            correctCount = correctCount,
+            wrongCount = results.count { !it.isCorrect },
+            fastestCorrectSeconds = fastest?.let { it / 1000.0 },
+            items = resultItems,
+            levelStars = stars,
+            daily = dailySummary,
+            duelOpponentName = if (duelOpponentUid != null) duelOpponentName else null,
+            ghost = ghost?.let {
+                GhostMatchSummary(
+                    runId = it.id,
+                    nickname = it.nickname,
+                    level = it.level,
+                    frameId = it.frameId,
+                    opponentScore = it.totalScore,
+                    opponentCorrectCount = it.correctCount
+                )
+            },
+            xpEarned = roundXpEarned,
+            goldEarned = goldEarned,
+            quickMatchDailyBonusApplied = quickMatchDailyBonusPending,
+            xpEventMultiplierApplied = xpEventMultiplierOnly > 1,
+            showSignInPrompt = PostMatchPrompts.shouldShowSignIn(settingsRepository, authRepository.authState.value),
+            showRatingPrompt = PostMatchPrompts.shouldShowRating(settingsRepository),
+            chestWon = chestWon,
+            chestLost = quickMatchWon && chestWon == null
+        )
+        _phase.value = resultPhase
+        // Only now, once there is finally something to compare them with:
+        // the opponent's drawings are the heaviest thing in a recorded round
+        // and a match abandoned halfway should never have paid for them.
+        ghost?.let { loadGhostItems(it.id) }
+        // Everything above (session save, XP, streak) already ran exactly
+        // once by this point — checkpointing the finished result itself
+        // means a process death on the result screen redisplays it as-is
+        // instead of re-running any of that.
+        saveResultSnapshot(resultPhase)
+    }
+
+    /** Everything this round paid out, so the doubling ad can pay it again. */
+    private var roundXpEarned = 0
+
+    /**
+     * Whether the doubling ad has already been taken this round.
+     *
+     * Its own flow rather than a field on the Result phase. Carrying it on
+     * the phase meant the offer's disappearance depended on a replacement
+     * Result object arriving at the screen after the ad's callback — one
+     * more thing between "the reward was granted" and "the button that
+     * granted it goes away", and on device the button stayed put. Nothing
+     * about "this round's ad is spent" needs to travel through the phase at
+     * all: it is a fact about the round, and the round outlives every
+     * redraw of the result.
+     */
+    private val _resultXpDoubled = MutableStateFlow(false)
+    val resultXpDoubled: StateFlow<Boolean> = _resultXpDoubled.asStateFlow()
+
+    /**
+     * Pays the round's XP a second time for a watched ad.
+     *
+     * Deliberately opt-in and once per round: XP only buys levels and avatar
+     * frames, so doubling it cannot unbalance play against anyone, and the
+     * offer sits on the result screen where the player has already finished
+     * and has nothing to lose by watching.
+     */
+    fun doubleResultXp(activity: Activity) {
+        val current = _phase.value as? GamePhase.Result ?: return
+        if (_resultXpDoubled.value || current.xpEarned <= 0) return
+        adManager.maybeShowRewarded(activity) { outcome ->
+            val earned = outcome == RewardedOutcome.EARNED
+            if (outcome == RewardedOutcome.UNAVAILABLE) reportAdUnavailable()
+            if (!earned) return@maybeShowRewarded
+            settingsRepository.addXp(current.xpEarned)
+            _resultXpDoubled.value = true
+        }
+    }
+
+    /** Called once when the Result screen appears — see AdManager's placement doc. */
+    fun showResultInterstitial(activity: Activity, onDismissed: () -> Unit = {}) {
+        // The daily challenge is exempt. It is the one screen a player is
+        // meant to open every single day, and a full-screen ad on the way
+        // out of a streak they are protecting is the surest way to make the
+        // habit feel like a toll. Every other mode keeps the normal cadence.
+        if ((_phase.value as? GamePhase.Result)?.daily != null) {
+            onDismissed()
+            return
+        }
+        adManager.maybeShowInterstitial(activity, onDismissed)
+    }
+
+    /**
+     * Replays the same match setup from scratch.
+     *
+     * Never offered for a quick match: the ghost's word list is fixed in the
+     * route, so "play again" would deal the player the exact same ten words
+     * against the exact same opponent, with the answers already known. The
+     * result screen sends them back to find a new opponent instead (see
+     * ResultScreen's ghost branch).
+     */
+    /** RatingPromptDialog's "Puanla" tap — see SettingsRepository.grantRatingBonusXpOnce for why this is safe to call more than once. */
+    fun grantRatingBonusXp() {
+        settingsRepository.grantRatingBonusXpOnce(PostMatchPrompts.RATING_BONUS_XP)
+    }
+
+    fun restart() {
+        roundXpEarned = 0
+        _resultXpDoubled.value = false
+        timerJob?.cancel()
+        clearRecoverySnapshot()
+        drawingIndex = 0
+        results.clear()
+        currentStrokes = mutableListOf()
+        pendingStroke = emptyList()
+        guessOrder = emptyList()
+        guessPos = 0
+        hintUsedThisMatch = false
+        revealedHintLetter = null
+        revealedLetterCount = null
+        currentGuessTotal = GameConstants.GUESS_DURATION_SECONDS
+        drawingHintUsedThisMatch = false
+        currentDrawingTotal = 0
+        _phase.value = GamePhase.Loading
+        startSession()
+    }
+
+    // --- Jokers: consumables bought in the store or won from chests. They are
+    // a separate budget from the once-per-match rewarded-ad hints above. ---
+
+    val jokerCounts: StateFlow<Map<com.sualtikasifi.cizimhafiza.domain.model.JokerType, Int>> = settingsRepository.jokerCounts
+
+    /** Reveals the first letter of the word being guessed. */
+    fun useFirstLetterJoker() {
+        val current = _phase.value as? GamePhase.Guessing ?: return
+        if (current.feedback != null || current.hintLetter != null) return
+        if (!settingsRepository.useJoker(com.sualtikasifi.cizimhafiza.domain.model.JokerType.FIRST_LETTER)) return
+        revealedHintLetter = results[guessOrder[guessPos]].word.text.take(1)
+        _phase.value = current.copy(hintLetter = revealedHintLetter)
+    }
+
+    /** Shows how many letters the word being guessed has. */
+    fun useLetterCountJoker() {
+        val current = _phase.value as? GamePhase.Guessing ?: return
+        if (current.feedback != null || current.letterCount != null) return
+        if (!settingsRepository.useJoker(com.sualtikasifi.cizimhafiza.domain.model.JokerType.LETTER_COUNT)) return
+        revealedLetterCount = results[guessOrder[guessPos]].word.text.count { it.isLetterOrDigit() }
+        _phase.value = current.copy(letterCount = revealedLetterCount)
+    }
+
+    /** Adds [GameConstants.DRAWING_TIME_BONUS_SECONDS] to the current drawing turn (once per word). */
+    fun useTimeJoker() {
+        val current = _phase.value as? GamePhase.Drawing ?: return
+        if (current.isUntimed || timeJokerUsedThisWord) return
+        if (!settingsRepository.useJoker(com.sualtikasifi.cizimhafiza.domain.model.JokerType.EXTRA_TIME)) return
+        timeJokerUsedThisWord = true
+        val word = words[drawingIndex]
+        currentDrawingTotal += GameConstants.DRAWING_TIME_BONUS_SECONDS
+        runDrawingCountdown(word, startSecondsLeft = current.secondsLeft + GameConstants.DRAWING_TIME_BONUS_SECONDS)
+    }
+
+    override fun onCleared() {
+        timerJob?.cancel()
+        super.onCleared()
+    }
+}

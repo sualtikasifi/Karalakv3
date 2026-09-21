@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose owns all theming (see ui/theme/Theme.kt); this is only the
+         splash-to-first-frame window background required by the manifest.
+         windowBackground is set explicitly to the app's cream color (not
+         left as the platform default white) so there's no color mismatch
+         flash between the OS splash screen and Compose's first frame. -->
+    <!-- Parent is an AppCompat theme (not a plain platform theme) because
+         MainActivity extends AppCompatActivity — required for per-app
+         language switching (AppCompatDelegate.setApplicationLocales), which
+         throws at runtime without it. Doesn't change how anything looks;
+         Compose still owns every visible color/shape. -->
+    <style name="Theme.CizimHafiza" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/splash_background</item>
+    </style>
+
+    <!-- Shown for the brief window between process start and Compose's first
+         frame (see MainActivity.installSplashScreen()). Hands off to
+         Theme.CizimHafiza automatically once the app is ready to draw.
+
+         The icon is @drawable/splash_mark, a purpose-built asset rather than
+         the launcher icon. Two reasons. The launcher icon is an adaptive
+         icon whose background layer is white, and the splash paints that
+         background as a white disc on the cream field — a hard-edged circle
+         that belongs to the launcher grid, not to this screen. And the mark
+         has to line up, to the pixel, with BrandSplash's first frame (see
+         presentation/splash/BrandSplash.kt), which continues this screen in
+         Compose: an icon without its own background is drawn into a 288dp
+         canvas, splash_mark's artwork occupies a known 52% of its frame, so
+         Compose can reproduce the same 150dp mark in the same place and the
+         hand-off has nothing to reveal. Change the framing of one and the
+         other has to follow. -->
+    <style name="Theme.Karalak.Splash" parent="Theme.SplashScreen">
+        <!-- The classic starting-window attribute, not just
+             windowSplashScreenBackground below. Android paints a "starting
+             window" using android:windowBackground THE INSTANT a window is
+             created — before the SplashScreen APIs, or this app's own code,
+             ever run — as the standard mechanism to avoid a blank/black
+             frame during any window creation, cold start or recreate alike.
+             This theme never set it, leaving that instant to whatever the
+             platform/OEM default is (black on some skins, notably MIUI) for
+             every recreate this Activity goes through — including the one
+             AppCompatDelegate.setApplicationLocales() triggers on a
+             language switch, which is exactly what kept flashing dark
+             despite windowSplashScreenBackground already being correct. -->
+        <item name="android:windowBackground">@color/splash_background</item>
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_mark</item>
+        <item name="postSplashScreenTheme">@style/Theme.CizimHafiza</item>
+    </style>
+</resources>
