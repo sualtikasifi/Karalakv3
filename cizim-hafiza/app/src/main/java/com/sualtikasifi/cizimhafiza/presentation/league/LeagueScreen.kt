@@ -58,6 +58,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod
 import com.sualtikasifi.cizimhafiza.domain.model.LeagueReward
 import com.sualtikasifi.cizimhafiza.domain.model.LeagueTable
 import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
+import com.sualtikasifi.cizimhafiza.util.GameConstants
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -140,7 +141,9 @@ fun LeagueScreen(
                 }
             }
 
-            run {
+            // Global only — a friend-list standing has no monthly prize of
+            // its own to show; this banner belongs to the ladder that does.
+            if (uiState.tab == LeagueTab.Global) {
                 // Falls back to the month's own frame so the prize is on
                 // screen from the first day, rather than only after the
                 // scheduled rebuild has stamped it into the table.
@@ -321,6 +324,8 @@ private fun RewardBanner(reward: LeagueReward, modifier: Modifier = Modifier) {
                     PenStrokePreview(skin = reward.skin, modifier = Modifier.fillMaxWidth().height(40.dp))
                 }
                 Spacer(modifier = Modifier.height(10.dp))
+                MonthlyBonusRow()
+                Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     text = rewardExplainer(reward),
                     style = MaterialTheme.typography.bodySmall,
@@ -420,6 +425,30 @@ private fun RewardSwatch(reward: LeagueReward.Frame, size: androidx.compose.ui.u
     }
 }
 
+/**
+ * Every podium month now also pays a flat gold+XP bonus on top of the pen/
+ * frame — see GameConstants.LEAGUE_MONTHLY_GOLD/XP and
+ * LeagueViewModel.collectPrize, which is where it's actually granted. Shown
+ * next to the cosmetic preview in both the not-yet-won banner and the
+ * just-won dialog so the reward is never a surprise the player has to
+ * discover in their balance afterwards.
+ */
+@Composable
+private fun MonthlyBonusRow(modifier: Modifier = Modifier) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = modifier) {
+        TintedBadge(
+            text = stringResource(R.string.league_reward_bonus_gold, GameConstants.LEAGUE_MONTHLY_GOLD),
+            container = AppTheme.tokens.gold.copy(alpha = 0.18f),
+            content = AppTheme.tokens.gold
+        )
+        TintedBadge(
+            text = stringResource(R.string.league_reward_bonus_xp, GameConstants.LEAGUE_MONTHLY_XP),
+            container = MaterialTheme.colorScheme.primaryContainer,
+            content = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    }
+}
+
 @Composable
 private fun rewardLabel(reward: LeagueReward): String = when (reward) {
     is LeagueReward.Pen -> stringResource(reward.skin.labelRes)
@@ -475,6 +504,8 @@ private fun PrizeWonDialog(reward: LeagueReward, rank: Int, onDismiss: () -> Uni
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
+                Spacer(modifier = Modifier.height(10.dp))
+                MonthlyBonusRow()
             }
         }
     )

@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.sualtikasifi.cizimhafiza.R
@@ -93,13 +94,15 @@ fun ReplayStrokeCanvas(
         // re-compose this whole subtree on every one of the ~60 frames a
         // replay lasts; read here it only re-runs the draw phase, which is
         // all that actually changes.
-        DrawingReplay.forEachVisible(strokes, totalUnits, progress.value) { stroke, visiblePoints ->
-            drawFittedStroke(
-                stroke = if (visiblePoints == stroke.size) stroke else stroke.subList(0, visiblePoints),
-                fit = fit,
-                paint = paint,
-                strokeWidthPx = strokeWidthPx
-            )
+        clipRect {
+            DrawingReplay.forEachVisible(strokes, totalUnits, progress.value) { stroke, visiblePoints ->
+                drawFittedStroke(
+                    stroke = if (visiblePoints == stroke.size) stroke else stroke.subList(0, visiblePoints),
+                    fit = fit,
+                    paint = paint,
+                    strokeWidthPx = strokeWidthPx
+                )
+            }
         }
     }
 }

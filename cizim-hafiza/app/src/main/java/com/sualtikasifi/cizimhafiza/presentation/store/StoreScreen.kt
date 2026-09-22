@@ -1,5 +1,11 @@
 package com.sualtikasifi.cizimhafiza.presentation.store
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,16 +26,16 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -49,6 +55,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog
+import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
+import com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
 import com.sualtikasifi.cizimhafiza.domain.model.JokerType
@@ -87,11 +96,19 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
     var tab by remember { mutableStateOf(0) }
     var pending by remember { mutableStateOf<Pending?>(null) }
     var tryingPen by remember { mutableStateOf<PenSkin?>(null) }
-    var noticeRes by remember { mutableStateOf<Int?>(null) }
-    LaunchedEffect(noticeRes) {
-        if (noticeRes != null) {
-            delay(2_200)
-            noticeRes = null
+    // The toast's own id changes on every fire, even for the same message
+    // twice in a row, so re-showing it (declined, tried again, still short)
+    // restarts its animation and its timer instead of doing nothing.
+    var toast by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
+    var toastId by remember { mutableIntStateOf(0) }
+    fun showToast(res: Int, isError: Boolean) {
+        toastId++
+        toast = res to isError
+    }
+    LaunchedEffect(toastId) {
+        if (toast != null) {
+            delay(2_400)
+            toast = null
         }
     }
 
@@ -156,7 +173,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                             canAfford = gold >= skin.storePrice,
                             onBuy = { pending = Pending.PenItem(skin) },
                             onEquip = { viewModel.equipPen(skin) },
-                            onCannotAfford = { noticeRes = R.string.store_not_enough }
+                            onCannotAfford = { showToast(R.string.store_not_enough, isError = true) }
                         )
                     }
                 } else if (tab == 2) {
@@ -166,7 +183,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                             owned = jokerCounts[type] ?: 0,
                             gold = gold,
                             onBuy = { qty -> pending = Pending.JokerItem(type, qty) },
-                            onCannotAfford = { noticeRes = R.string.store_not_enough }
+                            onCannotAfford = { showToast(R.string.store_not_enough, isError = true) }
                         )
                     }
                 } else if (viewModel.frames.isEmpty()) {
@@ -199,7 +216,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                             canAfford = gold >= frame.storePrice,
                             onBuy = { pending = Pending.FrameItem(frame) },
                             onEquip = { viewModel.equipFrame(frame) },
-                            onCannotAfford = { noticeRes = R.string.store_not_enough }
+                            onCannotAfford = { showToast(R.string.store_not_enough, isError = true) }
                         )
                     }
                 }
@@ -211,17 +228,16 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                 modifier = Modifier.align(Alignment.TopStart)
             )
 
-            noticeRes?.let { res ->
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(horizontal = 24.dp, vertical = 32.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xE62B1A12))
-                        .padding(horizontal = 18.dp, vertical = 12.dp)
-                ) {
-                    Text(text = stringResource(res), color = Color.White, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
-                }
+            // Anchored a third of the way up, not hugging the bottom edge —
+            // the old placement sat almost off-screen under a thumb reaching
+            // for the buy button, easy to miss entirely.
+            AnimatedVisibility(
+                visible = toast != null,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp, start = 24.dp, end = 24.dp),
+                enter = fadeIn(tween(160)) + slideInVertically(tween(220)) { it / 3 },
+                exit = fadeOut(tween(160)) + slideOutVertically(tween(180)) { it / 3 }
+            ) {
+                toast?.let { (res, isError) -> StoreToast(res = res, isError = isError) }
             }
         }
     }
@@ -229,28 +245,150 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
     tryingPen?.let { skin -> PenTryDialog(skin = skin, onDismiss = { tryingPen = null }) }
 
     pending?.let { item ->
-        val (name, price) = when (item) {
-            is Pending.PenItem -> stringResource(item.skin.labelRes) to item.skin.storePrice
-            is Pending.FrameItem -> stringResource(item.frame.nameRes()) to item.frame.storePrice
-            is Pending.JokerItem -> (stringResource(item.type.labelRes()) + " ×" + item.quantity) to item.type.priceFor(item.quantity)
+        val name = when (item) {
+            is Pending.PenItem -> stringResource(item.skin.labelRes)
+            is Pending.FrameItem -> stringResource(item.frame.nameRes())
+            is Pending.JokerItem -> stringResource(item.type.labelRes()) + " ×" + item.quantity
         }
-        AlertDialog(
-            onDismissRequest = { pending = null },
-            title = { Text(stringResource(R.string.store_buy_confirm_title)) },
-            text = { Text(stringResource(R.string.store_buy_confirm_body, name, price)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    val ok = when (item) {
-                        is Pending.PenItem -> viewModel.buyPen(item.skin)
-                        is Pending.FrameItem -> viewModel.buyFrame(item.frame)
-                        is Pending.JokerItem -> viewModel.buyJoker(item.type, item.quantity)
-                    }
-                    noticeRes = if (ok) R.string.store_bought else R.string.store_not_enough
-                    pending = null
-                }) { Text(stringResource(R.string.store_buy)) }
+        val price = when (item) {
+            is Pending.PenItem -> item.skin.storePrice
+            is Pending.FrameItem -> item.frame.storePrice
+            is Pending.JokerItem -> item.type.priceFor(item.quantity)
+        }
+        val preview: @Composable () -> Unit = {
+            when (item) {
+                is Pending.PenItem -> PenPreview(item.skin)
+                is Pending.FrameItem -> Image(painterResource(item.frame.drawableRes), contentDescription = null, modifier = Modifier.size(84.dp))
+                is Pending.JokerItem -> com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(item.type, 72.dp)
+            }
+        }
+        PurchaseConfirmDialog(
+            preview = preview,
+            name = name,
+            price = price,
+            gold = gold,
+            onConfirm = {
+                val ok = when (item) {
+                    is Pending.PenItem -> viewModel.buyPen(item.skin)
+                    is Pending.FrameItem -> viewModel.buyFrame(item.frame)
+                    is Pending.JokerItem -> viewModel.buyJoker(item.type, item.quantity)
+                }
+                showToast(if (ok) R.string.store_bought else R.string.store_not_enough, isError = !ok)
+                pending = null
             },
-            dismissButton = { TextButton(onClick = { pending = null }) { Text(stringResource(R.string.nickname_edit_cancel)) } }
+            onDismiss = { pending = null }
         )
+    }
+}
+
+/** A small floating card in the game's own voice — green for success, warm red for a failure — instead of a system snackbar. */
+@Composable
+private fun StoreToast(res: Int, isError: Boolean) {
+    val bg = if (isError) Color(0xFF3A1B14) else Color(0xFF14321F)
+    val accent = if (isError) Color(0xFFFF7A59) else Color(0xFF4ADE80)
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(bg)
+            .border(2.dp, accent.copy(alpha = 0.55f), RoundedCornerShape(20.dp))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Box(
+            modifier = Modifier.size(30.dp).clip(CircleShape).background(accent.copy(alpha = 0.2f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = if (isError) "✕" else "✓", color = accent, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+        }
+        Text(
+            text = stringResource(res),
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+/** The game's own popup for confirming a purchase, replacing the plain system AlertDialog. */
+@Composable
+private fun PurchaseConfirmDialog(
+    preview: @Composable () -> Unit,
+    name: String,
+    price: Int,
+    gold: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val canAfford = gold >= price
+    AppWindowDialog(title = stringResource(R.string.store_buy_confirm_title), onDismiss = onDismiss) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(Color.White.copy(alpha = 0.7f))
+                .padding(vertical = 16.dp),
+            contentAlignment = Alignment.Center
+        ) { preview() }
+        Spacer(modifier = Modifier.height(14.dp))
+        Text(
+            text = name,
+            fontFamily = DisplayFont,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 19.sp,
+            color = Ink,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .clip(RoundedCornerShape(50))
+                .background(Color(0xFF2B1A12))
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(24.dp))
+            Text(
+                text = NumberFormat.getIntegerInstance().format(price),
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 18.sp,
+                color = Color.White
+            )
+        }
+        if (!canAfford) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFFFFE3D6))
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(text = "⚠", fontSize = 16.sp)
+                Text(
+                    text = stringResource(R.string.store_missing_gold, price - gold),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFB3401A)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(18.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            SecondaryButton(text = stringResource(R.string.nickname_edit_cancel), onClick = onDismiss, modifier = Modifier.weight(1f))
+            PrimaryButton(
+                text = stringResource(R.string.store_buy),
+                onClick = onConfirm,
+                enabled = canAfford,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 

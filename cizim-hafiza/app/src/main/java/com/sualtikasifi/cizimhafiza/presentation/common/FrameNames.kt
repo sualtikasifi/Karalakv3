@@ -18,4 +18,20 @@ fun AvatarFrame.nameRes(): Int = when (this) {
     AvatarFrame.CHALK -> R.string.frame_name_chalk
     AvatarFrame.GRAFFITI -> R.string.frame_name_graffiti
     AvatarFrame.GRAND_MASTER -> R.string.frame_name_grand_master
+    AvatarFrame.WATER_SPLASH -> R.string.frame_name_water_splash
+    AvatarFrame.JASMINE_WREATH -> R.string.frame_name_jasmine_wreath
+    AvatarFrame.CHERRY_BLOSSOM -> R.string.frame_name_cherry_blossom
+    AvatarFrame.CHERRY_BLOSSOM_GOLD -> R.string.frame_name_cherry_blossom_gold
+    AvatarFrame.FLAME_RING -> R.string.frame_name_flame_ring
+    AvatarFrame.ICE_CRYSTAL -> R.string.frame_name_ice_crystal
+    AvatarFrame.RAINBOW_DREAM -> R.string.frame_name_rainbow_dream
+    AvatarFrame.AMETHYST_CRYSTAL -> R.string.frame_name_amethyst_crystal
+    AvatarFrame.OCEAN_TREASURE -> R.string.frame_name_ocean_treasure
+    AvatarFrame.TIME_EXPLORER -> R.string.frame_name_time_explorer
+    AvatarFrame.GALAXY_RING -> R.string.frame_name_galaxy_ring
+    AvatarFrame.CELESTIAL_MOON -> R.string.frame_name_celestial_moon
+    AvatarFrame.PEARL_BUTTERFLY -> R.string.frame_name_pearl_butterfly
+    AvatarFrame.DRAGON_FLAME -> R.string.frame_name_dragon_flame
+    AvatarFrame.SHADOW_CROWN -> R.string.frame_name_shadow_crown
+    AvatarFrame.ROYAL_CROWN -> R.string.frame_name_royal_crown
 }

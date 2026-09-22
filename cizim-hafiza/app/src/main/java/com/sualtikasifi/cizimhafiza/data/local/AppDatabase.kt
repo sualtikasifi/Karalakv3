@@ -26,7 +26,7 @@ import com.sualtikasifi.cizimhafiza.data.local.entity.WordReviewEntity
         LevelProgressEntity::class, WordReviewEntity::class, DifficultyReviewEntity::class,
         UnlockedAchievementEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -169,6 +169,16 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE unlocked_achievements ADD COLUMN seen INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
+        // Adds UnlockedAchievementEntity.claimed, backfilled to 1 (already
+        // claimed) for every row that existed before this column — those
+        // unlocks were already auto-paid under the pre-v10 behaviour, so
+        // treating them as unclaimed would pay their reward a second time.
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE unlocked_achievements ADD COLUMN claimed INTEGER NOT NULL DEFAULT 1")
             }
         }
     }

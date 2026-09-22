@@ -43,11 +43,15 @@ data class AchievementStats(
  * formula the game enforces; nudge an entry's position if actual player
  * data ever shows it landing very differently from its neighbours.
  */
+enum class AchievementMetric { GAMES, SCORE, WORDS, XP, PERFECT, STREAK, ONLINE_WIN }
+
+enum class AchievementRewardType { XP, GOLD }
+
 enum class Achievement(
     @StringRes val titleRes: Int,
     @StringRes val descriptionRes: Int,
     val emoji: String,
-    /** Awarded once, the moment this unlocks — see GameRepositoryImpl.finishSaving. */
+    /** Reward amount when [rewardType] is XP; scaled down into [goldReward] when it's GOLD. */
     val xpReward: Int,
     val isUnlocked: (AchievementStats) -> Boolean
 ) {
@@ -454,5 +458,62 @@ enum class Achievement(
     WORDS_100000(
         R.string.achievement_words_100000_title, R.string.achievement_words_100000_desc, "🌠", 4125,
         { it.lifetimeWordsDrawn >= 100000 }
-    )
+    );
+
+    /**
+     * Derived from the enum constant's own name rather than a 101st
+     * constructor argument, since every entry already reliably encodes it as
+     * `METRIC_THRESHOLD` (e.g. "WORDS_10", "STREAK_7") — the two exceptions,
+     * FIRST_GAME and PERFECT_ROUND, are called out explicitly below. Adding
+     * this as a real field would mean touching all 101 call sites above for
+     * information the name already carries.
+     */
+    val metric: AchievementMetric
+        get() = when {
+            this == FIRST_GAME -> AchievementMetric.GAMES
+            this == PERFECT_ROUND -> AchievementMetric.PERFECT
+            name.startsWith("ONLINE_WIN_") -> AchievementMetric.ONLINE_WIN
+            name.startsWith("GAMES_") -> AchievementMetric.GAMES
+            name.startsWith("SCORE_") -> AchievementMetric.SCORE
+            name.startsWith("WORDS_") -> AchievementMetric.WORDS
+            name.startsWith("XP_") -> AchievementMetric.XP
+            name.startsWith("PERFECT_") -> AchievementMetric.PERFECT
+            name.startsWith("STREAK_") -> AchievementMetric.STREAK
+            else -> error("Achievement $name does not follow the METRIC_THRESHOLD naming convention")
+        }
+
+    /** The numeric goal this achievement's metric must reach — see [metric]. */
+    val target: Int
+        get() = when (this) {
+            FIRST_GAME, PERFECT_ROUND -> 1
+            else -> name.substringAfterLast('_').toInt()
+        }
+
+    /** Reads the stat [metric] tracks, for "8/10"-style progress display. */
+    fun currentValue(stats: AchievementStats): Int = when (metric) {
+        AchievementMetric.GAMES -> stats.gamesPlayed
+        AchievementMetric.SCORE -> stats.lifetimeScore
+        AchievementMetric.WORDS -> stats.lifetimeWordsDrawn
+        AchievementMetric.XP -> stats.lifetimeXp
+        AchievementMetric.PERFECT -> stats.perfectRounds
+        AchievementMetric.STREAK -> maxOf(stats.currentStreak, stats.bestStreak)
+        AchievementMetric.ONLINE_WIN -> stats.onlineWins
+    }
+
+    /**
+     * Perfect-round and online-win tiers pay Gold instead of XP — both are
+     * harder to farm by just playing more solo rounds (a perfect round needs
+     * every word right, an online win needs beating real opponents), so
+     * spending them on a currency the player actually shops with reads as a
+     * bigger prize than the same number folded into the XP bar.
+     */
+    val rewardType: AchievementRewardType
+        get() = when (metric) {
+            AchievementMetric.PERFECT, AchievementMetric.ONLINE_WIN -> AchievementRewardType.GOLD
+            else -> AchievementRewardType.XP
+        }
+
+    /** Only meaningful when [rewardType] is GOLD — see [xpReward]. */
+    val goldReward: Int
+        get() = (xpReward / 4).coerceAtLeast(10)
 }

@@ -130,6 +130,12 @@ object GameConstants {
     /** Gold per star gained beyond a level's previous best. */
     const val LEVEL_GOLD_PER_NEW_STAR = 12
 
+    /** Flat gold paid alongside the pen/frame prize to every monthly league podium finisher — see LeagueViewModel.collectPrize. */
+    const val LEAGUE_MONTHLY_GOLD = 10_000
+
+    /** Flat XP paid alongside the pen/frame prize to every monthly league podium finisher — see LeagueViewModel.collectPrize. */
+    const val LEAGUE_MONTHLY_XP = 10_000
+
     private const val DAILY_GOLD_BASE = 30
     private const val DAILY_GOLD_PER_STREAK_DAY = 5
     private const val DAILY_GOLD_STREAK_CAP_DAYS = 10

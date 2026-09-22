@@ -59,7 +59,25 @@ enum class AvatarFrame(
     PAINTER(R.drawable.level_frame_painter, 0.53f, -0.022f, 0f, 70),
     CHALK(R.drawable.level_frame_chalk, 0.53f, 0f, 0f, 80),
     GRAFFITI(R.drawable.level_frame_graffiti, 0.49f, 0f, 0f, 90),
-    GRAND_MASTER(R.drawable.level_frame_grand_master, 0.51f, 0f, 0f, 100);
+    GRAND_MASTER(R.drawable.level_frame_grand_master, 0.51f, 0f, 0f, 100),
+
+    // --- Store frames (bought with gold, see StoreScreen). unlockLevel 0 like league prizes. ---
+    WATER_SPLASH(R.drawable.level_frame_water_splash, 0.50f, 0f, 0f, 0, storePrice = 1200),
+    JASMINE_WREATH(R.drawable.level_frame_jasmine_wreath, 0.46f, 0f, 0f, 0, storePrice = 1500),
+    CHERRY_BLOSSOM(R.drawable.level_frame_cherry_blossom, 0.44f, 0f, 0f, 0, storePrice = 1800),
+    CHERRY_BLOSSOM_GOLD(R.drawable.level_frame_cherry_blossom_gold, 0.44f, 0f, 0f, 0, storePrice = 2200),
+    FLAME_RING(R.drawable.level_frame_flame_ring, 0.48f, 0f, 0f, 0, storePrice = 3000),
+    ICE_CRYSTAL(R.drawable.level_frame_ice_crystal, 0.42f, 0f, 0f, 0, storePrice = 3200),
+    RAINBOW_DREAM(R.drawable.level_frame_rainbow_dream, 0.40f, 0f, 0f, 0, storePrice = 4000),
+    AMETHYST_CRYSTAL(R.drawable.level_frame_amethyst_crystal, 0.46f, 0f, 0f, 0, storePrice = 4500),
+    OCEAN_TREASURE(R.drawable.level_frame_ocean_treasure, 0.48f, 0f, 0f, 0, storePrice = 6000),
+    TIME_EXPLORER(R.drawable.level_frame_time_explorer, 0.44f, 0f, 0f, 0, storePrice = 6500),
+    GALAXY_RING(R.drawable.level_frame_galaxy_ring, 0.55f, 0f, 0f, 0, storePrice = 7500),
+    CELESTIAL_MOON(R.drawable.level_frame_celestial_moon, 0.40f, 0.05f, -0.02f, 0, storePrice = 8000),
+    PEARL_BUTTERFLY(R.drawable.level_frame_pearl_butterfly, 0.48f, 0f, 0f, 0, storePrice = 10000),
+    DRAGON_FLAME(R.drawable.level_frame_dragon_flame, 0.44f, 0f, 0f, 0, storePrice = 12000),
+    SHADOW_CROWN(R.drawable.level_frame_shadow_crown, 0.46f, 0f, 0f, 0, storePrice = 13000),
+    ROYAL_CROWN(R.drawable.level_frame_royal_crown, 0.50f, 0f, 0f, 0, storePrice = 15000);
 
     // Monthly league prize frames (LEAGUE_CHAMPION_<year>_<month>) were
     // removed — the first batch of artwork did not clean up against the

@@ -7,6 +7,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.LeagueReward
 import com.sualtikasifi.cizimhafiza.domain.model.LeagueTable
 import com.sualtikasifi.cizimhafiza.domain.repository.FriendRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.GlobalLeagueRepository
+import com.sualtikasifi.cizimhafiza.util.GameConstants
 import com.sualtikasifi.cizimhafiza.util.SettingsRepository
 import com.sualtikasifi.cizimhafiza.util.LeagueScorePublisher
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -122,6 +123,12 @@ class LeagueViewModel @Inject constructor(
         if (table.myLastPeriodWin == null) return null
         val rewardId = table.lastPeriod?.rewardId ?: return null
         if (!settingsRepository.grantLeagueReward(rewardId)) return null
+        // The flat monthly gold+XP bonus rides on the exact same
+        // once-per-period gate as the pen/frame above — grantLeagueReward
+        // already returned true exactly once, so this can't double-pay on a
+        // later open of the same month's result.
+        settingsRepository.earnGold(GameConstants.LEAGUE_MONTHLY_GOLD)
+        settingsRepository.addXp(GameConstants.LEAGUE_MONTHLY_XP)
         // Null when this build does not know the id — an older app reading a
         // prize whose artwork it does not ship. The grant still stands, so
         // updating the app later reveals it.

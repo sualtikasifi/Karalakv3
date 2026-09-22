@@ -17,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,7 +30,9 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -137,18 +140,27 @@ fun GuessScreen(
     }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        // No scrolling: the drawing canvas is the one flexible (weight(1f))
-        // element, so when the keyboard opens (imePadding shrinks the
-        // available height) the canvas simply shrinks to make room — the
-        // answer field and Gönder/Atla buttons stay fixed-size and always
-        // visible instead of being pushed off-screen or requiring a scroll.
-        Column(
+        // The drawing used to be the one flexible (weight(1f)) element, so
+        // opening the keyboard shrank it to make room for the fixed-size
+        // field/buttons below — on a short device that left almost nothing
+        // to actually look at. BoxWithConstraints measures the screen
+        // BEFORE .imePadding() below consumes any of it for the keyboard,
+        // so canvasHeight is one standard size on this device regardless of
+        // whether the keyboard is open; everything below it scrolls instead
+        // of stealing from it.
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .screenBackground()
                 .padding(padding)
                 .padding(horizontal = 18.dp, vertical = 12.dp)
+        ) {
+        val canvasHeight = (maxHeight * 0.36f).coerceIn(200.dp, 300.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
                 .imePadding()
+                .verticalScroll(rememberScrollState())
         ) {
             GameTopBar(
                 progressLabel = "${state.guessNumber} / ${state.totalGuesses}",
@@ -187,8 +199,7 @@ fun GuessScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-                    .heightIn(min = 96.dp)
+                    .height(canvasHeight)
                     .padding(bottom = AppTheme.tokens.raise)
                     .hardEdge(AppTheme.tokens.edge, AppTheme.tokens.raise, 26.dp)
                     .background(AppTheme.tokens.canvasPaper, MaterialTheme.shapes.large)
@@ -326,6 +337,8 @@ fun GuessScreen(
                 )
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+        }
         }
     }
 }

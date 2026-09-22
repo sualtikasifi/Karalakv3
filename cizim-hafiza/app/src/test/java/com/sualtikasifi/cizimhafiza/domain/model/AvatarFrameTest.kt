@@ -47,9 +47,11 @@ class AvatarFrameTest {
             previousCount = count
         }
         // League prizes are earned, never reached, so the top level unlocks
-        // every frame on the LADDER — not every frame that exists.
+        // every frame on the LADDER — not every frame that exists, and not
+        // the store frames either (bought with gold, never reached by
+        // levelling — same reasoning as isLeagueReward).
         assertEquals(
-            AvatarFrame.entries.count { !it.isLeagueReward },
+            AvatarFrame.entries.count { !it.isLeagueReward && !it.isStoreItem },
             AvatarFrame.unlockedFor(PlayerLevel.MAX_LEVEL).size
         )
     }
@@ -138,7 +140,11 @@ class AvatarFrameTest {
             listOf(
                 "SCRIBBLER", "ARTIST", "APPRENTICE", "POP_ART", "WOOD_PALETTE",
                 "MASTER_PAINTER", "WATERCOLOR_BRUSHES", "PAINTER", "CHALK",
-                "GRAFFITI", "GRAND_MASTER"
+                "GRAFFITI", "GRAND_MASTER",
+                "WATER_SPLASH", "JASMINE_WREATH", "CHERRY_BLOSSOM", "CHERRY_BLOSSOM_GOLD",
+                "FLAME_RING", "ICE_CRYSTAL", "RAINBOW_DREAM", "AMETHYST_CRYSTAL",
+                "OCEAN_TREASURE", "TIME_EXPLORER", "GALAXY_RING", "CELESTIAL_MOON",
+                "PEARL_BUTTERFLY", "DRAGON_FLAME", "SHADOW_CROWN", "ROYAL_CROWN"
             ),
             AvatarFrame.entries.map { it.name }
         )

@@ -14,6 +14,8 @@ import androidx.compose.ui.window.Dialog
 import com.sualtikasifi.cizimhafiza.presentation.common.PillShape
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
 import com.sualtikasifi.cizimhafiza.presentation.common.TintedBadge
+import com.sualtikasifi.cizimhafiza.domain.model.Achievement
+import com.sualtikasifi.cizimhafiza.domain.model.AchievementRewardType
 import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -118,7 +120,14 @@ fun AchievementsScreen(
             )
 
             selectedAchievement?.let { item ->
-                AchievementDetailDialog(item = item, onDismiss = { selectedAchievement = null })
+                AchievementDetailDialog(
+                    item = item,
+                    onClaim = {
+                        viewModel.claim(item.achievement)
+                        selectedAchievement = null
+                    },
+                    onDismiss = { selectedAchievement = null }
+                )
             }
         }
     }
@@ -182,7 +191,13 @@ private fun AchievementProgressHeader(unlockedCount: Int, total: Int, modifier: 
 }
 
 @Composable
-private fun AchievementDetailDialog(item: AchievementUiItem, onDismiss: () -> Unit) {
+private fun rewardText(achievement: Achievement): String = when (achievement.rewardType) {
+    AchievementRewardType.XP -> stringResource(R.string.achievement_xp_reward, achievement.xpReward)
+    AchievementRewardType.GOLD -> stringResource(R.string.achievement_gold_reward, achievement.goldReward)
+}
+
+@Composable
+private fun AchievementDetailDialog(item: AchievementUiItem, onClaim: () -> Unit, onDismiss: () -> Unit) {
     // A custom dialog rather than a stock AlertDialog: this is the app's one
     // "what did I earn / what am I chasing" moment, and Material's default
     // (small icon, plain title, run of body text, a text button) had none of
@@ -225,11 +240,28 @@ private fun AchievementDetailDialog(item: AchievementUiItem, onDismiss: () -> Un
                 Spacer(modifier = Modifier.height(10.dp))
                 TintedBadge(
                     text = stringResource(
-                        if (item.unlocked) R.string.achievement_unlocked_label else R.string.achievement_locked_label
+                        when {
+                            item.unlocked && item.claimed -> R.string.achievement_claimed_label
+                            item.unlocked -> R.string.achievement_unlocked_label
+                            else -> R.string.achievement_locked_label
+                        }
                     ),
                     container = if (item.unlocked) AppTheme.tokens.successContainer else MaterialTheme.colorScheme.surfaceVariant,
                     content = if (item.unlocked) AppTheme.tokens.success else MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                if (!item.unlocked) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = stringResource(
+                            R.string.achievement_progress_format,
+                            item.currentValue.coerceAtMost(item.achievement.target),
+                            item.achievement.target
+                        ),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(18.dp))
                 // The condition sits in its own inset panel so it reads as
@@ -270,18 +302,26 @@ private fun AchievementDetailDialog(item: AchievementUiItem, onDismiss: () -> Un
                 ) {
                     Text(text = "\uD83C\uDFC6", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        text = stringResource(R.string.achievement_xp_reward, item.achievement.xpReward),
+                        text = rewardText(item.achievement),
                         style = MaterialTheme.typography.titleMedium,
                         color = AppTheme.tokens.gold
                     )
                 }
 
                 Spacer(modifier = Modifier.height(22.dp))
-                PrimaryButton(
-                    text = stringResource(R.string.close),
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                if (item.unlocked && !item.claimed) {
+                    PrimaryButton(
+                        text = stringResource(R.string.achievement_claim_button),
+                        onClick = onClaim,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    PrimaryButton(
+                        text = stringResource(R.string.close),
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
     }
@@ -305,19 +345,27 @@ private fun AchievementChip(
             shimmering = false
         }
     }
-    val borderColor = if (shimmering) {
-        val pulse by rememberInfiniteTransition(label = "achievementShimmer").animateFloat(
-            initialValue = 0.35f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(700, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "achievementShimmerAlpha"
-        )
-        AppTheme.tokens.gold.copy(alpha = pulse)
-    } else {
-        MaterialTheme.colorScheme.outline
+    // Green once its reward is claimed — the resting state a chip should
+    // settle into — gold while it's earned but still waiting to be tapped
+    // (the whole reason it's tappable at all), the shimmer only overriding
+    // that gold for its one-time 10s celebration window.
+    val claimable = item.unlocked && !item.claimed
+    val borderColor = when {
+        shimmering -> {
+            val pulse by rememberInfiniteTransition(label = "achievementShimmer").animateFloat(
+                initialValue = 0.35f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(700, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "achievementShimmerAlpha"
+            )
+            AppTheme.tokens.gold.copy(alpha = pulse)
+        }
+        item.claimed -> AppTheme.tokens.success
+        claimable -> AppTheme.tokens.gold
+        else -> MaterialTheme.colorScheme.outline
     }
     // RaisedCard, not a flat Material one: 101 flat white squares on the
     // textured page read as cut-out holes in the artwork rather than as
@@ -325,7 +373,10 @@ private fun AchievementChip(
     WarmCard(
         onClick = onClick,
         corner = 20.dp,
-        face = AppTheme.tokens.cardWarm,
+        // Light green fill on top of the green border once claimed — the
+        // border alone still read as "just another accent color" next to the
+        // gold claimable border, not as a clearly finished, different state.
+        face = if (item.claimed) AppTheme.tokens.successContainer else AppTheme.tokens.cardWarm,
         border = borderColor,
         modifier = modifier.alpha(if (item.unlocked) 1f else 0.85f)
     ) {
@@ -350,13 +401,29 @@ private fun AchievementChip(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(2.dp))
-            // Shown whether locked or not — it's part of what makes a
-            // locked achievement worth chasing, not just a surprise reward.
-            Text(
-                text = stringResource(R.string.achievement_xp_reward, item.achievement.xpReward),
-                style = MaterialTheme.typography.labelSmall,
-                color = AppTheme.tokens.gold
-            )
+            when {
+                // Still chasing it — the number that matters here is how
+                // close, not what it eventually pays.
+                !item.unlocked -> Text(
+                    text = stringResource(
+                        R.string.achievement_progress_format,
+                        item.currentValue.coerceAtMost(item.achievement.target),
+                        item.achievement.target
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                claimable -> Text(
+                    text = stringResource(R.string.achievement_claim_button),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppTheme.tokens.gold
+                )
+                else -> Text(
+                    text = rewardText(item.achievement),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppTheme.tokens.success
+                )
+            }
         }
     }
 }

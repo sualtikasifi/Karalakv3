@@ -485,10 +485,12 @@ class BackupRepositoryImpl @Inject constructor(
         }
         // seen=true on purpose: these were earned on another device or in an
         // earlier session, so they must never light up this device's "new
-        // achievement" badge.
+        // achievement" badge. claimed=true for the same reason: the backup
+        // snapshot doesn't carry claim state, and treating a restored unlock
+        // as unclaimed would let its reward be collected again here.
         val now = System.currentTimeMillis()
         snapshot.unlockedAchievementIds.forEach { id ->
-            achievementDao.insert(UnlockedAchievementEntity(id = id, unlockedAtMillis = now, seen = true))
+            achievementDao.insert(UnlockedAchievementEntity(id = id, unlockedAtMillis = now, seen = true, claimed = true))
         }
     }
 

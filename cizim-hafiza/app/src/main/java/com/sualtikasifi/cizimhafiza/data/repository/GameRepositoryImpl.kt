@@ -206,7 +206,11 @@ class GameRepositoryImpl @Inject constructor(
         newlyUnlocked.forEach { achievement ->
             achievementDao.insert(UnlockedAchievementEntity(id = achievement.name, unlockedAtMillis = System.currentTimeMillis()))
         }
-        settingsRepository.addXp(newlyUnlocked.sumOf { it.xpReward })
+        // Reward is deliberately NOT granted here — unlocking only records
+        // that the condition was met. The player claims it explicitly on the
+        // Achievements screen (see AchievementDao.claim), so it's clear what
+        // was earned and what it was for, instead of a jump in the XP/gold
+        // bar with no visible cause.
         return newlyUnlocked
     }
 }

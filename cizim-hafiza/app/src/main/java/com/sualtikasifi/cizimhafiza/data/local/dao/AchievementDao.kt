@@ -33,6 +33,12 @@ interface AchievementDao {
     @Query("UPDATE unlocked_achievements SET seen = 1 WHERE seen = 0")
     suspend fun markAllSeen()
 
+    // Guarded by "AND claimed = 0" so a double-tap (or any other race) can
+    // only ever pay the reward once: the caller grants it only when this
+    // returns 1, never on the 0-row case of an already-claimed row.
+    @Query("UPDATE unlocked_achievements SET claimed = 1 WHERE id = :id AND claimed = 0")
+    suspend fun claim(id: String): Int
+
     /**
      * Takes back achievements whose condition no longer holds after a
      * moderation penalty — see PenaltyRepositoryImpl.

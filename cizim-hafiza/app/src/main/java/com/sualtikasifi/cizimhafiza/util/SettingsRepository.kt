@@ -5,6 +5,10 @@ import android.content.SharedPreferences
 import com.sualtikasifi.cizimhafiza.R
 import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +34,13 @@ import kotlin.random.Random
 class SettingsRepository @Inject constructor(@ApplicationContext private val context: Context) {
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    // For work this class needs to do off the main thread at construction
+    // time — this repository is a Hilt singleton, so it is built eagerly
+    // during Activity/Application injection, ON the main thread. Anything
+    // slow in an init block here stutters the very first frame (reported as
+    // "kasma" on the splash screen). See the two init blocks below.
+    private val repoScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     /**
      * What to call a player who never typed a nickname — a localised string,
@@ -344,7 +355,10 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     private val _jokerCounts = MutableStateFlow(loadJokers())
     val jokerCounts: StateFlow<Map<JokerType, Int>> = _jokerCounts.asStateFlow()
 
-    init { verifyEconomy() }
+    // Off the main thread: EconomyGuard's first call generates (or reads) an
+    // AndroidKeyStore key, which can synchronously cost 50-200ms on some
+    // devices — enough to visibly drop frames right at cold start otherwise.
+    init { repoScope.launch { verifyEconomy() } }
 
     /**
      * Checks the stored economy against its seal on every start. No key yet
@@ -435,7 +449,9 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     val chestSlots: StateFlow<List<Chest?>> = _chestSlots.asStateFlow()
 
     // Re-arm the "chest ready" alarm on every start — see ChestReadyNotifier.
-    init { com.sualtikasifi.cizimhafiza.notifications.ChestReadyNotifier.sync(context, _chestSlots.value) }
+    // Off the main thread too: AlarmManager IPC at construction time is the
+    // same class of cold-start stutter as the economy check above.
+    init { repoScope.launch { com.sualtikasifi.cizimhafiza.notifications.ChestReadyNotifier.sync(context, _chestSlots.value) } }
 
     private fun loadChestSlots(): List<Chest?> {
         val raw = prefs.getString(KEY_CHEST_SLOTS, null)

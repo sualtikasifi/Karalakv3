@@ -9,9 +9,9 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 enum class ChestTier(val unlockDurationMillis: Long, val goldReward: IntRange) {
-    SILVER(3 * 60 * 60 * 1000L, 25..45),
-    GOLD(6 * 60 * 60 * 1000L, 80..140),
-    RARE(8 * 60 * 60 * 1000L, 260..480)
+    SILVER(2 * 60 * 60 * 1000L, 25..45),
+    GOLD(3 * 60 * 60 * 1000L, 80..140),
+    RARE(6 * 60 * 60 * 1000L, 260..480)
 }
 
 /**
@@ -43,7 +43,7 @@ object ChestSlots {
     const val SLOT_COUNT = 4
 
     /** How much a watched rewarded ad takes off a running unlock (once per day). */
-    const val SPEEDUP_MILLIS = 3 * 60 * 60 * 1000L
+    const val SPEEDUP_MILLIS = 2 * 60 * 60 * 1000L
 
     // A 240-long cycle, 75% / 20% / 5% — a per-account SHUFFLE of a fixed
     // multiset rather than a fresh weighted roll every time. A genuinely

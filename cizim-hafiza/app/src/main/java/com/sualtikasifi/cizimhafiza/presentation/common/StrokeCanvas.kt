@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.input.pointer.pointerInput
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingStroke
@@ -79,7 +80,7 @@ fun StrokeCanvas(
     Canvas(modifier = modifier) {
         val fit = strokeFitFor(strokes) ?: return@Canvas
         val paint: Brush = penSkin?.let { penBrush(it, size.width, size.height) } ?: SolidColor(strokeColor)
-        strokes.forEach { stroke -> drawFittedStroke(stroke, fit, paint, strokeWidthPx) }
+        clipRect { strokes.forEach { stroke -> drawFittedStroke(stroke, fit, paint, strokeWidthPx) } }
     }
 }
 
@@ -235,10 +236,27 @@ fun DrawableCanvas(
             // re-attaches gesture detection cleanly instead of a drag begun
             // under one tool being interpreted under the other mid-gesture.
             .pointerInput(tool) {
+                // Compose keeps delivering onDrag callbacks for a gesture
+                // that started inside this Modifier even once the finger
+                // has moved past its edges — nothing about pointer input
+                // clips positions to the composable's own bounds. Left
+                // unclamped, a single fast drag off the paper recorded a
+                // point far outside the canvas: it drew a line running off
+                // the frame on THIS screen, and on every other screen that
+                // re-fits the same stroke to its own bounding box (the
+                // opponent's gallery, the result thumbnails) that one wild
+                // point inflated the box enough to shrink the whole drawing
+                // down to a sliver. Clamping at capture time is the single
+                // fix for both.
+                fun Offset.clampToCanvas() = Offset(
+                    x.coerceIn(0f, size.width.toFloat()),
+                    y.coerceIn(0f, size.height.toFloat())
+                )
                 if (tool == DrawTool.ERASER) {
                     detectDragGestures(
                         onDrag = { change, _ ->
-                            currentStrokes.firstOrNull { strokeHitBy(it, change.position) }
+                            val point = change.position.clampToCanvas()
+                            currentStrokes.firstOrNull { strokeHitBy(it, point) }
                                 ?.let(currentOnErase)
                         }
                     )
@@ -246,11 +264,11 @@ fun DrawableCanvas(
                     detectDragGestures(
                         onDragStart = { offset ->
                             inProgress.clear()
-                            inProgress.add(offset)
+                            inProgress.add(offset.clampToCanvas())
                             onStrokeProgress(inProgress.map { DrawingPoint(it.x, it.y) })
                         },
                         onDrag = { change, _ ->
-                            inProgress.add(change.position)
+                            inProgress.add(change.position.clampToCanvas())
                             onStrokeProgress(inProgress.map { DrawingPoint(it.x, it.y) })
                         },
                         onDragEnd = {
@@ -277,20 +295,26 @@ fun DrawableCanvas(
                 }
             }
     ) {
-        val strokeStyle = Stroke(width = strokeWidthPx, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-        // Built once per frame off the live canvas size, so a gradient pen
-        // sweeps across the whole drawing rather than restarting per stroke.
-        val paint: Brush = penSkin?.let { penBrush(it, size.width, size.height) } ?: SolidColor(strokeColor)
-        committed.forEach { it.draw(this, paint, strokeWidthPx, strokeStyle) }
-        when {
-            inProgress.size == 1 ->
-                drawCircle(brush = paint, radius = strokeWidthPx / 2f, center = inProgress[0])
-            inProgress.size >= 2 -> {
-                val path = Path().apply {
-                    moveTo(inProgress[0].x, inProgress[0].y)
-                    for (i in 1 until inProgress.size) lineTo(inProgress[i].x, inProgress[i].y)
+        // Belt-and-suspenders against the same overflow the pointer input
+        // above now prevents at the source: a stroke saved before that fix
+        // (or replayed from an opponent's older client) can still carry an
+        // out-of-bounds point, and this keeps it from drawing past the frame.
+        clipRect {
+            val strokeStyle = Stroke(width = strokeWidthPx, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            // Built once per frame off the live canvas size, so a gradient pen
+            // sweeps across the whole drawing rather than restarting per stroke.
+            val paint: Brush = penSkin?.let { penBrush(it, size.width, size.height) } ?: SolidColor(strokeColor)
+            committed.forEach { it.draw(this, paint, strokeWidthPx, strokeStyle) }
+            when {
+                inProgress.size == 1 ->
+                    drawCircle(brush = paint, radius = strokeWidthPx / 2f, center = inProgress[0])
+                inProgress.size >= 2 -> {
+                    val path = Path().apply {
+                        moveTo(inProgress[0].x, inProgress[0].y)
+                        for (i in 1 until inProgress.size) lineTo(inProgress[i].x, inProgress[i].y)
+                    }
+                    drawPath(path = path, brush = paint, style = strokeStyle)
                 }
-                drawPath(path = path, brush = paint, style = strokeStyle)
             }
         }
     }

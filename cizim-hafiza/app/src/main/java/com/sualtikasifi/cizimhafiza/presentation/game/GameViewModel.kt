@@ -1093,17 +1093,16 @@ class GameViewModel @Inject constructor(
         }
     }
 
-    /** Called once when the Result screen appears — see AdManager's placement doc. */
+    /**
+     * Called once when the Result screen appears — see AdManager's placement
+     * doc. Includes the daily challenge: it is the one screen almost every
+     * player opens daily, which is exactly why it is the most valuable
+     * interstitial placement in the app rather than the one to spare — forced
+     * past AdManager's normal every-Nth-match cadence so it shows every time,
+     * not just on the matches that happen to land on that count.
+     */
     fun showResultInterstitial(activity: Activity, onDismissed: () -> Unit = {}) {
-        // The daily challenge is exempt. It is the one screen a player is
-        // meant to open every single day, and a full-screen ad on the way
-        // out of a streak they are protecting is the surest way to make the
-        // habit feel like a toll. Every other mode keeps the normal cadence.
-        if ((_phase.value as? GamePhase.Result)?.daily != null) {
-            onDismissed()
-            return
-        }
-        adManager.maybeShowInterstitial(activity, onDismissed)
+        adManager.maybeShowInterstitial(activity, onDismissed, force = isDaily)
     }
 
     /**

@@ -123,19 +123,23 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
      * result screen is never blocked on an ad. Only actually shows every
      * [INTERSTITIAL_EVERY_N_MATCHES]th call — single-player and online
      * matches share one counter, persisted in SharedPreferences so the
-     * cadence survives an app restart.
+     * cadence survives an app restart — unless [force] skips that count
+     * entirely, for the one placement (the daily challenge) that's meant to
+     * show every time regardless of the shared cadence.
      */
-    fun maybeShowInterstitial(activity: Activity, onDismissed: () -> Unit) {
+    fun maybeShowInterstitial(activity: Activity, onDismissed: () -> Unit, force: Boolean = false) {
         if (!GameConstants.ADMOB_ENABLED) {
             onDismissed()
             return
         }
-        val matchCount = prefs.getInt(KEY_MATCH_COUNT, 0) + 1
-        prefs.edit().putInt(KEY_MATCH_COUNT, matchCount).apply()
-        if (matchCount % INTERSTITIAL_EVERY_N_MATCHES != 0) {
-            preloadInterstitial() // keep the cache warm for next time either way
-            onDismissed()
-            return
+        if (!force) {
+            val matchCount = prefs.getInt(KEY_MATCH_COUNT, 0) + 1
+            prefs.edit().putInt(KEY_MATCH_COUNT, matchCount).apply()
+            if (matchCount % INTERSTITIAL_EVERY_N_MATCHES != 0) {
+                preloadInterstitial() // keep the cache warm for next time either way
+                onDismissed()
+                return
+            }
         }
 
         val preloaded = cachedInterstitial
