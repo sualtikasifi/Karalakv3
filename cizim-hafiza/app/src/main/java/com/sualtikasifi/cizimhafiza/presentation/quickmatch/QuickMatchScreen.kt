@@ -10,12 +10,15 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,6 +26,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -44,6 +48,8 @@ import com.sualtikasifi.cizimhafiza.util.GameConstants
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.paint
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -51,6 +57,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -65,13 +72,16 @@ import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
 import com.sualtikasifi.cizimhafiza.domain.model.GhostRun
 import com.sualtikasifi.cizimhafiza.domain.model.GhostRuns
+import com.sualtikasifi.cizimhafiza.domain.model.LevelTier
 import com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel
+import com.sualtikasifi.cizimhafiza.domain.model.PlayerRank
 import com.sualtikasifi.cizimhafiza.presentation.common.LevelAvatar
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
 import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 import com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance
 import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
+import com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont
 import com.sualtikasifi.cizimhafiza.presentation.theme.Orange
 import kotlin.math.PI
 import kotlin.math.ceil
@@ -123,15 +133,26 @@ fun QuickMatchScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .screenBackground()
+                    // The found-opponent moment gets its own full-bleed
+                    // workshop photo (with "Rakibin Hazır!" already lettered
+                    // into it) instead of the shared doodle-paper background
+                    // every other state here still uses — see
+                    // MatchFoundTopClearance for why the content below
+                    // starts as low as it does.
+                    .then(
+                        if (matched) Modifier.paint(painterResource(R.drawable.match_found_bg), contentScale = ContentScale.Crop)
+                        else Modifier.screenBackground()
+                    )
                     .padding(padding)
                     .padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
                 // Clears the floating back button (see ScreenTopActions) —
                 // same convention every other screen uses, rather than this
                 // screen's own inline title row sitting a row lower than
-                // everywhere else's.
-                Spacer(modifier = Modifier.height(TopActionsClearance))
+                // everywhere else's. The Found state needs much more room:
+                // its own background bakes the "Rakibin Hazır!" signage into
+                // roughly the top quarter of the image.
+                Spacer(modifier = Modifier.height(if (matched) MatchFoundTopClearance else TopActionsClearance))
 
                 // Centred as one block when it fits, scrollable when it does
                 // not — same pattern as MainMenuScreen's own masthead+tiles
@@ -185,10 +206,27 @@ fun QuickMatchScreen(
                 }
                 }
             }
-            ScreenTopActions(
-                onBack = { if (matched) abandonConfirmOpen = true else onBack() },
-                modifier = Modifier.align(Alignment.TopStart)
-            )
+            if (matched) {
+                // The wood/neon button the new background's own art style
+                // calls for, in place of ScreenTopActions' plain round
+                // icon — every other state keeps that shared default.
+                Image(
+                    painter = painterResource(R.drawable.store_back_button),
+                    contentDescription = stringResource(R.string.cd_back),
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .statusBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { abandonConfirmOpen = true }
+                )
+            } else {
+                ScreenTopActions(
+                    onBack = onBack,
+                    modifier = Modifier.align(Alignment.TopStart)
+                )
+            }
         }
     }
 }
@@ -315,187 +353,111 @@ private fun FoundBody(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart:
     }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            QuickMatchMasthead(modifier = Modifier.align(Alignment.Center))
-            StickyNote(
-                text = stringResource(R.string.quick_match_sticky_good_drawings),
-                rotation = 7f,
-                modifier = Modifier.align(Alignment.TopEnd)
-            )
-        }
-        Spacer(modifier = Modifier.height(20.dp))
-        Box(modifier = Modifier.fillMaxWidth()) {
-            RakibinHazirCard(opponent = opponent, me = me, secondsLeft = secondsLeft)
-            StickyNote(
-                text = stringResource(R.string.quick_match_sticky_friendships),
-                rotation = -6f,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .offset(x = 8.dp, y = 46.dp)
-            )
-        }
-        Spacer(modifier = Modifier.height(56.dp))
+        PlayersSection(opponent = opponent, me = me)
+        Spacer(modifier = Modifier.height(16.dp))
+        CountdownBanner(secondsLeft)
+        Spacer(modifier = Modifier.height(16.dp))
+        TipsRow()
+        Spacer(modifier = Modifier.height(28.dp))
         GoodLuckMascot()
-        Spacer(modifier = Modifier.height(14.dp))
-        CountdownDots(progress = { progress.value })
     }
 }
 
 /**
- * Logo, app name and tagline — the same lockup MainMenuScreen opens with,
- * so the found-opponent moment reads as the app's own voice rather than a
- * screen that forgot which app it was in.
+ * How far the Found state's content starts from the top. [R.drawable.match_found_bg]
+ * bakes its own "Karalak" + "Rakibin Hazır!" signage into roughly the top
+ * quarter of the image (measured off the source art), so the player cards
+ * start right under that signage instead of at the usual
+ * [com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance].
+ */
+private val MatchFoundTopClearance = 215.dp
+
+/**
+ * Both players' cards side by side, with the VS mark and a small paper note
+ * overlapping the gap between them — the one part of the new background art
+ * that couldn't be baked in, since it has to show two different real players.
  */
 @Composable
-private fun QuickMatchMasthead(modifier: Modifier = Modifier) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = stringResource(R.string.app_tagline),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        SquiggleUnderline(color = Orange, modifier = Modifier.width(120.dp))
-        Spacer(modifier = Modifier.height(14.dp))
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-            contentAlignment = Alignment.Center
+private fun PlayersSection(opponent: GhostRun, me: QuickMatchPlayerSnapshot) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(28.dp)
+        ) {
+            PlayerCard(
+                nickname = me.nickname,
+                level = me.level,
+                frameId = me.frameId,
+                // Real, not derived — this is the player's own account.
+                lifetimeXp = me.lifetimeXp,
+                accent = MatchRed,
+                ribbon = R.drawable.match_ribbon_red,
+                modifier = Modifier.weight(1f)
+            )
+            PlayerCard(
+                nickname = opponent.nickname,
+                level = opponent.level,
+                frameId = opponent.frameId,
+                // The exact figure was never recorded with the round —
+                // only the level it bought. This is the floor XP for
+                // that level: a true lower bound, never a guess above it.
+                lifetimeXp = PlayerLevel.totalXpForLevel(opponent.level),
+                accent = MatchBlue,
+                ribbon = R.drawable.match_ribbon_blue,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Column(
+            modifier = Modifier.align(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = painterResource(R.drawable.karalak_logo_mark),
-                contentDescription = null,
-                modifier = Modifier.size(40.dp)
+                painter = painterResource(R.drawable.match_vs),
+                contentDescription = stringResource(R.string.quick_match_versus),
+                modifier = Modifier.size(64.dp)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            StickyNote(
+                text = stringResource(R.string.quick_match_center_note),
+                rotation = 0f
             )
         }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = stringResource(R.string.app_name),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground
-        )
     }
 }
 
-/**
- * A short, hand-drawn-looking wave — the same idea as SearchingBody's
- * sketching squiggle, but a fixed shape rather than an animated one: a
- * static accent under a title reads as an underline, an animated one under
- * a title that isn't going anywhere would just look unfinished.
- */
-@Composable
-private fun SquiggleUnderline(color: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.height(8.dp)) {
-        val path = Path()
-        val segments = 4
-        val stepX = size.width / segments
-        path.moveTo(0f, size.height / 2f)
-        for (i in 1..segments) {
-            val x = stepX * i
-            val controlY = if (i % 2 == 1) 0f else size.height
-            path.quadraticTo(x - stepX / 2f, controlY, x, size.height / 2f)
-        }
-        drawPath(path, color = color, style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round))
-    }
-}
+/** The ribbon's own dominant colour, sampled off the art — also doubles as each card's border/rank-ribbon accent. */
+private val MatchRed = Color(0xFFE23A1E)
+private val MatchBlue = Color(0xFF1E7FE0)
 
 /**
- * The match card itself — a "taped note" rather than a plain Material card,
- * so the one screen that exists purely to build anticipation looks like
- * something pinned up rather than a form being filled in.
+ * One player's card: a crown for flourish, an avatar in its earned frame, a
+ * name on the game's own ribbon art, an XP badge, and a rank ribbon — the
+ * same facts for "you" and for the opponent, so the pair reads as a match
+ * between two people rather than a stranger being introduced. Neither side
+ * is marked as ahead — see FoundBody's own doc comment on why no score
+ * appears here.
  */
 @Composable
-private fun RakibinHazirCard(opponent: GhostRun, me: QuickMatchPlayerSnapshot, secondsLeft: Int) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        // A strip of "tape" holding the note up, drawn behind the card so
-        // only its bottom half shows past the card's own top edge.
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = (-9).dp)
-                .size(width = 56.dp, height = 20.dp)
-                .rotate(-3f)
-                .background(TapeColor, RoundedCornerShape(3.dp))
-        )
-        RaisedCard(corner = 26.dp, modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(R.string.quick_match_opponent_found),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                SquiggleUnderline(color = Orange, modifier = Modifier.width(100.dp))
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    PlayerColumn(
-                        nickname = me.nickname,
-                        level = me.level,
-                        frameId = me.frameId,
-                        // Real, not derived — this is the player's own account.
-                        lifetimeXp = me.lifetimeXp,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = stringResource(R.string.quick_match_versus),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = Orange
-                    )
-                    PlayerColumn(
-                        nickname = opponent.nickname,
-                        level = opponent.level,
-                        frameId = opponent.frameId,
-                        // The exact figure was never recorded with the round —
-                        // only the level it bought. This is the floor XP for
-                        // that level: a true lower bound, never a guess above it.
-                        lifetimeXp = PlayerLevel.totalXpForLevel(opponent.level),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Spacer(modifier = Modifier.height(18.dp))
-                CountdownBanner(secondsLeft)
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = stringResource(R.string.quick_match_explainer, GhostRuns.RUN_WORD_COUNT),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
-
-/** A soft, paper-coloured strip — stands in for a piece of tape, not tied to the app's accent palette. */
-private val TapeColor = Color(0xFFE8DCC4)
-
-/**
- * One side of the match card: a small crown for flourish, an avatar in its
- * earned frame, a name, and an XP badge — the same three facts for "you"
- * and for the opponent, so the card reads as a match between two people
- * rather than a stranger being introduced. Neither side is marked as ahead
- * — see FoundBody's own doc comment on why no score appears here.
- */
-@Composable
-private fun PlayerColumn(
+private fun PlayerCard(
     nickname: String,
     level: Int,
     frameId: String,
     lifetimeXp: Int,
+    accent: Color,
+    ribbon: Int,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = "👑", fontSize = 16.sp)
+    val shape = RoundedCornerShape(22.dp)
+    val rank = LevelTier.forLevel(level).rank
+    Column(
+        modifier = modifier
+            .clip(shape)
+            .background(Color(0xE6221812))
+            .border(2.dp, accent, shape)
+            .padding(top = 14.dp, bottom = 12.dp, start = 8.dp, end = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = "👑", fontSize = 18.sp)
         Spacer(modifier = Modifier.height(2.dp))
         LevelAvatar(
             level = level,
@@ -505,16 +467,32 @@ private fun PlayerColumn(
             size = PLAYER_AVATAR_SIZE
         )
         Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = nickname,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.height(4.dp))
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxWidth().height(32.dp)
+        ) {
+            Image(
+                painter = painterResource(ribbon),
+                contentDescription = null,
+                contentScale = ContentScale.FillBounds,
+                modifier = Modifier.matchParentSize()
+            )
+            Text(
+                text = nickname,
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
         XpBadge(lifetimeXp)
+        Spacer(modifier = Modifier.height(8.dp))
+        RankRibbon(rank = rank, accent = accent)
     }
 }
 
@@ -525,7 +503,7 @@ private val PLAYER_AVATAR_SIZE = 76.dp
 private fun XpBadge(xp: Int) {
     Row(
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(50))
+            .background(Color.White.copy(alpha = 0.14f), RoundedCornerShape(50))
             .padding(horizontal = 10.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -534,26 +512,110 @@ private fun XpBadge(xp: Int) {
         Text(
             text = stringResource(R.string.level_total_xp, xp),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = Color.White
         )
     }
 }
 
-/** The countdown itself, now a banner rather than a ring — see FoundBody's doc comment. */
+/**
+ * A small pennant — pointed at both ends via a hand-drawn Path, since no
+ * asset was provided for this element specifically (only the wide name
+ * ribbon was). Shows the player's existing [PlayerRank] (the app's real
+ * level-tier title), coloured to match the card it sits in.
+ */
+@Composable
+private fun RankRibbon(rank: PlayerRank, accent: Color, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.height(26.dp), contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.matchParentSize()) {
+            val notch = size.height * 0.45f
+            val path = Path().apply {
+                moveTo(notch, 0f)
+                lineTo(size.width - notch, 0f)
+                lineTo(size.width, size.height / 2f)
+                lineTo(size.width - notch, size.height)
+                lineTo(notch, size.height)
+                lineTo(0f, size.height / 2f)
+                close()
+            }
+            drawPath(path, color = accent)
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+            modifier = Modifier.padding(horizontal = 12.dp)
+        ) {
+            Text(text = rank.emoji, fontSize = 10.sp)
+            Text(
+                text = stringResource(rank.nameRes),
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 10.sp,
+                color = Color.White,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+/**
+ * The countdown itself — the game's own glowing pill art (its clock icon and
+ * "…" are already baked into the two ends) with just the seconds text laid
+ * over the middle, in place of the plain orange banner this used to be.
+ */
 @Composable
 private fun CountdownBanner(secondsLeft: Int) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Orange, RoundedCornerShape(50))
-            .padding(vertical = 12.dp),
+            .aspectRatio(COUNTDOWN_BAR_ASPECT)
+            .paint(painterResource(R.drawable.match_countdown_bar), contentScale = ContentScale.FillBounds),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = stringResource(R.string.quick_match_starting_in, secondsLeft),
-            style = MaterialTheme.typography.titleMedium,
+            fontFamily = DisplayFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp,
             color = Color.White,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            // Keeps the text off the bar's own baked-in clock icon (left)
+            // and "…" (right) — asymmetric because the two ends aren't.
+            modifier = Modifier.padding(start = 68.dp, end = 52.dp)
+        )
+    }
+}
+
+private const val COUNTDOWN_BAR_ASPECT = 1400f / 250f
+
+/** Three short facts about the round ahead, in place of the single explainer sentence this used to be. */
+@Composable
+private fun TipsRow() {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        TipCard(emoji = "📝", text = stringResource(R.string.quick_match_tip_words, GhostRuns.RUN_WORD_COUNT), modifier = Modifier.weight(1f))
+        TipCard(emoji = "🏆", text = stringResource(R.string.quick_match_tip_scoring), modifier = Modifier.weight(1f))
+        TipCard(emoji = "😊", text = stringResource(R.string.quick_match_tip_fun), modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun TipCard(emoji: String, text: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xCC1E1610))
+            .padding(horizontal = 8.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = emoji, fontSize = 20.sp)
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White,
+            textAlign = TextAlign.Center,
+            maxLines = 3
         )
     }
 }
@@ -570,22 +632,25 @@ private fun GoodLuckMascot() {
         Spacer(modifier = Modifier.width(10.dp))
         Box(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                .background(Color(0xCC1A1108), RoundedCornerShape(16.dp))
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             Text(
                 text = stringResource(R.string.quick_match_good_luck),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = Color.White
             )
         }
     }
 }
 
 /**
- * A small taped-on sticky note, floating over a corner of the masthead or
- * card. Purely decorative — same spirit as the doodles already printed into
- * screenBackground()'s paper texture, just one a player can actually read.
+ * A small taped-on paper note, used for the "Güzel bir maç seni bekliyor!"
+ * tag between the two player cards. Purely decorative — same spirit as the
+ * doodles already printed into screenBackground()'s paper texture, just one
+ * a player can actually read.
  */
 @Composable
 private fun StickyNote(text: String, rotation: Float, modifier: Modifier = Modifier) {
@@ -607,36 +672,6 @@ private fun StickyNote(text: String, rotation: Float, modifier: Modifier = Modif
 private val StickyNoteColor = Color(0xFFFCE9A8)
 private val StickyNoteTextColor = Color(0xFF6B5B2A)
 
-/**
- * Eight dots filling in step with the countdown — a decorative echo of
- * [secondsLeft] rather than a second copy of it, so the last stretch before
- * the match starts reads as visibly closing in even at a glance.
- *
- * Takes a lambda and re-derives its own state for the same reason
- * [secondsLeft] does above: reading progress.value directly here would
- * recompose all eight dots every frame instead of the ~1-in-8 of a second
- * this actually changes on.
- */
-@Composable
-private fun CountdownDots(progress: () -> Float) {
-    val filled by remember(progress) {
-        derivedStateOf { (progress() * DOT_COUNT).toInt().coerceIn(0, DOT_COUNT) }
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        repeat(DOT_COUNT) { i ->
-            Box(
-                modifier = Modifier
-                    .size(7.dp)
-                    .background(
-                        if (i < filled) Orange else MaterialTheme.colorScheme.surfaceVariant,
-                        CircleShape
-                    )
-            )
-        }
-    }
-}
-
-private const val DOT_COUNT = 8
 private const val COUNTDOWN_MS = 5_000
 
 /** Whole hours left, rounded up so "1 saat" never means "in three minutes". */

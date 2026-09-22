@@ -910,6 +910,10 @@
     <string name="quick_match_searching">Finding an opponent…</string>
     <string name="quick_match_opponent_found">Your opponent is ready!</string>
     <string name="quick_match_explainer">You\'ll both draw the same %1$d words. Scores are compared at the end.</string>
+    <string name="quick_match_tip_words">You\'ll both draw the same %1$d words.</string>
+    <string name="quick_match_tip_scoring">Scores are compared at the end.</string>
+    <string name="quick_match_tip_fun">Don\'t forget to have fun! 😊</string>
+    <string name="quick_match_center_note">A great match\nawaits you!</string>
     <string name="quick_match_starting_in">Match starts in %1$d seconds</string>
     <string name="quick_match_good_luck">Good luck!</string>
     <string name="quick_match_sticky_good_drawings">Nice\ndrawings 🙂</string>
