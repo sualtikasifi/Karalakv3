@@ -634,14 +634,18 @@ private fun FrameCard(
 private fun PricePill(price: Int, canAfford: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
+            .height(TryRowHeight)
             .clip(RoundedCornerShape(50))
             .background(if (canAfford) Color(0xFF2B1A12) else Color(0xFF2B1A12).copy(alpha = 0.45f))
             .clickable(onClick = onClick)
-            .padding(start = 4.dp, end = 10.dp, top = 4.dp, bottom = 4.dp),
+            // Symmetric now — the 4dp/10dp start/end split this used to have
+            // (to leave room for a bulkier coin icon) left it visibly
+            // off-balance sitting next to the Try button.
+            .padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(22.dp))
+        Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(20.dp))
         Text(
             text = NumberFormat.getIntegerInstance().format(price),
             fontFamily = DisplayFont,
@@ -652,32 +656,25 @@ private fun PricePill(price: Int, canAfford: Boolean, onClick: () -> Unit) {
     }
 }
 
+/** Shared height for [PricePill] and [TryButton] so the two sit level and the same size next to each other. */
+private val TryRowHeight = 34.dp
+
 /**
- * A proper little button now — cream face, orange ink border, pencil glyph —
- * in place of the bare orange text link this used to be, which read as
- * unfinished next to the framed price pill it sits beside.
+ * The game's own glossy button art, in place of the plain bordered-text
+ * link this used to be. [TryRowHeight] matches [PricePill] exactly; the
+ * artwork's own 2:1 aspect ratio (640×320) sets the width from that same
+ * height, so the two buttons sit the same size and level next to each other.
  */
 @Composable
 private fun TryButton(onClick: () -> Unit) {
-    Row(
+    Image(
+        painter = painterResource(R.drawable.store_try_button),
+        contentDescription = stringResource(R.string.store_try),
         modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(Color(0xFFFFF1D6))
-            .border(1.5.dp, Color(0xFFE8672A).copy(alpha = 0.8f), RoundedCornerShape(50))
+            .height(TryRowHeight)
+            .width(TryRowHeight * 2f)
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Text(text = "✏", fontSize = 12.sp)
-        Text(
-            text = stringResource(R.string.store_try),
-            fontFamily = DisplayFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 12.sp,
-            color = Color(0xFFB3401A)
-        )
-    }
+    )
 }
 
 @Composable
