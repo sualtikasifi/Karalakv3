@@ -22,6 +22,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.draw.paint
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -66,16 +69,22 @@ import com.sualtikasifi.cizimhafiza.presentation.common.icon
 import com.sualtikasifi.cizimhafiza.presentation.common.labelRes
 import com.sualtikasifi.cizimhafiza.presentation.common.tint
 import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
-import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
-import com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance
 import com.sualtikasifi.cizimhafiza.presentation.common.nameRes
-import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
 import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 import com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont
 import kotlinx.coroutines.delay
 import java.text.NumberFormat
 
 private val Ink = Color(0xFF3A2416)
+
+/**
+ * How far the scrolling grid starts from the top — well past the usual
+ * [com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance],
+ * because [R.drawable.store_bg] bakes its own "Karalak Mağaza" signage into
+ * roughly the top fifth of the image; starting content at the normal
+ * clearance would run the tab row straight through that artwork.
+ */
+private val StoreTopClearance = 210.dp
 
 private sealed interface Pending {
     data class PenItem(val skin: PenSkin) : Pending
@@ -118,19 +127,22 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                 columns = GridCells.Fixed(2),
                 modifier = Modifier
                     .fillMaxSize()
-                    .screenBackground()
+                    // The workshop-corner photo backdrop, in place of the
+                    // shared doodle-paper background: it already carries the
+                    // "Karalak Mağaza" signage baked in, so this screen draws
+                    // no title text of its own — see StoreTopClearance below
+                    // for why the scrolling content starts as low as it does.
+                    .paint(painterResource(R.drawable.store_bg), contentScale = ContentScale.Crop)
                     .padding(padding)
                     .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(top = TopActionsClearance, bottom = 24.dp),
+                contentPadding = PaddingValues(top = StoreTopClearance, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        GoldPill(gold = gold)
                         // A guest's purchases live on this phone only: say so once they own something.
                         if (isGuest && (owned.isNotEmpty() || jokerCounts.values.any { it > 0 })) {
-                            Spacer(modifier = Modifier.height(10.dp))
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -149,8 +161,8 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                                     modifier = Modifier.weight(1f)
                                 )
                             }
+                            Spacer(modifier = Modifier.height(12.dp))
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             TabChip(stringResource(R.string.store_tab_pens), selected = tab == 0) { tab = 0 }
                             TabChip(stringResource(R.string.store_tab_frames), selected = tab == 1) { tab = 1 }
@@ -220,13 +232,40 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                         )
                     }
                 }
+
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Image(
+                        painter = painterResource(R.drawable.store_mascot_banner),
+                        contentDescription = null,
+                        contentScale = ContentScale.FillWidth,
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    )
+                }
             }
 
-            ScreenTopActions(
-                onBack = onBack,
-                title = stringResource(R.string.store_title),
-                modifier = Modifier.align(Alignment.TopStart)
-            )
+            // Floats over the backdrop rather than scrolling with the grid,
+            // same placement contract as ScreenTopActions elsewhere — but
+            // this screen's own back button and balance pill replace it
+            // wholesale, since the backdrop already carries the title.
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.store_back_button),
+                    contentDescription = stringResource(R.string.cd_back),
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable(onClick = onBack)
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                GoldPill(gold = gold)
+            }
 
             // Anchored a third of the way up, not hugging the bottom edge —
             // the old placement sat almost off-screen under a thumb reaching
@@ -414,22 +453,48 @@ private fun GoldPill(gold: Int) {
     }
 }
 
+/**
+ * The wood-plaque button art has only one, already-lit look baked in — there
+ * is no separate "unlit" asset — so the unselected state is the same plaque
+ * dimmed under a dark scrim rather than a different image, and the selected
+ * one is the plaque at full strength plus a thin glow border on top of its
+ * own baked-in neon edge.
+ */
 @Composable
 private fun TabChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    // Sized by the Text below, same as every other pill in this file — the
+    // plaque art and its dim/glow overlay are drawn via matchParentSize()
+    // onto whatever size that produces, rather than through paint(), whose
+    // default intrinsic-size behavior inflated this pill to the artwork's
+    // own very wide 720x260 aspect ratio and pushed "Jokerler" off-screen.
     Box(
+        contentAlignment = Alignment.Center,
         modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(if (selected) Color(0xFFFF7A21) else Color.White.copy(alpha = 0.85f))
-            .border(2.dp, if (selected) Color(0xFFC85A0A) else Color(0xFFEBCB93), RoundedCornerShape(50))
+            .clip(shape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 22.dp, vertical = 9.dp)
     ) {
+        Image(
+            painter = painterResource(R.drawable.store_tab_plaque),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.matchParentSize()
+        )
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .then(
+                    if (selected) Modifier.border(2.dp, Color(0xFFFFC773), shape)
+                    else Modifier.background(Color.Black.copy(alpha = 0.55f))
+                )
+        )
         Text(
             text = label,
             fontFamily = DisplayFont,
             fontWeight = FontWeight.ExtraBold,
             fontSize = 15.sp,
-            color = if (selected) Color.White else Ink
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
         )
     }
 }
