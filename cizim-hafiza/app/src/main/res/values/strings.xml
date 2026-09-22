@@ -1086,6 +1086,16 @@
     <string name="pen_sunrise">Sunrise</string>
     <string name="pen_night">Night</string>
     <string name="pen_diamond">Diamond</string>
+    <string name="pen_copper_tagline">Classic and sharp!</string>
+    <string name="pen_emerald_tagline">Nature\'s energy!</string>
+    <string name="pen_ruby_tagline">Turn heads!</string>
+    <string name="pen_sapphire_tagline">Calm and striking!</string>
+    <string name="pen_candy_tagline">A sweet touch!</string>
+    <string name="pen_ice_tagline">Cool and crisp!</string>
+    <string name="pen_sakura_tagline">A breath of spring!</string>
+    <string name="pen_sunrise_tagline">A fresh start!</string>
+    <string name="pen_night_tagline">Deep and mysterious!</string>
+    <string name="pen_diamond_tagline">Bright and dazzling!</string>
     <string name="store_title">Store</string>
     <string name="store_tab_pens">Pens</string>
     <string name="store_tab_frames">Frames</string>

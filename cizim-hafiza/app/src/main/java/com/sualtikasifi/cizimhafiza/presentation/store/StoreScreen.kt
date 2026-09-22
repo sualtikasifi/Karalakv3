@@ -177,23 +177,17 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                 }
 
                 if (tab == 0) {
-                    // Full-width rows, not the 2-column grid frames use: a
-                    // pen card needs room for the price pill AND the Try
-                    // button side by side, which a half-width cell can't
-                    // spare once the preview thumbnail and name are in it.
-                    items(viewModel.pens, span = { GridItemSpan(maxLineSpan) }) { skin ->
+                    items(viewModel.pens) { skin ->
                         val id = StoreViewModel.penId(skin)
-                        StoreCard(
-                            preview = { PenPreview(skin, modifier = Modifier.fillMaxSize()) },
-                            onTry = { tryingPen = skin },
-                            name = stringResource(skin.labelRes),
-                            price = skin.storePrice,
+                        PenCard(
+                            skin = skin,
                             owned = id in owned,
                             equipped = id in owned && selectedPen == skin.name,
                             canAfford = gold >= skin.storePrice,
                             onBuy = { pending = Pending.PenItem(skin) },
                             onEquip = { viewModel.equipPen(skin) },
-                            onCannotAfford = { showToast(R.string.store_not_enough, isError = true) }
+                            onCannotAfford = { showToast(R.string.store_not_enough, isError = true) },
+                            onTry = { tryingPen = skin }
                         )
                     }
                 } else if (tab == 2) {
@@ -528,6 +522,74 @@ private fun PenPreview(skin: PenSkin, modifier: Modifier = Modifier.fillMaxWidth
             brush = if (colors.size > 1) Brush.horizontalGradient(colors) else Brush.horizontalGradient(listOf(colors.first(), colors.first())),
             style = Stroke(width = w, cap = StrokeCap.Round)
         )
+    }
+}
+
+/** Each store pen's one-line flavour text under its name — see values(-tr)/strings.xml's pen_*_tagline entries. Null for every non-store pen, which this screen never shows. */
+private fun PenSkin.taglineRes(): Int? = when (this) {
+    PenSkin.COPPER -> R.string.pen_copper_tagline
+    PenSkin.EMERALD -> R.string.pen_emerald_tagline
+    PenSkin.RUBY -> R.string.pen_ruby_tagline
+    PenSkin.SAPPHIRE -> R.string.pen_sapphire_tagline
+    PenSkin.CANDY -> R.string.pen_candy_tagline
+    PenSkin.ICE -> R.string.pen_ice_tagline
+    PenSkin.SAKURA -> R.string.pen_sakura_tagline
+    PenSkin.SUNRISE -> R.string.pen_sunrise_tagline
+    PenSkin.NIGHT -> R.string.pen_night_tagline
+    PenSkin.DIAMOND -> R.string.pen_diamond_tagline
+    else -> null
+}
+
+/** The most saturated of a pen's colours, for a card border that reads as "this pen" at a glance — picking the first colour outright washed out badly on Ice (pale CFF3FF first, vivid 6FD3FF second) and Candy (vivid FF5FA2 first, but plain white second would've won on a "last colour" rule instead). */
+private fun PenSkin.accentColor(): Color =
+    colors.map { Color(it) }.maxByOrNull { c -> (maxOf(c.red, c.green, c.blue) - minOf(c.red, c.green, c.blue)) } ?: Color(0xFFEBCB93)
+
+/**
+ * The pens grid's own card shape — a 2-column vertical layout (preview on
+ * top, name, a one-line tagline, then price/Dene at the bottom), bordered in
+ * the pen's own colour rather than the neutral tan every other card uses, so
+ * the grid reads as a rack of distinct pens rather than one repeated
+ * template. Frames keep the plainer horizontal [StoreCard] — a ring's own
+ * artwork already carries enough colour that it doesn't need this treatment,
+ * and it has no tagline to make room for.
+ */
+@Composable
+private fun PenCard(
+    skin: PenSkin,
+    owned: Boolean,
+    equipped: Boolean,
+    canAfford: Boolean,
+    onBuy: () -> Unit,
+    onEquip: () -> Unit,
+    onCannotAfford: () -> Unit,
+    onTry: () -> Unit
+) {
+    val shape = RoundedCornerShape(22.dp)
+    val accent = skin.accentColor()
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(Brush.verticalGradient(listOf(Color(0xFFFFF6E3).copy(alpha = 0.85f), Color(0xFFFCE6BF).copy(alpha = 0.85f))))
+            .border(2.5.dp, if (equipped) AppTheme.tokens.success else accent.copy(alpha = 0.8f), shape)
+            .padding(12.dp)
+    ) {
+        PenPreview(skin, modifier = Modifier.fillMaxWidth().height(56.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = stringResource(skin.labelRes), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = Ink, maxLines = 1)
+        skin.taglineRes()?.let { tagline ->
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(text = stringResource(tagline), style = MaterialTheme.typography.labelSmall, color = Ink.copy(alpha = 0.6f), maxLines = 1)
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            when {
+                equipped -> ActionPill(stringResource(R.string.store_equipped), AppTheme.tokens.success, Color.White, null)
+                owned -> ActionPill(stringResource(R.string.store_equip), Color(0xFFFF7A21), Color.White, onEquip)
+                else -> PricePill(price = skin.storePrice, canAfford = canAfford, onClick = { if (canAfford) onBuy() else onCannotAfford() })
+            }
+            TryButton(onClick = onTry)
+        }
     }
 }
 

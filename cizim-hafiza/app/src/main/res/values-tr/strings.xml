@@ -1099,6 +1099,16 @@
     <string name="pen_sunrise">Gün Doğumu</string>
     <string name="pen_night">Gece</string>
     <string name="pen_diamond">Elmas</string>
+    <string name="pen_copper_tagline">Klasik ve şık!</string>
+    <string name="pen_emerald_tagline">Doğanın enerjisi!</string>
+    <string name="pen_ruby_tagline">Dikkat çek!</string>
+    <string name="pen_sapphire_tagline">Sakin ve etkileyici!</string>
+    <string name="pen_candy_tagline">Tatlı dokunuş!</string>
+    <string name="pen_ice_tagline">Serin ve net!</string>
+    <string name="pen_sakura_tagline">Bahar esintisi!</string>
+    <string name="pen_sunrise_tagline">Yeni bir başlangıç!</string>
+    <string name="pen_night_tagline">Gizemli ve derin!</string>
+    <string name="pen_diamond_tagline">Parlak ve göz alıcı!</string>
     <string name="store_title">Mağaza</string>
     <string name="store_tab_pens">Kalemler</string>
     <string name="store_tab_frames">Çerçeveler</string>
