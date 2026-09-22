@@ -632,11 +632,19 @@ private fun FrameCard(
 /** The compact buy price used inline in [PenCard]/[FrameCard] — a bigger, standalone version lives in [PurchaseConfirmDialog]. */
 @Composable
 private fun PricePill(price: Int, canAfford: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(50)
     Row(
         modifier = Modifier
             .height(TryRowHeight)
-            .clip(RoundedCornerShape(50))
-            .background(if (canAfford) Color(0xFF2B1A12) else Color(0xFF2B1A12).copy(alpha = 0.45f))
+            .clip(shape)
+            // The same warm gold/orange the Dene button art is painted in
+            // (was a near-black pill) — the two now read as one matched set
+            // instead of a dark "buy" button next to a bright "try" one.
+            .background(
+                if (canAfford) Brush.verticalGradient(listOf(Color(0xFFFFB648), Color(0xFFE8672A)))
+                else Brush.verticalGradient(listOf(Color(0xFFFFB648).copy(alpha = 0.45f), Color(0xFFE8672A).copy(alpha = 0.45f)))
+            )
+            .border(1.5.dp, Color(0xFFB3401A).copy(alpha = if (canAfford) 0.7f else 0.35f), shape)
             .clickable(onClick = onClick)
             // Symmetric now — the 4dp/10dp start/end split this used to have
             // (to leave room for a bulkier coin icon) left it visibly
@@ -662,8 +670,10 @@ private val TryRowHeight = 34.dp
 /**
  * The game's own glossy button art, in place of the plain bordered-text
  * link this used to be. [TryRowHeight] matches [PricePill] exactly; the
- * artwork's own 2:1 aspect ratio (640×320) sets the width from that same
- * height, so the two buttons sit the same size and level next to each other.
+ * artwork itself is cropped tight to its opaque pill shape (no leftover
+ * transparent margin from the source canvas), at that shape's own ~2.86:1
+ * aspect ratio, so the two buttons read as the same size sitting side by
+ * side instead of the Try pill looking shrunken inside its own bounding box.
  */
 @Composable
 private fun TryButton(onClick: () -> Unit) {
@@ -672,7 +682,7 @@ private fun TryButton(onClick: () -> Unit) {
         contentDescription = stringResource(R.string.store_try),
         modifier = Modifier
             .height(TryRowHeight)
-            .width(TryRowHeight * 2f)
+            .width(TryRowHeight * 2.86f)
             .clickable(onClick = onClick)
     )
 }
