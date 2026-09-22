@@ -462,7 +462,7 @@ private fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modif
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .height(58.dp)
+            .height(69.6.dp)
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
     ) {
