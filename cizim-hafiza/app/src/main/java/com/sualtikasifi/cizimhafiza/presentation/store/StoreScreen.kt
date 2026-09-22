@@ -221,17 +221,9 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                 } else {
                     items(viewModel.frames) { frame ->
                         val id = StoreViewModel.frameId(frame)
-                        StoreCard(
-                            preview = {
-                                Image(
-                                    painter = painterResource(frame.drawableRes),
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Fit,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            },
+                        FrameCard(
+                            frame = frame,
                             name = stringResource(frame.nameRes()),
-                            price = frame.storePrice,
                             owned = id in owned,
                             equipped = id in owned && selectedFrame == frame.name,
                             canAfford = gold >= frame.storePrice,
@@ -547,11 +539,10 @@ private fun PenSkin.accentColor(): Color =
 /**
  * The pens grid's own card shape — a 2-column vertical layout (preview on
  * top, name, a one-line tagline, then price/Dene at the bottom), bordered in
- * the pen's own colour rather than the neutral tan every other card uses, so
- * the grid reads as a rack of distinct pens rather than one repeated
- * template. Frames keep the plainer horizontal [StoreCard] — a ring's own
- * artwork already carries enough colour that it doesn't need this treatment,
- * and it has no tagline to make room for.
+ * the pen's own colour rather than the neutral tan [FrameCard] uses, so the
+ * grid reads as a rack of distinct pens rather than one repeated template.
+ * [FrameCard] shares this same overall shape but skips the tagline and Try
+ * button, which frames have no equivalent of.
  */
 @Composable
 private fun PenCard(
@@ -594,55 +585,51 @@ private fun PenCard(
 }
 
 /**
- * A short, horizontal row instead of the old tall column: a bare preview
- * (no white backing panel — pens draw straight onto the card's own warm
- * translucent face, frames are already-transparent PNGs) beside the name
- * and, in the same line, whatever action this item currently offers — buy,
- * equip, equipped, or (pens only) a Try button next to the price.
+ * The frames grid's own card — same 2-column vertical shape as [PenCard]
+ * (large preview on top, name, then the buy/equip row), instead of the
+ * cramped horizontal row this used to share with pens: a ring's whole point
+ * is the artwork, and a 60×52dp thumbnail squeezed beside two lines of text
+ * left it too small to actually tell one frame from another at a glance.
  */
 @Composable
-private fun StoreCard(
-    preview: @Composable () -> Unit,
+private fun FrameCard(
+    frame: AvatarFrame,
     name: String,
-    price: Int,
     owned: Boolean,
     equipped: Boolean,
     canAfford: Boolean,
     onBuy: () -> Unit,
     onEquip: () -> Unit,
-    onCannotAfford: () -> Unit,
-    onTry: (() -> Unit)? = null
+    onCannotAfford: () -> Unit
 ) {
-    val shape = RoundedCornerShape(20.dp)
-    Row(
+    val shape = RoundedCornerShape(22.dp)
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
-            // Slightly transparent on purpose — the workshop backdrop should
-            // still read through the card, not just sit behind opaque tiles.
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFF6E3).copy(alpha = 0.75f), Color(0xFFFCE6BF).copy(alpha = 0.75f))))
-            .border(2.dp, if (equipped) AppTheme.tokens.success else Color(0xFFEBCB93).copy(alpha = 0.85f), shape)
-            .padding(10.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .background(Brush.verticalGradient(listOf(Color(0xFFFFF6E3).copy(alpha = 0.85f), Color(0xFFFCE6BF).copy(alpha = 0.85f))))
+            .border(2.5.dp, if (equipped) AppTheme.tokens.success else Color(0xFFEBCB93).copy(alpha = 0.85f), shape)
+            .padding(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(modifier = Modifier.size(width = 60.dp, height = 52.dp), contentAlignment = Alignment.Center) { preview() }
-        Spacer(modifier = Modifier.width(10.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = name, fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Ink, maxLines = 1)
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                when {
-                    equipped -> ActionPill(stringResource(R.string.store_equipped), AppTheme.tokens.success, Color.White, null)
-                    owned -> ActionPill(stringResource(R.string.store_equip), Color(0xFFFF7A21), Color.White, onEquip)
-                    else -> PricePill(price = price, canAfford = canAfford, onClick = { if (canAfford) onBuy() else onCannotAfford() })
-                }
-                onTry?.let { TryButton(onClick = it) }
-            }
+        Image(
+            painter = painterResource(frame.drawableRes),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxWidth().height(104.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = name, fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = Ink, maxLines = 1)
+        Spacer(modifier = Modifier.height(10.dp))
+        when {
+            equipped -> ActionPill(stringResource(R.string.store_equipped), AppTheme.tokens.success, Color.White, null)
+            owned -> ActionPill(stringResource(R.string.store_equip), Color(0xFFFF7A21), Color.White, onEquip)
+            else -> PricePill(price = frame.storePrice, canAfford = canAfford, onClick = { if (canAfford) onBuy() else onCannotAfford() })
         }
     }
 }
 
-/** The compact buy price used inline in [StoreCard] — a bigger, standalone version lives in [PurchaseConfirmDialog]. */
+/** The compact buy price used inline in [PenCard]/[FrameCard] — a bigger, standalone version lives in [PurchaseConfirmDialog]. */
 @Composable
 private fun PricePill(price: Int, canAfford: Boolean, onClick: () -> Unit) {
     Row(
