@@ -677,14 +677,23 @@ private val TryRowHeight = 34.dp
  */
 @Composable
 private fun TryButton(onClick: () -> Unit) {
-    Image(
-        painter = painterResource(R.drawable.store_try_button),
-        contentDescription = stringResource(R.string.store_try),
+    // A plain Image with .height().width() on it measured noticeably short
+    // here — the fixed Box + matchParentSize() pairing is the same fix
+    // TabChip needed from the exact same kind of intrinsic-size mismatch,
+    // so it's used again rather than re-debugging the same root cause twice.
+    Box(
         modifier = Modifier
             .height(TryRowHeight)
             .width(TryRowHeight * 2.86f)
             .clickable(onClick = onClick)
-    )
+    ) {
+        Image(
+            painter = painterResource(R.drawable.store_try_button),
+            contentDescription = stringResource(R.string.store_try),
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.matchParentSize()
+        )
+    }
 }
 
 @Composable
