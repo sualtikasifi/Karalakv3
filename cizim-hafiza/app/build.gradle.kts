@@ -58,6 +58,7 @@ android {
         buildConfigField("String", "ADMOB_INTERSTITIAL_UNIT_ID", "\"ca-app-pub-3940256099942544/1033173712\"")
         buildConfigField("String", "ADMOB_REWARDED_UNIT_ID", "\"ca-app-pub-3940256099942544/5224354917\"")
         buildConfigField("boolean", "ADMOB_REAL_IDS", "false")
+        buildConfigField("String", "ADMOB_TEST_DEVICE_ID", "\"${localProperties.getProperty("ADMOB_TEST_DEVICE_ID", "")}\"")
 
         // The Play Services Ads manifest merger requires this meta-data tag
         // to be present regardless of build variant.

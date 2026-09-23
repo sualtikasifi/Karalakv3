@@ -85,6 +85,9 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
         MobileAds.setRequestConfiguration(
             RequestConfiguration.Builder()
                 .setMaxAdContentRating(RequestConfiguration.MAX_AD_CONTENT_RATING_PG)
+                // Developer phone (local.properties) always gets test ads, so
+                // playing on it never counts as invalid traffic on real units.
+                .setTestDeviceIds(listOfNotNull(BuildConfig.ADMOB_TEST_DEVICE_ID.takeIf { it.isNotBlank() }))
                 .build()
         )
         MobileAds.initialize(context) {
