@@ -49,25 +49,19 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Google's official public test ad unit IDs — safe defaults until
-        // real IDs are supplied via local.properties (ADMOB_*_UNIT_ID).
-        buildConfigField("String", "ADMOB_APP_ID", adUnitId("ADMOB_APP_ID", "ca-app-pub-3940256099942544~3347511713"))
-        buildConfigField("String", "ADMOB_INTERSTITIAL_UNIT_ID", adUnitId("ADMOB_INTERSTITIAL_UNIT_ID", "ca-app-pub-3940256099942544/1033173712"))
-        buildConfigField("String", "ADMOB_REWARDED_UNIT_ID", adUnitId("ADMOB_REWARDED_UNIT_ID", "ca-app-pub-3940256099942544/5224354917"))
-        // True only when all three real ad IDs are filled in local.properties. A release build without them shows no ad offers at all (see GameConstants.ADMOB_ENABLED) instead of shipping test ads that earn nothing.
-        buildConfigField(
-            "boolean",
-            "ADMOB_REAL_IDS",
-            listOf("ADMOB_APP_ID", "ADMOB_INTERSTITIAL_UNIT_ID", "ADMOB_REWARDED_UNIT_ID")
-                .all { !localProperties.getProperty(it).isNullOrBlank() }.toString()
-        )
+        // Google's official public test ad unit IDs. defaultConfig (and so
+        // every debug build) ALWAYS uses these, even when real IDs sit in
+        // local.properties: serving/clicking live ads on a development device
+        // is what gets an AdMob account flagged for invalid traffic. The real
+        // IDs are applied to the release build type only — see buildTypes.
+        buildConfigField("String", "ADMOB_APP_ID", "\"ca-app-pub-3940256099942544~3347511713\"")
+        buildConfigField("String", "ADMOB_INTERSTITIAL_UNIT_ID", "\"ca-app-pub-3940256099942544/1033173712\"")
+        buildConfigField("String", "ADMOB_REWARDED_UNIT_ID", "\"ca-app-pub-3940256099942544/5224354917\"")
+        buildConfigField("boolean", "ADMOB_REAL_IDS", "false")
 
         // The Play Services Ads manifest merger requires this meta-data tag
-        // to be present regardless of build variant, even though no ad is
-        // ever requested while GameConstants.ADMOB_ENABLED is false (see
-        // ads/AdManager.kt — it is off for launch, on purpose).
-        manifestPlaceholders["admobAppId"] =
-            localProperties.getProperty("ADMOB_APP_ID", "ca-app-pub-3940256099942544~3347511713")
+        // to be present regardless of build variant.
+        manifestPlaceholders["admobAppId"] = "ca-app-pub-3940256099942544~3347511713"
     }
 
     signingConfigs {
@@ -104,6 +98,18 @@ android {
 
     buildTypes {
         release {
+            // Real AdMob IDs (local.properties, gitignored) — release only.
+            // Without ALL three keys the release build keeps the test IDs and
+            // ADMOB_REAL_IDS stays false, so it shows no ad offers at all
+            // instead of shipping test ads that earn nothing.
+            val realAdKeys = listOf("ADMOB_APP_ID", "ADMOB_INTERSTITIAL_UNIT_ID", "ADMOB_REWARDED_UNIT_ID")
+            if (realAdKeys.all { !localProperties.getProperty(it).isNullOrBlank() }) {
+                buildConfigField("String", "ADMOB_APP_ID", adUnitId("ADMOB_APP_ID", ""))
+                buildConfigField("String", "ADMOB_INTERSTITIAL_UNIT_ID", adUnitId("ADMOB_INTERSTITIAL_UNIT_ID", ""))
+                buildConfigField("String", "ADMOB_REWARDED_UNIT_ID", adUnitId("ADMOB_REWARDED_UNIT_ID", ""))
+                buildConfigField("boolean", "ADMOB_REAL_IDS", "true")
+                manifestPlaceholders["admobAppId"] = localProperties.getProperty("ADMOB_APP_ID")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
