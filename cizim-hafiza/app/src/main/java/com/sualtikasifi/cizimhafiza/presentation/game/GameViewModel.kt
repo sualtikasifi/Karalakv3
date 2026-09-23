@@ -298,6 +298,9 @@ class GameViewModel @Inject constructor(
     private val recoveryJson = Json { ignoreUnknownKeys = true }
 
     init {
+        // Have the "+10 sn" / hint rewarded ad and the result interstitial
+        // already in memory before the first tap needs them.
+        adManager.warmUp()
         viewModelScope.launch {
             xpEventMultiplierOnly = xpEventRepository.currentMultiplier()
             effectiveXpMultiplier = xpEventMultiplierOnly *
@@ -455,8 +458,17 @@ class GameViewModel @Inject constructor(
         savedStateHandle.remove<String>(RECOVERY_KEY)
     }
 
-    /** Called from the Screen's lifecycle observer — see GameScreen. */
-    fun onEnterBackground() = ticker.pause()
+    /**
+     * Called from the Screen's lifecycle observer — see GameScreen.
+     *
+     * A Hızlı Eşleş round is NOT paused: it is played "against" someone, so
+     * its clock has to keep running in the background just like the other
+     * player's would — otherwise leaving the app becomes free thinking time.
+     * Offline and daily rounds have nobody to be fair to, so they still pause.
+     */
+    fun onEnterBackground() {
+        if (!isQuickMatch) ticker.pause()
+    }
 
     fun onEnterForeground() = ticker.resume()
 

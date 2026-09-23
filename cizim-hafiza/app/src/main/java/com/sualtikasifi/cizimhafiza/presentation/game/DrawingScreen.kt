@@ -121,7 +121,7 @@ fun DrawingScreen(
                 .fillMaxSize()
                 .screenBackground()
                 .padding(padding)
-                .padding(horizontal = 18.dp, vertical = 12.dp)
+                .padding(horizontal = 18.dp, vertical = 8.dp)
         ) {
             GameTopBar(
                 onBack = onBackClick,
@@ -132,7 +132,7 @@ fun DrawingScreen(
             ) {
                 if (state.isUntimed) {
                     Box(
-                        modifier = Modifier.size(56.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                        modifier = Modifier.size(46.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -147,12 +147,12 @@ fun DrawingScreen(
                         secondsLeft = state.secondsLeft,
                         totalSeconds = state.totalSeconds,
                         ringColor = timerColor,
-                        modifier = Modifier.size(58.dp)
+                        modifier = Modifier.size(46.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // --- The word to draw ---
             RaisedCard(
@@ -167,11 +167,11 @@ fun DrawingScreen(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp, horizontal = 16.dp)
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Keying on the word's id forces a brand-new canvas instance per
             // turn, but Compose doesn't guarantee the OLD instance's
@@ -222,7 +222,7 @@ fun DrawingScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             // --- Tools ---
             Row(

@@ -79,6 +79,7 @@ class WaitingRoomViewModel @Inject constructor(
             // Same UX-only pre-check as FriendsViewModel.inviteFriend: the
             // real gate is firestore.rules' invites-create rule, but checking
             // first turns a silent rejection into a specific reason.
+            var sent = false
             val message = when (val eligibility = friendRepository.canInvite(friend.uid)) {
                 InviteEligibility.Blocked -> UiText.of(R.string.error_invite_blocked)
                 is InviteEligibility.OnCooldown ->
@@ -86,11 +87,17 @@ class WaitingRoomViewModel @Inject constructor(
                 InviteEligibility.Eligible -> friendRepository
                     .sendMatchInvite(friend.uid, roomCode, nickname)
                     .fold(
-                        onSuccess = { UiText.of(R.string.info_invite_sent) },
+                        onSuccess = { sent = true; UiText.of(R.string.info_invite_sent) },
                         onFailure = { UiText.of(R.string.error_lobby_invite_failed) }
                     )
             }
-            _inviteState.update { it.copy(sendingToUid = null, message = message) }
+            _inviteState.update {
+                it.copy(
+                    sendingToUid = null,
+                    message = message,
+                    sentToUids = if (sent) it.sentToUids + friend.uid else it.sentToUids
+                )
+            }
         }
     }
 
@@ -225,5 +232,7 @@ class WaitingRoomViewModel @Inject constructor(
 /** In-lobby invite progress and its one-shot result message. */
 data class LobbyInviteState(
     val sendingToUid: String? = null,
-    val message: UiText? = null
+    val message: UiText? = null,
+    /** Friends an invite has actually gone out to — their row says so instead of offering to send again. */
+    val sentToUids: Set<String> = emptySet()
 )

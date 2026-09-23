@@ -501,19 +501,15 @@ enum class Achievement(
     }
 
     /**
-     * Perfect-round and online-win tiers pay Gold instead of XP — both are
-     * harder to farm by just playing more solo rounds (a perfect round needs
-     * every word right, an online win needs beating real opponents), so
-     * spending them on a currency the player actually shops with reads as a
-     * bigger prize than the same number folded into the XP bar.
+     * Every other achievement, in declaration (difficulty) order, pays Gold
+     * instead of XP — an even split, so both currencies are spread across the
+     * whole ladder rather than one of them clustering at the hard end. Derived
+     * from the position so no constructor call site has to change.
      */
     val rewardType: AchievementRewardType
-        get() = when (metric) {
-            AchievementMetric.PERFECT, AchievementMetric.ONLINE_WIN -> AchievementRewardType.GOLD
-            else -> AchievementRewardType.XP
-        }
+        get() = if (ordinal % 2 == 0) AchievementRewardType.XP else AchievementRewardType.GOLD
 
     /** Only meaningful when [rewardType] is GOLD — see [xpReward]. */
     val goldReward: Int
-        get() = (xpReward / 4).coerceAtLeast(10)
+        get() = (xpReward / 2).coerceAtLeast(15)
 }

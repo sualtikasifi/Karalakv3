@@ -24,6 +24,9 @@ interface DuelRepository {
     /** Duels waiting for this device to play, as the opponent. */
     fun observeIncomingDuels(): Flow<List<Duel>>
 
+    /** Duels this device already played as the opponent — the "recent challenges" history for the person who was challenged. */
+    fun observeCompletedReceivedDuels(): Flow<List<Duel>>
+
     /** Duels this device challenged someone else to, completed or not — for a "did they beat me" follow-up. */
     fun observeSentDuels(): Flow<List<Duel>>
 

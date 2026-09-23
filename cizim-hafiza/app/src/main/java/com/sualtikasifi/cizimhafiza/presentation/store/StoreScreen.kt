@@ -665,7 +665,7 @@ private fun PricePill(price: Int, canAfford: Boolean, onClick: () -> Unit) {
 }
 
 /** Shared height for [PricePill] and [TryButton] so the two sit level and the same size next to each other. */
-private val TryRowHeight = 30.6.dp
+private val TryRowHeight = 29.07.dp
 
 /**
  * The game's own glossy button art, in place of the plain bordered-text

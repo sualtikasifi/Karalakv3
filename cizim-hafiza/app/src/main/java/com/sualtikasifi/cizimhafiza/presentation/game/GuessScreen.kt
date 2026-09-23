@@ -14,6 +14,16 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -82,6 +92,7 @@ import com.sualtikasifi.cizimhafiza.presentation.theme.TimerWarning
 import com.sualtikasifi.cizimhafiza.util.capitalizeForWordLanguage
 import com.sualtikasifi.cizimhafiza.util.GameConstants
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun GuessScreen(
     state: GamePhase.Guessing,
@@ -140,27 +151,21 @@ fun GuessScreen(
     }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        // The drawing used to be the one flexible (weight(1f)) element, so
-        // opening the keyboard shrank it to make room for the fixed-size
-        // field/buttons below — on a short device that left almost nothing
-        // to actually look at. BoxWithConstraints measures the screen
-        // BEFORE .imePadding() below consumes any of it for the keyboard,
-        // so canvasHeight is one standard size on this device regardless of
-        // whether the keyboard is open; everything below it scrolls instead
-        // of stealing from it.
-        BoxWithConstraints(
+        // Laid out so the ANSWER FIELD is always on screen with the keyboard
+        // open: top bar, canvas, then field + submit directly under it, and
+        // every helper (ad hint, jokers, skip) folded into one slim row below.
+        // The canvas is the single flexible piece (weight) and takes whatever
+        // the keyboard leaves — every other piece is a small fixed height, so
+        // it can no longer be squeezed out of view the way a tall stack of
+        // buttons used to push the field behind the keyboard.
+        val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .screenBackground()
                 .padding(padding)
-                .padding(horizontal = 18.dp, vertical = 12.dp)
-        ) {
-        val canvasHeight = (maxHeight * 0.36f).coerceIn(200.dp, 300.dp)
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
                 .imePadding()
-                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 18.dp, vertical = 10.dp)
         ) {
             GameTopBar(
                 progressLabel = "${state.guessNumber} / ${state.totalGuesses}",
@@ -168,9 +173,13 @@ fun GuessScreen(
                 onToggleMusic = onToggleMusic
             ) {
                 // Absent only for the first-launch tutorial's practice round,
-                // which has no real ViewModel/XP behind it to show.
-                levelProgress?.let {
-                    LiveLevelBadge(progress = it, frame = selectedFrame ?: AvatarFrame.highestUnlockedFor(it.level))
+                // which has no real ViewModel/XP behind it to show. Hidden
+                // while the keyboard is up: it is the widest thing in this
+                // row and the one the player can most easily do without.
+                if (!imeVisible) {
+                    levelProgress?.let {
+                        LiveLevelBadge(progress = it, frame = selectedFrame ?: AvatarFrame.highestUnlockedFor(it.level))
+                    }
                 }
                 // totalSeconds == 0 means this guess turn is untimed (the
                 // first-launch tutorial) — an empty ring reading "0" would
@@ -189,17 +198,18 @@ fun GuessScreen(
                         secondsLeft = state.secondsLeft,
                         totalSeconds = state.totalSeconds,
                         ringColor = timerColor,
-                        modifier = Modifier.size(56.dp)
+                        modifier = Modifier.size(44.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(canvasHeight)
+                    .weight(1f)
+                    .heightIn(min = 120.dp)
                     .padding(bottom = AppTheme.tokens.raise)
                     .hardEdge(AppTheme.tokens.edge, AppTheme.tokens.raise, 26.dp)
                     .background(AppTheme.tokens.canvasPaper, MaterialTheme.shapes.large)
@@ -220,112 +230,60 @@ fun GuessScreen(
                     wordLanguage = wordLanguage,
                     modifier = Modifier.align(Alignment.Center)
                 )
+
+                // Revealed hints sit on the drawing itself instead of taking
+                // rows of their own below it — same reason as the feedback.
+                Row(
+                    modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (state.hintLetter != null) {
+                        // Capitalized the same way the word itself is displayed
+                        // everywhere else — a Turkish "i" has to become "İ", not "I".
+                        TintedBadge(
+                            text = stringResource(
+                                R.string.hint_first_letter,
+                                state.hintLetter.capitalizeForWordLanguage(wordLanguage)
+                            )
+                        )
+                    }
+                    state.letterCount?.let { count ->
+                        TintedBadge(text = stringResource(R.string.joker_letter_count_badge, count))
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            Text(
-                text = stringResource(R.string.what_did_you_draw),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // One rewarded-ad hint per whole match, not per word (see
-            // GameViewModel/OnlineGameViewModel.useHint): before it's spent,
-            // a CTA to watch an ad for this word's first letter; once spent,
-            // either this word's revealed letter (if it was spent here) or
-            // nothing at all (spent on an earlier word — stays out of the way).
-            if (!isAnswered && !state.hintUsed && state.hintLetter == null && GameConstants.ADMOB_ENABLED) {
-                Spacer(modifier = Modifier.height(10.dp))
-                SecondaryButton(
-                    // Countdown is paused (see useHint) the instant this is
-                    // tapped, so the label needs to make clear something is
-                    // happening — a frozen timer with no other signal would
-                    // otherwise look like the screen had just stalled.
-                    text = stringResource(
-                        if (hintRequested) R.string.loading_hint else R.string.watch_ad_for_hint
-                    ),
-                    onClick = {
-                        if (!hintRequested) {
-                            hintRequested = true
-                            onHintClick()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                AppTextField(
+                    value = answer,
+                    onValueChange = { newValue ->
+                        // Ignore edits once answered instead of toggling
+                        // enabled/readOnly, so the field never loses focus.
+                        if (!isAnswered) {
+                            answer = newValue
+                            onAnswerChanged(newValue)
                         }
                     },
-                    enabled = !hintRequested,
-                    height = 44.dp,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            if (state.hintLetter != null) {
-                Spacer(modifier = Modifier.height(10.dp))
-                // Capitalized the same way the word itself is displayed
-                // everywhere else — a Turkish "i" has to become "İ", not "I".
-                TintedBadge(
-                    text = stringResource(
-                        R.string.hint_first_letter,
-                        state.hintLetter.capitalizeForWordLanguage(wordLanguage)
-                    )
-                )
-            }
-
-            state.letterCount?.let { count ->
-                Spacer(modifier = Modifier.height(8.dp))
-                TintedBadge(text = stringResource(R.string.joker_letter_count_badge, count))
-            }
-            if (!isAnswered) {
-                Spacer(modifier = Modifier.height(8.dp))
-                androidx.compose.foundation.layout.Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                ) {
-                    val firstCount = jokers[com.sualtikasifi.cizimhafiza.domain.model.JokerType.FIRST_LETTER] ?: 0
-                    val countCount = jokers[com.sualtikasifi.cizimhafiza.domain.model.JokerType.LETTER_COUNT] ?: 0
-                    com.sualtikasifi.cizimhafiza.presentation.common.JokerButton(
-                        type = com.sualtikasifi.cizimhafiza.domain.model.JokerType.FIRST_LETTER,
-                        count = firstCount,
-                        enabled = state.hintLetter == null,
-                        onClick = onFirstLetterJoker,
-                        modifier = Modifier.weight(1f)
-                    )
-                    com.sualtikasifi.cizimhafiza.presentation.common.JokerButton(
-                        type = com.sualtikasifi.cizimhafiza.domain.model.JokerType.LETTER_COUNT,
-                        count = countCount,
-                        enabled = state.letterCount == null,
-                        onClick = onLetterCountJoker,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            AppTextField(
-                value = answer,
-                onValueChange = { newValue ->
-                    // Ignore edits once answered instead of toggling
-                    // enabled/readOnly, so the field never loses focus.
-                    if (!isAnswered) {
-                        answer = newValue
-                        onAnswerChanged(newValue)
-                    }
-                },
-                centered = true,
-                textStyle = MaterialTheme.typography.titleMedium,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                focusRequester = focusRequester,
-                corner = 26.dp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp)
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SecondaryButton(
-                    text = stringResource(R.string.skip_guess),
-                    onClick = { onSubmit("") },
-                    enabled = !isAnswered,
-                    height = 52.dp,
+                    centered = true,
+                    // "Bu neydi?" used to be a title of its own above the
+                    // buttons; as the placeholder it costs no height at all.
+                    placeholder = stringResource(R.string.what_did_you_draw),
+                    textStyle = MaterialTheme.typography.titleMedium,
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { if (!isAnswered && answer.isNotBlank()) onSubmit(answer) }
+                    ),
+                    focusRequester = focusRequester,
+                    corner = 26.dp,
                     modifier = Modifier.weight(1f)
                 )
                 PrimaryButton(
@@ -333,14 +291,93 @@ fun GuessScreen(
                     onClick = { onSubmit(answer) },
                     enabled = !isAnswered && answer.isNotBlank(),
                     height = 52.dp,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.width(112.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-        }
+            if (!isAnswered) {
+                Spacer(modifier = Modifier.height(8.dp))
+                // Ad hint (one per whole match, not per word — see
+                // GameViewModel/OnlineGameViewModel.useHint), the two jokers
+                // and skip, all in ONE slim row that wraps onto a second line
+                // only on a very narrow phone instead of always stacking.
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (!state.hintUsed && state.hintLetter == null && GameConstants.ADMOB_ENABLED) {
+                        HelperPill(
+                            // Countdown is paused (see useHint) the instant this is
+                            // tapped, so the label needs to make clear something is
+                            // happening — a frozen timer with no other signal would
+                            // otherwise look like the screen had just stalled.
+                            text = stringResource(
+                                if (hintRequested) R.string.loading_hint else R.string.watch_ad_for_hint
+                            ),
+                            enabled = !hintRequested,
+                            onClick = {
+                                if (!hintRequested) {
+                                    hintRequested = true
+                                    onHintClick()
+                                }
+                            }
+                        )
+                    }
+                    val firstCount = jokers[com.sualtikasifi.cizimhafiza.domain.model.JokerType.FIRST_LETTER] ?: 0
+                    val countCount = jokers[com.sualtikasifi.cizimhafiza.domain.model.JokerType.LETTER_COUNT] ?: 0
+                    com.sualtikasifi.cizimhafiza.presentation.common.JokerButton(
+                        type = com.sualtikasifi.cizimhafiza.domain.model.JokerType.FIRST_LETTER,
+                        count = firstCount,
+                        enabled = state.hintLetter == null,
+                        onClick = onFirstLetterJoker
+                    )
+                    com.sualtikasifi.cizimhafiza.presentation.common.JokerButton(
+                        type = com.sualtikasifi.cizimhafiza.domain.model.JokerType.LETTER_COUNT,
+                        count = countCount,
+                        enabled = state.letterCount == null,
+                        onClick = onLetterCountJoker
+                    )
+                    HelperPill(
+                        text = stringResource(R.string.skip_guess),
+                        enabled = true,
+                        onClick = { onSubmit("") }
+                    )
+                }
+            }
+            if (adErrorShown) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.ad_unavailable),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
         }
     }
+}
+
+/** A slim pill for the helper row under the answer field. */
+@Composable
+private fun HelperPill(text: String, enabled: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(50)
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        maxLines = 1,
+        modifier = Modifier
+            .alpha(if (enabled) 1f else 0.5f)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.5.dp, MaterialTheme.colorScheme.primary, shape)
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 9.dp)
+    )
 }
 
 /**

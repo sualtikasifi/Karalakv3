@@ -253,7 +253,7 @@ fun CizimHafizaNavGraph(
             SettingsScreen(
                 onBack = { navController.popBackStack() },
                 onReportBugClick = { navController.navigate(Screen.ReportBug) },
-                onReplayTutorialClick = { navController.navigate(Screen.Tutorial) },
+                onReplayTutorialClick = { navController.navigate(Screen.TutorialReplay) },
                 onAccountClick = { navController.navigate(Screen.Account) },
                 onDeveloperReveal = { navController.navigate(Screen.DrawingReports) }
             )
@@ -285,15 +285,19 @@ fun CizimHafizaNavGraph(
         composable(Screen.Tutorial) {
             TutorialScreen(
                 // Replaces the tutorial in the back stack so finishing it
-                // (or skipping) can't be undone with the back button —
-                // whether it was the launch destination or replayed from
-                // Settings, the player lands on a clean Main Menu.
+                // (or skipping) can't be undone with the back button — this is
+                // the first-launch tutorial, so the player lands on a clean
+                // Main Menu. A replay from Settings uses TutorialReplay instead.
                 onFinished = {
                     navController.navigate(Screen.MainMenu) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
             )
+        }
+
+        composable(Screen.TutorialReplay) {
+            TutorialScreen(onFinished = { navController.popBackStack() })
         }
 
         composable(Screen.ReportBug) {

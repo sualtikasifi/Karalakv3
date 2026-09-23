@@ -671,8 +671,8 @@
     <string name="league_global_failed">Could not load the global table.</string>
     <string name="league_global_refresh_note">The global ranking refreshes every hour.</string>
     <string name="league_reward_title">This month\'s prize</string>
-    <string name="league_reward_bonus_gold">+%1$d Gold</string>
-    <string name="league_reward_bonus_xp">+%1$d XP</string>
+    <string name="league_reward_bonus_gold">+%1$s Gold</string>
+    <string name="league_reward_bonus_xp">+%1$s XP</string>
     <string name="league_reward_explainer_pen">Finish top 3 in the Global ranking by month\'s end to win the %1$s Pen!</string>
     <string name="league_reward_explainer_frame">Finish top 3 in the Global ranking by month\'s end to win the %1$s Champion Frame!</string>
     <string name="league_reward_kind_frame">Special frame</string>
@@ -739,6 +739,13 @@
     <string name="duel_list_incoming_title">Waiting For You</string>
     <string name="duel_list_incoming_empty">No pending challenges right now.</string>
     <string name="duel_list_sent_title">Sent By You</string>
+    <string name="duel_list_requests_title">Incoming Requests</string>
+    <string name="duel_list_requests_empty">No pending requests right now.</string>
+    <string name="duel_list_friend_request">%1$s wants to be friends</string>
+    <string name="duel_list_recent_title">Recent Challenges</string>
+    <string name="duel_list_recent_empty">No finished challenges yet — play or send one!</string>
+    <string name="duel_list_score_line">%1$d – %2$d</string>
+    <string name="duel_list_new_result">New</string>
     <string name="duel_list_sent_empty">You haven\'t challenged anyone yet.</string>
     <string name="duel_list_word_count">%1$d words</string>
     <string name="duel_list_status_waiting">Waiting…</string>
@@ -893,6 +900,7 @@
     <string name="online_invite_sheet_title">Invite a friend to this room</string>
     <string name="online_invite_sheet_empty">No friends yet. You can also share the room code above.</string>
     <string name="online_invite_send">Invite</string>
+    <string name="online_invite_sent_short">Invite sent ✓</string>
     <!-- Rank ladder sheet -->
     <string name="rank_ladder_title">Ranks</string>
     <string name="rank_ladder_subtitle">Each rank unlocks at a level. You are currently %1$s.</string>
@@ -1031,7 +1039,7 @@
     <string name="home_frame_label">Frame</string>
     <string name="home_chests_tagline">Every win is a treasure!</string>
     <string name="home_chests_info_title">How chests work</string>
-    <string name="home_chests_info_body">Beat your opponent in Quick Match to earn a chest. Chests take 3, 6 or 8 hours to unlock depending on their quality, and only one can unlock at a time. You have 4 slots — when they\'re all full, new chests are lost.</string>
+    <string name="home_chests_info_body">Beat your opponent in Quick Match and win a chest! 🎁 Chests hold gold, jokers and sometimes rare pens. They unlock in 2, 3 or 6 hours depending on quality, and only one countdown runs at a time. You have 4 slots — when they\'re all full a new chest flies away, so open them in time! 🚀</string>
     <string name="home_chests_info_ok">Got it</string>
     <string name="chest_slot_empty_title">Chest Slot</string>
     <string name="chest_slot_empty_hint">Win to earn a chest</string>
@@ -1120,7 +1128,7 @@
     <string name="chest_speedup_unavailable">No ad available right now, try again later.</string>
     <string name="chest_speedup_used_today">You already used today\'s speed-up.</string>
     <string name="home_chests_info_line">%1$s: %2$d min (%3$d h)</string>
-    <string name="home_chests_info_speedup">Once a day you can watch an ad to cut 3 hours off a chest that is unlocking.</string>
+    <string name="home_chests_info_speedup">Impatient? ⏩ Once a day, watch a short ad to cut 2 hours off a chest that is unlocking!</string>
     <string name="chest_ready_channel_name">Chests</string>
     <string name="chest_ready_notif_title">Your chest is ready! 🎁</string>
     <string name="chest_ready_notif_body">%1$s is ready to open. Come and grab your reward!</string>

@@ -172,7 +172,7 @@
     <string name="error_friend_remove_failed">Arkadaş kaldırılamadı</string>
     <string name="error_block_failed">Engellenemedi</string>
     <string name="error_unblock_failed">Engel kaldırılamadı</string>
-    <string name="info_invite_sent">İstek gönderildi, cevap bekleniyor…</string>
+    <string name="info_invite_sent">Davet gönderildi, cevap bekleniyor…</string>
 
     <string name="friends_my_code_label">Kodun</string>
     <string name="friends_invite_reward_hint">Arkadaşını davet et, seviye 5\'e ulaşınca 500 XP kazan!</string>
@@ -681,8 +681,8 @@
     <string name="league_global_failed">Global tablo yüklenemedi.</string>
     <string name="league_global_refresh_note">Global sıralama saatte bir yenilenir.</string>
     <string name="league_reward_title">Bu ayın ödülü</string>
-    <string name="league_reward_bonus_gold">+%1$d Altın</string>
-    <string name="league_reward_bonus_xp">+%1$d XP</string>
+    <string name="league_reward_bonus_gold">+%1$s Altın</string>
+    <string name="league_reward_bonus_xp">+%1$s XP</string>
     <string name="league_reward_explainer_pen">Global sıralamada ay sonunda ilk 3\'e gir, %1$s Kalemi\'ni kazan!</string>
     <string name="league_reward_explainer_frame">Global sıralamada ay sonunda ilk 3\'e gir, %1$s Şampiyonu Çerçevesi\'ni kazan!</string>
     <string name="league_reward_kind_frame">Özel çerçeve</string>
@@ -753,6 +753,13 @@
     <string name="duel_list_incoming_title">Sana Gelenler</string>
     <string name="duel_list_incoming_empty">Şu an bekleyen bir meydan okuma yok.</string>
     <string name="duel_list_sent_title">Gönderdiklerim</string>
+    <string name="duel_list_requests_title">Gelen İstekler</string>
+    <string name="duel_list_requests_empty">Şu an bekleyen istek yok.</string>
+    <string name="duel_list_friend_request">%1$s arkadaş olmak istiyor</string>
+    <string name="duel_list_recent_title">Son Meydan Okumalar</string>
+    <string name="duel_list_recent_empty">Henüz biten bir meydan okuma yok — oyna ya da birine meydan oku!</string>
+    <string name="duel_list_score_line">%1$d – %2$d</string>
+    <string name="duel_list_new_result">Yeni</string>
     <string name="duel_list_sent_empty">Henüz kimseye meydan okumadın.</string>
     <string name="duel_list_word_count">%1$d kelime</string>
     <string name="duel_list_status_waiting">Bekleniyor…</string>
@@ -907,6 +914,7 @@
     <string name="online_invite_sheet_title">Arkadaşını odaya çağır</string>
     <string name="online_invite_sheet_empty">Henüz arkadaşın yok. Yukarıdaki oda kodunu paylaşarak da davet edebilirsin.</string>
     <string name="online_invite_send">Çağır</string>
+    <string name="online_invite_sent_short">Davet gönderildi ✓</string>
     <!-- Rütbe merdiveni sayfası -->
     <string name="rank_ladder_title">Rütbeler</string>
     <string name="rank_ladder_subtitle">Her rütbe bir seviyede açılır. Şu an %1$s rütbesindesin.</string>
@@ -1044,7 +1052,7 @@
     <string name="home_frame_label">Çerçevem</string>
     <string name="home_chests_tagline">Her galibiyet bir hazine!</string>
     <string name="home_chests_info_title">Kasalar nasıl çalışır?</string>
-    <string name="home_chests_info_body">Hızlı Eşleş\'te rakibini yenersen kasa kazanırsın. Kasaların açılma süresi kalitesine göre 3, 6 veya 8 saattir ve aynı anda yalnızca bir kasanın süresi işler. 4 yuvan var; hepsi doluyken kazanılan yeni kasa kaybolur.</string>
+    <string name="home_chests_info_body">Hızlı Eşleş\'te rakibini yenersen bir kasa kazanırsın! 🎁 Kasalar altın, joker ve bazen nadir kalemler saklar. Kaliteye göre 2, 3 veya 6 saatte açılır; aynı anda tek kasanın sayacı işler. 4 yuvan var — hepsi doluyken yeni kasa uçup gider, o yüzden zamanında aç! 🚀</string>
     <string name="home_chests_info_ok">Anladım</string>
     <string name="chest_slot_empty_title">Kasa Yuvası</string>
     <string name="chest_slot_empty_hint">Kazanarak kasa elde et</string>
@@ -1133,7 +1141,7 @@
     <string name="chest_speedup_unavailable">Şu an reklam yok, biraz sonra tekrar dene.</string>
     <string name="chest_speedup_used_today">Bugünkü hızlandırma hakkını kullandın.</string>
     <string name="home_chests_info_line">%1$s: %2$d dk (%3$d sa)</string>
-    <string name="home_chests_info_speedup">Günde bir kez reklam izleyerek açılmakta olan bir kasanın süresini 3 saat kısaltabilirsin.</string>
+    <string name="home_chests_info_speedup">Sabırsız mısın? ⏩ Günde bir kez kısa bir reklam izle, açılmakta olan kasanın süresi 2 saat kısalsın!</string>
     <string name="chest_ready_channel_name">Kasalar</string>
     <string name="chest_ready_notif_title">Kasan hazır! 🎁</string>
     <string name="chest_ready_notif_body">%1$s açılmaya hazır. Gel ve ödülünü al!</string>

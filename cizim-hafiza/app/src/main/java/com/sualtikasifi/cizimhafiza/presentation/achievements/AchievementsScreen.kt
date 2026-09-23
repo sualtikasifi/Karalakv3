@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.achievements
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -43,6 +44,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.text.font.FontWeight
+import kotlin.math.PI
+import kotlin.math.sin
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -67,7 +75,6 @@ fun AchievementsScreen(
     viewModel: AchievementsViewModel = hiltViewModel()
 ) {
     val achievements by viewModel.achievements.collectAsState()
-    val newlyUnlockedIds by viewModel.newlyUnlockedIds.collectAsState()
     val unlockedCount = achievements.count { it.unlocked }
     // Tapping a chip explains what it takes to earn it — before this,
     // nothing in the UI ever spelled out an achievement's condition beyond
@@ -101,8 +108,7 @@ fun AchievementsScreen(
                         row.forEach { item ->
                             AchievementChip(
                                 item = item,
-                                isNewlyUnlocked = item.achievement.name in newlyUnlockedIds,
-                                onClick = { selectedAchievement = item },
+                                onClick = { if (item.unlocked && !item.claimed) viewModel.claim(item.achievement) else selectedAchievement = item },
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -304,7 +310,7 @@ private fun AchievementDetailDialog(item: AchievementUiItem, onClaim: () -> Unit
                     Text(
                         text = rewardText(item.achievement),
                         style = MaterialTheme.typography.titleMedium,
-                        color = AppTheme.tokens.gold
+                        color = rewardColor(item.achievement)
                     )
                 }
 
@@ -327,103 +333,149 @@ private fun AchievementDetailDialog(item: AchievementUiItem, onClaim: () -> Unit
     }
 }
 
+
+/** Gold prizes read in yellow everywhere they appear, so "50 altın" is unmistakable next to "50 XP". */
+private val GoldRewardText = Color(0xFFE6A400)
+
+@Composable
+private fun rewardColor(achievement: Achievement): Color = when (achievement.rewardType) {
+    AchievementRewardType.GOLD -> GoldRewardText
+    AchievementRewardType.XP -> MaterialTheme.colorScheme.primary
+}
+
 @Composable
 private fun AchievementChip(
     item: AchievementUiItem,
     onClick: () -> Unit,
-    isNewlyUnlocked: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    // Shimmers for 10s the first time AchievementsScreen is opened after this
-    // achievement unlocked (see AchievementsViewModel.newlyUnlockedIds), then
-    // settles back to a plain card — a one-time celebration in place instead
-    // of a blocking dialog.
-    var shimmering by remember(item.achievement.name) { mutableStateOf(isNewlyUnlocked) }
-    LaunchedEffect(item.achievement.name, isNewlyUnlocked) {
-        if (isNewlyUnlocked) {
-            delay(10_000)
-            shimmering = false
-        }
-    }
-    // Green once its reward is claimed — the resting state a chip should
-    // settle into — gold while it's earned but still waiting to be tapped
-    // (the whole reason it's tappable at all), the shimmer only overriding
-    // that gold for its one-time 10s celebration window.
     val claimable = item.unlocked && !item.claimed
-    val borderColor = when {
-        shimmering -> {
-            val pulse by rememberInfiniteTransition(label = "achievementShimmer").animateFloat(
-                initialValue = 0.35f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(700, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "achievementShimmerAlpha"
-            )
-            AppTheme.tokens.gold.copy(alpha = pulse)
+
+    // Earned-but-uncollected chips breathe (border, fill, size) until tapped —
+    // the one thing on this page that should draw the eye among 101 tiles.
+    val transition = rememberInfiniteTransition(label = "claimPulse")
+    val pulseAnim by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(650, easing = LinearEasing), RepeatMode.Reverse),
+        label = "claimPulseValue"
+    )
+    val pulse = if (claimable) pulseAnim else 0f
+
+    // One-shot celebration the moment a chip flips from claimable to claimed:
+    // a small bounce plus the reward floating up and fading.
+    val burst = remember(item.achievement.name) { Animatable(0f) }
+    var wasClaimable by remember(item.achievement.name) { mutableStateOf(claimable) }
+    LaunchedEffect(claimable) {
+        if (wasClaimable && !claimable && item.claimed) {
+            burst.snapTo(0f)
+            burst.animateTo(1f, tween(1000, easing = LinearEasing))
+            burst.snapTo(0f)
         }
+        wasClaimable = claimable
+    }
+    val bounce = sin(burst.value * PI.toFloat()) * 0.12f
+
+    val borderColor = when {
         item.claimed -> AppTheme.tokens.success
-        claimable -> AppTheme.tokens.gold
+        claimable -> AppTheme.tokens.gold.copy(alpha = 0.45f + 0.55f * pulse)
         else -> MaterialTheme.colorScheme.outline
     }
-    // RaisedCard, not a flat Material one: 101 flat white squares on the
-    // textured page read as cut-out holes in the artwork rather than as
-    // chips sitting on it.
-    WarmCard(
-        onClick = onClick,
-        corner = 20.dp,
-        // Light green fill on top of the green border once claimed — the
-        // border alone still read as "just another accent color" next to the
-        // gold claimable border, not as a clearly finished, different state.
-        face = if (item.claimed) AppTheme.tokens.successContainer else AppTheme.tokens.cardWarm,
-        border = borderColor,
-        modifier = modifier.alpha(if (item.unlocked) 1f else 0.85f)
-    ) {
-        // Fixed height + both axes centered: titles run one or two lines, so
-        // without this the chips in a row ended up different heights with
-        // their emoji/label sitting at different offsets instead of centered.
-        Column(
+    val face = when {
+        item.claimed -> AppTheme.tokens.successContainer
+        claimable -> lerp(AppTheme.tokens.cardWarm, Color(0xFFFFE08A), 0.75f * pulse)
+        else -> AppTheme.tokens.cardWarm
+    }
+
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        // RaisedCard, not a flat Material one: 101 flat white squares on the
+        // textured page read as cut-out holes in the artwork rather than as
+        // chips sitting on it.
+        WarmCard(
+            onClick = onClick,
+            corner = 20.dp,
+            face = face,
+            border = borderColor,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(112.dp)
-                .padding(horizontal = 6.dp, vertical = 8.dp),
-            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .graphicsLayer {
+                    val s = 1f + 0.035f * pulse + bounce
+                    scaleX = s
+                    scaleY = s
+                }
+                .alpha(if (item.unlocked) 1f else 0.85f)
         ) {
-            Text(text = item.achievement.emoji, style = MaterialTheme.typography.headlineSmall)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(item.achievement.titleRes),
-                style = MaterialTheme.typography.labelSmall,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            when {
-                // Still chasing it — the number that matters here is how
-                // close, not what it eventually pays.
-                !item.unlocked -> Text(
-                    text = stringResource(
-                        R.string.achievement_progress_format,
-                        item.currentValue.coerceAtMost(item.achievement.target),
-                        item.achievement.target
-                    ),
+            // Fixed height + both axes centered: titles run one or two lines, so
+            // without this the chips in a row ended up different heights with
+            // their emoji/label sitting at different offsets instead of centered.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(126.dp)
+                    .padding(horizontal = 6.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(text = item.achievement.emoji, style = MaterialTheme.typography.headlineSmall)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(item.achievement.titleRes),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    modifier = Modifier.fillMaxWidth()
                 )
-                claimable -> Text(
-                    text = stringResource(R.string.achievement_claim_button),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = AppTheme.tokens.gold
-                )
-                else -> Text(
+                Spacer(modifier = Modifier.height(2.dp))
+                // Status line: how close (locked), a call to action (earned),
+                // or a check (collected).
+                when {
+                    !item.unlocked -> Text(
+                        text = stringResource(
+                            R.string.achievement_progress_format,
+                            item.currentValue.coerceAtMost(item.achievement.target),
+                            item.achievement.target
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    claimable -> Text(
+                        text = stringResource(R.string.achievement_claim_button),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFFB8740A)
+                    )
+                    else -> Text(
+                        text = "✓",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = AppTheme.tokens.success
+                    )
+                }
+                // Reward line on EVERY chip, so what each one pays is never a
+                // mystery — gold in yellow, XP in the accent colour.
+                Text(
                     text = rewardText(item.achievement),
                     style = MaterialTheme.typography.labelSmall,
-                    color = AppTheme.tokens.success
+                    fontWeight = FontWeight.Bold,
+                    color = rewardColor(item.achievement)
                 )
             }
+        }
+        if (burst.value > 0f) {
+            Text(
+                text = rewardText(item.achievement),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = rewardColor(item.achievement),
+                modifier = Modifier
+                    .offset(y = (-56 * burst.value).dp)
+                    .alpha(1f - burst.value)
+                    .graphicsLayer {
+                        val s = 1f + 0.2f * burst.value
+                        scaleX = s
+                        scaleY = s
+                    }
+            )
         }
     }
 }

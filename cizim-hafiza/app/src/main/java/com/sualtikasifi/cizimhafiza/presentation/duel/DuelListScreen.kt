@@ -19,6 +19,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.text.style.TextOverflow
+import com.sualtikasifi.cizimhafiza.domain.model.FriendRequest
+import com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,6 +54,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 import com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance
 import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
 
+
 @Composable
 fun DuelListScreen(
     onBack: () -> Unit,
@@ -56,7 +62,7 @@ fun DuelListScreen(
     viewModel: DuelListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var resultDuel by remember { mutableStateOf<Duel?>(null) }
+    var resultDuel by remember { mutableStateOf<RecentDuel?>(null) }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
@@ -70,54 +76,73 @@ fun DuelListScreen(
             // Clears the floating back button (see ScreenTopActions).
             contentPadding = PaddingValues(top = TopActionsClearance, bottom = 16.dp)
         ) {
+            // --- Incoming: challenges to play + friend requests to answer ---
             item {
-                Text(text = stringResource(R.string.duel_list_incoming_title), style = MaterialTheme.typography.titleMedium)
+                Text(text = stringResource(R.string.duel_list_requests_title), style = MaterialTheme.typography.titleMedium)
             }
-            if (uiState.incoming.isEmpty()) {
+            if (uiState.isLoading) {
+                item { CircularProgressIndicator(modifier = Modifier.padding(16.dp).size(28.dp)) }
+            } else if (uiState.incoming.isEmpty() && uiState.friendRequests.isEmpty()) {
                 item {
-                    EmptyState(
-                        emoji = "📭",
-                        message = stringResource(R.string.duel_list_incoming_empty)
-                    )
+                    EmptyState(emoji = "📭", message = stringResource(R.string.duel_list_requests_empty))
                 }
             } else {
-                items(uiState.incoming, key = { it.id }) { duel ->
+                items(uiState.incoming, key = { "duel_" + it.id }) { duel ->
                     IncomingDuelCard(duel = duel, onClick = { onPlayDuel(duel.id) })
+                }
+                items(uiState.friendRequests, key = { "req_" + it.uid }) { request ->
+                    FriendRequestCard(
+                        request = request,
+                        busy = uiState.answeringRequestUid == request.uid,
+                        onAccept = { viewModel.acceptFriendRequest(request) },
+                        onDecline = { viewModel.declineFriendRequest(request) }
+                    )
                 }
             }
 
+            // --- Recent: finished duels, both directions ---
+            item {
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(text = stringResource(R.string.duel_list_recent_title), style = MaterialTheme.typography.titleMedium)
+            }
+            if (!uiState.isLoading && uiState.recent.isEmpty()) {
+                item {
+                    EmptyState(emoji = "🏁", message = stringResource(R.string.duel_list_recent_empty))
+                }
+            } else {
+                items(uiState.recent, key = { "recent_" + it.duel.id }) { recent ->
+                    RecentDuelCard(
+                        recent = recent,
+                        onClick = {
+                            resultDuel = recent
+                            if (recent.isNew) viewModel.markSeen(recent.duel.id)
+                        },
+                        onDelete = { viewModel.deleteDuel(recent.duel.id) }
+                    )
+                }
+            }
+
+            // --- Sent and still waiting ---
             item {
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(text = stringResource(R.string.duel_list_sent_title), style = MaterialTheme.typography.titleMedium)
             }
-            if (uiState.sent.isEmpty()) {
+            if (!uiState.isLoading && uiState.pendingSent.isEmpty()) {
                 item {
-                    EmptyState(
-                        emoji = "📤",
-                        message = stringResource(R.string.duel_list_sent_empty)
-                    )
+                    EmptyState(emoji = "📤", message = stringResource(R.string.duel_list_sent_empty))
                 }
             } else {
-                items(uiState.sent, key = { it.id }) { duel ->
-                    SentDuelCard(
-                        duel = duel,
-                        onClick = {
-                            if (duel.status == DuelStatus.COMPLETE) {
-                                resultDuel = duel
-                                if (!duel.seenByChallenger) viewModel.markSeen(duel.id)
-                            }
-                        },
-                        onDelete = { viewModel.deleteDuel(duel.id) }
-                    )
+                items(uiState.pendingSent, key = { "sent_" + it.id }) { duel ->
+                    PendingSentCard(duel = duel, onDelete = { viewModel.deleteDuel(duel.id) })
                 }
             }
         }
-        ScreenTopActions(onBack = onBack, modifier = Modifier.align(Alignment.TopStart))
+        ScreenTopActions(onBack = onBack, title = stringResource(R.string.duel_list_title), modifier = Modifier.align(Alignment.TopStart))
         }
     }
 
-    resultDuel?.let { duel ->
-        DuelResultDialog(duel = duel, onDismiss = { resultDuel = null })
+    resultDuel?.let { recent ->
+        DuelResultDialog(recent = recent, onDismiss = { resultDuel = null })
     }
 }
 
@@ -143,7 +168,38 @@ private fun IncomingDuelCard(duel: Duel, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SentDuelCard(duel: Duel, onClick: () -> Unit, onDelete: () -> Unit) {
+private fun FriendRequestCard(request: FriendRequest, busy: Boolean, onAccept: () -> Unit, onDecline: () -> Unit) {
+    RaisedCard(corner = 18.dp, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            IconWell(icon = Icons.Filled.PersonAdd)
+            Text(
+                text = stringResource(R.string.duel_list_friend_request, request.nickname),
+                style = MaterialTheme.typography.titleSmall,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            if (busy) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            } else {
+                TextButton(onClick = onDecline) {
+                    Text(
+                        text = stringResource(R.string.friends_request_decline),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                SecondaryButton(text = stringResource(R.string.friends_request_accept), onClick = onAccept)
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentDuelCard(recent: RecentDuel, onClick: () -> Unit, onDelete: () -> Unit) {
     RaisedCard(corner = 18.dp, onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(14.dp),
@@ -151,28 +207,26 @@ private fun SentDuelCard(duel: Duel, onClick: () -> Unit, onDelete: () -> Unit) 
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             IconWell(
-                icon = if (duel.status == DuelStatus.AWAITING_OPPONENT) Icons.Filled.HourglassEmpty else Icons.Filled.EmojiEvents,
-                tint = when {
-                    duel.status == DuelStatus.AWAITING_OPPONENT -> MaterialTheme.colorScheme.onSurfaceVariant
-                    duel.challengerWon == true -> AppTheme.tokens.success
-                    duel.challengerWon == false -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                icon = Icons.Filled.EmojiEvents,
+                tint = when (recent.iWon) {
+                    true -> AppTheme.tokens.success
+                    false -> MaterialTheme.colorScheme.error
+                    null -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
             )
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = duel.opponentName, style = MaterialTheme.typography.titleSmall)
+                Text(text = recent.otherName, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    text = when {
-                        duel.status == DuelStatus.AWAITING_OPPONENT -> stringResource(R.string.duel_list_status_waiting)
-                        duel.challengerWon == true -> stringResource(R.string.duel_list_status_won)
-                        duel.challengerWon == false -> stringResource(R.string.duel_list_status_lost)
-                        else -> stringResource(R.string.duel_list_status_tied)
-                    },
+                    text = when (recent.iWon) {
+                        true -> stringResource(R.string.duel_list_status_won)
+                        false -> stringResource(R.string.duel_list_status_lost)
+                        null -> stringResource(R.string.duel_list_status_tied)
+                    } + "  ·  " + stringResource(R.string.duel_list_score_line, recent.myScore, recent.otherScore),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            if (!duel.seenByChallenger && duel.status == DuelStatus.COMPLETE) {
+            if (recent.isNew) {
                 Box(
                     modifier = Modifier
                         .size(8.dp)
@@ -187,12 +241,36 @@ private fun SentDuelCard(duel: Duel, onClick: () -> Unit, onDelete: () -> Unit) 
 }
 
 @Composable
-private fun DuelResultDialog(duel: Duel, onDismiss: () -> Unit) {
+private fun PendingSentCard(duel: Duel, onDelete: () -> Unit) {
+    RaisedCard(corner = 18.dp, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            IconWell(icon = Icons.Filled.HourglassEmpty, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = duel.opponentName, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = stringResource(R.string.duel_list_status_waiting),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.duel_list_delete), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DuelResultDialog(recent: RecentDuel, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                when (duel.challengerWon) {
+                when (recent.iWon) {
                     true -> stringResource(R.string.duel_list_status_won)
                     false -> stringResource(R.string.duel_list_status_lost)
                     null -> stringResource(R.string.duel_list_status_tied)
@@ -201,8 +279,8 @@ private fun DuelResultDialog(duel: Duel, onDismiss: () -> Unit) {
         },
         text = {
             Column {
-                Text(stringResource(R.string.duel_result_score_format, duel.challengerName, duel.challengerScore))
-                Text(stringResource(R.string.duel_result_score_format, duel.opponentName, duel.opponentScore ?: 0))
+                Text(stringResource(R.string.duel_result_score_format, stringResource(R.string.quick_match_you), recent.myScore))
+                Text(stringResource(R.string.duel_result_score_format, recent.otherName, recent.otherScore))
             }
         },
         confirmButton = {

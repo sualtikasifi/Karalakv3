@@ -367,6 +367,8 @@ fun WaitingRoomScreen(
         LobbyInviteSheet(
             friends = friends,
             sendingToUid = inviteState.sendingToUid,
+            sentToUids = inviteState.sentToUids,
+            message = inviteState.message?.asString(),
             onInvite = viewModel::inviteFriendToRoom,
             onDismiss = { invitePickerOpen = false }
         )
@@ -882,6 +884,8 @@ private fun EmptySlotCard(onInvite: (() -> Unit)? = null, modifier: Modifier = M
 private fun LobbyInviteSheet(
     friends: List<Friend>,
     sendingToUid: String?,
+    sentToUids: Set<String>,
+    message: String?,
     onInvite: (Friend) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -892,6 +896,11 @@ private fun LobbyInviteSheet(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
+            // The sheet is its own window with a scrim over the lobby, so the
+            // result has to be said in here too or it is hidden while open.
+            message?.let {
+                TintedBadge(text = it, modifier = Modifier.padding(bottom = 10.dp))
+            }
             if (friends.isEmpty()) {
                 EmptyState(
                     emoji = "🤝",
@@ -918,6 +927,13 @@ private fun LobbyInviteSheet(
                                 )
                                 if (sendingToUid == friend.uid) {
                                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                } else if (friend.uid in sentToUids) {
+                                    Text(
+                                        text = stringResource(R.string.online_invite_sent_short),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        color = AppTheme.tokens.success
+                                    )
                                 } else {
                                     SecondaryButton(
                                         text = stringResource(R.string.online_invite_send),

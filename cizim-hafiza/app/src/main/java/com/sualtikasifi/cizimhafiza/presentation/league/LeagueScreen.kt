@@ -437,12 +437,12 @@ private fun RewardSwatch(reward: LeagueReward.Frame, size: androidx.compose.ui.u
 private fun MonthlyBonusRow(modifier: Modifier = Modifier) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = modifier) {
         TintedBadge(
-            text = stringResource(R.string.league_reward_bonus_gold, GameConstants.LEAGUE_MONTHLY_GOLD),
+            text = stringResource(R.string.league_reward_bonus_gold, java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag("tr")).format(GameConstants.LEAGUE_MONTHLY_GOLD)),
             container = AppTheme.tokens.gold.copy(alpha = 0.18f),
             content = AppTheme.tokens.gold
         )
         TintedBadge(
-            text = stringResource(R.string.league_reward_bonus_xp, GameConstants.LEAGUE_MONTHLY_XP),
+            text = stringResource(R.string.league_reward_bonus_xp, java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag("tr")).format(GameConstants.LEAGUE_MONTHLY_XP)),
             container = MaterialTheme.colorScheme.primaryContainer,
             content = MaterialTheme.colorScheme.onPrimaryContainer
         )

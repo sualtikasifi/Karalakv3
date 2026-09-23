@@ -48,6 +48,9 @@ object Screen {
     const val Account = "account"
     const val Tutorial = "tutorial"
 
+    /** The tutorial opened again from Settings — finishing or skipping goes back there, not to a fresh Main Menu. */
+    const val TutorialReplay = "tutorial_replay"
+
     // worldId/levelIndex are optional query args (same pattern as OnlineJoinRoom's
     // ?roomCode= below) — present only when this game was launched from the level
     // map, so GameViewModel can record level progress; absent for free play.

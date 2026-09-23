@@ -41,12 +41,16 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
     // synchronized: every AdMob SDK callback that touches this is delivered
     // on the main thread, same as every call site here.
     private var cachedInterstitial: InterstitialAd? = null
+    private var cachedInterstitialAt = 0L
+    private var interstitialLoading = false
+    private var interstitialRetries = 0
 
     // Same single-threaded (main-thread callback) reasoning as
     // cachedInterstitial. rewardedLoading keeps a second preload from being
     // fired while one is already in flight, which would otherwise happen
     // every time a match ends near a hint request.
     private var cachedRewarded: RewardedAd? = null
+    private var cachedRewardedAt = 0L
     private var rewardedLoading = false
 
     // initializeIfConsented can be reached more than once (a consent form
@@ -90,6 +94,28 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
     }
 
     /**
+     * Makes sure BOTH ad types are sitting ready. Safe to call as often as
+     * wanted — it is a no-op for anything already cached and fresh. Called
+     * when a game screen opens, so by the time the player taps "+10 sn" (or
+     * finishes a round) the ad is already in memory instead of being fetched
+     * on the spot, and so an ad that sat cached past AdMob's ~1 hour expiry
+     * is replaced before it can fail to show.
+     */
+    fun warmUp() {
+        if (!GameConstants.ADMOB_ENABLED || !initialized) return
+        dropStale()
+        preloadInterstitial()
+        preloadRewarded()
+    }
+
+    /** Ads expire about an hour after loading — an expired one fails at show time, the worst moment to find out. */
+    private fun dropStale() {
+        val now = System.currentTimeMillis()
+        if (cachedInterstitial != null && now - cachedInterstitialAt > AD_FRESH_MILLIS) cachedInterstitial = null
+        if (cachedRewarded != null && now - cachedRewardedAt > AD_FRESH_MILLIS) cachedRewarded = null
+    }
+
+    /**
      * Fetches an interstitial in the background and holds onto it until
      * [maybeShowInterstitial] consumes it. A no-op if one is already cached
      * or ads are disabled — safe to call opportunistically (called once at
@@ -97,18 +123,31 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
      * cache is topped back up right after being spent).
      */
     private fun preloadInterstitial() {
-        if (!GameConstants.ADMOB_ENABLED || cachedInterstitial != null) return
+        if (!GameConstants.ADMOB_ENABLED || cachedInterstitial != null || interstitialLoading) return
+        interstitialLoading = true
         InterstitialAd.load(
             context,
             interstitialUnitId,
             AdRequest.Builder().build(),
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
+                    interstitialLoading = false
+                    interstitialRetries = 0
                     cachedInterstitial = ad
+                    cachedInterstitialAt = System.currentTimeMillis()
                 }
 
                 override fun onAdFailedToLoad(adError: LoadAdError) {
+                    interstitialLoading = false
                     Log.d(TAG, "Interstitial preload failed: ${adError.message}")
+                    // Backed-off retry, same as the rewarded one: a single
+                    // failed fill used to leave the cache empty until the
+                    // next game happened to top it up.
+                    if (interstitialRetries < PRELOAD_RETRIES) {
+                        val delayMillis = RETRY_BASE_MILLIS shl interstitialRetries
+                        interstitialRetries++
+                        mainHandler.postDelayed({ preloadInterstitial() }, delayMillis)
+                    }
                 }
             }
         )
@@ -120,12 +159,16 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
      * only falls back to an on-demand load (with its multi-second delay) on
      * the rare occasion nothing was preloaded yet. A load failure or a
      * disabled flag both fall straight through to [onDismissed] so the
-     * result screen is never blocked on an ad. Only actually shows every
-     * [INTERSTITIAL_EVERY_N_MATCHES]th call — single-player and online
-     * matches share one counter, persisted in SharedPreferences so the
-     * cadence survives an app restart — unless [force] skips that count
-     * entirely, for the one placement (the daily challenge) that's meant to
-     * show every time regardless of the shared cadence.
+     * result screen is never blocked on an ad.
+     *
+     * Frequency — the balance between revenue and AdMob's invalid-traffic /
+     * "too many interstitials" scrutiny: one ad after every
+     * [INTERSTITIAL_EVERY_N_GAMES]rd finished game (Hızlı Eşleş, offline and
+     * online share one counter, persisted so it survives an app restart),
+     * but never closer than [MIN_INTERSTITIAL_GAP_MILLIS] to the previous ad,
+     * so a run of very short games can't stack them. [force] skips both
+     * checks for the one placement (the daily challenge, once a day) meant
+     * to show every time.
      */
     fun maybeShowInterstitial(activity: Activity, onDismissed: () -> Unit, force: Boolean = false) {
         if (!GameConstants.ADMOB_ENABLED) {
@@ -133,19 +176,22 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
             return
         }
         if (!force) {
-            val matchCount = prefs.getInt(KEY_MATCH_COUNT, 0) + 1
-            prefs.edit().putInt(KEY_MATCH_COUNT, matchCount).apply()
-            if (matchCount % INTERSTITIAL_EVERY_N_MATCHES != 0) {
-                preloadInterstitial() // keep the cache warm for next time either way
+            val games = prefs.getInt(KEY_GAMES_SINCE_AD, 0) + 1
+            prefs.edit().putInt(KEY_GAMES_SINCE_AD, games).apply()
+            val sinceLast = System.currentTimeMillis() - prefs.getLong(KEY_LAST_AD_AT, 0L)
+            if (games < INTERSTITIAL_EVERY_N_GAMES || sinceLast < MIN_INTERSTITIAL_GAP_MILLIS) {
+                warmUp() // keep the cache warm for next time either way
                 onDismissed()
                 return
             }
         }
 
+        dropStale()
         val preloaded = cachedInterstitial
         if (preloaded != null) {
             cachedInterstitial = null
             preloaded.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdShowedFullScreenContent() = recordInterstitialShown()
                 override fun onAdDismissedFullScreenContent() {
                     onDismissed()
                     preloadInterstitial()
@@ -169,6 +215,7 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
                     ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                        override fun onAdShowedFullScreenContent() = recordInterstitialShown()
                         override fun onAdDismissedFullScreenContent() = onDismissed()
                         override fun onAdFailedToShowFullScreenContent(adError: AdError) = onDismissed()
                     }
@@ -183,6 +230,14 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
         )
     }
 
+    /** Only an ad that actually reached the screen resets the counters — a failed one must not cost the player their next chance. */
+    private fun recordInterstitialShown() {
+        prefs.edit()
+            .putInt(KEY_GAMES_SINCE_AD, 0)
+            .putLong(KEY_LAST_AD_AT, System.currentTimeMillis())
+            .apply()
+    }
+
     /**
      * Fetches a rewarded ad in the background and holds it until
      * [maybeShowRewarded] consumes it. Same rationale as
@@ -195,8 +250,8 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
     private var rewardedRetries = 0
 
     private fun scheduleRewardedPreloadRetry() {
-        if (rewardedRetries >= REWARDED_PRELOAD_RETRIES) return
-        val delayMillis = REWARDED_RETRY_BASE_MILLIS shl rewardedRetries
+        if (rewardedRetries >= PRELOAD_RETRIES) return
+        val delayMillis = RETRY_BASE_MILLIS shl rewardedRetries
         rewardedRetries++
         mainHandler.postDelayed({ preloadRewarded() }, delayMillis)
     }
@@ -213,6 +268,7 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
                     rewardedLoading = false
                     rewardedRetries = 0
                     cachedRewarded = ad
+                    cachedRewardedAt = System.currentTimeMillis()
                 }
 
                 override fun onAdFailedToLoad(adError: LoadAdError) {
@@ -278,6 +334,7 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
             ad.show(activity) { earned = true }
         }
 
+        dropStale()
         val preloaded = cachedRewarded
         if (preloaded != null) {
             cachedRewarded = null
@@ -303,12 +360,21 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
     private companion object {
         const val TAG = "AdManager"
         const val PREFS_NAME = "ad_manager_prefs"
-        const val KEY_MATCH_COUNT = "interstitial_match_count"
-        const val INTERSTITIAL_EVERY_N_MATCHES = 3
+        const val KEY_GAMES_SINCE_AD = "games_since_interstitial"
+        const val KEY_LAST_AD_AT = "last_interstitial_at"
 
-        /** How many times a failed rewarded preload is retried before giving up for this session. */
-        const val REWARDED_PRELOAD_RETRIES = 4
-        const val REWARDED_RETRY_BASE_MILLIS = 15_000L
+        /** Every 3rd finished game — see [maybeShowInterstitial]. */
+        const val INTERSTITIAL_EVERY_N_GAMES = 3
+
+        /** Never two interstitials closer together than this, however short the games between them. */
+        const val MIN_INTERSTITIAL_GAP_MILLIS = 3 * 60 * 1000L
+
+        /** Cached ads are dropped after this — AdMob expires them at about an hour. */
+        const val AD_FRESH_MILLIS = 55 * 60 * 1000L
+
+        /** How many times a failed preload is retried before giving up for this session. */
+        const val PRELOAD_RETRIES = 4
+        const val RETRY_BASE_MILLIS = 15_000L
     }
 }
 

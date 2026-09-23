@@ -116,6 +116,26 @@ class DuelRepositoryImpl @Inject constructor(
                 }
         }
 
+    override fun observeCompletedReceivedDuels(): Flow<List<Duel>> =
+        firestoreFlow("duels:receivedCompleted") { emit, onError ->
+            val uid = auth.currentUser?.uid
+            if (uid == null) {
+                emit(emptyList())
+                return@firestoreFlow duels.limit(0).addSnapshotListener { _, _ -> }
+            }
+            // Equality filters only (no composite index needed), sorted here.
+            duels
+                .whereEqualTo("opponentUid", uid)
+                .whereEqualTo("status", DuelStatus.COMPLETE.name)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        onError(error)
+                        return@addSnapshotListener
+                    }
+                    emit(snapshot?.documents.orEmpty().mapNotNull { it.toDuel() }.newestFirst())
+                }
+        }
+
     override fun observeSentDuels(): Flow<List<Duel>> =
         firestoreFlow("duels:sent") { emit, onError ->
             val uid = auth.currentUser?.uid
