@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.StarRate
 import androidx.compose.material.icons.filled.MusicNote
@@ -189,6 +190,18 @@ fun SettingsScreen(
                 // failure callback to fall back from, so a tap here read as
                 // a dead button. This is deterministic on every install.
                 onClick = { activity?.let(AppReviewLauncher::openStoreListing) }
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            NavRow(
+                icon = Icons.Filled.PrivacyTip,
+                label = stringResource(R.string.settings_privacy_policy),
+                onClick = {
+                    runCatching {
+                        activity?.startActivity(
+                            android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(PRIVACY_POLICY_URL))
+                        )
+                    }
+                }
             )
 
             // The build actually running, printed where anyone can find it.
@@ -401,3 +414,5 @@ private fun SettingGridCell(
         }
     }
 }
+
+private const val PRIVACY_POLICY_URL = "https://sualtikasifi.github.io/app-ads/"

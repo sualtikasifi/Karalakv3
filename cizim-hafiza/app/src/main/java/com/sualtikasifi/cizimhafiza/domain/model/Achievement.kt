@@ -511,5 +511,6 @@ enum class Achievement(
 
     /** Only meaningful when [rewardType] is GOLD — see [xpReward]. */
     val goldReward: Int
-        get() = (xpReward / 2).coerceAtLeast(15)
+        // Rounded to the nearest 5 so the chip reads "+35", never "+37".
+        get() = ((xpReward / 2 + 2) / 5 * 5).coerceAtLeast(15)
 }

@@ -769,7 +769,7 @@ private fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, c
                 }
                 Text(
                     text = when {
-                        ready -> stringResource(R.string.chests_open_button).uppercase(java.util.Locale.getDefault()) + "!"
+                        ready -> stringResource(R.string.chests_open_button).uppercase(androidx.compose.ui.text.intl.Locale.current.platformLocale) + "!"
                         // Down to the second: this is what the player watches tick.
                         unlocking -> formatCountdown(chest.remainingMillis(nowMillis))
                         else -> stringResource(R.string.chest_duration_hours, tier.durationHours())
@@ -794,11 +794,9 @@ private fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, c
 private fun FitText(text: String, color: Color, maxSp: Float = 12f, minSp: Float = 6f, twoLines: Boolean = false) {
     val measurer = androidx.compose.ui.text.rememberTextMeasurer()
     // A multi-word name breaks at the space nearest its middle, so "Kurşun Halka" becomes "Kurşun / Halka".
-    val shown = if (twoLines && text.contains(' ')) {
-        val mid = text.length / 2
-        val cut = text.indices.filter { text[it] == ' ' }.minByOrNull { kotlin.math.abs(it - mid) }!!
-        text.substring(0, cut).trim() + "\n" + text.substring(cut + 1).trim()
-    } else text
+    val mid = text.length / 2
+    val cut = if (twoLines) text.indices.filter { text[it] == ' ' }.minByOrNull { kotlin.math.abs(it - mid) } else null
+    val shown = if (cut != null) text.substring(0, cut).trim() + "\n" + text.substring(cut + 1).trim() else text
     val lines = if (shown.contains('\n')) 2 else 1
     BoxWithConstraints {
         val base = androidx.compose.ui.text.TextStyle(

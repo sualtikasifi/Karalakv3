@@ -669,7 +669,7 @@ private fun DailyChallengeCard(state: DailyChallengeState, onPlay: () -> Unit, c
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = stringResource(R.string.daily_play_now).uppercase(java.util.Locale.getDefault()),
+                    text = stringResource(R.string.daily_play_now).uppercase(androidx.compose.ui.text.intl.Locale.current.platformLocale),
                     fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
                     fontSize = 14.sp,

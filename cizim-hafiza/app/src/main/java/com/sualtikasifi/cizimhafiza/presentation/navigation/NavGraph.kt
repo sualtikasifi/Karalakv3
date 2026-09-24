@@ -5,7 +5,15 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import android.app.Activity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
+import android.view.ViewTreeObserver
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowCompat
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -79,6 +87,28 @@ fun CizimHafizaNavGraph(
             }
             inviteViewModel.onNavigatedToWaitingRoom()
         }
+    }
+
+    // Status-bar icons follow the screen behind them: dark on the cream
+    // screens, light on the Store's dark wood photo. Set here on every route
+    // change rather than once in MainActivity, because a Dialog window can
+    // leave the icons light on a cream screen after it closes.
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val onDarkScreen = backStackEntry?.destination?.route == Screen.Store
+    val activity = LocalContext.current as? Activity
+    val applyStatusBarIcons = {
+        activity?.window?.let { window ->
+            WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = !onDarkScreen
+        }
+    }
+    SideEffect { applyStatusBarIcons() }
+    // A closing Dialog hands focus back without any recomposition here, so
+    // re-apply whenever the window regains focus too.
+    val rootView = LocalView.current
+    DisposableEffect(rootView, onDarkScreen) {
+        val listener = ViewTreeObserver.OnWindowFocusChangeListener { hasFocus -> if (hasFocus) applyStatusBarIcons() }
+        rootView.viewTreeObserver.addOnWindowFocusChangeListener(listener)
+        onDispose { rootView.viewTreeObserver.removeOnWindowFocusChangeListener(listener) }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {

@@ -470,7 +470,7 @@ private fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modif
             painter = painterResource(R.drawable.store_tab_plaque),
             contentDescription = null,
             contentScale = ContentScale.FillBounds,
-            alpha = if (selected) 1f else 0.5f,
+            alpha = if (selected) 1f else 0.42f,
             modifier = Modifier.matchParentSize()
         )
         Text(
@@ -483,6 +483,18 @@ private fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modif
             maxLines = 1,
             textAlign = TextAlign.Center
         )
+        // The plaque's glow alone was too easy to miss on the busy wood photo.
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 7.dp)
+                    .width(30.dp)
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color(0xFFFFC94D))
+            )
+        }
     }
 }
 

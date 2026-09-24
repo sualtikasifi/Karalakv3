@@ -56,10 +56,11 @@ object ChestReadyNotifier {
     fun sync(context: Context, slots: List<Chest?>) {
         val now = System.currentTimeMillis()
         val unlocking = slots.firstOrNull { it?.unlockStartedAtMillis != null && !it.isReady(now) }
-        if (unlocking == null) {
+        val startedAt = unlocking?.unlockStartedAtMillis
+        if (unlocking == null || startedAt == null) {
             cancel(context)
         } else {
-            schedule(context, unlocking.unlockStartedAtMillis!! + unlocking.tier.unlockDurationMillis, unlocking.tier)
+            schedule(context, startedAt + unlocking.tier.unlockDurationMillis, unlocking.tier)
         }
     }
 

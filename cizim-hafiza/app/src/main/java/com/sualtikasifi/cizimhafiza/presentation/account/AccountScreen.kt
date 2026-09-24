@@ -507,14 +507,15 @@ private fun NicknameSaveButton(canSave: Boolean, saveState: NicknameSaveState, o
  */
 @Composable
 private fun rememberBackupTimestamp(millis: Long): String {
-    val context = LocalContext.current
-    return remember(millis) {
-        val timeOnly = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(millis))
+    val timeOnly = remember(millis) { SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(millis)) }
+    val daysAgo = remember(millis) {
         val day = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
-        when (LocalDate.now().toEpochDay() - day.toEpochDay()) {
-            0L -> context.getString(R.string.account_backup_today, timeOnly)
-            1L -> context.getString(R.string.account_backup_yesterday, timeOnly)
-            else -> SimpleDateFormat("d MMMM yyyy, HH:mm", Locale.getDefault()).format(Date(millis))
-        }
+        LocalDate.now().toEpochDay() - day.toEpochDay()
+    }
+    val fullDate = remember(millis) { SimpleDateFormat("d MMMM yyyy, HH:mm", Locale.getDefault()).format(Date(millis)) }
+    return when (daysAgo) {
+        0L -> stringResource(R.string.account_backup_today, timeOnly)
+        1L -> stringResource(R.string.account_backup_yesterday, timeOnly)
+        else -> fullDate
     }
 }

@@ -145,7 +145,7 @@ class AuthRepositoryImpl @Inject constructor(
         val credential = googleCredential().getOrElse { return Result.failure(it) }
         return runCatching {
             ensureSignedIn()
-            auth.currentUser!!.linkWithCredential(credential).await()
+            checkNotNull(auth.currentUser) { "No user after ensureSignedIn" }.linkWithCredential(credential).await()
             SignInOutcome.LinkedToDevice
         }.recoverCatching { error ->
             if (error !is FirebaseAuthUserCollisionException) throw error

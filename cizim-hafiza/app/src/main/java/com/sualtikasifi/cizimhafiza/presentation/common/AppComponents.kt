@@ -48,6 +48,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -244,11 +246,18 @@ private fun ChunkyButton(
                 Icon(icon, contentDescription = null, tint = content.copy(alpha = alpha), modifier = Modifier.size(21.dp))
                 Spacer(modifier = Modifier.width(9.dp))
             }
+            // A long label used to be clipped mid-word; shrink it a step at a
+            // time until it fits instead (the streak-rescue button hit this).
+            var fontScale by remember(text) { mutableFloatStateOf(1f) }
             Text(
                 text = text,
                 style = MaterialTheme.typography.titleLarge,
+                fontSize = MaterialTheme.typography.titleLarge.fontSize * fontScale,
                 color = content.copy(alpha = alpha),
-                maxLines = 1
+                maxLines = 1,
+                softWrap = false,
+                onTextLayout = { if (it.didOverflowWidth && fontScale > 0.6f) fontScale *= 0.92f },
+                modifier = Modifier.weight(1f, fill = false)
             )
             if (trailingIcon != null) {
                 Spacer(modifier = Modifier.width(9.dp))

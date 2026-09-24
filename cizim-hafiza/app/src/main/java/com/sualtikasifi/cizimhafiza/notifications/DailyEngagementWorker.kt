@@ -79,6 +79,7 @@ class DailyEngagementWorker @AssistedInject constructor(
                 GameConstants.LOST_XP_WARNING_DECAY_PER_DAY
             ).coerceAtLeast(0)
 
+        val nextTier = progress.nextTier
         val text = when {
             settingsRepository.lastPlayedEpochDay < 0 -> null // never played — nothing to remind them of yet
             daily.isAvailableToday -> NotificationMessages.dailyChallengeWaiting(applicationContext, today)
@@ -86,11 +87,11 @@ class DailyEngagementWorker @AssistedInject constructor(
                 NotificationMessages.lostXpWarning(applicationContext, today, lostXp)
             daysSincePlayed >= 3 -> NotificationMessages.inactivityReminder(applicationContext, today)
             settingsRepository.currentStreak >= 2 -> NotificationMessages.streakReminder(applicationContext, today)
-            progress.nextTier != null && progress.progressFraction >= 0.7f ->
+            nextTier != null && progress.progressFraction >= 0.7f ->
                 NotificationMessages.rankNudge(
                     context = applicationContext,
                     date = today,
-                    rankName = applicationContext.getString(progress.nextTier!!.rank.nameRes),
+                    rankName = applicationContext.getString(nextTier.rank.nameRes),
                     pointsRemaining = progress.xpToNextTier
                 )
             else -> NotificationMessages.weeklyVariety(applicationContext, today)

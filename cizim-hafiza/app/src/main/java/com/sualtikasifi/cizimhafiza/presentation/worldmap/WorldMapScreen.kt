@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
@@ -180,23 +181,33 @@ private fun WorldNode(card: WorldCardState, onClick: () -> Unit) {
             }
             }
         }
-        Text(
-            text = stringResource(card.world.displayNameRes),
-            style = MaterialTheme.typography.labelLarge,
-            textAlign = TextAlign.Center,
-            color = if (card.unlocked) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 6.dp)
-        )
-        Text(
-            text = if (card.unlocked) {
-                "${stringResource(R.string.world_progress_format, card.completedLevels)} · ⭐${card.totalStars}"
-            } else {
-                stringResource(R.string.world_locked_message)
-            },
-            style = MaterialTheme.typography.bodySmall,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        // The dashed path runs behind these labels; a soft plate keeps the
+        // line from striking through the words.
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .padding(top = 4.dp)
+                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.85f), RoundedCornerShape(12.dp))
+                .padding(horizontal = 10.dp, vertical = 3.dp)
+        ) {
+            Text(
+                text = stringResource(card.world.displayNameRes),
+                style = MaterialTheme.typography.labelLarge,
+                textAlign = TextAlign.Center,
+                color = if (card.unlocked) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+            )
+            Text(
+                text = if (card.unlocked) {
+                    "${stringResource(R.string.world_progress_format, card.completedLevels)} · ⭐${card.totalStars}"
+                } else {
+                    stringResource(R.string.world_locked_message)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         if (card.isCurrent) {
             TintedBadge(
                 text = stringResource(R.string.map_current_position),

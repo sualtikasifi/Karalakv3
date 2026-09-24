@@ -1192,4 +1192,5 @@
     <string name="chest_detail_tap_to_start">Tap the button below to start its timer.</string>
     <string name="chest_detail_total">Unlock time: %1$d h</string>
     <string name="chest_detail_ready">Your chest is ready!</string>
+    <string name="settings_privacy_policy">Privacy Policy</string>
 </resources>
