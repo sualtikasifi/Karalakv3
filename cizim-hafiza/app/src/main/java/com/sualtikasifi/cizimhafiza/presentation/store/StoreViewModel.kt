@@ -21,7 +21,8 @@ import javax.inject.Inject
 @HiltViewModel
 class StoreViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
-    private val authRepository: com.sualtikasifi.cizimhafiza.domain.repository.AuthRepository
+    private val authRepository: com.sualtikasifi.cizimhafiza.domain.repository.AuthRepository,
+    private val adManager: com.sualtikasifi.cizimhafiza.ads.AdManager
 ) : ViewModel() {
 
     val gold: StateFlow<Int> = settingsRepository.goldBalance
@@ -42,6 +43,36 @@ class StoreViewModel @Inject constructor(
 
     val jokerCounts: StateFlow<Map<com.sualtikasifi.cizimhafiza.domain.model.JokerType, Int>> = settingsRepository.jokerCounts
     fun buyJoker(type: com.sualtikasifi.cizimhafiza.domain.model.JokerType, quantity: Int): Boolean = settingsRepository.purchaseJoker(type, quantity)
+
+    /**
+     * Today's free joker while it is still unclaimed (and ads exist at all),
+     * null once it has been taken — which is what removes its card from the
+     * store. Re-evaluated every minute so it reappears at midnight without the
+     * screen being reopened.
+     */
+    val dailyJoker: StateFlow<com.sualtikasifi.cizimhafiza.domain.model.JokerType?> = kotlinx.coroutines.flow.combine(
+        settingsRepository.dailyJokerDay,
+        kotlinx.coroutines.flow.flow { while (true) { emit(Unit); kotlinx.coroutines.delay(60_000) } }
+    ) { claimedDay, _ ->
+        val today = java.time.LocalDate.now().toEpochDay()
+        if (!com.sualtikasifi.cizimhafiza.util.GameConstants.ADMOB_ENABLED || claimedDay == today) null
+        else com.sualtikasifi.cizimhafiza.domain.model.DailyJoker.typeFor(today)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** Shows a rewarded ad and, only if it is earned, adds today's joker. [onNotice] gets a string resource for a short message. */
+    fun claimDailyJoker(activity: android.app.Activity, onNotice: (Int, Boolean) -> Unit) {
+        adManager.maybeShowRewarded(activity) { outcome ->
+            when (outcome) {
+                com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.EARNED -> {
+                    if (settingsRepository.claimDailyJoker() != null) {
+                        onNotice(com.sualtikasifi.cizimhafiza.R.string.store_daily_joker_claimed, false)
+                    }
+                }
+                com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.SKIPPED -> Unit
+                else -> onNotice(com.sualtikasifi.cizimhafiza.R.string.store_daily_joker_unavailable, true)
+            }
+        }
+    }
 
     fun equipPen(skin: PenSkin) = settingsRepository.setSelectedPenSkin(skin)
     fun equipFrame(frame: AvatarFrame) = settingsRepository.setSelectedAvatarFrame(frame)

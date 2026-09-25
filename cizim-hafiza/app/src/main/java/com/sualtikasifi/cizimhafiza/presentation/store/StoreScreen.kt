@@ -8,6 +8,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -106,7 +109,11 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
     val selectedFrame by viewModel.selectedFrameId.collectAsState()
     val jokerCounts by viewModel.jokerCounts.collectAsState()
 
+    // 0 = jokers, 1 = pens, 2 = frames. Jokers first so the free daily one is
+    // the first thing the store shows.
     var tab by remember { mutableStateOf(0) }
+    val dailyJoker by viewModel.dailyJoker.collectAsState()
+    val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
     var pending by remember { mutableStateOf<Pending?>(null) }
     var tryingPen by remember { mutableStateOf<PenSkin?>(null) }
     // The toast's own id changes on every fire, even for the same message
@@ -168,15 +175,15 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                             Spacer(modifier = Modifier.height(12.dp))
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            TabChip(stringResource(R.string.store_tab_pens), selected = tab == 0, modifier = Modifier.weight(1f)) { tab = 0 }
-                            TabChip(stringResource(R.string.store_tab_frames), selected = tab == 1, modifier = Modifier.weight(1f)) { tab = 1 }
-                            TabChip(stringResource(R.string.store_tab_jokers), selected = tab == 2, modifier = Modifier.weight(1f)) { tab = 2 }
+                            TabChip(stringResource(R.string.store_tab_jokers), selected = tab == 0, modifier = Modifier.weight(1f)) { tab = 0 }
+                            TabChip(stringResource(R.string.store_tab_pens), selected = tab == 1, modifier = Modifier.weight(1f)) { tab = 1 }
+                            TabChip(stringResource(R.string.store_tab_frames), selected = tab == 2, modifier = Modifier.weight(1f)) { tab = 2 }
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                     }
                 }
 
-                if (tab == 0) {
+                if (tab == 1) {
                     items(viewModel.pens) { skin ->
                         val id = StoreViewModel.penId(skin)
                         PenCard(
@@ -190,7 +197,15 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                             onTry = { tryingPen = skin }
                         )
                     }
-                } else if (tab == 2) {
+                } else if (tab == 0) {
+                    dailyJoker?.let { free ->
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            DailyJokerCard(
+                                type = free,
+                                onClaim = { activity?.let { viewModel.claimDailyJoker(it) { res, isError -> showToast(res, isError) } } }
+                            )
+                        }
+                    }
                     items(JokerType.entries, span = { GridItemSpan(maxLineSpan) }) { type ->
                         JokerCard(
                             type = type,
@@ -723,6 +738,85 @@ private fun ActionPill(text: String, container: Color, content: Color, onClick: 
 }
 
 /** One joker row: what it does, how many the player has, and two ways to buy (1, or a discounted bundle). */
+/**
+ * Today's free joker: art, name and a green "watch an ad" button. Shown only
+ * while unclaimed — once taken the card is simply gone until tomorrow's.
+ */
+@Composable
+private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
+    val shape = RoundedCornerShape(24.dp)
+    val glow = androidx.compose.animation.core.rememberInfiniteTransition(label = "daily-joker").animateFloat(
+        initialValue = 0.55f,
+        targetValue = 1f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            androidx.compose.animation.core.tween(900),
+            androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "daily-joker-glow"
+    )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .drawBehind {
+                drawRoundRect(
+                    color = Color(0xFFFFC94D).copy(alpha = 0.32f * glow.value),
+                    topLeft = androidx.compose.ui.geometry.Offset(-5.dp.toPx(), -5.dp.toPx()),
+                    size = androidx.compose.ui.geometry.Size(size.width + 10.dp.toPx(), size.height + 10.dp.toPx()),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(29.dp.toPx())
+                )
+            }
+            .clip(shape)
+            .background(Brush.verticalGradient(listOf(Color(0xFFFFF1CC), Color(0xFFFFDD8A))))
+            .border(2.5.dp, Color(0xFFF0B24E), shape)
+            .padding(14.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.store_daily_joker_tag),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 1.sp,
+            color = Color(0xFF8A4B00),
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(Color(0xFFFFC94D).copy(alpha = 0.55f))
+                .padding(horizontal = 10.dp, vertical = 3.dp)
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, 64.dp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = stringResource(type.labelRes()), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = Ink)
+                Text(text = stringResource(type.descRes()), style = MaterialTheme.typography.bodySmall, color = Ink.copy(alpha = 0.8f))
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Brush.verticalGradient(listOf(Color(0xFF3FBF63), Color(0xFF2E8B45))))
+                .clickable(onClick = onClaim)
+                .padding(horizontal = 16.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            androidx.compose.material3.Icon(
+                androidx.compose.material.icons.Icons.Filled.PlayCircle,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.store_daily_joker_action),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White
+            )
+        }
+    }
+}
+
 @Composable
 private fun JokerCard(
     type: JokerType,

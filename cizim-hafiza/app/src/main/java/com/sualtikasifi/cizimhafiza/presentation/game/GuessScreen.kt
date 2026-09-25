@@ -74,6 +74,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.sualtikasifi.cizimhafiza.R
 import kotlinx.coroutines.delay
 import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
@@ -238,23 +239,27 @@ fun GuessScreen(
 
                 // Revealed hints sit on the drawing itself instead of taking
                 // rows of their own below it — same reason as the feedback.
-                Row(
-                    modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    if (state.hintLetter != null) {
-                        // Capitalized the same way the word itself is displayed
-                        // everywhere else — a Turkish "i" has to become "İ", not "I".
-                        TintedBadge(
-                            text = stringResource(
-                                R.string.hint_first_letter,
-                                state.hintLetter.capitalizeForWordLanguage(wordLanguage)
-                            )
-                        )
-                    }
-                    state.letterCount?.let { count ->
-                        TintedBadge(text = stringResource(R.string.joker_letter_count_badge, count))
-                    }
+                //
+                // The letter-count joker draws one blank per letter, hangman
+                // style, with a gap between words. If the first-letter joker
+                // (or the ad hint) was used as well, that letter is written
+                // over the first blank. On its own the first letter keeps its
+                // plain "İlk harf: B" badge.
+                val blankGroups = state.letterGroups ?: state.letterCount?.let { listOf(it) }
+                val firstLetterShown = state.hintLetter?.capitalizeForWordLanguage(wordLanguage)
+                if (blankGroups != null) {
+                    LetterBlanks(
+                        groups = blankGroups,
+                        firstLetter = firstLetterShown,
+                        modifier = Modifier.align(Alignment.TopCenter).padding(horizontal = 12.dp, vertical = 10.dp)
+                    )
+                } else if (firstLetterShown != null) {
+                    // Capitalized the same way the word itself is displayed
+                    // everywhere else — a Turkish "i" has to become "İ", not "I".
+                    TintedBadge(
+                        text = stringResource(R.string.hint_first_letter, firstLetterShown),
+                        modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
+                    )
                 }
             }
 
@@ -383,6 +388,52 @@ fun GuessScreen(
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
+        }
+    }
+}
+
+/**
+ * The word as a row of blanks — one per letter, grouped by word — with an
+ * optional [firstLetter] written on the very first one. Wraps onto further
+ * lines for a long answer instead of running off the canvas.
+ */
+@Composable
+private fun LetterBlanks(groups: List<Int>, firstLetter: String?, modifier: Modifier = Modifier) {
+    val ink = MaterialTheme.colorScheme.primary
+    FlowRow(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f), RoundedCornerShape(16.dp))
+            .border(1.5.dp, ink.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        groups.forEachIndexed { groupIndex, length ->
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                repeat(length) { letterIndex ->
+                    val letter = if (groupIndex == 0 && letterIndex == 0) firstLetter else null
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(modifier = Modifier.width(20.dp).height(26.dp), contentAlignment = Alignment.BottomCenter) {
+                            if (letter != null) {
+                                Text(
+                                    text = letter,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                                    fontSize = 21.sp,
+                                    color = ink,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .width(20.dp)
+                                .height(3.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(ink)
+                        )
+                    }
+                }
+            }
         }
     }
 }

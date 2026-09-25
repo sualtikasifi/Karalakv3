@@ -274,6 +274,7 @@ class GameViewModel @Inject constructor(
     private var hintUsedThisMatch = false
     private var revealedHintLetter: String? = null
     private var revealedLetterCount: Int? = null
+    private var revealedLetterGroups: List<Int>? = null
     private var timeJokerUsedThisWord = false
     // Grows by HINT_BONUS_SECONDS the moment a hint is earned, so the ring's
     // secondsLeft/totalSeconds stay proportionate instead of overshooting 100%.
@@ -738,6 +739,7 @@ class GameViewModel @Inject constructor(
         guessShownAtMillis = SystemClock.elapsedRealtime()
         revealedHintLetter = null
         revealedLetterCount = null
+        revealedLetterGroups = null
         currentGuessTotal = GameConstants.GUESS_DURATION_SECONDS
         runGuessCountdown(startSecondsLeft = currentGuessTotal)
     }
@@ -770,7 +772,8 @@ class GameViewModel @Inject constructor(
                     isWarning = isWarning,
                     hintUsed = hintUsedThisMatch,
                     hintLetter = revealedHintLetter,
-                    letterCount = revealedLetterCount
+                    letterCount = revealedLetterCount,
+                    letterGroups = revealedLetterGroups
                 )
                 ticker.awaitTick()
             }
@@ -866,6 +869,7 @@ class GameViewModel @Inject constructor(
         guessPos++
         revealedHintLetter = null
         revealedLetterCount = null
+        revealedLetterGroups = null
         currentGuessTotal = GameConstants.GUESS_DURATION_SECONDS
         saveActiveSnapshot(RecoveryStage.GUESSING)
 
@@ -1145,6 +1149,7 @@ class GameViewModel @Inject constructor(
         hintUsedThisMatch = false
         revealedHintLetter = null
         revealedLetterCount = null
+        revealedLetterGroups = null
         currentGuessTotal = GameConstants.GUESS_DURATION_SECONDS
         drawingHintUsedThisMatch = false
         currentDrawingTotal = 0
@@ -1171,8 +1176,10 @@ class GameViewModel @Inject constructor(
         val current = _phase.value as? GamePhase.Guessing ?: return
         if (current.feedback != null || current.letterCount != null) return
         if (!settingsRepository.useJoker(com.sualtikasifi.cizimhafiza.domain.model.JokerType.LETTER_COUNT)) return
-        revealedLetterCount = results[guessOrder[guessPos]].word.text.count { it.isLetterOrDigit() }
-        _phase.value = current.copy(letterCount = revealedLetterCount)
+        val secretWord = results[guessOrder[guessPos]].word.text
+        revealedLetterGroups = com.sualtikasifi.cizimhafiza.domain.model.letterGroupsOf(secretWord)
+        revealedLetterCount = revealedLetterGroups?.sum()
+        _phase.value = current.copy(letterCount = revealedLetterCount, letterGroups = revealedLetterGroups)
     }
 
     /** Adds [GameConstants.DRAWING_TIME_BONUS_SECONDS] to the current drawing turn (once per word). */

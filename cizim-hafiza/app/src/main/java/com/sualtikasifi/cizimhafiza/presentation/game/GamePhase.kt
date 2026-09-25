@@ -50,7 +50,9 @@ sealed interface GamePhase {
          * stays true. */
         val hintLetter: String? = null,
         /** Letter count revealed by the Harf Sayısı joker, only for THIS word. */
-        val letterCount: Int? = null
+        val letterCount: Int? = null,
+        /** Letters per word ("Gün batımı" → [3, 6]) so the guess screen can draw one blank per letter, with a gap between words. Null until the joker is used. */
+        val letterGroups: List<Int>? = null
     ) : GamePhase
 
     // @Serializable so a finished match can be checkpointed into

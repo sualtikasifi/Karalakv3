@@ -772,6 +772,9 @@ private fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, c
             }
             Row(
                 modifier = Modifier
+                    // Inset from the card edge so the dark plate and its rim do not
+                    // touch the chest border on either side.
+                    .padding(horizontal = 7.dp)
                     .fillMaxWidth()
                     .height(22.dp)
                     .clip(RoundedCornerShape(11.dp))

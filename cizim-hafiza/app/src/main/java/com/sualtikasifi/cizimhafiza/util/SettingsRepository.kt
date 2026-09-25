@@ -413,6 +413,23 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         return true
     }
 
+    // --- The daily rewarded-ad joker: one per local calendar day. Device-scoped
+    // (deliberately absent from the account backup and its clear) so signing out
+    // and back in cannot claim the same day's joker twice. ---
+    private val _dailyJokerDay = MutableStateFlow(prefs.getLong(KEY_DAILY_JOKER_DAY, -1L))
+    val dailyJokerDay: StateFlow<Long> = _dailyJokerDay.asStateFlow()
+
+    /** Hands over today's [DailyJoker] and records the day; null if it was already claimed. */
+    fun claimDailyJoker(): JokerType? {
+        val today = java.time.LocalDate.now().toEpochDay()
+        if (_dailyJokerDay.value == today) return null
+        val type = com.sualtikasifi.cizimhafiza.domain.model.DailyJoker.typeFor(today)
+        prefs.edit { putLong(KEY_DAILY_JOKER_DAY, today) }
+        _dailyJokerDay.value = today
+        addJoker(type, 1)
+        return type
+    }
+
     /** Puts a store item straight into the collection (chest drop) — no gold changes hands. */
     fun grantStoreItem(id: String) {
         if (id in _ownedStoreIds.value) return
@@ -1056,6 +1073,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_QM_RECENT_WORDS = "qm_recent_words"
         const val QM_RECENT_WORDS_CAP = 300
         const val KEY_CHEST_SPEEDUP_DAY = "chest_speedup_day"
+        const val KEY_DAILY_JOKER_DAY = "daily_joker_day"
         const val KEY_CHEST_SLOTS = "chest_slots"
         const val KEY_CHEST_CYCLE_SEED = "chest_cycle_seed"
         const val KEY_CHEST_CYCLE_INDEX = "chest_cycle_index"

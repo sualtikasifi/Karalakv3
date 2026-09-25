@@ -23,3 +23,15 @@ enum class JokerType(val price: Int) {
     fun priceFor(quantity: Int): Int =
         if (quantity >= BULK_QUANTITY) (price * quantity * (100 - BULK_DISCOUNT_PERCENT)) / 100 else price * quantity
 }
+
+/**
+ * The joker offered free (for a rewarded ad) on a given calendar day: first
+ * letter, then letter count, then extra drawing time, round and round. A pure
+ * function of the day so every device agrees and nothing has to be stored to
+ * know what "today's" joker is.
+ */
+object DailyJoker {
+    private val ROTATION = listOf(JokerType.FIRST_LETTER, JokerType.LETTER_COUNT, JokerType.EXTRA_TIME)
+
+    fun typeFor(epochDay: Long): JokerType = ROTATION[Math.floorMod(epochDay, ROTATION.size.toLong()).toInt()]
+}

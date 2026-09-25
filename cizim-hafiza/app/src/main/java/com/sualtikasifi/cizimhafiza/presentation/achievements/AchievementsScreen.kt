@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.drawscope.rotate as drawRotate
 import kotlin.math.PI
 import kotlin.math.sin
 import androidx.compose.ui.res.stringResource
@@ -369,12 +370,13 @@ private fun AchievementChip(
     LaunchedEffect(claimable) {
         if (wasClaimable && !claimable && item.claimed) {
             burst.snapTo(0f)
-            burst.animateTo(1f, tween(1000, easing = LinearEasing))
+            burst.animateTo(1f, tween(1400, easing = LinearEasing))
             burst.snapTo(0f)
         }
         wasClaimable = claimable
     }
-    val bounce = sin(burst.value * PI.toFloat()) * 0.12f
+    // Quick pop up, then a settling wobble — not a single lazy bump.
+    val bounce = sin(burst.value * PI.toFloat()) * 0.16f * (1f - 0.35f * burst.value)
 
     val borderColor = when {
         item.claimed -> AppTheme.tokens.success
@@ -462,20 +464,103 @@ private fun AchievementChip(
             }
         }
         if (burst.value > 0f) {
+            val p = burst.value
+            val rewardTint = rewardColor(item.achievement)
+            // White flash across the chip in the first instant.
+            val flash = (1f - p * 5f).coerceAtLeast(0f)
+            if (flash > 0f) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(Color.White.copy(alpha = 0.7f * flash), androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
+                )
+            }
+            ClaimBurstEffects(progress = p, ringColor = rewardTint, modifier = Modifier.matchParentSize())
+            // The reward rides up on a dark pill with a small overshoot, holds,
+            // then fades — big enough to actually read on a phone.
+            val rise = (1f - (1f - (p * 1.25f).coerceAtMost(1f)).let { it * it * it })
+            val overshoot = 1f + 0.35f * sin((p * 1.25f).coerceAtMost(1f) * PI.toFloat())
             Text(
-                text = rewardText(item.achievement),
+                text = "+" + rewardText(item.achievement).trimStart('+'),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
-                color = rewardColor(item.achievement),
+                color = Color(0xFFFFE08A),
                 modifier = Modifier
-                    .offset(y = (-56 * burst.value).dp)
-                    .alpha(1f - burst.value)
+                    .offset(y = (-72 * rise).dp)
+                    .alpha(if (p < 0.7f) 1f else ((1f - p) / 0.3f).coerceIn(0f, 1f))
                     .graphicsLayer {
-                        val s = 1f + 0.2f * burst.value
-                        scaleX = s
-                        scaleY = s
+                        scaleX = overshoot
+                        scaleY = overshoot
                     }
+                    .background(Color(0xE61C1109), androidx.compose.foundation.shape.RoundedCornerShape(50))
+                    .border(1.5.dp, rewardTint, androidx.compose.foundation.shape.RoundedCornerShape(50))
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
             )
         }
     }
 }
+
+/**
+ * The confetti-and-shockwave half of the claim celebration: a ring that
+ * expands and fades, and a fan of small sparks that burst outward and fall
+ * under a little gravity. Deterministic (fixed angles and distances), so it
+ * looks the same every time and costs a single Canvas.
+ */
+@Composable
+private fun ClaimBurstEffects(progress: Float, ringColor: Color, modifier: Modifier = Modifier) {
+    val sparks = remember {
+        val palette = listOf(
+            Color(0xFFFFC94D), Color(0xFFFF7A1A), Color(0xFFFF5C8A),
+            Color(0xFF4CD27A), Color(0xFF4FACFE), Color(0xFFFFFFFF)
+        )
+        List(18) { i ->
+            val angle = (i * 360f / 18f + (i % 3) * 7f) * (PI.toFloat() / 180f)
+            Spark(
+                angle = angle,
+                distance = 42f + (i % 4) * 14f,
+                size = 3.2f + (i % 3) * 1.6f,
+                color = palette[i % palette.size],
+                square = i % 2 == 0
+            )
+        }
+    }
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        val center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
+        val out = 1f - (1f - progress).let { it * it * it }
+        // Shockwave ring.
+        val ringProgress = (progress * 1.6f).coerceAtMost(1f)
+        drawCircle(
+            color = ringColor.copy(alpha = 0.55f * (1f - ringProgress)),
+            radius = (18.dp.toPx()) + 62.dp.toPx() * ringProgress,
+            center = center,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4.dp.toPx() * (1f - ringProgress) + 1.dp.toPx())
+        )
+        // Sparks.
+        val fade = if (progress < 0.6f) 1f else ((1f - progress) / 0.4f).coerceIn(0f, 1f)
+        sparks.forEach { spark ->
+            val r = spark.distance.dp.toPx() * out
+            val x = center.x + kotlin.math.cos(spark.angle) * r
+            val y = center.y + kotlin.math.sin(spark.angle) * r + 26.dp.toPx() * progress * progress
+            val s = spark.size.dp.toPx() * (1f - 0.4f * progress)
+            if (spark.square) {
+                drawRotate(degrees = progress * 240f + spark.angle * 30f, pivot = androidx.compose.ui.geometry.Offset(x, y)) {
+                    drawRect(
+                        color = spark.color.copy(alpha = fade),
+                        topLeft = androidx.compose.ui.geometry.Offset(x - s, y - s),
+                        size = androidx.compose.ui.geometry.Size(s * 2f, s * 2f)
+                    )
+                }
+            } else {
+                drawCircle(color = spark.color.copy(alpha = fade), radius = s, center = androidx.compose.ui.geometry.Offset(x, y))
+            }
+        }
+    }
+}
+
+private class Spark(
+    val angle: Float,
+    val distance: Float,
+    val size: Float,
+    val color: Color,
+    val square: Boolean
+)

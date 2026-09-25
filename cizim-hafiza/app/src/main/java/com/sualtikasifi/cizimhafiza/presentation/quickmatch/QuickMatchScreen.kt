@@ -205,8 +205,13 @@ fun QuickMatchScreen(
                             (fadeIn(tween(450, delayMillis = 150)) + scaleIn(tween(450, delayMillis = 150), initialScale = 0.9f)) togetherWith
                                 fadeOut(tween(200))
                         },
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center,
                         label = "quick_match_state"
                     ) { current ->
+                    // AnimatedContent hosts its content in a Box, which stacks children;
+                    // this Column restores the vertical layout each state was written for.
+                    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     when (current) {
                         QuickMatchState.Searching -> SearchingBody()
                         is QuickMatchState.Found -> FoundBody(
@@ -240,6 +245,7 @@ fun QuickMatchScreen(
                             actionLabel = null,
                             onAction = {}
                         )
+                    }
                     }
                     }
                 }

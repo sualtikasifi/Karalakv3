@@ -102,9 +102,11 @@ class WaitingRoomViewModel @Inject constructor(
     }
 
     private companion object {
-        // Comfortably inside PRESENCE_TIMEOUT_MS, so a couple of missed beats
-        // (a brief network blip) don't get anyone dropped.
-        const val PRESENCE_HEARTBEAT_MS = 20_000L
+        // Two full beats still fit inside PRESENCE_TIMEOUT_MS (75 s), so a
+        // brief network blip does not get anyone dropped. 30 s rather than
+        // 20 s: every beat is a write that each player's room listener then
+        // downloads, so the cost grows with the square of the lobby size.
+        const val PRESENCE_HEARTBEAT_MS = 30_000L
     }
 
     val roomCode: String = checkNotNull(savedStateHandle["roomCode"])
@@ -151,7 +153,16 @@ class WaitingRoomViewModel @Inject constructor(
                     // Another device's cleanup may have pruned this one while
                     // it was offline; rejoining is friendlier than silently
                     // vanishing from a lobby the player is still looking at.
-                    if (onlineGameRepository.isStillInRoom(roomCode)) {
+                    //
+                    // Decided from the room snapshot the lobby is ALREADY
+                    // listening to, not from a fresh document read: that read
+                    // used to run every beat for every player, and it told us
+                    // nothing the live listener had not. Until the first
+                    // snapshot arrives (room == null) the player is assumed
+                    // to be in.
+                    val room = _uiState.value.room
+                    val me = myUid
+                    if (room == null || me == null || room.players.any { it.uid == me }) {
                         onlineGameRepository.touchPresence(roomCode)
                     } else {
                         val nickname = settingsRepository.nicknameOrDefault

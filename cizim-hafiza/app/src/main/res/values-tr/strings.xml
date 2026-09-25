@@ -1206,4 +1206,19 @@
     <string name="chest_detail_ready">Kasan hazır!</string>
     <string name="settings_privacy_policy">Gizlilik Politikası</string>
     <string name="guess_tile_hint">İpucu</string>
+    <string name="chest_detail_contents_title">Kasadan neler çıkar?</string>
+    <string name="chest_detail_gold">%1$d–%2$d altın</string>
+    <string name="chest_detail_jokers_silver">%1$d%% ihtimalle 1 joker</string>
+    <string name="chest_detail_jokers_gold">1 joker garanti · %1$d%% ihtimalle 2 joker</string>
+    <string name="chest_detail_jokers_rare">2 joker garanti · %1$d%% ihtimalle 3 joker</string>
+    <string name="chest_detail_pen">%1$d%% ihtimalle özel mağaza kalemi</string>
+    <string name="chest_timer_remaining">Kalan süre</string>
+    <string name="chest_timer_total">Açılma süresi</string>
+    <string name="chest_timer_hint">Başlattığında geri sayım başlar</string>
+    <string name="get_ready_tag">Sıradaki aşama</string>
+    <string name="get_ready_sub">Şimdi çizimleri tahmin etme sırası sende</string>
+    <string name="store_daily_joker_tag">GÜNÜN ÜCRETSİZ JOKERİ</string>
+    <string name="store_daily_joker_action">Reklam izle, ücretsiz al</string>
+    <string name="store_daily_joker_claimed">Ücretsiz jokerin eklendi!</string>
+    <string name="store_daily_joker_unavailable">Şu an reklam yok, biraz sonra tekrar dene.</string>
 </resources>
