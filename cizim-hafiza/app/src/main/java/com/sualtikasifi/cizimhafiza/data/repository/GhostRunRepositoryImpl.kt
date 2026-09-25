@@ -135,7 +135,12 @@ class GhostRunRepositoryImpl @Inject constructor(
         items: List<ResultItem>,
         xpEarned: Int
     ) {
-        val slice = GhostRuns.recordableSlice(wordIds, perWord, items) ?: return
+        val slice = GhostRuns.recordableSlice(wordIds, perWord, items) ?: run {
+            // Says WHY, because a round that never reaches the review queue is
+            // otherwise indistinguishable from a broken upload.
+            Log.i(TAG, "Round not recorded: needs ${GhostRuns.RUN_WORD_COUNT}+ words and ${GhostRuns.MIN_CORRECT}+ correct (words=${wordIds.size}, correct=${perWord.count { it.isCorrect }})")
+            return
+        }
 
         // Rounds where the words were written rather than drawn never become
         // opponents. Nothing is taken from the player — the score, XP, streak
@@ -210,6 +215,7 @@ class GhostRunRepositoryImpl @Inject constructor(
             mapOf("uid" to uid, "itemsJson" to json.encodeToString(slice.items))
         )
         batch.commit().await()
+        Log.i(TAG, "Round filed for review: ${runRef.id} (${slice.wordIds.size} words)")
 
         pruneOwnRuns(uid)
     }

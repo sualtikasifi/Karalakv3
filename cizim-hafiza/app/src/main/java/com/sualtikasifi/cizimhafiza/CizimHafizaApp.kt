@@ -36,6 +36,7 @@ class CizimHafizaApp : Application(), Configuration.Provider {
     @Inject lateinit var referralRewardClaimer: ReferralRewardClaimer
     @Inject lateinit var autoBackupPublisher: AutoBackupPublisher
     @Inject lateinit var profileNameSynchronizer: ProfileNameSynchronizer
+    @Inject lateinit var xpEventRepository: com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
@@ -66,6 +67,9 @@ class CizimHafizaApp : Application(), Configuration.Provider {
         // AutoBackupPublisher for why the old "only on an explicit tap"
         // behaviour left most players' backups stale.
         autoBackupPublisher.start()
+        // One document listener: a 2x XP event started from the developer panel
+        // then reaches every open app at once instead of waiting for a cache to expire.
+        xpEventRepository.startListening()
         // Gives a signed-in player their Google name when they haven't
         // picked one — app-wide rather than on the Hesap screen, since the
         // name is what every other player sees in lobbies and the league.

@@ -311,6 +311,7 @@ fun DrawingReportsScreen(
                                     onPreview = { previewItem = it },
                                     onApprove = { viewModel.approve(run) },
                                     onReject = { viewModel.reject(run) },
+                                    onDismiss = { viewModel.dismiss(run) },
                                     onRename = { viewModel.startRename(run) }
                                 )
                             }
@@ -605,26 +606,56 @@ private fun XpEventPanel(
                 val until = remember(event.endsAtMillis) {
                     SimpleDateFormat("d MMMM, HH:mm", Locale.getDefault()).format(Date(event.endsAtMillis))
                 }
-                stringResource(R.string.reports_xp_event_active, until)
+                (event.label?.takeIf { it.isNotBlank() }?.let { "$it · " } ?: "") + stringResource(R.string.reports_xp_event_active, until)
             } else {
                 stringResource(R.string.reports_xp_event_inactive)
             },
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
         )
+        // The event's name, shown to every player on the home screen, and how
+        // long it runs. One start button: name + duration first, then go.
+        var eventName by remember { mutableStateOf("") }
         val durations = listOf(
-            Triple(3 * 60 * 60 * 1000L, R.string.reports_xp_event_3h, "3h"),
-            Triple(24 * 60 * 60 * 1000L, R.string.reports_xp_event_24h, "24h"),
-            Triple(3 * 24 * 60 * 60 * 1000L, R.string.reports_xp_event_3d, "3d")
+            15 * 60 * 1000L to R.string.reports_xp_event_d15,
+            30 * 60 * 1000L to R.string.reports_xp_event_d30,
+            60 * 60 * 1000L to R.string.reports_xp_event_d60,
+            3 * 60 * 60 * 1000L to R.string.reports_xp_event_d180,
+            24 * 60 * 60 * 1000L to R.string.reports_xp_event_d1440
         )
-        durations.forEach { (durationMillis, labelRes, label) ->
-            PrimaryButton(
-                text = stringResource(labelRes),
-                onClick = { onStart(durationMillis, label) },
-                enabled = !busy,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-            )
+        var selectedDuration by remember { mutableStateOf(durations[2].first) }
+        AppTextField(
+            value = eventName,
+            onValueChange = { if (it.length <= 32) eventName = it },
+            label = stringResource(R.string.reports_xp_event_name_label),
+            placeholder = stringResource(R.string.reports_xp_event_name_hint),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+        )
+        Text(
+            text = stringResource(R.string.reports_xp_event_duration_label),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(bottom = 6.dp)
+        )
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp)
+        ) {
+            durations.forEach { (millis, labelRes) ->
+                SelectableChip(
+                    label = stringResource(labelRes),
+                    selected = selectedDuration == millis,
+                    onClick = { selectedDuration = millis },
+                    verticalPadding = 10.dp
+                )
+            }
         }
+        PrimaryButton(
+            text = stringResource(R.string.reports_xp_event_start),
+            onClick = { onStart(selectedDuration, eventName.trim().ifBlank { null }) },
+            enabled = !busy,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+        )
         if (isRunning) {
             OutlinedButton(
                 onClick = onStop,
@@ -775,6 +806,7 @@ private fun PendingRunRow(
     onPreview: (ResultItem) -> Unit,
     onApprove: (() -> Unit)? = null,
     onReject: (() -> Unit)? = null,
+    onDismiss: (() -> Unit)? = null,
     onSendBack: (() -> Unit)? = null,
     onRename: (() -> Unit)? = null
 ) {
@@ -866,6 +898,16 @@ private fun PendingRunRow(
                         onClick = onReject,
                         enabled = !busy,
                         icon = Icons.Filled.Block,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                // Reddet: out of the queue with no penalty and no pool entry.
+                if (onDismiss != null) {
+                    SecondaryButton(
+                        text = stringResource(R.string.reports_queue_dismiss),
+                        onClick = onDismiss,
+                        enabled = !busy,
+                        icon = Icons.Filled.Close,
                         modifier = Modifier.weight(1f)
                     )
                 }

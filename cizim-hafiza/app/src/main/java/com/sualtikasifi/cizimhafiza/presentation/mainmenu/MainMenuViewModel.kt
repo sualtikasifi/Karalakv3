@@ -63,8 +63,14 @@ class MainMenuViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val penaltyRepository: PenaltyRepository,
     private val adManager: AdManager,
-    private val referralRewardClaimer: ReferralRewardClaimer
+    private val referralRewardClaimer: ReferralRewardClaimer,
+    xpEventRepository: com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository
 ) : ViewModel() {
+
+    /** The 2x XP event while one is running (null otherwise) — drives the home banner and the Hızlı Eşleş glow. */
+    val xpEvent: StateFlow<com.sualtikasifi.cizimhafiza.domain.repository.XpEvent?> = xpEventRepository.live
+        .map { event -> event?.takeIf { it.active && System.currentTimeMillis() < it.endsAtMillis } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** A referral reward claimed since app start, for a one-time "kazandın!" toast — see ReferralRewardClaimer. */
     val referralRewardXp: StateFlow<Int> = referralRewardClaimer.lastClaimedXp

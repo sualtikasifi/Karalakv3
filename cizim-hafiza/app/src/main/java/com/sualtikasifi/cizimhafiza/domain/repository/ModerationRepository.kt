@@ -70,4 +70,13 @@ interface ModerationRepository {
      * lockout by moving its own clock forward.
      */
     suspend fun reject(runId: String, xpToRevoke: Int): Result<Unit>
+
+    /**
+     * Turns a round down without judging its author: the round is deleted from
+     * the queue, and that is all. No penalty, no strike, no XP taken back —
+     * and it never reaches the pool either. For a round that is simply not
+     * wanted (a poor drawing, a duplicate) as opposed to one that broke the
+     * rules, which is what [reject] is for.
+     */
+    suspend fun dismiss(runId: String): Result<Unit>
 }

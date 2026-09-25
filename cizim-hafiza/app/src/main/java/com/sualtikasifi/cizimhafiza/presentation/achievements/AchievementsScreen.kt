@@ -487,7 +487,9 @@ private fun AchievementChip(
                 color = Color(0xFFFFE08A),
                 modifier = Modifier
                     .offset(y = (-72 * rise).dp)
-                    .alpha(if (p < 0.7f) 1f else ((1f - p) / 0.3f).coerceIn(0f, 1f))
+                    // Fades out smoothly over the back two thirds of the animation
+                    // instead of holding and then vanishing.
+                    .alpha(1f - androidx.compose.animation.core.FastOutSlowInEasing.transform(((p - 0.3f) / 0.7f).coerceIn(0f, 1f)))
                     .graphicsLayer {
                         scaleX = overshoot
                         scaleY = overshoot
@@ -536,7 +538,7 @@ private fun ClaimBurstEffects(progress: Float, ringColor: Color, modifier: Modif
             style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4.dp.toPx() * (1f - ringProgress) + 1.dp.toPx())
         )
         // Sparks.
-        val fade = if (progress < 0.6f) 1f else ((1f - progress) / 0.4f).coerceIn(0f, 1f)
+        val fade = 1f - androidx.compose.animation.core.FastOutSlowInEasing.transform(((progress - 0.3f) / 0.7f).coerceIn(0f, 1f))
         sparks.forEach { spark ->
             val r = spark.distance.dp.toPx() * out
             val x = center.x + kotlin.math.cos(spark.angle) * r

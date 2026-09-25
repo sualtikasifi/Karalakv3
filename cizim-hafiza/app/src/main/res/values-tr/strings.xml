@@ -983,7 +983,7 @@
     <string name="reports_league_hint">Ayın ilk üçünün kazanacağı ödülü seç. Boş bırakılırsa o ayın kendi çerçevesi verilir. Değişiklik, global tablo bir sonraki yenilenmesinde (en geç 1 saat) oyunculara ulaşır.</string>
     <string name="reports_league_no_rewards">Bu sürümde tanımlı lig ödülü yok.</string>
     <string name="reports_tab_xp_event">2x XP</string>
-    <string name="reports_xp_event_hint">Bitene kadar, o an oyunda olan her oyuncu için her XP ödemesini ikiye katlar. Başlatmadan önce duyur — oyuncular bunu uygulama içinde bir bannerla değil, sadece daha çok XP kazanarak fark eder.</string>
+    <string name="reports_xp_event_hint">Etkinliği başlattığında tüm oyuncuların ana ekranında adıyla birlikte bir banner çıkar, Hızlı Eşleş kartı parlar ve bitene kadar her XP ödemesi ikiye katlanır.</string>
     <string name="reports_xp_event_active">2x XP aktif, bitiş: %1$s</string>
     <string name="reports_xp_event_inactive">Aktif etkinlik yok</string>
     <string name="reports_xp_event_3h">Başlat — 3 saat</string>
@@ -1221,4 +1221,16 @@
     <string name="store_daily_joker_action">Reklam izle, ücretsiz al</string>
     <string name="store_daily_joker_claimed">Ücretsiz jokerin eklendi!</string>
     <string name="store_daily_joker_unavailable">Şu an reklam yok, biraz sonra tekrar dene.</string>
+    <string name="xp_event_default_name">2x XP Etkinliği</string>
+    <string name="xp_event_banner_sub">Şimdi her XP %1$dx kazandırıyor</string>
+    <string name="reports_xp_event_name_label">Etkinlik adı</string>
+    <string name="reports_xp_event_name_hint">Örn: Yılbaşı Etkinliği</string>
+    <string name="reports_xp_event_duration_label">Süre</string>
+    <string name="reports_xp_event_d15">15 dk</string>
+    <string name="reports_xp_event_d30">30 dk</string>
+    <string name="reports_xp_event_d60">1 saat</string>
+    <string name="reports_xp_event_d180">3 saat</string>
+    <string name="reports_xp_event_d1440">1 gün</string>
+    <string name="reports_xp_event_start">Etkinliği başlat</string>
+    <string name="reports_queue_dismiss">Reddet</string>
 </resources>

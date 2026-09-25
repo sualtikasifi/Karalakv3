@@ -408,6 +408,14 @@ class DrawingReportsViewModel @Inject constructor(
         moderationRepository.reject(run.id, run.xpEarned)
     }
 
+    /**
+     * Turns the round down without a penalty and without letting it into the
+     * pool — it just leaves the queue. See [ModerationRepository.dismiss].
+     */
+    fun dismiss(run: PendingRun) = decide(run, movesToPool = false, keepsRun = false) {
+        moderationRepository.dismiss(run.id)
+    }
+
     fun startRename(run: PendingRun) {
         _uiState.value = _uiState.value.copy(renaming = run, decisionFailed = false)
     }

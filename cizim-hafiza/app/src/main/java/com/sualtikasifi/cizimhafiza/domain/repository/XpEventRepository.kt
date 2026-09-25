@@ -9,6 +9,17 @@ package com.sualtikasifi.cizimhafiza.domain.repository
 interface XpEventRepository {
 
     /**
+     * The event document as it stands, kept live by ONE document listener
+     * (see [startListening]) — null until the first snapshot or when no event
+     * has ever been set. A change reaches every open app within a moment, and
+     * costs one read per device per change.
+     */
+    val live: kotlinx.coroutines.flow.StateFlow<XpEvent?>
+
+    /** Starts the listener behind [live]. Safe to call more than once. */
+    fun startListening()
+
+    /**
      * The multiplier in effect right now (1 when no event is running or the
      * stored one has already expired). Cached briefly client-side (see
      * REFRESH_WINDOW_MILLIS) — this is read once per match, not once per

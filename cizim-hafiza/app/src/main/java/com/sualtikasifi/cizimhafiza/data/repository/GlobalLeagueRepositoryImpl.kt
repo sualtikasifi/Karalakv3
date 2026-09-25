@@ -51,6 +51,17 @@ class GlobalLeagueRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun myRank(periodId: Long, myPeriodXp: Int, botsAbove: Int): Result<Int> = runCatching {
+        val ahead = firestore.collection("users")
+            .whereEqualTo("periodId", periodId)
+            .whereGreaterThan("periodXp", myPeriodXp.toLong())
+            .count()
+            .get(com.google.firebase.firestore.AggregateSource.SERVER)
+            .await()
+            .count
+        ahead.toInt() + botsAbove + 1
+    }
+
     override suspend fun setWeekReward(rewardId: String?): Result<Unit> = runCatching {
         configDoc.set(mapOf("rewardId" to rewardId), SetOptions.merge()).await()
         // The published snapshot still carries the OLD reward until the next

@@ -3,6 +3,8 @@ package com.sualtikasifi.cizimhafiza.data.repository
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sualtikasifi.cizimhafiza.domain.repository.XpEvent
 import com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,6 +21,35 @@ class XpEventRepositoryImpl @Inject constructor(
 
     private val eventDoc get() = firestore.document("config/xpEvent")
 
+    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO)
+    private val _live = kotlinx.coroutines.flow.MutableStateFlow<XpEvent?>(null)
+    override val live: kotlinx.coroutines.flow.StateFlow<XpEvent?> = _live
+
+    // True once the listener has delivered a snapshot; until then the cached
+    // one-off read below is what answers.
+    @Volatile private var liveReady = false
+    private var listening = false
+
+    @Synchronized
+    override fun startListening() {
+        if (listening) return
+        listening = true
+        scope.launch {
+            firestoreFlow<XpEvent?>("xpEvent") { emit, onError ->
+                eventDoc.addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        onError(error)
+                        return@addSnapshotListener
+                    }
+                    emit(snapshot?.data?.let { parse(it) })
+                }
+            }.catch { }.collect { event ->
+                _live.value = event
+                liveReady = true
+            }
+        }
+    }
+
     // Same cache-with-a-window shape as GlobalLeagueRepositoryImpl — this is
     // read once per match start, not once per word, so a few stale minutes
     // costs nothing and saves a read on every single round played.
@@ -26,12 +57,15 @@ class XpEventRepositoryImpl @Inject constructor(
     private var cachedAtMillis = 0L
 
     override suspend fun currentMultiplier(): Int {
-        val event = current().getOrNull() ?: return 1
+        // The live listener knows the instant an event starts or stops; the
+        // 5-minute cache below is only the fallback before it has reported.
+        val event = (if (liveReady) _live.value else current().getOrNull()) ?: return 1
         val stillRunning = event.active && System.currentTimeMillis() < event.endsAtMillis
         return if (stillRunning) event.multiplier else 1
     }
 
     override suspend fun current(): Result<XpEvent?> {
+        if (liveReady) return Result.success(_live.value)
         val fresh = cached
         if (fresh != null && System.currentTimeMillis() - cachedAtMillis < XpEventRepository.REFRESH_WINDOW_MILLIS) {
             return Result.success(fresh)
@@ -50,6 +84,7 @@ class XpEventRepositoryImpl @Inject constructor(
             mapOf(
                 "active" to true,
                 "multiplier" to multiplier,
+                "startedAtMillis" to System.currentTimeMillis(),
                 "endsAtMillis" to (System.currentTimeMillis() + durationMillis),
                 "label" to label
             )

@@ -226,6 +226,22 @@ fun LeagueScreen(
                     itemsIndexed(shownTable.entries, key = { _, entry -> entry.uid }) { index, entry ->
                         LeagueRow(rank = index + 1, entry = entry)
                     }
+                    // Not in the top 25: the real rank, pinned under the table
+                    // after a gap, rather than a row squeezed onto the end of it.
+                    val ownRank = uiState.myGlobalRank
+                    val ownEntry = uiState.myGlobalEntry
+                    if (uiState.tab == LeagueTab.Global && ownRank != null && ownEntry != null) {
+                        item(key = "own-gap") {
+                            Text(
+                                text = "⋮",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        item(key = "own-row") { LeagueRow(rank = ownRank, entry = ownEntry) }
+                    }
                     if (uiState.tab == LeagueTab.Global) {
                         item(key = "rebuilt-note") {
                             Text(

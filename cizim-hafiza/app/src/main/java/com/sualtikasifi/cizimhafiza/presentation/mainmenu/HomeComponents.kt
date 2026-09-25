@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
 import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.FilterQuality
@@ -376,7 +377,11 @@ internal fun HomeHero(modifier: Modifier = Modifier) {
     }
 }
 
-/** One of the three big ways to start a match: big art up front, small caption, saturated gradient, chunky edge. */
+/**
+ * One of the three big ways to start a match: big art up front, small caption,
+ * saturated gradient, chunky edge. While a 2x XP event is running ([boost]),
+ * the card breathes a golden glow and wears a pulsing "2x XP" badge.
+ */
 @Composable
 internal fun GradientModeCard(
     imageRes: Int,
@@ -385,36 +390,184 @@ internal fun GradientModeCard(
     bottom: Color,
     edge: Color,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    boost: com.sualtikasifi.cizimhafiza.domain.repository.XpEvent? = null
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.96f else 1f, label = "modePress")
-    Column(
-        modifier = modifier.fillMaxHeight()
-            .graphicsLayer { scaleX = scale; scaleY = scale }
-            .chunky(Brush.verticalGradient(listOf(top, bottom)), edge, corner = 24.dp, lift = 5.dp, rim = Color.White.copy(alpha = 0.35f))
-            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
-            .padding(start = 2.dp, end = 2.dp, top = 4.dp, bottom = 3.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+
+    // The event can run out while the home screen is open: flip the effect off
+    // at the moment it ends instead of waiting for a recomposition.
+    var boostExpired by remember(boost?.endsAtMillis) { mutableStateOf(boost == null || System.currentTimeMillis() >= boost.endsAtMillis) }
+    LaunchedEffect(boost?.endsAtMillis) {
+        if (boost != null) {
+            kotlinx.coroutines.delay((boost.endsAtMillis - System.currentTimeMillis()).coerceAtLeast(0L))
+            boostExpired = true
+        }
+    }
+    val boosted = boost != null && !boostExpired
+    val glow = rememberInfiniteTransition(label = "modeBoost").animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(850, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "modeBoostGlow"
+    )
+
+    Box(modifier = modifier.fillMaxHeight().graphicsLayer { scaleX = scale; scaleY = scale }) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (boosted) Modifier.drawBehind {
+                        val spread = 6.dp.toPx() * glow.value
+                        drawRoundRect(
+                            color = Color(0xFFFFD54A).copy(alpha = 0.55f * glow.value),
+                            topLeft = androidx.compose.ui.geometry.Offset(-spread, -spread),
+                            size = androidx.compose.ui.geometry.Size(size.width + spread * 2, size.height + spread * 2),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(24.dp.toPx() + spread)
+                        )
+                    } else Modifier
+                )
+                .chunky(Brush.verticalGradient(listOf(top, bottom)), edge, corner = 24.dp, lift = 5.dp, rim = Color.White.copy(alpha = 0.35f))
+                .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+                .padding(start = 2.dp, end = 2.dp, top = 4.dp, bottom = 3.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Image(
+                painter = painterResource(imageRes),
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth().weight(1f)
+            )
+            Box(modifier = Modifier.fillMaxWidth().height(26.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    text = label,
+                    fontFamily = DisplayFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 12.sp,
+                    lineHeight = 14.sp,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2
+                )
+            }
+        }
+        if (boosted && boost != null) {
+            BoostBadge(multiplier = boost.multiplier, modifier = Modifier.align(Alignment.TopEnd).padding(top = 3.dp, end = 3.dp))
+        }
+    }
+}
+
+/** The small "2x XP" pill on the boosted mode card: it pulses, and a star twinkles beside it. */
+@Composable
+private fun BoostBadge(multiplier: Int, modifier: Modifier = Modifier) {
+    val t = rememberInfiniteTransition(label = "boostBadge")
+    val pulse = t.animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(tween(650, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "boostBadgePulse"
+    )
+    val twinkle = t.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(480), RepeatMode.Reverse),
+        label = "boostBadgeTwinkle"
+    )
+    Row(
+        modifier = modifier.graphicsLayer { scaleX = pulse.value; scaleY = pulse.value },
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            painter = painterResource(imageRes),
-            contentDescription = null,
-            modifier = Modifier.fillMaxWidth().weight(1f)
+        Text(text = "✦", fontSize = 11.sp, color = Color(0xFFFFF3B0), modifier = Modifier.graphicsLayer { alpha = twinkle.value })
+        Text(
+            text = "${multiplier}x XP",
+            fontFamily = DisplayFont,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 10.sp,
+            color = Color(0xFF5A2E00),
+            modifier = Modifier
+                .background(Brush.verticalGradient(listOf(Color(0xFFFFE566), Color(0xFFFFB300))), RoundedCornerShape(50))
+                .border(1.5.dp, Color(0xFFB36B00), RoundedCornerShape(50))
+                .padding(horizontal = 6.dp, vertical = 2.dp)
         )
-        Box(modifier = Modifier.fillMaxWidth().height(26.dp), contentAlignment = Alignment.Center) {
+    }
+}
+
+/**
+ * Full-width home banner for a running event: the event's own name, what it
+ * does, and a live countdown. Hides itself the second the event ends.
+ */
+@Composable
+internal fun XpEventBanner(event: com.sualtikasifi.cizimhafiza.domain.repository.XpEvent, modifier: Modifier = Modifier) {
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(event.endsAtMillis) {
+        while (System.currentTimeMillis() < event.endsAtMillis) {
+            now = System.currentTimeMillis()
+            kotlinx.coroutines.delay(1_000)
+        }
+        now = System.currentTimeMillis()
+    }
+    val remaining = event.endsAtMillis - now
+    if (remaining <= 0) return
+
+    val shimmer = rememberInfiniteTransition(label = "xpBanner").animateFloat(
+        initialValue = -0.4f,
+        targetValue = 1.4f,
+        animationSpec = infiniteRepeatable(tween(2200, easing = androidx.compose.animation.core.LinearEasing)),
+        label = "xpBannerShimmer"
+    )
+    val shape = RoundedCornerShape(18.dp)
+    val name = event.label?.takeIf { it.isNotBlank() } ?: stringResource(R.string.xp_event_default_name)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(Brush.horizontalGradient(listOf(Color(0xFFFF8A00), Color(0xFFFFC21A), Color(0xFFFF8A00))))
+            .drawWithContent {
+                drawContent()
+                val x = size.width * shimmer.value
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        listOf(Color.Transparent, Color.White.copy(alpha = 0.35f), Color.Transparent),
+                        startX = x - 60.dp.toPx(),
+                        endX = x + 60.dp.toPx()
+                    )
+                )
+            }
+            .border(2.dp, Color(0xFFB36B00), shape)
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(text = "🎉", fontSize = 20.sp)
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = label,
+                text = name,
                 fontFamily = DisplayFont,
                 fontWeight = FontWeight.ExtraBold,
-                fontSize = 12.sp,
-                lineHeight = 14.sp,
-                color = Color.White,
-                textAlign = TextAlign.Center,
-                maxLines = 2
+                fontSize = 13.sp,
+                lineHeight = 15.sp,
+                color = Color(0xFF4A2600),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+            Text(
+                text = stringResource(R.string.xp_event_banner_sub, event.multiplier),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF6B3A00)
             )
         }
+        Text(
+            text = formatCountdown(remaining),
+            fontFamily = DisplayFont,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 13.sp,
+            color = Color(0xFFFFE08A),
+            modifier = Modifier
+                .background(Color(0xFF2A1808), RoundedCornerShape(50))
+                .padding(horizontal = 10.dp, vertical = 3.dp)
+        )
     }
 }
 

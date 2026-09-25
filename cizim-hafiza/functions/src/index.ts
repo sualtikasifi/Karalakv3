@@ -293,8 +293,13 @@ function botNickname(random: () => number): string {
   return `${prefix}${suffix}${number}`;
 }
 
-/** How many filler rows the table carries. */
-const BOT_COUNT = 24;
+/**
+ * How many filler rows the table carries. Equal to [PUBLISHED_TABLE_SIZE] on
+ * purpose: with one fewer, the single spare slot was always taken by the
+ * top REAL player however little they had scored, so a player nowhere near
+ * the top 25 saw themselves parked on row 25.
+ */
+const BOT_COUNT = 25;
 // How many rows the real-player query fetches, before bots are mixed in and
 // the combined list is cut down to PUBLISHED_TABLE_SIZE below. Generous on
 // purpose: a real player ranked, say, 40th by raw XP still needs to be IN

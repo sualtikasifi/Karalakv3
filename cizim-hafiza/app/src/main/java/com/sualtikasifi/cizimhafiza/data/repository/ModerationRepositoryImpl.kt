@@ -170,6 +170,13 @@ class ModerationRepositoryImpl @Inject constructor(
         batch.commit().await()
     }
 
+    override suspend fun dismiss(runId: String): Result<Unit> = runCatching {
+        val batch = firestore.batch()
+        batch.delete(pendingRuns.document(runId))
+        batch.delete(pendingRunItems.document(runId))
+        batch.commit().await()
+    }
+
     override suspend fun reject(runId: String, xpToRevoke: Int): Result<Unit> = runCatching {
         val runDoc = pendingRuns.document(runId).get().await()
         val uid = runDoc.getString("uid").orEmpty()

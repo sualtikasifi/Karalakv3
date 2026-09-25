@@ -173,10 +173,29 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
      * checks for the one placement (the daily challenge, once a day) meant
      * to show every time.
      */
-    fun maybeShowInterstitial(activity: Activity, onDismissed: () -> Unit, force: Boolean = false) {
+    fun maybeShowInterstitial(
+        activity: Activity,
+        onDismissed: () -> Unit,
+        force: Boolean = false,
+        /**
+         * With [force]: the shortest time since the previous interstitial for
+         * this one to still show. 0 (the daily challenge) shows every time;
+         * the Bölümler levels use a short gap so failing and instantly
+         * retrying an even level does not stack ads back to back.
+         */
+        forceMinGapMillis: Long = 0L
+    ) {
         if (!GameConstants.ADMOB_ENABLED) {
             onDismissed()
             return
+        }
+        if (force && forceMinGapMillis > 0L) {
+            val sinceLast = System.currentTimeMillis() - prefs.getLong(KEY_LAST_AD_AT, 0L)
+            if (sinceLast < forceMinGapMillis) {
+                warmUp()
+                onDismissed()
+                return
+            }
         }
         if (!force) {
             val games = prefs.getInt(KEY_GAMES_SINCE_AD, 0) + 1

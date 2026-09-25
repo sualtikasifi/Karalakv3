@@ -403,8 +403,8 @@ private fun FoundBody(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart:
         CountdownBanner(secondsLeft)
         Spacer(modifier = Modifier.height(16.dp))
         TipsRow()
-        Spacer(modifier = Modifier.height(28.dp))
-        GoodLuckMascot()
+        Spacer(modifier = Modifier.height(10.dp))
+        MatchMascot()
     }
 }
 
@@ -722,30 +722,37 @@ private fun TipCard(emoji: String, text: String, modifier: Modifier = Modifier) 
     }
 }
 
-/** The mascot wishing the player luck — tutorial_dino_thumbsup is the closest existing pose to this sentiment. */
+/**
+ * The two mascots high-fiving over a VS spark: the "match found" moment as an
+ * illustration. It bobs and tilts a little forever, so the last few seconds
+ * before the match do not sit on a still picture.
+ */
 @Composable
-private fun GoodLuckMascot() {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Image(
-            painter = painterResource(R.drawable.tutorial_dino_thumbsup),
-            contentDescription = null,
-            modifier = Modifier.size(80.dp)
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-        Box(
-            modifier = Modifier
-                .background(Color(0xCC1A1108), RoundedCornerShape(16.dp))
-                .padding(horizontal = 16.dp, vertical = 10.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.quick_match_good_luck),
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
-                color = Color.White
-            )
-        }
-    }
+private fun MatchMascot() {
+    val transition = rememberInfiniteTransition(label = "match_mascot")
+    val bob = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = -7f,
+        animationSpec = infiniteRepeatable(tween(850, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "match_mascot_bob"
+    )
+    val tilt = transition.animateFloat(
+        initialValue = -1.6f,
+        targetValue = 1.6f,
+        animationSpec = infiniteRepeatable(tween(1300, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "match_mascot_tilt"
+    )
+    Image(
+        painter = painterResource(R.drawable.match_high_five),
+        contentDescription = null,
+        modifier = Modifier
+            .fillMaxWidth(0.8f)
+            .aspectRatio(840f / 446f)
+            .graphicsLayer {
+                translationY = bob.value.dp.toPx()
+                rotationZ = tilt.value
+            }
+    )
 }
 
 private const val COUNTDOWN_MS = 5_000

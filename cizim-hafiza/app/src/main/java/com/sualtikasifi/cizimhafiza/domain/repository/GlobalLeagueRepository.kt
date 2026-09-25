@@ -20,6 +20,14 @@ interface GlobalLeagueRepository {
     suspend fun table(forceRefresh: Boolean = false): Result<GlobalLeagueTable>
 
     /**
+     * The player's real place in the month when they are outside the
+     * published top 25: how many real players have MORE monthly XP, plus
+     * [botsAbove], plus one. A Firestore count query, so it costs one read per
+     * thousand players ahead rather than a read per player.
+     */
+    suspend fun myRank(periodId: Long, myPeriodXp: Int, botsAbove: Int): Result<Int>
+
+    /**
      * Sets the cosmetic this week's top three win. Reviewer-only — the
      * Firestore rules on leaderboards/config enforce it, this is just the
      * call the review panel makes.

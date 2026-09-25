@@ -38,7 +38,14 @@ data class LeagueUiState(
      * SettingsRepository.grantLeagueReward), and only that read should
      * celebrate.
      */
-    val justWon: LeaguePrize? = null
+    val justWon: LeaguePrize? = null,
+    /**
+     * The player's own row when they are NOT among the published top 25 —
+     * shown pinned under the table with their real rank. Null when they are in
+     * the table (the table already shows them) or have not scored yet.
+     */
+    val myGlobalRank: Int? = null,
+    val myGlobalEntry: com.sualtikasifi.cizimhafiza.domain.model.LeagueEntry? = null
 )
 
 /**
@@ -111,10 +118,45 @@ class LeagueViewModel @Inject constructor(
                             justWon = it.justWon ?: collectPrize(table)
                         )
                     }
+                    resolveOwnRank(table)
                 }
                 .onFailure {
                     _uiState.update { state -> state.copy(globalLoading = false, globalFailed = true) }
                 }
+        }
+    }
+
+    /**
+     * When the player is outside the published top 25, works out their real
+     * place so it can be shown under the table ("537") instead of nothing —
+     * and, crucially, instead of a stray row on the last line of the table.
+     */
+    private fun resolveOwnRank(table: GlobalLeagueTable) {
+        val myXp = settingsRepository.periodXp.value
+        val inTable = table.table.entries.any { it.isMe }
+        if (inTable || myXp <= 0) {
+            _uiState.update { it.copy(myGlobalRank = null, myGlobalEntry = null) }
+            return
+        }
+        val botsAbove = table.table.entries.count { it.isBot && it.periodXp > myXp }
+        viewModelScope.launch {
+            globalLeagueRepository.myRank(table.periodId, myXp, botsAbove)
+                .onSuccess { rank ->
+                    val level = com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.levelForXp(settingsRepository.lifetimeXp.value)
+                    val entry = com.sualtikasifi.cizimhafiza.domain.model.LeagueEntry(
+                        uid = "me",
+                        nickname = settingsRepository.nicknameOrDefault,
+                        periodXp = myXp,
+                        level = level,
+                        frameId = com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
+                            .resolve(settingsRepository.selectedAvatarFrameId.value, level).name,
+                        isMe = true
+                    )
+                    _uiState.update { it.copy(myGlobalRank = rank, myGlobalEntry = entry) }
+                }
+                // A failed count is not worth a message: the table itself
+                // loaded, and the player just does not see a rank line.
+                .onFailure { _uiState.update { it.copy(myGlobalRank = null, myGlobalEntry = null) } }
         }
     }
 

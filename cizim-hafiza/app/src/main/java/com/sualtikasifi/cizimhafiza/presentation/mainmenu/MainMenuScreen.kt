@@ -138,6 +138,7 @@ fun MainMenuScreen(
     viewModel: MainMenuViewModel = hiltViewModel()
 ) {
     val hasUnseenAchievement by viewModel.hasUnseenAchievement.collectAsState()
+    val xpEvent by viewModel.xpEvent.collectAsState()
     val pendingFriendRequests by viewModel.pendingFriendRequests.collectAsState()
     val nickname by viewModel.nickname.collectAsState()
     val dailyState by viewModel.dailyState.collectAsState()
@@ -208,10 +209,14 @@ fun MainMenuScreen(
             // without moving. Only a genuinely short screen falls back to scrolling.
             BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 val compact = maxHeight < 700.dp
-                val fixedEstimate = if (compact) 480.dp else 530.dp
+                val fixedEstimate = (if (compact) 480.dp else 530.dp) + (if (xpEvent != null) 60.dp else 0.dp)
                 val flexible = maxHeight >= fixedEstimate + 96.dp + 18.dp
                 val modeHeight = (maxHeight - fixedEstimate - 18.dp).coerceIn(96.dp, 142.dp)
                 val content: @Composable ColumnScope.() -> Unit = {
+                    xpEvent?.let { event ->
+                        XpEventBanner(event = event)
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                     DailyChallengeCard(state = dailyState, onPlay = onDailyChallenge, compact = compact)
 
                     Spacer(modifier = Modifier.height(SECTION_GAP + 3.dp))
@@ -236,7 +241,8 @@ fun MainMenuScreen(
                             bottom = Color(0xFFF2611B),
                             edge = Color(0xFFB9460F),
                             onClick = onQuickMatch,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            boost = xpEvent
                         )
                         GradientModeCard(
                             imageRes = R.drawable.icon_mode_offline,

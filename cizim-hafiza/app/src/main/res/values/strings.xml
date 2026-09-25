@@ -1208,4 +1208,16 @@
     <string name="store_daily_joker_action">Watch an ad, get it free</string>
     <string name="store_daily_joker_claimed">Your free joker was added!</string>
     <string name="store_daily_joker_unavailable">No ad available right now, try again shortly.</string>
+    <string name="xp_event_default_name">2x XP Event</string>
+    <string name="xp_event_banner_sub">Every XP counts %1$dx right now</string>
+    <string name="reports_xp_event_name_label">Event name</string>
+    <string name="reports_xp_event_name_hint">e.g. New Year Event</string>
+    <string name="reports_xp_event_duration_label">Duration</string>
+    <string name="reports_xp_event_d15">15 min</string>
+    <string name="reports_xp_event_d30">30 min</string>
+    <string name="reports_xp_event_d60">1 hour</string>
+    <string name="reports_xp_event_d180">3 hours</string>
+    <string name="reports_xp_event_d1440">1 day</string>
+    <string name="reports_xp_event_start">Start event</string>
+    <string name="reports_queue_dismiss">Dismiss</string>
 </resources>

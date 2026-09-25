@@ -1118,7 +1118,17 @@ class GameViewModel @Inject constructor(
      * not just on the matches that happen to land on that count.
      */
     fun showResultInterstitial(activity: Activity, onDismissed: () -> Unit = {}) {
-        adManager.maybeShowInterstitial(activity, onDismissed, force = isDaily)
+        // Bölümler: every EVEN level (2, 4, 6, 8, 10) of every world shows one,
+        // on top of the usual every-Nth-match cadence. Not shown again within a
+        // minute of the previous ad, so a quick retry of the same level is not
+        // met with a second one.
+        val evenLevel = worldId != null && levelIndex != null && levelIndex % 2 == 0
+        adManager.maybeShowInterstitial(
+            activity,
+            onDismissed,
+            force = isDaily || evenLevel,
+            forceMinGapMillis = if (isDaily) 0L else LEVEL_AD_MIN_GAP_MILLIS
+        )
     }
 
     /**
@@ -1198,3 +1208,6 @@ class GameViewModel @Inject constructor(
         super.onCleared()
     }
 }
+
+/** See GameViewModel.showResultInterstitial: shortest gap between a level ad and the previous interstitial. */
+private const val LEVEL_AD_MIN_GAP_MILLIS = 60_000L
