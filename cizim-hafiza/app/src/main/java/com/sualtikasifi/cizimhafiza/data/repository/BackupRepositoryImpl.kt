@@ -135,6 +135,9 @@ class BackupRepositoryImpl @Inject constructor(
             goldBalance = settingsRepository.goldBalance.value,
             ownedStoreIds = settingsRepository.ownedStoreIds.value.toList(),
             jokerCounts = settingsRepository.jokerCounts.value.map { (type, n) -> "${type.name}:$n" },
+            chestSlots = com.sualtikasifi.cizimhafiza.domain.model.ChestBackupCodec.encode(settingsRepository.chestSlots.value),
+            chestCycleSeed = settingsRepository.chestCycleSeedForBackup,
+            chestCycleIndex = settingsRepository.chestCycleIndexForBackup,
             backedUpAt = System.currentTimeMillis()
         )
     }
@@ -454,7 +457,10 @@ class BackupRepositoryImpl @Inject constructor(
                 val (name, n) = entry.split(":").let { it.getOrNull(0) to it.getOrNull(1)?.toIntOrNull() }
                 val type = runCatching { com.sualtikasifi.cizimhafiza.domain.model.JokerType.valueOf(name.orEmpty()) }.getOrNull()
                 if (type != null && n != null) type to n else null
-            }.toMap()
+            }.toMap(),
+            chestSlots = com.sualtikasifi.cizimhafiza.domain.model.ChestBackupCodec.decode(snapshot.chestSlots),
+            restoredChestCycleSeed = snapshot.chestCycleSeed,
+            restoredChestCycleIndex = snapshot.chestCycleIndex
         )
         // Restored alongside the XP it explains. Without this a restore would
         // bring back the penalised total with a counter of zero, and the very

@@ -932,10 +932,9 @@
     <string name="quick_match_searching">Rakip aranıyor…</string>
     <string name="quick_match_opponent_found">Rakibin Hazır!</string>
     <string name="quick_match_explainer">Aynı %1$d kelimeyi ikiniz de çizeceksiniz. Puanlar sonunda karşılaştırılacak.</string>
-    <string name="quick_match_tip_words">Aynı %1$d kelimeyi ikiniz de çizeceksiniz.</string>
-    <string name="quick_match_tip_scoring">Puanlar sonunda karşılaştırılacak.</string>
-    <string name="quick_match_tip_fun">Eğlenmeyi unutma! 😊</string>
-    <string name="quick_match_center_note">Güzel bir maç\nseni bekliyor!</string>
+    <string name="quick_match_tip_words">İkiniz de aynı %1$d kelimeyi çizeceksiniz</string>
+    <string name="quick_match_tip_scoring">Puanlar maç sonunda karşılaştırılır</string>
+    <string name="quick_match_tip_fun">Rahat ol, keyfini çıkar!</string>
     <string name="quick_match_starting_in">Maç %1$d saniye sonra başlıyor</string>
     <string name="quick_match_good_luck">Bol şans!</string>
     <string name="quick_match_sticky_good_drawings">İyi\nçizimler 🙂</string>
@@ -1206,4 +1205,5 @@
     <string name="chest_detail_total">Açılma süresi: %1$d saat</string>
     <string name="chest_detail_ready">Kasan hazır!</string>
     <string name="settings_privacy_policy">Gizlilik Politikası</string>
+    <string name="guess_tile_hint">İpucu</string>
 </resources>

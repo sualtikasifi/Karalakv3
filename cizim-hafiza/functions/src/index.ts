@@ -433,19 +433,38 @@ export async function runBuildGlobalLeaderboard(): Promise<void> {
       .sort((a, b) => b.periodXp - a.periodXp || a.nickname.localeCompare(b.nickname))
       .slice(0, PUBLISHED_TABLE_SIZE);
 
-    await db.doc("leaderboards/global").set({
-      periodId,
-      generatedAt: now,
-      daysRemaining: Math.max(t.daysInMonth - t.day, 0),
-      // The month's own prize, unless the review panel has overridden it.
-      rewardId: (config.get("rewardId") as string | undefined) ?? rewardIdFor(periodId),
-      entries,
-      bots: botStates,
-      botsGrewAt: growthDue ? now : previousBotsGrewAt ?? now,
-      // Written by finalizeLeaguePeriod; preserved here so a rebuild during
-      // the week does not wipe the winners the app is still handing out.
-      lastPeriod: previous.get("lastPeriod") ?? null,
-    });
+    // On the first build of a new month, keep the standings the table showed
+    // just before the rollover. A player's own profile is re-stamped with the
+    // new month the moment they next open the app, which takes them out of
+    // finalizeLeaguePeriod's users/ query — and the most active players (the
+    // ones who win) are exactly the ones who open it right after midnight.
+    // These rows are the safety net that keeps their final score countable.
+    const endedPeriod =
+      !samePeriod && previousPeriodId !== undefined
+        ? {
+            periodId: previousPeriodId,
+            entries: ((previous.get("entries") as LeagueRow[] | undefined) ?? []).filter((e) => !e.bot && e.uid),
+          }
+        : undefined;
+
+    // merge: true — this used to overwrite the whole document, and copied
+    // lastPeriod across from a read taken earlier in the run. A finalize that
+    // committed in between was then silently undone, taking the winners (and
+    // with them the prize) back off the table.
+    await db.doc("leaderboards/global").set(
+      {
+        periodId,
+        generatedAt: now,
+        daysRemaining: Math.max(t.daysInMonth - t.day, 0),
+        // The month's own prize, unless the review panel has overridden it.
+        rewardId: (config.get("rewardId") as string | undefined) ?? rewardIdFor(periodId),
+        entries,
+        bots: botStates,
+        botsGrewAt: growthDue ? now : previousBotsGrewAt ?? now,
+        ...(endedPeriod ? { endedPeriod } : {}),
+      },
+      { merge: true }
+    );
 
   logger.info(
     `League: ${real.length} real + ${bots.length} bot row(s) for period ${periodId}, growth ${growthDue ? "applied" : "skipped"}`
@@ -509,14 +528,34 @@ export async function runFinalizeLeaguePeriod(): Promise<void> {
       .limit(3)
       .get();
 
-    const winners = snapshot.docs
-      .filter((doc) => ((doc.get("periodXp") as number | undefined) ?? 0) > 0)
-      .map((doc, index) => ({
-        uid: doc.id,
-        nickname: (doc.get("nickname") as string | undefined)?.trim() || "?",
-        periodXp: (doc.get("periodXp") as number | undefined) ?? 0,
-        rank: index + 1,
-      }));
+    // Two sources, best score per player. The users/ query misses anyone who
+    // opened the app after the rollover but before this ran (their profile
+    // already carries the new month); the snapshot the table published just
+    // before the rollover still has them. See runBuildGlobalLeaderboard.
+    const candidates = new Map<string, { uid: string; nickname: string; periodXp: number }>();
+    const consider = (uid: string, nickname: string, periodXp: number) => {
+      const seen = candidates.get(uid);
+      if (!seen || periodXp > seen.periodXp) candidates.set(uid, { uid, nickname, periodXp });
+    };
+    for (const doc of snapshot.docs) {
+      consider(
+        doc.id,
+        (doc.get("nickname") as string | undefined)?.trim() || "?",
+        (doc.get("periodXp") as number | undefined) ?? 0
+      );
+    }
+    const ended = existing.get("endedPeriod") as { periodId?: number; entries?: LeagueRow[] } | undefined;
+    if (ended?.periodId === finishedPeriodId) {
+      for (const row of ended.entries ?? []) {
+        if (row.uid && !row.bot) consider(row.uid, row.nickname?.trim() || "?", row.periodXp ?? 0);
+      }
+    }
+
+    const winners = [...candidates.values()]
+      .filter((c) => c.periodXp > 0)
+      .sort((a, b) => b.periodXp - a.periodXp || a.nickname.localeCompare(b.nickname))
+      .slice(0, 3)
+      .map((c, index) => ({ ...c, rank: index + 1 }));
 
     const batch = db.batch();
     for (const winner of winners) {

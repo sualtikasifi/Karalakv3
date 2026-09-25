@@ -38,8 +38,16 @@ data class LeagueUiState(
      * SettingsRepository.grantLeagueReward), and only that read should
      * celebrate.
      */
-    val justWon: LeagueReward? = null
+    val justWon: LeaguePrize? = null
 )
+
+/**
+ * What one visit collected: always the monthly gold + XP bonus, plus a
+ * cosmetic when this build knows the prize's id. [reward] is null for an id
+ * this build does not ship (an old app, or a month with no artwork) — the
+ * bonus is still real, so the celebration still fires.
+ */
+data class LeaguePrize(val reward: LeagueReward?)
 
 @HiltViewModel
 class LeagueViewModel @Inject constructor(
@@ -119,19 +127,26 @@ class LeagueViewModel @Inject constructor(
      * anyway: a separate per-player award document would be a second read
      * for a prize almost nobody has won.
      */
-    private fun collectPrize(table: GlobalLeagueTable): LeagueReward? {
+    private fun collectPrize(table: GlobalLeagueTable): LeaguePrize? {
         if (table.myLastPeriodWin == null) return null
-        val rewardId = table.lastPeriod?.rewardId ?: return null
-        if (!settingsRepository.grantLeagueReward(rewardId)) return null
-        // The flat monthly gold+XP bonus rides on the exact same
-        // once-per-period gate as the pen/frame above — grantLeagueReward
-        // already returned true exactly once, so this can't double-pay on a
-        // later open of the same month's result.
+        val period = table.lastPeriod ?: return null
+        // ONE gate per MONTH, not per prize id. The bonus used to ride on the
+        // prize id being new, but the id can be pinned from the review panel
+        // (leaderboards/config) — a pinned id repeats month after month, so
+        // from the second month on nobody would have been paid.
+        if (!settingsRepository.grantLeagueReward("$PERIOD_KEY_PREFIX${period.periodId}")) return null
+        // Ownership of the cosmetic itself is recorded separately; its result
+        // no longer decides whether the bonus is due.
+        period.rewardId?.let { settingsRepository.grantLeagueReward(it) }
         settingsRepository.earnGold(GameConstants.LEAGUE_MONTHLY_GOLD)
         settingsRepository.addXp(GameConstants.LEAGUE_MONTHLY_XP)
         // Null when this build does not know the id — an older app reading a
         // prize whose artwork it does not ship. The grant still stands, so
         // updating the app later reveals it.
-        return LeagueReward.find(rewardId)
+        return LeaguePrize(LeagueReward.find(period.rewardId))
+    }
+
+    private companion object {
+        const val PERIOD_KEY_PREFIX = "PERIOD:"
     }
 }

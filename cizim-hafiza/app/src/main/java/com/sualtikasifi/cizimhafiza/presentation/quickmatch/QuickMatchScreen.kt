@@ -1,6 +1,22 @@
 package com.sualtikasifi.cizimhafiza.presentation.quickmatch
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.delay
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -130,6 +146,19 @@ fun QuickMatchScreen(
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
+            // The paper background is always there; the workshop photo fades in
+            // over it when the opponent is found, so the switch is a
+            // cross-fade instead of a hard cut.
+            Box(modifier = Modifier.fillMaxSize().screenBackground())
+            val foundBgAlpha by animateFloatAsState(if (matched) 1f else 0f, tween(600), label = "quick_match_found_bg")
+            if (foundBgAlpha > 0f) {
+                Image(
+                    painter = painterResource(R.drawable.match_found_bg),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize().alpha(foundBgAlpha)
+                )
+            }
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -139,10 +168,6 @@ fun QuickMatchScreen(
                     // every other state here still uses — see
                     // MatchFoundTopClearance for why the content below
                     // starts as low as it does.
-                    .then(
-                        if (matched) Modifier.paint(painterResource(R.drawable.match_found_bg), contentScale = ContentScale.Crop)
-                        else Modifier.screenBackground()
-                    )
                     .padding(padding)
                     .padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
@@ -152,7 +177,8 @@ fun QuickMatchScreen(
                 // everywhere else's. The Found state needs much more room:
                 // its own background bakes the "Rakibin Hazır!" signage into
                 // roughly the top quarter of the image.
-                Spacer(modifier = Modifier.height(if (matched) MatchFoundTopClearance else TopActionsClearance))
+                val topClearance by animateDpAsState(if (matched) MatchFoundTopClearance else TopActionsClearance, tween(500, easing = FastOutSlowInEasing), label = "quick_match_top_clearance")
+                Spacer(modifier = Modifier.height(topClearance))
 
                 // Centred as one block when it fits, scrollable when it does
                 // not — same pattern as MainMenuScreen's own masthead+tiles
@@ -169,7 +195,19 @@ fun QuickMatchScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    when (val current = state) {
+                    // Each state fades and scales into place rather than replacing
+                    // the last one in a single frame. Keyed on the state's
+                    // class so updates INSIDE Found do not replay it.
+                    AnimatedContent(
+                        targetState = state,
+                        contentKey = { it::class },
+                        transitionSpec = {
+                            (fadeIn(tween(450, delayMillis = 150)) + scaleIn(tween(450, delayMillis = 150), initialScale = 0.9f)) togetherWith
+                                fadeOut(tween(200))
+                        },
+                        label = "quick_match_state"
+                    ) { current ->
+                    when (current) {
                         QuickMatchState.Searching -> SearchingBody()
                         is QuickMatchState.Found -> FoundBody(
                             opponent = current.opponent,
@@ -202,6 +240,7 @@ fun QuickMatchScreen(
                             actionLabel = null,
                             onAction = {}
                         )
+                    }
                     }
                 }
                 }
@@ -385,6 +424,7 @@ private fun PlayersSection(opponent: GhostRun, me: QuickMatchPlayerSnapshot) {
             horizontalArrangement = Arrangement.spacedBy(28.dp)
         ) {
             PlayerCard(
+                fromLeft = true,
                 nickname = me.nickname,
                 level = me.level,
                 frameId = me.frameId,
@@ -395,6 +435,7 @@ private fun PlayersSection(opponent: GhostRun, me: QuickMatchPlayerSnapshot) {
                 modifier = Modifier.weight(1f)
             )
             PlayerCard(
+                fromLeft = false,
                 nickname = opponent.nickname,
                 level = opponent.level,
                 frameId = opponent.frameId,
@@ -407,21 +448,23 @@ private fun PlayersSection(opponent: GhostRun, me: QuickMatchPlayerSnapshot) {
                 modifier = Modifier.weight(1f)
             )
         }
-        Column(
-            modifier = Modifier.align(Alignment.Center),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Image(
-                painter = painterResource(R.drawable.match_vs),
-                contentDescription = stringResource(R.string.quick_match_versus),
-                modifier = Modifier.size(64.dp)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            StickyNote(
-                text = stringResource(R.string.quick_match_center_note),
-                rotation = 0f
-            )
+        // Pops in once the two cards have landed on either side of it.
+        val vsScale = remember { Animatable(0f) }
+        LaunchedEffect(Unit) {
+            delay(350)
+            vsScale.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 300f))
         }
+        Image(
+            painter = painterResource(R.drawable.match_vs),
+            contentDescription = stringResource(R.string.quick_match_versus),
+            modifier = Modifier
+                .align(Alignment.Center)
+                .size(64.dp)
+                .graphicsLayer {
+                    scaleX = vsScale.value
+                    scaleY = vsScale.value
+                }
+        )
     }
 }
 
@@ -439,6 +482,7 @@ private val MatchBlue = Color(0xFF1E7FE0)
  */
 @Composable
 private fun PlayerCard(
+    fromLeft: Boolean,
     nickname: String,
     level: Int,
     frameId: String,
@@ -449,15 +493,60 @@ private fun PlayerCard(
 ) {
     val shape = RoundedCornerShape(22.dp)
     val rank = LevelTier.forLevel(level).rank
+    // Slides in from its own side with a small overshoot, then keeps a soft
+    // glow pulsing round its border. Every animated value is read inside a
+    // draw/graphics lambda (as State, not delegated) so the pulse repaints
+    // the card without recomposing it — avatar, ribbon and all.
+    val slide = remember { Animatable(if (fromLeft) -1f else 1f) }
+    LaunchedEffect(Unit) { slide.animateTo(0f, spring(dampingRatio = 0.6f, stiffness = 170f)) }
+    val pulse = rememberInfiniteTransition(label = "player_card_pulse")
+    val glow = pulse.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1100, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "player_card_glow"
+    )
+    val crownBob = pulse.animateFloat(
+        initialValue = 0f,
+        targetValue = -4f,
+        animationSpec = infiniteRepeatable(tween(800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "player_card_crown"
+    )
     Column(
         modifier = modifier
+            .graphicsLayer {
+                translationX = slide.value * size.width
+                alpha = (1f - kotlin.math.abs(slide.value)).coerceIn(0f, 1f)
+            }
+            .drawBehind {
+                val spread = 7.dp.toPx() * glow.value
+                drawRoundRect(
+                    color = accent.copy(alpha = 0.28f * glow.value),
+                    topLeft = Offset(-spread, -spread),
+                    size = Size(size.width + spread * 2, size.height + spread * 2),
+                    cornerRadius = CornerRadius(22.dp.toPx() + spread)
+                )
+            }
             .clip(shape)
             .background(Color(0xE6221812))
-            .border(2.dp, accent, shape)
+            .drawBehind {
+                val w = 2.5.dp.toPx()
+                drawRoundRect(
+                    color = accent.copy(alpha = 0.55f + 0.45f * glow.value),
+                    topLeft = Offset(w / 2, w / 2),
+                    size = Size(size.width - w, size.height - w),
+                    cornerRadius = CornerRadius(22.dp.toPx()),
+                    style = Stroke(width = w)
+                )
+            }
             .padding(top = 14.dp, bottom = 12.dp, start = 8.dp, end = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "👑", fontSize = 18.sp)
+        Text(
+            text = "👑",
+            fontSize = 18.sp,
+            modifier = Modifier.graphicsLayer { translationY = crownBob.value.dp.toPx() }
+        )
         Spacer(modifier = Modifier.height(2.dp))
         LevelAvatar(
             level = level,
@@ -592,7 +681,12 @@ private const val COUNTDOWN_BAR_ASPECT = 1400f / 250f
 /** Three short facts about the round ahead, in place of the single explainer sentence this used to be. */
 @Composable
 private fun TipsRow() {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+    // IntrinsicSize.Max + fillMaxHeight on each card: all three take the height
+    // of the tallest, so a longer sentence no longer makes one box bigger.
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)
+    ) {
         TipCard(emoji = "📝", text = stringResource(R.string.quick_match_tip_words, GhostRuns.RUN_WORD_COUNT), modifier = Modifier.weight(1f))
         TipCard(emoji = "🏆", text = stringResource(R.string.quick_match_tip_scoring), modifier = Modifier.weight(1f))
         TipCard(emoji = "😊", text = stringResource(R.string.quick_match_tip_fun), modifier = Modifier.weight(1f))
@@ -603,10 +697,12 @@ private fun TipsRow() {
 private fun TipCard(emoji: String, text: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
+            .fillMaxHeight()
             .clip(RoundedCornerShape(16.dp))
             .background(Color(0xCC1E1610))
             .padding(horizontal = 8.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Text(text = emoji, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(6.dp))
@@ -645,32 +741,6 @@ private fun GoodLuckMascot() {
         }
     }
 }
-
-/**
- * A small taped-on paper note, used for the "Güzel bir maç seni bekliyor!"
- * tag between the two player cards. Purely decorative — same spirit as the
- * doodles already printed into screenBackground()'s paper texture, just one
- * a player can actually read.
- */
-@Composable
-private fun StickyNote(text: String, rotation: Float, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .rotate(rotation)
-            .background(StickyNoteColor, RoundedCornerShape(4.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = StickyNoteTextColor,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-private val StickyNoteColor = Color(0xFFFCE9A8)
-private val StickyNoteTextColor = Color(0xFF6B5B2A)
 
 private const val COUNTDOWN_MS = 5_000
 

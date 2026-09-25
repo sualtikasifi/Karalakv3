@@ -103,3 +103,27 @@ object ChestLoot {
         return ChestReward(tier, gold, jokers, pen)
     }
 }
+
+/**
+ * How chest slots travel in the account backup: one string per slot,
+ * "id|TIER|startedAtMillis" (or "-" while still locked), and an empty string
+ * for an empty slot — positions are kept so a chest returns to the slot it
+ * was in. Unreadable entries decode to an empty slot rather than throwing: a
+ * corrupt row must never be able to fail a whole restore.
+ */
+object ChestBackupCodec {
+    fun encode(slots: List<Chest?>): List<String> = slots.map { chest ->
+        if (chest == null) "" else "${chest.id}|${chest.tier.name}|${chest.unlockStartedAtMillis ?: "-"}"
+    }
+
+    fun decode(entries: List<String>): List<Chest?> {
+        val decoded = entries.take(ChestSlots.SLOT_COUNT).map { entry ->
+            val parts = entry.split("|")
+            if (parts.size != 3 || parts[0].isBlank()) return@map null
+            val tier = runCatching { ChestTier.valueOf(parts[1]) }.getOrNull() ?: return@map null
+            val started = if (parts[2] == "-") null else parts[2].toLongOrNull() ?: return@map null
+            Chest(id = parts[0], tier = tier, unlockStartedAtMillis = started)
+        }
+        return decoded + List(ChestSlots.SLOT_COUNT - decoded.size) { null }
+    }
+}

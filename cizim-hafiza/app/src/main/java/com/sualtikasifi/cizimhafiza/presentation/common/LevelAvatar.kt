@@ -193,7 +193,14 @@ fun LevelAvatar(
             // three digits ("100") get a smaller fraction so they still clear
             // the circle's narrowing edges.
             val digits = level.toString()
-            val fontSize = (faceSize.value * if (digits.length >= 3) LEVEL_TEXT_FRACTION_WIDE else LEVEL_TEXT_FRACTION).sp
+            // One target size for every frame (a fraction of the whole
+            // avatar), capped only so it still fits the frame's hole. Sizing it
+            // off each hole alone made the digits swing from huge in the
+            // level-1 frame (hole 0.72) to tiny in the pencil frame (0.42).
+            val wide = digits.length >= 3
+            val target = size.value * if (wide) LEVEL_TEXT_TARGET_WIDE else LEVEL_TEXT_TARGET
+            val fitCap = faceSize.value * if (wide) LEVEL_TEXT_FIT_WIDE else LEVEL_TEXT_FIT
+            val fontSize = minOf(target, fitCap).sp
             Text(
                 text = digits,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -237,10 +244,15 @@ fun LevelAvatar(
 // Shared helpers / tuning
 // ---------------------------------------------------------------------------
 
-private const val LEVEL_TEXT_FRACTION = 0.58f
+/** Digit size as a share of the WHOLE avatar — the same for every frame so levels read alike everywhere. */
+private const val LEVEL_TEXT_TARGET = 0.30f
 
-/** Three digits ("100") need a smaller share of the face than one or two. */
-private const val LEVEL_TEXT_FRACTION_WIDE = 0.42f
+/** Three digits ("100") are wider, so they get a smaller share. */
+private const val LEVEL_TEXT_TARGET_WIDE = 0.23f
+
+/** Upper bound as a share of the frame's hole, so the digits never touch the artwork around it. */
+private const val LEVEL_TEXT_FIT = 0.75f
+private const val LEVEL_TEXT_FIT_WIDE = 0.50f
 
 /**
  * How many drifting sparkles a frame gets, by [AvatarFrame.unlockLevel] — 0

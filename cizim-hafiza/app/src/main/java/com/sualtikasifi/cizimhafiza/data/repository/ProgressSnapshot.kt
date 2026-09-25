@@ -58,17 +58,20 @@ data class ProgressSnapshot(
      */
     val penaltiesApplied: Int = 0,
     /**
-     * Chest gold (see SettingsRepository.goldBalance) — the one part of the
-     * chest economy that travels with the account. The chests themselves
-     * (SettingsRepository.chestSlots) deliberately do NOT: an in-progress
-     * unlock countdown is this device's business, not something a restore
-     * should teleport to a different phone.
+     * Chest gold (see SettingsRepository.goldBalance). The chests themselves
+     * travel too — see [chestSlots]: a chest won on the account should still
+     * be there after a reinstall or on a new phone.
      */
     val goldBalance: Int = 0,
     /** Store purchases ("pen:NAME" / "frame:NAME") — bought with gold, so they travel with it. */
     val ownedStoreIds: List<String> = emptyList(),
     /** Joker inventory as "TYPE:count" strings. */
     val jokerCounts: List<String> = emptyList(),
+    /** Chest slots — see ChestBackupCodec. Travels with the account so a reinstall does not lose won chests. */
+    val chestSlots: List<String> = emptyList(),
+    /** Seed and position of this account's chest tier cycle — 0 when never generated. */
+    val chestCycleSeed: Long = 0L,
+    val chestCycleIndex: Int = 0,
     val backedUpAt: Long
 ) {
     /**
@@ -101,6 +104,9 @@ data class ProgressSnapshot(
         "goldBalance" to goldBalance,
         "ownedStoreIds" to ownedStoreIds,
         "jokerCounts" to jokerCounts,
+        "chestSlots" to chestSlots,
+        "chestCycleSeed" to chestCycleSeed,
+        "chestCycleIndex" to chestCycleIndex,
         "backedUpAt" to backedUpAt
     )
 
@@ -139,6 +145,9 @@ data class ProgressSnapshot(
             goldBalance = data.int("goldBalance"),
             ownedStoreIds = data.strings("ownedStoreIds"),
             jokerCounts = data.strings("jokerCounts"),
+            chestSlots = data.strings("chestSlots"),
+            chestCycleSeed = data.long("chestCycleSeed"),
+            chestCycleIndex = data.int("chestCycleIndex"),
             backedUpAt = data.long("backedUpAt")
         )
 

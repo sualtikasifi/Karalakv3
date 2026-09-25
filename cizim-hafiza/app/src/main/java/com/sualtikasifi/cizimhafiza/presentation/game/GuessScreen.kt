@@ -45,6 +45,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.SkipNext
+import com.sualtikasifi.cizimhafiza.presentation.common.JokerArt
+import com.sualtikasifi.cizimhafiza.presentation.common.shortRes
+import com.sualtikasifi.cizimhafiza.presentation.common.tint
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
@@ -296,52 +301,74 @@ fun GuessScreen(
             }
 
             if (!isAnswered) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 // Ad hint (one per whole match, not per word — see
                 // GameViewModel/OnlineGameViewModel.useHint), the two jokers
-                // and skip, all in ONE slim row that wraps onto a second line
-                // only on a very narrow phone instead of always stacking.
-                FlowRow(
+                // and skip: one row of equal-width tiles, so they read as a
+                // toolbar instead of loose pills piled against the left edge.
+                // With the ad hint gone the remaining tiles simply share the
+                // width.
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (!state.hintUsed && state.hintLetter == null && GameConstants.ADMOB_ENABLED) {
-                        HelperPill(
+                        GuessActionTile(
+                            label = stringResource(if (hintRequested) R.string.loading_hint else R.string.guess_tile_hint),
+                            fill = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.primary,
+                            borderColor = MaterialTheme.colorScheme.primary,
+                            enabled = !hintRequested,
+                            modifier = Modifier.weight(1f),
                             // Countdown is paused (see useHint) the instant this is
-                            // tapped, so the label needs to make clear something is
+                            // tapped, so the label changes to make clear something is
                             // happening — a frozen timer with no other signal would
                             // otherwise look like the screen had just stalled.
-                            text = stringResource(
-                                if (hintRequested) R.string.loading_hint else R.string.watch_ad_for_hint
-                            ),
-                            enabled = !hintRequested,
                             onClick = {
                                 if (!hintRequested) {
                                     hintRequested = true
                                     onHintClick()
                                 }
+                            },
+                            icon = {
+                                Icon(Icons.Filled.PlayCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
                             }
                         )
                     }
-                    val firstCount = jokers[com.sualtikasifi.cizimhafiza.domain.model.JokerType.FIRST_LETTER] ?: 0
-                    val countCount = jokers[com.sualtikasifi.cizimhafiza.domain.model.JokerType.LETTER_COUNT] ?: 0
-                    com.sualtikasifi.cizimhafiza.presentation.common.JokerButton(
-                        type = com.sualtikasifi.cizimhafiza.domain.model.JokerType.FIRST_LETTER,
-                        count = firstCount,
-                        enabled = state.hintLetter == null,
-                        onClick = onFirstLetterJoker
+                    val firstType = com.sualtikasifi.cizimhafiza.domain.model.JokerType.FIRST_LETTER
+                    val countType = com.sualtikasifi.cizimhafiza.domain.model.JokerType.LETTER_COUNT
+                    val firstCount = jokers[firstType] ?: 0
+                    val letterCountCount = jokers[countType] ?: 0
+                    GuessActionTile(
+                        label = stringResource(firstType.shortRes()),
+                        fill = firstType.tint(),
+                        contentColor = Color.White,
+                        enabled = state.hintLetter == null && firstCount > 0,
+                        badgeCount = firstCount,
+                        modifier = Modifier.weight(1f),
+                        onClick = onFirstLetterJoker,
+                        icon = { JokerArt(firstType, 28.dp) }
                     )
-                    com.sualtikasifi.cizimhafiza.presentation.common.JokerButton(
-                        type = com.sualtikasifi.cizimhafiza.domain.model.JokerType.LETTER_COUNT,
-                        count = countCount,
-                        enabled = state.letterCount == null,
-                        onClick = onLetterCountJoker
+                    GuessActionTile(
+                        label = stringResource(countType.shortRes()),
+                        fill = countType.tint(),
+                        contentColor = Color.White,
+                        enabled = state.letterCount == null && letterCountCount > 0,
+                        badgeCount = letterCountCount,
+                        modifier = Modifier.weight(1f),
+                        onClick = onLetterCountJoker,
+                        icon = { JokerArt(countType, 28.dp) }
                     )
-                    HelperPill(
-                        text = stringResource(R.string.skip_guess),
-                        enabled = true,
-                        onClick = { onSubmit("") }
+                    GuessActionTile(
+                        label = stringResource(R.string.skip_guess),
+                        fill = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        borderColor = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onSubmit("") },
+                        icon = {
+                            Icon(Icons.Filled.SkipNext, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(28.dp))
+                        }
                     )
                 }
             }
@@ -360,24 +387,67 @@ fun GuessScreen(
     }
 }
 
-/** A slim pill for the helper row under the answer field. */
+/**
+ * One button of the helper toolbar under the answer field: icon over label,
+ * same height and (via the caller's weight) the same width as its neighbours.
+ * [badgeCount] draws a small count chip on the corner — the joker stock.
+ */
 @Composable
-private fun HelperPill(text: String, enabled: Boolean, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(50)
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-        maxLines = 1,
-        modifier = Modifier
-            .alpha(if (enabled) 1f else 0.5f)
+private fun GuessActionTile(
+    label: String,
+    fill: Color,
+    contentColor: Color,
+    modifier: Modifier = Modifier,
+    borderColor: Color? = null,
+    enabled: Boolean = true,
+    badgeCount: Int? = null,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit
+) {
+    val shape = RoundedCornerShape(16.dp)
+    Box(
+        modifier = modifier
+            .height(62.dp)
+            .alpha(if (enabled) 1f else 0.45f)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.5.dp, MaterialTheme.colorScheme.primary, shape)
+            .background(fill)
+            .then(if (borderColor != null) Modifier.border(2.dp, borderColor, shape) else Modifier)
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 9.dp)
-    )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            icon()
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                color = contentColor,
+                maxLines = 1
+            )
+        }
+        if (badgeCount != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 4.dp, end = 6.dp)
+                    .size(20.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = badgeCount.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                    color = fill
+                )
+            }
+        }
+    }
 }
 
 /**

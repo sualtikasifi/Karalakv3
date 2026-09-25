@@ -261,9 +261,9 @@ fun LeagueScreen(
             } else null
         )
 
-        uiState.justWon?.let { reward ->
+        uiState.justWon?.let { prize ->
             PrizeWonDialog(
-                reward = reward,
+                reward = prize.reward,
                 rank = uiState.global?.myLastPeriodWin?.rank ?: 0,
                 onDismiss = viewModel::dismissPrize
             )
@@ -481,7 +481,7 @@ private fun rewardExplainer(reward: LeagueReward): String = when (reward) {
 
 /** Shown once, the first time a won prize is actually handed over. */
 @Composable
-private fun PrizeWonDialog(reward: LeagueReward, rank: Int, onDismiss: () -> Unit) {
+private fun PrizeWonDialog(reward: LeagueReward?, rank: Int, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
@@ -494,17 +494,19 @@ private fun PrizeWonDialog(reward: LeagueReward, rank: Int, onDismiss: () -> Uni
                     PenStrokePreview(skin = reward.skin, modifier = Modifier.fillMaxWidth().height(40.dp))
                     Spacer(modifier = Modifier.height(10.dp))
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (reward is LeagueReward.Frame) {
-                        RewardSwatch(reward = reward, size = 44.dp)
-                        Spacer(modifier = Modifier.width(12.dp))
+                if (reward != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (reward is LeagueReward.Frame) {
+                            RewardSwatch(reward = reward, size = 44.dp)
+                            Spacer(modifier = Modifier.width(12.dp))
+                        }
+                        Text(
+                            text = stringResource(R.string.league_prize_won_body, rewardLabel(reward)),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
-                    Text(
-                        text = stringResource(R.string.league_prize_won_body, rewardLabel(reward)),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
-                Spacer(modifier = Modifier.height(10.dp))
                 MonthlyBonusRow()
             }
         }

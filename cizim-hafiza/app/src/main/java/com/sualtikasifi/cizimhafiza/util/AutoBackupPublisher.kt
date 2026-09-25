@@ -52,13 +52,22 @@ class AutoBackupPublisher @Inject constructor(
             // a player counts in days, so it is also the one they notice
             // missing after a reinstall — and the flow that pays for it must
             // not be an accident of what else changed at the same time.
+            // Chests, gold, jokers and store purchases too: opening a chest
+            // moves gold and jokers but no XP, so without these a chest
+            // opened right before a reinstall was never backed up.
             val progressChanged = combine(
-                settingsRepository.lifetimeXp,
-                settingsRepository.nickname,
-                settingsRepository.selectedAvatarFrameId,
-                settingsRepository.selectedPenSkinId,
-                dailyChallengeRepository.state
-            ) { _, _, _, _, _ -> Unit }
+                listOf<kotlinx.coroutines.flow.Flow<Any?>>(
+                    settingsRepository.lifetimeXp,
+                    settingsRepository.nickname,
+                    settingsRepository.selectedAvatarFrameId,
+                    settingsRepository.selectedPenSkinId,
+                    dailyChallengeRepository.state,
+                    settingsRepository.chestSlots,
+                    settingsRepository.goldBalance,
+                    settingsRepository.jokerCounts,
+                    settingsRepository.ownedStoreIds
+                )
+            ) { Unit }
 
             combine(authRepository.authState, progressChanged) { authState, _ -> authState }
                 .filterIsInstance<AuthState.Linked>()

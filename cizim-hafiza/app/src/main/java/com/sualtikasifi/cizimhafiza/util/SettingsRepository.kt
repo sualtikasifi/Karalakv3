@@ -466,6 +466,10 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         _chestSlots.value = slots
     }
 
+    /** The stored seed as-is (0 = never generated) — reading it for a backup must not create one. */
+    val chestCycleSeedForBackup: Long get() = prefs.getLong(KEY_CHEST_CYCLE_SEED, 0L)
+    val chestCycleIndexForBackup: Int get() = prefs.getInt(KEY_CHEST_CYCLE_INDEX, 0)
+
     /**
      * Generated once per account, the first time it is ever needed, and
      * never changed again — this is what makes [ChestSlots.tierAt] a
@@ -861,7 +865,10 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         earnedLeagueRewardIds: Set<String>,
         goldBalance: Int = 0,
         ownedStoreIds: Set<String> = emptySet(),
-        jokerCounts: Map<JokerType, Int> = emptyMap()
+        jokerCounts: Map<JokerType, Int> = emptyMap(),
+        chestSlots: List<Chest?> = List(ChestSlots.SLOT_COUNT) { null },
+        restoredChestCycleSeed: Long = 0L,
+        restoredChestCycleIndex: Int = 0
     ) {
         val frame = selectedAvatarFrameId.ifBlank { AvatarFrame.DEFAULT.name }
         val pen = selectedPenSkinId.ifBlank { PenSkin.DEFAULT.name }
@@ -882,11 +889,14 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             putString(KEY_SELECTED_AVATAR_FRAME, frame)
             putString(KEY_SELECTED_PEN_SKIN, pen)
             putString(KEY_EARNED_LEAGUE_REWARDS, Json.encodeToString(earnedLeagueRewardIds))
-            // Chest SLOTS are deliberately not part of the backup — an
-            // in-progress unlock countdown is this device's business, not
-            // the account's. Gold is the one part of the chest economy that
-            // does travel: it is just a spendable number, no different from
-            // lifetimeScore above.
+            // Chest slots travel with the account (see ChestBackupCodec), along
+            // with the seed/position of the tier cycle so the next chests
+            // keep following the same shuffle after a reinstall.
+            putString(KEY_CHEST_SLOTS, Json.encodeToString(chestSlots))
+            if (restoredChestCycleSeed != 0L) {
+                putLong(KEY_CHEST_CYCLE_SEED, restoredChestCycleSeed)
+                putInt(KEY_CHEST_CYCLE_INDEX, restoredChestCycleIndex)
+            }
             putInt(KEY_GOLD_BALANCE, goldBalance)
             putStringSet(KEY_OWNED_STORE_IDS, ownedStoreIds)
             putString(KEY_JOKERS, Json.encodeToString(jokerCounts.mapKeys { it.key.name }))
@@ -905,7 +915,8 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         _goldBalance.value = goldBalance
         _ownedStoreIds.value = ownedStoreIds
         _jokerCounts.value = jokerCounts
-        _chestSlots.value = List(ChestSlots.SLOT_COUNT) { null }
+        _chestSlots.value = chestSlots
+        com.sualtikasifi.cizimhafiza.notifications.ChestReadyNotifier.sync(context, chestSlots)
     }
 
     fun setNotificationsEnabled(enabled: Boolean) {

@@ -740,32 +740,49 @@ private fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, c
             Box(modifier = Modifier.height(if (compact) 42.dp else 54.dp), contentAlignment = Alignment.Center) {
                 ChestImage(tier = tier, width = if (compact) 48.dp else 62.dp)
             }
-            Text(
-                text = stringResource(tier.labelRes()),
-                fontWeight = FontWeight.ExtraBold,
-                color = tier.onBackdrop(),
-                textAlign = TextAlign.Center,
-                maxLines = if (compact) 1 else 2,
-                softWrap = !compact,
-                fontSize = if (compact) 9.5.sp else 11.sp,
-                lineHeight = 12.sp,
-                modifier = Modifier.weight(1f)
-            )
-            val pillColor = when {
-                ready -> AppTheme.tokens.success
-                unlocking -> Color(0xFF2B1A12)
-                else -> tier.accent()
+            // The name gets a fixed band of its own (two lines tall) so it can
+            // never reach into the timer below, whatever the font scale; the
+            // timer sits on a dark plate of its own, which also guarantees it
+            // reads on every chest colour.
+            Box(
+                modifier = Modifier.fillMaxWidth().height(if (compact) 14.dp else 26.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(tier.labelRes()),
+                    fontWeight = FontWeight.ExtraBold,
+                    color = tier.onBackdrop(),
+                    textAlign = TextAlign.Center,
+                    maxLines = if (compact) 1 else 2,
+                    softWrap = !compact,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    fontSize = if (compact) 9.5.sp else 11.sp,
+                    lineHeight = 12.sp
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            val plateBrush = when {
+                ready -> Brush.verticalGradient(listOf(Color(0xFF4CD27A), Color(0xFF1E9E52)))
+                else -> Brush.verticalGradient(listOf(Color(0xF2352218), Color(0xF21A1108)))
+            }
+            val plateBorder = when {
+                ready -> Color(0xFFB8F5CF)
+                unlocking -> Color(0xFFFFC94D).copy(alpha = 0.85f)
+                else -> tier.accent().copy(alpha = 0.7f)
             }
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(pillColor)
-                    .padding(horizontal = 6.dp, vertical = 4.dp),
+                    .fillMaxWidth()
+                    .height(22.dp)
+                    .clip(RoundedCornerShape(11.dp))
+                    .background(plateBrush)
+                    .border(1.dp, plateBorder, RoundedCornerShape(11.dp))
+                    .padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally)
             ) {
                 if (unlocking) {
-                    Icon(Icons.Filled.Schedule, contentDescription = null, tint = Color.White, modifier = Modifier.size(10.dp))
+                    Icon(Icons.Filled.Schedule, contentDescription = null, tint = Color(0xFFFFC94D), modifier = Modifier.size(10.dp))
                 }
                 Text(
                     text = when {
@@ -776,7 +793,7 @@ private fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, c
                     },
                     fontSize = 10.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
+                    color = if (unlocking) Color(0xFFFFE08A) else Color.White,
                     maxLines = 1,
                     softWrap = false
                 )

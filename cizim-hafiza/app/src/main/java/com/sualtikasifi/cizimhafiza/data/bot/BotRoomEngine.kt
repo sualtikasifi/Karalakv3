@@ -14,6 +14,8 @@ import com.sualtikasifi.cizimhafiza.domain.model.ResultItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.callbackFlow
@@ -72,6 +74,7 @@ class BotRoomEngine @Inject constructor(
         private const val BOT_DISPLAY_NAME = "Sude"
         private const val WORD_COUNT_TARGET = 10
         private const val WORD_COUNT_MIN = 3
+        private const val SPARE_WORD_READS = 3
         private const val POINTS_CORRECT = 5L
         private const val SPEED_BONUS_POINTS = 2L
 
@@ -673,7 +676,35 @@ class BotRoomEngine @Inject constructor(
         return target.coerceAtMost(wordCount)
     }
 
+    /**
+     * [count] random trained words WITH their drawings.
+     *
+     * Reads the one-document index of trained word ids and then only the
+     * handful of drawings actually needed. This used to read the WHOLE
+     * botTrainedWords collection on every bot match — one Firestore read per
+     * trained word (each carrying a full strokes payload) to keep ten of
+     * them, so the bill grew with the training set instead of the number of
+     * matches. The full read remains only as the fallback for a missing or
+     * too-short index.
+     */
     private suspend fun pickTrainedWords(count: Int): List<Map<String, Any?>> {
+        val indexed = runCatching {
+            (firestore.collection("botTrainingIndex").document("trained").get().await().get("wordIds") as? List<*>)
+                ?.mapNotNull { (it as? Number)?.toInt() }
+        }.getOrNull()
+        if (indexed != null && indexed.size >= count) {
+            // A few spares: an id whose drawing has since been deleted just
+            // gets skipped instead of failing the whole pick.
+            val docs = kotlinx.coroutines.coroutineScope {
+                indexed.shuffled().take(count + SPARE_WORD_READS).map { id ->
+                    async {
+                        runCatching { firestore.collection("botTrainedWords").document(id.toString()).get().await() }
+                            .getOrNull()?.takeIf { it.exists() }?.data
+                    }
+                }.awaitAll()
+            }.filterNotNull()
+            if (docs.size >= WORD_COUNT_MIN) return docs.take(count)
+        }
         val snapshot = firestore.collection("botTrainedWords").get().await()
         return snapshot.documents.mapNotNull { it.data }.shuffled().take(count)
     }
