@@ -25,6 +25,11 @@ data class RecentDuel(val duel: Duel, val iAmChallenger: Boolean) {
     val myScore: Int get() = if (iAmChallenger) duel.challengerScore else duel.opponentScore ?: 0
     val otherScore: Int get() = if (iAmChallenger) duel.opponentScore ?: 0 else duel.challengerScore
 
+    /** How many of [totalWords] each side actually guessed right — the "8/10" half of the story a bare score doesn't tell. */
+    val myCorrectCount: Int get() = if (iAmChallenger) duel.challengerCorrectCount else duel.opponentCorrectCount ?: 0
+    val otherCorrectCount: Int get() = if (iAmChallenger) duel.opponentCorrectCount ?: 0 else duel.challengerCorrectCount
+    val totalWords: Int get() = duel.totalWords
+
     /** True/false for a win/loss for me, null for a tie. */
     val iWon: Boolean? get() = duel.challengerWon?.let { if (iAmChallenger) it else !it }
 

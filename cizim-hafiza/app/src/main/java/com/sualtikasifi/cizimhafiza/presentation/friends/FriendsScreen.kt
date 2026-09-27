@@ -3,6 +3,10 @@ package com.sualtikasifi.cizimhafiza.presentation.friends
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -81,6 +85,7 @@ fun FriendsScreen(
     viewModel: FriendsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val duelBadgeCount by viewModel.duelBadgeCount.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(uiState.navigateToWaitingRoomCode) {
@@ -237,11 +242,33 @@ fun FriendsScreen(
             modifier = Modifier.align(Alignment.TopStart),
             title = stringResource(R.string.online_friends_entry)
         ) {
-            RaisedIconButton(
-                icon = Icons.Filled.SportsMma,
-                contentDescription = stringResource(R.string.duel_list_title),
-                onClick = onDuelList
-            )
+            Box {
+                RaisedIconButton(
+                    icon = Icons.Filled.SportsMma,
+                    contentDescription = stringResource(R.string.duel_list_title),
+                    onClick = onDuelList
+                )
+                // A duel notification used to land only on the main menu's
+                // Arkadaşlar tile, with nothing on this screen pointing at
+                // WHICH button actually opens the list — this repeats that
+                // same badge (see MainMenuScreen's own) right on it.
+                if (duelBadgeCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(2.dp)
+                            .background(MaterialTheme.colorScheme.error, CircleShape)
+                            .border(2.dp, Color.White, CircleShape)
+                            .padding(horizontal = 6.dp, vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = duelBadgeCount.toString(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onError
+                        )
+                    }
+                }
+            }
         }
         }
     }

@@ -730,6 +730,13 @@ private fun TipCard(emoji: String, text: String, modifier: Modifier = Modifier) 
  * as life, so it was dropped rather than tuned further. A still picture,
  * held for the few seconds before the match starts, is what actually reads
  * as a clean loading moment.
+ *
+ * Sized down from an earlier 0.8f: this is the last thing in FoundBody's
+ * (non-scrolling) Column, under the players section, the countdown and the
+ * tips row — at 0.8f the total stack ran taller than the available height on
+ * a typical phone, and this was what got clipped by the screen's own bottom
+ * edge as a result. Smaller leaves real clearance instead of depending on
+ * every other piece above it staying exactly as short as it is today.
  */
 @Composable
 private fun MatchMascot() {
@@ -737,7 +744,7 @@ private fun MatchMascot() {
         painter = painterResource(R.drawable.match_high_five),
         contentDescription = null,
         modifier = Modifier
-            .fillMaxWidth(0.8f)
+            .fillMaxWidth(0.58f)
             .aspectRatio(840f / 446f)
     )
 }

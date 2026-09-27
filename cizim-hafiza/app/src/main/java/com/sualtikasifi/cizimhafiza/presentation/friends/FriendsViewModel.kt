@@ -5,12 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sualtikasifi.cizimhafiza.domain.model.AddFriendOutcome
 import com.sualtikasifi.cizimhafiza.domain.model.BlockedUser
+import com.sualtikasifi.cizimhafiza.domain.model.DuelStatus
 import com.sualtikasifi.cizimhafiza.domain.model.Friend
 import com.sualtikasifi.cizimhafiza.domain.model.FriendRequest
 import com.sualtikasifi.cizimhafiza.domain.model.GameMode
 import com.sualtikasifi.cizimhafiza.domain.model.InviteEligibility
 import com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel
 import com.sualtikasifi.cizimhafiza.domain.repository.BotFriendRequestPendingException
+import com.sualtikasifi.cizimhafiza.domain.repository.DuelRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.FriendRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.OnlineGameRepository
 import com.sualtikasifi.cizimhafiza.util.GameConstants
@@ -18,9 +20,12 @@ import com.sualtikasifi.cizimhafiza.util.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -60,8 +65,24 @@ class FriendsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val friendRepository: FriendRepository,
     private val onlineGameRepository: OnlineGameRepository,
+    private val duelRepository: DuelRepository,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
+
+    /**
+     * Duels waiting to be played plus duels this player sent whose result
+     * just came back — the "Düellolar" button's own badge (see
+     * FriendsScreen). Landing on this screen already answers "where do I go
+     * for a friend request", but a duel notification on the main menu's
+     * Arkadaşlar tile gave no hint that the actual list is one tap further
+     * in, behind this specific button — this badge is that hint.
+     */
+    val duelBadgeCount: StateFlow<Int> = combine(
+        duelRepository.observeIncomingDuels().catch { emit(emptyList()) },
+        duelRepository.observeSentDuels().catch { emit(emptyList()) }
+    ) { incoming, sent ->
+        incoming.size + sent.count { it.status == DuelStatus.COMPLETE && !it.seenByChallenger }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     // Pre-filled when opened via a referral invite link
     // (karalak://friend/482913); empty for a plain in-app "Arkadaşlar" tap.

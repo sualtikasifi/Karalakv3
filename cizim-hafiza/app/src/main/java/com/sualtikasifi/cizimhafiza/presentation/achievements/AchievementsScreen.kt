@@ -494,8 +494,8 @@ private fun AchievementChip(
                         scaleX = overshoot
                         scaleY = overshoot
                     }
-                    .background(Color(0xE61C1109), androidx.compose.foundation.shape.RoundedCornerShape(50))
-                    .border(1.5.dp, rewardTint, androidx.compose.foundation.shape.RoundedCornerShape(50))
+                    .background(Color(0xE61C1109), androidx.compose.foundation.shape.RoundedCornerShape(50.dp))
+                    .border(1.5.dp, rewardTint, androidx.compose.foundation.shape.RoundedCornerShape(50.dp))
                     .padding(horizontal = 12.dp, vertical = 4.dp)
             )
         }

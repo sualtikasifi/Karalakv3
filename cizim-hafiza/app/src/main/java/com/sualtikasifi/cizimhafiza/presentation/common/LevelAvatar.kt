@@ -170,24 +170,6 @@ fun LevelAvatar(
                 .size(faceSize),
             contentAlignment = Alignment.Center
         ) {
-            // Read outside the Canvas lambda: DrawScope is not a composable
-            // scope, so a MaterialTheme lookup inside it will not compile.
-            val faceGlow = MaterialTheme.colorScheme.surface
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val glowRadius = this.size.minDimension / 2f
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            faceGlow.copy(alpha = 0.92f),
-                            faceGlow.copy(alpha = 0.78f),
-                            faceGlow.copy(alpha = 0f)
-                        ),
-                        center = this.center,
-                        radius = glowRadius
-                    ),
-                    radius = glowRadius
-                )
-            }
             // Scaled off the face rather than a fixed style so one composable
             // serves both a 36dp match-chrome badge and an 88dp profile — and
             // three digits ("100") get a smaller fraction so they still clear
@@ -201,6 +183,38 @@ fun LevelAvatar(
             val target = size.value * if (wide) LEVEL_TEXT_TARGET_WIDE else LEVEL_TEXT_TARGET
             val fitCap = faceSize.value * if (wide) LEVEL_TEXT_FIT_WIDE else LEVEL_TEXT_FIT
             val fontSize = minOf(target, fitCap).sp
+
+            // Read outside the Canvas lambda: DrawScope is not a composable
+            // scope, so a MaterialTheme lookup inside it will not compile.
+            val faceGlow = MaterialTheme.colorScheme.surface
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                // Sized off the DIGITS, not the whole face box. faceDiameterFraction
+                // (see AvatarFrame) is the frame's actual transparent hole —
+                // often much bigger than the number sitting inside it — and this
+                // glow used to fill that entire hole, which read as a plain white
+                // disc pasted in the middle of the ring rather than a subtle
+                // halo behind the text. Scaled to roughly the digits' own
+                // footprint (wider for more digits) instead, it now only mutes
+                // what is actually directly behind them.
+                val digitRadiusFactor = when {
+                    wide -> 0.95f
+                    digits.length == 2 -> 0.80f
+                    else -> 0.62f
+                }
+                val glowRadius = fontSize.toPx() * digitRadiusFactor
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            faceGlow.copy(alpha = 0.92f),
+                            faceGlow.copy(alpha = 0.78f),
+                            faceGlow.copy(alpha = 0f)
+                        ),
+                        center = this.center,
+                        radius = glowRadius
+                    ),
+                    radius = glowRadius
+                )
+            }
             Text(
                 text = digits,
                 color = MaterialTheme.colorScheme.onSurface,
