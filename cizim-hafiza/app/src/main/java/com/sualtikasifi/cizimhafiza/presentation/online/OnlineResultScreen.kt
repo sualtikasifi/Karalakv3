@@ -140,44 +140,41 @@ fun OnlineResultScreen(
 
     // Not everyone has submitted their result yet — an unfinished player's
     // totalScore field is still the pre-game 0, so showing the comparison
-    // now would misleadingly look like they already lost. Wait (with
-    // reactions still available) until everyone's genuinely finished.
+    // now would misleadingly look like they already lost. Wait until
+    // everyone's genuinely finished.
+    //
+    // No chat/emoji dock here on purpose (there used to be one): sending a
+    // reaction into a round that is already over and whose comparison
+    // hasn't opened yet had nowhere real to land, and it turned this pure
+    // waiting moment into something that looked like it was still asking
+    // for input. Just the wait, centered.
     if (others.isEmpty() || others.any { !it.finished }) {
         Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .screenBackground()
-                    .padding(padding).padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(padding)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = stringResource(R.string.online_you_finished, me.totalScore),
-                    style = MaterialTheme.typography.headlineMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                CircularProgressIndicator()
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = stringResource(R.string.online_waiting_for_opponent_result),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                if (others.isNotEmpty()) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = stringResource(R.string.online_you_finished, me.totalScore),
+                        style = MaterialTheme.typography.headlineMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     Spacer(modifier = Modifier.height(24.dp))
-                    // Tall enough for the full bubble (sender name + emoji +
-                    // caption line), not just the emoji — a too-short box let
-                    // the bubble's bottom half render underneath the
-                    // ReactionSendRow below it.
-                    Box(modifier = Modifier.fillMaxWidth().height(112.dp), contentAlignment = Alignment.Center) {
-                        ReactionOverlay(reactions = uiState.reactions, myUid = myUid, players = room.players)
-                    }
-                    ReactionSendRow(onSend = viewModel::sendReaction)
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.online_waiting_for_opponent_result),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }
@@ -192,6 +189,11 @@ fun OnlineResultScreen(
     val roundPlayers = listOfNotNull(me) + others
     val ranked = roundPlayers.sortedByDescending { it.totalScore }
     val myPlacement = ranked.indexOfFirst { it.uid == myUid } + 1
+    // Shown in the leaderboard (tagged red, see PlayerScoreCard) but kept
+    // OUT of ranked/roundPlayers — those still drive myPlacement, team
+    // totals and the "is everyone finished" gate above, none of which
+    // should ever wait on or rank someone who is no longer here.
+    val leftPlayers = room.players.filter { it.uid != myUid && it.left && !it.pendingNextRound }
     val teamMode = room?.teamMode == true
     val teamATotal = roundPlayers.filter { it.teamId == "A" }.sumOf { it.totalScore }
     val teamBTotal = roundPlayers.filter { it.teamId == "B" }.sumOf { it.totalScore }
@@ -265,6 +267,23 @@ fun OnlineResultScreen(
                         isYou = player.uid == myUid,
                         ready = player.uid in room.rematchVotes,
                         mascotPose = mascotPose
+                    )
+                }
+                // Left the room after this round finished — still shown (a
+                // silently vanishing row read as a bug) but tagged red and
+                // with no rank, since there is nothing left to compare their
+                // score against.
+                columnItems(leftPlayers, key = { it.uid }) { player ->
+                    PlayerScoreCard(
+                        rank = null,
+                        name = player.displayName,
+                        level = player.level,
+                        frameId = player.frameId,
+                        score = player.totalScore,
+                        correctCount = player.correctCount,
+                        totalWords = player.correctCount + player.wrongCount,
+                        isYou = false,
+                        left = true
                     )
                 }
             }
@@ -358,9 +377,13 @@ fun OnlineResultScreen(
                 }
             }
 
-            Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
-                ReactionOverlay(reactions = uiState.reactions, myUid = myUid, players = room.players)
-            }
+            // A persistent row, not the old pop-up overlay: a message
+            // arriving used to insert a solid card right where the gallery
+            // above it was, which read as the drawing being wiped out from
+            // under the player. This row's height never changes, and the
+            // full history lives one tap away instead of disappearing after
+            // a couple of seconds.
+            ChatRow(reactions = uiState.reactions, myUid = myUid, players = room.players, modifier = Modifier.padding(top = 8.dp))
             ReactionSendRow(onSend = viewModel::sendReaction, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
 
             if (uiState.rematchBlockedByNewJoiner) {
@@ -544,7 +567,7 @@ private fun TeamScoreCard(title: String, score: Int, isMine: Boolean, isWinning:
 
 @Composable
 private fun PlayerScoreCard(
-    rank: Int,
+    rank: Int?,
     name: String,
     level: Int,
     frameId: String?,
@@ -552,13 +575,20 @@ private fun PlayerScoreCard(
     correctCount: Int,
     totalWords: Int,
     isYou: Boolean,
-    /** Has voted for a rematch — worn as a green ring on their avatar. */
+    /** Has voted for a rematch — the whole row turns green, plus a ring on their avatar. */
     ready: Boolean = false,
+    /** Left the room after this round — the whole row turns red instead of showing a rank. */
+    left: Boolean = false,
     mascotPose: BotMascotPose? = null,
     modifier: Modifier = Modifier
 ) {
+    val containerColor = when {
+        left -> MaterialTheme.colorScheme.errorContainer
+        ready -> AppTheme.tokens.successContainer
+        else -> MaterialTheme.colorScheme.surface
+    }
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         modifier = modifier.fillMaxWidth()
     ) {
         Row(
@@ -568,7 +598,7 @@ private fun PlayerScoreCard(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = placementEmoji(rank) ?: "$rank.",
+                    text = rank?.let { placementEmoji(it) ?: "$it." } ?: "•",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(end = 10.dp)
                 )
@@ -589,28 +619,38 @@ private fun PlayerScoreCard(
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold
                     )
-                    // Same treatment as the lobby slot (see
-                    // WaitingRoomScreen.PlayerSlotCard): the rank is worn
-                    // under the name, in the display face, so it reads as a
-                    // title rather than as more of the nickname. The result
-                    // table is the other place people look each other up.
-                    val rank = LevelTier.forLevel(level).rank
-                    Text(
-                        text = "${rank.emoji} ${stringResource(rank.nameRes)}",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontSize = 11.sp,
-                        lineHeight = 14.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    // The score alone doesn't say how the round actually went
-                    // — "8/10 doğru" is what makes this a result table rather
-                    // than just a ranking.
-                    if (totalWords > 0) {
+                    if (left) {
+                        // No rank tier line here — leaving mid-comparison is
+                        // the one thing worth saying about this row instead.
                         Text(
-                            text = stringResource(R.string.online_correct_of_total, correctCount, totalWords),
+                            text = stringResource(R.string.online_player_left_lobby),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.error
                         )
+                    } else {
+                        // Same treatment as the lobby slot (see
+                        // WaitingRoomScreen.PlayerSlotCard): the rank is worn
+                        // under the name, in the display face, so it reads as a
+                        // title rather than as more of the nickname. The result
+                        // table is the other place people look each other up.
+                        val tier = LevelTier.forLevel(level).rank
+                        Text(
+                            text = "${tier.emoji} ${stringResource(tier.nameRes)}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        // The score alone doesn't say how the round actually went
+                        // — "8/10 doğru" is what makes this a result table rather
+                        // than just a ranking.
+                        if (totalWords > 0) {
+                            Text(
+                                text = stringResource(R.string.online_correct_of_total, correctCount, totalWords),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }

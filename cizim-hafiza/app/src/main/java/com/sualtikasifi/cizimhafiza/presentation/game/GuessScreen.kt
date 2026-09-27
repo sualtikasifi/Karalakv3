@@ -195,10 +195,7 @@ fun GuessScreen(
                     // Between the music toggle and the ring itself: the
                     // player was earning a speed bonus for answering fast
                     // (see XpAwards.wordXp) with no way to see it happening.
-                    LiveXpBonusBadge(
-                        secondsLeft = state.secondsLeft,
-                        totalSeconds = state.totalSeconds
-                    )
+                    LiveXpBonusBadge(secondsLeft = state.secondsLeft)
                     Spacer(modifier = Modifier.width(8.dp))
                     CircularCountdown(
                         secondsLeft = state.secondsLeft,
@@ -612,32 +609,31 @@ private val XpBonusSparkleGreen = Color(0xFF4FD97D)
 private val XpBonusYellow = Color(0xFFE0C22E)
 
 /**
- * Live preview of the speed bonus answering right now would earn — mirrors
- * XpAwards.wordXp's own 2/4/6-second thresholds, shifted one second earlier
- * on purpose. secondsLeft only ticks at whole-second boundaries while the
- * real award is judged against a continuous response-time-in-millis, so a
- * badge using XpAwards' thresholds directly could still read "+3" for most
- * of the second where the real elapsed time had already crossed into "+2"
- * territory — the badge promising more than the round would actually pay.
- * Cutting a second off every threshold means the badge can only ever be
- * conservative, never over-promise. The colour keeps escalating past the
- * point the number hits zero: a still-timed bar in red is "you're out of
- * bonus, hurry anyway" rather than the badge going dark and looking broken.
+ * Live preview of the speed bonus answering right now would earn, read
+ * straight off the countdown number the player is already looking at: 10-8
+ * seconds left → +3, 7-6 → +2, 5-4 → +1, below that → 0. Deliberately keyed
+ * to [secondsLeft] itself (GUESS_DURATION_SECONDS is always 10 for this
+ * screen) rather than re-derived from XpAwards.wordXp's own millisecond
+ * thresholds — the two used to disagree by up to a second depending on
+ * exactly when within a tick the countdown re-rendered, which is what made
+ * an earlier version of this badge feel like it was lying. Matching the
+ * visible number the player is timing themselves against is what actually
+ * reads as honest, even though it means this is its own small ladder rather
+ * than a mirror of the scoring formula.
  */
 @Composable
-private fun LiveXpBonusBadge(secondsLeft: Int, totalSeconds: Int, modifier: Modifier = Modifier) {
-    val elapsed = (totalSeconds - secondsLeft).coerceAtLeast(0)
+private fun LiveXpBonusBadge(secondsLeft: Int, modifier: Modifier = Modifier) {
     val bonus = when {
-        elapsed < 1 -> 3
-        elapsed < 3 -> 2
-        elapsed < 5 -> 1
+        secondsLeft >= 8 -> 3
+        secondsLeft >= 6 -> 2
+        secondsLeft >= 4 -> 1
         else -> 0
     }
     val stage = when {
-        elapsed < 1 -> 0
-        elapsed < 3 -> 1
-        elapsed < 5 -> 2
-        elapsed < 7 -> 3
+        secondsLeft >= 8 -> 0
+        secondsLeft >= 6 -> 1
+        secondsLeft >= 4 -> 2
+        secondsLeft >= 2 -> 3
         else -> 4
     }
     val targetColor = when (stage) {

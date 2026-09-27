@@ -83,6 +83,9 @@
     <string name="online_start_game">Oyunu Başlat</string>
     <string name="online_waiting_for_host">Herkes hazır! Oda sahibinin başlatmasını bekliyoruz…</string>
     <string name="online_you_label">%1$s (Sen)</string>
+    <string name="online_player_left_lobby">Lobiden ayrıldı</string>
+    <string name="online_chat_row_empty">Henüz mesaj yok — dokun, gönder</string>
+    <string name="online_chat_history_title">Sohbet</string>
     <string name="online_you_finished">Bitirdin! %1$d Puan</string>
     <string name="online_waiting_for_opponent_result">Diğer oyuncuların bitirmesini bekliyoruz…</string>
     <string name="online_result_placement">%1$d. oldun!</string>

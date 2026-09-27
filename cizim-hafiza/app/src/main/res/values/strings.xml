@@ -79,6 +79,9 @@
     <string name="online_start_game">Start Game</string>
     <string name="online_waiting_for_host">Everyone\'s ready! Waiting for the host to start…</string>
     <string name="online_you_label">%1$s (You)</string>
+    <string name="online_player_left_lobby">Left the lobby</string>
+    <string name="online_chat_row_empty">No messages yet — tap to send</string>
+    <string name="online_chat_history_title">Chat</string>
     <string name="online_you_finished">Finished! %1$d Points</string>
     <string name="online_waiting_for_opponent_result">Waiting for the other players to finish…</string>
     <string name="online_result_placement">You placed %1$d!</string>

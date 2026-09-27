@@ -7,6 +7,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -131,6 +132,16 @@ fun Modifier.raisedSurface(
     return this
         .padding(bottom = raise)
         .offset { IntOffset(0, (raise - depth.value).roundToPx()) }
+        // A caller animating this card's SIZE (not just its position) via an
+        // outer graphicsLayer scale — see AchievementsScreen's claim-burst
+        // bounce — could otherwise show a flash of square corners: the fill
+        // below is a background paint clipped to shape's Outline, not a real
+        // clip, and some GPU/driver combinations sample that outline's edge
+        // AA imprecisely once the whole layer is being scaled/composited as
+        // its own hardware layer. An explicit clip forces every draw in this
+        // subtree (the edge rect included) through the same rounded mask
+        // regardless of what transform is applied above it.
+        .clip(shape)
         .drawBehind {
             drawRoundRect(
                 color = edge,

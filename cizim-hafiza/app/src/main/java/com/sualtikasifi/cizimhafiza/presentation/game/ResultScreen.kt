@@ -43,9 +43,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -136,27 +138,33 @@ fun ResultScreen(
                     // the same number — this card (plus GhostVersusCard right
                     // under it) was pushing the drawing gallery, the actual
                     // reason anyone opens this screen, down to a sliver. One
-                    // row does the same job: the label, the number, and its
-                    // unit read left to right instead of stacked three deep.
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = stringResource(R.string.game_over),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 6.dp, end = 8.dp)
-                        )
-                        Text(
-                            text = "${state.totalScore}",
-                            style = MaterialTheme.typography.headlineLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = stringResource(R.string.points_unit),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
-                        )
-                    }
+                    // Text with mixed spans does the same job on one line,
+                    // and — unlike a Row of differently-sized Text children,
+                    // which lined up by each box's own bottom edge rather
+                    // than by a shared baseline and made the big number look
+                    // like it was floating at the wrong height next to the
+                    // label — a single Text lays every span out on ONE real
+                    // baseline, so the number sits proportionally with the
+                    // label and unit around it regardless of digit count.
+                    val gameOverLabel = stringResource(R.string.game_over)
+                    val pointsUnitLabel = stringResource(R.string.points_unit)
+                    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+                    val primary = MaterialTheme.colorScheme.primary
+                    Text(
+                        text = buildAnnotatedString {
+                            withStyle(MaterialTheme.typography.labelLarge.toSpanStyle().copy(color = onSurfaceVariant)) {
+                                append(gameOverLabel)
+                                append("  ")
+                            }
+                            withStyle(MaterialTheme.typography.headlineMedium.toSpanStyle().copy(color = primary)) {
+                                append("${state.totalScore}")
+                            }
+                            withStyle(MaterialTheme.typography.bodySmall.toSpanStyle().copy(color = onSurfaceVariant)) {
+                                append(" ")
+                                append(pointsUnitLabel)
+                            }
+                        }
+                    )
 
                     state.levelStars?.let { stars ->
                         Spacer(modifier = Modifier.height(4.dp))

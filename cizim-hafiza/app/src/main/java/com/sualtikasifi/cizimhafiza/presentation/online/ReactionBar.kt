@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,8 +51,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.annotation.StringRes
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.OnlinePlayer
@@ -455,6 +459,127 @@ fun ReactionOverlay(reactions: List<Reaction>, myUid: String?, players: List<Onl
                         // chat sheet now, not the quick-emoji row.
                         Text(text = reaction.emoji, fontSize = 36.sp)
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * A persistent chat row for the result comparison screen — [ReactionOverlay]'s
+ * replacement there. That pop-up had its own solid card, so every time a
+ * message arrived it inserted real height into the layout (or, seen from the
+ * player's side, popped a solid block over whatever was drawn where it
+ * landed) and then vanished again a couple of seconds later — the "message
+ * destroys the background behind it" complaint. This row's height never
+ * changes: it always shows one line (the latest message, or an empty-state
+ * hint), and tapping it opens the full history instead of only ever
+ * revealing the single most recent thing anyone said.
+ *
+ * [reactions] lives in the screen's own ViewModel state (a live Firestore
+ * listener started in that ViewModel's scope), so it is naturally forgotten
+ * the moment the player leaves the result screen — nothing here persists it
+ * on its own.
+ */
+@Composable
+fun ChatRow(reactions: List<Reaction>, myUid: String?, players: List<OnlinePlayer>, modifier: Modifier = Modifier) {
+    var historyOpen by remember { mutableStateOf(false) }
+    RaisedCard(corner = 18.dp, onClick = { historyOpen = true }, modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Chat,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            val latest = reactions.lastOrNull()
+            if (latest == null) {
+                Text(
+                    text = stringResource(R.string.online_chat_row_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+            } else {
+                val senderName = if (latest.uid == myUid) {
+                    stringResource(R.string.online_you_label, "").trim()
+                } else {
+                    players.find { it.uid == latest.uid }?.displayName.orEmpty()
+                }
+                val preview = presetPhraseTextRes(latest.messageKey)?.let { stringResource(it) } ?: latest.emoji
+                Text(
+                    text = if (senderName.isNotBlank()) "$senderName: $preview" else preview,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            if (reactions.isNotEmpty()) {
+                Text(
+                    text = "${reactions.size}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+    if (historyOpen) {
+        ChatHistoryDialog(reactions = reactions, myUid = myUid, players = players, onDismiss = { historyOpen = false })
+    }
+}
+
+/** The "window-style" full history [ChatRow] opens on tap — every message this match, oldest first. */
+@Composable
+private fun ChatHistoryDialog(reactions: List<Reaction>, myUid: String?, players: List<OnlinePlayer>, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        RaisedCard(corner = 24.dp, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).heightIn(max = 480.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(imageVector = Icons.AutoMirrored.Filled.Chat, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Text(
+                        text = stringResource(R.string.online_chat_history_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                if (reactions.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.online_chat_row_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 24.dp)
+                    )
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        items(reactions) { reaction ->
+                            val senderName = if (reaction.uid == myUid) {
+                                stringResource(R.string.online_you_label, "").trim()
+                            } else {
+                                players.find { it.uid == reaction.uid }?.displayName.orEmpty()
+                            }
+                            val text = presetPhraseTextRes(reaction.messageKey)?.let { stringResource(it) } ?: reaction.emoji
+                            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (senderName.isNotBlank()) {
+                                    Text(
+                                        text = senderName,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Text(text = text, style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                androidx.compose.material3.TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
+                    Text(stringResource(R.string.close))
                 }
             }
         }
