@@ -277,20 +277,73 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-const BOT_NAME_PREFIX = [
-  "kalem", "boya", "fırça", "çizgi", "gölge", "eskiz", "silgi", "palet",
-  "mürekkep", "tuval", "karakalem", "desen", "kontur", "leke", "perspektif",
-];
-const BOT_NAME_SUFFIX = [
-  "usta", "avcı", "kaşif", "ustası", "delisi", "canavarı", "sever", "krali",
-  "meraklısı", "yolcusu", "gezgini", "sihirbazı",
+// Real-looking usernames, not a prefix+suffix generator: a generator built
+// from a small word bank (kalemusta23, boyaavcı45, ...) always shares one
+// obvious theme, which is exactly how a player works out a name is a bot.
+// Half title-cased and half not, same as actual handles sitting next to each
+// other — kept in sync with GhostPersonas.NICKNAMES_TR in the Android app
+// (BotGhostRun.kt), the same list for Hızlı Eşleş's synthesised opponents.
+const BOT_NAME_POOL = [
+  "Memetcan", "ahmet734", "Fthylmz", "uykuluadam",
+  "Kraduman", "fistikezmesi", "Kadir007", "ceyda8821",
+  "Cananabaci", "yussuf", "Deliomer", "ruzgargibi",
+  "Brkydmr", "burakreis", "Gozluklucocuk", "mustfcn",
+  "Sagocu99", "yalnizkurt", "Ahmmet", "asabiadam",
+  "Simitcay", "kaptanali", "Karabela", "gecebekcisi",
+  "Demirhan", "hknkrks", "Yorgunsavasci", "zynpcetn",
+  "Karakoc", "aysenur11", "Alican1903", "siyahinci",
+  "Ssknr", "mertcn", "Iremsu", "bsgul",
+  "Aleyna34", "gorkem543", "Cnsyksl", "bthnky",
+  "Yusufinho", "polatalmdr", "Minikkus", "gamsizbaykus",
+  "Mimarmerve", "muhendisbey", "Soforkemal", "issizgucsuz",
+  "Mezunadam", "caykolik", "Kemalkaya", "gizemlikiz",
+  "Kafkef88", "poyrazkarayel", "Ucanbalik", "isimsizkahraman",
+  "Kacakyolcu", "delidolu", "Yalnizim", "firtinakemal",
+  "Gocebe", "krmzblt", "Karadenizli", "vethasan",
+  "Volkan00", "keloglan", "Gulyabani", "tosuncuk",
+  "Karaeylem", "ogretmenim", "Hemsiremelisa", "avukatbey",
+  "Ogrenciyiz", "tekbasina", "Krdsler", "sariyildiz",
+  "Merve742", "farukeczanesi", "Cemal33", "komsukizi",
+  "Bakkalamca", "uykucu", "Sessizkalan", "gokhantepe",
+  "Ahemt98", "yanlizadam", "Herkezgitsin", "orjinall",
+  "Suprizci", "yalnizdegil", "Mnyk", "fth123",
+  "Qweasd", "tofask", "Passatci", "hondacivic",
+  "Cbf150", "broadwayci", "Doganslx", "izmir35",
+  "Bursa1616", "kordonboyu", "Kemalpasali", "mudanyali",
+  "Adana01", "cikkofteci", "Caykasigi", "sekersiz",
+  "Bolacili", "sarmisakli", "Uykumvar", "nebilimben",
+  "Bosver", "falanfilan", "Ivirzivir", "baksanabana",
+  "Belkide", "veterinerbey", "Yirmi8", "hekimsami",
+  "98tayfa", "mormadenci", "Ustaeller", "kafkef",
+  "Pesimist", "cimbom1905", "Fenerli1907", "bjk1903",
+  "Ronaldo7", "ts61", "Messi10", "spinci",
+  "Lufersesi", "amatorbalikci", "Sahteyem", "yagmurlu",
+  "Lodos", "ametist", "Hsncn", "brk98",
+  "Glsh", "mstyfa", "Ahmet8520", "cufcuf",
+  "Wqewqe", "bumbum", "Laylaylom", "laylon",
+  "Soley", "hicbiri", "Sonsoz", "oburki",
+  "Isimsiz", "siyahgiyen", "Heryeryesil", "kdr",
+  "Gokhn", "voldemort", "Padisah", "vezir",
+  "Kayiboyu", "ineksaban",
 ];
 
-function botNickname(random: () => number): string {
-  const prefix = BOT_NAME_PREFIX[Math.floor(random() * BOT_NAME_PREFIX.length)];
-  const suffix = BOT_NAME_SUFFIX[Math.floor(random() * BOT_NAME_SUFFIX.length)];
-  const number = Math.floor(random() * 90) + 10;
-  return `${prefix}${suffix}${number}`;
+/**
+ * One name per bot for the whole period, with no two bots sharing one —
+ * a Fisher-Yates shuffle of the whole pool, seeded purely by periodId so
+ * every rebuild within the month lands on the same assignment. Picking
+ * each bot's name independently (one seededRandom draw per bot) very
+ * likely collided somewhere: 25 draws out of a 162-name pool is well past
+ * the birthday-paradox threshold, and two bots sharing a name on the same
+ * leaderboard is a bigger tell than any individual name ever was.
+ */
+function botNicknamesForPeriod(periodId: number, count: number): string[] {
+  const pool = [...BOT_NAME_POOL];
+  const random = seededRandom(periodId);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, count);
 }
 
 /**
@@ -431,9 +484,9 @@ export async function runBuildGlobalLeaderboard(): Promise<void> {
 
     const bots: LeagueRow[] = [];
     const botStates: BotState[] = [];
+    const nicknames = botNicknamesForPeriod(periodId, BOT_COUNT);
     for (let i = 0; i < BOT_COUNT; i++) {
-      const identity = seededRandom(periodId * 1_000 + i);
-      const nickname = botNickname(identity);
+      const nickname = nicknames[i];
 
       let periodXp = samePeriod ? previousBots[i]?.periodXp ?? 0 : 0;
       if (growthDue) {

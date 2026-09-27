@@ -175,69 +175,59 @@ object GhostPersonas {
 
     /**
      * The names a synthesised opponent can carry, in the device's language —
-     * see [nicknamesFor]. A hand-written list, not a generator: the generator
-     * that used to sit here crossed 28 prefixes with 28 roots and every name
-     * it produced was recognisably the same joke, which is exactly how a
-     * player works out that nobody is really there. Real usernames are
-     * inconsistent: initials, birth years, hometowns, football clubs,
-     * nicknames only the owner understands. That inconsistency is the point,
-     * and it cannot be generated from two word lists — nor, for the same
-     * reason, translated word-for-word: an English speaker's "real usernames"
-     * lean on different clubs and slang than a Turkish one's, so this is its
-     * own hand-written list in the same spirit, not a translation of the one
-     * below it.
+     * see [nicknamesFor]. A curated list, not a generator: an earlier
+     * generator that crossed a handful of prefixes with a handful of roots
+     * produced names that were all recognisably the same joke (kalemusta23,
+     * boyaavci45, ...), which is exactly how a player works out that nobody
+     * is really there. This list is real-looking usernames instead — no
+     * shared theme, half title-cased and half not, exactly how actual
+     * handles look next to each other. It cannot be translated word-for-word
+     * either: an English speaker's "real usernames" lean on different clubs
+     * and slang than a Turkish one's, so this is its own list in the same
+     * spirit, not a translation of the one below it.
      */
     private val NICKNAMES_TR = listOf(
-        "Burak.34st", "burak_kocaeli", "Volkan_01", "oguzhan35",
-        "Kaan_06", "kerem_bursa", "Batuhan_07", "onur.34ist",
-        "Mert_26", "berkcan_07", "Tolga_yilmaz", "gokhan.demir",
-        "Emrah_celik", "safak_aydin", "Ufuk_korkmaz", "sinan_unal",
-        "Baris_ozen", "serkan.polat", "Cagri_kurt", "melih_erdem",
-        "Berkay.k", "ozan.t", "Alp.y", "koray.d",
-        "Tunahan.s", "bora_k", "Cem.o", "kaan.unal",
-        "Emre.c", "mert.can", "Burak95", "ugur_1993",
-        "Selin_96", "deniz_98", "Ece.2000", "mertcan_97",
-        "Aybike_95", "kerem_1994", "Asli_99", "arda_2001",
-        "Aslan_1905", "fener_bahce_li", "Besiktas_1903", "trabzon_61",
-        "Sari_kanarya", "cimbom_gs", "Kartal_bJK", "bordo_mavi",
-        "Anadolu_kartali", "sarisin_bomba", "Halil_baba", "dayi_celal",
-        "Memo_reis", "usta_muharrem", "Kaptan_omer", "amca_oglu",
-        "Salih_aga", "ismet_reis", "Dayioglu", "baskan_34",
-        "Batuhan.yildiz", "yigit_demirci", "Tunahan_aksoy", "berk_ates",
-        "Kaan_guler", "arda_sahin", "Metehan_kaya", "atakan_ozkan",
-        "Doruk_celik", "efe_can_polat", "Asi_cocuk_06", "gece_kusu_34",
-        "Yalniz_kurt_tr", "firtina_berk", "Karizma_mert", "gol_kralı_10",
-        "Sahin_goz", "muhalif_ruh", "Cinfikirli", "hizli_surucu",
-        "Zeynep_unal", "irem_kaya", "Merve.demir", "gamze_92",
-        "Busra_k", "tugce_yilmaz", "Eda.sahin", "cennet_gul",
-        "Kubra_ak", "aslihan_oz", "Mustafa_usta", "recep_acar",
-        "Hasan_ali", "ibrahim_can", "Ismail_efe", "fatih_sultan",
-        "Mahmut_t", "kenan_b", "Ramazan_05", "adem_unal",
-        "Eylul.yildiz", "zeynep_su", "Elif_kara", "merve_demir",
-        "Tugce.sahin", "büşra_aksoy", "Irem_celik", "seda_korkmaz",
-        "Gizem_aydin", "cemre_unal", "Melis.guler", "aleyna_ozkan",
-        "Damla_kaya", "yagmur.kurt", "Aslı_polat", "esra_eren",
-        "Berna_onal", "pelin.yılmaz", "Didem_dogan", "hande_acar",
-        "Gamze_98", "sibel_95", "Burcu_97", "asli_2000",
-        "Ece_96", "selen_94", "Melike_99", "nazlı_93",
-        "Begüm_98", "ceren_95", "Aysu.k", "hilal.d",
-        "Duygu.s", "bade.t", "Pinar.y", "gonca.m",
-        "Ozge.c", "sinem.b", "Sevil.a", "mine.g",
-        "Zey_b", "elo_kara", "Mel_dmr", "ir_celik",
-        "Tug_sahin", "bus_aks", "Sed_kork", "giz_ayd",
-        "Cem_unl", "yag_kurt", "Tatli_bela_34", "gece_mavisi_06",
-        "Yildiz_tozu", "papatya_kokusu", "Kahve_fincani", "minik_serce",
-        "Mavi_dusler", "bulut_olcuh", "Ruzgar_gulu", "pembe_panter",
-        "Zeynep_gs_1905", "elif_bjk_1903", "Merve_fb_07", "trabzonlu_kiz",
-        "Cimbom_kizi", "sarikanarya_eda", "Besiktas_gulu", "karsiyakali_irem",
-        "Izmir_gulu_35", "ankarali_cemre", "Melis_baba", "sultan_ana",
-        "Sultan_abla", "kumsal_buse", "Derin_deniz", "gokce_gunes",
-        "Irmak_su", "defne_yapragi", "Nehir_ada", "lale_devri",
-        "Eylul_akin", "zeynep_yilmazer", "Elifsu_demir", "merve_nur_koc",
-        "Tugce_naz", "busra_sude", "Irem_su", "seda_nur",
-        "Gizem_su", "cemre_naz", "E.yildiz", "z.kara",
-        "M.demir", "t.sahin", "B.aksoy", "i.celik",
-        "S.korkmaz", "g.aydin", "C.unal", "m.guler"
+        "Memetcan", "ahmet734", "Fthylmz", "uykuluadam",
+        "Kraduman", "fistikezmesi", "Kadir007", "ceyda8821",
+        "Cananabaci", "yussuf", "Deliomer", "ruzgargibi",
+        "Brkydmr", "burakreis", "Gozluklucocuk", "mustfcn",
+        "Sagocu99", "yalnizkurt", "Ahmmet", "asabiadam",
+        "Simitcay", "kaptanali", "Karabela", "gecebekcisi",
+        "Demirhan", "hknkrks", "Yorgunsavasci", "zynpcetn",
+        "Karakoc", "aysenur11", "Alican1903", "siyahinci",
+        "Ssknr", "mertcn", "Iremsu", "bsgul",
+        "Aleyna34", "gorkem543", "Cnsyksl", "bthnky",
+        "Yusufinho", "polatalmdr", "Minikkus", "gamsizbaykus",
+        "Mimarmerve", "muhendisbey", "Soforkemal", "issizgucsuz",
+        "Mezunadam", "caykolik", "Kemalkaya", "gizemlikiz",
+        "Kafkef88", "poyrazkarayel", "Ucanbalik", "isimsizkahraman",
+        "Kacakyolcu", "delidolu", "Yalnizim", "firtinakemal",
+        "Gocebe", "krmzblt", "Karadenizli", "vethasan",
+        "Volkan00", "keloglan", "Gulyabani", "tosuncuk",
+        "Karaeylem", "ogretmenim", "Hemsiremelisa", "avukatbey",
+        "Ogrenciyiz", "tekbasina", "Krdsler", "sariyildiz",
+        "Merve742", "farukeczanesi", "Cemal33", "komsukizi",
+        "Bakkalamca", "uykucu", "Sessizkalan", "gokhantepe",
+        "Ahemt98", "yanlizadam", "Herkezgitsin", "orjinall",
+        "Suprizci", "yalnizdegil", "Mnyk", "fth123",
+        "Qweasd", "tofask", "Passatci", "hondacivic",
+        "Cbf150", "broadwayci", "Doganslx", "izmir35",
+        "Bursa1616", "kordonboyu", "Kemalpasali", "mudanyali",
+        "Adana01", "cikkofteci", "Caykasigi", "sekersiz",
+        "Bolacili", "sarmisakli", "Uykumvar", "nebilimben",
+        "Bosver", "falanfilan", "Ivirzivir", "baksanabana",
+        "Belkide", "veterinerbey", "Yirmi8", "hekimsami",
+        "98tayfa", "mormadenci", "Ustaeller", "kafkef",
+        "Pesimist", "cimbom1905", "Fenerli1907", "bjk1903",
+        "Ronaldo7", "ts61", "Messi10", "spinci",
+        "Lufersesi", "amatorbalikci", "Sahteyem", "yagmurlu",
+        "Lodos", "ametist", "Hsncn", "brk98",
+        "Glsh", "mstyfa", "Ahmet8520", "cufcuf",
+        "Wqewqe", "bumbum", "Laylaylom", "laylon",
+        "Soley", "hicbiri", "Sonsoz", "oburki",
+        "Isimsiz", "siyahgiyen", "Heryeryesil", "kdr",
+        "Gokhn", "voldemort", "Padisah", "vezir",
+        "Kayiboyu", "ineksaban"
     )
 
     /** The English-locale counterpart to [NICKNAMES_TR] — see its doc comment. */
