@@ -126,42 +126,53 @@ fun ResultScreen(
             // (see the weight(1f) grid further down) that the drawing
             // gallery — the thing a player actually came back to look at —
             // was squeezed into a sliver at the bottom of the screen.
-            RaisedCard(corner = 28.dp, modifier = Modifier.fillMaxWidth()) {
+            RaisedCard(corner = 24.dp, modifier = Modifier.fillMaxWidth()) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp, horizontal = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = stringResource(R.string.game_over),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "${state.totalScore}",
-                        style = MaterialTheme.typography.displayMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = stringResource(R.string.total_score, state.totalScore),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    // "Oyun Bitti!" / a big score number / "N Puan" underneath
+                    // used to be three separate full-width lines all saying
+                    // the same number — this card (plus GhostVersusCard right
+                    // under it) was pushing the drawing gallery, the actual
+                    // reason anyone opens this screen, down to a sliver. One
+                    // row does the same job: the label, the number, and its
+                    // unit read left to right instead of stacked three deep.
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = stringResource(R.string.game_over),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 6.dp, end = 8.dp)
+                        )
+                        Text(
+                            text = "${state.totalScore}",
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = stringResource(R.string.points_unit),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
+                        )
+                    }
 
                     state.levelStars?.let { stars ->
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             repeat(3) { index ->
                                 Icon(
                                     imageVector = if (index < stars) Icons.Filled.Star else Icons.Outlined.StarOutline,
                                     contentDescription = stringResource(R.string.stars_content_description, stars),
                                     tint = if (index < stars) AppTheme.tokens.gold else AppTheme.tokens.textFaint,
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -555,9 +566,9 @@ private fun GhostVersusCard(ghost: GhostMatchSummary, playerScore: Int) {
         else -> MaterialTheme.colorScheme.error
     }
 
-    RaisedCard(corner = 22.dp, modifier = Modifier.fillMaxWidth()) {
+    RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp, horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -568,11 +579,11 @@ private fun GhostVersusCard(ghost: GhostMatchSummary, playerScore: Int) {
                         else -> R.string.quick_match_lost
                     }
                 ),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleSmall,
                 color = accent,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -597,7 +608,7 @@ private fun GhostVersusCard(ghost: GhostMatchSummary, playerScore: Int) {
                         LevelAvatar(
                             level = ghost.level,
                             frame = AvatarFrame.resolve(ghost.frameId, ghost.level),
-                            size = 40.dp
+                            size = 32.dp
                         )
                     }
                 )
@@ -628,7 +639,7 @@ private fun VersusSide(
         )
         Text(
             text = "$score",
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.titleLarge,
             color = if (highlighted) AppTheme.tokens.success else MaterialTheme.colorScheme.onSurface,
             fontWeight = if (highlighted) FontWeight.Bold else FontWeight.Normal
         )

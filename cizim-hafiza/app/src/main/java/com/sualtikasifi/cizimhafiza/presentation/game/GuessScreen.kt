@@ -613,26 +613,31 @@ private val XpBonusYellow = Color(0xFFE0C22E)
 
 /**
  * Live preview of the speed bonus answering right now would earn — mirrors
- * XpAwards.wordXp's own 2/4/6-second thresholds exactly, so this is never a
- * promise the actual award can miss, just that formula made visible while
- * the clock is still running. The colour keeps escalating past the point
- * the number hits zero: a still-timed bar in red is "you're out of bonus,
- * hurry anyway" rather than the badge going dark and looking broken.
+ * XpAwards.wordXp's own 2/4/6-second thresholds, shifted one second earlier
+ * on purpose. secondsLeft only ticks at whole-second boundaries while the
+ * real award is judged against a continuous response-time-in-millis, so a
+ * badge using XpAwards' thresholds directly could still read "+3" for most
+ * of the second where the real elapsed time had already crossed into "+2"
+ * territory — the badge promising more than the round would actually pay.
+ * Cutting a second off every threshold means the badge can only ever be
+ * conservative, never over-promise. The colour keeps escalating past the
+ * point the number hits zero: a still-timed bar in red is "you're out of
+ * bonus, hurry anyway" rather than the badge going dark and looking broken.
  */
 @Composable
 private fun LiveXpBonusBadge(secondsLeft: Int, totalSeconds: Int, modifier: Modifier = Modifier) {
     val elapsed = (totalSeconds - secondsLeft).coerceAtLeast(0)
     val bonus = when {
-        elapsed < 2 -> 3
-        elapsed < 4 -> 2
-        elapsed < 6 -> 1
+        elapsed < 1 -> 3
+        elapsed < 3 -> 2
+        elapsed < 5 -> 1
         else -> 0
     }
     val stage = when {
-        elapsed < 2 -> 0
-        elapsed < 4 -> 1
-        elapsed < 6 -> 2
-        elapsed < 8 -> 3
+        elapsed < 1 -> 0
+        elapsed < 3 -> 1
+        elapsed < 5 -> 2
+        elapsed < 7 -> 3
         else -> 4
     }
     val targetColor = when (stage) {
@@ -666,7 +671,11 @@ private fun LiveXpBonusBadge(secondsLeft: Int, totalSeconds: Int, modifier: Modi
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
         Text(
-            text = stringResource(R.string.xp_gained_format, bonus),
+            // "bonus", not the plain xp_gained_format used for the actual
+            // post-answer award (GuessScreen's feedback text) — this number
+            // is on TOP of the word's own base XP, not the whole reward, and
+            // the badge used to read exactly like a total.
+            text = stringResource(R.string.xp_live_bonus_format, bonus),
             style = MaterialTheme.typography.labelMedium,
             color = color,
             fontWeight = FontWeight.Bold

@@ -41,25 +41,40 @@ fun penBrush(skin: PenSkin, canvasWidth: Float, canvasHeight: Float): Brush {
 fun PenSkin.previewColor(): Color = Color(colors.first())
 
 /**
- * How much drawn distance (px) one full sweep through a gradient pen's
- * colour list takes, before it loops back to the first colour and starts
- * again. Distance is the pen's own "usage" — every player draws at a
- * different scale/pace, so this is intentionally generous rather than tuned
- * to any one canvas size.
+ * How much drawn distance (px) one one-way sweep through a gradient pen's
+ * colour list takes — see [penColorAt] for why a "sweep" is a one-way trip,
+ * not a full loop. Distance is the pen's own "usage" — every player draws at
+ * a different scale/pace, so this is intentionally generous rather than
+ * tuned to any one canvas size. Longer than the first version of this (was
+ * 1400f): a short cycle made the colour visibly stride from stop to stop
+ * within a single ordinary stroke, which read as choppy rather than as a
+ * flowing gradient.
  */
-private const val PEN_USAGE_CYCLE_PX = 1400f
+private const val PEN_USAGE_CYCLE_PX = 2200f
 
 /**
  * The colour a gradient pen shows after [distancePx] of ink has been drawn
- * so far, cycling through [skin]'s colour list every [PEN_USAGE_CYCLE_PX].
- * A flat pen just returns its one colour.
+ * so far. A flat pen just returns its one colour.
+ *
+ * Walks the colour list forward, then backward, then forward again — a
+ * triangle wave, not a sawtooth. A sawtooth (plain `distancePx % cycle`)
+ * looks smooth for the whole sweep and then, at the loop point, cuts
+ * straight from the LAST colour back to the FIRST with no blend at all —
+ * exactly the "harsh, sudden transition when it loops back to the start"
+ * players noticed. Reflecting the direction instead of resetting it means
+ * every point on the cycle, including the loop point itself, is a
+ * continuous blend between neighbours: the pen colour breathes back and
+ * forth rather than snapping.
  */
 fun penColorAt(skin: PenSkin, distancePx: Float): Color {
     val colors = skin.colors.map { Color(it) }
     if (colors.size == 1) return colors.first()
-    val wrapped = distancePx.mod(PEN_USAGE_CYCLE_PX)
-    val t = (wrapped / PEN_USAGE_CYCLE_PX) * (colors.size - 1)
-    val index = t.toInt().coerceIn(0, colors.size - 2)
+    val segments = colors.size - 1
+    val period = PEN_USAGE_CYCLE_PX * 2f
+    val phase = distancePx.mod(period)
+    val forward = if (phase <= PEN_USAGE_CYCLE_PX) phase else period - phase
+    val t = (forward / PEN_USAGE_CYCLE_PX) * segments
+    val index = t.toInt().coerceIn(0, segments - 1)
     return lerp(colors[index], colors[index + 1], t - index)
 }
 

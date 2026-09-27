@@ -247,6 +247,7 @@
     <!-- Result screen -->
     <string name="game_over">Oyun Bitti!</string>
     <string name="total_score">%1$d Puan</string>
+    <string name="points_unit">Puan</string>
     <string name="correct_count">Doğru: %1$d</string>
     <string name="wrong_count">Yanlış: %1$d</string>
     <string name="fastest_correct">En Hızlı: %1$.1f sn</string>
@@ -609,6 +610,7 @@
     <string name="achievement_claim_button">Ödülü topla</string>
     <string name="achievement_progress_format">%1$d/%2$d</string>
     <string name="xp_gained_format">+%1$d XP</string>
+    <string name="xp_live_bonus_format">+%1$d XP bonus</string>
     <string name="daily_challenge_resets_in">Yenilenmesine: %1$s</string>
     <string name="daily_challenge_streak_multiplier_increased">🎉 Seri çarpanın arttı! Bugünkü XP\'n %1$dx katlandı</string>
     <string name="daily_challenge_multiplier_badge">%1$dx XP</string>

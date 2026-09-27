@@ -241,6 +241,7 @@
     <!-- Result screen -->
     <string name="game_over">Game Over!</string>
     <string name="total_score">%1$d Points</string>
+    <string name="points_unit">pts</string>
     <string name="correct_count">Correct: %1$d</string>
     <string name="wrong_count">Wrong: %1$d</string>
     <string name="fastest_correct">Fastest: %1$.1f s</string>
@@ -601,6 +602,7 @@
     <string name="achievement_claim_button">Claim reward</string>
     <string name="achievement_progress_format">%1$d/%2$d</string>
     <string name="xp_gained_format">+%1$d XP</string>
+    <string name="xp_live_bonus_format">+%1$d XP bonus</string>
     <string name="daily_challenge_resets_in">Resets in: %1$s</string>
     <string name="daily_challenge_streak_multiplier_increased">🎉 Your streak multiplier went up! Today\'s XP was multiplied %1$dx</string>
     <string name="daily_challenge_multiplier_badge">%1$dx XP</string>
