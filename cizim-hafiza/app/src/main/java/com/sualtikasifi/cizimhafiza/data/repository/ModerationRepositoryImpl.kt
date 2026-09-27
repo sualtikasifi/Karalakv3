@@ -5,12 +5,14 @@ import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.sualtikasifi.cizimhafiza.domain.model.Moderation
+import com.sualtikasifi.cizimhafiza.domain.model.PendingDailyChallenge
 import com.sualtikasifi.cizimhafiza.domain.model.PendingRun
 import com.sualtikasifi.cizimhafiza.domain.model.ResultItem
 import com.sualtikasifi.cizimhafiza.domain.model.ReviewerIdentity
 import com.sualtikasifi.cizimhafiza.domain.model.RunPage
 import com.sualtikasifi.cizimhafiza.domain.repository.ModerationRepository
 import kotlinx.coroutines.tasks.await
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -41,6 +43,7 @@ class ModerationRepositoryImpl @Inject constructor(
     private val ghostRunItems get() = firestore.collection("ghostRunItems")
     private val penalties get() = firestore.collection("penalties")
     private val strikes get() = firestore.collection("moderationStrikes")
+    private val pendingDailyChallenges get() = firestore.collection("pendingDailyChallenges")
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -238,5 +241,87 @@ class ModerationRepositoryImpl @Inject constructor(
             // claims authority the server will refuse.
             isReviewer = user?.email == Moderation.REVIEWER_EMAIL && user.isEmailVerified
         )
+    }
+
+    // --- Günlük Meydan Okuma review — see ModerationRepository's own doc on
+    // why submitDailyChallengeForReview alone, of everything in this class,
+    // is called by an ordinary player's device rather than the reviewer's. ---
+
+    override suspend fun submitDailyChallengeForReview(
+        items: List<ResultItem>,
+        score: Int,
+        correctCount: Int,
+        xpEarned: Int
+    ): Result<Unit> = runCatching {
+        val uid = auth.currentUser?.uid ?: return@runCatching Unit
+        val nickname = runCatching {
+            firestore.collection("users").document(uid).get(com.google.firebase.firestore.Source.CACHE).await()
+        }.getOrNull()?.takeIf { it.exists() }?.getString("nickname").orEmpty()
+        pendingDailyChallenges.add(
+            mapOf(
+                "uid" to uid,
+                "nickname" to nickname,
+                "itemsJson" to json.encodeToString(items),
+                "score" to score,
+                "correctCount" to correctCount,
+                "xpEarned" to xpEarned,
+                "createdAt" to System.currentTimeMillis()
+            )
+        ).await()
+        Unit
+    }
+
+    override suspend fun pendingDailyChallenges(limit: Int): Result<List<PendingDailyChallenge>> = runCatching {
+        pendingDailyChallenges
+            .orderBy("createdAt", Query.Direction.ASCENDING)
+            .limit(limit.toLong())
+            .get()
+            .await()
+            .documents
+            .mapNotNull { doc ->
+                val uid = doc.getString("uid") ?: return@mapNotNull null
+                val itemsJson = doc.getString("itemsJson") ?: return@mapNotNull null
+                val items = runCatching { json.decodeFromString<List<ResultItem>>(itemsJson) }.getOrDefault(emptyList())
+                PendingDailyChallenge(
+                    id = doc.id,
+                    uid = uid,
+                    nickname = doc.getString("nickname").orEmpty(),
+                    items = items,
+                    score = (doc.getLong("score") ?: 0L).toInt(),
+                    correctCount = (doc.getLong("correctCount") ?: 0L).toInt(),
+                    xpEarned = (doc.getLong("xpEarned") ?: 0L).toInt(),
+                    createdAtMillis = doc.getLong("createdAt") ?: 0L
+                )
+            }
+    }
+
+    override suspend fun approveDailyChallenge(id: String): Result<Unit> = runCatching {
+        pendingDailyChallenges.document(id).delete().await()
+        Unit
+    }
+
+    override suspend fun rejectDailyChallenge(id: String, xpToRevoke: Int): Result<Unit> = runCatching {
+        val doc = pendingDailyChallenges.document(id).get().await()
+        val uid = doc.getString("uid").orEmpty()
+        require(uid.isNotEmpty()) { "Pending daily challenge $id has no author" }
+
+        val batch = firestore.batch()
+        batch.delete(pendingDailyChallenges.document(id))
+        batch.set(
+            penalties.document(),
+            mapOf(
+                "uid" to uid,
+                "xpRevoked" to xpToRevoke.coerceAtLeast(0).toLong(),
+                // No strike/lockout here — that ladder is Hızlı Eşleş's own
+                // (see reject() above); a typed daily-challenge word costs XP
+                // and the streak, never online-mode access.
+                "strike" to 0L,
+                "lockedUntil" to 0L,
+                "breaksDailyStreak" to true,
+                "appliedAt" to 0L,
+                "createdAt" to System.currentTimeMillis()
+            )
+        )
+        batch.commit().await()
     }
 }

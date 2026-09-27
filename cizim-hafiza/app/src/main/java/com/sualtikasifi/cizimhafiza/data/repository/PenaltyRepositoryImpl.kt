@@ -8,6 +8,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.Achievement
 import com.sualtikasifi.cizimhafiza.domain.model.AchievementStats
 import com.sualtikasifi.cizimhafiza.domain.model.Penalty
 import com.sualtikasifi.cizimhafiza.domain.repository.PenaltyRepository
+import com.sualtikasifi.cizimhafiza.util.DailyChallengeRepository
 import com.sualtikasifi.cizimhafiza.util.SettingsRepository
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -25,7 +26,8 @@ class PenaltyRepositoryImpl @Inject constructor(
     private val firestore: FirebaseFirestore,
     private val auth: FirebaseAuth,
     private val settingsRepository: SettingsRepository,
-    private val achievementDao: AchievementDao
+    private val achievementDao: AchievementDao,
+    private val dailyChallengeRepository: DailyChallengeRepository
 ) : PenaltyRepository {
 
     private val penalties get() = firestore.collection("penalties")
@@ -55,7 +57,8 @@ class PenaltyRepositoryImpl @Inject constructor(
                 xpRevoked = (doc.getLong("xpRevoked") ?: 0L).toInt(),
                 strike = (doc.getLong("strike") ?: 1L).toInt(),
                 lockedUntilMillis = doc.getLong("lockedUntil") ?: 0L,
-                createdAtMillis = doc.getLong("createdAt") ?: 0L
+                createdAtMillis = doc.getLong("createdAt") ?: 0L,
+                breaksDailyStreak = doc.getBoolean("breaksDailyStreak") ?: false
             )
             // Marked BEFORE the local effect, not after. If the write fails
             // the penalty is simply applied on the next launch instead; if it
@@ -68,6 +71,7 @@ class PenaltyRepositoryImpl @Inject constructor(
 
             settingsRepository.revokeXp(penalty.xpRevoked)
             settingsRepository.penaltiesApplied = settingsRepository.penaltiesApplied + 1
+            if (penalty.breaksDailyStreak) dailyChallengeRepository.breakStreak()
             applied += penalty
         }
 

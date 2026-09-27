@@ -8,6 +8,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.BugReportEntry
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingReport
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingStroke
 import com.sualtikasifi.cizimhafiza.domain.model.Moderation
+import com.sualtikasifi.cizimhafiza.domain.model.PendingDailyChallenge
 import com.sualtikasifi.cizimhafiza.domain.model.PendingRun
 import com.sualtikasifi.cizimhafiza.domain.model.ReviewerIdentity
 import com.sualtikasifi.cizimhafiza.domain.model.RunPage
@@ -53,7 +54,7 @@ data class RefusedRound(
 )
 
 /** Which section of the inbox is on screen. */
-enum class ReportsTab { Queue, Pool, Feedback, Reports, Detector, League, XpEvent }
+enum class ReportsTab { Queue, Pool, Feedback, Reports, Detector, League, XpEvent, DailyChallenge }
 
 /**
  * One scrolling list of runs — the queue or the pool — and where it is up to.
@@ -130,7 +131,14 @@ data class DrawingReportsUiState(
     val xpEvent: XpEvent? = null,
     val xpEventLoading: Boolean = false,
     val xpEventLoaded: Boolean = false,
-    val xpEventFailed: Boolean = false
+    val xpEventFailed: Boolean = false,
+    // --- Günlük Meydan Okuma review — see ModerationRepository's daily-challenge methods. ---
+    val dailyChallengeQueue: List<PendingDailyChallenge> = emptyList(),
+    val dailyChallengeLoading: Boolean = false,
+    val dailyChallengeLoaded: Boolean = false,
+    val dailyChallengeFailed: Boolean = false,
+    /** The row a daily-challenge decision is running for — separate from [decidingId], which is Queue/Pool's own. */
+    val decidingDailyChallengeId: String? = null
 ) {
     fun listFor(tab: ReportsTab): RunList? = when (tab) {
         ReportsTab.Queue -> queue
@@ -175,6 +183,7 @@ class DrawingReportsViewModel @Inject constructor(
             ReportsTab.Feedback -> if (!_uiState.value.feedbackLoaded) loadFeedback()
             ReportsTab.League -> if (!_uiState.value.leagueLoaded) loadLeagueConfig()
             ReportsTab.XpEvent -> loadXpEvent()
+            ReportsTab.DailyChallenge -> if (!_uiState.value.dailyChallengeLoaded) loadDailyChallengeQueue()
             else -> if (!_uiState.value.evidenceLoaded) loadEvidence()
         }
     }
@@ -462,6 +471,52 @@ class DrawingReportsViewModel @Inject constructor(
         }
     }
 
+    private fun loadDailyChallengeQueue() {
+        if (_uiState.value.dailyChallengeLoading) return
+        _uiState.value = _uiState.value.copy(dailyChallengeLoading = true)
+        viewModelScope.launch {
+            val result = moderationRepository.pendingDailyChallenges(DAILY_CHALLENGE_SHOWN)
+            _uiState.value = _uiState.value.copy(
+                dailyChallengeQueue = result.getOrNull().orEmpty(),
+                dailyChallengeLoading = false,
+                dailyChallengeLoaded = true,
+                dailyChallengeFailed = result.isFailure
+            )
+        }
+    }
+
+    /** The word was drawn honestly — just clears the row, no penalty. */
+    fun approveDailyChallenge(item: PendingDailyChallenge) =
+        decideDailyChallenge(item) { moderationRepository.approveDailyChallenge(item.id) }
+
+    /** The word was typed, not drawn — takes back its XP and breaks the streak (see ModerationRepository.rejectDailyChallenge). */
+    fun rejectDailyChallenge(item: PendingDailyChallenge) =
+        decideDailyChallenge(item) { moderationRepository.rejectDailyChallenge(item.id, item.xpEarned) }
+
+    private fun decideDailyChallenge(item: PendingDailyChallenge, action: suspend () -> Result<Unit>) {
+        if (_uiState.value.decidingDailyChallengeId != null) return
+        _uiState.value = _uiState.value.copy(
+            decidingDailyChallengeId = item.id,
+            decisionFailed = false,
+            decisionError = null
+        )
+        viewModelScope.launch {
+            val result = action()
+            _uiState.value = if (result.isFailure) {
+                _uiState.value.copy(
+                    decidingDailyChallengeId = null,
+                    decisionFailed = true,
+                    decisionError = result.exceptionOrNull()?.describe()
+                )
+            } else {
+                _uiState.value.copy(
+                    dailyChallengeQueue = _uiState.value.dailyChallengeQueue.filterNot { it.id == item.id },
+                    decidingDailyChallengeId = null
+                )
+            }
+        }
+    }
+
     fun dismissDecisionFailure() {
         _uiState.value = _uiState.value.copy(decisionFailed = false, decisionError = null)
     }
@@ -559,6 +614,9 @@ class DrawingReportsViewModel @Inject constructor(
     private companion object {
         /** Enough to see a pattern, few enough to stay one cheap read. */
         const val REPORTS_SHOWN = 60
+
+        /** One attempt per player per day — this is never going to be a deep backlog. */
+        const val DAILY_CHALLENGE_SHOWN = 100
 
         /** Plain text, no drawings — a page of these is cheap. */
         const val FEEDBACK_SHOWN = 50

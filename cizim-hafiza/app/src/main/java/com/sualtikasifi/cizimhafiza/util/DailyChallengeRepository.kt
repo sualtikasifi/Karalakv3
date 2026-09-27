@@ -83,6 +83,20 @@ class DailyChallengeRepository @Inject constructor(@ApplicationContext context: 
     }
 
     /**
+     * Resets the streak to 0 after a reviewer catches a typed-not-drawn
+     * daily-challenge attempt (see ModerationRepository.rejectDailyChallenge /
+     * PenaltyRepositoryImpl) — a streak partly built on that attempt was
+     * never really kept. Leaves [KEY_LAST_COMPLETED] alone: the player still
+     * used up today's attempt (they cannot replay it), they just don't get
+     * to count it toward a streak.
+     */
+    fun breakStreak() {
+        if (currentStreak == 0) return
+        prefs.edit { putInt(KEY_CURRENT_STREAK, 0) }
+        _state.value = readState()
+    }
+
+    /**
      * Keeps a streak alive across a missed day or two, in exchange for a
      * watched rewarded ad.
      *

@@ -283,6 +283,25 @@ service cloud.firestore {
       allow delete: if reviewer();
     }
 
+    // Günlük Meydan Okuma review queue — see ModerationRepository's
+    // daily-challenge methods. Same "readable by any signed-in client,
+    // behind the app's own passcode gate rather than a rule" reasoning as
+    // pendingRuns above, since this same app build is what a non-reviewer's
+    // device uses to file its own attempt. No sibling "Items" collection
+    // (unlike pendingRuns/pendingRunItems): a daily attempt is a handful of
+    // words once a day, not worth splitting the way the far higher-volume
+    // Hızlı Eşleş queue is.
+    match /pendingDailyChallenges/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.itemsJson.size() < 200000;
+      allow update: if false;
+      // Reviewer only — approving or rejecting both just remove the row
+      // (see ModerationRepository.approveDailyChallenge/rejectDailyChallenge).
+      allow delete: if reviewer();
+    }
+
     match /ghostRuns/{runId} {
       allow read: if signedIn();
 

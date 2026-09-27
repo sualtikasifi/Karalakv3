@@ -123,6 +123,7 @@ class GameViewModel @Inject constructor(
     private val levelProgressRepository: LevelProgressRepository,
     private val dailyChallengeRepository: DailyChallengeRepository,
     private val duelRepository: DuelRepository,
+    private val moderationRepository: com.sualtikasifi.cizimhafiza.domain.repository.ModerationRepository,
     private val ghostRunRepository: GhostRunRepository,
     private val drawingReportRepository: DrawingReportRepository,
     private val settingsRepository: SettingsRepository,
@@ -974,7 +975,13 @@ class GameViewModel @Inject constructor(
         // makes turning up daily out-earn grinding solo rounds. Guarded on
         // isAvailableToday so a replay (or a process death mid-round) can't
         // pay out or advance the streak twice.
+        // Only the fresh-completion branch just below uploads for review —
+        // see the moderation queue submit call after resultItems, which
+        // reads this. The replay branch (a resumed/redisplayed Result phase)
+        // must never re-upload the same attempt a second time.
+        var dailyFreshCompletion = false
         val dailySummary = if (isDaily && dailyChallengeRepository.state.value.isAvailableToday) {
+            dailyFreshCompletion = true
             var xpAwarded = 0
             val updated = dailyChallengeRepository.recordCompletion(
                 correctFlags = results.map { it.isCorrect },
@@ -1009,6 +1016,24 @@ class GameViewModel @Inject constructor(
 
         val fastest = results.filter { it.isCorrect }.minOfOrNull { it.responseTimeMs }
         val resultItems = results.map { ResultItem(it.word.text, it.isCorrect, it.strokes) }
+
+        // Günlük Meydan Okuma has no drawn-vs-typed check the way Hızlı Eşleş
+        // does (see GhostRunRepository.record below, which never runs for a
+        // daily round) — typing the word straight into the canvas costs
+        // nothing to try and pays the same XP as drawing it. The XP is paid
+        // regardless (see dailySummary above): this only queues the attempt
+        // for the reviewer to catch that specific case after the fact and
+        // claw it back (see ModerationRepository.rejectDailyChallenge).
+        // Fire-and-forget, same as every other post-round Firestore write
+        // here — a failed upload must never hold up the player's own result.
+        if (dailyFreshCompletion) {
+            moderationRepository.submitDailyChallengeForReview(
+                items = resultItems,
+                score = totalScore,
+                correctCount = correctCount,
+                xpEarned = dailySummary?.xpEarned ?: 0
+            )
+        }
 
         // Left behind as an opponent for somebody else's "Hızlı Eşleş"
         // (see GhostRuns for which rounds qualify and why). The player is

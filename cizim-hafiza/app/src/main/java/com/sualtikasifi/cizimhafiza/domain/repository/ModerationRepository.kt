@@ -1,6 +1,8 @@
 package com.sualtikasifi.cizimhafiza.domain.repository
 
+import com.sualtikasifi.cizimhafiza.domain.model.PendingDailyChallenge
 import com.sualtikasifi.cizimhafiza.domain.model.PendingRun
+import com.sualtikasifi.cizimhafiza.domain.model.ResultItem
 import com.sualtikasifi.cizimhafiza.domain.model.ReviewerIdentity
 import com.sualtikasifi.cizimhafiza.domain.model.RunPage
 
@@ -79,4 +81,45 @@ interface ModerationRepository {
      * rules, which is what [reject] is for.
      */
     suspend fun dismiss(runId: String): Result<Unit>
+
+    // --- Günlük Meydan Okuma review — the one exception to this whole
+    // interface's "reviewer only" rule: submitDailyChallengeForReview is
+    // called by every PLAYER's own device, right after finishing the day's
+    // challenge. The XP was already paid at that point (typing instead of
+    // drawing costs the player nothing to try, so there is no reason to
+    // hold the reward hostage to a review that might take a day) — this
+    // queue exists only to catch the cases where they typed the word into
+    // the canvas instead of drawing it, same as Hızlı Eşleş's WrittenWordDetector
+    // problem, and claw the XP back after the fact. firestore.rules enforces
+    // the actual split: create is any signed-in uid writing their own
+    // document, read/delete stay reviewer-only exactly like the rest of
+    // this interface. ---
+
+    /** Queues this attempt for review. Best-effort — a failed upload never blocks the player's own result screen. */
+    suspend fun submitDailyChallengeForReview(
+        items: List<ResultItem>,
+        score: Int,
+        correctCount: Int,
+        xpEarned: Int
+    ): Result<Unit>
+
+    /** Oldest first, reviewer only. */
+    suspend fun pendingDailyChallenges(limit: Int): Result<List<PendingDailyChallenge>>
+
+    /**
+     * The attempt was drawn honestly — deletes it from the queue. No
+     * notification: an approval is not something the player needs to hear
+     * about, it just means the XP they already have stays theirs.
+     */
+    suspend fun approveDailyChallenge(id: String): Result<Unit>
+
+    /**
+     * The word was typed rather than drawn — deletes the attempt, revokes
+     * [xpToRevoke] via the same [com.sualtikasifi.cizimhafiza.domain.model.Penalty]
+     * pipeline Hızlı Eşleş rejections use (so the player is told, same as
+     * any other penalty), and additionally breaks today's daily-challenge
+     * streak — see PenaltyRepositoryImpl, which is what actually resets it
+     * once this device's own penalty write is applied.
+     */
+    suspend fun rejectDailyChallenge(id: String, xpToRevoke: Int): Result<Unit>
 }

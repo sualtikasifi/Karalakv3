@@ -49,6 +49,32 @@ data class Penalty(
      * clock can be turned back.
      */
     val lockedUntilMillis: Long,
+    val createdAtMillis: Long,
+    /**
+     * True only for a rejected Günlük Meydan Okuma attempt (see
+     * ModerationRepository.rejectDailyChallenge) — on top of the XP revoke
+     * every penalty already does, this one also resets the daily-challenge
+     * streak to 0 (see PenaltyRepositoryImpl.applyOutstanding), since a
+     * streak built partly on typed-not-drawn words was never really kept.
+     */
+    val breaksDailyStreak: Boolean = false
+)
+
+/**
+ * One finished Günlük Meydan Okuma attempt waiting to be reviewed — see
+ * ModerationRepository's daily-challenge methods. Unlike [PendingRun] the XP
+ * has already been paid by the time this is looked at, so the only decisions
+ * are "leave it" ([ModerationRepository.approveDailyChallenge]) or "take the
+ * XP back and break the streak" ([ModerationRepository.rejectDailyChallenge]).
+ */
+data class PendingDailyChallenge(
+    val id: String,
+    val uid: String,
+    val nickname: String,
+    val items: List<ResultItem>,
+    val score: Int,
+    val correctCount: Int,
+    val xpEarned: Int,
     val createdAtMillis: Long
 )
 

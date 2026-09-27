@@ -724,58 +724,23 @@ private fun TipCard(emoji: String, text: String, modifier: Modifier = Modifier) 
 
 /**
  * The two mascots high-fiving over a VS spark: the "match found" moment as an
- * illustration. It bobs and tilts a little forever, so the last few seconds
- * before the match do not sit on a still picture.
- *
- * The bob/tilt used to be applied straight to an Image sized flush with its
- * own layout box (fillMaxWidth(0.8f)) — rotating and shifting content that
- * fills its own bounds pushes the edges (a hand, an ear) straight into a
- * hard clip the instant it moves, which read as a rendering glitch rather
- * than an intentional wobble. A rectangular edge-fade over the whole box was
- * tried as a fix and looked worse — a visible rectangle of vignette sitting
- * over transparent PNG artwork reads as exactly the "amateur" look it was
- * supposed to avoid, since the art has no straight edges of its own for a
- * straight-edged fade to follow. The actual fix is simpler: the image is
- * just drawn smaller than its own box (imageScale), so the motion has room
- * to move inside the box and never reaches an edge to clip against at all —
- * no mask needed.
+ * illustration. Fully static — an earlier version bobbed and tilted it
+ * forever, which (even scaled down inside its own box, see the git history
+ * on this file for that attempt) still read as unwanted motion rather than
+ * as life, so it was dropped rather than tuned further. A still picture,
+ * held for the few seconds before the match starts, is what actually reads
+ * as a clean loading moment.
  */
 @Composable
 private fun MatchMascot() {
-    val transition = rememberInfiniteTransition(label = "match_mascot")
-    val bob = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = -7f,
-        animationSpec = infiniteRepeatable(tween(850, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "match_mascot_bob"
-    )
-    val tilt = transition.animateFloat(
-        initialValue = -1.6f,
-        targetValue = 1.6f,
-        animationSpec = infiniteRepeatable(tween(1300, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "match_mascot_tilt"
-    )
-    Box(
+    Image(
+        painter = painterResource(R.drawable.match_high_five),
+        contentDescription = null,
         modifier = Modifier
             .fillMaxWidth(0.8f)
-            .aspectRatio(840f / 446f),
-        contentAlignment = Alignment.Center
-    ) {
-        Image(
-            painter = painterResource(R.drawable.match_high_five),
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxSize(MascotImageScale)
-                .graphicsLayer {
-                    translationY = bob.value.dp.toPx()
-                    rotationZ = tilt.value
-                }
-        )
-    }
+            .aspectRatio(840f / 446f)
+    )
 }
-
-/** How much smaller than its box the mascot image is drawn — see [MatchMascot]'s doc comment. */
-private const val MascotImageScale = 0.9f
 
 private const val COUNTDOWN_MS = 5_000
 

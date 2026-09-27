@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,7 +57,16 @@ import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
  */
 @Composable
 fun DrawingReportsGate(onBack: () -> Unit, onBotNames: () -> Unit = {}) {
-    var unlocked by remember { mutableStateOf(false) }
+    // rememberSaveable, not remember: this composable's own NavBackStackEntry
+    // stays alive (just off-screen) while its "Bot İsimleri" chip pushes
+    // BotNamesScreen on top of it, so a plain `remember` was being torn down
+    // and recreated on the way back — the passcode reappeared every time,
+    // as if tapping "Bot İsimleri" had also locked the gate behind it. Saved
+    // state survives exactly that round trip. It still resets on a genuinely
+    // fresh visit (this whole composable, backstack entry included, is gone
+    // once onBack pops all the way out to Settings) — the actual behaviour
+    // the class doc above describes.
+    var unlocked by rememberSaveable { mutableStateOf(false) }
 
     if (unlocked) {
         DrawingReportsScreen(onBack = onBack, onBotNames = onBotNames)

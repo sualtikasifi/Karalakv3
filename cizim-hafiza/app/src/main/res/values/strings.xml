@@ -979,6 +979,7 @@
     <string name="reports_league_hint">Pick what the month\'s top three win. Left unset, the month\'s own frame is given. The change reaches players at the global table\'s next rebuild (within 1 hour).</string>
     <string name="reports_league_no_rewards">This build defines no league prizes.</string>
     <string name="reports_tab_xp_event">2x XP</string>
+    <string name="reports_tab_daily_challenge">Daily Challenge</string>
     <string name="reports_xp_event_hint">Doubles every XP payout for every signed-in player, live, until it ends. Announce it before starting — players see it only by earning more, not by a banner in the app.</string>
     <string name="reports_xp_event_active">2x XP is live, until %1$s</string>
     <string name="reports_xp_event_inactive">No event running</string>
@@ -1016,6 +1017,8 @@
     <string name="reports_pool_send_back">Send to review</string>
     <string name="reports_queue_empty">No rounds waiting for review.</string>
     <string name="reports_queue_summary">Lv %1$d · %2$d/%3$d · %4$d XP</string>
+    <string name="reports_daily_challenge_summary">%1$d/%2$d · %3$d XP</string>
+    <string name="reports_daily_challenge_empty">No daily challenge attempts waiting.</string>
     <string name="reports_queue_approve">Approve</string>
     <string name="reports_queue_reject">Reject</string>
     <string name="penalty_title">A round of yours was rejected</string>

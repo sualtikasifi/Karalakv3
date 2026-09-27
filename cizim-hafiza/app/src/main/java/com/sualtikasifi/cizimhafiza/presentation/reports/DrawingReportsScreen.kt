@@ -140,7 +140,7 @@ fun DrawingReportsScreen(
                 listOf(
                     listOf(ReportsTab.Queue, ReportsTab.Pool, ReportsTab.League),
                     listOf(ReportsTab.Feedback, ReportsTab.Reports, ReportsTab.Detector),
-                    listOf(ReportsTab.XpEvent)
+                    listOf(ReportsTab.XpEvent, ReportsTab.DailyChallenge)
                 ).forEach { row ->
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -225,15 +225,18 @@ fun DrawingReportsScreen(
                     ReportsTab.League -> 0
                     // Same story as League — see the XpEvent branch below.
                     ReportsTab.XpEvent -> 0
+                    ReportsTab.DailyChallenge -> uiState.dailyChallengeQueue.size
                 }
                 val firstLoad = when (uiState.tab) {
                     ReportsTab.Queue, ReportsTab.Pool -> list?.neverLoaded == true && list.loading
                     ReportsTab.Feedback -> uiState.feedbackLoading && !uiState.feedbackLoaded
+                    ReportsTab.DailyChallenge -> uiState.dailyChallengeLoading && !uiState.dailyChallengeLoaded
                     else -> uiState.evidenceLoading && !uiState.evidenceLoaded
                 }
                 val loadFailed = when (uiState.tab) {
                     ReportsTab.Queue, ReportsTab.Pool -> list?.failed == true && rowCount == 0
                     ReportsTab.Feedback -> uiState.feedbackFailed
+                    ReportsTab.DailyChallenge -> uiState.dailyChallengeFailed
                     else -> uiState.evidenceFailed
                 }
 
@@ -287,6 +290,7 @@ fun DrawingReportsScreen(
                                     // runs, kept only for exhaustiveness.
                                     ReportsTab.League -> R.string.reports_tab_league
                                     ReportsTab.XpEvent -> R.string.reports_tab_xp_event
+                                    ReportsTab.DailyChallenge -> R.string.reports_daily_challenge_empty
                                 }
                             ),
                             style = MaterialTheme.typography.bodyLarge,
@@ -349,6 +353,18 @@ fun DrawingReportsScreen(
                             ReportsTab.League -> Unit
                             // Same — see the XpEvent branch above.
                             ReportsTab.XpEvent -> Unit
+                            ReportsTab.DailyChallenge -> items(
+                                uiState.dailyChallengeQueue,
+                                key = { it.id }
+                            ) { pending ->
+                                PendingDailyChallengeRow(
+                                    pending = pending,
+                                    busy = uiState.decidingDailyChallengeId != null,
+                                    onPreview = { previewItem = it },
+                                    onApprove = { viewModel.approveDailyChallenge(pending) },
+                                    onReject = { viewModel.rejectDailyChallenge(pending) }
+                                )
+                            }
                         }
 
                         // The bottom of a run list is what pays for the next
@@ -929,6 +945,92 @@ private fun PendingRunRow(
 private const val QUEUE_THUMBS_PER_ROW = 5
 
 /**
+ * One finished Günlük Meydan Okuma attempt waiting for review — same shape
+ * as [PendingRunRow] (thumbnails, then a decision row), simplified: no
+ * rename (a daily attempt has nothing worth relabelling), no "gönder"/pool
+ * concept (see ModerationRepository's daily-challenge doc for why approve is
+ * just "leave it" and reject is "take the XP and the streak back").
+ */
+@Composable
+private fun PendingDailyChallengeRow(
+    pending: com.sualtikasifi.cizimhafiza.domain.model.PendingDailyChallenge,
+    busy: Boolean,
+    onPreview: (ResultItem) -> Unit,
+    onApprove: () -> Unit,
+    onReject: () -> Unit
+) {
+    RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = pending.nickname.ifBlank { pending.uid.take(8) },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                Text(
+                    text = stringResource(
+                        R.string.reports_daily_challenge_summary,
+                        pending.correctCount,
+                        pending.items.size,
+                        pending.xpEarned
+                    ),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            pending.items.chunked(QUEUE_THUMBS_PER_ROW).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    row.forEach { item ->
+                        StrokeCanvas(
+                            strokes = item.strokes,
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(1f)
+                                .clip(MaterialTheme.shapes.small)
+                                .background(AppTheme.tokens.canvasPaper)
+                                .clickable { onPreview(item) }
+                        )
+                    }
+                    repeat(QUEUE_THUMBS_PER_ROW - row.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                SecondaryButton(
+                    text = stringResource(R.string.reports_queue_reject),
+                    onClick = onReject,
+                    enabled = !busy,
+                    icon = Icons.Filled.Block,
+                    modifier = Modifier.weight(1f)
+                )
+                PrimaryButton(
+                    text = stringResource(R.string.reports_queue_approve),
+                    onClick = onApprove,
+                    enabled = !busy,
+                    icon = Icons.Filled.Check,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+/**
  * One round the detector refused.
  *
  * The score list is the useful part — it shows the SHAPE of the round, which
@@ -1019,6 +1121,7 @@ private fun ReportsTab.labelRes(): Int = when (this) {
     ReportsTab.Detector -> R.string.reports_tab_detector
     ReportsTab.League -> R.string.reports_tab_league
     ReportsTab.XpEvent -> R.string.reports_tab_xp_event
+    ReportsTab.DailyChallenge -> R.string.reports_tab_daily_challenge
 }
 
 /**

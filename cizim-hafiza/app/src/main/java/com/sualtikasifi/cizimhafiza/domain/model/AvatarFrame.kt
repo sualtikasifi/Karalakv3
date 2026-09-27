@@ -49,35 +49,43 @@ enum class AvatarFrame(
     /** Gold price in the store; 0 means not sold there. Give a store frame unlockLevel 0 (see PenSkin.storePrice). */
     val storePrice: Int = 0
 ) {
-    SCRIBBLER(R.drawable.level_frame_scribbler, 0.72f, 0f, 0f, 1),
-    ARTIST(R.drawable.level_frame_artist, 0.51f, 0f, 0f, 10),
-    APPRENTICE(R.drawable.level_frame_apprentice, 0.42f, 0f, 0f, 20),
-    POP_ART(R.drawable.level_frame_pop_art, 0.45f, 0f, 0f, 30),
-    WOOD_PALETTE(R.drawable.level_frame_wood_palette, 0.45f, 0f, -0.014f, 40),
-    MASTER_PAINTER(R.drawable.level_frame_master_painter, 0.42f, 0f, -0.031f, 50),
-    WATERCOLOR_BRUSHES(R.drawable.level_frame_watercolor_brushes, 0.49f, 0f, -0.022f, 60),
-    PAINTER(R.drawable.level_frame_painter, 0.53f, -0.022f, 0f, 70),
-    CHALK(R.drawable.level_frame_chalk, 0.53f, 0f, 0f, 80),
-    GRAFFITI(R.drawable.level_frame_graffiti, 0.49f, 0f, 0f, 90),
-    GRAND_MASTER(R.drawable.level_frame_grand_master, 0.51f, 0f, 0f, 100),
+    // faceDiameterFraction/faceOffsetXFraction/faceOffsetYFraction below were
+    // re-measured directly off each PNG's own transparent hole (a flood-fill
+    // from the artwork's centre, see the analysis script used to produce
+    // these) rather than eyeballed — several were off by close to a whole
+    // pixel-visible dp at the 88dp profile badge size (PAINTER had a
+    // -0.022 X offset though its hole sits dead centre; CELESTIAL_MOON's Y
+    // offset was a third of what its hole actually needs), which is what
+    // read as "not quite centred" on some frames and not others.
+    SCRIBBLER(R.drawable.level_frame_scribbler, 0.764f, 0.001f, 0.001f, 1),
+    ARTIST(R.drawable.level_frame_artist, 0.535f, 0f, 0f, 10),
+    APPRENTICE(R.drawable.level_frame_apprentice, 0.44f, 0f, 0.003f, 20),
+    POP_ART(R.drawable.level_frame_pop_art, 0.475f, -0.002f, -0.001f, 30),
+    WOOD_PALETTE(R.drawable.level_frame_wood_palette, 0.475f, 0f, -0.007f, 40),
+    MASTER_PAINTER(R.drawable.level_frame_master_painter, 0.449f, 0.002f, -0.0195f, 50),
+    WATERCOLOR_BRUSHES(R.drawable.level_frame_watercolor_brushes, 0.531f, -0.002f, -0.008f, 60),
+    PAINTER(R.drawable.level_frame_painter, 0.59f, 0f, 0f, 70),
+    CHALK(R.drawable.level_frame_chalk, 0.584f, 0.003f, 0.004f, 80),
+    GRAFFITI(R.drawable.level_frame_graffiti, 0.535f, 0f, -0.003f, 90),
+    GRAND_MASTER(R.drawable.level_frame_grand_master, 0.576f, 0.003f, 0f, 100),
 
     // --- Store frames (bought with gold, see StoreScreen). unlockLevel 0 like league prizes. ---
-    WATER_SPLASH(R.drawable.level_frame_water_splash, 0.50f, 0f, 0f, 0, storePrice = 1200),
-    JASMINE_WREATH(R.drawable.level_frame_jasmine_wreath, 0.46f, 0f, 0f, 0, storePrice = 1500),
-    CHERRY_BLOSSOM(R.drawable.level_frame_cherry_blossom, 0.44f, 0f, 0f, 0, storePrice = 1800),
-    CHERRY_BLOSSOM_GOLD(R.drawable.level_frame_cherry_blossom_gold, 0.44f, 0f, 0f, 0, storePrice = 2200),
-    FLAME_RING(R.drawable.level_frame_flame_ring, 0.48f, 0f, 0f, 0, storePrice = 3000),
-    ICE_CRYSTAL(R.drawable.level_frame_ice_crystal, 0.42f, 0f, 0f, 0, storePrice = 3200),
-    RAINBOW_DREAM(R.drawable.level_frame_rainbow_dream, 0.40f, 0f, 0f, 0, storePrice = 4000),
-    AMETHYST_CRYSTAL(R.drawable.level_frame_amethyst_crystal, 0.46f, 0f, 0f, 0, storePrice = 4500),
-    OCEAN_TREASURE(R.drawable.level_frame_ocean_treasure, 0.48f, 0f, 0f, 0, storePrice = 6000),
-    TIME_EXPLORER(R.drawable.level_frame_time_explorer, 0.44f, 0f, 0f, 0, storePrice = 6500),
-    GALAXY_RING(R.drawable.level_frame_galaxy_ring, 0.55f, 0f, 0f, 0, storePrice = 7500),
-    CELESTIAL_MOON(R.drawable.level_frame_celestial_moon, 0.40f, 0.05f, -0.02f, 0, storePrice = 8000),
-    PEARL_BUTTERFLY(R.drawable.level_frame_pearl_butterfly, 0.48f, 0f, 0f, 0, storePrice = 10000),
-    DRAGON_FLAME(R.drawable.level_frame_dragon_flame, 0.44f, 0f, 0f, 0, storePrice = 12000),
-    SHADOW_CROWN(R.drawable.level_frame_shadow_crown, 0.46f, 0f, 0f, 0, storePrice = 13000),
-    ROYAL_CROWN(R.drawable.level_frame_royal_crown, 0.50f, 0f, 0f, 0, storePrice = 15000);
+    WATER_SPLASH(R.drawable.level_frame_water_splash, 0.516f, 0.001f, 0.014f, 0, storePrice = 1200),
+    JASMINE_WREATH(R.drawable.level_frame_jasmine_wreath, 0.602f, 0f, -0.013f, 0, storePrice = 1500),
+    CHERRY_BLOSSOM(R.drawable.level_frame_cherry_blossom, 0.6f, 0.003f, -0.004f, 0, storePrice = 1800),
+    CHERRY_BLOSSOM_GOLD(R.drawable.level_frame_cherry_blossom_gold, 0.613f, 0.004f, -0.0215f, 0, storePrice = 2200),
+    FLAME_RING(R.drawable.level_frame_flame_ring, 0.572f, -0.001f, -0.009f, 0, storePrice = 3000),
+    ICE_CRYSTAL(R.drawable.level_frame_ice_crystal, 0.549f, 0.001f, -0.013f, 0, storePrice = 3200),
+    RAINBOW_DREAM(R.drawable.level_frame_rainbow_dream, 0.607f, 0.008f, -0.005f, 0, storePrice = 4000),
+    AMETHYST_CRYSTAL(R.drawable.level_frame_amethyst_crystal, 0.543f, -0.001f, -0.0215f, 0, storePrice = 4500),
+    OCEAN_TREASURE(R.drawable.level_frame_ocean_treasure, 0.58f, -0.009f, -0.013f, 0, storePrice = 6000),
+    TIME_EXPLORER(R.drawable.level_frame_time_explorer, 0.584f, -0.001f, -0.0225f, 0, storePrice = 6500),
+    GALAXY_RING(R.drawable.level_frame_galaxy_ring, 0.582f, 0f, -0.013f, 0, storePrice = 7500),
+    CELESTIAL_MOON(R.drawable.level_frame_celestial_moon, 0.506f, 0.008f, -0.06f, 0, storePrice = 8000),
+    PEARL_BUTTERFLY(R.drawable.level_frame_pearl_butterfly, 0.588f, 0.004f, -0.005f, 0, storePrice = 10000),
+    DRAGON_FLAME(R.drawable.level_frame_dragon_flame, 0.545f, 0.001f, -0.001f, 0, storePrice = 12000),
+    SHADOW_CROWN(R.drawable.level_frame_shadow_crown, 0.545f, -0.001f, -0.017f, 0, storePrice = 13000),
+    ROYAL_CROWN(R.drawable.level_frame_royal_crown, 0.537f, 0.001f, -0.0205f, 0, storePrice = 15000);
 
     // Monthly league prize frames (LEAGUE_CHAMPION_<year>_<month>) were
     // removed — the first batch of artwork did not clean up against the
