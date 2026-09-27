@@ -27,9 +27,24 @@ import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.jvm.Synchronized
 import kotlin.random.Random
 
-/** Sound/vibration on-off toggles from the Settings screen, backed by SharedPreferences. */
+/**
+ * Sound/vibration on-off toggles from the Settings screen, backed by SharedPreferences.
+ *
+ * Every gold/XP/joker/store/chest mutator below is `@Synchronized`: each one
+ * reads a StateFlow's current value, computes an updated value, and writes
+ * both the pref and the StateFlow back — a classic read-modify-write with no
+ * protection between the read and the write. Two of these racing on
+ * different threads (a chest finishing opening while a store purchase is in
+ * flight, two rapid joker taps) could otherwise silently lose one of the two
+ * updates. `@Synchronized` locks on `this`, which is safe here specifically
+ * because this class is a single `@Singleton` instance nothing else holds a
+ * lock on, and every one of these calls is a fast, synchronous
+ * SharedPreferences write — never a suspend function, so there is no risk of
+ * blocking the lock across a coroutine suspension point.
+ */
 @Singleton
 class SettingsRepository @Inject constructor(@ApplicationContext private val context: Context) {
 
@@ -272,6 +287,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     private val _goldBalance = MutableStateFlow(prefs.getInt(KEY_GOLD_BALANCE, 0))
     val goldBalance: StateFlow<Int> = _goldBalance.asStateFlow()
 
+    @Synchronized
     private fun addGold(amount: Int) {
         if (amount <= 0) return
         val updated = _goldBalance.value + amount
@@ -286,15 +302,6 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
 
     /** Gold earned by playing (achievements, level stars, daily challenge). Sealed like every other economy write. */
     fun earnGold(amount: Int) = addGold(amount)
-
-    /** Spends gold; false (and nothing changes) when the balance cannot cover it. */
-    private fun spendGold(amount: Int): Boolean {
-        if (amount <= 0 || _goldBalance.value < amount) return false
-        val updated = _goldBalance.value - amount
-        prefs.edit { putInt(KEY_GOLD_BALANCE, updated); sealEconomy(gold = updated) }
-        _goldBalance.value = updated
-        return true
-    }
 
     // --- Economy tamper seal (see EconomyGuard). Every write of gold / jokers /
     // store items also writes the seal in the SAME edit, so the two can never
@@ -318,11 +325,21 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     val ownedStoreIds: StateFlow<Set<String>> = _ownedStoreIds.asStateFlow()
 
     /** Buys [id] for [price] gold. False if already owned or the balance is too low. */
+    @Synchronized
     fun purchaseStoreItem(id: String, price: Int): Boolean {
-        if (price <= 0 || id in _ownedStoreIds.value || !spendGold(price)) return false
-        val updated = _ownedStoreIds.value + id
-        prefs.edit { putStringSet(KEY_OWNED_STORE_IDS, updated); sealEconomy(owned = updated) }
-        _ownedStoreIds.value = updated
+        if (price <= 0 || id in _ownedStoreIds.value || _goldBalance.value < price) return false
+        val updatedGold = _goldBalance.value - price
+        val updatedOwned = _ownedStoreIds.value + id
+        // One commit for the deduction AND the grant — spendGold()+a second
+        // apply() used to split these; a crash in between lost the player's
+        // gold with nothing granted for it.
+        prefs.edit(commit = true) {
+            putInt(KEY_GOLD_BALANCE, updatedGold)
+            putStringSet(KEY_OWNED_STORE_IDS, updatedOwned)
+            sealEconomy(gold = updatedGold, owned = updatedOwned)
+        }
+        _goldBalance.value = updatedGold
+        _ownedStoreIds.value = updatedOwned
         return true
     }
 
@@ -367,6 +384,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
      * sealed. A key with a missing or wrong seal means the numbers were
      * edited from outside: the economy is reset to zero.
      */
+    @Synchronized
     private fun verifyEconomy() {
         val payload = economyPayload(_goldBalance.value, _jokerCounts.value, _ownedStoreIds.value)
         val seal = prefs.getString(KEY_ECONOMY_SEAL, null)
@@ -393,12 +411,14 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         _jokerCounts.value = counts
     }
 
+    @Synchronized
     fun addJoker(type: JokerType, quantity: Int) {
         if (quantity <= 0) return
         saveJokers(_jokerCounts.value + (type to ((_jokerCounts.value[type] ?: 0) + quantity)))
     }
 
     /** Spends one joker; false if none are left. */
+    @Synchronized
     fun useJoker(type: JokerType): Boolean {
         val have = _jokerCounts.value[type] ?: 0
         if (have <= 0) return false
@@ -407,9 +427,21 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     }
 
     /** Buys [quantity] jokers at [JokerType.priceFor]; false if the balance can't cover it. */
+    @Synchronized
     fun purchaseJoker(type: JokerType, quantity: Int): Boolean {
-        if (quantity <= 0 || !spendGold(type.priceFor(quantity))) return false
-        addJoker(type, quantity)
+        val price = type.priceFor(quantity)
+        if (quantity <= 0 || _goldBalance.value < price) return false
+        val updatedGold = _goldBalance.value - price
+        val updatedJokers = _jokerCounts.value + (type to ((_jokerCounts.value[type] ?: 0) + quantity))
+        // One commit for the deduction AND the grant — see purchaseStoreItem's
+        // comment for why splitting these across two apply() calls is unsafe.
+        prefs.edit(commit = true) {
+            putInt(KEY_GOLD_BALANCE, updatedGold)
+            putString(KEY_JOKERS, Json.encodeToString(updatedJokers.mapKeys { it.key.name }))
+            sealEconomy(gold = updatedGold, jokers = updatedJokers)
+        }
+        _goldBalance.value = updatedGold
+        _jokerCounts.value = updatedJokers
         return true
     }
 
@@ -420,6 +452,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     val dailyJokerDay: StateFlow<Long> = _dailyJokerDay.asStateFlow()
 
     /** Hands over today's [DailyJoker] and records the day; null if it was already claimed. */
+    @Synchronized
     fun claimDailyJoker(): JokerType? {
         val today = java.time.LocalDate.now().toEpochDay()
         if (_dailyJokerDay.value == today) return null
@@ -431,6 +464,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     }
 
     /** Puts a store item straight into the collection (chest drop) — no gold changes hands. */
+    @Synchronized
     fun grantStoreItem(id: String) {
         if (id in _ownedStoreIds.value) return
         val updated = _ownedStoreIds.value + id
@@ -444,6 +478,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     val chestSpeedupDay: StateFlow<Long> = _chestSpeedupDay.asStateFlow()
 
     /** Takes [millis] off the running countdown of [chestId]. False if today's speed-up is spent or that chest is not counting down. */
+    @Synchronized
     fun speedUpChest(chestId: String, millis: Long): Boolean {
         val today = java.time.LocalDate.now().toEpochDay()
         if (_chestSpeedupDay.value == today) return false
@@ -519,6 +554,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
      * chest only if a slot was free to put it in; null still means the win
      * counted (the cycle moved on), just that nothing appeared on screen.
      */
+    @Synchronized
     fun awardChestForWin(): Chest? {
         val seed = chestCycleSeed
         val index = chestCycleIndex
@@ -532,6 +568,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     }
 
     /** False if another slot is already counting down — only one chest unlocks at a time. */
+    @Synchronized
     fun startUnlockingChest(chestId: String): Boolean {
         val slots = _chestSlots.value
         if (slots.any { it?.unlockStartedAtMillis != null }) return false
@@ -545,19 +582,45 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     }
 
     /** Grants the reward and empties the slot — null if the chest isn't ready yet or doesn't exist any more. */
+    @Synchronized
     fun openChestIfReady(chestId: String): ChestReward? {
         val slots = _chestSlots.value
         val index = slots.indexOfFirst { it?.id == chestId }
         val chest = slots.getOrNull(index) ?: return null
         if (!chest.isReady(System.currentTimeMillis())) return null
         val reward = ChestLoot.roll(chest.tier, _ownedStoreIds.value)
-        addGold(reward.gold)
-        reward.jokers.forEach { (type, n) -> addJoker(type, n) }
-        reward.penDrop?.let { grantStoreItem("pen:${it.name}") }
-        saveChestSlots(slots.toMutableList().apply { this[index] = null })
+
+        val updatedGold = _goldBalance.value + reward.gold
+        val updatedJokers = _jokerCounts.value.toMutableMap().apply {
+            reward.jokers.forEach { (type, n) -> this[type] = (this[type] ?: 0) + n }
+        }
+        val updatedOwned = reward.penDrop?.let { _ownedStoreIds.value + "pen:${it.name}" } ?: _ownedStoreIds.value
+        val updatedSlots = slots.toMutableList().apply { this[index] = null }
+
+        // One commit for the whole payout, not the four-plus separate
+        // apply() calls (addGold/addJoker per type/grantStoreItem/saveChestSlots)
+        // this used to be. Those are async and independently ordered on
+        // disk, so a process death between "reward granted" and "slot
+        // cleared" could leave the reward paid but the chest still sitting
+        // there ready to open again — a real double-grant path. Landing the
+        // reward and the slot-clear in the same commit makes that
+        // impossible: either both happened or neither did.
+        prefs.edit(commit = true) {
+            putInt(KEY_GOLD_BALANCE, updatedGold)
+            putString(KEY_JOKERS, Json.encodeToString(updatedJokers.mapKeys { it.key.name }))
+            putStringSet(KEY_OWNED_STORE_IDS, updatedOwned)
+            putString(KEY_CHEST_SLOTS, Json.encodeToString(updatedSlots))
+            sealEconomy(gold = updatedGold, jokers = updatedJokers, owned = updatedOwned)
+        }
+        _goldBalance.value = updatedGold
+        _jokerCounts.value = updatedJokers
+        _ownedStoreIds.value = updatedOwned
+        _chestSlots.value = updatedSlots
+        com.sualtikasifi.cizimhafiza.notifications.ChestReadyNotifier.sync(context, updatedSlots)
         return reward
     }
 
+    @Synchronized
     fun addScore(points: Int) {
         val updated = _lifetimeScore.value + points
         prefs.edit { putInt(KEY_LIFETIME_SCORE, updated) }
@@ -584,6 +647,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
      * record of having applied a penalty is written separately, and a
      * half-written pair would either lose the penalty or repeat it.
      */
+    @Synchronized
     fun revokeXp(amount: Int) {
         if (amount <= 0) return
         val updated = (_lifetimeXp.value - amount).coerceAtLeast(0)
@@ -618,6 +682,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         penaltiesApplied = penaltiesApplied + 1
     }
 
+    @Synchronized
     fun addXp(amount: Int) {
         if (amount <= 0) return
         val updated = _lifetimeXp.value + amount
@@ -710,6 +775,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
      * floor of the tier that score had already unlocked, so nobody opens the
      * update to find themselves demoted to Karalamacı.
      */
+    @Synchronized
     fun seedLifetimeXpFromLegacyScore(legacyScore: Int) {
         if (prefs.contains(KEY_LIFETIME_XP)) return
         // The old score thresholds, paired with the level each tier now starts at.
@@ -721,6 +787,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     }
 
     /** One-time seed from surviving local game history, only if no lifetime score has been recorded yet. */
+    @Synchronized
     fun seedLifetimeScoreIfAbsent(fallbackScore: Int) {
         if (prefs.contains(KEY_LIFETIME_SCORE)) return
         prefs.edit { putInt(KEY_LIFETIME_SCORE, fallbackScore) }
@@ -868,6 +935,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
      * on disk, where this account is cleared but not yet restored. Both
      * halves go into one editor and land together or not at all.
      */
+    @Synchronized
     fun replaceWithAccount(
         lifetimeScore: Int,
         lifetimeXp: Int,
@@ -1009,6 +1077,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
      * this one guards the XP itself, the same split addScore/addXp keep
      * from every other reward path.
      */
+    @Synchronized
     fun grantRatingBonusXpOnce(amount: Int): Boolean {
         if (prefs.getBoolean(KEY_RATING_BONUS_XP_GRANTED, false)) return false
         prefs.edit { putBoolean(KEY_RATING_BONUS_XP_GRANTED, true) }

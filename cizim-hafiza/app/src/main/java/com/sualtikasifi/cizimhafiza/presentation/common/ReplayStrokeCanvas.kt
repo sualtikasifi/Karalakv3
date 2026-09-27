@@ -18,9 +18,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -87,7 +85,6 @@ fun ReplayStrokeCanvas(
 
     Canvas(modifier = modifier) {
         val fit = strokeFitFor(strokes) ?: return@Canvas
-        val paint: Brush = penSkin?.let { penBrush(it, size.width, size.height) } ?: SolidColor(strokeColor)
 
         // progress.value is read HERE, inside the draw scope, and nowhere in
         // the composable body above. Read during composition it would
@@ -95,12 +92,15 @@ fun ReplayStrokeCanvas(
         // replay lasts; read here it only re-runs the draw phase, which is
         // all that actually changes.
         clipRect {
+            var distance = 0f
             DrawingReplay.forEachVisible(strokes, totalUnits, progress.value) { stroke, visiblePoints ->
-                drawFittedStroke(
+                distance = drawFittedStroke(
                     stroke = if (visiblePoints == stroke.size) stroke else stroke.subList(0, visiblePoints),
                     fit = fit,
-                    paint = paint,
-                    strokeWidthPx = strokeWidthPx
+                    penSkin = penSkin,
+                    strokeColor = strokeColor,
+                    strokeWidthPx = strokeWidthPx,
+                    startDistance = distance
                 )
             }
         }

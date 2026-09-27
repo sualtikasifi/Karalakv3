@@ -107,6 +107,9 @@ class WaitingRoomViewModel @Inject constructor(
         // 20 s: every beat is a write that each player's room listener then
         // downloads, so the cost grows with the square of the lobby size.
         const val PRESENCE_HEARTBEAT_MS = 30_000L
+
+        /** startGame()'s fallback: how long to wait for the room to flip to PLAYING before giving the "Başlat" button back. */
+        const val START_GAME_TIMEOUT_MS = 12_000L
     }
 
     val roomCode: String = checkNotNull(savedStateHandle["roomCode"])
@@ -220,6 +223,22 @@ class WaitingRoomViewModel @Inject constructor(
                 val words = getWordsForGameUseCase(room.wordCount, room.category, room.difficulty)
                 onlineGameRepository.startGame(roomCode, words.map { it.id })
             }.onFailure {
+                _uiState.update { state -> state.copy(isStarting = false, errorMessage = UiText.of(R.string.error_game_start_failed)) }
+            }
+        }
+        // A success above only queues the Firestore write — the actual
+        // "Başlat" → navigate-away happens when the room observer sees
+        // status flip to PLAYING (see WaitingRoomScreen's LaunchedEffect).
+        // If that update never arrives (a dropped listener, a rules
+        // rejection the write itself didn't surface as a failure) isStarting
+        // had no other path back to false: the host was left staring at a
+        // permanently disabled button with no way to retry. This timeout is
+        // that way back — harmless if the room really did start in time,
+        // since this screen will have already navigated away by then and
+        // the update below lands on a cleared ViewModel.
+        viewModelScope.launch {
+            delay(START_GAME_TIMEOUT_MS)
+            if (_uiState.value.isStarting) {
                 _uiState.update { state -> state.copy(isStarting = false, errorMessage = UiText.of(R.string.error_game_start_failed)) }
             }
         }

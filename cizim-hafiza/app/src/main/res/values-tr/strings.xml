@@ -202,7 +202,7 @@
     <string name="friends_remove_confirm_confirm">Çıkar</string>
     <string name="friends_remove_confirm_cancel">Vazgeç</string>
     <string name="friends_block_confirm_title">Kullanıcıyı engelle</string>
-    <string name="friends_block_confirm_message">%1$s adlı kişiyi engellersen sana bir daha davet gönderemez. İstediğin zaman engeli kaldırabilirsin.</string>
+    <string name="friends_block_confirm_message">%1$s adlı kişiyi engellersen sana bir daha davet gönderemez. Yine de arkadaş listende kalmaya devam eder — istersen ayrıca çıkarabilir, istediğin zaman engeli kaldırabilirsin.</string>
     <string name="friends_block_confirm_confirm">Engelle</string>
     <string name="friends_block_confirm_cancel">Vazgeç</string>
 
@@ -421,6 +421,9 @@
     <string name="settings_sound">Ses</string>
     <string name="settings_vibration">Titreşim</string>
     <string name="settings_notifications">Bildirimler</string>
+    <string name="settings_battery_optimization_title">Bildirimler geç mi geliyor?</string>
+    <string name="settings_battery_optimization_body">Telefonunun pil yöneticisi, uygulamayı açana kadar hatırlatmaları geciktirebilir. Karalak\'ı istisna yaparak zamanında gelmesini sağla.</string>
+    <string name="settings_battery_optimization_action">Bildirim sorununu düzelt</string>
     <string name="notification_channel_name">Oyun hatırlatmaları</string>
     <string name="notification_channel_description">Karalak\'ı unutmayasın diye günde en fazla bir kez gönderilen hatırlatmalar.</string>
     <string name="notification_channel_invite_name">Arkadaş davetleri</string>
@@ -747,7 +750,7 @@
     <string name="duel_challenge_sent">%1$s kişisine meydan okuma olarak gönderildi!</string>
     <string name="duel_create_title">Meydan Oku</string>
     <string name="duel_create_opponent">%1$s ile düello</string>
-    <string name="duel_create_explainer">Şimdi normal bir tur oyna — çizimlerin bittiğinde otomatik olarak %1$s kişisine bir meydan okuma olarak gönderilecek. O, uygulamayı bir sonraki açtığında senin çizimlerini tahmin edecek.</string>
+    <string name="duel_create_explainer">Şimdi normal bir tur oyna — çizimlerin bittiğinde otomatik olarak %1$s kişisine bir meydan okuma olarak gönderilecek. O, uygulamayı bir sonraki açtığında aynı kelimelerle kendi çizimlerini yapıp tahmin edecek; sonuçlarınız karşılaştırılacak.</string>
     <string name="duel_create_start">Turu Başlat</string>
     <string name="duel_list_title">Düellolar</string>
     <string name="duel_list_incoming_title">Sana Gelenler</string>

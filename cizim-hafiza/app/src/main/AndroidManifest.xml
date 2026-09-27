@@ -13,6 +13,15 @@
          SCHEDULE_EXACT_ALARM: the alarm is deliberately inexact (Play only
          grants exact alarms to alarm-clock and calendar apps). -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Lets Settings offer an "ignore battery optimizations" prompt for the
+         same daily reminder / chest-ready alarms — on the aggressive OEM
+         battery managers a large share of this game's players run (see
+         NotificationScheduler), a force-stopped or battery-restricted app has
+         its alarms silently held back until the app is next opened, which is
+         exactly the "notification only arrives when I open the app" symptom.
+         Only requests the exemption when the player explicitly taps the
+         prompt (see SettingsScreen) — never launched automatically. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <!-- play-services-ads (see build.gradle.kts) needs these to actually
          read/use an advertising ID — AD_ID plus its newer Android

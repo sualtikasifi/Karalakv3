@@ -30,9 +30,12 @@ object AppRestarter {
         val launchIntent = context.packageManager
             .getLaunchIntentForPackage(context.packageName)
             ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        if (launchIntent != null) {
-            context.startActivity(launchIntent)
-        }
+        // A null launch intent (package/launcher-activity state momentarily
+        // inconsistent) used to still fall through to exit() below — the
+        // process died with nothing queued to bring it back, leaving the
+        // player dropped out of the app entirely with no way back in.
+        if (launchIntent == null) return
+        context.startActivity(launchIntent)
         // exit() rather than finishAffinity(): the point is to drop the
         // PROCESS, not just the Activity stack. The intent above is already
         // queued with the system, so the app comes straight back up.

@@ -159,6 +159,10 @@ fun SettingsScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
+            if (notificationsEnabled) {
+                Spacer(modifier = Modifier.height(10.dp))
+                BatteryOptimizationHint()
+            }
             Spacer(modifier = Modifier.height(10.dp))
             LanguageRow(selectedLanguage = language, onLanguageSelected = viewModel::setLanguage)
             Spacer(modifier = Modifier.height(10.dp))
@@ -248,6 +252,75 @@ fun SettingsScreen(
             title = stringResource(R.string.menu_settings),
             modifier = Modifier.align(Alignment.TopStart)
         )
+        }
+    }
+}
+
+/**
+ * "Bildirimler bazen gelmiyor, uygulamaya girince geliyor" is the exact
+ * symptom of an OEM battery manager silently holding back this app's
+ * AlarmManager alarms (see NotificationScheduler/ChestReadyNotifier) until
+ * something else launches the app — most visible on the aggressive
+ * Xiaomi/MIUI-family managers a large share of this game's players run.
+ * There is no in-app fix for that; the actual fix lives in the OS's own
+ * battery settings, so this just gets the player there in one tap.
+ *
+ * Shown only while notifications are on, and only while the OS still has
+ * this app under battery restriction — rechecked every time Settings comes
+ * back to the foreground (e.g. returning from the system dialog), so the
+ * card disappears the moment the player grants the exemption instead of
+ * still asking for something already done.
+ */
+@Composable
+private fun BatteryOptimizationHint() {
+    val context = LocalContext.current
+    var ignoringOptimizations by remember {
+        mutableStateOf(
+            (context.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager)
+                ?.isIgnoringBatteryOptimizations(context.packageName) != false
+        )
+    }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        ignoringOptimizations = (context.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager)
+            ?.isIgnoringBatteryOptimizations(context.packageName) != false
+    }
+    if (ignoringOptimizations) return
+
+    WarmCard(corner = 22.dp, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)) {
+            Text(
+                text = stringResource(R.string.settings_battery_optimization_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.settings_battery_optimization_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton(
+                text = stringResource(R.string.settings_battery_optimization_action),
+                onClick = {
+                    runCatching {
+                        launcher.launch(
+                            android.content.Intent(
+                                android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                                android.net.Uri.parse("package:${context.packageName}")
+                            )
+                        )
+                    }.onFailure {
+                        // Some OEM builds refuse the direct-request intent —
+                        // the general battery-settings screen is the fallback
+                        // every device actually has.
+                        runCatching {
+                            launcher.launch(android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.sualtikasifi.cizimhafiza.data.local.entity.WordEntity
 import com.sualtikasifi.cizimhafiza.domain.model.Difficulty
 
@@ -39,6 +40,23 @@ interface WordDao {
      */
     @Query("DELETE FROM words WHERE approved = 1")
     suspend fun deleteApproved()
+
+    /**
+     * [deleteApproved] then [insertAll] as one atomic unit.
+     *
+     * WordPoolSynchronizer.sync() used to call the two separately: any other
+     * caller reading `words` (e.g. GetWordsForGameUseCase, mid-language-switch
+     * or mid-version-bump) could observe the table in the split second between
+     * the delete and the re-insert, when the playable pool is momentarily
+     * empty. @Transaction makes the whole replace atomic from every other
+     * reader's point of view — either the old pool or the new one, never
+     * neither.
+     */
+    @Transaction
+    suspend fun replaceApproved(words: List<WordEntity>) {
+        deleteApproved()
+        insertAll(words)
+    }
 
     @Query("SELECT DISTINCT category FROM words WHERE approved = 1 ORDER BY category")
     suspend fun getCategories(): List<String>

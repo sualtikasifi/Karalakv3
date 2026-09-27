@@ -305,77 +305,84 @@ fun GuessScreen(
                 )
             }
 
-            if (!isAnswered) {
-                Spacer(modifier = Modifier.height(10.dp))
-                // Ad hint (one per whole match, not per word — see
-                // GameViewModel/OnlineGameViewModel.useHint), the two jokers
-                // and skip: one row of equal-width tiles, so they read as a
-                // toolbar instead of loose pills piled against the left edge.
-                // With the ad hint gone the remaining tiles simply share the
-                // width.
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (!state.hintUsed && state.hintLetter == null && GameConstants.ADMOB_ENABLED) {
-                        GuessActionTile(
-                            label = stringResource(if (hintRequested) R.string.loading_hint else R.string.guess_tile_hint),
-                            fill = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.primary,
-                            borderColor = MaterialTheme.colorScheme.primary,
-                            enabled = !hintRequested,
-                            modifier = Modifier.weight(1f),
-                            // Countdown is paused (see useHint) the instant this is
-                            // tapped, so the label changes to make clear something is
-                            // happening — a frozen timer with no other signal would
-                            // otherwise look like the screen had just stalled.
-                            onClick = {
-                                if (!hintRequested) {
-                                    hintRequested = true
-                                    onHintClick()
-                                }
-                            },
-                            icon = {
-                                Icon(Icons.Filled.PlayCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
-                            }
-                        )
-                    }
-                    val firstType = com.sualtikasifi.cizimhafiza.domain.model.JokerType.FIRST_LETTER
-                    val countType = com.sualtikasifi.cizimhafiza.domain.model.JokerType.LETTER_COUNT
-                    val firstCount = jokers[firstType] ?: 0
-                    val letterCountCount = jokers[countType] ?: 0
+            Spacer(modifier = Modifier.height(10.dp))
+            // Ad hint (one per whole match, not per word — see
+            // GameViewModel/OnlineGameViewModel.useHint), the two jokers
+            // and skip: one row of equal-width tiles, so they read as a
+            // toolbar instead of loose pills piled against the left edge.
+            // With the ad hint gone the remaining tiles simply share the
+            // width.
+            //
+            // Kept on screen (merely disabled) through the isAnswered
+            // feedback pause instead of being removed outright: this whole
+            // Row used to disappear between words, and since the canvas
+            // above it holds weight(1f), removing it let the canvas jump
+            // taller for the pause and snap back for the next word — a
+            // constant resize/reflow on every single transition. Reserving
+            // the same height throughout keeps the canvas' size fixed.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (!state.hintUsed && state.hintLetter == null && GameConstants.ADMOB_ENABLED) {
                     GuessActionTile(
-                        label = stringResource(firstType.shortRes()),
-                        fill = firstType.tint(),
-                        contentColor = Color.White,
-                        enabled = state.hintLetter == null && firstCount > 0,
-                        badgeCount = firstCount,
-                        modifier = Modifier.weight(1f),
-                        onClick = onFirstLetterJoker,
-                        icon = { JokerArt(firstType, 28.dp) }
-                    )
-                    GuessActionTile(
-                        label = stringResource(countType.shortRes()),
-                        fill = countType.tint(),
-                        contentColor = Color.White,
-                        enabled = state.letterCount == null && letterCountCount > 0,
-                        badgeCount = letterCountCount,
-                        modifier = Modifier.weight(1f),
-                        onClick = onLetterCountJoker,
-                        icon = { JokerArt(countType, 28.dp) }
-                    )
-                    GuessActionTile(
-                        label = stringResource(R.string.skip_guess),
+                        label = stringResource(if (hintRequested) R.string.loading_hint else R.string.guess_tile_hint),
                         fill = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        borderColor = MaterialTheme.colorScheme.outline,
+                        contentColor = MaterialTheme.colorScheme.primary,
+                        borderColor = MaterialTheme.colorScheme.primary,
+                        enabled = !hintRequested && !isAnswered,
                         modifier = Modifier.weight(1f),
-                        onClick = { onSubmit("") },
+                        // Countdown is paused (see useHint) the instant this is
+                        // tapped, so the label changes to make clear something is
+                        // happening — a frozen timer with no other signal would
+                        // otherwise look like the screen had just stalled.
+                        onClick = {
+                            if (!hintRequested) {
+                                hintRequested = true
+                                onHintClick()
+                            }
+                        },
                         icon = {
-                            Icon(Icons.Filled.SkipNext, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(28.dp))
+                            Icon(Icons.Filled.PlayCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
                         }
                     )
                 }
+                val firstType = com.sualtikasifi.cizimhafiza.domain.model.JokerType.FIRST_LETTER
+                val countType = com.sualtikasifi.cizimhafiza.domain.model.JokerType.LETTER_COUNT
+                val firstCount = jokers[firstType] ?: 0
+                val letterCountCount = jokers[countType] ?: 0
+                GuessActionTile(
+                    label = stringResource(firstType.shortRes()),
+                    fill = firstType.tint(),
+                    contentColor = Color.White,
+                    enabled = !isAnswered && state.hintLetter == null && firstCount > 0,
+                    badgeCount = firstCount,
+                    modifier = Modifier.weight(1f),
+                    onClick = onFirstLetterJoker,
+                    icon = { JokerArt(firstType, 28.dp) }
+                )
+                GuessActionTile(
+                    label = stringResource(countType.shortRes()),
+                    fill = countType.tint(),
+                    contentColor = Color.White,
+                    enabled = !isAnswered && state.letterCount == null && letterCountCount > 0,
+                    badgeCount = letterCountCount,
+                    modifier = Modifier.weight(1f),
+                    onClick = onLetterCountJoker,
+                    icon = { JokerArt(countType, 28.dp) }
+                )
+                GuessActionTile(
+                    label = stringResource(R.string.skip_guess),
+                    fill = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    borderColor = MaterialTheme.colorScheme.outline,
+                    enabled = !isAnswered,
+                    modifier = Modifier.weight(1f),
+                    onClick = { onSubmit("") },
+                    icon = {
+                        Icon(Icons.Filled.SkipNext, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(28.dp))
+                    }
+                )
             }
             if (adErrorShown) {
                 Spacer(modifier = Modifier.height(6.dp))

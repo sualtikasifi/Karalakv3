@@ -123,23 +123,29 @@ object DrawingVideoExporter {
                 "karalak_${sanitize(word)}_${System.currentTimeMillis()}.mp4"
             )
 
-            // A failed encode leaves a file the muxer had already created
-            // and half-written; nothing downstream could tell it from a
-            // real clip.
-            onFailureDelete(file) {
-                encode(file, totalFrames) { canvas, frame ->
-                    // frame + 1, so the opening frame already carries the
-                    // first mark rather than being a blank sheet of paper. Past
-                    // drawnFrames the progress stays pinned at 1, which is what
-                    // makes the tail a held final image rather than a
-                    // continuation.
-                    val progress = ((frame + 1).toFloat() / drawnFrames).coerceAtMost(1f)
-                    drawFrame(canvas, strokes, totalUnits, progress, masked, logo, playLogo, template, frame)
+            try {
+                // A failed encode leaves a file the muxer had already created
+                // and half-written; nothing downstream could tell it from a
+                // real clip.
+                onFailureDelete(file) {
+                    encode(file, totalFrames) { canvas, frame ->
+                        // frame + 1, so the opening frame already carries the
+                        // first mark rather than being a blank sheet of paper. Past
+                        // drawnFrames the progress stays pinned at 1, which is what
+                        // makes the tail a held final image rather than a
+                        // continuation.
+                        val progress = ((frame + 1).toFloat() / drawnFrames).coerceAtMost(1f)
+                        drawFrame(canvas, strokes, totalUnits, progress, masked, logo, playLogo, template, frame)
+                    }
                 }
+            } finally {
+                // Was only recycled after a successful encode — a thrown
+                // exception from onFailureDelete/encode (e.g. MediaCodec
+                // failure) left these three decoded bitmaps leaked until GC.
+                logo.recycle()
+                playLogo.recycle()
+                template.recycle()
             }
-            logo.recycle()
-            playLogo.recycle()
-            template.recycle()
             file
         }.onFailure { Log.w(TAG, "Video export failed", it) }
     }

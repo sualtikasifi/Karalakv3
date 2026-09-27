@@ -300,8 +300,13 @@ class OnlineResultViewModel @Inject constructor(
         }
 
         // Require every currently-listed player to vote yes — the direct
-        // generalization of the old "both players vote" rule.
-        if (room.rematchVotes.size < activePlayers.size) return
+        // generalization of the old "both players vote" rule. Counted as a
+        // set intersection, not a bare size comparison: rematchVotes is
+        // never pruned when a player leaves, so a stale vote from someone
+        // who has since left could otherwise inflate the count past
+        // activePlayers.size while a real active player never voted at all.
+        val activeVotes = room.rematchVotes.intersect(activePlayers.map { it.uid }.toSet())
+        if (activeVotes.size < activePlayers.size) return
         hasTriggeredRematchReset = true
         viewModelScope.launch {
             // Fire-and-forget: a failure here just means the rematch reset

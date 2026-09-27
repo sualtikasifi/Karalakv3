@@ -75,8 +75,23 @@ class QuickMatchViewModel @Inject constructor(
      * — which made the retry loop below three identical attempts rather than
      * three chances, and made "Yeni Rakip" frequently present the opponent
      * the player had just declined.
+     *
+     * A LinkedHashSet, not a plain one, and capped at [SEEN_CAP]: this used
+     * to grow for the whole lifetime of the ViewModel with nothing ever
+     * removed from it, so a player mashing "Yeni Rakip" long enough in one
+     * sitting could exhaust the entire local candidate pool at their level
+     * and see nothing but Empty from then on, even though fresh real
+     * opponents kept arriving server-side the whole time. Evicting the
+     * oldest entry once the cap is hit keeps recently-declined opponents out
+     * without that ceiling.
      */
-    private val seen = mutableSetOf<String>()
+    private val seen = LinkedHashSet<String>()
+
+    private fun rememberSeen(id: String) {
+        seen.remove(id) // re-insert at the end, so a repeat stays "recent"
+        seen.add(id)
+        if (seen.size > SEEN_CAP) seen.remove(seen.first())
+    }
 
     init { search() }
 
@@ -141,7 +156,7 @@ class QuickMatchViewModel @Inject constructor(
                     _state.value = QuickMatchState.Empty
                     return@launch
                 }
-                seen += opponent.id
+                rememberSeen(opponent.id)
                 if (!isPlayable(opponent)) continue
                 val repeats = opponent.wordIds.count { it in recent }
                 if (repeats < bestRepeats) {
@@ -184,5 +199,8 @@ class QuickMatchViewModel @Inject constructor(
         /** How long "Rakip aranıyor" is shown at minimum, in millis. */
         const val MIN_SEARCH_MS = 3_000L
         const val MAX_SEARCH_MS = 8_000L
+
+        /** How many recently-shown opponents [seen] remembers before it starts forgetting the oldest. */
+        const val SEEN_CAP = 40
     }
 }

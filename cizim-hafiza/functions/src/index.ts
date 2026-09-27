@@ -323,6 +323,23 @@ const BOT_GROWTH_MIN = 35;
 const BOT_GROWTH_MAX = 165;
 
 /**
+ * The level a bot's card shows, derived from its own periodXp instead of a
+ * random draw independent of it (see the fix note on the call site below).
+ *
+ * Mirrors PlayerLevel.levelForXp/totalXpForLevel on the Android side
+ * (totalXpForLevel(level) = 25*(level-1)^2 + 75*(level-1)) — closed-form
+ * inverse of that quadratic, capped the same way. Keep the two in sync if
+ * the curve ever changes; nothing here enforces that automatically (same
+ * caveat as every other "keep in sync" constant in this file).
+ */
+const BOT_MAX_LEVEL = 100;
+function levelForBotXp(xp: number): number {
+  if (xp <= 0) return 1;
+  const n = Math.floor((-75 + Math.sqrt(75 * 75 + 100 * xp)) / 50);
+  return Math.min(BOT_MAX_LEVEL, Math.max(1, n + 1));
+}
+
+/**
  * Minimum real time between two growth applications to the same bot. The
  * schedule this runs from fires every hour; 50 minutes gives headroom for a
  * manual or slightly-early re-run not to double a bot's growth, while never
@@ -417,7 +434,6 @@ export async function runBuildGlobalLeaderboard(): Promise<void> {
     for (let i = 0; i < BOT_COUNT; i++) {
       const identity = seededRandom(periodId * 1_000 + i);
       const nickname = botNickname(identity);
-      const level = Math.max(Math.round(2 + identity() * 60), 1);
 
       let periodXp = samePeriod ? previousBots[i]?.periodXp ?? 0 : 0;
       if (growthDue) {
@@ -429,6 +445,13 @@ export async function runBuildGlobalLeaderboard(): Promise<void> {
         const growth = seededRandom(tick * 104_729 + periodId * 97 + i);
         periodXp += BOT_GROWTH_MIN + Math.floor(growth() * (BOT_GROWTH_MAX - BOT_GROWTH_MIN + 1));
       }
+      // Was an independent random draw (2-62, fixed for the whole period
+      // regardless of periodXp) — a bot with a low roll could sit on 8000+
+      // XP by month's end while still showing as, say, level 9, which is
+      // exactly the "how did they get 8280 XP at level 9" implausibility
+      // players notice. Derived from periodXp instead, so the level shown
+      // always matches the XP shown next to it.
+      const level = levelForBotXp(periodXp);
 
       bots.push({ uid: null, nickname, periodXp, level, bot: true });
       botStates.push({ nickname, periodXp, level });
@@ -593,6 +616,23 @@ export async function runFinalizeLeaguePeriod(): Promise<void> {
  */
 const REFERRAL_REWARD_XP = 500;
 const REFERRAL_REWARD_MIN_LEVEL = 5;
+// Both closed the same way an audit flagged this pipeline as farmable:
+// `level` is a client-published field (see users/{uid} in firestore.rules)
+// with no proof the invitee ever actually played to earn it — a script
+// could create a throwaway anon account, stamp invitedByUid, then
+// immediately publish level: 5 and collect 500 XP with zero real gameplay,
+// repeated without limit for one inviter.
+//
+// MIN_ACCOUNT_AGE_MS makes that require real wall-clock time per fake
+// account instead of being free — a genuine new player reaching level 5
+// takes far longer than this in practice, so it costs nobody honest
+// anything, while turning "run a script" into "wait a day per fake account".
+const REFERRAL_REWARD_MIN_ACCOUNT_AGE_MS = 24 * 60 * 60 * 1000;
+// A cap on how many rewards one inviter can ever collect — generous enough
+// that no real player's genuine friend circle hits it, but it bounds the
+// worst case of the exploit above to a fixed, small amount of stolen XP
+// instead of an unbounded farm.
+const REFERRAL_REWARD_MAX_PER_INVITER = 30;
 
 /**
  * Pays out the referral reward once an invitee reaches level 5.
@@ -629,10 +669,34 @@ export async function runGrantReferralRewards(): Promise<void> {
     .where("level", ">=", REFERRAL_REWARD_MIN_LEVEL)
     .get();
 
+  // Counts how many times each inviter has already been paid, so the
+  // per-inviter cap below can be enforced across this whole run without a
+  // Firestore read per candidate — cheap since a farming attempt is the one
+  // case this map grows large, and that is exactly what it exists to stop.
+  const grantedByInviter = new Map<string, number>();
+
   let granted = 0;
+  let skippedTooNew = 0;
+  let skippedCapped = 0;
   for (const doc of snapshot.docs) {
     const inviterUid = doc.get("invitedByUid") as string | undefined;
     if (!inviterUid) continue;
+
+    const alreadyGranted = grantedByInviter.get(inviterUid) ?? 0;
+    if (alreadyGranted >= REFERRAL_REWARD_MAX_PER_INVITER) {
+      skippedCapped++;
+      continue;
+    }
+
+    // The invitee's own AUTH account creation time — not any Firestore
+    // field, which the client controls — so this can't be spoofed by
+    // publishing a field early.
+    const authUser = await admin.auth().getUser(doc.id).catch(() => null);
+    const createdAtMs = authUser ? Date.parse(authUser.metadata.creationTime) : 0;
+    if (!createdAtMs || Date.now() - createdAtMs < REFERRAL_REWARD_MIN_ACCOUNT_AGE_MS) {
+      skippedTooNew++;
+      continue;
+    }
 
     const batch = db.batch();
     batch.update(doc.ref, { referralRewardGranted: true });
@@ -649,8 +713,12 @@ export async function runGrantReferralRewards(): Promise<void> {
       { merge: true }
     );
     await batch.commit();
+    grantedByInviter.set(inviterUid, alreadyGranted + 1);
     granted++;
   }
 
-  logger.info(`Referral rewards: granted ${granted} of ${snapshot.size} eligible invitee(s)`);
+  logger.info(
+    `Referral rewards: granted ${granted} of ${snapshot.size} eligible invitee(s) ` +
+      `(${skippedTooNew} too-new account(s), ${skippedCapped} over the per-inviter cap)`
+  );
 }

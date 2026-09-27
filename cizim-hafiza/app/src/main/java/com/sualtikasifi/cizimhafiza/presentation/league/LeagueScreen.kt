@@ -223,11 +223,23 @@ fun LeagueScreen(
                     contentPadding = PaddingValues(top = 10.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    itemsIndexed(shownTable.entries, key = { _, entry -> entry.uid }) { index, entry ->
+                    // On the global tab, the player's own entry is dropped out
+                    // of the ranked list even when it happens to occupy a
+                    // published slot — that slot is a bot or another real
+                    // player's earned spot, never a self-view of a rank that
+                    // can be misleadingly high before the bots have grown for
+                    // the month. The player's real (computed) rank is always
+                    // shown pinned below instead — see resolveOwnRank.
+                    val visibleEntries = if (uiState.tab == LeagueTab.Global) {
+                        shownTable.entries.filterNot { it.isMe }
+                    } else {
+                        shownTable.entries
+                    }
+                    itemsIndexed(visibleEntries, key = { _, entry -> entry.uid }) { index, entry ->
                         LeagueRow(rank = index + 1, entry = entry)
                     }
-                    // Not in the top 25: the real rank, pinned under the table
-                    // after a gap, rather than a row squeezed onto the end of it.
+                    // The real rank, pinned under the table after a gap,
+                    // rather than a row squeezed onto the end of it.
                     val ownRank = uiState.myGlobalRank
                     val ownEntry = uiState.myGlobalEntry
                     if (uiState.tab == LeagueTab.Global && ownRank != null && ownEntry != null) {

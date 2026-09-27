@@ -364,15 +364,38 @@ service cloud.firestore {
       allow write: if reviewer();
     }
 
+    // A sanity ceiling on the two fields that decide the league standings
+    // and every prize built on them — periodXp and level. NOT a real
+    // anti-cheat: a determined player can still inflate their score up to
+    // this ceiling, and the honest fix is a Cloud Function that recomputes
+    // periodXp from actual submitted match results rather than trusting a
+    // client-published number at all. What this closes is the trivial
+    // version of the exploit — a modified client (or a raw REST/SDK call
+    // with nothing but a valid anon auth token) writing periodXp:
+    // 999999999 and instantly topping both the friends table and the
+    // global leaderboard (see GlobalLeagueRepositoryImpl / buildGlobalLeaderboard
+    // in functions/src/index.ts, which both read this field unchecked).
+    // The ceilings are deliberately generous — far above what even a
+    // maximally dedicated player earns in a month (PlayerLevel.MAX_LEVEL is
+    // 100, and periodXp resets every calendar month, see LeaguePeriod) — so
+    // this never rejects a real player's honestly-earned score.
+    function plausibleLeagueFields() {
+      let after = request.resource.data;
+      return (!('periodXp' in after) || (after.periodXp is int && after.periodXp >= 0 && after.periodXp <= 300000))
+             && (!('level' in after) || (after.level is int && after.level >= 1 && after.level <= 100));
+    }
+
     match /users/{uid} {
       // Public profile: nickname, friendCode, level/frame, and the weekly
       // league score (see C1 / WeeklyLeague). Readable by anyone signed in —
       // that is what lets a friend list resolve nicknames and badges — and
-      // writable only by its owner. Note this document deliberately holds
+      // writable only by its owner, and only within plausibleLeagueFields()'s
+      // sanity ceiling (see its own doc comment for why this is a partial
+      // mitigation, not a full one). Note this document deliberately holds
       // NOTHING private: the FCM token lives in the private/ subcollection
       // below precisely because this one is world-readable.
       allow read: if signedIn();
-      allow write: if signedIn() && request.auth.uid == uid;
+      allow write: if signedIn() && request.auth.uid == uid && plausibleLeagueFields();
 
       // Device push token and anything else that must not be world-readable.
       // Cloud Functions read this with admin credentials, which bypass rules,

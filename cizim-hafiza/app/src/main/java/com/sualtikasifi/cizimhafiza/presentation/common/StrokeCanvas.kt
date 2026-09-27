@@ -79,8 +79,10 @@ fun StrokeCanvas(
 ) {
     Canvas(modifier = modifier) {
         val fit = strokeFitFor(strokes) ?: return@Canvas
-        val paint: Brush = penSkin?.let { penBrush(it, size.width, size.height) } ?: SolidColor(strokeColor)
-        clipRect { strokes.forEach { stroke -> drawFittedStroke(stroke, fit, paint, strokeWidthPx) } }
+        clipRect {
+            var distance = 0f
+            strokes.forEach { stroke -> distance = drawFittedStroke(stroke, fit, penSkin, strokeColor, strokeWidthPx, distance) }
+        }
     }
 }
 
@@ -144,36 +146,20 @@ internal fun DrawScope.strokeFitFor(strokes: List<DrawingStroke>): StrokeFit? {
     )
 }
 
-/** Draws one stroke (or a prefix of one) through [fit]. Empty strokes draw nothing. */
+/**
+ * Draws one stroke (or a prefix of one) through [fit]. Empty strokes draw
+ * nothing. Returns the drawn distance so far ([startDistance] plus this
+ * stroke's own length) — see [drawPenStroke], which this delegates to so a
+ * gradient pen's colour keeps tracking usage across re-renders too.
+ */
 internal fun DrawScope.drawFittedStroke(
     stroke: List<DrawingPoint>,
     fit: StrokeFit,
-    paint: Brush,
-    strokeWidthPx: Float
-) {
-    if (stroke.isEmpty()) return
-    // A stationary tap (e.g. a quick reminder dot) never crosses
-    // DrawableCanvas's drag touch-slop, so it's captured as a single-point
-    // "stroke" — render it as a dot instead of a line. A replay hits this
-    // same case for one frame at the start of every stroke.
-    if (stroke.size == 1) {
-        drawCircle(brush = paint, radius = strokeWidthPx / 2f, center = fit.map(stroke.first()))
-        return
-    }
-    val path = Path().apply {
-        val start = fit.map(stroke.first())
-        moveTo(start.x, start.y)
-        for (i in 1 until stroke.size) {
-            val p = fit.map(stroke[i])
-            lineTo(p.x, p.y)
-        }
-    }
-    drawPath(
-        path = path,
-        brush = paint,
-        style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
-    )
-}
+    penSkin: PenSkin?,
+    strokeColor: Color,
+    strokeWidthPx: Float,
+    startDistance: Float
+): Float = drawPenStroke(stroke.map(fit::map), penSkin, strokeColor, strokeWidthPx, startDistance)
 
 /**
  * Interactive drawing surface. Points are captured as raw [Offset]s while
@@ -226,9 +212,15 @@ fun DrawableCanvas(
     // in-progress stroke), so drawing got visibly less smooth the more
     // strokes had already accumulated in a turn. Now the per-frame draw
     // scope only ever rebuilds the one small in-progress stroke.
+    //
+    // Only used for a flat pen (or none): a gradient pen's colour depends on
+    // how far into the drawing each point falls (see drawPenStroke), which a
+    // pre-baked Path/dot has already thrown away — that path draws committed
+    // strokes point-by-point every frame instead, same as the in-progress one.
     val committed = remember(liveStrokes, strokeWidthPx) {
         liveStrokes.mapNotNull { stroke -> stroke.toRenderable() }
     }
+    val isGradientPen = penSkin?.isGradient == true
 
     Canvas(
         modifier = modifier
@@ -300,20 +292,29 @@ fun DrawableCanvas(
         // (or replayed from an opponent's older client) can still carry an
         // out-of-bounds point, and this keeps it from drawing past the frame.
         clipRect {
-            val strokeStyle = Stroke(width = strokeWidthPx, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-            // Built once per frame off the live canvas size, so a gradient pen
-            // sweeps across the whole drawing rather than restarting per stroke.
-            val paint: Brush = penSkin?.let { penBrush(it, size.width, size.height) } ?: SolidColor(strokeColor)
-            committed.forEach { it.draw(this, paint, strokeWidthPx, strokeStyle) }
-            when {
-                inProgress.size == 1 ->
-                    drawCircle(brush = paint, radius = strokeWidthPx / 2f, center = inProgress[0])
-                inProgress.size >= 2 -> {
-                    val path = Path().apply {
-                        moveTo(inProgress[0].x, inProgress[0].y)
-                        for (i in 1 until inProgress.size) lineTo(inProgress[i].x, inProgress[i].y)
+            if (isGradientPen) {
+                // Walked point-by-point in drawing order so the colour keeps
+                // tracking total ink used across every committed stroke, then
+                // continues into the one still being drawn.
+                var distance = 0f
+                liveStrokes.forEach { stroke ->
+                    distance = drawPenStroke(stroke.map { Offset(it.x, it.y) }, penSkin, strokeColor, strokeWidthPx, distance)
+                }
+                drawPenStroke(inProgress.toList(), penSkin, strokeColor, strokeWidthPx, distance)
+            } else {
+                val strokeStyle = Stroke(width = strokeWidthPx, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                val paint: Brush = SolidColor(penSkin?.let { Color(it.colors.first()) } ?: strokeColor)
+                committed.forEach { it.draw(this, paint, strokeWidthPx, strokeStyle) }
+                when {
+                    inProgress.size == 1 ->
+                        drawCircle(brush = paint, radius = strokeWidthPx / 2f, center = inProgress[0])
+                    inProgress.size >= 2 -> {
+                        val path = Path().apply {
+                            moveTo(inProgress[0].x, inProgress[0].y)
+                            for (i in 1 until inProgress.size) lineTo(inProgress[i].x, inProgress[i].y)
+                        }
+                        drawPath(path = path, brush = paint, style = strokeStyle)
                     }
-                    drawPath(path = path, brush = paint, style = strokeStyle)
                 }
             }
         }

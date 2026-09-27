@@ -40,9 +40,9 @@ data class LeagueUiState(
      */
     val justWon: LeaguePrize? = null,
     /**
-     * The player's own row when they are NOT among the published top 25 —
-     * shown pinned under the table with their real rank. Null when they are in
-     * the table (the table already shows them) or have not scored yet.
+     * The player's own row, always shown pinned under the table with their
+     * real computed rank (see resolveOwnRank). Null only when they have not
+     * scored yet this period.
      */
     val myGlobalRank: Int? = null,
     val myGlobalEntry: com.sualtikasifi.cizimhafiza.domain.model.LeagueEntry? = null
@@ -127,14 +127,20 @@ class LeagueViewModel @Inject constructor(
     }
 
     /**
-     * When the player is outside the published top 25, works out their real
-     * place so it can be shown under the table ("537") instead of nothing —
-     * and, crucially, instead of a stray row on the last line of the table.
+     * Always works out the player's real place — counting every real user
+     * AND bot actually ahead of them — rather than trusting a spot they
+     * happen to occupy in the published top 25. A weak scorer can still slip
+     * into that list early in the month, before the bots have grown much;
+     * showing them there as "25." would say they're near the top when
+     * hundreds of real players are ahead of them. So the own row is always
+     * shown pinned under the table with this computed rank (see
+     * LeagueScreen, which also drops the player's own entry out of the
+     * rendered list so a bot — or whichever real player actually earned it —
+     * occupies that slot instead).
      */
     private fun resolveOwnRank(table: GlobalLeagueTable) {
         val myXp = settingsRepository.periodXp.value
-        val inTable = table.table.entries.any { it.isMe }
-        if (inTable || myXp <= 0) {
+        if (myXp <= 0) {
             _uiState.update { it.copy(myGlobalRank = null, myGlobalEntry = null) }
             return
         }

@@ -209,6 +209,13 @@ class GameViewModel @Inject constructor(
     private val _phase = MutableStateFlow<GamePhase>(GamePhase.Loading)
     val phase: StateFlow<GamePhase> = _phase.asStateFlow()
 
+    // Declared here (not next to doubleResultXp below) so init{}'s recovery
+    // restore — which runs before the class body reaches that point — can
+    // set it from a checkpointed GamePhase.Result.xpDoubled without a
+    // "must be initialized" compile error.
+    private val _resultXpDoubled = MutableStateFlow(false)
+    val resultXpDoubled: StateFlow<Boolean> = _resultXpDoubled.asStateFlow()
+
     // Backs the live level badge on GuessScreen — since addXp updates this
     // StateFlow the instant a word is scored (see submitGuess), the badge's
     // progress bar visibly moves on every correct answer without GuessScreen
@@ -318,6 +325,9 @@ class GameViewModel @Inject constructor(
         when {
             recovery?.result != null -> {
                 _phase.value = recovery.result
+                // Restored alongside the phase itself — see GamePhase.Result.xpDoubled's
+                // doc comment for why this can't be left to reset to false here.
+                _resultXpDoubled.value = recovery.result.xpDoubled
                 // The opponent's drawings were never in the checkpoint (see
                 // GhostMatchSummary), so a result screen that survived a
                 // process death comes back without them. One document read
@@ -1077,17 +1087,20 @@ class GameViewModel @Inject constructor(
     /**
      * Whether the doubling ad has already been taken this round.
      *
-     * Its own flow rather than a field on the Result phase. Carrying it on
-     * the phase meant the offer's disappearance depended on a replacement
-     * Result object arriving at the screen after the ad's callback — one
-     * more thing between "the reward was granted" and "the button that
-     * granted it goes away", and on device the button stayed put. Nothing
-     * about "this round's ad is spent" needs to travel through the phase at
-     * all: it is a fact about the round, and the round outlives every
-     * redraw of the result.
+     * Its own flow (declared up near _phase — see that declaration's
+     * comment) rather than driving the button purely off a field on the
+     * Result phase. Carrying it ONLY on the phase meant the offer's
+     * disappearance depended on a replacement Result object arriving at the
+     * screen after the ad's callback — one more thing between "the reward
+     * was granted" and "the button that granted it goes away", and on
+     * device the button stayed put. This flow is still what the UI reads.
+     *
+     * It is now ALSO mirrored onto GamePhase.Result.xpDoubled purely so a
+     * process death has something durable to restore it from (see init{}'s
+     * recovery handling and doubleResultXp below) — without that mirror, a
+     * killed-and-restarted process forgot the ad had already been taken and
+     * let the same round's XP be doubled again.
      */
-    private val _resultXpDoubled = MutableStateFlow(false)
-    val resultXpDoubled: StateFlow<Boolean> = _resultXpDoubled.asStateFlow()
 
     /**
      * Pays the round's XP a second time for a watched ad.
@@ -1106,6 +1119,13 @@ class GameViewModel @Inject constructor(
             if (!earned) return@maybeShowRewarded
             settingsRepository.addXp(current.xpEarned)
             _resultXpDoubled.value = true
+            // Re-checkpointed with the flag flipped — see GamePhase.Result.xpDoubled's
+            // doc comment: without this a process death right after doubling
+            // resumed with the button showing again, able to double the same
+            // round's XP a further time.
+            val doubled = current.copy(xpDoubled = true)
+            _phase.value = doubled
+            saveResultSnapshot(doubled)
         }
     }
 

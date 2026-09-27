@@ -97,7 +97,16 @@ sealed interface GamePhase {
         /** Non-null only for a won Hızlı Eşleş round that found a free chest slot. */
         val chestWon: com.sualtikasifi.cizimhafiza.domain.model.Chest? = null,
         /** The win earned a chest but every slot was full, so it was lost. */
-        val chestLost: Boolean = false
+        val chestLost: Boolean = false,
+        /**
+         * True once the rewarded-ad "double this round's XP" button has
+         * already been used. Checkpointed alongside the rest of this phase
+         * (not held only in GameViewModel's own in-memory flow) so a process
+         * death after doubling doesn't un-double it on resume — without this
+         * the button reappeared after a restart and could award the same
+         * round's XP a third time.
+         */
+        val xpDoubled: Boolean = false
     ) : GamePhase
 }
 

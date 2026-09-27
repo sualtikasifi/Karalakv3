@@ -65,10 +65,13 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -726,6 +729,19 @@ private fun TipCard(emoji: String, text: String, modifier: Modifier = Modifier) 
  * The two mascots high-fiving over a VS spark: the "match found" moment as an
  * illustration. It bobs and tilts a little forever, so the last few seconds
  * before the match do not sit on a still picture.
+ *
+ * The bob/tilt used to be applied straight to an Image sized flush with its
+ * own layout box (fillMaxWidth(0.8f)) — rotating and shifting content that
+ * fills its own bounds pushes the edges (a hand, an ear) straight into a
+ * hard clip the instant it moves, which read as a rendering glitch rather
+ * than an intentional wobble. Two changes fix it without going back to a
+ * flat, motionless image (also tried, and read as lifeless):
+ *  - the image itself is drawn smaller than its box (imageScale), so the
+ *    motion has room to move inside the box before it would ever reach the
+ *    edge;
+ *  - [edgeFade] still fades the box's own left/right edges to transparent,
+ *    as a safety margin for whatever motion does reach them, blending into
+ *    whatever background is behind it instead of a hard cut.
  */
 @Composable
 private fun MatchMascot() {
@@ -742,18 +758,46 @@ private fun MatchMascot() {
         animationSpec = infiniteRepeatable(tween(1300, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "match_mascot_tilt"
     )
-    Image(
-        painter = painterResource(R.drawable.match_high_five),
-        contentDescription = null,
+    Box(
         modifier = Modifier
             .fillMaxWidth(0.8f)
             .aspectRatio(840f / 446f)
-            .graphicsLayer {
-                translationY = bob.value.dp.toPx()
-                rotationZ = tilt.value
-            }
-    )
+            .edgeFade(),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(R.drawable.match_high_five),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize(MascotImageScale)
+                .graphicsLayer {
+                    translationY = bob.value.dp.toPx()
+                    rotationZ = tilt.value
+                }
+        )
+    }
 }
+
+/** How much smaller than its box the mascot image is drawn — see [MatchMascot]'s doc comment. */
+private const val MascotImageScale = 0.9f
+
+/** Fades this composable's own left/right edges to transparent — a soft vignette rather than a hard clip. */
+private fun Modifier.edgeFade(): Modifier = this
+    // Forces an offscreen compositing layer so the DstIn blend below masks
+    // only this content, not whatever is drawn underneath it.
+    .graphicsLayer(alpha = 0.999f)
+    .drawWithContent {
+        drawContent()
+        drawRect(
+            brush = Brush.horizontalGradient(
+                0f to Color.Transparent,
+                0.1f to Color.Black,
+                0.9f to Color.Black,
+                1f to Color.Transparent
+            ),
+            blendMode = BlendMode.DstIn
+        )
+    }
 
 private const val COUNTDOWN_MS = 5_000
 

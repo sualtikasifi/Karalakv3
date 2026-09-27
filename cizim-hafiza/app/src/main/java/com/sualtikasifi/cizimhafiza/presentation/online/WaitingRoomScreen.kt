@@ -193,7 +193,16 @@ fun WaitingRoomScreen(
             onSwitchTeam = null
         )
     }
-    val occupiedSlots = listOfNotNull(mySlot) + otherSlots
+    // In the permanent bot room, Sude always takes the very first slot
+    // (top-left) rather than wherever she happens to land by join order —
+    // she is the one constant face in that room, so her seat should be too.
+    val occupiedSlots = (listOfNotNull(mySlot) + otherSlots).let { slots ->
+        if (viewModel.roomCode == BotRoomEngine.ROOM_CODE) {
+            slots.sortedByDescending { it.uid == BotRoomEngine.BOT_UID }
+        } else {
+            slots
+        }
+    }
     // Padded to a fixed 8-slot grid (see GameConstants.MAX_ROOM_SIZE) so the
     // lobby reads as slots being filled in, not a list that happens to be
     // short right now. Team mode instead pads each team to exactly

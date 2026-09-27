@@ -83,8 +83,10 @@ class WordPoolSynchronizer @Inject constructor(
             // remove, so a word the new asset drops would otherwise linger
             // forever — which now matters, because the two languages no
             // longer hold the same id set (see the v15 note below).
-            wordDao.deleteApproved()
-            wordDao.insertAll(bundledWords)
+            // One @Transaction call, not two separate ones: a caller reading
+            // `words` elsewhere (e.g. mid-language-switch) must never see the
+            // pool empty in the gap between the delete and the re-insert.
+            wordDao.replaceApproved(bundledWords)
             prefs.edit()
                 .putInt(KEY_WORD_POOL_VERSION, WORD_POOL_VERSION)
                 .putString(KEY_WORD_POOL_LANGUAGE, language)
