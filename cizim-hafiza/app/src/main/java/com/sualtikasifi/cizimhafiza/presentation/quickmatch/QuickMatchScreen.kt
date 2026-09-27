@@ -65,13 +65,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -734,14 +731,14 @@ private fun TipCard(emoji: String, text: String, modifier: Modifier = Modifier) 
  * own layout box (fillMaxWidth(0.8f)) — rotating and shifting content that
  * fills its own bounds pushes the edges (a hand, an ear) straight into a
  * hard clip the instant it moves, which read as a rendering glitch rather
- * than an intentional wobble. Two changes fix it without going back to a
- * flat, motionless image (also tried, and read as lifeless):
- *  - the image itself is drawn smaller than its box (imageScale), so the
- *    motion has room to move inside the box before it would ever reach the
- *    edge;
- *  - [edgeFade] still fades the box's own left/right edges to transparent,
- *    as a safety margin for whatever motion does reach them, blending into
- *    whatever background is behind it instead of a hard cut.
+ * than an intentional wobble. A rectangular edge-fade over the whole box was
+ * tried as a fix and looked worse — a visible rectangle of vignette sitting
+ * over transparent PNG artwork reads as exactly the "amateur" look it was
+ * supposed to avoid, since the art has no straight edges of its own for a
+ * straight-edged fade to follow. The actual fix is simpler: the image is
+ * just drawn smaller than its own box (imageScale), so the motion has room
+ * to move inside the box and never reaches an edge to clip against at all —
+ * no mask needed.
  */
 @Composable
 private fun MatchMascot() {
@@ -761,8 +758,7 @@ private fun MatchMascot() {
     Box(
         modifier = Modifier
             .fillMaxWidth(0.8f)
-            .aspectRatio(840f / 446f)
-            .edgeFade(),
+            .aspectRatio(840f / 446f),
         contentAlignment = Alignment.Center
     ) {
         Image(
@@ -780,24 +776,6 @@ private fun MatchMascot() {
 
 /** How much smaller than its box the mascot image is drawn — see [MatchMascot]'s doc comment. */
 private const val MascotImageScale = 0.9f
-
-/** Fades this composable's own left/right edges to transparent — a soft vignette rather than a hard clip. */
-private fun Modifier.edgeFade(): Modifier = this
-    // Forces an offscreen compositing layer so the DstIn blend below masks
-    // only this content, not whatever is drawn underneath it.
-    .graphicsLayer(alpha = 0.999f)
-    .drawWithContent {
-        drawContent()
-        drawRect(
-            brush = Brush.horizontalGradient(
-                0f to Color.Transparent,
-                0.1f to Color.Black,
-                0.9f to Color.Black,
-                1f to Color.Transparent
-            ),
-            blendMode = BlendMode.DstIn
-        )
-    }
 
 private const val COUNTDOWN_MS = 5_000
 
