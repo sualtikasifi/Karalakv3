@@ -413,3 +413,10 @@ fun ChestTier.artRes(): Int = when (this) {
     ChestTier.GOLD -> R.drawable.chest_artist
     ChestTier.RARE -> R.drawable.chest_surprise
 }
+
+/** The full-screen chest-opening video played in ChestOpeningDialog (res/raw), one per tier. */
+fun ChestTier.openVideoRes(): Int = when (this) {
+    ChestTier.SILVER -> R.raw.chest_open_apprentice
+    ChestTier.GOLD -> R.raw.chest_open_artist
+    ChestTier.RARE -> R.raw.chest_open_surprise
+}

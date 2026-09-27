@@ -71,6 +71,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.icon
 import com.sualtikasifi.cizimhafiza.presentation.common.shortRes
 import com.sualtikasifi.cizimhafiza.presentation.common.tint
 import com.sualtikasifi.cizimhafiza.presentation.common.artRes
+import com.sualtikasifi.cizimhafiza.presentation.common.openVideoRes
 import com.sualtikasifi.cizimhafiza.presentation.common.labelRes
 import com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont
 import kotlinx.coroutines.delay
@@ -131,9 +132,51 @@ private class Particle(
 )
 
 /**
- * The full-screen "kasa açma" moment: the chest drops in, shakes harder and
- * harder while light gathers behind it, bursts in a flash of coins and
- * confetti, then the gold it paid out counts up over rotating rays.
+ * Plays a tier's chest-opening video full-screen (cropped to fill, never
+ * letterboxed — see openVideoRes) and calls [onEnded] once, the moment
+ * playback reaches the end. No controls, no loop, no audio duplication
+ * with the rest of the scene: the video carries its own sound.
+ */
+@Composable
+private fun ChestOpeningVideo(tier: ChestTier, onEnded: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val latestOnEnded = androidx.compose.runtime.rememberUpdatedState(onEnded)
+    val player = remember(tier) {
+        androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
+            val uri = android.net.Uri.parse("android.resource://${context.packageName}/${tier.openVideoRes()}")
+            setMediaItem(androidx.media3.common.MediaItem.fromUri(uri))
+            prepare()
+            playWhenReady = true
+        }
+    }
+    androidx.compose.runtime.DisposableEffect(player) {
+        val listener = object : androidx.media3.common.Player.Listener {
+            override fun onPlaybackStateChanged(state: Int) {
+                if (state == androidx.media3.common.Player.STATE_ENDED) latestOnEnded.value()
+            }
+        }
+        player.addListener(listener)
+        onDispose {
+            player.removeListener(listener)
+            player.release()
+        }
+    }
+    androidx.compose.ui.viewinterop.AndroidView(
+        modifier = Modifier.fillMaxSize(),
+        factory = { ctx ->
+            androidx.media3.ui.PlayerView(ctx).apply {
+                this.player = player
+                useController = false
+                resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            }
+        }
+    )
+}
+
+/**
+ * The full-screen "kasa açma" moment: a tier-specific hand-made video plays
+ * the chest opening, then the gold it paid out counts up over rotating rays
+ * and a coin/confetti burst.
  *
  * The reward is already known (and already paid) when this starts — the
  * animation is presentation only, so backing out of the app mid-way can
@@ -176,24 +219,19 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
         }
     }
 
-    val intro = remember { Animatable(0f) }
-    val shake = remember { Animatable(0f) }
     val burst = remember { Animatable(0f) }
     val reveal = remember { Animatable(0f) }
     val count = remember { Animatable(0f) }
+    // 0 = the opening video is playing, 1 = it just ended and the reward is
+    // bursting/counting up, 2 = settled, the "topla" button is live.
     var stage by remember { mutableIntStateOf(0) }
     val haptic = LocalHapticFeedback.current
     val sound = com.sualtikasifi.cizimhafiza.presentation.common.rememberSoundManager()
 
-    LaunchedEffect(Unit) {
-        intro.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow))
-        delay(150)
-        shake.animateTo(1f, tween(2100, easing = LinearEasing))
+    LaunchedEffect(stage == 1) {
+        if (stage != 1) return@LaunchedEffect
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-        sound.playChestLand()
-        stage = 1
         launch { burst.animateTo(1f, tween(1500, easing = LinearOutSlowInEasing)) }
-        delay(280)
         launch { reveal.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 180f)) }
         sound.playCoinShower()
         delay(420)
@@ -209,12 +247,6 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
         animationSpec = infiniteRepeatable(tween(14_000, easing = LinearEasing), RepeatMode.Restart),
         label = "rayAngle"
     )
-    val pulse by infinite.animateFloat(
-        initialValue = 0.94f,
-        targetValue = 1.06f,
-        animationSpec = infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "pulse"
-    )
 
     val density = LocalDensity.current
 
@@ -224,51 +256,53 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
             .background(Color(0xF2140A1F)),
         contentAlignment = Alignment.Center
     ) {
-        // Rays + glow + burst, all in one canvas centred on the chest.
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val center = Offset(size.width / 2f, size.height * 0.47f)
-            val dp = density.density
-            val gather = shake.value
-            val energy = when (stage) {
-                0 -> 0.15f + 0.6f * gather
-                else -> 1f
-            }
-            val glowRadius = (170f + 90f * energy) * dp
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(light.copy(alpha = 0.95f * energy.coerceAtMost(1f)), accent.copy(alpha = 0.35f * energy), Color.Transparent),
-                    center = center,
-                    radius = glowRadius
-                ),
-                radius = glowRadius,
-                center = center
-            )
-            // Rotating light rays.
-            val rayCount = 18
-            val rayLen = size.maxDimension
-            withTransform({ rotate(rayAngle, center) }) {
-                for (i in 0 until rayCount) {
-                    val a = (i * 360f / rayCount) * (PI.toFloat() / 180f)
-                    val half = (PI.toFloat() / rayCount) * 0.3f
-                    val path = Path().apply {
-                        moveTo(center.x, center.y)
-                        lineTo(center.x + cos(a - half) * rayLen, center.y + sin(a - half) * rayLen)
-                        lineTo(center.x + cos(a + half) * rayLen, center.y + sin(a + half) * rayLen)
-                        close()
-                    }
-                    drawPath(
-                        path = path,
-                        brush = Brush.radialGradient(
-                            colors = listOf(light.copy(alpha = 0.3f * energy), Color.Transparent),
-                            center = center,
-                            radius = rayLen * 0.75f
+        // The chest actually opening — a tier-specific hand-made video,
+        // full-screen. Everything below only starts once it ends.
+        if (stage == 0) {
+            ChestOpeningVideo(tier = tier, onEnded = { if (stage == 0) stage = 1 })
+        }
+
+        // Rays + glow + burst, all in one canvas centred on the chest —
+        // only once the video has handed off to the reward reveal.
+        if (stage >= 1) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val center = Offset(size.width / 2f, size.height * 0.47f)
+                val dp = density.density
+                val glowRadius = 260f * dp
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(light.copy(alpha = 0.95f), accent.copy(alpha = 0.35f), Color.Transparent),
+                        center = center,
+                        radius = glowRadius
+                    ),
+                    radius = glowRadius,
+                    center = center
+                )
+                // Rotating light rays.
+                val rayCount = 18
+                val rayLen = size.maxDimension
+                withTransform({ rotate(rayAngle, center) }) {
+                    for (i in 0 until rayCount) {
+                        val a = (i * 360f / rayCount) * (PI.toFloat() / 180f)
+                        val half = (PI.toFloat() / rayCount) * 0.3f
+                        val path = Path().apply {
+                            moveTo(center.x, center.y)
+                            lineTo(center.x + cos(a - half) * rayLen, center.y + sin(a - half) * rayLen)
+                            lineTo(center.x + cos(a + half) * rayLen, center.y + sin(a + half) * rayLen)
+                            close()
+                        }
+                        drawPath(
+                            path = path,
+                            brush = Brush.radialGradient(
+                                colors = listOf(light.copy(alpha = 0.3f), Color.Transparent),
+                                center = center,
+                                radius = rayLen * 0.75f
+                            )
                         )
-                    )
+                    }
                 }
-            }
-            // Shock ring + flying coins and confetti.
-            val b = burst.value
-            if (stage >= 1) {
+                // Shock ring + flying coins and confetti.
+                val b = burst.value
                 drawCircle(
                     color = Color.White.copy(alpha = (1f - b).coerceIn(0f, 1f) * 0.9f),
                     radius = (60f + 620f * b) * dp,
@@ -298,48 +332,19 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
             }
         }
 
-        // The chest itself: drops in, then rattles with growing force, then pops.
-        if (stage == 0) {
-            val g = shake.value
-            val freq = 6f + 26f * g
-            val rot = sin(g * freq * 2f * PI.toFloat()) * (2f + 13f * g)
-            val jitter = sin(g * freq * 3.1f * PI.toFloat()) * 5f * g
-            Box(
-                modifier = Modifier
-                    .graphicsLayer {
-                        translationY = (-1f + intro.value) * 260.dp.toPx() + jitter * density.density
-                        rotationZ = rot
-                        val s = (0.55f + 0.45f * intro.value) * (1f + 0.16f * g * pulse)
-                        scaleX = s
-                        scaleY = s
-                    }
-                    .align(Alignment.Center)
-                    .padding(bottom = 80.dp)
-            ) {
-                ChestImage(tier = tier, width = 250.dp)
-            }
-        }
-
         // Flash at the moment of opening.
         if (stage >= 1) {
             val flash = (1f - burst.value / 0.22f).coerceIn(0f, 1f)
             Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = flash)))
         }
 
-        // The reveal.
-        Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            if (stage == 0) {
-                Spacer(modifier = Modifier.height(340.dp))
-                Text(
-                    text = stringResource(R.string.chest_open_shake_hint),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White.copy(alpha = 0.85f)
-                )
-            } else {
+        // The reveal — only once the video has handed off.
+        if (stage >= 1) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
                 val r = reveal.value
                 Text(
                     text = stringResource(tier.labelRes()),
