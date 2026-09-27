@@ -58,7 +58,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
 @Composable
 fun DuelListScreen(
     onBack: () -> Unit,
-    onPlayDuel: (duelId: String) -> Unit,
+    onPlayDuel: (duel: Duel) -> Unit,
     viewModel: DuelListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -88,7 +88,7 @@ fun DuelListScreen(
                 }
             } else {
                 items(uiState.incoming, key = { "duel_" + it.id }) { duel ->
-                    IncomingDuelCard(duel = duel, onClick = { onPlayDuel(duel.id) })
+                    IncomingDuelCard(duel = duel, onClick = { onPlayDuel(duel) })
                 }
                 items(uiState.friendRequests, key = { "req_" + it.uid }) { request ->
                     FriendRequestCard(

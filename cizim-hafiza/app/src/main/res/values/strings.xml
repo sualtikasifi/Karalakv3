@@ -738,6 +738,7 @@
 
     <!-- Asynchronous duels (C2) -->
     <string name="duel_challenge_action">Challenge</string>
+    <string name="duel_rematch_action">Challenge Back</string>
     <string name="duel_challenge_sent">Sent to %1$s as a challenge!</string>
     <string name="duel_create_title">Challenge</string>
     <string name="duel_create_opponent">Duel with %1$s</string>

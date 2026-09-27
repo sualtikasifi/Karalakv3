@@ -6,14 +6,13 @@ enum class DuelStatus { AWAITING_OPPONENT, COMPLETE }
 /**
  * One asynchronous duel: the challenger plays a normal solo round (see
  * GameViewModel's duel-challenge args), and [items] — that round's own
- * drawings — becomes a challenge the opponent can open and guess whenever
- * they next launch the app, with no clock forcing either side to be online
- * at the same time. Whoever scored higher wins (see [challengerWon]).
- *
- * The challenger's own strokes only ever get INTERPRETED by the opponent —
- * the opponent never draws anything of their own in a duel (see
- * DuelPlayViewModel), which is what makes this "one player draws now, the
- * other guesses later" rather than a second, delayed online room.
+ * drawings, kept only so the challenger has something to look back on —
+ * becomes a challenge the opponent can open whenever they next launch the
+ * app. Opening it has the opponent play the exact same [wordIds], in the
+ * same order, through an ordinary draw-then-guess round of their own (see
+ * GameViewModel's duel-completion arg) — never a look at the challenger's
+ * drawings before playing, so nothing about the challenger's round can hint
+ * at the answers. Whoever scored higher wins (see [challengerWon]).
  */
 data class Duel(
     val id: String,
@@ -21,10 +20,18 @@ data class Duel(
     val challengerName: String,
     val opponentUid: String,
     val opponentName: String,
-    /** The challenger's own finished round — word, whether THEY guessed it right, and its strokes for the opponent to see. */
+    /** The challenger's own finished round — word, whether THEY guessed it right, and its strokes shown while the opponent draws the same words themselves. */
     val items: List<ResultItem>,
     val challengerScore: Int,
     val challengerCorrectCount: Int,
+    /**
+     * The exact word ids the challenger drew, in the order they drew them —
+     * what lets the opponent's own round (see GameViewModel's duelId-to-complete
+     * arg) ask the identical questions instead of a fresh random set. Empty
+     * only for a duel created before this field existed; such a duel can no
+     * longer be completed (see DuelListViewModel).
+     */
+    val wordIds: List<Int> = emptyList(),
     /** Null until the opponent has played (see DuelStatus.COMPLETE). */
     val opponentScore: Int? = null,
     val opponentCorrectCount: Int? = null,

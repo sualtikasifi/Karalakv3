@@ -752,6 +752,7 @@
 
     <!-- Asynchronous duels (C2) -->
     <string name="duel_challenge_action">Meydan Oku</string>
+    <string name="duel_rematch_action">Geri Meydan Oku</string>
     <string name="duel_challenge_sent">%1$s kişisine meydan okuma olarak gönderildi!</string>
     <string name="duel_create_title">Meydan Oku</string>
     <string name="duel_create_opponent">%1$s ile düello</string>

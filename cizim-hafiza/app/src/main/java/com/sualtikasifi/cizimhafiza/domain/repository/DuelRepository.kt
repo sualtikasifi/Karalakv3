@@ -15,7 +15,9 @@ interface DuelRepository {
         opponentName: String,
         items: List<ResultItem>,
         challengerScore: Int,
-        challengerCorrectCount: Int
+        challengerCorrectCount: Int,
+        /** The exact word ids this round drew, in order — see Duel.wordIds. */
+        wordIds: List<Int>
     ): Result<Unit>
 
     /** One-shot fetch for the play screen — no live updates needed once the round is already loaded. */

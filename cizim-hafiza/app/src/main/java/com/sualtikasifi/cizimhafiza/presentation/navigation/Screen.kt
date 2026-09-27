@@ -57,10 +57,14 @@ object Screen {
     // duelOpponentUid/duelOpponentName are the same idea for a duel challenge
     // (see C2 / GameViewModel's duel args) — present only when this round's
     // own result should become a challenge for that friend instead of just a
-    // normal saved session.
+    // normal saved session. duelIdToComplete is the other half of C2: present
+    // only when this round IS the answer to an incoming challenge — the
+    // opponent's own round, played against the challenger's exact word list
+    // (see GameViewModel.loadWords), which on finishing submits back to that
+    // same duel instead of sending a new one.
     private const val GameRoute =
         "game/{wordCount}/{category}/{difficulty}/{mode}?worldId={worldId}&levelIndex={levelIndex}&daily={daily}" +
-            "&duelOpponentUid={duelOpponentUid}&duelOpponentName={duelOpponentName}&ghost={ghost}"
+            "&duelOpponentUid={duelOpponentUid}&duelOpponentName={duelOpponentName}&ghost={ghost}&duelIdToComplete={duelIdToComplete}"
     const val Game = GameRoute
     const val ArgWordCount = "wordCount"
     const val ArgCategory = "category"
@@ -72,6 +76,7 @@ object Screen {
     const val ArgDuelOpponentUid = "duelOpponentUid"
     const val ArgDuelOpponentName = "duelOpponentName"
     const val ArgGhost = "ghost"
+    const val ArgDuelIdToComplete = "duelIdToComplete"
     const val AllCategoriesArg = "all"
     const val AllDifficultiesArg = "all"
 
@@ -192,14 +197,22 @@ object Screen {
     const val DuelList = "duel_list"
     private const val CreateDuelRoute = "create_duel/{$ArgDuelOpponentUid}/{$ArgDuelOpponentName}"
     const val CreateDuel = CreateDuelRoute
-    private const val DuelPlayRoute = "duel_play/{duelId}"
-    const val DuelPlay = DuelPlayRoute
-    const val ArgDuelId = "duelId"
 
     // Same URL-encoding reasoning as duelChallengeRoute above — a friend's
     // nickname is free text and would otherwise corrupt this path segment.
     fun createDuelRoute(opponentUid: String, opponentName: String): String =
         "create_duel/${java.net.URLEncoder.encode(opponentUid, "UTF-8")}/${java.net.URLEncoder.encode(opponentName, "UTF-8")}"
 
-    fun duelPlayRoute(duelId: String): String = "duel_play/$duelId"
+    /**
+     * Opening an incoming duel runs it through the ordinary game destination,
+     * same as quickMatchGameRoute does for a Hızlı Eşleş — the opponent's
+     * round IS an ordinary draw-then-guess round, just fed [duel]'s own word
+     * count and asked to report back to [duel] instead of saving a plain
+     * session. wordCount comes straight off [duel] (its own items.size) —
+     * category/difficulty are the "all" placeholders, same as a level-map
+     * route, because loadWords() overrides them entirely from duelIdToComplete.
+     */
+    fun duelCompletionGameRoute(duel: com.sualtikasifi.cizimhafiza.domain.model.Duel): String =
+        "game/${duel.totalWords}/$AllCategoriesArg/$AllDifficultiesArg/${GameMode.NORMAL.name}" +
+            "?duelIdToComplete=${java.net.URLEncoder.encode(duel.id, "UTF-8")}"
 }

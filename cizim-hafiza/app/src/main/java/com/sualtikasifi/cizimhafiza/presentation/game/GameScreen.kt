@@ -54,6 +54,10 @@ fun GameScreen(
     // Quick match only: the result screen offers "yeni rakip" instead of
     // "tekrar oyna" (see ResultScreen's ghost branch). null everywhere else.
     onFindAnotherOpponent: (() -> Unit)? = null,
+    // Set only when this round just answered an incoming duel (see
+    // ResultScreen's duelChallenger branch) — "Geri Meydan Oku" hands the
+    // challenger's uid/name straight to CreateDuelScreen. null everywhere else.
+    onRematchDuel: ((opponentUid: String, opponentName: String) -> Unit)? = null,
     viewModel: GameViewModel = hiltViewModel()
 ) {
     val phase by viewModel.phase.collectAsState()
@@ -198,7 +202,8 @@ fun GameScreen(
                 onReportOpponentDrawing = viewModel::reportOpponentDrawing,
                 reportState = reportState,
                 onDismissReport = viewModel::dismissReport,
-                onRatingBonusGranted = viewModel::grantRatingBonusXp
+                onRatingBonusGranted = viewModel::grantRatingBonusXp,
+                onRematchDuel = onRematchDuel
             )
         }
     }

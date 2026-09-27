@@ -78,6 +78,15 @@ sealed interface GamePhase {
         // so the result screen can say so instead of just showing a normal
         // solo score.
         val duelOpponentName: String? = null,
+        /**
+         * Non-null only when this round ANSWERED someone else's challenge
+         * (see GameViewModel.duelToComplete) — who challenged, what they
+         * scored, and the duel's own id so the result screen can show a
+         * comparison and offer "Geri Meydan Oku" (send a new challenge back
+         * to the same person). Never set together with [duelOpponentName]:
+         * one round either creates a duel or completes one, never both.
+         */
+        val duelChallenger: DuelChallengerSummary? = null,
         // Non-null only for a "Hızlı Eşleş" round — the recorded opponent
         // this round was played against, so the result screen can show who
         // won instead of just a score. Their DRAWINGS are deliberately not
@@ -130,6 +139,22 @@ data class GhostMatchSummary(
     val frameId: String,
     val opponentScore: Int,
     val opponentCorrectCount: Int
+)
+
+/**
+ * The challenger half of a just-answered duel — who sent it and what they
+ * scored, so the result screen can show a comparison the instant this round
+ * finishes (see GamePhase.Result.duelChallenger). [duelId]/[challengerUid]
+ * are carried so the screen can offer "Geri Meydan Oku" straight from here,
+ * without a second Firestore lookup.
+ */
+@Serializable
+data class DuelChallengerSummary(
+    val duelId: String,
+    val challengerUid: String,
+    val challengerName: String,
+    val challengerScore: Int,
+    val challengerCorrectCount: Int
 )
 
 /** The daily-challenge-only half of a [GamePhase.Result]. */

@@ -14,6 +14,8 @@ import com.sualtikasifi.cizimhafiza.ads.AdManager
 import com.sualtikasifi.cizimhafiza.ads.RewardedOutcome
 import com.sualtikasifi.cizimhafiza.data.local.dao.AchievementDao
 import com.sualtikasifi.cizimhafiza.domain.model.Penalty
+import com.sualtikasifi.cizimhafiza.domain.model.DuelStatus
+import com.sualtikasifi.cizimhafiza.domain.repository.DuelRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.FriendRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.PenaltyRepository
 import com.sualtikasifi.cizimhafiza.util.ReferralRewardClaimer
@@ -58,6 +60,7 @@ enum class StreakToast { Rescued }
 class MainMenuViewModel @Inject constructor(
     achievementDao: AchievementDao,
     private val friendRepository: FriendRepository,
+    private val duelRepository: DuelRepository,
     private val authRepository: com.sualtikasifi.cizimhafiza.domain.repository.AuthRepository,
     private val dailyChallengeRepository: DailyChallengeRepository,
     private val settingsRepository: SettingsRepository,
@@ -283,16 +286,28 @@ class MainMenuViewModel @Inject constructor(
      * one job it exists for: telling somebody a request arrived. On the menu
      * it is in front of them every time they open the app.
      *
+     * Widened to also count duels waiting to be played and duels this
+     * player sent whose result just came back (see C2) — a duel a friend
+     * sends has no push notification to announce it (a Firestore-write
+     * trigger needs the Blaze plan this project deliberately doesn't use,
+     * see functions/DEPLOY.md), so this badge is what stands in for one:
+     * whatever needs this player's attention on the Friends screen shows up
+     * here the moment the app is open, instead of staying invisible until
+     * they happen to tap in on their own.
+     *
      * An empty collection costs no document reads to watch, and a failure
      * shows no badge rather than an error — a home screen should not grow
      * one over a number this small.
      */
-    val pendingFriendRequests: StateFlow<Int> = friendRepository.observeFriendRequests()
-        .map { it.size }
-        .catch { emit(0) }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = 0
-        )
+    val pendingFriendRequests: StateFlow<Int> = combine(
+        friendRepository.observeFriendRequests().catch { emit(emptyList()) },
+        duelRepository.observeIncomingDuels().catch { emit(emptyList()) },
+        duelRepository.observeSentDuels().catch { emit(emptyList()) }
+    ) { requests, incoming, sent ->
+        requests.size + incoming.size + sent.count { it.status == DuelStatus.COMPLETE && !it.seenByChallenger }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = 0
+    )
 }

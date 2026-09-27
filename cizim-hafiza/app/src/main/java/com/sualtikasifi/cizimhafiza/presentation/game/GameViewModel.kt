@@ -31,6 +31,7 @@ import com.sualtikasifi.cizimhafiza.domain.repository.AuthRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.GhostRunRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.DrawingReportRepository
 import com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState
+import com.sualtikasifi.cizimhafiza.domain.model.Duel
 import com.sualtikasifi.cizimhafiza.domain.repository.DuelRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.LevelProgressRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository
@@ -153,6 +154,16 @@ class GameViewModel @Inject constructor(
         ?.let { runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrNull() }
     private val duelOpponentName: String? = savedStateHandle.get<String>(Screen.ArgDuelOpponentName)
         ?.let { runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrNull() }
+    // See Screen.duelCompletionGameRoute — present only when this round IS
+    // the answer to an incoming challenge. Mutually exclusive with
+    // duelOpponentUid above: this round either creates a new duel or
+    // completes an existing one, never both. The actual Duel (challenger
+    // name/score, word ids) is fetched once in loadWords() and kept in
+    // [duelToComplete] — fetched there rather than here because Duel lookup
+    // is suspend and this is a plain constructor property.
+    private val duelIdToComplete: String? = savedStateHandle.get<String>(Screen.ArgDuelIdToComplete)
+        ?.let { runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrNull() }
+    private var duelToComplete: Duel? = null
     // See Screen.quickMatchGameRoute — the recorded round this one is being
     // played against, carried whole in the route so setting the match up
     // needs no lookup of its own.
@@ -496,7 +507,15 @@ class GameViewModel @Inject constructor(
         // place to make sure the current language's rows are actually in
         // Room before any of them run. See WordPoolSynchronizer.ensureSynced.
         wordPoolSynchronizer.ensureSynced()
-        return if (ghost != null) {
+        return if (duelIdToComplete != null) {
+            // Same reasoning as the ghost branch below: a duel's whole point
+            // is that both sides answered the same questions, so this round
+            // has to ask exactly what the challenger's did, in the order
+            // they drew them — never a fresh random set.
+            val duel = duelRepository.getDuel(duelIdToComplete).getOrNull()
+            duelToComplete = duel
+            if (duel != null && duel.wordIds.isNotEmpty()) getWordsByIdsUseCase(duel.wordIds) else emptyList()
+        } else if (ghost != null) {
             // Exactly the words the opponent drew, in the order they drew
             // them — a comparison of two scores only means anything if both
             // rounds asked the same questions.
@@ -1033,7 +1052,22 @@ class GameViewModel @Inject constructor(
                 opponentName = duelOpponentName.orEmpty(),
                 items = resultItems,
                 challengerScore = totalScore,
-                challengerCorrectCount = correctCount
+                challengerCorrectCount = correctCount,
+                wordIds = results.map { it.wordId }
+            )
+        }
+        // The other half of C2: this round answered someone else's
+        // challenge rather than creating a new one (duelOpponentUid and
+        // duelIdToComplete are never both set). Reports back to that same
+        // duel so the challenger's next open of the app shows the result —
+        // see DuelRepositoryImpl.submitDuelResult / firestore.rules'
+        // duels/{duelId} update rule for why this is the ONE write this
+        // device is allowed to make on a duel it didn't create.
+        duelToComplete?.let { duel ->
+            duelRepository.submitDuelResult(
+                duelId = duel.id,
+                opponentScore = totalScore,
+                opponentCorrectCount = correctCount
             )
         }
 
@@ -1050,6 +1084,15 @@ class GameViewModel @Inject constructor(
             levelStars = stars,
             daily = dailySummary,
             duelOpponentName = if (duelOpponentUid != null) duelOpponentName else null,
+            duelChallenger = duelToComplete?.let {
+                DuelChallengerSummary(
+                    duelId = it.id,
+                    challengerUid = it.challengerUid,
+                    challengerName = it.challengerName,
+                    challengerScore = it.challengerScore,
+                    challengerCorrectCount = it.challengerCorrectCount
+                )
+            },
             ghost = ghost?.let {
                 GhostMatchSummary(
                     runId = it.id,

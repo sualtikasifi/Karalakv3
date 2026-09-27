@@ -50,7 +50,6 @@ import androidx.compose.runtime.remember
 import com.sualtikasifi.cizimhafiza.presentation.account.AccountScreen
 import com.sualtikasifi.cizimhafiza.presentation.duel.CreateDuelScreen
 import com.sualtikasifi.cizimhafiza.presentation.duel.DuelListScreen
-import com.sualtikasifi.cizimhafiza.presentation.duel.DuelPlayScreen
 import com.sualtikasifi.cizimhafiza.presentation.reportbug.ReportBugScreen
 import com.sualtikasifi.cizimhafiza.presentation.botnames.BotNamesScreen
 import com.sualtikasifi.cizimhafiza.presentation.reports.DrawingReportsGate
@@ -204,7 +203,8 @@ fun CizimHafizaNavGraph(
                 navArgument(Screen.ArgDaily) { type = NavType.StringType; nullable = true; defaultValue = null },
                 navArgument(Screen.ArgDuelOpponentUid) { type = NavType.StringType; nullable = true; defaultValue = null },
                 navArgument(Screen.ArgDuelOpponentName) { type = NavType.StringType; nullable = true; defaultValue = null },
-                navArgument(Screen.ArgGhost) { type = NavType.StringType; nullable = true; defaultValue = null }
+                navArgument(Screen.ArgGhost) { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument(Screen.ArgDuelIdToComplete) { type = NavType.StringType; nullable = true; defaultValue = null }
             )
         ) { backStackEntry ->
             val worldIdArg = backStackEntry.arguments?.getString(Screen.ArgWorldId)?.toIntOrNull()
@@ -240,6 +240,13 @@ fun CizimHafizaNavGraph(
                         // behind for the back button to walk through.
                         navController.navigate(Screen.QuickMatch) {
                             popUpTo(Screen.QuickMatch) { inclusive = true }
+                        }
+                    }
+                } else null,
+                onRematchDuel = if (backStackEntry.arguments?.getString(Screen.ArgDuelIdToComplete) != null) {
+                    { opponentUid, opponentName ->
+                        navController.navigate(Screen.createDuelRoute(opponentUid, opponentName)) {
+                            popUpTo(Screen.DuelList)
                         }
                     }
                 } else null
@@ -400,17 +407,13 @@ fun CizimHafizaNavGraph(
         composable(Screen.DuelList) {
             DuelListScreen(
                 onBack = { navController.popBackStack() },
-                onPlayDuel = { duelId -> navController.navigate(Screen.duelPlayRoute(duelId)) }
-            )
-        }
-
-        composable(
-            route = Screen.DuelPlay,
-            arguments = listOf(navArgument(Screen.ArgDuelId) { type = NavType.StringType })
-        ) {
-            DuelPlayScreen(
-                onBack = { navController.popBackStack() },
-                onFinished = { navController.popBackStack() }
+                // Runs the opponent's own round through the ordinary game
+                // destination — see Screen.duelCompletionGameRoute's doc.
+                onPlayDuel = { duel ->
+                    navController.navigate(Screen.duelCompletionGameRoute(duel)) {
+                        popUpTo(Screen.DuelList)
+                    }
+                }
             )
         }
 

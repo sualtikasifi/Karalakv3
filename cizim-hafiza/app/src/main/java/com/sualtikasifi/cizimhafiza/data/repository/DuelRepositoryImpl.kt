@@ -47,7 +47,8 @@ class DuelRepositoryImpl @Inject constructor(
         opponentName: String,
         items: List<ResultItem>,
         challengerScore: Int,
-        challengerCorrectCount: Int
+        challengerCorrectCount: Int,
+        wordIds: List<Int>
     ): Result<Unit> = runCatching {
         val uid = requireUid()
         // Cache-first: this is the player's OWN profile doc, written by this
@@ -67,6 +68,7 @@ class DuelRepositoryImpl @Inject constructor(
                 "opponentUid" to opponentUid,
                 "opponentName" to opponentName,
                 "itemsJson" to json.encodeToString(items),
+                "wordIds" to wordIds,
                 "challengerScore" to challengerScore,
                 "challengerCorrectCount" to challengerCorrectCount,
                 "opponentScore" to null,
@@ -206,6 +208,7 @@ class DuelRepositoryImpl @Inject constructor(
             opponentUid = opponentUid,
             opponentName = getString("opponentName").orEmpty(),
             items = items,
+            wordIds = (get("wordIds") as? List<*>).orEmpty().mapNotNull { (it as? Number)?.toInt() },
             challengerScore = (get("challengerScore") as? Number)?.toInt() ?: 0,
             challengerCorrectCount = (get("challengerCorrectCount") as? Number)?.toInt() ?: 0,
             opponentScore = (get("opponentScore") as? Number)?.toInt(),

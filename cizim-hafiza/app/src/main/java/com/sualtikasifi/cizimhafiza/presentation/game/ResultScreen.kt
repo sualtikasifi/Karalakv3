@@ -95,7 +95,9 @@ fun ResultScreen(
     reportState: ReportSendState = ReportSendState.Idle,
     onDismissReport: () -> Unit = {},
     /** Called once, only when the rating prompt's "Puanla" is actually tapped — see RatingPromptDialog. */
-    onRatingBonusGranted: () -> Unit = {}
+    onRatingBonusGranted: () -> Unit = {},
+    /** Only when [state].duelChallenger is set: send a fresh challenge back to that same person. */
+    onRematchDuel: ((opponentUid: String, opponentName: String) -> Unit)? = null
 ) {
     var previewItem by remember { mutableStateOf<ResultItem?>(null) }
     var reportItem by remember { mutableStateOf<ResultItem?>(null) }
@@ -230,6 +232,20 @@ fun ResultScreen(
             state.ghost?.let { ghost ->
                 Spacer(modifier = Modifier.height(8.dp))
                 GhostVersusCard(ghost = ghost, playerScore = state.totalScore)
+            }
+
+            // Answered someone else's challenge (see GameViewModel.duelToComplete)
+            // — the comparison is available the instant this round finishes,
+            // since the challenger's score was already sitting there waiting.
+            state.duelChallenger?.let { duel ->
+                Spacer(modifier = Modifier.height(8.dp))
+                DuelChallengerVersusCard(
+                    duel = duel,
+                    playerScore = state.totalScore,
+                    onRematch = onRematchDuel?.let { rematch ->
+                        { rematch(duel.challengerUid, duel.challengerName) }
+                    }
+                )
             }
 
             state.daily?.let { daily ->
@@ -651,6 +667,79 @@ private fun VersusSide(
             color = if (highlighted) AppTheme.tokens.success else MaterialTheme.colorScheme.onSurface,
             fontWeight = if (highlighted) FontWeight.Bold else FontWeight.Normal
         )
+    }
+}
+
+/**
+ * The comparison against a duel's challenger — same shape as [GhostVersusCard],
+ * a friend instead of a recorded opponent. Shown the instant this round
+ * finishes: the challenger's score has been sitting on the duel document
+ * since they sent it, so there is nothing left to wait on.
+ *
+ * [onRematch] is only non-null when the caller actually wants the button
+ * offered — see ResultScreen's duelChallenger branch, which only passes one
+ * when the screen itself was handed an onRematchDuel callback.
+ */
+@Composable
+private fun DuelChallengerVersusCard(duel: DuelChallengerSummary, playerScore: Int, onRematch: (() -> Unit)?) {
+    val won = playerScore > duel.challengerScore
+    val drew = playerScore == duel.challengerScore
+    val accent = when {
+        drew -> MaterialTheme.colorScheme.onSurfaceVariant
+        won -> AppTheme.tokens.success
+        else -> MaterialTheme.colorScheme.error
+    }
+
+    RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(
+                    when {
+                        drew -> R.string.quick_match_drew
+                        won -> R.string.quick_match_won
+                        else -> R.string.quick_match_lost
+                    }
+                ),
+                style = MaterialTheme.typography.titleSmall,
+                color = accent,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                VersusSide(
+                    name = stringResource(R.string.quick_match_you),
+                    score = playerScore,
+                    highlighted = won,
+                    avatar = null
+                )
+                Text(
+                    text = stringResource(R.string.quick_match_versus),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                VersusSide(
+                    name = duel.challengerName,
+                    score = duel.challengerScore,
+                    highlighted = !won && !drew,
+                    avatar = null
+                )
+            }
+            if (onRematch != null) {
+                Spacer(modifier = Modifier.height(10.dp))
+                SecondaryButton(
+                    text = stringResource(R.string.duel_rematch_action),
+                    onClick = onRematch,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
     }
 }
 
