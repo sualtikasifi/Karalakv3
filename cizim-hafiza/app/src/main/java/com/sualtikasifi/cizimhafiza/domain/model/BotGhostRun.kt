@@ -227,7 +227,22 @@ object GhostPersonas {
         "Soley", "hicbiri", "Sonsoz", "oburki",
         "Isimsiz", "siyahgiyen", "Heryeryesil", "kdr",
         "Gokhn", "voldemort", "Padisah", "vezir",
-        "Kayiboyu", "ineksaban"
+        "Kayiboyu", "ineksaban",
+        "enesk", "Melihcan", "gokalp07", "Zeynepnaz",
+        "tarikk", "Sevgiliyim", "bulentbey", "Aycan_m",
+        "muratcan55", "Ferhatt", "duygu_k", "Salihk1",
+        "emirhann", "Beratcan", "kubrag", "Ozanbey",
+        "aslihan99", "Yigitcan", "ercank", "Tuncerbey",
+        "birkank", "Kayahan_", "ediz34", "Melisnur",
+        "hakanaltin", "Sumeyye_k", "canerk35", "Ilayda_r",
+        "yakupp", "Selimcan", "meltemx", "huseyinkoc",
+        "Gulcan55", "ridvank", "Ipeknur", "tolgaa",
+        "Berkant", "ferideh", "Cansu_yz", "mucahitt",
+        "Idilnaz", "atillaa", "semihk", "Zeliha_t",
+        "onurcan", "Basakk", "irfanbey", "Necla_h",
+        "turgutt", "Ozlemk", "kenanaydin", "Ebruc",
+        "savasbey", "Yeliz_d", "erolk", "Sibelnur",
+        "kadircan", "Nese_y", "mahiryilmaz", "Damla_ceyy"
     )
 
     /** The English-locale counterpart to [NICKNAMES_TR] — see its doc comment. */
