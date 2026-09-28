@@ -19,6 +19,7 @@ import com.sualtikasifi.cizimhafiza.domain.repository.DuelRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.FriendRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.PenaltyRepository
 import com.sualtikasifi.cizimhafiza.util.ReferralRewardClaimer
+import com.sualtikasifi.cizimhafiza.util.UsernameClaimResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -54,7 +55,7 @@ private fun AvatarFrame.isUnlockedBy(level: Int, earnedRewardIds: Set<String>, o
     if (isLeagueReward) LeagueReward.Frame(this).id in earnedRewardIds else level >= unlockLevel
 
 /** What a finished rewarded streak action should confirm on screen. */
-enum class StreakToast { Rescued }
+enum class StreakToast { Rescued, AdGoldEarned, AdUnavailable }
 
 @HiltViewModel
 class MainMenuViewModel @Inject constructor(
@@ -67,6 +68,7 @@ class MainMenuViewModel @Inject constructor(
     private val penaltyRepository: PenaltyRepository,
     private val adManager: AdManager,
     private val referralRewardClaimer: ReferralRewardClaimer,
+    private val usernameRepository: com.sualtikasifi.cizimhafiza.util.UsernameRepository,
     xpEventRepository: com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository
 ) : ViewModel() {
 
@@ -113,6 +115,40 @@ class MainMenuViewModel @Inject constructor(
     val streakToast: StateFlow<StreakToast?> = _streakToast.asStateFlow()
 
     fun consumeStreakToast() { _streakToast.value = null }
+
+    /** When the 500-gold ad button unlocks again (epoch millis; in the past = ready now). */
+    val adGoldNextAtMillis: StateFlow<Long> = settingsRepository.adGoldNextAtMillis
+
+    /** Epoch day the free ad chest was last taken; anything but today means it is available. */
+    val adChestDay: StateFlow<Long> = settingsRepository.adChestDay
+
+    private val _freeChestReward = MutableStateFlow<com.sualtikasifi.cizimhafiza.domain.model.ChestReward?>(null)
+    /** The free ad chest just opened, for the opening scene; cleared by [consumeFreeChestReward]. */
+    val freeChestReward: StateFlow<com.sualtikasifi.cizimhafiza.domain.model.ChestReward?> = _freeChestReward.asStateFlow()
+
+    fun consumeFreeChestReward() { _freeChestReward.value = null }
+
+    fun watchAdForGold(activity: Activity) {
+        if (!settingsRepository.isAdGoldReady()) return
+        adManager.maybeShowRewarded(activity) { outcome ->
+            when (outcome) {
+                RewardedOutcome.EARNED -> if (settingsRepository.claimAdGold()) _streakToast.value = StreakToast.AdGoldEarned
+                RewardedOutcome.SKIPPED -> Unit
+                else -> _streakToast.value = StreakToast.AdUnavailable
+            }
+        }
+    }
+
+    fun watchAdForChest(activity: Activity) {
+        if (!settingsRepository.isAdChestReady()) return
+        adManager.maybeShowRewarded(activity) { outcome ->
+            when (outcome) {
+                RewardedOutcome.EARNED -> settingsRepository.claimAdChest()?.let { _freeChestReward.value = it }
+                RewardedOutcome.SKIPPED -> Unit
+                else -> _streakToast.value = StreakToast.AdUnavailable
+            }
+        }
+    }
 
     /** Dismisses the rescue offer for this app session without spending it. */
     fun dismissRescuePrompt() = dailyChallengeRepository.dismissRescuePrompt()
@@ -171,17 +207,20 @@ class MainMenuViewModel @Inject constructor(
     fun markFeatureTourSeen() { settingsRepository.featureTourSeen = true }
     val nicknameRenameUsed: StateFlow<Boolean> = settingsRepository.nicknameRenameUsed
 
-    /** Spends the player's one rename; false if it was already spent or the name is invalid. */
-    fun renameNickname(name: String): Boolean {
-        if (!settingsRepository.renameNicknameOnce(name)) return false
-        // Publish it like the account screen does, so friends and the league see the new name.
-        val trimmed = name.trim()
+    private val _usernameChecked = MutableStateFlow(settingsRepository.nicknameRenameUsed.value)
+    /** True once we know whether this account already owns a username, so the claim dialog never flashes for a returning player. */
+    val usernameChecked: StateFlow<Boolean> = _usernameChecked.asStateFlow()
+
+    init {
         viewModelScope.launch {
-            runCatching { friendRepository.updatePublicNickname(trimmed) }
-            runCatching { authRepository.updateDisplayName(trimmed) }
+            usernameRepository.syncFromServer()
+            // Offline: fall through so a brand-new player still sees the dialog and gets a clear network error.
+            _usernameChecked.value = true
         }
-        return true
     }
+
+    suspend fun claimUsername(name: String): UsernameClaimResult = usernameRepository.claim(name)
+
 
 
     /** The pen the player is drawing with, for the profile bar's "Kalemim" chip. */

@@ -511,9 +511,8 @@ fun OnlineResultScreen(
     if (uiState.showSignInPrompt && !signInPromptDismissed) {
         SignInPromptDialog(onDismiss = { signInPromptDismissed = true })
     }
-    if (uiState.chestLost) {
-        var chestLostDismissed by remember { mutableStateOf(false) }
-        if (!chestLostDismissed) com.sualtikasifi.cizimhafiza.presentation.common.ChestLostDialog(onDismiss = { chestLostDismissed = true })
+    uiState.overflowReward?.let { reward ->
+        com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog(reward = reward, onDismiss = viewModel::consumeOverflowReward)
     }
     uiState.chestWon?.let { chest ->
         if (!chestWonDismissed) {

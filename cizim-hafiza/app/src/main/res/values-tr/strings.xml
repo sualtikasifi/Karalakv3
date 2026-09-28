@@ -906,6 +906,15 @@
     <string name="exit_confirm_no">Kal</string>
     <string name="result_double_xp">🎬 Reklam izle, %1$d XP\'yi ikiye katla</string>
     <string name="result_xp_doubled">🏆 %1$d XP kazandın!</string>
+    <string name="result_points_are_xp">%1$d puan kazandın — puanların XP olarak eklendi</string>
+    <string name="result_xp_doubled_note">Reklam ödülüyle XP\'in ikiye katlandı!</string>
+    <string name="result_xp_bonus_applied">🎉 Bonus çarpan</string>
+    <string name="result_level_label">Seviye %1$d</string>
+    <string name="result_level_up">🎉 SEVİYE ATLADIN!</string>
+    <string name="result_view_drawings">Çizimleri Gör</string>
+    <string name="result_view_drawings_sub">%1$d çizimin tamamı tek sayfada</string>
+    <string name="result_x2_button">🎬 x2 XP</string>
+    <string name="result_claim">Ödülü Al</string>
     <!-- Ana menü seviye kartı: seviye ilerlemesi ile rütbe ilerlemesi ayrı ayrı okunur -->
     <string name="level_xp_to_next_level">Bir sonraki seviyeye %1$d XP kaldı</string>
     <string name="level_max_reached">En yüksek seviyedesin!</string>
@@ -1110,6 +1119,19 @@
     <string name="nickname_edit_save">Kaydet</string>
     <string name="nickname_edit_cancel">Vazgeç</string>
     <string name="nickname_edit_invalid">Ad 2 ile 16 karakter arasında olmalı.</string>
+    <string name="home_ad_gold_label">+500 Altın</string>
+    <string name="home_ad_chest_label">Bedava Kasa</string>
+    <string name="home_ad_watch">İzle</string>
+    <string name="home_ad_gold_earned">+500 altın kazandın!</string>
+    <string name="home_ad_unavailable">Reklam şu an yüklenemedi, biraz sonra tekrar dene.</string>
+    <string name="chest_home_start">Başlat</string>
+    <string name="daily_challenge_ready_short">%1$d kelime · aynı kelimeler</string>
+    <string name="username_setup_title">Kullanıcı adını belirle</string>
+    <string name="username_setup_warning">Kullanıcı adı yalnızca BİR KEZ belirlenir ve sonradan asla değiştirilemez. Her ad tek bir kişiye aittir. Dikkatli seç!</string>
+    <string name="username_setup_confirm">Bu adı al</string>
+    <string name="username_error_invalid">Ad 2–16 karakter olmalı; yalnızca harf, rakam, boşluk, _ . - kullanılabilir.</string>
+    <string name="username_error_taken">Bu kullanıcı adı daha önce alınmış. Başka bir ad dene.</string>
+    <string name="username_error_network">Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.</string>
     <string name="daily_play_now">Şimdi Oyna</string>
     <string name="daily_done_badge">Tamamlandı</string>
     <string name="pen_copper">Bakır</string>

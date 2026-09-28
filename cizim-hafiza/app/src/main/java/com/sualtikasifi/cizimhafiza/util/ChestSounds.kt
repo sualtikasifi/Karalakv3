@@ -109,6 +109,34 @@ internal object ChestSounds {
         pcm(out)
     }
 
+
+    /**
+     * The chest reward chime: a soft rising pentatonic arpeggio in pure,
+     * warm bell tones with a gentle echo — pleasant instead of the harsh
+     * coin-shower pile-up it replaces.
+     */
+    val reward: ShortArray by lazy {
+        val out = DoubleArray((RATE * 1.9).toInt())
+        fun bell(freq: Double, seconds: Double, volume: Double, decay: Double): DoubleArray {
+            val n = (RATE * seconds).toInt()
+            return DoubleArray(n) { i ->
+                val t = i / RATE.toDouble()
+                val env = exp(-decay * t) * minOf(1.0, t / 0.012)
+                volume * env * (sin(2 * PI * freq * t) + 0.16 * sin(4 * PI * freq * t) + 0.05 * sin(6 * PI * freq * t))
+            }
+        }
+        val arpeggio = listOf(523.25 to 0.0, 659.25 to 0.11, 783.99 to 0.22, 1046.5 to 0.34)
+        arpeggio.forEach { (f, at) -> mix(out, bell(f, 1.1, 0.30, 3.6), at) }
+        listOf(523.25, 783.99, 1318.5).forEach { f -> mix(out, bell(f, 1.4, 0.13, 2.4), 0.46) }
+        val echoed = out.copyOf()
+        val delay = (RATE * 0.21).toInt()
+        for (i in delay until out.size) echoed[i] += out[i - delay] * 0.28
+        for (i in 2 * delay until out.size) echoed[i] += out[i - 2 * delay] * 0.12
+        val fade = (RATE * 0.25).toInt()
+        for (i in 0 until fade) echoed[echoed.size - 1 - i] *= i / fade.toDouble()
+        pcm(echoed.map { it * 0.85 }.toDoubleArray())
+    }
+
     fun play(samples: ShortArray) {
         runCatching {
             val track = AudioTrack.Builder()

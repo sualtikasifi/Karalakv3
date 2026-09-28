@@ -360,6 +360,13 @@ class GameViewModel @Inject constructor(
      * drawings are all already on screen — so it stays silent rather than
      * putting an error in front of somebody who just won a match.
      */
+    private val _overflowChestReward = MutableStateFlow<com.sualtikasifi.cizimhafiza.domain.model.ChestReward?>(null)
+
+    /** A won match's chest opened on the spot because every slot was full; shown once, then cleared. */
+    val overflowChestReward: StateFlow<com.sualtikasifi.cizimhafiza.domain.model.ChestReward?> = _overflowChestReward.asStateFlow()
+
+    fun consumeOverflowChestReward() { _overflowChestReward.value = null }
+
     private val _ghostItems = MutableStateFlow<List<ResultItem>>(emptyList())
     val ghostItems: StateFlow<List<ResultItem>> = _ghostItems.asStateFlow()
 
@@ -1098,7 +1105,9 @@ class GameViewModel @Inject constructor(
 
         if (goldEarned > 0) settingsRepository.earnGold(goldEarned)
         val quickMatchWon = ghost != null && totalScore > ghost.totalScore
-        val chestWon = if (quickMatchWon) settingsRepository.awardChestForWin() else null
+        val chestAward = if (quickMatchWon) settingsRepository.awardChestForWinOrPay() else null
+        val chestWon = chestAward?.chest
+        _overflowChestReward.value = chestAward?.instantReward
 
         val resultPhase = GamePhase.Result(
             totalScore = totalScore,
@@ -1135,7 +1144,7 @@ class GameViewModel @Inject constructor(
             showSignInPrompt = PostMatchPrompts.shouldShowSignIn(settingsRepository, authRepository.authState.value),
             showRatingPrompt = PostMatchPrompts.shouldShowRating(settingsRepository),
             chestWon = chestWon,
-            chestLost = quickMatchWon && chestWon == null
+            chestLost = chestAward?.instantReward != null
         )
         _phase.value = resultPhase
         // Only now, once there is finally something to compare them with:

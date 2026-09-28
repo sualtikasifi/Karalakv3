@@ -16,6 +16,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
 import com.sualtikasifi.cizimhafiza.domain.model.Chest
 import com.sualtikasifi.cizimhafiza.domain.model.ChestReward
 import com.sualtikasifi.cizimhafiza.domain.model.ChestLoot
+import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
 import com.sualtikasifi.cizimhafiza.domain.model.ChestSlots
 import com.sualtikasifi.cizimhafiza.domain.model.JokerType
 import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
@@ -205,14 +206,11 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     private val _nicknameRenameUsed = MutableStateFlow(prefs.getBoolean(KEY_NICKNAME_RENAME_USED, false))
     val nicknameRenameUsed: StateFlow<Boolean> = _nicknameRenameUsed.asStateFlow()
 
-    /** The one-time rename. False (and nothing changes) if already spent or the name is not 2..16 characters. */
-    fun renameNicknameOnce(name: String): Boolean {
-        val trimmed = name.trim()
-        if (_nicknameRenameUsed.value || trimmed.length !in NICKNAME_MIN..NICKNAME_MAX) return false
-        setNickname(trimmed)
+    /** Stores the server-verified username and locks it for good. */
+    fun lockUsername(name: String) {
+        setNickname(name)
         prefs.edit { putBoolean(KEY_NICKNAME_RENAME_USED, true) }
         _nicknameRenameUsed.value = true
-        return true
     }
 
     fun setNickname(name: String) {
@@ -567,6 +565,45 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         return chest
     }
 
+    /** A won match's chest: either it went into a slot ([chest]) or the slots were full and it was opened on the spot ([instantReward]). */
+    data class ChestAward(val chest: Chest?, val instantReward: ChestReward?)
+
+    /**
+     * Like [awardChestForWin], but a win never pays nothing: when every slot is
+     * taken the chest is opened immediately and its loot paid out, instead of
+     * being lost.
+     */
+    @Synchronized
+    fun awardChestForWinOrPay(): ChestAward {
+        val seed = chestCycleSeed
+        val index = chestCycleIndex
+        val slots = _chestSlots.value
+        val freeIndex = slots.indexOfFirst { it == null }
+        if (freeIndex >= 0) return ChestAward(awardChestForWin(), null)
+        chestCycleIndex = index + 1
+        return ChestAward(null, payChestOutright(ChestSlots.tierAt(seed, index)))
+    }
+
+    private fun payChestOutright(tier: ChestTier, extraEdit: android.content.SharedPreferences.Editor.() -> Unit = {}): ChestReward {
+        val reward = ChestLoot.roll(tier, _ownedStoreIds.value)
+        val updatedGold = _goldBalance.value + reward.gold
+        val updatedJokers = _jokerCounts.value.toMutableMap().apply {
+            reward.jokers.forEach { (type, n) -> this[type] = (this[type] ?: 0) + n }
+        }
+        val updatedOwned = reward.penDrop?.let { _ownedStoreIds.value + "pen:${it.name}" } ?: _ownedStoreIds.value
+        prefs.edit(commit = true) {
+            putInt(KEY_GOLD_BALANCE, updatedGold)
+            putString(KEY_JOKERS, Json.encodeToString(updatedJokers.mapKeys { it.key.name }))
+            putStringSet(KEY_OWNED_STORE_IDS, updatedOwned)
+            extraEdit()
+            sealEconomy(gold = updatedGold, jokers = updatedJokers, owned = updatedOwned)
+        }
+        _goldBalance.value = updatedGold
+        _jokerCounts.value = updatedJokers
+        _ownedStoreIds.value = updatedOwned
+        return reward
+    }
+
     /** False if another slot is already counting down — only one chest unlocks at a time. */
     @Synchronized
     fun startUnlockingChest(chestId: String): Boolean {
@@ -620,6 +657,43 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         return reward
     }
 
+
+    // --- Home-screen ad rewards: 500 gold every 4 hours, and one free
+    // mid-tier chest per calendar day (resets at local midnight). ---
+
+    private val _adGoldNextAtMillis = MutableStateFlow(prefs.getLong(KEY_AD_GOLD_NEXT_AT, 0L))
+    val adGoldNextAtMillis: StateFlow<Long> = _adGoldNextAtMillis.asStateFlow()
+
+    private val _adChestDay = MutableStateFlow(prefs.getLong(KEY_AD_CHEST_DAY, -1L))
+    val adChestDay: StateFlow<Long> = _adChestDay.asStateFlow()
+
+    @Synchronized
+    fun isAdGoldReady(now: Long = System.currentTimeMillis()): Boolean = now >= _adGoldNextAtMillis.value
+
+    /** Pays [AD_GOLD_AMOUNT] gold and starts the 4-hour cooldown; false while the cooldown is still running. */
+    @Synchronized
+    fun claimAdGold(): Boolean {
+        val now = System.currentTimeMillis()
+        if (now < _adGoldNextAtMillis.value) return false
+        val next = now + AD_GOLD_COOLDOWN_MILLIS
+        prefs.edit(commit = true) { putLong(KEY_AD_GOLD_NEXT_AT, next) }
+        _adGoldNextAtMillis.value = next
+        addGold(AD_GOLD_AMOUNT)
+        return true
+    }
+
+    @Synchronized
+    fun isAdChestReady(): Boolean = _adChestDay.value != java.time.LocalDate.now().toEpochDay()
+
+    /** Rolls and pays a free mid-tier chest without needing a slot; null if today's was already taken. */
+    @Synchronized
+    fun claimAdChest(): ChestReward? {
+        val today = java.time.LocalDate.now().toEpochDay()
+        if (_adChestDay.value == today) return null
+        val reward = payChestOutright(ChestTier.GOLD) { putLong(KEY_AD_CHEST_DAY, today) }
+        _adChestDay.value = today
+        return reward
+    }
     @Synchronized
     fun addScore(points: Int) {
         val updated = _lifetimeScore.value + points
@@ -1146,6 +1220,10 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_CHEST_SLOTS = "chest_slots"
         const val KEY_CHEST_CYCLE_SEED = "chest_cycle_seed"
         const val KEY_CHEST_CYCLE_INDEX = "chest_cycle_index"
+        const val KEY_AD_GOLD_NEXT_AT = "ad_gold_next_at"
+        const val KEY_AD_CHEST_DAY = "ad_chest_day"
+        const val AD_GOLD_AMOUNT = 500
+        const val AD_GOLD_COOLDOWN_MILLIS = 4 * 60 * 60 * 1000L
         const val KEY_CURRENT_STREAK = "current_streak"
         const val KEY_NOTIFICATION_PERMISSION_REQUESTED = "notification_permission_requested"
         const val KEY_LAST_REMINDER_EPOCH_DAY = "last_reminder_epoch_day"

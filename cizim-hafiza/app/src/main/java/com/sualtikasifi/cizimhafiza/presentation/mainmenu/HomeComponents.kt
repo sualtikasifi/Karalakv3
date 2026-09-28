@@ -52,6 +52,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -66,6 +67,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.animation.core.Animatable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -150,8 +152,6 @@ internal fun HomeProfileBar(
     frame: AvatarFrame,
     pen: PenSkin,
     gold: Int,
-    renameUsed: Boolean,
-    onEditName: () -> Unit,
     onFrameClick: () -> Unit,
     onPenClick: () -> Unit,
     onRankClick: () -> Unit,
@@ -179,7 +179,7 @@ internal fun HomeProfileBar(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Row(
-                    modifier = if (renameUsed) Modifier else Modifier.clickable(onClick = onEditName).a11yButton(stringResource(R.string.nickname_edit_title)),
+                    modifier = Modifier,
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
@@ -193,14 +193,6 @@ internal fun HomeProfileBar(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
-                    if (!renameUsed) {
-                        Box(
-                            modifier = Modifier.size(22.dp).clip(CircleShape).background(Color(0xFFFF7A21)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.nickname_edit_title), tint = Color.White, modifier = Modifier.size(13.dp))
-                        }
-                    }
                 }
                 Spacer(modifier = Modifier.height(3.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -623,41 +615,71 @@ internal fun GradientTile(
     }
 }
 
-/** The one-time username change. Warns that it can only be done once; validation lives in SettingsRepository. */
+/** First-run username choice. Not dismissable: the name is unique, stored online, and can never be changed afterwards. */
 @Composable
-internal fun NicknameEditDialog(current: String, onConfirm: (String) -> Boolean, onDismiss: () -> Unit) {
-    var text by remember { mutableStateOf(current) }
-    var error by remember { mutableStateOf(false) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.nickname_edit_title)) },
-        text = {
-            Column {
+internal fun UsernameSetupDialog(initial: String, onClaim: suspend (String) -> com.sualtikasifi.cizimhafiza.util.UsernameClaimResult) {
+    var text by remember { mutableStateOf(initial) }
+    var error by remember { mutableStateOf<Int?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = {},
+        properties = androidx.compose.ui.window.DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+    ) {
+        com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard(corner = 28.dp, raise = 8.dp, modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Text(
-                    text = stringResource(R.string.nickname_edit_warning),
+                    text = stringResource(R.string.username_setup_title),
+                    fontFamily = DisplayFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 22.sp,
+                    color = Ink,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.username_setup_warning),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
                 AppTextField(
                     value = text,
-                    onValueChange = { if (it.length <= 16) { text = it; error = false } },
-                    placeholder = stringResource(R.string.nickname_edit_hint)
+                    onValueChange = { if (it.length <= 16 && !busy) { text = it; error = null } },
+                    placeholder = stringResource(R.string.nickname_edit_hint),
+                    centered = true
                 )
-                if (error) {
+                error?.let {
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(stringResource(R.string.nickname_edit_invalid), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(it), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+                com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton(
+                    text = stringResource(R.string.username_setup_confirm),
+                    onClick = {
+                        if (busy) return@PrimaryButton
+                        busy = true
+                        scope.launch {
+                            error = when (onClaim(text)) {
+                                com.sualtikasifi.cizimhafiza.util.UsernameClaimResult.Invalid -> R.string.username_error_invalid
+                                com.sualtikasifi.cizimhafiza.util.UsernameClaimResult.Taken -> R.string.username_error_taken
+                                com.sualtikasifi.cizimhafiza.util.UsernameClaimResult.NetworkError -> R.string.username_error_network
+                                else -> null
+                            }
+                            busy = false
+                        }
+                    },
+                    enabled = !busy && text.trim().length >= 2,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
-        },
-        confirmButton = {
-            TextButton(onClick = { if (onConfirm(text)) onDismiss() else error = true }) {
-                Text(stringResource(R.string.nickname_edit_save))
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.nickname_edit_cancel)) } }
-    )
+        }
+    }
 }
 
 /** Every pen, locked ones dimmed with the level that opens them; tapping an unlocked one equips it. */
@@ -937,6 +959,9 @@ private fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, c
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally)
             ) {
+                if (!unlocking && !ready) {
+                    Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = Color(0xFFFFE08A), modifier = Modifier.size(12.dp))
+                }
                 if (unlocking) {
                     Icon(Icons.Filled.Schedule, contentDescription = null, tint = Color(0xFFFFC94D), modifier = Modifier.size(10.dp))
                 }
@@ -945,7 +970,7 @@ private fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, c
                         ready -> stringResource(R.string.chests_open_button).uppercase(androidx.compose.ui.text.intl.Locale.current.platformLocale) + "!"
                         // Down to the second: this is what the player watches tick.
                         unlocking -> formatCountdown(chest.remainingMillis(nowMillis))
-                        else -> stringResource(R.string.chest_duration_hours, tier.durationHours())
+                        else -> stringResource(R.string.chest_home_start).uppercase(androidx.compose.ui.text.intl.Locale.current.platformLocale)
                     },
                     fontSize = 10.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -1057,6 +1082,152 @@ private fun XpBar(fraction: Float, label: String, modifier: Modifier = Modifier)
             color = Color.White,
             style = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.7f), Offset(0f, 2f), 3f)),
             maxLines = 1
+        )
+    }
+}
+
+/** Ticks once a second while [untilMillis] is still in the future; returns the current time. */
+@Composable
+private fun rememberNowUntil(untilMillis: Long): Long {
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(untilMillis) {
+        now = System.currentTimeMillis()
+        while (now < untilMillis) {
+            kotlinx.coroutines.delay(1_000)
+            now = System.currentTimeMillis()
+        }
+    }
+    return now
+}
+
+private fun hms(totalSeconds: Long): String {
+    val s = totalSeconds.coerceAtLeast(0)
+    return "%d:%02d:%02d".format(s / 3600, (s % 3600) / 60, s % 60)
+}
+
+/** A chunky side button with a bouncing icon, a moving sheen while it can be used, and a countdown while it cannot. */
+@Composable
+private fun HomeAdButton(
+    ready: Boolean,
+    face: List<Color>,
+    edge: Color,
+    label: String,
+    footer: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    art: @Composable (bounce: Float) -> Unit
+) {
+    val t = rememberInfiniteTransition(label = "homeAd")
+    val bounce by t.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(850, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "bounce"
+    )
+    val sheen by t.animateFloat(
+        initialValue = -0.6f,
+        targetValue = 1.6f,
+        animationSpec = infiniteRepeatable(tween(2400, easing = androidx.compose.animation.core.LinearEasing)),
+        label = "sheen"
+    )
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val press by animateFloatAsState(if (pressed) 0.95f else 1f, label = "adPress")
+    val colors = if (ready) face else listOf(Color(0xFFB8B2A6), Color(0xFF8F897C))
+    val rim = if (ready) edge else Color(0xFF5E584B)
+    Column(
+        modifier = modifier
+            .graphicsLayer { scaleX = press; scaleY = press }
+            .chunky(Brush.verticalGradient(colors), rim, corner = 20.dp, lift = 4.dp, rim = Color.White.copy(alpha = 0.45f))
+            .drawWithContent {
+                drawContent()
+                if (ready) {
+                    val x = size.width * sheen
+                    drawRect(
+                        brush = Brush.horizontalGradient(
+                            listOf(Color.Transparent, Color.White.copy(alpha = 0.38f), Color.Transparent),
+                            startX = x - 22.dp.toPx(),
+                            endX = x + 22.dp.toPx()
+                        )
+                    )
+                }
+            }
+            .clickable(interactionSource = interaction, indication = null, enabled = ready, onClick = onClick)
+            .padding(horizontal = 3.dp, vertical = 5.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceEvenly
+    ) {
+        Box(modifier = Modifier.weight(1f, fill = false), contentAlignment = Alignment.Center) {
+            art(if (ready) bounce else 0f)
+        }
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            FitText(text = label, color = Color.White, maxSp = 11f, minSp = 7f)
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(if (ready) Color.White.copy(alpha = 0.92f) else Color.Black.copy(alpha = 0.22f))
+                .padding(vertical = 3.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            FitText(text = footer, color = if (ready) Ink else Color.White, maxSp = 10f, minSp = 7f)
+        }
+    }
+}
+
+/** Left of the daily card: watch an ad for 500 gold, available again every four hours. */
+@Composable
+internal fun AdGoldButton(nextAtMillis: Long, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val now = rememberNowUntil(nextAtMillis)
+    val remaining = nextAtMillis - now
+    val ready = remaining <= 0
+    HomeAdButton(
+        ready = ready,
+        face = listOf(Color(0xFFFFDB5C), Color(0xFFF59E0B)),
+        edge = Color(0xFFB36B00),
+        label = stringResource(R.string.home_ad_gold_label),
+        footer = if (ready) "🎬 " + stringResource(R.string.home_ad_watch) else hms(remaining / 1000),
+        onClick = onClick,
+        modifier = modifier
+    ) { bounce ->
+        Image(
+            painter = painterResource(R.drawable.icon_gold_coin),
+            contentDescription = null,
+            modifier = Modifier
+                .size(46.dp)
+                .graphicsLayer {
+                    translationY = -6.dp.toPx() * bounce
+                    rotationZ = (bounce - 0.5f) * 12f
+                    alpha = if (ready) 1f else 0.6f
+                }
+        )
+    }
+}
+
+/** Right of the daily card: one free mid-tier chest per day for an ad, refreshed at midnight. */
+@Composable
+internal fun AdChestButton(availableToday: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val midnight = remember(availableToday) { java.time.LocalDate.now().plusDays(1).atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() }
+    val now = rememberNowUntil(if (availableToday) 0L else midnight)
+    val remaining = midnight - now
+    HomeAdButton(
+        ready = availableToday,
+        face = listOf(Color(0xFF6CC3FF), Color(0xFF2C7FDB)),
+        edge = Color(0xFF14549A),
+        label = stringResource(R.string.home_ad_chest_label),
+        footer = if (availableToday) "🎬 " + stringResource(R.string.home_ad_watch) else hms(remaining / 1000),
+        onClick = onClick,
+        modifier = modifier
+    ) { bounce ->
+        ChestImage(
+            tier = ChestTier.GOLD,
+            width = 56.dp,
+            modifier = Modifier.graphicsLayer {
+                rotationZ = (bounce - 0.5f) * 10f
+                translationY = -4.dp.toPx() * bounce
+                alpha = if (availableToday) 1f else 0.6f
+            }
         )
     }
 }

@@ -29,6 +29,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
@@ -72,6 +74,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -139,6 +142,9 @@ fun MainMenuScreen(
 ) {
     val hasUnseenAchievement by viewModel.hasUnseenAchievement.collectAsState()
     val xpEvent by viewModel.xpEvent.collectAsState()
+    val adGoldNextAt by viewModel.adGoldNextAtMillis.collectAsState()
+    val adChestDay by viewModel.adChestDay.collectAsState()
+    val freeChestReward by viewModel.freeChestReward.collectAsState()
     val pendingFriendRequests by viewModel.pendingFriendRequests.collectAsState()
     val nickname by viewModel.nickname.collectAsState()
     val dailyState by viewModel.dailyState.collectAsState()
@@ -151,7 +157,6 @@ fun MainMenuScreen(
     var framePickerOpen by remember { mutableStateOf(false) }
     var penPickerOpen by remember { mutableStateOf(false) }
     var featureTourOpen by remember { mutableStateOf(!viewModel.featureTourSeen) }
-    var nicknameEditOpen by remember { mutableStateOf(false) }
     val nicknameRenameUsed by viewModel.nicknameRenameUsed.collectAsState()
     val penSkinItems by viewModel.penSkinItems.collectAsState()
     var rankLadderOpen by remember { mutableStateOf(false) }
@@ -196,8 +201,6 @@ fun MainMenuScreen(
                 frame = selectedFrame,
                 pen = selectedPen,
                 gold = gold,
-                renameUsed = nicknameRenameUsed,
-                onEditName = { nicknameEditOpen = true },
                 onFrameClick = { framePickerOpen = true },
                 onPenClick = { penPickerOpen = true },
                 onRankClick = { rankLadderOpen = true },
@@ -210,14 +213,36 @@ fun MainMenuScreen(
             BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 val compact = maxHeight < 700.dp
                 val fixedEstimate = (if (compact) 480.dp else 530.dp) + (if (xpEvent != null) 60.dp else 0.dp)
-                val flexible = maxHeight >= fixedEstimate + 96.dp + 18.dp
                 val modeHeight = (maxHeight - fixedEstimate - 18.dp).coerceIn(96.dp, 142.dp)
                 val content: @Composable ColumnScope.() -> Unit = {
                     xpEvent?.let { event ->
                         XpEventBanner(event = event)
                         Spacer(modifier = Modifier.height(8.dp))
                     }
-                    DailyChallengeCard(state = dailyState, onPlay = onDailyChallenge, compact = compact)
+                    if (GameConstants.ADMOB_ENABLED) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().height(if (compact) 116.dp else 126.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            AdGoldButton(
+                                nextAtMillis = adGoldNextAt,
+                                onClick = { activity?.let(viewModel::watchAdForGold) },
+                                modifier = Modifier.width(74.dp).fillMaxHeight()
+                            )
+                            DailyChallengeCardNarrow(
+                                state = dailyState,
+                                onPlay = onDailyChallenge,
+                                modifier = Modifier.weight(1f).fillMaxHeight()
+                            )
+                            AdChestButton(
+                                availableToday = adChestDay != java.time.LocalDate.now().toEpochDay(),
+                                onClick = { activity?.let(viewModel::watchAdForChest) },
+                                modifier = Modifier.width(74.dp).fillMaxHeight()
+                            )
+                        }
+                    } else {
+                        DailyChallengeCard(state = dailyState, onPlay = onDailyChallenge, compact = compact)
+                    }
 
                     Spacer(modifier = Modifier.height(SECTION_GAP + 3.dp))
 
@@ -305,27 +330,13 @@ fun MainMenuScreen(
 
                     HomeChestsSection(compact = compact)
                 }
-                if (flexible) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 8.dp, bottom = 10.dp),
-                        verticalArrangement = Arrangement.SpaceEvenly,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        content = content
-                    )
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 8.dp, bottom = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        content = content
-                    )
-                }
+                FitToHeight(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 8.dp, bottom = 10.dp),
+                    content = content
+                )
             }
         }
         }
@@ -375,6 +386,8 @@ fun MainMenuScreen(
                     text = stringResource(
                         when (toast) {
                             StreakToast.Rescued -> R.string.streak_rescue_done
+                            StreakToast.AdGoldEarned -> R.string.home_ad_gold_earned
+                            StreakToast.AdUnavailable -> R.string.home_ad_unavailable
                         }
                     ),
                     container = MaterialTheme.colorScheme.surface,
@@ -400,6 +413,10 @@ fun MainMenuScreen(
             }
         }
 
+        freeChestReward?.let { reward ->
+            com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog(reward = reward, onDismiss = viewModel::consumeFreeChestReward)
+        }
+
         if (rankLadderOpen) {
             RankLadderSheet(progress = levelProgress, onDismiss = { rankLadderOpen = false })
         }
@@ -416,11 +433,11 @@ fun MainMenuScreen(
             )
         }
 
-        if (nicknameEditOpen && !nicknameRenameUsed) {
-            NicknameEditDialog(
-                current = nickname,
-                onConfirm = viewModel::renameNickname,
-                onDismiss = { nicknameEditOpen = false }
+        val usernameChecked by viewModel.usernameChecked.collectAsState()
+        if (usernameChecked && !nicknameRenameUsed) {
+            UsernameSetupDialog(
+                initial = nickname.takeIf { it != stringResource(R.string.default_nickname) }.orEmpty(),
+                onClaim = viewModel::claimUsername
             )
         }
 
@@ -864,6 +881,160 @@ private fun RankLadderSheet(progress: LevelProgressState, onDismiss: () -> Unit)
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+/**
+ * The daily challenge in the narrow slot between the two ad buttons: same
+ * information, stacked instead of side by side so nothing has to shrink to
+ * illegibility.
+ */
+@Composable
+private fun DailyChallengeCardNarrow(state: DailyChallengeState, onPlay: () -> Unit, modifier: Modifier = Modifier) {
+    val available = state.isAvailableToday
+    val top = if (available) Color(0xFF9B6BF2) else Color(0xFF52C378)
+    val bottom = if (available) Color(0xFF6440D6) else Color(0xFF2E9A55)
+    val edge = if (available) Color(0xFF3F2699) else Color(0xFF1E6E3B)
+    val words = DailyChallenge.WORD_COUNT
+    val correct = state.todayResult?.correctCount ?: 0
+    val pulse = rememberInfiniteTransition(label = "dailyPulseNarrow").animateFloat(
+        initialValue = 1f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "dailyPulseNarrowFraction"
+    )
+    Column(
+        modifier = modifier
+            .chunky(Brush.verticalGradient(listOf(top, bottom)), edge, corner = 22.dp, lift = 4.dp, rim = Color.White.copy(alpha = 0.35f))
+            .then(if (available) Modifier.clickable(onClick = onPlay) else Modifier)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.SpaceEvenly
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Image(
+                painter = painterResource(R.drawable.daily_calendar_icon),
+                contentDescription = null,
+                modifier = Modifier.size(40.dp)
+            )
+            Text(
+                text = stringResource(R.string.daily_challenge_title),
+                fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                fontSize = 13.sp,
+                lineHeight = 14.sp,
+                color = Color.White,
+                maxLines = 3,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (state.currentStreak > 0) {
+                Image(
+                    painter = painterResource(R.drawable.daily_streak_icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp)
+                )
+                Text(
+                    text = stringResource(
+                        R.string.daily_challenge_multiplier_badge,
+                        XpAwards.dailyStreakMultiplier(state.currentStreak)
+                    ),
+                    fontSize = 11.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                    color = Color.White
+                )
+            }
+            Text(
+                text = if (available) {
+                    stringResource(R.string.daily_challenge_ready_short, words)
+                } else {
+                    stringResource(R.string.daily_challenge_done, correct, words)
+                },
+                fontSize = 10.sp,
+                lineHeight = 11.sp,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                color = Color.White.copy(alpha = 0.92f),
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        if (available) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer { scaleX = pulse.value; scaleY = pulse.value }
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White)
+                    .padding(vertical = 6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.daily_play_now).uppercase(androidx.compose.ui.text.intl.Locale.current.platformLocale),
+                    fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                    fontSize = 13.sp,
+                    color = Color(0xFF5B3FC4),
+                    maxLines = 1
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.Black.copy(alpha = 0.18f))
+                    .padding(vertical = 3.dp, horizontal = 6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "✓ " + stringResource(R.string.daily_done_badge),
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                    fontSize = 12.sp,
+                    color = Color.White,
+                    maxLines = 1
+                )
+                Text(
+                    text = midnightCountdownText(),
+                    fontSize = 11.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                    color = Color.White.copy(alpha = 0.95f),
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Lays [content] out at its natural size and, if that is taller than the space
+ * given, scales the whole thing down to fit instead of scrolling — so the home
+ * screen never moves, whatever the phone's height, density or font setting.
+ * Shorter content is centred vertically. Touch input follows the scaling.
+ */
+@Composable
+private fun FitToHeight(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    androidx.compose.ui.layout.Layout(
+        content = { Column(horizontalAlignment = Alignment.CenterHorizontally, content = content) },
+        modifier = modifier.clipToBounds()
+    ) { measurables, constraints ->
+        val available = constraints.maxHeight
+        val placeable = measurables.first().measure(
+            constraints.copy(minWidth = 0, minHeight = 0, maxHeight = androidx.compose.ui.unit.Constraints.Infinity)
+        )
+        val scale = if (placeable.height > available && placeable.height > 0) {
+            (available.toFloat() / placeable.height).coerceAtLeast(0.55f)
+        } else 1f
+        val scaledHeight = (placeable.height * scale).toInt()
+        layout(constraints.maxWidth, available) {
+            val x = (constraints.maxWidth - placeable.width) / 2
+            val y = ((available - scaledHeight) / 2).coerceAtLeast(0)
+            placeable.placeWithLayer(x, y) {
+                scaleX = scale
+                scaleY = scale
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)
+            }
         }
     }
 }

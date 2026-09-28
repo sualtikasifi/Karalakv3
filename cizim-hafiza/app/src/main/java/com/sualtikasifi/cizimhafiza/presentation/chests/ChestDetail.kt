@@ -147,8 +147,83 @@ private fun ChestDetailDialog(
             onBubbleDone()
         }
     }
-
-    AppWindowDialog(title = stringResource(tier.labelRes()), onDismiss = onDismiss) {
+    AppWindowDialog(
+        title = stringResource(tier.labelRes()),
+        onDismiss = onDismiss,
+        footer = {
+            when {
+                ready -> {
+                    Text(
+                        text = stringResource(R.string.chest_detail_ready),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = AppTheme.tokens.success
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    PrimaryButton(text = stringResource(R.string.chests_open_button), onClick = onOpen, modifier = Modifier.fillMaxWidth())
+                }
+    
+                unlocking -> {
+                    if (speedupAvailable) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(50))
+                                .background(Color(0xFF2E8B45))
+                                .clickable(onClick = onSpeedup)
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(Icons.Filled.PlayCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Text(
+                                text = stringResource(R.string.chest_speedup_button),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Box(
+                                modifier = Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFFFE066)).padding(horizontal = 9.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.chest_speedup_badge),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF3A2416)
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = stringResource(R.string.chest_speedup_used_today),
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+    
+                anotherUnlocking -> Text(
+                    text = stringResource(R.string.chest_slot_busy),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+    
+                else -> PrimaryButton(
+                    text = stringResource(R.string.chests_start_button) + " · " + stringResource(R.string.chest_duration_hours, tier.durationHours()),
+                    onClick = onStart,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    ) {
         ChestStage(tier = tier, bubble = bubble, wobble = wiggle.value, onTapChest = onTapChest)
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -158,80 +233,6 @@ private fun ChestDetailDialog(
         if (!ready) {
             Spacer(modifier = Modifier.height(12.dp))
             ChestTimerPlate(chest = chest, nowMillis = nowMillis, unlocking = unlocking)
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        when {
-            ready -> {
-                Text(
-                    text = stringResource(R.string.chest_detail_ready),
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = AppTheme.tokens.success
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                PrimaryButton(text = stringResource(R.string.chests_open_button), onClick = onOpen, modifier = Modifier.fillMaxWidth())
-            }
-
-            unlocking -> {
-                if (speedupAvailable) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(50))
-                            .background(Color(0xFF2E8B45))
-                            .clickable(onClick = onSpeedup)
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(Icons.Filled.PlayCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text(
-                            text = stringResource(R.string.chest_speedup_button),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Box(
-                            modifier = Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFFFE066)).padding(horizontal = 9.dp, vertical = 3.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.chest_speedup_badge),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF3A2416)
-                            )
-                        }
-                    }
-                } else {
-                    Text(
-                        text = stringResource(R.string.chest_speedup_used_today),
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            anotherUnlocking -> Text(
-                text = stringResource(R.string.chest_slot_busy),
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            else -> PrimaryButton(
-                text = stringResource(R.string.chests_start_button) + " · " + stringResource(R.string.chest_duration_hours, tier.durationHours()),
-                onClick = onStart,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
     }
 }
@@ -398,10 +399,13 @@ private fun SpeechBubble(text: String) {
 /** The tier's own backdrop with the chest on it, tappable, with the chest's answer as a speech bubble above. */
 @Composable
 private fun ChestStage(tier: ChestTier, bubble: Bubble?, wobble: Float, onTapChest: () -> Unit) {
+    // Scales with the screen so a short phone still has room for the timer and the action button.
+    val stageHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.30f).coerceIn(170f, 282f)
+    val chestWidth = stageHeight * 0.84f
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(282.dp)
+            .height(stageHeight.dp)
             .clip(RoundedCornerShape(22.dp))
             .border(3.dp, tier.borderColor(), RoundedCornerShape(22.dp))
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onTapChest),
@@ -413,7 +417,7 @@ private fun ChestStage(tier: ChestTier, bubble: Bubble?, wobble: Float, onTapChe
                 .padding(top = 40.dp)
                 .graphicsLayer { rotationZ = wobble * 6f }
         ) {
-            ChestImage(tier = tier, width = 238.dp)
+            ChestImage(tier = tier, width = chestWidth.dp)
         }
         AnimatedVisibility(
             visible = bubble != null,

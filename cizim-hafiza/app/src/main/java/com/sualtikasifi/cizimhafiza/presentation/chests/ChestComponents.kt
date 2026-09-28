@@ -12,12 +12,15 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -149,17 +152,34 @@ private fun ChestOpeningVideo(tier: ChestTier, onEnded: () -> Unit) {
             playWhenReady = true
         }
     }
-    androidx.compose.runtime.DisposableEffect(player) {
+    // Every clip fades to white at its very end, and the tail is dead time:
+    // hand over to the reward screen [VIDEO_TAIL_TRIM_MS] before the last frame
+    // (or at the real end, whichever comes first) so opening feels quick.
+    androidx.compose.runtime.LaunchedEffect(player) {
+        var fired = false
+        fun fire() {
+            if (!fired) { fired = true; latestOnEnded.value() }
+        }
         val listener = object : androidx.media3.common.Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
-                if (state == androidx.media3.common.Player.STATE_ENDED) latestOnEnded.value()
+                if (state == androidx.media3.common.Player.STATE_ENDED) fire()
             }
         }
         player.addListener(listener)
-        onDispose {
+        try {
+            while (!fired) {
+                val duration = player.duration
+                if (duration != androidx.media3.common.C.TIME_UNSET && duration > VIDEO_TAIL_TRIM_MS * 2 &&
+                    player.currentPosition >= duration - VIDEO_TAIL_TRIM_MS
+                ) fire()
+                delay(40)
+            }
+        } finally {
             player.removeListener(listener)
-            player.release()
         }
+    }
+    androidx.compose.runtime.DisposableEffect(player) {
+        onDispose { player.release() }
     }
     androidx.compose.ui.viewinterop.AndroidView(
         modifier = Modifier.fillMaxSize(),
@@ -173,10 +193,14 @@ private fun ChestOpeningVideo(tier: ChestTier, onEnded: () -> Unit) {
     )
 }
 
+/** How much of the opening video's white-out tail is skipped. */
+private const val VIDEO_TAIL_TRIM_MS = 1_500L
+
 /**
  * The full-screen "kasa açma" moment: a tier-specific hand-made video plays
- * the chest opening, then the gold it paid out counts up over rotating rays
- * and a coin/confetti burst.
+ * the chest opening, then hands off to a bright reward screen — white like the
+ * video's last frame — where the gold counts up on a card under soft rays and
+ * confetti in the chest's own colour.
  *
  * The reward is already known (and already paid) when this starts — the
  * animation is presentation only, so backing out of the app mid-way can
@@ -197,17 +221,20 @@ fun ChestOpeningDialog(reward: ChestReward, onDismiss: () -> Unit) {
     }
 }
 
+private val RewardInk = Color(0xFF3A2416)
+private val RewardGold = Color(0xFFC77F00)
+
 @Composable
 private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
     val tier = reward.tier
     val accent = tier.accent()
     val light = tier.glow()
     val palette = remember(tier) {
-        listOf(accent, light, Color(0xFFFFD84D), Color(0xFFFFFFFF), Color(0xFFFF7A59), Color(0xFF5BD6FF))
+        listOf(accent, light, Color(0xFFFFC928), Color(0xFFFF7A59), Color(0xFF5BD6FF), Color(0xFF7BD88F))
     }
     val particles = remember {
         val rnd = Random(reward.gold * 31 + tier.ordinal)
-        List(64) {
+        List(56) {
             Particle(
                 angle = rnd.nextFloat() * (2f * PI.toFloat()),
                 speed = 260f + rnd.nextFloat() * 620f,
@@ -221,9 +248,10 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
 
     val burst = remember { Animatable(0f) }
     val reveal = remember { Animatable(0f) }
+    val fadeIn = remember { Animatable(0f) }
     val count = remember { Animatable(0f) }
     // 0 = the opening video is playing, 1 = it just ended and the reward is
-    // bursting/counting up, 2 = settled, the "topla" button is live.
+    // fading in / counting up, 2 = settled, the "topla" button is live.
     var stage by remember { mutableIntStateOf(0) }
     val haptic = LocalHapticFeedback.current
     val sound = com.sualtikasifi.cizimhafiza.presentation.common.rememberSoundManager()
@@ -231,11 +259,12 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
     LaunchedEffect(stage == 1) {
         if (stage != 1) return@LaunchedEffect
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-        launch { burst.animateTo(1f, tween(1500, easing = LinearOutSlowInEasing)) }
-        launch { reveal.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 180f)) }
+        launch { fadeIn.animateTo(1f, tween(320)) }
+        launch { burst.animateTo(1f, tween(1300, easing = LinearOutSlowInEasing)) }
+        launch { reveal.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 220f)) }
         sound.playCoinShower()
-        delay(420)
-        count.animateTo(reward.gold.toFloat(), tween(1300, easing = FastOutSlowInEasing))
+        delay(250)
+        count.animateTo(reward.gold.toFloat(), tween(900, easing = FastOutSlowInEasing))
         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         stage = 2
     }
@@ -244,16 +273,17 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
     val rayAngle by infinite.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(14_000, easing = LinearEasing), RepeatMode.Restart),
+        animationSpec = infiniteRepeatable(tween(16_000, easing = LinearEasing), RepeatMode.Restart),
         label = "rayAngle"
     )
 
     val density = LocalDensity.current
+    val hasExtras = reward.jokers.isNotEmpty() || reward.penDrop != null
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xF2140A1F)),
+            .background(if (stage == 0) Color.Black else Color.White),
         contentAlignment = Alignment.Center
     ) {
         // The chest actually opening — a tier-specific hand-made video,
@@ -262,54 +292,52 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
             ChestOpeningVideo(tier = tier, onEnded = { if (stage == 0) stage = 1 })
         }
 
-        // Rays + glow + burst, all in one canvas centred on the chest —
-        // only once the video has handed off to the reward reveal.
         if (stage >= 1) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val center = Offset(size.width / 2f, size.height * 0.47f)
+            val a = fadeIn.value
+            // Soft tint, rays and confetti — light enough to sit on white.
+            Canvas(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = a }) {
+                val center = Offset(size.width / 2f, size.height * 0.36f)
                 val dp = density.density
-                val glowRadius = 260f * dp
+                val glowRadius = 340f * dp
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(light.copy(alpha = 0.95f), accent.copy(alpha = 0.35f), Color.Transparent),
+                        colors = listOf(light.copy(alpha = 0.75f), light.copy(alpha = 0.22f), Color.Transparent),
                         center = center,
                         radius = glowRadius
                     ),
                     radius = glowRadius,
                     center = center
                 )
-                // Rotating light rays.
-                val rayCount = 18
+                val rayCount = 16
                 val rayLen = size.maxDimension
                 withTransform({ rotate(rayAngle, center) }) {
                     for (i in 0 until rayCount) {
-                        val a = (i * 360f / rayCount) * (PI.toFloat() / 180f)
-                        val half = (PI.toFloat() / rayCount) * 0.3f
+                        val ang = (i * 360f / rayCount) * (PI.toFloat() / 180f)
+                        val half = (PI.toFloat() / rayCount) * 0.28f
                         val path = Path().apply {
                             moveTo(center.x, center.y)
-                            lineTo(center.x + cos(a - half) * rayLen, center.y + sin(a - half) * rayLen)
-                            lineTo(center.x + cos(a + half) * rayLen, center.y + sin(a + half) * rayLen)
+                            lineTo(center.x + cos(ang - half) * rayLen, center.y + sin(ang - half) * rayLen)
+                            lineTo(center.x + cos(ang + half) * rayLen, center.y + sin(ang + half) * rayLen)
                             close()
                         }
                         drawPath(
                             path = path,
                             brush = Brush.radialGradient(
-                                colors = listOf(light.copy(alpha = 0.3f), Color.Transparent),
+                                colors = listOf(accent.copy(alpha = 0.16f), Color.Transparent),
                                 center = center,
-                                radius = rayLen * 0.75f
+                                radius = rayLen * 0.7f
                             )
                         )
                     }
                 }
-                // Shock ring + flying coins and confetti.
                 val b = burst.value
                 drawCircle(
-                    color = Color.White.copy(alpha = (1f - b).coerceIn(0f, 1f) * 0.9f),
-                    radius = (60f + 620f * b) * dp,
+                    color = accent.copy(alpha = (1f - b).coerceIn(0f, 1f) * 0.55f),
+                    radius = (50f + 560f * b) * dp,
                     center = center,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = (18f * (1f - b) + 2f) * dp)
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = (14f * (1f - b) + 2f) * dp)
                 )
-                val t = b * 1.6f
+                val t = b * 1.5f
                 particles.forEach { p ->
                     val x = center.x + cos(p.angle) * p.speed * t * dp
                     val y = center.y + sin(p.angle) * p.speed * t * dp + 0.5f * 900f * t * t * dp
@@ -330,95 +358,110 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                     }
                 }
             }
-        }
 
-        // Flash at the moment of opening.
-        if (stage >= 1) {
-            val flash = (1f - burst.value / 0.22f).coerceIn(0f, 1f)
-            Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = flash)))
-        }
-
-        // The reveal — only once the video has handed off.
-        if (stage >= 1) {
+            val r = reveal.value
             Column(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = fadeIn.value }
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                val r = reveal.value
                 Text(
-                    text = stringResource(tier.labelRes()),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = light,
+                    text = stringResource(R.string.chests_reward_title),
+                    fontFamily = DisplayFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 26.sp,
+                    color = RewardInk,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier.graphicsLayer { scaleX = r; scaleY = r }
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Image(
-                    painter = painterResource(R.drawable.icon_gold_coin),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(if (reward.jokers.isNotEmpty() || reward.penDrop != null) 110.dp else 150.dp)
-                        .graphicsLayer {
-                            scaleX = r
-                            scaleY = r
-                            rotationY = (1f - r.coerceIn(0f, 1f)) * 540f
-                        }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = stringResource(R.string.chests_reward_gold, count.value.toInt()),
-                    color = Color(0xFFFFD84D),
-                    fontFamily = DisplayFont,
+                    text = stringResource(tier.labelRes()),
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = if (reward.jokers.isNotEmpty() || reward.penDrop != null) 44.sp else 52.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.graphicsLayer { scaleX = 0.8f + 0.2f * r; scaleY = 0.8f + 0.2f * r }
+                    color = accent,
+                    modifier = Modifier
+                        .graphicsLayer { scaleX = r; scaleY = r }
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
+                        .background(accent.copy(alpha = 0.14f))
+                        .padding(horizontal = 14.dp, vertical = 4.dp)
                 )
-                // Everything else the chest paid out: jokers, and (legendary only) a pen.
-                if (stage >= 2 && (reward.jokers.isNotEmpty() || reward.penDrop != null)) {
-                    Spacer(modifier = Modifier.height(14.dp))
-                    androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        reward.jokers.forEach { (type, n) ->
-                            androidx.compose.foundation.layout.Column(
+                Spacer(modifier = Modifier.height(18.dp))
+                Column(
+                    modifier = Modifier
+                        .graphicsLayer { scaleX = 0.85f + 0.15f * r; scaleY = 0.85f + 0.15f * r }
+                        .fillMaxWidth()
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(28.dp))
+                        .background(Color.White)
+                        .border(2.5.dp, accent.copy(alpha = 0.55f), androidx.compose.foundation.shape.RoundedCornerShape(28.dp))
+                        .padding(horizontal = 20.dp, vertical = 22.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.icon_gold_coin),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(if (hasExtras) 92.dp else 124.dp)
+                            .graphicsLayer { rotationY = (1f - r.coerceIn(0f, 1f)) * 540f }
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = stringResource(R.string.chests_reward_gold, count.value.toInt()),
+                        color = RewardGold,
+                        fontFamily = DisplayFont,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = if (hasExtras) 40.sp else 48.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    if (stage >= 2 && hasExtras) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            reward.jokers.forEach { (type, n) ->
+                                androidx.compose.foundation.layout.Column(
+                                    modifier = Modifier
+                                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                                        .background(type.tint())
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, 40.dp)
+                                    Text("×$n", color = Color.White, fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                                    Text(stringResource(type.shortRes()), color = Color.White.copy(alpha = 0.95f), style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                                }
+                            }
+                        }
+                        reward.penDrop?.let { pen ->
+                            Spacer(modifier = Modifier.height(12.dp))
+                            val colors = pen.colors.map { Color(it) }
+                            androidx.compose.foundation.layout.Row(
                                 modifier = Modifier
-                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
-                                    .background(type.tint().copy(alpha = 0.9f))
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
+                                    .background(RewardInk.copy(alpha = 0.07f))
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, 40.dp)
-                                Text("×$n", color = Color.White, fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-                                Text(stringResource(type.shortRes()), color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                                Box(
+                                    modifier = Modifier
+                                        .size(width = 46.dp, height = 12.dp)
+                                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
+                                        .background(Brush.horizontalGradient(if (colors.size > 1) colors else listOf(colors.first(), colors.first())))
+                                )
+                                Text(
+                                    text = stringResource(R.string.joker_pen_won) + " " + stringResource(pen.labelRes),
+                                    color = RewardInk,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
                             }
                         }
                     }
-                    reward.penDrop?.let { pen ->
-                        Spacer(modifier = Modifier.height(10.dp))
-                        val colors = pen.colors.map { Color(it) }
-                        androidx.compose.foundation.layout.Row(
-                            modifier = Modifier
-                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
-                                .background(Color.White.copy(alpha = 0.16f))
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(width = 46.dp, height = 12.dp)
-                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
-                                    .background(Brush.horizontalGradient(if (colors.size > 1) colors else listOf(colors.first(), colors.first())))
-                            )
-                            Text(
-                                text = stringResource(R.string.joker_pen_won) + " " + stringResource(pen.labelRes),
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
                 }
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(22.dp))
                 if (stage >= 2) {
                     PrimaryButton(
                         text = stringResource(R.string.chests_reward_button),
@@ -426,7 +469,7 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                         modifier = Modifier.width(240.dp)
                     )
                 } else {
-                    Spacer(modifier = Modifier.height(56.dp))
+                    Spacer(modifier = Modifier.height(58.dp))
                 }
             }
         }

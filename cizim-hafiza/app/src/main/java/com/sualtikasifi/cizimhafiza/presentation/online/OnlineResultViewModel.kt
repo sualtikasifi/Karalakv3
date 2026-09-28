@@ -53,7 +53,9 @@ data class OnlineResultUiState(
     val showRatingPrompt: Boolean = false,
     /** Non-null exactly once, right after a 1st-place finish that found a free chest slot. */
     val chestWon: Chest? = null,
-    val chestLost: Boolean = false
+    val chestLost: Boolean = false,
+    /** Set when a win found every chest slot full: the chest was opened on the spot. */
+    val overflowReward: com.sualtikasifi.cizimhafiza.domain.model.ChestReward? = null
 )
 
 @HiltViewModel
@@ -243,14 +245,16 @@ class OnlineResultViewModel @Inject constructor(
                     // Chests are earned ONLY here — a won real online-room
                     // match — never from solo play, Hızlı Eşleş or the daily
                     // challenge (see SettingsRepository.awardChestForWin).
-                    val chestWon = if (placement == 1) settingsRepository.awardChestForWin() else null
-                    val chestLost = placement == 1 && chestWon == null
+                    val chestAward = if (placement == 1) settingsRepository.awardChestForWinOrPay() else null
+                    val chestWon = chestAward?.chest
+                    val chestLost = chestAward?.instantReward != null
                     _uiState.update {
                         it.copy(
                             showSignInPrompt = PostMatchPrompts.shouldShowSignIn(settingsRepository, authRepository.authState.value),
                             showRatingPrompt = PostMatchPrompts.shouldShowRating(settingsRepository),
                             chestWon = chestWon,
-                            chestLost = chestLost
+                            chestLost = chestLost,
+                            overflowReward = chestAward?.instantReward
                         )
                     }
                 }
@@ -268,6 +272,8 @@ class OnlineResultViewModel @Inject constructor(
         }.getOrDefault(emptyMap())
 
     /** Called once when the finished-round comparison is actually showing — see AdManager's placement doc. */
+    fun consumeOverflowReward() = _uiState.update { it.copy(overflowReward = null) }
+
     fun showInterstitial(activity: Activity, onDismissed: () -> Unit = {}) {
         adManager.maybeShowInterstitial(activity, onDismissed)
     }

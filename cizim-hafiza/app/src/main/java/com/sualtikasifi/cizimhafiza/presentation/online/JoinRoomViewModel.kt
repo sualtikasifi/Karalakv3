@@ -50,7 +50,7 @@ class JoinRoomViewModel @Inject constructor(
     // Persisted on every keystroke — see CreateRoomViewModel.setNickname for
     // why both screens write it as it is typed rather than on submit.
     /** False once the player has chosen a name: it can then only be changed once, from the home screen. Read at screen open so typing the first name is not cut off mid-way. */
-    val nicknameEditable: Boolean = !settingsRepository.hasChosenNickname
+    val nicknameEditable: Boolean get() = !settingsRepository.nicknameRenameUsed.value
 
     fun setNickname(name: String) {
         if (!nicknameEditable) return

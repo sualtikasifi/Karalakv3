@@ -66,6 +66,7 @@ fun GameScreen(
     val adUnavailable by viewModel.adUnavailable.collectAsState()
     val xpDoubled by viewModel.resultXpDoubled.collectAsState()
     val ghostItems by viewModel.ghostItems.collectAsState()
+    val overflowChest by viewModel.overflowChestReward.collectAsState()
     val reportState by viewModel.reportState.collectAsState()
     val levelProgress by viewModel.levelProgress.collectAsState()
     val selectedFrame by viewModel.selectedFrame.collectAsState()
@@ -203,8 +204,13 @@ fun GameScreen(
                 reportState = reportState,
                 onDismissReport = viewModel::dismissReport,
                 onRatingBonusGranted = viewModel::grantRatingBonusXp,
-                onRematchDuel = onRematchDuel
+                onRematchDuel = onRematchDuel,
+                levelProgress = levelProgress
             )
         }
+
+    overflowChest?.let { reward ->
+        com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog(reward = reward, onDismiss = viewModel::consumeOverflowChestReward)
+    }
     }
 }

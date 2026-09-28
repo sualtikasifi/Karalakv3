@@ -1,7 +1,6 @@
 package com.sualtikasifi.cizimhafiza.domain.usecase
 
 import com.sualtikasifi.cizimhafiza.domain.model.Difficulty
-import com.sualtikasifi.cizimhafiza.domain.model.XpAwards
 import com.sualtikasifi.cizimhafiza.util.AnswerMatcher
 import com.sualtikasifi.cizimhafiza.util.GameConstants
 import javax.inject.Inject
@@ -22,7 +21,8 @@ class SubmitGuessUseCase @Inject constructor() {
         if (GameConstants.SPEED_BONUS_ENABLED && responseTimeMs < GameConstants.SPEED_BONUS_THRESHOLD_MS) {
             points += GameConstants.SPEED_BONUS_POINTS
         }
-        val xp = XpAwards.wordXp(difficulty = difficulty, responseTimeMs = responseTimeMs)
+        // Score and XP are one currency: every point earned is one XP.
+        val xp = points
         return GuessOutcome(isCorrect = true, pointsAwarded = points, xpAwarded = xp)
     }
 }

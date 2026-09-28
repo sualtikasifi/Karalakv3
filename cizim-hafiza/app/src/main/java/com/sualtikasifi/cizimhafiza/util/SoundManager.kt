@@ -35,7 +35,7 @@ class SoundManager @Inject constructor(
     fun playChestWin() = playSynth(ChestSounds.fanfare)
 
     /** Coins pouring out of an opened chest. */
-    fun playCoinShower() = playSynth(ChestSounds.coins)
+    fun playCoinShower() = playSynth(ChestSounds.reward)
 
     private fun playSynth(samples: ShortArray) {
         if (!settingsRepository.soundEnabled.value) return

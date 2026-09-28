@@ -892,6 +892,15 @@
     <string name="exit_confirm_no">Stay</string>
     <string name="result_double_xp">🎬 Watch an ad, double your %1$d XP</string>
     <string name="result_xp_doubled">🏆 You earned %1$d XP!</string>
+    <string name="result_points_are_xp">You scored %1$d points — added to your XP</string>
+    <string name="result_xp_doubled_note">Your XP was doubled with the ad reward!</string>
+    <string name="result_xp_bonus_applied">🎉 Bonus multiplier</string>
+    <string name="result_level_label">Level %1$d</string>
+    <string name="result_level_up">🎉 LEVEL UP!</string>
+    <string name="result_view_drawings">View Drawings</string>
+    <string name="result_view_drawings_sub">All %1$d drawings on one page</string>
+    <string name="result_x2_button">🎬 x2 XP</string>
+    <string name="result_claim">Claim</string>
     <!-- Home level card: level progress and rank progress read separately -->
     <string name="level_xp_to_next_level">%1$d XP to the next level</string>
     <string name="level_max_reached">You\'re at the top level!</string>
@@ -1097,6 +1106,19 @@
     <string name="nickname_edit_save">Save</string>
     <string name="nickname_edit_cancel">Cancel</string>
     <string name="nickname_edit_invalid">The name must be 2 to 16 characters.</string>
+    <string name="home_ad_gold_label">+500 Gold</string>
+    <string name="home_ad_chest_label">Free Chest</string>
+    <string name="home_ad_watch">Watch</string>
+    <string name="home_ad_gold_earned">You earned 500 gold!</string>
+    <string name="home_ad_unavailable">The ad could not load right now, try again in a moment.</string>
+    <string name="chest_home_start">Start</string>
+    <string name="daily_challenge_ready_short">%1$d words · same for all</string>
+    <string name="username_setup_title">Choose your username</string>
+    <string name="username_setup_warning">Your username is set only ONCE and can never be changed afterwards. Every name belongs to one person. Choose carefully!</string>
+    <string name="username_setup_confirm">Take this name</string>
+    <string name="username_error_invalid">The name must be 2–16 characters using letters, digits, spaces, _ . -</string>
+    <string name="username_error_taken">This username is already taken. Try another one.</string>
+    <string name="username_error_network">Could not connect. Check your internet and try again.</string>
     <string name="daily_play_now">Play Now</string>
     <string name="daily_done_badge">Completed</string>
     <string name="pen_copper">Copper</string>

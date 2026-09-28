@@ -198,10 +198,11 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
             }
         }
         if (!force) {
-            val games = prefs.getInt(KEY_GAMES_SINCE_AD, 0) + 1
-            prefs.edit().putInt(KEY_GAMES_SINCE_AD, games).apply()
-            val sinceLast = System.currentTimeMillis() - prefs.getLong(KEY_LAST_AD_AT, 0L)
-            if (games < INTERSTITIAL_EVERY_N_GAMES || sinceLast < MIN_INTERSTITIAL_GAP_MILLIS) {
+            // Lifetime finished-game counter: the very first game never shows an
+            // ad, after that every second game does (2nd, 4th, 6th, ...).
+            val games = prefs.getInt(KEY_TOTAL_GAMES, 0) + 1
+            prefs.edit().putInt(KEY_TOTAL_GAMES, games).apply()
+            if (games < 2 || games % 2 != 0) {
                 warmUp() // keep the cache warm for next time either way
                 onDismissed()
                 return
@@ -382,6 +383,7 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
     private companion object {
         const val TAG = "AdManager"
         const val PREFS_NAME = "ad_manager_prefs"
+        const val KEY_TOTAL_GAMES = "total_finished_games"
         const val KEY_GAMES_SINCE_AD = "games_since_interstitial"
         const val KEY_LAST_AD_AT = "last_interstitial_at"
 

@@ -148,7 +148,7 @@ class AccountViewModel @Inject constructor(
      * react to, and an abandoned edit costs nothing.
      */
     /** See CreateRoomViewModel.nicknameEditable. */
-    val nicknameEditable: Boolean = !settingsRepository.hasChosenNickname
+    val nicknameEditable: Boolean get() = !settingsRepository.nicknameRenameUsed.value
 
     fun setNicknameDraft(name: String) {
         if (!nicknameEditable) return

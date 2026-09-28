@@ -80,6 +80,9 @@ class AccountDeletionRepositoryImpl @Inject constructor(
             val code = userDoc.get().await().getString("friendCode")
             if (code != null) firestore.collection("friendCodes").document(code).delete().await()
         }
+        runCatching {
+            firestore.collection("usernames").whereEqualTo("uid", uid).get().await().documents.forEach { it.reference.delete().await() }
+        }
         // Recorded rounds live in a flat top-level collection, not under
         // users/{uid}, so the subcollection sweep above cannot reach them —
         // and they carry this player's nickname, level and drawings. A

@@ -234,6 +234,23 @@ service cloud.firestore {
       allow delete: if signedIn() && isParticipant();
     }
 
+    // One-time, globally unique usernames: usernames/{foldedName} →
+    // { uid, name, createdAt }. Create-only (a taken name can never be
+    // overwritten or re-pointed); only the owner may delete it, which is what
+    // frees the name when an account is deleted.
+    match /usernames/{key} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+                    && request.resource.data.keys().hasOnly(['uid', 'name', 'createdAt'])
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() >= 2
+                    && request.resource.data.name.size() <= 16
+                    && key.size() >= 2 && key.size() <= 32;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
     // Permanent friend codes — a code->uid lookup doc that never rotates.
     match /friendCodes/{code} {
       allow read: if signedIn();

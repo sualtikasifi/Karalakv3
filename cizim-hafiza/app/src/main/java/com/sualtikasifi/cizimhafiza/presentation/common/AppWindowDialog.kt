@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -41,7 +43,12 @@ import com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont
  * sheet sliding up from the edge.
  */
 @Composable
-fun AppWindowDialog(title: String, onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+fun AppWindowDialog(
+    title: String,
+    onDismiss: () -> Unit,
+    footer: (@Composable ColumnScope.() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         BoxWithConstraints(
             modifier = Modifier
@@ -84,7 +91,14 @@ fun AppWindowDialog(title: String, onDismiss: () -> Unit, content: @Composable C
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                content()
+                if (footer != null) {
+                    // Body scrolls, footer (the primary action) stays pinned so it can never be pushed off a short screen.
+                    Column(modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) { content() }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    footer()
+                } else {
+                    content()
+                }
             }
         }
     }
