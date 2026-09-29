@@ -891,9 +891,10 @@ private fun RankLadderSheet(progress: LevelProgressState, onDismiss: () -> Unit)
 }
 
 /**
- * The daily challenge as one compact tile: calendar mark, title, one status line and — once a
- * streak exists — its XP multiplier badge. No button inside the button: while today's run is
- * open the whole tile plays it, and a pulsing "Şimdi oyna ▸" line says so.
+ * The daily challenge as one compact, centred tile: the title, one status line and one footer
+ * line, all on the same centre axis. Open: "Şimdi oyna ▸" pulses and the whole tile plays it.
+ * Done: "✓ Tamamlandı" with the streak multiplier and the countdown to tomorrow beneath it.
+ * The streak multiplier chip appears in the footer in both states once a streak exists.
  */
 @Composable
 private fun DailyChallengeCardNarrow(state: DailyChallengeState, onPlay: () -> Unit, modifier: Modifier = Modifier) {
@@ -901,8 +902,6 @@ private fun DailyChallengeCardNarrow(state: DailyChallengeState, onPlay: () -> U
     val top = if (available) Color(0xFF9B6BF2) else Color(0xFF52C378)
     val bottom = if (available) Color(0xFF6440D6) else Color(0xFF2E9A55)
     val edge = if (available) Color(0xFF3F2699) else Color(0xFF1E6E3B)
-    val words = DailyChallenge.WORD_COUNT
-    val correct = state.todayResult?.correctCount ?: 0
     val pulse = rememberInfiniteTransition(label = "dailyPulseCompact").animateFloat(
         initialValue = 0.55f,
         targetValue = 1f,
@@ -910,82 +909,81 @@ private fun DailyChallengeCardNarrow(state: DailyChallengeState, onPlay: () -> U
         label = "dailyPulseCompactFraction"
     )
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    Row(
+    val bold = androidx.compose.ui.text.font.FontWeight.ExtraBold
+    Column(
         modifier = modifier
             .chunky(Brush.verticalGradient(listOf(top, bottom)), edge, corner = 22.dp, lift = 4.dp, rim = Color.White.copy(alpha = 0.35f))
             .then(if (available) Modifier.clickable(interactionSource = interaction, indication = null, onClick = onPlay) else Modifier)
-            .padding(horizontal = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Image(
-            painter = painterResource(R.drawable.daily_calendar_icon),
-            contentDescription = null,
-            modifier = Modifier.size(46.dp)
+        Text(
+            text = stringResource(R.string.daily_challenge_title),
+            fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
+            fontWeight = bold,
+            fontSize = 15.sp,
+            lineHeight = 16.sp,
+            color = Color.White,
+            textAlign = TextAlign.Center,
+            maxLines = 2
         )
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Spacer(modifier = Modifier.height(5.dp))
+        if (available) {
             Text(
-                text = stringResource(R.string.daily_challenge_title),
-                fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                text = stringResource(R.string.daily_play_now) + " ▸",
                 fontSize = 14.sp,
-                lineHeight = 15.sp,
-                color = Color.White,
-                maxLines = 2
+                fontWeight = bold,
+                color = Color(0xFFFFE566),
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                modifier = Modifier.graphicsLayer { alpha = pulse.value }
             )
-            if (available) {
-                Text(
-                    text = stringResource(R.string.daily_challenge_ready_short, words),
-                    fontSize = 10.sp,
-                    lineHeight = 11.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                    color = Color.White.copy(alpha = 0.85f),
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                )
-                Text(
-                    text = stringResource(R.string.daily_play_now) + " ▸",
-                    fontSize = 12.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-                    color = Color(0xFFFFE566),
-                    maxLines = 1,
-                    modifier = Modifier.graphicsLayer { alpha = pulse.value }
-                )
-            } else {
-                Text(
-                    text = "✓ " + stringResource(R.string.daily_challenge_done, correct, words),
-                    fontSize = 10.sp,
-                    lineHeight = 11.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                    color = Color.White.copy(alpha = 0.92f),
-                    maxLines = 2,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "⏳ " + midnightCountdownText(),
-                    fontSize = 11.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-                    color = Color.White,
-                    maxLines = 1
-                )
-            }
+        } else {
+            Text(
+                text = "✓ " + stringResource(R.string.daily_done_badge),
+                fontSize = 14.sp,
+                fontWeight = bold,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
         }
-        if (state.currentStreak > 0) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Image(
-                    painter = painterResource(R.drawable.daily_streak_icon),
-                    contentDescription = null,
-                    modifier = Modifier.size(34.dp)
-                )
-                Text(
-                    text = stringResource(
-                        R.string.daily_challenge_multiplier_badge,
-                        XpAwards.dailyStreakMultiplier(state.currentStreak)
-                    ),
-                    fontSize = 12.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-                    color = Color.White
-                )
+        val showStreak = state.currentStreak > 0
+        if (showStreak || !available) {
+            Spacer(modifier = Modifier.height(5.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
+            ) {
+                if (showStreak) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Image(
+                            painter = painterResource(R.drawable.daily_streak_icon),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.daily_challenge_multiplier_badge,
+                                XpAwards.dailyStreakMultiplier(state.currentStreak)
+                            ),
+                            fontSize = 12.sp,
+                            fontWeight = bold,
+                            color = Color.White,
+                            maxLines = 1
+                        )
+                    }
+                }
+                if (!available) {
+                    Text(
+                        text = "⏳ " + midnightCountdownText(),
+                        fontSize = 12.sp,
+                        fontWeight = bold,
+                        color = Color.White.copy(alpha = 0.95f),
+                        maxLines = 1
+                    )
+                }
             }
         }
     }

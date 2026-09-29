@@ -1121,7 +1121,7 @@
     <string name="nickname_edit_cancel">Vazgeç</string>
     <string name="nickname_edit_invalid">Ad 2 ile 16 karakter arasında olmalı.</string>
     <string name="home_ad_gold_label">+500 Altın</string>
-    <string name="home_ad_chest_label">Bedava Kasa</string>
+    <string name="home_ad_chest_label">Ücretsiz Kasa</string>
     <string name="home_ad_watch">İzle</string>
     <string name="home_ad_gold_earned">+500 altın kazandın!</string>
     <string name="home_ad_unavailable">Reklam şu an yüklenemedi, biraz sonra tekrar dene.</string>

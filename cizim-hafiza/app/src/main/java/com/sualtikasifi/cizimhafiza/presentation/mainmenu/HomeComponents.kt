@@ -1189,12 +1189,12 @@ private fun HomeAdButton(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = 5.dp, end = 5.dp)
-                    .size(18.dp)
+                    .size(22.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.95f)),
+                    .background(Color.White.copy(alpha = if (ready) 0.95f else 0.55f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = edge, modifier = Modifier.size(13.dp))
+                Text(text = "🎬", fontSize = 12.sp)
             }
         }
     }
