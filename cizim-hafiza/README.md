@@ -18,7 +18,7 @@ data/          Room entity/DAO/Database, repository implementasyonu
 domain/        Modeller, repository arayüzü, use case'ler
 presentation/  Compose ekranları, ViewModel'ler, navigation
 di/            Hilt modülleri
-ads/           AdManager (altyapı hazır, canlı reklam çağrısı yok)
+ads/           AdManager (geçiş + ödüllü reklamlar, UMP onayı)
 util/          Constants, AnswerMatcher (Levenshtein), VibratorHelper, SettingsRepository
 ```
 
@@ -37,18 +37,15 @@ kelime var (8 kategori × 83–165). Daha da eklemek için:
 
 ## AdMob
 
-`GameConstants.ADMOB_ENABLED = BuildConfig.DEBUG` — reklam akışı **debug
-build'lerde açık, yayın build'lerinde kapalı**. Akışın tamamı (UMP onayı,
-geçiş reklamı, dört ödüllü reklam girişi) yazılmış ve debug APK'da baştan
-sona denenebilir; birim kimlikleri Google'ın herkese açık TEST kimliklerine
-düşer, dolayısıyla geliştirme sırasında reklamlara serbestçe tıklanabilir —
-kendi *gerçek* biriminize tıklamak AdMob hesabını askıya aldıran şeydir.
+`GameConstants.ADMOB_ENABLED = BuildConfig.DEBUG || BuildConfig.ADMOB_REAL_IDS` —
+reklamlar debug build'lerde (Google'ın herkese açık TEST kimlikleriyle, serbestçe
+tıklanabilir) ve gerçek kimlikler `local.properties`'te varsa release build'lerde
+açıktır. Kimlikler yoksa release reklamsız çıkar ve gelir gelmez; bunu CI'daki
+"release reklam kimlikleri" kontrolü yakalar. Kendi *gerçek* biriminize tıklamak
+AdMob hesabını askıya aldırır.
 
-Yayına açmak tek bir değişiklik: bu satır `true` olur, manifest'teki dört
-`tools:node="remove"` satırı çıkar, `local.properties`'e gerçek ID'ler
-girilir ve Play Console Veri Güvenliği formu + gizlilik politikası reklam
-kimliğini beyan edecek şekilde güncellenir. Dördü aynı sürümde olmalı
-(bkz. PLAY_STORE.md).
+Geçiş reklamı: ilk oyun hariç her ikinci maçta. Ödüllü reklamlar: ipucu, sonuçta
+XP x2, seri kurtarma, 4 saatte bir +500 altın, günde bir bedava kasa.
 
 ## Hız bonusu
 

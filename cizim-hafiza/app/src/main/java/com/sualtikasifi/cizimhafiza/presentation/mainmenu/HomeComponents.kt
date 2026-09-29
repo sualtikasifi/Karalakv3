@@ -927,6 +927,7 @@ private fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, c
                     text = stringResource(tier.labelRes()),
                     fontWeight = FontWeight.ExtraBold,
                     color = tier.onBackdrop(),
+                    style = if (tier == ChestTier.RARE) androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.55f), Offset(0f, 2f), 4f)) else androidx.compose.ui.text.TextStyle.Default,
                     textAlign = TextAlign.Center,
                     maxLines = if (compact) 1 else 2,
                     softWrap = !compact,
@@ -1161,7 +1162,7 @@ private fun HomeAdButton(
             art(if (ready) bounce else 0f)
         }
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            FitText(text = label, color = Color.White, maxSp = 11f, minSp = 7f)
+            FitText(text = label, color = Color.White, maxSp = 12f, minSp = 7f, twoLines = true)
         }
         Box(
             modifier = Modifier
@@ -1195,7 +1196,7 @@ internal fun AdGoldButton(nextAtMillis: Long, onClick: () -> Unit, modifier: Mod
             painter = painterResource(R.drawable.icon_gold_coin),
             contentDescription = null,
             modifier = Modifier
-                .size(46.dp)
+                .size(40.dp)
                 .graphicsLayer {
                     translationY = -6.dp.toPx() * bounce
                     rotationZ = (bounce - 0.5f) * 12f
@@ -1222,7 +1223,7 @@ internal fun AdChestButton(availableToday: Boolean, onClick: () -> Unit, modifie
     ) { bounce ->
         ChestImage(
             tier = ChestTier.GOLD,
-            width = 56.dp,
+            width = 50.dp,
             modifier = Modifier.graphicsLayer {
                 rotationZ = (bounce - 0.5f) * 10f
                 translationY = -4.dp.toPx() * bounce

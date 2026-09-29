@@ -167,11 +167,12 @@ uygulamada (`app/build.gradle.kts`) ve kod yazılmasa bile kendiliğinden
 başlar. Uygulamayı yazan kişinin bunları "kullanmıyorum" sanması Play
 açısından bir savunma değil — paket içindeyse toplanıyordur.
 
-**Reklamlar:** Bu sürümden itibaren reklam **açık**. `GameConstants.ADMOB_ENABLED`
-artık sabit `true` (eskiden `BuildConfig.DEBUG` idi, yani yalnızca debug
-build'de). İki format kullanılıyor: sonuç ekranından sonra en fazla üç maçta
-bir gösterilen bir **geçiş reklamı**, ve kullanıcının kendi başlattığı ek
-ipucu / XP katlayıcı / seri kurtarma için **ödüllü reklamlar**. Banner, native
+**Reklamlar:** `GameConstants.ADMOB_ENABLED = BuildConfig.DEBUG || BuildConfig.ADMOB_REAL_IDS`:
+reklamlar debug build'de ve gerçek AdMob kimlikleri `local.properties`'te varsa
+release build'de açık. İki format: ilk oyun hariç **her ikinci maçın** sonucunda
+gösterilen bir **geçiş reklamı**, ve kullanıcının kendi başlattığı **ödüllü
+reklamlar** (ek ipucu, sonuçta XP x2, seri kurtarma, 4 saatte bir +500 altın,
+günlük bedava kasa). Banner, native
 veya app-open reklam yok. `AD_ID` ve AdServices izinleri artık
 `AndroidManifest.xml`'de kalıcı (bkz. dosyanın başındaki açıklama).
 Formdaki "reklam veya pazarlama" amacı ve "reklam kimliği kullanılıyor mu"

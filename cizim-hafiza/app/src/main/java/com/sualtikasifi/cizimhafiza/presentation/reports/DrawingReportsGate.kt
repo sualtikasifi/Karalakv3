@@ -76,7 +76,7 @@ fun DrawingReportsGate(onBack: () -> Unit, onBotNames: () -> Unit = {}) {
     var entered by remember { mutableStateOf("") }
     var wrong by remember { mutableStateOf(false) }
     val submit = {
-        if (entered == REPORTS_ACCESS_CODE) {
+        if (REPORTS_ACCESS_CODE.isNotEmpty() && entered == REPORTS_ACCESS_CODE) {
             unlocked = true
         } else {
             wrong = true
@@ -136,7 +136,7 @@ fun DrawingReportsGate(onBack: () -> Unit, onBotNames: () -> Unit = {}) {
                         PrimaryButton(
                             text = stringResource(R.string.reports_gate_enter),
                             onClick = submit,
-                            enabled = entered.length == REPORTS_ACCESS_CODE.length,
+                            enabled = REPORTS_ACCESS_CODE.isNotEmpty() && entered.length == REPORTS_ACCESS_CODE.length,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }

@@ -911,7 +911,7 @@ private fun DailyChallengeCardNarrow(state: DailyChallengeState, onPlay: () -> U
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.SpaceEvenly
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
             Image(
                 painter = painterResource(R.drawable.daily_calendar_icon),
                 contentDescription = null,
@@ -925,10 +925,11 @@ private fun DailyChallengeCardNarrow(state: DailyChallengeState, onPlay: () -> U
                 lineHeight = 14.sp,
                 color = Color.White,
                 maxLines = 3,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.weight(1f)
             )
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)) {
             if (state.currentStreak > 0) {
                 Image(
                     painter = painterResource(R.drawable.daily_streak_icon),
@@ -957,6 +958,7 @@ private fun DailyChallengeCardNarrow(state: DailyChallengeState, onPlay: () -> U
                 color = Color.White.copy(alpha = 0.92f),
                 maxLines = 2,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.weight(1f)
             )
         }

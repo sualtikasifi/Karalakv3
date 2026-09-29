@@ -30,6 +30,7 @@ object InviteShareUtil {
             appendLine(context.getString(R.string.share_room_invite))
             appendLine(context.getString(R.string.share_room_code, roomCode))
             appendLine()
+            appendLine(context.getString(R.string.share_invite_link, webInviteLink("join", roomCode)))
             appendLine(context.getString(R.string.share_room_installed, deepLink))
             append(context.getString(R.string.share_room_not_installed, playStoreLink))
         }
@@ -60,11 +61,16 @@ object InviteShareUtil {
             appendLine()
             appendLine(context.getString(R.string.share_friend_code, friendCode))
             appendLine(context.getString(R.string.share_friend_code_instructions))
+            appendLine(context.getString(R.string.share_invite_link, webInviteLink("friend", friendCode)))
             appendLine()
             append(context.getString(R.string.share_room_not_installed, playStoreLink))
         }
         share(context, message)
     }
+
+    /** One https link that opens the app when installed and the Play Store when not (see hosting/davet). */
+    private fun webInviteLink(type: String, code: String) =
+        "https://karalak-b6e11.web.app/davet/?t=$type&c=$code"
 
     private fun playStoreLink() =
         "https://play.google.com/store/apps/details?id=${BuildConfig.APPLICATION_ID}"

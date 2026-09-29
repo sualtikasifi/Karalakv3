@@ -73,10 +73,10 @@ eşleştirilmez, reklam amacıyla kullanılmaz ve satılmaz.
 
 Uygulama, **Google AdMob** aracılığıyla reklam gösterir:
 
-- Sonuç ekranından sonra, en fazla üç maçta bir gösterilen bir **geçiş
+- Sonuç ekranından sonra, ilk oyun hariç her ikinci maçta gösterilen bir **geçiş
   reklamı**.
-- Senin kendi isteğinle açtığın durumlarda (ek ipucu, XP katlayıcı, seri
-  kurtarma) gösterilen **ödüllü reklamlar**. Ödüllü reklamlarda ödül
+- Senin kendi isteğinle açtığın durumlarda (ek ipucu, sonuçta XP x2, seri
+  kurtarma, 4 saatte bir +500 altın, günde bir bedava kasa) gösterilen **ödüllü reklamlar**. Ödüllü reklamlarda ödül
   yalnızca reklamı sonuna kadar izlersen verilir.
 
 Reklam hiçbir zaman kendiliğinden, sen bir işlem başlatmadan gösterilmez.

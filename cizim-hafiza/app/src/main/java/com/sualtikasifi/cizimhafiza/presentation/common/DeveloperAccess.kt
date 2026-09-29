@@ -10,7 +10,7 @@ package com.sualtikasifi.cizimhafiza.presentation.common
  * people meant to get in (a handful of friends helping train it) are told
  * the number directly.
  */
-const val DEVELOPER_ACCESS_CODE = "8991"
+val DEVELOPER_ACCESS_CODE: String = com.sualtikasifi.cizimhafiza.BuildConfig.DEVELOPER_ACCESS_CODE
 
 /**
  * The passcode in front of the report inbox (see DrawingReportsGate) — a
@@ -20,7 +20,7 @@ const val DEVELOPER_ACCESS_CODE = "8991"
  * maintains the game, so it stays its own number even after Bot Eğitim's
  * code has been shared around and forgotten.
  */
-const val REPORTS_ACCESS_CODE = "1593572580"
+val REPORTS_ACCESS_CODE: String = com.sualtikasifi.cizimhafiza.BuildConfig.REPORTS_ACCESS_CODE
 
 /**
  * How many taps on the version line in Settings reveal the report inbox's

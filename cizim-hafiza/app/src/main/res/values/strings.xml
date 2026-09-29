@@ -5,6 +5,7 @@
     <string name="share_room_code">Room code: %1$s</string>
     <string name="share_room_installed">Already have Karalak? %1$s</string>
     <string name="share_room_not_installed">Don\'t have it yet? %1$s</string>
+    <string name="share_invite_link">One tap to open (opens the Play Store if not installed): %1$s</string>
     <string name="share_friend_invite">Be my friend on Karalak! 🎨</string>
     <string name="share_friend_reward_hint">Reach level 5 and you\'ll earn me 500 XP!</string>
     <string name="share_friend_code">My friend code: %1$s</string>

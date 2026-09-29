@@ -77,7 +77,7 @@ fun BotTrainingGate(
     var entered by remember { mutableStateOf("") }
     var wrong by remember { mutableStateOf(false) }
     val submit = {
-        if (entered == DEVELOPER_ACCESS_CODE) {
+        if (DEVELOPER_ACCESS_CODE.isNotEmpty() && entered == DEVELOPER_ACCESS_CODE) {
             viewModel.unlock()
             unlocked = true
         } else {
@@ -153,7 +153,7 @@ fun BotTrainingGate(
                     PrimaryButton(
                         text = stringResource(R.string.bot_training_unlock),
                         onClick = submit,
-                        enabled = entered.length == DEVELOPER_ACCESS_CODE.length,
+                        enabled = DEVELOPER_ACCESS_CODE.isNotEmpty() && entered.length == DEVELOPER_ACCESS_CODE.length,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }

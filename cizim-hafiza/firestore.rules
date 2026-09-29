@@ -497,6 +497,10 @@ service cloud.firestore {
         allow delete: if signedIn() && (request.auth.uid == uid || request.auth.uid == fromUid);
         allow create: if signedIn()
                       && fromUid == request.auth.uid
+                      && request.resource.data.keys().hasOnly(['fromNickname', 'sentAt'])
+                      && request.resource.data.fromNickname is string
+                      && request.resource.data.fromNickname.size() <= 40
+                      && !exists(/databases/$(database)/documents/users/$(uid)/friends/$(request.auth.uid))
                       && !exists(/databases/$(database)/documents/users/$(uid)/blockedUsers/$(request.auth.uid));
         allow update: if false;
       }
@@ -636,7 +640,8 @@ service cloud.firestore {
     // wipe it, or somebody could alternate a cheated round with an honest one
     // and never reach a lockout.
     match /moderationStrikes/{uid} {
-      allow read: if signedIn();
+      // Owner or reviewer only: a strike count is nobody else's business.
+      allow read: if signedIn() && (request.auth.uid == uid || reviewer());
       // Same reasoning as penalties: a count anybody could raise is a count
       // anybody could use to get somebody else locked out.
       allow create, update, delete: if reviewer();

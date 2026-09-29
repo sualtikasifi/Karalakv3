@@ -8,3 +8,7 @@ sdk.dir=/path/to/Android/sdk
 ADMOB_APP_ID=ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY
 ADMOB_INTERSTITIAL_UNIT_ID=ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY
 ADMOB_REWARDED_UNIT_ID=ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY
+
+# Passcodes for the hidden developer screens (Bot Egitim / report inbox). Leave blank to lock them.
+DEVELOPER_ACCESS_CODE=
+REPORTS_ACCESS_CODE=

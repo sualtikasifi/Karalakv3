@@ -58,6 +58,9 @@ android {
         buildConfigField("String", "ADMOB_INTERSTITIAL_UNIT_ID", "\"ca-app-pub-3940256099942544/1033173712\"")
         buildConfigField("String", "ADMOB_REWARDED_UNIT_ID", "\"ca-app-pub-3940256099942544/5224354917\"")
         buildConfigField("boolean", "ADMOB_REAL_IDS", "false")
+        // Developer-screen passcodes live in local.properties (gitignored), never in source. Blank = that screen is locked for everyone.
+        buildConfigField("String", "DEVELOPER_ACCESS_CODE", adUnitId("DEVELOPER_ACCESS_CODE", ""))
+        buildConfigField("String", "REPORTS_ACCESS_CODE", adUnitId("REPORTS_ACCESS_CODE", ""))
         buildConfigField("String", "ADMOB_TEST_DEVICE_ID", "\"${localProperties.getProperty("ADMOB_TEST_DEVICE_ID", "")}\"")
 
         // The Play Services Ads manifest merger requires this meta-data tag
@@ -147,6 +150,9 @@ android {
     }
 }
 
+// Exported schemas double as the fixtures for the migration test (androidTest).
+android.sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
@@ -220,6 +226,9 @@ dependencies {
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.firebase.messaging.ktx)
+    // App Check: Firestore/Auth calls carry an attestation token, so scripts that hit the backend directly can be refused once enforcement is switched on in the console.
+    implementation(libs.firebase.appcheck.playintegrity)
+    debugImplementation(libs.firebase.appcheck.debug)
     // Crashlytics: 60+ awaited Firestore calls and a large Compose surface
     // mean field crashes are otherwise completely invisible — there is no
     // other channel telling us what breaks on real devices.
@@ -256,5 +265,22 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.room.testing)
     androidTestImplementation(platform(libs.androidx.compose.bom))
+}
+
+// Guard for the mistake that costs the most: a release that ships without the
+// real AdMob IDs shows no ad offers and earns nothing. Warns on every release
+// build; with -PrequireRealAds (what the Release workflow passes) it refuses.
+run {
+    val realAdKeys = listOf("ADMOB_APP_ID", "ADMOB_INTERSTITIAL_UNIT_ID", "ADMOB_REWARDED_UNIT_ID")
+    tasks.matching { it.name == "bundleRelease" || it.name == "assembleRelease" }.configureEach {
+        doFirst {
+            val missing = realAdKeys.filter { localProperties.getProperty(it).isNullOrBlank() }
+            if (missing.isNotEmpty()) {
+                val msg = "Release build has NO real AdMob IDs (missing: ${missing.joinToString()}): ads will be off and earn nothing."
+                if (project.hasProperty("requireRealAds")) throw GradleException(msg) else logger.warn("WARNING: $msg")
+            }
+        }
+    }
 }

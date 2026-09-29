@@ -46,6 +46,13 @@ class CizimHafizaApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
 
+        // Must be installed before any Firebase call. Harmless until App Check
+        // enforcement is switched on in the Firebase console.
+        runCatching {
+            com.google.firebase.FirebaseApp.initializeApp(this)
+            com.google.firebase.appcheck.FirebaseAppCheck.getInstance().installAppCheckProviderFactory(AppCheckProvider.factory())
+        }
+
         // Ads are NOT initialised here any more: consent has to be
         // gathered first, and Google's UMP form needs an Activity to show
         // itself. Both now happen together in MainActivity.onCreate — see
