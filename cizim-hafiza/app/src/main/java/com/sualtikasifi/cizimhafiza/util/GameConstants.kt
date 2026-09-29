@@ -122,6 +122,14 @@ object GameConstants {
      */
     val ADMOB_ENABLED: Boolean = BuildConfig.DEBUG || BuildConfig.ADMOB_REAL_IDS
 
+    /**
+     * Firebase App Check. OFF until the app is registered in the Firebase console (Play Integrity +
+     * the debug token) and enforcement is about to be switched on: while it is installed every
+     * Firestore/Auth call first waits for an attestation token, so a phone where that token
+     * cannot be fetched stalls the whole backend for no benefit.
+     */
+    const val APP_CHECK_ENABLED = false
+
     // --- Gold from playing (chests are not the only source) ---
 
     /** Gold per achievement unlocked. */

@@ -46,9 +46,8 @@ class CizimHafizaApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
 
-        // Must be installed before any Firebase call. Harmless until App Check
-        // enforcement is switched on in the Firebase console.
-        runCatching {
+        // Must be installed before any Firebase call. Off by default — see GameConstants.APP_CHECK_ENABLED.
+        if (com.sualtikasifi.cizimhafiza.util.GameConstants.APP_CHECK_ENABLED) runCatching {
             com.google.firebase.FirebaseApp.initializeApp(this)
             com.google.firebase.appcheck.FirebaseAppCheck.getInstance().installAppCheckProviderFactory(AppCheckProvider.factory())
         }

@@ -383,11 +383,19 @@ internal fun GradientModeCard(
     edge: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    boost: com.sualtikasifi.cizimhafiza.domain.repository.XpEvent? = null
+    boost: com.sualtikasifi.cizimhafiza.domain.repository.XpEvent? = null,
+    /** A bright streak of light circling the card's edge, to draw the eye to it. */
+    orbit: Boolean = false
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.96f else 1f, label = "modePress")
+    val orbitAngle by rememberInfiniteTransition(label = "modeOrbit").animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(2800, easing = androidx.compose.animation.core.LinearEasing)),
+        label = "modeOrbitAngle"
+    )
 
     // The event can run out while the home screen is open: flip the effect off
     // at the moment it ends instead of waiting for a recomposition.
@@ -422,6 +430,7 @@ internal fun GradientModeCard(
                     } else Modifier
                 )
                 .chunky(Brush.verticalGradient(listOf(top, bottom)), edge, corner = 24.dp, lift = 5.dp, rim = Color.White.copy(alpha = 0.35f))
+                .then(if (orbit) Modifier.drawWithContent { drawContent(); drawOrbit(orbitAngle, 24.dp.toPx()) } else Modifier)
                 .clickable(interactionSource = interaction, indication = null, onClick = onClick)
                 .padding(start = 2.dp, end = 2.dp, top = 4.dp, bottom = 3.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -1106,14 +1115,18 @@ private fun hms(totalSeconds: Long): String {
     return "%d:%02d:%02d".format(s / 3600, (s % 3600) / 60, s % 60)
 }
 
-/** A chunky side button with a bouncing icon, a moving sheen while it can be used, and a countdown while it cannot. */
+/**
+ * A chunky side tile: bouncing art, a two-line label, and — only while it cannot be used — a
+ * countdown in place of any call to action. While it is ready the whole tile is the button; a
+ * small ▶ badge in the corner and a moving sheen say so, instead of a second button inside it.
+ */
 @Composable
 private fun HomeAdButton(
     ready: Boolean,
     face: List<Color>,
     edge: Color,
     label: String,
-    footer: String,
+    countdown: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     art: @Composable (bounce: Float) -> Unit
@@ -1136,43 +1149,53 @@ private fun HomeAdButton(
     val press by animateFloatAsState(if (pressed) 0.95f else 1f, label = "adPress")
     val colors = if (ready) face else listOf(Color(0xFFB8B2A6), Color(0xFF8F897C))
     val rim = if (ready) edge else Color(0xFF5E584B)
-    Column(
-        modifier = modifier
-            .graphicsLayer { scaleX = press; scaleY = press }
-            .chunky(Brush.verticalGradient(colors), rim, corner = 20.dp, lift = 4.dp, rim = Color.White.copy(alpha = 0.45f))
-            .drawWithContent {
-                drawContent()
-                if (ready) {
-                    val x = size.width * sheen
-                    drawRect(
-                        brush = Brush.horizontalGradient(
-                            listOf(Color.Transparent, Color.White.copy(alpha = 0.38f), Color.Transparent),
-                            startX = x - 22.dp.toPx(),
-                            endX = x + 22.dp.toPx()
+    Box(modifier = modifier.graphicsLayer { scaleX = press; scaleY = press }) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .chunky(Brush.verticalGradient(colors), rim, corner = 20.dp, lift = 4.dp, rim = Color.White.copy(alpha = 0.45f))
+                .drawWithContent {
+                    drawContent()
+                    if (ready) {
+                        val x = size.width * sheen
+                        drawRect(
+                            brush = Brush.horizontalGradient(
+                                listOf(Color.Transparent, Color.White.copy(alpha = 0.38f), Color.Transparent),
+                                startX = x - 22.dp.toPx(),
+                                endX = x + 22.dp.toPx()
+                            )
                         )
-                    )
+                    }
+                }
+                .clickable(interactionSource = interaction, indication = null, enabled = ready, onClick = onClick)
+                .padding(horizontal = 4.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Box(modifier = Modifier.weight(1f, fill = false), contentAlignment = Alignment.Center) {
+                art(if (ready) bounce else 0f)
+            }
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                FitText(text = label, color = Color.White, maxSp = 12f, minSp = 7f, twoLines = true)
+            }
+            if (countdown != null) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    FitText(text = "⏳ $countdown", color = Color.White.copy(alpha = 0.95f), maxSp = 10f, minSp = 7f)
                 }
             }
-            .clickable(interactionSource = interaction, indication = null, enabled = ready, onClick = onClick)
-            .padding(horizontal = 3.dp, vertical = 5.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceEvenly
-    ) {
-        Box(modifier = Modifier.weight(1f, fill = false), contentAlignment = Alignment.Center) {
-            art(if (ready) bounce else 0f)
         }
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            FitText(text = label, color = Color.White, maxSp = 12f, minSp = 7f, twoLines = true)
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(if (ready) Color.White.copy(alpha = 0.92f) else Color.Black.copy(alpha = 0.22f))
-                .padding(vertical = 3.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            FitText(text = footer, color = if (ready) Ink else Color.White, maxSp = 10f, minSp = 7f)
+        if (ready) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 5.dp, end = 5.dp)
+                    .size(18.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.95f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = edge, modifier = Modifier.size(13.dp))
+            }
         }
     }
 }
@@ -1188,7 +1211,7 @@ internal fun AdGoldButton(nextAtMillis: Long, onClick: () -> Unit, modifier: Mod
         face = listOf(Color(0xFFFFDB5C), Color(0xFFF59E0B)),
         edge = Color(0xFFB36B00),
         label = stringResource(R.string.home_ad_gold_label),
-        footer = if (ready) "🎬 " + stringResource(R.string.home_ad_watch) else hms(remaining / 1000),
+        countdown = if (ready) null else hms(remaining / 1000),
         onClick = onClick,
         modifier = modifier
     ) { bounce ->
@@ -1217,7 +1240,7 @@ internal fun AdChestButton(availableToday: Boolean, onClick: () -> Unit, modifie
         face = listOf(Color(0xFF6CC3FF), Color(0xFF2C7FDB)),
         edge = Color(0xFF14549A),
         label = stringResource(R.string.home_ad_chest_label),
-        footer = if (availableToday) "🎬 " + stringResource(R.string.home_ad_watch) else hms(remaining / 1000),
+        countdown = if (availableToday) null else hms(remaining / 1000),
         onClick = onClick,
         modifier = modifier
     ) { bounce ->
@@ -1231,4 +1254,51 @@ internal fun AdChestButton(availableToday: Boolean, onClick: () -> Unit, modifie
             }
         )
     }
+}
+
+/**
+ * A comet of light travelling once around the rounded edge: a bright head with a fading tail,
+ * drawn as a sweep-gradient stroke whose shader is rotated each frame (rotating the canvas
+ * instead would spin the rounded rectangle itself).
+ */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawOrbit(angleDegrees: Float, cornerPx: Float) {
+    val w = size.width
+    val h = size.height
+    val cx = w / 2f
+    val cy = h / 2f
+    val shader = android.graphics.SweepGradient(
+        cx, cy,
+        intArrayOf(
+            android.graphics.Color.TRANSPARENT,
+            android.graphics.Color.TRANSPARENT,
+            android.graphics.Color.argb(120, 255, 236, 150),
+            android.graphics.Color.argb(255, 255, 255, 255),
+            android.graphics.Color.TRANSPARENT
+        ),
+        floatArrayOf(0f, 0.55f, 0.85f, 0.985f, 1f)
+    ).apply {
+        setLocalMatrix(android.graphics.Matrix().apply { postRotate(angleDegrees, cx, cy) })
+    }
+    val brush = object : androidx.compose.ui.graphics.ShaderBrush() {
+        override fun createShader(size: androidx.compose.ui.geometry.Size) = shader
+    }
+    val stroke = 3.dp.toPx()
+    val inset = stroke / 2f
+    val rectSize = androidx.compose.ui.geometry.Size(w - stroke, h - stroke)
+    // Soft halo under the sharp line.
+    drawRoundRect(
+        brush = brush,
+        topLeft = Offset(inset, inset),
+        size = rectSize,
+        cornerRadius = CornerRadius(cornerPx),
+        alpha = 0.35f,
+        style = Stroke(width = stroke * 3f)
+    )
+    drawRoundRect(
+        brush = brush,
+        topLeft = Offset(inset, inset),
+        size = rectSize,
+        cornerRadius = CornerRadius(cornerPx),
+        style = Stroke(width = stroke)
+    )
 }
