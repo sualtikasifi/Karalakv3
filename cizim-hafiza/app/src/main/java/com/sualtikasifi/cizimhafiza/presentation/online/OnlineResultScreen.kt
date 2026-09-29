@@ -261,6 +261,7 @@ fun OnlineResultScreen(
                         name = player.displayName,
                         level = player.level,
                         frameId = player.frameId,
+                        avatarUrl = player.avatarUrl,
                         score = player.totalScore,
                         correctCount = player.correctCount,
                         totalWords = player.correctCount + player.wrongCount,
@@ -279,6 +280,7 @@ fun OnlineResultScreen(
                         name = player.displayName,
                         level = player.level,
                         frameId = player.frameId,
+                        avatarUrl = player.avatarUrl,
                         score = player.totalScore,
                         correctCount = player.correctCount,
                         totalWords = player.correctCount + player.wrongCount,
@@ -570,6 +572,7 @@ private fun PlayerScoreCard(
     name: String,
     level: Int,
     frameId: String?,
+    avatarUrl: String = "",
     score: Int,
     correctCount: Int,
     totalWords: Int,
@@ -607,6 +610,8 @@ private fun PlayerScoreCard(
                     LevelAvatar(
                         level = level,
                         frame = AvatarFrame.resolve(frameId, level),
+                        photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(avatarUrl),
+                        levelBadge = true,
                         size = 42.dp,
                         ready = ready,
                         modifier = Modifier.padding(end = 8.dp)

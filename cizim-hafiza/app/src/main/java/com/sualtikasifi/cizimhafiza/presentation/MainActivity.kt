@@ -161,6 +161,7 @@ class MainActivity : AppCompatActivity() {
                         tutorialCompleted = tutorialCompleted
                     )
                     RequestNotificationPermissionOnce(settingsRepository)
+                    com.sualtikasifi.cizimhafiza.presentation.common.UsernameFinalizeHost()
                     GoogleSignInLauncherHost(googleSignInLauncher)
                     StartMusicAfterFirstFrame(musicPlayer)
                     // Over the app, not instead of it: the nav graph above

@@ -206,6 +206,20 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     private val _nicknameRenameUsed = MutableStateFlow(prefs.getBoolean(KEY_NICKNAME_RENAME_USED, false))
     val nicknameRenameUsed: StateFlow<Boolean> = _nicknameRenameUsed.asStateFlow()
 
+    /** Which picture sits inside the avatar frame: "DINO", "GOOGLE", or "" (automatic: the Google photo when signed in). */
+    private val _avatarSource = MutableStateFlow(prefs.getString(KEY_AVATAR_SOURCE, "") ?: "")
+    val avatarSource: StateFlow<String> = _avatarSource.asStateFlow()
+
+    fun setAvatarSource(value: String) {
+        prefs.edit { putString(KEY_AVATAR_SOURCE, value) }
+        _avatarSource.value = value
+    }
+
+    /** How many times this account has already changed its auto-assigned username before the final lock. */
+    var usernameChanges: Int
+        get() = prefs.getInt(KEY_USERNAME_CHANGES, 0)
+        set(value) = prefs.edit { putInt(KEY_USERNAME_CHANGES, value) }
+
     /** Stores the server-verified username and locks it for good. */
     fun lockUsername(name: String) {
         setNickname(name)
@@ -903,6 +917,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         _lifetimeWordsDrawn.value = 0
         _nickname.value = ""
         _nicknameRenameUsed.value = false
+        _avatarSource.value = ""
         _selectedAvatarFrameId.value = AvatarFrame.DEFAULT.name
         _selectedPenSkinId.value = PenSkin.DEFAULT.name
         _periodXp.value = 0
@@ -941,6 +956,8 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         // previous player's "leave it blank" decision.
         putBoolean(KEY_NICKNAME_CHOSEN, false)
         remove(KEY_NICKNAME_RENAME_USED)
+        remove(KEY_USERNAME_CHANGES)
+        remove(KEY_AVATAR_SOURCE)
         putString(KEY_SELECTED_AVATAR_FRAME, AvatarFrame.DEFAULT.name)
         putString(KEY_SELECTED_PEN_SKIN, PenSkin.DEFAULT.name)
         // The league standing is this player's, not the phone's —
@@ -1232,6 +1249,8 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_RATING_BONUS_XP_GRANTED = "rating_bonus_xp_granted"
         const val KEY_NICKNAME_CHOSEN = "nickname_chosen_by_player"
         const val KEY_NICKNAME_RENAME_USED = "nickname_rename_used"
+        const val KEY_USERNAME_CHANGES = "username_changes"
+        const val KEY_AVATAR_SOURCE = "avatar_source"
         const val NICKNAME_MIN = 2
         const val NICKNAME_MAX = 16
         const val KEY_BOT_TRAINING_UNLOCKED = "bot_training_unlocked"

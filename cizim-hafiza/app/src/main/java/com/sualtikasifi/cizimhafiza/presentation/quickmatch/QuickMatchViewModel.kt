@@ -51,7 +51,8 @@ data class QuickMatchPlayerSnapshot(
     val nickname: String,
     val level: Int,
     val frameId: String,
-    val lifetimeXp: Int
+    val lifetimeXp: Int,
+    val avatarUrl: String = ""
 )
 
 @HiltViewModel
@@ -60,7 +61,8 @@ class QuickMatchViewModel @Inject constructor(
     private val getWordsByIdsUseCase: GetWordsByIdsUseCase,
     private val settingsRepository: SettingsRepository,
     private val penaltyRepository: PenaltyRepository,
-    private val wordPoolSynchronizer: WordPoolSynchronizer
+    private val wordPoolSynchronizer: WordPoolSynchronizer,
+    private val avatarPhotoResolver: com.sualtikasifi.cizimhafiza.util.AvatarPhotoResolver
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<QuickMatchState>(QuickMatchState.Searching)
@@ -132,7 +134,8 @@ class QuickMatchViewModel @Inject constructor(
                 nickname = settingsRepository.nicknameOrDefault,
                 level = level,
                 frameId = settingsRepository.selectedAvatarFrameId.value,
-                lifetimeXp = myXp
+                lifetimeXp = myXp,
+                avatarUrl = avatarPhotoResolver.currentUrl()
             )
             // Prefer an opponent whose words the player has NOT played lately,
             // so Hızlı Eşleş does not keep dealing the same handful of words.

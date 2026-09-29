@@ -1122,7 +1122,7 @@
     <string name="nickname_edit_invalid">Ad 2 ile 16 karakter arasında olmalı.</string>
     <string name="home_ad_gold_label">+500 Altın</string>
     <string name="home_ad_chest_label">Ücretsiz Kasa</string>
-    <string name="home_ad_watch">İzle</string>
+    <string name="home_ad_watch">Reklam izle</string>
     <string name="home_ad_gold_earned">+500 altın kazandın!</string>
     <string name="home_ad_unavailable">Reklam şu an yüklenemedi, biraz sonra tekrar dene.</string>
     <string name="chest_home_start">Başlat</string>
@@ -1133,6 +1133,18 @@
     <string name="username_error_invalid">Ad 2–16 karakter olmalı; yalnızca harf, rakam, boşluk, _ . - kullanılabilir.</string>
     <string name="username_error_taken">Bu kullanıcı adı daha önce alınmış. Başka bir ad dene.</string>
     <string name="username_error_network">Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.</string>
+    <string name="home_level_inline">%1$d Seviye</string>
+    <string name="avatar_source_title">Profil görseli</string>
+    <string name="avatar_source_karalak">Karalak</string>
+    <string name="avatar_source_google">Google fotoğrafım</string>
+    <string name="avatar_source_google_locked">Google fotoğrafını kullanmak için Google ile giriş yap.</string>
+    <string name="avatar_frame_section">Çerçeve</string>
+    <string name="username_finalize_title">Kullanıcı adını sabitle</string>
+    <string name="username_finalize_body">Google hesabın bağlandı. Kullanıcı adın ve profilin bu hesapla eşleşecek. Adı bu son seferde değiştirebilirsin, sonra kalıcı olur.</string>
+    <string name="username_finalize_keep">Böyle kalsın (kalıcı)</string>
+    <string name="username_finalize_change">Değiştir ve kalıcı yap</string>
+    <string name="username_finalize_later">Şimdi değil</string>
+    <string name="username_change_taken_hint">Adı Google\'a bağlamadan önce bir kez değiştirebilirsin.</string>
     <string name="daily_play_now">Şimdi Oyna</string>
     <string name="daily_done_badge">Tamamlandı</string>
     <string name="pen_copper">Bakır</string>

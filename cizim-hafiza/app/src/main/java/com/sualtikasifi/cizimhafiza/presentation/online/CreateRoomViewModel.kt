@@ -62,7 +62,7 @@ class CreateRoomViewModel @Inject constructor(
     // created meant typing a name here and backing out left the other
     // screen still showing the old one.
     /** False once the player has chosen a name: it can then only be changed once, from the home screen. Read at screen open so typing the first name is not cut off mid-way. */
-    val nicknameEditable: Boolean get() = !settingsRepository.nicknameRenameUsed.value
+    val nicknameEditable: Boolean = false
 
     fun setNickname(name: String) {
         if (!nicknameEditable) return

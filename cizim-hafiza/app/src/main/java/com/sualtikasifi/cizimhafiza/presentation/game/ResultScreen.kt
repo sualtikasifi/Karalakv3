@@ -532,7 +532,9 @@ private fun GhostVersusCard(ghost: GhostMatchSummary, playerScore: Int) {
                         LevelAvatar(
                             level = ghost.level,
                             frame = AvatarFrame.resolve(ghost.frameId, ghost.level),
-                            size = 32.dp
+                            size = 32.dp,
+                            photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Dino,
+                            levelBadge = true
                         )
                     }
                 )

@@ -97,7 +97,7 @@ interface FriendRepository {
      * profile document, so friends can read it without a per-player
      * subcollection. Safe to call often — it is a single merged write.
      */
-    suspend fun publishLeagueScore(nickname: String, periodXp: Int, periodId: Long, level: Int, frameId: String)
+    suspend fun publishLeagueScore(nickname: String, periodXp: Int, periodId: Long, level: Int, frameId: String, avatarUrl: String)
 
     /**
      * The player's own row plus every friend's, already ranked — see

@@ -150,6 +150,7 @@ internal fun HomeProfileBar(
     nickname: String,
     progress: LevelProgressState,
     frame: AvatarFrame,
+    photo: com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto,
     pen: PenSkin,
     gold: Int,
     onFrameClick: () -> Unit,
@@ -174,6 +175,7 @@ internal fun HomeProfileBar(
             LevelAvatar(
                 level = progress.level,
                 frame = frame,
+                photo = photo,
                 size = 64.dp,
                 modifier = Modifier.clickable(onClick = onFrameClick).a11yButton(stringResource(R.string.avatar_frame_change_cd))
             )
@@ -192,6 +194,14 @@ internal fun HomeProfileBar(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
+                    )
+                    Text(
+                        text = "• " + stringResource(R.string.home_level_inline, progress.level),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = InkSoft.copy(alpha = 0.85f),
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
                 Spacer(modifier = Modifier.height(3.dp))
@@ -624,73 +634,6 @@ internal fun GradientTile(
     }
 }
 
-/** First-run username choice. Not dismissable: the name is unique, stored online, and can never be changed afterwards. */
-@Composable
-internal fun UsernameSetupDialog(initial: String, onClaim: suspend (String) -> com.sualtikasifi.cizimhafiza.util.UsernameClaimResult) {
-    var text by remember { mutableStateOf(initial) }
-    var error by remember { mutableStateOf<Int?>(null) }
-    var busy by remember { mutableStateOf(false) }
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
-    androidx.compose.ui.window.Dialog(
-        onDismissRequest = {},
-        properties = androidx.compose.ui.window.DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
-    ) {
-        com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard(corner = 28.dp, raise = 8.dp, modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(R.string.username_setup_title),
-                    fontFamily = DisplayFont,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 22.sp,
-                    color = Ink,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.username_setup_warning),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-                AppTextField(
-                    value = text,
-                    onValueChange = { if (it.length <= 16 && !busy) { text = it; error = null } },
-                    placeholder = stringResource(R.string.nickname_edit_hint),
-                    centered = true
-                )
-                error?.let {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(stringResource(it), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton(
-                    text = stringResource(R.string.username_setup_confirm),
-                    onClick = {
-                        if (busy) return@PrimaryButton
-                        busy = true
-                        scope.launch {
-                            error = when (onClaim(text)) {
-                                com.sualtikasifi.cizimhafiza.util.UsernameClaimResult.Invalid -> R.string.username_error_invalid
-                                com.sualtikasifi.cizimhafiza.util.UsernameClaimResult.Taken -> R.string.username_error_taken
-                                com.sualtikasifi.cizimhafiza.util.UsernameClaimResult.NetworkError -> R.string.username_error_network
-                                else -> null
-                            }
-                            busy = false
-                        }
-                    },
-                    enabled = !busy && text.trim().length >= 2,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
-    }
-}
-
 /** Every pen, locked ones dimmed with the level that opens them; tapping an unlocked one equips it. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -999,7 +942,7 @@ private fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, c
  * seven-digit gold balance stays inside its chip.
  */
 @Composable
-private fun FitText(text: String, color: Color, maxSp: Float = 12f, minSp: Float = 6f, twoLines: Boolean = false) {
+internal fun FitText(text: String, color: Color, maxSp: Float = 12f, minSp: Float = 6f, twoLines: Boolean = false, textAlign: TextAlign = TextAlign.Center, style: androidx.compose.ui.text.TextStyle = androidx.compose.ui.text.TextStyle.Default) {
     val measurer = androidx.compose.ui.text.rememberTextMeasurer()
     // A multi-word name breaks at the space nearest its middle, so "Kurşun Halka" becomes "Kurşun / Halka".
     val mid = text.length / 2
@@ -1017,11 +960,12 @@ private fun FitText(text: String, color: Color, maxSp: Float = 12f, minSp: Float
         val sp = if (natural <= available || natural == 0) maxSp else (maxSp * available / natural).coerceAtLeast(minSp)
         Text(
             text = shown,
+            style = style,
             fontFamily = DisplayFont,
             fontWeight = FontWeight.ExtraBold,
             fontSize = sp.sp,
             lineHeight = (sp * 1.05f).sp,
-            textAlign = TextAlign.Center,
+            textAlign = textAlign,
             color = color,
             maxLines = lines,
             softWrap = false
@@ -1116,9 +1060,10 @@ private fun hms(totalSeconds: Long): String {
 }
 
 /**
- * A chunky side tile: bouncing art, a two-line label, and — only while it cannot be used — a
- * countdown in place of any call to action. While it is ready the whole tile is the button; a
- * small ▶ badge in the corner and a moving sheen say so, instead of a second button inside it.
+ * A reward tile with the usual mobile-game anatomy: art on top, the reward in a two-line centred
+ * caption, and an edge-to-edge footer band that says what the tap does. The band is part of the
+ * tile (not a button inside it) and is what tells the player a video ad is coming — "🎬 Reklam
+ * izle" while ready, "⏳ 3:59:12" while cooling down.
  */
 @Composable
 private fun HomeAdButton(
@@ -1126,7 +1071,7 @@ private fun HomeAdButton(
     face: List<Color>,
     edge: Color,
     label: String,
-    countdown: String?,
+    footer: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     art: @Composable (bounce: Float) -> Unit
@@ -1149,52 +1094,50 @@ private fun HomeAdButton(
     val press by animateFloatAsState(if (pressed) 0.95f else 1f, label = "adPress")
     val colors = if (ready) face else listOf(Color(0xFFB8B2A6), Color(0xFF8F897C))
     val rim = if (ready) edge else Color(0xFF5E584B)
-    Box(modifier = modifier.graphicsLayer { scaleX = press; scaleY = press }) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .chunky(Brush.verticalGradient(colors), rim, corner = 20.dp, lift = 4.dp, rim = Color.White.copy(alpha = 0.45f))
-                .drawWithContent {
-                    drawContent()
-                    if (ready) {
-                        val x = size.width * sheen
-                        drawRect(
-                            brush = Brush.horizontalGradient(
-                                listOf(Color.Transparent, Color.White.copy(alpha = 0.38f), Color.Transparent),
-                                startX = x - 22.dp.toPx(),
-                                endX = x + 22.dp.toPx()
-                            )
+    val shadow = androidx.compose.ui.text.TextStyle(
+        shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.35f), Offset(0f, 2f), 3f)
+    )
+    Column(
+        modifier = modifier
+            .graphicsLayer { scaleX = press; scaleY = press }
+            .chunky(Brush.verticalGradient(colors), rim, corner = 20.dp, lift = 4.dp, rim = Color.White.copy(alpha = 0.45f))
+            .drawWithContent {
+                drawContent()
+                if (ready) {
+                    val x = size.width * sheen
+                    drawRect(
+                        brush = Brush.horizontalGradient(
+                            listOf(Color.Transparent, Color.White.copy(alpha = 0.32f), Color.Transparent),
+                            startX = x - 22.dp.toPx(),
+                            endX = x + 22.dp.toPx()
                         )
-                    }
+                    )
                 }
-                .clickable(interactionSource = interaction, indication = null, enabled = ready, onClick = onClick)
-                .padding(horizontal = 4.dp, vertical = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly
+            }
+            .clickable(interactionSource = interaction, indication = null, enabled = ready, onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth().height(48.dp).padding(top = 6.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Box(modifier = Modifier.weight(1f, fill = false), contentAlignment = Alignment.Center) {
-                art(if (ready) bounce else 0f)
-            }
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                FitText(text = label, color = Color.White, maxSp = 12f, minSp = 7f, twoLines = true)
-            }
-            if (countdown != null) {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    FitText(text = "⏳ $countdown", color = Color.White.copy(alpha = 0.95f), maxSp = 10f, minSp = 7f)
-                }
-            }
+            art(if (ready) bounce else 0f)
         }
-        if (ready) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 5.dp, end = 5.dp)
-                    .size(22.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = if (ready) 0.95f else 0.55f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "🎬", fontSize = 12.sp)
+        Box(
+            modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 4.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            FitText(text = label, color = Color.White, maxSp = 13f, minSp = 8f, twoLines = true, style = shadow)
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(24.dp)
+                .background(Color.Black.copy(alpha = if (ready) 0.30f else 0.22f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(modifier = Modifier.padding(horizontal = 9.dp)) {
+                FitText(text = footer, color = Color.White, maxSp = 9.5f, minSp = 7f)
             }
         }
     }
@@ -1211,7 +1154,7 @@ internal fun AdGoldButton(nextAtMillis: Long, onClick: () -> Unit, modifier: Mod
         face = listOf(Color(0xFFFFDB5C), Color(0xFFF59E0B)),
         edge = Color(0xFFB36B00),
         label = stringResource(R.string.home_ad_gold_label),
-        countdown = if (ready) null else hms(remaining / 1000),
+        footer = if (ready) "🎬 " + stringResource(R.string.home_ad_watch) else "⏳ " + hms(remaining / 1000),
         onClick = onClick,
         modifier = modifier
     ) { bounce ->
@@ -1240,7 +1183,7 @@ internal fun AdChestButton(availableToday: Boolean, onClick: () -> Unit, modifie
         face = listOf(Color(0xFF6CC3FF), Color(0xFF2C7FDB)),
         edge = Color(0xFF14549A),
         label = stringResource(R.string.home_ad_chest_label),
-        countdown = if (availableToday) null else hms(remaining / 1000),
+        footer = if (availableToday) "🎬 " + stringResource(R.string.home_ad_watch) else "⏳ " + hms(remaining / 1000),
         onClick = onClick,
         modifier = modifier
     ) { bounce ->

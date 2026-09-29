@@ -160,6 +160,7 @@ fun WaitingRoomScreen(
             name = it.displayName,
             level = it.level,
             frame = AvatarFrame.resolve(it.frameId, it.level),
+            avatarUrl = it.avatarUrl,
             ready = amReady,
             isYou = true,
             pending = amPending,
@@ -178,6 +179,7 @@ fun WaitingRoomScreen(
             uid = player.uid,
             name = player.displayName,
             level = if (isBot) BotRoomEngine.BOT_LEVEL else player.level,
+            avatarUrl = if (isBot) "" else player.avatarUrl,
             frame = if (isBot) {
                 AvatarFrame.highestUnlockedFor(BotRoomEngine.BOT_LEVEL)
             } else {
@@ -654,6 +656,7 @@ private data class PlayerSlotUiState(
     val name: String,
     val level: Int,
     val frame: AvatarFrame,
+    val avatarUrl: String = "",
     val ready: Boolean,
     val isYou: Boolean,
     val pending: Boolean,
@@ -733,7 +736,13 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                 // is each player's own pick, synced onto the room alongside
                 // their level (see OnlinePlayer.frameId), so everyone sees
                 // what that player actually chose.
-                LevelAvatar(level = slot.level, frame = slot.frame, size = 38.dp)
+                LevelAvatar(
+                    level = slot.level,
+                    frame = slot.frame,
+                    size = 38.dp,
+                    photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(slot.avatarUrl),
+                    levelBadge = true
+                )
                 Spacer(modifier = Modifier.width(6.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(

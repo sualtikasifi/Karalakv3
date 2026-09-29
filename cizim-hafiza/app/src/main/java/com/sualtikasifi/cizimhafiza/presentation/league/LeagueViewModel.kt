@@ -61,7 +61,8 @@ class LeagueViewModel @Inject constructor(
     private val friendRepository: FriendRepository,
     private val globalLeagueRepository: GlobalLeagueRepository,
     private val settingsRepository: SettingsRepository,
-    private val leagueScorePublisher: LeagueScorePublisher
+    private val leagueScorePublisher: LeagueScorePublisher,
+    private val avatarPhotoResolver: com.sualtikasifi.cizimhafiza.util.AvatarPhotoResolver
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LeagueUiState())
@@ -156,6 +157,7 @@ class LeagueViewModel @Inject constructor(
                         level = level,
                         frameId = com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
                             .resolve(settingsRepository.selectedAvatarFrameId.value, level).name,
+                        avatarUrl = avatarPhotoResolver.currentUrl(),
                         isMe = true
                     )
                     _uiState.update { it.copy(myGlobalRank = rank, myGlobalEntry = entry) }

@@ -44,7 +44,8 @@ import javax.inject.Inject
 class OnlineGameRepositoryImpl @Inject constructor(
     private val firestore: FirebaseFirestore,
     private val auth: FirebaseAuth,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val avatarPhotoResolver: com.sualtikasifi.cizimhafiza.util.AvatarPhotoResolver
 ) : OnlineGameRepository {
 
     /** This device's current level, stamped onto its player entry so opponents can see it. */
@@ -312,6 +313,7 @@ class OnlineGameRepositoryImpl @Inject constructor(
                             displayName = data["displayName"] as? String ?: "",
                             level = (data["level"] as? Number)?.toInt() ?: 1,
                             frameId = data["frameId"] as? String ?: AvatarFrame.DEFAULT.name,
+                            avatarUrl = data["avatarUrl"] as? String ?: "",
                             teamId = data["teamId"] as? String
                         )
                     }
@@ -353,7 +355,8 @@ class OnlineGameRepositoryImpl @Inject constructor(
                     mapOf(
                         "players.$uid.lastSeenAt" to System.currentTimeMillis(),
                         "players.$uid.level" to myLevel,
-                        "players.$uid.frameId" to myFrameId
+                        "players.$uid.frameId" to myFrameId,
+                        "players.$uid.avatarUrl" to avatarPhotoResolver.currentUrl()
                     )
                 )
             }
@@ -468,6 +471,7 @@ class OnlineGameRepositoryImpl @Inject constructor(
                             displayName = data["displayName"] as? String ?: "",
                             level = (data["level"] as? Number)?.toInt() ?: 1,
                             frameId = data["frameId"] as? String ?: AvatarFrame.DEFAULT.name,
+                            avatarUrl = data["avatarUrl"] as? String ?: "",
                             teamId = data["teamId"] as? String
                         )
                     }
@@ -489,6 +493,7 @@ class OnlineGameRepositoryImpl @Inject constructor(
         pendingNextRound: Boolean = false,
         level: Int = myLevel,
         frameId: String = myFrameId,
+        avatarUrl: String = avatarPhotoResolver.currentUrl(),
         teamId: String? = null
     ) = mapOf(
         "displayName" to displayName,
@@ -497,6 +502,7 @@ class OnlineGameRepositoryImpl @Inject constructor(
         // every player's badge at once.
         "level" to level,
         "frameId" to frameId,
+        "avatarUrl" to avatarUrl,
         "joinedAt" to System.currentTimeMillis(),
         // Seeded so a player counts as present the instant they join, before
         // their first heartbeat lands (see touchPresence).
@@ -533,6 +539,7 @@ class OnlineGameRepositoryImpl @Inject constructor(
                 displayName = data["displayName"] as? String ?: "",
                 level = (data["level"] as? Number)?.toInt() ?: 1,
                 frameId = data["frameId"] as? String ?: AvatarFrame.DEFAULT.name,
+                avatarUrl = data["avatarUrl"] as? String ?: "",
                 ready = data["ready"] as? Boolean ?: false,
                 finished = data["finished"] as? Boolean ?: false,
                 left = data["left"] as? Boolean ?: false,

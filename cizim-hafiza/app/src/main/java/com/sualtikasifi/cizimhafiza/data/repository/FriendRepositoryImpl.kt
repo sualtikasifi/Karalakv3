@@ -482,7 +482,8 @@ class FriendRepositoryImpl @Inject constructor(
         periodXp: Int,
         periodId: Long,
         level: Int,
-        frameId: String
+        frameId: String,
+        avatarUrl: String
     ) {
         val uid = requireUid()
         // Merged onto the public profile document rather than a subcollection:
@@ -497,7 +498,8 @@ class FriendRepositoryImpl @Inject constructor(
                 "periodXp" to periodXp,
                 "periodId" to periodId,
                 "level" to level,
-                "frameId" to frameId
+                "frameId" to frameId,
+                "avatarUrl" to avatarUrl
             ),
             SetOptions.merge()
         ).await()
@@ -589,6 +591,7 @@ class FriendRepositoryImpl @Inject constructor(
                                     periodXp = if (storedWeek == currentWeek) (doc.getLong("periodXp") ?: 0L).toInt() else 0,
                                     level = (doc.getLong("level") ?: 1L).toInt(),
                                     frameId = doc.getString("frameId") ?: AvatarFrame.DEFAULT.name,
+                                    avatarUrl = doc.getString("avatarUrl").orEmpty(),
                                     isMe = memberUid == uid
                                 )
                             }

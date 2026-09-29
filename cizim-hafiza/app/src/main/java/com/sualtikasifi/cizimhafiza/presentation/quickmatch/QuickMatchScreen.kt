@@ -434,6 +434,7 @@ private fun PlayersSection(opponent: GhostRun, me: QuickMatchPlayerSnapshot) {
                 nickname = me.nickname,
                 level = me.level,
                 frameId = me.frameId,
+                avatarUrl = me.avatarUrl,
                 // Real, not derived — this is the player's own account.
                 lifetimeXp = me.lifetimeXp,
                 accent = MatchRed,
@@ -492,6 +493,7 @@ private fun PlayerCard(
     nickname: String,
     level: Int,
     frameId: String,
+    avatarUrl: String = "",
     lifetimeXp: Int,
     accent: Color,
     ribbon: Int,
@@ -559,7 +561,9 @@ private fun PlayerCard(
             // The stored name is only a preference; resolve() is what
             // decides which ring that level has actually earned.
             frame = AvatarFrame.resolve(frameId, level),
-            size = PLAYER_AVATAR_SIZE
+            size = PLAYER_AVATAR_SIZE,
+            photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(avatarUrl),
+            levelBadge = true
         )
         Spacer(modifier = Modifier.height(8.dp))
         Box(

@@ -45,6 +45,8 @@ data class AccountUiState(
      */
     val nicknameEdit: String? = null,
     val nicknameSaveState: NicknameSaveState = NicknameSaveState.Idle,
+    /** String resource of why the last rename failed, or null. */
+    val nicknameError: Int? = null,
     val level: Int = 1,
     val frame: AvatarFrame = AvatarFrame.DEFAULT,
     /** A sign-in or sign-out is running; the whole account section is frozen behind a spinner. */
@@ -111,7 +113,8 @@ class AccountViewModel @Inject constructor(
     private val backupRepository: BackupRepository,
     private val accountDeletionRepository: AccountDeletionRepository,
     private val friendRepository: FriendRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val usernameRepository: com.sualtikasifi.cizimhafiza.util.UsernameRepository
 ) : ViewModel() {
 
     private val _actionState = MutableStateFlow(AccountUiState(isGoogleSignInConfigured = authRepository.isGoogleSignInConfigured))
@@ -148,7 +151,10 @@ class AccountViewModel @Inject constructor(
      * react to, and an abandoned edit costs nothing.
      */
     /** See CreateRoomViewModel.nicknameEditable. */
-    val nicknameEditable: Boolean get() = !settingsRepository.nicknameRenameUsed.value
+    /** One change is allowed before Google is linked; linking asks for the final, permanent one (see UsernameFinalizeHost). */
+    val nicknameEditable: Boolean
+        get() = !settingsRepository.nicknameRenameUsed.value && settingsRepository.usernameChanges < 1 &&
+            authRepository.authState.value !is com.sualtikasifi.cizimhafiza.domain.repository.AuthState.Linked
 
     fun setNicknameDraft(name: String) {
         if (!nicknameEditable) return
@@ -156,7 +162,8 @@ class AccountViewModel @Inject constructor(
             nicknameEdit = name,
             // Typing again retracts the confirmation — it described the
             // previous save, not this text.
-            nicknameSaveState = NicknameSaveState.Idle
+            nicknameSaveState = NicknameSaveState.Idle,
+            nicknameError = null
         )
     }
 
@@ -177,9 +184,18 @@ class AccountViewModel @Inject constructor(
         val name = state.nicknameDraft.trim()
         _actionState.value = state.copy(nicknameSaveState = NicknameSaveState.Saving)
         viewModelScope.launch {
-            settingsRepository.setNickname(name)
-            runCatching { friendRepository.updatePublicNickname(name) }
-            authRepository.updateDisplayName(name)
+            val result = usernameRepository.change(name, final = false)
+            val errorRes = when (result) {
+                com.sualtikasifi.cizimhafiza.util.UsernameClaimResult.Success -> null
+                com.sualtikasifi.cizimhafiza.util.UsernameClaimResult.Invalid -> com.sualtikasifi.cizimhafiza.R.string.username_error_invalid
+                com.sualtikasifi.cizimhafiza.util.UsernameClaimResult.Taken -> com.sualtikasifi.cizimhafiza.R.string.username_error_taken
+                com.sualtikasifi.cizimhafiza.util.UsernameClaimResult.NetworkError -> com.sualtikasifi.cizimhafiza.R.string.username_error_network
+                com.sualtikasifi.cizimhafiza.util.UsernameClaimResult.AlreadyLocked -> com.sualtikasifi.cizimhafiza.R.string.nickname_locked_hint
+            }
+            if (errorRes != null) {
+                _actionState.value = _actionState.value.copy(nicknameSaveState = NicknameSaveState.Idle, nicknameError = errorRes)
+                return@launch
+            }
             _actionState.value = _actionState.value.copy(
                 // Released rather than set to `name`: the edit is finished,
                 // so the field goes back to mirroring what is stored — which

@@ -632,7 +632,13 @@ private fun LeagueRow(rank: Int, entry: LeagueEntry) {
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            LevelAvatar(level = entry.level, frame = AvatarFrame.resolve(entry.frameId, entry.level), size = 40.dp)
+            LevelAvatar(
+                level = entry.level,
+                frame = AvatarFrame.resolve(entry.frameId, entry.level),
+                size = 40.dp,
+                photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(entry.avatarUrl),
+                levelBadge = true
+            )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = if (entry.isMe) stringResource(R.string.online_you_label, entry.nickname) else entry.nickname,

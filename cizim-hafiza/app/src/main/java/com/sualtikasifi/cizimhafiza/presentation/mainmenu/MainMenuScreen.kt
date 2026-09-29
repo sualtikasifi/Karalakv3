@@ -154,6 +154,9 @@ fun MainMenuScreen(
     val selectedPen by viewModel.selectedPen.collectAsState()
     val gold by viewModel.goldBalance.collectAsState()
     val avatarFrameItems by viewModel.avatarFrameItems.collectAsState()
+    val avatarPhoto by viewModel.avatarPhoto.collectAsState()
+    val avatarSource by viewModel.avatarSource.collectAsState()
+    val googlePhotoUrl by viewModel.googlePhotoUrl.collectAsState()
     var framePickerOpen by remember { mutableStateOf(false) }
     var penPickerOpen by remember { mutableStateOf(false) }
     var featureTourOpen by remember { mutableStateOf(!viewModel.featureTourSeen) }
@@ -199,6 +202,7 @@ fun MainMenuScreen(
                 nickname = nickname,
                 progress = levelProgress,
                 frame = selectedFrame,
+                photo = avatarPhoto,
                 pen = selectedPen,
                 gold = gold,
                 onFrameClick = { framePickerOpen = true },
@@ -212,7 +216,7 @@ fun MainMenuScreen(
             // without moving. Only a genuinely short screen falls back to scrolling.
             BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 val compact = maxHeight < 700.dp
-                val fixedEstimate = (if (compact) 450.dp else 500.dp) + (if (xpEvent != null) 60.dp else 0.dp)
+                val fixedEstimate = (if (compact) 470.dp else 520.dp) + (if (xpEvent != null) 60.dp else 0.dp)
                 val modeHeight = (maxHeight - fixedEstimate - 18.dp).coerceIn(96.dp, 160.dp)
                 val content: @Composable ColumnScope.() -> Unit = {
                     xpEvent?.let { event ->
@@ -221,13 +225,13 @@ fun MainMenuScreen(
                     }
                     if (GameConstants.ADMOB_ENABLED) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().height(if (compact) 92.dp else 100.dp),
+                            modifier = Modifier.fillMaxWidth().height(if (compact) 112.dp else 120.dp),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             AdGoldButton(
                                 nextAtMillis = adGoldNextAt,
                                 onClick = { activity?.let(viewModel::watchAdForGold) },
-                                modifier = Modifier.width(74.dp).fillMaxHeight()
+                                modifier = Modifier.width(84.dp).fillMaxHeight()
                             )
                             DailyChallengeCardNarrow(
                                 state = dailyState,
@@ -237,14 +241,14 @@ fun MainMenuScreen(
                             AdChestButton(
                                 availableToday = adChestDay != java.time.LocalDate.now().toEpochDay(),
                                 onClick = { activity?.let(viewModel::watchAdForChest) },
-                                modifier = Modifier.width(74.dp).fillMaxHeight()
+                                modifier = Modifier.width(84.dp).fillMaxHeight()
                             )
                         }
                     } else {
                         DailyChallengeCardNarrow(
                             state = dailyState,
                             onPlay = onDailyChallenge,
-                            modifier = Modifier.fillMaxWidth().height(if (compact) 92.dp else 100.dp)
+                            modifier = Modifier.fillMaxWidth().height(if (compact) 112.dp else 120.dp)
                         )
                     }
 
@@ -438,17 +442,13 @@ fun MainMenuScreen(
             )
         }
 
-        val usernameChecked by viewModel.usernameChecked.collectAsState()
-        if (usernameChecked && !nicknameRenameUsed) {
-            UsernameSetupDialog(
-                initial = nickname.takeIf { it != stringResource(R.string.default_nickname) }.orEmpty(),
-                onClaim = viewModel::claimUsername
-            )
-        }
 
         if (framePickerOpen) {
             AvatarFramePickerSheet(
                 items = avatarFrameItems,
+                photoSource = avatarSource,
+                googlePhotoUrl = googlePhotoUrl,
+                onPhotoSource = viewModel::selectAvatarSource,
                 onSelect = { viewModel.selectAvatarFrame(it); framePickerOpen = false },
                 onDismiss = { framePickerOpen = false }
             )
@@ -543,10 +543,53 @@ private fun PenaltyDialog(penalty: Penalty, onDismiss: () -> Unit) {
 @Composable
 private fun AvatarFramePickerSheet(
     items: List<AvatarFrameUiItem>,
+    photoSource: String,
+    googlePhotoUrl: String?,
+    onPhotoSource: (String) -> Unit,
     onSelect: (AvatarFrame) -> Unit,
     onDismiss: () -> Unit
 ) {
     com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog(title = stringResource(R.string.avatar_frame_picker_title), onDismiss = onDismiss) {
+        val googleSelected = googlePhotoUrl != null && photoSource != "DINO"
+        Text(
+            text = stringResource(R.string.avatar_source_title),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+            color = Color(0xFF3A2416)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top) {
+            AvatarSourceOption(
+                label = stringResource(R.string.avatar_source_karalak),
+                selected = !googleSelected,
+                enabled = true,
+                photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Dino,
+                onClick = { onPhotoSource("DINO") }
+            )
+            AvatarSourceOption(
+                label = stringResource(R.string.avatar_source_google),
+                selected = googleSelected,
+                enabled = googlePhotoUrl != null,
+                photo = googlePhotoUrl?.let { com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Url(it) },
+                onClick = { onPhotoSource("GOOGLE") }
+            )
+        }
+        if (googlePhotoUrl == null) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.avatar_source_google_locked),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+        Text(
+            text = stringResource(R.string.avatar_frame_section),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+            color = Color(0xFF3A2416)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
         Column(modifier = Modifier.fillMaxWidth().weight(1f, fill = false)) {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
@@ -891,10 +934,11 @@ private fun RankLadderSheet(progress: LevelProgressState, onDismiss: () -> Unit)
 }
 
 /**
- * The daily challenge as one compact, centred tile: the title, one status line and one footer
- * line, all on the same centre axis. Open: "Şimdi oyna ▸" pulses and the whole tile plays it.
- * Done: "✓ Tamamlandı" with the streak multiplier and the countdown to tomorrow beneath it.
- * The streak multiplier chip appears in the footer in both states once a streak exists.
+ * The daily challenge tile. Everything sits on one centre axis in fixed rows — title, status,
+ * streak multiplier chip, and (once done) the countdown — so no state can look lopsided.
+ *  - open: the "Şimdi oyna ▸" line pulses and the whole tile plays the challenge;
+ *  - done: "✓ Tamamlandı", the multiplier chip and the countdown to tomorrow.
+ * The multiplier is a gold pill (dark text on gold, always readable) rather than loose text.
  */
 @Composable
 private fun DailyChallengeCardNarrow(state: DailyChallengeState, onPlay: () -> Unit, modifier: Modifier = Modifier) {
@@ -903,36 +947,37 @@ private fun DailyChallengeCardNarrow(state: DailyChallengeState, onPlay: () -> U
     val bottom = if (available) Color(0xFF6440D6) else Color(0xFF2E9A55)
     val edge = if (available) Color(0xFF3F2699) else Color(0xFF1E6E3B)
     val pulse = rememberInfiniteTransition(label = "dailyPulseCompact").animateFloat(
-        initialValue = 0.55f,
+        initialValue = 0.6f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "dailyPulseCompactFraction"
     )
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val bold = androidx.compose.ui.text.font.FontWeight.ExtraBold
+    val shadow = androidx.compose.ui.text.TextStyle(
+        shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.3f), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)
+    )
     Column(
         modifier = modifier
             .chunky(Brush.verticalGradient(listOf(top, bottom)), edge, corner = 22.dp, lift = 4.dp, rim = Color.White.copy(alpha = 0.35f))
             .then(if (available) Modifier.clickable(interactionSource = interaction, indication = null, onClick = onPlay) else Modifier)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .padding(horizontal = 8.dp, vertical = 5.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.SpaceEvenly
     ) {
-        Text(
-            text = stringResource(R.string.daily_challenge_title),
-            fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
-            fontWeight = bold,
-            fontSize = 15.sp,
-            lineHeight = 16.sp,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-            maxLines = 2
-        )
-        Spacer(modifier = Modifier.height(5.dp))
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            FitText(
+                text = stringResource(R.string.daily_challenge_title),
+                color = Color.White,
+                maxSp = 15f,
+                minSp = 9f,
+                style = shadow
+            )
+        }
         if (available) {
             Text(
                 text = stringResource(R.string.daily_play_now) + " ▸",
-                fontSize = 14.sp,
+                fontSize = 15.sp,
                 fontWeight = bold,
                 color = Color(0xFFFFE566),
                 textAlign = TextAlign.Center,
@@ -942,50 +987,49 @@ private fun DailyChallengeCardNarrow(state: DailyChallengeState, onPlay: () -> U
         } else {
             Text(
                 text = "✓ " + stringResource(R.string.daily_done_badge),
-                fontSize = 14.sp,
+                fontSize = 15.sp,
                 fontWeight = bold,
                 color = Color.White,
                 textAlign = TextAlign.Center,
                 maxLines = 1
             )
         }
-        val showStreak = state.currentStreak > 0
-        if (showStreak || !available) {
-            Spacer(modifier = Modifier.height(5.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
-            ) {
-                if (showStreak) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Image(
-                            painter = painterResource(R.drawable.daily_streak_icon),
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = stringResource(
-                                R.string.daily_challenge_multiplier_badge,
-                                XpAwards.dailyStreakMultiplier(state.currentStreak)
-                            ),
-                            fontSize = 12.sp,
-                            fontWeight = bold,
-                            color = Color.White,
-                            maxLines = 1
-                        )
-                    }
-                }
-                if (!available) {
-                    Text(
-                        text = "⏳ " + midnightCountdownText(),
-                        fontSize = 12.sp,
-                        fontWeight = bold,
-                        color = Color.White.copy(alpha = 0.95f),
-                        maxLines = 1
-                    )
-                }
-            }
+        if (state.currentStreak > 0) {
+            MultiplierChip(multiplier = XpAwards.dailyStreakMultiplier(state.currentStreak))
         }
+        if (!available) {
+            Text(
+                text = "⏳ " + midnightCountdownText(),
+                fontSize = 12.sp,
+                fontWeight = bold,
+                color = Color.White.copy(alpha = 0.95f),
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+/** The streak's XP multiplier as a gold pill: dark on gold, readable on both card colours. */
+@Composable
+private fun MultiplierChip(multiplier: Int) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(Brush.verticalGradient(listOf(Color(0xFFFFE566), Color(0xFFFFB300))))
+            .border(1.5.dp, Color(0xFFB36B00), RoundedCornerShape(50))
+            .padding(horizontal = 10.dp, vertical = 1.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(text = "🔥", fontSize = 13.sp)
+        Text(
+            text = stringResource(R.string.daily_challenge_multiplier_badge, multiplier),
+            fontSize = 13.sp,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+            color = Color(0xFF4A2600),
+            maxLines = 1
+        )
     }
 }
 
@@ -1018,5 +1062,45 @@ private fun FitToHeight(modifier: Modifier = Modifier, content: @Composable Colu
                 transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)
             }
         }
+    }
+}
+
+/** One picture choice for the avatar: a round preview with its name, ringed when selected, dimmed when unavailable. */
+@Composable
+private fun AvatarSourceOption(
+    label: String,
+    selected: Boolean,
+    enabled: Boolean,
+    photo: com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto?,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(enabled = enabled, onClick = onClick)
+            .alpha(if (enabled) 1f else 0.45f)
+            .padding(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .border(if (selected) 3.dp else 1.dp, if (selected) Color(0xFFFF7A21) else Color(0xFFD9B57A), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            if (photo != null) {
+                com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhotoFace(photo = photo, modifier = Modifier.fillMaxSize())
+            } else {
+                Icon(Icons.Filled.Group, contentDescription = null, tint = Color(0xFF7A5A44))
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.ExtraBold else androidx.compose.ui.text.font.FontWeight.Medium,
+            color = Color(0xFF3A2416)
+        )
     }
 }

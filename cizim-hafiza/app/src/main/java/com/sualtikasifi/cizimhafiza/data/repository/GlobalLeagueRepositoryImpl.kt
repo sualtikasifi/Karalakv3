@@ -89,7 +89,7 @@ class GlobalLeagueRepositoryImpl @Inject constructor(
                 // The function does not send a frame: doing so would mean
                 // duplicating the whole frame ladder in TypeScript, where it
                 // would drift the first time a frame was added here.
-                frameId = AvatarFrame.highestUnlockedFor(level).name,
+                frameId = if (uid == null) botFrameFor(level, (row["nickname"] as? String).orEmpty()).name else AvatarFrame.highestUnlockedFor(level).name,
                 isMe = uid != null && uid == myUid,
                 isBot = uid == null
             )
@@ -107,6 +107,19 @@ class GlobalLeagueRepositoryImpl @Inject constructor(
             lastPeriod = lastPeriod,
             myLastPeriodWin = lastPeriod?.winners?.firstOrNull { it.uid == myUid }
         )
+    }
+
+    /**
+     * A filler row's frame: any frame its level could really have unlocked (ladder frames and store
+     * frames alike, never the plain default), picked from its own name so it stays the same on
+     * every refresh but differs from row to row.
+     */
+    private fun botFrameFor(level: Int, seed: String): AvatarFrame {
+        val choices = AvatarFrame.unlockedFor(level).filter { it != AvatarFrame.DEFAULT } +
+            AvatarFrame.entries.filter { it.isStoreItem }
+        if (choices.isEmpty()) return AvatarFrame.highestUnlockedFor(level)
+        val hash = seed.fold(7) { acc, c -> acc * 31 + c.code }
+        return choices[(hash and Int.MAX_VALUE) % choices.size]
     }
 
     private fun parseLastPeriod(data: Map<*, *>?): LeaguePeriodResult? {

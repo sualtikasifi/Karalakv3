@@ -1109,7 +1109,7 @@
     <string name="nickname_edit_invalid">The name must be 2 to 16 characters.</string>
     <string name="home_ad_gold_label">+500 Gold</string>
     <string name="home_ad_chest_label">Free Chest</string>
-    <string name="home_ad_watch">Watch</string>
+    <string name="home_ad_watch">Watch ad</string>
     <string name="home_ad_gold_earned">You earned 500 gold!</string>
     <string name="home_ad_unavailable">The ad could not load right now, try again in a moment.</string>
     <string name="chest_home_start">Start</string>
@@ -1120,6 +1120,18 @@
     <string name="username_error_invalid">The name must be 2–16 characters using letters, digits, spaces, _ . -</string>
     <string name="username_error_taken">This username is already taken. Try another one.</string>
     <string name="username_error_network">Could not connect. Check your internet and try again.</string>
+    <string name="home_level_inline">Level %1$d</string>
+    <string name="avatar_source_title">Profile picture</string>
+    <string name="avatar_source_karalak">Karalak</string>
+    <string name="avatar_source_google">My Google photo</string>
+    <string name="avatar_source_google_locked">Sign in with Google to use your Google photo.</string>
+    <string name="avatar_frame_section">Frame</string>
+    <string name="username_finalize_title">Lock your username</string>
+    <string name="username_finalize_body">Your Google account is linked. Your username and profile now belong to it. You can change the name one last time, then it becomes permanent.</string>
+    <string name="username_finalize_keep">Keep it (permanent)</string>
+    <string name="username_finalize_change">Change and make permanent</string>
+    <string name="username_finalize_later">Not now</string>
+    <string name="username_change_taken_hint">You can change the name once before linking Google.</string>
     <string name="daily_play_now">Play Now</string>
     <string name="daily_done_badge">Completed</string>
     <string name="pen_copper">Copper</string>

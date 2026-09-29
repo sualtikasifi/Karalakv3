@@ -41,7 +41,8 @@ import javax.inject.Singleton
 @Singleton
 class LeagueScorePublisher @Inject constructor(
     private val settingsRepository: SettingsRepository,
-    private val friendRepository: FriendRepository
+    private val friendRepository: FriendRepository,
+    private val avatarPhotoResolver: AvatarPhotoResolver
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -53,9 +54,7 @@ class LeagueScorePublisher @Inject constructor(
         if (started) return
         started = true
         scope.launch {
-            settingsRepository.periodXp
-                .debounce(PUBLISH_DEBOUNCE_MS)
-                .map { xp -> snapshotFor(xp) }
+            kotlinx.coroutines.flow.combine(settingsRepository.periodXp.debounce(PUBLISH_DEBOUNCE_MS), avatarPhotoResolver.url) { xp, avatarUrl -> snapshotFor(xp, avatarUrl) }
                 .distinctUntilChanged()
                 .collect { snapshot -> publish(snapshot) }
         }
@@ -67,17 +66,18 @@ class LeagueScorePublisher @Inject constructor(
      * while the debounce above is still counting down.
      */
     fun publishNow() {
-        scope.launch { publish(snapshotFor(settingsRepository.periodXp.value)) }
+        scope.launch { publish(snapshotFor(settingsRepository.periodXp.value, avatarPhotoResolver.currentUrl())) }
     }
 
-    private fun snapshotFor(periodXp: Int): Snapshot {
+    private fun snapshotFor(periodXp: Int, avatarUrl: String): Snapshot {
         val level = PlayerLevel.levelForXp(settingsRepository.lifetimeXp.value)
         return Snapshot(
             nickname = settingsRepository.nicknameOrDefault,
             periodXp = periodXp,
             periodId = LeaguePeriod.periodIdFor(LocalDate.now()),
             level = level,
-            frameId = AvatarFrame.resolve(settingsRepository.selectedAvatarFrameId.value, level).name
+            frameId = AvatarFrame.resolve(settingsRepository.selectedAvatarFrameId.value, level).name,
+            avatarUrl = avatarUrl
         )
     }
 
@@ -89,7 +89,8 @@ class LeagueScorePublisher @Inject constructor(
                 periodXp = snapshot.periodXp,
                 periodId = snapshot.periodId,
                 level = snapshot.level,
-                frameId = snapshot.frameId
+                frameId = snapshot.frameId,
+                avatarUrl = snapshot.avatarUrl
             )
         }.onSuccess {
             // Only remembered once the write actually landed — a signature
@@ -104,9 +105,10 @@ class LeagueScorePublisher @Inject constructor(
         val periodXp: Int,
         val periodId: Long,
         val level: Int,
-        val frameId: String
+        val frameId: String,
+        val avatarUrl: String
     ) {
-        val signature: String get() = "$periodId|$periodXp|$level|$frameId|$nickname"
+        val signature: String get() = "$periodId|$periodXp|$level|$frameId|$nickname|$avatarUrl"
     }
 
     private companion object {

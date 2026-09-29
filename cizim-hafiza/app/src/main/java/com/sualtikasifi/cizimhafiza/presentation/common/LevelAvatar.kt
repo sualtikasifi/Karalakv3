@@ -11,6 +11,7 @@ import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -33,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.PlatformTextStyle
@@ -76,7 +78,11 @@ fun LevelAvatar(
     frame: AvatarFrame,
     modifier: Modifier = Modifier,
     size: Dp = 44.dp,
-    ready: Boolean = false
+    ready: Boolean = false,
+    /** When set, this picture fills the frame's hole instead of the level number. */
+    photo: AvatarPhoto? = null,
+    /** With a [photo]: a small level pill on the corner, for places where the level is not written out nearby. */
+    levelBadge: Boolean = false
 ) {
     val sparkleCount = sparkleCountFor(frame.unlockLevel)
     // Read outside the Canvas below: DrawScope is not a composable scope.
@@ -170,6 +176,10 @@ fun LevelAvatar(
                 .size(faceSize),
             contentAlignment = Alignment.Center
         ) {
+            if (photo != null) {
+                AvatarPhotoFace(photo = photo, modifier = Modifier.fillMaxSize())
+                return@Box
+            }
             // Scaled off the face rather than a fixed style so one composable
             // serves both a 36dp match-chrome badge and an 88dp profile — and
             // three digits ("100") get a smaller fraction so they still clear
@@ -250,6 +260,27 @@ fun LevelAvatar(
                     )
                 )
             )
+        }
+        if (photo != null && levelBadge) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(size * 0.38f)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(Color(0xFF3A2416))
+                    .border(1.5.dp, Color.White, androidx.compose.foundation.shape.CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = level.toString(),
+                    color = Color.White,
+                    fontFamily = DisplayFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = (size.value * if (level >= 100) 0.15f else 0.19f).sp,
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
         }
     }
 }
@@ -394,3 +425,49 @@ fun LiveLevelBadge(progress: LevelProgressState, frame: AvatarFrame, modifier: M
         }
     }
 }
+
+/** What can sit inside an avatar frame in place of the level number. */
+sealed interface AvatarPhoto {
+    /** Karalak's own mascot. */
+    data object Dino : AvatarPhoto
+
+    /** The player's Google account picture. */
+    data class Url(val url: String) : AvatarPhoto
+}
+
+/**
+ * A circular picture filling the frame's hole. The mascot artwork is a disc on a white square, so
+ * it is scaled up until the disc — not the white margin — reaches the edge of the circle.
+ */
+@Composable
+fun AvatarPhotoFace(photo: AvatarPhoto, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .clip(androidx.compose.foundation.shape.CircleShape)
+            .background(Color(0xFFFFD79A)),
+        contentAlignment = Alignment.Center
+    ) {
+        val dino = @Composable {
+            Image(
+                painter = painterResource(id = com.sualtikasifi.cizimhafiza.R.drawable.avatar_dino),
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().graphicsLayer { scaleX = 1.38f; scaleY = 1.38f; translationY = size.height * 0.015f }
+            )
+        }
+        when (photo) {
+            AvatarPhoto.Dino -> dino()
+            is AvatarPhoto.Url -> coil3.compose.SubcomposeAsyncImage(
+                model = photo.url,
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+                loading = { dino() },
+                error = { dino() }
+            )
+        }
+    }
+}
+
+/** The picture to draw for another player's published avatar URL ("" or null = the Karalak mascot). */
+fun avatarPhotoOf(url: String?): AvatarPhoto = if (url.isNullOrBlank()) AvatarPhoto.Dino else AvatarPhoto.Url(url)

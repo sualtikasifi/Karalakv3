@@ -82,6 +82,7 @@ data class LeagueEntry(
     val periodXp: Int,
     val level: Int,
     val frameId: String,
+    val avatarUrl: String = "",
     val isMe: Boolean,
     /**
      * A filler row in the global table rather than a person.

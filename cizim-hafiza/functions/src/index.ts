@@ -367,7 +367,7 @@ function botNicknamesForPeriod(periodId: number, count: number): string[] {
  * top REAL player however little they had scored, so a player nowhere near
  * the top 25 saw themselves parked on row 25.
  */
-const BOT_COUNT = 25;
+const BOT_COUNT = 20;
 // How many rows the real-player query fetches, before bots are mixed in and
 // the combined list is cut down to PUBLISHED_TABLE_SIZE below. Generous on
 // purpose: a real player ranked, say, 40th by raw XP still needs to be IN
@@ -379,7 +379,7 @@ const MAX_ENTRIES = 100;
 // the cut — so on a quiet month this is BOT_COUNT bots plus however many
 // real players outscored the weakest bot, never more than this many rows
 // total, whatever the real player count turns out to be.
-const PUBLISHED_TABLE_SIZE = 25;
+const PUBLISHED_TABLE_SIZE = 20;
 
 /**
  * Random XP a bot gains each time growth is applied — see
@@ -405,6 +405,29 @@ function levelForBotXp(xp: number): number {
   if (xp <= 0) return 1;
   const n = Math.floor((-75 + Math.sqrt(75 * 75 + 100 * xp)) / 50);
   return Math.min(BOT_MAX_LEVEL, Math.max(1, n + 1));
+}
+
+/** Total XP needed to have reached [level] — the Android curve (PlayerLevel.totalXpForLevel), 25n² + 75n with n = level - 1. */
+function totalXpForLevel(level: number): number {
+  const n = Math.max(level - 1, 0);
+  return 25 * n * n + 75 * n;
+}
+
+/** The level a bot starts each month at, drawn once per bot from this range so no two rows share the telltale 19-20. */
+const BOT_MIN_START_LEVEL = 18;
+const BOT_MAX_START_LEVEL = 50;
+
+/**
+ * A bot's lifetime XP before this month's gains: a random level in
+ * [BOT_MIN_START_LEVEL, BOT_MAX_START_LEVEL] plus a random spot inside that level,
+ * deterministic from the period and the bot's index. Its shown level is then
+ * levelForBotXp(startXp + periodXp), so it climbs the real level curve as it earns.
+ */
+function botStartXp(periodId: number, index: number): number {
+  const rnd = seededRandom(periodId * 7_919 + index * 104_729 + 17);
+  const level = BOT_MIN_START_LEVEL + Math.floor(rnd() * (BOT_MAX_START_LEVEL - BOT_MIN_START_LEVEL + 1));
+  const span = totalXpForLevel(level + 1) - totalXpForLevel(level);
+  return totalXpForLevel(level) + Math.floor(rnd() * span);
 }
 
 /**
@@ -519,7 +542,7 @@ export async function runBuildGlobalLeaderboard(): Promise<void> {
       // exactly the "how did they get 8280 XP at level 9" implausibility
       // players notice. Derived from periodXp instead, so the level shown
       // always matches the XP shown next to it.
-      const level = levelForBotXp(periodXp);
+      const level = levelForBotXp(botStartXp(periodId, i) + periodXp);
 
       bots.push({ uid: null, nickname, periodXp, level, bot: true });
       botStates.push({ nickname, periodXp, level });

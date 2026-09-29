@@ -128,6 +128,7 @@ fun AccountScreen(
                     draft = uiState.nicknameDraft,
                     canSave = uiState.canSaveNickname,
                     saveState = uiState.nicknameSaveState,
+                    error = uiState.nicknameError,
                     onDraftChange = viewModel::setNicknameDraft,
                     onSave = viewModel::saveNickname
                 )
@@ -266,7 +267,7 @@ private fun SignedInCard(uiState: AccountUiState) {
                             .background(MaterialTheme.colorScheme.primaryContainer)
                     )
                 } else {
-                    LevelAvatar(level = uiState.level, frame = uiState.frame, size = 56.dp)
+                    LevelAvatar(level = uiState.level, frame = uiState.frame, size = 56.dp, photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Dino, levelBadge = true)
                 }
                 Spacer(modifier = Modifier.size(14.dp))
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -293,7 +294,7 @@ private fun SignedInCard(uiState: AccountUiState) {
 
             Spacer(modifier = Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                LevelAvatar(level = uiState.level, frame = uiState.frame, size = 34.dp)
+                LevelAvatar(level = uiState.level, frame = uiState.frame, size = 34.dp, photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Dino, levelBadge = true)
                 Spacer(modifier = Modifier.size(10.dp))
                 Text(
                     text = stringResource(R.string.account_level_format, uiState.level),
@@ -362,7 +363,7 @@ private fun SignedOutCard(uiState: AccountUiState) {
             modifier = Modifier.fillMaxWidth().padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LevelAvatar(level = uiState.level, frame = uiState.frame, size = 56.dp)
+            LevelAvatar(level = uiState.level, frame = uiState.frame, size = 56.dp, photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Dino, levelBadge = true)
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = stringResource(R.string.account_signed_out_title),
@@ -419,6 +420,7 @@ private fun NicknameCard(
     draft: String,
     canSave: Boolean,
     saveState: NicknameSaveState,
+    error: Int?,
     onDraftChange: (String) -> Unit,
     onSave: () -> Unit
 ) {
@@ -445,7 +447,21 @@ private fun NicknameCard(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(12.dp))
+            if (error != null) {
+                Text(
+                    text = stringResource(error),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
             if (editable) {
+                Text(
+                    text = stringResource(R.string.username_change_taken_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 NicknameSaveButton(canSave = canSave, saveState = saveState, onSave = onSave)
             } else {
                 Text(

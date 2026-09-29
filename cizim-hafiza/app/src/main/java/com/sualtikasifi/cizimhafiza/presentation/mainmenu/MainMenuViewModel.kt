@@ -19,7 +19,6 @@ import com.sualtikasifi.cizimhafiza.domain.repository.DuelRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.FriendRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.PenaltyRepository
 import com.sualtikasifi.cizimhafiza.util.ReferralRewardClaimer
-import com.sualtikasifi.cizimhafiza.util.UsernameClaimResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -207,19 +206,10 @@ class MainMenuViewModel @Inject constructor(
     fun markFeatureTourSeen() { settingsRepository.featureTourSeen = true }
     val nicknameRenameUsed: StateFlow<Boolean> = settingsRepository.nicknameRenameUsed
 
-    private val _usernameChecked = MutableStateFlow(settingsRepository.nicknameRenameUsed.value)
-    /** True once we know whether this account already owns a username, so the claim dialog never flashes for a returning player. */
-    val usernameChecked: StateFlow<Boolean> = _usernameChecked.asStateFlow()
-
     init {
-        viewModelScope.launch {
-            usernameRepository.syncFromServer()
-            // Offline: fall through so a brand-new player still sees the dialog and gets a clear network error.
-            _usernameChecked.value = true
-        }
+        // New players get "Karalak<number>" automatically; nothing is asked on first launch.
+        viewModelScope.launch { usernameRepository.ensureUsername() }
     }
-
-    suspend fun claimUsername(name: String): UsernameClaimResult = usernameRepository.claim(name)
 
 
 
@@ -254,6 +244,24 @@ class MainMenuViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = AvatarFrame.entries.map { AvatarFrameUiItem(it, unlocked = it == AvatarFrame.DEFAULT, selected = it == AvatarFrame.DEFAULT) }
     )
+
+    /** The Google account picture, when signed in and the account has one. */
+    val googlePhotoUrl: StateFlow<String?> = authRepository.authState
+        .map { (it as? com.sualtikasifi.cizimhafiza.domain.repository.AuthState.Linked)?.photoUrl?.takeIf { url -> url.isNotBlank() } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** "DINO", "GOOGLE" or "" (automatic) — the player's explicit choice, see [avatarPhoto]. */
+    val avatarSource: StateFlow<String> = settingsRepository.avatarSource
+
+    /** The picture inside the avatar frame: their Google photo when available and not opted out of, else the mascot. */
+    val avatarPhoto: StateFlow<com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto> = combine(googlePhotoUrl, settingsRepository.avatarSource) { url, source ->
+        when {
+            source == "DINO" || url == null -> com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Dino
+            else -> com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Url(url)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Dino)
+
+    fun selectAvatarSource(source: String) = settingsRepository.setAvatarSource(source)
 
     /** Only ever called for a frame [AvatarFrameUiItem.unlocked] — see MainMenuScreen's picker sheet. */
     fun selectAvatarFrame(frame: AvatarFrame) = settingsRepository.setSelectedAvatarFrame(frame)

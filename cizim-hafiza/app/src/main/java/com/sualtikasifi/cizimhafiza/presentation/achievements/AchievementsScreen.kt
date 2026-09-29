@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -376,7 +377,9 @@ private fun AchievementChip(
         wasClaimable = claimable
     }
     // Quick pop up, then a settling wobble — not a single lazy bump.
-    val bounce = sin(burst.value * PI.toFloat()) * 0.16f * (1f - 0.35f * burst.value)
+    // The chip itself stays put while collecting (no scale wobble): its size changing under the
+    // player's finger read as the tile "changing shape". The effects are the flash, ring and pill.
+    val bounce = 0f
 
     val borderColor = when {
         item.claimed -> AppTheme.tokens.success
@@ -485,7 +488,10 @@ private fun AchievementChip(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color(0xFFFFE08A),
+                maxLines = 1,
+                softWrap = false,
                 modifier = Modifier
+                    .wrapContentWidth(unbounded = true)
                     .offset(y = (-72 * rise).dp)
                     // Fades out smoothly over the back two thirds of the animation
                     // instead of holding and then vanishing.
