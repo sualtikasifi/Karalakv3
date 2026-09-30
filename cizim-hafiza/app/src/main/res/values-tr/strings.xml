@@ -6,11 +6,12 @@
     <string name="share_room_installed">Karalak zaten yüklüyse: %1$s</string>
     <string name="share_room_not_installed">Yüklü değilse: %1$s</string>
     <string name="share_invite_link">Tek dokunuşla aç (yüklü değilse Play Store açılır): %1$s</string>
-    <string name="share_friend_invite">Karalak\'ta arkadaşım ol! 🎨</string>
-    <string name="share_friend_reward_hint">Seviye 5\'e ulaştığında bana 500 XP kazandırıyorsun!</string>
+    <string name="share_friend_invite">Seni Karalak\'a davet ediyorum! 🎨</string>
+    <string name="share_friend_pitch">Önce çiz, sonra ne çizdiğini hatırla. Kelimeleri süre dolmadan çiz, arkadaşlarınla yarış, haftalık ligde yüksel.</string>
+    <string name="share_friend_reward_hint">🎁 İkimiz de kazanıyoruz: Benim kodumla katılıp seviye 5\'e ulaşınca ikimiz de 500 XP alıyoruz!</string>
     <string name="share_friend_code">Arkadaşlık kodum: %1$s</string>
-    <string name="share_friend_code_instructions">Karalak\'ı aç, sonra bu kodu \"Arkadaş ekle\" kısmına gir</string>
-    <string name="referral_reward_earned_format">Davet ettiğin bir arkadaş seviye 5\'e ulaştı, %1$d XP kazandın! 🎉</string>
+    <string name="share_friend_code_instructions">Link açılmazsa: Karalak\'ı yükle, Arkadaşlar bölümünde \"Arkadaş ekle\" kısmına bu kodu gir.</string>
+    <string name="referral_reward_earned_format">Davet ödülün geldi: %1$d XP kazandın! 🎉</string>
     <string name="app_name">Karalak</string>
     <string name="app_tagline">Çiz, Hatırla, Tahmin Et!</string>
 
@@ -179,7 +180,7 @@
     <string name="info_invite_sent">Davet gönderildi, cevap bekleniyor…</string>
 
     <string name="friends_my_code_label">Kodun</string>
-    <string name="friends_invite_reward_hint">Arkadaşını davet et, seviye 5\'e ulaşınca 500 XP kazan!</string>
+    <string name="friends_invite_reward_hint">Arkadaşını davet et, seviye 5\'e ulaşınca ikiniz de 500 XP kazanın!</string>
     <string name="friends_share_code">Kodumu Paylaş</string>
     <string name="friends_add_friend_label">Arkadaş ekle</string>
     <string name="friends_add_friend_hint">6 haneli kod</string>

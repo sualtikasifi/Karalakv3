@@ -166,12 +166,14 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
      *
      * Frequency — the balance between revenue and AdMob's invalid-traffic /
      * "too many interstitials" scrutiny: one ad after every
-     * [INTERSTITIAL_EVERY_N_GAMES]rd finished game (Hızlı Eşleş, offline and
-     * online share one counter, persisted so it survives an app restart),
-     * but never closer than [MIN_INTERSTITIAL_GAP_MILLIS] to the previous ad,
-     * so a run of very short games can't stack them. [force] skips both
-     * checks for the one placement (the daily challenge, once a day) meant
-     * to show every time.
+     * [INTERSTITIAL_EVERY_N_GAMES]nd finished game (Hızlı Eşleş, offline and
+     * online share one counter, persisted so it survives an app restart; the
+     * very first game never shows one), but never closer than
+     * [MIN_INTERSTITIAL_GAP_MILLIS] to the previous ad, so a run of very
+     * short games can't stack them. A game that would have shown an ad but
+     * falls inside that gap simply shows none; the next eligible game does.
+     * [force] skips both checks for the one placement (the daily challenge,
+     * once a day) meant to show every time.
      */
     fun maybeShowInterstitial(
         activity: Activity,
@@ -199,10 +201,15 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
         }
         if (!force) {
             // Lifetime finished-game counter: the very first game never shows an
-            // ad, after that every second game does (2nd, 4th, 6th, ...).
+            // ad, after that every INTERSTITIAL_EVERY_N_GAMES-th game does
+            // (2nd, 4th, 6th, ...) — unless the previous ad was too recent.
             val games = prefs.getInt(KEY_TOTAL_GAMES, 0) + 1
             prefs.edit().putInt(KEY_TOTAL_GAMES, games).apply()
-            if (games < 2 || games % 2 != 0) {
+            val sinceLast = System.currentTimeMillis() - prefs.getLong(KEY_LAST_AD_AT, 0L)
+            if (games < INTERSTITIAL_EVERY_N_GAMES ||
+                games % INTERSTITIAL_EVERY_N_GAMES != 0 ||
+                sinceLast < MIN_INTERSTITIAL_GAP_MILLIS
+            ) {
                 warmUp() // keep the cache warm for next time either way
                 onDismissed()
                 return
@@ -253,10 +260,9 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
         )
     }
 
-    /** Only an ad that actually reached the screen resets the counters — a failed one must not cost the player their next chance. */
+    /** Only an ad that actually reached the screen starts the gap — a failed one must not cost the player their next chance. */
     private fun recordInterstitialShown() {
         prefs.edit()
-            .putInt(KEY_GAMES_SINCE_AD, 0)
             .putLong(KEY_LAST_AD_AT, System.currentTimeMillis())
             .apply()
     }
@@ -384,11 +390,10 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
         const val TAG = "AdManager"
         const val PREFS_NAME = "ad_manager_prefs"
         const val KEY_TOTAL_GAMES = "total_finished_games"
-        const val KEY_GAMES_SINCE_AD = "games_since_interstitial"
         const val KEY_LAST_AD_AT = "last_interstitial_at"
 
-        /** Every 3rd finished game — see [maybeShowInterstitial]. */
-        const val INTERSTITIAL_EVERY_N_GAMES = 3
+        /** Every 2nd finished game (the first never) — see [maybeShowInterstitial]. Matches the Play listing and privacy policy. */
+        const val INTERSTITIAL_EVERY_N_GAMES = 2
 
         /** Never two interstitials closer together than this, however short the games between them. */
         const val MIN_INTERSTITIAL_GAP_MILLIS = 3 * 60 * 1000L

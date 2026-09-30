@@ -469,5 +469,19 @@ fun AvatarPhotoFace(photo: AvatarPhoto, modifier: Modifier = Modifier) {
     }
 }
 
-/** The picture to draw for another player's published avatar URL ("" or null = the Karalak mascot). */
-fun avatarPhotoOf(url: String?): AvatarPhoto = if (url.isNullOrBlank()) AvatarPhoto.Dino else AvatarPhoto.Url(url)
+/**
+ * Only a Google account picture (https://lh<N>.googleusercontent.com/...) is ever fetched for another
+ * player. The published avatar URL is written by that player's own client and Firestore does not
+ * vouch for it, so anything else — another host, plain http, an oversized string — would let one
+ * player make every other player's phone load an address of their choosing.
+ */
+private val GOOGLE_AVATAR_URL = Regex("^https://lh[0-9]+\\.googleusercontent\\.com/\\S*$")
+private const val MAX_AVATAR_URL_LENGTH = 512
+
+/** The picture to draw for another player's published avatar URL ("", null or anything untrusted = the Karalak mascot). */
+fun avatarPhotoOf(url: String?): AvatarPhoto =
+    if (url.isNullOrBlank() || url.length > MAX_AVATAR_URL_LENGTH || !GOOGLE_AVATAR_URL.matches(url)) {
+        AvatarPhoto.Dino
+    } else {
+        AvatarPhoto.Url(url)
+    }

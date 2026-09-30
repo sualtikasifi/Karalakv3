@@ -57,11 +57,16 @@ object InviteShareUtil {
         val playStoreLink = playStoreLink()
         val message = buildString {
             appendLine(context.getString(R.string.share_friend_invite))
+            appendLine(context.getString(R.string.share_friend_pitch))
+            appendLine()
             appendLine(context.getString(R.string.share_friend_reward_hint))
+            appendLine()
+            // The https link first: it is the one part that is tappable in every
+            // messenger, opens the app when installed and the Play Store when not.
+            appendLine(context.getString(R.string.share_invite_link, webInviteLink("friend", friendCode)))
             appendLine()
             appendLine(context.getString(R.string.share_friend_code, friendCode))
             appendLine(context.getString(R.string.share_friend_code_instructions))
-            appendLine(context.getString(R.string.share_invite_link, webInviteLink("friend", friendCode)))
             appendLine()
             append(context.getString(R.string.share_room_not_installed, playStoreLink))
         }

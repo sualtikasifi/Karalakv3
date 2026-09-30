@@ -30,6 +30,7 @@ import androidx.lifecycle.ViewModel
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
 import com.sualtikasifi.cizimhafiza.presentation.common.DEVELOPER_ACCESS_CODE
+import com.sualtikasifi.cizimhafiza.presentation.common.MAX_CODE_INPUT_LENGTH
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
 import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
@@ -126,7 +127,7 @@ fun BotTrainingGate(
                             // there is nothing else worth typing here, and a
                             // stray character would otherwise fail the compare
                             // invisibly.
-                            entered = input.filter(Char::isDigit).take(DEVELOPER_ACCESS_CODE.length)
+                            entered = input.filter(Char::isDigit).take(MAX_CODE_INPUT_LENGTH)
                             wrong = false
                         },
                         label = stringResource(R.string.bot_training_code_label),
@@ -153,7 +154,7 @@ fun BotTrainingGate(
                     PrimaryButton(
                         text = stringResource(R.string.bot_training_unlock),
                         onClick = submit,
-                        enabled = DEVELOPER_ACCESS_CODE.isNotEmpty() && entered.length == DEVELOPER_ACCESS_CODE.length,
+                        enabled = DEVELOPER_ACCESS_CODE.isNotEmpty() && entered.isNotEmpty(),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }

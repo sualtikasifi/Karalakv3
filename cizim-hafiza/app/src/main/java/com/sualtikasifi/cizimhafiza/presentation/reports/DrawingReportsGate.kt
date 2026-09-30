@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
+import com.sualtikasifi.cizimhafiza.presentation.common.MAX_CODE_INPUT_LENGTH
 import com.sualtikasifi.cizimhafiza.presentation.common.REPORTS_ACCESS_CODE
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
 import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
@@ -109,7 +110,11 @@ fun DrawingReportsGate(onBack: () -> Unit, onBotNames: () -> Unit = {}) {
                         AppTextField(
                             value = entered,
                             onValueChange = { input ->
-                                entered = input.filter(Char::isDigit).take(REPORTS_ACCESS_CODE.length)
+                                // Capped at a fixed length, not at the code's own: sizing the field
+                                // to the code both gave its length away and made the box refuse
+                                // digits whenever the code baked into this build was shorter than
+                                // the one being typed.
+                                entered = input.filter(Char::isDigit).take(MAX_CODE_INPUT_LENGTH)
                                 wrong = false
                             },
                             label = stringResource(R.string.reports_gate_label),
@@ -136,7 +141,7 @@ fun DrawingReportsGate(onBack: () -> Unit, onBotNames: () -> Unit = {}) {
                         PrimaryButton(
                             text = stringResource(R.string.reports_gate_enter),
                             onClick = submit,
-                            enabled = REPORTS_ACCESS_CODE.isNotEmpty() && entered.length == REPORTS_ACCESS_CODE.length,
+                            enabled = REPORTS_ACCESS_CODE.isNotEmpty() && entered.isNotEmpty(),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }

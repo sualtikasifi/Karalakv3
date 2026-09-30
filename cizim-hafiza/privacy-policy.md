@@ -5,7 +5,7 @@
 **Geliştirici:** AVC Software
 **İletişim:** sualtikasifi@gmail.com
 
-**Son güncelleme:** 18 Eylül 2026
+**Son güncelleme:** 30 Eylül 2026
 
 > Yayınlanan sürüm: https://sualtikasifi.github.io/app-ads/
 > Play Console'a girilecek URL budur. Bu dosya ile `docs/index.html`
@@ -25,18 +25,30 @@ aşağıdaki bilgiler Google'ın Firebase altyapısına (Firestore veritabanı)
 gönderilir:
 
 - **Cihazına özel, anonim bir kimlik** (Firebase Anonymous Authentication) —
-  isim, e-posta veya şifre istenmez, hesap oluşturulmaz.
-- **Kendi seçtiğin takma ad** — sadece o anki oyun odasındaki rakibine
+  isim, e-posta veya şifre istenmez.
+- **Kendi seçtiğin takma ad** — odadaki diğer oyunculara ve arkadaşlarına
   gösterilir.
 - **Oda kodu, o oyundaki kelime listesi, skorların ve çizimlerin** — sadece
-  o oyun odasındaki iki oyuncu tarafından görülebilir; oyun bittikten sonra
+  o oyun odasındaki oyuncular tarafından görülebilir; oyun bittikten sonra
   bu veriler sunucuda kalmaya devam eder (odalar otomatik silinmez) ancak
   başka bir kullanıcı tarafından erişilemez.
 - **Gönderdiğin emoji tepkileri.**
 
-Bu veriler üçüncü taraflarla paylaşılmaz, reklam amacıyla kullanılmaz ve
-kimlik bilgisiyle eşleştirilmez. Google'ın Firebase altyapısı için genel
-gizlilik uygulamaları geçerlidir: https://firebase.google.com/support/privacy
+Bu veriler reklam amacıyla kullanılmaz ve satılmaz. Google'ın Firebase
+altyapısı için genel gizlilik uygulamaları geçerlidir:
+https://firebase.google.com/support/privacy
+
+## Google ile giriş ve genel profil
+
+Google ile giriş yapmayı seçersen **e-posta adresin, görünen adın ve profil
+fotoğrafın** ilerlemeni buluta yedeklemek ve yeni bir cihazda geri yüklemek
+için işlenir. E-posta adresin ve görünen adın diğer oyunculara gösterilmez.
+
+Çevrimiçi modları, arkadaş listesini veya ligi kullandığında **genel
+profilin** diğer oyunculara gösterilir: takma adın, seviyen, seçtiğin avatar
+çerçevesi, haftalık/aylık lig puanın ve — Google ile giriş yaptıysan ve
+maskot yerine profil fotoğrafını seçtiysen — **Google profil fotoğrafının
+adresi**. İstersen profil fotoğrafı yerine oyunun maskotunu seçebilirsin.
 
 ## Hızlı Eşleş modu
 
@@ -73,26 +85,33 @@ eşleştirilmez, reklam amacıyla kullanılmaz ve satılmaz.
 
 Uygulama, **Google AdMob** aracılığıyla reklam gösterir:
 
-- Sonuç ekranından sonra, ilk oyun hariç her ikinci maçta gösterilen bir **geçiş
-  reklamı**.
+- Sonuç ekranından sonra, ilk oyun hariç her ikinci maçta (iki reklam
+  arasında en az 3 dakika olmak koşuluyla) gösterilen bir **geçiş reklamı**.
 - Senin kendi isteğinle açtığın durumlarda (ek ipucu, sonuçta XP x2, seri
-  kurtarma, 4 saatte bir +500 altın, günde bir bedava kasa) gösterilen **ödüllü reklamlar**. Ödüllü reklamlarda ödül
-  yalnızca reklamı sonuna kadar izlersen verilir.
+  kurtarma, 4 saatte bir +500 altın, günde bir bedava kasa) gösterilen
+  **ödüllü reklamlar**. Ödüllü reklamlarda ödül yalnızca reklamı sonuna kadar
+  izlersen verilir.
 
-Reklam hiçbir zaman kendiliğinden, sen bir işlem başlatmadan gösterilmez.
+Ödüllü reklamlar hiçbir zaman kendiliğinden, sen bir işlem başlatmadan
+gösterilmez. Banner, yerel veya uygulama açılış reklamı yoktur.
 
 AdMob, reklamları göstermek ve kişiselleştirmek için **reklam kimliği
 (advertising ID)** gibi cihaz tanımlayıcılarını işleyebilir. AB/EEA ve
 Birleşik Krallık'taki kullanıcılara Google'ın Kullanıcı Mesaj Platformu
 (UMP) üzerinden reklam kişiselleştirme rızası sorulur; bu rızanı istediğin
-an geri alabilirsin. Bu durumda Google'ın kendi gizlilik politikası
-geçerlidir: https://policies.google.com/privacy
+an geri alabilirsin. Telefonunun ayarlarından reklam kimliğini sıfırlayabilir
+veya reklam kişiselleştirmeyi kapatabilirsin. Google'ın kendi gizlilik
+politikası geçerlidir: https://policies.google.com/privacy
 
 ## İzinler
 
-Uygulama yalnızca **titreşim (VIBRATE)** izni ister; bu izin, çizim
-süresinin son saniyelerinde haptik uyarı vermek için kullanılır ve
-başka hiçbir amaçla kullanılmaz.
+- **Titreşim (VIBRATE)** — çizim süresinin son saniyelerinde haptik uyarı.
+- **Bildirim gönderme (POST_NOTIFICATIONS)** — günlük görev hatırlatması ve
+  arkadaş davetleri; reddedebilirsin, oyun çalışmaya devam eder.
+- **Açılışta başlatma (RECEIVE_BOOT_COMPLETED)** — telefonu yeniden
+  başlattığında kurulu hatırlatmaların kaybolmaması için.
+- **Reklam kimliği (AD_ID)** — reklamların sunulması ve dolandırıcılığın
+  önlenmesi için.
 
 ## Verilerin silinmesi
 
@@ -100,22 +119,28 @@ Karalak uygulamasını cihazından kaldırdığında (sil/uninstall), cihazında
 yerel olarak tutulan tüm oyun geçmişi, kıdem/puan durumu ve ayarlar
 otomatik olarak silinir — ayrıca bir işlem yapmana gerek yoktur.
 
-Çevrimiçi (arkadaşınla oynama) modunda Firebase'e gönderilmiş veriler için
-silme talebinde bulunmak istersen:
+**Uygulama içinden:** Ayarlar → Hesap → *Hesabı Sil*. Bu işlem Google
+bağlantını, bulut yedeğini, takma adını, arkadaş listeni, kaydedilmiş
+turlarını ve çizimlerini kalıcı olarak siler. Geri alınamaz.
 
-1. sualtikasifi@gmail.com adresine, kullandığın takma adı ve (varsa) oda
-   kodunu belirterek bir e-posta gönder.
-2. Talebin en geç 30 gün içinde işleme alınır.
+**E-postayla:** sualtikasifi@gmail.com adresine, kullandığın takma adı ve
+(varsa) oda kodunu belirterek bir e-posta gönder. Talebin en geç 30 gün
+içinde işleme alınır.
 
-Bu talep üzerine silinen veriler: anonim kullanıcı kimliğin, takma adın,
-oda/oyun kayıtların (kelime listesi, skorlar, çizimler) ve gönderdiğin
-emoji tepkileri. Bu veriler talep edilmediği sürece süresiz olarak
+Silinen veriler: anonim kullanıcı kimliğin, takma adın, oda/oyun kayıtların
+(kelime listesi, skorlar, çizimler), Google hesabına bağlı yedeğin ve
+gönderdiğin emoji tepkileri. Talep edilmediği sürece bu veriler
 Firebase'de saklanabilir (oyun odaları otomatik silinmez).
 
 ## Üçüncü taraflarla paylaşım
 
-Uygulama, yukarıda açıklanan Firebase (Google) altyapısı dışında hiçbir
-veriyi üçüncü taraflarla paylaşmaz.
+Verilerin satılmaz. Uygulama, yukarıda açıklanan Firebase ve Google AdMob
+(Google) altyapısı dışında hiçbir veriyi üçüncü taraflarla paylaşmaz.
+
+## Çocuklar
+
+Karalak 13 yaş altındaki çocuklara yönelik değildir ve bilerek bu yaş
+grubundan veri toplamaz.
 
 ## İletişim
 

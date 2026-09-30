@@ -636,16 +636,33 @@ private fun LeagueRow(rank: Int, entry: LeagueEntry) {
                 level = entry.level,
                 frame = AvatarFrame.resolve(entry.frameId, entry.level),
                 size = 40.dp,
-                photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(entry.avatarUrl),
-                levelBadge = true
+                photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(entry.avatarUrl)
             )
             Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = if (entry.isMe) stringResource(R.string.online_you_label, entry.nickname) else entry.nickname,
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 1,
-                modifier = Modifier.weight(1f)
-            )
+            // Level sits beside the name ("Ad • 12 Seviye"), the same way the
+            // home screen's profile card writes it, instead of as a dark pill
+            // pinned on the avatar frame.
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = if (entry.isMe) stringResource(R.string.online_you_label, entry.nickname) else entry.nickname,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                Text(
+                    text = "• " + stringResource(R.string.home_level_inline, entry.level),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
             Text(
                 text = stringResource(R.string.league_xp_format, entry.periodXp),
                 style = MaterialTheme.typography.titleSmall,

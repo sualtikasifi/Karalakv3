@@ -699,8 +699,8 @@ export async function runFinalizeLeaguePeriod(): Promise<void> {
 // ---------------------------------------------------------------------------
 
 /**
- * XP granted to whoever sent a friend-invite link once the person who opened
- * it reaches this level. Keep in sync with FriendsScreen's
+ * XP granted to BOTH sides — whoever sent a friend-invite link and the person
+ * who opened it — once the invitee reaches the level below. Keep in sync with FriendsScreen's
  * friends_invite_reward_hint / InviteShareUtil's share_friend_reward_hint on
  * the Android side — there is no shared source of truth between the two,
  * this project has no build step that could enforce one.
@@ -790,6 +790,9 @@ export async function runGrantReferralRewards(): Promise<void> {
     }
 
     const batch = db.batch();
+    // referralRewardGranted flips in the same batch as both payouts, so the
+    // invitee can never be paid twice (or paid without the inviter) by a
+    // re-run: the query above no longer matches this document afterwards.
     batch.update(doc.ref, { referralRewardGranted: true });
     batch.set(
       db.doc(`users/${inviterUid}/private/pendingRewards`),
@@ -798,6 +801,21 @@ export async function runGrantReferralRewards(): Promise<void> {
           amount: REFERRAL_REWARD_XP,
           reason: "referral",
           sourceUid: doc.id,
+          createdAt: Date.now(),
+        }),
+      },
+      { merge: true }
+    );
+    // The invitee is rewarded too — same amount, same trigger (reaching the
+    // level above), so it is covered by the same account-age and per-inviter
+    // limits and cannot be farmed any faster than the inviter's share.
+    batch.set(
+      db.doc(`users/${doc.id}/private/pendingRewards`),
+      {
+        pending: admin.firestore.FieldValue.arrayUnion({
+          amount: REFERRAL_REWARD_XP,
+          reason: "referral_invitee",
+          sourceUid: inviterUid,
           createdAt: Date.now(),
         }),
       },

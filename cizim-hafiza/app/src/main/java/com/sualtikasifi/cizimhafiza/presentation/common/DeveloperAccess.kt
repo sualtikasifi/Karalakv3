@@ -23,6 +23,14 @@ val DEVELOPER_ACCESS_CODE: String = com.sualtikasifi.cizimhafiza.BuildConfig.DEV
 val REPORTS_ACCESS_CODE: String = com.sualtikasifi.cizimhafiza.BuildConfig.REPORTS_ACCESS_CODE
 
 /**
+ * The longest passcode either gate's text field will accept. Fixed on purpose: the fields used to
+ * stop at the length of the code baked into the build, so a build made with a shorter code than the
+ * one the maintainer types (a stale local.properties or CI secret) capped the box at that shorter
+ * length and made the real code impossible to enter.
+ */
+const val MAX_CODE_INPUT_LENGTH = 16
+
+/**
  * How many taps on the version line in Settings reveal the report inbox's
  * passcode gate.
  *
