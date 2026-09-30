@@ -148,6 +148,13 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    // The app is Turkish + English only (see res/xml/locale_config.xml). Without this every
+    // library (Play Services, Firebase, Material, ...) ships its translations into ~80 other
+    // languages that no screen can ever show.
+    androidResources {
+        localeFilters += listOf("tr", "en")
+    }
 }
 
 // Exported schemas double as the fixtures for the migration test (androidTest).
