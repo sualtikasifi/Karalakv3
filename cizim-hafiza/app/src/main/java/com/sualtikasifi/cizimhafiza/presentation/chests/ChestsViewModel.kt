@@ -66,8 +66,8 @@ class ChestsViewModel @Inject constructor(
     val speedupAvailable: StateFlow<Boolean> = kotlinx.coroutines.flow.combine(
         settingsRepository.chestSpeedupDay,
         _nowMillis
-    ) { day, _ -> day != java.time.LocalDate.now().toEpochDay() }
-        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, settingsRepository.chestSpeedupDay.value != java.time.LocalDate.now().toEpochDay())
+    ) { day, _ -> day != com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay() }
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, settingsRepository.chestSpeedupDay.value != com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay())
 
     /**
      * Watches a rewarded ad and, if it is earned, takes [ChestSlots.SPEEDUP_MILLIS]

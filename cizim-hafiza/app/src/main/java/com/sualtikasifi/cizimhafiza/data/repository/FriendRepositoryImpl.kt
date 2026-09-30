@@ -562,8 +562,8 @@ class FriendRepositoryImpl @Inject constructor(
     override fun observeLeagueTable(): Flow<LeagueTable> =
         firestoreFlow("leagueTable") { emit, onError ->
             val uid = requireUid()
-            val currentWeek = LeaguePeriod.periodIdFor(LocalDate.now())
-            val daysRemaining = LeaguePeriod.daysRemainingIn(LocalDate.now())
+            val currentWeek = LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today())
+            val daysRemaining = LeaguePeriod.daysRemainingIn(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today())
 
             // Driven off the friends list rather than a query across all
             // users: there is no index that could scope "everyone I am

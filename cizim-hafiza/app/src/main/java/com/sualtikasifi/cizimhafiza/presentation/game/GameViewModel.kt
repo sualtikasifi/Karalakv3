@@ -176,7 +176,7 @@ class GameViewModel @Inject constructor(
     // might tick over. Doesn't touch SettingsRepository's stored day itself;
     // see claimQuickMatchDailyBonus() in finishGame() for that.
     private val quickMatchDailyBonusPending: Boolean =
-        ghost != null && settingsRepository.lastQuickMatchEpochDay != LocalDate.now().toEpochDay()
+        ghost != null && settingsRepository.lastQuickMatchEpochDay != com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
 
     // The live XP-event multiplier (see XpEventRepository / Developer Panel)
     // times this round's own Quick Match daily bonus — fixed once fetched in
@@ -528,7 +528,7 @@ class GameViewModel @Inject constructor(
             // Derived from the date, never queried at random — that's what
             // makes it the same round for every player (see DailyChallenge).
             DailyChallenge.wordsFor(
-                epochDay = LocalDate.now().toEpochDay(),
+                epochDay = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay(),
                 languageTag = WordSeeder.currentLanguage(context),
                 pool = getWordsForGameUseCase.getAllApprovedWords()
             )

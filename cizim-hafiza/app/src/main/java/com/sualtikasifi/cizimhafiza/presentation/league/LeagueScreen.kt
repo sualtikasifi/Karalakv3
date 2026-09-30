@@ -156,7 +156,7 @@ fun LeagueScreen(
                 // screen from the first day, rather than only after the
                 // scheduled rebuild has stamped it into the table.
                 val reward = LeagueReward.find(uiState.global?.rewardId)
-                    ?: LeagueReward.forPeriod(LeaguePeriod.periodIdFor(LocalDate.now()))
+                    ?: LeagueReward.forPeriod(LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()))
                 reward?.let { reward ->
                     RewardBanner(reward = reward, modifier = Modifier.padding(bottom = 8.dp))
                 }

@@ -74,7 +74,7 @@ class LeagueScorePublisher @Inject constructor(
         return Snapshot(
             nickname = settingsRepository.nicknameOrDefault,
             periodXp = periodXp,
-            periodId = LeaguePeriod.periodIdFor(LocalDate.now()),
+            periodId = LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()),
             level = level,
             frameId = AvatarFrame.resolve(settingsRepository.selectedAvatarFrameId.value, level).name,
             avatarUrl = avatarUrl

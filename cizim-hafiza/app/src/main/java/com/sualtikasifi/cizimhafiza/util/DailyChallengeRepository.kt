@@ -60,7 +60,7 @@ class DailyChallengeRepository @Inject constructor(@ApplicationContext context: 
      * the streak never really reached.
      */
     fun recordCompletion(correctFlags: List<Boolean>, score: Int, xpForStreak: (Int) -> Int): DailyChallengeState {
-        val today = LocalDate.now().toEpochDay()
+        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
         val last = lastCompletedEpochDay
         if (last == today) return _state.value
 
@@ -131,7 +131,7 @@ class DailyChallengeRepository @Inject constructor(@ApplicationContext context: 
     private var rescuePromptDismissed = false
 
     fun rescueStreak(): Boolean {
-        val today = LocalDate.now().toEpochDay()
+        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
         if (_state.value.rescuableStreak <= 0) return false
         prefs.edit {
             putLong(KEY_LAST_COMPLETED, today - 1)
@@ -194,7 +194,7 @@ class DailyChallengeRepository @Inject constructor(@ApplicationContext context: 
     }
 
     private fun readState(): DailyChallengeState {
-        val today = LocalDate.now().toEpochDay()
+        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
         val last = lastCompletedEpochDay
         // A streak is only still "live" if it was kept today or yesterday;
         // beyond that the stored number is history unless the player buys it

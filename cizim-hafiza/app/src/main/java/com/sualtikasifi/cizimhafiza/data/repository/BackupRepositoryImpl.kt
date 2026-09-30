@@ -139,7 +139,7 @@ class BackupRepositoryImpl @Inject constructor(
             chestCycleSeed = settingsRepository.chestCycleSeedForBackup,
             chestCycleIndex = settingsRepository.chestCycleIndexForBackup,
             periodXp = settingsRepository.periodXp.value,
-            periodId = com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(java.time.LocalDate.now()),
+            periodId = com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()),
             adGoldNextAt = settingsRepository.adGoldNextAtMillis.value,
             adChestDay = settingsRepository.adChestDay.value,
             backedUpAt = System.currentTimeMillis()

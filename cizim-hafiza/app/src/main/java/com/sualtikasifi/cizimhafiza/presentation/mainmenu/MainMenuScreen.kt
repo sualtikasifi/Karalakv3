@@ -176,6 +176,17 @@ fun MainMenuScreen(
     val context = LocalContext.current
     val activity = context as? Activity
 
+    // Midnight while the menu is open: nothing else re-reads the day, so without this the daily
+    // challenge and the free chest stayed "done" until the player left and came back.
+    var today by androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()) }
+    LaunchedEffect(today) {
+        val now = com.sualtikasifi.cizimhafiza.util.TurkeyTime.now()
+        val untilMidnight = java.time.Duration.between(now, now.toLocalDate().plusDays(1).atStartOfDay()).toMillis()
+        delay(untilMidnight + 1_000)
+        today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
+        viewModel.refreshDaily()
+    }
+
     // The app can sit in the background across midnight; without this the
     // menu would still be showing "done for today" on a day whose challenge
     // is actually waiting to be played.
@@ -245,7 +256,7 @@ fun MainMenuScreen(
                                 modifier = Modifier.weight(1f).fillMaxHeight()
                             )
                             AdChestButton(
-                                availableToday = adChestDay != java.time.LocalDate.now().toEpochDay(),
+                                availableToday = adChestDay != today,
                                 onClick = { activity?.let(viewModel::watchAdForChest) },
                                 modifier = Modifier.width(84.dp).fillMaxHeight()
                             )
@@ -798,12 +809,12 @@ private fun DailyChallengeCard(state: DailyChallengeState, onPlay: () -> Unit, c
 @Composable
 private fun midnightCountdownText(): String {
     var remaining by remember {
-        mutableStateOf(java.time.Duration.between(java.time.LocalDateTime.now(), nextMidnight()))
+        mutableStateOf(java.time.Duration.between(com.sualtikasifi.cizimhafiza.util.TurkeyTime.now(), nextMidnight()))
     }
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(1_000)
-            remaining = java.time.Duration.between(java.time.LocalDateTime.now(), nextMidnight())
+            remaining = java.time.Duration.between(com.sualtikasifi.cizimhafiza.util.TurkeyTime.now(), nextMidnight())
         }
     }
     val total = remaining.seconds.coerceAtLeast(0)
@@ -814,7 +825,7 @@ private fun midnightCountdownText(): String {
 }
 
 private fun nextMidnight(): java.time.LocalDateTime =
-    java.time.LocalDate.now().plusDays(1).atStartOfDay()
+    com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().plusDays(1).atStartOfDay()
 
 /**
  * The one deliberate way back from a broken streak.

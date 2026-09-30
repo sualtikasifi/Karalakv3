@@ -54,7 +54,7 @@ class StoreViewModel @Inject constructor(
         settingsRepository.dailyJokerDay,
         kotlinx.coroutines.flow.flow { while (true) { emit(Unit); kotlinx.coroutines.delay(60_000) } }
     ) { claimedDay, _ ->
-        val today = java.time.LocalDate.now().toEpochDay()
+        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
         if (!com.sualtikasifi.cizimhafiza.util.GameConstants.ADMOB_ENABLED || claimedDay == today) null
         else com.sualtikasifi.cizimhafiza.domain.model.DailyJoker.typeFor(today)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)

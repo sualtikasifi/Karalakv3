@@ -234,7 +234,7 @@ internal fun AdGoldButton(nextAtMillis: Long, onClick: () -> Unit, modifier: Mod
 /** Right of the daily card: one free mid-tier chest per day for an ad, refreshed at midnight. */
 @Composable
 internal fun AdChestButton(availableToday: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val midnight = remember(availableToday) { java.time.LocalDate.now().plusDays(1).atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() }
+    val midnight = remember(availableToday) { com.sualtikasifi.cizimhafiza.util.TurkeyTime.nextMidnightMillis() }
     val now = rememberNowUntil(if (availableToday) 0L else midnight)
     val remaining = midnight - now
     HomeAdButton(

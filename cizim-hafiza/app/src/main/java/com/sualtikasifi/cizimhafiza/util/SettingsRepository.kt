@@ -485,7 +485,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     /** Hands over today's [DailyJoker] and records the day; null if it was already claimed. */
     @Synchronized
     fun claimDailyJoker(): JokerType? {
-        val today = java.time.LocalDate.now().toEpochDay()
+        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
         if (_dailyJokerDay.value == today) return null
         val type = com.sualtikasifi.cizimhafiza.domain.model.DailyJoker.typeFor(today)
         prefs.edit { putLong(KEY_DAILY_JOKER_DAY, today) }
@@ -511,7 +511,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     /** Takes [millis] off the running countdown of [chestId]. False if today's speed-up is spent or that chest is not counting down. */
     @Synchronized
     fun speedUpChest(chestId: String, millis: Long): Boolean {
-        val today = java.time.LocalDate.now().toEpochDay()
+        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
         if (_chestSpeedupDay.value == today) return false
         val slots = _chestSlots.value
         val index = slots.indexOfFirst { it?.id == chestId }
@@ -708,12 +708,12 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     }
 
     @Synchronized
-    fun isAdChestReady(): Boolean = _adChestDay.value != java.time.LocalDate.now().toEpochDay()
+    fun isAdChestReady(): Boolean = _adChestDay.value != com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
 
     /** Rolls and pays a free mid-tier chest without needing a slot; null if today's was already taken. */
     @Synchronized
     fun claimAdChest(): ChestReward? {
-        val today = java.time.LocalDate.now().toEpochDay()
+        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
         if (_adChestDay.value == today) return null
         val reward = payChestOutright(ChestTier.GOLD) { putLong(KEY_AD_CHEST_DAY, today) }
         _adChestDay.value = today
@@ -806,7 +806,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
      * abandoned never spends the day's bonus.
      */
     fun claimQuickMatchDailyBonus(): Boolean {
-        val today = LocalDate.now().toEpochDay()
+        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
         if (lastQuickMatchEpochDay == today) return false
         prefs.edit { putLong(KEY_LAST_QUICK_MATCH_EPOCH_DAY, today) }
         return true
@@ -824,7 +824,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     val periodXp: StateFlow<Int> = _periodXp.asStateFlow()
 
     private fun readPeriodXp(): Int {
-        val currentPeriod = LeaguePeriod.periodIdFor(LocalDate.now())
+        val currentPeriod = LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today())
         if (prefs.getLong(KEY_PERIOD_XP_PERIOD, -1L) != currentPeriod) return 0
         return prefs.getInt(KEY_PERIOD_XP, 0)
     }
@@ -836,7 +836,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
      */
     @Synchronized
     fun restoreEngagement(periodXp: Int, periodId: Long, adGoldNextAt: Long, adChestDay: Long) {
-        val currentPeriod = LeaguePeriod.periodIdFor(LocalDate.now())
+        val currentPeriod = LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today())
         if (periodId == currentPeriod && periodXp > _periodXp.value) {
             prefs.edit {
                 putLong(KEY_PERIOD_XP_PERIOD, currentPeriod)
@@ -855,7 +855,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     }
 
     private fun addPeriodXp(amount: Int) {
-        val currentPeriod = LeaguePeriod.periodIdFor(LocalDate.now())
+        val currentPeriod = LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today())
         val storedPeriod = prefs.getLong(KEY_PERIOD_XP_PERIOD, -1L)
         val base = if (storedPeriod == currentPeriod) prefs.getInt(KEY_PERIOD_XP, 0) else 0
         val updated = base + amount
@@ -1221,7 +1221,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
      * already played today, and otherwise resets it to a fresh streak of 1.
      */
     fun updateStreakOnPlay() {
-        val today = LocalDate.now().toEpochDay()
+        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
         val newStreak = when (today - lastPlayedEpochDay) {
             0L -> currentStreak
             1L -> currentStreak + 1
