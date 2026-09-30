@@ -76,17 +76,6 @@ adb logcat -d | grep "Displayed $PKG" | cut -c1-200 | tee "$OUT/startup_displaye
 # --- Main menu ------------------------------------------------------------------------------
 sleep 6
 shot 01_main_menu
-dump_ui 01_main_menu
-echo "--- visible texts on the main menu:"
-python3 - "$OUT/01_main_menu.xml" <<'PY' | tee "$OUT/01_main_menu_texts.txt"
-import sys, xml.etree.ElementTree as ET
-seen = []
-for n in ET.parse(sys.argv[1]).iter('node'):
-    for v in (n.get('text'), n.get('content-desc')):
-        if v and v not in seen:
-            seen.append(v)
-print("\n".join(seen))
-PY
 
 # --- Walk the main screens by coordinates (1080x2400) ------------------------------------------
 # Compose content is not exposed to uiautomator on this emulator, so taps are by position,
@@ -120,9 +109,11 @@ walk() { :; }
 adb logcat -d > "$OUT/logcat.txt"
 adb logcat -d -b crash > "$OUT/crash.txt"
 FAIL=0
-if grep -q "FATAL EXCEPTION" "$OUT/logcat.txt"; then
-  echo "::error::The app crashed (FATAL EXCEPTION in logcat)"
-  grep -A 12 "FATAL EXCEPTION" "$OUT/logcat.txt" | head -60
+# "FATAL EXCEPTION" lines also come from tools run on the emulator (uiautomator, am), so
+# only a crash whose "Process:" line names this app counts.
+if grep -A 3 "FATAL EXCEPTION" "$OUT/logcat.txt" | grep -q "Process: $PKG"; then
+  echo "::error::The app crashed (FATAL EXCEPTION in $PKG)"
+  grep -A 14 "FATAL EXCEPTION" "$OUT/logcat.txt" | head -60
   FAIL=1
 fi
 if grep -q "ANR in $PKG" "$OUT/logcat.txt"; then
