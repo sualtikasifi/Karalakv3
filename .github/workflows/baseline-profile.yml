@@ -1,0 +1,81 @@
+name: Baseline profile
+
+# Generates app/src/release/generated/baselineProfiles/ (the profile) on a GitHub-hosted
+# runner (hardware-accelerated emulator via a Gradle Managed Device — see
+# cizim-hafiza/BASELINE_PROFILE.md) and commits it to the branch it ran on.
+# Once that file is in the repo, every release build ships it and Android
+# pre-compiles the app's startup path at install time instead of interpreting
+# it on each player's first launches.
+#
+# Manual only: run it from the Actions tab (Run workflow) on the branch you want the
+# profile committed to. Re-run it after big changes to the first screens; a stale
+# profile is harmless but less useful. (It used to also run on every pull-request push,
+# which regenerated and re-committed the profile each time and raced with normal pushes.)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: cizim-hafiza
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # A pull request would otherwise check out a detached merge commit,
+          # which cannot be pushed back to.
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Emulators need /dev/kvm; hosted Linux runners have it but not world-writable.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Generate baseline profile
+        run: >
+          ./gradlew :app:generateBaselineProfile
+          -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
+          -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.enabledRules=BaselineProfile
+          --no-daemon --console=plain
+
+      - name: Show what was generated
+        run: |
+          # The plugin writes per variant: app/src/release/generated/baselineProfiles/.
+          F=$(ls app/src/*/generated/baselineProfiles/baseline-prof.txt 2>/dev/null | head -1)
+          test -n "$F" && test -s "$F" || { echo "::error::No baseline profile was produced"; exit 1; }
+          echo "$F"
+          wc -l "$F"
+          head -5 "$F"
+          ls -l app/src/*/generated/baselineProfiles/
+
+      - name: Upload profile
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-prof
+          path: cizim-hafiza/app/src/*/generated/baselineProfiles/
+          retention-days: 30
+
+      - name: Commit the profile to the branch
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/*/generated/baselineProfiles
+          if git diff --cached --quiet; then echo "Profile unchanged."; exit 0; fi
+          git commit -m "Baseline profile güncellendi"
+          git push origin "HEAD:$BRANCH"
