@@ -4,6 +4,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
+import com.sualtikasifi.cizimhafiza.data.repository.getCacheFirst
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
@@ -279,7 +280,7 @@ class BotRoomEngine @Inject constructor(
         if (freshWordIds != wordIds) return
 
         val trainedDocs = wordIds.mapNotNull { id ->
-            firestore.collection("botTrainedWords").document(id.toString()).get().await().takeIf { it.exists() }
+            firestore.collection("botTrainedWords").document(id.toString()).getCacheFirst().takeIf { it.exists() }
         }
         if (trainedDocs.isEmpty()) return
 
@@ -689,7 +690,7 @@ class BotRoomEngine @Inject constructor(
      */
     private suspend fun pickTrainedWords(count: Int): List<Map<String, Any?>> {
         val indexed = runCatching {
-            (firestore.collection("botTrainingIndex").document("trained").get().await().get("wordIds") as? List<*>)
+            (firestore.collection("botTrainingIndex").document("trained").getCacheFirst().get("wordIds") as? List<*>)
                 ?.mapNotNull { (it as? Number)?.toInt() }
         }.getOrNull()
         if (indexed != null && indexed.size >= count) {
@@ -698,7 +699,7 @@ class BotRoomEngine @Inject constructor(
             val docs = kotlinx.coroutines.coroutineScope {
                 indexed.shuffled().take(count + SPARE_WORD_READS).map { id ->
                     async {
-                        runCatching { firestore.collection("botTrainedWords").document(id.toString()).get().await() }
+                        runCatching { firestore.collection("botTrainedWords").document(id.toString()).getCacheFirst() }
                             .getOrNull()?.takeIf { it.exists() }?.data
                     }
                 }.awaitAll()

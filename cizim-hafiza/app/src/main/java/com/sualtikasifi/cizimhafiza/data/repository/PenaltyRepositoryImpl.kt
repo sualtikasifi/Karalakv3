@@ -38,14 +38,22 @@ class PenaltyRepositoryImpl @Inject constructor(
         // definition; creating an account just to check would be a write on
         // the cold path for nothing.
         val uid = auth.currentUser?.uid ?: return emptyList()
-        val outstanding = runCatching {
+        // Even an empty answer costs a server read, and it is empty on nearly every launch.
+        // A penalty is a record that waits for its device, so looking every few hours instead
+        // of every start loses nothing a player could notice.
+        val now = System.currentTimeMillis()
+        if (now - settingsRepository.lastPenaltyCheckMillis < PENALTY_CHECK_INTERVAL_MILLIS) return emptyList()
+        val queried = runCatching {
             penalties
                 .whereEqualTo("uid", uid)
                 .whereEqualTo("appliedAt", 0L)
                 .get()
                 .await()
                 .documents
-        }.onFailure { Log.w(TAG, "Could not read penalties", it) }.getOrNull().orEmpty()
+        }.onFailure { Log.w(TAG, "Could not read penalties", it) }.getOrNull()
+        // Only a query that actually answered counts as a check; a failure retries next launch.
+        if (queried != null) settingsRepository.lastPenaltyCheckMillis = now
+        val outstanding = queried.orEmpty()
 
         if (outstanding.isEmpty()) return emptyList()
 
@@ -143,5 +151,8 @@ class PenaltyRepositoryImpl @Inject constructor(
 
     private companion object {
         const val TAG = "Penalties"
+
+        /** How often the launch-time penalty check actually asks the server. */
+        const val PENALTY_CHECK_INTERVAL_MILLIS = 3 * 60 * 60 * 1000L
     }
 }

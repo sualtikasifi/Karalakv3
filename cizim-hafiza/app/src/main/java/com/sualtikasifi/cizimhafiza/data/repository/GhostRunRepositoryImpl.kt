@@ -348,7 +348,7 @@ class GhostRunRepositoryImpl @Inject constructor(
     private suspend fun trainedWordIds(): List<Int>? {
         cachedTrainedIds?.let { return it }
         return runCatching {
-            val snapshot = firestore.collection("botTrainingIndex").document("trained").get().await()
+            val snapshot = firestore.collection("botTrainingIndex").document("trained").getCacheFirst()
             (snapshot.get("wordIds") as? List<*>)
                 ?.mapNotNull { (it as? Number)?.toInt() }
                 ?.takeIf { it.size >= GhostRuns.RUN_WORD_COUNT }
@@ -392,7 +392,7 @@ class GhostRunRepositoryImpl @Inject constructor(
 
     override suspend fun loadItems(runId: String): Result<List<ResultItem>> = runCatching {
         BotGhostRuns.parse(runId)?.let { (seed, wordIds) -> return@runCatching botItems(seed, wordIds) }
-        val raw = ghostRunItems.document(runId).get().await().getString("itemsJson")
+        val raw = ghostRunItems.document(runId).getCacheFirst().getString("itemsJson")
             ?: return@runCatching emptyList()
         json.decodeFromString<List<ResultItem>>(raw)
     }
@@ -426,7 +426,7 @@ class GhostRunRepositoryImpl @Inject constructor(
         wordIds
             .mapIndexed { index, wordId ->
                 async {
-                    val doc = runCatching { botTrainedWords.document(wordId.toString()).get().await() }
+                    val doc = runCatching { botTrainedWords.document(wordId.toString()).getCacheFirst() }
                         .getOrNull()
                         ?.takeIf { it.exists() }
                         ?: return@async null

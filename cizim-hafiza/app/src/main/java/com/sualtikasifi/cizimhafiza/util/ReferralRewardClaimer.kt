@@ -49,6 +49,12 @@ class ReferralRewardClaimer @Inject constructor(
         if (started) return
         started = true
         scope.launch {
+            // A reward is only ever added by a once-a-day server job, so looking on every single
+            // start is a server read that almost always finds nothing. Once per few hours is
+            // plenty; a reward simply waits until the next check.
+            val now = System.currentTimeMillis()
+            if (now - settingsRepository.lastRewardCheckMillis < REWARD_CHECK_INTERVAL_MILLIS) return@launch
+            settingsRepository.lastRewardCheckMillis = now
             runCatching { friendRepository.claimPendingRewards() }
                 .onSuccess { amount ->
                     if (amount > 0) {
@@ -66,5 +72,6 @@ class ReferralRewardClaimer @Inject constructor(
 
     private companion object {
         const val TAG = "ReferralRewardClaimer"
+        const val REWARD_CHECK_INTERVAL_MILLIS = 4 * 60 * 60 * 1000L
     }
 }
