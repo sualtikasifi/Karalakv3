@@ -7,15 +7,12 @@ name: Baseline profile
 # pre-compiles the app's startup path at install time instead of interpreting
 # it on each player's first launches.
 #
-# Run it from the Actions tab (Run workflow) on the branch you want the profile
-# committed to. It also runs when this file itself is changed in a pull request,
-# so edits to the workflow are tested before they are merged. Re-run it after
-# big changes to the first screens; a stale profile is harmless but less useful.
+# Manual only: run it from the Actions tab (Run workflow) on the branch you want the
+# profile committed to. Re-run it after big changes to the first screens; a stale
+# profile is harmless but less useful. (It used to also run on every pull-request push,
+# which regenerated and re-committed the profile each time and raced with normal pushes.)
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - ".github/workflows/baseline-profile.yml"
 
 permissions:
   contents: write
