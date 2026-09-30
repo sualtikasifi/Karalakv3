@@ -21,7 +21,7 @@ adb logcat -c
 # Skip the first-run tutorial: it is a plain boolean in the app's settings file, and the
 # debug build is debuggable so run-as can write it.
 adb shell "run-as $PKG mkdir -p shared_prefs"
-printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boolean name=\"tutorial_completed\" value=\"true\" /></map>" \
+printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boolean name=\"tutorial_completed\" value=\"true\" /><boolean name=\"feature_tour_seen\" value=\"true\" /></map>" \
   | adb shell "run-as $PKG sh -c 'cat > shared_prefs/cizim_hafiza_settings.xml'"
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
@@ -69,7 +69,9 @@ for i in 1 2 3; do
   sleep 2
   adb shell am start -W -n $ACT | tee -a "$OUT/startup.txt"
 done
-echo "--- TotalTime per run:"; grep -E "TotalTime|WaitTime" "$OUT/startup.txt"
+echo "--- am start -W (times out on the software-rendered emulator, kept for reference):"; grep -E "Status|WaitTime" "$OUT/startup.txt"
+# The activity manager's own "Displayed" line is the reliable first-frame time here.
+adb logcat -d | grep "Displayed $PKG" | cut -c1-200 | tee "$OUT/startup_displayed.txt"
 
 # --- Main menu ------------------------------------------------------------------------------
 sleep 6
@@ -86,24 +88,15 @@ for n in ET.parse(sys.argv[1]).iter('node'):
 print("\n".join(seen))
 PY
 
-# --- Walk a few screens; each is best-effort, a missing label is reported, not fatal ------
-walk() {
-  local name="$1" label="$2"
-  if tap_text "$label"; then
-    sleep 3
-    shot "$name"
-    dump_ui "$name"
-    adb shell input keyevent KEYCODE_BACK
-    sleep 2
-  fi
-}
-walk 02_store "Mağaza"
-walk 03_league "Lig"
-walk 04_friends "Arkadaş"
-walk 05_achievements "Başarım"
-walk 06_settings "Ayarlar"
-walk 07_levels "Bölüm"
-walk 08_daily "Günlük"
+# --- Scroll the main menu top to bottom, one screenshot per screen ----------------------------
+# Compose content is not exposed to uiautomator on this emulator (the dump above is nearly
+# empty), so navigation is by swipe/coordinates. Screen is 1080x2400 (pixel_6).
+for i in 02 03 04 05; do
+  adb shell input swipe 540 1900 540 600 600
+  sleep 2
+  shot ${i}_main_menu_scrolled
+done
+walk() { :; }
 
 # --- Verdict ----------------------------------------------------------------------------------
 adb logcat -d > "$OUT/logcat.txt"
