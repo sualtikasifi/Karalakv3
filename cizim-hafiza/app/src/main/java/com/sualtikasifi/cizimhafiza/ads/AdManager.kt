@@ -28,7 +28,10 @@ import javax.inject.Singleton
  * rewarded ad offered opt-in for an extra hint / extra time, never auto-shown.
  */
 @Singleton
-class AdManager @Inject constructor(@ApplicationContext private val context: Context) {
+class AdManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val adminStats: dagger.Lazy<com.sualtikasifi.cizimhafiza.util.AdminStats>
+) {
 
     private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
@@ -44,6 +47,22 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
     private fun logAdEvent(event: String, placement: String) {
         runCatching {
             analytics?.logEvent(event, android.os.Bundle().apply { putString("placement", placement) })
+        }
+        // The same event also feeds the developer panel's own counters (AdminStats).
+        runCatching {
+            adminStats.get().record(
+                com.sualtikasifi.cizimhafiza.util.AdminStats.adKey(placement, event.removePrefix("ad_"))
+            )
+        }
+    }
+
+    /** AdMob's own estimate of what one impression earned, in millionths of the account currency. */
+    private fun recordRevenue(placement: String, valueMicros: Long) {
+        runCatching {
+            adminStats.get().record(
+                com.sualtikasifi.cizimhafiza.util.AdminStats.adKey(placement, "revenue_micros"),
+                valueMicros
+            )
         }
     }
 
@@ -201,6 +220,7 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
         /** Where the ad was triggered, for analytics only. */
         placement: String = "interstitial"
     ) {
+        runCatching { adminStats.get().record("games__finished__$placement") }
         if (!GameConstants.ADMOB_ENABLED) {
             onDismissed()
             return
@@ -234,6 +254,7 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
         val preloaded = cachedInterstitial
         if (preloaded != null) {
             cachedInterstitial = null
+            preloaded.setOnPaidEventListener { recordRevenue(placement, it.valueMicros) }
             preloaded.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdShowedFullScreenContent() = recordInterstitialShown(placement)
                 override fun onAdDismissedFullScreenContent() {
@@ -258,6 +279,7 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
             AdRequest.Builder().build(),
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
+                    ad.setOnPaidEventListener { recordRevenue(placement, it.valueMicros) }
                     ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                         override fun onAdShowedFullScreenContent() = recordInterstitialShown(placement)
                         override fun onAdDismissedFullScreenContent() = onDismissed()
@@ -375,6 +397,7 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
             // then `earned` already reflects whether the reward callback
             // fired first, so skipping early correctly resolves as no reward.
             var earned = false
+            ad.setOnPaidEventListener { recordRevenue(placement, it.valueMicros) }
             ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() =
                     settle(if (earned) RewardedOutcome.EARNED else RewardedOutcome.SKIPPED)

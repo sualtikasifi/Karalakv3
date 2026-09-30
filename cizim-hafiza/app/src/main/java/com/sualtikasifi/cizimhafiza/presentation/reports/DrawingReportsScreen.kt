@@ -140,7 +140,7 @@ fun DrawingReportsScreen(
                 listOf(
                     listOf(ReportsTab.Queue, ReportsTab.Pool, ReportsTab.League),
                     listOf(ReportsTab.Feedback, ReportsTab.Reports, ReportsTab.Detector),
-                    listOf(ReportsTab.XpEvent, ReportsTab.DailyChallenge)
+                    listOf(ReportsTab.XpEvent, ReportsTab.DailyChallenge, ReportsTab.Stats)
                 ).forEach { row ->
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -224,7 +224,7 @@ fun DrawingReportsScreen(
                     // the `when` below, which is taken before this is used.
                     ReportsTab.League -> 0
                     // Same story as League — see the XpEvent branch below.
-                    ReportsTab.XpEvent -> 0
+                    ReportsTab.XpEvent, ReportsTab.Stats -> 0
                     ReportsTab.DailyChallenge -> uiState.dailyChallengeQueue.size
                 }
                 val firstLoad = when (uiState.tab) {
@@ -249,6 +249,8 @@ fun DrawingReportsScreen(
                         failed = uiState.leagueFailed,
                         onSelect = viewModel::setWeekReward
                     )
+
+                    uiState.tab == ReportsTab.Stats -> StatsPanel()
 
                     // Also not a list — a status line plus start/stop
                     // buttons, same shape as the League branch above.
@@ -289,7 +291,7 @@ fun DrawingReportsScreen(
                                     // intercepts this tab before this ever
                                     // runs, kept only for exhaustiveness.
                                     ReportsTab.League -> R.string.reports_tab_league
-                                    ReportsTab.XpEvent -> R.string.reports_tab_xp_event
+                                    ReportsTab.XpEvent, ReportsTab.Stats -> R.string.reports_tab_xp_event
                                     ReportsTab.DailyChallenge -> R.string.reports_daily_challenge_empty
                                 }
                             ),
@@ -352,7 +354,7 @@ fun DrawingReportsScreen(
                             // own branch above and never gets this far.
                             ReportsTab.League -> Unit
                             // Same — see the XpEvent branch above.
-                            ReportsTab.XpEvent -> Unit
+                            ReportsTab.XpEvent, ReportsTab.Stats -> Unit
                             ReportsTab.DailyChallenge -> items(
                                 uiState.dailyChallengeQueue,
                                 key = { it.id }
@@ -1122,6 +1124,7 @@ private fun ReportsTab.labelRes(): Int = when (this) {
     ReportsTab.League -> R.string.reports_tab_league
     ReportsTab.XpEvent -> R.string.reports_tab_xp_event
     ReportsTab.DailyChallenge -> R.string.reports_tab_daily_challenge
+    ReportsTab.Stats -> R.string.reports_tab_stats
 }
 
 /**

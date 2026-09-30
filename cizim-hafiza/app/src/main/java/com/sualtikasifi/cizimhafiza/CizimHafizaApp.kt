@@ -39,6 +39,7 @@ class CizimHafizaApp : Application(), Configuration.Provider {
     @Inject lateinit var gameSessionDao: Lazy<GameSessionDao>
     @Inject lateinit var settingsRepository: SettingsRepository
     @Inject lateinit var firebaseAuth: Lazy<FirebaseAuth>
+    @Inject lateinit var adminStats: Lazy<com.sualtikasifi.cizimhafiza.util.AdminStats>
     @Inject lateinit var workerFactory: HiltWorkerFactory
     @Inject lateinit var leagueScorePublisher: Lazy<LeagueScorePublisher>
     @Inject lateinit var referralRewardClaimer: Lazy<ReferralRewardClaimer>
@@ -162,6 +163,14 @@ class CizimHafizaApp : Application(), Configuration.Provider {
             // package-replaced receivers re-arm it independently, so waiting a
             // moment here loses nothing.
             guarded("daily reminder") { NotificationScheduler.schedule(this@CizimHafizaApp) }
+            // Developer-panel counters: flush when the app is backgrounded, and count this
+            // launch and this player's day. Waits for the anonymous sign-in to have a uid.
+            guarded("admin stats") {
+                adminStats.get().install(this@CizimHafizaApp)
+                adminStats.get().record("app__open__count")
+                delay(3_000L)
+                adminStats.get().markActiveToday()
+            }
         }
     }
 
