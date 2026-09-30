@@ -83,7 +83,9 @@ class WaitingRoomViewModel @Inject constructor(
             val message = when (val eligibility = friendRepository.canInvite(friend.uid)) {
                 InviteEligibility.Blocked -> UiText.of(R.string.error_invite_blocked)
                 is InviteEligibility.OnCooldown ->
-                    UiText.of(R.string.error_invite_cooldown, (eligibility.remainingMillis / 60_000L) + 1)
+                    ((eligibility.remainingMillis / 60_000L) + 1).let { minutes ->
+                        UiText.of(if (minutes == 1L) R.string.error_invite_cooldown_one else R.string.error_invite_cooldown, minutes)
+                    }
                 InviteEligibility.Eligible -> friendRepository
                     .sendMatchInvite(friend.uid, roomCode, nickname)
                     .fold(

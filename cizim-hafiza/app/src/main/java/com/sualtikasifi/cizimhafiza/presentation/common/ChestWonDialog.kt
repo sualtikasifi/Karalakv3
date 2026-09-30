@@ -369,7 +369,9 @@ private fun ChestWonScene(chest: Chest, onDismiss: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(Icons.Filled.Schedule, contentDescription = null, tint = Color(0xFFFFE066), modifier = Modifier.size(20.dp))
                     Text(
-                        text = stringResource(R.string.chest_win_unlock_time, tier.durationHours()),
+                        text = tier.durationHours().let { hours ->
+                            stringResource(if (hours.toLong() == 1L) R.string.chest_win_unlock_time_one else R.string.chest_win_unlock_time, hours)
+                        },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White

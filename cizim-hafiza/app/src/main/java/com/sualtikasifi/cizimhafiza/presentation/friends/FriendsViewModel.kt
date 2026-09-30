@@ -250,7 +250,7 @@ class FriendsViewModel @Inject constructor(
                 }
                 is InviteEligibility.OnCooldown -> {
                     val minutes = (eligibility.remainingMillis / 60_000L) + 1
-                    _uiState.update { it.copy(invitingFriendUid = null, errorMessage = UiText.of(R.string.error_invite_cooldown, minutes)) }
+                    _uiState.update { it.copy(invitingFriendUid = null, errorMessage = UiText.of(if (minutes == 1L) R.string.error_invite_cooldown_one else R.string.error_invite_cooldown, minutes)) }
                     return@launch
                 }
                 InviteEligibility.Eligible -> Unit

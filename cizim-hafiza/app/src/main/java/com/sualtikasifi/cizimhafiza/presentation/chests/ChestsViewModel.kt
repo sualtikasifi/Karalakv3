@@ -76,7 +76,7 @@ class ChestsViewModel @Inject constructor(
      */
     fun speedUp(activity: android.app.Activity, onNotice: (Int) -> Unit) {
         val chest = settingsRepository.chestSlots.value.firstOrNull { it?.unlockStartedAtMillis != null && !it.isReady(System.currentTimeMillis()) } ?: return
-        adManager.maybeShowRewarded(activity) { outcome ->
+        adManager.maybeShowRewarded(activity, "chest_speedup") { outcome ->
             when (outcome) {
                 com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.EARNED -> {
                     if (settingsRepository.speedUpChest(chest.id, com.sualtikasifi.cizimhafiza.domain.model.ChestSlots.SPEEDUP_MILLIS)) {

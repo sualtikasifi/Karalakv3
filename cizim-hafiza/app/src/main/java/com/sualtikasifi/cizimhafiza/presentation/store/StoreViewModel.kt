@@ -61,7 +61,7 @@ class StoreViewModel @Inject constructor(
 
     /** Shows a rewarded ad and, only if it is earned, adds today's joker. [onNotice] gets a string resource for a short message. */
     fun claimDailyJoker(activity: android.app.Activity, onNotice: (Int, Boolean) -> Unit) {
-        adManager.maybeShowRewarded(activity) { outcome ->
+        adManager.maybeShowRewarded(activity, "store_daily_joker") { outcome ->
             when (outcome) {
                 com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.EARNED -> {
                     if (settingsRepository.claimDailyJoker() != null) {

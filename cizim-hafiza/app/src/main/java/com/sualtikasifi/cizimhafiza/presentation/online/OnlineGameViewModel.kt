@@ -504,7 +504,7 @@ class OnlineGameViewModel @Inject constructor(
         timerJob?.cancel()
         val pausedSecondsLeft = current.secondsLeft
         val word = words[drawingIndex]
-        adManager.maybeShowRewarded(activity) { outcome ->
+        adManager.maybeShowRewarded(activity, "drawing_time_bonus_online") { outcome ->
             val earned = outcome == RewardedOutcome.EARNED
             if (outcome == RewardedOutcome.UNAVAILABLE) reportAdUnavailable()
             if (earned) {
@@ -623,7 +623,7 @@ class OnlineGameViewModel @Inject constructor(
         timerJob?.cancel()
         val pausedSecondsLeft = current.secondsLeft
         val adStartedAt = SystemClock.elapsedRealtime()
-        adManager.maybeShowRewarded(activity) { outcome ->
+        adManager.maybeShowRewarded(activity, "guess_hint_online") { outcome ->
             val earned = outcome == RewardedOutcome.EARNED
             if (outcome == RewardedOutcome.UNAVAILABLE) reportAdUnavailable()
             // See GameViewModel.useHint: the ad's own duration is pushed out

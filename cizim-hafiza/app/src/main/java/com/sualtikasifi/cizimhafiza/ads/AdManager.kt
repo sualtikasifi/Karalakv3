@@ -13,6 +13,7 @@ import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.sualtikasifi.cizimhafiza.BuildConfig
 import com.sualtikasifi.cizimhafiza.util.GameConstants
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -34,6 +35,17 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
     private val interstitialUnitId = BuildConfig.ADMOB_INTERSTITIAL_UNIT_ID
     private val rewardedUnitId = BuildConfig.ADMOB_REWARDED_UNIT_ID
     private val prefs by lazy { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
+
+    // Which ad buttons players actually use, and whether the ad then paid out. Each call
+    // site passes a short placement name; events carry it as the "placement" parameter.
+    // Never allowed to affect an ad: analytics failing is silent.
+    private val analytics by lazy { runCatching { FirebaseAnalytics.getInstance(context) }.getOrNull() }
+
+    private fun logAdEvent(event: String, placement: String) {
+        runCatching {
+            analytics?.logEvent(event, android.os.Bundle().apply { putString("placement", placement) })
+        }
+    }
 
     // Preloaded ahead of time (see preloadInterstitial) so maybeShowInterstitial
     // can show instantly instead of eating a multi-second network load right
@@ -185,7 +197,9 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
          * the Bölümler levels use a short gap so failing and instantly
          * retrying an even level does not stack ads back to back.
          */
-        forceMinGapMillis: Long = 0L
+        forceMinGapMillis: Long = 0L,
+        /** Where the ad was triggered, for analytics only. */
+        placement: String = "interstitial"
     ) {
         if (!GameConstants.ADMOB_ENABLED) {
             onDismissed()
@@ -221,7 +235,7 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
         if (preloaded != null) {
             cachedInterstitial = null
             preloaded.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdShowedFullScreenContent() = recordInterstitialShown()
+                override fun onAdShowedFullScreenContent() = recordInterstitialShown(placement)
                 override fun onAdDismissedFullScreenContent() {
                     onDismissed()
                     preloadInterstitial()
@@ -245,7 +259,7 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
                     ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                        override fun onAdShowedFullScreenContent() = recordInterstitialShown()
+                        override fun onAdShowedFullScreenContent() = recordInterstitialShown(placement)
                         override fun onAdDismissedFullScreenContent() = onDismissed()
                         override fun onAdFailedToShowFullScreenContent(adError: AdError) = onDismissed()
                     }
@@ -261,7 +275,8 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
     }
 
     /** Only an ad that actually reached the screen starts the gap — a failed one must not cost the player their next chance. */
-    private fun recordInterstitialShown() {
+    private fun recordInterstitialShown(placement: String) {
+        logAdEvent("ad_interstitial_shown", placement)
         prefs.edit()
             .putLong(KEY_LAST_AD_AT, System.currentTimeMillis())
             .apply()
@@ -325,8 +340,10 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
      * cases need different answers: one is a choice, the other is worth
      * apologising for and worth offering again.
      */
-    fun maybeShowRewarded(activity: Activity, onResult: (RewardedOutcome) -> Unit) {
+    fun maybeShowRewarded(activity: Activity, placement: String = "unknown", onResult: (RewardedOutcome) -> Unit) {
+        logAdEvent("ad_reward_requested", placement)
         if (!GameConstants.ADMOB_ENABLED) {
+            logAdEvent("ad_reward_unavailable", placement)
             onResult(RewardedOutcome.UNAVAILABLE)
             return
         }
@@ -339,6 +356,14 @@ class AdManager @Inject constructor(@ApplicationContext private val context: Con
         val settle: (RewardedOutcome) -> Unit = { outcome ->
             if (!settled) {
                 settled = true
+                logAdEvent(
+                    when (outcome) {
+                        RewardedOutcome.EARNED -> "ad_reward_earned"
+                        RewardedOutcome.SKIPPED -> "ad_reward_skipped"
+                        RewardedOutcome.UNAVAILABLE -> "ad_reward_unavailable"
+                    },
+                    placement
+                )
                 onResult(outcome)
                 preloadRewarded() // top the cache back up for next time
             }

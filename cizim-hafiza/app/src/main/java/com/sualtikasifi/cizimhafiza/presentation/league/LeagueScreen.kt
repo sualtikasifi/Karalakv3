@@ -135,7 +135,7 @@ fun LeagueScreen(
                         text = if (it.daysRemaining <= 0) {
                             stringResource(R.string.league_resets_today)
                         } else {
-                            stringResource(R.string.league_resets_in, it.daysRemaining)
+                            stringResource(if (it.daysRemaining == 1) R.string.league_resets_in_one else R.string.league_resets_in, it.daysRemaining)
                         }
                     )
                 }

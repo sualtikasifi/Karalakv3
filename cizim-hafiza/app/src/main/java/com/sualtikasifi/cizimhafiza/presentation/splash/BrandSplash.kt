@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.splash
 
+import android.content.Context
 import android.provider.Settings
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -68,9 +69,16 @@ import kotlin.math.sin
  *
  * It is also kept honestly short. A word game gets opened many times a day,
  * and every millisecond here is a millisecond of not playing — so the whole
- * thing is [TOTAL_MILLIS], it plays on cold start only (the caller's
- * rememberSaveable), a tap skips straight to the end, and it is skipped
- * outright when the device has animations turned off.
+ * thing is [TOTAL_MILLIS] the first time the app is ever opened and a
+ * noticeably faster [FAST_TOTAL_MILLIS] on every cold start after that, it
+ * plays on cold start only (the caller's rememberSaveable), a tap skips
+ * straight to the end, and it is skipped outright when the device has
+ * animations turned off.
+ *
+ * The faster run keeps the first [HOLD_MILLIS] in real time — that stretch has
+ * to line up with the system splash's own cross-fade — and plays the rest of
+ * the same timeline at [FAST_RATE] speed, so nothing about the drawing
+ * changes, only how long the player waits for it.
  */
 @Composable
 fun BrandSplash(onFinished: () -> Unit) {
@@ -85,16 +93,28 @@ fun BrandSplash(onFinished: () -> Unit) {
         }.getOrDefault(false)
     }
 
+    // Seen once → every later cold start plays the faster run. Read once and
+    // remembered: the flag flips at the end of this composition's own run and
+    // must not change which speed the run in flight is using.
+    val returning = remember {
+        runCatching { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getBoolean(KEY_SEEN, false) }
+            .getOrDefault(false)
+    }
+    val finish = {
+        runCatching { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putBoolean(KEY_SEEN, true).apply() }
+        onFinished()
+    }
+
     val progress = remember { Animatable(0f) }
     var skipped by remember { mutableStateOf(false) }
 
     LaunchedEffect(animationsDisabled) {
         if (animationsDisabled) {
-            onFinished()
+            finish()
             return@LaunchedEffect
         }
-        progress.animateTo(1f, tween(TOTAL_MILLIS, easing = LinearEasing))
-        onFinished()
+        progress.animateTo(1f, tween(if (returning) FAST_TOTAL_MILLIS else TOTAL_MILLIS, easing = LinearEasing))
+        finish()
     }
     // A second animateTo on the same Animatable cancels the first, so the
     // timeline above simply stops where the tap caught it and this one runs
@@ -102,7 +122,7 @@ fun BrandSplash(onFinished: () -> Unit) {
     LaunchedEffect(skipped) {
         if (!skipped) return@LaunchedEffect
         progress.animateTo(1f, tween(SKIP_MILLIS, easing = LinearEasing))
-        onFinished()
+        finish()
     }
 
     val mark = painterResource(R.drawable.splash_mark)
@@ -126,12 +146,12 @@ fun BrandSplash(onFinished: () -> Unit) {
             .graphicsLayer {
                 // Read inside the lambda so the fade re-runs in the draw
                 // phase only — the splash never recomposes to disappear.
-                alpha = 1f - phase(progress.value * TOTAL_MILLIS, FADE_FROM, TOTAL_MILLIS)
+                alpha = 1f - phase(elapsedMillis(progress.value, returning), FADE_FROM, TOTAL_MILLIS)
             }
             .background(CreamBackground)
             .pointerInput(Unit) { detectTapGestures { skipped = true } }
     ) {
-        val elapsed = progress.value * TOTAL_MILLIS
+        val elapsed = elapsedMillis(progress.value, returning)
         val rise = FastOutSlowInEasing.transform(phase(elapsed, RISE_FROM, RISE_TO))
         val ink = FastOutSlowInEasing.transform(phase(elapsed, INK_FROM, INK_TO))
         val rule = phase(elapsed, RULE_FROM, RULE_TO)
@@ -287,6 +307,22 @@ private val PencilEraser = Color(0xFFE58C7A)
 // One cold-start second and a bit, spent as: hold for the hand-off, rise,
 // write, underline, lift, leave.
 private const val TOTAL_MILLIS = 1160
+
+// The repeat-launch run: the first HOLD_MILLIS in real time (it overlaps the system
+// splash's 180 ms cross-fade), the remaining timeline at FAST_RATE speed.
+private const val FAST_TOTAL_MILLIS = 700
+private const val HOLD_MILLIS = 180f
+private const val FAST_RATE = (FAST_TOTAL_MILLIS - HOLD_MILLIS) / (TOTAL_MILLIS - HOLD_MILLIS)
+
+private const val PREFS_NAME = "brand_splash"
+private const val KEY_SEEN = "seen"
+
+/** Position on the original timeline, in ms, for a 0..1 [progress] of the run being played. */
+private fun elapsedMillis(progress: Float, returning: Boolean): Float {
+    if (!returning) return progress * TOTAL_MILLIS
+    val real = progress * FAST_TOTAL_MILLIS
+    return if (real <= HOLD_MILLIS) real else HOLD_MILLIS + (real - HOLD_MILLIS) / FAST_RATE
+}
 private const val SKIP_MILLIS = 170
 private const val RISE_FROM = 180
 private const val RISE_TO = 380
