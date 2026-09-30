@@ -1198,7 +1198,7 @@
     <string name="joker_extra_time_short">+ Time</string>
     <string name="joker_owned">You have: %1$d</string>
     <string name="joker_buy_one">Buy 1</string>
-    <string name="joker_buy_bulk">Buy %1$d · %%%2$d off</string>
+    <string name="joker_buy_bulk">Buy %1$d · %2$d%% off</string>
     <string name="joker_letter_count_badge">Letters: %1$d</string>
     <string name="joker_bought">Joker purchased!</string>
     <string name="joker_reward_label">Jokers</string>
