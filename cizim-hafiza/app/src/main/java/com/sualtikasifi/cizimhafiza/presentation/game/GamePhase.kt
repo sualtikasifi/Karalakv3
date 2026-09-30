@@ -96,6 +96,12 @@ sealed interface GamePhase {
         val xpEarned: Int = 0,
         /** Gold this round paid out (achievements, level stars, daily challenge). */
         val goldEarned: Int = 0,
+        /** Where [goldEarned] came from, so the result screen can say so. */
+        val goldFromAchievements: Int = 0,
+        val goldFromLevel: Int = 0,
+        val goldFromDaily: Int = 0,
+        /** The XP multiplier this round paid at (1 = none): the daily Hızlı Eşleş bonus and any running XP event, multiplied. */
+        val xpMultiplier: Int = 1,
         /** True when [xpEarned] includes the first-Quick-Match-of-the-day 2x bonus. */
         val quickMatchDailyBonusApplied: Boolean = false,
         /** True when [xpEarned] includes an admin-run XP event's multiplier. */

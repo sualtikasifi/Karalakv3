@@ -63,7 +63,8 @@ class UsernameRepository @Inject constructor(
                 settingsRepository.setNickname(ownedName)
                 settingsRepository.usernameChanges = (profile.getLong("usernameChanges") ?: 0L).toInt()
                 // Only an explicit `false` means "still changeable"; older claims are final.
-                if (profile.getBoolean("usernameLocked") != false) settingsRepository.lockUsername(ownedName)
+                // The single Google-link offer has already been made on this account once it is locked or was offered.
+                if (profile.getBoolean("usernameLocked") != false || profile.getBoolean("usernameOffered") == true) settingsRepository.lockUsername(ownedName)
                 settingsRepository.usernameVerified = true
                 return
             }

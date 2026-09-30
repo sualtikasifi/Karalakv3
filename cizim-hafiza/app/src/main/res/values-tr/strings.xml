@@ -687,6 +687,7 @@
     <string name="league_resets_in">%1$d gün sonra sıfırlanır</string>
     <string name="league_resets_in_one">%1$d gün sonra sıfırlanır</string>
     <string name="league_resets_today">Bugün sıfırlanıyor</string>
+    <string name="league_resets_countdown">Sıfırlanmasına %1$s kaldı</string>
     <string name="league_empty">Henüz kimse bu ay oynamamış. İlk sen ol!</string>
     <string name="league_tab_friends">Arkadaşlar</string>
     <string name="league_tab_global">Global</string>
@@ -711,8 +712,8 @@
     <string name="account_signed_out_message">Google hesabınla giriş yap — seviyen, başarımların ve serilerin hesabına kaydedilsin. Telefonunu değiştirsen bile aynı hesapla kaldığın yerden devam edersin.</string>
     <string name="account_sign_in_google">Google ile Giriş Yap</string>
     <string name="rating_prompt_title">Bizi puanlar mısın? ⭐</string>
-    <string name="rating_prompt_body">3 tur oynadın bile! Play Store\'da bize 5 yıldız ver, sana hemen 500 XP hediye edelim.</string>
-    <string name="rating_prompt_rate_button">Puanla, 500 XP kazan</string>
+    <string name="rating_prompt_body">3 tur oynadın bile! Play Store\'da bize 5 yıldız vererek bizi destekle ve 500 XP kazan.</string>
+    <string name="rating_prompt_rate_button">Puanla ve 500 XP kazan</string>
     <string name="rating_prompt_later_button">Daha sonra</string>
     <string name="sign_in_prompt_title">İlerlemeni kaybetme! 🎉</string>
     <string name="sign_in_prompt_body">Google hesabınla giriş yap, puanların ve rozetlerin telefon değişse bile hep seninle kalsın.</string>
@@ -920,6 +921,18 @@
     <string name="result_view_drawings_sub">%1$d çizimin tamamı tek sayfada</string>
     <string name="result_x2_button">🎬 x2 XP</string>
     <string name="result_claim">Ödülü Al</string>
+    <string name="result_x2_button_amount">🎬 x2 · %1$d XP</string>
+    <string name="result_claim_amount">Ödülü Al · %1$d XP</string>
+    <string name="result_xp_daily">Günlük meydan okuma ödülün</string>
+    <string name="result_xp_formula_mult">%1$d puan × %2$d bonus çarpanı</string>
+    <string name="result_xp_formula_plain">%1$d puan = %1$d XP</string>
+    <string name="result_xp_formula_extra">%1$d puan + bölüm bonusu</string>
+    <string name="result_bonus_quick">🔥 Günün ilk Hızlı Eşleş\'i: XP ×2</string>
+    <string name="result_bonus_event">🎉 XP etkinliği: ×%1$d</string>
+    <string name="result_gold_achievement">🏆 Başarım ödülü +%1$d altın</string>
+    <string name="result_gold_level">⭐ Bölüm yıldızı +%1$d altın</string>
+    <string name="result_gold_daily">📅 Günlük ödül +%1$d altın</string>
+    <string name="result_your_drawings">Çizimlerin</string>
     <!-- Ana menü seviye kartı: seviye ilerlemesi ile rütbe ilerlemesi ayrı ayrı okunur -->
     <string name="level_xp_to_next_level">Bir sonraki seviyeye %1$d XP kaldı</string>
     <string name="level_max_reached">En yüksek seviyedesin!</string>
@@ -1096,6 +1109,14 @@
     <string name="home_chests_info_title">Kasalar nasıl çalışır?</string>
     <string name="home_chests_info_body">Hızlı Eşleş\'te rakibini yenersen bir kasa kazanırsın! 🎁 Kasalar altın, joker ve bazen nadir kalemler saklar. Kaliteye göre 2, 3 veya 6 saatte açılır; aynı anda tek kasanın sayacı işler. 4 yuvan var — hepsi doluyken yeni kasa uçup gider, o yüzden zamanında aç! 🚀</string>
     <string name="home_chests_info_ok">Anladım</string>
+    <string name="chest_info_step_win_title">Oyunu kazan</string>
+    <string name="chest_info_step_win_body">Çevrimiçi modlarda rakiplerini geride bırak, oyunları kazan ve ödüllerini topla.</string>
+    <string name="chest_info_step_open_title">Kilidi aç</string>
+    <string name="chest_info_step_open_body">Kazandığın kasalara dokun ve geri sayım başlasın. Süresi dolan kasayı aç ve ödüllerini hemen al.</string>
+    <string name="chest_info_step_slots_title">Yeni kasalara yer aç</string>
+    <string name="chest_info_step_slots_body">%1$d yuvan dolduğunda yeni kasa düşmez. Sahip olduğun kasaları açarak ödülleri topla, bu şekilde yeni kasalara yer aç.</string>
+    <string name="chest_info_contents_title">Kasaların içinde ne var?</string>
+    <string name="chest_info_speedup_tip">Kasanın daha erken açılmasını ister misin? Günde 1 reklam izleyerek açılma süresini 2 saat kısaltabilirsin.</string>
     <string name="chest_slot_empty_title">Kasa Yuvası</string>
     <string name="chest_slot_empty_hint">Kazanarak kasa elde et</string>
     <string name="chest_slot_tap_to_start">Başlatmak için dokun</string>
@@ -1148,6 +1169,7 @@
     <string name="home_ad_unavailable">Reklam şu an yüklenemedi, biraz sonra tekrar dene.</string>
     <string name="chest_home_start">Başlat</string>
     <string name="daily_challenge_ready_short">%1$d kelime · aynı kelimeler</string>
+    <string name="daily_challenge_words_short">%1$d kelime</string>
     <string name="username_setup_title">Kullanıcı adını belirle</string>
     <string name="username_setup_warning">Kullanıcı adı yalnızca BİR KEZ belirlenir ve sonradan asla değiştirilemez. Her ad tek bir kişiye aittir. Dikkatli seç!</string>
     <string name="username_setup_confirm">Bu adı al</string>
@@ -1277,10 +1299,10 @@
     <string name="guess_tile_hint">İpucu</string>
     <string name="chest_detail_contents_title">Kasadan neler çıkar?</string>
     <string name="chest_detail_gold">%1$d–%2$d altın</string>
-    <string name="chest_detail_jokers_silver">%1$d%% ihtimalle 1 joker</string>
-    <string name="chest_detail_jokers_gold">1 joker garanti · %1$d%% ihtimalle 2 joker</string>
-    <string name="chest_detail_jokers_rare">2 joker garanti · %1$d%% ihtimalle 3 joker</string>
-    <string name="chest_detail_pen">%1$d%% ihtimalle özel mağaza kalemi</string>
+    <string name="chest_detail_jokers_silver">%%%1$d şansla 1 joker bonusu</string>
+    <string name="chest_detail_jokers_gold">1 joker + %%%1$d şansla 2. joker bonusu</string>
+    <string name="chest_detail_jokers_rare">2 joker + %%%1$d şansla 3. joker bonusu</string>
+    <string name="chest_detail_pen">%%%1$d şansla özel mağaza kalemi</string>
     <string name="chest_timer_remaining">Kalan süre</string>
     <string name="chest_timer_total">Açılma süresi</string>
     <string name="chest_timer_hint">Başlattığında geri sayım başlar</string>

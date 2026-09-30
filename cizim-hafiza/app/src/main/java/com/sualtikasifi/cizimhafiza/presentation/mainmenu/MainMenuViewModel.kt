@@ -115,6 +115,24 @@ class MainMenuViewModel @Inject constructor(
 
     fun consumeStreakToast() { _streakToast.value = null }
 
+    private val _ratingPrompt = MutableStateFlow(false)
+
+    /** True when the one-time "rate us" ask should be on screen: from the third finished game on, asked here on the menu rather than on the result screen. */
+    val ratingPrompt: StateFlow<Boolean> = _ratingPrompt.asStateFlow()
+
+    fun checkRatingPrompt() {
+        if (!_ratingPrompt.value && com.sualtikasifi.cizimhafiza.util.PostMatchPrompts.shouldShowRating(settingsRepository)) {
+            _ratingPrompt.value = true
+        }
+    }
+
+    fun dismissRatingPrompt() { _ratingPrompt.value = false }
+
+    fun rateAndClaimBonus() {
+        settingsRepository.grantRatingBonusXpOnce(com.sualtikasifi.cizimhafiza.util.PostMatchPrompts.RATING_BONUS_XP)
+        _ratingPrompt.value = false
+    }
+
     /** When the 500-gold ad button unlocks again (epoch millis; in the past = ready now). */
     val adGoldNextAtMillis: StateFlow<Long> = settingsRepository.adGoldNextAtMillis
 

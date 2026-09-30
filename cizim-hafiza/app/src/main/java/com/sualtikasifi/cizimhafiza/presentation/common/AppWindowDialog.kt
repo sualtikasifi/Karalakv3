@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -47,6 +48,10 @@ fun AppWindowDialog(
     title: String,
     onDismiss: () -> Unit,
     footer: (@Composable ColumnScope.() -> Unit)? = null,
+    /** Centre the title and drop the corner close button (for windows that end in their own confirm button). */
+    centerTitle: Boolean = false,
+    /** Wrap the body in a scroller when a footer is given; off for content that is sized to fit. */
+    scrollBody: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -69,16 +74,17 @@ fun AppWindowDialog(
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
                     .padding(16.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = if (centerTitle) Arrangement.Center else Arrangement.Start) {
                     Text(
                         text = title,
                         fontFamily = DisplayFont,
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 22.sp,
                         color = Color(0xFF3A2416),
-                        modifier = Modifier.weight(1f)
+                        textAlign = if (centerTitle) androidx.compose.ui.text.style.TextAlign.Center else androidx.compose.ui.text.style.TextAlign.Start,
+                        modifier = if (centerTitle) Modifier.fillMaxWidth() else Modifier.weight(1f)
                     )
-                    Box(
+                    if (!centerTitle) Box(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
@@ -93,7 +99,7 @@ fun AppWindowDialog(
                 Spacer(modifier = Modifier.height(12.dp))
                 if (footer != null) {
                     // Body scrolls, footer (the primary action) stays pinned so it can never be pushed off a short screen.
-                    Column(modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) { content() }
+                    Column(modifier = if (scrollBody) Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()) else Modifier) { content() }
                     Spacer(modifier = Modifier.height(12.dp))
                     footer()
                 } else {

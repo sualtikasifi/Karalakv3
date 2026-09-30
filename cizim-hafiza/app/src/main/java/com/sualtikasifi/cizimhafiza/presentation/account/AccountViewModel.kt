@@ -159,7 +159,7 @@ class AccountViewModel @Inject constructor(
     fun setNicknameDraft(name: String) {
         if (!nicknameEditable) return
         _actionState.value = _actionState.value.copy(
-            nicknameEdit = name,
+            nicknameEdit = name.take(16),
             // Typing again retracts the confirmation — it described the
             // previous save, not this text.
             nicknameSaveState = NicknameSaveState.Idle,

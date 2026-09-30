@@ -34,7 +34,7 @@ object PostMatchPrompts {
 
     fun shouldShowRating(settingsRepository: SettingsRepository): Boolean {
         if (settingsRepository.ratingPromptShown) return false
-        if (settingsRepository.lifetimeGamesPlayed != RATING_PROMPT_AT_GAME) return false
+        if (settingsRepository.lifetimeGamesPlayed < RATING_PROMPT_AT_GAME) return false
         settingsRepository.ratingPromptShown = true
         return true
     }

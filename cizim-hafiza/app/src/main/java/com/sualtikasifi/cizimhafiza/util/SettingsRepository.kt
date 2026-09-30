@@ -598,24 +598,16 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         return chest
     }
 
-    /** A won match's chest: either it went into a slot ([chest]) or the slots were full and it was opened on the spot ([instantReward]). */
+    /** A won match's chest award: [chest] is null when every slot was full, in which case nothing drops. */
     data class ChestAward(val chest: Chest?, val instantReward: ChestReward?)
 
     /**
-     * Like [awardChestForWin], but a win never pays nothing: when every slot is
-     * taken the chest is opened immediately and its loot paid out, instead of
-     * being lost.
+     * A win's chest goes into a free slot; with every slot taken nothing drops (the win still pays
+     * its XP and gold) and [ChestAward.chest] is null. The tier cycle still advances, so leaving
+     * chests unopened costs the chest that would have come.
      */
     @Synchronized
-    fun awardChestForWinOrPay(): ChestAward {
-        val seed = chestCycleSeed
-        val index = chestCycleIndex
-        val slots = _chestSlots.value
-        val freeIndex = slots.indexOfFirst { it == null }
-        if (freeIndex >= 0) return ChestAward(awardChestForWin(), null)
-        chestCycleIndex = index + 1
-        return ChestAward(null, payChestOutright(ChestSlots.tierAt(seed, index)))
-    }
+    fun awardChestForWinOrPay(): ChestAward = ChestAward(awardChestForWin(), null)
 
     private fun payChestOutright(tier: ChestTier, extraEdit: android.content.SharedPreferences.Editor.() -> Unit = {}): ChestReward {
         val reward = ChestLoot.roll(tier, _ownedStoreIds.value)
@@ -835,6 +827,31 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val currentPeriod = LeaguePeriod.periodIdFor(LocalDate.now())
         if (prefs.getLong(KEY_PERIOD_XP_PERIOD, -1L) != currentPeriod) return 0
         return prefs.getInt(KEY_PERIOD_XP, 0)
+    }
+
+    /**
+     * Brings back what a reinstall would otherwise zero: this month's league XP (only if the backup
+     * is from the same month) and the ad-reward cooldowns (the later of local and backed-up, so a
+     * reinstall is never a way to collect a reward twice).
+     */
+    @Synchronized
+    fun restoreEngagement(periodXp: Int, periodId: Long, adGoldNextAt: Long, adChestDay: Long) {
+        val currentPeriod = LeaguePeriod.periodIdFor(LocalDate.now())
+        if (periodId == currentPeriod && periodXp > _periodXp.value) {
+            prefs.edit {
+                putLong(KEY_PERIOD_XP_PERIOD, currentPeriod)
+                putInt(KEY_PERIOD_XP, periodXp)
+            }
+            _periodXp.value = periodXp
+        }
+        if (adGoldNextAt > _adGoldNextAtMillis.value) {
+            prefs.edit { putLong(KEY_AD_GOLD_NEXT_AT, adGoldNextAt) }
+            _adGoldNextAtMillis.value = adGoldNextAt
+        }
+        if (adChestDay > _adChestDay.value) {
+            prefs.edit { putLong(KEY_AD_CHEST_DAY, adChestDay) }
+            _adChestDay.value = adChestDay
+        }
     }
 
     private fun addPeriodXp(amount: Int) {

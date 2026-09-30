@@ -51,14 +51,25 @@ class UsernameFinalizeViewModel @Inject constructor(
 
     private val dismissed = MutableStateFlow(false)
 
+    /** The server has been asked whether this account already went through the offer, so a returning account never flashes it. */
+    private val checked = MutableStateFlow(false)
+
+    init {
+        viewModelScope.launch {
+            usernameRepository.ensureUsername()
+            checked.value = true
+        }
+    }
+
     /** The signed-in account still has a changeable name: offer to keep it or change it one last time. */
     val shouldPrompt: StateFlow<Boolean> = combine(
         authRepository.authState,
         settingsRepository.nicknameRenameUsed,
         settingsRepository.nickname,
-        dismissed
-    ) { auth, locked, nickname, dismissed ->
-        auth is AuthState.Linked && !locked && nickname.isNotBlank() && !dismissed
+        dismissed,
+        checked
+    ) { auth, locked, nickname, dismissed, checked ->
+        checked && auth is AuthState.Linked && !locked && nickname.isNotBlank() && !dismissed
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     val currentName: StateFlow<String> = settingsRepository.nickname
@@ -92,7 +103,11 @@ fun UsernameFinalizeHost(viewModel: UsernameFinalizeViewModel = hiltViewModel())
     val scope = rememberCoroutineScope()
     val unchanged = text.trim() == current.trim()
 
-    Dialog(onDismissRequest = { if (!busy) viewModel.later() }) {
+    // Not dismissable: this is the one and only offer, made the first time Google is linked.
+    Dialog(
+        onDismissRequest = {},
+        properties = androidx.compose.ui.window.DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+    ) {
         RaisedCard(corner = 28.dp, raise = 8.dp, modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 22.dp),
@@ -139,14 +154,6 @@ fun UsernameFinalizeHost(viewModel: UsernameFinalizeViewModel = hiltViewModel())
                         }
                     },
                     enabled = !busy && text.trim().length >= 2,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                SecondaryButton(
-                    text = stringResource(R.string.username_finalize_later),
-                    onClick = viewModel::later,
-                    height = 46.dp,
-                    enabled = !busy,
                     modifier = Modifier.fillMaxWidth()
                 )
             }

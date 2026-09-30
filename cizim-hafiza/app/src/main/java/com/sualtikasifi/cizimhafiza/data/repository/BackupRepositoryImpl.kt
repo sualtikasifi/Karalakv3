@@ -138,6 +138,10 @@ class BackupRepositoryImpl @Inject constructor(
             chestSlots = com.sualtikasifi.cizimhafiza.domain.model.ChestBackupCodec.encode(settingsRepository.chestSlots.value),
             chestCycleSeed = settingsRepository.chestCycleSeedForBackup,
             chestCycleIndex = settingsRepository.chestCycleIndexForBackup,
+            periodXp = settingsRepository.periodXp.value,
+            periodId = com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(java.time.LocalDate.now()),
+            adGoldNextAt = settingsRepository.adGoldNextAtMillis.value,
+            adChestDay = settingsRepository.adChestDay.value,
             backedUpAt = System.currentTimeMillis()
         )
     }
@@ -467,6 +471,7 @@ class BackupRepositoryImpl @Inject constructor(
         // next archive would refuse it as a regression — quietly re-opening
         // the hole the counter exists to close.
         settingsRepository.penaltiesApplied = snapshot.penaltiesApplied
+        settingsRepository.restoreEngagement(snapshot.periodXp, snapshot.periodId, snapshot.adGoldNextAt, snapshot.adChestDay)
         dailyChallengeRepository.replaceWithAccount(
             lastCompletedEpochDay = snapshot.dailyLastCompletedEpochDay,
             currentStreak = snapshot.dailyCurrentStreak,

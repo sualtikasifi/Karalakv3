@@ -677,6 +677,7 @@
     <string name="league_resets_in">Resets in %1$d days</string>
     <string name="league_resets_in_one">Resets in %1$d day</string>
     <string name="league_resets_today">Resets today</string>
+    <string name="league_resets_countdown">Resets in %1$s</string>
     <string name="league_empty">Nobody has played this month yet. Be the first!</string>
     <string name="league_tab_friends">Friends</string>
     <string name="league_tab_global">Global</string>
@@ -701,7 +702,7 @@
     <string name="account_signed_out_message">Sign in with Google so your level, achievements and streaks are saved to your account. Switch phones and you pick up exactly where you left off.</string>
     <string name="account_sign_in_google">Sign in with Google</string>
     <string name="rating_prompt_title">Rate us? ⭐</string>
-    <string name="rating_prompt_body">You\'ve already played 3 rounds! Give us 5 stars on the Play Store and we\'ll gift you 500 XP right away.</string>
+    <string name="rating_prompt_body">You\'ve already played 3 rounds! Support us with 5 stars on the Play Store and earn 500 XP.</string>
     <string name="rating_prompt_rate_button">Rate &amp; get 500 XP</string>
     <string name="rating_prompt_later_button">Later</string>
     <string name="sign_in_prompt_title">Don\'t lose your progress! 🎉</string>
@@ -906,6 +907,18 @@
     <string name="result_view_drawings_sub">All %1$d drawings on one page</string>
     <string name="result_x2_button">🎬 x2 XP</string>
     <string name="result_claim">Claim</string>
+    <string name="result_x2_button_amount">🎬 x2 · %1$d XP</string>
+    <string name="result_claim_amount">Claim · %1$d XP</string>
+    <string name="result_xp_daily">Your daily challenge reward</string>
+    <string name="result_xp_formula_mult">%1$d points × %2$d bonus multiplier</string>
+    <string name="result_xp_formula_plain">%1$d points = %1$d XP</string>
+    <string name="result_xp_formula_extra">%1$d points + level bonus</string>
+    <string name="result_bonus_quick">🔥 First Quick Match of the day: XP ×2</string>
+    <string name="result_bonus_event">🎉 XP event: ×%1$d</string>
+    <string name="result_gold_achievement">🏆 Achievement reward +%1$d gold</string>
+    <string name="result_gold_level">⭐ Level stars +%1$d gold</string>
+    <string name="result_gold_daily">📅 Daily reward +%1$d gold</string>
+    <string name="result_your_drawings">Your drawings</string>
     <!-- Home level card: level progress and rank progress read separately -->
     <string name="level_xp_to_next_level">%1$d XP to the next level</string>
     <string name="level_max_reached">You\'re at the top level!</string>
@@ -1083,6 +1096,14 @@
     <string name="home_chests_info_title">How chests work</string>
     <string name="home_chests_info_body">Beat your opponent in Quick Match and win a chest! 🎁 Chests hold gold, jokers and sometimes rare pens. They unlock in 2, 3 or 6 hours depending on quality, and only one countdown runs at a time. You have 4 slots — when they\'re all full a new chest flies away, so open them in time! 🚀</string>
     <string name="home_chests_info_ok">Got it</string>
+    <string name="chest_info_step_win_title">Win the game</string>
+    <string name="chest_info_step_win_body">Outplay your opponents in online modes, win games and collect your rewards.</string>
+    <string name="chest_info_step_open_title">Unlock</string>
+    <string name="chest_info_step_open_body">Tap the chests you win to start the countdown. Open a chest once its time is up and get your rewards right away.</string>
+    <string name="chest_info_step_slots_title">Make room for new chests</string>
+    <string name="chest_info_step_slots_body">When your %1$d slots are full, no new chest drops. Open the chests you own to collect rewards and make room for new ones.</string>
+    <string name="chest_info_contents_title">What\'s inside the chests?</string>
+    <string name="chest_info_speedup_tip">Want your chest sooner? Watch 1 ad a day to cut 2 hours off its opening time.</string>
     <string name="chest_slot_empty_title">Chest Slot</string>
     <string name="chest_slot_empty_hint">Win to earn a chest</string>
     <string name="chest_slot_tap_to_start">Tap to unlock</string>
@@ -1135,6 +1156,7 @@
     <string name="home_ad_unavailable">The ad could not load right now, try again in a moment.</string>
     <string name="chest_home_start">Start</string>
     <string name="daily_challenge_ready_short">%1$d words · same for all</string>
+    <string name="daily_challenge_words_short">%1$d words</string>
     <string name="username_setup_title">Choose your username</string>
     <string name="username_setup_warning">Your username is set only ONCE and can never be changed afterwards. Every name belongs to one person. Choose carefully!</string>
     <string name="username_setup_confirm">Take this name</string>
@@ -1264,9 +1286,9 @@
     <string name="guess_tile_hint">Hint</string>
     <string name="chest_detail_contents_title">What can drop?</string>
     <string name="chest_detail_gold">%1$d–%2$d gold</string>
-    <string name="chest_detail_jokers_silver">%1$d%% chance of 1 joker</string>
-    <string name="chest_detail_jokers_gold">1 joker guaranteed · %1$d%% chance of 2</string>
-    <string name="chest_detail_jokers_rare">2 jokers guaranteed · %1$d%% chance of 3</string>
+    <string name="chest_detail_jokers_silver">%1$d%% chance of a bonus joker</string>
+    <string name="chest_detail_jokers_gold">1 joker + %1$d%% chance of a 2nd bonus joker</string>
+    <string name="chest_detail_jokers_rare">2 jokers + %1$d%% chance of a 3rd bonus joker</string>
     <string name="chest_detail_pen">%1$d%% chance of a special store pen</string>
     <string name="chest_timer_remaining">Time left</string>
     <string name="chest_timer_total">Unlock time</string>

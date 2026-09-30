@@ -105,7 +105,9 @@ fun ResultScreen(
     onRatingBonusGranted: () -> Unit = {},
     /** Only when [state].duelChallenger is set: send a fresh challenge back to that same person. */
     onRematchDuel: ((opponentUid: String, opponentName: String) -> Unit)? = null,
-    levelProgress: com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState? = null
+    levelProgress: com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState? = null,
+    /** The player's own username, headed over their drawings. */
+    myName: String = ""
 ) {
     var previewItem by remember { mutableStateOf<ResultItem?>(null) }
     var reportItem by remember { mutableStateOf<ResultItem?>(null) }
@@ -124,7 +126,6 @@ fun ResultScreen(
     val wordLanguage = currentWordLanguage()
 
     val shownXp = state.xpEarned * (if (xpDoubled) 2 else 1)
-    var galleryOpen by remember { mutableStateOf(false) }
     // A round that was already doubled when this screen (re)opened stays put;
     // only a double taken here sends the player home.
     val startedDoubled = remember { xpDoubled }
@@ -135,238 +136,112 @@ fun ResultScreen(
         }
     }
 
+    // One screen, no scrolling: the summary on top, every drawing (yours and the opponent's)
+    // in whatever room is left, the two claim buttons pinned underneath.
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .screenBackground()
                 .padding(padding)
-                .padding(horizontal = 18.dp, vertical = 12.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // --- Score = XP hero -------------------------------------------
-                RaisedCard(corner = 24.dp, modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp, horizontal = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = stringResource(R.string.game_over),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = stringResource(R.string.xp_gained_format, shownXp),
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = if (xpDoubled) {
-                                stringResource(R.string.result_xp_doubled_note)
-                            } else {
-                                stringResource(R.string.result_points_are_xp, state.totalScore)
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
+            ResultSummaryCard(state = state, shownXp = shownXp, xpDoubled = xpDoubled)
 
-                        state.levelStars?.let { stars ->
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                repeat(3) { index ->
-                                    Icon(
-                                        imageVector = if (index < stars) Icons.Filled.Star else Icons.Outlined.StarOutline,
-                                        contentDescription = stringResource(R.string.stars_content_description, stars),
-                                        tint = if (index < stars) AppTheme.tokens.gold else AppTheme.tokens.textFaint,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            StatPill(
-                                text = "${state.correctCount}",
-                                icon = Icons.Filled.Check,
-                                contentColor = AppTheme.tokens.success
-                            )
-                            StatPill(
-                                text = "${state.wrongCount}",
-                                icon = Icons.Filled.Close,
-                                contentColor = MaterialTheme.colorScheme.error
-                            )
-                            state.fastestCorrectSeconds?.let {
-                                StatPill(
-                                    text = stringResource(R.string.fastest_correct, it),
-                                    icon = Icons.Filled.Bolt,
-                                    contentColor = AppTheme.tokens.gold
-                                )
-                            }
-                        }
-                        if (state.goldEarned > 0 || state.quickMatchDailyBonusApplied || state.xpEventMultiplierApplied) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                if (state.goldEarned > 0) {
-                                    TintedBadge(
-                                        text = stringResource(R.string.result_gold_earned, state.goldEarned),
-                                        container = AppTheme.tokens.gold.copy(alpha = 0.2f),
-                                        content = AppTheme.tokens.gold
-                                    )
-                                }
-                                if (state.quickMatchDailyBonusApplied || state.xpEventMultiplierApplied) {
-                                    TintedBadge(text = stringResource(R.string.result_xp_bonus_applied))
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (levelProgress != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    ResultLevelCard(progress = levelProgress, gainedXp = shownXp)
-                }
-
-                state.duelOpponentName?.let { opponentName ->
-                    Spacer(modifier = Modifier.height(8.dp))
-                    RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = stringResource(R.string.duel_challenge_sent, opponentName),
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth().padding(16.dp)
-                        )
-                    }
-                }
-
-                state.ghost?.let { ghost ->
-                    Spacer(modifier = Modifier.height(8.dp))
-                    GhostVersusCard(ghost = ghost, playerScore = state.totalScore)
-                }
-
-                state.duelChallenger?.let { duel ->
-                    Spacer(modifier = Modifier.height(8.dp))
-                    DuelChallengerVersusCard(
-                        duel = duel,
-                        playerScore = state.totalScore,
-                        onRematch = onRematchDuel?.let { rematch ->
-                            { rematch(duel.challengerUid, duel.challengerName) }
-                        }
-                    )
-                }
-
-                state.daily?.let { daily ->
-                    Spacer(modifier = Modifier.height(8.dp))
-                    DailyChallengeResultCard(
-                        daily = daily,
-                        correctFlags = state.items.map { it.isCorrect },
-                        onShare = {
-                            DailyChallengeShareUtil.shareResult(
-                                context = context,
-                                correctFlags = state.items.map { it.isCorrect },
-                                streak = daily.streak
-                            )
-                        }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // The drawings live on their own page: ten of them inline
-                // used to push everything else off the screen.
-                RaisedCard(corner = 22.dp, modifier = Modifier.fillMaxWidth(), onClick = { galleryOpen = true }) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Row(horizontalArrangement = Arrangement.spacedBy((-10).dp)) {
-                            state.items.take(4).forEach { item ->
-                                StrokeCanvas(
-                                    strokes = item.strokes,
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .clip(CircleShape)
-                                        .background(AppTheme.tokens.canvasPaper)
-                                        .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
-                                )
-                            }
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.result_view_drawings),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                            Text(
-                                text = stringResource(R.string.result_view_drawings_sub, state.items.size),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Icon(Icons.Filled.Palette, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    }
-                }
-
-                if (onLevelNextAction != null && nextActionLabel != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SecondaryButton(
-                        text = nextActionLabel,
-                        onClick = onLevelNextAction,
-                        height = 50.dp,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+            if (levelProgress != null) {
                 Spacer(modifier = Modifier.height(6.dp))
+                ResultLevelCard(progress = levelProgress, gainedXp = shownXp)
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            state.duelOpponentName?.let { opponentName ->
+                Spacer(modifier = Modifier.height(6.dp))
+                RaisedCard(corner = 18.dp, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = stringResource(R.string.duel_challenge_sent, opponentName),
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(12.dp)
+                    )
+                }
+            }
 
-            // Always ends on the home screen. XP is already banked: Claim just
-            // leaves, x2 watches an ad, pays the round a second time, then leaves.
+            state.ghost?.let { ghost ->
+                Spacer(modifier = Modifier.height(6.dp))
+                GhostVersusCard(ghost = ghost, playerScore = state.totalScore)
+            }
+
+            state.duelChallenger?.let { duel ->
+                Spacer(modifier = Modifier.height(6.dp))
+                DuelChallengerVersusCard(
+                    duel = duel,
+                    playerScore = state.totalScore,
+                    onRematch = onRematchDuel?.let { rematch ->
+                        { rematch(duel.challengerUid, duel.challengerName) }
+                    }
+                )
+            }
+
+            state.daily?.let { daily ->
+                Spacer(modifier = Modifier.height(6.dp))
+                DailyChallengeResultCard(
+                    daily = daily,
+                    correctFlags = state.items.map { it.isCorrect },
+                    onShare = {
+                        DailyChallengeShareUtil.shareResult(
+                            context = context,
+                            correctFlags = state.items.map { it.isCorrect },
+                            streak = daily.streak
+                        )
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            ResultDrawings(
+                state = state,
+                ghostItems = ghostItems,
+                onPreview = { previewItem = it },
+                wordLanguage = wordLanguage,
+                myName = myName,
+                modifier = Modifier.weight(1f).fillMaxWidth()
+            )
+
+            if (onLevelNextAction != null && nextActionLabel != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                SecondaryButton(
+                    text = nextActionLabel,
+                    onClick = onLevelNextAction,
+                    height = 44.dp,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Always ends on the home screen. The XP is already banked: "Ödülü Al" just leaves
+            // (and says how much it is), "x2" watches an ad, pays the round a second time, then leaves.
             val canDouble = onDoubleXp != null && state.xpEarned > 0 && GameConstants.ADMOB_ENABLED && !xpDoubled
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                 if (canDouble) {
                     PrimaryButton(
-                        text = stringResource(R.string.result_x2_button),
+                        text = stringResource(R.string.result_x2_button_amount, state.xpEarned * 2),
                         onClick = onDoubleXp!!,
                         face = Color(0xFFF59E0B),
-                        height = 56.dp,
+                        height = 54.dp,
                         modifier = Modifier.weight(1f)
                     )
                 }
                 PrimaryButton(
-                    text = stringResource(R.string.result_claim),
+                    text = stringResource(R.string.result_claim_amount, shownXp),
                     onClick = onMainMenu,
                     enabled = !(xpDoubled && !startedDoubled),
-                    height = 56.dp,
+                    height = 54.dp,
                     modifier = Modifier.weight(1f)
                 )
             }
         }
-    }
-
-    if (galleryOpen) {
-        ResultGalleryPage(
-            state = state,
-            ghostItems = ghostItems,
-            showingOpponent = showingOpponentGallery,
-            onSelectOpponent = { showingOpponentGallery = it },
-            onPreview = { previewItem = it },
-            onClose = { galleryOpen = false },
-            wordLanguage = wordLanguage
-        )
     }
 
     val itemToPreview = previewItem
@@ -464,6 +339,10 @@ fun ResultScreen(
     }
     if (state.showSignInPrompt && !signInPromptDismissed) {
         SignInPromptDialog(onDismiss = { signInPromptDismissed = true })
+    }
+    if (state.chestLost) {
+        var chestLostDismissed by remember { mutableStateOf(false) }
+        if (!chestLostDismissed) com.sualtikasifi.cizimhafiza.presentation.common.ChestLostDialog(onDismiss = { chestLostDismissed = true })
     }
     state.chestWon?.let { chest ->
         var chestWonDismissed by remember { mutableStateOf(false) }
@@ -815,98 +694,236 @@ private fun ResultLevelCard(progress: com.sualtikasifi.cizimhafiza.domain.model.
     }
 }
 
-/** Every drawing of the round on a page of its own, so none of them is squeezed or cut off. */
+/**
+ * The round's summary in one compact card: the XP earned (big), the one-line sum that explains it,
+ * hits / misses / fastest, and a chip for every bonus or gold source — each saying what it is.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun ResultGalleryPage(
+private fun ResultSummaryCard(state: GamePhase.Result, shownXp: Int, xpDoubled: Boolean) {
+    val base = state.totalScore
+    val mult = state.xpMultiplier
+    val explanation = when {
+        xpDoubled -> stringResource(R.string.result_xp_doubled_note)
+        state.daily != null -> stringResource(R.string.result_xp_daily)
+        mult > 1 && state.xpEarned == base * mult -> stringResource(R.string.result_xp_formula_mult, base, mult)
+        state.xpEarned == base -> stringResource(R.string.result_xp_formula_plain, base)
+        else -> stringResource(R.string.result_xp_formula_extra, base)
+    }
+    RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(R.string.game_over),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = stringResource(R.string.xp_gained_format, shownXp),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = explanation,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            state.levelStars?.let { stars ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    repeat(3) { index ->
+                        Icon(
+                            imageVector = if (index < stars) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                            contentDescription = stringResource(R.string.stars_content_description, stars),
+                            tint = if (index < stars) AppTheme.tokens.gold else AppTheme.tokens.textFaint,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                StatPill(text = "${state.correctCount}", icon = Icons.Filled.Check, contentColor = AppTheme.tokens.success)
+                StatPill(text = "${state.wrongCount}", icon = Icons.Filled.Close, contentColor = MaterialTheme.colorScheme.error)
+                state.fastestCorrectSeconds?.let {
+                    StatPill(
+                        text = stringResource(R.string.fastest_correct, it),
+                        icon = Icons.Filled.Bolt,
+                        contentColor = AppTheme.tokens.gold
+                    )
+                }
+            }
+            val quick = state.quickMatchDailyBonusApplied
+            val eventMult = if (state.xpEventMultiplierApplied) (mult / if (quick) 2 else 1).coerceAtLeast(2) else 0
+            val hasChips = quick || eventMult > 0 || state.goldFromAchievements > 0 || state.goldFromLevel > 0 || state.goldFromDaily > 0
+            if (hasChips) {
+                Spacer(modifier = Modifier.height(6.dp))
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (quick) TintedBadge(text = stringResource(R.string.result_bonus_quick))
+                    if (eventMult > 0) TintedBadge(text = stringResource(R.string.result_bonus_event, eventMult))
+                    val goldBg = AppTheme.tokens.gold.copy(alpha = 0.2f)
+                    if (state.goldFromAchievements > 0) TintedBadge(
+                        text = stringResource(R.string.result_gold_achievement, state.goldFromAchievements),
+                        container = goldBg, content = AppTheme.tokens.gold
+                    )
+                    if (state.goldFromLevel > 0) TintedBadge(
+                        text = stringResource(R.string.result_gold_level, state.goldFromLevel),
+                        container = goldBg, content = AppTheme.tokens.gold
+                    )
+                    if (state.goldFromDaily > 0) TintedBadge(
+                        text = stringResource(R.string.result_gold_daily, state.goldFromDaily),
+                        container = goldBg, content = AppTheme.tokens.gold
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Every drawing of the round, on the result screen itself: yours, and (Hızlı Eşleş) the
+ * opponent's under them. Thumbnails are sized from the space available so they all fit without
+ * scrolling; tapping one opens the replay.
+ */
+@Composable
+private fun ResultDrawings(
     state: GamePhase.Result,
     ghostItems: List<ResultItem>,
-    showingOpponent: Boolean,
-    onSelectOpponent: (Boolean) -> Unit,
     onPreview: (ResultItem) -> Unit,
-    onClose: () -> Unit,
-    wordLanguage: String
+    wordLanguage: String,
+    myName: String,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        BackHandler(onBack = onClose)
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .screenBackground()
-                .systemBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (state.ghost != null) {
-                    GalleryToggle(
-                        opponentName = state.ghost.nickname,
-                        opponentReady = ghostItems.isNotEmpty(),
-                        showingOpponent = showingOpponent,
-                        onSelect = onSelectOpponent,
-                        modifier = Modifier.weight(1f)
-                    )
-                } else {
-                    Text(
-                        text = stringResource(R.string.your_drawings),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                if (!showingOpponent) {
-                    RaisedIconButton(
-                        icon = Icons.Filled.Share,
-                        contentDescription = stringResource(R.string.share_all_drawings),
-                        onClick = {
-                            DrawingShareUtil.shareAllResults(
-                                context = context,
-                                totalScore = state.totalScore,
-                                correctCount = state.correctCount,
-                                wrongCount = state.wrongCount,
-                                fastestCorrectSeconds = state.fastestCorrectSeconds,
-                                items = state.items
-                            )
-                        },
-                        size = 42.dp
+    val ghost = state.ghost
+    val sections = if (ghost != null) 2 else 1
+    val count = state.items.size
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier = modifier) {
+        val gap = 6.dp
+        val labelHeight = 26.dp
+        var columns = 5
+        var cell = 0.dp
+        for (c in 4..10) {
+            val rows = (count + c - 1) / c
+            val byWidth = (maxWidth - gap * (c - 1)) / c
+            val usedByGaps = gap * (rows * sections + sections * 2) + labelHeight * sections
+            val byHeight = (maxHeight - usedByGaps) / (rows * sections)
+            val candidate = minOf(byWidth, byHeight, if (sections == 1) 130.dp else 96.dp)
+            if (candidate > cell) { cell = candidate; columns = c }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+            DrawingSection(
+                title = myName.ifBlank { stringResource(R.string.result_your_drawings) },
+                items = state.items,
+                columns = columns,
+                cell = cell,
+                gap = gap,
+                labelHeight = labelHeight,
+                onPreview = onPreview,
+                onShare = {
+                    DrawingShareUtil.shareAllResults(
+                        context = context,
+                        totalScore = state.totalScore,
+                        correctCount = state.correctCount,
+                        wrongCount = state.wrongCount,
+                        fastestCorrectSeconds = state.fastestCorrectSeconds,
+                        items = state.items
                     )
                 }
-                RaisedIconButton(
-                    icon = Icons.Filled.Close,
-                    contentDescription = stringResource(R.string.close),
-                    onClick = onClose,
-                    size = 42.dp
+            )
+            if (ghost != null) {
+                DrawingSection(
+                    title = ghost.nickname,
+                    items = ghostItems,
+                    placeholders = count,
+                    columns = columns,
+                    cell = cell,
+                    gap = gap,
+                    labelHeight = labelHeight,
+                    onPreview = onPreview,
+                    onShare = null
                 )
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(if (showingOpponent && ghostItems.isNotEmpty()) ghostItems else state.items) { item ->
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box {
+        }
+    }
+}
+
+@Composable
+private fun DrawingSection(
+    title: String,
+    items: List<ResultItem>,
+    columns: Int,
+    cell: androidx.compose.ui.unit.Dp,
+    gap: androidx.compose.ui.unit.Dp,
+    labelHeight: androidx.compose.ui.unit.Dp,
+    onPreview: (ResultItem) -> Unit,
+    onShare: (() -> Unit)?,
+    placeholders: Int = 0
+) {
+    Box(
+        modifier = Modifier.fillMaxWidth().height(labelHeight),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 28.dp)
+        )
+        if (onShare != null) {
+            Icon(
+                imageVector = Icons.Filled.Share,
+                contentDescription = stringResource(R.string.share_all_drawings),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.align(Alignment.CenterEnd).size(20.dp).clickable(onClick = onShare)
+            )
+        }
+    }
+    val total = if (items.isEmpty()) placeholders else items.size
+    val slots = List(total) { index -> items.getOrNull(index) }
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(gap), horizontalAlignment = Alignment.CenterHorizontally) {
+        slots.chunked(columns).forEach { rowItems ->
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally)) {
+                rowItems.forEach { item ->
+                    Box(modifier = Modifier.size(cell)) {
+                        if (item == null) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(MaterialTheme.shapes.small)
+                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f))
+                            )
+                        } else {
                             StrokeCanvas(
                                 strokes = item.strokes,
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(1f)
-                                    .clip(MaterialTheme.shapes.medium)
+                                    .fillMaxSize()
+                                    .clip(MaterialTheme.shapes.small)
                                     .background(AppTheme.tokens.canvasPaper)
                                     .border(
                                         1.5.dp,
-                                        if (item.isCorrect) AppTheme.tokens.success.copy(alpha = 0.45f) else MaterialTheme.colorScheme.outline,
-                                        MaterialTheme.shapes.medium
+                                        if (item.isCorrect) AppTheme.tokens.success.copy(alpha = 0.6f) else MaterialTheme.colorScheme.error.copy(alpha = 0.5f),
+                                        MaterialTheme.shapes.small
                                     )
                                     .clickable { onPreview(item) }
                             )
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .padding(5.dp)
-                                    .size(21.dp)
+                                    .padding(3.dp)
+                                    .size(14.dp)
                                     .clip(CircleShape)
                                     .background(if (item.isCorrect) AppTheme.tokens.success else MaterialTheme.colorScheme.error),
                                 contentAlignment = Alignment.Center
@@ -915,18 +932,10 @@ private fun ResultGalleryPage(
                                     imageVector = if (item.isCorrect) Icons.Filled.Check else Icons.Filled.Close,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.surface,
-                                    modifier = Modifier.size(14.dp)
+                                    modifier = Modifier.size(10.dp)
                                 )
                             }
                         }
-                        Text(
-                            text = item.word.capitalizeForWordLanguage(wordLanguage),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                            modifier = Modifier.fillMaxWidth().padding(top = 3.dp)
-                        )
                     }
                 }
             }

@@ -54,8 +54,6 @@ data class OnlineResultUiState(
     /** Non-null exactly once, right after a 1st-place finish that found a free chest slot. */
     val chestWon: Chest? = null,
     val chestLost: Boolean = false,
-    /** Set when a win found every chest slot full: the chest was opened on the spot. */
-    val overflowReward: com.sualtikasifi.cizimhafiza.domain.model.ChestReward? = null
 )
 
 @HiltViewModel
@@ -247,14 +245,13 @@ class OnlineResultViewModel @Inject constructor(
                     // challenge (see SettingsRepository.awardChestForWin).
                     val chestAward = if (placement == 1) settingsRepository.awardChestForWinOrPay() else null
                     val chestWon = chestAward?.chest
-                    val chestLost = chestAward?.instantReward != null
+                    val chestLost = placement == 1 && chestWon == null
                     _uiState.update {
                         it.copy(
                             showSignInPrompt = PostMatchPrompts.shouldShowSignIn(settingsRepository, authRepository.authState.value),
-                            showRatingPrompt = PostMatchPrompts.shouldShowRating(settingsRepository),
+                            showRatingPrompt = false,
                             chestWon = chestWon,
-                            chestLost = chestLost,
-                            overflowReward = chestAward?.instantReward
+                            chestLost = chestLost
                         )
                     }
                 }
@@ -272,8 +269,6 @@ class OnlineResultViewModel @Inject constructor(
         }.getOrDefault(emptyMap())
 
     /** Called once when the finished-round comparison is actually showing — see AdManager's placement doc. */
-    fun consumeOverflowReward() = _uiState.update { it.copy(overflowReward = null) }
-
     fun showInterstitial(activity: Activity, onDismissed: () -> Unit = {}) {
         adManager.maybeShowInterstitial(activity, onDismissed, placement = "interstitial_result_online")
     }

@@ -195,6 +195,9 @@ class GameViewModel @Inject constructor(
     /** True for a Hızlı Eşleş round — leaving one half-way costs XP. */
     val isQuickMatch: Boolean = ghost != null
 
+    /** The player's own username, shown over their drawings on the result screen. */
+    val myNickname: String get() = settingsRepository.nicknameOrDefault
+
     fun abandonQuickMatch() {
         if (ghost != null) settingsRepository.applyQuickMatchAbandonPenalty()
     }
@@ -360,13 +363,6 @@ class GameViewModel @Inject constructor(
      * drawings are all already on screen — so it stays silent rather than
      * putting an error in front of somebody who just won a match.
      */
-    private val _overflowChestReward = MutableStateFlow<com.sualtikasifi.cizimhafiza.domain.model.ChestReward?>(null)
-
-    /** A won match's chest opened on the spot because every slot was full; shown once, then cleared. */
-    val overflowChestReward: StateFlow<com.sualtikasifi.cizimhafiza.domain.model.ChestReward?> = _overflowChestReward.asStateFlow()
-
-    fun consumeOverflowChestReward() { _overflowChestReward.value = null }
-
     private val _ghostItems = MutableStateFlow<List<ResultItem>>(emptyList())
     val ghostItems: StateFlow<List<ResultItem>> = _ghostItems.asStateFlow()
 
@@ -944,7 +940,10 @@ class GameViewModel @Inject constructor(
         soundManager.playGameOver()
         // Gold earned by playing (not only by winning chests): achievements,
         // improving a level's stars, and the daily challenge. Paid once, below.
-        var goldEarned = newlyUnlocked.size * GameConstants.ACHIEVEMENT_GOLD
+        val goldFromAchievements = newlyUnlocked.size * GameConstants.ACHIEVEMENT_GOLD
+        var goldFromLevel = 0
+        var goldFromDaily = 0
+        var goldEarned = goldFromAchievements
 
         // Spends today's Quick Match bonus only now that the round actually
         // finished — see quickMatchDailyBonusPending, decided at
@@ -975,7 +974,8 @@ class GameViewModel @Inject constructor(
             settingsRepository.addXp(bonus)
             roundXpEarned += bonus
             // Gold only for stars beyond the best already earned — replaying a cleared level pays none.
-            goldEarned += (it - previousBestStars).coerceAtLeast(0) * GameConstants.LEVEL_GOLD_PER_NEW_STAR
+            goldFromLevel = (it - previousBestStars).coerceAtLeast(0) * GameConstants.LEVEL_GOLD_PER_NEW_STAR
+            goldEarned += goldFromLevel
         }
 
         // Bookkeeping for today's challenge: streak, freezes and the XP that
@@ -1003,7 +1003,8 @@ class GameViewModel @Inject constructor(
             )
             settingsRepository.addXp(xpAwarded)
             roundXpEarned += xpAwarded
-            goldEarned += GameConstants.dailyChallengeGold(updated.currentStreak)
+            goldFromDaily = GameConstants.dailyChallengeGold(updated.currentStreak)
+            goldEarned += goldFromDaily
             DailyResultSummary(
                 streak = updated.currentStreak,
                 xpEarned = xpAwarded,
@@ -1107,7 +1108,6 @@ class GameViewModel @Inject constructor(
         val quickMatchWon = ghost != null && totalScore > ghost.totalScore
         val chestAward = if (quickMatchWon) settingsRepository.awardChestForWinOrPay() else null
         val chestWon = chestAward?.chest
-        _overflowChestReward.value = chestAward?.instantReward
 
         val resultPhase = GamePhase.Result(
             totalScore = totalScore,
@@ -1139,12 +1139,17 @@ class GameViewModel @Inject constructor(
             },
             xpEarned = roundXpEarned,
             goldEarned = goldEarned,
+            goldFromAchievements = goldFromAchievements,
+            goldFromLevel = goldFromLevel,
+            goldFromDaily = goldFromDaily,
+            xpMultiplier = effectiveXpMultiplier,
             quickMatchDailyBonusApplied = quickMatchDailyBonusPending,
             xpEventMultiplierApplied = xpEventMultiplierOnly > 1,
             showSignInPrompt = PostMatchPrompts.shouldShowSignIn(settingsRepository, authRepository.authState.value),
-            showRatingPrompt = PostMatchPrompts.shouldShowRating(settingsRepository),
+            // The rating ask waits for the main menu after the third game — see MainMenuViewModel.checkRatingPrompt.
+            showRatingPrompt = false,
             chestWon = chestWon,
-            chestLost = chestAward?.instantReward != null
+            chestLost = quickMatchWon && chestWon == null
         )
         _phase.value = resultPhase
         // Only now, once there is finally something to compare them with:

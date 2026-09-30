@@ -469,40 +469,29 @@ private fun AchievementChip(
         if (burst.value > 0f) {
             val p = burst.value
             val rewardTint = rewardColor(item.achievement)
-            // White flash across the chip in the first instant.
-            val flash = (1f - p * 5f).coerceAtLeast(0f)
-            if (flash > 0f) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(Color.White.copy(alpha = 0.7f * flash), androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
-                )
-            }
             ClaimBurstEffects(progress = p, ringColor = rewardTint, modifier = Modifier.matchParentSize())
             // The reward rides up on a dark pill with a small overshoot, holds,
             // then fades — big enough to actually read on a phone.
             val rise = (1f - (1f - (p * 1.25f).coerceAtMost(1f)).let { it * it * it })
-            val overshoot = 1f + 0.35f * sin((p * 1.25f).coerceAtMost(1f) * PI.toFloat())
             Text(
                 text = "+" + rewardText(item.achievement).trimStart('+'),
-                style = MaterialTheme.typography.titleMedium,
+                // Plain, unscaled text kept inside the chip's own width — a glow or a scale-up here
+                // used to be cut off at the sides by the text's own bounds.
+                style = MaterialTheme.typography.titleSmall.copy(
+                    shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.25f), androidx.compose.ui.geometry.Offset(0f, 2f), 2f)
+                ),
                 fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFFFFE08A),
+                color = rewardTint,
+                textAlign = TextAlign.Center,
                 maxLines = 1,
                 softWrap = false,
                 modifier = Modifier
-                    .wrapContentWidth(unbounded = true)
-                    .offset(y = (-72 * rise).dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .offset(y = (-30 * rise).dp)
                     // Fades out smoothly over the back two thirds of the animation
                     // instead of holding and then vanishing.
                     .alpha(1f - androidx.compose.animation.core.FastOutSlowInEasing.transform(((p - 0.3f) / 0.7f).coerceIn(0f, 1f)))
-                    .graphicsLayer {
-                        scaleX = overshoot
-                        scaleY = overshoot
-                    }
-                    .background(Color(0xE61C1109), androidx.compose.foundation.shape.RoundedCornerShape(50.dp))
-                    .border(1.5.dp, rewardTint, androidx.compose.foundation.shape.RoundedCornerShape(50.dp))
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
             )
         }
     }
@@ -535,14 +524,6 @@ private fun ClaimBurstEffects(progress: Float, ringColor: Color, modifier: Modif
     androidx.compose.foundation.Canvas(modifier = modifier) {
         val center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
         val out = 1f - (1f - progress).let { it * it * it }
-        // Shockwave ring.
-        val ringProgress = (progress * 1.6f).coerceAtMost(1f)
-        drawCircle(
-            color = ringColor.copy(alpha = 0.55f * (1f - ringProgress)),
-            radius = (18.dp.toPx()) + 62.dp.toPx() * ringProgress,
-            center = center,
-            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4.dp.toPx() * (1f - ringProgress) + 1.dp.toPx())
-        )
         // Sparks.
         val fade = 1f - androidx.compose.animation.core.FastOutSlowInEasing.transform(((progress - 0.3f) / 0.7f).coerceIn(0f, 1f))
         sparks.forEach { spark ->
@@ -550,17 +531,7 @@ private fun ClaimBurstEffects(progress: Float, ringColor: Color, modifier: Modif
             val x = center.x + kotlin.math.cos(spark.angle) * r
             val y = center.y + kotlin.math.sin(spark.angle) * r + 26.dp.toPx() * progress * progress
             val s = spark.size.dp.toPx() * (1f - 0.4f * progress)
-            if (spark.square) {
-                drawRotate(degrees = progress * 240f + spark.angle * 30f, pivot = androidx.compose.ui.geometry.Offset(x, y)) {
-                    drawRect(
-                        color = spark.color.copy(alpha = fade),
-                        topLeft = androidx.compose.ui.geometry.Offset(x - s, y - s),
-                        size = androidx.compose.ui.geometry.Size(s * 2f, s * 2f)
-                    )
-                }
-            } else {
-                drawCircle(color = spark.color.copy(alpha = fade), radius = s, center = androidx.compose.ui.geometry.Offset(x, y))
-            }
+            drawCircle(color = spark.color.copy(alpha = fade), radius = s, center = androidx.compose.ui.geometry.Offset(x, y))
         }
     }
 }

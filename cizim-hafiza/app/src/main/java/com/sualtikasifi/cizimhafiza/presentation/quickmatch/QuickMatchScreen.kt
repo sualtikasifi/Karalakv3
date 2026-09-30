@@ -406,7 +406,6 @@ private fun FoundBody(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart:
         Spacer(modifier = Modifier.height(16.dp))
         TipsRow()
         Spacer(modifier = Modifier.height(10.dp))
-        MatchMascot()
     }
 }
 

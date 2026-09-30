@@ -72,6 +72,12 @@ data class ProgressSnapshot(
     /** Seed and position of this account's chest tier cycle — 0 when never generated. */
     val chestCycleSeed: Long = 0L,
     val chestCycleIndex: Int = 0,
+    /** This month's league XP and the month it belongs to (LeaguePeriod id), so a reinstall does not zero the standings. */
+    val periodXp: Int = 0,
+    val periodId: Long = -1L,
+    /** Home-screen ad rewards: when the 500-gold ad unlocks again, and the day the free chest was last taken. */
+    val adGoldNextAt: Long = 0L,
+    val adChestDay: Long = -1L,
     val backedUpAt: Long
 ) {
     /**
@@ -107,6 +113,10 @@ data class ProgressSnapshot(
         "chestSlots" to chestSlots,
         "chestCycleSeed" to chestCycleSeed,
         "chestCycleIndex" to chestCycleIndex,
+        "periodXp" to periodXp,
+        "periodId" to periodId,
+        "adGoldNextAt" to adGoldNextAt,
+        "adChestDay" to adChestDay,
         "backedUpAt" to backedUpAt
     )
 
@@ -148,6 +158,10 @@ data class ProgressSnapshot(
             chestSlots = data.strings("chestSlots"),
             chestCycleSeed = data.long("chestCycleSeed"),
             chestCycleIndex = data.int("chestCycleIndex"),
+            periodXp = data.int("periodXp"),
+            periodId = data.long("periodId", absent = -1L),
+            adGoldNextAt = data.long("adGoldNextAt"),
+            adChestDay = data.long("adChestDay", absent = -1L),
             backedUpAt = data.long("backedUpAt")
         )
 

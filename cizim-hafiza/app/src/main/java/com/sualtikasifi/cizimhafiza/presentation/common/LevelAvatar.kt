@@ -447,6 +447,9 @@ sealed interface AvatarPhoto {
 
     /** The player's Google account picture. */
     data class Url(val url: String) : AvatarPhoto
+
+    /** A stand-in picture for a league filler row, picked deterministically from [seed] (its name): mascot, Google-style default, initial, or an emoji scene. */
+    data class Persona(val seed: String) : AvatarPhoto
 }
 
 /**
@@ -471,6 +474,7 @@ fun AvatarPhotoFace(photo: AvatarPhoto, modifier: Modifier = Modifier) {
         }
         when (photo) {
             AvatarPhoto.Dino -> dino()
+            is AvatarPhoto.Persona -> PersonaFace(photo.seed, dino)
             is AvatarPhoto.Url -> coil3.compose.SubcomposeAsyncImage(
                 model = photo.url,
                 contentDescription = null,
@@ -499,3 +503,62 @@ fun avatarPhotoOf(url: String?): AvatarPhoto =
     } else {
         AvatarPhoto.Url(url)
     }
+
+private val PersonaEmoji = listOf("🦊", "🐼", "🎨", "⚽", "🎸", "🌸", "🚀", "🐱", "🎮", "🌵", "🍕", "🐶", "🦁", "📚", "🏀", "🐧")
+private val PersonaGradients = listOf(
+    Color(0xFFFFE0B2) to Color(0xFFFFB74D),
+    Color(0xFFC8E6C9) to Color(0xFF81C784),
+    Color(0xFFBBDEFB) to Color(0xFF64B5F6),
+    Color(0xFFF8BBD0) to Color(0xFFF06292),
+    Color(0xFFD1C4E9) to Color(0xFF9575CD),
+    Color(0xFFB2EBF2) to Color(0xFF4DD0E1),
+    Color(0xFFFFF59D) to Color(0xFFFFD54F)
+)
+private val PersonaLetterColors = listOf(
+    Color(0xFF1A73E8), Color(0xFFD93025), Color(0xFF188038), Color(0xFFE37400),
+    Color(0xFF9334E6), Color(0xFF12B5CB), Color(0xFFE52592), Color(0xFF5F6368)
+)
+
+/**
+ * Filler-row pictures that read like a real mix of players: a few keep the Karalak mascot, one or
+ * two wear Google's grey default silhouette, some have a coloured initial (Google's own default
+ * for accounts without a photo), and the rest an emoji "artwork" on a soft gradient.
+ */
+@Composable
+private fun PersonaFace(seed: String, mascot: @Composable () -> Unit) {
+    val hash = (seed.fold(11) { acc, c -> acc * 31 + c.code }) and Int.MAX_VALUE
+    val bucket = hash % 20
+    when {
+        bucket <= 2 -> mascot()
+        bucket <= 4 -> Canvas(modifier = Modifier.fillMaxSize()) {
+            drawRect(Color(0xFFDADCE0))
+            val w = size.width
+            drawCircle(Color.White, radius = w * 0.17f, center = Offset(w / 2f, w * 0.40f))
+            drawCircle(Color.White, radius = w * 0.34f, center = Offset(w / 2f, w * 1.02f))
+        }
+        bucket <= 9 -> Box(
+            modifier = Modifier.fillMaxSize().background(PersonaLetterColors[hash / 20 % PersonaLetterColors.size]),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.foundation.layout.BoxWithConstraints(contentAlignment = Alignment.Center) {
+                Text(
+                    text = seed.firstOrNull { it.isLetter() }?.uppercaseChar()?.toString() ?: "K",
+                    color = Color.White,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = (maxWidth.value * 0.5f).sp
+                )
+            }
+        }
+        else -> {
+            val (top, bottom) = PersonaGradients[hash / 20 % PersonaGradients.size]
+            Box(
+                modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(top, bottom))),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.foundation.layout.BoxWithConstraints(contentAlignment = Alignment.Center) {
+                    Text(text = PersonaEmoji[hash / 140 % PersonaEmoji.size], fontSize = (maxWidth.value * 0.52f).sp)
+                }
+            }
+        }
+    }
+}

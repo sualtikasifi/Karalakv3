@@ -195,37 +195,7 @@ internal fun HomeChestsSection(compact: Boolean = false, viewModel: ChestsViewMo
         viewModel = viewModel
     )
 
-    if (infoOpen) {
-        AlertDialog(
-            onDismissRequest = { infoOpen = false },
-            title = { Text(stringResource(R.string.home_chests_info_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(stringResource(R.string.home_chests_info_body))
-                    ChestTier.entries.forEach { tier ->
-                        val minutes = (tier.unlockDurationMillis / 60_000L).toInt()
-                        Text(
-                            text = stringResource(R.string.home_chests_info_line, stringResource(tier.labelRes()), minutes, tier.durationHours()),
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = stringResource(
-                                when (tier) {
-                                    ChestTier.SILVER -> R.string.chest_loot_silver
-                                    ChestTier.GOLD -> R.string.chest_loot_gold
-                                    ChestTier.RARE -> R.string.chest_loot_rare
-                                },
-                                tier.goldReward.first, tier.goldReward.last
-                            ),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                    Text(stringResource(R.string.home_chests_info_speedup), style = MaterialTheme.typography.bodySmall)
-                }
-            },
-            confirmButton = { TextButton(onClick = { infoOpen = false }) { Text(stringResource(R.string.home_chests_info_ok)) } }
-        )
-    }
+    if (infoOpen) ChestInfoDialog(onDismiss = { infoOpen = false })
 }
 
 @Composable

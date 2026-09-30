@@ -34,6 +34,8 @@ import androidx.compose.runtime.Composable
 import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.animation.togetherWith
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -94,6 +96,12 @@ fun LeagueScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val table = uiState.table
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(5_000)
+            LeagueLabelClock.toggle()
+        }
+    }
 
     // No title bar: the back button floats directly on the page's own
     // background instead of sitting in a separate, differently-colored strip.
@@ -133,7 +141,7 @@ fun LeagueScreen(
                 shownTable?.let {
                     TintedBadge(
                         text = if (it.daysRemaining <= 0) {
-                            stringResource(R.string.league_resets_today)
+                            stringResource(R.string.league_resets_countdown, rememberResetCountdown())
                         } else {
                             stringResource(if (it.daysRemaining == 1) R.string.league_resets_in_one else R.string.league_resets_in, it.daysRemaining)
                         }
@@ -636,7 +644,8 @@ private fun LeagueRow(rank: Int, entry: LeagueEntry) {
                 level = entry.level,
                 frame = AvatarFrame.resolve(entry.frameId, entry.level),
                 size = 40.dp,
-                photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(entry.avatarUrl)
+                photo = if (entry.isBot) com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(entry.nickname)
+                else com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(entry.avatarUrl)
             )
             Spacer(modifier = Modifier.width(10.dp))
             // Level sits beside the name ("Ad • 12 Seviye"), the same way the
@@ -654,14 +663,7 @@ private fun LeagueRow(rank: Int, entry: LeagueEntry) {
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
-                Text(
-                    text = "• " + stringResource(R.string.home_level_inline, entry.level),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    softWrap = false
-                )
+                RankLevelLabel(level = entry.level)
             }
             Text(
                 text = stringResource(R.string.league_xp_format, entry.periodXp),
@@ -705,4 +707,59 @@ private fun MeRowGlow(corner: Dp, modifier: Modifier = Modifier) {
             size = Size(size.width + strokeWidth, size.height + strokeWidth)
         )
     }
+}
+
+/** Flips between the rank title and the level every few seconds; one clock for every row so they turn together. */
+private object LeagueLabelClock {
+    val showRank = kotlinx.coroutines.flow.MutableStateFlow(false)
+    fun toggle() { showRank.value = !showRank.value }
+}
+
+/** "• Çırak" and "• 33 Seviye" taking turns in the same spot, same type style, with a soft cross-fade. */
+@Composable
+private fun RankLevelLabel(level: Int) {
+    val showRank by LeagueLabelClock.showRank.collectAsState()
+    val rankName = stringResource(com.sualtikasifi.cizimhafiza.domain.model.LevelTier.forLevel(level).rank.nameRes)
+    val levelText = stringResource(R.string.home_level_inline, level)
+    androidx.compose.animation.AnimatedContent(
+        targetState = showRank,
+        transitionSpec = {
+            (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(450)) +
+                androidx.compose.animation.slideInVertically(androidx.compose.animation.core.tween(450)) { it / 3 })
+                .togetherWith(
+                    androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(300)) +
+                        androidx.compose.animation.slideOutVertically(androidx.compose.animation.core.tween(300)) { -it / 3 }
+                )
+        },
+        label = "rank-level"
+    ) { rank ->
+        Text(
+            text = "• " + if (rank) rankName else levelText,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            softWrap = false
+        )
+    }
+}
+
+/** "HH:MM:SS" until the league resets: midnight Istanbul at the turn of the month. */
+@Composable
+private fun rememberResetCountdown(): String {
+    val zone = java.time.ZoneId.of("Europe/Istanbul")
+    fun remaining(): String {
+        val now = java.time.ZonedDateTime.now(zone)
+        val reset = now.toLocalDate().withDayOfMonth(1).plusMonths(1).atStartOfDay(zone)
+        val total = java.time.Duration.between(now, reset).seconds.coerceAtLeast(0)
+        return "%02d:%02d:%02d".format(total / 3600, (total % 3600) / 60, total % 60)
+    }
+    var text by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(remaining()) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(1_000)
+            text = remaining()
+        }
+    }
+    return text
 }
