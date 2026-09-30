@@ -148,7 +148,7 @@ fun FriendsScreen(
             item {
                 MyCodeCard(
                     code = uiState.myFriendCode,
-                    onShare = { code -> InviteShareUtil.shareFriendCode(context, code) }
+                    onShare = { code -> InviteShareUtil.shareFriendCode(context, code, uiState.nickname) }
                 )
             }
 

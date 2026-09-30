@@ -53,15 +53,23 @@ object InviteShareUtil {
      * explicit instructions for typing it into "Add a friend" beats
      * implying a tap that, most of the time, cannot happen.
      */
-    fun shareFriendCode(context: Context, friendCode: String) {
+    fun shareFriendCode(context: Context, friendCode: String, nickname: String = "") {
         val playStoreLink = playStoreLink()
         val message = buildString {
-            appendLine(context.getString(R.string.share_friend_invite))
+            appendLine(
+                if (nickname.isBlank()) context.getString(R.string.share_friend_invite)
+                else context.getString(R.string.share_friend_invite_named, nickname)
+            )
+            appendLine(context.getString(R.string.share_friend_pitch))
+            appendLine()
             appendLine(context.getString(R.string.share_friend_reward_hint))
+            appendLine()
+            // The https link first: it is the one part that is tappable in every
+            // messenger, opens the app when installed and the Play Store when not.
+            appendLine(context.getString(R.string.share_invite_link, webInviteLink("friend", friendCode)))
             appendLine()
             appendLine(context.getString(R.string.share_friend_code, friendCode))
             appendLine(context.getString(R.string.share_friend_code_instructions))
-            appendLine(context.getString(R.string.share_invite_link, webInviteLink("friend", friendCode)))
             appendLine()
             append(context.getString(R.string.share_room_not_installed, playStoreLink))
         }
