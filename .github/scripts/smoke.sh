@@ -88,14 +88,32 @@ for n in ET.parse(sys.argv[1]).iter('node'):
 print("\n".join(seen))
 PY
 
-# --- Scroll the main menu top to bottom, one screenshot per screen ----------------------------
-# Compose content is not exposed to uiautomator on this emulator (the dump above is nearly
-# empty), so navigation is by swipe/coordinates. Screen is 1080x2400 (pixel_6).
-for i in 02 03 04 05; do
-  adb shell input swipe 540 1900 540 600 600
+# --- Walk the main screens by coordinates (1080x2400) ------------------------------------------
+# Compose content is not exposed to uiautomator on this emulator, so taps are by position,
+# read off the main-menu screenshot. Each screen: tap, wait, screenshot, Back.
+
+# The ads consent form (UMP) opens over the main menu on a fresh install; accept it so the
+# buttons underneath can be reached (the emulator counts as an EEA device).
+adb shell input tap 540 1678
+sleep 3
+shot 02_main_menu_after_consent
+
+tour() {  # tour <file-name> <x> <y>
+  adb shell input tap "$2" "$3"
+  sleep 4
+  shot "$1"
+  adb shell input keyevent KEYCODE_BACK
   sleep 2
-  shot ${i}_main_menu_scrolled
-done
+}
+tour 03_levels        200 1488
+tour 04_friends       540 1488
+tour 05_achievements  880 1488
+tour 06_league        200 1692
+tour 07_store         540 1692
+tour 08_settings      880 1692
+tour 09_daily         540  756
+tour 10_offline       880 1146
+shot 11_back_on_main_menu
 walk() { :; }
 
 # --- Verdict ----------------------------------------------------------------------------------
