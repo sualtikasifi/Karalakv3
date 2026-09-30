@@ -32,7 +32,10 @@ class BaselineProfileGenerator {
 
     @Test
     fun generate() = baselineProfileRule.collect(
-        packageName = "com.sualtikasifi.cizimhafiza"
+        packageName = "com.sualtikasifi.cizimhafiza",
+        // Also emits a startup profile: the plugin uses it to lay the startup classes out
+        // together in the dex, which is what speeds up a cold launch beyond precompilation.
+        includeInStartupProfile = true
     ) {
         pressHome()
         startActivityAndWait()

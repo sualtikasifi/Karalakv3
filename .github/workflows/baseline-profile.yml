@@ -1,6 +1,6 @@
 name: Baseline profile
 
-# Generates app/src/main/baselineProfiles/baseline-prof.txt on a GitHub-hosted
+# Generates app/src/release/generated/baselineProfiles/ (the profile) on a GitHub-hosted
 # runner (hardware-accelerated emulator via a Gradle Managed Device — see
 # cizim-hafiza/BASELINE_PROFILE.md) and commits it to the branch it ran on.
 # Once that file is in the repo, every release build ships it and Android
@@ -57,16 +57,19 @@ jobs:
 
       - name: Show what was generated
         run: |
-          F=app/src/main/baselineProfiles/baseline-prof.txt
-          test -s "$F" || { echo "::error::No baseline profile was produced"; exit 1; }
+          # The plugin writes per variant: app/src/release/generated/baselineProfiles/.
+          F=$(ls app/src/*/generated/baselineProfiles/baseline-prof.txt 2>/dev/null | head -1)
+          test -n "$F" && test -s "$F" || { echo "::error::No baseline profile was produced"; exit 1; }
+          echo "$F"
           wc -l "$F"
           head -5 "$F"
+          ls -l app/src/*/generated/baselineProfiles/
 
       - name: Upload profile
         uses: actions/upload-artifact@v4
         with:
           name: baseline-prof
-          path: cizim-hafiza/app/src/main/baselineProfiles/baseline-prof.txt
+          path: cizim-hafiza/app/src/*/generated/baselineProfiles/
           retention-days: 30
 
       - name: Commit the profile to the branch
@@ -75,7 +78,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/src/main/baselineProfiles/baseline-prof.txt
+          git add app/src/*/generated/baselineProfiles
           if git diff --cached --quiet; then echo "Profile unchanged."; exit 0; fi
           git commit -m "Baseline profile güncellendi"
           git push origin "HEAD:$BRANCH"
