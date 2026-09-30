@@ -6,8 +6,7 @@
     <string name="share_room_installed">Already have Karalak? %1$s</string>
     <string name="share_room_not_installed">Don\'t have it yet? %1$s</string>
     <string name="share_invite_link">One tap to open (opens the Play Store if not installed): %1$s</string>
-    <string name="share_friend_invite">I want to play Karalak with you! 🎨</string>
-    <string name="share_friend_invite_named">%1$s is inviting you to be friends on Karalak! 🎨</string>
+    <string name="share_friend_invite">I\'m inviting you to Karalak! 🎨</string>
     <string name="share_friend_pitch">Draw first, then remember what you drew. Beat the clock, race your friends and climb the weekly league.</string>
     <string name="share_friend_reward_hint">🎁 We both win: join with my code and when you reach level 5 we each get 500 XP!</string>
     <string name="share_friend_code">My friend code: %1$s</string>

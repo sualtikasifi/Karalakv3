@@ -53,13 +53,10 @@ object InviteShareUtil {
      * explicit instructions for typing it into "Add a friend" beats
      * implying a tap that, most of the time, cannot happen.
      */
-    fun shareFriendCode(context: Context, friendCode: String, nickname: String = "") {
+    fun shareFriendCode(context: Context, friendCode: String) {
         val playStoreLink = playStoreLink()
         val message = buildString {
-            appendLine(
-                if (nickname.isBlank()) context.getString(R.string.share_friend_invite)
-                else context.getString(R.string.share_friend_invite_named, nickname)
-            )
+            appendLine(context.getString(R.string.share_friend_invite))
             appendLine(context.getString(R.string.share_friend_pitch))
             appendLine()
             appendLine(context.getString(R.string.share_friend_reward_hint))
