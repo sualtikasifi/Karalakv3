@@ -105,6 +105,32 @@ tour 10_offline       880 1146
 shot 11_back_on_main_menu
 walk() { :; }
 
+# --- Play one whole round hands-off: Daily Challenge, draw -> break -> guess -> result --------------
+# The word is unknown to the script, so the guessing phase is left to run out its timers; what is
+# checked is that every phase appears, moves on by itself and ends on the result screen without a
+# crash. A few strokes are drawn during the first drawing turns so the canvas is exercised.
+adb shell input tap 540 756          # Daily Challenge card on the main menu
+sleep 5
+for i in $(seq 1 16); do
+  if [ "$i" -le 6 ]; then
+    adb shell input swipe 200 900 880 1100 300
+    adb shell input swipe 880 1300 200 1600 300
+  fi
+  adb exec-out screencap -p > "$OUT/flow_$(printf %02d "$i").png"
+  sleep 8
+done
+
+# Flow screenshots are many, so keep them small (half size JPEG) before publishing.
+python3 -m pip install -q pillow >/dev/null 2>&1 && python3 - "$OUT" <<'PY'
+import sys, glob, os
+from PIL import Image
+for f in sorted(glob.glob(os.path.join(sys.argv[1], 'flow_*.png'))):
+    im = Image.open(f).convert('RGB')
+    im = im.resize((im.width // 2, im.height // 2))
+    im.save(f[:-4] + '.jpg', quality=60)
+    os.remove(f)
+PY
+
 # --- Verdict ----------------------------------------------------------------------------------
 adb logcat -d > "$OUT/logcat.txt"
 adb logcat -d -b crash > "$OUT/crash.txt"

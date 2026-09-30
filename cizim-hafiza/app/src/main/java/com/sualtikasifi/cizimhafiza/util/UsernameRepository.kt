@@ -51,6 +51,9 @@ class UsernameRepository @Inject constructor(
      */
     suspend fun ensureUsername() {
         if (settingsRepository.nicknameRenameUsed.value) return
+        // Already confirmed with the server on this device: nothing can have changed it since
+        // (only this app renames), so skip the two reads a start-up check costs.
+        if (settingsRepository.usernameVerified) return
         try {
             val uid = authRepository.ensureSignedIn()
             val owned = usernames.whereEqualTo("uid", uid).limit(1).get().await().documents.firstOrNull()
@@ -61,6 +64,7 @@ class UsernameRepository @Inject constructor(
                 settingsRepository.usernameChanges = (profile.getLong("usernameChanges") ?: 0L).toInt()
                 // Only an explicit `false` means "still changeable"; older claims are final.
                 if (profile.getBoolean("usernameLocked") != false) settingsRepository.lockUsername(ownedName)
+                settingsRepository.usernameVerified = true
                 return
             }
 
@@ -98,6 +102,7 @@ class UsernameRepository @Inject constructor(
         settingsRepository.setNickname(name)
         settingsRepository.usernameChanges = 0
         publish(uid, name, changes = 0, locked = false)
+        settingsRepository.usernameVerified = true
         return true
     }
 

@@ -129,7 +129,7 @@ class MainMenuViewModel @Inject constructor(
 
     fun watchAdForGold(activity: Activity) {
         if (!settingsRepository.isAdGoldReady()) return
-        adManager.maybeShowRewarded(activity) { outcome ->
+        adManager.maybeShowRewarded(activity, "home_gold") { outcome ->
             when (outcome) {
                 RewardedOutcome.EARNED -> if (settingsRepository.claimAdGold()) _streakToast.value = StreakToast.AdGoldEarned
                 RewardedOutcome.SKIPPED -> Unit
@@ -140,7 +140,7 @@ class MainMenuViewModel @Inject constructor(
 
     fun watchAdForChest(activity: Activity) {
         if (!settingsRepository.isAdChestReady()) return
-        adManager.maybeShowRewarded(activity) { outcome ->
+        adManager.maybeShowRewarded(activity, "home_free_chest") { outcome ->
             when (outcome) {
                 RewardedOutcome.EARNED -> settingsRepository.claimAdChest()?.let { _freeChestReward.value = it }
                 RewardedOutcome.SKIPPED -> Unit
@@ -162,7 +162,7 @@ class MainMenuViewModel @Inject constructor(
      */
     fun rescueStreak(activity: Activity) {
         if (dailyChallengeRepository.state.value.rescuableStreak <= 0) return
-        adManager.maybeShowRewarded(activity) { outcome ->
+        adManager.maybeShowRewarded(activity, "streak_rescue") { outcome ->
             val earned = outcome == RewardedOutcome.EARNED
             // The rescue dialog stays open on an unavailable ad, so the
             // player can simply tap again — no separate notice needed.

@@ -112,7 +112,7 @@ class JoinRoomViewModel @Inject constructor(
         is RoomNotFoundException -> UiText.of(R.string.error_room_not_found)
         is RoomFullException -> UiText.of(R.string.error_room_full)
         is RoomAlreadyStartedException -> UiText.of(R.string.error_room_already_started)
-        is KickedFromRoomException -> UiText.of(R.string.error_kicked_from_room, error.remainingMinutes)
+        is KickedFromRoomException -> UiText.of(if (error.remainingMinutes == 1) R.string.error_kicked_from_room_one else R.string.error_kicked_from_room, error.remainingMinutes)
         else -> UiText.of(R.string.error_no_connection)
     }
 }

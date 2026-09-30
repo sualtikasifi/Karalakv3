@@ -275,7 +275,7 @@ class OnlineResultViewModel @Inject constructor(
     fun consumeOverflowReward() = _uiState.update { it.copy(overflowReward = null) }
 
     fun showInterstitial(activity: Activity, onDismissed: () -> Unit = {}) {
-        adManager.maybeShowInterstitial(activity, onDismissed)
+        adManager.maybeShowInterstitial(activity, onDismissed, placement = "interstitial_result_online")
     }
 
     fun selectPlayer(uid: String) {

@@ -705,7 +705,7 @@ class GameViewModel @Inject constructor(
         timerJob?.cancel()
         val pausedSecondsLeft = current.secondsLeft
         val word = words[drawingIndex]
-        adManager.maybeShowRewarded(activity) { outcome ->
+        adManager.maybeShowRewarded(activity, "drawing_time_bonus") { outcome ->
             val earned = outcome == RewardedOutcome.EARNED
             if (outcome == RewardedOutcome.UNAVAILABLE) reportAdUnavailable()
             if (earned) {
@@ -834,7 +834,7 @@ class GameViewModel @Inject constructor(
         timerJob?.cancel()
         val pausedSecondsLeft = current.secondsLeft
         val adStartedAt = SystemClock.elapsedRealtime()
-        adManager.maybeShowRewarded(activity) { outcome ->
+        adManager.maybeShowRewarded(activity, "guess_hint") { outcome ->
             val earned = outcome == RewardedOutcome.EARNED
             if (outcome == RewardedOutcome.UNAVAILABLE) reportAdUnavailable()
             // The ad's own load+watch time is pushed out of the answer clock:
@@ -1190,7 +1190,7 @@ class GameViewModel @Inject constructor(
     fun doubleResultXp(activity: Activity) {
         val current = _phase.value as? GamePhase.Result ?: return
         if (_resultXpDoubled.value || current.xpEarned <= 0) return
-        adManager.maybeShowRewarded(activity) { outcome ->
+        adManager.maybeShowRewarded(activity, "result_xp_x2") { outcome ->
             val earned = outcome == RewardedOutcome.EARNED
             if (outcome == RewardedOutcome.UNAVAILABLE) reportAdUnavailable()
             if (!earned) return@maybeShowRewarded
@@ -1224,7 +1224,8 @@ class GameViewModel @Inject constructor(
             activity,
             onDismissed,
             force = isDaily || evenLevel,
-            forceMinGapMillis = if (isDaily) 0L else LEVEL_AD_MIN_GAP_MILLIS
+            forceMinGapMillis = if (isDaily) 0L else LEVEL_AD_MIN_GAP_MILLIS,
+            placement = if (isDaily) "interstitial_daily" else if (evenLevel) "interstitial_level" else "interstitial_result_solo"
         )
     }
 

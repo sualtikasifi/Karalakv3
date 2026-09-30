@@ -236,10 +236,12 @@ fun QuickMatchScreen(
                             // Hours remaining rather than a timestamp: "14
                             // saat" is something a player can act on, a date
                             // and time is something they have to work out.
-                            body = stringResource(
-                                R.string.quick_match_locked_body,
-                                hoursRemaining(current.untilMillis)
-                            ),
+                            body = hoursRemaining(current.untilMillis).let { hours ->
+                                stringResource(
+                                    if (hours == 1) R.string.quick_match_locked_body_one else R.string.quick_match_locked_body,
+                                    hours
+                                )
+                            },
                             // No retry button — there is nothing to retry
                             // until the clock runs out.
                             actionLabel = null,
@@ -671,7 +673,7 @@ private fun CountdownBanner(secondsLeft: Int) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = stringResource(R.string.quick_match_starting_in, secondsLeft),
+            text = stringResource(if (secondsLeft == 1) R.string.quick_match_starting_in_one else R.string.quick_match_starting_in, secondsLeft),
             fontFamily = DisplayFont,
             fontWeight = FontWeight.Bold,
             fontSize = 15.sp,

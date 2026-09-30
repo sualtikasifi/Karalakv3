@@ -152,6 +152,7 @@
     <string name="error_room_full">This room is full</string>
     <string name="error_room_already_started">That round just ended, try again in a moment</string>
     <string name="error_kicked_from_room">You were removed from this room. Try again in %1$d minutes</string>
+    <string name="error_kicked_from_room_one">You were removed from this room. Try again in %1$d minute</string>
     <string name="error_room_create_failed">Could not create the room, please try again</string>
     <string name="error_game_start_failed">Could not start the game, please try again</string>
     <string name="error_friend_code_failed">Could not create a friend code, please try again</string>
@@ -166,6 +167,7 @@
     <string name="error_friend_add_failed">Could not add that friend</string>
     <string name="error_invite_blocked">This player has blocked you, so you cannot invite them</string>
     <string name="error_invite_cooldown">You can invite this player again in %1$d minutes</string>
+    <string name="error_invite_cooldown_one">You can invite this player again in %1$d minute</string>
     <string name="error_invite_failed_room_ready">The invite did not send, but your room is ready — share the code instead</string>
     <string name="error_invite_send_failed">Could not send the invite</string>
     <string name="error_friend_remove_failed">Could not remove that friend</string>
@@ -673,6 +675,7 @@
     <!-- Weekly friends league (C1) -->
     <string name="league_title">Monthly League</string>
     <string name="league_resets_in">Resets in %1$d days</string>
+    <string name="league_resets_in_one">Resets in %1$d day</string>
     <string name="league_resets_today">Resets today</string>
     <string name="league_empty">Nobody has played this month yet. Be the first!</string>
     <string name="league_tab_friends">Friends</string>
@@ -942,6 +945,7 @@
     <string name="quick_match_tip_scoring">Scores are compared when the match ends</string>
     <string name="quick_match_tip_fun">Relax and enjoy the game!</string>
     <string name="quick_match_starting_in">Match starts in %1$d seconds</string>
+    <string name="quick_match_starting_in_one">Match starts in %1$d second</string>
     <string name="quick_match_good_luck">Good luck!</string>
     <string name="quick_match_sticky_good_drawings">Nice\ndrawings 🙂</string>
     <string name="quick_match_sticky_friendships">Great drawings,\ngreat friendships 🙂</string>
@@ -1039,6 +1043,7 @@
     <string name="penalty_understood">Understood</string>
     <string name="quick_match_locked_title">This mode is temporarily closed</string>
     <string name="quick_match_locked_body">Three of your rounds in a row were rejected. Quick Match and Play with Friends reopen in about %1$d hours.</string>
+    <string name="quick_match_locked_body_one">Three of your rounds in a row were rejected. Quick Match and Play with Friends reopen in about %1$d hour.</string>
 
     <!-- Chests (kasalar) — earned only from a WON Race a Friend match. -->
     <string name="chest_tier_silver">Apprentice Chest</string>
@@ -1184,6 +1189,7 @@
     <string name="rarity_legendary">Legendary</string>
     <string name="chest_win_title">CHEST WON!</string>
     <string name="chest_win_unlock_time">Unlock time: %1$d hours</string>
+    <string name="chest_win_unlock_time_one">Unlock time: %1$d hour</string>
     <string name="chest_win_hint">Start the timer from My Chests</string>
     <string name="home_xp_to_next">%1$d XP to Lv. %2$d</string>
     <string name="store_tab_jokers">Jokers</string>

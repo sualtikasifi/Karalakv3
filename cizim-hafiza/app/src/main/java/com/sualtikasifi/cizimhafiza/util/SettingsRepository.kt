@@ -220,6 +220,25 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         get() = prefs.getInt(KEY_USERNAME_CHANGES, 0)
         set(value) = prefs.edit { putInt(KEY_USERNAME_CHANGES, value) }
 
+    /**
+     * True once this device has confirmed with the server that the account owns its username.
+     * Until then every app start re-checks it (two server reads); afterwards it is skipped.
+     * Cleared with the rest of the account-scoped state, so a different account re-verifies.
+     */
+    var usernameVerified: Boolean
+        get() = prefs.getBoolean(KEY_USERNAME_VERIFIED, false)
+        set(value) = prefs.edit { putBoolean(KEY_USERNAME_VERIFIED, value) }
+
+    /** Last time this device looked for unapplied moderation penalties (see PenaltyRepositoryImpl). */
+    var lastPenaltyCheckMillis: Long
+        get() = prefs.getLong(KEY_LAST_PENALTY_CHECK, 0L)
+        set(value) = prefs.edit { putLong(KEY_LAST_PENALTY_CHECK, value) }
+
+    /** Last time the pending-reward document was checked on this device (see ReferralRewardClaimer). */
+    var lastRewardCheckMillis: Long
+        get() = prefs.getLong(KEY_LAST_REWARD_CHECK, 0L)
+        set(value) = prefs.edit { putLong(KEY_LAST_REWARD_CHECK, value) }
+
     /** Stores the server-verified username and locks it for good. */
     fun lockUsername(name: String) {
         setNickname(name)
@@ -957,6 +976,9 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         putBoolean(KEY_NICKNAME_CHOSEN, false)
         remove(KEY_NICKNAME_RENAME_USED)
         remove(KEY_USERNAME_CHANGES)
+        remove(KEY_USERNAME_VERIFIED)
+        remove(KEY_LAST_REWARD_CHECK)
+        remove(KEY_LAST_PENALTY_CHECK)
         remove(KEY_AVATAR_SOURCE)
         putString(KEY_SELECTED_AVATAR_FRAME, AvatarFrame.DEFAULT.name)
         putString(KEY_SELECTED_PEN_SKIN, PenSkin.DEFAULT.name)
@@ -1250,6 +1272,9 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_NICKNAME_CHOSEN = "nickname_chosen_by_player"
         const val KEY_NICKNAME_RENAME_USED = "nickname_rename_used"
         const val KEY_USERNAME_CHANGES = "username_changes"
+        const val KEY_USERNAME_VERIFIED = "username_verified"
+        const val KEY_LAST_REWARD_CHECK = "last_reward_check_millis"
+        const val KEY_LAST_PENALTY_CHECK = "last_penalty_check_millis"
         const val KEY_AVATAR_SOURCE = "avatar_source"
         const val NICKNAME_MIN = 2
         const val NICKNAME_MAX = 16

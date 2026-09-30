@@ -158,6 +158,7 @@
     <string name="error_room_full">Oda dolu</string>
     <string name="error_room_already_started">Tur az önce bitti, birazdan tekrar dene</string>
     <string name="error_kicked_from_room">Bu odadan atıldın, %1$d dakika sonra tekrar deneyebilirsin</string>
+    <string name="error_kicked_from_room_one">Bu odadan atıldın, %1$d dakika sonra tekrar deneyebilirsin</string>
     <string name="error_room_create_failed">Oda oluşturulamadı, tekrar dene</string>
     <string name="error_game_start_failed">Oyun başlatılamadı, tekrar dene</string>
     <string name="error_friend_code_failed">Arkadaşlık kodu oluşturulamadı, tekrar dene</string>
@@ -172,6 +173,7 @@
     <string name="error_friend_add_failed">Arkadaş eklenemedi</string>
     <string name="error_invite_blocked">Bu kişi seni engellemiş, davet gönderemezsin</string>
     <string name="error_invite_cooldown">Bu kişiye %1$d dakika sonra tekrar davet gönderebilirsin</string>
+    <string name="error_invite_cooldown_one">Bu kişiye %1$d dakika sonra tekrar davet gönderebilirsin</string>
     <string name="error_invite_failed_room_ready">Davet gönderilemedi ama oda hazır, kodu paylaşabilirsin</string>
     <string name="error_invite_send_failed">Davet gönderilemedi</string>
     <string name="error_friend_remove_failed">Arkadaş kaldırılamadı</string>
@@ -683,6 +685,7 @@
     <!-- Weekly friends league (C1) -->
     <string name="league_title">Aylık Lig</string>
     <string name="league_resets_in">%1$d gün sonra sıfırlanır</string>
+    <string name="league_resets_in_one">%1$d gün sonra sıfırlanır</string>
     <string name="league_resets_today">Bugün sıfırlanıyor</string>
     <string name="league_empty">Henüz kimse bu ay oynamamış. İlk sen ol!</string>
     <string name="league_tab_friends">Arkadaşlar</string>
@@ -956,6 +959,7 @@
     <string name="quick_match_tip_scoring">Puanlar maç sonunda karşılaştırılır</string>
     <string name="quick_match_tip_fun">Rahat ol, keyfini çıkar!</string>
     <string name="quick_match_starting_in">Maç %1$d saniye sonra başlıyor</string>
+    <string name="quick_match_starting_in_one">Maç %1$d saniye sonra başlıyor</string>
     <string name="quick_match_good_luck">Bol şans!</string>
     <string name="quick_match_sticky_good_drawings">İyi\nçizimler 🙂</string>
     <string name="quick_match_sticky_friendships">Güzel çizimler\ngüzel dostluklar 🙂</string>
@@ -1052,6 +1056,7 @@
     <string name="penalty_understood">Anladım</string>
     <string name="quick_match_locked_title">Bu mod geçici olarak kapalı</string>
     <string name="quick_match_locked_body">Üst üste üç turun ihlal nedeniyle geçersiz sayıldı. Hızlı Eşleş ve Arkadaşınla Yarış yaklaşık %1$d saat sonra tekrar açılacak.</string>
+    <string name="quick_match_locked_body_one">Üst üste üç turun ihlal nedeniyle geçersiz sayıldı. Hızlı Eşleş ve Arkadaşınla Yarış yaklaşık %1$d saat sonra tekrar açılacak.</string>
 
     <!-- Kasalar — yalnızca KAZANILAN Arkadaşınla Yarış maçından kazanılır. -->
     <string name="chest_tier_silver">Çırak Kasası</string>
@@ -1197,6 +1202,7 @@
     <string name="rarity_legendary">Efsanevi</string>
     <string name="chest_win_title">KASA KAZANDIN!</string>
     <string name="chest_win_unlock_time">Açılma süresi: %1$d saat</string>
+    <string name="chest_win_unlock_time_one">Açılma süresi: %1$d saat</string>
     <string name="chest_win_hint">Süreyi Kasalarım\'dan başlat</string>
     <string name="home_xp_to_next">Sv. %2$d için %1$d XP</string>
     <string name="store_tab_jokers">Jokerler</string>
