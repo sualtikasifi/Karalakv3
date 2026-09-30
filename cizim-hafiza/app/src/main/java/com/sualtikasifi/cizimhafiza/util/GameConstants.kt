@@ -123,12 +123,14 @@ object GameConstants {
     val ADMOB_ENABLED: Boolean = BuildConfig.DEBUG || BuildConfig.ADMOB_REAL_IDS
 
     /**
-     * Firebase App Check. OFF until the app is registered in the Firebase console (Play Integrity +
-     * the debug token) and enforcement is about to be switched on: while it is installed every
-     * Firestore/Auth call first waits for an attestation token, so a phone where that token
-     * cannot be fetched stalls the whole backend for no benefit.
+     * Firebase App Check. ON in release builds since the app was registered with Play Integrity in
+     * the Firebase console; deliberately still NOT enforced there (Firestore / Auth show
+     * "Unenforced"), so a device whose attestation fails is served exactly as before. Enforcement
+     * is switched on in the console only once the console's verified-request count shows the new
+     * release working. Debug builds stay off: they would need the debug token registered, and the
+     * emulator smoke test has no Play Integrity.
      */
-    const val APP_CHECK_ENABLED = false
+    val APP_CHECK_ENABLED: Boolean = !BuildConfig.DEBUG
 
     // --- Gold from playing (chests are not the only source) ---
 
