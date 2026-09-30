@@ -68,6 +68,11 @@ import kotlin.math.sin
  * enchanted-gear glow, scaled to how rare the frame actually is.
  */
 /** Where the green "hazır" ring lands, as a fraction of the avatar's box. */
+/** How much larger than the frame's hole a picture is drawn; the ring hides the excess. */
+private const val PHOTO_OVERSCAN = 1.15f
+
+/** Upper bound (of the whole badge) so a thin ring such as the level-1 sketch never shows the picture past its edge. */
+private const val PHOTO_MAX_FRACTION = 0.86f
 private const val READY_RING_RADIUS_FRACTION = 0.465f
 private const val READY_RING_WIDTH_FRACTION = 0.055f
 private const val READY_RING_GLOW_FRACTION = 0.13f
@@ -89,6 +94,18 @@ fun LevelAvatar(
     val readyColor = AppTheme.tokens.success
 
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
+        // A picture goes UNDER the ring and is drawn a little larger than the
+        // hole (PHOTO_OVERSCAN), so the ring's opaque part covers the picture's
+        // edge. The holes are ornate, not round: a circle sized to fit the
+        // narrowest point left a white gap everywhere else.
+        if (photo != null) {
+            AvatarPhotoFace(
+                photo = photo,
+                modifier = Modifier
+                    .offset(x = size * frame.faceOffsetXFraction, y = size * frame.faceOffsetYFraction)
+                    .size(size * minOf(frame.faceDiameterFraction * PHOTO_OVERSCAN, PHOTO_MAX_FRACTION))
+            )
+        }
         Image(
             painter = painterResource(id = frame.drawableRes),
             contentDescription = null,
@@ -176,10 +193,7 @@ fun LevelAvatar(
                 .size(faceSize),
             contentAlignment = Alignment.Center
         ) {
-            if (photo != null) {
-                AvatarPhotoFace(photo = photo, modifier = Modifier.fillMaxSize())
-                return@Box
-            }
+            if (photo != null) return@Box // drawn under the ring, above
             // Scaled off the face rather than a fixed style so one composable
             // serves both a 36dp match-chrome badge and an 88dp profile — and
             // three digits ("100") get a smaller fraction so they still clear

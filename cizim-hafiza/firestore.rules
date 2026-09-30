@@ -418,7 +418,38 @@ service cloud.firestore {
     function plausibleLeagueFields() {
       let after = request.resource.data;
       return (!('periodXp' in after) || (after.periodXp is int && after.periodXp >= 0 && after.periodXp <= 300000))
-             && (!('level' in after) || (after.level is int && after.level >= 1 && after.level <= 100));
+             && (!('level' in after) || (after.level is int && after.level >= 1 && after.level <= 100))
+             && plausibleXpGrowth();
+    }
+
+    // How fast periodXp may grow: a burst allowance plus a steady rate measured from the
+    // server-stamped time of the account's previous score write (periodXpAt). This is what
+    // stops a modified client jumping straight to the ceiling above — reaching it now takes
+    // days, not one write — without recomputing anything server-side.
+    //
+    // The numbers are deliberately far above honest play: a round is worth tens to hundreds
+    // of XP, so 3000 an hour is not reachable by hand, and the 30000 burst covers everything
+    // that legitimately lands at once (the 10000 monthly prize, referral / rating bonuses,
+    // XP earned while offline and published on the next launch). A document that predates
+    // periodXpAt has no reference point, so its first write is held only to the ceiling.
+    // A new month restarts the score from zero, so growth is measured against 0 then.
+    function plausibleXpGrowth() {
+      let after = request.resource.data;
+      let existing = resource != null;
+      let sameMonth = existing
+                      && 'periodId' in resource.data && 'periodId' in after
+                      && resource.data.periodId == after.periodId;
+      let before = (sameMonth && 'periodXp' in resource.data) ? resource.data.periodXp : 0;
+      let growth = ('periodXp' in after ? after.periodXp : before) - before;
+      let hasStamp = existing && 'periodXpAt' in resource.data && resource.data.periodXpAt is timestamp;
+      let allowed = !existing ? 30000
+                    : (!hasStamp ? 300000
+                       : 30000 + (request.time.toMillis() - resource.data.periodXpAt.toMillis()) / 1200);
+      // The stamp must be the server's own time, or a client could backdate it to earn allowance.
+      let stampOk = !('periodXpAt' in after)
+                    || (existing && 'periodXpAt' in resource.data && after.periodXpAt == resource.data.periodXpAt)
+                    || after.periodXpAt == request.time;
+      return growth <= allowed && stampOk;
     }
 
     match /users/{uid} {
@@ -719,6 +750,33 @@ service cloud.firestore {
                     && request.resource.data.name is string
                     && request.resource.data.name.size() > 0
                     && request.resource.data.name.size() <= 40;
+    }
+
+    // Daily counters behind the developer panel's İstatistik tab (AdminStats.kt):
+    // ad requests / payouts / estimated revenue per placement, app opens, finished
+    // games. Every device adds to the same day's document with FieldValue.increment,
+    // so any signed-in player may write — but only the two expected fields, only under
+    // a real date id, and only a bounded number of counters. Rules cannot prove that
+    // each write is a +1, so a modified client could inflate these numbers; they are
+    // trend figures for the maintainer, not anything the game relies on. Reading is
+    // the reviewer's alone: ad revenue is nobody else's business.
+    match /adminStats/{day} {
+      allow read: if reviewer();
+      allow create, update: if signedIn()
+                            && day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+                            && request.resource.data.keys().hasOnly(['day', 'counts'])
+                            && request.resource.data.day == day
+                            && request.resource.data.counts is map
+                            && request.resource.data.counts.size() <= 300;
+      allow delete: if false;
+
+      // One empty marker per player per day: the number of documents here is that
+      // day's distinct active players (read with a count() query, no document reads).
+      match /users/{uid} {
+        allow read: if reviewer();
+        allow create: if signedIn() && request.auth.uid == uid;
+        allow update, delete: if false;
+      }
     }
   }
 }

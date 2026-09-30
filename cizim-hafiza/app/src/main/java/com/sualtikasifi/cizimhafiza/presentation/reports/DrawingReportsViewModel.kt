@@ -54,7 +54,7 @@ data class RefusedRound(
 )
 
 /** Which section of the inbox is on screen. */
-enum class ReportsTab { Queue, Pool, Feedback, Reports, Detector, League, XpEvent, DailyChallenge }
+enum class ReportsTab { Queue, Pool, Feedback, Reports, Detector, League, XpEvent, DailyChallenge, Stats }
 
 /**
  * One scrolling list of runs — the queue or the pool — and where it is up to.
@@ -183,6 +183,7 @@ class DrawingReportsViewModel @Inject constructor(
             ReportsTab.Feedback -> if (!_uiState.value.feedbackLoaded) loadFeedback()
             ReportsTab.League -> if (!_uiState.value.leagueLoaded) loadLeagueConfig()
             ReportsTab.XpEvent -> loadXpEvent()
+            ReportsTab.Stats -> Unit // StatsPanel loads itself
             ReportsTab.DailyChallenge -> if (!_uiState.value.dailyChallengeLoaded) loadDailyChallengeQueue()
             else -> if (!_uiState.value.evidenceLoaded) loadEvidence()
         }

@@ -496,6 +496,8 @@ class FriendRepositoryImpl @Inject constructor(
             mapOf(
                 "nickname" to nickname,
                 "periodXp" to periodXp,
+                // The server's own clock: the security rules measure how fast periodXp may grow from it.
+                "periodXpAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
                 "periodId" to periodId,
                 "level" to level,
                 "frameId" to frameId,
