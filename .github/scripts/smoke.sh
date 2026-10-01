@@ -16,6 +16,10 @@ echo "APK: $APK"
 adb wait-for-device
 adb shell input keyevent 82 || true
 adb install -r -t "$APK"
+# The app asks for the notification permission a few seconds after its first launch; that system dialog
+# would swallow the scripted taps below, so it is granted up front (the dialog itself is covered by the
+# ads-consent tap further down only for the UMP form, not this one).
+adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
 adb logcat -c
 
 # Skip the first-run tutorial: it is a plain boolean in the app's settings file, and the
