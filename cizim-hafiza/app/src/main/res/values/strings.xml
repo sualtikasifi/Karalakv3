@@ -257,6 +257,11 @@
     <string name="your_drawings">Your Drawings</string>
     <string name="close">Close</string>
     <string name="share_drawing">Share</string>
+    <string name="share_drawing_choose">How do you want to share it?</string>
+    <string name="share_as_photo">Share as a photo</string>
+    <string name="share_as_video">Share as a video</string>
+    <string name="share_video_preparing">Preparing your video…</string>
+    <string name="share_video_failed">Could not make the video. Try sharing it as a photo.</string>
     <string name="share_all_drawings">Share all</string>
 
     <!-- Avatar frame picker -->

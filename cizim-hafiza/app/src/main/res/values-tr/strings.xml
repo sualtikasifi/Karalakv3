@@ -263,6 +263,11 @@
     <string name="your_drawings">Çizimlerin</string>
     <string name="close">Kapat</string>
     <string name="share_drawing">Paylaş</string>
+    <string name="share_drawing_choose">Nasıl paylaşmak istersin?</string>
+    <string name="share_as_photo">Fotoğraf olarak paylaş</string>
+    <string name="share_as_video">Video olarak paylaş</string>
+    <string name="share_video_preparing">Video hazırlanıyor…</string>
+    <string name="share_video_failed">Video hazırlanamadı. Fotoğraf olarak paylaşmayı dene.</string>
     <string name="share_all_drawings">Tümünü paylaş</string>
 
     <!-- Avatar frame picker -->

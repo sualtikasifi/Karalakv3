@@ -43,6 +43,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Videocam
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -110,6 +113,10 @@ fun ResultScreen(
     myName: String = ""
 ) {
     var previewItem by remember { mutableStateOf<ResultItem?>(null) }
+    // The drawing the share-as-photo-or-video choice is open for, and whether its video is being made.
+    var shareChoiceFor by remember { mutableStateOf<ResultItem?>(null) }
+    var videoPreparing by remember { mutableStateOf(false) }
+    val shareScope = androidx.compose.runtime.rememberCoroutineScope()
     var reportItem by remember { mutableStateOf<ResultItem?>(null) }
     // Local, not derived from `state`: the phase itself only ever decides
     // whether a prompt is ELIGIBLE to show (once, per PostMatchPrompts) —
@@ -295,7 +302,7 @@ fun ResultScreen(
                     } else {
                         PrimaryButton(
                             text = stringResource(R.string.share_drawing),
-                            onClick = { DrawingShareUtil.shareDrawing(context, itemToPreview.word, itemToPreview.strokes) },
+                            onClick = { shareChoiceFor = itemToPreview },
                             icon = Icons.Filled.Share,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -309,6 +316,64 @@ fun ResultScreen(
                 )
             }
         }
+    }
+
+    shareChoiceFor?.let { item ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { if (!videoPreparing) shareChoiceFor = null },
+            title = { Text(stringResource(R.string.share_drawing_choose)) },
+            text = {
+                if (videoPreparing) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.CircularProgressIndicator(modifier = Modifier.size(28.dp))
+                        Text(
+                            text = stringResource(R.string.share_video_preparing),
+                            modifier = Modifier.padding(start = 14.dp)
+                        )
+                    }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        PrimaryButton(
+                            text = stringResource(R.string.share_as_photo),
+                            icon = Icons.Filled.Image,
+                            onClick = {
+                                DrawingShareUtil.shareDrawingOnTemplate(context, item.word, item.strokes)
+                                shareChoiceFor = null
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        SecondaryButton(
+                            text = stringResource(R.string.share_as_video),
+                            icon = Icons.Filled.Videocam,
+                            onClick = {
+                                videoPreparing = true
+                                shareScope.launch {
+                                    com.sualtikasifi.cizimhafiza.util.DrawingVideoExporter
+                                        .exportForSharing(context, item.word, item.strokes)
+                                        .onSuccess { com.sualtikasifi.cizimhafiza.util.DrawingVideoExporter.share(context, it) }
+                                        .onFailure {
+                                            android.widget.Toast.makeText(
+                                                context, R.string.share_video_failed, android.widget.Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+                                    videoPreparing = false
+                                    shareChoiceFor = null
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                if (!videoPreparing) {
+                    androidx.compose.material3.TextButton(onClick = { shareChoiceFor = null }) {
+                        Text(stringResource(R.string.close))
+                    }
+                }
+            }
+        )
     }
 
     val itemToReport = reportItem
