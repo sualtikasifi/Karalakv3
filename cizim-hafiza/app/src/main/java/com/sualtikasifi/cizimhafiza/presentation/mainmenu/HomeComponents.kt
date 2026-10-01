@@ -1,6 +1,8 @@
 package com.sualtikasifi.cizimhafiza.presentation.mainmenu
 
 import androidx.annotation.StringRes
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -734,8 +736,37 @@ internal fun FitText(text: String, color: Color, maxSp: Float = 12f, minSp: Floa
  */
 @Composable
 private fun XpBar(fraction: Float, label: String, modifier: Modifier = Modifier) {
-    val animated = remember { Animatable(0f) }
-    LaunchedEffect(fraction) { animated.animateTo(fraction.coerceIn(0f, 1f), tween(1100, easing = FastOutSlowInEasing)) }
+    // Coming home from a result screen, the bar already stands at its old value (no fill-up from empty),
+    // so the spark that lands on it is what visibly moves it.
+    val animated = remember { Animatable(if (com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.active.value != null) fraction.coerceIn(0f, 1f) else 0f) }
+    LaunchedEffect(fraction) {
+        val target = fraction.coerceIn(0f, 1f)
+        // A level-up shows as the bar filling to the top, emptying, and filling again to its new value.
+        if (target < animated.value - 0.01f) {
+            animated.animateTo(1f, tween(450, easing = FastOutSlowInEasing))
+            animated.snapTo(0f)
+        }
+        animated.animateTo(target, tween(1100, easing = FastOutSlowInEasing))
+    }
+    // Landing glow: lit when the spark arrives, then fades.
+    val glow = remember { Animatable(0f) }
+    val arrivedId by com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.arrivedId.collectAsState()
+    LaunchedEffect(arrivedId) {
+        if (arrivedId != 0L) {
+            glow.snapTo(1f)
+            glow.animateTo(0f, tween(1400))
+        }
+    }
+    // Tell the spark where to land: the end of the bar's current fill, in window coordinates.
+    var barRect by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    LaunchedEffect(barRect, fraction) {
+        val r = barRect ?: return@LaunchedEffect
+        com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.target.value =
+            Offset(r.left + r.width * fraction.coerceIn(0.06f, 1f), r.center.y)
+    }
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.target.value = null }
+    }
     val infinite = rememberInfiniteTransition(label = "xpSheen")
     val sheen = infinite.animateFloat(
         initialValue = 0f,
@@ -743,10 +774,24 @@ private fun XpBar(fraction: Float, label: String, modifier: Modifier = Modifier)
         animationSpec = infiniteRepeatable(tween(2600, easing = androidx.compose.animation.core.LinearEasing), RepeatMode.Restart),
         label = "sheen"
     )
-    Box(modifier = modifier.height(20.dp), contentAlignment = Alignment.Center) {
+    Box(
+        modifier = modifier.height(20.dp).onGloballyPositioned { barRect = it.boundsInWindow() },
+        contentAlignment = Alignment.Center
+    ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val h = size.height
             val rim = 2.dp.toPx()
+            val g = glow.value
+            if (g > 0f) {
+                for (i in 1..4) {
+                    drawRoundRect(
+                        Color(0xFFFFC53D).copy(alpha = 0.30f * g / i),
+                        topLeft = Offset(-i * 3.dp.toPx(), -i * 3.dp.toPx()),
+                        size = androidx.compose.ui.geometry.Size(size.width + i * 6.dp.toPx(), h + i * 6.dp.toPx()),
+                        cornerRadius = CornerRadius(h / 2f + i * 3.dp.toPx())
+                    )
+                }
+            }
             drawRoundRect(Color(0xFF7A4A2A), cornerRadius = CornerRadius(h / 2f))
             val innerSize = androidx.compose.ui.geometry.Size(size.width - rim * 2, h - rim * 2)
             drawRoundRect(

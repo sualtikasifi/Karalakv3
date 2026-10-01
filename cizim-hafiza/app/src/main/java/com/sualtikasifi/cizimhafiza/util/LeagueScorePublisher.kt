@@ -73,7 +73,8 @@ class LeagueScorePublisher @Inject constructor(
         val level = PlayerLevel.levelForXp(settingsRepository.lifetimeXp.value)
         return Snapshot(
             nickname = settingsRepository.nicknameOrDefault,
-            periodXp = periodXp,
+            // Read against the current month, not the value the flow last carried (see currentPeriodXp).
+            periodXp = settingsRepository.currentPeriodXp(),
             periodId = LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()),
             level = level,
             frameId = AvatarFrame.resolve(settingsRepository.selectedAvatarFrameId.value, level).name,

@@ -24,7 +24,6 @@ import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
 import com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton
 import com.sualtikasifi.cizimhafiza.presentation.common.SelectableChip
-import java.util.Locale
 
 /** Developer panel "İstatistik" tab: players, opens, games and per-button ad results from AdminStats. */
 @Composable
@@ -85,7 +84,6 @@ fun StatsPanel(viewModel: StatsViewModel = hiltViewModel()) {
                             StatLine(stringResource(R.string.stats_players_avg), avg.toString())
                             StatLine(stringResource(R.string.stats_opens), state.appOpens.toString())
                             StatLine(stringResource(R.string.stats_games), state.gamesFinished.toString())
-                            StatLine(stringResource(R.string.stats_revenue), money(state.revenueMicros))
                         }
                     }
                 }
@@ -108,10 +106,7 @@ fun StatsPanel(viewModel: StatsViewModel = hiltViewModel()) {
                 items(state.placements, key = { it.placement }) { row ->
                     RaisedCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(placementLabel(row.placement), style = MaterialTheme.typography.titleSmall)
-                                Text(money(row.revenueMicros), style = MaterialTheme.typography.titleSmall)
-                            }
+                            Text(placementLabel(row.placement), style = MaterialTheme.typography.titleSmall)
                             val detail = if (row.requested > 0 || row.shown == 0L) {
                                 val rate = if (row.requested > 0) (row.earned * 100 / row.requested).toInt() else 0
                                 stringResource(
@@ -141,8 +136,6 @@ private fun StatLine(label: String, value: String) {
         Text(value, style = MaterialTheme.typography.titleSmall)
     }
 }
-
-private fun money(micros: Long): String = String.format(Locale.US, "$%.2f", micros / 1_000_000.0)
 
 /** Developer-facing names for the placement ids AdManager's call sites pass. */
 private fun placementLabel(placement: String): String = when (placement) {

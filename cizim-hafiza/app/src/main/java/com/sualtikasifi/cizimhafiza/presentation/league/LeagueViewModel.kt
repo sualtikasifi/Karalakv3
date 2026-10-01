@@ -143,7 +143,7 @@ class LeagueViewModel @Inject constructor(
     val myPeriodXp: kotlinx.coroutines.flow.StateFlow<Int> get() = settingsRepository.periodXp
 
     private fun resolveOwnRank(table: GlobalLeagueTable) {
-        val myXp = settingsRepository.periodXp.value
+        val myXp = settingsRepository.currentPeriodXp()
         if (myXp <= 0) {
             _uiState.update { it.copy(myGlobalRank = null, myGlobalEntry = null) }
             return

@@ -39,6 +39,31 @@ internal object ShareTemplate {
     fun load(context: Context): Bitmap =
         BitmapFactory.decodeResource(context.resources, R.drawable.share_template)
 
+    /** The template for a whole round's drawings ("Bu çizimleri sen de tahmin edebilir misin?"), same size. */
+    fun loadCollage(context: Context): Bitmap =
+        BitmapFactory.decodeResource(context.resources, R.drawable.share_template_collage)
+
+    /** Where the grid of drawings goes on the collage template: inside the big white card. */
+    val collageRect = RectF(100f, 362f, 934f, 1312f)
+
+    /**
+     * "KEDİ" -> "K _ _ _": only the first letter is ever shown on anything that leaves the app, the rest are
+     * blanks — the shared picture is a riddle, not the answer. Spaces stay spaces.
+     */
+    fun maskedWord(word: String): String {
+        val upper = word.uppercase()
+        val first = upper.indexOfFirst { it.isLetterOrDigit() }
+        if (first < 0) return upper
+        return upper.mapIndexed { i, c ->
+            when {
+                i == first -> c.toString()
+                c.isWhitespace() -> " "
+                c.isLetterOrDigit() -> "_"
+                else -> c.toString()
+            }
+        }.joinToString(" ")
+    }
+
     /** The word on its band and the "Karalak" caption under it. [word] is drawn exactly as given. */
     fun drawWordAndCaption(context: Context, canvas: Canvas, word: String) {
         canvas.drawRoundRect(bandRect, 30f, 30f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = bandColor })

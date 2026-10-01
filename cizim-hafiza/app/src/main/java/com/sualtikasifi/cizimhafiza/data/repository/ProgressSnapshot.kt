@@ -75,6 +75,8 @@ data class ProgressSnapshot(
     /** This month's league XP and the month it belongs to (LeaguePeriod id), so a reinstall does not zero the standings. */
     val periodXp: Int = 0,
     val periodId: Long = -1L,
+    /** 2 from the version that reads the month's XP against the current month; older backups' periodXp is not trusted. */
+    val periodXpVersion: Int = 0,
     /** Home-screen ad rewards: when the 500-gold ad unlocks again, and the day the free chest was last taken. */
     val adGoldNextAt: Long = 0L,
     val adChestDay: Long = -1L,
@@ -118,6 +120,7 @@ data class ProgressSnapshot(
         "chestCycleIndex" to chestCycleIndex,
         "periodXp" to periodXp,
         "periodId" to periodId,
+        "periodXpVersion" to periodXpVersion,
         "adGoldNextAt" to adGoldNextAt,
         "adChestDay" to adChestDay,
         "ratingPromptShown" to ratingPromptShown,
@@ -165,6 +168,7 @@ data class ProgressSnapshot(
             chestCycleIndex = data.int("chestCycleIndex"),
             periodXp = data.int("periodXp"),
             periodId = data.long("periodId", absent = -1L),
+            periodXpVersion = data.int("periodXpVersion"),
             adGoldNextAt = data.long("adGoldNextAt"),
             adChestDay = data.long("adChestDay", absent = -1L),
             ratingPromptShown = data.int("ratingPromptShown"),

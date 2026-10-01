@@ -56,7 +56,12 @@ class SettingsViewModel @Inject constructor(
     )
     val language: StateFlow<String> = _language.asStateFlow()
 
-    fun setSoundEnabled(enabled: Boolean) = settingsRepository.setSoundEnabled(enabled)
+    /** The master switch ("Tüm Sesler"): turning it off silences music and vibration too, turning it on brings both back. */
+    fun setSoundEnabled(enabled: Boolean) {
+        settingsRepository.setSoundEnabled(enabled)
+        settingsRepository.setMusicEnabled(enabled)
+        settingsRepository.setVibrationEnabled(enabled)
+    }
     fun setVibrationEnabled(enabled: Boolean) = settingsRepository.setVibrationEnabled(enabled)
     val musicEnabled: StateFlow<Boolean> = settingsRepository.musicEnabled
 

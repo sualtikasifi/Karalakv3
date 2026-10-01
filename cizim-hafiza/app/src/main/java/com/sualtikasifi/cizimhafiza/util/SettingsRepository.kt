@@ -827,7 +827,23 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
      * would carry last month's total into the new table, which is far worse
      * than computing the boundary on demand from the date.
      */
-    private val _periodXp = MutableStateFlow(readPeriodXp())
+    /**
+     * One-time clean-up: until this version, a score that had been counted in one month could be copied
+     * into the next (an app left open across midnight, or a backup written just after it, kept last month's
+     * number and stamped it with the new month's id), so some accounts started a month with last month's XP.
+     * The month's XP is reset once; from here on it is always read against the current month.
+     */
+    private fun periodXpAfterFix(): Int {
+        if (!prefs.getBoolean(KEY_PERIOD_XP_FIX_V2, false)) {
+            prefs.edit {
+                putInt(KEY_PERIOD_XP, 0)
+                putBoolean(KEY_PERIOD_XP_FIX_V2, true)
+            }
+        }
+        return readPeriodXp()
+    }
+
+    private val _periodXp = MutableStateFlow(periodXpAfterFix())
     val periodXp: StateFlow<Int> = _periodXp.asStateFlow()
 
     private fun readPeriodXp(): Int {
@@ -885,6 +901,17 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     /** Re-reads the period total; call on resume in case the month rolled over while the app sat open. */
     fun refreshPeriodXp() {
         _periodXp.value = readPeriodXp()
+    }
+
+    /**
+     * This month's XP, read against the current month right now (and the observable value brought up to
+     * date). Everything that WRITES the number somewhere — the league row, the cloud backup — uses this and
+     * not [periodXp]'s last value, which can still be last month's if the app sat open past midnight.
+     */
+    fun currentPeriodXp(): Int {
+        val value = readPeriodXp()
+        if (_periodXp.value != value) _periodXp.value = value
+        return value
     }
 
     /**
@@ -1350,6 +1377,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_RATING_PROMPT_SHOWN = "rating_prompt_shown"
         const val KEY_QUICK_MATCH_GAMES_FINISHED = "quick_match_games_finished"
         const val KEY_USERNAME_OFFER_SHOWN = "username_offer_shown"
+        const val KEY_PERIOD_XP_FIX_V2 = "period_xp_fix_v2"
         const val KEY_USERNAME_OFFER_PENDING = "username_offer_pending"
         const val KEY_RATING_PROMPT_PENDING = "rating_prompt_pending"
         const val FLAGS_PREFS_NAME = "one_time_flags"

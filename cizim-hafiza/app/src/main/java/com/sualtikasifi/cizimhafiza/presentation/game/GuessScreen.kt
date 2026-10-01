@@ -17,6 +17,10 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
@@ -419,7 +423,17 @@ private fun LetterBlanks(groups: List<Int>, firstLetter: String?, modifier: Modi
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(modifier = Modifier.width(20.dp).height(26.dp), contentAlignment = Alignment.BottomCenter) {
                             if (letter != null) {
+                                val pop = remember { androidx.compose.animation.core.Animatable(0.3f) }
+                                LaunchedEffect(letter) {
+                                    pop.animateTo(
+                                        1f,
+                                        androidx.compose.animation.core.spring(
+                                            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy
+                                        )
+                                    )
+                                }
                                 Text(
+                                    modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value },
                                     text = letter,
                                     fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
                                     fontSize = 21.sp,
@@ -459,15 +473,34 @@ private fun GuessActionTile(
     onClick: () -> Unit,
     icon: @Composable () -> Unit
 ) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(18.dp)
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (pressed) 0.94f else 1f,
+        animationSpec = androidx.compose.animation.core.spring(stiffness = 600f),
+        label = "tileScale"
+    )
+    val solid = borderColor == null
+    // Coloured jokers get a lit top and a darker lower edge, so they read as raised keys; the plain
+    // tiles (ad hint, skip) stay flat and outlined so the jokers are what the eye goes to first.
+    val background = if (solid) {
+        Brush.verticalGradient(listOf(lerp(fill, Color.White, 0.22f), fill, lerp(fill, Color.Black, 0.18f)))
+    } else {
+        Brush.verticalGradient(listOf(fill, fill))
+    }
     Box(
         modifier = modifier
-            .height(62.dp)
-            .alpha(if (enabled) 1f else 0.45f)
+            .height(66.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .alpha(if (enabled) 1f else 0.42f)
             .clip(shape)
-            .background(fill)
-            .then(if (borderColor != null) Modifier.border(2.dp, borderColor, shape) else Modifier)
-            .clickable(enabled = enabled, onClick = onClick)
+            .background(background)
+            .then(
+                if (borderColor != null) Modifier.border(2.dp, borderColor, shape)
+                else Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), shape)
+            )
+            .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
     ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
@@ -488,17 +521,18 @@ private fun GuessActionTile(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 4.dp, end = 6.dp)
-                    .size(20.dp)
+                    .padding(top = 4.dp, end = 5.dp)
+                    .size(22.dp)
                     .clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(Color.White),
+                    .background(Color.White)
+                    .border(1.5.dp, lerp(fill, Color.Black, 0.25f), androidx.compose.foundation.shape.CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = badgeCount.toString(),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-                    color = fill
+                    color = lerp(fill, Color.Black, 0.25f)
                 )
             }
         }

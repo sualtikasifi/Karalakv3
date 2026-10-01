@@ -160,6 +160,7 @@ class MainActivity : AppCompatActivity() {
                         onNavControllerReady = { navController = it },
                         tutorialCompleted = tutorialCompleted
                     )
+                    com.sualtikasifi.cizimhafiza.presentation.common.XpFlyOverlay()
                     RequestNotificationPermissionOnce(settingsRepository)
                     com.sualtikasifi.cizimhafiza.presentation.common.UsernameFinalizeHost()
                     GoogleSignInLauncherHost(googleSignInLauncher)

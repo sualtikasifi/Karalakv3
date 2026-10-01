@@ -16,6 +16,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -290,6 +291,15 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
         // full-screen. Everything below only starts once it ends.
         if (stage == 0) {
             ChestOpeningVideo(tier = tier, onEnded = { if (stage == 0) stage = 1 })
+            // A tap anywhere skips straight to the reward (already paid — see the class comment).
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null
+                    ) { if (stage == 0) stage = 1 }
+            )
         }
 
         if (stage >= 1) {
