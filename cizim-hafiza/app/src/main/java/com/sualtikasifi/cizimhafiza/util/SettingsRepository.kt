@@ -1003,6 +1003,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         remove(KEY_USERNAME_CHANGES)
         remove(KEY_USERNAME_OFFER_SHOWN)
         remove(KEY_USERNAME_OFFER_PENDING)
+        remove(KEY_RATING_PROMPT_PENDING)
         remove(KEY_USERNAME_VERIFIED)
         remove(KEY_LAST_REWARD_CHECK)
         remove(KEY_LAST_PENALTY_CHECK)
@@ -1218,6 +1219,21 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         flagPrefs.edit { putInt(KEY_QUICK_MATCH_GAMES_FINISHED, quickMatchGamesFinished + 1) }
     }
 
+    /**
+     * The rating ask is due: set at the moment a Quick Match round FINISHES with at least three on
+     * the count, never from restored data. That is what keeps it from appearing the instant a
+     * reinstalled account's counters come back — it waits for a round actually played. Account-scoped.
+     */
+    var ratingPromptPending: Boolean
+        get() = prefs.getBoolean(KEY_RATING_PROMPT_PENDING, false)
+        set(value) = prefs.edit { putBoolean(KEY_RATING_PROMPT_PENDING, value) }
+
+    fun markRatingDueIfEligible() {
+        if (!ratingPromptShown && quickMatchGamesFinished >= com.sualtikasifi.cizimhafiza.util.PostMatchPrompts.RATING_PROMPT_AT_GAME) {
+            ratingPromptPending = true
+        }
+    }
+
     /** Restores the prompts' state from a cloud backup: never un-shows a prompt, never lowers the count. */
     fun restoreOneTimePrompts(ratingShown: Boolean, quickMatchGames: Int) {
         flagPrefs.edit {
@@ -1335,6 +1351,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_QUICK_MATCH_GAMES_FINISHED = "quick_match_games_finished"
         const val KEY_USERNAME_OFFER_SHOWN = "username_offer_shown"
         const val KEY_USERNAME_OFFER_PENDING = "username_offer_pending"
+        const val KEY_RATING_PROMPT_PENDING = "rating_prompt_pending"
         const val FLAGS_PREFS_NAME = "one_time_flags"
         const val KEY_RATING_BONUS_XP_GRANTED = "rating_bonus_xp_granted"
         const val KEY_NICKNAME_CHOSEN = "nickname_chosen_by_player"

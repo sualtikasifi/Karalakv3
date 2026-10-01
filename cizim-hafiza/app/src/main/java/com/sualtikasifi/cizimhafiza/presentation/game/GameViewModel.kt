@@ -1106,7 +1106,10 @@ class GameViewModel @Inject constructor(
 
         if (goldEarned > 0) settingsRepository.earnGold(goldEarned)
         val quickMatchWon = ghost != null && totalScore > ghost.totalScore
-        if (ghost != null) settingsRepository.recordQuickMatchFinished()
+        if (ghost != null) {
+            settingsRepository.recordQuickMatchFinished()
+            settingsRepository.markRatingDueIfEligible()
+        }
         val chestAward = if (quickMatchWon) settingsRepository.awardChestForWinOrPay() else null
         val chestWon = chestAward?.chest
 
