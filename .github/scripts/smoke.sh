@@ -104,8 +104,6 @@ tour 05_achievements  880 1488
 tour 06_league        200 1692
 tour 07_store         540 1692
 tour 08_settings      880 1692
-tour 09_daily         540  756
-tour 10_offline       880 1146
 # League, Global tab (table, compact prize banner, monthly XP card).
 adb shell input tap 200 1692
 sleep 4
@@ -129,6 +127,8 @@ sleep 2
 adb shell input keyevent KEYCODE_BACK
 sleep 2
 
+tour 09_daily         540  756
+tour 10_offline       880 1146
 shot 11_back_on_main_menu
 walk() { :; }
 
