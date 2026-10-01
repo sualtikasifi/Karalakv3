@@ -153,6 +153,8 @@ fun MainMenuScreen(
     val dailyState by viewModel.dailyState.collectAsState()
     val penaltyWarning by viewModel.penaltyWarning.collectAsState()
     val levelProgress by viewModel.levelProgress.collectAsState()
+    val xpFly by com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.active.collectAsState()
+    val xpFlyArrived by com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.arrivedId.collectAsState()
     val selectedFrame by viewModel.selectedFrame.collectAsState()
     val selectedPen by viewModel.selectedPen.collectAsState()
     val gold by viewModel.goldBalance.collectAsState()
@@ -217,7 +219,7 @@ fun MainMenuScreen(
         ) {
             HomeProfileBar(
                 nickname = nickname,
-                progress = levelProgress,
+                progress = com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.displayProgress(levelProgress, xpFly, xpFlyArrived),
                 frame = selectedFrame,
                 photo = avatarPhoto,
                 pen = selectedPen,

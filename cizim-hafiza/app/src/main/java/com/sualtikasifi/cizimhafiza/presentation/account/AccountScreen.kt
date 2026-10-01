@@ -123,9 +123,15 @@ fun AccountScreen(
                 Spacer(modifier = Modifier.height(TopActionsClearance))
 
                 ProfileHeader(uiState)
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+                AccountCard(
+                    uiState = uiState,
+                    onSignIn = viewModel::signIn,
+                    onSignOut = viewModel::promptSignOut
+                )
+                Spacer(modifier = Modifier.height(10.dp))
                 StatsRow(uiState)
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 NicknameCard(
                     editable = viewModel.nicknameEditable,
                     draft = uiState.nicknameDraft,
@@ -134,12 +140,6 @@ fun AccountScreen(
                     error = uiState.nicknameError,
                     onDraftChange = viewModel::setNicknameDraft,
                     onSave = viewModel::saveNickname
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                AccountCard(
-                    uiState = uiState,
-                    onSignIn = viewModel::signIn,
-                    onSignOut = viewModel::promptSignOut
                 )
 
                 uiState.message?.let { message ->
@@ -241,41 +241,42 @@ private fun ProfileHeader(uiState: AccountUiState) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(96.dp)
+                    .height(64.dp)
                     .background(
                         Brush.verticalGradient(
                             listOf(MaterialTheme.colorScheme.primaryContainer, Color.Transparent)
                         )
                     )
             )
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                LevelAvatar(
-                    level = uiState.level,
-                    frame = uiState.frame,
-                    size = 112.dp,
-                    photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(linked?.photoUrl)
-                )
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    LevelAvatar(
+                        level = uiState.level,
+                        frame = uiState.frame,
+                        size = 76.dp,
+                        photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(linked?.photoUrl)
+                    )
+                    Spacer(modifier = Modifier.size(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = name,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        RankLevelLabel(level = uiState.level, bullet = false)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        StatusPill(linked = linked)
+                    }
+                }
                 Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                RankLevelLabel(level = uiState.level, bullet = false)
-
-                Spacer(modifier = Modifier.height(14.dp))
                 LinearProgressIndicator(
                     progress = { progress.progressFraction },
-                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape)
+                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape)
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(
                         text = if (progress.isMaxLevel) stringResource(R.string.account_xp_max)
@@ -291,8 +292,6 @@ private fun ProfileHeader(uiState: AccountUiState) {
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-                StatusPill(linked = linked)
             }
         }
     }
@@ -359,12 +358,12 @@ private fun StatsRow(uiState: AccountUiState) {
 private fun StatTile(value: String, label: String, modifier: Modifier = Modifier) {
     RaisedCard(corner = 18.dp, modifier = modifier) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1
@@ -402,9 +401,9 @@ private fun SectionHeader(icon: androidx.compose.ui.graphics.vector.ImageVector,
 @Composable
 private fun AccountCard(uiState: AccountUiState, onSignIn: () -> Unit, onSignOut: () -> Unit) {
     RaisedCard(corner = 22.dp, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
             SectionHeader(Icons.Filled.CloudSync, stringResource(R.string.account_section_account))
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             when {
                 uiState.isSignedIn -> SyncStatusRow(lastBackupAtMillis = uiState.lastBackupAtMillis)
                 uiState.isGoogleSignInConfigured -> Text(
@@ -419,7 +418,7 @@ private fun AccountCard(uiState: AccountUiState, onSignIn: () -> Unit, onSignOut
                 )
             }
             if (uiState.isSignedIn || uiState.isGoogleSignInConfigured) {
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 if (uiState.isBusy) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                         CircularProgressIndicator(modifier = Modifier.size(30.dp))
@@ -538,7 +537,7 @@ private fun NicknameCard(
     onSave: () -> Unit
 ) {
     RaisedCard(corner = 22.dp, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
             SectionHeader(Icons.Filled.Person, stringResource(R.string.account_section_username))
             Spacer(modifier = Modifier.height(12.dp))
             AppTextField(

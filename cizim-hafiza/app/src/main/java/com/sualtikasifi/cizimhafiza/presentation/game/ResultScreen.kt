@@ -59,6 +59,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.sualtikasifi.cizimhafiza.R
@@ -240,12 +243,38 @@ fun ResultScreen(
                         modifier = Modifier.weight(1f)
                     )
                 }
+                // Where the player's thumb lands, so the XP can fly from exactly there to the home bar.
+                var claimTapWindowPos by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
+                var claimTopLeft by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+                var claimCenter by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
                 PrimaryButton(
                     text = stringResource(R.string.result_claim_amount, shownXp),
-                    onClick = onMainMenu,
+                    onClick = {
+                        if (shownXp > 0 && levelProgress != null) {
+                            com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.start(
+                                origin = claimTapWindowPos ?: claimCenter,
+                                amount = shownXp,
+                                toXp = levelProgress.totalXp
+                            )
+                        }
+                        onMainMenu()
+                    },
                     enabled = !(xpDoubled && !startedDoubled),
                     height = 54.dp,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .onGloballyPositioned {
+                            claimTopLeft = it.positionInWindow()
+                            claimCenter = claimTopLeft + androidx.compose.ui.geometry.Offset(it.size.width / 2f, it.size.height / 2f)
+                        }
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                                    event.changes.firstOrNull { it.pressed }?.let { claimTapWindowPos = claimTopLeft + it.position }
+                                }
+                            }
+                        }
                 )
             }
         }
@@ -881,7 +910,7 @@ private fun ResultDrawings(
             val byWidth = (maxWidth - gap * (c - 1)) / c
             val usedByGaps = gap * (rows * sections + sections * 2) + labelHeight * sections
             val byHeight = (maxHeight - usedByGaps) / (rows * sections)
-            val candidate = minOf(byWidth, byHeight, if (sections == 1) 130.dp else 96.dp)
+            val candidate = minOf(byWidth, byHeight, if (sections == 1) 180.dp else 124.dp)
             if (candidate > cell) { cell = candidate; columns = c }
         }
         Column(verticalArrangement = Arrangement.spacedBy(gap)) {

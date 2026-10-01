@@ -687,7 +687,7 @@ private fun CountdownBanner(secondsLeft: Int) {
     }
 }
 
-private const val COUNTDOWN_BAR_ASPECT = 1400f / 250f
+private const val COUNTDOWN_BAR_ASPECT = 1272f / 202f
 
 /** Three short facts about the round ahead, in place of the single explainer sentence this used to be. */
 @Composable
