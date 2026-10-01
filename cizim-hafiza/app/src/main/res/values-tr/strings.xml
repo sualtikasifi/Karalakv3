@@ -431,7 +431,7 @@
     <string name="cd_back">Geri</string>
 
     <!-- Settings -->
-    <string name="settings_sound">Ses</string>
+    <string name="settings_sound">Tüm Sesler</string>
     <string name="settings_vibration">Titreşim</string>
     <string name="settings_notifications">Bildirimler</string>
     <string name="settings_battery_optimization_title">Bildirimler geç mi geliyor?</string>
@@ -1047,7 +1047,7 @@
     <string name="reports_league_no_rewards">Bu sürümde tanımlı lig ödülü yok.</string>
     <string name="reports_tab_xp_event">2x XP</string>
     <string name="reports_tab_stats">İstatistik</string>
-    <string name="stats_hint">Oyuncuların cihazlarında sayılır: eğilim görmek içindir, kesin muhasebe değildir. Gelir, AdMob\'un gösterim başına kendi tahminidir (genelde USD).</string>
+    <string name="stats_hint">Oyuncuların cihazlarında sayılır: eğilim görmek içindir, kesin muhasebe değildir.</string>
     <string name="stats_range_1">Bugün</string>
     <string name="stats_range_7">7 gün</string>
     <string name="stats_range_30">30 gün</string>
@@ -1055,7 +1055,6 @@
     <string name="stats_players_avg">Günlük ortalama</string>
     <string name="stats_opens">Uygulama açılışı</string>
     <string name="stats_games">Biten oyun</string>
-    <string name="stats_revenue">Tahmini reklam geliri</string>
     <string name="stats_ads_title">Reklam yerleri</string>
     <string name="stats_ad_rewarded">istendi %1$d · izlendi %2$d (%%%3$d) · atlandı %4$d · reklam yok %5$d</string>
     <string name="stats_ad_interstitial">gösterildi %1$d</string>

@@ -815,6 +815,26 @@ class GameViewModel @Inject constructor(
     }
 
     /**
+     * What a watched ad gives while guessing: one of the two hints, picked at random with equal chance —
+     * the first letter, or how many letters the word has. A hint the player already has (from a joker) is
+     * never picked again: the other one is given instead.
+     */
+    private fun revealRandomHint() {
+        val word = results[guessOrder[guessPos]].word.text
+        val pickLetter = when {
+            revealedHintLetter != null && revealedLetterCount == null -> false
+            revealedLetterCount != null && revealedHintLetter == null -> true
+            else -> kotlin.random.Random.nextBoolean()
+        }
+        if (pickLetter) {
+            revealedHintLetter = word.take(1)
+        } else {
+            revealedLetterGroups = com.sualtikasifi.cizimhafiza.domain.model.letterGroupsOf(word)
+            revealedLetterCount = revealedLetterGroups?.sum()
+        }
+    }
+
+    /**
      * Watches a rewarded ad for this match's one-time hint: the current
      * word's first letter. The countdown is paused (not just visually — the
      * timer coroutine itself is cancelled) the instant this is called, for
@@ -843,7 +863,7 @@ class GameViewModel @Inject constructor(
             guessShownAtMillis += SystemClock.elapsedRealtime() - adStartedAt
             if (earned) {
                 hintUsedThisMatch = true
-                revealedHintLetter = results[guessOrder[guessPos]].word.text.take(1)
+                revealRandomHint()
                 currentGuessTotal += GameConstants.HINT_BONUS_SECONDS
                 runGuessCountdown(startSecondsLeft = pausedSecondsLeft + GameConstants.HINT_BONUS_SECONDS)
             } else {

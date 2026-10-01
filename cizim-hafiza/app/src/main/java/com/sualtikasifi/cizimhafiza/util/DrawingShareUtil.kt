@@ -57,7 +57,7 @@ object DrawingShareUtil {
         items: List<ResultItem>
     ) {
         val language = WordSeeder.currentLanguage(context)
-        val bitmap = renderResultsCard(context, language, totalScore, correctCount, wrongCount, fastestCorrectSeconds, items)
+        val bitmap = renderResultsCard(context, items)
         shareBitmap(context, bitmap, "karalak_sonuc")
     }
 
@@ -81,7 +81,7 @@ object DrawingShareUtil {
         template.recycle()
         val canvas = Canvas(bitmap)
         drawStrokes(canvas, strokes, ShareTemplate.drawingRect, paddingRatio = 0.04f)
-        ShareTemplate.drawWordAndCaption(context, canvas, word.capitalizeForWordLanguage(language))
+        ShareTemplate.drawWordAndCaption(context, canvas, ShareTemplate.maskedWord(word))
         shareBitmap(context, bitmap, "karalak")
     }
 
@@ -109,127 +109,62 @@ object DrawingShareUtil {
         return bitmap
     }
 
-    private fun renderResultsCard(
-        context: Context,
-        language: String,
-        totalScore: Int,
-        correctCount: Int,
-        wrongCount: Int,
-        fastestCorrectSeconds: Double?,
-        items: List<ResultItem>
-    ): Bitmap {
-        val columns = 3
-        val outerPadding = 40f
-        val cellGap = 20f
-        val cellSize = (CARD_WIDTH - outerPadding * 2 - cellGap * (columns - 1)) / columns
-        val labelHeight = 56f
-        val rowHeight = cellSize + labelHeight + cellGap
-        val rows = ceil(items.size / columns.toFloat()).toInt().coerceAtLeast(1)
-
-        val headerHeight = 360f
-        val gridHeight = rows * rowHeight
-        val footerHeight = 150f
-        val height = (headerHeight + gridHeight + footerHeight).toInt()
-
-        val bitmap = Bitmap.createBitmap(CARD_WIDTH, height, Bitmap.Config.ARGB_8888)
+    /**
+     * The whole round on the "Bu çizimleri sen de tahmin edebilir misin?" template: every drawing in a grid
+     * inside the big white card, each with only the first letter of its word under it. The grid picks the
+     * column count that makes the drawings biggest for however many there are.
+     */
+    private fun renderResultsCard(context: Context, items: List<ResultItem>): Bitmap {
+        val template = ShareTemplate.loadCollage(context)
+        val bitmap = template.copy(Bitmap.Config.ARGB_8888, true)
+        template.recycle()
         val canvas = Canvas(bitmap)
-        canvas.drawColor(backgroundColor)
 
-        drawResultsHeader(canvas, context, totalScore, correctCount, wrongCount, fastestCorrectSeconds)
-
-        items.forEachIndexed { index, item ->
-            val col = index % columns
-            val row = index / columns
-            val cellLeft = outerPadding + col * (cellSize + cellGap)
-            val cellTop = headerHeight + row * rowHeight
-            val cellRect = RectF(cellLeft, cellTop, cellLeft + cellSize, cellTop + cellSize)
-
-            drawRoundedCard(canvas, cellRect, cornerRadius = 22f)
-            drawStrokes(canvas, item.strokes, cellRect, paddingRatio = 0.1f)
-            drawBadge(canvas, cellRect.right - 26f, cellRect.top + 26f, radius = 22f, isCorrect = item.isCorrect)
-
-            val labelPaint = Paint().apply {
-                color = textDark
-                textSize = 32f
-                isAntiAlias = true
-                textAlign = Paint.Align.CENTER
-                typeface = Typeface.DEFAULT_BOLD
+        val area = ShareTemplate.collageRect
+        val gap = 18f
+        val captionHeight = 40f
+        val count = items.size.coerceAtLeast(1)
+        var bestCols = 1
+        var bestSide = 0f
+        for (cols in 1..count) {
+            val rows = ceil(count / cols.toFloat()).toInt()
+            val side = minOf(
+                (area.width() - gap * (cols - 1)) / cols,
+                (area.height() - gap * (rows - 1)) / rows - captionHeight
+            )
+            if (side > bestSide) {
+                bestSide = side
+                bestCols = cols
             }
+        }
+        val side = bestSide.coerceAtLeast(40f)
+        val rows = ceil(count / bestCols.toFloat()).toInt()
+        val gridHeight = rows * (side + captionHeight) + (rows - 1) * gap
+        val top = area.top + (area.height() - gridHeight) / 2f
+
+        val captionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = textDark
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.DEFAULT_BOLD
+            textSize = (side * 0.13f).coerceIn(20f, 32f)
+        }
+        items.forEachIndexed { index, item ->
+            val row = index / bestCols
+            val inRow = minOf(bestCols, items.size - row * bestCols)
+            val rowWidth = inRow * side + (inRow - 1) * gap
+            val left = area.left + (area.width() - rowWidth) / 2f + (index % bestCols) * (side + gap)
+            val cellTop = top + row * (side + captionHeight + gap)
+            val rect = RectF(left, cellTop, left + side, cellTop + side)
+            drawRoundedCard(canvas, rect, cornerRadius = 20f)
+            drawStrokes(canvas, item.strokes, rect, paddingRatio = 0.1f)
             canvas.drawText(
-                item.word.capitalizeForWordLanguage(language),
-                cellRect.centerX(),
-                cellRect.bottom + labelHeight * 0.65f,
-                labelPaint
+                ShareTemplate.maskedWord(item.word),
+                rect.centerX(),
+                rect.bottom + captionHeight * 0.75f,
+                captionPaint
             )
         }
-
-        drawBrandFooter(canvas, CARD_WIDTH / 2f, headerHeight + gridHeight + footerHeight * 0.62f, textSize = 46f)
-
         return bitmap
-    }
-
-    private fun drawResultsHeader(
-        canvas: Canvas,
-        context: Context,
-        totalScore: Int,
-        correctCount: Int,
-        wrongCount: Int,
-        fastestCorrectSeconds: Double?
-    ) {
-        val titlePaint = Paint().apply {
-            color = textDark
-            textSize = 40f
-            isAntiAlias = true
-            textAlign = Paint.Align.CENTER
-            typeface = Typeface.DEFAULT_BOLD
-        }
-        canvas.drawText(context.getString(R.string.game_over), CARD_WIDTH / 2f, 80f, titlePaint)
-
-        val scorePaint = Paint().apply {
-            color = brandOrange
-            textSize = 96f
-            isAntiAlias = true
-            textAlign = Paint.Align.CENTER
-            typeface = Typeface.DEFAULT_BOLD
-        }
-        canvas.drawText(context.getString(R.string.total_score, totalScore), CARD_WIDTH / 2f, 200f, scorePaint)
-
-        val stats = buildList {
-            add(context.getString(R.string.correct_count, correctCount))
-            add(context.getString(R.string.wrong_count, wrongCount))
-            fastestCorrectSeconds?.let { add(context.getString(R.string.fastest_correct, it)) }
-        }
-        val pillPaint = Paint().apply {
-            color = cardWhite
-            isAntiAlias = true
-        }
-        val pillBorderPaint = Paint().apply {
-            color = outline
-            style = Paint.Style.STROKE
-            strokeWidth = 3f
-            isAntiAlias = true
-        }
-        val pillTextPaint = Paint().apply {
-            color = textDark
-            textSize = 30f
-            isAntiAlias = true
-            textAlign = Paint.Align.CENTER
-            typeface = Typeface.DEFAULT_BOLD
-        }
-        val pillHeight = 64f
-        val pillGap = 16f
-        val pillWidths = stats.map { pillTextPaint.measureText(it) + 56f }
-        val totalWidth = pillWidths.sum() + pillGap * (stats.size - 1)
-        var x = CARD_WIDTH / 2f - totalWidth / 2f
-        val pillTop = 250f
-        stats.forEachIndexed { i, text ->
-            val w = pillWidths[i]
-            val rect = RectF(x, pillTop, x + w, pillTop + pillHeight)
-            canvas.drawRoundRect(rect, pillHeight / 2f, pillHeight / 2f, pillPaint)
-            canvas.drawRoundRect(rect, pillHeight / 2f, pillHeight / 2f, pillBorderPaint)
-            canvas.drawText(text, rect.centerX(), rect.centerY() + pillTextPaint.textSize * 0.35f, pillTextPaint)
-            x += w + pillGap
-        }
     }
 
     private fun drawBrandFooter(canvas: Canvas, centerX: Float, y: Float, textSize: Float) {

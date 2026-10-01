@@ -138,7 +138,8 @@ class BackupRepositoryImpl @Inject constructor(
             chestSlots = com.sualtikasifi.cizimhafiza.domain.model.ChestBackupCodec.encode(settingsRepository.chestSlots.value),
             chestCycleSeed = settingsRepository.chestCycleSeedForBackup,
             chestCycleIndex = settingsRepository.chestCycleIndexForBackup,
-            periodXp = settingsRepository.periodXp.value,
+            periodXp = settingsRepository.currentPeriodXp(),
+            periodXpVersion = 2,
             periodId = com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()),
             adGoldNextAt = settingsRepository.adGoldNextAtMillis.value,
             adChestDay = settingsRepository.adChestDay.value,
@@ -473,7 +474,12 @@ class BackupRepositoryImpl @Inject constructor(
         // next archive would refuse it as a regression — quietly re-opening
         // the hole the counter exists to close.
         settingsRepository.penaltiesApplied = snapshot.penaltiesApplied
-        settingsRepository.restoreEngagement(snapshot.periodXp, snapshot.periodId, snapshot.adGoldNextAt, snapshot.adChestDay)
+        // A backup written before the month-rollover fix may carry last month's XP under this month's id: its
+        // league XP is not trusted (version < 2); the ad cooldowns are unaffected.
+        settingsRepository.restoreEngagement(
+            if (snapshot.periodXpVersion >= 2) snapshot.periodXp else 0,
+            snapshot.periodId, snapshot.adGoldNextAt, snapshot.adChestDay
+        )
         settingsRepository.restoreOneTimePrompts(snapshot.ratingPromptShown == 1, snapshot.quickMatchGames)
         dailyChallengeRepository.replaceWithAccount(
             lastCompletedEpochDay = snapshot.dailyLastCompletedEpochDay,

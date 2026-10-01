@@ -313,7 +313,10 @@ class MainMenuViewModel @Inject constructor(
      * app can sit in the background across midnight, at which point a
      * "already done today" card is stale and today's challenge is waiting.
      */
-    fun refreshDaily() = dailyChallengeRepository.refresh()
+    fun refreshDaily() {
+        settingsRepository.refreshPeriodXp() // the month may have turned while the app sat open
+        dailyChallengeRepository.refresh()
+    }
 
     // Drives the small badge on the "İstatistikler" tile — cleared the next
     // time StatisticsScreen opens (see StatisticsViewModel.markAllSeen).

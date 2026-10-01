@@ -78,11 +78,11 @@ object DrawingVideoExporter {
     private const val SLOWDOWN_FACTOR = 3
 
     // The player-facing share clip (exportForSharing): drawn in 2x slow motion, but never shorter than
-    // 2 s nor longer than 12 s, then 2 s holding the finished picture with the word revealed.
+    // 2 s nor longer than 12 s, then 5 s holding the finished picture (the word stays blanked: first letter only).
     private const val SHARE_SLOWDOWN_FACTOR = 2
     private const val SHARE_MIN_DRAW_FRAMES = FRAME_RATE * 2
     private const val SHARE_MAX_DRAW_FRAMES = FRAME_RATE * 12
-    private const val SHARE_TAIL_FRAMES = FRAME_RATE * 2
+    private const val SHARE_TAIL_FRAMES = FRAME_RATE * 5
 
     private const val DEQUEUE_TIMEOUT_US = 10_000L
 
@@ -160,8 +160,8 @@ object DrawingVideoExporter {
 
     /**
      * The clip a player shares from the result screen: the same branded card as the shared picture
-     * ([ShareTemplate]), with the drawing drawn out stroke by stroke in the middle of it. The word shows
-     * as blanks while it is being drawn and is revealed on the held final frame. A few seconds long at
+     * ([ShareTemplate]), with the drawing drawn out stroke by stroke in the middle of it. The word is only ever
+     * shown as its first letter plus blanks, and the finished drawing is held for five seconds. A few seconds long at
      * most, whatever the drawing — the pace is sped up for a very dense one rather than letting it run on.
      */
     suspend fun exportForSharing(
@@ -175,8 +175,6 @@ object DrawingVideoExporter {
             val drawnFrames = (DrawingReplay.durationMillis(totalUnits) * FRAME_RATE * SHARE_SLOWDOWN_FACTOR / 1000)
                 .coerceIn(SHARE_MIN_DRAW_FRAMES, SHARE_MAX_DRAW_FRAMES)
             val totalFrames = drawnFrames + SHARE_TAIL_FRAMES
-            val language = com.sualtikasifi.cizimhafiza.data.local.WordSeeder.currentLanguage(context)
-            val shown = word.capitalizeForWordLanguage(language)
             val masked = maskedWord(word)
             val template = ShareTemplate.load(context)
 
@@ -190,7 +188,7 @@ object DrawingVideoExporter {
                         val progress = ((frame + 1).toFloat() / drawnFrames).coerceAtMost(1f)
                         canvas.drawBitmap(template, 0f, 0f, null)
                         drawDrawing(canvas, strokes, totalUnits, progress, ShareTemplate.drawingRect)
-                        ShareTemplate.drawWordAndCaption(context, canvas, if (frame >= drawnFrames) shown else masked)
+                        ShareTemplate.drawWordAndCaption(context, canvas, masked)
                     }
                 }
             } finally {

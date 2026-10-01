@@ -28,7 +28,7 @@ data class AdPlacementStats(
     val unavailable: Long = 0,
     /** Interstitials that reached the screen (rewarded ads have no such event: they count as earned/skipped). */
     val shown: Long = 0,
-    val revenueMicros: Long = 0
+
 )
 
 data class DayPlayers(val day: String, val players: Long)
@@ -40,7 +40,7 @@ data class StatsUiState(
     val loaded: Boolean = false,
     val appOpens: Long = 0,
     val gamesFinished: Long = 0,
-    val revenueMicros: Long = 0,
+
     val players: List<DayPlayers> = emptyList(),
     val placements: List<AdPlacementStats> = emptyList()
 )
@@ -112,17 +112,15 @@ class StatsViewModel @Inject constructor(
                 "reward_skipped" -> cur.copy(skipped = value)
                 "reward_unavailable" -> cur.copy(unavailable = value)
                 "interstitial_shown" -> cur.copy(shown = value)
-                "revenue_micros" -> cur.copy(revenueMicros = value)
                 else -> cur
             }
         }
-        val rows = byPlacement.values.sortedByDescending { it.revenueMicros * 1_000_000 + it.requested + it.shown }
+        val rows = byPlacement.values.sortedByDescending { it.requested + it.shown }
         return StatsUiState(
             days = days,
             loaded = true,
             appOpens = totals["app__open__count"] ?: 0L,
             gamesFinished = totals.filterKeys { it.startsWith("games__finished__") }.values.sum(),
-            revenueMicros = rows.sumOf { it.revenueMicros },
             players = players,
             placements = rows
         )

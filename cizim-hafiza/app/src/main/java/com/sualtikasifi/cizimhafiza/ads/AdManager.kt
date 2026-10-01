@@ -56,16 +56,6 @@ class AdManager @Inject constructor(
         }
     }
 
-    /** AdMob's own estimate of what one impression earned, in millionths of the account currency. */
-    private fun recordRevenue(placement: String, valueMicros: Long) {
-        runCatching {
-            adminStats.get().record(
-                com.sualtikasifi.cizimhafiza.util.AdminStats.adKey(placement, "revenue_micros"),
-                valueMicros
-            )
-        }
-    }
-
     // Preloaded ahead of time (see preloadInterstitial) so maybeShowInterstitial
     // can show instantly instead of eating a multi-second network load right
     // at the moment the player reaches the result screen. Plain var, not
@@ -254,7 +244,6 @@ class AdManager @Inject constructor(
         val preloaded = cachedInterstitial
         if (preloaded != null) {
             cachedInterstitial = null
-            preloaded.setOnPaidEventListener { recordRevenue(placement, it.valueMicros) }
             preloaded.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdShowedFullScreenContent() = recordInterstitialShown(placement)
                 override fun onAdDismissedFullScreenContent() {
@@ -279,7 +268,6 @@ class AdManager @Inject constructor(
             AdRequest.Builder().build(),
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
-                    ad.setOnPaidEventListener { recordRevenue(placement, it.valueMicros) }
                     ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                         override fun onAdShowedFullScreenContent() = recordInterstitialShown(placement)
                         override fun onAdDismissedFullScreenContent() = onDismissed()
@@ -397,7 +385,6 @@ class AdManager @Inject constructor(
             // then `earned` already reflects whether the reward callback
             // fired first, so skipping early correctly resolves as no reward.
             var earned = false
-            ad.setOnPaidEventListener { recordRevenue(placement, it.valueMicros) }
             ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() =
                     settle(if (earned) RewardedOutcome.EARNED else RewardedOutcome.SKIPPED)

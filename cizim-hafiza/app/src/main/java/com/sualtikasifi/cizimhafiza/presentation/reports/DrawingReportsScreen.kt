@@ -159,22 +159,6 @@ fun DrawingReportsScreen(
                         }
                     }
                 }
-                // Not one more uiState.tab: Bot İsimleri is its own screen
-                // with its own ViewModel and Firestore listener (see
-                // BotNamesScreen), so this chip navigates instead of
-                // switching the selection — it is never drawn "selected"
-                // the way the tabs above are.
-                Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-                    SelectableChip(
-                        label = stringResource(R.string.menu_bot_names),
-                        selected = false,
-                        onClick = onBotNames,
-                        modifier = Modifier.weight(1f),
-                        verticalPadding = 10.dp,
-                        style = MaterialTheme.typography.bodySmall,
-                        fillWidth = true
-                    )
-                }
                 Spacer(modifier = Modifier.height(2.dp))
 
                 // A refused decision is a line above the list, never a
