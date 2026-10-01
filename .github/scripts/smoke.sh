@@ -16,6 +16,10 @@ echo "APK: $APK"
 adb wait-for-device
 adb shell input keyevent 82 || true
 adb install -r -t "$APK"
+# The app asks for the notification permission a few seconds after its first launch; that system dialog
+# would swallow the scripted taps below, so it is granted up front (the dialog itself is covered by the
+# ads-consent tap further down only for the UMP form, not this one).
+adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
 adb logcat -c
 
 # Skip the first-run tutorial: it is a plain boolean in the app's settings file, and the
@@ -100,6 +104,29 @@ tour 05_achievements  880 1488
 tour 06_league        200 1692
 tour 07_store         540 1692
 tour 08_settings      880 1692
+# League, Global tab (table, compact prize banner, monthly XP card).
+adb shell input tap 200 1692
+sleep 4
+adb shell input tap 794 386
+sleep 6
+shot 06b_league_global
+adb shell input keyevent KEYCODE_BACK
+sleep 2
+
+# Settings > Account (profile header, stats, username, backup), top and bottom of the page.
+adb shell input tap 880 1692
+sleep 4
+adb shell input tap 540 2174
+sleep 5
+shot 08b_account
+adb shell input swipe 540 1800 540 500 400
+sleep 2
+shot 08c_account_bottom
+adb shell input keyevent KEYCODE_BACK
+sleep 2
+adb shell input keyevent KEYCODE_BACK
+sleep 2
+
 tour 09_daily         540  756
 tour 10_offline       880 1146
 shot 11_back_on_main_menu

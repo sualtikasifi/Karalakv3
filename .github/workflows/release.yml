@@ -26,6 +26,10 @@ on:
         description: "Increase versionCode by 1"
         type: boolean
         default: true
+      build_apk:
+        description: "Also build a signed release APK to install straight onto a phone (uninstall the Play version first: the signatures differ)"
+        type: boolean
+        default: false
 
 # contents: write is needed only to push the version bump back.
 permissions:
@@ -98,6 +102,19 @@ jobs:
 
       - name: Build release bundle (refuses without real ad IDs)
         run: ./gradlew :app:bundleRelease -PrequireRealAds --console=plain
+
+      - name: Build release APK
+        if: ${{ inputs.build_apk }}
+        run: ./gradlew :app:assembleRelease -PrequireRealAds --console=plain
+
+      - name: Upload APK
+        if: ${{ inputs.build_apk }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: karalak-release-apk
+          path: cizim-hafiza/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Upload bundle
         uses: actions/upload-artifact@v4

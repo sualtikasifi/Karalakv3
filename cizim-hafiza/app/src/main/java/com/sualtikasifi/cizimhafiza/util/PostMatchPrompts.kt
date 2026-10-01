@@ -35,7 +35,10 @@ object PostMatchPrompts {
 
     fun shouldShowRating(settingsRepository: SettingsRepository): Boolean {
         if (settingsRepository.ratingPromptShown) return false
-        if (settingsRepository.quickMatchGamesFinished < RATING_PROMPT_AT_GAME) return false
+        // Due only once a Quick Match round has finished with the count at three or more — see
+        // SettingsRepository.markRatingDueIfEligible. Counters restored from a backup alone never qualify.
+        if (!settingsRepository.ratingPromptPending) return false
+        settingsRepository.ratingPromptPending = false
         settingsRepository.ratingPromptShown = true
         return true
     }

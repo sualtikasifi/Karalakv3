@@ -483,7 +483,8 @@ class FriendRepositoryImpl @Inject constructor(
         periodId: Long,
         level: Int,
         frameId: String,
-        avatarUrl: String
+        avatarUrl: String,
+        totalXp: Int
     ) {
         val uid = requireUid()
         // Merged onto the public profile document rather than a subcollection:
@@ -496,6 +497,8 @@ class FriendRepositoryImpl @Inject constructor(
             mapOf(
                 "nickname" to nickname,
                 "periodXp" to periodXp,
+                // Lifetime XP, for the Friends table (the global one ranks by periodXp).
+                "totalXp" to totalXp,
                 // The server's own clock: the security rules measure how fast periodXp may grow from it.
                 "periodXpAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
                 "periodId" to periodId,
@@ -592,13 +595,18 @@ class FriendRepositoryImpl @Inject constructor(
                                     nickname = doc.getString("nickname").orEmpty().ifBlank { "?" },
                                     periodXp = if (storedWeek == currentWeek) (doc.getLong("periodXp") ?: 0L).toInt() else 0,
                                     level = (doc.getLong("level") ?: 1L).toInt(),
+                                    totalXp = maxOf(
+                                        (doc.getLong("totalXp") ?: 0L).toInt(),
+                                        // A profile that has not published a total yet is at least as far as its level says.
+                                        com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.totalXpForLevel((doc.getLong("level") ?: 1L).toInt())
+                                    ),
                                     frameId = doc.getString("frameId") ?: AvatarFrame.DEFAULT.name,
                                     avatarUrl = doc.getString("avatarUrl").orEmpty(),
                                     isMe = memberUid == uid
                                 )
                             }
                         }.getOrDefault(emptyList())
-                        emit(LeagueTable.rank(rows, daysRemaining))
+                        emit(LeagueTable.rank(rows, daysRemaining, byTotalXp = true))
                     }
                 }
         }

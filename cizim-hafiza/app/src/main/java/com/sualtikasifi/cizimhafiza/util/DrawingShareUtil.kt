@@ -73,6 +73,18 @@ object DrawingShareUtil {
         context.startActivity(Intent.createChooser(shareIntent, null))
     }
 
+    /** The picture to share: the drawing, its word and the Karalak mark on the branded template card. */
+    fun shareDrawingOnTemplate(context: Context, word: String, strokes: List<DrawingStroke>) {
+        val language = WordSeeder.currentLanguage(context)
+        val template = ShareTemplate.load(context)
+        val bitmap = template.copy(Bitmap.Config.ARGB_8888, true)
+        template.recycle()
+        val canvas = Canvas(bitmap)
+        drawStrokes(canvas, strokes, ShareTemplate.drawingRect, paddingRatio = 0.04f)
+        ShareTemplate.drawWordAndCaption(context, canvas, word.capitalizeForWordLanguage(language))
+        shareBitmap(context, bitmap, "karalak")
+    }
+
     private fun renderSingleCard(word: String, strokes: List<DrawingStroke>, language: String): Bitmap {
         val height = CARD_WIDTH + 260
         val bitmap = Bitmap.createBitmap(CARD_WIDTH, height, Bitmap.Config.ARGB_8888)

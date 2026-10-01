@@ -139,6 +139,9 @@ class LeagueViewModel @Inject constructor(
      * rendered list so a bot — or whichever real player actually earned it —
      * occupies that slot instead).
      */
+    /** This month's XP on this device — what the monthly card compares against the table's cut-offs. */
+    val myPeriodXp: kotlinx.coroutines.flow.StateFlow<Int> get() = settingsRepository.periodXp
+
     private fun resolveOwnRank(table: GlobalLeagueTable) {
         val myXp = settingsRepository.periodXp.value
         if (myXp <= 0) {

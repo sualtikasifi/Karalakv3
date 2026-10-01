@@ -84,6 +84,8 @@ data class LeagueEntry(
     val frameId: String,
     val avatarUrl: String = "",
     val isMe: Boolean,
+    /** Everything this player has ever earned — what the Friends table shows and ranks by. 0 when unknown. */
+    val totalXp: Int = 0,
     /**
      * A filler row in the global table rather than a person.
      *
@@ -116,9 +118,10 @@ data class LeagueTable(
     val myRank: Int? get() = entries.indexOfFirst { it.isMe }.takeIf { it >= 0 }?.plus(1)
 
     companion object {
-        fun rank(entries: List<LeagueEntry>, daysRemaining: Int): LeagueTable = LeagueTable(
+        /** [byTotalXp]: order by lifetime XP (the Friends table) instead of this month's XP (the global one). */
+        fun rank(entries: List<LeagueEntry>, daysRemaining: Int, byTotalXp: Boolean = false): LeagueTable = LeagueTable(
             entries = entries.sortedWith(
-                compareByDescending<LeagueEntry> { it.periodXp }
+                compareByDescending<LeagueEntry> { if (byTotalXp) it.totalXp else it.periodXp }
                     .thenBy { it.nickname.lowercase() }
                     .thenBy { it.uid }
             ),

@@ -77,6 +77,13 @@ object DrawingVideoExporter {
      */
     private const val SLOWDOWN_FACTOR = 3
 
+    // The player-facing share clip (exportForSharing): drawn in 2x slow motion, but never shorter than
+    // 2 s nor longer than 12 s, then 2 s holding the finished picture with the word revealed.
+    private const val SHARE_SLOWDOWN_FACTOR = 2
+    private const val SHARE_MIN_DRAW_FRAMES = FRAME_RATE * 2
+    private const val SHARE_MAX_DRAW_FRAMES = FRAME_RATE * 12
+    private const val SHARE_TAIL_FRAMES = FRAME_RATE * 2
+
     private const val DEQUEUE_TIMEOUT_US = 10_000L
 
     /** Wall-clock bound on the whole encode — see the loop in [encode]. */
@@ -128,7 +135,7 @@ object DrawingVideoExporter {
                 // and half-written; nothing downstream could tell it from a
                 // real clip.
                 onFailureDelete(file) {
-                    encode(file, totalFrames) { canvas, frame ->
+                    encode(file, WIDTH, HEIGHT, totalFrames) { canvas, frame ->
                         // frame + 1, so the opening frame already carries the
                         // first mark rather than being a blank sheet of paper. Past
                         // drawnFrames the progress stays pinned at 1, which is what
@@ -148,6 +155,49 @@ object DrawingVideoExporter {
             }
             file
         }.onFailure { Log.w(TAG, "Video export failed", it) }
+    }
+
+
+    /**
+     * The clip a player shares from the result screen: the same branded card as the shared picture
+     * ([ShareTemplate]), with the drawing drawn out stroke by stroke in the middle of it. The word shows
+     * as blanks while it is being drawn and is revealed on the held final frame. A few seconds long at
+     * most, whatever the drawing — the pace is sped up for a very dense one rather than letting it run on.
+     */
+    suspend fun exportForSharing(
+        context: Context,
+        word: String,
+        strokes: List<DrawingStroke>
+    ): Result<File> = withContext(Dispatchers.Default) {
+        runCatching {
+            require(strokes.any { it.isNotEmpty() }) { "Boş çizim" }
+            val totalUnits = DrawingReplay.timelineUnits(strokes)
+            val drawnFrames = (DrawingReplay.durationMillis(totalUnits) * FRAME_RATE * SHARE_SLOWDOWN_FACTOR / 1000)
+                .coerceIn(SHARE_MIN_DRAW_FRAMES, SHARE_MAX_DRAW_FRAMES)
+            val totalFrames = drawnFrames + SHARE_TAIL_FRAMES
+            val language = com.sualtikasifi.cizimhafiza.data.local.WordSeeder.currentLanguage(context)
+            val shown = word.capitalizeForWordLanguage(language)
+            val masked = maskedWord(word)
+            val template = ShareTemplate.load(context)
+
+            val file = File(
+                File(context.cacheDir, "shared_drawings").apply { mkdirs() },
+                "karalak_${sanitize(word)}_${System.currentTimeMillis()}.mp4"
+            )
+            try {
+                onFailureDelete(file) {
+                    encode(file, ShareTemplate.WIDTH, ShareTemplate.HEIGHT, totalFrames) { canvas, frame ->
+                        val progress = ((frame + 1).toFloat() / drawnFrames).coerceAtMost(1f)
+                        canvas.drawBitmap(template, 0f, 0f, null)
+                        drawDrawing(canvas, strokes, totalUnits, progress, ShareTemplate.drawingRect)
+                        ShareTemplate.drawWordAndCaption(context, canvas, if (frame >= drawnFrames) shown else masked)
+                    }
+                }
+            } finally {
+                template.recycle()
+            }
+            file
+        }.onFailure { Log.w(TAG, "Share video export failed", it) }
     }
 
     /** Hands the finished file to the system share sheet. */
@@ -376,11 +426,11 @@ object DrawingVideoExporter {
 
     // ---- encoding ----
 
-    private inline fun encode(file: File, totalFrames: Int, renderFrame: (Canvas, Int) -> Unit) {
+    private inline fun encode(file: File, width: Int, height: Int, totalFrames: Int, renderFrame: (Canvas, Int) -> Unit) {
         val (codecName, colorFormat) = selectEncoder()
             ?: error("Bu cihazda kullanılabilir bir video kodlayıcı yok")
 
-        val format = MediaFormat.createVideoFormat(MIME, WIDTH, HEIGHT).apply {
+        val format = MediaFormat.createVideoFormat(MIME, width, height).apply {
             setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat)
             setInteger(MediaFormat.KEY_BIT_RATE, BIT_RATE)
             setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE)
@@ -389,10 +439,10 @@ object DrawingVideoExporter {
 
         val codec = MediaCodec.createByCodecName(codecName)
         val muxer = MediaMuxer(file.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
-        val bitmap = Bitmap.createBitmap(WIDTH, HEIGHT, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val pixels = IntArray(WIDTH * HEIGHT)
-        val yuv = ByteArray(WIDTH * HEIGHT * 3 / 2)
+        val pixels = IntArray(width * height)
+        val yuv = ByteArray(width * height * 3 / 2)
         val semiPlanar = colorFormat == MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar
 
         var muxerStarted = false
@@ -426,8 +476,8 @@ object DrawingVideoExporter {
                             inputDone = true
                         } else {
                             renderFrame(canvas, frame)
-                            bitmap.getPixels(pixels, 0, WIDTH, 0, 0, WIDTH, HEIGHT)
-                            toYuv420(pixels, yuv, semiPlanar)
+                            bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+                            toYuv420(pixels, yuv, semiPlanar, width, height)
                             codec.getInputBuffer(inputIndex)?.apply {
                                 clear()
                                 put(yuv)
@@ -505,20 +555,20 @@ object DrawingVideoExporter {
      * short promo clip re-compressed again by Instagram/TikTok on upload
      * never needed pixel-perfect chroma to begin with.
      */
-    private fun toYuv420(pixels: IntArray, out: ByteArray, semiPlanar: Boolean) {
-        val frameSize = WIDTH * HEIGHT
+    private fun toYuv420(pixels: IntArray, out: ByteArray, semiPlanar: Boolean, width: Int, height: Int) {
+        val frameSize = width * height
         val chromaPlaneSize = frameSize / 4
         var uIndex = frameSize
         var vIndex = if (semiPlanar) frameSize + 1 else frameSize + chromaPlaneSize
 
-        for (y in 0 until HEIGHT) {
-            for (x in 0 until WIDTH) {
-                val argb = pixels[y * WIDTH + x]
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val argb = pixels[y * width + x]
                 val r = (argb shr 16) and 0xFF
                 val g = (argb shr 8) and 0xFF
                 val b = argb and 0xFF
 
-                out[y * WIDTH + x] = ((((66 * r + 129 * g + 25 * b + 128) shr 8) + 16)
+                out[y * width + x] = ((((66 * r + 129 * g + 25 * b + 128) shr 8) + 16)
                     .coerceIn(0, 255)).toByte()
 
                 if (y % 2 == 0 && x % 2 == 0) {

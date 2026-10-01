@@ -263,6 +263,11 @@
     <string name="your_drawings">Çizimlerin</string>
     <string name="close">Kapat</string>
     <string name="share_drawing">Paylaş</string>
+    <string name="share_drawing_choose">Nasıl paylaşmak istersin?</string>
+    <string name="share_as_photo">Fotoğraf olarak paylaş</string>
+    <string name="share_as_video">Video olarak paylaş</string>
+    <string name="share_video_preparing">Video hazırlanıyor…</string>
+    <string name="share_video_failed">Video hazırlanamadı. Fotoğraf olarak paylaşmayı dene.</string>
     <string name="share_all_drawings">Tümünü paylaş</string>
 
     <!-- Avatar frame picker -->
@@ -697,6 +702,27 @@
     <string name="league_reward_title">Bu ayın ödülü</string>
     <string name="league_reward_bonus_gold">+%1$s Altın</string>
     <string name="league_reward_bonus_xp">+%1$s XP</string>
+    <string name="account_section_username">Kullanıcı adı</string>
+    <string name="account_section_account">Hesap ve yedek</string>
+    <string name="account_google_linked">Google ile bağlı</string>
+    <string name="account_guest_badge">Misafir hesap</string>
+    <string name="account_stat_xp">Toplam XP</string>
+    <string name="account_stat_games">Oynanan oyun</string>
+    <string name="account_stat_streak">En iyi seri (gün)</string>
+    <string name="account_xp_progress">%1$d / %2$d XP</string>
+    <string name="account_xp_to_next">Sonraki seviyeye %1$d XP</string>
+    <string name="account_xp_max">En üst seviyedesin</string>
+    <string name="account_guest_hint">Google hesabını bağla: ilerlemen yedeklensin, başka bir telefonda da kaldığın yerden devam et.</string>
+    <string name="account_danger_title">Tehlikeli bölge</string>
+    <string name="league_friends_total_caption">Arkadaşlar · toplam XP</string>
+    <string name="league_reward_top3">İlk 3\'e</string>
+    <string name="league_monthly_title">Bu ayki XP\'in</string>
+    <string name="league_monthly_rank">Sıran #%1$d</string>
+    <string name="league_monthly_unranked">Henüz sırada değilsin</string>
+    <string name="league_monthly_to_top">İlk %1$d\'ye girmek için %2$s XP daha</string>
+    <string name="league_monthly_in_top">İlk %1$d\'desin 🎉</string>
+    <string name="league_monthly_to_podium">Ödül (ilk 3) için %1$s XP daha</string>
+    <string name="league_monthly_in_podium">Ödül sırasındasın! 🏆</string>
     <string name="league_reward_explainer_pen">Global sıralamada ay sonunda ilk 3\'e gir, %1$s Kalemi\'ni kazan!</string>
     <string name="league_reward_explainer_frame">Global sıralamada ay sonunda ilk 3\'e gir, %1$s Şampiyonu Çerçevesi\'ni kazan!</string>
     <string name="league_reward_kind_frame">Özel çerçeve</string>

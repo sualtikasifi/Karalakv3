@@ -64,6 +64,7 @@ import com.sualtikasifi.cizimhafiza.util.GameConstants
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel
 import com.sualtikasifi.cizimhafiza.presentation.common.LevelAvatar
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
 import com.sualtikasifi.cizimhafiza.presentation.common.WarmCard
@@ -96,12 +97,6 @@ fun LeagueScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val table = uiState.table
-    androidx.compose.runtime.LaunchedEffect(Unit) {
-        while (true) {
-            kotlinx.coroutines.delay(5_000)
-            LeagueLabelClock.toggle()
-        }
-    }
 
     // No title bar: the back button floats directly on the page's own
     // background instead of sitting in a separate, differently-colored strip.
@@ -138,7 +133,10 @@ fun LeagueScreen(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.Center
             ) {
-                shownTable?.let {
+                if (uiState.tab == LeagueTab.Friends) {
+                    // The friends board is all-time; only the global one resets each month.
+                    TintedBadge(text = stringResource(R.string.league_friends_total_caption))
+                } else shownTable?.let {
                     TintedBadge(
                         text = if (it.daysRemaining <= 0) {
                             stringResource(R.string.league_resets_countdown, rememberResetCountdown())
@@ -158,8 +156,17 @@ fun LeagueScreen(
                 val reward = LeagueReward.find(uiState.global?.rewardId)
                     ?: LeagueReward.forPeriod(LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()))
                 reward?.let { reward ->
-                    RewardBanner(reward = reward, modifier = Modifier.padding(bottom = 8.dp))
+                    RewardBanner(reward = reward, modifier = Modifier.padding(bottom = 6.dp))
                 }
+                val myXp by viewModel.myPeriodXp.collectAsState()
+                val others = uiState.global?.table?.entries.orEmpty().filterNot { it.isMe }.take(GLOBAL_VISIBLE_ROWS)
+                MonthlyXpCard(
+                    myXp = myXp,
+                    myRank = uiState.myGlobalRank,
+                    top20Xp = others.getOrNull(GLOBAL_VISIBLE_ROWS - 1)?.periodXp,
+                    podiumXp = others.getOrNull(2)?.periodXp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
             }
 
             // Alone on the friends table: say so, and offer the fix.
@@ -239,12 +246,12 @@ fun LeagueScreen(
                     // the month. The player's real (computed) rank is always
                     // shown pinned below instead — see resolveOwnRank.
                     val visibleEntries = if (uiState.tab == LeagueTab.Global) {
-                        shownTable.entries.filterNot { it.isMe }
+                        shownTable.entries.filterNot { it.isMe }.take(GLOBAL_VISIBLE_ROWS)
                     } else {
                         shownTable.entries
                     }
                     itemsIndexed(visibleEntries, key = { _, entry -> entry.uid }) { index, entry ->
-                        LeagueRow(rank = index + 1, entry = entry)
+                        LeagueRow(rank = index + 1, entry = entry, showTotalXp = uiState.tab == LeagueTab.Friends)
                     }
                     // The real rank, pinned under the table after a gap,
                     // rather than a row squeezed onto the end of it.
@@ -324,46 +331,125 @@ fun LeagueScreen(
 @Composable
 private fun RewardBanner(reward: LeagueReward, modifier: Modifier = Modifier) {
     val gold = AppTheme.tokens.gold
+    val number = java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag("tr"))
     WarmCard(
-        corner = 18.dp,
+        corner = 16.dp,
         border = gold,
         modifier = modifier.fillMaxWidth()
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(gold.copy(alpha = 0.20f), Color.Transparent)))
+                .background(Brush.verticalGradient(listOf(gold.copy(alpha = 0.18f), Color.Transparent)))
         ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "🏆", style = MaterialTheme.typography.headlineSmall)
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.league_reward_title),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = gold,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = rewardLabel(reward),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    if (reward is LeagueReward.Frame) {
-                        RewardSwatch(reward = reward, size = 48.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (reward is LeagueReward.Frame) {
+                    RewardSwatch(reward = reward, size = 28.dp)
+                } else {
+                    Text(text = "🏆", style = MaterialTheme.typography.titleLarge)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.league_reward_title),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = gold,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = rewardLabel(reward),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    if (reward is LeagueReward.Pen) {
+                        PenStrokePreview(skin = reward.skin, modifier = Modifier.fillMaxWidth().height(22.dp))
                     }
                 }
-                if (reward is LeagueReward.Pen) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    PenStrokePreview(skin = reward.skin, modifier = Modifier.fillMaxWidth().height(40.dp))
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = stringResource(R.string.league_reward_bonus_gold, number.format(GameConstants.LEAGUE_MONTHLY_GOLD)),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = gold
+                    )
+                    Text(
+                        text = stringResource(R.string.league_reward_bonus_xp, number.format(GameConstants.LEAGUE_MONTHLY_XP)),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = stringResource(R.string.league_reward_top3),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                Spacer(modifier = Modifier.height(10.dp))
-                MonthlyBonusRow()
-                Spacer(modifier = Modifier.height(10.dp))
+            }
+        }
+    }
+}
+
+/**
+ * "Where do I stand this month": the player's own monthly XP, their real rank, and how much more it
+ * takes to reach the visible top 20 and the prize places — the table alone never said how far off
+ * those were. The cut-offs are the XP of the 20th and 3rd rows of the published table.
+ */
+@Composable
+private fun MonthlyXpCard(myXp: Int, myRank: Int?, top20Xp: Int?, podiumXp: Int?, modifier: Modifier = Modifier) {
+    val number = java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag("tr"))
+    val inPodium = myRank != null && myRank <= 3
+    val inTop20 = myRank != null && myRank <= GLOBAL_VISIBLE_ROWS
+    val toTop20 = ((top20Xp ?: 0) - myXp + 1).coerceAtLeast(1)
+    val toPodium = ((podiumXp ?: 0) - myXp + 1).coerceAtLeast(1)
+    WarmCard(corner = 16.dp, modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.league_monthly_title),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = stringResource(R.string.league_xp_format, myXp),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 Text(
-                    text = rewardExplainer(reward),
+                    text = if (myRank != null) stringResource(R.string.league_monthly_rank, myRank)
+                    else stringResource(R.string.league_monthly_unranked),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            if (top20Xp != null && !inTop20) {
+                Spacer(modifier = Modifier.height(6.dp))
+                androidx.compose.material3.LinearProgressIndicator(
+                    progress = { (myXp.toFloat() / top20Xp.coerceAtLeast(1)).coerceIn(0f, 1f) },
+                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape)
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = when {
+                    inPodium -> stringResource(R.string.league_monthly_in_podium)
+                    inTop20 -> stringResource(R.string.league_monthly_in_top, GLOBAL_VISIBLE_ROWS) + " · " +
+                        stringResource(R.string.league_monthly_to_podium, number.format(toPodium))
+                    else -> stringResource(R.string.league_monthly_to_top, GLOBAL_VISIBLE_ROWS, number.format(toTop20))
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (!inTop20 && podiumXp != null) {
+                Text(
+                    text = stringResource(R.string.league_monthly_to_podium, number.format(toPodium)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -371,6 +457,9 @@ private fun RewardBanner(reward: LeagueReward, modifier: Modifier = Modifier) {
         }
     }
 }
+
+/** How many rows of the global table are drawn: the published list, minus the player's own row, capped here. */
+private const val GLOBAL_VISIBLE_ROWS = 20
 
 /**
  * A wide, hand-drawn-looking curve painted in the pen's own brush — the same
@@ -568,7 +657,7 @@ private val SilverFace = androidx.compose.ui.graphics.Color(0xFFE7EAF0)
 private val BronzeFace = androidx.compose.ui.graphics.Color(0xFFF7DFC9)
 
 @Composable
-private fun LeagueRow(rank: Int, entry: LeagueEntry) {
+private fun LeagueRow(rank: Int, entry: LeagueEntry, showTotalXp: Boolean = false) {
     // The top 3 get a gold/silver/bronze rank chip AND a tinted card, so the
     // three rows that will actually win something are unmistakable at a
     // glance rather than only readable by comparing rank numbers.
@@ -666,7 +755,7 @@ private fun LeagueRow(rank: Int, entry: LeagueEntry) {
                 RankLevelLabel(level = entry.level)
             }
             Text(
-                text = stringResource(R.string.league_xp_format, entry.periodXp),
+                text = stringResource(R.string.league_xp_format, if (showTotalXp) entry.totalXp else entry.periodXp),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -705,41 +794,6 @@ private fun MeRowGlow(corner: Dp, modifier: Modifier = Modifier) {
             style = Stroke(width = strokeWidth),
             topLeft = Offset(-strokeWidth / 2f, -strokeWidth / 2f),
             size = Size(size.width + strokeWidth, size.height + strokeWidth)
-        )
-    }
-}
-
-/** Flips between the rank title and the level every few seconds; one clock for every row so they turn together. */
-private object LeagueLabelClock {
-    val showRank = kotlinx.coroutines.flow.MutableStateFlow(false)
-    fun toggle() { showRank.value = !showRank.value }
-}
-
-/** "• Çırak" and "• 33 Seviye" taking turns in the same spot, same type style, with a soft cross-fade. */
-@Composable
-private fun RankLevelLabel(level: Int) {
-    val showRank by LeagueLabelClock.showRank.collectAsState()
-    val rankName = stringResource(com.sualtikasifi.cizimhafiza.domain.model.LevelTier.forLevel(level).rank.nameRes)
-    val levelText = stringResource(R.string.home_level_inline, level)
-    androidx.compose.animation.AnimatedContent(
-        targetState = showRank,
-        transitionSpec = {
-            (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(450)) +
-                androidx.compose.animation.slideInVertically(androidx.compose.animation.core.tween(450)) { it / 3 })
-                .togetherWith(
-                    androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(300)) +
-                        androidx.compose.animation.slideOutVertically(androidx.compose.animation.core.tween(300)) { -it / 3 }
-                )
-        },
-        label = "rank-level"
-    ) { rank ->
-        Text(
-            text = "• " + if (rank) rankName else levelText,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            softWrap = false
         )
     }
 }

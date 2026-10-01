@@ -75,7 +75,11 @@ class UsernameFinalizeViewModel @Inject constructor(
         // usernameOfferShown: the offer is made once per account, ever — see markOffered.
         checked && auth is AuthState.Linked && !locked && nickname.isNotBlank() && !dismissed &&
             !settingsRepository.usernameOfferShown
-    }.distinctUntilChanged()
+    }
+        // Only a guest account linked to Google just now is ever offered the name; an account the
+        // player signed back in to (reinstall, new phone) has had its offer already.
+        .combine(settingsRepository.usernameOfferPending) { candidate, pending -> candidate && pending }
+        .distinctUntilChanged()
         // Before showing, ask the server whether this account was already offered: a reinstall
         // wipes every local flag, and a returning account must never see the offer a second time.
         .mapLatest { candidate -> candidate && !usernameRepository.offerAlreadyMade() }

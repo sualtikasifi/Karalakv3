@@ -257,6 +257,11 @@
     <string name="your_drawings">Your Drawings</string>
     <string name="close">Close</string>
     <string name="share_drawing">Share</string>
+    <string name="share_drawing_choose">How do you want to share it?</string>
+    <string name="share_as_photo">Share as a photo</string>
+    <string name="share_as_video">Share as a video</string>
+    <string name="share_video_preparing">Preparing your video…</string>
+    <string name="share_video_failed">Could not make the video. Try sharing it as a photo.</string>
     <string name="share_all_drawings">Share all</string>
 
     <!-- Avatar frame picker -->
@@ -687,6 +692,27 @@
     <string name="league_reward_title">This month\'s prize</string>
     <string name="league_reward_bonus_gold">+%1$s Gold</string>
     <string name="league_reward_bonus_xp">+%1$s XP</string>
+    <string name="account_section_username">Username</string>
+    <string name="account_section_account">Account &amp; backup</string>
+    <string name="account_google_linked">Linked with Google</string>
+    <string name="account_guest_badge">Guest account</string>
+    <string name="account_stat_xp">Total XP</string>
+    <string name="account_stat_games">Games played</string>
+    <string name="account_stat_streak">Best streak (days)</string>
+    <string name="account_xp_progress">%1$d / %2$d XP</string>
+    <string name="account_xp_to_next">%1$d XP to the next level</string>
+    <string name="account_xp_max">You are at the top level</string>
+    <string name="account_guest_hint">Link your Google account to back up your progress and pick up where you left off on another phone.</string>
+    <string name="account_danger_title">Danger zone</string>
+    <string name="league_friends_total_caption">Friends · total XP</string>
+    <string name="league_reward_top3">for the top 3</string>
+    <string name="league_monthly_title">Your XP this month</string>
+    <string name="league_monthly_rank">Rank #%1$d</string>
+    <string name="league_monthly_unranked">Not ranked yet</string>
+    <string name="league_monthly_to_top">%2$s more XP to reach the top %1$d</string>
+    <string name="league_monthly_in_top">You are in the top %1$d 🎉</string>
+    <string name="league_monthly_to_podium">%1$s more XP for a prize (top 3)</string>
+    <string name="league_monthly_in_podium">You are in a prize place! 🏆</string>
     <string name="league_reward_explainer_pen">Finish top 3 in the Global ranking by month\'s end to win the %1$s Pen!</string>
     <string name="league_reward_explainer_frame">Finish top 3 in the Global ranking by month\'s end to win the %1$s Champion Frame!</string>
     <string name="league_reward_kind_frame">Special frame</string>

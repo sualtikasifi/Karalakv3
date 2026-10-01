@@ -49,6 +49,11 @@ data class AccountUiState(
     val nicknameError: Int? = null,
     val level: Int = 1,
     val frame: AvatarFrame = AvatarFrame.DEFAULT,
+    /** Progress inside the current level, for the profile header's bar. */
+    val levelProgress: com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState =
+        com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState.forXp(0),
+    val gamesPlayed: Int = 0,
+    val bestStreak: Int = 0,
     /** A sign-in or sign-out is running; the whole account section is frozen behind a spinner. */
     val isBusy: Boolean = false,
     val message: UiText? = null,
@@ -132,6 +137,9 @@ class AccountViewModel @Inject constructor(
             lastBackupAtMillis = lastBackupAtMillis,
             nickname = nickname,
             level = level,
+            levelProgress = com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState.forXp(lifetimeXp),
+            gamesPlayed = settingsRepository.lifetimeGamesPlayed,
+            bestStreak = settingsRepository.bestStreak,
             frame = AvatarFrame.resolve(settingsRepository.selectedAvatarFrameId.value, level)
         )
     }.stateIn(
@@ -237,6 +245,8 @@ class AccountViewModel @Inject constructor(
                     .onSuccess { outcome ->
                         when (outcome) {
                             SignInOutcome.LinkedToDevice -> {
+                                // The only moment the "keep or change your name" offer is made.
+                                settingsRepository.requestUsernameOffer()
                                 nameFromEmailIfUnnamed()
                                 _actionState.value = _actionState.value.copy(
                                     isBusy = false,
