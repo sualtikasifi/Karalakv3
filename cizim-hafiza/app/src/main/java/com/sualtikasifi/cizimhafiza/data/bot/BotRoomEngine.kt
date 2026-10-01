@@ -107,6 +107,9 @@ class BotRoomEngine @Inject constructor(
     private val listenerStarted = AtomicBoolean(false)
     private val roomRef: DocumentReference get() = firestore.collection("rooms").document(ROOM_CODE)
 
+    // Arrivals (uid:joinedAt) whose "Sude re-readies herself" pause was already started in this process.
+    private val botDelayHandled = java.util.Collections.synchronizedSet(mutableSetOf<String>())
+
     // Events this process already looked at. Purely a cost saver — the real,
     // cross-device guarantee is botChat.handled in Firestore — but the room
     // listener re-fires on every write, and without this each one would cost
@@ -169,7 +172,7 @@ class BotRoomEngine @Inject constructor(
         }
     }
 
-    // --- Waiting room: becomes "ready" itself after a random 2-8s delay
+    // --- Waiting room: becomes "ready" itself after a random 3-6s delay
     // (not instantly, like a real person needing a moment), then waits for
     // every real player to actually tap "Hazır Ol" before starting —
     // matching a real friend's room instead of yanking everyone straight
@@ -196,9 +199,22 @@ class BotRoomEngine @Inject constructor(
             scope.launch { runCatching { maybeChat(BotChatMoment.PLAYER_JOINED, "join:$uid:$joinedAt") } }
         }
 
+        // The bot room is permanent, so Sude may still be "ready" from the last round when somebody walks in —
+        // which looked like her sitting there pre-readied. A fresh arrival sends her back to not-ready; the
+        // branch below then readies her again after its random 3-6 s pause, like a person would.
+        val arrivals = realPlayers.filter { (uid, data) ->
+            val joinedAt = (data["joinedAt"] as? Number)?.toLong() ?: return@filter false
+            now - joinedAt <= 15_000L && "$uid:$joinedAt" !in botDelayHandled
+        }
+        if (arrivals.isNotEmpty() && players[BOT_UID]?.get("ready") as? Boolean == true) {
+            arrivals.forEach { (uid, data) -> botDelayHandled.add("$uid:${(data["joinedAt"] as Number).toLong()}") }
+            roomRef.update("players.$BOT_UID.ready", false).await()
+            return
+        }
+
         val botReady = players[BOT_UID]?.get("ready") as? Boolean == true
         if (!botReady) {
-            delay(Random.nextLong(2_000, 8_001))
+            delay(Random.nextLong(3_000, 6_001))
             // Re-check: another device may have already marked the bot
             // ready while this one was sleeping, or the room may have moved
             // on (everyone left, room recycled, etc).

@@ -230,6 +230,8 @@
     <string name="exit_game_message">Şu anki ilerlemen kaybolacak.</string>
     <string name="exit_game_confirm">Çık</string>
     <string name="exit_game_cancel">Devam Et</string>
+    <string name="daily_exit_title">Meydan okumayı bırakıyor musun?</string>
+    <string name="daily_exit_message">Şimdi çıkarsan meydan okuma bugünlük bitmiş sayılır: o ana kadar bildiklerin puanlanır, kalan kelimeler yanlış sayılır ve bugün yeniden oynayamazsın. Yine de çıkmak istiyor musun?</string>
 
     <!-- Drawing screen -->
     <string name="clear_canvas">Temizle</string>
@@ -928,6 +930,11 @@
     <string name="account_delete_message">Seviyen, XP\'n, başarımların, bölüm ilerlemen, arkadaş listen ve buluttaki yedeğin kalıcı olarak silinir. Bu işlem geri alınamaz.</string>
     <string name="account_delete_confirm">Evet, sil</string>
     <string name="account_delete_cancel">Vazgeç</string>
+    <string name="account_delete_continue">Devam et</string>
+    <string name="account_delete_final_title">Bu işlem geri alınamaz!</string>
+    <string name="account_delete_final_message">Hesabın ve tüm verilerin kalıcı olarak silinecek, geri getirmenin hiçbir yolu yok. Gerçekten silmek istediğine emin misin?</string>
+    <string name="account_delete_final_keep">Vazgeç, kalsın</string>
+    <string name="account_delete_final_confirm">Kalıcı olarak sil</string>
     <string name="account_delete_done">Hesabın ve verilerin silindi.</string>
     <string name="account_delete_failed">Hesap silinemedi. Bağlantını kontrol edip tekrar dene.</string>
     <string name="account_delete_reauth_needed">Güvenlik için önce tekrar giriş yapman gerekiyor. Çıkış yapıp Google hesabınla yeniden bağlan, sonra silmeyi dene.</string>
@@ -1015,6 +1022,7 @@
     <string name="quick_match_lost">Kaybettin</string>
     <string name="quick_match_drew">Berabere</string>
     <string name="quick_match_you">Sen</string>
+    <string name="quick_match_you_named">%1$s (Sen)</string>
     <string name="quick_match_versus">VS</string>
     <string name="quick_match_gallery_yours">Senin</string>
     <!-- Reporting somebody else's drawing (Hızlı Eşleş + online rooms). -->
@@ -1150,7 +1158,7 @@
     <string name="chest_slot_waiting">Sırada</string>
     <string name="chest_slot_busy">Başka bir kasa açılıyor — önce onun süresi dolmalı.</string>
     <string name="chest_slot_still_unlocking">Bu kasanın süresi dolmadı.</string>
-    <string name="chest_duration_hours">%1$d sa</string>
+    <string name="chest_duration_hours">%1$d saat</string>
     <string name="chest_open_tap_skip">Devam etmek için dokun</string>
     <string name="chest_open_shake_hint">Açılıyor…</string>
     <string name="chest_open_reward_label">Kazandın</string>
@@ -1192,7 +1200,7 @@
     <string name="home_ad_watch">Reklam izle</string>
     <string name="home_ad_gold_earned">+500 altın kazandın!</string>
     <string name="home_ad_unavailable">Reklam şu an yüklenemedi, biraz sonra tekrar dene.</string>
-    <string name="chest_home_start">Başlat</string>
+    <string name="chest_home_start">Kasayı Aç</string>
     <string name="daily_challenge_ready_short">%1$d kelime · aynı kelimeler</string>
     <string name="daily_challenge_words_short">%1$d kelime</string>
     <string name="username_setup_title">Kullanıcı adını belirle</string>

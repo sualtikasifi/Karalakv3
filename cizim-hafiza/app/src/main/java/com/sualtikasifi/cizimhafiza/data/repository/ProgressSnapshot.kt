@@ -80,6 +80,10 @@ data class ProgressSnapshot(
     /** Home-screen ad rewards: when the 500-gold ad unlocks again, and the day the free chest was last taken. */
     val adGoldNextAt: Long = 0L,
     val adChestDay: Long = -1L,
+    /** Which unlocked achievements had their reward collected, so a reinstall does not hand rewards out twice or lose uncollected ones. */
+    val claimedAchievementIds: List<String> = emptyList(),
+    /** True when [claimedAchievementIds] is meaningful; older backups lack it and treat every unlock as already collected. */
+    val claimsSaved: Boolean = false,
     /** 1 once the rating ask was shown, and how many Quick Match rounds were finished — so a reinstall does not ask again. */
     val ratingPromptShown: Int = 0,
     val quickMatchGames: Int = 0,
@@ -123,6 +127,8 @@ data class ProgressSnapshot(
         "periodXpVersion" to periodXpVersion,
         "adGoldNextAt" to adGoldNextAt,
         "adChestDay" to adChestDay,
+        "claimedAchievementIds" to claimedAchievementIds,
+        "claimsSaved" to claimsSaved,
         "ratingPromptShown" to ratingPromptShown,
         "quickMatchGames" to quickMatchGames,
         "backedUpAt" to backedUpAt
@@ -171,6 +177,8 @@ data class ProgressSnapshot(
             periodXpVersion = data.int("periodXpVersion"),
             adGoldNextAt = data.long("adGoldNextAt"),
             adChestDay = data.long("adChestDay", absent = -1L),
+            claimedAchievementIds = data.strings("claimedAchievementIds"),
+            claimsSaved = data["claimsSaved"] as? Boolean ?: false,
             ratingPromptShown = data.int("ratingPromptShown"),
             quickMatchGames = data.int("quickMatchGames"),
             backedUpAt = data.long("backedUpAt")

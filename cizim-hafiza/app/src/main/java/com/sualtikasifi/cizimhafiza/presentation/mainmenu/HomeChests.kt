@@ -309,24 +309,28 @@ private fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, c
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally)
             ) {
-                if (!unlocking && !ready) {
-                    Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = Color(0xFFFFE08A), modifier = Modifier.size(12.dp))
-                }
-                if (unlocking) {
-                    Icon(Icons.Filled.Schedule, contentDescription = null, tint = Color(0xFFFFC94D), modifier = Modifier.size(10.dp))
-                }
+                // One centred label, no icon beside it: an icon on one side pulled the text off the plate's centre.
                 Text(
                     text = when {
-                        ready -> stringResource(R.string.chests_open_button).uppercase(androidx.compose.ui.text.intl.Locale.current.platformLocale) + "!"
+                        ready -> stringResource(R.string.chests_open_button) + "!"
                         // Down to the second: this is what the player watches tick.
                         unlocking -> formatCountdown(chest.remainingMillis(nowMillis))
-                        else -> stringResource(R.string.chest_home_start).uppercase(androidx.compose.ui.text.intl.Locale.current.platformLocale)
+                        else -> stringResource(R.string.chest_home_start)
                     },
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = if (unlocking) Color(0xFFFFE08A) else Color.White,
+                    textAlign = TextAlign.Center,
                     maxLines = 1,
-                    softWrap = false
+                    softWrap = false,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = androidx.compose.ui.text.TextStyle(
+                        platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                        lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                            alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+                            trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.None
+                        )
+                    )
                 )
             }
         }

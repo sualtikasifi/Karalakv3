@@ -113,7 +113,9 @@ fun ResultScreen(
     onRematchDuel: ((opponentUid: String, opponentName: String) -> Unit)? = null,
     levelProgress: com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState? = null,
     /** The player's own username, headed over their drawings. */
-    myName: String = ""
+    myName: String = "",
+    myFrame: AvatarFrame = AvatarFrame.DEFAULT,
+    myAvatarUrl: String = ""
 ) {
     var previewItem by remember { mutableStateOf<ResultItem?>(null) }
     // The drawing the share-as-photo-or-video choice is open for, and whether its video is being made.
@@ -178,7 +180,14 @@ fun ResultScreen(
 
             state.ghost?.let { ghost ->
                 Spacer(modifier = Modifier.height(6.dp))
-                GhostVersusCard(ghost = ghost, playerScore = state.totalScore)
+                GhostVersusCard(
+                    ghost = ghost,
+                    playerScore = state.totalScore,
+                    myName = myName,
+                    myLevel = levelProgress?.level ?: 1,
+                    myFrame = myFrame,
+                    myAvatarUrl = myAvatarUrl
+                )
             }
 
             state.duelChallenger?.let { duel ->
@@ -454,7 +463,14 @@ fun ResultScreen(
  * thing worth reading here is which column is bigger.
  */
 @Composable
-private fun GhostVersusCard(ghost: GhostMatchSummary, playerScore: Int) {
+private fun GhostVersusCard(
+    ghost: GhostMatchSummary,
+    playerScore: Int,
+    myName: String,
+    myLevel: Int,
+    myFrame: AvatarFrame,
+    myAvatarUrl: String
+) {
     val won = playerScore > ghost.opponentScore
     val drew = playerScore == ghost.opponentScore
     val accent = when {
@@ -462,57 +478,101 @@ private fun GhostVersusCard(ghost: GhostMatchSummary, playerScore: Int) {
         won -> AppTheme.tokens.success
         else -> MaterialTheme.colorScheme.error
     }
+    val outcome = stringResource(
+        when {
+            drew -> R.string.quick_match_drew
+            won -> R.string.quick_match_won
+            else -> R.string.quick_match_lost
+        }
+    )
 
     RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = stringResource(
-                    when {
-                        drew -> R.string.quick_match_drew
-                        won -> R.string.quick_match_won
-                        else -> R.string.quick_match_lost
-                    }
-                ),
+                text = outcome,
                 style = MaterialTheme.typography.titleSmall,
-                color = accent,
-                fontWeight = FontWeight.Bold
+                color = Color.White,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
+                    .background(accent)
+                    .padding(horizontal = 14.dp, vertical = 2.dp)
             )
             Spacer(modifier = Modifier.height(6.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceEvenly
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                VersusSide(
-                    name = stringResource(R.string.quick_match_you),
+                Duelist(
+                    name = stringResource(R.string.quick_match_you_named, myName.ifBlank { stringResource(R.string.quick_match_you) }),
+                    level = myLevel,
+                    frame = myFrame,
+                    photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(myAvatarUrl),
                     score = playerScore,
                     highlighted = won,
-                    avatar = null
+                    modifier = Modifier.weight(1f)
                 )
-                Text(
-                    text = stringResource(R.string.quick_match_versus),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                VersusSide(
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.quick_match_versus),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Duelist(
                     name = ghost.nickname,
+                    level = ghost.level,
+                    frame = AvatarFrame.resolve(ghost.frameId, ghost.level),
+                    photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(ghost.nickname),
                     score = ghost.opponentScore,
                     highlighted = !won && !drew,
-                    avatar = {
-                        LevelAvatar(
-                            level = ghost.level,
-                            frame = AvatarFrame.resolve(ghost.frameId, ghost.level),
-                            size = 32.dp,
-                            photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Dino,
-                            levelBadge = true
-                        )
-                    }
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
+    }
+}
+
+/** One side of the Quick Match comparison: picture in its frame, name, the rank/level label, and the score. */
+@Composable
+private fun Duelist(
+    name: String,
+    level: Int,
+    frame: AvatarFrame,
+    photo: com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto,
+    score: Int,
+    highlighted: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        LevelAvatar(level = level, frame = frame, size = 52.dp, photo = photo)
+        Spacer(modifier = Modifier.height(3.dp))
+        Text(
+            text = name,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(level = level, bullet = false)
+        Text(
+            text = "$score",
+            style = MaterialTheme.typography.headlineSmall,
+            color = if (highlighted) AppTheme.tokens.success else MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.ExtraBold
+        )
     }
 }
 

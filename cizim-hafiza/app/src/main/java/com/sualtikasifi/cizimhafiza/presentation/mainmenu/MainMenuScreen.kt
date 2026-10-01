@@ -51,6 +51,8 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Map
@@ -198,6 +200,7 @@ fun MainMenuScreen(
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.refreshDaily()
                 viewModel.checkRatingPrompt()
+                viewModel.syncAchievements()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -1056,19 +1059,28 @@ private fun DailyChallengeCardNarrow(state: DailyChallengeState, onPlay: () -> U
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
                     repeat(DailyChallenge.WORD_COUNT) { index ->
                         val flag = flags.getOrNull(index)
+                        // Right: white disc with a green tick (reads on the green "done" tile). Wrong: red disc with a
+                        // white cross. Not played yet: an empty ring.
                         Box(
                             modifier = Modifier
-                                .size(12.dp)
+                                .size(16.dp)
                                 .clip(CircleShape)
                                 .background(
                                     when (flag) {
-                                        true -> Color(0xFF8CF0A6)
-                                        false -> Color(0xFFFF8A80)
+                                        true -> Color.White
+                                        false -> Color(0xFFE53935)
                                         null -> Color.White.copy(alpha = 0.22f)
                                     }
                                 )
-                                .border(1.5.dp, Color.White.copy(alpha = if (flag == null) 0.55f else 0.95f), CircleShape)
-                        )
+                                .border(1.5.dp, Color.White.copy(alpha = if (flag == null) 0.55f else 0.95f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            when (flag) {
+                                true -> Icon(Icons.Filled.Check, contentDescription = null, tint = Color(0xFF1E9E52), modifier = Modifier.size(11.dp))
+                                false -> Icon(Icons.Filled.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(11.dp))
+                                null -> Unit
+                            }
+                        }
                     }
                 }
             }

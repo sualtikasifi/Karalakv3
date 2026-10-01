@@ -124,22 +124,12 @@ fun AccountScreen(
 
                 ProfileHeader(uiState)
                 Spacer(modifier = Modifier.height(10.dp))
+                StatsRow(uiState)
+                Spacer(modifier = Modifier.height(10.dp))
                 AccountCard(
                     uiState = uiState,
                     onSignIn = viewModel::signIn,
                     onSignOut = viewModel::promptSignOut
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                StatsRow(uiState)
-                Spacer(modifier = Modifier.height(10.dp))
-                NicknameCard(
-                    editable = viewModel.nicknameEditable,
-                    draft = uiState.nicknameDraft,
-                    canSave = uiState.canSaveNickname,
-                    saveState = uiState.nicknameSaveState,
-                    error = uiState.nicknameError,
-                    onDraftChange = viewModel::setNicknameDraft,
-                    onSave = viewModel::saveNickname
                 )
 
                 uiState.message?.let { message ->
@@ -199,9 +189,9 @@ fun AccountScreen(
             title = { Text(stringResource(R.string.account_delete_title)) },
             text = { Text(stringResource(R.string.account_delete_message)) },
             confirmButton = {
-                TextButton(onClick = viewModel::deleteAccount) {
+                TextButton(onClick = viewModel::confirmDeleteFirstStep) {
                     Text(
-                        text = stringResource(R.string.account_delete_confirm),
+                        text = stringResource(R.string.account_delete_continue),
                         color = MaterialTheme.colorScheme.error
                     )
                 }
@@ -209,6 +199,29 @@ fun AccountScreen(
             dismissButton = {
                 TextButton(onClick = viewModel::dismissDeletePrompt) {
                     Text(stringResource(R.string.account_delete_cancel))
+                }
+            }
+        )
+    }
+
+    // The second, separate confirmation. Different wording and the safe choice on the prominent side, so the
+    // two taps cannot be made on autopilot.
+    if (uiState.showDeleteFinalPrompt) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissDeletePrompt,
+            title = { Text(stringResource(R.string.account_delete_final_title)) },
+            text = { Text(stringResource(R.string.account_delete_final_message)) },
+            confirmButton = {
+                TextButton(onClick = viewModel::dismissDeletePrompt) {
+                    Text(stringResource(R.string.account_delete_final_keep))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::deleteAccount) {
+                    Text(
+                        text = stringResource(R.string.account_delete_final_confirm),
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         )
@@ -442,12 +455,6 @@ private fun AccountCard(uiState: AccountUiState, onSignIn: () -> Unit, onSignOut
 @Composable
 private fun DangerZone(isDeleting: Boolean, onDelete: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = stringResource(R.string.account_danger_title),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(6.dp))
         if (isDeleting) {
             CircularProgressIndicator(modifier = Modifier.size(28.dp))
         } else {

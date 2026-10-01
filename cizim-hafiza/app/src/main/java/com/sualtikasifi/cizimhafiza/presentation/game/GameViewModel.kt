@@ -133,6 +133,7 @@ class GameViewModel @Inject constructor(
     private val adManager: AdManager,
     private val wordPoolSynchronizer: WordPoolSynchronizer,
     private val xpEventRepository: XpEventRepository,
+    private val avatarPhotoResolver: com.sualtikasifi.cizimhafiza.util.AvatarPhotoResolver,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -197,6 +198,25 @@ class GameViewModel @Inject constructor(
 
     /** The player's own username, shown over their drawings on the result screen. */
     val myNickname: String get() = settingsRepository.nicknameOrDefault
+
+    /** The picture this player wears in their frame ("" = the Karalak mascot), shown in the Quick Match comparison. */
+    val myAvatarUrl: String get() = avatarPhotoResolver.currentUrl()
+
+    val isDailyChallenge: Boolean get() = isDaily
+
+    /**
+     * Leaving the daily challenge half-way ends it on the spot, scored on what was answered so far: words not
+     * yet drawn or guessed count as missed. Without this a player could walk in, read the five words, back out
+     * and play the same words again later with all the answers known.
+     */
+    fun forfeitDaily() {
+        if (!isDaily || _phase.value is GamePhase.Result) return
+        timerJob?.cancel()
+        for (i in results.size until words.size) {
+            results.add(DrawingResult(sessionId = 0L, wordId = words[i].id, word = words[i], strokes = emptyList()))
+        }
+        viewModelScope.launch { finishGame() }
+    }
 
     fun abandonQuickMatch() {
         if (ghost != null) settingsRepository.applyQuickMatchAbandonPenalty()

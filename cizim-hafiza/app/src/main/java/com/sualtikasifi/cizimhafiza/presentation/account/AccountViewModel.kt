@@ -60,6 +60,8 @@ data class AccountUiState(
     val errorMessage: UiText? = null,
     val showSignOutPrompt: Boolean = false,
     val showDeletePrompt: Boolean = false,
+    /** The second, separate confirmation: deleting an account is irreversible, and one stray tap must not be enough. */
+    val showDeleteFinalPrompt: Boolean = false,
     val isDeleting: Boolean = false,
     /**
      * Only account DELETION sets this, and only deletion should.
@@ -410,7 +412,10 @@ class AccountViewModel @Inject constructor(
 
     fun promptDeleteAccount() { _actionState.value = _actionState.value.copy(showDeletePrompt = true) }
 
-    fun dismissDeletePrompt() { _actionState.value = _actionState.value.copy(showDeletePrompt = false) }
+    fun dismissDeletePrompt() { _actionState.value = _actionState.value.copy(showDeletePrompt = false, showDeleteFinalPrompt = false) }
+
+    /** First "yes": opens the final confirmation instead of deleting. */
+    fun confirmDeleteFirstStep() { _actionState.value = _actionState.value.copy(showDeletePrompt = false, showDeleteFinalPrompt = true) }
 
     /**
      * Deletes the account and everything attached to it — see
@@ -425,7 +430,7 @@ class AccountViewModel @Inject constructor(
      */
     fun deleteAccount() {
         if (_actionState.value.isDeleting) return
-        _actionState.value = _actionState.value.copy(isDeleting = true, showDeletePrompt = false, errorMessage = null)
+        _actionState.value = _actionState.value.copy(isDeleting = true, showDeletePrompt = false, showDeleteFinalPrompt = false, errorMessage = null)
         viewModelScope.launch {
             accountDeletionRepository.deleteAccountAndData()
                 .onSuccess {

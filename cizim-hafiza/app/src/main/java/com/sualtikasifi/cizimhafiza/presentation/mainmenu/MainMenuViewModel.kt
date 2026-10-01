@@ -68,6 +68,7 @@ class MainMenuViewModel @Inject constructor(
     private val adManager: AdManager,
     private val referralRewardClaimer: ReferralRewardClaimer,
     private val usernameRepository: com.sualtikasifi.cizimhafiza.util.UsernameRepository,
+    private val achievementUnlocker: com.sualtikasifi.cizimhafiza.util.AchievementUnlocker,
     xpEventRepository: com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository
 ) : ViewModel() {
 
@@ -114,6 +115,9 @@ class MainMenuViewModel @Inject constructor(
     val streakToast: StateFlow<StreakToast?> = _streakToast.asStateFlow()
 
     fun consumeStreakToast() { _streakToast.value = null }
+
+    /** Records achievements earned outside a finished game (see AchievementUnlocker); the menu badge follows. */
+    fun syncAchievements() { viewModelScope.launch { achievementUnlocker.sync() } }
 
     private val _ratingPrompt = MutableStateFlow(false)
 

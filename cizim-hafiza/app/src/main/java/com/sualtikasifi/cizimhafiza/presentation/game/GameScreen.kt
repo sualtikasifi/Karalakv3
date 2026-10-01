@@ -114,10 +114,12 @@ fun GameScreen(
     if (showExitConfirm) {
         AlertDialog(
             onDismissRequest = { showExitConfirm = false },
-            title = { Text(stringResource(R.string.exit_game_title)) },
+            title = { Text(stringResource(if (viewModel.isDailyChallenge) R.string.daily_exit_title else R.string.exit_game_title)) },
             text = {
                 Text(
-                    if (viewModel.isQuickMatch) {
+                    if (viewModel.isDailyChallenge) {
+                        stringResource(R.string.daily_exit_message)
+                    } else if (viewModel.isQuickMatch) {
                         stringResource(R.string.quick_match_exit_message, GameConstants.QUICK_MATCH_ABANDON_PENALTY_XP)
                     } else {
                         stringResource(R.string.exit_game_message)
@@ -127,8 +129,12 @@ fun GameScreen(
             confirmButton = {
                 TextButton(onClick = {
                     showExitConfirm = false
-                    viewModel.abandonQuickMatch()
-                    onMainMenu()
+                    if (viewModel.isDailyChallenge) {
+                        viewModel.forfeitDaily()
+                    } else {
+                        viewModel.abandonQuickMatch()
+                        onMainMenu()
+                    }
                 }) {
                     Text(stringResource(R.string.exit_game_confirm))
                 }
@@ -205,7 +211,9 @@ fun GameScreen(
                 onRatingBonusGranted = viewModel::grantRatingBonusXp,
                 onRematchDuel = onRematchDuel,
                 levelProgress = levelProgress,
-                myName = viewModel.myNickname
+                myName = viewModel.myNickname,
+                myFrame = selectedFrame,
+                myAvatarUrl = viewModel.myAvatarUrl
             )
         }
     }

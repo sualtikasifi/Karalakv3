@@ -636,11 +636,13 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         return reward
     }
 
-    /** False if another slot is already counting down — only one chest unlocks at a time. */
+    /** False while another chest is still counting down — one timer at a time, but a chest that is done waiting does not count. */
     @Synchronized
     fun startUnlockingChest(chestId: String): Boolean {
         val slots = _chestSlots.value
-        if (slots.any { it?.unlockStartedAtMillis != null }) return false
+        // A finished-but-unopened chest no longer blocks the queue: only a timer that is still running does.
+        val now = System.currentTimeMillis()
+        if (slots.any { it?.unlockStartedAtMillis != null && !it.isReady(now) }) return false
         val index = slots.indexOfFirst { it?.id == chestId }
         val chest = slots.getOrNull(index) ?: return false
         if (chest.unlockStartedAtMillis != null) return false

@@ -33,7 +33,8 @@ data class AchievementUiItem(
 @HiltViewModel
 class AchievementsViewModel @Inject constructor(
     private val achievementDao: AchievementDao,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val achievementUnlocker: com.sualtikasifi.cizimhafiza.util.AchievementUnlocker
 ) : ViewModel() {
 
     // Snapshot of which achievement ids were still unseen when this screen
@@ -45,6 +46,8 @@ class AchievementsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            // Catch up on anything earned outside a finished game first, so it shows (and shimmers) now.
+            achievementUnlocker.sync()
             _newlyUnlockedIds.value = achievementDao.getUnseenIds().toSet()
             achievementDao.markAllSeen()
         }
@@ -70,6 +73,10 @@ class AchievementsViewModel @Inject constructor(
             onlineWins = settingsRepository.lifetimeOnlineWins,
             lifetimeXp = xp
         )
+    }
+    init {
+        // XP can move while this page is open (claiming a reward pays XP), which may complete the next XP tier.
+        viewModelScope.launch { stats.collect { achievementUnlocker.sync() } }
     }
 
     val achievements: StateFlow<List<AchievementUiItem>> = combine(

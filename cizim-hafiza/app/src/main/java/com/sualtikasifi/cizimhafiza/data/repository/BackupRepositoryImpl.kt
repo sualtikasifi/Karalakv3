@@ -143,6 +143,8 @@ class BackupRepositoryImpl @Inject constructor(
             periodId = com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()),
             adGoldNextAt = settingsRepository.adGoldNextAtMillis.value,
             adChestDay = settingsRepository.adChestDay.value,
+            claimedAchievementIds = achievementDao.getClaimedIds(),
+            claimsSaved = true,
             ratingPromptShown = if (settingsRepository.ratingPromptShown) 1 else 0,
             quickMatchGames = settingsRepository.quickMatchGamesFinished,
             backedUpAt = System.currentTimeMillis()
@@ -510,7 +512,7 @@ class BackupRepositoryImpl @Inject constructor(
         // as unclaimed would let its reward be collected again here.
         val now = System.currentTimeMillis()
         snapshot.unlockedAchievementIds.forEach { id ->
-            achievementDao.insert(UnlockedAchievementEntity(id = id, unlockedAtMillis = now, seen = true, claimed = true))
+            achievementDao.insert(UnlockedAchievementEntity(id = id, unlockedAtMillis = now, seen = true, claimed = !snapshot.claimsSaved || id in snapshot.claimedAchievementIds))
         }
     }
 

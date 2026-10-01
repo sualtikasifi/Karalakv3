@@ -280,66 +280,51 @@ function seededRandom(seed: number): () => number {
 // Real-looking usernames, not a prefix+suffix generator: a generator built
 // from a small word bank (kalemusta23, boyaavcı45, ...) always shares one
 // obvious theme, which is exactly how a player works out a name is a bot.
-// Half title-cased and half not, same as actual handles sitting next to each
-// other — kept in sync with GhostPersonas.NICKNAMES_TR in the Android app
-// (BotGhostRun.kt), the same list for Hızlı Eşleş's synthesised opponents.
+// Taken verbatim from Botisimleri.txt, the list the game's owner compiled by hand — no other names are used.
+// (Hızlı Eşleş's synthesised opponents draw from GhostPersonas.NICKNAMES_TR in the Android app,
+// BotGhostRun.kt.)
 const BOT_NAME_POOL = [
-  "Memetcan", "ahmet734", "Fthylmz", "uykuluadam",
-  "Kraduman", "fistikezmesi", "Kadir007", "ceyda8821",
-  "Cananabaci", "yussuf", "Deliomer", "ruzgargibi",
-  "Brkydmr", "burakreis", "Gozluklucocuk", "mustfcn",
-  "Sagocu99", "yalnizkurt", "Ahmmet", "asabiadam",
-  "Simitcay", "kaptanali", "Karabela", "gecebekcisi",
-  "Demirhan", "hknkrks", "Yorgunsavasci", "zynpcetn",
-  "Karakoc", "aysenur11", "Alican1903", "siyahinci",
-  "Ssknr", "mertcn", "Iremsu", "bsgul",
-  "Aleyna34", "gorkem543", "Cnsyksl", "bthnky",
-  "Yusufinho", "polatalmdr", "Minikkus", "gamsizbaykus",
-  "Mimarmerve", "muhendisbey", "Soforkemal", "issizgucsuz",
-  "Mezunadam", "caykolik", "Kemalkaya", "gizemlikiz",
-  "Kafkef88", "poyrazkarayel", "Ucanbalik", "isimsizkahraman",
-  "Kacakyolcu", "delidolu", "Yalnizim", "firtinakemal",
-  "Gocebe", "krmzblt", "Karadenizli", "vethasan",
-  "Volkan00", "keloglan", "Gulyabani", "tosuncuk",
-  "Karaeylem", "ogretmenim", "Hemsiremelisa", "avukatbey",
-  "Ogrenciyiz", "tekbasina", "Krdsler", "sariyildiz",
-  "Merve742", "farukeczanesi", "Cemal33", "komsukizi",
-  "Bakkalamca", "uykucu", "Sessizkalan", "gokhantepe",
-  "Ahemt98", "yanlizadam", "Herkezgitsin", "orjinall",
-  "Suprizci", "yalnizdegil", "Mnyk", "fth123",
-  "Qweasd", "tofask", "Passatci", "hondacivic",
-  "Cbf150", "broadwayci", "Doganslx", "izmir35",
-  "Bursa1616", "kordonboyu", "Kemalpasali", "mudanyali",
-  "Adana01", "cikkofteci", "Caykasigi", "sekersiz",
-  "Bolacili", "sarmisakli", "Uykumvar", "nebilimben",
-  "Bosver", "falanfilan", "Ivirzivir", "baksanabana",
-  "Belkide", "veterinerbey", "Yirmi8", "hekimsami",
-  "98tayfa", "mormadenci", "Ustaeller", "kafkef",
-  "Pesimist", "cimbom1905", "Fenerli1907", "bjk1903",
-  "Ronaldo7", "ts61", "Messi10", "spinci",
-  "Lufersesi", "amatorbalikci", "Sahteyem", "yagmurlu",
-  "Lodos", "ametist", "Hsncn", "brk98",
-  "Glsh", "mstyfa", "Ahmet8520", "cufcuf",
-  "Wqewqe", "bumbum", "Laylaylom", "laylon",
-  "Soley", "hicbiri", "Sonsoz", "oburki",
-  "Isimsiz", "siyahgiyen", "Heryeryesil", "kdr",
-  "Gokhn", "voldemort", "Padisah", "vezir",
-  "Kayiboyu", "ineksaban",
-  "enesk", "Melihcan", "gokalp07", "Zeynepnaz",
-  "tarikk", "Sevgiliyim", "bulentbey", "Aycan_m",
-  "muratcan55", "Ferhatt", "duygu_k", "Salihk1",
-  "emirhann", "Beratcan", "kubrag", "Ozanbey",
-  "aslihan99", "Yigitcan", "ercank", "Tuncerbey",
-  "birkank", "Kayahan_", "ediz34", "Melisnur",
-  "hakanaltin", "Sumeyye_k", "canerk35", "Ilayda_r",
-  "yakupp", "Selimcan", "meltemx", "huseyinkoc",
-  "Gulcan55", "ridvank", "Ipeknur", "tolgaa",
-  "Berkant", "ferideh", "Cansu_yz", "mucahitt",
-  "Idilnaz", "atillaa", "semihk", "Zeliha_t",
-  "onurcan", "Basakk", "irfanbey", "Necla_h",
-  "turgutt", "Ozlemk", "kenanaydin", "Ebruc",
-  "savasbey", "Yeliz_d", "erolk", "Sibelnur",
-  "kadircan", "Nese_y", "mahiryilmaz", "Damla_ceyy",
+  "memetcan", "ahmet734", "fthylmz", "uykuluadam",
+  "kraduman", "fistikezmesi", "kadir007", "ceyda8821",
+  "cananabaci", "yussuf", "deliomer", "ruzgargibi",
+  "brkydmr", "burakreis", "gozluklucocuk", "mustfcn",
+  "sagocu99", "yalnizkurt", "ahmmet", "asabiadam",
+  "simitcay", "kaptanali", "karabela", "gecebekcisi",
+  "demirhan", "hknkrks", "yorgunsavasci", "zynpcetn",
+  "karakoc", "aysenur11", "alican1903", "siyahinci",
+  "ssknr", "mertcn", "iremsu", "bsgul",
+  "aleyna34", "gorkem543", "cnsyksl", "bthnky",
+  "yusufinho", "polatalmdr", "minikkus", "gamsizbaykus",
+  "mimarmerve", "muhendisbey", "soforkemal", "issizgucsuz",
+  "mezunadam", "caykolik", "kemalkaya", "gizemlikiz",
+  "kafkef88", "poyrazkarayel", "ucanbalik", "isimsizkahraman",
+  "kacakyolcu", "delidolu", "yalnizim", "firtinakemal",
+  "gocebe", "krmzblt", "karadenizli", "vethasan",
+  "volkan00", "keloglan", "gulyabani", "tosuncuk",
+  "karaeylem", "ogretmenim", "hemsiremelisa", "avukatbey",
+  "ogrenciyiz", "tekbasina", "krdsler", "sariyildiz",
+  "merve742", "farukeczanesi", "cemal33", "komsukizi",
+  "bakkalamca", "uykucu", "sessizkalan", "gokhantepe",
+  "ahemt98", "yanlizadam", "herkezgitsin", "orjinall",
+  "suprizci", "yalnizdegil", "mnyk", "fth123",
+  "qweasd", "tofask", "passatci", "hondacivic",
+  "cbf150", "broadwayci", "doganslx", "izmir35",
+  "bursa1616", "kordonboyu", "kemalpasali", "mudanyali",
+  "adana01", "cikkofteci", "caykasigi", "sekersiz",
+  "bolacili", "sarmisakli", "uykumvar", "nebilimben",
+  "bosver", "falanfilan", "ivirzivir", "baksanabana",
+  "belkide", "veterinerbey", "yirmi8", "hekimsami",
+  "98tayfa", "mormadenci", "ustaeller", "kafkef",
+  "pesimist", "cimbom1905", "fenerli1907", "bjk1903",
+  "ronaldo7", "ts61", "messi10", "spinci",
+  "lufersesi", "amatorbalikci", "sahteyem", "yagmurlu",
+  "lodos", "ametist", "hsncn", "brk98",
+  "glsh", "mstyfa", "ahmet8520", "cufcuf",
+  "wqewqe", "bumbum", "laylaylom", "laylon",
+  "soley", "hicbiri", "sonsoz", "oburki",
+  "isimsiz", "siyahgiyen", "heryeryesil", "kdr",
+  "gokhn", "voldemort", "padisah", "vezir",
+  "kayiboyu", "ineksaban",
 ];
 
 /**
@@ -389,8 +374,8 @@ const PUBLISHED_TABLE_SIZE = 21;
  * schedule moving from every 6 hours to every 1), so the DAILY total a bot
  * earns stays the same — only how finely it's spread across the day changed.
  */
-const BOT_GROWTH_MIN = 35;
-const BOT_GROWTH_MAX = 165;
+const BOT_GROWTH_MIN = 70;
+const BOT_GROWTH_MAX = 330;
 
 /**
  * The level a bot's card shows, derived from its own periodXp instead of a
@@ -416,8 +401,10 @@ function totalXpForLevel(level: number): number {
 }
 
 /** The level a bot starts each month at, drawn once per bot from this range so no two rows share the telltale 19-20. */
-const BOT_MIN_START_LEVEL = 18;
-const BOT_MAX_START_LEVEL = 50;
+const BOT_MIN_START_LEVEL = 25;
+const BOT_MAX_START_LEVEL = 55;
+/** A bot never shows a level above this, however much XP it piles up over the month. */
+const BOT_MAX_SHOWN_LEVEL = 70;
 
 /**
  * A bot's lifetime XP before this month's gains: a random level in
@@ -544,7 +531,7 @@ export async function runBuildGlobalLeaderboard(): Promise<void> {
       // exactly the "how did they get 8280 XP at level 9" implausibility
       // players notice. Derived from periodXp instead, so the level shown
       // always matches the XP shown next to it.
-      const level = levelForBotXp(botStartXp(periodId, i) + periodXp);
+      const level = Math.min(BOT_MAX_SHOWN_LEVEL, levelForBotXp(botStartXp(periodId, i) + periodXp));
 
       bots.push({ uid: null, nickname, periodXp, level, bot: true });
       botStates.push({ nickname, periodXp, level });

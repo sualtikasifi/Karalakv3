@@ -224,6 +224,8 @@
     <string name="exit_game_message">Your current progress will be lost.</string>
     <string name="exit_game_confirm">Quit</string>
     <string name="exit_game_cancel">Continue</string>
+    <string name="daily_exit_title">Leave the challenge?</string>
+    <string name="daily_exit_message">If you leave now, today\'s challenge is over: what you got right so far is scored, the remaining words count as missed and you can\'t play it again today. Leave anyway?</string>
 
     <!-- Drawing screen -->
     <string name="clear_canvas">Clear</string>
@@ -914,6 +916,11 @@
     <string name="account_delete_message">Your level, XP, achievements, level progress, friends list and cloud backup will be permanently deleted. This cannot be undone.</string>
     <string name="account_delete_confirm">Yes, delete</string>
     <string name="account_delete_cancel">Cancel</string>
+    <string name="account_delete_continue">Continue</string>
+    <string name="account_delete_final_title">This can\'t be undone!</string>
+    <string name="account_delete_final_message">Your account and all your data will be deleted permanently, with no way to bring them back. Are you really sure?</string>
+    <string name="account_delete_final_keep">Cancel, keep it</string>
+    <string name="account_delete_final_confirm">Delete forever</string>
     <string name="account_delete_done">Your account and data have been deleted.</string>
     <string name="account_delete_failed">Could not delete the account. Check your connection and try again.</string>
     <string name="account_delete_reauth_needed">For security you need to sign in again first. Sign out, reconnect your Google account, then try deleting.</string>
@@ -998,6 +1005,7 @@
     <string name="quick_match_lost">You lost</string>
     <string name="quick_match_drew">A draw</string>
     <string name="quick_match_you">You</string>
+    <string name="quick_match_you_named">%1$s (You)</string>
     <string name="quick_match_versus">VS</string>
     <string name="quick_match_gallery_yours">Yours</string>
     <string name="account_nickname_save">Save</string>
@@ -1137,7 +1145,7 @@
     <string name="chest_slot_waiting">Waiting</string>
     <string name="chest_slot_busy">Another chest is unlocking — wait for it to finish first.</string>
     <string name="chest_slot_still_unlocking">This chest is still unlocking.</string>
-    <string name="chest_duration_hours">%1$d h</string>
+    <string name="chest_duration_hours">%1$d hours</string>
     <string name="chest_open_tap_skip">Tap to continue</string>
     <string name="chest_open_shake_hint">Opening…</string>
     <string name="chest_open_reward_label">You earned</string>
@@ -1179,7 +1187,7 @@
     <string name="home_ad_watch">Watch ad</string>
     <string name="home_ad_gold_earned">You earned 500 gold!</string>
     <string name="home_ad_unavailable">The ad could not load right now, try again in a moment.</string>
-    <string name="chest_home_start">Start</string>
+    <string name="chest_home_start">Open chest</string>
     <string name="daily_challenge_ready_short">%1$d words · same for all</string>
     <string name="daily_challenge_words_short">%1$d words</string>
     <string name="username_setup_title">Choose your username</string>

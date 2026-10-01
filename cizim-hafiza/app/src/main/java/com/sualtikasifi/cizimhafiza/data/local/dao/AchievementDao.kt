@@ -9,6 +9,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AchievementDao {
+    @Query("SELECT id FROM unlocked_achievements WHERE claimed = 1")
+    suspend fun getClaimedIds(): List<String>
+
     @Query("SELECT id FROM unlocked_achievements")
     suspend fun getUnlockedIds(): List<String>
 

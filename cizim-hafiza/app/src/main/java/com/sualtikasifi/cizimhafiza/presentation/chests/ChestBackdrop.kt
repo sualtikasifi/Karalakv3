@@ -73,7 +73,7 @@ fun DrawScope.sparkle(center: Offset, radius: Float, color: Color) {
 /**
  * The background a chest sits on, by rarity — the quality of the chest reads
  * before the name does:
- *  - Çırak (common): a plain, warm paper card.
+ *  - Çırak (common): a warm paper card with a gently breathing glow and a few quiet twinkles.
  *  - Sanatçı (rare): a rich gold panel with a sun glow, twinkling sparkles and a shimmer sweep.
  *  - Sürpriz (legendary): a deep cosmic panel — rotating light rays, a bright core and a field of twinkling stars.
  */
@@ -83,7 +83,7 @@ fun ChestBackdrop(tier: ChestTier, modifier: Modifier = Modifier) {
     val sweep = infinite.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(3400, easing = LinearEasing), RepeatMode.Restart),
+        animationSpec = infiniteRepeatable(tween(5000, easing = LinearEasing), RepeatMode.Restart),
         label = "sweep"
     )
     val spin = infinite.animateFloat(
@@ -107,29 +107,46 @@ fun ChestBackdrop(tier: ChestTier, modifier: Modifier = Modifier) {
         when (tier) {
             ChestTier.SILVER -> {
                 drawRect(Brush.verticalGradient(listOf(Color(0xFFFFF4E2), Color(0xFFEBD3AE))))
+                // A soft warm glow that breathes, and a few quiet twinkles — light on purpose, so the
+                // common chest is not left looking dead without competing with the richer ones.
+                val breathe = 0.40f + 0.25f * pulse.value
                 drawCircle(
-                    Brush.radialGradient(listOf(Color.White.copy(alpha = 0.55f), Color.Transparent), glowCenter, w * 0.6f),
-                    radius = w * 0.6f, center = glowCenter
+                    Brush.radialGradient(listOf(Color.White.copy(alpha = breathe + 0.15f), Color.Transparent), glowCenter, w * 0.62f),
+                    radius = w * 0.62f, center = glowCenter
                 )
+                stars.take(4).forEach { s ->
+                    val a = (0.55f * kotlin.math.abs(sin((s.offset + sweep.value) * PI.toFloat() * 2f))).coerceIn(0f, 1f)
+                    sparkle(Offset(s.x * w, s.y * h * 0.9f), w * 0.04f * s.size, Color.White.copy(alpha = a))
+                }
             }
             ChestTier.GOLD -> {
                 drawRect(Brush.verticalGradient(listOf(Color(0xFFFFF5C9), Color(0xFFFFD25E), Color(0xFFFFB92E))))
+                // The glow breathes (a reversing, always-continuous pulse) and is brighter than before.
+                val glow = 0.85f + 0.15f * pulse.value
                 drawCircle(
-                    Brush.radialGradient(listOf(Color.White.copy(alpha = 0.85f), Color(0x00FFF3B0)), glowCenter, w * 0.75f),
-                    radius = w * 0.75f, center = glowCenter
+                    Brush.radialGradient(
+                        listOf(Color.White.copy(alpha = glow), Color(0xCCFFF3B0), Color(0x00FFF3B0)),
+                        glowCenter, w * (0.80f + 0.08f * pulse.value)
+                    ),
+                    radius = w * 0.88f, center = glowCenter
                 )
-                // Shimmer band sweeping diagonally.
-                val bandX = (-0.4f + 1.8f * sweep.value) * w
-                drawRect(
-                    Brush.linearGradient(
-                        listOf(Color.Transparent, Color.White.copy(alpha = 0.55f), Color.Transparent),
-                        start = Offset(bandX - w * 0.2f, 0f),
-                        end = Offset(bandX + w * 0.2f, h * 0.5f)
+                // Two shimmer bands half a lap apart, each fading in and out with a sine envelope, so there is
+                // never a moment when one "starts over" — the loop has no visible seam.
+                for (phaseShift in floatArrayOf(0f, 0.5f)) {
+                    val phase = (sweep.value + phaseShift) % 1f
+                    val envelope = sin(phase * PI.toFloat())
+                    val bandX = (-0.2f + 1.4f * phase) * w
+                    drawRect(
+                        Brush.linearGradient(
+                            listOf(Color.Transparent, Color.White.copy(alpha = 0.7f * envelope), Color.Transparent),
+                            start = Offset(bandX - w * 0.22f, 0f),
+                            end = Offset(bandX + w * 0.22f, h * 0.5f)
+                        )
                     )
-                )
+                }
                 stars.forEach { s ->
                     val a = (0.35f + 0.65f * kotlin.math.abs(sin((s.offset + sweep.value) * PI.toFloat() * 2f))).coerceIn(0f, 1f)
-                    sparkle(Offset(s.x * w, s.y * h), w * 0.045f * s.size, Color.White.copy(alpha = a))
+                    sparkle(Offset(s.x * w, s.y * h), w * 0.05f * s.size, Color.White.copy(alpha = a))
                 }
             }
             ChestTier.RARE -> {
