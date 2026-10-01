@@ -78,6 +78,9 @@ data class ProgressSnapshot(
     /** Home-screen ad rewards: when the 500-gold ad unlocks again, and the day the free chest was last taken. */
     val adGoldNextAt: Long = 0L,
     val adChestDay: Long = -1L,
+    /** 1 once the rating ask was shown, and how many Quick Match rounds were finished — so a reinstall does not ask again. */
+    val ratingPromptShown: Int = 0,
+    val quickMatchGames: Int = 0,
     val backedUpAt: Long
 ) {
     /**
@@ -117,6 +120,8 @@ data class ProgressSnapshot(
         "periodId" to periodId,
         "adGoldNextAt" to adGoldNextAt,
         "adChestDay" to adChestDay,
+        "ratingPromptShown" to ratingPromptShown,
+        "quickMatchGames" to quickMatchGames,
         "backedUpAt" to backedUpAt
     )
 
@@ -162,6 +167,8 @@ data class ProgressSnapshot(
             periodId = data.long("periodId", absent = -1L),
             adGoldNextAt = data.long("adGoldNextAt"),
             adChestDay = data.long("adChestDay", absent = -1L),
+            ratingPromptShown = data.int("ratingPromptShown"),
+            quickMatchGames = data.int("quickMatchGames"),
             backedUpAt = data.long("backedUpAt")
         )
 

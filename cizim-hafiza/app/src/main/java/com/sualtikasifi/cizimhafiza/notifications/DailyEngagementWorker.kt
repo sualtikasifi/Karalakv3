@@ -39,8 +39,14 @@ class DailyEngagementWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         if (!settingsRepository.notificationsEnabled.value) return Result.success()
 
+        // The reminder FIRES at the player's own local evening hour (see NotificationScheduler), and
+        // the once-per-day claim below is on that local day. But "did they play today" / "how many
+        // days since" are game facts, stored on the Türkiye calendar like every other daily reset
+        // (see TurkeyTime) — comparing them to the phone's date told a player abroad they had not
+        // played when they had, or the other way round, around the two clocks' midnights.
         val today = LocalDate.now()
         val todayEpochDay = today.toEpochDay()
+        val gameEpochDay = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
 
         // An alarm and a WorkManager backstop both drive this worker (see
         // NotificationScheduler for why one alone was not arriving at all),
@@ -64,9 +70,9 @@ class DailyEngagementWorker @AssistedInject constructor(
             return Result.success()
         }
 
-        if (settingsRepository.lastPlayedEpochDay == todayEpochDay) return Result.success()
+        if (settingsRepository.lastPlayedEpochDay == gameEpochDay) return Result.success()
 
-        val daysSincePlayed = todayEpochDay - settingsRepository.lastPlayedEpochDay
+        val daysSincePlayed = gameEpochDay - settingsRepository.lastPlayedEpochDay
         val progress = LevelProgressState.forXp(settingsRepository.lifetimeXp.value)
 
         // Shrinks by LOST_XP_WARNING_DECAY_PER_DAY for every day past the

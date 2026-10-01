@@ -240,7 +240,7 @@ class MainActivity : AppCompatActivity() {
 
 /**
  * Asks for the POST_NOTIFICATIONS runtime permission (API 33+) exactly once,
- * once, a few seconds after the first finished round — never nags again afterward.
+ * a few seconds after the first launch of an install — never nags again afterward.
  * The Settings screen's "Bildirimler" toggle offers a way to (re-)request it
  * later for anyone who dismissed this or wants to turn notifications on
  * after having turned them off.
@@ -254,10 +254,11 @@ private fun RequestNotificationPermissionOnce(settingsRepository: SettingsReposi
 
     LaunchedEffect(Unit) {
         if (settingsRepository.notificationPermissionRequested) return@LaunchedEffect
-        // Not on the very first launch: a brand-new player reaches their first round
-        // before being asked anything. The prompt comes a few seconds after that round.
-        while (settingsRepository.lifetimeGamesPlayed < 1) kotlinx.coroutines.delay(2_000)
-        kotlinx.coroutines.delay(4_000)
+        // Asked on the first open of a fresh install, a few seconds in so the splash and the ads
+        // consent form are out of the way. Not tied to anything the player does afterwards: it used
+        // to wait for a finished game, which made it fire right after a Google sign-in restored an
+        // old account's game count on a reinstall.
+        kotlinx.coroutines.delay(5_000)
         settingsRepository.notificationPermissionRequested = true
         val alreadyGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
