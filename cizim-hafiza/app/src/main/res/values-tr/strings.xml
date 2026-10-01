@@ -709,6 +709,7 @@
     <string name="account_xp_max">En üst seviyedesin</string>
     <string name="account_guest_hint">Google hesabını bağla: ilerlemen yedeklensin, başka bir telefonda da kaldığın yerden devam et.</string>
     <string name="account_danger_title">Tehlikeli bölge</string>
+    <string name="league_friends_total_caption">Arkadaşlar · toplam XP</string>
     <string name="league_reward_top3">İlk 3\'e</string>
     <string name="league_monthly_title">Bu ayki XP\'in</string>
     <string name="league_monthly_rank">Sıran #%1$d</string>

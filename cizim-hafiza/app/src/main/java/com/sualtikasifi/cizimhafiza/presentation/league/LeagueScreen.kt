@@ -133,7 +133,10 @@ fun LeagueScreen(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.Center
             ) {
-                shownTable?.let {
+                if (uiState.tab == LeagueTab.Friends) {
+                    // The friends board is all-time; only the global one resets each month.
+                    TintedBadge(text = stringResource(R.string.league_friends_total_caption))
+                } else shownTable?.let {
                     TintedBadge(
                         text = if (it.daysRemaining <= 0) {
                             stringResource(R.string.league_resets_countdown, rememberResetCountdown())
@@ -248,7 +251,7 @@ fun LeagueScreen(
                         shownTable.entries
                     }
                     itemsIndexed(visibleEntries, key = { _, entry -> entry.uid }) { index, entry ->
-                        LeagueRow(rank = index + 1, entry = entry)
+                        LeagueRow(rank = index + 1, entry = entry, showTotalXp = uiState.tab == LeagueTab.Friends)
                     }
                     // The real rank, pinned under the table after a gap,
                     // rather than a row squeezed onto the end of it.
@@ -654,7 +657,7 @@ private val SilverFace = androidx.compose.ui.graphics.Color(0xFFE7EAF0)
 private val BronzeFace = androidx.compose.ui.graphics.Color(0xFFF7DFC9)
 
 @Composable
-private fun LeagueRow(rank: Int, entry: LeagueEntry) {
+private fun LeagueRow(rank: Int, entry: LeagueEntry, showTotalXp: Boolean = false) {
     // The top 3 get a gold/silver/bronze rank chip AND a tinted card, so the
     // three rows that will actually win something are unmistakable at a
     // glance rather than only readable by comparing rank numbers.
@@ -752,7 +755,7 @@ private fun LeagueRow(rank: Int, entry: LeagueEntry) {
                 RankLevelLabel(level = entry.level)
             }
             Text(
-                text = stringResource(R.string.league_xp_format, entry.periodXp),
+                text = stringResource(R.string.league_xp_format, if (showTotalXp) entry.totalXp else entry.periodXp),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary

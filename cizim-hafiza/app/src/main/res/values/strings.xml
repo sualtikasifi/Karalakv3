@@ -699,6 +699,7 @@
     <string name="account_xp_max">You are at the top level</string>
     <string name="account_guest_hint">Link your Google account to back up your progress and pick up where you left off on another phone.</string>
     <string name="account_danger_title">Danger zone</string>
+    <string name="league_friends_total_caption">Friends · total XP</string>
     <string name="league_reward_top3">for the top 3</string>
     <string name="league_monthly_title">Your XP this month</string>
     <string name="league_monthly_rank">Rank #%1$d</string>

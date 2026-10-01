@@ -77,7 +77,8 @@ class LeagueScorePublisher @Inject constructor(
             periodId = LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()),
             level = level,
             frameId = AvatarFrame.resolve(settingsRepository.selectedAvatarFrameId.value, level).name,
-            avatarUrl = avatarUrl
+            avatarUrl = avatarUrl,
+            totalXp = settingsRepository.lifetimeXp.value
         )
     }
 
@@ -90,7 +91,8 @@ class LeagueScorePublisher @Inject constructor(
                 periodId = snapshot.periodId,
                 level = snapshot.level,
                 frameId = snapshot.frameId,
-                avatarUrl = snapshot.avatarUrl
+                avatarUrl = snapshot.avatarUrl,
+                totalXp = snapshot.totalXp
             )
         }.onSuccess {
             // Only remembered once the write actually landed — a signature
@@ -106,9 +108,10 @@ class LeagueScorePublisher @Inject constructor(
         val periodId: Long,
         val level: Int,
         val frameId: String,
-        val avatarUrl: String
+        val avatarUrl: String,
+        val totalXp: Int
     ) {
-        val signature: String get() = "$periodId|$periodXp|$level|$frameId|$nickname|$avatarUrl"
+        val signature: String get() = "$periodId|$periodXp|$level|$frameId|$nickname|$avatarUrl|$totalXp"
     }
 
     private companion object {

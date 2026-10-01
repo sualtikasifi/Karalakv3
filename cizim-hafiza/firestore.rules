@@ -419,6 +419,8 @@ service cloud.firestore {
       let after = request.resource.data;
       return (!('periodXp' in after) || (after.periodXp is int && after.periodXp >= 0 && after.periodXp <= 300000))
              && (!('level' in after) || (after.level is int && after.level >= 1 && after.level <= 100))
+             // Lifetime XP, shown on the Friends table. A sanity ceiling only (level 100 is ~252k XP).
+             && (!('totalXp' in after) || (after.totalXp is int && after.totalXp >= 0 && after.totalXp <= 5000000))
              && plausibleXpGrowth();
     }
 
