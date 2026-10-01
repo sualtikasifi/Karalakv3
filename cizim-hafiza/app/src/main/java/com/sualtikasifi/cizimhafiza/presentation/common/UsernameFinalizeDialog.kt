@@ -38,10 +38,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class UsernameFinalizeViewModel @Inject constructor(
     authRepository: AuthRepository,
@@ -69,12 +72,21 @@ class UsernameFinalizeViewModel @Inject constructor(
         dismissed,
         checked
     ) { auth, locked, nickname, dismissed, checked ->
-        checked && auth is AuthState.Linked && !locked && nickname.isNotBlank() && !dismissed
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+        // usernameOfferShown: the offer is made once per account, ever — see markOffered.
+        checked && auth is AuthState.Linked && !locked && nickname.isNotBlank() && !dismissed &&
+            !settingsRepository.usernameOfferShown
+    }.distinctUntilChanged()
+        // Before showing, ask the server whether this account was already offered: a reinstall
+        // wipes every local flag, and a returning account must never see the offer a second time.
+        .mapLatest { candidate -> candidate && !usernameRepository.offerAlreadyMade() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     val currentName: StateFlow<String> = settingsRepository.nickname
 
     fun later() { dismissed.value = true }
+
+    /** Called when the offer first appears. */
+    fun offerShown() { viewModelScope.launch { usernameRepository.markOffered() } }
 
     /** Keeps the name when [name] is unchanged, otherwise renames — either way the result is permanent. */
     suspend fun finalize(name: String): UsernameClaimResult {
@@ -96,6 +108,7 @@ fun UsernameFinalizeHost(viewModel: UsernameFinalizeViewModel = hiltViewModel())
     val prompt by viewModel.shouldPrompt.collectAsState()
     val current by viewModel.currentName.collectAsState()
     if (!prompt) return
+    androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.offerShown() }
 
     var text by remember(current) { mutableStateOf(current) }
     var error by remember { mutableStateOf<Int?>(null) }

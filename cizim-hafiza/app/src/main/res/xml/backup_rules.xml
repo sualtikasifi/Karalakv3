@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Room DB holds only local game history/scores — fine to include in auto backup. -->
+<!-- Room DB holds only local game history/scores. one_time_flags holds the "already asked" facts
+     (rating prompt, Quick Match count) that must survive a reinstall; the main settings file is
+     account data restored from Firestore instead, so it stays out. -->
 <full-backup-content>
     <include domain="database" path="." />
+    <include domain="sharedpref" path="one_time_flags.xml" />
 </full-backup-content>

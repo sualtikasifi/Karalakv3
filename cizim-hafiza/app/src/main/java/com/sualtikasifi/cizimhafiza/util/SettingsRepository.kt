@@ -51,6 +51,13 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
+    /**
+     * The few "has this device already been asked" facts that must outlive a reinstall — kept in their
+     * own small file because only this file is included in Android's cloud backup (see
+     * res/xml/backup_rules.xml); the main settings file is account data and deliberately is not.
+     */
+    private val flagPrefs = context.getSharedPreferences(FLAGS_PREFS_NAME, Context.MODE_PRIVATE)
+
     // For work this class needs to do off the main thread at construction
     // time — this repository is a Hilt singleton, so it is built eagerly
     // during Activity/Application injection, ON the main thread. Anything
@@ -993,6 +1000,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         putBoolean(KEY_NICKNAME_CHOSEN, false)
         remove(KEY_NICKNAME_RENAME_USED)
         remove(KEY_USERNAME_CHANGES)
+        remove(KEY_USERNAME_OFFER_SHOWN)
         remove(KEY_USERNAME_VERIFIED)
         remove(KEY_LAST_REWARD_CHECK)
         remove(KEY_LAST_PENALTY_CHECK)
@@ -1195,9 +1203,30 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         get() = prefs.getBoolean(KEY_SIGN_IN_PROMPT_SHOWN, false)
         set(value) = prefs.edit { putBoolean(KEY_SIGN_IN_PROMPT_SHOWN, value) }
 
+    // Read from both files so a device that already answered before the flag moved to flagPrefs is not asked again.
     var ratingPromptShown: Boolean
-        get() = prefs.getBoolean(KEY_RATING_PROMPT_SHOWN, false)
-        set(value) = prefs.edit { putBoolean(KEY_RATING_PROMPT_SHOWN, value) }
+        get() = flagPrefs.getBoolean(KEY_RATING_PROMPT_SHOWN, false) || prefs.getBoolean(KEY_RATING_PROMPT_SHOWN, false)
+        set(value) = flagPrefs.edit { putBoolean(KEY_RATING_PROMPT_SHOWN, value) }
+
+    /** Quick Match rounds finished to the end. The rating ask comes after the third. Survives a reinstall like [ratingPromptShown]. */
+    val quickMatchGamesFinished: Int get() = flagPrefs.getInt(KEY_QUICK_MATCH_GAMES_FINISHED, 0)
+
+    fun recordQuickMatchFinished() {
+        flagPrefs.edit { putInt(KEY_QUICK_MATCH_GAMES_FINISHED, quickMatchGamesFinished + 1) }
+    }
+
+    /** Restores the prompts' state from a cloud backup: never un-shows a prompt, never lowers the count. */
+    fun restoreOneTimePrompts(ratingShown: Boolean, quickMatchGames: Int) {
+        flagPrefs.edit {
+            if (ratingShown) putBoolean(KEY_RATING_PROMPT_SHOWN, true)
+            if (quickMatchGames > quickMatchGamesFinished) putInt(KEY_QUICK_MATCH_GAMES_FINISHED, quickMatchGames)
+        }
+    }
+
+    /** The one-time "keep your name or change it" offer was shown to this account. Account-scoped: cleared with the rest on an account switch. */
+    var usernameOfferShown: Boolean
+        get() = prefs.getBoolean(KEY_USERNAME_OFFER_SHOWN, false)
+        set(value) = prefs.edit { putBoolean(KEY_USERNAME_OFFER_SHOWN, value) }
 
     /**
      * Pays the rating-prompt's 500 XP bonus exactly once, ever — a second
@@ -1285,6 +1314,9 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_LAST_REMINDER_EPOCH_DAY = "last_reminder_epoch_day"
         const val KEY_SIGN_IN_PROMPT_SHOWN = "sign_in_prompt_shown"
         const val KEY_RATING_PROMPT_SHOWN = "rating_prompt_shown"
+        const val KEY_QUICK_MATCH_GAMES_FINISHED = "quick_match_games_finished"
+        const val KEY_USERNAME_OFFER_SHOWN = "username_offer_shown"
+        const val FLAGS_PREFS_NAME = "one_time_flags"
         const val KEY_RATING_BONUS_XP_GRANTED = "rating_bonus_xp_granted"
         const val KEY_NICKNAME_CHOSEN = "nickname_chosen_by_player"
         const val KEY_NICKNAME_RENAME_USED = "nickname_rename_used"

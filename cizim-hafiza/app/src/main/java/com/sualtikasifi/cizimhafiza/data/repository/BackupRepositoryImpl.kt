@@ -142,6 +142,8 @@ class BackupRepositoryImpl @Inject constructor(
             periodId = com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()),
             adGoldNextAt = settingsRepository.adGoldNextAtMillis.value,
             adChestDay = settingsRepository.adChestDay.value,
+            ratingPromptShown = if (settingsRepository.ratingPromptShown) 1 else 0,
+            quickMatchGames = settingsRepository.quickMatchGamesFinished,
             backedUpAt = System.currentTimeMillis()
         )
     }
@@ -472,6 +474,7 @@ class BackupRepositoryImpl @Inject constructor(
         // the hole the counter exists to close.
         settingsRepository.penaltiesApplied = snapshot.penaltiesApplied
         settingsRepository.restoreEngagement(snapshot.periodXp, snapshot.periodId, snapshot.adGoldNextAt, snapshot.adChestDay)
+        settingsRepository.restoreOneTimePrompts(snapshot.ratingPromptShown == 1, snapshot.quickMatchGames)
         dailyChallengeRepository.replaceWithAccount(
             lastCompletedEpochDay = snapshot.dailyLastCompletedEpochDay,
             currentStreak = snapshot.dailyCurrentStreak,

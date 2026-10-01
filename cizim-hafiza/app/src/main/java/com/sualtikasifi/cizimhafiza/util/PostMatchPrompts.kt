@@ -19,6 +19,7 @@ import com.sualtikasifi.cizimhafiza.domain.repository.AuthState
  */
 object PostMatchPrompts {
     const val SIGN_IN_PROMPT_AT_GAME = 1
+    /** Finished Quick Match rounds (not games in general) after which the rating ask may appear. */
     const val RATING_PROMPT_AT_GAME = 3
 
     /** Paid once, via SettingsRepository.grantRatingBonusXpOnce, when the rating prompt's "Puanla" is tapped. */
@@ -34,7 +35,7 @@ object PostMatchPrompts {
 
     fun shouldShowRating(settingsRepository: SettingsRepository): Boolean {
         if (settingsRepository.ratingPromptShown) return false
-        if (settingsRepository.lifetimeGamesPlayed < RATING_PROMPT_AT_GAME) return false
+        if (settingsRepository.quickMatchGamesFinished < RATING_PROMPT_AT_GAME) return false
         settingsRepository.ratingPromptShown = true
         return true
     }

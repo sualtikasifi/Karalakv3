@@ -148,6 +148,36 @@ class UsernameRepository @Inject constructor(
         }
     }
 
+    /**
+     * Whether this account has already been through the "keep or change your name" offer, asked of
+     * the server itself: a returning Google account arrives on a fresh install with no local trace
+     * of it. When it has, the name is locked here too. Offline or failing, it answers true — an
+     * offer that is skipped once is better than one that is repeated.
+     */
+    suspend fun offerAlreadyMade(): Boolean = try {
+        val uid = authRepository.ensureSignedIn()
+        val profile = users.document(uid).get().await()
+        val done = profile.getBoolean("usernameOffered") == true || profile.getBoolean("usernameLocked") == true
+        if (done) settingsRepository.lockUsername(settingsRepository.nickname.value.trim())
+        done
+    } catch (e: Exception) {
+        Log.w(TAG, "offerAlreadyMade failed", e)
+        true
+    }
+
+    /**
+     * Records on the account that the "keep or change your name" offer has been made, so it is
+     * never shown again — not after a reinstall, not on another device (see [ensureUsername], which
+     * treats an offered account as locked). Written when the offer appears, not when it is answered.
+     */
+    suspend fun markOffered() {
+        settingsRepository.usernameOfferShown = true
+        runCatching {
+            val uid = authRepository.ensureSignedIn()
+            users.document(uid).set(mapOf("usernameOffered" to true), SetOptions.merge()).await()
+        }.onFailure { Log.w(TAG, "markOffered failed", it) }
+    }
+
     /** Keeps the current name and makes it permanent. */
     suspend fun lockCurrent(): UsernameClaimResult {
         val name = settingsRepository.nickname.value.trim()
