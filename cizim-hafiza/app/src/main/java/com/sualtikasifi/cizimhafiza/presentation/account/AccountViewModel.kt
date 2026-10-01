@@ -237,6 +237,8 @@ class AccountViewModel @Inject constructor(
                     .onSuccess { outcome ->
                         when (outcome) {
                             SignInOutcome.LinkedToDevice -> {
+                                // The only moment the "keep or change your name" offer is made.
+                                settingsRepository.requestUsernameOffer()
                                 nameFromEmailIfUnnamed()
                                 _actionState.value = _actionState.value.copy(
                                     isBusy = false,

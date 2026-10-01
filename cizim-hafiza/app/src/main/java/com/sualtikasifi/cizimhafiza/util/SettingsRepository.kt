@@ -960,6 +960,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         _lifetimeWordsDrawn.value = 0
         _nickname.value = ""
         _nicknameRenameUsed.value = false
+        _usernameOfferPending.value = false
         _avatarSource.value = ""
         _selectedAvatarFrameId.value = AvatarFrame.DEFAULT.name
         _selectedPenSkinId.value = PenSkin.DEFAULT.name
@@ -1001,6 +1002,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         remove(KEY_NICKNAME_RENAME_USED)
         remove(KEY_USERNAME_CHANGES)
         remove(KEY_USERNAME_OFFER_SHOWN)
+        remove(KEY_USERNAME_OFFER_PENDING)
         remove(KEY_USERNAME_VERIFIED)
         remove(KEY_LAST_REWARD_CHECK)
         remove(KEY_LAST_PENALTY_CHECK)
@@ -1133,6 +1135,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         _lifetimeXp.value = lifetimeXp
         _lifetimeWordsDrawn.value = lifetimeWordsDrawn
         _nickname.value = nickname
+        _usernameOfferPending.value = false
         _selectedAvatarFrameId.value = frame
         _selectedPenSkinId.value = pen
         _goldBalance.value = goldBalance
@@ -1221,6 +1224,21 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             if (ratingShown) putBoolean(KEY_RATING_PROMPT_SHOWN, true)
             if (quickMatchGames > quickMatchGamesFinished) putInt(KEY_QUICK_MATCH_GAMES_FINISHED, quickMatchGames)
         }
+    }
+
+    private val _usernameOfferPending = MutableStateFlow(prefs.getBoolean(KEY_USERNAME_OFFER_PENDING, false))
+
+    /**
+     * True only after a guest account was linked to Google for the first time on this device (see
+     * AccountViewModel.signIn, LinkedToDevice). Signing in to an account that already exists —
+     * a reinstall, a second phone — never sets it, so a returning account is never offered the
+     * name again. Dropped with the rest of the account-scoped state on an account switch.
+     */
+    val usernameOfferPending: StateFlow<Boolean> = _usernameOfferPending.asStateFlow()
+
+    fun requestUsernameOffer() {
+        prefs.edit { putBoolean(KEY_USERNAME_OFFER_PENDING, true) }
+        _usernameOfferPending.value = true
     }
 
     /** The one-time "keep your name or change it" offer was shown to this account. Account-scoped: cleared with the rest on an account switch. */
@@ -1316,6 +1334,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_RATING_PROMPT_SHOWN = "rating_prompt_shown"
         const val KEY_QUICK_MATCH_GAMES_FINISHED = "quick_match_games_finished"
         const val KEY_USERNAME_OFFER_SHOWN = "username_offer_shown"
+        const val KEY_USERNAME_OFFER_PENDING = "username_offer_pending"
         const val FLAGS_PREFS_NAME = "one_time_flags"
         const val KEY_RATING_BONUS_XP_GRANTED = "rating_bonus_xp_granted"
         const val KEY_NICKNAME_CHOSEN = "nickname_chosen_by_player"
