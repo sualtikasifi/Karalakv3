@@ -367,7 +367,7 @@ function botNicknamesForPeriod(periodId: number, count: number): string[] {
  * top REAL player however little they had scored, so a player nowhere near
  * the top 25 saw themselves parked on row 25.
  */
-const BOT_COUNT = 20;
+const BOT_COUNT = 21;
 // How many rows the real-player query fetches, before bots are mixed in and
 // the combined list is cut down to PUBLISHED_TABLE_SIZE below. Generous on
 // purpose: a real player ranked, say, 40th by raw XP still needs to be IN
@@ -379,7 +379,9 @@ const MAX_ENTRIES = 100;
 // the cut — so on a quiet month this is BOT_COUNT bots plus however many
 // real players outscored the weakest bot, never more than this many rows
 // total, whatever the real player count turns out to be.
-const PUBLISHED_TABLE_SIZE = 20;
+// 21, not 20: the app drops the player's own row out of the list (their real rank is pinned under it),
+// so a published row for them must not cost a visible one — it still shows 20 others.
+const PUBLISHED_TABLE_SIZE = 21;
 
 /**
  * Random XP a bot gains each time growth is applied — see

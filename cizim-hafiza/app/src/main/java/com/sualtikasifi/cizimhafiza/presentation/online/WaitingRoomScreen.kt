@@ -740,8 +740,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     level = slot.level,
                     frame = slot.frame,
                     size = 38.dp,
-                    photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(slot.avatarUrl),
-                    levelBadge = true
+                    photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(slot.avatarUrl)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -753,22 +752,9 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                         overflow = TextOverflow.Ellipsis,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    // The rank, worn under the name like a title. Set in the
-                    // display face rather than the body one the name uses, a
-                    // size down and in the primary colour: a rank is earned
-                    // and meant to be read as such, and giving it the same
-                    // typeface as the nickname would have made it look like
-                    // a second line of the name.
-                    val rank = LevelTier.forLevel(slot.level).rank
-                    Text(
-                        text = "${rank.emoji} ${stringResource(rank.nameRes)}",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontSize = 10.sp,
-                        lineHeight = 12.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    // Level and rank take turns under the name every five seconds, set in the same
+                    // type as the league table's rows (see RankLevelLabel).
+                    com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(level = slot.level, bullet = false)
                     // A chat message takes over this exact spot instead of
                     // opening a bubble above the card. A fixed-height Box
                     // around the Crossfade (rather than letting an empty
