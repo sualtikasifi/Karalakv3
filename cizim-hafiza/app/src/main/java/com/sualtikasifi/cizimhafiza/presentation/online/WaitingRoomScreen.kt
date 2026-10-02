@@ -131,7 +131,7 @@ fun WaitingRoomScreen(
     } else {
         activePlayers.size >= 2 && activePlayers.all { it.ready }
     }
-    val amReady = me?.ready == true
+    val amReady = uiState.readyOverride ?: (me?.ready == true)
 
     // Why a full, all-ready 2v2 room still cannot start. Computed here
     // alongside allReady so the two can never disagree.

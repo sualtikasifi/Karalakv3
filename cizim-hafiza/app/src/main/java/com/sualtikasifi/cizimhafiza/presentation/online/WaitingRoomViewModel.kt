@@ -42,7 +42,11 @@ data class WaitingRoomUiState(
     // Null until the shared word list resolves to local Word objects.
     val estimatedRoundSeconds: Int? = null,
     // The 3, 2, 1 shown on every player's ready button once the host starts the match; null otherwise.
-    val countdownSeconds: Int? = null
+    val countdownSeconds: Int? = null,
+    // What this player just asked for with the ready button, shown (and toggled from) at once instead of waiting for
+    // the room snapshot to echo it back; dropped as soon as the server agrees. Without it a quick second tap read a stale
+    // value and re-sent the same state, so "Hazır" could not be taken back.
+    val readyOverride: Boolean? = null
 )
 
 @HiltViewModel
@@ -151,7 +155,16 @@ class WaitingRoomViewModel @Inject constructor(
         viewModelScope.launch {
             onlineGameRepository.observeRoom(roomCode)
                 .catch { _uiState.update { it.copy(errorMessage = UiText.of(R.string.error_room_listener_failed)) } }
-                .collect { room -> _uiState.update { it.copy(room = room, errorMessage = null) } }
+                .collect { room ->
+                    val serverReady = room?.players?.find { it.uid == myUid }?.ready
+                    _uiState.update {
+                        it.copy(
+                            room = room,
+                            errorMessage = null,
+                            readyOverride = if (it.readyOverride == serverReady) null else it.readyOverride
+                        )
+                    }
+                }
         }
         // Every player (host included) shows the same 3-2-1 once the host has started the match: it runs from
         // the moment this device first sees the host's stamp, so clock differences between phones do not matter.
@@ -244,8 +257,14 @@ class WaitingRoomViewModel @Inject constructor(
     fun toggleReady() {
         // Locked once the host's countdown is running — the match is starting with everyone as they are.
         if (_uiState.value.countdownSeconds != null || _uiState.value.isStarting) return
-        val amReady = _uiState.value.room?.players?.find { it.uid == myUid }?.ready ?: false
-        viewModelScope.launch { runCatching { onlineGameRepository.setReady(roomCode, !amReady) } }
+        val state = _uiState.value
+        val amReady = state.readyOverride ?: state.room?.players?.find { it.uid == myUid }?.ready ?: false
+        val wanted = !amReady
+        _uiState.update { it.copy(readyOverride = wanted) }
+        viewModelScope.launch {
+            runCatching { onlineGameRepository.setReady(roomCode, wanted) }
+                .onFailure { _uiState.update { s -> s.copy(readyOverride = null) } }
+        }
     }
 
     /** 2v2 rooms only (see OnlineRoom.teamMode) — self-service team switch, shown on the player's own slot. */
