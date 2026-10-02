@@ -104,6 +104,7 @@ import com.sualtikasifi.cizimhafiza.presentation.chests.ChestBackdrop
 import com.sualtikasifi.cizimhafiza.presentation.chests.ChestImage
 import com.sualtikasifi.cizimhafiza.presentation.chests.borderColor
 import com.sualtikasifi.cizimhafiza.presentation.chests.formatCountdown
+import com.sualtikasifi.cizimhafiza.presentation.common.drawOrbitSparks
 import com.sualtikasifi.cizimhafiza.presentation.chests.onBackdrop
 import com.sualtikasifi.cizimhafiza.presentation.chests.ChestsViewModel
 import com.sualtikasifi.cizimhafiza.presentation.chests.accent
@@ -248,6 +249,12 @@ private fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, c
         animationSpec = infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "pulse"
     )
+    val orbit = infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(3400, easing = androidx.compose.animation.core.LinearEasing)),
+        label = "orbit"
+    )
     Box(
         modifier = modifier
             .fillMaxHeight()
@@ -287,52 +294,84 @@ private fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, c
             }
             Spacer(modifier = Modifier.weight(1f))
             val plateBrush = when {
-                ready -> Brush.verticalGradient(listOf(Color(0xFF4CD27A), Color(0xFF1E9E52)))
+                ready -> Brush.verticalGradient(listOf(Color(0xFF5BE08A), Color(0xFF1E9E52)))
+                unlocking -> Brush.verticalGradient(listOf(Color(0xFF4A2B14), Color(0xFF1F1008)))
                 else -> Brush.verticalGradient(listOf(Color(0xF2352218), Color(0xF21A1108)))
             }
             val plateBorder = when {
                 ready -> Color(0xFFB8F5CF)
-                unlocking -> Color(0xFFFFC94D).copy(alpha = 0.85f)
+                unlocking -> Color(0xFFFFC94D)
                 else -> tier.accent().copy(alpha = 0.7f)
             }
-            Row(
+            val sparkColors = remember(ready) {
+                if (ready) listOf(Color(0xFFD9FFE6), Color.White) else listOf(Color(0xFFFFE08A), Color(0xFFFFB340), Color.White)
+            }
+            val plateShape = RoundedCornerShape(11.dp)
+            // Inset from the card edge so the plate and its rim do not touch the chest border on either side.
+            // The sparks circle the plate while a chest is counting down (gold) or waiting to be opened (green).
+            Box(
                 modifier = Modifier
-                    // Inset from the card edge so the dark plate and its rim do not
-                    // touch the chest border on either side.
                     .padding(horizontal = 7.dp)
                     .fillMaxWidth()
-                    .height(22.dp)
-                    .clip(RoundedCornerShape(11.dp))
-                    .background(plateBrush)
-                    .border(1.dp, plateBorder, RoundedCornerShape(11.dp))
-                    .padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally)
+                    .height(24.dp)
+                    .drawWithContent {
+                        drawContent()
+                        if (unlocking || ready) {
+                            drawOrbitSparks(
+                                progress = orbit.value,
+                                count = if (ready) 4 else 6,
+                                colors = sparkColors,
+                                radius = 1.7.dp.toPx(),
+                                outset = 1.dp.toPx()
+                            )
+                        }
+                    }
             ) {
-                // One centred label, no icon beside it: an icon on one side pulled the text off the plate's centre.
-                Text(
-                    text = when {
-                        ready -> stringResource(R.string.chests_open_button) + "!"
-                        // Down to the second: this is what the player watches tick.
-                        unlocking -> formatCountdown(chest.remainingMillis(nowMillis))
-                        // Not started yet: just how long the chest takes (HH:MM), the same plate the countdown later uses.
-                        else -> (tier.unlockDurationMillis / 60_000L).let { minutes -> "%02d:%02d".format(minutes / 60, minutes % 60) }
-                    },
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = if (unlocking) Color(0xFFFFE08A) else Color.White,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    softWrap = false,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = androidx.compose.ui.text.TextStyle(
-                        platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
-                        lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
-                            alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
-                            trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.None
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(plateShape)
+                        .background(plateBrush)
+                        // A glossy highlight over the top half, like a button cap.
+                        .drawBehind {
+                            drawRect(
+                                Brush.verticalGradient(
+                                    listOf(Color.White.copy(alpha = 0.30f), Color.White.copy(alpha = 0.04f)),
+                                    endY = size.height * 0.55f
+                                ),
+                                size = androidx.compose.ui.geometry.Size(size.width, size.height * 0.55f)
+                            )
+                        }
+                        .border(1.5.dp, plateBorder, plateShape)
+                        .padding(horizontal = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // One centred label, no icon beside it: an icon on one side pulled the text off the plate's centre.
+                    Text(
+                        text = when {
+                            ready -> stringResource(R.string.chests_open_button) + "!"
+                            // Down to the second: this is what the player watches tick.
+                            unlocking -> formatCountdown(chest.remainingMillis(nowMillis))
+                            // Not started yet: just how long the chest takes (SS:DD), the same plate the countdown later uses.
+                            else -> (tier.unlockDurationMillis / 60_000L).let { minutes -> "%02d:%02d".format(minutes / 60, minutes % 60) }
+                        },
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = if (unlocking) Color(0xFFFFE08A) else Color.White,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        softWrap = false,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = androidx.compose.ui.text.TextStyle(
+                            shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.45f), Offset(0f, 1.5f), 2f),
+                            platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                            lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                                alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+                                trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.None
+                            )
                         )
                     )
-                )
+                }
             }
         }
     }

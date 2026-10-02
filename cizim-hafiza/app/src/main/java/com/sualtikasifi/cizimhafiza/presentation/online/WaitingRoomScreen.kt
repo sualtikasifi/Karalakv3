@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.lazy.items
@@ -83,6 +84,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 import com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance
 import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
+import com.sualtikasifi.cizimhafiza.presentation.common.drawOrbitSparks
 import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 import com.sualtikasifi.cizimhafiza.util.GameConstants
 import com.sualtikasifi.cizimhafiza.util.InviteShareUtil
@@ -623,34 +625,46 @@ private fun ReadyButton(
         label = "halo"
     )
     val face = if (amReady || counting) green else androidx.compose.ui.graphics.lerp(green, androidx.compose.ui.graphics.Color.White, 0.38f * blink)
-    // Strength and reach of the halo: none while waiting to be pressed, calm once ready, strongest during the count.
+    // A soft halo (none while waiting to be pressed, calm once ready, a little stronger during the count) and
+    // coloured sparks circling the button — quicker and more of them once the count has begun.
     val glowStrength = when {
-        counting -> 0.85f + 0.15f * halo
-        amReady -> 0.55f + 0.30f * halo
+        counting -> 0.45f + 0.15f * halo
+        amReady -> 0.22f + 0.10f * halo
         else -> 0f
     }
-    val glowReach = 20.dp
+    val glowReach = if (counting) 16.dp else 12.dp
+    val lap by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.tween(if (counting) 2200 else 4800, easing = androidx.compose.animation.core.LinearEasing)
+        ),
+        label = "lap"
+    )
+    val sparkColors = remember {
+        listOf(Color(0xFFFFD54F), Color(0xFFFF8FB8), Color(0xFF7FE3FF), Color(0xFFB7F26B), Color.White)
+    }
     Box(
         modifier = modifier
             .drawBehind {
                 if (glowStrength > 0f) {
-                    val layers = 8
+                    val layers = 5
                     for (i in layers downTo 1) {
                         val grow = glowReach.toPx() * i / layers
                         drawRoundRect(
-                            color = green.copy(alpha = glowStrength * (1f - (i - 1f) / layers) * 0.5f),
+                            color = green.copy(alpha = glowStrength * (1f - (i - 1f) / layers) * 0.4f),
                             topLeft = androidx.compose.ui.geometry.Offset(-grow, -grow),
                             size = androidx.compose.ui.geometry.Size(size.width + 2 * grow, size.height + 2 * grow),
                             cornerRadius = CornerRadius(size.height / 2 + grow)
                         )
                     }
-                    // A bright rim hugging the button, so the halo reads as light coming off it.
-                    drawRoundRect(
-                        color = androidx.compose.ui.graphics.lerp(green, androidx.compose.ui.graphics.Color.White, 0.55f).copy(alpha = glowStrength),
-                        topLeft = androidx.compose.ui.geometry.Offset(-2.dp.toPx(), -2.dp.toPx()),
-                        size = androidx.compose.ui.geometry.Size(size.width + 4.dp.toPx(), size.height + 4.dp.toPx()),
-                        cornerRadius = CornerRadius(size.height / 2 + 2.dp.toPx()),
-                        style = Stroke(width = 2.5.dp.toPx())
+                    drawOrbitSparks(
+                        progress = lap,
+                        count = if (counting) 18 else 11,
+                        colors = sparkColors,
+                        radius = 2.8.dp.toPx(),
+                        outset = 7.dp.toPx(),
+                        wobble = 4.dp.toPx()
                     )
                 }
             }

@@ -100,6 +100,9 @@ class BotRoomEngine @Inject constructor(
         // it needs room for a good few of each within one match.
         private const val HANDLED_LIMIT = 40
         private const val LOCAL_ATTEMPT_CACHE_LIMIT = 200
+        private const val ABANDONED_WATCH_INTERVAL_MS = 10_000L
+        private const val ABANDONED_WATCH_TICKS = 120
+        private const val ABANDONED_MATCH_GRACE_MS = 30_000L
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -273,6 +276,7 @@ class BotRoomEngine @Inject constructor(
         if (matchSeed != 0L) {
             scope.launch { runCatching { maybeChat(BotChatMoment.MATCH_START, "start:$matchSeed") } }
             scheduleMidMatchChatter(matchSeed)
+            scheduleAbandonedMatchWatch(matchSeed)
         }
 
         val botPlayer = players[BOT_UID] ?: return
@@ -348,6 +352,34 @@ class BotRoomEngine @Inject constructor(
         val allFinished = activePlayers.isNotEmpty() && activePlayers.values.all { it["finished"] as? Boolean == true }
         if (allFinished) {
             roomRef.update(mapOf("status" to "FINISHED", "finishedAt" to System.currentTimeMillis())).await()
+        }
+    }
+
+    // A round whose real players all closed the app never reaches FINISHED by itself (they never submit), so
+    // whoever arrives afterwards would sit out as a "pending" joiner, staring at 0:00. Every device in the room
+    // watches for that and ends the round once nobody who is actually playing it is still present; the pending
+    // joiners are then carried into a fresh lobby by handleFinished.
+    private fun scheduleAbandonedMatchWatch(matchSeed: Long) {
+        if (!markLocallyAttempted("abandoned:$matchSeed")) return
+        scope.launch {
+            repeat(ABANDONED_WATCH_TICKS) {
+                delay(ABANDONED_WATCH_INTERVAL_MS)
+                val fresh = runCatching { roomRef.get().await() }.getOrNull() ?: return@repeat
+                if (!fresh.exists() || fresh.getString("status") != "PLAYING") return@launch
+                if ((fresh.get("startedAt") as? Number)?.toLong() != matchSeed) return@launch
+                @Suppress("UNCHECKED_CAST")
+                val freshPlayers = fresh.get("players") as? Map<String, Map<String, Any?>> ?: emptyMap()
+                val now = System.currentTimeMillis()
+                val stillPlaying = freshPlayers.filterKeys { it != BOT_UID }.filterValues {
+                    it["pendingNextRound"] as? Boolean != true && it["left"] as? Boolean != true &&
+                        // Tighter than isPresentEntry's 75 s: a live player beats every 30 s, so 50 s of silence is enough here.
+                        now - ((it["lastSeenAt"] as? Number)?.toLong() ?: (it["joinedAt"] as? Number)?.toLong() ?: 0L) <= 50_000L
+                }
+                if (stillPlaying.isEmpty() && now - matchSeed > ABANDONED_MATCH_GRACE_MS) {
+                    runCatching { roomRef.update(mapOf("status" to "FINISHED", "finishedAt" to now)).await() }
+                    return@launch
+                }
+            }
         }
     }
 
