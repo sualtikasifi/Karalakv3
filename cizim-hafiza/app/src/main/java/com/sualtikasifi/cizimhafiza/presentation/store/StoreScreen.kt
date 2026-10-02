@@ -116,7 +116,8 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
     var tab by remember { mutableStateOf(0) }
     // Which way the last tab change went (+1 towards the right, -1 towards the left): the new cards slide in from there.
     var tabDirection by remember { mutableIntStateOf(1) }
-    val selectTab = { next: Int -> if (next != tab) { tabDirection = if (next > tab) 1 else -1; tab = next } }
+    var tabOpenedAt by remember { androidx.compose.runtime.mutableLongStateOf(System.currentTimeMillis()) }
+    val selectTab = { next: Int -> if (next != tab) { tabDirection = if (next > tab) 1 else -1; tab = next; tabOpenedAt = System.currentTimeMillis() } }
     val dailyJoker by viewModel.dailyJoker.collectAsState()
     val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
     var pending by remember { mutableStateOf<Pending?>(null) }
@@ -191,7 +192,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                 if (tab == 1) {
                     itemsIndexed(viewModel.pens) { index, skin ->
                         val id = StoreViewModel.penId(skin)
-                        TabEntrance(tab, tabDirection, index) { PenCard(
+                        TabEntrance(tab, tabDirection, tabOpenedAt, index) { PenCard(
                             skin = skin,
                             owned = id in owned,
                             equipped = id in owned && selectedPen == skin.name,
@@ -205,7 +206,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                 } else if (tab == 0) {
                     dailyJoker?.let { free ->
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            TabEntrance(tab, tabDirection, 0) {
+                            TabEntrance(tab, tabDirection, tabOpenedAt, 0) {
                                 DailyJokerCard(
                                     type = free,
                                     onClaim = { activity?.let { viewModel.claimDailyJoker(it) { res, isError -> showToast(res, isError) } } }
@@ -214,7 +215,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                         }
                     }
                     itemsIndexed(JokerType.entries, span = { _, _ -> GridItemSpan(maxLineSpan) }) { index, type ->
-                        TabEntrance(tab, tabDirection, index + 1) {
+                        TabEntrance(tab, tabDirection, tabOpenedAt, index + 1) {
                             JokerCard(
                                 type = type,
                                 owned = jokerCounts[type] ?: 0,
@@ -245,7 +246,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                 } else {
                     itemsIndexed(viewModel.frames) { index, frame ->
                         val id = StoreViewModel.frameId(frame)
-                        TabEntrance(tab, tabDirection, index) { FrameCard(
+                        TabEntrance(tab, tabDirection, tabOpenedAt, index) { FrameCard(
                             frame = frame,
                             name = stringResource(frame.nameRes()),
                             owned = id in owned,
@@ -953,11 +954,13 @@ private fun PenTryDialog(skin: PenSkin, onDismiss: () -> Unit) {
 /**
  * Slides and fades one card in when its tab opens — from the side the tab came from, one card after another —
  * so switching tabs reads as the shelf being swapped rather than as the contents blinking over. Cards far
- * down the list (which only appear once scrolled to) skip it.
+ * down the list, or scrolled into view later, skip it.
  */
 @Composable
-private fun TabEntrance(tab: Int, direction: Int, index: Int, content: @Composable () -> Unit) {
-    val animate = index < 9
+private fun TabEntrance(tab: Int, direction: Int, openedAt: Long, index: Int, content: @Composable () -> Unit) {
+    // Only cards that appear together with the tab itself; one scrolled back into view later (the grid recomposes
+    // it from scratch) must show at once, not slide in again.
+    val animate = remember(tab) { index < 9 && System.currentTimeMillis() - openedAt < 700L }
     val progress = remember(tab) { androidx.compose.animation.core.Animatable(if (animate) 0f else 1f) }
     LaunchedEffect(tab) {
         if (!animate) return@LaunchedEffect
