@@ -50,7 +50,8 @@ class UsernameRepository @Inject constructor(
      * nothing (retries next launch) while offline.
      */
     suspend fun ensureUsername() {
-        if (settingsRepository.nicknameRenameUsed.value) return
+        // A locked name is still checked once against the server (verified flag below): a restore from
+        // an older backup can bring back a stale local name, and the server's claim is the truth.
         // Already confirmed with the server on this device: nothing can have changed it since
         // (only this app renames), so skip the two reads a start-up check costs.
         if (settingsRepository.usernameVerified) return
@@ -68,6 +69,9 @@ class UsernameRepository @Inject constructor(
                 settingsRepository.usernameVerified = true
                 return
             }
+
+            // A locked account never gets a new name handed out; it just keeps what it has until the server answers.
+            if (settingsRepository.nicknameRenameUsed.value) return
 
             // A name the player typed in an older version gets first refusal.
             val legacy = settingsRepository.nickname.value.trim().replace(Regex("\\s+"), " ")
