@@ -184,11 +184,27 @@ class DailyChallengeRepository @Inject constructor(@ApplicationContext context: 
     fun replaceWithAccount(lastCompletedEpochDay: Long, currentStreak: Int, bestStreak: Int, result: String = "") {
         // One durable write for the clear AND the restore — see
         // SettingsRepository.replaceWithAccount.
+        // A backup written before results were included (see ProgressSnapshot.dailyResult) carries none. If this
+        // device already holds the result of that very day's completion, it is the same player's own and is kept,
+        // rather than being wiped along with the rest and leaving "completed" with no ticks or crosses.
+        val keepLocal = result.isBlank() && lastCompletedEpochDay >= 0 &&
+            prefs.getLong(KEY_RESULT_DAY, -1L) == lastCompletedEpochDay
+        val keptFlags = prefs.getString(KEY_RESULT_FLAGS, "").orEmpty()
+        val keptScore = prefs.getInt(KEY_RESULT_SCORE, 0)
+        val keptXp = prefs.getInt(KEY_RESULT_XP, 0)
+        val keptStreak = prefs.getInt(KEY_RESULT_STREAK, 0)
         prefs.edit(commit = true) {
             stageAccountScopedClear()
             putLong(KEY_LAST_COMPLETED, lastCompletedEpochDay)
             putInt(KEY_CURRENT_STREAK, currentStreak)
             putInt(KEY_BEST_STREAK, bestStreak)
+            if (keepLocal) {
+                putLong(KEY_RESULT_DAY, lastCompletedEpochDay)
+                putString(KEY_RESULT_FLAGS, keptFlags)
+                putInt(KEY_RESULT_SCORE, keptScore)
+                putInt(KEY_RESULT_XP, keptXp)
+                putInt(KEY_RESULT_STREAK, keptStreak)
+            }
             // The last result goes back too (see ProgressSnapshot.dailyResult); a malformed one is simply skipped.
             val parts = result.split("|")
             val day = parts.getOrNull(0)?.toLongOrNull()
