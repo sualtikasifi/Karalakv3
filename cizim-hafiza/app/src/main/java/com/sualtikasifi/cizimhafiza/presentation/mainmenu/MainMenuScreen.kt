@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -1057,28 +1058,30 @@ private fun DailyChallengeCardNarrow(state: DailyChallengeState, onPlay: () -> U
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+                // One pip per word, sharing the row's width so all five always fit: a green disc with a white tick for a
+                // right answer, a red one with a white cross for a wrong one, a faint empty disc before playing — each with
+                // the same thin white rim.
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     repeat(DailyChallenge.WORD_COUNT) { index ->
                         val flag = flags.getOrNull(index)
-                        // Right: white disc with a green tick (reads on the green "done" tile). Wrong: red disc with a
-                        // white cross. Not played yet: an empty ring.
                         Box(
                             modifier = Modifier
-                                .size(21.dp)
+                                .weight(1f)
+                                .aspectRatio(1f)
                                 .clip(CircleShape)
                                 .background(
                                     when (flag) {
-                                        true -> Color.White
+                                        true -> Color(0xFF14833F)
                                         false -> Color(0xFFE53935)
                                         null -> Color.White.copy(alpha = 0.22f)
                                     }
                                 )
-                                .border(1.5.dp, Color.White.copy(alpha = if (flag == null) 0.55f else 0.95f), CircleShape),
+                                .border(1.dp, Color.White, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             when (flag) {
-                                true -> Icon(Icons.Filled.Check, contentDescription = null, tint = Color(0xFF1E9E52), modifier = Modifier.size(15.dp))
-                                false -> Icon(Icons.Filled.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(15.dp))
+                                true -> Icon(Icons.Filled.Check, contentDescription = null, tint = Color.White, modifier = Modifier.fillMaxSize(0.72f))
+                                false -> Icon(Icons.Filled.Close, contentDescription = null, tint = Color.White, modifier = Modifier.fillMaxSize(0.72f))
                                 null -> Unit
                             }
                         }

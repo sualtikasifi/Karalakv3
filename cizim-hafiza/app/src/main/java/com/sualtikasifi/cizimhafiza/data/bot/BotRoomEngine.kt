@@ -834,7 +834,12 @@ class BotRoomEngine @Inject constructor(
             }
             "PLAYING" -> {
                 val startedAt = snapshot.getLong("startedAt") ?: 0L
-                if (now - startedAt > 15 * 60_000L) resetToWaiting()
+                @Suppress("UNCHECKED_CAST")
+                val players = snapshot.get("players") as? Map<String, Map<String, Any?>> ?: emptyMap()
+                // A match nobody is still playing (everyone closed the app mid-round) would otherwise keep the next
+                // arrival sitting out as a "pending" joiner for the whole 15 minutes.
+                val abandoned = players.none { (uid, data) -> uid != BOT_UID && data.isPresentEntry(now) }
+                if (now - startedAt > 15 * 60_000L || (abandoned && now - startedAt > 90_000L)) resetToWaiting()
             }
             "WAITING" -> {
                 @Suppress("UNCHECKED_CAST")
