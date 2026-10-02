@@ -374,8 +374,11 @@ const PUBLISHED_TABLE_SIZE = 21;
  * schedule moving from every 6 hours to every 1), so the DAILY total a bot
  * earns stays the same — only how finely it's spread across the day changed.
  */
-const BOT_GROWTH_MIN = 70;
-const BOT_GROWTH_MAX = 330;
+const BOT_GROWTH_MIN = 60;
+const BOT_GROWTH_MAX = 260;
+/** Each bot earns at its own pace for the whole month: a share of the base rate drawn from this range. */
+const BOT_PACE_MIN = 0.65;
+const BOT_PACE_MAX = 1.2;
 
 /**
  * The level a bot's card shows, derived from its own periodXp instead of a
@@ -426,6 +429,25 @@ function botStartXp(periodId: number, index: number): number {
  * missing a real hourly tick.
  */
 const BOT_GROWTH_INTERVAL_MS = 50 * 60 * 1000;
+
+const ISTANBUL_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+/**
+ * What bot [index] has earned so far this month: the sum of one seeded draw per growth tick since the month
+ * began, scaled by that bot's own pace. Deterministic for a given (period, bot, time), so it does not matter
+ * how many scheduled runs happened in between — or whether any did.
+ */
+function botPeriodXp(periodId: number, index: number, now: number, monthStartMs: number): number {
+  const pace = BOT_PACE_MIN + seededRandom(periodId * 131 + index * 977 + 5)() * (BOT_PACE_MAX - BOT_PACE_MIN);
+  const startTick = Math.floor(monthStartMs / BOT_GROWTH_INTERVAL_MS);
+  const nowTick = Math.floor(now / BOT_GROWTH_INTERVAL_MS);
+  let xp = 0;
+  for (let tick = startTick + 1; tick <= nowTick; tick++) {
+    const draw = seededRandom(tick * 104_729 + periodId * 97 + index)();
+    xp += Math.floor((BOT_GROWTH_MIN + draw * (BOT_GROWTH_MAX - BOT_GROWTH_MIN + 1)) * pace);
+  }
+  return xp;
+}
 
 interface BotState {
   nickname: string;
@@ -498,16 +520,13 @@ export async function runBuildGlobalLeaderboard(): Promise<void> {
     const previous = await db.doc("leaderboards/global").get();
 
     const previousPeriodId = previous.get("periodId") as number | undefined;
-    const previousBots = (previous.get("bots") as BotState[] | undefined) ?? [];
-    const previousBotsGrewAt = previous.get("botsGrewAt") as number | undefined;
 
     const samePeriod = previousPeriodId === periodId;
     const now = Date.now();
-    // A new month starts every bot back at zero, same as a real player's own
-    // periodXp — growth is then due immediately so the table is not all
-    // zeroes right after the rollover.
-    const growthDue =
-      !samePeriod || previousBotsGrewAt === undefined || now - previousBotsGrewAt >= BOT_GROWTH_INTERVAL_MS;
+    // Bot scores are a pure function of the time elapsed in the month (see botPeriodXp), not a running
+    // total that each scheduled run adds to — GitHub's cron fires late and unevenly, and a run that never
+    // happened used to mean bots that never earned. Now every run lands on the same, correct figure.
+    const monthStartMs = Date.UTC(t.year, t.month - 1, 1) - ISTANBUL_OFFSET_MS;
 
     const bots: LeagueRow[] = [];
     const botStates: BotState[] = [];
@@ -515,16 +534,7 @@ export async function runBuildGlobalLeaderboard(): Promise<void> {
     for (let i = 0; i < BOT_COUNT; i++) {
       const nickname = nicknames[i];
 
-      let periodXp = samePeriod ? previousBots[i]?.periodXp ?? 0 : 0;
-      if (growthDue) {
-        // Seeded by the growth tick rather than pure Math.random(): two
-        // calls landing in the same throttle window (retries, a manual
-        // re-run right after the scheduled one) compute the same increment
-        // instead of each adding their own.
-        const tick = Math.floor(now / BOT_GROWTH_INTERVAL_MS);
-        const growth = seededRandom(tick * 104_729 + periodId * 97 + i);
-        periodXp += BOT_GROWTH_MIN + Math.floor(growth() * (BOT_GROWTH_MAX - BOT_GROWTH_MIN + 1));
-      }
+      const periodXp = botPeriodXp(periodId, i, now, monthStartMs);
       // Was an independent random draw (2-62, fixed for the whole period
       // regardless of periodXp) — a bot with a low roll could sit on 8000+
       // XP by month's end while still showing as, say, level 9, which is
@@ -568,14 +578,14 @@ export async function runBuildGlobalLeaderboard(): Promise<void> {
         rewardId: (config.get("rewardId") as string | undefined) ?? rewardIdFor(periodId),
         entries,
         bots: botStates,
-        botsGrewAt: growthDue ? now : previousBotsGrewAt ?? now,
+        botsGrewAt: now,
         ...(endedPeriod ? { endedPeriod } : {}),
       },
       { merge: true }
     );
 
   logger.info(
-    `League: ${real.length} real + ${bots.length} bot row(s) for period ${periodId}, growth ${growthDue ? "applied" : "skipped"}`
+    `League: ${real.length} real + ${bots.length} bot row(s) for period ${periodId}, bot scores derived from elapsed time`
   );
 }
 
