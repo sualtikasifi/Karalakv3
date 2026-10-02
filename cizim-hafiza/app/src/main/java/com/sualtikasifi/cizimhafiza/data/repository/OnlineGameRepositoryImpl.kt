@@ -347,29 +347,19 @@ class OnlineGameRepositoryImpl @Inject constructor(
 
     override suspend fun touchPresence(roomCode: String) {
         val uid = requireUid()
-        val docRef = rooms.document(roomCode)
-        // A transaction rather than a plain dotted-path update: update() would
-        // happily *create* players.$uid if this device had already been pruned
-        // from the room, leaving a nameless half-player in the lobby.
-        firestore.runTransaction<Unit> { tx ->
-            val snapshot = tx.get(docRef)
-            @Suppress("UNCHECKED_CAST")
-            val players = snapshot.get("players") as? Map<String, Any?> ?: emptyMap()
-            if (players.containsKey(uid)) {
-                // Level and chosen frame ride along with the heartbeat so a
-                // level earned — or a frame swapped — mid-session shows up to
-                // the others without a rejoin.
-                tx.update(
-                    docRef,
-                    mapOf(
-                        "players.$uid.lastSeenAt" to System.currentTimeMillis(),
-                        "players.$uid.level" to myLevel,
-                        "players.$uid.frameId" to myFrameId,
-                        "players.$uid.avatarUrl" to avatarPhotoResolver.currentUrl()
-                    )
-                )
-            }
-        }.await()
+        // A plain update: one write, no read. (It used to be a transaction that first read the room to make sure this
+        // uid was still in it, because an update would otherwise re-create a pruned player as a nameless half-entry.
+        // The caller already checks that against the room snapshot it is listening to, so the read bought nothing.)
+        // Level and chosen frame ride along with the heartbeat so a level earned — or a frame swapped — mid-session
+        // shows up to the others without a rejoin.
+        rooms.document(roomCode).update(
+            mapOf(
+                "players.$uid.lastSeenAt" to System.currentTimeMillis(),
+                "players.$uid.level" to myLevel,
+                "players.$uid.frameId" to myFrameId,
+                "players.$uid.avatarUrl" to avatarPhotoResolver.currentUrl()
+            )
+        ).await()
     }
 
     override suspend fun isStillInRoom(roomCode: String): Boolean {

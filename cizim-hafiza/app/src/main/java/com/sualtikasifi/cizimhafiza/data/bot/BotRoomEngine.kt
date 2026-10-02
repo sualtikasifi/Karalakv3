@@ -100,14 +100,24 @@ class BotRoomEngine @Inject constructor(
         // it needs room for a good few of each within one match.
         private const val HANDLED_LIMIT = 40
         private const val LOCAL_ATTEMPT_CACHE_LIMIT = 200
-        private const val ABANDONED_WATCH_INTERVAL_MS = 10_000L
-        private const val ABANDONED_WATCH_TICKS = 120
-        private const val ABANDONED_MATCH_GRACE_MS = 30_000L
+        private const val ABANDONED_WATCH_INTERVAL_MS = 15_000L
+        // The longest a round can honestly take, from its word count: every word is drawn and then guessed (about
+        // 30 s of clock between them even with the hint bonuses), plus a fixed allowance for breaks and slow starts.
+        private const val ROUND_MILLIS_PER_WORD = 30_000L
+        private const val ROUND_FIXED_ALLOWANCE_MS = 150_000L
+        private const val ROUND_HARD_CAP_MS = 20 * 60_000L
+
+        fun maxRoundMillis(wordCount: Int): Long =
+            (wordCount * ROUND_MILLIS_PER_WORD + ROUND_FIXED_ALLOWANCE_MS).coerceAtMost(ROUND_HARD_CAP_MS)
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val json = Json { ignoreUnknownKeys = true }
     private val listenerStarted = AtomicBoolean(false)
+
+    // The room as the live listener last delivered it. Anything that only needs "what is the room like now" reads
+    // this instead of fetching the document again: the listener is already paying for every change.
+    @Volatile private var latestRoom: DocumentSnapshot? = null
     private val roomRef: DocumentReference get() = firestore.collection("rooms").document(ROOM_CODE)
 
     // Arrivals (uid:joinedAt) whose "Sude re-readies herself" pause was already started in this process.
@@ -158,6 +168,7 @@ class BotRoomEngine @Inject constructor(
                 emit(snapshot)
             }
         }.catch { }.collect { snapshot ->
+            latestRoom = snapshot?.takeIf { it.exists() }
             if (snapshot == null || !snapshot.exists()) return@collect
             runCatching { handleRoomChange(snapshot) }
         }
@@ -221,7 +232,8 @@ class BotRoomEngine @Inject constructor(
             // Re-check: another device may have already marked the bot
             // ready while this one was sleeping, or the room may have moved
             // on (everyone left, room recycled, etc).
-            val fresh = roomRef.get().await()
+            // The live listener's copy is as current as a fresh read (it carries every write), and costs nothing.
+            val fresh = latestRoom ?: roomRef.get().await()
             if (fresh.getString("status") != "WAITING") return
             @Suppress("UNCHECKED_CAST")
             val freshPlayers = fresh.get("players") as? Map<String, Map<String, Any?>> ?: emptyMap()
@@ -276,7 +288,7 @@ class BotRoomEngine @Inject constructor(
         if (matchSeed != 0L) {
             scope.launch { runCatching { maybeChat(BotChatMoment.MATCH_START, "start:$matchSeed") } }
             scheduleMidMatchChatter(matchSeed)
-            scheduleAbandonedMatchWatch(matchSeed)
+            scheduleAbandonedMatchWatch(matchSeed, (snapshot.get("wordIds") as? List<*>)?.size ?: 0)
         }
 
         val botPlayer = players[BOT_UID] ?: return
@@ -291,7 +303,7 @@ class BotRoomEngine @Inject constructor(
 
         // Re-check after the delay: another device may have already
         // submitted, or the room may have been reset/rematched meanwhile.
-        val fresh = roomRef.get().await()
+        val fresh = latestRoom ?: roomRef.get().await()
         if (!fresh.exists() || fresh.getString("status") != "PLAYING") return
         @Suppress("UNCHECKED_CAST")
         val freshPlayers = fresh.get("players") as? Map<String, Map<String, Any?>> ?: emptyMap()
@@ -357,28 +369,33 @@ class BotRoomEngine @Inject constructor(
 
     // A round whose real players all closed the app never reaches FINISHED by itself (they never submit), so
     // whoever arrives afterwards would sit out as a "pending" joiner, staring at 0:00. Every device in the room
-    // watches for that and ends the round once nobody who is actually playing it is still present; the pending
-    // joiners are then carried into a fresh lobby by handleFinished.
-    private fun scheduleAbandonedMatchWatch(matchSeed: Long) {
+    // watches for that and ends the round once it has run longer than any honest round of that many words could.
+    //
+    // Judged from the room as the live listener last delivered it — nothing is read from the server while waiting,
+    // however many players and rounds there are. Presence cannot be used here: the lobby's heartbeat stops when the
+    // match starts, so every player looks "absent" a minute in. The one server read happens only when a round is
+    // actually about to be ended, and checks it is still that same round.
+    private fun scheduleAbandonedMatchWatch(matchSeed: Long, wordCount: Int) {
         if (!markLocallyAttempted("abandoned:$matchSeed")) return
+        val limit = maxRoundMillis(wordCount)
         scope.launch {
-            repeat(ABANDONED_WATCH_TICKS) {
+            while (true) {
                 delay(ABANDONED_WATCH_INTERVAL_MS)
-                val fresh = runCatching { roomRef.get().await() }.getOrNull() ?: return@repeat
-                if (!fresh.exists() || fresh.getString("status") != "PLAYING") return@launch
-                if ((fresh.get("startedAt") as? Number)?.toLong() != matchSeed) return@launch
-                @Suppress("UNCHECKED_CAST")
-                val freshPlayers = fresh.get("players") as? Map<String, Map<String, Any?>> ?: emptyMap()
-                val now = System.currentTimeMillis()
-                val stillPlaying = freshPlayers.filterKeys { it != BOT_UID }.filterValues {
-                    it["pendingNextRound"] as? Boolean != true && it["left"] as? Boolean != true &&
-                        // Tighter than isPresentEntry's 75 s: a live player beats every 30 s, so 50 s of silence is enough here.
-                        now - ((it["lastSeenAt"] as? Number)?.toLong() ?: (it["joinedAt"] as? Number)?.toLong() ?: 0L) <= 50_000L
+                val room = latestRoom
+                if (room == null || room.getString("status") != "PLAYING") return@launch
+                if ((room.get("startedAt") as? Number)?.toLong() != matchSeed) return@launch
+                if (System.currentTimeMillis() - matchSeed <= limit) continue
+                runCatching {
+                    firestore.runTransaction { tx ->
+                        val fresh = tx.get(roomRef)
+                        if (fresh.getString("status") == "PLAYING" &&
+                            (fresh.get("startedAt") as? Number)?.toLong() == matchSeed
+                        ) {
+                            tx.update(roomRef, mapOf("status" to "FINISHED", "finishedAt" to System.currentTimeMillis()))
+                        }
+                    }.await()
                 }
-                if (stillPlaying.isEmpty() && now - matchSeed > ABANDONED_MATCH_GRACE_MS) {
-                    runCatching { roomRef.update(mapOf("status" to "FINISHED", "finishedAt" to now)).await() }
-                    return@launch
-                }
+                return@launch
             }
         }
     }
@@ -867,10 +884,11 @@ class BotRoomEngine @Inject constructor(
                 val startedAt = snapshot.getLong("startedAt") ?: 0L
                 @Suppress("UNCHECKED_CAST")
                 val players = snapshot.get("players") as? Map<String, Map<String, Any?>> ?: emptyMap()
-                // A match nobody is still playing (everyone closed the app mid-round) would otherwise keep the next
-                // arrival sitting out as a "pending" joiner for the whole 15 minutes.
-                val abandoned = players.none { (uid, data) -> uid != BOT_UID && data.isPresentEntry(now) }
-                if (now - startedAt > 15 * 60_000L || (abandoned && now - startedAt > 90_000L)) resetToWaiting()
+                // A round that has outrun any honest one of its length (everyone closed the app mid-round) would otherwise
+                // keep the next arrival sitting out as a "pending" joiner. Presence is not usable here: nobody sends a
+                // heartbeat while a match is running, so a live round looks abandoned from a minute in.
+                val wordCount = (snapshot.get("wordIds") as? List<*>)?.size ?: 0
+                if (now - startedAt > maxRoundMillis(wordCount)) resetToWaiting()
             }
             "WAITING" -> {
                 @Suppress("UNCHECKED_CAST")
