@@ -73,27 +73,51 @@ class GlobalLeagueRepositoryImpl @Inject constructor(
 
     private fun parse(data: Map<String, Any?>): GlobalLeagueTable {
         val myUid = auth.currentUser?.uid
-        val rows = (data["entries"] as? List<*>).orEmpty().filterIsInstance<Map<*, *>>()
+        val docPeriod = (data["periodId"] as? Number)?.toLong() ?: 0L
+        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()
+        val thisPeriod = com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(today)
 
-        val entries = rows.mapIndexed { index, row ->
-            val uid = row["uid"] as? String
+        // Real players come from the published document: its own `humans` list when the builder wrote one
+        // (kept apart from the filler rows so an older writer cannot disturb it), otherwise the real rows
+        // of `entries`. A document from a past month says nothing about this one.
+        val published = ((data["humans"] as? List<*>) ?: (data["entries"] as? List<*>)).orEmpty()
+            .filterIsInstance<Map<*, *>>()
+            .filter { it["uid"] is String }
+        val rows = if (docPeriod == thisPeriod) published else emptyList()
+
+        val humans = rows.map { row ->
+            val uid = row["uid"] as String
             val level = (row["level"] as? Number)?.toInt() ?: 1
             LeagueEntry(
-                // A filler row has no account, so it has no uid. The list
-                // still needs a stable key per row, and its position in the
-                // published (already ranked) list is exactly that.
-                uid = uid ?: "$BOT_KEY_PREFIX$index",
+                uid = uid,
                 nickname = (row["nickname"] as? String)?.takeIf { it.isNotBlank() } ?: "?",
                 periodXp = (row["periodXp"] as? Number)?.toInt() ?: 0,
                 level = level,
-                // The function does not send a frame: doing so would mean
-                // duplicating the whole frame ladder in TypeScript, where it
-                // would drift the first time a frame was added here.
-                frameId = if (uid == null) botFrameFor(level, (row["nickname"] as? String).orEmpty()).name else AvatarFrame.highestUnlockedFor(level).name,
-                isMe = uid != null && uid == myUid,
-                isBot = uid == null
+                frameId = AvatarFrame.highestUnlockedFor(level).name,
+                isMe = uid == myUid,
+                isBot = false
             )
         }
+
+        // The filler players are worked out here, from the month and the clock (see LeagueBots), so their
+        // names and scores are the same on every phone and always current.
+        val bots = com.sualtikasifi.cizimhafiza.domain.model.LeagueBots
+            .bots(thisPeriod, System.currentTimeMillis(), com.sualtikasifi.cizimhafiza.domain.model.LeagueBots.monthStartMillis(today))
+            .mapIndexed { index, bot ->
+                LeagueEntry(
+                    uid = "$BOT_KEY_PREFIX$index",
+                    nickname = bot.nickname,
+                    periodXp = bot.periodXp,
+                    level = bot.level,
+                    frameId = botFrameFor(bot.level, bot.nickname).name,
+                    isMe = false,
+                    isBot = true
+                )
+            }
+        // Same cut as the server's: the 21 best of everyone, so the app can still show 20 others next to the player.
+        val entries = (humans + bots)
+            .sortedWith(compareByDescending<LeagueEntry> { it.periodXp }.thenBy { it.nickname })
+            .take(PUBLISHED_ROWS)
 
         val daysRemaining = (data["daysRemaining"] as? Number)?.toInt() ?: 0
         val lastPeriod = parseLastPeriod(data["lastPeriod"] as? Map<*, *>)
@@ -101,7 +125,7 @@ class GlobalLeagueRepositoryImpl @Inject constructor(
             // Re-ranked here rather than trusted as ordered: the tie-break
             // then matches the friends table exactly, and myRank comes free.
             table = LeagueTable.rank(entries, daysRemaining),
-            periodId = (data["periodId"] as? Number)?.toLong() ?: 0L,
+            periodId = docPeriod,
             generatedAtMillis = (data["generatedAt"] as? Number)?.toLong() ?: 0L,
             rewardId = data["rewardId"] as? String,
             lastPeriod = lastPeriod,
@@ -144,5 +168,6 @@ class GlobalLeagueRepositoryImpl @Inject constructor(
 
     private companion object {
         const val BOT_KEY_PREFIX = "filler:"
+        const val PUBLISHED_ROWS = 21
     }
 }

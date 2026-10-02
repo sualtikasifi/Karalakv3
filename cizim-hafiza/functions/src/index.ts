@@ -577,6 +577,9 @@ export async function runBuildGlobalLeaderboard(): Promise<void> {
         // The month's own prize, unless the review panel has overridden it.
         rewardId: (config.get("rewardId") as string | undefined) ?? rewardIdFor(periodId),
         entries,
+        // The real players alone (top 30): the app works out its own filler rows, and reads this so that a second
+        // writer of `entries` cannot hide a real player behind its own filler.
+        humans: real.slice(0, 30).map((r) => ({ uid: r.uid, nickname: r.nickname, periodXp: r.periodXp, level: r.level })),
         bots: botStates,
         botsGrewAt: now,
         ...(endedPeriod ? { endedPeriod } : {}),
