@@ -23,7 +23,17 @@ printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boo
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 dump() { adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "$OUT/$1.xml" >/dev/null 2>&1; }
-step() { sleep "${2:-2}"; shot "$1"; dump "$1"; }
+step() { sleep "${2:-2}"; clear_overlays; shot "$1"; dump "$1"; }
+
+# System dialogs on this slow emulator ("Pixel Launcher isn't responding") and the ads consent form can land over
+# the app at any moment and swallow taps; dismiss them whenever they are on screen.
+clear_overlays() {
+  local xy
+  for label in "Wait" "Consent"; do
+    xy=$(find_xy "$label")
+    if [ -n "$xy" ]; then echo "overlay: tapping '$label' at $xy"; adb shell input tap $xy; sleep 2; fi
+  done
+}
 
 # Centre of the first node whose text / description contains $1 ("" when there is none).
 find_xy() {
@@ -104,6 +114,7 @@ if rows:
 PY
 }
 tap_btn() {  # taps the coaching card's primary button
+  clear_overlays
   local xy; xy=$(btn_xy)
   if [ -z "$xy" ]; then xy="540 1700"; fi
   echo "tap button at $xy"
@@ -127,6 +138,7 @@ done
 step t04_draw1_drawn 1
 
 # --- Word 1 is untimed: "Sonraki Kelime" moves on; then the timed words end by themselves --------------
+clear_overlays
 adb shell input tap 852 2240
 step t05_after_word1 3
 tap_btn
