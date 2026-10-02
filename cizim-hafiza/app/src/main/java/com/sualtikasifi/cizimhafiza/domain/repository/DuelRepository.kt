@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.domain.repository
 
 import com.sualtikasifi.cizimhafiza.domain.model.Duel
+import com.sualtikasifi.cizimhafiza.util.DuelHistoryEntry
 import com.sualtikasifi.cizimhafiza.domain.model.ResultItem
 import kotlinx.coroutines.flow.Flow
 
@@ -37,6 +38,15 @@ interface DuelRepository {
 
     /** Clears the challenger's "new result" flag once they've opened a completed duel they sent. */
     suspend fun markSeenByChallenger(duelId: String): Result<Unit>
+
+    /** Finished duels remembered on this phone, newest first — read without touching the server. */
+    val history: Flow<List<DuelHistoryEntry>>
+
+    /** Keeps the opponent's own copy of a duel they just finished. */
+    fun recordReceivedResult(duel: Duel, myScore: Int, myCorrectCount: Int)
+
+    /** Clears a result's "new" mark on this phone. */
+    fun markHistorySeen(duelId: String)
 
     /** Either participant may remove a duel from their own view once it no longer needs to be there. */
     suspend fun deleteDuel(duelId: String): Result<Unit>

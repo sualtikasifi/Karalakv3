@@ -112,14 +112,14 @@ fun DuelListScreen(
                     EmptyState(emoji = "🏁", message = stringResource(R.string.duel_list_recent_empty))
                 }
             } else {
-                items(uiState.recent, key = { "recent_" + it.duel.id }) { recent ->
+                items(uiState.recent, key = { "recent_" + it.id }) { recent ->
                     RecentDuelCard(
                         recent = recent,
                         onClick = {
                             resultDuel = recent
-                            if (recent.isNew) viewModel.markSeen(recent.duel.id)
+                            if (recent.isNew) viewModel.markSeen(recent.id)
                         },
-                        onDelete = { viewModel.deleteDuel(recent.duel.id) }
+                        onDelete = { viewModel.deleteDuel(recent.id) }
                     )
                 }
             }

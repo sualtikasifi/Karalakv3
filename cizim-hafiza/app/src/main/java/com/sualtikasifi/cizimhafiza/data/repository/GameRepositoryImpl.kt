@@ -91,7 +91,7 @@ class GameRepositoryImpl @Inject constructor(
         return ids.mapNotNull { byId[it]?.toDomain() }
     }
 
-    override suspend fun saveGame(totalScore: Int, results: List<DrawingResult>): List<Achievement> {
+    override suspend fun saveGame(totalScore: Int, results: List<DrawingResult>, wonHeadToHead: Boolean): List<Achievement> {
         val fastest = results.filter { it.isCorrect }.minOfOrNull { it.responseTimeMs }
         val correctCount = results.count { it.isCorrect }
         val sessionId = gameSessionDao.insert(
@@ -122,7 +122,9 @@ class GameRepositoryImpl @Inject constructor(
             wordCount = results.size,
             hadPerfectRound = results.isNotEmpty() && correctCount == results.size,
             isOnline = false,
-            wasOnlineWin = false
+            // A Hızlı Eşleş or friend-duel win counts toward the "online wins" achievements too: those
+            // are the matches players actually win, and counting only room games left the ladder stuck.
+            wasOnlineWin = wonHeadToHead
         )
     }
 

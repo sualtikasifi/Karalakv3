@@ -28,13 +28,27 @@ import javax.inject.Inject
 class DuelRepositoryImpl @Inject constructor(
     private val firestore: FirebaseFirestore,
     private val auth: FirebaseAuth,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val historyStore: com.sualtikasifi.cizimhafiza.util.DuelHistoryStore
 ) : DuelRepository {
 
     private val duels get() = firestore.collection("duels")
     private val json = Json { ignoreUnknownKeys = true }
 
     override val currentUid: String? get() = auth.currentUser?.uid
+
+    override val history: Flow<List<com.sualtikasifi.cizimhafiza.util.DuelHistoryEntry>> get() = historyStore.entries
+
+    override fun recordReceivedResult(duel: Duel, myScore: Int, myCorrectCount: Int) =
+        historyStore.archiveReceived(duel, myScore, myCorrectCount)
+
+    override fun markHistorySeen(duelId: String) = historyStore.markSeen(duelId)
+
+    /** Copies any finished duels a snapshot carries into the on-phone history. */
+    private fun List<Duel>.archived(): List<Duel> {
+        currentUid?.let { historyStore.archive(this, it) }
+        return this
+    }
 
     private suspend fun requireUid(): String {
         auth.currentUser?.uid?.let { return it }
@@ -134,7 +148,7 @@ class DuelRepositoryImpl @Inject constructor(
                         onError(error)
                         return@addSnapshotListener
                     }
-                    emit(snapshot?.documents.orEmpty().mapNotNull { it.toDuel() }.newestFirst())
+                    emit(snapshot?.documents.orEmpty().mapNotNull { it.toDuel() }.archived().newestFirst())
                 }
         }
 
@@ -154,7 +168,7 @@ class DuelRepositoryImpl @Inject constructor(
                         onError(error)
                         return@addSnapshotListener
                     }
-                    emit(snapshot?.documents.orEmpty().mapNotNull { it.toDuel() }.newestFirst())
+                    emit(snapshot?.documents.orEmpty().mapNotNull { it.toDuel() }.archived().newestFirst())
                 }
         }
 
@@ -190,6 +204,7 @@ class DuelRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteDuel(duelId: String): Result<Unit> = runCatching {
+        historyStore.remove(duelId)
         duels.document(duelId).delete().await()
         Unit
     }

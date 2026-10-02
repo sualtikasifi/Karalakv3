@@ -9,8 +9,8 @@ class SaveGameSessionUseCase @Inject constructor(
     private val repository: GameRepository
 ) {
     /** Returns any achievements newly unlocked by this save. */
-    suspend operator fun invoke(results: List<DrawingResult>): List<Achievement> {
+    suspend operator fun invoke(results: List<DrawingResult>, wonHeadToHead: Boolean = false): List<Achievement> {
         val totalScore = results.sumOf { it.pointsAwarded }
-        return repository.saveGame(totalScore, results)
+        return repository.saveGame(totalScore, results, wonHeadToHead)
     }
 }

@@ -36,6 +36,10 @@ class SettingsViewModel @Inject constructor(
     val showAccountNudge: StateFlow<Boolean> = authRepository.authState
         .map { it !is AuthState.Linked && settingsRepository.lifetimeGamesPlayed >= ACCOUNT_NUDGE_GAMES_THRESHOLD }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initialValue = false)
+    /** Whether a Google account is linked; the account row keeps a travelling light until it is. */
+    val accountLinked: StateFlow<Boolean> = authRepository.authState
+        .map { it is AuthState.Linked }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initialValue = true)
     val vibrationEnabled: StateFlow<Boolean> = settingsRepository.vibrationEnabled
     val notificationsEnabled: StateFlow<Boolean> = settingsRepository.notificationsEnabled
 
