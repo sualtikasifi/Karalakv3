@@ -524,8 +524,8 @@ private fun Modifier.travelingLight(corner: androidx.compose.ui.unit.Dp): Modifi
     )
     drawWithContent {
         drawContent()
-        val stroke = 2.5.dp.toPx()
-        val glow = Color(0xFFFFC53D)
+        val stroke = 4.dp.toPx()
+        val glow = Color(0xFFFF7A1A)
         val angle = turn
         val brush = object : androidx.compose.ui.graphics.ShaderBrush() {
             override fun createShader(size: androidx.compose.ui.geometry.Size): android.graphics.Shader =
@@ -534,9 +534,9 @@ private fun Modifier.travelingLight(corner: androidx.compose.ui.unit.Dp): Modifi
                     size.height / 2f,
                     intArrayOf(
                         Color.Transparent.toArgb(), Color.Transparent.toArgb(),
-                        glow.copy(alpha = 0.9f).toArgb(), Color.White.toArgb()
+                        glow.copy(alpha = 0.95f).toArgb(), Color(0xFFFF5A00).toArgb()
                     ),
-                    floatArrayOf(0f, 0.55f, 0.9f, 1f)
+                    floatArrayOf(0f, 0.45f, 0.85f, 1f)
                 ).also { shader ->
                     shader.setLocalMatrix(android.graphics.Matrix().apply { postRotate(angle, size.width / 2f, size.height / 2f) })
                 }

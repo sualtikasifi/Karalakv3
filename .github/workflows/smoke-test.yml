@@ -11,6 +11,14 @@ name: Emulator smoke test
 # Run it from the Actions tab (Run workflow), or it runs when this file or the script changes.
 on:
   workflow_dispatch:
+    inputs:
+      script:
+        description: "Script to run in the emulator"
+        type: choice
+        default: smoke.sh
+        options:
+          - smoke.sh
+          - tutorial.sh
   pull_request:
     paths:
       - ".github/workflows/smoke-test.yml"
@@ -52,7 +60,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: bash .github/scripts/smoke.sh
+          script: bash .github/scripts/${{ inputs.script || 'smoke.sh' }}
 
       # Runs even when the test failed: a crash is exactly when the screenshots are wanted.
       - name: Publish results

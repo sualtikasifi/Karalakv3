@@ -48,6 +48,8 @@ fun TutorialScreen(
     val phase by viewModel.phase.collectAsState()
     val coach by viewModel.coach.collectAsState()
     val isFinished by viewModel.isFinished.collectAsState()
+    val jokers by viewModel.jokers.collectAsState()
+    val spotlight by viewModel.spotlight.collectAsState()
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -91,7 +93,11 @@ fun TutorialScreen(
             is GamePhase.Guessing -> GuessScreen(
                 state = current,
                 onSubmit = viewModel::submitGuess,
-                onAnswerChanged = viewModel::onAnswerChanged
+                onAnswerChanged = viewModel::onAnswerChanged,
+                jokers = jokers,
+                onFirstLetterJoker = viewModel::useFirstLetterJoker,
+                onLetterCountJoker = viewModel::useLetterCountJoker,
+                jokerSpotlight = spotlight
             )
 
             else -> Box(

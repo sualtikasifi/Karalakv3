@@ -121,7 +121,8 @@ class AccountViewModel @Inject constructor(
     private val accountDeletionRepository: AccountDeletionRepository,
     private val friendRepository: FriendRepository,
     private val settingsRepository: SettingsRepository,
-    private val usernameRepository: com.sualtikasifi.cizimhafiza.util.UsernameRepository
+    private val usernameRepository: com.sualtikasifi.cizimhafiza.util.UsernameRepository,
+    private val dailyChallengeRepository: com.sualtikasifi.cizimhafiza.util.DailyChallengeRepository
 ) : ViewModel() {
 
     private val _actionState = MutableStateFlow(AccountUiState(isGoogleSignInConfigured = authRepository.isGoogleSignInConfigured))
@@ -131,8 +132,9 @@ class AccountViewModel @Inject constructor(
         backupRepository.lastBackupAtMillis,
         settingsRepository.nickname,
         settingsRepository.lifetimeXp,
-        _actionState
-    ) { authState, lastBackupAtMillis, nickname, lifetimeXp, action ->
+        combine(_actionState, dailyChallengeRepository.state) { action, daily -> action to daily }
+    ) { authState, lastBackupAtMillis, nickname, lifetimeXp, actionAndDaily ->
+        val (action, daily) = actionAndDaily
         val level = PlayerLevel.levelForXp(lifetimeXp)
         action.copy(
             authState = authState,
@@ -141,7 +143,12 @@ class AccountViewModel @Inject constructor(
             level = level,
             levelProgress = com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState.forXp(lifetimeXp),
             gamesPlayed = settingsRepository.lifetimeGamesPlayed,
-            bestStreak = settingsRepository.bestStreak,
+            // The longest run of days, whichever kind built it: playing any game on consecutive days, or the daily
+            // challenge's own streak (the flame players watch, which a restore from the account brings back too).
+            bestStreak = maxOf(
+                settingsRepository.bestStreak, settingsRepository.currentStreak,
+                daily.bestStreak, daily.currentStreak
+            ),
             frame = AvatarFrame.resolve(settingsRepository.selectedAvatarFrameId.value, level)
         )
     }.stateIn(

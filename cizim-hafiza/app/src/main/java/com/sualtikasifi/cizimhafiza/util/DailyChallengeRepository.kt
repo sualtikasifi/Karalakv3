@@ -181,7 +181,7 @@ class DailyChallengeRepository @Inject constructor(@ApplicationContext context: 
      * numbers and the backup describe two DIFFERENT players here, so the
      * outgoing streak must be overwritten outright, not compared against.
      */
-    fun replaceWithAccount(lastCompletedEpochDay: Long, currentStreak: Int, bestStreak: Int) {
+    fun replaceWithAccount(lastCompletedEpochDay: Long, currentStreak: Int, bestStreak: Int, result: String = "") {
         // One durable write for the clear AND the restore — see
         // SettingsRepository.replaceWithAccount.
         prefs.edit(commit = true) {
@@ -189,6 +189,16 @@ class DailyChallengeRepository @Inject constructor(@ApplicationContext context: 
             putLong(KEY_LAST_COMPLETED, lastCompletedEpochDay)
             putInt(KEY_CURRENT_STREAK, currentStreak)
             putInt(KEY_BEST_STREAK, bestStreak)
+            // The last result goes back too (see ProgressSnapshot.dailyResult); a malformed one is simply skipped.
+            val parts = result.split("|")
+            val day = parts.getOrNull(0)?.toLongOrNull()
+            if (parts.size == 5 && day != null) {
+                putLong(KEY_RESULT_DAY, day)
+                putString(KEY_RESULT_FLAGS, parts[1])
+                putInt(KEY_RESULT_SCORE, parts[2].toIntOrNull() ?: 0)
+                putInt(KEY_RESULT_XP, parts[3].toIntOrNull() ?: 0)
+                putInt(KEY_RESULT_STREAK, parts[4].toIntOrNull() ?: 0)
+            }
         }
         _state.value = readState()
     }

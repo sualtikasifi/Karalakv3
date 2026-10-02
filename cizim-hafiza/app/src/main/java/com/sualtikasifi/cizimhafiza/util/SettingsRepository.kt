@@ -1242,6 +1242,19 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         set(value) = flagPrefs.edit { putBoolean(KEY_RATING_PROMPT_SHOWN, value) }
 
     /** Quick Match rounds finished to the end. The rating ask comes after the third. Survives a reinstall like [ratingPromptShown]. */
+    /**
+     * The tutorial's gift: three First Letter and three Letter Count jokers, once per install. Returns whether
+     * it was granted now (false when it already had been, e.g. the tutorial replayed from Settings).
+     */
+    @Synchronized
+    fun grantTutorialJokersOnce(): Boolean {
+        if (flagPrefs.getBoolean(KEY_TUTORIAL_JOKERS_GRANTED, false)) return false
+        flagPrefs.edit { putBoolean(KEY_TUTORIAL_JOKERS_GRANTED, true) }
+        addJoker(JokerType.FIRST_LETTER, TUTORIAL_JOKER_GIFT)
+        addJoker(JokerType.LETTER_COUNT, TUTORIAL_JOKER_GIFT)
+        return true
+    }
+
     val quickMatchGamesFinished: Int get() = flagPrefs.getInt(KEY_QUICK_MATCH_GAMES_FINISHED, 0)
 
     fun recordQuickMatchFinished() {
@@ -1378,6 +1391,8 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_SIGN_IN_PROMPT_SHOWN = "sign_in_prompt_shown"
         const val KEY_RATING_PROMPT_SHOWN = "rating_prompt_shown"
         const val KEY_QUICK_MATCH_GAMES_FINISHED = "quick_match_games_finished"
+        const val KEY_TUTORIAL_JOKERS_GRANTED = "tutorial_jokers_granted"
+        const val TUTORIAL_JOKER_GIFT = 3
         const val KEY_USERNAME_OFFER_SHOWN = "username_offer_shown"
         const val KEY_PERIOD_XP_FIX_V2 = "period_xp_fix_v2"
         const val KEY_USERNAME_OFFER_PENDING = "username_offer_pending"

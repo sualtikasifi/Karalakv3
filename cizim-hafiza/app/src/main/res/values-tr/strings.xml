@@ -395,8 +395,14 @@
     <string name="tutorial_last_word_body">Artık nasıl olduğunu biliyorsun. Bu sonuncusu, sonra sıra hatırlamaya gelecek.</string>
     <string name="tutorial_guess_title">Sıra hatırlamada</string>
     <string name="tutorial_guess_body">Şimdi çizimlerini tek tek göstereceğim. Her birinin hangi kelime olduğunu yaz. Gerçek oyunda da kendi çizimlerini böyle tahmin edeceksin.</string>
+    <string name="tutorial_joker_first_title">İlk Harf Jokeri</string>
+    <string name="tutorial_joker_first_body">Çizimi tanıyamadın mı? Bu butona dokun, kelimenin ilk harfi ekranda belirsin. Süre, sen dokunana kadar durdu. Şimdi dene!</string>
+    <string name="tutorial_joker_count_title">Harf Sayısı Jokeri</string>
+    <string name="tutorial_joker_count_body">Kelime kaç harfli? Bu butona dokun, her harf için bir çizgi görünsün. Süre yine durdu. Şimdi sen dene!</string>
+    <string name="tutorial_joker_free_title">Jokerler senin elinde 🎁</string>
+    <string name="tutorial_joker_free_body">Bu son kelimede istediğin jokeri kullanabilirsin, ya da hiç kullanmadan deneyebilirsin. Eğitimi bitirince her jokerden 3\'er hakkın olacak!</string>
     <string name="tutorial_finale_title">İşte bu kadar! 🎉</string>
-    <string name="tutorial_finale_body">Gördün mü, hepsi bu kadar basitti! Artık çizmeyi de hatırlamayı da biliyorsun. Sıra gerçek oyunda, arkadaşlarınla yarış, bölümleri geç, rozetleri topla. Kalemin hazır, bol şans!</string>
+    <string name="tutorial_finale_body">Gördün mü, hepsi bu kadar basitti! Artık çizmeyi de hatırlamayı da biliyorsun. Sıra gerçek oyunda, arkadaşlarınla yarış, bölümleri geç, rozetleri topla. Hediye olarak her jokerden 3\'er hakkın hesabına eklendi. Kalemin hazır, bol şans!</string>
     <string name="tutorial_finale_button">Oynamaya başla</string>
     <string name="tutorial_skip">Eğitimi atla</string>
     <!-- The tutorial's 3 practice words — deliberately not in the real word

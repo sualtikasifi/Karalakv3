@@ -162,7 +162,7 @@ fun LeagueScreen(
                 val others = uiState.global?.table?.entries.orEmpty().filterNot { it.isMe }.take(GLOBAL_VISIBLE_ROWS)
                 MonthlyXpCard(
                     myXp = myXp,
-                    myRank = uiState.myGlobalRank,
+                    myRank = uiState.myGlobalRank?.takeIf { it <= GLOBAL_VISIBLE_ROWS },
                     top20Xp = others.getOrNull(GLOBAL_VISIBLE_ROWS - 1)?.periodXp,
                     podiumXp = others.getOrNull(2)?.periodXp,
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -238,36 +238,22 @@ fun LeagueScreen(
                     contentPadding = PaddingValues(top = 10.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // On the global tab, the player's own entry is dropped out
-                    // of the ranked list even when it happens to occupy a
-                    // published slot — that slot is a bot or another real
-                    // player's earned spot, never a self-view of a rank that
-                    // can be misleadingly high before the bots have grown for
-                    // the month. The player's real (computed) rank is always
-                    // shown pinned below instead — see resolveOwnRank.
+                    // Global: at most 20 rows. The player appears in them only when their XP earns a place in the
+                    // top 20, at the spot it earns; anyone further back is not listed and is told so on the card.
                     val visibleEntries = if (uiState.tab == LeagueTab.Global) {
-                        shownTable.entries.filterNot { it.isMe }.take(GLOBAL_VISIBLE_ROWS)
+                        val others = shownTable.entries.filterNot { it.isMe }
+                        val ownRank = uiState.myGlobalRank
+                        val ownEntry = uiState.myGlobalEntry
+                        if (ownRank != null && ownEntry != null && ownRank <= GLOBAL_VISIBLE_ROWS) {
+                            others.toMutableList().apply { add((ownRank - 1).coerceAtMost(size), ownEntry) }.take(GLOBAL_VISIBLE_ROWS)
+                        } else {
+                            others.take(GLOBAL_VISIBLE_ROWS)
+                        }
                     } else {
                         shownTable.entries
                     }
                     itemsIndexed(visibleEntries, key = { _, entry -> entry.uid }) { index, entry ->
                         LeagueRow(rank = index + 1, entry = entry, showTotalXp = uiState.tab == LeagueTab.Friends)
-                    }
-                    // The real rank, pinned under the table after a gap,
-                    // rather than a row squeezed onto the end of it.
-                    val ownRank = uiState.myGlobalRank
-                    val ownEntry = uiState.myGlobalEntry
-                    if (uiState.tab == LeagueTab.Global && ownRank != null && ownEntry != null) {
-                        item(key = "own-gap") {
-                            Text(
-                                text = "⋮",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                        item(key = "own-row") { LeagueRow(rank = ownRank, entry = ownEntry) }
                     }
                     if (uiState.tab == LeagueTab.Global) {
                         item(key = "rebuilt-note") {

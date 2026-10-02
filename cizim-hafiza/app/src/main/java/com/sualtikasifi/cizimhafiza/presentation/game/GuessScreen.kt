@@ -63,6 +63,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -117,7 +119,9 @@ fun GuessScreen(
     musicEnabled: Boolean = true,
     onToggleMusic: () -> Unit = {},
     adUnavailable: Boolean = false,
-    onAdUnavailableShown: () -> Unit = {}
+    onAdUnavailableShown: () -> Unit = {},
+    /** The tutorial only: dim everything but one joker button and ask the player to use it. */
+    jokerSpotlight: JokerSpotlight? = null
 ) {
     val wordLanguage = currentWordLanguage()
     var answer by remember(state.guessNumber) { mutableStateOf("") }
@@ -155,11 +159,20 @@ fun GuessScreen(
     // reasserted on every new guess as a safety net.
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
-    LaunchedEffect(state.guessNumber) {
-        focusRequester.requestFocus()
-        keyboardController?.show()
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    LaunchedEffect(state.guessNumber, jokerSpotlight != null) {
+        if (jokerSpotlight != null) {
+            // The tutorial lesson: no keyboard, so the joker button is the only thing there is to do.
+            focusManager.clearFocus(force = true)
+            keyboardController?.hide()
+        } else {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
     }
 
+    var spotlightHole by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         // Laid out so the ANSWER FIELD is always on screen with the keyboard
         // open: top bar, canvas, then field + submit directly under it, and
@@ -358,7 +371,9 @@ fun GuessScreen(
                     contentColor = Color.White,
                     enabled = !isAnswered && state.hintLetter == null && firstCount > 0,
                     badgeCount = firstCount,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).onGloballyPositioned {
+                        if (jokerSpotlight?.type == firstType) spotlightHole = it.boundsInWindow()
+                    },
                     onClick = onFirstLetterJoker,
                     icon = { JokerArt(firstType, 28.dp) }
                 )
@@ -368,7 +383,9 @@ fun GuessScreen(
                     contentColor = Color.White,
                     enabled = !isAnswered && state.letterCount == null && letterCountCount > 0,
                     badgeCount = letterCountCount,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).onGloballyPositioned {
+                        if (jokerSpotlight?.type == countType) spotlightHole = it.boundsInWindow()
+                    },
                     onClick = onLetterCountJoker,
                     icon = { JokerArt(countType, 28.dp) }
                 )
@@ -397,6 +414,8 @@ fun GuessScreen(
             }
             Spacer(modifier = Modifier.height(4.dp))
         }
+    }
+    jokerSpotlight?.let { JokerSpotlightOverlay(it, spotlightHole) }
     }
 }
 

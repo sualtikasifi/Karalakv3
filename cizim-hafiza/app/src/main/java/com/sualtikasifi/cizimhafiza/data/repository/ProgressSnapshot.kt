@@ -84,6 +84,12 @@ data class ProgressSnapshot(
     val claimedAchievementIds: List<String> = emptyList(),
     /** True when [claimedAchievementIds] is meaningful; older backups lack it and treat every unlock as already collected. */
     val claimsSaved: Boolean = false,
+    /**
+     * Today's daily-challenge result as "epochDay|1,0,1,1,0|score|xp|streak" (empty when there is none), so the
+     * ticks and crosses on the home card — and the "done" state they belong to — survive signing in or out.
+     * Without it a restore kept "completed today" but wiped which answers were right.
+     */
+    val dailyResult: String = "",
     /** 1 once the rating ask was shown, and how many Quick Match rounds were finished — so a reinstall does not ask again. */
     val ratingPromptShown: Int = 0,
     val quickMatchGames: Int = 0,
@@ -129,6 +135,7 @@ data class ProgressSnapshot(
         "adChestDay" to adChestDay,
         "claimedAchievementIds" to claimedAchievementIds,
         "claimsSaved" to claimsSaved,
+        "dailyResult" to dailyResult,
         "ratingPromptShown" to ratingPromptShown,
         "quickMatchGames" to quickMatchGames,
         "backedUpAt" to backedUpAt
@@ -179,6 +186,7 @@ data class ProgressSnapshot(
             adChestDay = data.long("adChestDay", absent = -1L),
             claimedAchievementIds = data.strings("claimedAchievementIds"),
             claimsSaved = data["claimsSaved"] as? Boolean ?: false,
+            dailyResult = data.str("dailyResult"),
             ratingPromptShown = data.int("ratingPromptShown"),
             quickMatchGames = data.int("quickMatchGames"),
             backedUpAt = data.long("backedUpAt")
