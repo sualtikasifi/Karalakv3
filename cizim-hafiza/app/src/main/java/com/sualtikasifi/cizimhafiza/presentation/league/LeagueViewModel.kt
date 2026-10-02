@@ -165,9 +165,24 @@ class LeagueViewModel @Inject constructor(
                     )
                     _uiState.update { it.copy(myGlobalRank = rank, myGlobalEntry = entry) }
                 }
-                // A failed count is not worth a message: the table itself
-                // loaded, and the player just does not see a rank line.
-                .onFailure { _uiState.update { it.copy(myGlobalRank = null, myGlobalEntry = null) } }
+                // The exact count failed (offline, a throttled query): fall back to placing the player among
+                // the rows of the table that did load, rather than telling someone with more XP than the whole
+                // table that they are not ranked.
+                .onFailure {
+                    val estimate = table.table.entries.count { row -> !row.isMe && row.periodXp > myXp } + 1
+                    val level = com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.levelForXp(settingsRepository.lifetimeXp.value)
+                    val entry = com.sualtikasifi.cizimhafiza.domain.model.LeagueEntry(
+                        uid = "me",
+                        nickname = settingsRepository.nicknameOrDefault,
+                        periodXp = myXp,
+                        level = level,
+                        frameId = com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
+                            .resolve(settingsRepository.selectedAvatarFrameId.value, level).name,
+                        avatarUrl = avatarPhotoResolver.currentUrl(),
+                        isMe = true
+                    )
+                    _uiState.update { it.copy(myGlobalRank = estimate, myGlobalEntry = entry) }
+                }
         }
     }
 
