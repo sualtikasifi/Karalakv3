@@ -7,6 +7,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.DuelStatus
 import com.sualtikasifi.cizimhafiza.domain.model.FriendRequest
 import com.sualtikasifi.cizimhafiza.domain.repository.DuelRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.FriendRepository
+import com.sualtikasifi.cizimhafiza.util.DuelHistoryEntry
 import com.sualtikasifi.cizimhafiza.util.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,30 +15,37 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** A finished duel seen from THIS player's side, whichever end of it they were on. */
-data class RecentDuel(val duel: Duel, val iAmChallenger: Boolean) {
-    val otherName: String get() = if (iAmChallenger) duel.opponentName else duel.challengerName
-    val myScore: Int get() = if (iAmChallenger) duel.challengerScore else duel.opponentScore ?: 0
-    val otherScore: Int get() = if (iAmChallenger) duel.opponentScore ?: 0 else duel.challengerScore
+/** A finished duel seen from THIS player's side, whichever end of it they were on — read from the phone's own history. */
+data class RecentDuel(private val entry: DuelHistoryEntry) {
+    val id: String get() = entry.id
+    val iAmChallenger: Boolean get() = entry.iAmChallenger
+    val otherName: String get() = entry.otherName
+    val myScore: Int get() = entry.myScore
+    val otherScore: Int get() = entry.otherScore
 
     /** How many of [totalWords] each side actually guessed right — the "8/10" half of the story a bare score doesn't tell. */
-    val myCorrectCount: Int get() = if (iAmChallenger) duel.challengerCorrectCount else duel.opponentCorrectCount ?: 0
-    val otherCorrectCount: Int get() = if (iAmChallenger) duel.opponentCorrectCount ?: 0 else duel.challengerCorrectCount
-    val totalWords: Int get() = duel.totalWords
+    val myCorrectCount: Int get() = entry.myCorrect
+    val otherCorrectCount: Int get() = entry.otherCorrect
+    val totalWords: Int get() = entry.totalWords
 
     /** True/false for a win/loss for me, null for a tie. */
-    val iWon: Boolean? get() = duel.challengerWon?.let { if (iAmChallenger) it else !it }
+    val iWon: Boolean? get() = when {
+        entry.myScore > entry.otherScore -> true
+        entry.myScore < entry.otherScore -> false
+        else -> null
+    }
 
     /** The moment it finished — what "recent" is sorted on. */
-    val finishedAt: Long get() = duel.completedAt ?: duel.createdAt
+    val finishedAt: Long get() = entry.finishedAt
 
     /** Only a result the challenger has not opened yet is "new"; the opponent played it themselves. */
-    val isNew: Boolean get() = iAmChallenger && !duel.seenByChallenger
+    val isNew: Boolean get() = entry.iAmChallenger && !entry.seen
 }
 
 data class DuelListUiState(
@@ -65,21 +73,25 @@ class DuelListViewModel @Inject constructor(
 
     private val answeringUid = MutableStateFlow<String?>(null)
 
+    init {
+        // Duels this player answered on an older version have no on-phone copy yet; listening here copies them
+        // in once (the repository archives whatever a snapshot carries). Nothing is shown from this stream.
+        duelRepository.observeCompletedReceivedDuels().catch { }.launchIn(viewModelScope)
+    }
+
+    // Finished duels come from the phone's own history; the server listeners below only feed that history
+    // (see DuelRepositoryImpl) and drive the "waiting for you" and "waiting for them" lists.
     private val sources = combine(
         duelRepository.observeIncomingDuels().catch { emit(emptyList()) },
         duelRepository.observeSentDuels().catch { emit(emptyList()) },
-        duelRepository.observeCompletedReceivedDuels().catch { emit(emptyList()) },
-        friendRepository.observeFriendRequests().catch { emit(emptyList()) }
-    ) { incoming, sent, receivedDone, requests ->
-        val recent = (sent.filter { it.status == DuelStatus.COMPLETE }.map { RecentDuel(it, iAmChallenger = true) } +
-            receivedDone.map { RecentDuel(it, iAmChallenger = false) })
-            .sortedByDescending { it.finishedAt }
-            .take(RECENT_LIMIT)
+        friendRepository.observeFriendRequests().catch { emit(emptyList()) },
+        duelRepository.history
+    ) { incoming, sent, requests, history ->
         DuelListUiState(
             incoming = incoming,
             friendRequests = requests,
             pendingSent = sent.filter { it.status == DuelStatus.AWAITING_OPPONENT },
-            recent = recent,
+            recent = history.map { RecentDuel(it) }.sortedByDescending { it.finishedAt }.take(RECENT_LIMIT),
             isLoading = false
         )
     }
@@ -90,6 +102,7 @@ class DuelListViewModel @Inject constructor(
 
     /** Marks a completed sent duel as seen — call when its result card is opened. */
     fun markSeen(duelId: String) {
+        duelRepository.markHistorySeen(duelId)
         viewModelScope.launch { runCatching { duelRepository.markSeenByChallenger(duelId) } }
     }
 

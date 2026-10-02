@@ -25,7 +25,7 @@ interface GameRepository {
     suspend fun getWordsByIds(ids: List<Int>): List<Word>
 
     /** Persists a finished game (session row + one drawing-result row per word) and returns any achievements newly unlocked by it. */
-    suspend fun saveGame(totalScore: Int, results: List<DrawingResult>): List<Achievement>
+    suspend fun saveGame(totalScore: Int, results: List<DrawingResult>, wonHeadToHead: Boolean = false): List<Achievement>
 
     /** Persists a finished online match's summary (this player's placement/rank among the room, no per-word drawing rows — those live in Firestore) and returns any achievements newly unlocked by it. */
     suspend fun saveOnlineGameSession(

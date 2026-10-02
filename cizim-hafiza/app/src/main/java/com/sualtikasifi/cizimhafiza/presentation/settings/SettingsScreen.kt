@@ -48,7 +48,12 @@ import com.sualtikasifi.cizimhafiza.util.AppReviewLauncher
 import com.sualtikasifi.cizimhafiza.BuildConfig
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -91,6 +96,7 @@ fun SettingsScreen(
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val language by viewModel.language.collectAsState()
     val showAccountNudge by viewModel.showAccountNudge.collectAsState()
+    val accountLinked by viewModel.accountLinked.collectAsState()
     val context = LocalContext.current
     val activity = context as? Activity
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -182,7 +188,8 @@ fun SettingsScreen(
                 icon = Icons.Filled.AccountCircle,
                 label = stringResource(R.string.account_title),
                 onClick = onAccountClick,
-                showBadge = showAccountNudge
+                showBadge = showAccountNudge,
+                travelingLight = !accountLinked
             )
             Spacer(modifier = Modifier.height(10.dp))
             NavRow(
@@ -326,8 +333,19 @@ private fun BatteryOptimizationHint() {
 }
 
 @Composable
-private fun NavRow(icon: ImageVector, label: String, onClick: () -> Unit, showBadge: Boolean = false) {
-    WarmCard(corner = 22.dp, onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+private fun NavRow(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    showBadge: Boolean = false,
+    /** A light that keeps travelling round the row's edge — draws the eye to it. */
+    travelingLight: Boolean = false
+) {
+    WarmCard(
+        corner = 22.dp,
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().then(if (travelingLight) Modifier.travelingLight(22.dp) else Modifier)
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -489,3 +507,46 @@ private fun SettingGridCell(
 }
 
 private const val PRIVACY_POLICY_URL = "https://sualtikasifi.github.io/app-ads/"
+
+/**
+ * A bright arc that circles the element's edge, lap after lap. Used on the account row for anyone who has not
+ * linked a Google account yet, so the one thing that protects their progress is the thing the eye lands on.
+ */
+private fun Modifier.travelingLight(corner: androidx.compose.ui.unit.Dp): Modifier = composed {
+    val transition = androidx.compose.animation.core.rememberInfiniteTransition(label = "accountLight")
+    val turn by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            androidx.compose.animation.core.tween(2600, easing = androidx.compose.animation.core.LinearEasing)
+        ),
+        label = "turn"
+    )
+    drawWithContent {
+        drawContent()
+        val stroke = 2.5.dp.toPx()
+        val glow = Color(0xFFFFC53D)
+        val angle = turn
+        val brush = object : androidx.compose.ui.graphics.ShaderBrush() {
+            override fun createShader(size: androidx.compose.ui.geometry.Size): android.graphics.Shader =
+                android.graphics.SweepGradient(
+                    size.width / 2f,
+                    size.height / 2f,
+                    intArrayOf(
+                        Color.Transparent.toArgb(), Color.Transparent.toArgb(),
+                        glow.copy(alpha = 0.9f).toArgb(), Color.White.toArgb()
+                    ),
+                    floatArrayOf(0f, 0.55f, 0.9f, 1f)
+                ).also { shader ->
+                    shader.setLocalMatrix(android.graphics.Matrix().apply { postRotate(angle, size.width / 2f, size.height / 2f) })
+                }
+        }
+        drawRoundRect(
+            brush = brush,
+            topLeft = androidx.compose.ui.geometry.Offset(stroke / 2, stroke / 2),
+            size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner.toPx()),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(stroke)
+        )
+    }
+}

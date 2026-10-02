@@ -963,9 +963,10 @@ private fun ResultDrawings(
     androidx.compose.foundation.layout.BoxWithConstraints(modifier = modifier) {
         val gap = 6.dp
         val labelHeight = 26.dp
-        var columns = 5
+        var columns = if (count == 5) 3 else 5
         var cell = 0.dp
-        for (c in 4..10) {
+        // Five drawings (the daily challenge) sit three over two, each row centred, not four over one.
+        for (c in if (count == 5) 3..3 else 4..10) {
             val rows = (count + c - 1) / c
             val byWidth = (maxWidth - gap * (c - 1)) / c
             val usedByGaps = gap * (rows * sections + sections * 2) + labelHeight * sections

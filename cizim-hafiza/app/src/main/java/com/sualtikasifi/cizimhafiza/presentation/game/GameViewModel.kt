@@ -976,7 +976,9 @@ class GameViewModel @Inject constructor(
         // MainMenu badge + StatisticsScreen shimmer read persisted
         // unseen/seen state straight from AchievementDao instead of a
         // per-match snapshot (see StatisticsViewModel).
-        val newlyUnlocked = saveGameSessionUseCase(results)
+        val wonHeadToHead = (ghost != null && totalScore > ghost.totalScore) ||
+            (duelToComplete?.let { totalScore > it.challengerScore } == true)
+        val newlyUnlocked = saveGameSessionUseCase(results, wonHeadToHead)
         soundManager.playGameOver()
         // Gold earned by playing (not only by winning chests): achievements,
         // improving a level's stars, and the daily challenge. Paid once, below.
@@ -1137,6 +1139,7 @@ class GameViewModel @Inject constructor(
         // duels/{duelId} update rule for why this is the ONE write this
         // device is allowed to make on a duel it didn't create.
         duelToComplete?.let { duel ->
+            duelRepository.recordReceivedResult(duel, totalScore, correctCount)
             duelRepository.submitDuelResult(
                 duelId = duel.id,
                 opponentScore = totalScore,
