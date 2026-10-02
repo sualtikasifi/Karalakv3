@@ -10,7 +10,10 @@ import com.sualtikasifi.cizimhafiza.domain.model.Difficulty
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingStroke
 import com.sualtikasifi.cizimhafiza.domain.model.Word
 import com.sualtikasifi.cizimhafiza.presentation.game.GamePhase
+import com.sualtikasifi.cizimhafiza.domain.model.JokerType
+import com.sualtikasifi.cizimhafiza.domain.model.letterGroupsOf
 import com.sualtikasifi.cizimhafiza.presentation.game.GuessFeedback
+import com.sualtikasifi.cizimhafiza.presentation.game.JokerSpotlight
 import com.sualtikasifi.cizimhafiza.util.AnswerMatcher
 import com.sualtikasifi.cizimhafiza.util.GameConstants
 import com.sualtikasifi.cizimhafiza.util.SettingsRepository
@@ -75,6 +78,18 @@ class TutorialViewModel @Inject constructor(
 
     private val _isFinished = MutableStateFlow(false)
     val isFinished: StateFlow<Boolean> = _isFinished.asStateFlow()
+
+    /** Practice stock for the guess turns: three of each, spent only on screen — the real gift comes at the end. */
+    private val _jokers = MutableStateFlow(mapOf(JokerType.FIRST_LETTER to PRACTICE_JOKERS, JokerType.LETTER_COUNT to PRACTICE_JOKERS))
+    val jokers: StateFlow<Map<JokerType, Int>> = _jokers.asStateFlow()
+
+    /** Non-null while the player is being walked through one joker: the clock is stopped and only that button works. */
+    private val _spotlight = MutableStateFlow<JokerSpotlight?>(null)
+    val spotlight: StateFlow<JokerSpotlight?> = _spotlight.asStateFlow()
+
+    // What the jokers have revealed for the word being guessed — kept here because the countdown rebuilds the phase every second.
+    private var revealedLetter: String? = null
+    private var revealedGroups: List<Int>? = null
 
     private var drawingIndex = 0
     private var guessIndex = 0
@@ -205,29 +220,77 @@ class TutorialViewModel @Inject constructor(
 
     private fun showGuess() {
         timerJob?.cancel()
-        val word = words[guessIndex]
-        val strokes = strokesPerWord[word.id].orEmpty()
+        revealedLetter = null
+        revealedGroups = null
+        // The first two guesses teach one joker each, with the clock held until it has been used; the third is free.
+        val lesson = when (guessIndex) {
+            0 -> JokerSpotlight(JokerType.FIRST_LETTER, R.string.tutorial_joker_first_title, R.string.tutorial_joker_first_body)
+            1 -> JokerSpotlight(JokerType.LETTER_COUNT, R.string.tutorial_joker_count_title, R.string.tutorial_joker_count_body)
+            else -> null
+        }
+        if (lesson != null) {
+            _phase.value = guessingPhase(TUTORIAL_GUESS_SECONDS, feedback = null)
+            _spotlight.value = lesson
+            return
+        }
+        startGuessCountdown()
+    }
+
+    private fun guessingPhase(secondsLeft: Int, feedback: GuessFeedback?) = GamePhase.Guessing(
+        guessNumber = guessIndex + 1,
+        totalGuesses = words.size,
+        strokes = strokesPerWord[words[guessIndex].id].orEmpty(),
+        feedback = feedback,
+        secondsLeft = secondsLeft,
+        totalSeconds = TUTORIAL_GUESS_SECONDS,
+        isWarning = secondsLeft <= GameConstants.WARNING_THRESHOLD_SECONDS,
+        hintUsed = true,
+        hintLetter = revealedLetter,
+        letterCount = revealedGroups?.sum(),
+        letterGroups = revealedGroups
+    )
+
+    private fun startGuessCountdown() {
+        timerJob?.cancel()
         timerJob = viewModelScope.launch {
             for (secondsLeft in TUTORIAL_GUESS_SECONDS downTo 1) {
-                _phase.value = GamePhase.Guessing(
-                    guessNumber = guessIndex + 1,
-                    totalGuesses = words.size,
-                    strokes = strokes,
-                    feedback = null,
-                    secondsLeft = secondsLeft,
-                    totalSeconds = TUTORIAL_GUESS_SECONDS,
-                    isWarning = secondsLeft <= GameConstants.WARNING_THRESHOLD_SECONDS,
-                    hintUsed = true
-                )
+                _phase.value = guessingPhase(secondsLeft, feedback = null)
                 delay(1_000)
             }
             submitGuess("") // time's up, counts the same as a wrong guess
         }
     }
 
+    /** First Letter joker: writes the word's first letter onto the board. */
+    fun useFirstLetterJoker() = useJoker(JokerType.FIRST_LETTER) {
+        revealedLetter = words[guessIndex].text.take(1)
+    }
+
+    /** Letter Count joker: draws one blank per letter. */
+    fun useLetterCountJoker() = useJoker(JokerType.LETTER_COUNT) {
+        revealedGroups = letterGroupsOf(words[guessIndex].text)
+    }
+
+    private fun useJoker(type: JokerType, reveal: () -> Unit) {
+        val current = _phase.value as? GamePhase.Guessing ?: return
+        if (current.feedback != null) return
+        val lesson = _spotlight.value
+        // During a lesson only the joker being taught counts.
+        if (lesson != null && lesson.type != type) return
+        val already = if (type == JokerType.FIRST_LETTER) revealedLetter != null else revealedGroups != null
+        if (already || (_jokers.value[type] ?: 0) <= 0) return
+        _jokers.value = _jokers.value + (type to (_jokers.value.getValue(type) - 1))
+        reveal()
+        _phase.value = guessingPhase(current.secondsLeft, feedback = null)
+        if (lesson != null) {
+            _spotlight.value = null
+            startGuessCountdown()
+        }
+    }
+
     fun onAnswerChanged(text: String) {
         val current = _phase.value as? GamePhase.Guessing ?: return
-        if (current.feedback != null || text.isBlank()) return
+        if (_spotlight.value != null || current.feedback != null || text.isBlank()) return
         if (AnswerMatcher.normalize(text) == AnswerMatcher.normalize(words[guessIndex].text)) {
             submitGuess(text)
         }
@@ -235,7 +298,7 @@ class TutorialViewModel @Inject constructor(
 
     fun submitGuess(answer: String) {
         val current = _phase.value as? GamePhase.Guessing ?: return
-        if (current.feedback != null) return
+        if (_spotlight.value != null || current.feedback != null) return
         timerJob?.cancel()
         val word = words[guessIndex]
         val isCorrect = AnswerMatcher.isCorrect(answer, word.text)
@@ -245,7 +308,13 @@ class TutorialViewModel @Inject constructor(
         viewModelScope.launch {
             delay(1_400)
             guessIndex++
-            if (guessIndex < words.size) showGuess() else _coach.value = FINALE_COACH
+            _coach.value = when {
+                guessIndex >= words.size -> FINALE_COACH
+                // Before the free guess: say that now the jokers are the player's to use (or not) as they like.
+                guessIndex == 2 -> FREE_JOKER_COACH
+                else -> null
+            }
+            if (_coach.value == null) showGuess()
         }
     }
 
@@ -253,6 +322,8 @@ class TutorialViewModel @Inject constructor(
     fun completeTutorial() {
         timerJob?.cancel()
         settingsRepository.tutorialCompleted = true
+        // Whoever plays it through gets the practice jokers for real (once); skipping does not.
+        if (_isFinished.value || _coach.value == FINALE_COACH) settingsRepository.grantTutorialJokersOnce()
     }
 
     override fun onCleared() {
@@ -271,6 +342,9 @@ class TutorialViewModel @Inject constructor(
         // Guessing-phase countdown, per word.
         const val TUTORIAL_GUESS_SECONDS = 10
 
+        // Practice stock shown on the joker buttons.
+        const val PRACTICE_JOKERS = 3
+
         val INTRO_COACH = TutorialCoach(
             R.string.tutorial_intro_title, R.string.tutorial_intro_body, "👋", R.string.tutorial_intro_button,
             imageRes = R.drawable.tutorial_dino_wave
@@ -286,6 +360,10 @@ class TutorialViewModel @Inject constructor(
         val GUESS_INTRO_COACH = TutorialCoach(
             R.string.tutorial_guess_title, R.string.tutorial_guess_body, "🤔", R.string.tutorial_generic_button,
             imageRes = R.drawable.tutorial_dino_thinking
+        )
+        val FREE_JOKER_COACH = TutorialCoach(
+            R.string.tutorial_joker_free_title, R.string.tutorial_joker_free_body, "🎁", R.string.tutorial_generic_button,
+            imageRes = R.drawable.tutorial_dino_thumbsup
         )
         val FINALE_COACH = TutorialCoach(
             R.string.tutorial_finale_title, R.string.tutorial_finale_body, "🎉", R.string.tutorial_finale_button,

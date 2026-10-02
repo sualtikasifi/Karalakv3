@@ -33,6 +33,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -112,6 +114,9 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
     // 0 = jokers, 1 = pens, 2 = frames. Jokers first so the free daily one is
     // the first thing the store shows.
     var tab by remember { mutableStateOf(0) }
+    // Which way the last tab change went (+1 towards the right, -1 towards the left): the new cards slide in from there.
+    var tabDirection by remember { mutableIntStateOf(1) }
+    val selectTab = { next: Int -> if (next != tab) { tabDirection = if (next > tab) 1 else -1; tab = next } }
     val dailyJoker by viewModel.dailyJoker.collectAsState()
     val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
     var pending by remember { mutableStateOf<Pending?>(null) }
@@ -175,18 +180,18 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                             Spacer(modifier = Modifier.height(12.dp))
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            TabChip(stringResource(R.string.store_tab_jokers), selected = tab == 0, modifier = Modifier.weight(1f)) { tab = 0 }
-                            TabChip(stringResource(R.string.store_tab_pens), selected = tab == 1, modifier = Modifier.weight(1f)) { tab = 1 }
-                            TabChip(stringResource(R.string.store_tab_frames), selected = tab == 2, modifier = Modifier.weight(1f)) { tab = 2 }
+                            TabChip(stringResource(R.string.store_tab_jokers), selected = tab == 0, modifier = Modifier.weight(1f)) { selectTab(0) }
+                            TabChip(stringResource(R.string.store_tab_pens), selected = tab == 1, modifier = Modifier.weight(1f)) { selectTab(1) }
+                            TabChip(stringResource(R.string.store_tab_frames), selected = tab == 2, modifier = Modifier.weight(1f)) { selectTab(2) }
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                     }
                 }
 
                 if (tab == 1) {
-                    items(viewModel.pens) { skin ->
+                    itemsIndexed(viewModel.pens) { index, skin ->
                         val id = StoreViewModel.penId(skin)
-                        PenCard(
+                        TabEntrance(tab, tabDirection, index) { PenCard(
                             skin = skin,
                             owned = id in owned,
                             equipped = id in owned && selectedPen == skin.name,
@@ -195,25 +200,29 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                             onEquip = { viewModel.equipPen(skin) },
                             onCannotAfford = { showToast(R.string.store_not_enough, isError = true) },
                             onTry = { tryingPen = skin }
-                        )
+                        ) }
                     }
                 } else if (tab == 0) {
                     dailyJoker?.let { free ->
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            DailyJokerCard(
-                                type = free,
-                                onClaim = { activity?.let { viewModel.claimDailyJoker(it) { res, isError -> showToast(res, isError) } } }
-                            )
+                            TabEntrance(tab, tabDirection, 0) {
+                                DailyJokerCard(
+                                    type = free,
+                                    onClaim = { activity?.let { viewModel.claimDailyJoker(it) { res, isError -> showToast(res, isError) } } }
+                                )
+                            }
                         }
                     }
-                    items(JokerType.entries, span = { GridItemSpan(maxLineSpan) }) { type ->
-                        JokerCard(
-                            type = type,
-                            owned = jokerCounts[type] ?: 0,
-                            gold = gold,
-                            onBuy = { qty -> pending = Pending.JokerItem(type, qty) },
-                            onCannotAfford = { showToast(R.string.store_not_enough, isError = true) }
-                        )
+                    itemsIndexed(JokerType.entries, span = { _, _ -> GridItemSpan(maxLineSpan) }) { index, type ->
+                        TabEntrance(tab, tabDirection, index + 1) {
+                            JokerCard(
+                                type = type,
+                                owned = jokerCounts[type] ?: 0,
+                                gold = gold,
+                                onBuy = { qty -> pending = Pending.JokerItem(type, qty) },
+                                onCannotAfford = { showToast(R.string.store_not_enough, isError = true) }
+                            )
+                        }
                     }
                 } else if (viewModel.frames.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
@@ -234,9 +243,9 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                         }
                     }
                 } else {
-                    items(viewModel.frames) { frame ->
+                    itemsIndexed(viewModel.frames) { index, frame ->
                         val id = StoreViewModel.frameId(frame)
-                        FrameCard(
+                        TabEntrance(tab, tabDirection, index) { FrameCard(
                             frame = frame,
                             name = stringResource(frame.nameRes()),
                             owned = id in owned,
@@ -245,7 +254,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                             onBuy = { pending = Pending.FrameItem(frame) },
                             onEquip = { viewModel.equipFrame(frame) },
                             onCannotAfford = { showToast(R.string.store_not_enough, isError = true) }
-                        )
+                        ) }
                     }
                 }
             }
@@ -474,10 +483,21 @@ private fun GoldPill(gold: Int) {
  */
 @Composable
 private fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    // The plaque brightens, lifts a touch and the underline grows when a tab is chosen, instead of snapping.
+    val glow by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (selected) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = 380f),
+        label = "tabGlow"
+    )
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .height(50.dp)
+            .graphicsLayer {
+                val lift = 1f + 0.05f * glow
+                scaleX = lift
+                scaleY = lift
+            }
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
     ) {
@@ -485,7 +505,7 @@ private fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modif
             painter = painterResource(R.drawable.store_tab_plaque),
             contentDescription = null,
             contentScale = ContentScale.FillBounds,
-            alpha = if (selected) 1f else 0.42f,
+            alpha = 0.42f + 0.58f * glow.coerceIn(0f, 1f),
             modifier = Modifier.matchParentSize()
         )
         Text(
@@ -499,12 +519,12 @@ private fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modif
             textAlign = TextAlign.Center
         )
         // The plaque's glow alone was too easy to miss on the busy wood photo.
-        if (selected) {
+        if (glow > 0.01f) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 7.dp)
-                    .width(30.dp)
+                    .width((30f * glow).coerceAtLeast(0f).dp)
                     .height(3.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .background(Color(0xFFFFC94D))
@@ -928,4 +948,34 @@ private fun PenTryDialog(skin: PenSkin, onDismiss: () -> Unit) {
             )
         }
     }
+}
+
+/**
+ * Slides and fades one card in when its tab opens — from the side the tab came from, one card after another —
+ * so switching tabs reads as the shelf being swapped rather than as the contents blinking over. Cards far
+ * down the list (which only appear once scrolled to) skip it.
+ */
+@Composable
+private fun TabEntrance(tab: Int, direction: Int, index: Int, content: @Composable () -> Unit) {
+    val animate = index < 9
+    val progress = remember(tab) { androidx.compose.animation.core.Animatable(if (animate) 0f else 1f) }
+    LaunchedEffect(tab) {
+        if (!animate) return@LaunchedEffect
+        delay(index * 55L)
+        progress.animateTo(
+            1f,
+            androidx.compose.animation.core.spring(dampingRatio = 0.78f, stiffness = 260f)
+        )
+    }
+    Box(
+        modifier = Modifier.graphicsLayer {
+            val p = progress.value
+            alpha = (p * 1.6f).coerceIn(0f, 1f)
+            translationX = (1f - p) * direction * 64.dp.toPx()
+            translationY = (1f - p) * 10.dp.toPx()
+            val scale = 0.94f + 0.06f * p.coerceAtMost(1f)
+            scaleX = scale
+            scaleY = scale
+        }
+    ) { content() }
 }

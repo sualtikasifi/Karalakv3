@@ -389,8 +389,14 @@
     <string name="tutorial_last_word_body">You\'ve got the hang of it. This is the last one, then it\'s time to remember.</string>
     <string name="tutorial_guess_title">Time to remember</string>
     <string name="tutorial_guess_body">Now I\'ll show your drawings one by one. Type what each one was. In a real game you\'ll guess your own drawings the same way.</string>
+    <string name="tutorial_joker_first_title">First Letter joker</string>
+    <string name="tutorial_joker_first_body">Can\'t tell what the drawing is? Tap this button and the word\'s first letter appears. The clock is paused until you tap. Give it a try!</string>
+    <string name="tutorial_joker_count_title">Letter Count joker</string>
+    <string name="tutorial_joker_count_body">How long is the word? Tap this button and a line appears for every letter. The clock is paused again. Your turn!</string>
+    <string name="tutorial_joker_free_title">The jokers are yours 🎁</string>
+    <string name="tutorial_joker_free_body">On this last word you can use whichever joker you like, or none at all. When you finish the tutorial you get 3 of each joker to keep!</string>
     <string name="tutorial_finale_title">That\'s it! 🎉</string>
-    <string name="tutorial_finale_body">See? It really was that simple. You know how to draw and how to remember. Now for the real thing, race your friends, clear the levels, collect the badges. Your pen is ready, good luck!</string>
+    <string name="tutorial_finale_body">See? It really was that simple. You know how to draw and how to remember. Now for the real thing, race your friends, clear the levels, collect the badges. As a gift, 3 of each joker have been added to your account. Your pen is ready, good luck!</string>
     <string name="tutorial_finale_button">Start playing</string>
     <string name="tutorial_skip">Skip tutorial</string>
     <string name="tutorial_word_1">book</string>

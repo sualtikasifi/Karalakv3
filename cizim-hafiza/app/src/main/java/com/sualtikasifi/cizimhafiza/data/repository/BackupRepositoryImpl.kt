@@ -145,6 +145,9 @@ class BackupRepositoryImpl @Inject constructor(
             adChestDay = settingsRepository.adChestDay.value,
             claimedAchievementIds = achievementDao.getClaimedIds(),
             claimsSaved = true,
+            dailyResult = daily.lastResult?.let { r ->
+                listOf(r.epochDay, r.correctFlags.joinToString(",") { if (it) "1" else "0" }, r.score, r.xpEarned, r.streakAfter).joinToString("|")
+            }.orEmpty(),
             ratingPromptShown = if (settingsRepository.ratingPromptShown) 1 else 0,
             quickMatchGames = settingsRepository.quickMatchGamesFinished,
             backedUpAt = System.currentTimeMillis()
@@ -486,7 +489,8 @@ class BackupRepositoryImpl @Inject constructor(
         dailyChallengeRepository.replaceWithAccount(
             lastCompletedEpochDay = snapshot.dailyLastCompletedEpochDay,
             currentStreak = snapshot.dailyCurrentStreak,
-            bestStreak = snapshot.dailyBestStreak
+            bestStreak = snapshot.dailyBestStreak,
+            result = snapshot.dailyResult
         )
         snapshot.levelProgress.forEach { row ->
             val parts = row.split(":")
