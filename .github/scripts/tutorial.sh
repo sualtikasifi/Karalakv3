@@ -68,11 +68,46 @@ for y in range(h // 2, h, 3):
     row = off + y * w * 4
     for x in range(0, w, 3):
         r, g, b = d[row + x * 4], d[row + x * 4 + 1], d[row + x * 4 + 2]
-        if r > 225 and 100 < g < 175 and b < 70:
+        if r > 170 and 70 < g < 175 and b < 70 and r - b > 120:
             xs.append(x); ys.append(y)
 if len(xs) > 20:
     print((min(xs) + max(xs)) // 2, (min(ys) + max(ys)) // 2)
 PY
+}
+
+# Centre of the wide orange primary button of a coaching card (rows where an orange run is at least 600px
+# wide; the dino picture is narrower), read from a raw screenshot. Prints "x y" or nothing.
+btn_xy() {
+  adb exec-out screencap > "$OUT/_raw.bin"
+  python3 - "$OUT/_raw.bin" <<'PY'
+import sys, struct
+d = open(sys.argv[1], 'rb').read()
+w, h, fmt = struct.unpack('<III', d[:12])
+off = 12
+if len(d) < off + w * h * 4:
+    sys.exit(0)
+rows = []
+for y in range(300, h - 300, 2):
+    run = best = 0
+    base = off + y * w * 4
+    for x in range(0, w, 2):
+        r, g, b = d[base + x * 4], d[base + x * 4 + 1], d[base + x * 4 + 2]
+        if r > 225 and 90 < g < 140 and b < 60:
+            run += 2
+            best = max(best, run)
+        else:
+            run = 0
+    if best >= 600:
+        rows.append(y)
+if rows:
+    print(w // 2, (rows[0] + rows[-1]) // 2)
+PY
+}
+tap_btn() {  # taps the coaching card's primary button
+  local xy; xy=$(btn_xy)
+  if [ -z "$xy" ]; then xy="540 1700"; fi
+  echo "tap button at $xy"
+  adb shell input tap $xy
 }
 
 # --- Launch: the tutorial starts by itself on a fresh install -----------------------------------
@@ -83,7 +118,7 @@ tap_text "Accept" 540 1678 >/dev/null || true
 step t02_intro 4
 
 # --- Intro card -> first drawing ------------------------------------------------------------------
-tap_text "Let's go" 540 1700 || tap_text "Hadi başlayalım" 540 1700 || true
+tap_btn
 step t03_draw1 4
 for i in 1 2 3; do
   adb shell input swipe 250 900 830 1100 250
@@ -92,19 +127,19 @@ done
 step t04_draw1_drawn 1
 
 # --- Word 1 is untimed: "Sonraki Kelime" moves on; then the timed words end by themselves --------------
-tap_text "Sonraki" 540 2150 || tap_text "Next" 540 2150 || true
+adb shell input tap 852 2240
 step t05_after_word1 3
-tap_text "Anladım" 540 1700 || tap_text "Got it" 540 1700 || true
+tap_btn
 step t06_draw2 3
 for i in 1 2; do adb shell input swipe 250 900 830 1200 250; done
 sleep 14
 step t07_after_word2 2
-tap_text "Anladım" 540 1700 || tap_text "Got it" 540 1700 || true
+tap_btn
 step t08_draw3 3
 adb shell input swipe 250 900 830 1200 250
 sleep 12
 step t09_before_guess 2
-tap_text "Anladım" 540 1700 || tap_text "Got it" 540 1700 || true
+tap_btn
 
 # --- Guess 1: First Letter lesson ------------------------------------------------------------------
 step t10_lesson1 3
@@ -133,12 +168,12 @@ sleep 4
 
 # --- Guess 3: free choice card, then the third word ----------------------------------------------------
 step t17_free_card 2
-tap_text "Anladım" 540 1700 || tap_text "Got it" 540 1700 || true
+tap_btn
 step t18_guess3 3
 adb shell input text "apple"
 sleep 4
 step t19_finale 3
-tap_text "Oynamaya başla" 540 1700 || tap_text "Start playing" 540 1700 || true
+tap_btn
 step t20_home 5
 
 # --- Verdict --------------------------------------------------------------------------------------------
