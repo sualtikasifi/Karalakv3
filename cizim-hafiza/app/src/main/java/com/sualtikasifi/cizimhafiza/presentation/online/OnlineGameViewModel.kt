@@ -200,15 +200,6 @@ class OnlineGameViewModel @Inject constructor(
             )
         )
 
-    // Non-null while showing the "3, 2, 1…" countdown before the first
-    // Drawing phase — both on the very first match and on every rematch,
-    // since a rematch gets a brand new OnlineGameViewModel just like the
-    // first game does. Kept separate from GamePhase (rather than adding a
-    // new case there) so the single-player GameViewModel/GameScreen, which
-    // shares that sealed interface, doesn't have to care about it.
-    private val _startCountdown = MutableStateFlow<Int?>(GameConstants.ONLINE_START_COUNTDOWN_SECONDS)
-    val startCountdown: StateFlow<Int?> = _startCountdown.asStateFlow()
-
 
     /**
      * The player's chosen cosmetic pen (see domain.model.PenSkin). Resolved
@@ -276,7 +267,6 @@ class OnlineGameViewModel @Inject constructor(
             // Already submitted to Firestore before death (finishAndSubmit
             // always submits first — see its own comment) — redisplay only,
             // no room fetch needed.
-            _startCountdown.value = null
             _phase.value = recovery.result
         } else {
             viewModelScope.launch {
@@ -297,7 +287,6 @@ class OnlineGameViewModel @Inject constructor(
                 // stale checkpoint's word list is trusted for anything.
                 val active = recovery?.active?.takeIf { room != null && it.words.map { w -> w.id } == room.wordIds }
                 if (active != null) {
-                    _startCountdown.value = null
                     resumeFrom(active)
                     return@launch
                 }
@@ -317,17 +306,9 @@ class OnlineGameViewModel @Inject constructor(
 
                 words = room?.let { getWordsByIdsUseCase(it.wordIds) } ?: emptyList()
                 if (words.isEmpty()) {
-                    _startCountdown.value = null
                     finishAndSubmit()
                 } else {
-                    // A lobby that already counted 3-2-1 on its ready buttons goes straight into the match.
-                    if (room?.startedAfterCountdown != true) {
-                        for (secondsLeft in GameConstants.ONLINE_START_COUNTDOWN_SECONDS downTo 1) {
-                            _startCountdown.value = secondsLeft
-                            delay(1_000)
-                        }
-                    }
-                    _startCountdown.value = null
+                    // The 3-2-1 already ran on the lobby's ready buttons, so the match starts straight away.
                     runDrawingTurn()
                 }
             }

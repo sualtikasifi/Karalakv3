@@ -625,25 +625,33 @@ private fun ReadyButton(
     val face = if (amReady || counting) green else androidx.compose.ui.graphics.lerp(green, androidx.compose.ui.graphics.Color.White, 0.38f * blink)
     // Strength and reach of the halo: none while waiting to be pressed, calm once ready, strongest during the count.
     val glowStrength = when {
-        counting -> 0.55f + 0.35f * halo
-        amReady -> 0.22f + 0.16f * halo
+        counting -> 0.85f + 0.15f * halo
+        amReady -> 0.55f + 0.30f * halo
         else -> 0f
     }
-    val glowReach = if (counting) 22.dp else 14.dp
+    val glowReach = 20.dp
     Box(
         modifier = modifier
             .drawBehind {
                 if (glowStrength > 0f) {
-                    val layers = 5
+                    val layers = 8
                     for (i in layers downTo 1) {
                         val grow = glowReach.toPx() * i / layers
                         drawRoundRect(
-                            color = green.copy(alpha = glowStrength * (1f - (i - 1f) / layers) * 0.35f),
+                            color = green.copy(alpha = glowStrength * (1f - (i - 1f) / layers) * 0.5f),
                             topLeft = androidx.compose.ui.geometry.Offset(-grow, -grow),
                             size = androidx.compose.ui.geometry.Size(size.width + 2 * grow, size.height + 2 * grow),
                             cornerRadius = CornerRadius(size.height / 2 + grow)
                         )
                     }
+                    // A bright rim hugging the button, so the halo reads as light coming off it.
+                    drawRoundRect(
+                        color = androidx.compose.ui.graphics.lerp(green, androidx.compose.ui.graphics.Color.White, 0.55f).copy(alpha = glowStrength),
+                        topLeft = androidx.compose.ui.geometry.Offset(-2.dp.toPx(), -2.dp.toPx()),
+                        size = androidx.compose.ui.geometry.Size(size.width + 4.dp.toPx(), size.height + 4.dp.toPx()),
+                        cornerRadius = CornerRadius(size.height / 2 + 2.dp.toPx()),
+                        style = Stroke(width = 2.5.dp.toPx())
+                    )
                 }
             }
     ) {

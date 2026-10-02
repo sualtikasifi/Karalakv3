@@ -259,8 +259,7 @@ class BotRoomEngine @Inject constructor(
                         mapOf(
                             "status" to "PLAYING",
                             "wordIds" to wordIds.map { it.toLong() },
-                            "startedAt" to System.currentTimeMillis(),
-                            "startedAfterCountdown" to false
+                            "startedAt" to System.currentTimeMillis()
                         )
                     )
                 }

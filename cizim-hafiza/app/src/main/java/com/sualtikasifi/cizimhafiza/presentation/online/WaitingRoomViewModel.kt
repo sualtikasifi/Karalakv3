@@ -115,10 +115,12 @@ class WaitingRoomViewModel @Inject constructor(
         /** startGame()'s fallback: how long to wait for the room to flip to PLAYING before giving the "Başlat" button back. */
         const val START_GAME_TIMEOUT_MS = 12_000L
 
-        const val COUNTDOWN_SECONDS = 3
+        const val COUNTDOWN_SECONDS = GameConstants.ONLINE_START_COUNTDOWN_SECONDS
 
         /** A countdown stamp older than this when first seen is a leftover (a host who left mid-count), not a live one. */
         const val COUNTDOWN_STALE_MS = 8_000L
+
+        const val COUNTDOWN_HOLD_MS = 6_000L
     }
 
     private var countdownJob: kotlinx.coroutines.Job? = null
@@ -167,6 +169,10 @@ class WaitingRoomViewModel @Inject constructor(
                                 _uiState.update { it.copy(countdownSeconds = second) }
                                 delay(1_000)
                             }
+                            // Held at 0, still locked, until the host's write flips the room to PLAYING; only a start
+                            // that never arrives (the host dropped) frees the button again.
+                            _uiState.update { it.copy(countdownSeconds = 0) }
+                            delay(COUNTDOWN_HOLD_MS)
                             _uiState.update { it.copy(countdownSeconds = null) }
                         }
                     }

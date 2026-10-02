@@ -41,7 +41,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
-import com.sualtikasifi.cizimhafiza.presentation.common.CircularCountdown
 import com.sualtikasifi.cizimhafiza.presentation.common.PillShape
 import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
 import com.sualtikasifi.cizimhafiza.presentation.game.BreakScreen
@@ -69,7 +68,6 @@ fun OnlineGameScreen(
     val levelProgress by viewModel.levelProgress.collectAsState()
     val selectedFrame by viewModel.selectedFrame.collectAsState()
     val selectedPen by viewModel.selectedPen.collectAsState()
-    val startCountdown by viewModel.startCountdown.collectAsState()
     var showExitConfirm by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
@@ -105,12 +103,6 @@ fun OnlineGameScreen(
     }
 
     val teamInfo by viewModel.teamInfo.collectAsState()
-    val secondsLeft = startCountdown
-    if (secondsLeft != null) {
-        StartingCountdownScreen(secondsLeft = secondsLeft, totalSeconds = GameConstants.ONLINE_START_COUNTDOWN_SECONDS)
-        return
-    }
-
     // A 2v2 room says so while it is being played. Overlaid rather than
     // threaded into DrawingScreen/GuessScreen: those two are shared with
     // solo play, and a team banner is not their business.
@@ -197,35 +189,5 @@ fun OnlineGameScreen(
             }
         }
     }
-    }
-}
-
-@Composable
-private fun StartingCountdownScreen(secondsLeft: Int, totalSeconds: Int) {
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .screenBackground()
-                .padding(padding)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = Icons.Filled.SportsEsports,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(56.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = stringResource(R.string.online_game_starting), style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(32.dp))
-            CircularCountdown(
-                secondsLeft = secondsLeft,
-                totalSeconds = totalSeconds,
-                modifier = Modifier.size(140.dp)
-            )
-        }
     }
 }
