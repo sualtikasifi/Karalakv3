@@ -1306,7 +1306,7 @@
     <string name="store_guest_warning">You are not signed in — what you buy is saved on this phone only. Tap to link your account so nothing is lost.</string>
     <string name="tour_heading">What\'s new</string>
     <string name="tour_chests_title">Chests</string>
-    <string name="tour_chests_body">Beat your opponent in Quick Match to win a chest. Tap Open Chest to start its countdown; when it ends, open it and collect your rewards. While one chest is counting down the next one waits, but you can start a new chest as soon as an earlier one is ready, even if you have not opened it yet. You have four chest slots, and while all of them are full you cannot win another chest, so remember to open the ready ones. Rarer chests give more gold, jokers and even special pens!</string>
+    <string name="tour_chests_body">Beat your opponent in Quick Match to win a chest. Tap a chest to start its countdown; when it ends, open it and collect your rewards. While one chest is counting down the next one waits, but you can start a new chest as soon as an earlier one is ready, even if you have not opened it yet. You have four chest slots, and while all of them are full you cannot win another chest, so remember to open the ready ones. Rarer chests give more gold, jokers and even special pens!</string>
     <string name="tour_jokers_title">Jokers</string>
     <string name="tour_jokers_body">Jokers have your back in tough moments. The First Letter Joker reveals a word\'s first letter, the Letter Count Joker shows how long it is, and the Extra Time Joker gives your drawing more time. Win jokers from chests or buy them in the Store with gold.</string>
     <string name="tour_store_title">Store</string>

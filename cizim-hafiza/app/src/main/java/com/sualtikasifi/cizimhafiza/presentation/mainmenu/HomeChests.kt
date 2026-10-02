@@ -315,7 +315,8 @@ private fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, c
                         ready -> stringResource(R.string.chests_open_button) + "!"
                         // Down to the second: this is what the player watches tick.
                         unlocking -> formatCountdown(chest.remainingMillis(nowMillis))
-                        else -> stringResource(R.string.chest_home_start)
+                        // Not started yet: just how long the chest takes (HH:MM), the same plate the countdown later uses.
+                        else -> (tier.unlockDurationMillis / 60_000L).let { minutes -> "%02d:%02d".format(minutes / 60, minutes % 60) }
                     },
                     fontSize = 11.sp,
                     fontWeight = FontWeight.ExtraBold,

@@ -1319,7 +1319,7 @@
     <string name="store_guest_warning">Giriş yapmadın — satın aldıkların yalnızca bu telefonda saklanır. Hiçbir şey kaybolmasın diye dokunup hesabını bağla.</string>
     <string name="tour_heading">Yenilikler</string>
     <string name="tour_chests_title">Kasalar</string>
-    <string name="tour_chests_body">Hızlı Eşleş\'te rakibini yenince bir kasa kazanırsın. Kasayı Aç\'a dokunduğunda geri sayım başlar; süre dolunca kasanı açıp ödüllerini alırsın. Bir kasanın süresi işlerken sıradaki kasa bekler, süresi dolmuş bir kasayı açmadan da yenisini başlatabilirsin. Dört kasa yuvan var; hepsi doluyken yeni kasa kazanamazsın, bu yüzden hazır kasalarını açmayı unutma. Nadir kasalar daha çok altın, joker ve hatta özel kalem getirir!</string>
+    <string name="tour_chests_body">Hızlı Eşleş\'te rakibini yenince bir kasa kazanırsın. Kasana dokunup süreyi başlattığında geri sayım başlar; süre dolunca kasanı açıp ödüllerini alırsın. Bir kasanın süresi işlerken sıradaki kasa bekler, süresi dolmuş bir kasayı açmadan da yenisini başlatabilirsin. Dört kasa yuvan var; hepsi doluyken yeni kasa kazanamazsın, bu yüzden hazır kasalarını açmayı unutma. Nadir kasalar daha çok altın, joker ve hatta özel kalem getirir!</string>
     <string name="tour_jokers_title">Jokerler</string>
     <string name="tour_jokers_body">Jokerler zor anlarda yanında olur. İlk Harf Jokeri kelimenin ilk harfini, Harf Sayısı Jokeri kaç harfli olduğunu gösterir; Ekstra Süre Jokeri ise çizimine fazladan zaman kazandırır. Jokerleri kasalardan kazanabilir ya da Mağaza\'dan altınla satın alabilirsin.</string>
     <string name="tour_store_title">Mağaza</string>

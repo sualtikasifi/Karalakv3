@@ -106,9 +106,42 @@ fun ChestBackdrop(tier: ChestTier, modifier: Modifier = Modifier) {
         val glowCenter = Offset(w / 2f, h * 0.38f)
         when (tier) {
             ChestTier.SILVER -> {
-                drawRect(Brush.verticalGradient(listOf(Color(0xFFFFF4E2), Color(0xFFEBD3AE))))
-                // A soft warm glow that breathes, and a few quiet twinkles — light on purpose, so the
-                // common chest is not left looking dead without competing with the richer ones.
+                drawRect(Brush.verticalGradient(listOf(Color(0xFFFFE9C4), Color(0xFFE9B97A))))
+                // Soft light fanning out slowly from behind the chest (8 identical rays, so a full turn has no seam).
+                rotate(spin.value, glowCenter) {
+                    val rays = 8
+                    for (i in 0 until rays) {
+                        val a = i * 2f * PI.toFloat() / rays
+                        val half = PI.toFloat() / rays * 0.4f
+                        val len = h * 1.2f
+                        val p = Path().apply {
+                            moveTo(glowCenter.x, glowCenter.y)
+                            lineTo(glowCenter.x + cos(a - half) * len, glowCenter.y + sin(a - half) * len)
+                            lineTo(glowCenter.x + cos(a + half) * len, glowCenter.y + sin(a + half) * len)
+                            close()
+                        }
+                        drawPath(p, Brush.radialGradient(listOf(Color.White.copy(alpha = 0.34f), Color.Transparent), glowCenter, len))
+                    }
+                }
+                // A faint darkening towards the edges frames the card and lifts the middle.
+                drawRect(
+                    Brush.radialGradient(
+                        listOf(Color.Transparent, Color(0x2E7A4A12)),
+                        center = Offset(w / 2f, h / 2f),
+                        radius = maxOf(w, h) * 0.75f
+                    )
+                )
+                // Warm specks drifting up and fading in and out, each on its own loop offset.
+                val drift = spin.value / 360f
+                stars.take(6).forEach { s ->
+                    val phase = (drift + s.offset) % 1f
+                    val env = sin(phase * PI.toFloat())
+                    drawCircle(
+                        Color(0xFFFFF6DD).copy(alpha = 0.85f * env),
+                        radius = w * 0.016f * s.size,
+                        center = Offset(s.x * w, h * (1.02f - 1.04f * phase))
+                    )
+                }
                 val breathe = 0.40f + 0.25f * pulse.value
                 drawCircle(
                     Brush.radialGradient(listOf(Color.White.copy(alpha = breathe + 0.15f), Color.Transparent), glowCenter, w * 0.62f),
