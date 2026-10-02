@@ -1074,20 +1074,24 @@ private fun DrawingSection(
                                     )
                                     .clickable { onPreview(item) }
                             )
+                            // The mark grows with the drawing it sits on: a green disc with a tick for a right
+                            // answer, a red disc with a cross for a wrong one, white-ringed so it reads on any paper.
+                            val badge = (cell.value * 0.2f).coerceIn(18f, 30f).dp
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .padding(3.dp)
-                                    .size(14.dp)
+                                    .padding(4.dp)
+                                    .size(badge)
                                     .clip(CircleShape)
-                                    .background(if (item.isCorrect) AppTheme.tokens.success else MaterialTheme.colorScheme.error),
+                                    .background(if (item.isCorrect) AppTheme.tokens.success else MaterialTheme.colorScheme.error)
+                                    .border(1.5.dp, Color.White, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = if (item.isCorrect) Icons.Filled.Check else Icons.Filled.Close,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.surface,
-                                    modifier = Modifier.size(10.dp)
+                                    tint = Color.White,
+                                    modifier = Modifier.size(badge * 0.72f)
                                 )
                             }
                         }
