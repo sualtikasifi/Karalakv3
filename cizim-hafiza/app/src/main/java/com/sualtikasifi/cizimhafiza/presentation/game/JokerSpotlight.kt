@@ -134,13 +134,14 @@ fun JokerSpotlightOverlay(spotlight: JokerSpotlight, hole: Rect?) {
         }
 
         if (local != null) {
+            val handBox = 56.dp
             val aboveHole = with(density) { (height - local.top).toDp() }
+            // The explanation sits above the pointing hand, which hangs right over the button's centre.
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(horizontal = 20.dp)
-                    .padding(bottom = aboveHole + 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(bottom = aboveHole + handBox + 4.dp)
             ) {
                 RaisedCard(corner = 24.dp, modifier = Modifier.fillMaxWidth()) {
                     Column(
@@ -163,9 +164,22 @@ fun JokerSpotlightOverlay(spotlight: JokerSpotlight, hole: Rect?) {
                         )
                     }
                 }
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .offset {
+                        IntOffset(
+                            (local.center.x - handBox.toPx() / 2f).toInt(),
+                            -(height - local.top).toInt() - 2.dp.roundToPx()
+                        )
+                    }
+                    .size(handBox),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
                     text = "👇",
-                    fontSize = 40.sp,
+                    fontSize = 38.sp,
                     modifier = Modifier.graphicsLayer { translationY = 10.dp.toPx() * pulse }
                 )
             }

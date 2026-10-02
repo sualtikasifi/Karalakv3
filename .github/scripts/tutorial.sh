@@ -155,12 +155,11 @@ tap_btn
 
 # --- Guess 1: First Letter lesson ------------------------------------------------------------------
 step t10_lesson1 3
-echo "ring: $(ring_xy)"
 # Everything but the glowing button must be dead: tapping the field / the canvas changes nothing.
 adb shell input tap 540 1300
 step t11_lesson1_blocked 1
-XY=$(ring_xy)
-if [ -n "$XY" ]; then adb shell input tap $XY; else adb shell input tap 206 2150; fi
+clear_overlays
+adb shell input tap 198 2210   # First Letter button (left tile)
 step t12_lesson1_done 2
 sleep 4
 step t13_lesson1_running 1
@@ -171,9 +170,8 @@ sleep 3
 step t14_guess1_answered 1
 sleep 3
 step t15_lesson2 2
-echo "ring: $(ring_xy)"
-XY=$(ring_xy)
-if [ -n "$XY" ]; then adb shell input tap $XY; else adb shell input tap 540 2150; fi
+clear_overlays
+adb shell input tap 547 2210   # Letter Count button (middle tile)
 step t16_lesson2_done 2
 adb shell input text "dog"
 sleep 4
