@@ -153,7 +153,8 @@ class GameRepositoryImpl @Inject constructor(
             wordCount = wordCount,
             hadPerfectRound = wordCount > 0 && correctCount == wordCount,
             isOnline = true,
-            wasOnlineWin = placement == 1
+            // First of a room that actually had an opponent: winning a room you were alone in is not a win.
+            wasOnlineWin = placement == 1 && playerCount >= 2
         )
     }
 
