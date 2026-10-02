@@ -121,13 +121,33 @@ class WaitingRoomViewModel @Inject constructor(
 
         const val COUNTDOWN_SECONDS = GameConstants.ONLINE_START_COUNTDOWN_SECONDS
 
-        /** A countdown stamp older than this when first seen is a leftover (a host who left mid-count), not a live one. */
-        const val COUNTDOWN_STALE_MS = 8_000L
+        /**
+         * A countdown stamp older than this when first seen is a leftover (a host who left mid-count), not a live one.
+         * Generous on purpose: the stamp is the HOST's phone clock, and other phones' clocks are often off by many seconds —
+         * a tight limit made the 3-2-1 silently never appear on them.
+         */
+        const val COUNTDOWN_STALE_MS = 10 * 60_000L
 
         const val COUNTDOWN_HOLD_MS = 6_000L
     }
 
     private var countdownJob: kotlinx.coroutines.Job? = null
+
+    /** Starts the 3-2-1 on this device's ready button; a count already running is left alone (host and stamp both ask). */
+    private fun beginCountdown() {
+        if (countdownJob?.isActive == true) return
+        countdownJob = viewModelScope.launch {
+            for (second in COUNTDOWN_SECONDS downTo 1) {
+                _uiState.update { it.copy(countdownSeconds = second) }
+                delay(1_000)
+            }
+            // Held at 0, still locked, until the host's write flips the room to PLAYING; only a start
+            // that never arrives (the host dropped) frees the button again.
+            _uiState.update { it.copy(countdownSeconds = 0) }
+            delay(COUNTDOWN_HOLD_MS)
+            _uiState.update { it.copy(countdownSeconds = null) }
+        }
+    }
 
     val roomCode: String = checkNotNull(savedStateHandle["roomCode"])
     val myUid: String? get() = onlineGameRepository.currentUid
@@ -172,22 +192,14 @@ class WaitingRoomViewModel @Inject constructor(
             uiState.map { state -> state.room?.takeIf { it.status == RoomStatus.WAITING }?.countdownStartedAt }
                 .distinctUntilChanged()
                 .collect { stamp ->
-                    countdownJob?.cancel()
-                    countdownJob = null
-                    if (stamp == null || kotlin.math.abs(System.currentTimeMillis() - stamp) > COUNTDOWN_STALE_MS) {
+                    if (stamp == null) {
+                        countdownJob?.cancel()
+                        countdownJob = null
+                        _uiState.update { it.copy(countdownSeconds = null) }
+                    } else if (kotlin.math.abs(System.currentTimeMillis() - stamp) > COUNTDOWN_STALE_MS) {
                         _uiState.update { it.copy(countdownSeconds = null) }
                     } else {
-                        countdownJob = launch {
-                            for (second in COUNTDOWN_SECONDS downTo 1) {
-                                _uiState.update { it.copy(countdownSeconds = second) }
-                                delay(1_000)
-                            }
-                            // Held at 0, still locked, until the host's write flips the room to PLAYING; only a start
-                            // that never arrives (the host dropped) frees the button again.
-                            _uiState.update { it.copy(countdownSeconds = 0) }
-                            delay(COUNTDOWN_HOLD_MS)
-                            _uiState.update { it.copy(countdownSeconds = null) }
-                        }
+                        beginCountdown()
                     }
                 }
         }
@@ -281,10 +293,15 @@ class WaitingRoomViewModel @Inject constructor(
             runCatching {
                 // Words first, so a failure here never leaves a countdown running towards nothing.
                 val words = getWordsForGameUseCase(room.wordCount, room.category, room.difficulty)
+                // The host's own button counts down at once, without waiting for the room snapshot to echo the stamp back.
+                beginCountdown()
                 onlineGameRepository.startCountdown(roomCode)
                 delay(COUNTDOWN_SECONDS * 1_000L)
                 onlineGameRepository.startGame(roomCode, words.map { it.id })
             }.onFailure {
+                countdownJob?.cancel()
+                countdownJob = null
+                _uiState.update { state -> state.copy(countdownSeconds = null) }
                 runCatching { onlineGameRepository.cancelCountdown(roomCode) }
                 _uiState.update { state -> state.copy(isStarting = false, errorMessage = UiText.of(R.string.error_game_start_failed)) }
             }
