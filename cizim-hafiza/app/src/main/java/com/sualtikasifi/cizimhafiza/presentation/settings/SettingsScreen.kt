@@ -110,11 +110,12 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .screenBackground()
                 .padding(padding)
-                .padding(horizontal = 20.dp, vertical = 12.dp)
-                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
         ) {
-            // Clears the floating back button (see ScreenTopActions).
-            Spacer(modifier = Modifier.height(TopActionsClearance))
+            // Clears the floating back button (see ScreenTopActions); outside the scrolling part so the
+            // content stops at the title instead of sliding underneath it.
+            Spacer(modifier = Modifier.height(TopActionsClearance + 12.dp))
+            Column(modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
 
             // 2x2 rather than four stacked full-width rows: four on/off
             // toggles that each only ever say one short word took up as
@@ -253,6 +254,8 @@ fun SettingsScreen(
                         }
                     )
             )
+            Spacer(modifier = Modifier.height(12.dp))
+            }
         }
         ScreenTopActions(
             onBack = onBack,
