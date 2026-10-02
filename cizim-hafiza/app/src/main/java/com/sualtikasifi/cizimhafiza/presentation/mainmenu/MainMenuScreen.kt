@@ -146,6 +146,7 @@ fun MainMenuScreen(
     viewModel: MainMenuViewModel = hiltViewModel()
 ) {
     val hasUnseenAchievement by viewModel.hasUnseenAchievement.collectAsState()
+    val accountNotLinked by viewModel.accountNotLinked.collectAsState()
     val xpEvent by viewModel.xpEvent.collectAsState()
     val adGoldNextAt by viewModel.adGoldNextAtMillis.collectAsState()
     val adChestDay by viewModel.adChestDay.collectAsState()
@@ -352,7 +353,7 @@ fun MainMenuScreen(
                                 icon = Icons.Filled.Settings,
                                 label = stringResource(R.string.menu_settings),
                                 top = Color(0xFF8AA0C2), bottom = Color(0xFF5D7599), edge = Color(0xFF3B4E6C),
-                                onClick = onSettings, compact = compact, modifier = Modifier.weight(1f)
+                                onClick = onSettings, showBadge = accountNotLinked, compact = compact, modifier = Modifier.weight(1f)
                             )
                         }
                     }
@@ -1063,7 +1064,7 @@ private fun DailyChallengeCardNarrow(state: DailyChallengeState, onPlay: () -> U
                         // white cross. Not played yet: an empty ring.
                         Box(
                             modifier = Modifier
-                                .size(16.dp)
+                                .size(21.dp)
                                 .clip(CircleShape)
                                 .background(
                                     when (flag) {
@@ -1076,8 +1077,8 @@ private fun DailyChallengeCardNarrow(state: DailyChallengeState, onPlay: () -> U
                             contentAlignment = Alignment.Center
                         ) {
                             when (flag) {
-                                true -> Icon(Icons.Filled.Check, contentDescription = null, tint = Color(0xFF1E9E52), modifier = Modifier.size(11.dp))
-                                false -> Icon(Icons.Filled.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(11.dp))
+                                true -> Icon(Icons.Filled.Check, contentDescription = null, tint = Color(0xFF1E9E52), modifier = Modifier.size(15.dp))
+                                false -> Icon(Icons.Filled.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(15.dp))
                                 null -> Unit
                             }
                         }

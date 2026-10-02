@@ -28,13 +28,11 @@ class SettingsViewModel @Inject constructor(
 
     val soundEnabled: StateFlow<Boolean> = settingsRepository.soundEnabled
 
-    // A small nudge on the "Hesap" row rather than an interruption: a
-    // player who has played enough to have something worth protecting, but
-    // never opened this screen's Google-link offer on their own, is exactly
-    // who loses everything on a lost or reset phone. Disappears the moment
-    // they link, since the condition is just "still anonymous".
+    // A small nudge on the "Hesap" row rather than an interruption: a player
+    // without a linked Google account loses everything on a lost or reset phone.
+    // Disappears the moment they link, since the condition is just "still anonymous".
     val showAccountNudge: StateFlow<Boolean> = authRepository.authState
-        .map { it !is AuthState.Linked && settingsRepository.lifetimeGamesPlayed >= ACCOUNT_NUDGE_GAMES_THRESHOLD }
+        .map { it !is AuthState.Linked }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initialValue = false)
     /** Whether a Google account is linked; the account row keeps a travelling light until it is. */
     val accountLinked: StateFlow<Boolean> = authRepository.authState
@@ -83,7 +81,4 @@ class SettingsViewModel @Inject constructor(
         wordPoolSynchronizer.syncAsync()
     }
 
-    private companion object {
-        const val ACCOUNT_NUDGE_GAMES_THRESHOLD = 3
-    }
 }

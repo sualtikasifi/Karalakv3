@@ -324,6 +324,11 @@ class MainMenuViewModel @Inject constructor(
 
     // Drives the small badge on the "İstatistikler" tile — cleared the next
     // time StatisticsScreen opens (see StatisticsViewModel.markAllSeen).
+    /** True while no Google account is linked — the Ayarlar tile carries a dot nudging the player towards the Hesap row. */
+    val accountNotLinked: StateFlow<Boolean> = authRepository.authState
+        .map { it !is com.sualtikasifi.cizimhafiza.domain.repository.AuthState.Linked }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initialValue = false)
+
     val hasUnseenAchievement: StateFlow<Boolean> = achievementDao.observeUnseenCount()
         .map { it > 0 }
         .stateIn(

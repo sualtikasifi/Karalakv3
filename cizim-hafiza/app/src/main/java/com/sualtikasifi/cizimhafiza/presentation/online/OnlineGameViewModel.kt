@@ -320,9 +320,12 @@ class OnlineGameViewModel @Inject constructor(
                     _startCountdown.value = null
                     finishAndSubmit()
                 } else {
-                    for (secondsLeft in GameConstants.ONLINE_START_COUNTDOWN_SECONDS downTo 1) {
-                        _startCountdown.value = secondsLeft
-                        delay(1_000)
+                    // A lobby that already counted 3-2-1 on its ready buttons goes straight into the match.
+                    if (room?.startedAfterCountdown != true) {
+                        for (secondsLeft in GameConstants.ONLINE_START_COUNTDOWN_SECONDS downTo 1) {
+                            _startCountdown.value = secondsLeft
+                            delay(1_000)
+                        }
                     }
                     _startCountdown.value = null
                     runDrawingTurn()

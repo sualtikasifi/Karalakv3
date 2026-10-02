@@ -40,7 +40,9 @@ data class WaitingRoomUiState(
     // guessing for every word), for a pendingNextRound joiner sitting in
     // the lobby — see room.startedAt and WaitingRoomScreen's countdown.
     // Null until the shared word list resolves to local Word objects.
-    val estimatedRoundSeconds: Int? = null
+    val estimatedRoundSeconds: Int? = null,
+    // The 3, 2, 1 shown on every player's ready button once the host starts the match; null otherwise.
+    val countdownSeconds: Int? = null
 )
 
 @HiltViewModel
@@ -112,7 +114,14 @@ class WaitingRoomViewModel @Inject constructor(
 
         /** startGame()'s fallback: how long to wait for the room to flip to PLAYING before giving the "Başlat" button back. */
         const val START_GAME_TIMEOUT_MS = 12_000L
+
+        const val COUNTDOWN_SECONDS = 3
+
+        /** A countdown stamp older than this when first seen is a leftover (a host who left mid-count), not a live one. */
+        const val COUNTDOWN_STALE_MS = 8_000L
     }
+
+    private var countdownJob: kotlinx.coroutines.Job? = null
 
     val roomCode: String = checkNotNull(savedStateHandle["roomCode"])
     val myUid: String? get() = onlineGameRepository.currentUid
@@ -141,6 +150,27 @@ class WaitingRoomViewModel @Inject constructor(
             onlineGameRepository.observeRoom(roomCode)
                 .catch { _uiState.update { it.copy(errorMessage = UiText.of(R.string.error_room_listener_failed)) } }
                 .collect { room -> _uiState.update { it.copy(room = room, errorMessage = null) } }
+        }
+        // Every player (host included) shows the same 3-2-1 once the host has started the match: it runs from
+        // the moment this device first sees the host's stamp, so clock differences between phones do not matter.
+        viewModelScope.launch {
+            uiState.map { state -> state.room?.takeIf { it.status == RoomStatus.WAITING }?.countdownStartedAt }
+                .distinctUntilChanged()
+                .collect { stamp ->
+                    countdownJob?.cancel()
+                    countdownJob = null
+                    if (stamp == null || kotlin.math.abs(System.currentTimeMillis() - stamp) > COUNTDOWN_STALE_MS) {
+                        _uiState.update { it.copy(countdownSeconds = null) }
+                    } else {
+                        countdownJob = launch {
+                            for (second in COUNTDOWN_SECONDS downTo 1) {
+                                _uiState.update { it.copy(countdownSeconds = second) }
+                                delay(1_000)
+                            }
+                            _uiState.update { it.copy(countdownSeconds = null) }
+                        }
+                    }
+                }
         }
         viewModelScope.launch {
             onlineGameRepository.observeReactions(roomCode)
@@ -206,6 +236,8 @@ class WaitingRoomViewModel @Inject constructor(
     }
 
     fun toggleReady() {
+        // Locked once the host's countdown is running — the match is starting with everyone as they are.
+        if (_uiState.value.countdownSeconds != null || _uiState.value.isStarting) return
         val amReady = _uiState.value.room?.players?.find { it.uid == myUid }?.ready ?: false
         viewModelScope.launch { runCatching { onlineGameRepository.setReady(roomCode, !amReady) } }
     }
@@ -222,9 +254,13 @@ class WaitingRoomViewModel @Inject constructor(
         _uiState.update { it.copy(isStarting = true, errorMessage = null) }
         viewModelScope.launch {
             runCatching {
+                // Words first, so a failure here never leaves a countdown running towards nothing.
                 val words = getWordsForGameUseCase(room.wordCount, room.category, room.difficulty)
+                onlineGameRepository.startCountdown(roomCode)
+                delay(COUNTDOWN_SECONDS * 1_000L)
                 onlineGameRepository.startGame(roomCode, words.map { it.id })
             }.onFailure {
+                runCatching { onlineGameRepository.cancelCountdown(roomCode) }
                 _uiState.update { state -> state.copy(isStarting = false, errorMessage = UiText.of(R.string.error_game_start_failed)) }
             }
         }
@@ -239,7 +275,7 @@ class WaitingRoomViewModel @Inject constructor(
         // since this screen will have already navigated away by then and
         // the update below lands on a cleared ViewModel.
         viewModelScope.launch {
-            delay(START_GAME_TIMEOUT_MS)
+            delay(START_GAME_TIMEOUT_MS + COUNTDOWN_SECONDS * 1_000L)
             if (_uiState.value.isStarting) {
                 _uiState.update { state -> state.copy(isStarting = false, errorMessage = UiText.of(R.string.error_game_start_failed)) }
             }

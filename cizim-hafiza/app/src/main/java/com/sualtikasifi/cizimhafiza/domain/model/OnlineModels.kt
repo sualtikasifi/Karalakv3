@@ -86,6 +86,11 @@ data class OnlineRoom(
     // "time left" for the round in progress instead of no information at
     // all — see WaitingRoomScreen.
     val startedAt: Long? = null,
+    // Wall-clock time the host pressed "Başlat", i.e. when the 3-2-1 on every lobby's ready button began;
+    // cleared again when the room flips to PLAYING (see OnlineGameRepositoryImpl.startCountdown/startGame).
+    val countdownStartedAt: Long? = null,
+    // True when this round began after the lobby's own 3-2-1, so the game screen does not count down a second time.
+    val startedAfterCountdown: Boolean = false,
     val rematchVotes: Set<String> = emptySet(),
     // Host-only feature (see WaitingRoomViewModel.kickPlayer/unbanPlayer) —
     // enforced for real in firestore.rules' rooms/{roomCode} update rule,

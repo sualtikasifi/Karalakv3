@@ -49,6 +49,12 @@ interface OnlineGameRepository {
     /** Host-only: locks in the shared word list and flips the room to PLAYING. */
     suspend fun startGame(roomCode: String, wordIds: List<Int>)
 
+    /** Host-only: starts the shared 3-2-1 on every lobby's ready button (OnlineRoom.countdownStartedAt). */
+    suspend fun startCountdown(roomCode: String)
+
+    /** Host-only: drops a countdown that will not be followed by a start (the word list failed to load). */
+    suspend fun cancelCountdown(roomCode: String)
+
     /** Called once when a player finishes their own drawing+guessing run. */
     suspend fun submitResult(
         roomCode: String,

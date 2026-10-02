@@ -80,7 +80,7 @@
     <string name="online_invite_friend">Davet Et</string>
     <string name="online_waiting_for_friend">Arkadaşlarını bekliyoruz…</string>
     <string name="online_room_occupancy">%1$d/%2$d kişi</string>
-    <string name="online_ready">Hazırım</string>
+    <string name="online_ready">Hazır</string>
     <string name="online_ready_cancel">Hazır değilim</string>
     <string name="online_start_game">Oyunu Başlat</string>
     <string name="online_waiting_for_host">Herkes hazır! Oda sahibinin başlatmasını bekliyoruz…</string>
@@ -1319,11 +1319,11 @@
     <string name="store_guest_warning">Giriş yapmadın — satın aldıkların yalnızca bu telefonda saklanır. Hiçbir şey kaybolmasın diye dokunup hesabını bağla.</string>
     <string name="tour_heading">Yenilikler</string>
     <string name="tour_chests_title">Kasalar</string>
-    <string name="tour_chests_body">Hızlı Eşleş\'te rakibini yenerek kasa kazan. Süresini Kasalarım\'dan başlat — aynı anda yalnızca bir kasa sayar. Nadir kasalar daha çok altın, joker ve hatta kalem verir!</string>
+    <string name="tour_chests_body">Hızlı Eşleş\'te rakibini yenince bir kasa kazanırsın. Kasayı Aç\'a dokunduğunda geri sayım başlar; süre dolunca kasanı açıp ödüllerini alırsın. Bir kasanın süresi işlerken sıradaki kasa bekler, süresi dolmuş bir kasayı açmadan da yenisini başlatabilirsin. Dört kasa yuvan var; hepsi doluyken yeni kasa kazanamazsın, bu yüzden hazır kasalarını açmayı unutma. Nadir kasalar daha çok altın, joker ve hatta özel kalem getirir!</string>
     <string name="tour_jokers_title">Jokerler</string>
-    <string name="tour_jokers_body">Jokerler maçta yardımcı olur: ilk harfi göster, harf sayısını öğren ya da çizimde ekstra süre kazan. Kasalardan kazan ya da mağazadan satın al.</string>
+    <string name="tour_jokers_body">Jokerler zor anlarda yanında olur. İlk Harf Jokeri kelimenin ilk harfini, Harf Sayısı Jokeri kaç harfli olduğunu gösterir; Ekstra Süre Jokeri ise çizimine fazladan zaman kazandırır. Jokerleri kasalardan kazanabilir ya da Mağaza\'dan altınla satın alabilirsin.</string>
     <string name="tour_store_title">Mağaza</string>
-    <string name="tour_store_body">Altınlarını yeni kalemlere ve jokerlere harca. Ana ekrandaki altına ya da Mağaza butonuna dokun — satın almadan önce kalemi deneyebilirsin!</string>
+    <string name="tour_store_body">Biriktirdiğin altınları Mağaza\'da harcayabilirsin: yeni kalemlerle çizimlerine farklı bir tarz kat, profil fotoğrafın için özel çerçeveler al ve jokerlerini yenile. Kalemleri satın almadan önce Dene ile deneyebilirsin. Ana ekrandaki altına ya da Mağaza kutusuna dokunman yeterli.</string>
     <string name="tour_next">İleri</string>
     <string name="tour_start">Hadi başlayalım!</string>
     <string name="quick_match_abandon_title">Eşleşme iptal edilsin mi?</string>

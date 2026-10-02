@@ -205,9 +205,19 @@ class OnlineGameRepositoryImpl @Inject constructor(
             mapOf(
                 "status" to RoomStatus.PLAYING.name,
                 "wordIds" to wordIds.map { it.toLong() },
-                "startedAt" to System.currentTimeMillis()
+                "startedAt" to System.currentTimeMillis(),
+                "countdownStartedAt" to FieldValue.delete(),
+                "startedAfterCountdown" to true
             )
         ).await()
+    }
+
+    override suspend fun startCountdown(roomCode: String) {
+        rooms.document(roomCode).update("countdownStartedAt", System.currentTimeMillis()).await()
+    }
+
+    override suspend fun cancelCountdown(roomCode: String) {
+        rooms.document(roomCode).update("countdownStartedAt", FieldValue.delete()).await()
     }
 
     override suspend fun submitResult(
@@ -324,6 +334,7 @@ class OnlineGameRepositoryImpl @Inject constructor(
                         "wordIds" to wordIds.map { it.toLong() },
                         "startedAt" to System.currentTimeMillis(),
                         "players" to resetPlayers,
+                        "startedAfterCountdown" to false,
                         "rematchVotes" to emptyList<String>()
                     )
                 )
@@ -532,6 +543,8 @@ class OnlineGameRepositoryImpl @Inject constructor(
         val mode = getString("mode")?.let { runCatching { GameMode.valueOf(it) }.getOrNull() } ?: GameMode.NORMAL
         val wordIds = (get("wordIds") as? List<*>)?.mapNotNull { (it as? Number)?.toInt() } ?: emptyList()
         val startedAt = (get("startedAt") as? Number)?.toLong()
+        val countdownStartedAt = (get("countdownStartedAt") as? Number)?.toLong()
+        val startedAfterCountdown = getBoolean("startedAfterCountdown") == true
         val playersMap = get("players") as? Map<String, Map<String, Any?>> ?: emptyMap()
         val players = playersMap.map { (uid, data) ->
             OnlinePlayer(
@@ -572,6 +585,8 @@ class OnlineGameRepositoryImpl @Inject constructor(
             players = players,
             teamMode = getBoolean("teamMode") == true,
             startedAt = startedAt,
+            countdownStartedAt = countdownStartedAt,
+            startedAfterCountdown = startedAfterCountdown,
             rematchVotes = rematchVotes,
             kickedUsers = kickedUsers
         )

@@ -2,6 +2,7 @@ package com.sualtikasifi.cizimhafiza.presentation.online
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.animateFloat
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
@@ -244,6 +245,7 @@ fun WaitingRoomScreen(
                 amReady = amReady,
                 isHost = isHost,
                 isStarting = uiState.isStarting,
+                countdownSeconds = uiState.countdownSeconds,
                 errorMessage = uiState.errorMessage,
                 phraseUsageCounts = phraseUsageCounts,
                 emojiUsageCounts = emojiUsageCounts,
@@ -491,6 +493,7 @@ private fun WaitingRoomActions(
     amReady: Boolean,
     isHost: Boolean,
     isStarting: Boolean,
+    countdownSeconds: Int?,
     errorMessage: UiText?,
     phraseUsageCounts: Map<String, Int>,
     emojiUsageCounts: Map<String, Int>,
@@ -540,12 +543,12 @@ private fun WaitingRoomActions(
             // player list already explains what they're waiting for.
             amPending -> Unit
             !hasOthers -> Unit
-            !allReady -> Column(modifier = Modifier.fillMaxWidth()) {
+            else -> Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 // In a 2v2 room "everyone is ready" is not enough — the sides
                 // have to be even. Without this line four ready players in a
                 // 3-1 split sat looking at a ready button that would never
                 // turn into a start button, with nothing saying why.
-                teamImbalanceHint?.let { hint ->
+                if (!allReady) teamImbalanceHint?.let { hint ->
                     Text(
                         text = stringResource(hint),
                         style = MaterialTheme.typography.bodySmall,
@@ -554,29 +557,103 @@ private fun WaitingRoomActions(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                     )
                 }
-                SecondaryButton(
-                    text = stringResource(if (amReady) R.string.online_ready_cancel else R.string.online_ready),
+                // The ready button stays for everybody, host included, so "Hazır" can always be taken back.
+                // Once everyone is ready the host's start button joins it and the others are told who they wait for.
+                if (allReady && countdownSeconds == null && !isStarting) {
+                    if (isHost) {
+                        PrimaryButton(
+                            text = stringResource(R.string.online_start_game),
+                            onClick = onStartGame,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.online_waiting_for_host),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+                ReadyButton(
+                    amReady = amReady,
+                    countdownSeconds = countdownSeconds,
+                    locked = isStarting,
                     onClick = onToggleReady,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-            isHost -> if (isStarting) {
-                CircularProgressIndicator(modifier = Modifier.size(32.dp))
-            } else {
-                PrimaryButton(
-                    text = stringResource(R.string.online_start_game),
-                    onClick = onStartGame,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            else -> Text(
-                text = stringResource(R.string.online_waiting_for_host),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
+    }
+}
+
+/**
+ * The lobby's one ready button. Not ready: green, slowly blinking. Ready: steady green with a soft halo; tapping
+ * again takes it back. Once the host starts the match the face shows 3, 2, 1 and the halo grows brighter.
+ */
+@Composable
+private fun ReadyButton(
+    amReady: Boolean,
+    countdownSeconds: Int?,
+    locked: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val green = AppTheme.tokens.success
+    val counting = countdownSeconds != null
+    val transition = androidx.compose.animation.core.rememberInfiniteTransition(label = "ready")
+    val blink by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.tween(1300, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "blink"
+    )
+    val halo by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.tween(if (counting) 520 else 1500, easing = androidx.compose.animation.core.LinearEasing),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "halo"
+    )
+    val face = if (amReady || counting) green else androidx.compose.ui.graphics.lerp(green, androidx.compose.ui.graphics.Color.White, 0.38f * blink)
+    // Strength and reach of the halo: none while waiting to be pressed, calm once ready, strongest during the count.
+    val glowStrength = when {
+        counting -> 0.55f + 0.35f * halo
+        amReady -> 0.22f + 0.16f * halo
+        else -> 0f
+    }
+    val glowReach = if (counting) 22.dp else 14.dp
+    Box(
+        modifier = modifier
+            .drawBehind {
+                if (glowStrength > 0f) {
+                    val layers = 5
+                    for (i in layers downTo 1) {
+                        val grow = glowReach.toPx() * i / layers
+                        drawRoundRect(
+                            color = green.copy(alpha = glowStrength * (1f - (i - 1f) / layers) * 0.35f),
+                            topLeft = androidx.compose.ui.geometry.Offset(-grow, -grow),
+                            size = androidx.compose.ui.geometry.Size(size.width + 2 * grow, size.height + 2 * grow),
+                            cornerRadius = CornerRadius(size.height / 2 + grow)
+                        )
+                    }
+                }
+            }
+    ) {
+        PrimaryButton(
+            text = countdownSeconds?.toString() ?: stringResource(R.string.online_ready),
+            onClick = { if (!counting && !locked) onClick() },
+            enabled = true,
+            face = face,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
