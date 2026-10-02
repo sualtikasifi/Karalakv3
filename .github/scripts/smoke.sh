@@ -147,6 +147,41 @@ for i in $(seq 1 16); do
   sleep 8
 done
 
+# --- Back home after the round: the daily card should now show a tick or a cross for each word ------------------
+# The round ends on an interstitial ad and then the result screen. Close the ad, press the result screen's
+# primary (orange, wide) button found by colour, and capture the main menu's daily card.
+primary_btn_xy() {
+  adb exec-out screencap > "$OUT/_raw.bin"
+  python3 - "$OUT/_raw.bin" <<'PY'
+import sys, struct
+d = open(sys.argv[1], 'rb').read()
+w, h, fmt = struct.unpack('<III', d[:12])
+off = 12
+if len(d) < off + w * h * 4:
+    sys.exit(0)
+rows = []
+for y in range(h - 700, h - 80, 2):
+    run = best = 0
+    base = off + y * w * 4
+    for x in range(0, w, 2):
+        r, g, b = d[base + x * 4], d[base + x * 4 + 1], d[base + x * 4 + 2]
+        if r > 225 and 90 < g < 150 and b < 70:
+            run += 2; best = max(best, run)
+        else:
+            run = 0
+    if best >= 380:
+        rows.append(y)
+if rows:
+    print(int(w * 0.75), (rows[0] + rows[-1]) // 2)
+PY
+}
+for i in 1 2 3; do adb shell input keyevent KEYCODE_BACK; sleep 3; done
+adb exec-out screencap -p > "$OUT/after_01_result_or_menu.png"
+XY=$(primary_btn_xy)
+if [ -n "$XY" ]; then echo "result button at $XY"; adb shell input tap $XY; sleep 6; fi
+adb exec-out screencap -p > "$OUT/after_02_menu_daily_card.png"
+rm -f "$OUT/_raw.bin"
+
 # Flow screenshots are many, so keep them small (half size JPEG) before publishing.
 python3 -m pip install -q pillow >/dev/null 2>&1 && python3 - "$OUT" <<'PY'
 import sys, glob, os
