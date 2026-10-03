@@ -320,5 +320,6 @@ private fun worldBackgroundRes(worldId: Int?): Int? = when (worldId) {
     1 -> R.drawable.bg_world_1
     4 -> R.drawable.bg_world_4
     5 -> R.drawable.bg_world_5
+    7 -> R.drawable.bg_world_7
     else -> null
 }
