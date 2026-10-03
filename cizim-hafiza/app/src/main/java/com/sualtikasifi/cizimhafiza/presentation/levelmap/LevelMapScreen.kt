@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.levelmap
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -81,6 +82,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.CurrentPositionGlow
 import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 
 // The artwork files are all this size (bg_world_N); the stop positions in LevelNodePositions are fractions of it.
@@ -91,6 +93,9 @@ private const val ArtHeight = 1870f
 private const val ArtStretch = 1.1f
 
 private val CoinSize = 58.dp
+
+/** Seconds counted on the PLAY button before a level opens. */
+private const val PlayCountdownSeconds = 3
 private val RingSize = 80.dp
 
 // How far up the artwork its bottom edge melts into the plain colour below it.
@@ -111,6 +116,20 @@ fun LevelMapScreen(
     var tapped by rememberSaveable { mutableStateOf<Int?>(null) }
     val current = tapped ?: levels.firstOrNull { it.isNext }?.levelIndex ?: levels.lastOrNull { it.unlocked }?.levelIndex
     val selected = levels.firstOrNull { it.levelIndex == current }
+
+    // PLAY starts a 3-2-1 on the button itself; the level opens when it reaches the end. Another tap on the map cancels it.
+    var startingLevel by remember { mutableStateOf<Int?>(null) }
+    var countdown by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(startingLevel) {
+        val level = startingLevel ?: return@LaunchedEffect
+        for (second in PlayCountdownSeconds downTo 1) {
+            countdown = second
+            delay(1_000)
+        }
+        startingLevel = null
+        countdown = null
+        onLevelClick(level)
+    }
 
     val scroll = rememberScrollState()
     val positions = LevelNodePositions[world?.id] ?: LevelNodePositions.getValue(1)
@@ -188,7 +207,7 @@ fun LevelMapScreen(
                     LevelCoin(
                         level = level,
                         isOpen = level.levelIndex == current,
-                        onClick = { if (level.unlocked) tapped = level.levelIndex },
+                        onClick = { if (level.unlocked) { startingLevel = null; countdown = null; tapped = level.levelIndex } },
                         modifier = Modifier.offset(x = (centreX - CoinBox.value / 2f).dp, y = (centreY - CoinBox.value / 2f).dp)
                     )
                 }
@@ -241,7 +260,8 @@ fun LevelMapScreen(
                     LevelPanel(
                         level = shown,
                         worldIconRes = world.iconRes,
-                        onPlay = { onLevelClick(shown.levelIndex) },
+                        countdown = countdown,
+                        onPlay = { if (startingLevel == null) startingLevel = shown.levelIndex },
                         modifier = Modifier.navigationBarsPadding().padding(horizontal = PanelSideMargin, vertical = 10.dp)
                     )
                 }
@@ -264,7 +284,7 @@ private fun LevelCoin(level: LevelNodeState, isOpen: Boolean, onClick: () -> Uni
     val rim = Color(0xFF7A4313)
     val pop by animateFloatAsState(if (isOpen) 1.14f else 1f, spring(dampingRatio = 0.45f, stiffness = 380f), label = "coin-pop")
     val face = when {
-        !level.unlocked -> Brush.verticalGradient(listOf(Color(0xFFA7ADB5), Color(0xFF727881)))
+        !level.unlocked -> Brush.verticalGradient(listOf(Color(0xFF6C7686), Color(0xFF3A4250)))
         level.isNext -> Brush.verticalGradient(listOf(Color(0xFF52B3FF), Color(0xFF1F73D3)))
         else -> Brush.verticalGradient(listOf(Color(0xFFFFB347), Color(0xFFE9801D)))
     }
@@ -304,7 +324,7 @@ private fun LevelCoin(level: LevelNodeState, isOpen: Boolean, onClick: () -> Uni
                 .shadow(4.dp, CircleShape)
                 .clip(CircleShape)
                 .background(face)
-                .border(3.dp, rim, CircleShape)
+                .border(3.dp, if (level.unlocked) rim else Color(0xFFAEB9CA), CircleShape)
         ) {
             if (level.unlocked) {
                 Text(
@@ -317,22 +337,64 @@ private fun LevelCoin(level: LevelNodeState, isOpen: Boolean, onClick: () -> Uni
                     )
                 )
             } else {
-                Icon(Icons.Filled.Lock, contentDescription = stringResource(R.string.level_locked), tint = Color(0xFF3E4249), modifier = Modifier.size(26.dp))
+                Padlock(modifier = Modifier.size(30.dp))
             }
         }
         if (!level.unlocked) {
+            // The stage number sits on a small plate under the coin, so a locked stop still says which one it is.
             Text(
                 text = level.levelIndex.toString(),
-                style = TextStyle(color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold),
-                modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-4).dp)
+                style = TextStyle(color = Color(0xFFEAF0F7), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .offset(y = 2.dp)
+                    .background(Brush.verticalGradient(listOf(Color(0xFF4A5362), Color(0xFF2B323D))), RoundedCornerShape(8.dp))
+                    .border(1.5.dp, Color(0xFF9AA6B8), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 7.dp, vertical = 1.dp)
             )
         }
     }
 }
 
+/** A steel padlock with a keyhole, drawn rather than taken from the icon set so it can carry a highlight and a shadow. */
+@Composable
+private fun Padlock(modifier: Modifier = Modifier) {
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val bodyTop = h * 0.44f
+        drawArc(
+            color = Color(0xFFCBD3DF),
+            startAngle = 180f, sweepAngle = 180f, useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset(w * 0.24f, h * 0.06f),
+            size = androidx.compose.ui.geometry.Size(w * 0.52f, h * 0.76f),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.13f)
+        )
+        val body = androidx.compose.ui.geometry.Rect(w * 0.12f, bodyTop, w * 0.88f, h * 0.96f)
+        drawRoundRect(
+            brush = Brush.verticalGradient(listOf(Color(0xFFF1F4F9), Color(0xFFA9B4C4), Color(0xFF7D8999)), startY = body.top, endY = body.bottom),
+            topLeft = body.topLeft, size = body.size, cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.14f)
+        )
+        drawRoundRect(
+            color = Color(0xFF3B4452), topLeft = body.topLeft, size = body.size,
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.14f),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.05f)
+        )
+        val cx = w / 2f
+        val cy = body.top + body.height * 0.42f
+        drawCircle(Color(0xFF2B323D), radius = w * 0.085f, center = androidx.compose.ui.geometry.Offset(cx, cy))
+        drawRoundRect(
+            Color(0xFF2B323D),
+            topLeft = androidx.compose.ui.geometry.Offset(cx - w * 0.035f, cy),
+            size = androidx.compose.ui.geometry.Size(w * 0.07f, h * 0.17f),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.03f)
+        )
+    }
+}
+
 /** The card that rises from the bottom when a stop is tapped: its number, the stars so far and the button that starts it. */
 @Composable
-private fun LevelPanel(level: LevelNodeState, worldIconRes: Int, onPlay: () -> Unit, modifier: Modifier = Modifier) {
+private fun LevelPanel(level: LevelNodeState, worldIconRes: Int, countdown: Int?, onPlay: () -> Unit, modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxWidth().aspectRatio(1080f / 350f)) {
         Image(
             painter = painterResource(R.drawable.level_panel),
@@ -378,13 +440,13 @@ private fun LevelPanel(level: LevelNodeState, worldIconRes: Int, onPlay: () -> U
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            PlayButton(onClick = onPlay)
+            PlayButton(countdown = countdown, onClick = onPlay)
         }
     }
 }
 
 @Composable
-private fun PlayButton(onClick: () -> Unit) {
+private fun PlayButton(countdown: Int?, onClick: () -> Unit) {
     val shape = RoundedCornerShape(18.dp)
     Box(
         contentAlignment = Alignment.Center,
@@ -395,13 +457,17 @@ private fun PlayButton(onClick: () -> Unit) {
             .clip(shape)
             .background(Brush.verticalGradient(listOf(Color(0xFF7BE042), Color(0xFF2FA524))))
             .border(3.dp, Color(0xFF1F7A1A), shape)
-            .clickable(onClick = onClick)
+            .clickable(enabled = countdown == null, onClick = onClick)
     ) {
+        // Each number lands big and settles, like the lobby's start count.
+        val pop = remember(countdown) { Animatable(if (countdown != null) 1.6f else 1f) }
+        LaunchedEffect(countdown) { if (countdown != null) pop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 300f)) }
         Text(
-            text = stringResource(R.string.level_play),
+            text = countdown?.toString() ?: stringResource(R.string.level_play),
+            modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value },
             style = TextStyle(
                 color = Color.White,
-                fontSize = 22.sp,
+                fontSize = if (countdown != null) 30.sp else 22.sp,
                 fontWeight = FontWeight.ExtraBold,
                 shadow = androidx.compose.ui.graphics.Shadow(Color(0xFF14540F), androidx.compose.ui.geometry.Offset(0f, 3f), 3f)
             )
