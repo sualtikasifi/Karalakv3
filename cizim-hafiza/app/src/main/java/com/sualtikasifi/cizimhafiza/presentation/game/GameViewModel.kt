@@ -1272,6 +1272,11 @@ class GameViewModel @Inject constructor(
         // minute of the previous ad, so a quick retry of the same level is not
         // met with a second one.
         val evenLevel = worldId != null && levelIndex != null && levelIndex % 2 == 0
+        // An odd level never shows one — not even through the every-Nth-match cadence of ordinary games.
+        if (worldId != null && levelIndex != null && !evenLevel) {
+            onDismissed()
+            return
+        }
         adManager.maybeShowInterstitial(
             activity,
             onDismissed,
