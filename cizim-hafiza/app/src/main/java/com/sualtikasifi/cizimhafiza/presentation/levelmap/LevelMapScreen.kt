@@ -1,6 +1,20 @@
 package com.sualtikasifi.cizimhafiza.presentation.levelmap
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -77,6 +91,7 @@ private const val ArtHeight = 1870f
 private const val ArtStretch = 1.1f
 
 private val CoinSize = 58.dp
+private val RingSize = 80.dp
 
 // How far up the artwork its bottom edge melts into the plain colour below it.
 private val FadeHeight = 130.dp
@@ -119,7 +134,10 @@ fun LevelMapScreen(
             snapshotFlow { scroll.maxValue }.first { it > 0 }
             val nodeY = with(density) { (artHeight * (positions[index - 1].second / 100f)).toPx() }
             val viewport = with(density) { maxHeight.toPx() }
-            scroll.animateScrollTo((nodeY - viewport * 0.38f).toInt().coerceIn(0, scroll.maxValue))
+            scroll.animateScrollTo(
+                (nodeY - viewport * 0.38f).toInt().coerceIn(0, scroll.maxValue),
+                tween(700, easing = FastOutSlowInEasing)
+            )
         }
 
         Column(modifier = Modifier.fillMaxSize().verticalScroll(scroll)) {
@@ -144,6 +162,24 @@ fun LevelMapScreen(
                             )
                         )
                 )
+                // A golden ring that travels from stop to stop, so moving on reads as walking along the path.
+                current?.let { open ->
+                    val (ox, oy) = positions[open - 1]
+                    val ringX by animateDpAsState((screenWidth.value / 2f + ArtWidth * scale * (ox / 100f - 0.5f)).dp, tween(650, easing = FastOutSlowInEasing), label = "ring-x")
+                    val ringY by animateDpAsState((artHeight.value * oy / 100f).dp, tween(650, easing = FastOutSlowInEasing), label = "ring-y")
+                    val pulse by rememberInfiniteTransition(label = "ring").animateFloat(
+                        initialValue = 0.9f, targetValue = 1.08f,
+                        animationSpec = infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+                        label = "ring-pulse"
+                    )
+                    Box(
+                        modifier = Modifier
+                            .offset(x = ringX - RingSize / 2, y = ringY - RingSize / 2 + 6.dp)
+                            .size(RingSize)
+                            .graphicsLayer { scaleX = pulse; scaleY = pulse }
+                            .border(5.dp, Color(0xFFFFE066), CircleShape)
+                    )
+                }
                 levels.forEach { level ->
                     val (px, py) = positions[level.levelIndex - 1]
                     // Cropped to fill the box, the picture is as wide as its height says; the centre stays put.
@@ -190,12 +226,25 @@ fun LevelMapScreen(
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
             if (selected != null && world != null) {
-                LevelPanel(
-                    level = selected,
-                    worldIconRes = world.iconRes,
-                    onPlay = { onLevelClick(selected.levelIndex) },
-                    modifier = Modifier.navigationBarsPadding().padding(horizontal = PanelSideMargin, vertical = 10.dp)
-                )
+                // Moving between stops slides the panel's content the way the ring travels: forwards from the right,
+                // backwards from the left.
+                AnimatedContent(
+                    targetState = selected,
+                    contentKey = { it.levelIndex },
+                    transitionSpec = {
+                        val dir = if (targetState.levelIndex >= initialState.levelIndex) 1 else -1
+                        (slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { dir * it / 3 } + fadeIn(tween(300)))
+                            .togetherWith(slideOutHorizontally(tween(380, easing = FastOutSlowInEasing)) { -dir * it / 3 } + fadeOut(tween(200)))
+                    },
+                    label = "level-panel"
+                ) { shown ->
+                    LevelPanel(
+                        level = shown,
+                        worldIconRes = world.iconRes,
+                        onPlay = { onLevelClick(shown.levelIndex) },
+                        modifier = Modifier.navigationBarsPadding().padding(horizontal = PanelSideMargin, vertical = 10.dp)
+                    )
+                }
             }
         }
     }
@@ -213,6 +262,7 @@ private val CoinBox = 72.dp
 @Composable
 private fun LevelCoin(level: LevelNodeState, isOpen: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val rim = Color(0xFF7A4313)
+    val pop by animateFloatAsState(if (isOpen) 1.14f else 1f, spring(dampingRatio = 0.45f, stiffness = 380f), label = "coin-pop")
     val face = when {
         !level.unlocked -> Brush.verticalGradient(listOf(Color(0xFFA7ADB5), Color(0xFF727881)))
         level.isNext -> Brush.verticalGradient(listOf(Color(0xFF52B3FF), Color(0xFF1F73D3)))
@@ -250,10 +300,11 @@ private fun LevelCoin(level: LevelNodeState, isOpen: Boolean, onClick: () -> Uni
             modifier = Modifier
                 .padding(top = 12.dp)
                 .size(CoinSize)
+                .graphicsLayer { scaleX = pop; scaleY = pop }
                 .shadow(4.dp, CircleShape)
                 .clip(CircleShape)
                 .background(face)
-                .border(if (isOpen) 4.dp else 3.dp, if (isOpen) Color(0xFFFFE066) else rim, CircleShape)
+                .border(3.dp, rim, CircleShape)
         ) {
             if (level.unlocked) {
                 Text(
