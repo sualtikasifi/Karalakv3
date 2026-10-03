@@ -100,6 +100,7 @@ fun WorldMapScreen(
 
 /** The banner picture of each world, or null for a world whose picture has not been drawn yet. */
 private fun bannerRes(worldId: Int): Int? = when (worldId) {
+    1 -> R.drawable.world_banner_1
     2 -> R.drawable.world_banner_2
     3 -> R.drawable.world_banner_3
     4 -> R.drawable.world_banner_4
