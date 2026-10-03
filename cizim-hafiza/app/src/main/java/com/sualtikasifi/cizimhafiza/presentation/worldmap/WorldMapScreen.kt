@@ -213,7 +213,7 @@ private fun WorldBanner(card: WorldCardState, onClick: () -> Unit) {
                 text = stringResource(R.string.map_current_position),
                 container = AppTheme.tokens.gold,
                 content = Color.White,
-                modifier = Modifier.align(Alignment.TopEnd).padding(top = 2.dp, end = 22.dp)
+                modifier = Modifier.align(Alignment.BottomStart).padding(start = 22.dp, bottom = 12.dp)
             )
         }
     }
