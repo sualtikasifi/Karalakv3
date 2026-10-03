@@ -1,72 +1,60 @@
 package com.sualtikasifi.cizimhafiza.presentation.worldmap
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.paint
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
-import com.sualtikasifi.cizimhafiza.presentation.common.CurrentPositionGlow
-import com.sualtikasifi.cizimhafiza.presentation.common.WindingPathBiasCycle
-import com.sualtikasifi.cizimhafiza.presentation.common.WindingPathCanvas
-import com.sualtikasifi.cizimhafiza.presentation.common.rememberBottomAlignedScrollState
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 import com.sualtikasifi.cizimhafiza.presentation.common.TintedBadge
-import com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance
-import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
 import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 
-// Tall enough for the tallest node: the glow halo's enlarged WorldNodeSize *
-// 1.55f circle, plus title, plus subtitle, plus (when isCurrent) the
-// "Buradasın" badge below it. This used to be a plain 184.dp sized for the
-// bare circle+title+subtitle only, from before CurrentPositionGlow and the
-// badge existed — a current-world row's real content ran past it and into
-// the next row's, which visually cut the badge/subtitle off instead of
-// actually overlapping the artwork (Compose doesn't clip a Box's children
-// to its own bounds, so the row below just painted over it).
-private val RowHeight = 240.dp
-// Clears the floating back button (see ScreenTopActions/TopActionsClearance).
-private val TopPadding = TopActionsClearance
-
-// A light wash over the page's collage, warm rather than the mint green this
-// used to be: the green read as a color cast on the artwork rather than as a
-// backdrop of its own, and made this the one screen whose background didn't
-// look like the rest of the app.
-private val OverviewGradientTop = Color(0xFFFDF7EC).copy(alpha = 0.24f)
-private val OverviewGradientBottom = Color(0xFFF3E6D2).copy(alpha = 0.40f)
+// The artwork carries its own "Dünyalar" sign; the list starts below it. 0.265 of the window height is where the
+// sign's lower edge falls in bg_worlds (a 9:20 picture, cropped to fill), plus a little air.
+private const val SignClearanceFraction = 0.265f
 
 @Composable
 fun WorldMapScreen(
@@ -75,145 +63,135 @@ fun WorldMapScreen(
     viewModel: WorldMapViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    // World 1 at the bottom, climbing toward World 9 at the top.
-    val displayWorlds = uiState.worlds.asReversed()
+    val worlds = uiState.worlds
+    val listState = rememberLazyListState()
 
-    // No title bar: the back button floats directly on the page's own
-    // background instead of sitting in a separate, differently-colored strip.
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        val (scrollState, isReady) = rememberBottomAlignedScrollState()
+    // Opens on "where you left off" rather than always at World 1.
+    val currentIndex = worlds.indexOfFirst { it.isCurrent }
+    LaunchedEffect(currentIndex >= 0) {
+        if (currentIndex > 0) listState.scrollToItem((currentIndex - 1).coerceAtLeast(0))
+    }
 
-        // Both background layers — the collage and the wash over it — are
-        // painted here, on the full window, and the Scaffold inset goes on
-        // the scrolling content instead. Previously the wash was a scrolling
-        // element inset below the status bar, so the strip behind the
-        // notification bar showed bare collage and the boundary between the
-        // two read as a hard seam that stayed put while the map scrolled.
-        Box(
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { _ ->
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .screenBackground()
-                .background(Brush.verticalGradient(listOf(OverviewGradientTop, OverviewGradientBottom)))
+                .paint(painterResource(R.drawable.bg_worlds), contentScale = ContentScale.Crop)
         ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(padding)
-                .verticalScroll(scrollState)
-                .graphicsLayer(alpha = if (isReady) 1f else 0f)
-        ) {
-            WindingPathCanvas(
-                itemCount = displayWorlds.size,
-                rowHeight = RowHeight,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                modifier = Modifier.padding(top = TopPadding)
-            )
-            Column(modifier = Modifier.fillMaxWidth().padding(top = TopPadding)) {
-                displayWorlds.forEachIndexed { renderIndex, card ->
-                    Box(
-                        modifier = Modifier.fillMaxWidth().height(RowHeight),
-                        contentAlignment = BiasAlignment(
-                            horizontalBias = WindingPathBiasCycle[renderIndex % WindingPathBiasCycle.size],
-                            verticalBias = 0f
-                        )
-                    ) {
-                        WorldNode(card = card, onClick = { if (card.unlocked) onWorldClick(card.world.id) })
+            // The list lives below the sign, not under it: the sign stays fully visible while the cards scroll
+            // and are cut off along its lower edge.
+            Column(modifier = Modifier.fillMaxSize()) {
+                Spacer(modifier = Modifier.height(this@BoxWithConstraints.maxHeight * SignClearanceFraction))
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 6.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    itemsIndexed(worlds, key = { _, card -> card.world.id }) { _, card ->
+                        WorldBanner(card = card, onClick = { if (card.unlocked) onWorldClick(card.world.id) })
                     }
                 }
             }
-        }
-        ScreenTopActions(onBack = onBack, modifier = Modifier.align(Alignment.TopStart))
+            ScreenTopActions(onBack = onBack, modifier = Modifier.align(Alignment.TopStart))
         }
     }
 }
 
-private val WorldNodeSize = 92.dp
+/** The banner picture of each world, or null for a world whose picture has not been drawn yet. */
+private fun bannerRes(worldId: Int): Int? = when (worldId) {
+    2 -> R.drawable.world_banner_2
+    3 -> R.drawable.world_banner_3
+    4 -> R.drawable.world_banner_4
+    5 -> R.drawable.world_banner_5
+    6 -> R.drawable.world_banner_6
+    7 -> R.drawable.world_banner_7
+    8 -> R.drawable.world_banner_8
+    9 -> R.drawable.world_banner_9
+    else -> null
+}
+
+/** Greyed and darkened, alpha untouched, so a locked world keeps the banner's rounded outline. */
+private val LockedFilter = ColorFilter.colorMatrix(
+    ColorMatrix().apply {
+        setToSaturation(0.2f)
+        timesAssign(ColorMatrix(floatArrayOf(
+            0.55f, 0f, 0f, 0f, 0f,
+            0f, 0.55f, 0f, 0f, 0f,
+            0f, 0f, 0.55f, 0f, 0f,
+            0f, 0f, 0f, 1f, 0f
+        )))
+    }
+)
 
 @Composable
-private fun WorldNode(card: WorldCardState, onClick: () -> Unit) {
-    val accent = Color(card.world.accentColor)
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 16.dp)) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(WorldNodeSize * 1.55f)) {
-            // Behind and past the edge of the node itself — see
-            // CurrentPositionGlow's own doc for why a moving glow, not just
-            // a border, is what actually catches the eye on a long path of
-            // near-identical circles.
-            if (card.isCurrent) {
-                CurrentPositionGlow(modifier = Modifier.matchParentSize())
-            }
-            Card(
-                onClick = onClick,
+private fun WorldBanner(card: WorldCardState, onClick: () -> Unit) {
+    val name = stringResource(card.world.displayNameRes)
+    val banner = bannerRes(card.world.id)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
                 enabled = card.unlocked,
-                shape = CircleShape,
-                colors = CardDefaults.cardColors(containerColor = accent, contentColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = if (card.unlocked) 6.dp else 0.dp),
-                // A frame around every node, not just the current one — bare
-                // circles butting straight against the collage looked
-                // unfinished. The current world's ring switches to gold so it
-                // still reads as distinct even with every node now framed.
-                border = BorderStroke(
-                    width = if (card.isCurrent) 3.dp else 2.dp,
-                    color = when {
-                        card.isCurrent -> AppTheme.tokens.gold
-                        card.unlocked -> Color.White.copy(alpha = 0.75f)
-                        else -> Color.White.copy(alpha = 0.35f)
-                    }
-                ),
-                modifier = Modifier.size(WorldNodeSize)
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            )
+    ) {
+        if (banner != null) {
+            Image(
+                painter = painterResource(banner),
+                contentDescription = name,
+                contentScale = ContentScale.FillWidth,
+                colorFilter = if (card.unlocked) null else LockedFilter,
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else {
+            // No picture yet: a plain card in the world's own colour, same size as the others.
+            Box(
+                contentAlignment = Alignment.CenterStart,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1080f / 288f)
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(Color(card.world.accentColor).copy(alpha = if (card.unlocked) 1f else 0.5f))
+                    .padding(horizontal = 22.dp)
             ) {
-            Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(), contentAlignment = Alignment.Center) {
-                // A per-world illustration (see world_icon_1..9.png) instead of
-                // the flat accent circle + emoji this used to be — each one a
-                // distinct hand-drawn scene rather than an interchangeable
-                // colored disc. Locked worlds still show it — a fully hidden
-                // circle gave no reason to keep climbing toward it — just
-                // dimmed under a dark scrim with the lock on top.
-                Image(
-                    painter = painterResource(card.world.iconRes),
-                    contentDescription = stringResource(card.world.displayNameRes),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().clip(CircleShape)
-                )
-                if (!card.unlocked) {
-                    Box(modifier = Modifier.fillMaxSize().clip(CircleShape).background(Color.Black.copy(alpha = 0.45f)))
-                    Icon(Icons.Filled.Lock, contentDescription = stringResource(R.string.level_locked), tint = Color.White)
-                }
-            }
+                Text(text = name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             }
         }
-        // The dashed path runs behind these labels; a soft plate keeps the
-        // line from striking through the words.
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .padding(top = 4.dp)
-                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.85f), RoundedCornerShape(12.dp))
-                .padding(horizontal = 10.dp, vertical = 3.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 22.dp, bottom = 12.dp)
         ) {
-            Text(
-                text = stringResource(card.world.displayNameRes),
-                style = MaterialTheme.typography.labelLarge,
-                textAlign = TextAlign.Center,
-                color = if (card.unlocked) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-            )
-            Text(
-                text = if (card.unlocked) {
-                    "${stringResource(R.string.world_progress_format, card.completedLevels)} · ⭐${card.totalStars}"
-                } else {
-                    stringResource(R.string.world_locked_message)
-                },
-                style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (card.unlocked) {
+                Text(
+                    text = "${stringResource(R.string.world_progress_format, card.completedLevels)} · ⭐${card.totalStars}",
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                )
+            } else {
+                Icon(
+                    Icons.Filled.Lock,
+                    contentDescription = stringResource(R.string.level_locked),
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), CircleShape)
+                        .padding(5.dp)
+                )
+            }
         }
         if (card.isCurrent) {
             TintedBadge(
                 text = stringResource(R.string.map_current_position),
-                container = AppTheme.tokens.gold.copy(alpha = 0.18f),
-                content = AppTheme.tokens.gold,
-                modifier = Modifier.padding(top = 2.dp)
+                container = AppTheme.tokens.gold,
+                content = Color.White,
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 2.dp, end = 22.dp)
             )
         }
     }
