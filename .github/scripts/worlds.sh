@@ -51,8 +51,9 @@ PY
 }
 adb shell am start -n $ACT
 sleep 8
-sleep 12
-clear_overlays; sleep 3; clear_overlays
+sleep 20
+adb shell input tap 540 1678
+sleep 4
 shot 00_menu
 adb shell input tap 200 1488
 sleep 4
