@@ -318,5 +318,6 @@ private fun StarRow(stars: Int, modifier: Modifier = Modifier) {
 /** The full-screen artwork of a world's level map, or null for a world whose artwork has not been added yet. */
 private fun worldBackgroundRes(worldId: Int?): Int? = when (worldId) {
     1 -> R.drawable.bg_world_1
+    4 -> R.drawable.bg_world_4
     else -> null
 }
