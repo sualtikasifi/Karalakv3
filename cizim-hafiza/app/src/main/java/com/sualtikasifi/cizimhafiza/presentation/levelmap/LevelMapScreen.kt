@@ -78,6 +78,9 @@ private const val ArtStretch = 1.1f
 
 private val CoinSize = 58.dp
 
+// How far up the artwork its bottom edge melts into the plain colour below it.
+private val FadeHeight = 130.dp
+
 @Composable
 fun LevelMapScreen(
     worldId: Int,
@@ -132,8 +135,14 @@ fun LevelMapScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .height(mapHeight - artHeight + 48.dp)
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, edge, edge)))
+                        .height(mapHeight - artHeight + FadeHeight)
+                        .background(
+                            Brush.verticalGradient(
+                                0f to Color.Transparent,
+                                (FadeHeight / (mapHeight - artHeight + FadeHeight)) to edge,
+                                1f to edge
+                            )
+                        )
                 )
                 levels.forEach { level ->
                     val (px, py) = positions[level.levelIndex - 1]
