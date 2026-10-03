@@ -35,6 +35,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.paint
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -93,8 +95,13 @@ fun LevelMapScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .screenBackground()
-                .background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.22f), accent.copy(alpha = 0.04f))))
+                .then(
+                    // A world with its own artwork shows it, fixed and unveiled; the rest keep the shared collage + wash.
+                    worldBackgroundRes(world?.id)?.let { Modifier.paint(painterResource(it), contentScale = ContentScale.Crop) }
+                        ?: Modifier
+                            .screenBackground()
+                            .background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.22f), accent.copy(alpha = 0.04f))))
+                )
         ) {
         Box(
             modifier = Modifier
@@ -306,4 +313,10 @@ private fun StarRow(stars: Int, modifier: Modifier = Modifier) {
             )
         }
     }
+}
+
+/** The full-screen artwork of a world's level map, or null for a world whose artwork has not been added yet. */
+private fun worldBackgroundRes(worldId: Int?): Int? = when (worldId) {
+    1 -> R.drawable.bg_world_1
+    else -> null
 }
