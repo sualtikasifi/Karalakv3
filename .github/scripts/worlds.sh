@@ -68,3 +68,11 @@ adb shell input swipe 540 1700 540 300 400
 adb shell input swipe 540 1700 540 300 400
 sleep 2
 shot 03_worlds_end
+# Back to the top of the list, open the first world's level map.
+adb shell input swipe 540 700 540 1900 400
+adb shell input swipe 540 700 540 1900 400
+sleep 2
+adb shell input tap 540 790
+sleep 5
+clear_overlays
+shot 04_levelmap

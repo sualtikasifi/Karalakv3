@@ -1350,4 +1350,7 @@
     <string name="reports_xp_event_d1440">1 day</string>
     <string name="reports_xp_event_start">Start event</string>
     <string name="reports_queue_dismiss">Dismiss</string>
+    <string name="level_panel_title">Stage %1$d</string>
+    <string name="level_panel_subtitle">Draw, guess and collect the stars!</string>
+    <string name="level_play">PLAY</string>
 </resources>

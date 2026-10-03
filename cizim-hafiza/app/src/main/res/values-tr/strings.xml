@@ -1363,4 +1363,7 @@
     <string name="reports_xp_event_d1440">1 gün</string>
     <string name="reports_xp_event_start">Etkinliği başlat</string>
     <string name="reports_queue_dismiss">Reddet</string>
+    <string name="level_panel_title">Aşama %1$d</string>
+    <string name="level_panel_subtitle">Çiz, tahmin et ve yıldızları topla!</string>
+    <string name="level_play">OYNA</string>
 </resources>
