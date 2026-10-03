@@ -39,6 +39,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.res.painterResource
@@ -54,7 +59,10 @@ import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 
 // The artwork carries its own "Dünyalar" sign; the list starts below it. 0.265 of the window height is where the
 // sign's lower edge falls in bg_worlds (a 9:20 picture, cropped to fill), plus a little air.
-private const val SignClearanceFraction = 0.265f
+private const val SignClearanceFraction = 0.235f
+
+// The cards melt away over this height at the top of the list instead of being cut off in a hard line.
+private val TopFade = 64.dp
 
 @Composable
 fun WorldMapScreen(
@@ -84,8 +92,21 @@ fun WorldMapScreen(
                 Spacer(modifier = Modifier.height(this@BoxWithConstraints.maxHeight * SignClearanceFraction))
                 LazyColumn(
                     state = listState,
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 6.dp, bottom = 24.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                        .drawWithContent {
+                            drawContent()
+                            val fade = TopFade.toPx().coerceAtMost(size.height)
+                            drawRect(
+                                brush = Brush.verticalGradient(
+                                    colorStops = arrayOf(0f to Color.Transparent, (fade / size.height) to Color.Black, 1f to Color.Black)
+                                ),
+                                blendMode = BlendMode.DstIn
+                            )
+                        },
+                    contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 40.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     itemsIndexed(worlds, key = { _, card -> card.world.id }) { _, card ->
