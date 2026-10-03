@@ -103,8 +103,10 @@ fun LevelMapScreen(
         // The panel's own height (its picture is 1080x350) plus the margin round it: the artwork carries on under it,
         // and the scroll can bring any stop above it.
         val panelHeight = (screenWidth - PanelSideMargin * 2) * (350f / 1080f)
-        val mapHeight = screenWidth * (ArtHeight / ArtWidth) * ArtStretch + panelHeight + 56.dp
-        val scale = mapHeight.value / ArtHeight
+        val artHeight = screenWidth * (ArtHeight / ArtWidth) * ArtStretch
+        val mapHeight = artHeight + panelHeight + 72.dp
+        val scale = artHeight.value / ArtHeight
+        val edge = Color(LevelArtBottomColors[world?.id] ?: 0xFF2F5D2B)
 
         // Brings the open stop into the upper part of the window whenever it changes (and once the first layout
         // has told the scroll state how far it can go).
@@ -112,7 +114,7 @@ fun LevelMapScreen(
             val index = current ?: return@LaunchedEffect
             if (levels.isEmpty()) return@LaunchedEffect
             snapshotFlow { scroll.maxValue }.first { it > 0 }
-            val nodeY = with(density) { (mapHeight * (positions[index - 1].second / 100f)).toPx() }
+            val nodeY = with(density) { (artHeight * (positions[index - 1].second / 100f)).toPx() }
             val viewport = with(density) { maxHeight.toPx() }
             scroll.animateScrollTo((nodeY - viewport * 0.38f).toInt().coerceIn(0, scroll.maxValue))
         }
@@ -123,13 +125,21 @@ fun LevelMapScreen(
                     painter = painterResource(worldBackgroundRes(world?.id) ?: R.drawable.bg_world_1),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxWidth().height(artHeight)
+                )
+                // Below the picture: its own bottom colour, so the ground seems to carry on under the panel.
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(mapHeight - artHeight + 48.dp)
+                        .background(Brush.verticalGradient(listOf(Color.Transparent, edge, edge)))
                 )
                 levels.forEach { level ->
                     val (px, py) = positions[level.levelIndex - 1]
                     // Cropped to fill the box, the picture is as wide as its height says; the centre stays put.
                     val centreX = screenWidth.value / 2f + ArtWidth * scale * (px / 100f - 0.5f)
-                    val centreY = mapHeight.value * py / 100f
+                    val centreY = artHeight.value * py / 100f
                     LevelCoin(
                         level = level,
                         isOpen = level.levelIndex == current,

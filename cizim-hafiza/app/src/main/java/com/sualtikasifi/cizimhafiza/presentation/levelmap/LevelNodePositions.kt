@@ -15,3 +15,16 @@ internal val LevelNodePositions: Map<Int, List<Pair<Float, Float>>> = mapOf(
     8 to listOf(32f to 91f, 40f to 80f, 55f to 73f, 70f to 66f, 62f to 56f, 50f to 50f, 50f to 43f, 63f to 36f, 45f to 29f, 65f to 17f),
     9 to listOf(80f to 93f, 68f to 86f, 55f to 80f, 45f to 72f, 60f to 67f, 70f to 58f, 62f to 52f, 60f to 44f, 48f to 35f, 65f to 22f)
 )
+
+/** The colour of each artwork's bottom edge, which carries on under the panel where the picture ends. */
+internal val LevelArtBottomColors: Map<Int, Long> = mapOf(
+    1 to 0xFF7E7033L,
+    2 to 0xFF677269L,
+    3 to 0xFF64642CL,
+    4 to 0xFF82764DL,
+    5 to 0xFF60492BL,
+    6 to 0xFF7A653AL,
+    7 to 0xFF7F6F3BL,
+    8 to 0xFF58562CL,
+    9 to 0xFF605826L
+)
