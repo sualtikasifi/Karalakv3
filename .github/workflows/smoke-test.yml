@@ -19,6 +19,7 @@ on:
         options:
           - smoke.sh
           - tutorial.sh
+          - worlds.sh
   pull_request:
     paths:
       - ".github/workflows/smoke-test.yml"
