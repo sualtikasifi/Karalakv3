@@ -319,5 +319,6 @@ private fun StarRow(stars: Int, modifier: Modifier = Modifier) {
 private fun worldBackgroundRes(worldId: Int?): Int? = when (worldId) {
     1 -> R.drawable.bg_world_1
     4 -> R.drawable.bg_world_4
+    5 -> R.drawable.bg_world_5
     else -> null
 }
