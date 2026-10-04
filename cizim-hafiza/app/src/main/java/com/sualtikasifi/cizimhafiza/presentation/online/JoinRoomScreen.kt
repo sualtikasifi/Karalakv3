@@ -122,12 +122,12 @@ fun JoinRoomScreen(
             Text(
                 text = stringResource(R.string.online_nickname_label),
                 style = label,
-                modifier = Modifier.offset(x = panelWidth * LabelLeft, y = panelHeight * (Well1Top - 0.115f))
+                modifier = Modifier.offset(x = panelWidth * WellLeft + 22.dp, y = panelHeight * (Well1Top - 0.115f))
             )
             Text(
                 text = stringResource(R.string.online_room_code_label),
                 style = label,
-                modifier = Modifier.offset(x = panelWidth * LabelLeft, y = panelHeight * (Well2Top - 0.108f))
+                modifier = Modifier.offset(x = panelWidth * WellLeft + 22.dp, y = panelHeight * (Well2Top - 0.108f))
             )
             WellField(
                 value = uiState.nickname,

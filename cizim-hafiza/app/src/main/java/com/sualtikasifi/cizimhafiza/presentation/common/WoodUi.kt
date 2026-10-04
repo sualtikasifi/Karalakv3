@@ -225,9 +225,18 @@ fun WoodSection(title: String, content: @Composable () -> Unit) {
             )
             Text(
                 text = title,
-                style = PaintedStyle(color = InkBrown, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+                style = PaintedStyle(
+                    color = InkBrown,
+                    fontSize = when {
+                        title.length <= 26 -> 16.sp
+                        title.length <= 32 -> 14.sp
+                        else -> 12.5.sp
+                    },
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center
+                ),
                 maxLines = 1,
-                modifier = Modifier.padding(horizontal = 30.dp)
+                modifier = Modifier.padding(horizontal = 26.dp)
             )
         }
     }

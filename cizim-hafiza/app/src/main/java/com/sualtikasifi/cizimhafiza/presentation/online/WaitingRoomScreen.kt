@@ -419,7 +419,7 @@ fun WaitingRoomScreen(
         // The title, written on the painted sign.
         val signTitle = stringResource(R.string.online_waiting_room_title)
         Box(
-            modifier = Modifier.fillMaxWidth().offset(y = sceneY(0.147f) - 30.dp),
+            modifier = Modifier.fillMaxWidth().offset(y = sceneY(0.147f) - 25.dp),
             contentAlignment = Alignment.Center
         ) {
             val base = PaintedStyle(fontSize = 34.sp, fontWeight = FontWeight.ExtraBold)

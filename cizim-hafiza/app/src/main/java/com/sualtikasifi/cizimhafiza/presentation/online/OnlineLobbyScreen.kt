@@ -150,10 +150,10 @@ private fun RaceButton(
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
     ) {
         Image(painter = painterResource(image), contentDescription = null, contentScale = ContentScale.FillWidth, modifier = Modifier.fillMaxWidth())
-        Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.align(Alignment.CenterStart).padding(start = 46.dp).size(30.dp))
+        Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.align(Alignment.CenterStart).padding(start = 38.dp).size(26.dp))
         run {
             Box(contentAlignment = Alignment.Center) {
-                val style = PaintedStyle(fontSize = androidx.compose.ui.unit.TextUnit(24f, androidx.compose.ui.unit.TextUnitType.Sp), fontWeight = FontWeight.ExtraBold)
+                val style = PaintedStyle(fontSize = androidx.compose.ui.unit.TextUnit(22f, androidx.compose.ui.unit.TextUnitType.Sp), fontWeight = FontWeight.ExtraBold)
                 if (outline != null) {
                     Text(text, style = style.copy(color = outline, drawStyle = Stroke(width = 7f, join = androidx.compose.ui.graphics.StrokeJoin.Round)), maxLines = 1)
                 }
