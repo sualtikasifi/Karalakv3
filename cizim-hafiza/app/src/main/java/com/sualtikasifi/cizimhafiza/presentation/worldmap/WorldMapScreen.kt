@@ -84,12 +84,15 @@ fun WorldMapScreen(
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .paint(painterResource(R.drawable.bg_worlds), contentScale = ContentScale.Crop)
+                .paint(painterResource(R.drawable.bg_worlds), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
         ) {
             // The list lives below the sign, not under it: the sign stays fully visible while the cards scroll
             // and are cut off along its lower edge.
             Column(modifier = Modifier.fillMaxSize()) {
-                Spacer(modifier = Modifier.height(this@BoxWithConstraints.maxHeight * SignClearanceFraction))
+                // The art is anchored at the top and scaled to fill: the sign's lower edge sits at a fixed fraction of the ART,
+                // which is the screen's height only on a tall phone.
+                val artScale = maxOf(this@BoxWithConstraints.maxWidth.value / 1080f, this@BoxWithConstraints.maxHeight.value / 2401f)
+                Spacer(modifier = Modifier.height((2401f * artScale * SignClearanceFraction).dp))
                 LazyColumn(
                     state = listState,
                     modifier = Modifier

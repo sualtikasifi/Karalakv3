@@ -138,7 +138,7 @@ fun LeagueScreen(
         val widthPx = with(density) { maxWidth.toPx() }
         val heightPx = with(density) { maxHeight.toPx() }
         val sc = maxOf(widthPx / ArtW, heightPx / ArtH)
-        val offY = (heightPx - ArtH * sc) / 2f
+        val offY = 0f
         fun yOf(px: Float): Dp = with(density) { (offY + px * sc).toDp() }
         fun len(px: Float): Dp = with(density) { (px * sc).toDp() }
 
@@ -146,6 +146,7 @@ fun LeagueScreen(
             painter = painterResource(R.drawable.bg_league),
             contentDescription = null,
             contentScale = ContentScale.Crop,
+            alignment = androidx.compose.ui.Alignment.TopCenter,
             modifier = Modifier.fillMaxSize()
         )
 

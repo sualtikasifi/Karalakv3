@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -162,7 +164,7 @@ fun WoodScreen(
         val heightPx = with(density) { maxHeight.toPx() }
         val s = maxOf(widthPx / ArtW, heightPx / ArtH)
         val offX = (widthPx - ArtW * s) / 2f
-        val offY = (heightPx - ArtH * s) / 2f
+        val offY = 0f
         fun yOf(fraction: Float): Dp = with(density) { (offY + ArtH * s * fraction).toDp() }
         fun len(artPx: Float): Dp = with(density) { (artPx * s).toDp() }
 
@@ -170,6 +172,7 @@ fun WoodScreen(
             painter = painterResource(R.drawable.bg_offline),
             contentDescription = null,
             contentScale = ContentScale.Crop,
+            alignment = androidx.compose.ui.Alignment.TopCenter,
             modifier = Modifier.fillMaxSize()
         )
 
@@ -181,8 +184,10 @@ fun WoodScreen(
             LetteredText(title, with(density) { (46f * s).toSp() })
         }
 
-        val startHeight = 92.dp
+        val compact = maxHeight < 780.dp
+        val startHeight = if (compact) 80.dp else 92.dp
         // Everything between the sign and the action scrolls; the cards melt away at the top edge.
+        androidx.compose.runtime.CompositionLocalProvider(LocalPanelScale provides if (compact) 0.85f else 1f) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -201,10 +206,20 @@ fun WoodScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             content = content
         )
+        }
 
         action(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 6.dp).height(startHeight))
 
-        ScreenTopActions(onBack = onBack, modifier = Modifier.align(Alignment.TopStart))
+        Image(
+            painter = painterResource(R.drawable.join_back),
+            contentDescription = stringResource(R.string.cd_back),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(start = 16.dp, top = 12.dp)
+                .size(56.dp)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onBack)
+        )
     }
 }
 
@@ -294,6 +309,107 @@ fun WoodSection(title: String, content: @Composable () -> Unit) {
     }
 }
 
+
+/** 1 on a normal phone; a little less on a short screen so the whole setup still fits without scrolling. */
+val LocalPanelScale = androidx.compose.runtime.compositionLocalOf { 1f }
+
+/**
+ * One wooden panel holding several labelled choice rows — the compact form of the setup screens, so everything fits
+ * the screen at once instead of being a stack of separate framed sections.
+ */
+@Composable
+fun CompactPanel(content: @Composable ColumnScope.() -> Unit) {
+    val k = LocalPanelScale.current
+    NinePatch(
+        res = R.drawable.offline_panel,
+        slicePx = 92,
+        edge = 17.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 14.dp * k, bottom = 14.dp * k),
+            verticalArrangement = Arrangement.spacedBy(8.dp * k),
+            content = content
+        )
+    }
+}
+
+/** A small left-aligned caption above a row of choices. */
+@Composable
+fun PanelRow(label: String, content: @Composable () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            style = PaintedStyle(
+                color = Color(0xFFFFEBC8), fontSize = 13.5.sp, textAlign = TextAlign.Start,
+                shadow = androidx.compose.ui.graphics.Shadow(Color(0xAA2A1005), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)
+            ),
+            maxLines = 1,
+            modifier = Modifier.padding(start = 4.dp, bottom = 3.dp)
+        )
+        content()
+    }
+}
+
+/** A single-line text field painted as a cream pill. */
+@Composable
+fun PillField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default
+) {
+    NinePatch(
+        res = R.drawable.offline_pill_off,
+        slicePx = 90,
+        edge = 20.dp,
+        modifier = modifier.fillMaxWidth().height(40.dp * LocalPanelScale.current).graphicsLayer { alpha = if (enabled) 1f else 0.7f }
+    ) {
+        androidx.compose.foundation.text.BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            enabled = enabled,
+            singleLine = true,
+            textStyle = PaintedStyle(color = InkBrown, fontSize = 16.sp, textAlign = TextAlign.Start),
+            keyboardOptions = keyboardOptions,
+            cursorBrush = androidx.compose.ui.graphics.SolidColor(ButtonOrange),
+            modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(horizontal = 18.dp)
+        )
+    }
+}
+
+/** Choices laid out [columns] to a row, every cell the same width. */
+@Composable
+fun <T> ChoiceGrid(
+    items: List<T>,
+    columns: Int,
+    pillHeight: Dp,
+    textSize: androidx.compose.ui.unit.TextUnit,
+    label: @Composable (T) -> String,
+    isSelected: (T) -> Boolean,
+    onSelect: (T) -> Unit,
+    maxLines: Int = 1
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        items.chunked(columns).forEach { rowItems ->
+            Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.fillMaxWidth()) {
+                rowItems.forEach { item ->
+                    ChoicePill(
+                        label = label(item),
+                        selected = isSelected(item),
+                        onClick = { onSelect(item) },
+                        modifier = Modifier.weight(1f),
+                        height = pillHeight * LocalPanelScale.current,
+                        textSize = textSize,
+                        maxLines = maxLines
+                    )
+                }
+                repeat(columns - rowItems.size) { Spacer(modifier = Modifier.weight(1f)) }
+            }
+        }
+    }
+}
 
 /** An option: cream when free, orange when chosen, and a little larger while chosen. */
 @Composable

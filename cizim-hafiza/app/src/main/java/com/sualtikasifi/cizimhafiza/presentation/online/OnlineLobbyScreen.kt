@@ -66,7 +66,7 @@ fun OnlineLobbyScreen(
         // The picture fills the window (Crop): one scale, centred.
         val s = maxOf(widthPx / ArtW, heightPx / ArtH)
         val offX = (widthPx - ArtW * s) / 2f
-        val offY = (heightPx - ArtH * s) / 2f
+        val offY = 0f
         fun x(fraction: Float): Dp = with(density) { (offX + ArtW * s * fraction).toDp() }
         fun y(fraction: Float): Dp = with(density) { (offY + ArtH * s * fraction).toDp() }
         fun len(artPx: Float): Dp = with(density) { (artPx * s).toDp() }
@@ -75,6 +75,7 @@ fun OnlineLobbyScreen(
             painter = painterResource(R.drawable.bg_race),
             contentDescription = null,
             contentScale = ContentScale.Crop,
+            alignment = androidx.compose.ui.Alignment.TopCenter,
             modifier = Modifier.fillMaxSize()
         )
 

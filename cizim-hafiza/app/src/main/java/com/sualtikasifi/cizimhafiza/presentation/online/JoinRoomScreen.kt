@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -80,7 +81,7 @@ fun JoinRoomScreen(
         val heightPx = with(density) { maxHeight.toPx() }
         val s = maxOf(widthPx / ArtW, heightPx / ArtH)
         val offX = (widthPx - ArtW * s) / 2f
-        val offY = (heightPx - ArtH * s) / 2f
+        val offY = 0f
         fun yOf(fraction: Float): Dp = with(density) { (offY + ArtH * s * fraction).toDp() }
         fun len(artPx: Float): Dp = with(density) { (artPx * s).toDp() }
 
@@ -88,6 +89,7 @@ fun JoinRoomScreen(
             painter = painterResource(R.drawable.bg_join),
             contentDescription = null,
             contentScale = ContentScale.Crop,
+            alignment = androidx.compose.ui.Alignment.TopCenter,
             modifier = Modifier.fillMaxSize()
         )
 
@@ -103,10 +105,14 @@ fun JoinRoomScreen(
         // The form panel.
         val panelWidth = maxWidth * 0.9f
         val panelHeight = panelWidth / PanelAspect
+        // With the keyboard up, the panel slides just far enough to keep the code well above it.
+        val imeBottom = with(density) { androidx.compose.foundation.layout.WindowInsets.Companion.ime.getBottom(this).toDp() }
+        val wellBottom = yOf(0.29f) + panelHeight * (Well2Top + WellHeight)
+        val lift = if (imeBottom > 0.dp) (wellBottom + 14.dp - (maxHeight - imeBottom)).coerceAtLeast(0.dp) else 0.dp
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .offset(y = yOf(0.29f))
+                .offset(y = yOf(0.29f) - lift)
                 .width(panelWidth)
                 .height(panelHeight)
         ) {
@@ -173,7 +179,7 @@ fun JoinRoomScreen(
                 style = PaintedStyle(color = Color(0xFFFFD6D0), fontSize = 15.sp, textAlign = TextAlign.Center),
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .offset(y = yOf(0.29f) + panelHeight + 56.dp)
+                    .offset(y = yOf(0.29f) - lift + panelHeight + 56.dp)
                     .padding(horizontal = 24.dp)
                     .background(Color(0xCC3B1E08), RoundedCornerShape(14.dp))
                     .padding(horizontal = 14.dp, vertical = 8.dp)

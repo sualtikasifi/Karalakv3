@@ -170,7 +170,7 @@ fun FriendsScreen(
         val widthPx = with(density) { maxWidth.toPx() }
         val heightPx = with(density) { maxHeight.toPx() }
         val s = maxOf(widthPx / ArtW, heightPx / ArtH)
-        val scene = Scene(s, (widthPx - ArtW * s) / 2f, (heightPx - ArtH * s) / 2f, density)
+        val scene = Scene(s, (widthPx - ArtW * s) / 2f, 0f, density)
         val focusManager = LocalFocusManager.current
         val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -178,6 +178,7 @@ fun FriendsScreen(
             painter = painterResource(R.drawable.bg_friends),
             contentDescription = null,
             contentScale = ContentScale.Crop,
+            alignment = androidx.compose.ui.Alignment.TopCenter,
             modifier = Modifier.fillMaxSize()
         )
 
