@@ -77,6 +77,11 @@ echo "--- am start -W (times out on the software-rendered emulator, kept for ref
 # The activity manager's own "Displayed" line is the reliable first-frame time here.
 adb logcat -d | grep "Displayed $PKG" | cut -c1-200 | tee "$OUT/startup_displayed.txt"
 
+# The slow emulator sometimes shows a system 'Pixel Launcher isn't responding' dialog; dismiss it and bring the app back.
+tap_text "Wait" || true
+sleep 2
+adb shell am start -n $ACT
+sleep 8
 # --- Main menu ------------------------------------------------------------------------------
 sleep 6
 shot 01_main_menu
