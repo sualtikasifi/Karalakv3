@@ -2,6 +2,9 @@ package com.sualtikasifi.cizimhafiza.presentation.game
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.clickable
@@ -153,6 +156,8 @@ fun DrawingScreen(
         val screenHeight = maxHeight
         fun fromBottom(artY: Float): Dp = screenHeight - a(ArtHeight - artY)
         val f = (maxWidth.value / 411f).coerceIn(0.85f, 1.25f)
+        // Phones with a tall status bar would hide the top of the header under it: slide the scene down by the excess.
+        val topShift = with(LocalDensity.current) { (WindowInsets.statusBars.getTop(this).toDp() - 38.dp).coerceAtLeast(0.dp) }
         val ink = Color(0xFF3A2A22)
         val noRipple = remember { MutableInteractionSource() }
 
@@ -160,9 +165,11 @@ fun DrawingScreen(
             res = R.drawable.bg_draw,
             topSrc = 720,
             bottomSrc = 801,
+            topOffset = topShift,
             modifier = Modifier.fillMaxSize()
         )
 
+        Box(modifier = Modifier.fillMaxSize().offset(y = topShift)) {
         // --- Header: back (painted into the picture), clock + progress, music, countdown ring ---
         Box(
             modifier = Modifier
@@ -244,13 +251,15 @@ fun DrawingScreen(
                 .background(Color(0xFFF58A1F), RoundedCornerShape(50))
         )
 
+        }
+
         // --- The canvas ---
-        val canvasHeight = (screenHeight - a(438f) - a(ArtHeight - 1386f)).coerceAtLeast(120.dp)
+        val canvasHeight = (screenHeight - topShift - a(438f) - a(ArtHeight - 1386f)).coerceAtLeast(120.dp)
         key(state.word.id) {
             val wordId = state.word.id
             Box(
                 modifier = Modifier
-                    .offset(a(36f), a(438f))
+                    .offset(a(36f), a(438f) + topShift)
                     .size(a(770f), canvasHeight)
                     .clip(RoundedCornerShape(a(20f)))
                     .background(AppTheme.tokens.canvasPaper)
@@ -345,7 +354,7 @@ private const val ArtHeight = 1870f
  * whatever height the phone has.
  */
 @Composable
-private fun ThreeSliceBackground(res: Int, topSrc: Int, bottomSrc: Int, modifier: Modifier = Modifier) {
+private fun ThreeSliceBackground(res: Int, topSrc: Int, bottomSrc: Int, topOffset: Dp = 0.dp, modifier: Modifier = Modifier) {
     val img = ImageBitmap.imageResource(res)
     Box(
         modifier = modifier.drawBehind {
@@ -354,7 +363,8 @@ private fun ThreeSliceBackground(res: Int, topSrc: Int, bottomSrc: Int, modifier
             val bottomDst = (bottomSrc * k).roundToInt()
             val w = size.width.roundToInt()
             val h = size.height.roundToInt()
-            val midDst = (h - topDst - bottomDst).coerceAtLeast(0)
+            val off = topOffset.toPx().roundToInt()
+            val midDst = (h - off - topDst - bottomDst).coerceAtLeast(0)
             val midSrc = img.height - topSrc - bottomSrc
             fun slice(sy: Int, sh: Int, dy: Int, dh: Int) = drawImage(
                 image = img,
@@ -364,8 +374,9 @@ private fun ThreeSliceBackground(res: Int, topSrc: Int, bottomSrc: Int, modifier
                 dstSize = IntSize(w, dh),
                 filterQuality = FilterQuality.Medium
             )
-            slice(0, topSrc, 0, topDst)
-            if (midDst > 0) slice(topSrc, midSrc, topDst, midDst)
+            if (off > 0) slice(0, 1, 0, off)
+            slice(0, topSrc, off, topDst)
+            if (midDst > 0) slice(topSrc, midSrc, off + topDst, midDst)
             slice(img.height - bottomSrc, bottomSrc, h - bottomDst, bottomDst)
         }
     )
