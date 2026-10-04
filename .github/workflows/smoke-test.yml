@@ -22,6 +22,7 @@ on:
           - worlds.sh
           - race.sh
           - offline.sh
+          - createroom.sh
   pull_request:
     paths:
       - ".github/workflows/smoke-test.yml"

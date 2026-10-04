@@ -1,22 +1,19 @@
 package com.sualtikasifi.cizimhafiza.presentation.online
 
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -27,18 +24,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.Difficulty
-import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
-import com.sualtikasifi.cizimhafiza.presentation.common.SelectableChip
-import com.sualtikasifi.cizimhafiza.presentation.common.SelectableCountCard
 import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
-import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
-import com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance
-import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
+import com.sualtikasifi.cizimhafiza.presentation.common.ChoicePill
+import com.sualtikasifi.cizimhafiza.presentation.common.StartButton
+import com.sualtikasifi.cizimhafiza.presentation.common.WoodScreen
+import com.sualtikasifi.cizimhafiza.presentation.common.WoodSection
 import com.sualtikasifi.cizimhafiza.util.asString
 
+/** Opening a room: the same workshop scene as the offline setup, plus the player's name and the room's mode. */
 @Composable
 fun CreateRoomScreen(
     onBack: () -> Unit,
@@ -47,197 +44,133 @@ fun CreateRoomScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .screenBackground()
-                .padding(padding).padding(horizontal = 18.dp, vertical = 8.dp)
-        ) {
-            // Clears the floating back button (see ScreenTopActions).
-            Spacer(modifier = Modifier.height(TopActionsClearance))
-            // Scrollable, with the create button pinned below it: this screen
-            // stacks a nickname field, five word-count cards, ten category
-            // chips, four difficulty chips and two mode chips, which only
-            // ever fitted a phone screen exactly. One step up in text size
-            // (or a shorter device, or a larger system font) pushed the
-            // difficulty row and the button off the bottom with no way to
-            // reach them.
-            Column(
-                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                AppTextField(
-                    value = uiState.nickname,
-                    onValueChange = viewModel::setNickname,
-                    enabled = viewModel.nicknameEditable,
-                    label = stringResource(R.string.online_nickname_label),
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = stringResource(R.string.select_word_count),
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                    uiState.availableCounts.forEach { count ->
-                        SelectableCountCard(
-                            count = count,
-                            selected = count == uiState.selectedCount,
-                            onClick = { viewModel.selectCount(count) },
-                            modifier = Modifier.weight(1f),
-                            verticalPadding = 8.dp,
-                            textStyle = MaterialTheme.typography.titleLarge
-                        )
-                    }
+    WoodScreen(
+        title = stringResource(R.string.online_create_room),
+        onBack = onBack,
+        action = { modifier ->
+            if (uiState.isCreating) {
+                Box(modifier = modifier.aspectRatio(509f / 123f), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(modifier = Modifier.size(36.dp))
                 }
-
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = stringResource(R.string.select_category),
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+            } else {
+                StartButton(
+                    text = stringResource(R.string.online_create_room_action),
+                    onClick = { viewModel.createRoom(onRoomCreated) },
+                    modifier = modifier
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-                SelectableChip(
-                    label = "🎨 ${stringResource(R.string.all_categories)}",
-                    selected = uiState.selectedCategory == null,
-                    onClick = { viewModel.selectCategory(null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalPadding = 12.dp,
-                    verticalPadding = 8.dp,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fillWidth = true
+            }
+        }
+    ) {
+        WoodSection(stringResource(R.string.online_nickname_label)) {
+            AppTextField(
+                value = uiState.nickname,
+                onValueChange = viewModel::setNickname,
+                enabled = viewModel.nicknameEditable,
+                label = stringResource(R.string.online_nickname_label),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        WoodSection(stringResource(R.string.select_word_count)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                uiState.availableCounts.forEach { count ->
+                    ChoicePill(
+                        label = count.toString(),
+                        selected = count == uiState.selectedCount,
+                        onClick = { viewModel.selectCount(count) },
+                        modifier = Modifier.weight(1f),
+                        textSize = 20.sp
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        WoodSection(stringResource(R.string.online_room_mode_title)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                ChoicePill(
+                    label = stringResource(R.string.online_room_mode_free_for_all),
+                    selected = !uiState.teamMode,
+                    onClick = { viewModel.setTeamMode(false) },
+                    modifier = Modifier.weight(1f),
+                    height = 56.dp,
+                    textSize = 15.sp,
+                    maxLines = 2
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                ChoicePill(
+                    label = stringResource(R.string.online_room_mode_team),
+                    selected = uiState.teamMode,
+                    onClick = { viewModel.setTeamMode(true) },
+                    modifier = Modifier.weight(1f),
+                    height = 56.dp,
+                    textSize = 15.sp,
+                    maxLines = 2
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        WoodSection(stringResource(R.string.select_category)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 uiState.categories.chunked(3).forEach { rowCategories ->
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                         rowCategories.forEach { category ->
-                            SelectableChip(
+                            ChoicePill(
                                 label = category,
                                 selected = uiState.selectedCategory == category,
                                 onClick = { viewModel.selectCategory(category) },
                                 modifier = Modifier.weight(1f),
-                                horizontalPadding = 4.dp,
-                                verticalPadding = 9.dp,
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 2,
-                                fillWidth = true
+                                height = 52.dp,
+                                textSize = 13.sp,
+                                maxLines = 2
                             )
                         }
-                        repeat(3 - rowCategories.size) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
+                        repeat(3 - rowCategories.size) { Spacer(modifier = Modifier.weight(1f)) }
                     }
-                    Spacer(modifier = Modifier.height(6.dp))
                 }
-
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.select_difficulty),
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                SelectableChip(
-                    label = stringResource(R.string.all_difficulties),
-                    selected = uiState.selectedDifficulty == null,
-                    onClick = { viewModel.selectDifficulty(null) },
+                ChoicePill(
+                    label = "🎨  ${stringResource(R.string.all_categories)}",
+                    selected = uiState.selectedCategory == null,
+                    onClick = { viewModel.selectCategory(null) },
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalPadding = 12.dp,
-                    verticalPadding = 8.dp,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fillWidth = true
+                    textSize = 16.sp
                 )
-                Spacer(modifier = Modifier.height(5.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            }
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        WoodSection(stringResource(R.string.select_difficulty)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                     Difficulty.entries.forEach { difficulty ->
-                        SelectableChip(
+                        ChoicePill(
                             label = difficultyLabel(difficulty),
                             selected = uiState.selectedDifficulty == difficulty,
                             onClick = { viewModel.selectDifficulty(difficulty) },
                             modifier = Modifier.weight(1f),
-                            horizontalPadding = 8.dp,
-                            verticalPadding = 9.dp,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fillWidth = true
+                            textSize = 16.sp
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.online_room_mode_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    SelectableChip(
-                        label = stringResource(R.string.online_room_mode_free_for_all),
-                        selected = !uiState.teamMode,
-                        onClick = { viewModel.setTeamMode(false) },
-                        modifier = Modifier.weight(1f),
-                        horizontalPadding = 8.dp,
-                        verticalPadding = 9.dp,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fillWidth = true
-                    )
-                    SelectableChip(
-                        label = stringResource(R.string.online_room_mode_team),
-                        selected = uiState.teamMode,
-                        onClick = { viewModel.setTeamMode(true) },
-                        modifier = Modifier.weight(1f),
-                        horizontalPadding = 8.dp,
-                        verticalPadding = 9.dp,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fillWidth = true
-                    )
-                }
-
-                uiState.errorMessage?.let { message ->
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = message.asString(),
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-
-            if (uiState.isCreating) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.size(32.dp))
-                }
-            } else {
-                PrimaryButton(
-                    text = stringResource(R.string.online_create_room_action),
-                    onClick = { viewModel.createRoom(onRoomCreated) },
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+                ChoicePill(
+                    label = stringResource(R.string.all_difficulties),
+                    selected = uiState.selectedDifficulty == null,
+                    onClick = { viewModel.selectDifficulty(null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    textSize = 16.sp
                 )
             }
         }
-        ScreenTopActions(
-            onBack = onBack,
-            modifier = Modifier.align(Alignment.TopStart),
-            title = stringResource(R.string.online_create_room)
-        )
+
+        uiState.errorMessage?.let { message ->
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = message.asString(),
+                color = androidx.compose.ui.graphics.Color(0xFFFFD6D0),
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(androidx.compose.ui.graphics.Color(0xCC3B1E08), androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            )
         }
     }
 }
