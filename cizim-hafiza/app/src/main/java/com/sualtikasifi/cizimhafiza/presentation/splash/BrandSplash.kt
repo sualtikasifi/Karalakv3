@@ -5,11 +5,16 @@ import android.provider.Settings
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,85 +22,50 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.sualtikasifi.cizimhafiza.R
-import com.sualtikasifi.cizimhafiza.presentation.theme.CreamBackground
-import com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont
-import com.sualtikasifi.cizimhafiza.presentation.theme.Orange
-import com.sualtikasifi.cizimhafiza.presentation.theme.TextDark
 import kotlin.math.PI
 import kotlin.math.sin
 
 /**
- * The brand moment: a pencil writes "Karalak" under the mark, underlines it,
- * and lifts away.
+ * The brand moment: the painted Karalak scene fades in over the system splash, drifts in slowly, twinkles, and a loading
+ * bar fills underneath it before the app opens.
  *
- * Why this exists as an app-owned screen rather than as a fancier system
- * splash: the system splash (see Theme.Karalak.Splash) is deliberately
- * limited to one background color and one icon. It can hold an
- * AnimatedVectorDrawable on API 31+ and nothing at all on older versions,
- * it cannot play video, and it is capped at a fraction of a second. Anything
- * with real motion has to live here, in Compose, drawn over the app after
- * the system has handed the window across.
+ * The hand-off from the system splash (see Theme.Karalak.Splash) is a plain colour with the round logo in the middle; this
+ * screen's first frame is exactly that — same colour, same logo, same place — and only then does the scene fade in over
+ * it, so the player never sees a seam.
  *
- * The hand-off is the whole trick. This screen's first frame is the system
- * splash's last frame — same cream field, same mark, same size, dead centre
- * — so the 180 ms cross-fade between them has nothing to reveal. Only once
- * the system splash is gone does anything move: the mark rises to make room
- * and the pencil starts writing. The player never sees a seam, just one
- * continuous opening.
- *
- * It is also kept honestly short. A word game gets opened many times a day,
- * and every millisecond here is a millisecond of not playing — so the whole
- * thing is [TOTAL_MILLIS] the first time the app is ever opened and a
- * noticeably faster [FAST_TOTAL_MILLIS] on every cold start after that, it
- * plays on cold start only (the caller's rememberSaveable), a tap skips
- * straight to the end, and it is skipped outright when the device has
- * animations turned off.
- *
- * The faster run keeps the first [HOLD_MILLIS] in real time — that stretch has
- * to line up with the system splash's own cross-fade — and plays the rest of
- * the same timeline at [FAST_RATE] speed, so nothing about the drawing
- * changes, only how long the player waits for it.
+ * It is kept honestly short: [TOTAL_MILLIS] the first time the app is ever opened and a quicker [FAST_TOTAL_MILLIS] on
+ * every cold start after that. It plays on cold start only (the caller's rememberSaveable), a tap skips to the end, and
+ * it is skipped outright when the device has animations turned off.
  */
 @Composable
 fun BrandSplash(onFinished: () -> Unit) {
     val context = LocalContext.current
     val animationsDisabled = remember {
         runCatching {
-            Settings.Global.getFloat(
-                context.contentResolver,
-                Settings.Global.ANIMATOR_DURATION_SCALE,
-                1f
-            ) == 0f
+            Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
         }.getOrDefault(false)
     }
-
-    // Seen once → every later cold start plays the faster run. Read once and
-    // remembered: the flag flips at the end of this composition's own run and
-    // must not change which speed the run in flight is using.
+    // Seen once -> every later cold start plays the faster run. Read once and remembered: the flag flips at the end of
+    // this composition's own run and must not change which speed the run in flight is using.
     val returning = remember {
         runCatching { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getBoolean(KEY_SEEN, false) }
             .getOrDefault(false)
@@ -107,260 +77,179 @@ fun BrandSplash(onFinished: () -> Unit) {
 
     val progress = remember { Animatable(0f) }
     var skipped by remember { mutableStateOf(false) }
+    val total = if (returning) FAST_TOTAL_MILLIS else TOTAL_MILLIS
 
     LaunchedEffect(animationsDisabled) {
         if (animationsDisabled) {
             finish()
             return@LaunchedEffect
         }
-        progress.animateTo(1f, tween(if (returning) FAST_TOTAL_MILLIS else TOTAL_MILLIS, easing = LinearEasing))
+        progress.animateTo(1f, tween(total, easing = LinearEasing))
         finish()
     }
-    // A second animateTo on the same Animatable cancels the first, so the
-    // timeline above simply stops where the tap caught it and this one runs
-    // out the rest — no flag to check on every frame.
+    // A second animateTo on the same Animatable cancels the first, so the timeline simply stops where the tap caught it
+    // and this one runs out the rest.
     LaunchedEffect(skipped) {
         if (!skipped) return@LaunchedEffect
         progress.animateTo(1f, tween(SKIP_MILLIS, easing = LinearEasing))
         finish()
     }
 
-    val mark = painterResource(R.drawable.splash_mark)
-    val wordmark = stringResource(R.string.app_name)
-    val measurer = rememberTextMeasurer()
-    val wordLayout = remember(wordmark, measurer) {
-        measurer.measure(
-            AnnotatedString(wordmark),
-            TextStyle(
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 40.sp,
-                letterSpacing = 0.5.sp
-            )
-        )
-    }
+    val twinkle = rememberInfiniteTransition(label = "splashTwinkle")
+    val pulse = twinkle.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1100, easing = LinearEasing), RepeatMode.Restart),
+        label = "pulse"
+    )
+    val stripes = twinkle.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(700, easing = LinearEasing), RepeatMode.Restart),
+        label = "stripes"
+    )
 
-    Canvas(
+    val scene = painterResource(R.drawable.splash_art)
+    val mark = painterResource(R.drawable.splash_mark)
+
+    BoxWithConstraints(
         Modifier
             .fillMaxSize()
+            .background(SplashColor)
             .graphicsLayer {
-                // Read inside the lambda so the fade re-runs in the draw
-                // phase only — the splash never recomposes to disappear.
-                alpha = 1f - phase(elapsedMillis(progress.value, returning), FADE_FROM, TOTAL_MILLIS)
+                // Read inside the lambda so the fade re-runs in the draw phase only.
+                alpha = 1f - phase(progress.value * total, total - FADE_OUT_MILLIS, total.toFloat())
             }
-            .background(CreamBackground)
             .pointerInput(Unit) { detectTapGestures { skipped = true } }
     ) {
-        val elapsed = elapsedMillis(progress.value, returning)
-        val rise = FastOutSlowInEasing.transform(phase(elapsed, RISE_FROM, RISE_TO))
-        val ink = FastOutSlowInEasing.transform(phase(elapsed, INK_FROM, INK_TO))
-        val rule = phase(elapsed, RULE_FROM, RULE_TO)
-        val lift = FastOutSlowInEasing.transform(phase(elapsed, LIFT_FROM, LIFT_TO))
+        val density = LocalDensity.current
+        val wPx = with(density) { maxWidth.toPx() }
+        val hPx = with(density) { maxHeight.toPx() }
+        // How the Crop-scaled scene maps onto the screen (art units are pixels of the 841 x 1870 picture).
+        val cover = maxOf(wPx / ART_W, hPx / ART_H)
+        val offX = (wPx - ART_W * cover) / 2f
+        val offY = (hPx - ART_H * cover) / 2f
 
-        val centre = Offset(size.width / 2f, size.height / 2f)
-        val markSide = MARK_SIDE.toPx() * (1f - MARK_SHRINK * rise)
-        val markCentreY = centre.y - MARK_RISE.toPx() * rise
-
-        // Laid out from where the mark ENDS up, not where it is this frame:
-        // the writing starts while the mark is still rising, and a baseline
-        // that tracked it would drag the wordmark along for those 80 ms.
-        val restingMarkBottom = centre.y - MARK_RISE.toPx() +
-            MARK_SIDE.toPx() * MARK_ART_FRACTION * (1f - MARK_SHRINK) / 2f
-        val wordWidth = wordLayout.size.width.toFloat()
-        val wordLeft = centre.x - wordWidth / 2f
-        val wordTop = restingMarkBottom + WORD_GAP.toPx()
-        val wordBottom = wordTop + wordLayout.size.height
-
-        translate(centre.x - markSide / 2f, markCentreY - markSide / 2f) {
-            with(mark) { draw(Size(markSide, markSide)) }
+        // The system splash's own frame, held for a moment and then handed over to the scene.
+        val sceneAlpha = phase(progress.value * total, MARK_HOLD, MARK_HOLD + CROSS_FADE)
+        Canvas(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - sceneAlpha }) {
+            val side = 288.dp.toPx()
+            translate(size.width / 2f - side / 2f, size.height / 2f - side / 2f) {
+                with(mark) { draw(Size(side, side)) }
+            }
         }
 
-        clipRect(right = wordLeft + wordWidth * ink) {
-            drawText(wordLayout, color = TextDark, topLeft = Offset(wordLeft, wordTop))
-        }
+        Image(
+            painter = scene,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    alpha = sceneAlpha
+                    // A slow push-in: the whole picture breathes toward the player over the run.
+                    val zoom = 1f + ZOOM * FastOutSlowInEasing.transform(progress.value)
+                    scaleX = zoom
+                    scaleY = zoom
+                }
+        )
 
-        // Hand-drawn, so it sags: a ruler-straight line under a wordmark a
-        // pencil just wrote would give the trick away.
-        //
-        // It is drawn on its own, after the pencil has lifted clear, and not
-        // traced by the nib — which was the first thing tried. A pencil is
-        // held barrel-up, so on the way back along the underline the barrel
-        // lies straight across the word that was just written and hides half
-        // of it at the exact moment the wordmark is meant to land. The
-        // flourish is worth more than the literalism.
-        val ruleY = wordBottom - RULE_LIFT.toPx()
-        val ruleLeft = wordLeft - RULE_OVERHANG.toPx()
-        val ruleRight = wordLeft + wordWidth + RULE_OVERHANG.toPx()
-        val rulePath = Path().apply {
-            moveTo(ruleLeft, ruleY)
-            // Control offset is twice the sag: a quadratic only reaches half
-            // its control point's deflection at the midpoint.
-            quadraticTo(centre.x, ruleY + RULE_SAG.toPx() * 2f, ruleRight, ruleY)
-        }
-        clipRect(right = ruleLeft + (ruleRight - ruleLeft) * rule) {
-            drawPath(
-                rulePath,
-                color = Orange,
-                style = Stroke(width = RULE_WIDTH.toPx(), cap = StrokeCap.Round)
-            )
-        }
+        Canvas(Modifier.fillMaxSize().graphicsLayer { alpha = sceneAlpha }) {
+            // Sparkles on the scene's painted stars (art coordinates), each on its own phase.
+            STARS.forEachIndexed { i, star ->
+                val t = (pulse.value + i * 0.23f) % 1f
+                val k = 0.5f + 0.5f * sin(t * 2f * PI.toFloat())
+                val c = Offset(offX + star.x * cover, offY + star.y * cover)
+                val r = star.r * cover * (0.7f + 0.5f * k)
+                drawStar(c, r, Color(0xFFFFF3B0).copy(alpha = 0.25f + 0.65f * k))
+            }
 
-        val pencilAlpha = phase(elapsed, PENCIL_IN_FROM, PENCIL_IN_TO) * (1f - lift)
-        if (pencilAlpha > 0f) {
-            val wobble = sin(ink * PI * 5).toFloat() * WOBBLE.toPx()
-            val tip = Offset(
-                wordLeft + wordWidth * ink + LIFT_X.toPx() * lift,
-                wordBottom - NIB_DROP.toPx() + wobble - LIFT_Y.toPx() * lift
-            )
-            drawGraphiteDust(tip, wordLeft, pencilAlpha)
-            drawPencil(tip, PENCIL_LENGTH.toPx(), pencilAlpha)
+            // The loading bar: a dark track with a golden rim, an orange fill with moving stripes, and a bright head.
+            val left = offX + BAR_L * cover
+            val top = offY + BAR_T * cover
+            val barW = (BAR_R - BAR_L) * cover
+            val barH = (BAR_B - BAR_T) * cover
+            val round = CornerRadius(barH / 2f)
+            drawRoundRect(Color(0xFFFFE08A), Offset(left - 3f, top - 3f), Size(barW + 6f, barH + 6f), round)
+            drawRoundRect(Color(0xFF8A4E12), Offset(left, top), Size(barW, barH), round)
+            drawRoundRect(Color(0xFF3F2210), Offset(left + barH * 0.09f, top + barH * 0.09f), Size(barW - barH * 0.18f, barH * 0.82f), CornerRadius(barH * 0.41f))
+            val frac = FastOutSlowInEasing.transform(phase(progress.value * total, BAR_FROM, total - FADE_OUT_MILLIS * 0.6f))
+            val inL = left + barH * 0.17f
+            val inT = top + barH * 0.17f
+            val inH = barH * 0.66f
+            val inMax = barW - barH * 0.34f
+            val fillW = (inMax * frac).coerceAtLeast(inH)
+            val fillPath = Path().apply {
+                addRoundRect(androidx.compose.ui.geometry.RoundRect(inL, inT, inL + fillW, inT + inH, CornerRadius(inH / 2f)))
+            }
+            clipPath(fillPath) {
+                drawRect(
+                    Brush.verticalGradient(listOf(Color(0xFFFFC04A), Color(0xFFF58A1F)), startY = inT, endY = inT + inH),
+                    Offset(inL, inT), Size(fillW, inH)
+                )
+                // Diagonal stripes sliding along the fill.
+                val step = inH * 1.1f
+                var x = inL - step * 2 + stripes.value * step
+                while (x < inL + fillW + step) {
+                    val p = Path().apply {
+                        moveTo(x, inT + inH); lineTo(x + step * 0.5f, inT + inH)
+                        lineTo(x + step * 0.5f + inH * 0.8f, inT); lineTo(x + inH * 0.8f, inT); close()
+                    }
+                    drawPath(p, Color.White.copy(alpha = 0.22f))
+                    x += step
+                }
+                drawRect(Color.White.copy(alpha = 0.28f), Offset(inL, inT), Size(fillW, inH * 0.3f))
+            }
+            if (frac > 0.02f) {
+                drawCircle(Color(0xFFFFF3B0).copy(alpha = 0.55f), inH * 0.95f, Offset(inL + fillW - inH * 0.3f, inT + inH / 2f))
+            }
         }
     }
+}
+
+private class StarSpot(val x: Float, val y: Float, val r: Float)
+
+private val STARS = listOf(
+    StarSpot(472f, 328f, 22f), StarSpot(794f, 598f, 20f), StarSpot(133f, 812f, 20f),
+    StarSpot(540f, 1296f, 26f), StarSpot(326f, 1138f, 14f), StarSpot(780f, 130f, 14f)
+)
+
+/** A four-pointed sparkle. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawStar(c: Offset, r: Float, color: Color) {
+    val p = Path().apply {
+        moveTo(c.x, c.y - r)
+        quadraticTo(c.x, c.y, c.x + r, c.y)
+        quadraticTo(c.x, c.y, c.x, c.y + r)
+        quadraticTo(c.x, c.y, c.x - r, c.y)
+        quadraticTo(c.x, c.y, c.x, c.y - r)
+        close()
+    }
+    drawPath(p, color)
 }
 
 /** 0f before [fromMs], 1f after [toMs], linear in between. */
-private fun phase(elapsed: Float, fromMs: Int, toMs: Int): Float =
-    ((elapsed - fromMs) / (toMs - fromMs).toFloat()).coerceIn(0f, 1f)
+private fun phase(elapsed: Float, fromMs: Float, toMs: Float): Float =
+    ((elapsed - fromMs) / (toMs - fromMs)).coerceIn(0f, 1f)
 
-/**
- * Graphite thrown off behind the nib. Deterministic rather than random: a
- * scatter that redrew itself every frame would shimmer, and this one has to
- * sit still on the page it was just laid down on.
- */
-private fun DrawScope.drawGraphiteDust(tip: Offset, wordLeft: Float, alpha: Float) {
-    repeat(7) { i ->
-        val behind = tip.x - (i + 1) * DUST_SPACING.toPx()
-        if (behind <= wordLeft) return
-        val jitter = ((i * 37) % 13 - 6) * DUST_JITTER.toPx()
-        drawCircle(
-            color = Graphite,
-            radius = (DUST_RADIUS.toPx() - i * DUST_SHRINK.toPx()).coerceAtLeast(0.4f),
-            center = Offset(behind, tip.y + jitter),
-            alpha = alpha * 0.45f * (1f - i / 7f)
-        )
-    }
-}
+private val SplashColor = Color(0xFFB07F34)
 
-/**
- * The pencil itself, built nib-first: everything below is laid out along +x
- * from the nib at the origin and then rotated about it, so the point stays
- * welded to the letter being written no matter what angle the barrel is at.
- */
-private fun DrawScope.drawPencil(tip: Offset, length: Float, alpha: Float) {
-    val w = length * 0.155f
-    rotate(degrees = -34f, pivot = tip) {
-        translate(tip.x, tip.y) {
-            val nib = Path().apply {
-                moveTo(0f, 0f)
-                lineTo(length * 0.085f, -w * 0.34f)
-                lineTo(length * 0.085f, w * 0.34f)
-                close()
-            }
-            drawPath(nib, Graphite, alpha = alpha)
-
-            val shoulder = Path().apply {
-                moveTo(length * 0.085f, -w * 0.34f)
-                lineTo(length * 0.24f, -w * 0.5f)
-                lineTo(length * 0.24f, w * 0.5f)
-                lineTo(length * 0.085f, w * 0.34f)
-                close()
-            }
-            drawPath(shoulder, PencilWoodLight, alpha = alpha)
-
-            drawRect(
-                color = PencilWood,
-                topLeft = Offset(length * 0.24f, -w / 2f),
-                size = Size(length * 0.55f, w),
-                alpha = alpha
-            )
-            // One darker facet along the underside — a flat rectangle reads
-            // as a stick, a shaded one reads as a hexagonal pencil.
-            drawRect(
-                color = PencilWoodShade,
-                topLeft = Offset(length * 0.24f, w * 0.16f),
-                size = Size(length * 0.55f, w * 0.34f),
-                alpha = alpha
-            )
-            drawRect(
-                color = PencilFerrule,
-                topLeft = Offset(length * 0.79f, -w / 2f),
-                size = Size(length * 0.1f, w),
-                alpha = alpha
-            )
-            drawRect(
-                color = PencilEraser,
-                topLeft = Offset(length * 0.89f, -w / 2f),
-                size = Size(length * 0.11f, w),
-                alpha = alpha
-            )
-        }
-    }
-}
-
-private val Graphite = Color(0xFF2A2622)
-private val PencilWood = Color(0xFFE7B14F)
-private val PencilWoodLight = Color(0xFFF2D9A8)
-private val PencilWoodShade = Color(0xFFC98F32)
-private val PencilFerrule = Color(0xFFBFC4C9)
-private val PencilEraser = Color(0xFFE58C7A)
-
-// One cold-start second and a bit, spent as: hold for the hand-off, rise,
-// write, underline, lift, leave.
-private const val TOTAL_MILLIS = 1160
-
-// The repeat-launch run: the first HOLD_MILLIS in real time (it overlaps the system
-// splash's 180 ms cross-fade), the remaining timeline at FAST_RATE speed.
-private const val FAST_TOTAL_MILLIS = 700
-private const val HOLD_MILLIS = 180f
-private const val FAST_RATE = (FAST_TOTAL_MILLIS - HOLD_MILLIS) / (TOTAL_MILLIS - HOLD_MILLIS)
+// First run: the logo holds, the scene fades in, the bar fills, the whole thing leaves. Later runs are quicker.
+private const val TOTAL_MILLIS = 2300
+private const val FAST_TOTAL_MILLIS = 1500
+private const val SKIP_MILLIS = 170
+private const val MARK_HOLD = 120f
+private const val CROSS_FADE = 300f
+private const val BAR_FROM = 380f
+private const val FADE_OUT_MILLIS = 260f
+private const val ZOOM = 0.05f
 
 private const val PREFS_NAME = "brand_splash"
 private const val KEY_SEEN = "seen"
 
-/** Position on the original timeline, in ms, for a 0..1 [progress] of the run being played. */
-private fun elapsedMillis(progress: Float, returning: Boolean): Float {
-    if (!returning) return progress * TOTAL_MILLIS
-    val real = progress * FAST_TOTAL_MILLIS
-    return if (real <= HOLD_MILLIS) real else HOLD_MILLIS + (real - HOLD_MILLIS) / FAST_RATE
-}
-private const val SKIP_MILLIS = 170
-private const val RISE_FROM = 180
-private const val RISE_TO = 380
-private const val PENCIL_IN_FROM = 240
-private const val PENCIL_IN_TO = 330
-private const val INK_FROM = 300
-private const val INK_TO = 720
-private const val RULE_FROM = 780
-private const val RULE_TO = 950
-private const val LIFT_FROM = 725
-private const val LIFT_TO = 870
-private const val FADE_FROM = 980
-
-/**
- * The frame the mark is drawn into, NOT the mark's visible size. It matches
- * the 288dp canvas the platform gives a splash icon that has no background
- * of its own (androidx's splashscreen_icon_size_no_background), because
- * @drawable/splash_mark is drawn into exactly that canvas one frame earlier
- * — same asset, same frame, same place, so the cross-fade between the two
- * screens has nothing to reveal. [MARK_ART_FRACTION] is how much of that
- * frame the artwork actually fills (see the asset's own framing), which is
- * what everything laid out below the mark has to measure against.
- */
-private val MARK_SIDE = 288.dp
-private const val MARK_ART_FRACTION = 0.52f
-private const val MARK_SHRINK = 0.1f
-private val MARK_RISE = 50.dp
-private val WORD_GAP = 22.dp
-private val RULE_LIFT = 4.dp
-private val RULE_SAG = 3.5.dp
-private val RULE_OVERHANG = 10.dp
-private val RULE_WIDTH = 3.5.dp
-private val NIB_DROP = 8.dp
-private val WOBBLE = 1.6.dp
-private val LIFT_X = 30.dp
-private val LIFT_Y = 40.dp
-private val PENCIL_LENGTH = 84.dp
-private val DUST_SPACING = 5.dp
-private val DUST_JITTER = 0.5.dp
-private val DUST_RADIUS = 1.7.dp
-private val DUST_SHRINK = 0.16.dp
+// The scene picture and where its loading bar sits in it (pixels of the 841 x 1870 art).
+private const val ART_W = 841f
+private const val ART_H = 1870f
+private const val BAR_L = 196f
+private const val BAR_R = 642f
+private const val BAR_T = 1354f
+private const val BAR_B = 1430f
