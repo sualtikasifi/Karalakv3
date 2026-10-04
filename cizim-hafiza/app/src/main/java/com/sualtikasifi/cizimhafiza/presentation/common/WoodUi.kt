@@ -133,7 +133,14 @@ fun WoodScreen(
  * [slicePx] from each side and only the middle pieces stretch; the corners are drawn [edge] wide.
  */
 @Composable
-fun NinePatch(res: Int, slicePx: Int, edge: Dp, modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit = {}) {
+fun NinePatch(
+    res: Int,
+    slicePx: Int,
+    edge: Dp,
+    modifier: Modifier = Modifier,
+    tint: androidx.compose.ui.graphics.ColorFilter? = null,
+    content: @Composable BoxScope.() -> Unit = {}
+) {
     val img: ImageBitmap = ImageBitmap.imageResource(res)
     val edgePx = with(LocalDensity.current) { edge.roundToPx() }
     Box(
@@ -152,7 +159,8 @@ fun NinePatch(res: Int, slicePx: Int, edge: Dp, modifier: Modifier = Modifier, c
                     srcSize = IntSize(sx[c + 1] - sx[c], sy[r + 1] - sy[r]),
                     dstOffset = IntOffset(dx[c], dy[r]),
                     dstSize = IntSize(dx[c + 1] - dx[c], dy[r + 1] - dy[r]),
-                    filterQuality = FilterQuality.Medium
+                    filterQuality = FilterQuality.Medium,
+                    colorFilter = tint
                 )
             }
         },
