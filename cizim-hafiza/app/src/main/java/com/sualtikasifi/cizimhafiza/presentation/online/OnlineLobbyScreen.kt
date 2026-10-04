@@ -142,7 +142,6 @@ private fun RaceButton(
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
     ) {
         Image(painter = painterResource(image), contentDescription = null, contentScale = ContentScale.FillWidth, modifier = Modifier.fillMaxWidth())
-        Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.align(Alignment.CenterStart).padding(start = 38.dp).size(26.dp))
         run {
             LetteredText(text, 22.sp, fill = textColor, outline = outline)
         }
