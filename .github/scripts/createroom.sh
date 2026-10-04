@@ -51,7 +51,7 @@ PY
 }
 adb shell am start -n $ACT
 sleep 8
-sleep 25
+sleep 50
 adb shell input tap 540 1678
 sleep 4
 shot 00_menu
