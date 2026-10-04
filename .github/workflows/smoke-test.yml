@@ -23,6 +23,7 @@ on:
           - race.sh
           - offline.sh
           - createroom.sh
+          - join.sh
   pull_request:
     paths:
       - ".github/workflows/smoke-test.yml"

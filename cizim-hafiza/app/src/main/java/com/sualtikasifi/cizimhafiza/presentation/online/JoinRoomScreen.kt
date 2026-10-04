@@ -1,37 +1,69 @@
 package com.sualtikasifi.cizimhafiza.presentation.online
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
-import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
-import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
-import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
-import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
-import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
 import com.sualtikasifi.cizimhafiza.util.asString
 
+// bg_join is this size; its hanging sign is painted on it, so the title is placed by fractions of the picture.
+private const val ArtW = 841f
+private const val ArtH = 1870f
+private val Ink = Color(0xFF5A3A1A)
+
+// The form panel (join_panel) has its two input wells painted in. These are where they sit, as fractions of the picture.
+private const val PanelAspect = 969f / 670f
+private const val Well1Top = 0.2806f
+private const val Well2Top = 0.5672f
+private const val WellHeight = 0.172f
+private const val WellLeft = 0.1269f
+private const val WellWidth = 0.7327f
+private const val LabelLeft = 0.215f
+
+/** Joining a friend's room: the workshop scene, a painted form panel with the name and code typed into its wells. */
 @Composable
 fun JoinRoomScreen(
     onBack: () -> Unit,
@@ -40,68 +72,170 @@ fun JoinRoomScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .screenBackground()
-                .padding(padding).padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val density = LocalDensity.current
+        val widthPx = with(density) { maxWidth.toPx() }
+        val heightPx = with(density) { maxHeight.toPx() }
+        val s = maxOf(widthPx / ArtW, heightPx / ArtH)
+        val offX = (widthPx - ArtW * s) / 2f
+        val offY = (heightPx - ArtH * s) / 2f
+        fun yOf(fraction: Float): Dp = with(density) { (offY + ArtH * s * fraction).toDp() }
+        fun len(artPx: Float): Dp = with(density) { (artPx * s).toDp() }
+
+        Image(
+            painter = painterResource(R.drawable.bg_join),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Title on the sign.
+        val signCentreX = with(density) { (offX + ArtW * s * 0.503f).toDp() }
+        Box(
+            modifier = Modifier.offset(x = signCentreX - len(230f), y = yOf(0.197f) - len(32f)).width(len(460f)),
+            contentAlignment = Alignment.Center
         ) {
-            // The form lives on its own panel rather than loose on the page:
-            // a heading, two inputs and a button floating directly on the
-            // collage artwork had nothing tying them together and read as
-            // scattered controls on a wallpaper.
-            RaisedCard(corner = 28.dp, raise = 7.dp, modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 26.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    AppTextField(
-                        value = uiState.nickname,
-                        onValueChange = viewModel::setNickname,
-                        enabled = viewModel.nicknameEditable,
-                        label = stringResource(R.string.online_nickname_label),
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    AppTextField(
-                        value = uiState.roomCode,
-                        onValueChange = viewModel::setRoomCode,
-                        label = stringResource(R.string.online_room_code_label),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+            val base = TextStyle(fontSize = with(density) { (46f * s).toSp() }, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+            val title = stringResource(R.string.online_join_room)
+            Text(title, style = base.copy(color = Color(0xFF5A2E0C), drawStyle = Stroke(width = with(density) { 8f * s }, join = StrokeJoin.Round)), maxLines = 1)
+            Text(title, style = base.copy(color = Color.White), maxLines = 1)
+        }
 
-                    uiState.errorMessage?.let { message ->
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = message.asString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+        // The form panel.
+        val panelWidth = maxWidth * 0.9f
+        val panelHeight = panelWidth / PanelAspect
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = yOf(0.29f))
+                .width(panelWidth)
+                .height(panelHeight)
+        ) {
+            Image(
+                painter = painterResource(R.drawable.join_panel),
+                contentDescription = null,
+                contentScale = ContentScale.FillBounds,
+                modifier = Modifier.fillMaxSize()
+            )
+            val label = TextStyle(color = Ink, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
+            Text(
+                text = stringResource(R.string.online_nickname_label),
+                style = label,
+                modifier = Modifier.offset(x = panelWidth * LabelLeft, y = panelHeight * (Well1Top - 0.115f))
+            )
+            Text(
+                text = stringResource(R.string.online_room_code_label),
+                style = label,
+                modifier = Modifier.offset(x = panelWidth * LabelLeft, y = panelHeight * (Well2Top - 0.108f))
+            )
+            WellField(
+                value = uiState.nickname,
+                onValueChange = viewModel::setNickname,
+                enabled = viewModel.nicknameEditable,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                modifier = Modifier
+                    .offset(x = panelWidth * WellLeft, y = panelHeight * Well1Top)
+                    .width(panelWidth * WellWidth)
+                    .height(panelHeight * WellHeight)
+            )
+            WellField(
+                value = uiState.roomCode,
+                onValueChange = viewModel::setRoomCode,
+                enabled = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                modifier = Modifier
+                    .offset(x = panelWidth * WellLeft, y = panelHeight * Well2Top)
+                    .width(panelWidth * WellWidth)
+                    .height(panelHeight * WellHeight)
+            )
+
+            // The join button sits on the panel's lower edge.
+            val joinWidth = panelWidth * 0.62f
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.align(Alignment.BottomCenter).offset(y = joinWidth * (180f / 559f) * 0.45f).width(joinWidth)
+            ) {
+                if (uiState.isJoining) {
+                    Box(modifier = Modifier.aspectRatio(559f / 180f), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(modifier = Modifier.size(34.dp))
                     }
-
-                    Spacer(modifier = Modifier.height(22.dp))
-                    PrimaryButton(
+                } else {
+                    PaintedButton(
                         text = stringResource(R.string.online_join_room_action),
-                        onClick = { viewModel.joinRoom(onJoined) },
-                        enabled = !uiState.isJoining,
-                        modifier = Modifier.fillMaxWidth()
+                        onClick = { viewModel.joinRoom(onJoined) }
                     )
                 }
             }
         }
-        ScreenTopActions(
-            onBack = onBack,
-            modifier = Modifier.align(Alignment.TopStart),
-            title = stringResource(R.string.online_join_room)
-        )
+
+        uiState.errorMessage?.let { message ->
+            Text(
+                text = message.asString(),
+                style = TextStyle(color = Color(0xFFFFD6D0), fontSize = 15.sp, textAlign = TextAlign.Center),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = yOf(0.29f) + panelHeight + 56.dp)
+                    .padding(horizontal = 24.dp)
+                    .background(Color(0xCC3B1E08), RoundedCornerShape(14.dp))
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+            )
         }
+
+        // The painted back button.
+        val backInteraction = remember { MutableInteractionSource() }
+        Image(
+            painter = painterResource(R.drawable.join_back),
+            contentDescription = stringResource(R.string.cd_back),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(start = 16.dp, top = 12.dp)
+                .size(56.dp)
+                .clickable(interactionSource = backInteraction, indication = null, onClick = onBack)
+        )
+    }
+}
+
+/** Text typed straight into one of the panel's painted wells. */
+@Composable
+private fun WellField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    enabled: Boolean,
+    keyboardOptions: KeyboardOptions,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier.graphicsLayer { alpha = if (enabled) 1f else 0.85f }, contentAlignment = Alignment.CenterStart) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            enabled = enabled,
+            singleLine = true,
+            keyboardOptions = keyboardOptions,
+            textStyle = TextStyle(color = Ink, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold),
+            cursorBrush = SolidColor(Ink),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp)
+        )
+    }
+}
+
+/** The orange painted button; it dips a little while pressed. */
+@Composable
+private fun PaintedButton(text: String, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.95f else 1f, label = "join-btn")
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(559f / 180f)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+    ) {
+        Image(painter = painterResource(R.drawable.join_btn), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+        val base = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
+        Text(text, style = base.copy(color = Color(0xFF8A3A00), drawStyle = Stroke(width = 8f, join = StrokeJoin.Round)), maxLines = 1)
+        Text(text, style = base.copy(color = Color.White), maxLines = 1)
     }
 }
