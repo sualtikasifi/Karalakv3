@@ -1,5 +1,33 @@
 package com.sualtikasifi.cizimhafiza.presentation.league
 
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.sp
+import com.sualtikasifi.cizimhafiza.presentation.common.ButtonOrange
+import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionInk
+import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle
+import com.sualtikasifi.cizimhafiza.presentation.common.InkBrown
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
+import com.sualtikasifi.cizimhafiza.presentation.common.PillShape
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -79,6 +107,9 @@ import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 import com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance
 import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
 
+private const val ArtW = 1080f
+private const val ArtH = 2401f
+
 /**
  * Two leaderboards that reset on the first of every month — see
  * domain.model.LeaguePeriod for why a month, and why not lifetime.
@@ -88,6 +119,9 @@ import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
  * hour (see functions/src/index.ts). That difference is visible on
  * purpose: the global tab says when it was last rebuilt, because a table
  * that is not live should not pretend to be.
+ *
+ * Painted trophy-room scene: the sign, tabs and reset timer stay pinned; the prize, the player's standing and the rows
+ * scroll beneath them (a 20-row table cannot fit one screen) and melt away at their top edge.
  */
 @Composable
 fun LeagueScreen(
@@ -97,147 +131,116 @@ fun LeagueScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val table = uiState.table
+    val shownTable = if (uiState.tab == LeagueTab.Friends) table else uiState.global?.table
 
-    // No title bar: the back button floats directly on the page's own
-    // background instead of sitting in a separate, differently-colored strip.
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-        Column(
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val density = LocalDensity.current
+        val widthPx = with(density) { maxWidth.toPx() }
+        val heightPx = with(density) { maxHeight.toPx() }
+        val sc = maxOf(widthPx / ArtW, heightPx / ArtH)
+        val offY = (heightPx - ArtH * sc) / 2f
+        fun yOf(px: Float): Dp = with(density) { (offY + px * sc).toDp() }
+        fun len(px: Float): Dp = with(density) { (px * sc).toDp() }
+
+        Image(
+            painter = painterResource(R.drawable.bg_league),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // ── Scrolling part ──
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .screenBackground()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
-                // Clears the floating back button (see ScreenTopActions).
-                .padding(top = TopActionsClearance)
+                .padding(top = yOf(655f))
+                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                .drawWithContent {
+                    drawContent()
+                    val fade = 22.dp.toPx().coerceAtMost(size.height)
+                    drawRect(
+                        brush = Brush.verticalGradient(colorStops = arrayOf(0f to Color.Transparent, (fade / size.height) to Color.Black, 1f to Color.Black)),
+                        blendMode = BlendMode.DstIn
+                    )
+                },
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                LeagueTab.entries.forEach { tab ->
-                    SelectableChip(
-                        label = stringResource(tab.labelRes()),
-                        selected = uiState.tab == tab,
-                        onClick = { viewModel.selectTab(tab) },
-                        modifier = Modifier.weight(1f),
-                        verticalPadding = 10.dp,
-                        fillWidth = true
-                    )
-                }
-            }
-
-            val shownTable = if (uiState.tab == LeagueTab.Friends) table else uiState.global?.table
-
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                if (uiState.tab == LeagueTab.Friends) {
-                    // The friends board is all-time; only the global one resets each month.
-                    TintedBadge(text = stringResource(R.string.league_friends_total_caption))
-                } else shownTable?.let {
-                    TintedBadge(
-                        text = if (it.daysRemaining <= 0) {
-                            stringResource(R.string.league_resets_countdown, rememberResetCountdown())
-                        } else {
-                            stringResource(if (it.daysRemaining == 1) R.string.league_resets_in_one else R.string.league_resets_in, it.daysRemaining)
-                        }
-                    )
-                }
-            }
-
-            // Global only — a friend-list standing has no monthly prize of
-            // its own to show; this banner belongs to the ladder that does.
+            // Global only — a friend-list standing has no monthly prize of its own to show.
             if (uiState.tab == LeagueTab.Global) {
-                // Falls back to the month's own frame so the prize is on
-                // screen from the first day, rather than only after the
-                // scheduled rebuild has stamped it into the table.
-                val reward = LeagueReward.find(uiState.global?.rewardId)
-                    ?: LeagueReward.forPeriod(LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()))
-                reward?.let { reward ->
-                    RewardBanner(reward = reward, modifier = Modifier.padding(bottom = 6.dp))
+                item(key = "reward") {
+                    // Falls back to the month's own frame so the prize is on screen from the first day.
+                    val reward = LeagueReward.find(uiState.global?.rewardId)
+                        ?: LeagueReward.forPeriod(LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()))
+                    reward?.let { RewardBanner(reward = it) }
                 }
-                val myXp by viewModel.myPeriodXp.collectAsState()
-                val others = uiState.global?.table?.entries.orEmpty().filterNot { it.isMe }.take(GLOBAL_VISIBLE_ROWS)
-                MonthlyXpCard(
-                    myXp = myXp,
-                    myRank = uiState.myGlobalRank?.takeIf { it <= GLOBAL_VISIBLE_ROWS },
-                    top20Xp = others.getOrNull(GLOBAL_VISIBLE_ROWS - 1)?.periodXp,
-                    podiumXp = others.getOrNull(2)?.periodXp,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+                item(key = "xp") {
+                    val myXp by viewModel.myPeriodXp.collectAsState()
+                    val others = uiState.global?.table?.entries.orEmpty().filterNot { it.isMe }.take(GLOBAL_VISIBLE_ROWS)
+                    MonthlyXpCard(
+                        myXp = myXp,
+                        myRank = uiState.myGlobalRank?.takeIf { it <= GLOBAL_VISIBLE_ROWS },
+                        top20Xp = others.getOrNull(GLOBAL_VISIBLE_ROWS - 1)?.periodXp,
+                        podiumXp = others.getOrNull(2)?.periodXp
+                    )
+                }
             }
 
             // Alone on the friends table: say so, and offer the fix.
             if (uiState.tab == LeagueTab.Friends && !uiState.isLoading && (shownTable?.entries?.size ?: 0) <= 1) {
-                WarmCard(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), corner = 20.dp, onClick = onFriends) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(text = "🤝", style = MaterialTheme.typography.headlineSmall)
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.league_friends_hint),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = stringResource(R.string.league_friends_hint_action),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                item(key = "friends-hint") {
+                    PaperPanel(modifier = Modifier.clickable(onClick = onFriends)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(text = "🤝", style = PaintedStyle(fontSize = 28.sp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.league_friends_hint),
+                                    style = DescriptionStyle(13.sp, 17.sp).copy(textAlign = TextAlign.Start)
+                                )
+                                Text(
+                                    text = stringResource(R.string.league_friends_hint_action),
+                                    style = PaintedStyle(color = ButtonOrange, fontSize = 14.sp, textAlign = TextAlign.Start)
+                                )
+                            }
                         }
                     }
                 }
             }
 
             when {
-                // Row-shaped placeholders rather than a centred spinner: the
-                // table is what arrives, so the wait should look like the
-                // table arriving, not like the screen deciding what to be.
-                uiState.tab == LeagueTab.Friends && uiState.isLoading -> LoadingRows(count = 5, height = 62.dp)
+                // Row-shaped placeholders rather than a centred spinner: the wait should look like the table arriving.
+                uiState.tab == LeagueTab.Friends && uiState.isLoading ->
+                    item(key = "loading") { LoadingRows(count = 5, height = 50.dp) }
                 uiState.tab == LeagueTab.Global && uiState.globalLoading && uiState.global == null ->
-                    LoadingRows(count = 5, height = 62.dp)
+                    item(key = "loading") { LoadingRows(count = 5, height = 50.dp) }
                 uiState.tab == LeagueTab.Global && uiState.globalFailed && uiState.global == null ->
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            EmptyState(
-                                emoji = "📡",
-                                message = stringResource(R.string.league_global_failed),
-                                modifier = Modifier.padding(horizontal = 24.dp)
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            SecondaryButton(
-                                text = stringResource(R.string.reports_load_more),
-                                onClick = viewModel::refreshGlobal,
-                                icon = Icons.Filled.Refresh
-                            )
+                    item(key = "failed") {
+                        PaperPanel {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                                Text("📡", style = PaintedStyle(fontSize = 30.sp))
+                                Text(stringResource(R.string.league_global_failed), style = DescriptionStyle(14.sp, 18.sp))
+                                Spacer(Modifier.height(10.dp))
+                                SecondaryButton(
+                                    text = stringResource(R.string.reports_load_more),
+                                    onClick = viewModel::refreshGlobal,
+                                    icon = Icons.Filled.Refresh
+                                )
+                            }
                         }
                     }
-                shownTable == null || shownTable.entries.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    EmptyState(
-                        emoji = "🏅",
-                        message = stringResource(
-                            if (uiState.tab == LeagueTab.Friends) R.string.league_empty
-                            else R.string.league_global_empty
-                        ),
-                        modifier = Modifier.padding(horizontal = 24.dp)
-                    )
-                }
-                else -> LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    // Top padding, not just item spacing: MeRowGlow draws
-                    // slightly outside its row's own bounds (a breathing
-                    // outline, not a fill), which is invisible between rows
-                    // since there's spacedBy space for it to sit in — but
-                    // rank #1 has no row above it to borrow that space from,
-                    // so without padding here the glow's top edge fell
-                    // outside the list's own viewport and got clipped.
-                    contentPadding = PaddingValues(top = 10.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
+                shownTable == null || shownTable.entries.isEmpty() ->
+                    item(key = "empty") {
+                        PaperPanel {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                                Text("🏅", style = PaintedStyle(fontSize = 30.sp))
+                                Text(
+                                    stringResource(if (uiState.tab == LeagueTab.Friends) R.string.league_empty else R.string.league_global_empty),
+                                    style = DescriptionStyle(14.sp, 18.sp)
+                                )
+                            }
+                        }
+                    }
+                else -> {
                     // Global: at most 20 rows. The player appears in them only when their XP earns a place in the
                     // top 20, at the spot it earns; anyone further back is not listed and is told so on the card.
                     val visibleEntries = if (uiState.tab == LeagueTab.Global) {
@@ -257,38 +260,141 @@ fun LeagueScreen(
                     }
                     if (uiState.tab == LeagueTab.Global) {
                         item(key = "rebuilt-note") {
-                            Text(
+                            LetteredText(
                                 text = stringResource(R.string.league_global_refresh_note),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                                size = 12.sp,
+                                weight = FontWeight.Bold,
+                                maxLines = 3,
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp, start = 8.dp, end = 8.dp)
                             )
                         }
                     }
-                    item { Spacer(modifier = Modifier.height(8.dp)) }
                 }
             }
         }
-        ScreenTopActions(
-            onBack = onBack,
-            modifier = Modifier.align(Alignment.TopStart),
-            title = stringResource(R.string.league_title),
-            // Sharing ScreenTopActions' own Row (rather than a second
-            // independently-positioned button) is what keeps this level
-            // with the back button — a separately aligned/padded button
-            // drifted out of line with it.
-            trailing = if (uiState.tab == LeagueTab.Global) {
-                {
-                    RaisedIconButton(
-                        icon = Icons.Filled.Refresh,
-                        contentDescription = stringResource(R.string.reports_refresh),
-                        onClick = viewModel::refreshGlobal,
-                        enabled = !uiState.globalLoading
+
+        // ── Pinned part ──
+        val signWidth = maxWidth * 0.64f
+        val signHeight = signWidth * (522f / 1199f)
+        Box(
+            modifier = Modifier.align(Alignment.TopCenter).offset(y = yOf(96f)).width(signWidth).height(signHeight),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Image(
+                painter = painterResource(R.drawable.league_sign),
+                contentDescription = null,
+                contentScale = ContentScale.FillBounds,
+                modifier = Modifier.fillMaxSize()
+            )
+            Box(
+                modifier = Modifier.fillMaxWidth().offset(y = signHeight * 0.32f).height(signHeight * 0.36f),
+                contentAlignment = Alignment.Center
+            ) {
+                val title = stringResource(R.string.league_title)
+                LetteredText(title, len(if (title.length > 11) 52f else 66f).value.sp)
+            }
+        }
+
+        val backInteraction = remember { MutableInteractionSource() }
+        Image(
+            painter = painterResource(R.drawable.join_back),
+            contentDescription = stringResource(R.string.cd_back),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(start = 16.dp, top = 12.dp)
+                .size(56.dp)
+                .clickable(interactionSource = backInteraction, indication = null, onClick = onBack)
+        )
+        if (uiState.tab == LeagueTab.Global) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(end = 16.dp, top = 12.dp)
+                    .size(56.dp)
+                    .alpha(if (uiState.globalLoading) 0.55f else 1f)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = !uiState.globalLoading,
+                        onClick = viewModel::refreshGlobal
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(painterResource(R.drawable.league_wood), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                Icon(
+                    Icons.Filled.Refresh,
+                    contentDescription = stringResource(R.string.reports_refresh),
+                    tint = Color.White,
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+        }
+
+        // Tabs.
+        Row(
+            modifier = Modifier.fillMaxWidth().offset(y = yOf(430f)).padding(horizontal = 26.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            LeagueTab.entries.forEach { tab ->
+                val selected = uiState.tab == tab
+                NinePatch(
+                    res = if (selected) R.drawable.league_pill_on else R.drawable.league_pill_off,
+                    slicePx = 80,
+                    edge = 20.dp,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp)
+                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { viewModel.selectTab(tab) }
+                ) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        if (selected) {
+                            LetteredText(stringResource(tab.labelRes()), 17.sp)
+                        } else {
+                            Text(stringResource(tab.labelRes()), style = PaintedStyle(color = InkBrown, fontSize = 17.sp, textAlign = TextAlign.Center))
+                        }
+                    }
+                }
+            }
+        }
+
+        // Reset timer / caption.
+        val timerText: String? = if (uiState.tab == LeagueTab.Friends) {
+            // The friends board is all-time; only the global one resets each month.
+            stringResource(R.string.league_friends_total_caption)
+        } else shownTable?.let {
+            if (it.daysRemaining <= 0) {
+                stringResource(R.string.league_resets_countdown, rememberResetCountdown())
+            } else {
+                stringResource(if (it.daysRemaining == 1) R.string.league_resets_in_one else R.string.league_resets_in, it.daysRemaining)
+            }
+        }
+        if (timerText != null) {
+            NinePatch(
+                res = R.drawable.league_timer,
+                slicePx = 135,
+                edge = 31.dp,
+                sliceYPx = 40,
+                edgeY = 9.dp,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = yOf(556f))
+                    .height(38.dp)
+                    .widthIn(min = 190.dp)
+            ) {
+                Box(
+                    modifier = Modifier.padding(start = 40.dp, end = 18.dp).heightIn(min = 38.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = timerText,
+                        style = PaintedStyle(color = InkBrown, fontSize = 13.sp, textAlign = TextAlign.Center),
+                        maxLines = 1
                     )
                 }
-            } else null
-        )
+            }
+        }
 
         uiState.justWon?.let { prize ->
             PrizeWonDialog(
@@ -297,84 +403,78 @@ fun LeagueScreen(
                 onDismiss = viewModel::dismissPrize
             )
         }
-        }
+    }
+}
+
+/** A cream painted panel that hugs its content. */
+@Composable
+private fun PaperPanel(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    NinePatch(
+        res = R.drawable.league_card,
+        slicePx = 100,
+        edge = 26.dp,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Box(Modifier.padding(horizontal = 24.dp, vertical = 18.dp)) { content() }
     }
 }
 
 /**
- * This month's prize, shown above the global table so the contest has a
- * point. A gold wash + border set it apart from an ordinary card — the
- * plain white box it used to be read as one more row of chrome, not as
- * something worth chasing. The explainer line underneath is new for the
- * same reason: the card showed WHAT the prize was but never said how to
- * win it, so it read as decoration rather than a stake in the table below.
- *
- * A pen reward gets a full-width painted stroke below the label — a 34dp
- * diagonal square could not show a gradient pen's actual sweep, so players
- * had to take the name on faith; a frame reward's own [LevelAvatar] preview
- * already showed the real artwork, just too small to register.
+ * This month's prize, shown above the global table so the contest has a point. A pen reward gets a full-width painted
+ * stroke below the label; a frame reward shows its real artwork.
  */
 @Composable
 private fun RewardBanner(reward: LeagueReward, modifier: Modifier = Modifier) {
-    val gold = AppTheme.tokens.gold
     val number = java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag("tr"))
-    WarmCard(
-        corner = 16.dp,
-        border = gold,
+    val goldInk = Color(0xFFC77A00)
+    NinePatch(
+        res = R.drawable.league_banner,
+        slicePx = 100,
+        edge = 26.dp,
         modifier = modifier.fillMaxWidth()
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(gold.copy(alpha = 0.18f), Color.Transparent)))
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (reward is LeagueReward.Frame) {
-                    RewardSwatch(reward = reward, size = 28.dp)
-                } else {
-                    Text(text = "🏆", style = MaterialTheme.typography.titleLarge)
+            if (reward is LeagueReward.Frame) {
+                RewardSwatch(reward = reward, size = 30.dp)
+            } else {
+                Text(text = "🏆", style = PaintedStyle(fontSize = 34.sp))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.league_reward_title),
+                    style = PaintedStyle(color = DescriptionInk, fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
+                    maxLines = 1
+                )
+                Text(
+                    text = rewardLabel(reward),
+                    style = PaintedStyle(color = InkBrown, fontSize = 22.sp),
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                if (reward is LeagueReward.Pen) {
+                    PenStrokePreview(skin = reward.skin, modifier = Modifier.fillMaxWidth().height(20.dp))
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.league_reward_title),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = gold,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = rewardLabel(reward),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                    )
-                    if (reward is LeagueReward.Pen) {
-                        PenStrokePreview(skin = reward.skin, modifier = Modifier.fillMaxWidth().height(22.dp))
-                    }
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = stringResource(R.string.league_reward_bonus_gold, number.format(GameConstants.LEAGUE_MONTHLY_GOLD)),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = gold
-                    )
-                    Text(
-                        text = stringResource(R.string.league_reward_bonus_xp, number.format(GameConstants.LEAGUE_MONTHLY_XP)),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = stringResource(R.string.league_reward_top3),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = stringResource(R.string.league_reward_bonus_gold, number.format(GameConstants.LEAGUE_MONTHLY_GOLD)),
+                    style = PaintedStyle(color = goldInk, fontSize = 13.sp),
+                    maxLines = 1
+                )
+                Text(
+                    text = stringResource(R.string.league_reward_bonus_xp, number.format(GameConstants.LEAGUE_MONTHLY_XP)),
+                    style = PaintedStyle(color = ButtonOrange, fontSize = 13.sp),
+                    maxLines = 1
+                )
+                Text(
+                    text = stringResource(R.string.league_reward_top3),
+                    style = PaintedStyle(color = DescriptionInk, fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
+                    maxLines = 1
+                )
             }
         }
     }
@@ -382,8 +482,8 @@ private fun RewardBanner(reward: LeagueReward, modifier: Modifier = Modifier) {
 
 /**
  * "Where do I stand this month": the player's own monthly XP, their real rank, and how much more it
- * takes to reach the visible top 20 and the prize places — the table alone never said how far off
- * those were. The cut-offs are the XP of the 20th and 3rd rows of the published table.
+ * takes to reach the visible top 20 and the prize places. The cut-offs are the XP of the 20th and 3rd rows of the
+ * published table.
  */
 @Composable
 private fun MonthlyXpCard(myXp: Int, myRank: Int?, top20Xp: Int?, podiumXp: Int?, modifier: Modifier = Modifier) {
@@ -392,35 +492,46 @@ private fun MonthlyXpCard(myXp: Int, myRank: Int?, top20Xp: Int?, podiumXp: Int?
     val inTop20 = myRank != null && myRank <= GLOBAL_VISIBLE_ROWS
     val toTop20 = ((top20Xp ?: 0) - myXp + 1).coerceAtLeast(1)
     val toPodium = ((podiumXp ?: 0) - myXp + 1).coerceAtLeast(1)
-    WarmCard(corner = 16.dp, modifier = modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)) {
+    val note = DescriptionStyle(13.sp, 17.sp).copy(textAlign = TextAlign.Start)
+    NinePatch(
+        res = R.drawable.league_card,
+        slicePx = 100,
+        edge = 26.dp,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.league_monthly_title),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = PaintedStyle(color = InkBrown, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
+                        maxLines = 1
                     )
                     Text(
                         text = stringResource(R.string.league_xp_format, myXp),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.primary
+                        style = PaintedStyle(color = ButtonOrange, fontSize = 28.sp, textAlign = TextAlign.Start),
+                        maxLines = 1
                     )
                 }
                 Text(
                     text = if (myRank != null) stringResource(R.string.league_monthly_rank, myRank)
                     else stringResource(R.string.league_monthly_unranked),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    style = PaintedStyle(color = InkBrown, fontSize = 15.sp, textAlign = TextAlign.End),
+                    maxLines = 2,
+                    modifier = Modifier.widthIn(max = 150.dp)
                 )
             }
             if (top20Xp != null && !inTop20) {
                 Spacer(modifier = Modifier.height(6.dp))
-                androidx.compose.material3.LinearProgressIndicator(
-                    progress = { (myXp.toFloat() / top20Xp.coerceAtLeast(1)).coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape)
-                )
+                val fraction = (myXp.toFloat() / top20Xp.coerceAtLeast(1)).coerceIn(0f, 1f)
+                Box(Modifier.fillMaxWidth().height(10.dp).background(Color(0xFFE2CDAA), PillShape)) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth(fraction)
+                            .height(10.dp)
+                            .background(Brush.verticalGradient(listOf(Color(0xFFFF9A3C), ButtonOrange)), PillShape)
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
@@ -430,15 +541,10 @@ private fun MonthlyXpCard(myXp: Int, myRank: Int?, top20Xp: Int?, podiumXp: Int?
                         stringResource(R.string.league_monthly_to_podium, number.format(toPodium))
                     else -> stringResource(R.string.league_monthly_to_top, GLOBAL_VISIBLE_ROWS, number.format(toTop20))
                 },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = note
             )
             if (!inTop20 && podiumXp != null) {
-                Text(
-                    text = stringResource(R.string.league_monthly_to_podium, number.format(toPodium)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text(text = stringResource(R.string.league_monthly_to_podium, number.format(toPodium)), style = note)
             }
         }
     }
@@ -642,112 +748,80 @@ private val GoldFace = androidx.compose.ui.graphics.Color(0xFFFFF0C2)
 private val SilverFace = androidx.compose.ui.graphics.Color(0xFFE7EAF0)
 private val BronzeFace = androidx.compose.ui.graphics.Color(0xFFF7DFC9)
 
+/** Row sprites are one picture each (they carry the crown and the avatar ring), so they keep their proportions. */
+private const val PodiumAspect = 1402f / 215f
+/** Where the avatar ring sits inside the row picture, as a fraction of its width. */
+private const val AvatarCentre = 0.181f
+
 @Composable
 private fun LeagueRow(rank: Int, entry: LeagueEntry, showTotalXp: Boolean = false) {
-    // The top 3 get a gold/silver/bronze rank chip AND a tinted card, so the
-    // three rows that will actually win something are unmistakable at a
-    // glance rather than only readable by comparing rank numbers.
-    val medalColor = when (rank) {
-        1 -> AppTheme.tokens.gold
-        2 -> SilverAccent
-        3 -> BronzeAccent
+    val sprite = when (rank) {
+        1 -> R.drawable.league_row1
+        2 -> R.drawable.league_row2
+        3 -> R.drawable.league_row3
         else -> null
     }
-    val faceColor = when (rank) {
-        1 -> GoldFace
-        2 -> SilverFace
-        3 -> BronzeFace
-        else -> null
-    }
-    val rankColor = medalColor ?: MaterialTheme.colorScheme.onSurfaceVariant
-    // "Which row is even me" among up to 25 look-alike rows was the actual
-    // problem — a glow around the small avatar circle didn't fix that any
-    // more than the row's own border already did, since both need the eye
-    // to already be looking at that one row to notice. A glow around the
-    // row's own frame is what actually catches a scrolling eye, so this
-    // Box (a no-op for every other row) exists only to hold that glow
-    // behind the card below it.
-    Box(modifier = Modifier.fillMaxWidth()) {
-    if (entry.isMe) {
-        MeRowGlow(corner = 18.dp, modifier = Modifier.matchParentSize())
-    }
-    WarmCard(
-        corner = 18.dp,
-        face = faceColor ?: MaterialTheme.colorScheme.surface,
-        border = when {
-            entry.isMe -> MaterialTheme.colorScheme.primary
-            medalColor != null -> medalColor
-            else -> null
-        },
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(modifier = Modifier.width(32.dp), contentAlignment = Alignment.Center) {
-                if (rank <= 3 && medalColor != null) {
-                    Box(
-                        modifier = Modifier
-                            .size(30.dp)
-                            .background(medalColor.copy(alpha = 0.28f), androidx.compose.foundation.shape.CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = when (rank) {
-                                1 -> "🥇"
-                                2 -> "🥈"
-                                else -> "🥉"
-                            },
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
-                } else {
+    // A glow around the row's own frame is what catches a scrolling eye, so the "me" row gets one behind its card.
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val rowWidth = maxWidth
+        val rowHeight = if (sprite != null) rowWidth / PodiumAspect else 46.dp
+        val avatarSize = if (sprite != null) rowHeight * 0.74f else 34.dp
+        Box(modifier = Modifier.fillMaxWidth().height(rowHeight)) {
+            if (entry.isMe) {
+                MeRowGlow(corner = 18.dp, modifier = Modifier.matchParentSize())
+            }
+            if (sprite != null) {
+                Image(painterResource(sprite), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+            } else {
+                NinePatch(R.drawable.league_row, slicePx = 70, edge = 20.dp, modifier = Modifier.fillMaxSize())
+                Box(Modifier.width(rowWidth * 0.125f).fillMaxHeight(), contentAlignment = Alignment.Center) {
                     Text(
                         text = stringResource(R.string.league_rank_format, rank),
-                        style = MaterialTheme.typography.titleMedium,
-                        // SemiBold rather than Normal off the podium: Quicksand's
-                        // Normal weight is its thinnest, and a rank digit is the
-                        // smallest, most-scanned element in the row.
-                        fontWeight = FontWeight.SemiBold,
-                        color = rankColor
+                        style = PaintedStyle(color = DescriptionInk, fontSize = 16.sp, textAlign = TextAlign.Center)
                     )
                 }
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            LevelAvatar(
-                level = entry.level,
-                frame = AvatarFrame.resolve(entry.frameId, entry.level),
-                size = 40.dp,
-                photo = if (entry.isBot) com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(entry.nickname)
-                else com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(entry.avatarUrl)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            // Level sits beside the name ("Ad • 12 Seviye"), the same way the
-            // home screen's profile card writes it, instead of as a dark pill
-            // pinned on the avatar frame.
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            Box(
+                modifier = Modifier
+                    .offset(x = rowWidth * AvatarCentre - avatarSize / 2)
+                    .size(avatarSize)
+                    .align(Alignment.CenterStart)
             ) {
-                Text(
-                    text = if (entry.isMe) stringResource(R.string.online_you_label, entry.nickname) else entry.nickname,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
+                LevelAvatar(
+                    level = entry.level,
+                    frame = AvatarFrame.resolve(entry.frameId, entry.level),
+                    size = avatarSize,
+                    photo = if (entry.isBot) com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(entry.nickname)
+                    else com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(entry.avatarUrl)
                 )
-                RankLevelLabel(level = entry.level)
             }
-            Text(
-                text = stringResource(R.string.league_xp_format, if (showTotalXp) entry.totalXp else entry.periodXp),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = rowWidth * 0.27f, end = 18.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = if (entry.isMe) stringResource(R.string.online_you_label, entry.nickname) else entry.nickname,
+                        style = PaintedStyle(color = InkBrown, fontSize = 15.sp, textAlign = TextAlign.Start),
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    RankLevelLabel(level = entry.level)
+                }
+                Text(
+                    text = stringResource(R.string.league_xp_format, if (showTotalXp) entry.totalXp else entry.periodXp),
+                    style = PaintedStyle(color = ButtonOrange, fontSize = 15.sp, textAlign = TextAlign.End),
+                    maxLines = 1
+                )
+            }
         }
-    }
     }
 }
 

@@ -28,6 +28,7 @@ on:
           - pages.sh
           - friends.sh
           - achievements.sh
+          - league.sh
   pull_request:
     paths:
       - ".github/workflows/smoke-test.yml"

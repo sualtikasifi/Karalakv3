@@ -219,19 +219,23 @@ fun NinePatch(
     edge: Dp,
     modifier: Modifier = Modifier,
     tint: androidx.compose.ui.graphics.ColorFilter? = null,
+    sliceYPx: Int = slicePx,
+    edgeY: Dp = edge,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     val img: ImageBitmap = ImageBitmap.imageResource(res)
     val edgePx = with(LocalDensity.current) { edge.roundToPx() }
+    val edgeYPx = with(LocalDensity.current) { edgeY.roundToPx() }
     Box(
         modifier = modifier.drawBehind {
             val w = size.width.toInt()
             val h = size.height.toInt()
             val d = minOf(edgePx, w / 2, h / 2)
+            val dY = minOf(edgeYPx, w / 2, h / 2)
             val sx = intArrayOf(0, slicePx, img.width - slicePx, img.width)
-            val sy = intArrayOf(0, slicePx, img.height - slicePx, img.height)
+            val sy = intArrayOf(0, sliceYPx, img.height - sliceYPx, img.height)
             val dx = intArrayOf(0, d, w - d, w)
-            val dy = intArrayOf(0, d, h - d, h)
+            val dy = intArrayOf(0, dY, h - dY, h)
             for (r in 0..2) for (c in 0..2) {
                 drawImage(
                     image = img,
