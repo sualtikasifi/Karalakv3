@@ -30,6 +30,7 @@ on:
           - achievements.sh
           - league.sh
           - audit.sh
+          - audit_short.sh
   pull_request:
     paths:
       - ".github/workflows/smoke-test.yml"
