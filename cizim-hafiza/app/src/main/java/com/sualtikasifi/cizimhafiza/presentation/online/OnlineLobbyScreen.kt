@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.core.animateFloatAsState
 import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 
 // bg_race is this size; every overlay below is placed by fractions of the picture, so it stays on its sign,
@@ -78,7 +79,7 @@ fun OnlineLobbyScreen(
             modifier = Modifier.offset(x = x(0.5f) - len(330f), y = y(0.478f) - len(40f)).width(len(660f)),
             contentAlignment = Alignment.Center
         ) {
-            val base = TextStyle(fontSize = titleSize, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+            val base = PaintedStyle(fontSize = titleSize, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
             Text(
                 text = stringResource(R.string.online_lobby_title),
                 style = base.copy(color = Color(0xFF5A2E0C), drawStyle = Stroke(width = with(density) { (9f * s) }, join = androidx.compose.ui.graphics.StrokeJoin.Round)),
@@ -94,7 +95,7 @@ fun OnlineLobbyScreen(
         ) {
             Text(
                 text = stringResource(R.string.online_lobby_subtitle),
-                style = TextStyle(
+                style = PaintedStyle(
                     color = Color(0xFF5A3A1A),
                     fontSize = with(density) { (27f * s).toSp() },
                     fontWeight = FontWeight.Bold,
@@ -148,11 +149,10 @@ private fun RaceButton(
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
     ) {
         Image(painter = painterResource(image), contentDescription = null, contentScale = ContentScale.FillWidth, modifier = Modifier.fillMaxWidth())
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(30.dp))
-            Box(modifier = Modifier.width(10.dp))
+        Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.align(Alignment.CenterStart).padding(start = 46.dp).size(30.dp))
+        run {
             Box(contentAlignment = Alignment.Center) {
-                val style = TextStyle(fontSize = androidx.compose.ui.unit.TextUnit(24f, androidx.compose.ui.unit.TextUnitType.Sp), fontWeight = FontWeight.ExtraBold)
+                val style = PaintedStyle(fontSize = androidx.compose.ui.unit.TextUnit(24f, androidx.compose.ui.unit.TextUnitType.Sp), fontWeight = FontWeight.ExtraBold)
                 if (outline != null) {
                     Text(text, style = style.copy(color = outline, drawStyle = Stroke(width = 7f, join = androidx.compose.ui.graphics.StrokeJoin.Round)), maxLines = 1)
                 }

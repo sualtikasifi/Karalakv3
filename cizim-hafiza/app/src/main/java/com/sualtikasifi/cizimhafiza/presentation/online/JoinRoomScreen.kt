@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.util.asString
 
 // bg_join is this size; its hanging sign is painted on it, so the title is placed by fractions of the picture.
@@ -55,7 +56,7 @@ private const val ArtH = 1870f
 private val Ink = Color(0xFF5A3A1A)
 
 // The form panel (join_panel) has its two input wells painted in. These are where they sit, as fractions of the picture.
-private const val PanelAspect = 969f / 670f
+private const val PanelAspect = 1936f / 1336f
 private const val Well1Top = 0.2806f
 private const val Well2Top = 0.5672f
 private const val WellHeight = 0.172f
@@ -95,7 +96,7 @@ fun JoinRoomScreen(
             modifier = Modifier.offset(x = signCentreX - len(230f), y = yOf(0.197f) - len(32f)).width(len(460f)),
             contentAlignment = Alignment.Center
         ) {
-            val base = TextStyle(fontSize = with(density) { (46f * s).toSp() }, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+            val base = PaintedStyle(fontSize = with(density) { (46f * s).toSp() }, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
             val title = stringResource(R.string.online_join_room)
             Text(title, style = base.copy(color = Color(0xFF5A2E0C), drawStyle = Stroke(width = with(density) { 8f * s }, join = StrokeJoin.Round)), maxLines = 1)
             Text(title, style = base.copy(color = Color.White), maxLines = 1)
@@ -117,7 +118,7 @@ fun JoinRoomScreen(
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier.fillMaxSize()
             )
-            val label = TextStyle(color = Ink, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
+            val label = PaintedStyle(color = Ink, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
             Text(
                 text = stringResource(R.string.online_nickname_label),
                 style = label,
@@ -153,10 +154,10 @@ fun JoinRoomScreen(
             val joinWidth = panelWidth * 0.62f
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.align(Alignment.BottomCenter).offset(y = joinWidth * (180f / 559f) * 0.45f).width(joinWidth)
+                modifier = Modifier.align(Alignment.BottomCenter).offset(y = joinWidth * (355f / 1115f) * 0.45f).width(joinWidth)
             ) {
                 if (uiState.isJoining) {
-                    Box(modifier = Modifier.aspectRatio(559f / 180f), contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.aspectRatio(1115f / 355f), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(modifier = Modifier.size(34.dp))
                     }
                 } else {
@@ -171,7 +172,7 @@ fun JoinRoomScreen(
         uiState.errorMessage?.let { message ->
             Text(
                 text = message.asString(),
-                style = TextStyle(color = Color(0xFFFFD6D0), fontSize = 15.sp, textAlign = TextAlign.Center),
+                style = PaintedStyle(color = Color(0xFFFFD6D0), fontSize = 15.sp, textAlign = TextAlign.Center),
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .offset(y = yOf(0.29f) + panelHeight + 56.dp)
@@ -212,7 +213,7 @@ private fun WellField(
             enabled = enabled,
             singleLine = true,
             keyboardOptions = keyboardOptions,
-            textStyle = TextStyle(color = Ink, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold),
+            textStyle = PaintedStyle(color = Ink, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold),
             cursorBrush = SolidColor(Ink),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp)
         )
@@ -229,12 +230,12 @@ private fun PaintedButton(text: String, onClick: () -> Unit) {
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(559f / 180f)
+            .aspectRatio(1115f / 355f)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
     ) {
         Image(painter = painterResource(R.drawable.join_btn), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-        val base = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
+        val base = PaintedStyle(fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
         Text(text, style = base.copy(color = Color(0xFF8A3A00), drawStyle = Stroke(width = 8f, join = StrokeJoin.Round)), maxLines = 1)
         Text(text, style = base.copy(color = Color.White), maxLines = 1)
     }

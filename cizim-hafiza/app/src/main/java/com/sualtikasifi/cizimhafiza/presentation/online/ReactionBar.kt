@@ -224,7 +224,7 @@ fun ReactionSendRow(
 
     com.sualtikasifi.cizimhafiza.presentation.common.NinePatch(
         res = R.drawable.lobby_chatbar,
-        slicePx = 105,
+        slicePx = 205,
         edge = 38.dp,
         modifier = modifier.fillMaxWidth().height(76.dp)
     ) {

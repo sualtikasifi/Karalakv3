@@ -85,6 +85,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import java.util.Locale
 import com.sualtikasifi.cizimhafiza.data.bot.BotRoomEngine
 import com.sualtikasifi.cizimhafiza.domain.model.KickedUser
@@ -325,11 +326,11 @@ fun WaitingRoomScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.height(46.dp).aspectRatio(364f / 120f)) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.height(46.dp).aspectRatio(720f / 233f)) {
                     Image(painter = painterResource(R.drawable.lobby_band), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
                     OutlinedLabel(stringResource(R.string.online_players_section_title), 19.sp)
                 }
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.height(40.dp).aspectRatio(287f / 95f)) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.height(40.dp).aspectRatio(568f / 173f)) {
                     Image(painter = painterResource(R.drawable.lobby_pill), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Icon(Icons.Filled.Person, contentDescription = null, tint = Color(0xFFE9801D), modifier = Modifier.size(18.dp))
@@ -339,7 +340,7 @@ fun WaitingRoomScreen(
                                 presentPlayerCount,
                                 if (teamMode) GameConstants.TEAM_ROOM_SIZE else GameConstants.MAX_ROOM_SIZE
                             ),
-                            style = TextStyle(color = Color(0xFF5A3A1A), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold),
+                            style = PaintedStyle(color = Color(0xFF5A3A1A), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold),
                             maxLines = 1
                         )
                     }
@@ -405,7 +406,7 @@ fun WaitingRoomScreen(
                     Image(painter = painterResource(R.drawable.lobby_hourglass), contentDescription = null, modifier = Modifier.height(30.dp))
                     Text(
                         text = stringResource(R.string.online_waiting_for_friend),
-                        style = TextStyle(color = Color(0xFFFFF1D6), fontSize = 15.sp, fontWeight = FontWeight.Bold),
+                        style = PaintedStyle(color = Color(0xFFFFF1D6), fontSize = 15.sp, fontWeight = FontWeight.Bold),
                         textAlign = TextAlign.Center
                     )
                 }
@@ -421,7 +422,7 @@ fun WaitingRoomScreen(
             modifier = Modifier.fillMaxWidth().offset(y = sceneY(0.147f) - 30.dp),
             contentAlignment = Alignment.Center
         ) {
-            val base = TextStyle(fontSize = 34.sp, fontWeight = FontWeight.ExtraBold)
+            val base = PaintedStyle(fontSize = 34.sp, fontWeight = FontWeight.ExtraBold)
             Text(signTitle, style = base.copy(color = Color(0xFF5A2E0C), drawStyle = Stroke(width = 8f, join = StrokeJoin.Round)), maxLines = 1)
             Text(signTitle, style = base.copy(color = Color.White), maxLines = 1)
         }
@@ -506,7 +507,7 @@ private fun RoomCodeCard(roomCode: String, onInvite: () -> Unit) {
         )
         Text(
             text = stringResource(R.string.online_room_code_hint),
-            style = TextStyle(color = Color(0xFF5A3A1A), fontSize = 15.sp, fontWeight = FontWeight.ExtraBold),
+            style = PaintedStyle(color = Color(0xFF5A3A1A), fontSize = 15.sp, fontWeight = FontWeight.ExtraBold),
             maxLines = 1,
             modifier = Modifier.align(Alignment.TopCenter).offset(y = h * 0.1f)
         )
@@ -516,21 +517,19 @@ private fun RoomCodeCard(roomCode: String, onInvite: () -> Unit) {
         ) {
             Text(
                 text = roomCode,
-                style = TextStyle(color = Color(0xFF5A3A1A), fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 8.sp),
+                style = PaintedStyle(color = Color(0xFF5A3A1A), fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 8.sp),
                 maxLines = 1
             )
         }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
+        Box(
+            contentAlignment = Alignment.Center,
             modifier = Modifier
                 .offset(x = w * 0.2f, y = h * 0.585f)
                 .width(w * 0.62f)
                 .height(h * 0.27f)
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onInvite)
         ) {
-            Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
-            Spacer(modifier = Modifier.width(8.dp))
+            Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.align(Alignment.CenterStart).padding(start = w * 0.07f).size(22.dp))
             OutlinedLabel(stringResource(R.string.online_invite_friend), 20.sp, outline = Color(0xFF8A3A00))
         }
     }
@@ -541,7 +540,7 @@ private fun RoomCodeCard(roomCode: String, onInvite: () -> Unit) {
 private fun HintPlate(text: String, color: Color, modifier: Modifier = Modifier) {
     Text(
         text = text,
-        style = TextStyle(color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+        style = PaintedStyle(color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
         modifier = modifier
             .background(Color(0xCC3B1E08), RoundedCornerShape(14.dp))
             .padding(horizontal = 12.dp, vertical = 6.dp)
@@ -556,8 +555,8 @@ private fun LobbyButton(text: String, green: Boolean, pulse: Float, onClick: () 
     val scale by animateFloatAsState(if (pressed) 0.96f else 1f, label = "lobby-btn")
     NinePatch(
         res = if (green) R.drawable.lobby_btn_green else R.drawable.lobby_btn,
-        slicePx = 49,
-        edge = 28.dp,
+        slicePx = 86,
+        edge = 27.dp,
         modifier = modifier
             .height(56.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale; alpha = 1f - 0.12f * pulse }
@@ -572,7 +571,7 @@ private fun LobbyButton(text: String, green: Boolean, pulse: Float, onClick: () 
 /** White text with a dark outline, the lettering style of every painted title. */
 @Composable
 private fun OutlinedLabel(text: String, size: androidx.compose.ui.unit.TextUnit, outline: Color = Color(0xFF5A2E0C)) {
-    val base = TextStyle(fontSize = size, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+    val base = PaintedStyle(fontSize = size, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
     Box(contentAlignment = Alignment.Center) {
         Text(text, style = base.copy(color = outline, drawStyle = Stroke(width = 7f, join = StrokeJoin.Round)), maxLines = 1)
         Text(text, style = base.copy(color = Color.White), maxLines = 1)
@@ -877,9 +876,9 @@ private fun TeamColumn(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.align(Alignment.CenterHorizontally).height(36.dp).aspectRatio(287f / 95f)) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.align(Alignment.CenterHorizontally).height(36.dp).aspectRatio(568f / 173f)) {
             Image(painter = painterResource(R.drawable.lobby_pill), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-            Text(title, style = TextStyle(color = Color(0xFF5A3A1A), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold), maxLines = 1)
+            Text(title, style = PaintedStyle(color = Color(0xFF5A3A1A), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold), maxLines = 1)
         }
         slots.forEach { slot ->
             PlayerSlotCell(
@@ -934,7 +933,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
     ))) else null
     NinePatch(
         res = R.drawable.lobby_card,
-        slicePx = 45,
+        slicePx = 90,
         edge = 22.dp,
         tint = readyTint,
         modifier = modifier.fillMaxWidth()
@@ -1051,7 +1050,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
 private fun EmptySlotCard(onInvite: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     NinePatch(
         res = R.drawable.lobby_slot,
-        slicePx = 45,
+        slicePx = 90,
         edge = 21.dp,
         modifier = modifier
             .fillMaxWidth()
@@ -1064,7 +1063,7 @@ private fun EmptySlotCard(onInvite: (() -> Unit)? = null, modifier: Modifier = M
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = stringResource(R.string.online_invite_friend_slot),
-                    style = TextStyle(color = Color(0xFF5A3A1A), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+                    style = PaintedStyle(color = Color(0xFF5A3A1A), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
                     maxLines = 2
                 )
             }
