@@ -113,18 +113,15 @@ for i in $(seq 1 20); do
 done
 shot 02_main_menu_after_consent
 P=${P:-a}
-P=j
+P=k
 b() { adb shell input keyevent KEYCODE_BACK; sleep 3; }
-adb shell input tap 819 1773; sleep 6; shot ${P}01_settings
-adb shell input swipe 540 1800 540 600 400; sleep 2; shot ${P}02_settings_scrolled
+shot ${P}00_home
+adb shell input tap 541 1347; sleep 3; shot ${P}01_after_tap
+sleep 5; shot ${P}02_quickmatch
+b; sleep 2; shot ${P}03_after_back
+adb shell input tap 539 1781; sleep 6; shot ${P}04_store
 b
-adb shell input tap 541 1347; sleep 7; shot ${P}03_quickmatch
-b; sleep 2
-adb shell input tap 536 1581; sleep 6; shot ${P}04_friends
+adb shell input tap 242 2144; sleep 4; shot ${P}05_chest
 b
-adb shell input tap 261 1759; sleep 6; shot ${P}05_league
-b
-adb shell input tap 539 1781; sleep 6; shot ${P}06_store
-b
-adb shell input tap 242 2144; sleep 4; shot ${P}07_chest
+adb shell input tap 256 1572; sleep 5; shot ${P}06_levels
 b
