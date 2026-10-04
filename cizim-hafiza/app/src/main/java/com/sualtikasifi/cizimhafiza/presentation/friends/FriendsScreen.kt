@@ -79,6 +79,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.ButtonOrange
 import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionInk
 import com.sualtikasifi.cizimhafiza.presentation.common.InkBrown
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.util.InviteShareUtil
 import com.sualtikasifi.cizimhafiza.util.UiText
@@ -182,16 +183,38 @@ fun FriendsScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // The painted back and duel-list buttons are part of the art; these are the touch targets over them.
         val noRipple = remember { MutableInteractionSource() }
-        SceneBox(scene, 40f, 250f, 180f, 400f) {
-            Box(
-                Modifier.fillMaxSize().clickable(interactionSource = noRipple, indication = null, onClick = onBack)
-            )
+
+        @Composable
+        fun Sprite(res: Int, x0: Float, y0: Float, x1: Float, y1: Float) {
+            SceneBox(scene, x0, y0, x1, y1) {
+                Image(painterResource(res), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+            }
         }
-        SceneBox(scene, 900f, 250f, 1040f, 400f) {
-            Box(
-                Modifier.fillMaxSize().clickable(interactionSource = noRipple, indication = null, onClick = onDuelList)
+
+        // Back (left) and duel list (right), in the same corner spot as on the other painted pages.
+        Image(
+            painter = painterResource(R.drawable.join_back),
+            contentDescription = stringResource(R.string.cd_back),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(start = 16.dp, top = 12.dp)
+                .size(56.dp)
+                .clickable(interactionSource = noRipple, indication = null, onClick = onBack)
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(end = 16.dp, top = 12.dp)
+                .size(56.dp)
+                .clickable(interactionSource = noRipple, indication = null, onClick = onDuelList)
+        ) {
+            Image(
+                painter = painterResource(R.drawable.fr_clip),
+                contentDescription = stringResource(R.string.duel_list_title),
+                modifier = Modifier.fillMaxSize()
             )
             if (duelBadgeCount > 0) {
                 Box(
@@ -201,51 +224,48 @@ fun FriendsScreen(
                         .border(2.dp, Color.White, CircleShape)
                         .padding(horizontal = 6.dp, vertical = 1.dp)
                 ) {
-                    Text(
-                        text = duelBadgeCount.toString(),
-                        style = PaintedStyle(color = Color.White, fontSize = 12.sp)
-                    )
+                    Text(text = duelBadgeCount.toString(), style = PaintedStyle(color = Color.White, fontSize = 12.sp))
                 }
             }
         }
 
-        // Title on the hanging sign.
-        SceneBox(scene, 290f, 370f, 800f, 500f) {
-            LetteredText(stringResource(R.string.online_friends_entry), scene.fs(68f))
+        // Title on the hanging sign (plank centre is at 50% / 63% of the sprite).
+        Sprite(R.drawable.fr_sign, 215f, 110f, 865f, 349f)
+        SceneBox(scene, 290f, 205f, 790f, 315f) {
+            LetteredText(stringResource(R.string.online_friends_entry), scene.fs(62f))
         }
 
         // ── Code card ──
-        SceneBox(scene, 215f, 556f, 870f, 624f) {
+        Sprite(R.drawable.fr_panel_wide, 70f, 380f, 1010f, 820f)
+        SceneBox(scene, 215f, 410f, 865f, 474f) {
             Text(
                 stringResource(R.string.friends_my_code_label),
-                style = PaintedStyle(color = InkBrown, fontSize = scene.fs(52f), textAlign = TextAlign.Center)
+                style = PaintedStyle(color = InkBrown, fontSize = scene.fs(48f), textAlign = TextAlign.Center)
             )
         }
-        SceneBox(scene, 235f, 628f, 835f, 716f) {
+        SceneBox(scene, 190f, 478f, 890f, 560f) {
             Text(
                 stringResource(R.string.friends_invite_reward_hint),
                 style = PaintedStyle(
-                    color = DescriptionInk, fontSize = scene.fs(30f), fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center, lineHeight = scene.fs(36f)
+                    color = DescriptionInk, fontSize = scene.fs(28f), fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center, lineHeight = scene.fs(34f)
                 )
             )
         }
-        SceneBox(scene, 270f, 713f, 815f, 808f) {
+        SceneBox(scene, 270f, 572f, 810f, 664f) {
             val code = uiState.myFriendCode
             if (code != null) {
                 Text(
                     code,
-                    style = PaintedStyle(
-                        color = InkBrown, fontSize = scene.fs(82f), textAlign = TextAlign.Center,
-                        letterSpacing = scene.fs(14f)
-                    ),
+                    style = PaintedStyle(color = InkBrown, fontSize = scene.fs(76f), textAlign = TextAlign.Center, letterSpacing = scene.fs(12f)),
                     maxLines = 1
                 )
             } else {
                 CircularProgressIndicator(modifier = Modifier.size(28.dp), color = ButtonOrange, strokeWidth = 3.dp)
             }
         }
-        SceneBox(scene, 330f, 862f, 750f, 962f) {
+        Sprite(R.drawable.fr_orange_w, 340f, 688f, 740f, 800f)
+        SceneBox(scene, 340f, 688f, 740f, 800f) {
             val code = uiState.myFriendCode
             Box(
                 Modifier.fillMaxSize().then(
@@ -255,21 +275,24 @@ fun FriendsScreen(
                 ),
                 contentAlignment = Alignment.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(scene.len(14f))) {
-                    Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(scene.len(46f)))
-                    LetteredText(stringResource(R.string.friends_share_code), scene.fs(42f))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(scene.len(10f))) {
+                    Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(scene.len(34f)))
+                    LetteredText(stringResource(R.string.friends_share_code), scene.fs(32f))
                 }
             }
         }
 
         // ── Add a friend ──
-        SceneBox(scene, 150f, 1048f, 490f, 1128f) {
-            LetteredText(stringResource(R.string.friends_add_friend_label), scene.fs(52f))
+        Sprite(R.drawable.fr_ribbon, 70f, 835f, 470f, 948f)
+        SceneBox(scene, 110f, 850f, 440f, 935f) {
+            LetteredText(stringResource(R.string.friends_add_friend_label), scene.fs(40f))
         }
-        SceneBox(scene, 520f, 1052f, 1040f, 1124f) {
-            FriendsMessage(uiState.infoMessage, uiState.errorMessage, scene)
-        }
-        SceneBox(scene, 112f, 1172f, 700f, 1244f, contentAlignment = Alignment.CenterStart) {
+        NinePatch(
+            res = R.drawable.fr_cream_b, slicePx = 120, sliceYPx = 100,
+            edge = scene.len(55f), edgeY = scene.len(50f),
+            modifier = Modifier.offset(scene.x(70f), scene.y(963f)).size(scene.len(710f), scene.len(110f))
+        )
+        SceneBox(scene, 100f, 963f, 750f, 1073f, contentAlignment = Alignment.CenterStart) {
             BasicTextField(
                 value = uiState.addFriendCodeInput,
                 onValueChange = viewModel::setAddFriendCodeInput,
@@ -286,9 +309,7 @@ fun FriendsScreen(
                         if (uiState.addFriendCodeInput.isEmpty()) {
                             Text(
                                 stringResource(R.string.friends_add_friend_hint),
-                                style = PaintedStyle(
-                                    color = Color(0xFF9C8F82), fontSize = scene.fs(44f), fontWeight = FontWeight.SemiBold
-                                )
+                                style = PaintedStyle(color = Color(0xFF9C8F82), fontSize = scene.fs(44f), fontWeight = FontWeight.SemiBold)
                             )
                         }
                         inner()
@@ -297,7 +318,8 @@ fun FriendsScreen(
             )
         }
         val canAdd = uiState.addFriendCodeInput.length == 6
-        SceneBox(scene, 775f, 1150f, 960f, 1266f) {
+        Sprite(R.drawable.fr_orange_s, 790f, 955f, 1000f, 1083f)
+        SceneBox(scene, 795f, 975f, 935f, 1070f) {
             if (uiState.isAddingFriend) {
                 CircularProgressIndicator(modifier = Modifier.size(26.dp), color = Color.White, strokeWidth = 3.dp)
             } else {
@@ -312,18 +334,26 @@ fun FriendsScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     LetteredText(
-                        stringResource(R.string.friends_add_button), scene.fs(50f),
+                        stringResource(R.string.friends_add_button), scene.fs(44f),
                         modifier = Modifier.alpha(if (canAdd) 1f else 0.6f)
                     )
                 }
             }
         }
+        SceneBox(scene, 110f, 1088f, 970f, 1142f) {
+            FriendsMessage(uiState.infoMessage, uiState.errorMessage, scene)
+        }
 
         // ── Friends list ──
-        SceneBox(scene, 175f, 1318f, 520f, 1400f) {
-            LetteredText(stringResource(R.string.friends_list_title), scene.fs(52f))
+        Sprite(R.drawable.fr_ribbon, 70f, 1150f, 490f, 1269f)
+        SceneBox(scene, 105f, 1168f, 455f, 1252f) {
+            LetteredText(stringResource(R.string.friends_list_title), scene.fs(40f))
         }
-        SceneBox(scene, 135f, 1432f, 950f, 1800f, contentAlignment = Alignment.TopCenter) {
+        NinePatch(
+            res = R.drawable.fr_panel_big, slicePx = 170, edge = scene.len(85f),
+            modifier = Modifier.offset(scene.x(70f), scene.y(1255f)).size(scene.len(940f), scene.len(595f))
+        )
+        SceneBox(scene, 135f, 1315f, 945f, 1790f, contentAlignment = Alignment.TopCenter) {
             FriendsPanel(uiState, viewModel, scene, onDuel)
         }
     }

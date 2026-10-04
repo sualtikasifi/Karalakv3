@@ -288,7 +288,7 @@ fun LeagueScreen(
                 modifier = Modifier.fillMaxSize()
             )
             Box(
-                modifier = Modifier.fillMaxWidth().offset(y = signHeight * 0.32f).height(signHeight * 0.36f),
+                modifier = Modifier.fillMaxWidth().offset(x = signWidth * 0.010f, y = signHeight * 0.415f).height(signHeight * 0.36f),
                 contentAlignment = Alignment.Center
             ) {
                 val title = stringResource(R.string.league_title)
@@ -457,7 +457,7 @@ private fun RewardBanner(reward: LeagueReward, modifier: Modifier = Modifier) {
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
                 if (reward is LeagueReward.Pen) {
-                    PenStrokePreview(skin = reward.skin, modifier = Modifier.fillMaxWidth().height(20.dp))
+                    PenStrokePreview(skin = reward.skin, modifier = Modifier.fillMaxWidth().height(30.dp))
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
@@ -597,7 +597,7 @@ private fun PenStrokePreview(skin: PenSkin, modifier: Modifier = Modifier) {
             path = drawnPath,
             brush = penBrush(skin, size.width, size.height),
             alpha = strokeAlpha,
-            style = Stroke(width = size.minDimension * 0.14f, cap = StrokeCap.Round)
+            style = Stroke(width = size.minDimension * 0.30f, cap = StrokeCap.Round)
         )
     }
 }

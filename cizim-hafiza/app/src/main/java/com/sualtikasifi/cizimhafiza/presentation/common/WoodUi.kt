@@ -178,7 +178,7 @@ fun WoodScreen(
 
         val signCentreX = with(density) { (offX + ArtW * s * 0.505f).toDp() }
         Box(
-            modifier = Modifier.offset(x = signCentreX - len(300f), y = yOf(0.172f) - len(34f)).width(len(600f)),
+            modifier = Modifier.offset(x = signCentreX - len(300f), y = yOf(0.172f) - len(47f)).width(len(600f)),
             contentAlignment = Alignment.Center
         ) {
             LetteredText(title, with(density) { (46f * s).toSp() })

@@ -31,6 +31,7 @@ on:
           - league.sh
           - audit.sh
           - audit_short.sh
+          - titles.sh
   pull_request:
     paths:
       - ".github/workflows/smoke-test.yml"

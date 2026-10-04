@@ -173,7 +173,7 @@ fun AchievementsScreen(
                 modifier = Modifier.fillMaxSize()
             )
             Box(
-                modifier = Modifier.fillMaxWidth().offset(y = signHeight * 0.30f).height(signHeight * 0.36f),
+                modifier = Modifier.fillMaxWidth().offset(x = signWidth * 0.028f, y = signHeight * 0.415f).height(signHeight * 0.36f),
                 contentAlignment = Alignment.Center
             ) {
                 LetteredText(stringResource(R.string.menu_achievements), (len(64f).value).sp)
@@ -453,6 +453,12 @@ private fun AchievementChip(
     val bounce = 0f
 
     val tint = when {
+        item.claimed -> ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+            0.72f, 0f, 0f, 0f, 0f,
+            0f, 0.97f, 0f, 0f, 0f,
+            0f, 0f, 0.62f, 0f, 0f,
+            0f, 0f, 0f, 1f, 0f
+        )))
         claimable -> ColorFilter.tint(Color(0xFFFFD84D).copy(alpha = 0.55f * pulse), BlendMode.SrcAtop)
         !item.unlocked -> ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0.55f) })
         else -> null
@@ -507,8 +513,9 @@ private fun AchievementChip(
                         maxLines = 1
                     )
                     else -> Text(
-                        text = "✓",
-                        style = PaintedStyle(color = AppTheme.tokens.success, fontSize = 15.sp, textAlign = TextAlign.Center)
+                        text = stringResource(R.string.achievement_claimed_label),
+                        style = PaintedStyle(color = Color(0xFF1E6B2E), fontSize = 11.sp, textAlign = TextAlign.Center),
+                        maxLines = 1
                     )
                 }
                 RewardPill(item.achievement)
