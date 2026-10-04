@@ -97,7 +97,11 @@ fun TutorialScreen(
                 jokers = jokers,
                 onFirstLetterJoker = viewModel::useFirstLetterJoker,
                 onLetterCountJoker = viewModel::useLetterCountJoker,
-                jokerSpotlight = spotlight
+                jokerSpotlight = spotlight,
+                onBackClick = {
+                    viewModel.completeTutorial()
+                    onFinished()
+                }
             )
 
             else -> Box(

@@ -1,6 +1,24 @@
 package com.sualtikasifi.cizimhafiza.presentation.game
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
+import com.sualtikasifi.cizimhafiza.presentation.common.ButtonOrange
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
+import com.sualtikasifi.cizimhafiza.presentation.common.StretchBackground
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.RepeatMode
@@ -26,6 +44,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.border
@@ -121,9 +140,11 @@ fun GuessScreen(
     adUnavailable: Boolean = false,
     onAdUnavailableShown: () -> Unit = {},
     /** The tutorial only: dim everything but one joker button and ask the player to use it. */
-    jokerSpotlight: JokerSpotlight? = null
+    jokerSpotlight: JokerSpotlight? = null,
+    onBackClick: () -> Unit = {}
 ) {
     val wordLanguage = currentWordLanguage()
+    val backDescription = stringResource(R.string.cd_back)
     var answer by remember(state.guessNumber) { mutableStateOf("") }
     val isAnswered = state.feedback != null
     val timerColor = if (state.isWarning) TimerWarning else MaterialTheme.colorScheme.primary
@@ -172,77 +193,126 @@ fun GuessScreen(
     }
 
     var spotlightHole by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    val noRipple = remember { MutableInteractionSource() }
     Box(modifier = Modifier.fillMaxSize()) {
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        // Laid out so the ANSWER FIELD is always on screen with the keyboard
-        // open: top bar, canvas, then field + submit directly under it, and
-        // every helper (ad hint, jokers, skip) folded into one slim row below.
-        // The canvas is the single flexible piece (weight) and takes whatever
-        // the keyboard leaves — every other piece is a small fixed height, so
-        // it can no longer be squeezed out of view the way a tall stack of
-        // buttons used to push the field behind the keyboard.
-        val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .screenBackground()
-                .padding(padding)
-                .imePadding()
-                .padding(horizontal = 18.dp, vertical = 10.dp)
-        ) {
-            GameTopBar(
-                progressLabel = "${state.guessNumber} / ${state.totalGuesses}",
-                musicEnabled = musicEnabled,
-                onToggleMusic = onToggleMusic
+        // The painted desk scene (bg_guess), 841 art units wide. The header sits on the top band, the answer tray and
+        // the joker row on the bottom band, and the drawing frame in between stretches to whatever height is left. With
+        // the keyboard up, the desk props under the joker row and the lamp above the header are dropped so the drawing
+        // keeps as much room as possible.
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().imePadding()) {
+            val unit = maxWidth / ArtW
+            fun a(v: Float): Dp = unit * v
+            val boxHeight = maxHeight
+            val compact = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+            val inset = with(LocalDensity.current) { WindowInsets.statusBars.getTop(this).toDp() }
+            val f = (maxWidth.value / 411f).coerceIn(0.85f, 1.25f)
+            val ink = Color(0xFF3A2A22)
+            // Where the pills of the header should start: just under the status bar.
+            val headTop = inset + 8.dp
+            val topFrom = if (compact) (HeaderTop - headTop / unit).coerceIn(0f, HeaderTop) else 0f
+            val shift = if (compact) 0.dp else (headTop - a(HeaderTop)).coerceAtLeast(0.dp)
+            val bottomTo = if (compact) 1595f else ArtH
+            fun yTop(v: Float): Dp = shift + a(v - topFrom)
+            fun yBottom(v: Float): Dp = boxHeight - a(bottomTo - v)
+
+            StretchBackground(
+                res = R.drawable.bg_guess,
+                artHeight = ArtH,
+                topFrom = topFrom,
+                topEnd = TopBandEnd,
+                bottomStart = BottomBandStart,
+                bottomTo = bottomTo,
+                shift = shift,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // --- Header ---
+            Box(
+                modifier = Modifier
+                    .offset(a(22f), yTop(155f))
+                    .size(a(84f), a(78f))
+                    .clickable(interactionSource = noRipple, indication = null, onClick = onBackClick)
+                    .semantics { contentDescription = backDescription }
+            )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.offset(a(118f), yTop(158f)).size(a(114f), a(74f))
             ) {
-                // Absent only for the first-launch tutorial's practice round,
-                // which has no real ViewModel/XP behind it to show. Hidden
-                // while the keyboard is up: it is the widest thing in this
-                // row and the one the player can most easily do without.
-                if (!imeVisible) {
-                    levelProgress?.let {
+                Text(
+                    text = "${state.guessNumber} / ${state.totalGuesses}",
+                    style = PaintedStyle(color = ink, fontSize = 17.sp * f, textAlign = TextAlign.Center),
+                    maxLines = 1
+                )
+            }
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .offset(a(246f), yTop(158f))
+                    .size(a(76f), a(74f))
+                    .clickable(interactionSource = noRipple, indication = null, onClick = onToggleMusic)
+            ) {
+                Icon(
+                    imageVector = if (musicEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                    contentDescription = stringResource(if (musicEnabled) R.string.cd_music_on else R.string.cd_music_off),
+                    tint = ink,
+                    modifier = Modifier.size(24.dp * f)
+                )
+            }
+            // Absent only for the first-launch tutorial's practice round, which has no real ViewModel/XP behind it to
+            // show. Hidden while the keyboard is up: it is the widest thing in this row.
+            if (!compact) {
+                levelProgress?.let {
+                    Box(
+                        contentAlignment = Alignment.CenterStart,
+                        modifier = Modifier.offset(a(334f), yTop(150f)).size(a(190f), a(90f))
+                    ) {
                         LiveLevelBadge(progress = it, frame = selectedFrame ?: AvatarFrame.highestUnlockedFor(it.level))
                     }
                 }
-                // totalSeconds == 0 means this guess turn is untimed (the
-                // first-launch tutorial) — an empty ring reading "0" would
-                // look like an expired timer, so show nothing instead.
-                if (state.totalSeconds > 0) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    // Between the music toggle and the ring itself: the
-                    // player was earning a speed bonus for answering fast
-                    // (see XpAwards.wordXp) with no way to see it happening.
+            }
+            // totalSeconds == 0 means this guess turn is untimed (the first-launch tutorial) — an empty ring reading
+            // "0" would look like an expired timer, so show nothing instead.
+            if (state.totalSeconds > 0) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.offset(a(532f), yTop(158f)).size(a(184f), a(74f))
+                ) {
                     LiveXpBonusBadge(secondsLeft = state.secondsLeft)
-                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .offset(a(722f), yTop(150f))
+                        .size(a(98f))
+                        .shadow(2.dp, CircleShape)
+                        .background(Color.White, CircleShape)
+                        .border(1.dp, Color(0x33000000), CircleShape)
+                ) {
                     CircularCountdown(
                         secondsLeft = state.secondsLeft,
                         totalSeconds = state.totalSeconds,
                         ringColor = timerColor,
-                        modifier = Modifier.size(44.dp)
+                        trackColor = Color(0xFFFFE3CC),
+                        strokeWidth = 5.dp,
+                        textStyle = PaintedStyle(color = timerColor, fontSize = 22.sp * f),
+                        modifier = Modifier.fillMaxSize().padding(2.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
+            // --- The drawing ---
+            val canvasTop = yTop(310f)
+            val canvasBottom = yBottom(1112f)
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .heightIn(min = 120.dp)
-                    .padding(bottom = AppTheme.tokens.raise)
-                    .hardEdge(AppTheme.tokens.edge, AppTheme.tokens.raise, 26.dp)
-                    .background(AppTheme.tokens.canvasPaper, MaterialTheme.shapes.large)
-                    .dotGridBackground(AppTheme.tokens.canvasGrid, spacing = 22.dp, radius = 1.2.dp)
-                    .border(2.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.large)
+                    .offset(a(66f), canvasTop)
+                    .size(a(724f), (canvasBottom - canvasTop).coerceAtLeast(60.dp))
+                    .clip(RoundedCornerShape(a(16f)))
             ) {
                 StrokeCanvas(strokes = state.strokes, modifier = Modifier.fillMaxSize())
 
-                // Correct/wrong feedback is drawn ON TOP of the canvas rather
-                // than appended below it: as a sibling in the Column it added
-                // real height, which stole it from the canvas's weight(1f) and
-                // made the drawing visibly shrink the instant an answer landed.
-                // As an overlay the layout never moves.
+                // Correct/wrong feedback is drawn ON TOP of the canvas rather than appended below it, so the layout
+                // never moves when an answer lands.
                 GuessFeedbackOverlay(
                     visible = isAnswered,
                     feedback = state.feedback,
@@ -251,14 +321,11 @@ fun GuessScreen(
                     modifier = Modifier.align(Alignment.Center)
                 )
 
-                // Revealed hints sit on the drawing itself instead of taking
-                // rows of their own below it — same reason as the feedback.
+                // Revealed hints sit on the drawing itself instead of taking rows of their own below it.
                 //
-                // The letter-count joker draws one blank per letter, hangman
-                // style, with a gap between words. If the first-letter joker
-                // (or the ad hint) was used as well, that letter is written
-                // over the first blank. On its own the first letter keeps its
-                // plain "İlk harf: B" badge.
+                // The letter-count joker draws one blank per letter, hangman style, with a gap between words. If the
+                // first-letter joker (or the ad hint) was used as well, that letter is written over the first blank.
+                // On its own the first letter keeps its plain "İlk harf: B" badge.
                 val blankGroups = state.letterGroups ?: state.letterCount?.let { listOf(it) }
                 val firstLetterShown = state.hintLetter?.capitalizeForWordLanguage(wordLanguage)
                 if (blankGroups != null) {
@@ -268,8 +335,8 @@ fun GuessScreen(
                         modifier = Modifier.align(Alignment.TopCenter).padding(horizontal = 12.dp, vertical = 10.dp)
                     )
                 } else if (firstLetterShown != null) {
-                    // Capitalized the same way the word itself is displayed
-                    // everywhere else — a Turkish "i" has to become "İ", not "I".
+                    // Capitalized the same way the word itself is displayed everywhere else — a Turkish "i" has to
+                    // become "İ", not "I".
                     TintedBadge(
                         text = stringResource(R.string.hint_first_letter, firstLetterShown),
                         modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
@@ -277,28 +344,23 @@ fun GuessScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            // --- Answer tray ---
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.offset(a(58f), yBottom(1273f)).size(a(484f), a(92f))
             ) {
-                AppTextField(
+                BasicTextField(
                     value = answer,
                     onValueChange = { newValue ->
-                        // Ignore edits once answered instead of toggling
-                        // enabled/readOnly, so the field never loses focus.
+                        // Ignore edits once answered instead of toggling enabled/readOnly, so the field never loses focus.
                         if (!isAnswered) {
                             answer = newValue
                             onAnswerChanged(newValue)
                         }
                     },
-                    centered = true,
-                    // "Bu neydi?" used to be a title of its own above the
-                    // buttons; as the placeholder it costs no height at all.
-                    placeholder = stringResource(R.string.what_did_you_draw),
-                    textStyle = MaterialTheme.typography.titleMedium,
+                    singleLine = true,
+                    textStyle = PaintedStyle(color = ink, fontSize = 21.sp * f, textAlign = TextAlign.Center),
+                    cursorBrush = SolidColor(ButtonOrange),
                     keyboardOptions = KeyboardOptions(
                         capitalization = KeyboardCapitalization.Sentences,
                         imeAction = ImeAction.Done
@@ -306,116 +368,195 @@ fun GuessScreen(
                     keyboardActions = KeyboardActions(
                         onDone = { if (!isAnswered && answer.isNotBlank()) onSubmit(answer) }
                     ),
-                    focusRequester = focusRequester,
-                    corner = 26.dp,
-                    modifier = Modifier.weight(1f)
-                )
-                PrimaryButton(
-                    text = stringResource(R.string.submit_guess),
-                    onClick = { onSubmit(answer) },
-                    enabled = !isAnswered && answer.isNotBlank(),
-                    height = 52.dp,
-                    modifier = Modifier.width(112.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-            // Ad hint (one per whole match, not per word — see
-            // GameViewModel/OnlineGameViewModel.useHint), the two jokers
-            // and skip: one row of equal-width tiles, so they read as a
-            // toolbar instead of loose pills piled against the left edge.
-            // With the ad hint gone the remaining tiles simply share the
-            // width.
-            //
-            // Kept on screen (merely disabled) through the isAnswered
-            // feedback pause instead of being removed outright: this whole
-            // Row used to disappear between words, and since the canvas
-            // above it holds weight(1f), removing it let the canvas jump
-            // taller for the pause and snap back for the next word — a
-            // constant resize/reflow on every single transition. Reserving
-            // the same height throughout keeps the canvas' size fixed.
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (!state.hintUsed && state.hintLetter == null && GameConstants.ADMOB_ENABLED) {
-                    GuessActionTile(
-                        label = stringResource(if (hintRequested) R.string.loading_hint else R.string.guess_tile_hint),
-                        fill = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.primary,
-                        borderColor = MaterialTheme.colorScheme.primary,
-                        enabled = !hintRequested && !isAnswered,
-                        modifier = Modifier.weight(1f),
-                        // Countdown is paused (see useHint) the instant this is
-                        // tapped, so the label changes to make clear something is
-                        // happening — a frozen timer with no other signal would
-                        // otherwise look like the screen had just stalled.
-                        onClick = {
-                            if (!hintRequested) {
-                                hintRequested = true
-                                onHintClick()
+                    modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                    decorationBox = { inner ->
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
+                            if (answer.isEmpty()) {
+                                // "Bu neydi?" used to be a title of its own above the buttons; as the placeholder it
+                                // costs no height at all.
+                                Text(
+                                    text = stringResource(R.string.what_did_you_draw),
+                                    style = PaintedStyle(color = Color(0xFF9C8F82), fontSize = 21.sp * f, textAlign = TextAlign.Center),
+                                    maxLines = 1
+                                )
                             }
-                        },
-                        icon = {
-                            Icon(Icons.Filled.PlayCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+                            inner()
                         }
-                    )
-                }
-                val firstType = com.sualtikasifi.cizimhafiza.domain.model.JokerType.FIRST_LETTER
-                val countType = com.sualtikasifi.cizimhafiza.domain.model.JokerType.LETTER_COUNT
-                val firstCount = jokers[firstType] ?: 0
-                val letterCountCount = jokers[countType] ?: 0
-                GuessActionTile(
-                    label = stringResource(firstType.shortRes()),
-                    fill = firstType.tint(),
-                    contentColor = Color.White,
-                    enabled = !isAnswered && state.hintLetter == null && firstCount > 0,
-                    badgeCount = firstCount,
-                    modifier = Modifier.weight(1f).onGloballyPositioned {
-                        if (jokerSpotlight?.type == firstType) spotlightHole = it.boundsInWindow()
-                    },
-                    onClick = onFirstLetterJoker,
-                    icon = { JokerArt(firstType, 28.dp) }
-                )
-                GuessActionTile(
-                    label = stringResource(countType.shortRes()),
-                    fill = countType.tint(),
-                    contentColor = Color.White,
-                    enabled = !isAnswered && state.letterCount == null && letterCountCount > 0,
-                    badgeCount = letterCountCount,
-                    modifier = Modifier.weight(1f).onGloballyPositioned {
-                        if (jokerSpotlight?.type == countType) spotlightHole = it.boundsInWindow()
-                    },
-                    onClick = onLetterCountJoker,
-                    icon = { JokerArt(countType, 28.dp) }
-                )
-                GuessActionTile(
-                    label = stringResource(R.string.skip_guess),
-                    fill = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    borderColor = MaterialTheme.colorScheme.outline,
-                    enabled = !isAnswered,
-                    modifier = Modifier.weight(1f),
-                    onClick = { onSubmit("") },
-                    icon = {
-                        Icon(Icons.Filled.SkipNext, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(28.dp))
                     }
                 )
             }
+            val canSubmit = !isAnswered && answer.isNotBlank()
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .offset(a(572f), yBottom(1265f))
+                    .size(a(225f), a(105f))
+                    .clickable(interactionSource = noRipple, indication = null, enabled = canSubmit) { onSubmit(answer) }
+            ) {
+                if (!canSubmit) {
+                    Box(
+                        Modifier.fillMaxSize().background(Color(0x99EADBC8), RoundedCornerShape(50))
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.alpha(if (canSubmit) 1f else 0.7f)
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp * f))
+                    LetteredText(stringResource(R.string.submit_guess), 19.sp * f, outline = Color(0xFF8A3A00))
+                }
+            }
+
+            // --- Joker row: ad hint, the two jokers, skip. Kept on screen (merely disabled) through the isAnswered
+            // pause so nothing reflows between words. ---
+            val tileTop = yBottom(1406f)
+            val tileH = a(164f)
+            val firstType = com.sualtikasifi.cizimhafiza.domain.model.JokerType.FIRST_LETTER
+            val countType = com.sualtikasifi.cizimhafiza.domain.model.JokerType.LETTER_COUNT
+            val firstCount = jokers[firstType] ?: 0
+            val letterCountCount = jokers[countType] ?: 0
+            val hintAvailable = !state.hintUsed && state.hintLetter == null && GameConstants.ADMOB_ENABLED
+            JokerTile(
+                x = a(48f), top = tileTop, width = a(172f), height = tileH,
+                label = stringResource(if (hintRequested) R.string.loading_hint else R.string.guess_tile_hint),
+                labelColor = Color(0xFFB4501A), outline = null,
+                enabled = hintAvailable && !hintRequested && !isAnswered,
+                badge = null, badgeColor = Color.Unspecified,
+                onClick = {
+                    // Countdown is paused (see useHint) the instant this is tapped, so the label changes to make clear
+                    // something is happening.
+                    if (!hintRequested) {
+                        hintRequested = true
+                        onHintClick()
+                    }
+                },
+                icon = { Icon(Icons.Filled.PlayCircle, contentDescription = null, tint = Color(0xFFF26A1B), modifier = Modifier.size(a(66f))) }
+            )
+            JokerTile(
+                x = a(237f), top = tileTop, width = a(171f), height = tileH,
+                label = stringResource(firstType.shortRes()),
+                labelColor = Color.White, outline = Color(0xFF4A1F8A),
+                enabled = !isAnswered && state.hintLetter == null && firstCount > 0,
+                badge = firstCount, badgeColor = Color(0xFF6A2DBF),
+                modifier = Modifier.onGloballyPositioned {
+                    if (jokerSpotlight?.type == firstType) spotlightHole = it.boundsInWindow()
+                },
+                onClick = onFirstLetterJoker,
+                icon = { JokerArt(firstType, a(66f)) }
+            )
+            JokerTile(
+                x = a(426f), top = tileTop, width = a(178f), height = tileH,
+                label = stringResource(countType.shortRes()),
+                labelColor = Color.White, outline = Color(0xFF0B4F8A),
+                enabled = !isAnswered && state.letterCount == null && letterCountCount > 0,
+                badge = letterCountCount, badgeColor = Color(0xFF1B7FE0),
+                modifier = Modifier.onGloballyPositioned {
+                    if (jokerSpotlight?.type == countType) spotlightHole = it.boundsInWindow()
+                },
+                onClick = onLetterCountJoker,
+                icon = { JokerArt(countType, a(66f)) }
+            )
+            JokerTile(
+                x = a(621f), top = tileTop, width = a(176f), height = tileH,
+                label = stringResource(R.string.skip_guess),
+                labelColor = Color(0xFF4A2A10), outline = null,
+                enabled = !isAnswered,
+                badge = null, badgeColor = Color.Unspecified,
+                onClick = { onSubmit("") },
+                icon = { Icon(Icons.Filled.SkipNext, contentDescription = null, tint = Color(0xFF4A2A10), modifier = Modifier.size(a(66f))) }
+            )
             if (adErrorShown) {
-                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = stringResource(R.string.ad_unavailable),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+                    style = PaintedStyle(color = Color.White, fontSize = 12.sp, textAlign = TextAlign.Center),
+                    modifier = Modifier
+                        .offset(a(60f), tileTop - 22.dp)
+                        .background(Color(0xCC8A2A10), RoundedCornerShape(50))
+                        .padding(horizontal = 12.dp, vertical = 3.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
         }
+        jokerSpotlight?.let { JokerSpotlightOverlay(it, spotlightHole) }
     }
-    jokerSpotlight?.let { JokerSpotlightOverlay(it, spotlightHole) }
+}
+
+private const val ArtW = 841f
+private const val ArtH = 1870f
+/** Top of the header pills in the picture. */
+private const val HeaderTop = 158f
+private const val TopBandEnd = 400f
+private const val BottomBandStart = 985f
+
+/**
+ * One tile of the joker row, drawn over the painted tile of the scene: the icon on top, the label under it and, for the
+ * two jokers, how many are left in a white badge on the corner. A tile that can't be used right now is veiled.
+ */
+@Composable
+private fun JokerTile(
+    x: androidx.compose.ui.unit.Dp,
+    top: androidx.compose.ui.unit.Dp,
+    width: androidx.compose.ui.unit.Dp,
+    height: androidx.compose.ui.unit.Dp,
+    label: String,
+    labelColor: Color,
+    outline: Color?,
+    enabled: Boolean,
+    badge: Int?,
+    badgeColor: Color,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (pressed) 0.94f else 1f,
+        animationSpec = spring(stiffness = 600f),
+        label = "tileScale"
+    )
+    Box(
+        modifier = modifier
+            .offset(x, top)
+            .size(width, height)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            icon()
+            Spacer(modifier = Modifier.height(2.dp))
+            val size = (height.value * 0.115f).coerceIn(12f, 17f)
+            if (outline != null) {
+                LetteredText(label, size.sp, outline = outline)
+            } else {
+                Text(label, style = PaintedStyle(color = labelColor, fontSize = size.sp, textAlign = TextAlign.Center), maxLines = 1)
+            }
+        }
+        if (badge != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = height * 0.04f, end = width * 0.03f)
+                    .size(height * 0.245f)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .border(1.5.dp, badgeColor, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = badge.toString(),
+                    style = PaintedStyle(color = badgeColor, fontSize = 13.sp, textAlign = TextAlign.Center),
+                    maxLines = 1
+                )
+            }
+        }
+        if (!enabled) {
+            Box(Modifier.fillMaxSize().background(Color(0x99F1E3D0), RoundedCornerShape(height * 0.17f)))
+        }
     }
 }
 
@@ -470,89 +611,6 @@ private fun LetterBlanks(groups: List<Int>, firstLetter: String?, modifier: Modi
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-/**
- * One button of the helper toolbar under the answer field: icon over label,
- * same height and (via the caller's weight) the same width as its neighbours.
- * [badgeCount] draws a small count chip on the corner — the joker stock.
- */
-@Composable
-private fun GuessActionTile(
-    label: String,
-    fill: Color,
-    contentColor: Color,
-    modifier: Modifier = Modifier,
-    borderColor: Color? = null,
-    enabled: Boolean = true,
-    badgeCount: Int? = null,
-    onClick: () -> Unit,
-    icon: @Composable () -> Unit
-) {
-    val shape = RoundedCornerShape(18.dp)
-    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
-    val scale by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (pressed) 0.94f else 1f,
-        animationSpec = androidx.compose.animation.core.spring(stiffness = 600f),
-        label = "tileScale"
-    )
-    val solid = borderColor == null
-    // Coloured jokers get a lit top and a darker lower edge, so they read as raised keys; the plain
-    // tiles (ad hint, skip) stay flat and outlined so the jokers are what the eye goes to first.
-    val background = if (solid) {
-        Brush.verticalGradient(listOf(lerp(fill, Color.White, 0.22f), fill, lerp(fill, Color.Black, 0.18f)))
-    } else {
-        Brush.verticalGradient(listOf(fill, fill))
-    }
-    Box(
-        modifier = modifier
-            .height(66.dp)
-            .graphicsLayer { scaleX = scale; scaleY = scale }
-            .alpha(if (enabled) 1f else 0.42f)
-            .clip(shape)
-            .background(background)
-            .then(
-                if (borderColor != null) Modifier.border(2.dp, borderColor, shape)
-                else Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), shape)
-            )
-            .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            icon()
-            Spacer(modifier = Modifier.height(3.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-                color = contentColor,
-                maxLines = 1
-            )
-        }
-        if (badgeCount != null) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 4.dp, end = 5.dp)
-                    .size(22.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(Color.White)
-                    .border(1.5.dp, lerp(fill, Color.Black, 0.25f), androidx.compose.foundation.shape.CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = badgeCount.toString(),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-                    color = lerp(fill, Color.Black, 0.25f)
-                )
             }
         }
     }
