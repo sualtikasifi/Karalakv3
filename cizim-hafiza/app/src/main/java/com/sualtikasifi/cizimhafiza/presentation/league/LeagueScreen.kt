@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.league
 
 import androidx.compose.foundation.Image
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.BoxWithConstraints
