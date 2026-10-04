@@ -116,6 +116,7 @@ P=${P:-a}
 P=s
 adb shell am force-stop $PKG; sleep 2
 adb shell am start -n $ACT >/dev/null
-for i in 1 2 3 4 5 6 7 8; do
-  adb exec-out screencap -p > "$OUT/${P}0$i.png"
+for i in $(seq 1 16); do
+  sleep 1
+  adb exec-out screencap -p > "$OUT/${P}$(printf %02d $i).png"
 done
