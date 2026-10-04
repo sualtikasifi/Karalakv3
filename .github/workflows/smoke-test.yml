@@ -30,7 +30,9 @@ on:
           - achievements.sh
           - league.sh
           - audit.sh
+          - home.sh
           - audit_short.sh
+          - home.sh
           - titles.sh
           - draw.sh
   pull_request:
