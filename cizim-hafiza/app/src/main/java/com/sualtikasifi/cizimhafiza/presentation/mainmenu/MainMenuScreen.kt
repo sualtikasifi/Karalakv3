@@ -77,6 +77,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.paint
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -219,7 +220,7 @@ fun MainMenuScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .screenBackground()
+                .paint(painterResource(R.drawable.bg_home), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
                 .padding(padding)
         ) {
             HomeProfileBar(
