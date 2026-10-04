@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -174,7 +175,7 @@ fun ResultScreen(
     // in whatever room is left, the two claim buttons pinned underneath.
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         // The painted pieces shrink a little on a short phone so the drawings keep their room.
-        val k = (maxHeight / 891.dp).coerceIn(0.68f, 1f)
+        val k = ((maxHeight - 24.dp) / 891.dp).coerceIn(0.68f, 1f)
         val showDesk = maxHeight >= 700.dp
         Image(
             painter = painterResource(R.drawable.bg_result_wood),
@@ -193,6 +194,7 @@ fun ResultScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
                 .navigationBarsPadding()
                 .padding(bottom = if (showDesk) 52.dp * k else 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
