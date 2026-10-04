@@ -14,6 +14,8 @@ APK=$(ls cizim-hafiza/app/build/outputs/apk/debug/*.apk | head -1)
 echo "APK: $APK"
 
 adb wait-for-device
+adb shell wm size 1080x1920
+sleep 3
 adb shell input keyevent 82 || true
 adb install -r -t "$APK"
 # The app asks for the notification permission a few seconds after its first launch; that system dialog
@@ -100,7 +102,7 @@ d = open(sys.argv[1], 'rb').read()
 w, h, fmt = struct.unpack('<III', d[:12])
 off = 12
 ok = 0
-for (x, y) in ((540, 1678), (300, 1680), (780, 1680)):
+for (x, y) in ((540, 1352), (300, 1352), (780, 1352)):
     p = off + (y * w + x) * 4
     r, g, b = d[p], d[p + 1], d[p + 2]
     if r < 60 and 80 < g < 150 and b > 190: ok += 1
@@ -109,14 +111,10 @@ PY
 }
 for i in $(seq 1 20); do
   sleep 6
-  if [ "$(consent_visible)" = "1" ]; then echo "consent form seen"; adb shell input tap 540 1678; sleep 3; break; fi
+  if [ "$(consent_visible)" = "1" ]; then echo "consent form seen"; adb shell input tap 540 1352; sleep 3; break; fi
 done
 shot 02_main_menu_after_consent
 P=s
-adb shell wm size 1080x1920
-sleep 8
-adb shell am start -n $ACT
-sleep 6
 # Race a Friend: Create Room (top / scrolled), Join (keyboard), lobby of the bot room
 adb shell input tap 200 1140
 sleep 5
