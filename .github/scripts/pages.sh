@@ -85,10 +85,27 @@ shot 01_main_menu
 # Compose content is not exposed to uiautomator on this emulator, so taps are by position,
 # read off the main-menu screenshot. Each screen: tap, wait, screenshot, Back.
 
-# The ads consent form (UMP) opens over the main menu on a fresh install; accept it so the
-# buttons underneath can be reached (the emulator counts as an EEA device).
-adb shell input tap 540 1678
-sleep 3
+# The ads consent form (UMP) appears at an unpredictable moment on this slow emulator. Wait until its blue "Consent"
+# button is really on screen (found by colour), tap it, and only then carry on.
+consent_visible() {
+  adb exec-out screencap > "$OUT/_raw.bin"
+  python3 - "$OUT/_raw.bin" <<'PY'
+import sys, struct
+d = open(sys.argv[1], 'rb').read()
+w, h, fmt = struct.unpack('<III', d[:12])
+off = 12
+ok = 0
+for (x, y) in ((540, 1678), (300, 1680), (780, 1680)):
+    p = off + (y * w + x) * 4
+    r, g, b = d[p], d[p + 1], d[p + 2]
+    if r < 60 and 80 < g < 150 and b > 190: ok += 1
+print(1 if ok >= 2 else 0)
+PY
+}
+for i in $(seq 1 20); do
+  sleep 6
+  if [ "$(consent_visible)" = "1" ]; then echo "consent form seen"; adb shell input tap 540 1678; sleep 3; break; fi
+done
 shot 02_main_menu_after_consent
 # Race a Friend -> Join -> bot room lobby
 adb shell input tap 200 1140
