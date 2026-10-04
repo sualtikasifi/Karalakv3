@@ -473,7 +473,7 @@ internal fun GradientModeCard(
 
 /** The small "2x XP" pill on the boosted mode card: it pulses, and a star twinkles beside it. */
 @Composable
-private fun BoostBadge(multiplier: Int, modifier: Modifier = Modifier) {
+internal fun BoostBadge(multiplier: Int, modifier: Modifier = Modifier) {
     val t = rememberInfiniteTransition(label = "boostBadge")
     val pulse = t.animateFloat(
         initialValue = 0.92f,
@@ -803,7 +803,7 @@ internal fun FitText(text: String, color: Color, maxSp: Float = 12f, minSp: Floa
  * a light sheen sliding across it, the XP text written on the bar itself.
  */
 @Composable
-private fun XpBar(fraction: Float, label: String, modifier: Modifier = Modifier) {
+internal fun XpBar(fraction: Float, label: String, modifier: Modifier = Modifier) {
     // Coming home from a result screen, the bar already stands at its old value (no fill-up from empty),
     // so the spark that lands on it is what visibly moves it.
     val animated = remember { Animatable(if (com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.active.value != null) fraction.coerceIn(0f, 1f) else 0f) }
