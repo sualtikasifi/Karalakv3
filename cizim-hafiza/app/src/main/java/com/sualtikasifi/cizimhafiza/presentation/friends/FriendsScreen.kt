@@ -214,22 +214,22 @@ fun FriendsScreen(
         }
 
         // ── Code card ──
-        SceneBox(scene, 215f, 568f, 870f, 636f) {
+        SceneBox(scene, 215f, 556f, 870f, 624f) {
             Text(
                 stringResource(R.string.friends_my_code_label),
                 style = PaintedStyle(color = InkBrown, fontSize = scene.fs(52f), textAlign = TextAlign.Center)
             )
         }
-        SceneBox(scene, 215f, 640f, 870f, 708f) {
+        SceneBox(scene, 235f, 628f, 835f, 716f) {
             Text(
                 stringResource(R.string.friends_invite_reward_hint),
                 style = PaintedStyle(
-                    color = DescriptionInk, fontSize = scene.fs(32f), fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center, lineHeight = scene.fs(40f)
+                    color = DescriptionInk, fontSize = scene.fs(30f), fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center, lineHeight = scene.fs(36f)
                 )
             )
         }
-        SceneBox(scene, 270f, 735f, 815f, 830f) {
+        SceneBox(scene, 270f, 713f, 815f, 808f) {
             val code = uiState.myFriendCode
             if (code != null) {
                 Text(
