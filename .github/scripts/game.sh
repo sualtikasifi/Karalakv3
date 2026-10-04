@@ -123,7 +123,7 @@ for i in 1 2 3 4 5 6; do
   sleep 3
 done
 shot ${P}01_menu
-adb shell input tap 819 1347; sleep 6; dismiss; shot ${P}00_setup
+adb shell input tap 880 1150; sleep 6; dismiss; shot ${P}00_setup
 adb shell input tap 540 2230; sleep 5
 for i in $(seq 1 22); do
   sleep 11
