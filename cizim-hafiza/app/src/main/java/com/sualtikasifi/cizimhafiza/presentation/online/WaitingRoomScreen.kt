@@ -261,6 +261,7 @@ fun WaitingRoomScreen(
     val sceneDensity = LocalDensity.current
     val scenePxW = with(sceneDensity) { maxWidth.toPx() }
     val scenePxH = with(sceneDensity) { maxHeight.toPx() }
+    val screenHeight = maxHeight
     val sceneScale = maxOf(scenePxW / LOBBY_ART_W, scenePxH / LOBBY_ART_H)
     val sceneOffY = 0f
     fun sceneY(fraction: Float): Dp = with(sceneDensity) { (sceneOffY + LOBBY_ART_H * sceneScale * fraction).toDp() }
@@ -302,7 +303,7 @@ fun WaitingRoomScreen(
         // grid sits still inside the viewport, and this scrolls only as a
         // fallback on a short phone or a full 8-slot room — it no longer
         // sways up and down on its own the way the lazily-measured list did.
-        val compact = maxHeight < 780.dp
+        val compact = screenHeight < 780.dp
         androidx.compose.runtime.CompositionLocalProvider(LocalSlotHeight provides if (compact) 46.dp else 54.dp) {
         Column(
             modifier = Modifier

@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -105,7 +106,7 @@ fun JoinRoomScreen(
         val panelWidth = maxWidth * 0.9f
         val panelHeight = panelWidth / PanelAspect
         // With the keyboard up, the panel slides just far enough to keep the code well above it.
-        val imeBottom = with(density) { androidx.compose.foundation.layout.WindowInsets.ime.getBottom(this).toDp() }
+        val imeBottom = with(density) { androidx.compose.foundation.layout.WindowInsets.Companion.ime.getBottom(this).toDp() }
         val wellBottom = yOf(0.29f) + panelHeight * (Well2Top + WellHeight)
         val lift = if (imeBottom > 0.dp) (wellBottom + 14.dp - (maxHeight - imeBottom)).coerceAtLeast(0.dp) else 0.dp
         Box(
