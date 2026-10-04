@@ -85,7 +85,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionInk
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
+import com.sualtikasifi.cizimhafiza.presentation.common.TitleOutline
 import java.util.Locale
 import com.sualtikasifi.cizimhafiza.data.bot.BotRoomEngine
 import com.sualtikasifi.cizimhafiza.domain.model.KickedUser
@@ -340,7 +343,7 @@ fun WaitingRoomScreen(
                                 presentPlayerCount,
                                 if (teamMode) GameConstants.TEAM_ROOM_SIZE else GameConstants.MAX_ROOM_SIZE
                             ),
-                            style = PaintedStyle(color = Color(0xFF5A3A1A), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold),
+                            style = PaintedStyle(color = DescriptionInk, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold),
                             maxLines = 1
                         )
                     }
@@ -422,9 +425,7 @@ fun WaitingRoomScreen(
             modifier = Modifier.fillMaxWidth().offset(y = sceneY(0.147f) - 25.dp),
             contentAlignment = Alignment.Center
         ) {
-            val base = PaintedStyle(fontSize = 34.sp, fontWeight = FontWeight.ExtraBold)
-            Text(signTitle, style = base.copy(color = Color(0xFF5A2E0C), drawStyle = Stroke(width = 8f, join = StrokeJoin.Round)), maxLines = 1)
-            Text(signTitle, style = base.copy(color = Color.White), maxLines = 1)
+            LetteredText(signTitle, 34.sp)
         }
         Image(
             painter = painterResource(R.drawable.join_back),
@@ -507,7 +508,7 @@ private fun RoomCodeCard(roomCode: String, onInvite: () -> Unit) {
         )
         Text(
             text = stringResource(R.string.online_room_code_hint),
-            style = PaintedStyle(color = Color(0xFF5A3A1A), fontSize = 15.sp, fontWeight = FontWeight.ExtraBold),
+            style = PaintedStyle(color = DescriptionInk, fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
             maxLines = 1,
             modifier = Modifier.align(Alignment.TopCenter).offset(y = h * 0.1f)
         )
@@ -517,7 +518,7 @@ private fun RoomCodeCard(roomCode: String, onInvite: () -> Unit) {
         ) {
             Text(
                 text = roomCode,
-                style = PaintedStyle(color = Color(0xFF5A3A1A), fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 8.sp),
+                style = PaintedStyle(color = DescriptionInk, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 8.sp),
                 maxLines = 1
             )
         }
@@ -570,12 +571,8 @@ private fun LobbyButton(text: String, green: Boolean, pulse: Float, onClick: () 
 
 /** White text with a dark outline, the lettering style of every painted title. */
 @Composable
-private fun OutlinedLabel(text: String, size: androidx.compose.ui.unit.TextUnit, outline: Color = Color(0xFF5A2E0C)) {
-    val base = PaintedStyle(fontSize = size, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
-    Box(contentAlignment = Alignment.Center) {
-        Text(text, style = base.copy(color = outline, drawStyle = Stroke(width = 7f, join = StrokeJoin.Round)), maxLines = 1)
-        Text(text, style = base.copy(color = Color.White), maxLines = 1)
-    }
+private fun OutlinedLabel(text: String, size: androidx.compose.ui.unit.TextUnit, outline: Color = TitleOutline) {
+    LetteredText(text, size, outline = outline)
 }
 
 /** Shown only to someone who joined mid-round and is sitting the current one out. */
@@ -878,7 +875,7 @@ private fun TeamColumn(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.align(Alignment.CenterHorizontally).height(36.dp).aspectRatio(568f / 173f)) {
             Image(painter = painterResource(R.drawable.lobby_pill), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-            Text(title, style = PaintedStyle(color = Color(0xFF5A3A1A), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold), maxLines = 1)
+            Text(title, style = PaintedStyle(color = DescriptionInk, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold), maxLines = 1)
         }
         slots.forEach { slot ->
             PlayerSlotCell(
@@ -1063,7 +1060,7 @@ private fun EmptySlotCard(onInvite: (() -> Unit)? = null, modifier: Modifier = M
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = stringResource(R.string.online_invite_friend_slot),
-                    style = PaintedStyle(color = Color(0xFF5A3A1A), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+                    style = PaintedStyle(color = DescriptionInk, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
                     maxLines = 2
                 )
             }

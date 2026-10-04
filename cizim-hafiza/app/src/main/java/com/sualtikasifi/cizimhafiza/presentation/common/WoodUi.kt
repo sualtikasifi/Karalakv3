@@ -61,7 +61,13 @@ import androidx.compose.foundation.layout.ColumnScope
 // bg_offline is this size; the title sign is painted on it, so the title is placed by fractions of the picture.
 private const val ArtW = 841f
 private const val ArtH = 1870f
-val InkBrown = Color(0xFF5A3A1A)
+val InkBrown = Color(0xFF5A321F)
+/** Titles: white fill, dark-brown outline. */
+val TitleOutline = Color(0xFF5A2815)
+/** Descriptions and body lines laid over paper. */
+val DescriptionInk = Color(0xFF5A321F)
+/** Orange lettering for the white button. */
+val ButtonOrange = Color(0xFFF47721)
 
 /**
  * The lettering of every painted screen: the app's display face (Baloo 2) with the font's built-in top/bottom padding
@@ -96,6 +102,50 @@ fun PaintedStyle(
 )
 
 /**
+ * The game's lettering: Baloo 2 ExtraBold, [fill] over a rounded [outline] (about 5 px on a 1080-px screen at title size,
+ * thinner for smaller text) and a soft drop shadow. With no outline (orange on a white button) a warm shadow does the job.
+ */
+@Composable
+fun LetteredText(
+    text: String,
+    size: androidx.compose.ui.unit.TextUnit,
+    modifier: Modifier = Modifier,
+    fill: Color = Color.White,
+    outline: Color? = TitleOutline,
+    weight: FontWeight = FontWeight.ExtraBold,
+    maxLines: Int = 1
+) {
+    val density = LocalDensity.current
+    val strokeDp = (size.value * 0.11f).coerceIn(1.3f, 4.2f)
+    val base = PaintedStyle(fontSize = size, fontWeight = weight, textAlign = TextAlign.Center)
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        if (outline != null) {
+            Text(
+                text,
+                style = base.copy(
+                    color = outline,
+                    drawStyle = Stroke(width = with(density) { strokeDp.dp.toPx() }, join = StrokeJoin.Round),
+                    shadow = androidx.compose.ui.graphics.Shadow(Color(0x66000000), androidx.compose.ui.geometry.Offset(0f, with(density) { 2.dp.toPx() }), with(density) { 3.dp.toPx() })
+                ),
+                maxLines = maxLines
+            )
+        }
+        Text(
+            text,
+            style = base.copy(
+                color = fill,
+                shadow = if (outline == null) androidx.compose.ui.graphics.Shadow(Color(0x66A04000), androidx.compose.ui.geometry.Offset(0f, with(density) { 1.5.dp.toPx() }), with(density) { 2.dp.toPx() }) else null
+            ),
+            maxLines = maxLines
+        )
+    }
+}
+
+/** Body text on paper: Baloo 2 SemiBold in the calm brown. */
+fun DescriptionStyle(size: androidx.compose.ui.unit.TextUnit, lineHeight: androidx.compose.ui.unit.TextUnit = androidx.compose.ui.unit.TextUnit.Unspecified): TextStyle =
+    PaintedStyle(color = DescriptionInk, fontSize = size, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, lineHeight = lineHeight)
+
+/**
  * The workshop scene shared by the offline and create-room screens: the painted background with its hanging sign
  * carrying [title], a scrolling stack of wooden sections in the middle, and one action pinned below.
  */
@@ -128,9 +178,7 @@ fun WoodScreen(
             modifier = Modifier.offset(x = signCentreX - len(300f), y = yOf(0.172f) - len(34f)).width(len(600f)),
             contentAlignment = Alignment.Center
         ) {
-            val base = PaintedStyle(fontSize = with(density) { (46f * s).toSp() }, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
-            Text(title, style = base.copy(color = Color(0xFF5A2E0C), drawStyle = Stroke(width = with(density) { 8f * s }, join = StrokeJoin.Round)), maxLines = 1)
-            Text(title, style = base.copy(color = Color.White), maxLines = 1)
+            LetteredText(title, with(density) { (46f * s).toSp() })
         }
 
         val startHeight = 92.dp
@@ -293,9 +341,7 @@ fun StartButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
     ) {
         Image(painter = painterResource(R.drawable.offline_start), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-        val base = PaintedStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
-        Text(text, style = base.copy(color = Color(0xFF0B4F5C), drawStyle = Stroke(width = 8f, join = StrokeJoin.Round)), maxLines = 1)
-        Text(text, style = base.copy(color = Color.White), maxLines = 1)
+        LetteredText(text, 30.sp, outline = Color(0xFF0B4F5C))
     }
 }
 

@@ -78,6 +78,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.CurrentPositionGlow
 import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
@@ -425,7 +426,7 @@ private fun LevelPanel(level: LevelNodeState, worldIconRes: Int, countdown: Int?
                 )
                 Text(
                     text = stringResource(R.string.level_panel_subtitle),
-                    style = PaintedStyle(color = Color(0xFF6B4A2A), fontSize = 12.sp, lineHeight = 15.sp),
+                    style = PaintedStyle(color = Color(0xFF5A321F), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, lineHeight = 15.sp),
                     maxLines = 2
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -463,15 +464,11 @@ private fun PlayButton(countdown: Int?, onClick: () -> Unit) {
         // Each number lands big and settles, like the lobby's start count.
         val pop = remember(countdown) { Animatable(if (countdown != null) 1.6f else 1f) }
         LaunchedEffect(countdown) { if (countdown != null) pop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 300f)) }
-        Text(
+        LetteredText(
             text = countdown?.toString() ?: stringResource(R.string.level_play),
-            modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value },
-            style = PaintedStyle(
-                color = Color.White,
-                fontSize = if (countdown != null) 30.sp else 22.sp,
-                fontWeight = FontWeight.ExtraBold,
-                shadow = androidx.compose.ui.graphics.Shadow(Color(0xFF14540F), androidx.compose.ui.geometry.Offset(0f, 3f), 3f)
-            )
+            size = if (countdown != null) 30.sp else 22.sp,
+            outline = Color(0xFF14540F),
+            modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value }
         )
     }
 }

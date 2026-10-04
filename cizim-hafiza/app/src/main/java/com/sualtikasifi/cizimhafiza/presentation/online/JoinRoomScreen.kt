@@ -47,13 +47,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.util.asString
 
 // bg_join is this size; its hanging sign is painted on it, so the title is placed by fractions of the picture.
 private const val ArtW = 841f
 private const val ArtH = 1870f
-private val Ink = Color(0xFF5A3A1A)
+private val Ink = Color(0xFF5A321F)
 
 // The form panel (join_panel) has its two input wells painted in. These are where they sit, as fractions of the picture.
 private const val PanelAspect = 1936f / 1336f
@@ -96,10 +97,7 @@ fun JoinRoomScreen(
             modifier = Modifier.offset(x = signCentreX - len(230f), y = yOf(0.197f) - len(32f)).width(len(460f)),
             contentAlignment = Alignment.Center
         ) {
-            val base = PaintedStyle(fontSize = with(density) { (46f * s).toSp() }, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
-            val title = stringResource(R.string.online_join_room)
-            Text(title, style = base.copy(color = Color(0xFF5A2E0C), drawStyle = Stroke(width = with(density) { 8f * s }, join = StrokeJoin.Round)), maxLines = 1)
-            Text(title, style = base.copy(color = Color.White), maxLines = 1)
+            LetteredText(stringResource(R.string.online_join_room), with(density) { (46f * s).toSp() })
         }
 
         // The form panel.
@@ -235,8 +233,6 @@ private fun PaintedButton(text: String, onClick: () -> Unit) {
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
     ) {
         Image(painter = painterResource(R.drawable.join_btn), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-        val base = PaintedStyle(fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-        Text(text, style = base.copy(color = Color(0xFF8A3A00), drawStyle = Stroke(width = 8f, join = StrokeJoin.Round)), maxLines = 1)
-        Text(text, style = base.copy(color = Color.White), maxLines = 1)
+        LetteredText(text, 26.sp, outline = Color(0xFF8A3A00))
     }
 }
