@@ -163,3 +163,5 @@ shot ${P}10_worlds
 adb shell input tap 540 790
 sleep 6
 shot ${P}11_levelmap
+adb logcat -d | grep -E "FATAL|AndroidRuntime|ANR in|Process .* has died|am_proc_died|am_crash" | head -60 > "$OUT/crash_audit.txt"
+adb logcat -d -s ActivityManager:I | grep -i "cizimhafiza" | head -40 >> "$OUT/crash_audit.txt"
