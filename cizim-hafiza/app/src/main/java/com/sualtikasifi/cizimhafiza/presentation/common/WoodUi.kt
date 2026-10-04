@@ -64,6 +64,38 @@ private const val ArtH = 1870f
 val InkBrown = Color(0xFF5A3A1A)
 
 /**
+ * The lettering of every painted screen: the app's display face (Baloo 2) with the font's built-in top/bottom padding
+ * removed and the line height set, so a label sits truly in the middle of whatever it is laid over.
+ */
+fun PaintedStyle(
+    color: Color = Color.Unspecified,
+    fontSize: androidx.compose.ui.unit.TextUnit = androidx.compose.ui.unit.TextUnit.Unspecified,
+    fontWeight: FontWeight? = null,
+    textAlign: TextAlign = TextAlign.Unspecified,
+    lineHeight: androidx.compose.ui.unit.TextUnit = androidx.compose.ui.unit.TextUnit.Unspecified,
+    letterSpacing: androidx.compose.ui.unit.TextUnit = androidx.compose.ui.unit.TextUnit.Unspecified,
+    shadow: androidx.compose.ui.graphics.Shadow? = null
+): TextStyle = TextStyle(
+    color = color,
+    fontSize = fontSize,
+    fontWeight = fontWeight ?: FontWeight.ExtraBold,
+    fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
+    textAlign = textAlign,
+    letterSpacing = letterSpacing,
+    shadow = shadow,
+    lineHeight = when {
+        lineHeight != androidx.compose.ui.unit.TextUnit.Unspecified -> lineHeight
+        fontSize != androidx.compose.ui.unit.TextUnit.Unspecified -> fontSize * 1.2f
+        else -> androidx.compose.ui.unit.TextUnit.Unspecified
+    },
+    platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+    lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+        alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+        trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.None
+    )
+)
+
+/**
  * The workshop scene shared by the offline and create-room screens: the painted background with its hanging sign
  * carrying [title], a scrolling stack of wooden sections in the middle, and one action pinned below.
  */
@@ -96,7 +128,7 @@ fun WoodScreen(
             modifier = Modifier.offset(x = signCentreX - len(300f), y = yOf(0.172f) - len(34f)).width(len(600f)),
             contentAlignment = Alignment.Center
         ) {
-            val base = TextStyle(fontSize = with(density) { (46f * s).toSp() }, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+            val base = PaintedStyle(fontSize = with(density) { (46f * s).toSp() }, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
             Text(title, style = base.copy(color = Color(0xFF5A2E0C), drawStyle = Stroke(width = with(density) { 8f * s }, join = StrokeJoin.Round)), maxLines = 1)
             Text(title, style = base.copy(color = Color.White), maxLines = 1)
         }
@@ -175,7 +207,7 @@ fun WoodSection(title: String, content: @Composable () -> Unit) {
     Box(modifier = Modifier.fillMaxWidth()) {
         NinePatch(
             res = R.drawable.offline_panel,
-            slicePx = 46,
+            slicePx = 92,
             edge = 17.dp,
             modifier = Modifier.fillMaxWidth().padding(top = ribbonHeight / 2)
         ) {
@@ -193,9 +225,18 @@ fun WoodSection(title: String, content: @Composable () -> Unit) {
             )
             Text(
                 text = title,
-                style = TextStyle(color = InkBrown, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+                style = PaintedStyle(
+                    color = InkBrown,
+                    fontSize = when {
+                        title.length <= 26 -> 16.sp
+                        title.length <= 32 -> 14.sp
+                        else -> 12.5.sp
+                    },
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center
+                ),
                 maxLines = 1,
-                modifier = Modifier.padding(horizontal = 30.dp)
+                modifier = Modifier.padding(horizontal = 26.dp)
             )
         }
     }
@@ -216,7 +257,7 @@ fun ChoicePill(
     val scale by animateFloatAsState(if (selected) 1.04f else 1f, label = "pill")
     NinePatch(
         res = if (selected) R.drawable.offline_pill_on else R.drawable.offline_pill_off,
-        slicePx = 46,
+        slicePx = 90,
         edge = height / 2,
         modifier = modifier
             .height(height)
@@ -225,7 +266,7 @@ fun ChoicePill(
     ) {
         Text(
             text = label,
-            style = TextStyle(
+            style = PaintedStyle(
                 color = if (selected) Color.White else InkBrown,
                 fontSize = textSize,
                 fontWeight = FontWeight.ExtraBold,
@@ -247,12 +288,12 @@ fun StartButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .aspectRatio(509f / 123f)
+            .aspectRatio(1015f / 246f)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
     ) {
         Image(painter = painterResource(R.drawable.offline_start), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-        val base = TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
+        val base = PaintedStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
         Text(text, style = base.copy(color = Color(0xFF0B4F5C), drawStyle = Stroke(width = 8f, join = StrokeJoin.Round)), maxLines = 1)
         Text(text, style = base.copy(color = Color.White), maxLines = 1)
     }

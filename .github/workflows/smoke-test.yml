@@ -25,6 +25,7 @@ on:
           - createroom.sh
           - join.sh
           - lobby.sh
+          - pages.sh
   pull_request:
     paths:
       - ".github/workflows/smoke-test.yml"

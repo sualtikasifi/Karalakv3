@@ -78,6 +78,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.CurrentPositionGlow
 import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
@@ -329,7 +330,7 @@ private fun LevelCoin(level: LevelNodeState, isOpen: Boolean, onClick: () -> Uni
             if (level.unlocked) {
                 Text(
                     text = level.levelIndex.toString(),
-                    style = TextStyle(
+                    style = PaintedStyle(
                         color = Color.White,
                         fontSize = 26.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -344,7 +345,7 @@ private fun LevelCoin(level: LevelNodeState, isOpen: Boolean, onClick: () -> Uni
             // The stage number sits on a small plate under the coin, so a locked stop still says which one it is.
             Text(
                 text = level.levelIndex.toString(),
-                style = TextStyle(color = Color(0xFFEAF0F7), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold),
+                style = PaintedStyle(color = Color(0xFFEAF0F7), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .offset(y = 2.dp)
@@ -419,12 +420,12 @@ private fun LevelPanel(level: LevelNodeState, worldIconRes: Int, countdown: Int?
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.level_panel_title, level.levelIndex),
-                    style = TextStyle(color = Color(0xFF4A2A10), fontSize = 20.sp, fontWeight = FontWeight.ExtraBold),
+                    style = PaintedStyle(color = Color(0xFF4A2A10), fontSize = 20.sp, fontWeight = FontWeight.ExtraBold),
                     maxLines = 1
                 )
                 Text(
                     text = stringResource(R.string.level_panel_subtitle),
-                    style = TextStyle(color = Color(0xFF6B4A2A), fontSize = 12.sp, lineHeight = 15.sp),
+                    style = PaintedStyle(color = Color(0xFF6B4A2A), fontSize = 12.sp, lineHeight = 15.sp),
                     maxLines = 2
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -465,7 +466,7 @@ private fun PlayButton(countdown: Int?, onClick: () -> Unit) {
         Text(
             text = countdown?.toString() ?: stringResource(R.string.level_play),
             modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value },
-            style = TextStyle(
+            style = PaintedStyle(
                 color = Color.White,
                 fontSize = if (countdown != null) 30.sp else 22.sp,
                 fontWeight = FontWeight.ExtraBold,

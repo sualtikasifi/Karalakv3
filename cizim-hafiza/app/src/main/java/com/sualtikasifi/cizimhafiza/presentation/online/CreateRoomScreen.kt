@@ -49,7 +49,7 @@ fun CreateRoomScreen(
         onBack = onBack,
         action = { modifier ->
             if (uiState.isCreating) {
-                Box(modifier = modifier.aspectRatio(509f / 123f), contentAlignment = Alignment.Center) {
+                Box(modifier = modifier.aspectRatio(1015f / 246f), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(modifier = Modifier.size(36.dp))
                 }
             } else {
