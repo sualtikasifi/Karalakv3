@@ -295,6 +295,100 @@ fun WoodSection(title: String, content: @Composable () -> Unit) {
 }
 
 
+/**
+ * One wooden panel holding several labelled choice rows — the compact form of the setup screens, so everything fits
+ * the screen at once instead of being a stack of separate framed sections.
+ */
+@Composable
+fun CompactPanel(content: @Composable ColumnScope.() -> Unit) {
+    NinePatch(
+        res = R.drawable.offline_panel,
+        slicePx = 92,
+        edge = 17.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 14.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            content = content
+        )
+    }
+}
+
+/** A small left-aligned caption above a row of choices. */
+@Composable
+fun PanelRow(label: String, content: @Composable () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            style = PaintedStyle(color = InkBrown, fontSize = 13.sp, textAlign = TextAlign.Start),
+            maxLines = 1,
+            modifier = Modifier.padding(start = 4.dp, bottom = 3.dp)
+        )
+        content()
+    }
+}
+
+/** A single-line text field painted as a cream pill. */
+@Composable
+fun PillField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default
+) {
+    NinePatch(
+        res = R.drawable.offline_pill_off,
+        slicePx = 90,
+        edge = 20.dp,
+        modifier = modifier.fillMaxWidth().height(40.dp).graphicsLayer { alpha = if (enabled) 1f else 0.7f }
+    ) {
+        androidx.compose.foundation.text.BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            enabled = enabled,
+            singleLine = true,
+            textStyle = PaintedStyle(color = InkBrown, fontSize = 16.sp, textAlign = TextAlign.Start),
+            keyboardOptions = keyboardOptions,
+            cursorBrush = androidx.compose.ui.graphics.SolidColor(ButtonOrange),
+            modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(horizontal = 18.dp)
+        )
+    }
+}
+
+/** Choices laid out [columns] to a row, every cell the same width. */
+@Composable
+fun <T> ChoiceGrid(
+    items: List<T>,
+    columns: Int,
+    pillHeight: Dp,
+    textSize: androidx.compose.ui.unit.TextUnit,
+    label: @Composable (T) -> String,
+    isSelected: (T) -> Boolean,
+    onSelect: (T) -> Unit,
+    maxLines: Int = 1
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        items.chunked(columns).forEach { rowItems ->
+            Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.fillMaxWidth()) {
+                rowItems.forEach { item ->
+                    ChoicePill(
+                        label = label(item),
+                        selected = isSelected(item),
+                        onClick = { onSelect(item) },
+                        modifier = Modifier.weight(1f),
+                        height = pillHeight,
+                        textSize = textSize,
+                        maxLines = maxLines
+                    )
+                }
+                repeat(columns - rowItems.size) { Spacer(modifier = Modifier.weight(1f)) }
+            }
+        }
+    }
+}
+
 /** An option: cream when free, orange when chosen, and a little larger while chosen. */
 @Composable
 fun ChoicePill(

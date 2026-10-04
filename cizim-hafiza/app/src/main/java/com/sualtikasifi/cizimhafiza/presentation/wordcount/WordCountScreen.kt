@@ -17,10 +17,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.Difficulty
 import com.sualtikasifi.cizimhafiza.domain.model.GameMode
-import com.sualtikasifi.cizimhafiza.presentation.common.ChoicePill
 import com.sualtikasifi.cizimhafiza.presentation.common.StartButton
 import com.sualtikasifi.cizimhafiza.presentation.common.WoodScreen
-import com.sualtikasifi.cizimhafiza.presentation.common.WoodSection
+import com.sualtikasifi.cizimhafiza.presentation.common.CompactPanel
+import com.sualtikasifi.cizimhafiza.presentation.common.ChoiceGrid
+import com.sualtikasifi.cizimhafiza.presentation.common.PanelRow
 
 @Composable
 fun WordCountScreen(
@@ -41,81 +42,52 @@ fun WordCountScreen(
             )
         }
     ) {
-        WoodSection(stringResource(R.string.select_word_count)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                uiState.availableCounts.forEach { count ->
-                    ChoicePill(
-                        label = count.toString(),
-                        selected = count == uiState.selectedCount,
-                        onClick = { viewModel.selectCount(count) },
-                        modifier = Modifier.weight(1f),
-                        textSize = 20.sp
-                    )
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        WoodSection(stringResource(R.string.select_mode)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                GameMode.entries.forEach { mode ->
-                    ChoicePill(
-                        label = "${modeEmoji(mode)}  ${modeLabel(mode)}",
-                        selected = uiState.selectedMode == mode,
-                        onClick = { viewModel.selectMode(mode) },
-                        modifier = Modifier.weight(1f),
-                        textSize = 16.sp
-                    )
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        WoodSection(stringResource(R.string.select_category)) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                uiState.categories.chunked(3).forEach { rowCategories ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                        rowCategories.forEach { category ->
-                            ChoicePill(
-                                label = "${categoryEmoji(category)}\n$category",
-                                selected = uiState.selectedCategory == category,
-                                onClick = { viewModel.selectCategory(category) },
-                                modifier = Modifier.weight(1f),
-                                height = 64.dp,
-                                textSize = 13.sp,
-                                maxLines = 2
-                            )
-                        }
-                        repeat(3 - rowCategories.size) { Spacer(modifier = Modifier.weight(1f)) }
-                    }
-                }
-                ChoicePill(
-                    label = "${categoryEmoji(null)}  ${stringResource(R.string.all_categories)}",
-                    selected = uiState.selectedCategory == null,
-                    onClick = { viewModel.selectCategory(null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    textSize = 16.sp
+        CompactPanel {
+            PanelRow(stringResource(R.string.select_word_count)) {
+                ChoiceGrid(
+                    items = uiState.availableCounts,
+                    columns = uiState.availableCounts.size.coerceIn(1, 6),
+                    pillHeight = 38.dp,
+                    textSize = 18.sp,
+                    label = { it.toString() },
+                    isSelected = { it == uiState.selectedCount },
+                    onSelect = viewModel::selectCount
                 )
             }
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        WoodSection(stringResource(R.string.select_difficulty)) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                    Difficulty.entries.forEach { difficulty ->
-                        ChoicePill(
-                            label = difficultyLabel(difficulty),
-                            selected = uiState.selectedDifficulty == difficulty,
-                            onClick = { viewModel.selectDifficulty(difficulty) },
-                            modifier = Modifier.weight(1f),
-                            textSize = 16.sp
-                        )
-                    }
-                }
-                ChoicePill(
-                    label = stringResource(R.string.all_difficulties),
-                    selected = uiState.selectedDifficulty == null,
-                    onClick = { viewModel.selectDifficulty(null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    textSize = 16.sp
+            PanelRow(stringResource(R.string.select_mode)) {
+                ChoiceGrid(
+                    items = GameMode.entries.toList(),
+                    columns = GameMode.entries.size.coerceIn(1, 3),
+                    pillHeight = 40.dp,
+                    textSize = 14.sp,
+                    label = { "${modeEmoji(it)}  ${modeLabel(it)}" },
+                    isSelected = { uiState.selectedMode == it },
+                    onSelect = viewModel::selectMode,
+                    maxLines = 2
+                )
+            }
+            PanelRow(stringResource(R.string.select_category)) {
+                ChoiceGrid(
+                    items = uiState.categories.toList<String?>() + listOf<String?>(null),
+                    columns = 4,
+                    pillHeight = 40.dp,
+                    textSize = 12.sp,
+                    label = { "${categoryEmoji(it)} ${it ?: stringResource(R.string.all_categories)}" },
+                    isSelected = { uiState.selectedCategory == it },
+                    onSelect = viewModel::selectCategory,
+                    maxLines = 2
+                )
+            }
+            PanelRow(stringResource(R.string.select_difficulty)) {
+                ChoiceGrid(
+                    items = Difficulty.entries.toList<Difficulty?>() + listOf<Difficulty?>(null),
+                    columns = 4,
+                    pillHeight = 38.dp,
+                    textSize = 13.sp,
+                    label = { if (it == null) stringResource(R.string.all_difficulties) else difficultyLabel(it) },
+                    isSelected = { uiState.selectedDifficulty == it },
+                    onSelect = viewModel::selectDifficulty,
+                    maxLines = 2
                 )
             }
         }
