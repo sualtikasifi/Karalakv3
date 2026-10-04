@@ -7,6 +7,30 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.statusBarsPadding
+import com.sualtikasifi.cizimhafiza.presentation.common.ButtonOrange
+import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionInk
+import com.sualtikasifi.cizimhafiza.presentation.common.InkBrown
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.size
@@ -64,12 +88,13 @@ import com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance
 import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
 import kotlinx.coroutines.delay
 
+private const val ArtW = 1080f
+private const val ArtH = 2401f
+private val CardDrawables = intArrayOf(R.drawable.ach_card_1, R.drawable.ach_card_2, R.drawable.ach_card_3, R.drawable.ach_card_4)
+
 /**
- * Purely the badge catalog now — rank/level, the pen and frame pickers moved
- * to the main menu's profile card (see MainMenuScreen.LevelBadgeCard), and
- * the raw session stats/recent-games list were dropped entirely rather than
- * kept as a second section, so this screen is unambiguously "the achievements
- * page" the "Başarımlar" tile promises.
+ * The badge catalog on the painted trophy-room scene: a hanging sign for the title, a progress panel and a grid of
+ * painted cards. The grid is long by nature (101 badges), so it scrolls under the sign and melts away at its top edge.
  */
 @Composable
 fun AchievementsScreen(
@@ -78,120 +103,164 @@ fun AchievementsScreen(
 ) {
     val achievements by viewModel.achievements.collectAsState()
     val unlockedCount = achievements.count { it.unlocked }
-    // Tapping a chip explains what it takes to earn it — before this,
-    // nothing in the UI ever spelled out an achievement's condition beyond
-    // the small print on the card itself, easy to miss among 101 of them.
+    // Tapping a chip explains what it takes to earn it.
     var selectedAchievement by remember { mutableStateOf<AchievementUiItem?>(null) }
 
-    // No title bar: the back button floats directly on the page's own
-    // background instead of sitting in a separate, differently-colored strip.
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .screenBackground()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp),
-                // Clears the floating back button (see ScreenTopActions).
-                contentPadding = PaddingValues(top = TopActionsClearance, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                item {
-                    AchievementProgressHeader(
-                        unlockedCount = unlockedCount,
-                        total = achievements.size,
-                        modifier = Modifier.padding(bottom = 4.dp)
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val density = LocalDensity.current
+        val widthPx = with(density) { maxWidth.toPx() }
+        val heightPx = with(density) { maxHeight.toPx() }
+        val sc = maxOf(widthPx / ArtW, heightPx / ArtH)
+        val offX = (widthPx - ArtW * sc) / 2f
+        val offY = (heightPx - ArtH * sc) / 2f
+        fun yOf(px: Float): Dp = with(density) { (offY + px * sc).toDp() }
+        fun len(px: Float): Dp = with(density) { (px * sc).toDp() }
+
+        Image(
+            painter = painterResource(R.drawable.bg_achievements),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // The cards scroll between the sign and the bottom edge.
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = yOf(500f))
+                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                .drawWithContent {
+                    drawContent()
+                    val fade = 26.dp.toPx().coerceAtMost(size.height)
+                    drawRect(
+                        brush = Brush.verticalGradient(colorStops = arrayOf(0f to Color.Transparent, (fade / size.height) to Color.Black, 1f to Color.Black)),
+                        blendMode = BlendMode.DstIn
                     )
-                }
-
-                items(achievements.chunked(3)) { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        row.forEach { item ->
-                            AchievementChip(
-                                item = item,
-                                onClick = { if (item.unlocked && !item.claimed) viewModel.claim(item.achievement) else selectedAchievement = item },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                        // Pad the last, possibly-shorter row so its chips stay
-                        // the same width as full rows instead of stretching.
-                        repeat(3 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
+                },
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item {
+                AchievementProgressHeader(unlockedCount = unlockedCount, total = achievements.size)
+            }
+            itemsIndexed(achievements.chunked(3)) { rowIndex, row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    row.forEachIndexed { col, item ->
+                        AchievementChip(
+                            item = item,
+                            variant = (rowIndex * 3 + col + rowIndex) % CardDrawables.size,
+                            onClick = { if (item.unlocked && !item.claimed) viewModel.claim(item.achievement) else selectedAchievement = item },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
+                    repeat(3 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
                 }
             }
+        }
 
-            ScreenTopActions(
-                onBack = onBack,
-                title = stringResource(R.string.menu_achievements),
-                modifier = Modifier.align(Alignment.TopStart)
+        // Hanging sign with the title.
+        val signWidth = maxWidth * 0.66f
+        val signHeight = signWidth * (507f / 1201f)
+        Box(
+            modifier = Modifier.align(Alignment.TopCenter).offset(y = yOf(120f)).width(signWidth).height(signHeight),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Image(
+                painter = painterResource(R.drawable.ach_sign),
+                contentDescription = null,
+                contentScale = ContentScale.FillBounds,
+                modifier = Modifier.fillMaxSize()
             )
-
-            selectedAchievement?.let { item ->
-                AchievementDetailDialog(
-                    item = item,
-                    onClaim = {
-                        viewModel.claim(item.achievement)
-                        selectedAchievement = null
-                    },
-                    onDismiss = { selectedAchievement = null }
-                )
+            Box(
+                modifier = Modifier.fillMaxWidth().offset(y = signHeight * 0.30f).height(signHeight * 0.36f),
+                contentAlignment = Alignment.Center
+            ) {
+                LetteredText(stringResource(R.string.menu_achievements), (len(64f).value).sp)
             }
+        }
+
+        // The painted back button.
+        val backInteraction = remember { MutableInteractionSource() }
+        Image(
+            painter = painterResource(R.drawable.join_back),
+            contentDescription = stringResource(R.string.cd_back),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(start = 16.dp, top = 12.dp)
+                .size(56.dp)
+                .clickable(interactionSource = backInteraction, indication = null, onClick = onBack)
+        )
+
+        selectedAchievement?.let { item ->
+            AchievementDetailDialog(
+                item = item,
+                onClaim = {
+                    viewModel.claim(item.achievement)
+                    selectedAchievement = null
+                },
+                onDismiss = { selectedAchievement = null }
+            )
         }
     }
 }
 
-/**
- * The catalog's progress line, given a card of its own. It used to be a lone
- * muted sentence floating level with the back button — with 101 chips
- * scrolling under it, the one number that says how far along you are read as
- * a caption on the first row rather than as the page's own summary.
- */
+/** The catalog's summary: trophy, how many are open, the percentage and a progress bar, on a painted panel. */
 @Composable
 private fun AchievementProgressHeader(unlockedCount: Int, total: Int, modifier: Modifier = Modifier) {
     val fraction = if (total > 0) unlockedCount.toFloat() / total else 0f
-    WarmCard(corner = 24.dp, face = AppTheme.tokens.cardWarm, raise = 7.dp, modifier = modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp)) {
+    NinePatch(
+        res = R.drawable.ach_panel,
+        slicePx = 150,
+        edge = 34.dp,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 30.dp, vertical = 20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(46.dp)
-                        .background(AppTheme.tokens.gold.copy(alpha = 0.18f), CircleShape)
-                        .border(2.dp, AppTheme.tokens.gold.copy(alpha = 0.55f), CircleShape)
+                        .size(44.dp)
+                        .background(Color(0xFFFFE9B0), CircleShape)
+                        .border(2.dp, Color(0xFFE0A030), CircleShape)
                 ) {
-                    Text(text = "\uD83C\uDFC6", style = MaterialTheme.typography.titleLarge)
+                    Text(text = "\uD83C\uDFC6", style = PaintedStyle(fontSize = 22.sp, textAlign = TextAlign.Center))
                 }
-                Spacer(modifier = Modifier.size(14.dp))
+                Spacer(modifier = Modifier.size(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.achievements_progress_count_format, unlockedCount, total),
-                        style = MaterialTheme.typography.headlineSmall
+                        style = PaintedStyle(color = InkBrown, fontSize = 24.sp),
+                        maxLines = 1
                     )
                     Text(
                         text = stringResource(R.string.achievements_progress_caption),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = PaintedStyle(color = DescriptionInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
+                        maxLines = 1
                     )
                 }
-                TintedBadge(
-                    text = stringResource(R.string.achievements_progress_percent, (fraction * 100).toInt()),
-                    container = AppTheme.tokens.gold.copy(alpha = 0.18f),
-                    content = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .background(Brush.verticalGradient(listOf(Color(0xFFFFA64D), ButtonOrange)), PillShape)
+                        .border(1.5.dp, Color(0xFFB04A0E), PillShape)
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    LetteredText(stringResource(R.string.achievements_progress_percent, (fraction * 100).toInt()), 16.sp)
+                }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(10.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, PillShape)
+                    .height(12.dp)
+                    .background(Color(0xFFE2CDAA), PillShape)
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(fraction)
-                        .height(10.dp)
-                        .background(AppTheme.tokens.gold, PillShape)
+                        .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                        .height(12.dp)
+                        .background(Brush.verticalGradient(listOf(Color(0xFFFFD04D), Color(0xFFF5A300))), PillShape)
                 )
             }
         }
@@ -348,6 +417,7 @@ private fun rewardColor(achievement: Achievement): Color = when (achievement.rew
 @Composable
 private fun AchievementChip(
     item: AchievementUiItem,
+    variant: Int,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -381,58 +451,45 @@ private fun AchievementChip(
     // player's finger read as the tile "changing shape". The effects are the flash, ring and pill.
     val bounce = 0f
 
-    val borderColor = when {
-        item.claimed -> AppTheme.tokens.success
-        claimable -> AppTheme.tokens.gold.copy(alpha = 0.45f + 0.55f * pulse)
-        else -> MaterialTheme.colorScheme.outline
-    }
-    val face = when {
-        item.claimed -> AppTheme.tokens.successContainer
-        claimable -> lerp(AppTheme.tokens.cardWarm, Color(0xFFFFE08A), 0.75f * pulse)
-        else -> AppTheme.tokens.cardWarm
+    val tint = when {
+        claimable -> ColorFilter.tint(Color(0xFFFFD84D).copy(alpha = 0.55f * pulse), BlendMode.SrcAtop)
+        !item.unlocked -> ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0.55f) })
+        else -> null
     }
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        // RaisedCard, not a flat Material one: 101 flat white squares on the
-        // textured page read as cut-out holes in the artwork rather than as
-        // chips sitting on it.
-        WarmCard(
-            onClick = onClick,
-            corner = 20.dp,
-            face = face,
-            border = borderColor,
+        NinePatch(
+            res = CardDrawables[variant],
+            slicePx = 120,
+            edge = 26.dp,
+            tint = tint,
             modifier = Modifier
                 .fillMaxWidth()
+                .height(128.dp)
                 .graphicsLayer {
-                    val s = 1f + 0.035f * pulse + bounce
-                    scaleX = s
-                    scaleY = s
+                    val sc = 1f + 0.035f * pulse + bounce
+                    scaleX = sc
+                    scaleY = sc
                 }
-                .alpha(if (item.unlocked) 1f else 0.85f)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
         ) {
-            // Fixed height + both axes centered: titles run one or two lines, so
-            // without this the chips in a row ended up different heights with
-            // their emoji/label sitting at different offsets instead of centered.
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(126.dp)
-                    .padding(horizontal = 6.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxSize().padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 13.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.SpaceEvenly
             ) {
-                Text(text = item.achievement.emoji, style = MaterialTheme.typography.headlineSmall)
-                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = item.achievement.emoji,
+                    style = PaintedStyle(fontSize = 26.sp, textAlign = TextAlign.Center),
+                    modifier = Modifier.alpha(if (item.unlocked) 1f else 0.6f)
+                )
                 Text(
                     text = stringResource(item.achievement.titleRes),
-                    style = MaterialTheme.typography.labelSmall,
-                    textAlign = TextAlign.Center,
+                    style = PaintedStyle(color = InkBrown, fontSize = 12.sp, textAlign = TextAlign.Center, lineHeight = 13.sp),
                     maxLines = 2,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(2.dp))
-                // Status line: how close (locked), a call to action (earned),
-                // or a check (collected).
+                // Status line: how close (locked), a call to action (earned), or a check (collected).
                 when {
                     !item.unlocked -> Text(
                         text = stringResource(
@@ -440,30 +497,20 @@ private fun AchievementChip(
                             item.currentValue.coerceAtMost(item.achievement.target),
                             item.achievement.target
                         ),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = PaintedStyle(color = DescriptionInk, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
+                        maxLines = 1
                     )
                     claimable -> Text(
                         text = stringResource(R.string.achievement_claim_button),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFFB8740A)
+                        style = PaintedStyle(color = Color(0xFFB8740A), fontSize = 12.sp, textAlign = TextAlign.Center),
+                        maxLines = 1
                     )
                     else -> Text(
                         text = "✓",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = AppTheme.tokens.success
+                        style = PaintedStyle(color = AppTheme.tokens.success, fontSize = 15.sp, textAlign = TextAlign.Center)
                     )
                 }
-                // Reward line on EVERY chip, so what each one pays is never a
-                // mystery — gold in yellow, XP in the accent colour.
-                Text(
-                    text = rewardText(item.achievement),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = rewardColor(item.achievement)
-                )
+                RewardPill(item.achievement)
             }
         }
         if (burst.value > 0f) {
@@ -494,6 +541,25 @@ private fun AchievementChip(
                     .alpha(1f - androidx.compose.animation.core.FastOutSlowInEasing.transform(((p - 0.3f) / 0.7f).coerceIn(0f, 1f)))
             )
         }
+    }
+}
+
+/** What a badge pays: blue for XP, orange for gold. */
+@Composable
+private fun RewardPill(achievement: Achievement) {
+    val gold = achievement.rewardType == AchievementRewardType.GOLD
+    val top = if (gold) Color(0xFFFFA64D) else Color(0xFF4CB3FF)
+    val bottom = if (gold) ButtonOrange else Color(0xFF1B7FE0)
+    val edge = if (gold) Color(0xFFB04A0E) else Color(0xFF0E4FA0)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .height(20.dp)
+            .background(Brush.verticalGradient(listOf(top, bottom)), PillShape)
+            .border(1.2.dp, edge, PillShape)
+            .padding(horizontal = 8.dp)
+    ) {
+        LetteredText(rewardText(achievement), 11.sp, outline = edge)
     }
 }
 
