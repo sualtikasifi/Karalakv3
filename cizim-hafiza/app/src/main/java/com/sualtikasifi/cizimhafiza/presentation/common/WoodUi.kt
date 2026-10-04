@@ -184,8 +184,10 @@ fun WoodScreen(
             LetteredText(title, with(density) { (46f * s).toSp() })
         }
 
-        val startHeight = 92.dp
+        val compact = maxHeight < 780.dp
+        val startHeight = if (compact) 80.dp else 92.dp
         // Everything between the sign and the action scrolls; the cards melt away at the top edge.
+        androidx.compose.runtime.CompositionLocalProvider(LocalPanelScale provides if (compact) 0.85f else 1f) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -204,6 +206,7 @@ fun WoodScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             content = content
         )
+        }
 
         action(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 6.dp).height(startHeight))
 
@@ -307,12 +310,16 @@ fun WoodSection(title: String, content: @Composable () -> Unit) {
 }
 
 
+/** 1 on a normal phone; a little less on a short screen so the whole setup still fits without scrolling. */
+val LocalPanelScale = androidx.compose.runtime.compositionLocalOf { 1f }
+
 /**
  * One wooden panel holding several labelled choice rows — the compact form of the setup screens, so everything fits
  * the screen at once instead of being a stack of separate framed sections.
  */
 @Composable
 fun CompactPanel(content: @Composable ColumnScope.() -> Unit) {
+    val k = LocalPanelScale.current
     NinePatch(
         res = R.drawable.offline_panel,
         slicePx = 92,
@@ -320,8 +327,8 @@ fun CompactPanel(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 14.dp, bottom = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 14.dp * k, bottom = 14.dp * k),
+            verticalArrangement = Arrangement.spacedBy(8.dp * k),
             content = content
         )
     }
@@ -357,7 +364,7 @@ fun PillField(
         res = R.drawable.offline_pill_off,
         slicePx = 90,
         edge = 20.dp,
-        modifier = modifier.fillMaxWidth().height(40.dp).graphicsLayer { alpha = if (enabled) 1f else 0.7f }
+        modifier = modifier.fillMaxWidth().height(40.dp * LocalPanelScale.current).graphicsLayer { alpha = if (enabled) 1f else 0.7f }
     ) {
         androidx.compose.foundation.text.BasicTextField(
             value = value,
@@ -393,7 +400,7 @@ fun <T> ChoiceGrid(
                         selected = isSelected(item),
                         onClick = { onSelect(item) },
                         modifier = Modifier.weight(1f),
-                        height = pillHeight,
+                        height = pillHeight * LocalPanelScale.current,
                         textSize = textSize,
                         maxLines = maxLines
                     )

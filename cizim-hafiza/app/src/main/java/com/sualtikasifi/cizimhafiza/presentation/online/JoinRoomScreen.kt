@@ -104,10 +104,14 @@ fun JoinRoomScreen(
         // The form panel.
         val panelWidth = maxWidth * 0.9f
         val panelHeight = panelWidth / PanelAspect
+        // With the keyboard up, the panel slides just far enough to keep the code well above it.
+        val imeBottom = with(density) { androidx.compose.foundation.layout.WindowInsets.ime.getBottom(this).toDp() }
+        val wellBottom = yOf(0.29f) + panelHeight * (Well2Top + WellHeight)
+        val lift = if (imeBottom > 0.dp) (wellBottom + 14.dp - (maxHeight - imeBottom)).coerceAtLeast(0.dp) else 0.dp
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .offset(y = yOf(0.29f))
+                .offset(y = yOf(0.29f) - lift)
                 .width(panelWidth)
                 .height(panelHeight)
         ) {
@@ -174,7 +178,7 @@ fun JoinRoomScreen(
                 style = PaintedStyle(color = Color(0xFFFFD6D0), fontSize = 15.sp, textAlign = TextAlign.Center),
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .offset(y = yOf(0.29f) + panelHeight + 56.dp)
+                    .offset(y = yOf(0.29f) - lift + panelHeight + 56.dp)
                     .padding(horizontal = 24.dp)
                     .background(Color(0xCC3B1E08), RoundedCornerShape(14.dp))
                     .padding(horizontal = 14.dp, vertical = 8.dp)
