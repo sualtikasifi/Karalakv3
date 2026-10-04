@@ -114,11 +114,15 @@ internal fun PaintedHome(
                     val w = maxWidth.value
                     val h = maxHeight.value
                     val longest = text.split(' ').maxOf { it.length }.coerceAtLeast(1)
+                    val base = baseArt * us
+                    val len = text.length.coerceAtLeast(1)
+                    // One line when the text fits at the wanted size, otherwise as many lines as allowed.
+                    val lines = if (maxLines > 1 && 0.62f * len * base <= w * 0.92f) 1 else maxLines
                     val byWord = w / (0.62f * longest)
-                    val byTotal = w * maxLines / (0.62f * text.length.coerceAtLeast(1) * 1.2f)
-                    val byHeight = h / (1.3f * maxLines)
-                    val dp = minOf(baseArt * us, byWord, byTotal, byHeight)
-                    LetteredText(text, (dp / fontScale).sp, fill = fill, outline = outline, maxLines = maxLines)
+                    val byTotal = w * lines / (0.62f * len * 1.2f)
+                    val byHeight = h / (1.3f * lines)
+                    val dp = minOf(base, byWord, byTotal, byHeight)
+                    LetteredText(text, (dp / fontScale).sp, fill = fill, outline = outline, maxLines = lines)
                 }
             }
         }
