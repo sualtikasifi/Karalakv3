@@ -421,7 +421,7 @@ fun WaitingRoomScreen(
             modifier = Modifier.fillMaxWidth().offset(y = sceneY(0.147f) - 30.dp),
             contentAlignment = Alignment.Center
         ) {
-            val base = TextStyle(fontSize = 38.sp, fontWeight = FontWeight.ExtraBold)
+            val base = TextStyle(fontSize = 34.sp, fontWeight = FontWeight.ExtraBold)
             Text(signTitle, style = base.copy(color = Color(0xFF5A2E0C), drawStyle = Stroke(width = 8f, join = StrokeJoin.Round)), maxLines = 1)
             Text(signTitle, style = base.copy(color = Color.White), maxLines = 1)
         }
@@ -560,7 +560,7 @@ private fun LobbyButton(text: String, green: Boolean, pulse: Float, onClick: () 
         edge = 28.dp,
         modifier = modifier
             .height(56.dp)
-            .graphicsLayer { scaleX = scale; scaleY = scale; alpha = 1f - 0.2f * pulse }
+            .graphicsLayer { scaleX = scale; scaleY = scale; alpha = 1f - 0.12f * pulse }
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
