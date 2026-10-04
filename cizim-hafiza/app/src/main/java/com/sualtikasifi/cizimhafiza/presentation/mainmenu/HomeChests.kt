@@ -421,11 +421,11 @@ internal fun HomeChestsPainted(
             maxLines = 1
         )
     }
-    Box(box(560f, 1438f, 728f, 1506f), contentAlignment = Alignment.CenterEnd) {
+    Box(box(480f, 1440f, 728f, 1504f), contentAlignment = Alignment.CenterEnd) {
         Text(
             text = stringResource(if ((0 until ChestSlots.SLOT_COUNT).all { slots.getOrNull(it) != null }) R.string.home_chests_full else R.string.home_chests_tagline),
             style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
-                color = Color(0xFF4A3426), fontSize = fs(27f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End, lineHeight = fs(32f)
+                color = Color(0xFF4A3426), fontSize = fs(23f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End, lineHeight = fs(27f)
             ),
             maxLines = 2
         )

@@ -139,18 +139,18 @@ internal fun PaintedHome(
         ) {
             LevelAvatar(level = progress.level, frame = frame, photo = photo, size = (132f * us).dp)
         }
-        Box(box(224f, 358f, 780f, 400f), contentAlignment = Alignment.CenterStart) {
+        Box(box(224f, 350f, 780f, 394f), contentAlignment = Alignment.CenterStart) {
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = nickname,
-                    style = PaintedStyle(color = HomeInk, fontSize = fs(41f), textAlign = TextAlign.Start),
+                    style = PaintedStyle(color = HomeInk, fontSize = fs(36f), textAlign = TextAlign.Start),
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
                 Text(
                     text = "• " + stringResource(R.string.home_level_inline, progress.level),
-                    style = PaintedStyle(color = InkSoft2, fontSize = fs(29f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
+                    style = PaintedStyle(color = InkSoft2, fontSize = fs(26f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
                     maxLines = 1
                 )
             }
@@ -312,8 +312,8 @@ internal fun PaintedHome(
         val chestNow = rememberNowUntil(if (adChestAvailable) 0L else midnight)
         val chestRemaining = midnight - chestNow
         Box(box(616f, 538f, 808f, 754f).clickable(enabled = adChestAvailable, interactionSource = noRipple, indication = null, onClick = onWatchChest)) {}
-        Box(box(640f, 650f, 790f, 706f), contentAlignment = Alignment.Center) {
-            LetteredText(stringResource(R.string.home_ad_chest_label), fs(33f), outline = Color(0xFF14549A), maxLines = 2)
+        Box(box(634f, 644f, 796f, 706f), contentAlignment = Alignment.Center) {
+            LetteredText(stringResource(R.string.home_ad_chest_label), fs(27f), outline = Color(0xFF14549A), maxLines = 2)
         }
         Box(
             box(654f, 708f, 792f, 746f)
