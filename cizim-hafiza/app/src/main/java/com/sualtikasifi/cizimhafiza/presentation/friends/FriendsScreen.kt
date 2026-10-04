@@ -237,36 +237,36 @@ fun FriendsScreen(
         }
 
         // ── Code card ──
-        Sprite(R.drawable.fr_panel_wide, 70f, 380f, 1010f, 820f)
-        SceneBox(scene, 215f, 410f, 865f, 474f) {
+        Sprite(R.drawable.fr_panel_wide, 70f, 380f, 1010f, 835f)
+        SceneBox(scene, 215f, 452f, 865f, 508f) {
             Text(
                 stringResource(R.string.friends_my_code_label),
-                style = PaintedStyle(color = InkBrown, fontSize = scene.fs(48f), textAlign = TextAlign.Center)
+                style = PaintedStyle(color = InkBrown, fontSize = scene.fs(42f), textAlign = TextAlign.Center)
             )
         }
-        SceneBox(scene, 190f, 478f, 890f, 560f) {
+        SceneBox(scene, 235f, 510f, 845f, 585f) {
             Text(
                 stringResource(R.string.friends_invite_reward_hint),
                 style = PaintedStyle(
-                    color = DescriptionInk, fontSize = scene.fs(28f), fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center, lineHeight = scene.fs(34f)
+                    color = DescriptionInk, fontSize = scene.fs(25f), fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center, lineHeight = scene.fs(31f)
                 )
             )
         }
-        SceneBox(scene, 270f, 572f, 810f, 664f) {
+        SceneBox(scene, 270f, 590f, 810f, 670f) {
             val code = uiState.myFriendCode
             if (code != null) {
                 Text(
                     code,
-                    style = PaintedStyle(color = InkBrown, fontSize = scene.fs(76f), textAlign = TextAlign.Center, letterSpacing = scene.fs(12f)),
+                    style = PaintedStyle(color = InkBrown, fontSize = scene.fs(66f), textAlign = TextAlign.Center, letterSpacing = scene.fs(12f)),
                     maxLines = 1
                 )
             } else {
                 CircularProgressIndicator(modifier = Modifier.size(28.dp), color = ButtonOrange, strokeWidth = 3.dp)
             }
         }
-        Sprite(R.drawable.fr_orange_w, 340f, 688f, 740f, 800f)
-        SceneBox(scene, 340f, 688f, 740f, 800f) {
+        Sprite(R.drawable.fr_orange_w, 350f, 684f, 730f, 792f)
+        SceneBox(scene, 350f, 684f, 730f, 792f) {
             val code = uiState.myFriendCode
             Box(
                 Modifier.fillMaxSize().then(
@@ -278,7 +278,7 @@ fun FriendsScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(scene.len(10f))) {
                     Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(scene.len(34f)))
-                    LetteredText(stringResource(R.string.friends_share_code), scene.fs(32f))
+                    LetteredText(stringResource(R.string.friends_share_code), scene.fs(30f))
                 }
             }
         }
@@ -385,16 +385,16 @@ private fun FriendsPanel(uiState: FriendsUiState, viewModel: FriendsViewModel, s
             Image(
                 painter = painterResource(R.drawable.friends_handshake),
                 contentDescription = null,
-                modifier = Modifier.size(scene.len(190f))
+                modifier = Modifier.size(scene.len(150f))
             )
             Spacer(Modifier.height(scene.len(26f)))
-            Text(first, style = PaintedStyle(color = InkBrown, fontSize = scene.fs(44f), textAlign = TextAlign.Center))
+            Text(first, style = PaintedStyle(color = InkBrown, fontSize = scene.fs(36f), textAlign = TextAlign.Center), modifier = Modifier.padding(horizontal = scene.len(40f)))
             if (rest.isNotEmpty()) {
                 Text(
                     rest,
                     style = PaintedStyle(
-                        color = DescriptionInk, fontSize = scene.fs(38f), fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center, lineHeight = scene.fs(46f)
+                        color = DescriptionInk, fontSize = scene.fs(32f), fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center, lineHeight = scene.fs(40f)
                     )
                 )
             }
