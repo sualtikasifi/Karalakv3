@@ -1,6 +1,25 @@
 package com.sualtikasifi.cizimhafiza.presentation.online
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.Image
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloat
 import androidx.annotation.StringRes
@@ -165,6 +184,7 @@ fun WaitingRoomScreen(
             frame = AvatarFrame.resolve(it.frameId, it.level),
             avatarUrl = it.avatarUrl,
             ready = amReady,
+            isHost = room?.hostUid == it.uid,
             isYou = true,
             pending = amPending,
             onKick = null,
@@ -189,6 +209,7 @@ fun WaitingRoomScreen(
                 AvatarFrame.resolve(player.frameId, player.level)
             },
             ready = player.ready,
+            isHost = room?.hostUid == player.uid,
             isYou = false,
             pending = player.pendingNextRound,
             onKick = if (isHost) {
@@ -232,8 +253,21 @@ fun WaitingRoomScreen(
 
     // No title bar: the back button floats directly on the page's own
     // background instead of sitting in a separate, differently-colored strip.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    val sceneDensity = LocalDensity.current
+    val scenePxW = with(sceneDensity) { maxWidth.toPx() }
+    val scenePxH = with(sceneDensity) { maxHeight.toPx() }
+    val sceneScale = maxOf(scenePxW / LOBBY_ART_W, scenePxH / LOBBY_ART_H)
+    val sceneOffY = (scenePxH - LOBBY_ART_H * sceneScale) / 2f
+    fun sceneY(fraction: Float): Dp = with(sceneDensity) { (sceneOffY + LOBBY_ART_H * sceneScale * fraction).toDp() }
+    Image(
+        painter = painterResource(R.drawable.bg_lobby),
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier = Modifier.fillMaxSize()
+    )
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Transparent,
         // The action controls are pinned rather than living at the end of the
         // scroll: the player list is the only part that should ever grow, and
         // in a full room it used to push "Hazırım" (and the last player row)
@@ -266,12 +300,11 @@ fun WaitingRoomScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .screenBackground()
                 .padding(padding)
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
-                // Clears the floating back button (see ScreenTopActions).
-                .padding(top = TopActionsClearance, bottom = 12.dp),
+                // Starts under the painted sign.
+                .padding(top = sceneY(0.205f), bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -292,18 +325,25 @@ fun WaitingRoomScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.online_players_section_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                TintedBadge(
-                    text = stringResource(
-                        R.string.online_room_occupancy,
-                        presentPlayerCount,
-                        if (teamMode) GameConstants.TEAM_ROOM_SIZE else GameConstants.MAX_ROOM_SIZE
-                    )
-                )
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.height(46.dp).aspectRatio(364f / 120f)) {
+                    Image(painter = painterResource(R.drawable.lobby_band), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                    OutlinedLabel(stringResource(R.string.online_players_section_title), 19.sp)
+                }
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.height(40.dp).aspectRatio(287f / 95f)) {
+                    Image(painter = painterResource(R.drawable.lobby_pill), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(Icons.Filled.Person, contentDescription = null, tint = Color(0xFFE9801D), modifier = Modifier.size(18.dp))
+                        Text(
+                            text = stringResource(
+                                R.string.online_room_occupancy,
+                                presentPlayerCount,
+                                if (teamMode) GameConstants.TEAM_ROOM_SIZE else GameConstants.MAX_ROOM_SIZE
+                            ),
+                            style = TextStyle(color = Color(0xFF5A3A1A), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold),
+                            maxLines = 1
+                        )
+                    }
+                }
             }
 
             if (teamMode) {
@@ -354,28 +394,52 @@ fun WaitingRoomScreen(
             }
 
             if (others.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.online_waiting_for_friend),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .padding(vertical = 4.dp)
+                        .background(Color(0xCC3B1E08), RoundedCornerShape(18.dp))
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Image(painter = painterResource(R.drawable.lobby_hourglass), contentDescription = null, modifier = Modifier.height(30.dp))
+                    Text(
+                        text = stringResource(R.string.online_waiting_for_friend),
+                        style = TextStyle(color = Color(0xFFFFF1D6), fontSize = 15.sp, fontWeight = FontWeight.Bold),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
 
             if (isHost && room?.kickedUsers?.isNotEmpty() == true) {
                 KickedUsersSection(kickedUsers = room.kickedUsers, onUnban = viewModel::unbanPlayer)
             }
         }
-        ScreenTopActions(
-            onBack = {
-                viewModel.leaveRoom()
-                onLeave()
-            },
-            modifier = Modifier.align(Alignment.TopStart),
-            title = stringResource(R.string.online_waiting_room_title)
+        // The title, written on the painted sign.
+        val signTitle = stringResource(R.string.online_waiting_room_title)
+        Box(
+            modifier = Modifier.fillMaxWidth().offset(y = sceneY(0.147f) - 30.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            val base = TextStyle(fontSize = 34.sp, fontWeight = FontWeight.ExtraBold)
+            Text(signTitle, style = base.copy(color = Color(0xFF5A2E0C), drawStyle = Stroke(width = 8f, join = StrokeJoin.Round)), maxLines = 1)
+            Text(signTitle, style = base.copy(color = Color.White), maxLines = 1)
+        }
+        Image(
+            painter = painterResource(R.drawable.join_back),
+            contentDescription = stringResource(R.string.cd_back),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(start = 16.dp, top = 12.dp)
+                .size(56.dp)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                    viewModel.leaveRoom()
+                    onLeave()
+                }
         )
         }
+    }
     }
 
     if (invitePickerOpen) {
@@ -430,34 +494,88 @@ fun WaitingRoomScreen(
 /** The room code plus its one action — the thing you actually came to this screen to hand someone. */
 @Composable
 private fun RoomCodeCard(roomCode: String, onInvite: () -> Unit) {
-    // Teal, not the default white face: a plain white card read as flat
-    // against the textured collage background, and online surfaces already
-    // use teal as their own identity color throughout the app.
-    RaisedCard(corner = 24.dp, face = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+    // lobby_codepanel is painted with its code well and its invite button; the texts are laid over them by fractions.
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier = Modifier.fillMaxWidth().aspectRatio(753f / 388f)) {
+        val w = maxWidth
+        val h = maxHeight
+        Image(
+            painter = painterResource(R.drawable.lobby_codepanel),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.fillMaxSize()
+        )
+        Text(
+            text = stringResource(R.string.online_room_code_hint),
+            style = TextStyle(color = Color(0xFF5A3A1A), fontSize = 15.sp, fontWeight = FontWeight.ExtraBold),
+            maxLines = 1,
+            modifier = Modifier.align(Alignment.TopCenter).offset(y = h * 0.1f)
+        )
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.offset(x = w * 0.17f, y = h * 0.26f).width(w * 0.68f).height(h * 0.265f)
         ) {
             Text(
-                text = stringResource(R.string.online_room_code_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
                 text = roomCode,
-                style = MaterialTheme.typography.headlineMedium.copy(letterSpacing = 8.sp),
-                color = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            SecondaryButton(
-                text = stringResource(R.string.online_invite_friend),
-                onClick = onInvite,
-                icon = Icons.Filled.Share,
-                height = 48.dp,
-                modifier = Modifier.fillMaxWidth()
+                style = TextStyle(color = Color(0xFF5A3A1A), fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 8.sp),
+                maxLines = 1
             )
         }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .offset(x = w * 0.2f, y = h * 0.585f)
+                .width(w * 0.62f)
+                .height(h * 0.27f)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onInvite)
+        ) {
+            Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            OutlinedLabel(stringResource(R.string.online_invite_friend), 20.sp, outline = Color(0xFF8A3A00))
+        }
+    }
+}
+
+/** A short message on a dark plate, readable over the painted scene. */
+@Composable
+private fun HintPlate(text: String, color: Color, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = TextStyle(color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+        modifier = modifier
+            .background(Color(0xCC3B1E08), RoundedCornerShape(14.dp))
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    )
+}
+
+/** The painted pill with its label: orange to press, green once chosen; it dips while pressed and can pulse. */
+@Composable
+private fun LobbyButton(text: String, green: Boolean, pulse: Float, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.96f else 1f, label = "lobby-btn")
+    NinePatch(
+        res = if (green) R.drawable.lobby_btn_green else R.drawable.lobby_btn,
+        slicePx = 49,
+        edge = 28.dp,
+        modifier = modifier
+            .height(56.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale; alpha = 1f - 0.12f * pulse }
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+    ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            OutlinedLabel(text, 24.sp, outline = if (green) Color(0xFF1B6B12) else Color(0xFF8A3A00))
+        }
+    }
+}
+
+/** White text with a dark outline, the lettering style of every painted title. */
+@Composable
+private fun OutlinedLabel(text: String, size: androidx.compose.ui.unit.TextUnit, outline: Color = Color(0xFF5A2E0C)) {
+    val base = TextStyle(fontSize = size, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+    Box(contentAlignment = Alignment.Center) {
+        Text(text, style = base.copy(color = outline, drawStyle = Stroke(width = 7f, join = StrokeJoin.Round)), maxLines = 1)
+        Text(text, style = base.copy(color = Color.White), maxLines = 1)
     }
 }
 
@@ -506,7 +624,6 @@ private fun WaitingRoomActions(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
             // A custom bottomBar isn't auto-inset like Scaffold's own content
             // slot is — without this, the ready/start button and the reaction
             // row sat behind the phone's own on-screen back/home/recents bar
@@ -532,12 +649,7 @@ private fun WaitingRoomActions(
         )
 
         errorMessage?.let { message ->
-            Text(
-                text = message.asString(),
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-            )
+            HintPlate(message.asString(), Color(0xFFFFD6D0), Modifier.padding(bottom = 8.dp))
         }
 
         when {
@@ -551,31 +663,21 @@ private fun WaitingRoomActions(
                 // 3-1 split sat looking at a ready button that would never
                 // turn into a start button, with nothing saying why.
                 if (!allReady) teamImbalanceHint?.let { hint ->
-                    Text(
-                        text = stringResource(hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                    )
+                    HintPlate(stringResource(hint), Color(0xFFFFF1D6), Modifier.padding(bottom = 8.dp))
                 }
                 // The ready button stays for everybody, host included, so "Hazır" can always be taken back.
                 // Once everyone is ready the host's start button joins it and the others are told who they wait for.
                 if (allReady && countdownSeconds == null && !isStarting) {
                     if (isHost) {
-                        PrimaryButton(
+                        LobbyButton(
                             text = stringResource(R.string.online_start_game),
+                            green = false,
+                            pulse = 0f,
                             onClick = onStartGame,
                             modifier = Modifier.fillMaxWidth()
                         )
                     } else {
-                        Text(
-                            text = stringResource(R.string.online_waiting_for_host),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        HintPlate(stringResource(R.string.online_waiting_for_host), Color(0xFFFFF1D6))
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                 }
@@ -624,7 +726,6 @@ private fun ReadyButton(
         ),
         label = "halo"
     )
-    val face = if (amReady || counting) green else androidx.compose.ui.graphics.lerp(green, androidx.compose.ui.graphics.Color.White, 0.38f * blink)
     // A soft halo (none while waiting to be pressed, calm once ready, a little stronger during the count) and
     // coloured sparks circling the button — quicker and more of them once the count has begun.
     val glowStrength = when {
@@ -669,11 +770,11 @@ private fun ReadyButton(
                 }
             }
     ) {
-        PrimaryButton(
+        LobbyButton(
             text = countdownSeconds?.toString() ?: stringResource(R.string.online_ready),
+            green = amReady || counting,
+            pulse = if (amReady || counting) 0f else blink,
             onClick = { if (!counting && !locked) onClick() },
-            enabled = true,
-            face = face,
             modifier = Modifier.fillMaxWidth()
         )
     }
@@ -757,6 +858,7 @@ private data class PlayerSlotUiState(
     val frame: AvatarFrame,
     val avatarUrl: String = "",
     val ready: Boolean,
+    val isHost: Boolean = false,
     val isYou: Boolean,
     val pending: Boolean,
     val onKick: (() -> Unit)?,
@@ -775,13 +877,10 @@ private fun TeamColumn(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.align(Alignment.CenterHorizontally).height(36.dp).aspectRatio(287f / 95f)) {
+            Image(painter = painterResource(R.drawable.lobby_pill), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+            Text(title, style = TextStyle(color = Color(0xFF5A3A1A), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold), maxLines = 1)
+        }
         slots.forEach { slot ->
             PlayerSlotCell(
                 slot = slot,
@@ -795,6 +894,10 @@ private fun TeamColumn(
 
 /** A fixed row height shared by [PlayerSlotCard] and [EmptySlotCard] so occupied and empty seats line up in the grid. */
 private val SLOT_HEIGHT = 64.dp
+
+// bg_lobby is this size; its hanging sign is painted on it, so the title and the content start are placed by fractions.
+private const val LOBBY_ART_W = 841f
+private const val LOBBY_ART_H = 1870f
 
 /**
  * One grid cell: [slot]'s card (or an empty placeholder). A player's own
@@ -823,8 +926,19 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
     // Ready reads as the whole card turning a light "go" green instead of a
     // small checkmark next to the name — a glance at the grid says who's
     // ready without having to read every row.
-    val face = if (slot.ready) AppTheme.tokens.successContainer else MaterialTheme.colorScheme.surface
-    RaisedCard(corner = 16.dp, face = face, modifier = modifier.fillMaxWidth()) {
+    val readyTint = if (slot.ready) ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+        0.78f, 0f, 0f, 0f, 0f,
+        0f, 0.98f, 0f, 0f, 0f,
+        0f, 0f, 0.72f, 0f, 0f,
+        0f, 0f, 0f, 1f, 0f
+    ))) else null
+    NinePatch(
+        res = R.drawable.lobby_card,
+        slicePx = 45,
+        edge = 22.dp,
+        tint = readyTint,
+        modifier = modifier.fillMaxWidth()
+    ) {
         Box(modifier = Modifier.fillMaxWidth().heightIn(min = SLOT_HEIGHT)) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
@@ -843,14 +957,21 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = if (slot.isYou) stringResource(R.string.online_you_label, slot.name) else slot.name,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontSize = 13.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (slot.isYou) stringResource(R.string.online_you_label, slot.name) else slot.name,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        if (slot.isHost) {
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Image(painter = painterResource(R.drawable.lobby_crown), contentDescription = null, modifier = Modifier.size(16.dp))
+                        }
+                    }
                     // Level and rank take turns under the name every five seconds, set in the same
                     // type as the league table's rows (see RankLevelLabel).
                     com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(level = slot.level, bullet = false)
@@ -928,46 +1049,22 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
  */
 @Composable
 private fun EmptySlotCard(onInvite: (() -> Unit)? = null, modifier: Modifier = Modifier) {
-    val outline = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-    val shape = RoundedCornerShape(16.dp)
-    Box(
-        contentAlignment = Alignment.Center,
+    NinePatch(
+        res = R.drawable.lobby_slot,
+        slicePx = 45,
+        edge = 21.dp,
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = SLOT_HEIGHT)
-            .clip(shape)
-            // Was a barely-there 0.35f — read as decoration, not something to
-            // tap. Raised so the seat visibly reads as a button on sight,
-            // not just once you notice the dashed outline.
-            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f))
             .then(if (onInvite != null) Modifier.clickable(onClick = onInvite) else Modifier)
-            .drawBehind {
-                val stroke = Stroke(
-                    width = 2.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f)
-                )
-                drawRoundRect(
-                    color = outline,
-                    style = stroke,
-                    cornerRadius = CornerRadius(16.dp.toPx(), 16.dp.toPx())
-                )
-            }
-            .padding(6.dp)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                Icons.Filled.PersonAdd,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(22.dp)
-            )
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.align(Alignment.Center).padding(6.dp)) {
+            Image(painter = painterResource(R.drawable.lobby_adduser), contentDescription = null, modifier = Modifier.size(26.dp))
             if (onInvite != null) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = stringResource(R.string.online_invite_friend_slot),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    textAlign = TextAlign.Center,
+                    style = TextStyle(color = Color(0xFF5A3A1A), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
                     maxLines = 2
                 )
             }

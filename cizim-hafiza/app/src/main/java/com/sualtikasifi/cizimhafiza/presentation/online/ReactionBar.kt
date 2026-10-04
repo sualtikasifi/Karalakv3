@@ -222,11 +222,16 @@ fun ReactionSendRow(
         EMOJI_CATALOG.sortedByDescending { emojiUsageCounts[it.key] ?: 0 }.take(5)
     }
 
-    RaisedCard(corner = 20.dp, face = MaterialTheme.colorScheme.surface, modifier = modifier.fillMaxWidth()) {
+    com.sualtikasifi.cizimhafiza.presentation.common.NinePatch(
+        res = R.drawable.lobby_chatbar,
+        slicePx = 105,
+        edge = 38.dp,
+        modifier = modifier.fillMaxWidth().height(76.dp)
+    ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+            modifier = Modifier.fillMaxSize().padding(horizontal = 30.dp, vertical = 14.dp)
         ) {
             Surface(
                 onClick = { sheetOpen = true },

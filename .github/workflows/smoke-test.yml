@@ -24,6 +24,7 @@ on:
           - offline.sh
           - createroom.sh
           - join.sh
+          - lobby.sh
   pull_request:
     paths:
       - ".github/workflows/smoke-test.yml"
