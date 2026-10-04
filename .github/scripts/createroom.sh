@@ -64,3 +64,4 @@ shot 08_createroom
 adb shell input swipe 540 1700 540 600 400
 sleep 2
 shot 09_createroom_scrolled
+adb logcat -d | grep -E "FATAL|AndroidRuntime|Exception" | head -40 > "$OUT/crash_createroom.txt"
