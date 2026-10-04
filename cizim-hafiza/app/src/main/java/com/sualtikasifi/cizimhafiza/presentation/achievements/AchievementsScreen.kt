@@ -127,7 +127,7 @@ fun AchievementsScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = yOf(500f))
+                .padding(top = yOf(440f))
                 .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                 .drawWithContent {
                     drawContent()
