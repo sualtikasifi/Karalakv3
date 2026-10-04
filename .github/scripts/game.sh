@@ -21,6 +21,7 @@ adb install -r -t "$APK"
 # ads-consent tap further down only for the UMP form, not this one).
 adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
 adb logcat -c
+adb shell settings put global hide_error_dialogs 1 || true
 
 # Skip the first-run tutorial: it is a plain boolean in the app's settings file, and the
 # debug build is debuggable so run-as can write it.
@@ -117,7 +118,12 @@ P=g
 dismiss() { tap_text "Wait" || true; sleep 1; }
 dismiss
 adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 12; dismiss; sleep 2
-adb shell input tap 819 1347; sleep 6; dismiss; shot ${P}00_setup
+for i in 1 2 3 4 5 6; do
+  if [ "$(consent_visible)" = "1" ]; then echo "consent again"; adb shell input tap 540 1678; sleep 3; break; fi
+  sleep 3
+done
+shot ${P}01_menu
+adb shell input tap 880 1150; sleep 6; dismiss; shot ${P}00_setup
 adb shell input tap 540 2230; sleep 5
 for i in $(seq 1 22); do
   sleep 11
