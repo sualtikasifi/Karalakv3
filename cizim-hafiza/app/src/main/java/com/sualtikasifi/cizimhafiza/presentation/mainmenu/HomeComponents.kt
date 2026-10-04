@@ -161,17 +161,16 @@ internal fun HomeProfileBar(
     onGoldClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    com.sualtikasifi.cizimhafiza.presentation.common.NinePatch(
+        res = R.drawable.home_profile,
+        slicePx = 100,
+        edge = 24.dp,
+        modifier = modifier.fillMaxWidth()
+    ) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .chunky(
-                face = Brush.verticalGradient(listOf(Color(0xFFFFF6E3), Color(0xFFFCE6BF))),
-                edge = Color(0xFFD9B57A),
-                corner = 26.dp,
-                lift = 5.dp,
-                rim = Color(0xFFEBCB93)
-            )
-            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .padding(start = 18.dp, end = 18.dp, top = 12.dp, bottom = 16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             LevelAvatar(
@@ -276,6 +275,7 @@ internal fun HomeProfileBar(
                 modifier = Modifier.weight(1f).clickable(onClick = onFrameClick)
             )
         }
+    }
     }
 }
 
@@ -581,6 +581,74 @@ internal fun XpEventBanner(event: com.sualtikasifi.cizimhafiza.domain.repository
                 .background(Color(0xFF2A1808), RoundedCornerShape(50))
                 .padding(horizontal = 10.dp, vertical = 3.dp)
         )
+    }
+}
+
+/**
+ * One painted menu tile: the picture already carries its frame and its icon, the label is written on its lower third in
+ * the game's lettering. A red dot or a count can ride on the corner; [boost] adds the "2x XP" pill of a running event.
+ */
+@Composable
+internal fun PaintedTile(
+    res: Int,
+    aspect: Float,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    showBadge: Boolean = false,
+    badgeCount: Int = 0,
+    boost: com.sualtikasifi.cizimhafiza.domain.repository.XpEvent? = null,
+    labelSize: Float = 14f
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.95f else 1f, label = "paintedTile")
+    var boostExpired by remember(boost?.endsAtMillis) { mutableStateOf(boost == null || System.currentTimeMillis() >= boost.endsAtMillis) }
+    LaunchedEffect(boost?.endsAtMillis) {
+        if (boost != null) {
+            kotlinx.coroutines.delay((boost.endsAtMillis - System.currentTimeMillis()).coerceAtLeast(0L))
+            boostExpired = true
+        }
+    }
+    val boosted = boost != null && !boostExpired
+    BoxWithConstraints(
+        modifier = modifier
+            .aspectRatio(aspect)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .a11yButton(label)
+    ) {
+        Image(painterResource(res), contentDescription = null, contentScale = androidx.compose.ui.layout.ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+        val tileWidth = maxWidth
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = maxHeight * 0.1f)
+                .fillMaxWidth()
+                .height(maxHeight * 0.27f)
+                .padding(horizontal = 6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            val sizeSp = (tileWidth.value * labelSize / 120f).coerceIn(10f, 17f)
+            com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                text = label,
+                size = sizeSp.sp,
+                maxLines = 2
+            )
+        }
+        if (showBadge) {
+            Box(modifier = Modifier.align(Alignment.TopEnd).padding(top = 10.dp, end = 10.dp).size(14.dp).background(MaterialTheme.colorScheme.error, CircleShape).border(2.dp, Color.White, CircleShape))
+        }
+        if (badgeCount > 0) {
+            Box(
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 6.dp).background(MaterialTheme.colorScheme.error, CircleShape).border(2.dp, Color.White, CircleShape).padding(horizontal = 7.dp, vertical = 1.dp)
+            ) {
+                Text(text = badgeCount.toString(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onError)
+            }
+        }
+        if (boosted && boost != null) {
+            BoostBadge(multiplier = boost.multiplier, modifier = Modifier.align(Alignment.TopStart).padding(top = 8.dp, start = 10.dp))
+        }
     }
 }
 
