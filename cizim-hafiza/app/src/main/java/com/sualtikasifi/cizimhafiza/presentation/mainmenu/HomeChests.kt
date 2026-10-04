@@ -416,7 +416,7 @@ internal fun HomeChestsPainted(
         Text(
             text = stringResource(R.string.menu_chests),
             style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
-                color = Color(0xFF2B1A10), fontSize = fs(46f), textAlign = TextAlign.Start
+                color = Color(0xFF2B1A10), fontSize = fs(40f), textAlign = TextAlign.Start
             ),
             maxLines = 1
         )

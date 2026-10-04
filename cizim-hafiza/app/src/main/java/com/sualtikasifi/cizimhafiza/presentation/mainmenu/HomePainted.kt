@@ -214,8 +214,8 @@ internal fun PaintedHome(
         val flags = dailyState.todayResult?.correctFlags.orEmpty()
         val multiplier = XpAwards.dailyStreakMultiplier(dailyState.streakIfCompletedToday)
         val cardInk = if (available) Color(0xFF2E1A66) else Color(0xFF0B4F2A)
-        Box(box(388f, 548f, 594f, 624f), contentAlignment = Alignment.Center) {
-            LetteredText(stringResource(R.string.daily_challenge_title), fs(33f), outline = cardInk, maxLines = 2)
+        Box(box(384f, 546f, 598f, 626f), contentAlignment = Alignment.Center) {
+            LetteredText(stringResource(R.string.daily_challenge_title), fs(28f), outline = cardInk, maxLines = 2)
         }
         Box(box(256f, 628f, 360f, 678f), contentAlignment = Alignment.Center) {
             Box(
@@ -313,7 +313,7 @@ internal fun PaintedHome(
         val chestRemaining = midnight - chestNow
         Box(box(616f, 538f, 808f, 754f).clickable(enabled = adChestAvailable, interactionSource = noRipple, indication = null, onClick = onWatchChest)) {}
         Box(box(634f, 644f, 796f, 706f), contentAlignment = Alignment.Center) {
-            LetteredText(stringResource(R.string.home_ad_chest_label), fs(27f), outline = Color(0xFF14549A), maxLines = 2)
+            LetteredText(stringResource(R.string.home_ad_chest_label), fs(25f), outline = Color(0xFF14549A), maxLines = 1)
         }
         Box(
             box(654f, 708f, 792f, 746f)
@@ -333,7 +333,7 @@ internal fun PaintedHome(
         fun Tile(x0: Float, y0: Float, x1: Float, y1: Float, lx0: Float, ly0: Float, lx1: Float, ly1: Float, label: String, onClick: () -> Unit, content: @Composable () -> Unit = {}) {
             Box(box(x0, y0, x1, y1).clickable(interactionSource = noRipple, indication = null, onClick = onClick).a11yButton(label)) {}
             Box(box(lx0, ly0, lx1, ly1), contentAlignment = Alignment.Center) {
-                LetteredText(label, fs(35f), outline = Color(0xFF241408), maxLines = 2)
+                LetteredText(label, fs(30f), outline = Color(0xFF241408), maxLines = 2)
             }
             content()
         }
