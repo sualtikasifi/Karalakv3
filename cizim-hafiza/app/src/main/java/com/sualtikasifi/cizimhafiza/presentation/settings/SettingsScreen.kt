@@ -59,6 +59,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPage
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedRow
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -103,166 +109,103 @@ fun SettingsScreen(
         ActivityResultContracts.RequestPermission()
     ) { granted -> viewModel.setNotificationsEnabled(granted) }
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .screenBackground()
-                .padding(padding)
-                .padding(horizontal = 20.dp)
-        ) {
-            // Clears the floating back button (see ScreenTopActions); outside the scrolling part so the
-            // content stops at the title instead of sliding underneath it.
-            Spacer(modifier = Modifier.height(TopActionsClearance + 12.dp))
-            Column(modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
-
-            // 2x2 rather than four stacked full-width rows: four on/off
-            // toggles that each only ever say one short word took up as
-            // much vertical space as everything else on this screen
-            // combined.
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                SettingGridCell(
-                    icon = Icons.AutoMirrored.Filled.VolumeUp,
-                    label = stringResource(R.string.settings_sound),
-                    checked = soundEnabled,
-                    onCheckedChange = viewModel::setSoundEnabled,
-                    modifier = Modifier.weight(1f)
-                )
-                SettingGridCell(
-                    icon = Icons.Filled.MusicNote,
-                    label = stringResource(R.string.settings_music),
-                    checked = musicEnabled,
-                    onCheckedChange = viewModel::setMusicEnabled,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                SettingGridCell(
-                    icon = Icons.Filled.Vibration,
-                    label = stringResource(R.string.settings_vibration),
-                    checked = vibrationEnabled,
-                    onCheckedChange = viewModel::setVibrationEnabled,
-                    modifier = Modifier.weight(1f)
-                )
-                SettingGridCell(
-                    icon = Icons.Filled.Notifications,
-                    label = stringResource(R.string.settings_notifications),
-                    checked = notificationsEnabled,
-                    onCheckedChange = { enabled ->
-                        val needsRuntimePermission = enabled &&
-                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                            ContextCompat.checkSelfPermission(
-                                context,
-                                Manifest.permission.POST_NOTIFICATIONS
-                            ) != PackageManager.PERMISSION_GRANTED
-                        if (needsRuntimePermission) {
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        } else {
-                            viewModel.setNotificationsEnabled(enabled)
-                        }
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            if (notificationsEnabled) {
-                Spacer(modifier = Modifier.height(10.dp))
-                BatteryOptimizationHint()
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-            LanguageRow(selectedLanguage = language, onLanguageSelected = viewModel::setLanguage)
-            Spacer(modifier = Modifier.height(10.dp))
-            NavRow(
-                icon = Icons.Filled.School,
-                label = stringResource(R.string.settings_replay_tutorial),
-                onClick = onReplayTutorialClick
+    PaintedPage(title = stringResource(R.string.menu_settings), onBack = onBack) {
+        // 2x2 rather than four stacked full-width rows: four on/off toggles that each only ever say one short word.
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            SettingGridCell(
+                icon = Icons.AutoMirrored.Filled.VolumeUp, iconColor = Color(0xFFF26A1B),
+                label = stringResource(R.string.settings_sound),
+                checked = soundEnabled, onCheckedChange = viewModel::setSoundEnabled,
+                modifier = Modifier.weight(1f)
             )
-            Spacer(modifier = Modifier.height(10.dp))
-            NavRow(
-                icon = Icons.Filled.BugReport,
-                label = stringResource(R.string.report_bug_title),
-                onClick = onReportBugClick
+            SettingGridCell(
+                icon = Icons.Filled.MusicNote, iconColor = Color(0xFF2E86D6),
+                label = stringResource(R.string.settings_music),
+                checked = musicEnabled, onCheckedChange = viewModel::setMusicEnabled,
+                modifier = Modifier.weight(1f)
             )
-            Spacer(modifier = Modifier.height(10.dp))
-            NavRow(
-                icon = Icons.Filled.AccountCircle,
-                label = stringResource(R.string.account_title),
-                onClick = onAccountClick,
-                showBadge = showAccountNudge,
-                travelingLight = !accountLinked
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            SettingGridCell(
+                icon = Icons.Filled.Vibration, iconColor = Color(0xFF7B4FD6),
+                label = stringResource(R.string.settings_vibration),
+                checked = vibrationEnabled, onCheckedChange = viewModel::setVibrationEnabled,
+                modifier = Modifier.weight(1f)
             )
-            Spacer(modifier = Modifier.height(10.dp))
-            NavRow(
-                icon = Icons.Filled.StarRate,
-                label = stringResource(R.string.settings_rate_app),
-                // Straight to the store listing, not Play Core's in-app
-                // review sheet — that API silently does nothing on a
-                // sideloaded install or once its quota is spent, with no
-                // failure callback to fall back from, so a tap here read as
-                // a dead button. This is deterministic on every install.
-                onClick = { activity?.let(AppReviewLauncher::openStoreListing) }
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            NavRow(
-                icon = Icons.Filled.PrivacyTip,
-                label = stringResource(R.string.settings_privacy_policy),
-                onClick = {
-                    runCatching {
-                        activity?.startActivity(
-                            android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(PRIVACY_POLICY_URL))
-                        )
+            SettingGridCell(
+                icon = Icons.Filled.Notifications, iconColor = Color(0xFFF2A100),
+                label = stringResource(R.string.settings_notifications),
+                checked = notificationsEnabled,
+                onCheckedChange = { enabled ->
+                    val needsRuntimePermission = enabled &&
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                    if (needsRuntimePermission) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        viewModel.setNotificationsEnabled(enabled)
                     }
-                }
+                },
+                modifier = Modifier.weight(1f)
             )
-
-            // The build actually running, printed where anyone can find it.
-            // Without this there was no way to answer "is the APK on this
-            // phone the new one?" — every build looked identical from the
-            // inside, and a sideloaded install that silently did not replace
-            // the old app was indistinguishable from one that did.
-            Spacer(modifier = Modifier.height(20.dp))
-            Text(
-                text = stringResource(
-                    R.string.settings_version_format,
-                    BuildConfig.VERSION_NAME,
-                    BuildConfig.VERSION_CODE
-                ),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp)
-                    // No ripple and no hint that this does anything: a player
-                    // who taps the version seven times should see exactly
-                    // what a player who taps it once sees. Bot İsimleri used
-                    // to have its own separate long-press door here — folded
-                    // into a button inside the report inbox instead (see
-                    // DrawingReportsScreen), since a gesture competing with
-                    // this screen's own scroll turned out to be genuinely
-                    // hard to land.
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() },
-                        onClick = {
-                            versionTaps++
-                            if (versionTaps >= DEVELOPER_REVEAL_TAPS) {
-                                versionTaps = 0
-                                onDeveloperReveal()
-                            }
-                        }
-                    )
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            }
         }
-        ScreenTopActions(
-            onBack = onBack,
-            title = stringResource(R.string.menu_settings),
-            modifier = Modifier.align(Alignment.TopStart)
+        if (notificationsEnabled) {
+            Spacer(modifier = Modifier.height(8.dp))
+            BatteryOptimizationHint()
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        LanguageRow(selectedLanguage = language, onLanguageSelected = viewModel::setLanguage)
+        Spacer(modifier = Modifier.height(8.dp))
+        NavRow(Icons.Filled.School, Color(0xFF7B4FD6), stringResource(R.string.settings_replay_tutorial), onReplayTutorialClick)
+        Spacer(modifier = Modifier.height(8.dp))
+        NavRow(Icons.Filled.BugReport, Color(0xFFE5483C), stringResource(R.string.report_bug_title), onReportBugClick)
+        Spacer(modifier = Modifier.height(8.dp))
+        NavRow(
+            Icons.Filled.AccountCircle, Color(0xFF2E86D6), stringResource(R.string.account_title), onAccountClick,
+            showBadge = showAccountNudge, travelingLight = !accountLinked
         )
-        }
+        Spacer(modifier = Modifier.height(8.dp))
+        NavRow(
+            Icons.Filled.StarRate, Color(0xFFF2A100), stringResource(R.string.settings_rate_app),
+            // Straight to the store listing, not Play Core's in-app review sheet — that API silently does nothing on a
+            // sideloaded install or once its quota is spent, with no failure callback to fall back from.
+            onClick = { activity?.let(AppReviewLauncher::openStoreListing) }
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        NavRow(
+            Icons.Filled.PrivacyTip, Color(0xFF34A853), stringResource(R.string.settings_privacy_policy),
+            onClick = {
+                runCatching {
+                    activity?.startActivity(
+                        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(PRIVACY_POLICY_URL))
+                    )
+                }
+            }
+        )
+
+        // The build actually running, printed where anyone can find it: without this there was no way to answer
+        // "is the APK on this phone the new one?".
+        Spacer(modifier = Modifier.height(14.dp))
+        Text(
+            text = stringResource(R.string.settings_version_format, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+            style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(12.sp).copy(color = Color(0xFFFFEBC8)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp)
+                // No ripple and no hint that this does anything: seven taps open the developer door.
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = {
+                        versionTaps++
+                        if (versionTaps >= DEVELOPER_REVEAL_TAPS) {
+                            versionTaps = 0
+                            onDeveloperReveal()
+                        }
+                    }
+                )
+        )
     }
 }
 
@@ -296,18 +239,16 @@ private fun BatteryOptimizationHint() {
     }
     if (ignoringOptimizations) return
 
-    WarmCard(corner = 22.dp, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)) {
+    com.sualtikasifi.cizimhafiza.presentation.common.NinePatch(res = R.drawable.league_card, slicePx = 100, edge = 20.dp, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
             Text(
                 text = stringResource(R.string.settings_battery_optimization_title),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface
+                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = com.sualtikasifi.cizimhafiza.presentation.common.InkBrown, fontSize = 16.sp, textAlign = TextAlign.Start)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = stringResource(R.string.settings_battery_optimization_body),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(12.sp, 16.sp).copy(textAlign = TextAlign.Start)
             )
             Spacer(modifier = Modifier.height(10.dp))
             com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton(
@@ -338,51 +279,28 @@ private fun BatteryOptimizationHint() {
 @Composable
 private fun NavRow(
     icon: ImageVector,
+    iconColor: Color,
     label: String,
     onClick: () -> Unit,
     showBadge: Boolean = false,
     /** A light that keeps travelling round the row's edge — draws the eye to it. */
     travelingLight: Boolean = false
 ) {
-    WarmCard(
-        corner = 22.dp,
+    PaintedRow(
+        icon = icon,
+        iconColor = iconColor,
+        title = label,
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().then(if (travelingLight) Modifier.travelingLight(22.dp) else Modifier)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box {
-                    IconWell(icon = icon)
-                    // Same dot as MenuTile's unseen-achievement badge — a
-                    // presence indicator, not a count, since there's nothing
-                    // here to count: just "still anonymous and played enough
-                    // to have something worth protecting".
-                    if (showBadge) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .size(12.dp)
-                                .background(MaterialTheme.colorScheme.error, CircleShape)
-                        )
-                    }
-                }
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
+        badge = showBadge,
+        modifier = if (travelingLight) Modifier.travelingLight(20.dp) else Modifier,
+        trailing = {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = com.sualtikasifi.cizimhafiza.presentation.common.InkBrown
             )
         }
-    }
+    )
 }
 
 /**
@@ -407,43 +325,22 @@ private fun LanguageRow(selectedLanguage: String, onLanguageSelected: (String) -
     val orderedEntries = SupportedLanguage.entries.sortedWith(
         compareBy({ it != selected }, { labels.getValue(it) })
     )
-    WarmCard(corner = 22.dp, onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconWell(icon = Icons.Filled.Language)
-                Text(
-                    text = stringResource(R.string.settings_language),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            // DropdownMenu anchors to whatever composable directly contains
-            // its own call — NOT to an align() modifier passed into it (that
-            // modifier only styles the floating menu's own content, once
-            // already positioned; it does nothing to WHERE it's positioned).
-            // Wrapping it around the earlier full-width Row made the whole
-            // card the anchor, so the menu opened from that row's start
-            // (the left edge) no matter what modifier was handed to
-            // DropdownMenu itself. Anchoring it to just this trailing
-            // flag+label+arrow Box — which SpaceBetween already pins to the
-            // card's right edge — makes the menu open from there instead.
+    PaintedRow(
+        icon = Icons.Filled.Language,
+        iconColor = Color(0xFF2E86D6),
+        title = stringResource(R.string.settings_language),
+        onClick = { expanded = true },
+        trailing = {
+            // DropdownMenu anchors to whatever composable directly contains its own call, so it lives inside this
+            // trailing Box, which sits at the card's right edge — the menu opens from there.
             Box {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(text = selected.flagEmoji, style = MaterialTheme.typography.bodyMedium)
                     Text(
                         text = stringResource(selected.labelRes),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = com.sualtikasifi.cizimhafiza.presentation.common.InkBrown, fontSize = 15.sp, textAlign = TextAlign.End)
                     )
-                    Icon(
-                        imageVector = Icons.Filled.ArrowDropDown,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = com.sualtikasifi.cizimhafiza.presentation.common.InkBrown)
                 }
                 DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                     orderedEntries.forEach { language ->
@@ -463,7 +360,7 @@ private fun LanguageRow(selectedLanguage: String, onLanguageSelected: (String) -
                 }
             }
         }
-    }
+    )
 }
 
 /**
@@ -474,35 +371,33 @@ private fun LanguageRow(selectedLanguage: String, onLanguageSelected: (String) -
 @Composable
 private fun SettingGridCell(
     icon: ImageVector,
+    iconColor: Color,
     label: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    WarmCard(corner = 20.dp, modifier = modifier) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp)) {
+    com.sualtikasifi.cizimhafiza.presentation.common.NinePatch(res = R.drawable.league_card, slicePx = 100, edge = 20.dp, modifier = modifier) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 11.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconWell(icon = icon)
-                Switch(
-                    checked = checked,
-                    onCheckedChange = onCheckedChange,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.surface,
-                        checkedTrackColor = MaterialTheme.colorScheme.primary,
-                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-                        uncheckedBorderColor = MaterialTheme.colorScheme.outline
-                    )
-                )
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .shadow(2.dp, CircleShape)
+                        .background(Brush.verticalGradient(listOf(androidx.compose.ui.graphics.lerp(iconColor, Color.White, 0.28f), iconColor)), CircleShape)
+                        .border(1.5.dp, Color.White.copy(alpha = 0.85f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) { Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp)) }
+                com.sualtikasifi.cizimhafiza.presentation.common.PaintedSwitch(checked = checked, onCheckedChange = onCheckedChange)
             }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
+                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = com.sualtikasifi.cizimhafiza.presentation.common.InkBrown, fontSize = 17.sp, textAlign = TextAlign.Start),
                 maxLines = 1
             )
         }

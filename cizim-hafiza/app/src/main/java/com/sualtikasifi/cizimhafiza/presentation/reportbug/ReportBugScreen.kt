@@ -27,6 +27,27 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.sualtikasifi.cizimhafiza.presentation.common.ButtonOrange
+import com.sualtikasifi.cizimhafiza.presentation.common.ChoicePill
+import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle
+import com.sualtikasifi.cizimhafiza.presentation.common.InkBrown
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPage
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -73,132 +94,137 @@ fun ReportBugScreen(
     var pendingDeleteId by remember { mutableStateOf<String?>(null) }
     var deleteAllRequested by remember { mutableStateOf(false) }
 
-    // A scrollable list rather than a fixed Column: reports used to be
-    // strictly write-only (send it, see a "thanks" card, never hear
-    // anything again), so there was nothing below the form worth scrolling
-    // to. Once a developer reply can show up here, the history needs room
-    // to grow past one screen.
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-    Box(modifier = Modifier.fillMaxSize()) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .screenBackground()
-            .padding(padding)
-            .padding(horizontal = 20.dp),
-        // Clears the floating back button (see ScreenTopActions).
-        contentPadding = PaddingValues(top = TopActionsClearance, bottom = 16.dp)
-    ) {
-        item {
-            Column {
-                // A short intro card, same language as CreateDuelScreen's —
-                // gives the form a proper "what is this for" framing instead
-                // of dropping straight into a bare text field.
-                RaisedCard(corner = 22.dp, modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        IconWell(icon = Icons.Filled.Feedback)
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Text(
-                            text = stringResource(R.string.report_bug_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
+    // Scrolls only when it has to: the form fits a normal phone, the history of earlier reports grows below it.
+    val cream = Color(0xFFFFEBC8)
+    PaintedPage(title = stringResource(R.string.report_bug_title), onBack = onBack) {
+        // A short intro card: gives the form a proper "what is this for" framing.
+        NinePatch(res = R.drawable.league_card, slicePx = 100, edge = 22.dp, modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier.size(42.dp).background(Color(0xFFFFE2B5), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) { Icon(Icons.Filled.Feedback, contentDescription = null, tint = Color(0xFFF26A1B), modifier = Modifier.size(24.dp)) }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.report_bug_hint),
+                    style = DescriptionStyle(14.sp, 19.sp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+
+        FormLabel(stringResource(R.string.report_bug_category_label), cream)
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            ChoicePill(
+                label = stringResource(R.string.report_bug_category_suggestion),
+                selected = uiState.category == BugReportCategory.SUGGESTION,
+                onClick = { viewModel.onCategorySelected(BugReportCategory.SUGGESTION) },
+                modifier = Modifier.weight(1f),
+                height = 48.dp,
+                textSize = 17.sp
+            )
+            ChoicePill(
+                label = stringResource(R.string.report_bug_category_complaint),
+                selected = uiState.category == BugReportCategory.COMPLAINT,
+                onClick = { viewModel.onCategorySelected(BugReportCategory.COMPLAINT) },
+                modifier = Modifier.weight(1f),
+                height = 48.dp,
+                textSize = 17.sp
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+
+        FormLabel(stringResource(R.string.report_bug_description_label), cream)
+        Spacer(modifier = Modifier.height(6.dp))
+        NinePatch(res = R.drawable.league_card, slicePx = 100, edge = 20.dp, modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp)) {
+            BasicTextField(
+                value = uiState.description,
+                onValueChange = { if (it.length <= MAX_DESCRIPTION_LENGTH) viewModel.onDescriptionChanged(it) },
+                textStyle = PaintedStyle(color = InkBrown, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
+                cursorBrush = SolidColor(ButtonOrange),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp).padding(horizontal = 18.dp, vertical = 16.dp),
+                decorationBox = { inner ->
+                    Box {
+                        if (uiState.description.isEmpty()) {
+                            Text(
+                                stringResource(R.string.report_bug_placeholder),
+                                style = PaintedStyle(color = Color(0xFF9C8F82), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start)
+                            )
+                        }
+                        inner()
                     }
                 }
-                Spacer(modifier = Modifier.height(18.dp))
-
-                SectionLabel(text = stringResource(R.string.report_bug_category_label))
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SelectableChip(
-                        label = stringResource(R.string.report_bug_category_suggestion),
-                        selected = uiState.category == BugReportCategory.SUGGESTION,
-                        onClick = { viewModel.onCategorySelected(BugReportCategory.SUGGESTION) },
-                        fillWidth = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                    SelectableChip(
-                        label = stringResource(R.string.report_bug_category_complaint),
-                        selected = uiState.category == BugReportCategory.COMPLAINT,
-                        onClick = { viewModel.onCategorySelected(BugReportCategory.COMPLAINT) },
-                        fillWidth = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Spacer(modifier = Modifier.height(18.dp))
-
-                SectionLabel(text = stringResource(R.string.report_bug_description_label))
-                Spacer(modifier = Modifier.height(8.dp))
-                AppTextField(
-                    value = uiState.description,
-                    onValueChange = { if (it.length <= MAX_DESCRIPTION_LENGTH) viewModel.onDescriptionChanged(it) },
-                    placeholder = stringResource(R.string.report_bug_placeholder),
-                    singleLine = false,
-                    minLines = 6,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp)
-                )
-                Text(
-                    text = stringResource(R.string.report_bug_char_count_format, uiState.description.length, MAX_DESCRIPTION_LENGTH),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    textAlign = TextAlign.End
-                )
-                uiState.errorMessage?.let { message ->
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = message.asString(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-                Spacer(modifier = Modifier.height(14.dp))
-                PrimaryButton(
-                    text = stringResource(
-                        if (uiState.isSubmitting) R.string.report_bug_sending else R.string.report_bug_submit
-                    ),
-                    onClick = viewModel::submit,
-                    enabled = uiState.description.isNotBlank() && !uiState.isSubmitting,
-                    modifier = Modifier.fillMaxWidth()
+            )
+        }
+        Text(
+            text = stringResource(R.string.report_bug_char_count_format, uiState.description.length, MAX_DESCRIPTION_LENGTH),
+            style = PaintedStyle(color = cream, fontSize = 12.sp, textAlign = TextAlign.End),
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, end = 6.dp)
+        )
+        uiState.errorMessage?.let { message ->
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = message.asString(),
+                style = PaintedStyle(color = Color(0xFFFFD6D0), fontSize = 14.sp, textAlign = TextAlign.Center),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xCC3B1E08), RoundedCornerShape(14.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        val canSend = uiState.description.isNotBlank() && !uiState.isSubmitting
+        NinePatch(
+            res = R.drawable.res_btn_claim,
+            slicePx = 64,
+            sliceYPx = 46,
+            edge = 28.dp,
+            edgeY = 21.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .graphicsLayer { alpha = if (canSend) 1f else 0.55f }
+                .clickable(enabled = canSend, interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = viewModel::submit)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                Spacer(Modifier.width(10.dp))
+                LetteredText(
+                    stringResource(if (uiState.isSubmitting) R.string.report_bug_sending else R.string.report_bug_submit),
+                    20.sp, outline = Color(0xFF8A3A00)
                 )
             }
         }
 
         if (myReports.isNotEmpty()) {
-            item {
-                Spacer(modifier = Modifier.height(28.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.report_bug_history_title),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    TextButton(onClick = { deleteAllRequested = true }) {
-                        Text(
-                            text = stringResource(R.string.report_bug_delete_all),
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(18.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                LetteredText(stringResource(R.string.report_bug_history_title), 18.sp)
+                Text(
+                    text = stringResource(R.string.report_bug_delete_all),
+                    style = PaintedStyle(color = Color(0xFFFFC2BA), fontSize = 14.sp, textAlign = TextAlign.End),
+                    modifier = Modifier.clickable { deleteAllRequested = true }.padding(8.dp)
+                )
             }
-            items(myReports, key = { it.id }) { report ->
+            Spacer(modifier = Modifier.height(6.dp))
+            myReports.forEach { report ->
                 ReportHistoryCard(report, onDelete = { pendingDeleteId = report.id })
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
-
-        item { Spacer(modifier = Modifier.height(16.dp)) }
-    }
-    ScreenTopActions(onBack = onBack, modifier = Modifier.align(Alignment.TopStart))
-    }
+        Spacer(modifier = Modifier.height(12.dp))
     }
     if (uiState.isSubmitted) {
         AlertDialog(
@@ -263,8 +289,8 @@ private fun ConfirmReportDeleteDialog(message: String, onDismiss: () -> Unit, on
 @Composable
 private fun ReportHistoryCard(report: BugReport, onDelete: () -> Unit) {
     val dateFormat = remember(report.submittedAtMillis) { SimpleDateFormat("d MMMM yyyy", Locale.getDefault()) }
-    RaisedCard(corner = 18.dp, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
+    NinePatch(res = R.drawable.league_card, slicePx = 100, edge = 20.dp, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -333,4 +359,17 @@ private fun ReportHistoryCard(report: BugReport, onDelete: () -> Unit) {
             }
         }
     }
+}
+
+/** A section label on the wooden wall: cream lettering with a soft shadow, left aligned. */
+@Composable
+private fun FormLabel(text: String, color: Color) {
+    Text(
+        text = text,
+        style = PaintedStyle(
+            color = color, fontSize = 16.sp, textAlign = TextAlign.Start,
+            shadow = androidx.compose.ui.graphics.Shadow(Color(0xAA2A1005), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)
+        ),
+        modifier = Modifier.padding(start = 4.dp)
+    )
 }
