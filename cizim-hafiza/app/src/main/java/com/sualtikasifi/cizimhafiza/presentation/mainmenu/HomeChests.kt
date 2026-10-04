@@ -228,7 +228,7 @@ internal fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, 
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = stringResource(R.string.chest_slot_empty_title),
+                text = stringResource(R.string.chest_slot_empty_title).let { if (compact) it.replace(' ', '\n') else it },
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = InkSoft,
@@ -412,7 +412,7 @@ internal fun HomeChestsPainted(
     val now by viewModel.nowMillis.collectAsState()
     var infoOpen by remember { mutableStateOf(false) }
 
-    Box(box(168f, 1434f, 352f, 1494f), contentAlignment = Alignment.CenterStart) {
+    Box(box(168f, 1434f, 440f, 1494f), contentAlignment = Alignment.CenterStart) {
         Text(
             text = stringResource(R.string.menu_chests),
             style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(

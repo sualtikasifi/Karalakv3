@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
@@ -105,6 +106,23 @@ internal fun PaintedHome(
             Modifier.offset(ux * x0, uy * y0).size(ux * (x1 - x0), uy * (y1 - y0))
         val noRipple = remember { MutableInteractionSource() }
 
+        @Composable
+        fun FitLettered(text: String, baseArt: Float, outline: Color?, maxLines: Int, modifier: Modifier, fill: Color = Color.White) {
+            Box(modifier, contentAlignment = Alignment.Center) {
+                BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    val fontScale = LocalDensity.current.fontScale
+                    val w = maxWidth.value
+                    val h = maxHeight.value
+                    val longest = text.split(' ').maxOf { it.length }.coerceAtLeast(1)
+                    val byWord = w / (0.62f * longest)
+                    val byTotal = w * maxLines / (0.62f * text.length.coerceAtLeast(1) * 1.2f)
+                    val byHeight = h / (1.3f * maxLines)
+                    val dp = minOf(baseArt * us, byWord, byTotal, byHeight)
+                    LetteredText(text, (dp / fontScale).sp, fill = fill, outline = outline, maxLines = maxLines)
+                }
+            }
+        }
+
         Image(
             painter = painterResource(R.drawable.bg_home_scene),
             contentDescription = null,
@@ -127,9 +145,7 @@ internal fun PaintedHome(
         ) {
             Icon(Icons.Filled.Create, contentDescription = null, tint = Color(0xFF5A2E0A), modifier = Modifier.size((30f * us).dp))
         }
-        Box(box(350f, 266f, 462f, 320f), contentAlignment = Alignment.Center) {
-            LetteredText(stringResource(pen.labelRes), fs(27f), outline = Color(0xFF3A1E08), maxLines = 2)
-        }
+        FitLettered(stringResource(pen.labelRes), 27f, Color(0xFF3A1E08), 1, box(350f, 266f, 484f, 320f))
 
         // ── Profile ──
         Box(
@@ -214,18 +230,14 @@ internal fun PaintedHome(
         val flags = dailyState.todayResult?.correctFlags.orEmpty()
         val multiplier = XpAwards.dailyStreakMultiplier(dailyState.streakIfCompletedToday)
         val cardInk = if (available) Color(0xFF2E1A66) else Color(0xFF0B4F2A)
-        Box(box(384f, 546f, 598f, 626f), contentAlignment = Alignment.Center) {
-            LetteredText(stringResource(R.string.daily_challenge_title), fs(28f), outline = cardInk, maxLines = 2)
-        }
-        Box(box(256f, 628f, 360f, 678f), contentAlignment = Alignment.Center) {
-            Box(
-                modifier = Modifier
-                    .background(Brush.verticalGradient(listOf(Color(0xFFFFE9B0), Color(0xFFFFC04A))), RoundedCornerShape(50))
-                    .border(2.dp, Color(0xFFE08A1B), RoundedCornerShape(50))
-                    .padding(horizontal = (14f * us).dp, vertical = (3f * us).dp)
-            ) {
-                Text("🔥 ${multiplier}x", style = PaintedStyle(color = Color(0xFF8A3A00), fontSize = fs(32f), textAlign = TextAlign.Center), maxLines = 1)
-            }
+        FitLettered(stringResource(R.string.daily_challenge_title), 30f, cardInk, 2, box(384f, 546f, 598f, 626f))
+        Box(
+            box(256f, 630f, 360f, 676f)
+                .background(Brush.verticalGradient(listOf(Color(0xFFFFE9B0), Color(0xFFFFC04A))), RoundedCornerShape(50))
+                .border(2.dp, Color(0xFFE08A1B), RoundedCornerShape(50)),
+            contentAlignment = Alignment.Center
+        ) {
+            FitLettered("🔥 ${multiplier}x", 30f, null, 1, Modifier.fillMaxSize().padding(horizontal = 4.dp), fill = Color(0xFF8A3A00))
         }
         Box(box(394f, 628f, 594f, 676f), contentAlignment = Alignment.Center) {
             Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
@@ -296,9 +308,7 @@ internal fun PaintedHome(
         val goldRemaining = adGoldNextAt - goldNow
         val goldReady = goldRemaining <= 0
         Box(box(34f, 538f, 244f, 754f).clickable(enabled = goldReady, interactionSource = noRipple, indication = null, onClick = onWatchGold)) {}
-        Box(box(46f, 648f, 232f, 698f), contentAlignment = Alignment.Center) {
-            LetteredText(stringResource(R.string.home_ad_gold_label), fs(36f), outline = Color(0xFF8A4E12), maxLines = 1)
-        }
+        FitLettered(stringResource(R.string.home_ad_gold_label), 36f, Color(0xFF8A4E12), 1, box(40f, 648f, 238f, 698f))
         Box(box(98f, 702f, 226f, 742f), contentAlignment = Alignment.Center) {
             Text(
                 text = if (goldReady) stringResource(R.string.home_ad_watch) else "⏳ " + hms(goldRemaining / 1000),
@@ -312,9 +322,7 @@ internal fun PaintedHome(
         val chestNow = rememberNowUntil(if (adChestAvailable) 0L else midnight)
         val chestRemaining = midnight - chestNow
         Box(box(616f, 538f, 808f, 754f).clickable(enabled = adChestAvailable, interactionSource = noRipple, indication = null, onClick = onWatchChest)) {}
-        Box(box(634f, 644f, 796f, 706f), contentAlignment = Alignment.Center) {
-            LetteredText(stringResource(R.string.home_ad_chest_label), fs(25f), outline = Color(0xFF14549A), maxLines = 1)
-        }
+        FitLettered(stringResource(R.string.home_ad_chest_label), 27f, Color(0xFF14549A), 2, box(634f, 640f, 796f, 706f))
         Box(
             box(654f, 708f, 792f, 746f)
                 .background(Color(0xCC183A6E), RoundedCornerShape(50))
@@ -332,9 +340,7 @@ internal fun PaintedHome(
         @Composable
         fun Tile(x0: Float, y0: Float, x1: Float, y1: Float, lx0: Float, ly0: Float, lx1: Float, ly1: Float, label: String, onClick: () -> Unit, content: @Composable () -> Unit = {}) {
             Box(box(x0, y0, x1, y1).clickable(interactionSource = noRipple, indication = null, onClick = onClick).a11yButton(label)) {}
-            Box(box(lx0, ly0, lx1, ly1), contentAlignment = Alignment.Center) {
-                LetteredText(label, fs(30f), outline = Color(0xFF241408), maxLines = 2)
-            }
+            FitLettered(label, 31f, Color(0xFF241408), 2, box(lx0, ly0, lx1, ly1))
             content()
         }
         Tile(30f, 776f, 288f, 1012f, 56f, 926f, 268f, 998f, stringResource(R.string.menu_play_online), onPlayOnline)
@@ -381,3 +387,4 @@ private fun CornerCount(modifier: Modifier, count: Int) {
         }
     }
 }
+
