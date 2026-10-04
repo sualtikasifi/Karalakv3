@@ -21,6 +21,7 @@ on:
           - tutorial.sh
           - worlds.sh
           - race.sh
+          - offline.sh
   pull_request:
     paths:
       - ".github/workflows/smoke-test.yml"
