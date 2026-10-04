@@ -35,8 +35,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.animation.core.animateFloatAsState
 import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.presentation.common.ButtonOrange
+import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 
@@ -80,13 +84,7 @@ fun OnlineLobbyScreen(
             modifier = Modifier.offset(x = x(0.5f) - len(330f), y = y(0.478f) - len(40f)).width(len(660f)),
             contentAlignment = Alignment.Center
         ) {
-            val base = PaintedStyle(fontSize = titleSize, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
-            Text(
-                text = stringResource(R.string.online_lobby_title),
-                style = base.copy(color = Color(0xFF5A2E0C), drawStyle = Stroke(width = with(density) { (9f * s) }, join = androidx.compose.ui.graphics.StrokeJoin.Round)),
-                maxLines = 1
-            )
-            Text(text = stringResource(R.string.online_lobby_title), style = base.copy(color = Color.White), maxLines = 1)
+            LetteredText(stringResource(R.string.online_lobby_title), titleSize)
         }
 
         // Line on the paper scroll.
@@ -96,13 +94,7 @@ fun OnlineLobbyScreen(
         ) {
             Text(
                 text = stringResource(R.string.online_lobby_subtitle),
-                style = PaintedStyle(
-                    color = Color(0xFF5A3A1A),
-                    fontSize = with(density) { (27f * s).toSp() },
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    lineHeight = with(density) { (34f * s).toSp() }
-                )
+                style = DescriptionStyle(with(density) { (27f * s).toSp() }, with(density) { (34f * s).toSp() })
             )
         }
 
@@ -119,7 +111,7 @@ fun OnlineLobbyScreen(
             image = R.drawable.race_btn_white,
             text = stringResource(R.string.online_join_room),
             icon = Icons.AutoMirrored.Filled.Login,
-            textColor = Color(0xFFF26A0F),
+            textColor = ButtonOrange,
             outline = null,
             onClick = onJoinRoom,
             modifier = Modifier.offset(x = x(0.5f) - len(290f), y = y(0.748f) - len(74f)).width(len(580f))
@@ -152,13 +144,7 @@ private fun RaceButton(
         Image(painter = painterResource(image), contentDescription = null, contentScale = ContentScale.FillWidth, modifier = Modifier.fillMaxWidth())
         Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.align(Alignment.CenterStart).padding(start = 38.dp).size(26.dp))
         run {
-            Box(contentAlignment = Alignment.Center) {
-                val style = PaintedStyle(fontSize = androidx.compose.ui.unit.TextUnit(22f, androidx.compose.ui.unit.TextUnitType.Sp), fontWeight = FontWeight.ExtraBold)
-                if (outline != null) {
-                    Text(text, style = style.copy(color = outline, drawStyle = Stroke(width = 7f, join = androidx.compose.ui.graphics.StrokeJoin.Round)), maxLines = 1)
-                }
-                Text(text, style = style.copy(color = textColor), maxLines = 1)
-            }
+            LetteredText(text, 22.sp, fill = textColor, outline = outline)
         }
     }
 }
