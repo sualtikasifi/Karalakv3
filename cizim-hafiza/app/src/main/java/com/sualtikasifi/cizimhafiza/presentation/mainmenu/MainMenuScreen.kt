@@ -217,118 +217,37 @@ fun MainMenuScreen(
     // rather than letting any one element claim its old, roomier size.
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         com.sualtikasifi.cizimhafiza.presentation.common.CappedFontScale {
-        Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            painter = painterResource(R.drawable.bg_result_wood),
-            contentDescription = null,
-            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
+        PaintedHome(
+            nickname = nickname,
+            progress = com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.displayProgress(levelProgress, xpFly, xpFlyArrived),
+            frame = selectedFrame,
+            photo = avatarPhoto,
+            pen = selectedPen,
+            gold = gold,
+            xpEvent = xpEvent,
+            dailyState = dailyState,
+            adGoldNextAt = adGoldNextAt,
+            adChestAvailable = adChestDay != today,
+            pendingFriendRequests = pendingFriendRequests,
+            hasUnseenAchievement = hasUnseenAchievement,
+            accountNotLinked = accountNotLinked,
+            onFrameClick = { framePickerOpen = true },
+            onPenClick = { penPickerOpen = true },
+            onRankClick = { rankLadderOpen = true },
+            onGoldClick = onStore,
+            onWatchGold = { activity?.let(viewModel::watchAdForGold) },
+            onWatchChest = { activity?.let(viewModel::watchAdForChest) },
+            onDaily = onDailyChallenge,
+            onPlayOnline = onPlayOnline,
+            onQuickMatch = onQuickMatch,
+            onPlay = onPlay,
+            onLevels = onLevels,
+            onFriends = onFriends,
+            onAchievements = onAchievements,
+            onLeague = onLeague,
+            onStore = onStore,
+            onSettings = onSettings
         )
-        Image(
-            painter = painterResource(R.drawable.home_desk),
-            contentDescription = null,
-            contentScale = androidx.compose.ui.layout.ContentScale.FillWidth,
-            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            Image(
-                painter = painterResource(R.drawable.home_logo),
-                contentDescription = null,
-                contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
-                modifier = Modifier
-                    .padding(start = 8.dp, top = 2.dp)
-                    .width(262.dp)
-                    .aspectRatio(948f / 514f)
-            )
-            HomeProfileBar(
-                nickname = nickname,
-                progress = com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.displayProgress(levelProgress, xpFly, xpFlyArrived),
-                frame = selectedFrame,
-                photo = avatarPhoto,
-                pen = selectedPen,
-                gold = gold,
-                onFrameClick = { framePickerOpen = true },
-                onPenClick = { penPickerOpen = true },
-                onRankClick = { rankLadderOpen = true },
-                onGoldClick = onStore,
-                modifier = Modifier.padding(horizontal = 10.dp).offset(y = (-16).dp)
-            )
-            // Fixed, non-scrolling page: everything is scaled down together on a short phone (FitToHeight).
-            BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                val compact = maxHeight < 700.dp
-                val content: @Composable ColumnScope.() -> Unit = {
-                    xpEvent?.let { event ->
-                        XpEventBanner(event = event)
-                        Spacer(modifier = Modifier.height(6.dp))
-                    }
-                    if (GameConstants.ADMOB_ENABLED) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().height(if (compact) 108.dp else 116.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            AdGoldButton(
-                                nextAtMillis = adGoldNextAt,
-                                onClick = { activity?.let(viewModel::watchAdForGold) },
-                                modifier = Modifier.width(84.dp).fillMaxHeight()
-                            )
-                            DailyChallengeCardNarrow(
-                                state = dailyState,
-                                onPlay = onDailyChallenge,
-                                modifier = Modifier.weight(1f).fillMaxHeight()
-                            )
-                            AdChestButton(
-                                availableToday = adChestDay != today,
-                                onClick = { activity?.let(viewModel::watchAdForChest) },
-                                modifier = Modifier.width(84.dp).fillMaxHeight()
-                            )
-                        }
-                    } else {
-                        DailyChallengeCardNarrow(
-                            state = dailyState,
-                            onPlay = onDailyChallenge,
-                            modifier = Modifier.fillMaxWidth().height(if (compact) 108.dp else 116.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(SECTION_GAP))
-
-                    // Three big modes, then six small ones: painted tiles, equal width, heights from their pictures.
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        PaintedTile(R.drawable.home_tile_race, 514f / 470f, stringResource(R.string.menu_play_online), onPlayOnline, Modifier.weight(1f))
-                        PaintedTile(R.drawable.home_tile_quick, 514f / 470f, stringResource(R.string.quick_match_title), onQuickMatch, Modifier.weight(1f), boost = xpEvent)
-                        PaintedTile(R.drawable.home_tile_offline, 514f / 470f, stringResource(R.string.menu_play), onPlay, Modifier.weight(1f))
-                    }
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        PaintedTile(R.drawable.home_tile_levels, 514f / 370f, stringResource(R.string.menu_levels), onLevels, Modifier.weight(1f))
-                        PaintedTile(R.drawable.home_tile_friends, 514f / 370f, stringResource(R.string.menu_friends), onFriends, Modifier.weight(1f), badgeCount = pendingFriendRequests)
-                        PaintedTile(R.drawable.home_tile_ach, 514f / 370f, stringResource(R.string.menu_achievements), onAchievements, Modifier.weight(1f), showBadge = hasUnseenAchievement)
-                    }
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        PaintedTile(R.drawable.home_tile_league, 514f / 374f, stringResource(R.string.league_title), onLeague, Modifier.weight(1f))
-                        PaintedTile(R.drawable.home_tile_store, 514f / 374f, stringResource(R.string.store_title), onStore, Modifier.weight(1f))
-                        PaintedTile(R.drawable.home_tile_settings, 514f / 363f, stringResource(R.string.menu_settings), onSettings, Modifier.weight(1f), showBadge = accountNotLinked)
-                    }
-
-                    Spacer(modifier = Modifier.height(SECTION_GAP))
-
-                    HomeChestsSection(compact = true)
-                }
-                FitToHeight(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp)
-                        .padding(top = 8.dp, bottom = 10.dp),
-                    content = content
-                )
-            }
-        }
-        }
         }
 
         if (exitPromptOpen) {
@@ -771,7 +690,7 @@ private fun DailyChallengeCard(state: DailyChallengeState, onPlay: () -> Unit, c
  * moment the card it's showing will actually flip to "ready" again.
  */
 @Composable
-private fun midnightCountdownText(): String {
+internal fun midnightCountdownText(): String {
     var remaining by remember {
         mutableStateOf(java.time.Duration.between(com.sualtikasifi.cizimhafiza.util.TurkeyTime.now(), nextMidnight()))
     }

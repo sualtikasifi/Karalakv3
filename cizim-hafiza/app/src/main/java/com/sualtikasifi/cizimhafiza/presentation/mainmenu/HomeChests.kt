@@ -200,7 +200,7 @@ internal fun HomeChestsSection(compact: Boolean = false, viewModel: ChestsViewMo
 }
 
 @Composable
-private fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, compact: Boolean, modifier: Modifier = Modifier) {
+internal fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, compact: Boolean, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(18.dp)
     if (chest == null) {
         val dash = InkSoft.copy(alpha = 0.5f)
@@ -394,4 +394,78 @@ internal fun rememberNowUntil(untilMillis: Long): Long {
 internal fun hms(totalSeconds: Long): String {
     val s = totalSeconds.coerceAtLeast(0)
     return "%d:%02d:%02d".format(s / 3600, (s % 3600) / 60, s % 60)
+}
+
+
+/**
+ * The painted "Kasalarım" panel: the picture already carries the frame, the empty slots and the info button; this places
+ * the live parts over it. [box] turns a rectangle of the picture into a Modifier, [fs] a size in picture units into text.
+ */
+@Composable
+internal fun HomeChestsPainted(
+    box: (Float, Float, Float, Float) -> Modifier,
+    fs: (Float) -> androidx.compose.ui.unit.TextUnit,
+    viewModel: ChestsViewModel = hiltViewModel()
+) {
+    var selectedChestId by remember { mutableStateOf<String?>(null) }
+    val slots by viewModel.chestSlots.collectAsState()
+    val now by viewModel.nowMillis.collectAsState()
+    var infoOpen by remember { mutableStateOf(false) }
+
+    Box(box(168f, 1434f, 352f, 1494f), contentAlignment = Alignment.CenterStart) {
+        Text(
+            text = stringResource(R.string.menu_chests),
+            style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
+                color = Color(0xFF2B1A10), fontSize = fs(46f), textAlign = TextAlign.Start
+            ),
+            maxLines = 1
+        )
+    }
+    Box(box(560f, 1438f, 728f, 1506f), contentAlignment = Alignment.CenterEnd) {
+        Text(
+            text = stringResource(if ((0 until ChestSlots.SLOT_COUNT).all { slots.getOrNull(it) != null }) R.string.home_chests_full else R.string.home_chests_tagline),
+            style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
+                color = Color(0xFF4A3426), fontSize = fs(27f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End, lineHeight = fs(32f)
+            ),
+            maxLines = 2
+        )
+    }
+    Box(
+        box(731f, 1426f, 794f, 1490f)
+            .clickable { infoOpen = true }
+            .a11yButton(stringResource(R.string.home_chests_info_title))
+    )
+    val slotX = listOf(64f to 232f, 247f to 412f, 429f to 596f, 610f to 780f)
+    (0 until ChestSlots.SLOT_COUNT).forEach { index ->
+        val (x0, x1) = slotX[index]
+        val chest = slots.getOrNull(index)
+        if (chest != null) {
+            Box(box(x0, 1494f, x1, 1674f)) {
+                HomeChestSlot(
+                    chest = chest,
+                    nowMillis = now,
+                    onClick = { selectedChestId = chest.id },
+                    compact = true,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        } else {
+            Box(box(x0 + 14f, 1594f, x1 - 14f, 1652f), contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(R.string.chest_slot_empty_title),
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
+                        color = Color(0xFF4A3426), fontSize = fs(27f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, lineHeight = fs(31f)
+                    ),
+                    maxLines = 2
+                )
+            }
+        }
+    }
+
+    com.sualtikasifi.cizimhafiza.presentation.chests.ChestDetailHost(
+        selectedId = selectedChestId,
+        onDismiss = { selectedChestId = null },
+        viewModel = viewModel
+    )
+    if (infoOpen) ChestInfoDialog(onDismiss = { infoOpen = false })
 }

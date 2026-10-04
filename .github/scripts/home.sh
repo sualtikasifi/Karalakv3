@@ -113,14 +113,10 @@ for i in $(seq 1 20); do
 done
 shot 02_main_menu_after_consent
 P=${P:-a}
-P=m
-b() { adb shell input keyevent KEYCODE_BACK; sleep 3; }
+P=n
 dismiss() { tap_text "Wait" || true; sleep 1; }
-# Re-open the app from scratch for every screen, so one hang cannot spoil the rest.
-fresh() { dismiss; adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 12; dismiss; sleep 2; }
-fresh; shot ${P}00_home
-adb shell input tap 541 1347; sleep 8; dismiss; shot ${P}01_quickmatch
-fresh; adb shell input tap 819 1773; sleep 6; dismiss; adb shell input tap 540 1000; shot ${P}02_settings
-fresh; adb shell input tap 539 1781; sleep 7; shot ${P}03_store
-fresh; adb shell input tap 242 2144; sleep 4; shot ${P}04_chest
-fresh; adb shell input tap 256 1572; sleep 6; shot ${P}05_levels
+adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 14; dismiss; sleep 3
+shot ${P}01_home
+adb shell wm size 1080x1920; sleep 4; adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 14; dismiss; sleep 3
+shot ${P}02_home_short
+adb shell wm size reset
