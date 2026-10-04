@@ -31,6 +31,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.sp
+import com.sualtikasifi.cizimhafiza.presentation.common.ButtonOrange
+import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle
+import com.sualtikasifi.cizimhafiza.presentation.common.InkBrown
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Flag
@@ -150,141 +173,176 @@ fun ResultScreen(
 
     // One screen, no scrolling: the summary on top, every drawing (yours and the opponent's)
     // in whatever room is left, the two claim buttons pinned underneath.
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        // The painted pieces shrink a little on a short phone so the drawings keep their room.
+        val k = ((maxHeight - 24.dp) / 891.dp).coerceIn(0.68f, 1f)
+        val showDesk = maxHeight >= 700.dp
+        Image(
+            painter = painterResource(R.drawable.bg_result_wood),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        if (showDesk) {
+            Image(
+                painter = painterResource(R.drawable.res_desk),
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .screenBackground()
-                .padding(padding)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(bottom = if (showDesk) 52.dp * k else 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ResultSummaryCard(state = state, shownXp = shownXp, xpDoubled = xpDoubled)
+            ResultSummaryCard(state = state, shownXp = shownXp, xpDoubled = xpDoubled, k = k)
 
             if (levelProgress != null) {
-                Spacer(modifier = Modifier.height(6.dp))
-                ResultLevelCard(progress = levelProgress, gainedXp = shownXp)
+                ResultLevelCard(progress = levelProgress, gainedXp = shownXp, k = k)
             }
 
-            state.duelOpponentName?.let { opponentName ->
-                Spacer(modifier = Modifier.height(6.dp))
-                RaisedCard(corner = 18.dp, modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = stringResource(R.string.duel_challenge_sent, opponentName),
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(12.dp)
-                    )
-                }
-            }
-
-            state.ghost?.let { ghost ->
-                Spacer(modifier = Modifier.height(6.dp))
-                GhostVersusCard(
-                    ghost = ghost,
-                    playerScore = state.totalScore,
-                    myName = myName,
-                    myLevel = levelProgress?.level ?: 1,
-                    myFrame = myFrame,
-                    myAvatarUrl = myAvatarUrl
-                )
-            }
-
-            state.duelChallenger?.let { duel ->
-                Spacer(modifier = Modifier.height(6.dp))
-                DuelChallengerVersusCard(
-                    duel = duel,
-                    playerScore = state.totalScore,
-                    onRematch = onRematchDuel?.let { rematch ->
-                        { rematch(duel.challengerUid, duel.challengerName) }
-                    }
-                )
-            }
-
-            state.daily?.let { daily ->
-                Spacer(modifier = Modifier.height(6.dp))
-                DailyChallengeResultCard(
-                    daily = daily,
-                    correctFlags = state.items.map { it.isCorrect },
-                    onShare = {
-                        DailyChallengeShareUtil.shareResult(
-                            context = context,
-                            correctFlags = state.items.map { it.isCorrect },
-                            streak = daily.streak
+            Column(
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                state.duelOpponentName?.let { opponentName ->
+                    Spacer(modifier = Modifier.height(6.dp))
+                    PaperPanel(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = stringResource(R.string.duel_challenge_sent, opponentName),
+                            style = PaintedStyle(color = InkBrown, fontSize = 15.sp, textAlign = TextAlign.Center),
+                            modifier = Modifier.fillMaxWidth().padding(6.dp)
                         )
                     }
-                )
-            }
+                }
 
-            Spacer(modifier = Modifier.height(6.dp))
-
-            ResultDrawings(
-                state = state,
-                ghostItems = ghostItems,
-                onPreview = { previewItem = it },
-                wordLanguage = wordLanguage,
-                myName = myName,
-                modifier = Modifier.weight(1f).fillMaxWidth()
-            )
-
-            if (onLevelNextAction != null && nextActionLabel != null) {
-                Spacer(modifier = Modifier.height(6.dp))
-                SecondaryButton(
-                    text = nextActionLabel,
-                    onClick = onLevelNextAction,
-                    height = 44.dp,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Always ends on the home screen. The XP is already banked: "Ödülü Al" just leaves
-            // (and says how much it is), "x2" watches an ad, pays the round a second time, then leaves.
-            val canDouble = onDoubleXp != null && state.xpEarned > 0 && GameConstants.ADMOB_ENABLED && !xpDoubled
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                if (canDouble) {
-                    PrimaryButton(
-                        text = stringResource(R.string.result_x2_button_amount, state.xpEarned * 2),
-                        onClick = onDoubleXp!!,
-                        face = Color(0xFFF59E0B),
-                        height = 54.dp,
-                        modifier = Modifier.weight(1f)
+                state.ghost?.let { ghost ->
+                    Spacer(modifier = Modifier.height(6.dp))
+                    GhostVersusCard(
+                        ghost = ghost,
+                        playerScore = state.totalScore,
+                        myName = myName,
+                        myLevel = levelProgress?.level ?: 1,
+                        myFrame = myFrame,
+                        myAvatarUrl = myAvatarUrl
                     )
                 }
-                // Where the player's thumb lands, so the XP can fly from exactly there to the home bar.
-                var claimTapWindowPos by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
-                var claimTopLeft by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-                var claimCenter by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-                PrimaryButton(
-                    text = stringResource(R.string.result_claim_amount, shownXp),
-                    onClick = {
-                        if (shownXp > 0 && levelProgress != null) {
-                            com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.start(
-                                origin = claimTapWindowPos ?: claimCenter,
-                                amount = shownXp,
-                                toXp = levelProgress.totalXp
+
+                state.duelChallenger?.let { duel ->
+                    Spacer(modifier = Modifier.height(6.dp))
+                    DuelChallengerVersusCard(
+                        duel = duel,
+                        playerScore = state.totalScore,
+                        onRematch = onRematchDuel?.let { rematch ->
+                            { rematch(duel.challengerUid, duel.challengerName) }
+                        }
+                    )
+                }
+
+                state.daily?.let { daily ->
+                    Spacer(modifier = Modifier.height(6.dp))
+                    DailyChallengeResultCard(
+                        daily = daily,
+                        correctFlags = state.items.map { it.isCorrect },
+                        onShare = {
+                            DailyChallengeShareUtil.shareResult(
+                                context = context,
+                                correctFlags = state.items.map { it.isCorrect },
+                                streak = daily.streak
                             )
                         }
-                        onMainMenu()
-                    },
-                    enabled = !(xpDoubled && !startedDoubled),
-                    height = 54.dp,
-                    modifier = Modifier
-                        .weight(1f)
-                        .onGloballyPositioned {
-                            claimTopLeft = it.positionInWindow()
-                            claimCenter = claimTopLeft + androidx.compose.ui.geometry.Offset(it.size.width / 2f, it.size.height / 2f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                ResultDrawings(
+                    state = state,
+                    ghostItems = ghostItems,
+                    onPreview = { previewItem = it },
+                    wordLanguage = wordLanguage,
+                    myName = myName,
+                    modifier = Modifier.weight(1f).fillMaxWidth()
+                )
+            }
+
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (onLevelNextAction != null && nextActionLabel != null) {
+                    PaintedPill(
+                        res = R.drawable.res_btn_next,
+                        height = 50.dp * k,
+                        onClick = onLevelNextAction,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Filled.Refresh, contentDescription = null, tint = Color(0xFFB5441A), modifier = Modifier.size(22.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            nextActionLabel,
+                            style = PaintedStyle(color = Color(0xFFA83A18), fontSize = 19.sp, textAlign = TextAlign.Center),
+                            maxLines = 1
+                        )
+                    }
+                }
+
+                // Always ends on the home screen. The XP is already banked: "Ödülü Al" just leaves
+                // (and says how much it is), "x2" watches an ad, pays the round a second time, then leaves.
+                val canDouble = onDoubleXp != null && state.xpEarned > 0 && GameConstants.ADMOB_ENABLED && !xpDoubled
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    if (canDouble) {
+                        PaintedPill(
+                            res = R.drawable.res_btn_claim,
+                            height = 54.dp * k,
+                            onClick = onDoubleXp!!,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            LetteredText(stringResource(R.string.result_x2_button_amount, state.xpEarned * 2), 17.sp, outline = Color(0xFF8A3A00))
                         }
-                        .pointerInput(Unit) {
-                            awaitPointerEventScope {
-                                while (true) {
-                                    val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
-                                    event.changes.firstOrNull { it.pressed }?.let { claimTapWindowPos = claimTopLeft + it.position }
+                    }
+                    // Where the player's thumb lands, so the XP can fly from exactly there to the home bar.
+                    var claimTapWindowPos by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
+                    var claimTopLeft by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+                    var claimCenter by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+                    PaintedPill(
+                        res = R.drawable.res_btn_claim,
+                        height = 54.dp * k,
+                        enabled = !(xpDoubled && !startedDoubled),
+                        onClick = {
+                            if (shownXp > 0 && levelProgress != null) {
+                                com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.start(
+                                    origin = claimTapWindowPos ?: claimCenter,
+                                    amount = shownXp,
+                                    toXp = levelProgress.totalXp
+                                )
+                            }
+                            onMainMenu()
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .onGloballyPositioned {
+                                claimTopLeft = it.positionInWindow()
+                                claimCenter = claimTopLeft + androidx.compose.ui.geometry.Offset(it.size.width / 2f, it.size.height / 2f)
+                            }
+                            .pointerInput(Unit) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                                        event.changes.firstOrNull { it.pressed }?.let { claimTapWindowPos = claimTopLeft + it.position }
+                                    }
                                 }
                             }
-                        }
-                )
+                    ) {
+                        Icon(Icons.Filled.CardGiftcard, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+                        Spacer(Modifier.width(10.dp))
+                        LetteredText(stringResource(R.string.result_claim_amount, shownXp), 19.sp, outline = Color(0xFF8A3A00))
+                    }
+                }
             }
         }
     }
@@ -486,7 +544,7 @@ private fun GhostVersusCard(
         }
     )
 
-    RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
+    PaperPanel(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -625,7 +683,7 @@ private fun DuelChallengerVersusCard(duel: DuelChallengerSummary, playerScore: I
         else -> MaterialTheme.colorScheme.error
     }
 
-    RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
+    PaperPanel(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -753,7 +811,7 @@ private fun DailyChallengeResultCard(
     correctFlags: List<Boolean>,
     onShare: () -> Unit
 ) {
-    RaisedCard(corner = 24.dp, modifier = Modifier.fillMaxWidth()) {
+    PaperPanel(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -801,60 +859,105 @@ private fun DailyChallengeResultCard(
 
 /** Where the round left the player on the level ladder, with the bar animating from where it started. */
 @Composable
-private fun ResultLevelCard(progress: com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState, gainedXp: Int) {
+private fun ResultLevelCard(progress: com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState, gainedXp: Int, k: Float) {
     val before = com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState.forXp(progress.totalXp - gainedXp)
     val leveledUp = before.level < progress.level
     val fraction = remember { androidx.compose.animation.core.Animatable(if (leveledUp) 0f else before.progressFraction) }
     LaunchedEffect(progress.totalXp) {
         fraction.animateTo(progress.progressFraction, androidx.compose.animation.core.tween(1100))
     }
-    RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = stringResource(R.string.result_level_label, progress.level),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier.weight(1f)
-                )
-                if (leveledUp) {
-                    TintedBadge(
-                        text = stringResource(R.string.result_level_up),
-                        container = AppTheme.tokens.gold.copy(alpha = 0.25f),
-                        content = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                } else if (!progress.isMaxLevel) {
-                    Text(
-                        text = stringResource(R.string.home_xp_to_next, progress.xpToNextLevel, progress.level + 1),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            androidx.compose.material3.LinearProgressIndicator(
-                progress = { fraction.value },
-                modifier = Modifier.fillMaxWidth().height(12.dp).clip(CircleShape),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth(k).aspectRatio(940f / 204f)) {
+        val u = maxWidth / 940f
+        fun fs(art: Float) = (u.value * art).sp
+        Image(painterResource(R.drawable.res_level), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+        Box(modifier = Modifier.offset(u * 120f, u * 34f).size(u * 380f, u * 64f), contentAlignment = Alignment.CenterStart) {
+            Text(
+                text = stringResource(R.string.result_level_label, progress.level),
+                style = PaintedStyle(color = InkBrown, fontSize = fs(54f), textAlign = TextAlign.Start),
+                maxLines = 1
             )
-            Spacer(modifier = Modifier.height(4.dp))
+        }
+        Box(modifier = Modifier.offset(u * 480f, u * 38f).size(u * 352f, u * 56f), contentAlignment = Alignment.CenterEnd) {
+            if (leveledUp) {
+                Box(
+                    modifier = Modifier
+                        .background(Brush.verticalGradient(listOf(Color(0xFFFFA64D), ButtonOrange)), RoundedCornerShape(50))
+                        .padding(horizontal = 12.dp, vertical = 2.dp)
+                ) { LetteredText(stringResource(R.string.result_level_up), fs(32f), outline = Color(0xFF8A3A00)) }
+            } else if (!progress.isMaxLevel) {
+                Text(
+                    text = stringResource(R.string.home_xp_to_next, progress.xpToNextLevel, progress.level + 1),
+                    style = PaintedStyle(color = InkBrown, fontSize = fs(30f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End),
+                    maxLines = 1
+                )
+            }
+        }
+        // The XP bar: a tan track, an orange fill and the little dot at its far end, as painted in the picture.
+        Box(
+            modifier = Modifier
+                .offset(u * 118f, u * 102f)
+                .size(u * 714f, u * 30f)
+                .background(Color(0xFFE6D3B3), RoundedCornerShape(50))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(fraction.value.coerceIn(0.04f, 1f))
+                    .background(Brush.verticalGradient(listOf(Color(0xFFFFA23A), Color(0xFFF58A1F))), RoundedCornerShape(50))
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = u * 12f)
+                    .size(u * 12f)
+                    .background(Color(0xFFF58A1F), CircleShape)
+            )
+        }
+        Box(modifier = Modifier.offset(u * 120f, u * 140f).size(u * 420f, u * 40f), contentAlignment = Alignment.CenterStart) {
             Text(
                 text = stringResource(R.string.home_xp_format, progress.xpIntoLevel, progress.xpForThisLevel),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = PaintedStyle(color = InkBrown, fontSize = fs(31f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
+                maxLines = 1
             )
         }
     }
 }
 
+/** A cream pill carrying a number, the hits / misses counters of the summary card. */
+@Composable
+private fun CountPill(icon: androidx.compose.ui.graphics.vector.ImageVector, tint: Color, value: Int, size: androidx.compose.ui.unit.TextUnit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(size.value.dp * 0.95f))
+        Text(value.toString(), style = PaintedStyle(color = tint, fontSize = size, textAlign = TextAlign.Center), maxLines = 1)
+    }
+}
+
+/** A star of the level rating: gold with a darker edge when earned, a faint brown one when not. */
+@Composable
+private fun RatingStar(filled: Boolean, size: androidx.compose.ui.unit.Dp, description: String) {
+    Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
+        Icon(
+            Icons.Filled.Star,
+            contentDescription = description,
+            tint = if (filled) Color(0xFFB86A00) else Color(0x66795548),
+            modifier = Modifier.fillMaxSize()
+        )
+        Icon(
+            Icons.Filled.Star,
+            contentDescription = null,
+            tint = if (filled) Color(0xFFFFC21A) else Color(0x44C9A98A),
+            modifier = Modifier.fillMaxSize(0.8f)
+        )
+    }
+}
+
 /**
- * The round's summary in one compact card: the XP earned (big), the one-line sum that explains it,
- * hits / misses / fastest, and a chip for every bonus or gold source — each saying what it is.
+ * The round's summary on the painted "game over" card: the XP earned (big), the one-line sum that explains it, the stars
+ * (or the fastest answer), hits / misses, and a chip for every bonus or gold source — each saying what it is.
  */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun ResultSummaryCard(state: GamePhase.Result, shownXp: Int, xpDoubled: Boolean) {
+private fun ResultSummaryCard(state: GamePhase.Result, shownXp: Int, xpDoubled: Boolean, k: Float) {
     val base = state.totalScore
     val mult = state.xpMultiplier
     val explanation = when {
@@ -864,81 +967,142 @@ private fun ResultSummaryCard(state: GamePhase.Result, shownXp: Int, xpDoubled: 
         state.xpEarned == base -> stringResource(R.string.result_xp_formula_plain, base)
         else -> stringResource(R.string.result_xp_formula_extra, base)
     }
-    RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.game_over),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = stringResource(R.string.xp_gained_format, shownXp),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = explanation,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-            state.levelStars?.let { stars ->
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    repeat(3) { index ->
-                        Icon(
-                            imageVector = if (index < stars) Icons.Filled.Star else Icons.Outlined.StarOutline,
-                            contentDescription = stringResource(R.string.stars_content_description, stars),
-                            tint = if (index < stars) AppTheme.tokens.gold else AppTheme.tokens.textFaint,
-                            modifier = Modifier.size(20.dp)
-                        )
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth(k).aspectRatio(940f / 505f)) {
+            val u = maxWidth / 940f
+            fun fs(art: Float) = (u.value * art).sp
+            @Composable
+            fun Slot(x0: Float, y0: Float, x1: Float, y1: Float, content: @Composable () -> Unit) {
+                Box(
+                    modifier = Modifier.offset(u * x0, u * y0).size(u * (x1 - x0), u * (y1 - y0)),
+                    contentAlignment = Alignment.Center
+                ) { content() }
+            }
+            Image(painterResource(R.drawable.res_header), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+            Slot(350f, 88f, 690f, 160f) {
+                Text(
+                    text = stringResource(R.string.game_over),
+                    style = PaintedStyle(color = Color(0xFF2B1A10), fontSize = fs(56f), textAlign = TextAlign.Center),
+                    maxLines = 1
+                )
+            }
+            Slot(400f, 176f, 650f, 262f) {
+                LetteredText(
+                    text = stringResource(R.string.xp_gained_format, shownXp),
+                    size = fs(80f),
+                    fill = Color(0xFFF26A1B),
+                    outline = null
+                )
+            }
+            Slot(390f, 262f, 660f, 304f) {
+                Text(
+                    text = explanation,
+                    style = DescriptionStyle(fs(29f), fs(31f)),
+                    maxLines = 2
+                )
+            }
+            Slot(380f, 304f, 660f, 378f) {
+                val stars = state.levelStars
+                if (stars != null) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(u * 14f), verticalAlignment = Alignment.CenterVertically) {
+                        repeat(3) { index ->
+                            RatingStar(index < stars, u * 66f, stringResource(R.string.stars_content_description, stars))
+                        }
+                    }
+                } else {
+                    state.fastestCorrectSeconds?.let {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Icon(Icons.Filled.Bolt, contentDescription = null, tint = Color(0xFFE08A00), modifier = Modifier.size(fs(40f).value.dp))
+                            Text(
+                                stringResource(R.string.fastest_correct, it),
+                                style = PaintedStyle(color = InkBrown, fontSize = fs(34f), textAlign = TextAlign.Center),
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                StatPill(text = "${state.correctCount}", icon = Icons.Filled.Check, contentColor = AppTheme.tokens.success)
-                StatPill(text = "${state.wrongCount}", icon = Icons.Filled.Close, contentColor = MaterialTheme.colorScheme.error)
-                state.fastestCorrectSeconds?.let {
-                    StatPill(
-                        text = stringResource(R.string.fastest_correct, it),
-                        icon = Icons.Filled.Bolt,
-                        contentColor = AppTheme.tokens.gold
-                    )
-                }
-            }
-            val quick = state.quickMatchDailyBonusApplied
-            val eventMult = if (state.xpEventMultiplierApplied) (mult / if (quick) 2 else 1).coerceAtLeast(2) else 0
-            val hasChips = quick || eventMult > 0 || state.goldFromAchievements > 0 || state.goldFromLevel > 0 || state.goldFromDaily > 0
-            if (hasChips) {
-                Spacer(modifier = Modifier.height(6.dp))
-                androidx.compose.foundation.layout.FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (quick) TintedBadge(text = stringResource(R.string.result_bonus_quick))
-                    if (eventMult > 0) TintedBadge(text = stringResource(R.string.result_bonus_event, eventMult))
-                    val goldBg = AppTheme.tokens.gold.copy(alpha = 0.2f)
-                    if (state.goldFromAchievements > 0) TintedBadge(
-                        text = stringResource(R.string.result_gold_achievement, state.goldFromAchievements),
-                        container = goldBg, content = AppTheme.tokens.gold
-                    )
-                    if (state.goldFromLevel > 0) TintedBadge(
-                        text = stringResource(R.string.result_gold_level, state.goldFromLevel),
-                        container = goldBg, content = AppTheme.tokens.gold
-                    )
-                    if (state.goldFromDaily > 0) TintedBadge(
-                        text = stringResource(R.string.result_gold_daily, state.goldFromDaily),
-                        container = goldBg, content = AppTheme.tokens.gold
-                    )
-                }
+            Slot(352f, 388f, 510f, 462f) { CountPill(Icons.Filled.Check, Color(0xFF2EA043), state.correctCount, fs(46f)) }
+            Slot(534f, 388f, 692f, 462f) { CountPill(Icons.Filled.Close, Color(0xFFE23B32), state.wrongCount, fs(46f)) }
+        }
+        val quick = state.quickMatchDailyBonusApplied
+        val eventMult = if (state.xpEventMultiplierApplied) (mult / if (quick) 2 else 1).coerceAtLeast(2) else 0
+        val hasChips = quick || eventMult > 0 || state.goldFromAchievements > 0 || state.goldFromLevel > 0 || state.goldFromDaily > 0
+        if (hasChips) {
+            androidx.compose.foundation.layout.FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp)
+            ) {
+                if (quick) ChipPill(text = stringResource(R.string.result_bonus_quick), color = Color(0xFFB5441A))
+                if (eventMult > 0) ChipPill(text = stringResource(R.string.result_bonus_event, eventMult), color = Color(0xFFB5441A))
+                val gold = Color(0xFF9A6200)
+                if (state.goldFromAchievements > 0) ChipPill(text = stringResource(R.string.result_gold_achievement, state.goldFromAchievements), color = gold)
+                if (state.goldFromLevel > 0) ChipPill(text = stringResource(R.string.result_gold_level, state.goldFromLevel), color = gold)
+                if (state.goldFromDaily > 0) ChipPill(text = stringResource(R.string.result_gold_daily, state.goldFromDaily), color = gold)
             }
         }
+    }
+}
+
+/** A small cream pill naming a bonus or a gold source. */
+@Composable
+private fun ChipPill(text: String, color: Color) {
+    Box(
+        modifier = Modifier
+            .shadow(2.dp, RoundedCornerShape(50))
+            .background(Color(0xFFFFF3DA), RoundedCornerShape(50))
+            .border(1.2.dp, Color(0xFFE0B878), RoundedCornerShape(50))
+            .padding(horizontal = 10.dp, vertical = 3.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, style = PaintedStyle(color = color, fontSize = 12.sp, textAlign = TextAlign.Center), maxLines = 1)
+    }
+}
+
+/** A parchment panel for the extra cards (quick match, duel, daily challenge). */
+@Composable
+private fun PaperPanel(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    NinePatch(
+        res = R.drawable.league_card,
+        slicePx = 100,
+        edge = 22.dp,
+        modifier = modifier
+    ) {
+        Box(modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp)) { content() }
+    }
+}
+
+/** One of the screen's wide painted buttons; [content] is laid out in a row in its middle. */
+@Composable
+private fun PaintedPill(
+    res: Int,
+    height: androidx.compose.ui.unit.Dp,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
+) {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by androidx.compose.animation.core.animateFloatAsState(if (pressed) 0.97f else 1f, label = "pillPress")
+    NinePatch(
+        res = res,
+        slicePx = 64,
+        sliceYPx = 46,
+        edge = 28.dp,
+        edgeY = 21.dp,
+        modifier = modifier
+            .height(height)
+            .graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (enabled) 1f else 0.55f }
+            .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            content = content
+        )
     }
 }
 
@@ -1027,22 +1191,18 @@ private fun DrawingSection(
         modifier = Modifier.fillMaxWidth().height(labelHeight),
         contentAlignment = Alignment.Center
     ) {
-        Text(
+        LetteredText(
             text = title,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
+            size = 16.sp,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 28.dp)
         )
         if (onShare != null) {
             Icon(
                 imageVector = Icons.Filled.Share,
                 contentDescription = stringResource(R.string.share_all_drawings),
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.align(Alignment.CenterEnd).size(20.dp).clickable(onClick = onShare)
+                tint = Color.White,
+                modifier = Modifier.align(Alignment.CenterEnd).size(22.dp).clickable(onClick = onShare)
             )
         }
     }
@@ -1052,46 +1212,53 @@ private fun DrawingSection(
         slots.chunked(columns).forEach { rowItems ->
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally)) {
                 rowItems.forEach { item ->
+                    val note = RoundedCornerShape(6.dp)
                     Box(modifier = Modifier.size(cell)) {
                         if (item == null) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clip(MaterialTheme.shapes.small)
-                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f))
+                                    .clip(note)
+                                    .background(Color(0x66FFF3DA))
                             )
                         } else {
-                            StrokeCanvas(
-                                strokes = item.strokes,
+                            // A sheet from a spiral notebook, with the drawing on it.
+                            Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clip(MaterialTheme.shapes.small)
-                                    .background(AppTheme.tokens.canvasPaper)
-                                    .border(
-                                        1.5.dp,
-                                        if (item.isCorrect) AppTheme.tokens.success.copy(alpha = 0.6f) else MaterialTheme.colorScheme.error.copy(alpha = 0.5f),
-                                        MaterialTheme.shapes.small
-                                    )
+                                    .shadow(3.dp, note)
+                                    .clip(note)
+                                    .background(Brush.verticalGradient(listOf(Color(0xFFFFF9EA), Color(0xFFF6E6C6))))
+                                    .border(1.dp, Color(0xFFD9BC8C), note)
                                     .clickable { onPreview(item) }
-                            )
+                            ) {
+                                StrokeCanvas(strokes = item.strokes, modifier = Modifier.fillMaxSize().padding(start = 7.dp, top = 2.dp, end = 2.dp, bottom = 2.dp))
+                                Column(
+                                    modifier = Modifier.align(Alignment.CenterStart).padding(start = 2.5.dp),
+                                    verticalArrangement = Arrangement.spacedBy(cell * 0.09f)
+                                ) {
+                                    repeat(5) { Box(Modifier.size(2.8.dp).background(Color(0xFFB59A7A), CircleShape)) }
+                                }
+                            }
                             // The mark grows with the drawing it sits on: a green disc with a tick for a right
                             // answer, a red disc with a cross for a wrong one, white-ringed so it reads on any paper.
-                            val badge = (cell.value * 0.2f).coerceIn(18f, 30f).dp
+                            val badge = (cell.value * 0.22f).coerceIn(18f, 30f).dp
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .padding(4.dp)
+                                    .padding(2.dp)
                                     .size(badge)
+                                    .shadow(3.dp, CircleShape)
                                     .clip(CircleShape)
-                                    .background(if (item.isCorrect) AppTheme.tokens.success else MaterialTheme.colorScheme.error)
-                                    .border(1.5.dp, Color.White, CircleShape),
+                                    .background(if (item.isCorrect) Color(0xFF34B24A) else Color(0xFFE53935))
+                                    .border(2.dp, Color.White, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = if (item.isCorrect) Icons.Filled.Check else Icons.Filled.Close,
                                     contentDescription = null,
                                     tint = Color.White,
-                                    modifier = Modifier.size(badge * 0.72f)
+                                    modifier = Modifier.size(badge * 0.66f)
                                 )
                             }
                         }

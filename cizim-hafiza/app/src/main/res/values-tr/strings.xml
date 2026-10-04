@@ -1366,4 +1366,9 @@
     <string name="level_panel_title">Aşama %1$d</string>
     <string name="level_panel_subtitle">Çiz, tahmin et ve yıldızları topla!</string>
     <string name="level_play">OYNA</string>
+    <string name="quick_match_searching_title">Rakip</string>
+    <string name="quick_match_searching_title2">aranıyor…</string>
+    <string name="quick_match_searching_sub">Sana en uygun rakibi bulmak için diğer oyuncular taranıyor…</string>
+    <string name="quick_match_dont_worry">Merak etme!</string>
+    <string name="quick_match_dont_worry_body">Kısa süre içinde seninle aynı seviyede bir rakip bulacağız.</string>
 </resources>

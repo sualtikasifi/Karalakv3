@@ -8,6 +8,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -453,12 +455,7 @@ private fun AchievementChip(
     val bounce = 0f
 
     val tint = when {
-        item.claimed -> ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
-            0.72f, 0f, 0f, 0f, 0f,
-            0f, 0.97f, 0f, 0f, 0f,
-            0f, 0f, 0.62f, 0f, 0f,
-            0f, 0f, 0f, 1f, 0f
-        )))
+        item.claimed -> ColorFilter.tint(Color(0xFFA9DE9A), BlendMode.Modulate)
         claimable -> ColorFilter.tint(Color(0xFFFFD84D).copy(alpha = 0.55f * pulse), BlendMode.SrcAtop)
         !item.unlocked -> ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0.55f) })
         else -> null
@@ -514,11 +511,30 @@ private fun AchievementChip(
                     )
                     else -> Text(
                         text = stringResource(R.string.achievement_claimed_label),
-                        style = PaintedStyle(color = Color(0xFF1E6B2E), fontSize = 11.sp, textAlign = TextAlign.Center),
+                        style = PaintedStyle(color = Color(0xFF14602A), fontSize = 11.sp, textAlign = TextAlign.Center),
                         maxLines = 1
                     )
                 }
                 RewardPill(item.achievement)
+            }
+        }
+        if (item.claimed) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 4.dp, end = 4.dp)
+                    .size(22.dp)
+                    .shadow(2.dp, CircleShape)
+                    .background(Brush.verticalGradient(listOf(Color(0xFF5FD068), Color(0xFF2EA043))), CircleShape)
+                    .border(1.5.dp, Color.White, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.Icon(
+                    androidx.compose.material.icons.Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(14.dp)
+                )
             }
         }
         if (burst.value > 0f) {

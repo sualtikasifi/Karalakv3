@@ -152,7 +152,8 @@ fun OnlineGameScreen(
                 musicEnabled = musicEnabled,
                 onToggleMusic = viewModel::toggleMusic,
                 adUnavailable = adUnavailable,
-                onAdUnavailableShown = viewModel::consumeAdUnavailable
+                onAdUnavailableShown = viewModel::consumeAdUnavailable,
+                onBackClick = { showExitConfirm = true }
             )
         }
     }

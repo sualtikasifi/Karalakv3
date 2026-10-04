@@ -217,12 +217,33 @@ fun MainMenuScreen(
     // rather than letting any one element claim its old, roomier size.
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         com.sualtikasifi.cizimhafiza.presentation.common.CappedFontScale {
+        Box(modifier = Modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(R.drawable.bg_result_wood),
+            contentDescription = null,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        Image(
+            painter = painterResource(R.drawable.home_desk),
+            contentDescription = null,
+            contentScale = androidx.compose.ui.layout.ContentScale.FillWidth,
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .paint(painterResource(R.drawable.bg_home), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
                 .padding(padding)
         ) {
+            Image(
+                painter = painterResource(R.drawable.home_logo),
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
+                modifier = Modifier
+                    .padding(start = 8.dp, top = 2.dp)
+                    .width(262.dp)
+                    .aspectRatio(948f / 514f)
+            )
             HomeProfileBar(
                 nickname = nickname,
                 progress = com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.displayProgress(levelProgress, xpFly, xpFlyArrived),
@@ -234,23 +255,19 @@ fun MainMenuScreen(
                 onPenClick = { penPickerOpen = true },
                 onRankClick = { rankLadderOpen = true },
                 onGoldClick = onStore,
-                modifier = Modifier.padding(horizontal = 12.dp).padding(top = 6.dp)
+                modifier = Modifier.padding(horizontal = 10.dp).offset(y = (-16).dp)
             )
-            // Fixed, non-scrolling page: the mode row is the one flexible part and
-            // absorbs whatever height is left, so the layout fits any normal phone
-            // without moving. Only a genuinely short screen falls back to scrolling.
+            // Fixed, non-scrolling page: everything is scaled down together on a short phone (FitToHeight).
             BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 val compact = maxHeight < 700.dp
-                val fixedEstimate = (if (compact) 470.dp else 520.dp) + (if (xpEvent != null) 60.dp else 0.dp)
-                val modeHeight = (maxHeight - fixedEstimate - 18.dp).coerceIn(96.dp, 160.dp)
                 val content: @Composable ColumnScope.() -> Unit = {
                     xpEvent?.let { event ->
                         XpEventBanner(event = event)
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                     }
                     if (GameConstants.ADMOB_ENABLED) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().height(if (compact) 112.dp else 120.dp),
+                            modifier = Modifier.fillMaxWidth().height(if (compact) 108.dp else 116.dp),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             AdGoldButton(
@@ -273,96 +290,34 @@ fun MainMenuScreen(
                         DailyChallengeCardNarrow(
                             state = dailyState,
                             onPlay = onDailyChallenge,
-                            modifier = Modifier.fillMaxWidth().height(if (compact) 112.dp else 120.dp)
+                            modifier = Modifier.fillMaxWidth().height(if (compact) 108.dp else 116.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(SECTION_GAP + 3.dp))
+                    Spacer(modifier = Modifier.height(SECTION_GAP))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth().height(modeHeight),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        GradientModeCard(
-                            imageRes = R.drawable.icon_mode_playfriend,
-                            label = stringResource(R.string.menu_play_online),
-                            top = Color(0xFF45AEF5),
-                            bottom = Color(0xFF2181D6),
-                            edge = Color(0xFF12569A),
-                            onClick = onPlayOnline,
-                            modifier = Modifier.weight(1f)
-                        )
-                        GradientModeCard(
-                            imageRes = R.drawable.icon_mode_quickmatch,
-                            label = stringResource(R.string.quick_match_title),
-                            top = Color(0xFFFF9445),
-                            bottom = Color(0xFFF2611B),
-                            edge = Color(0xFFB9460F),
-                            onClick = onQuickMatch,
-                            modifier = Modifier.weight(1f),
-                            boost = xpEvent,
-                            orbit = true
-                        )
-                        GradientModeCard(
-                            imageRes = R.drawable.icon_mode_offline,
-                            label = stringResource(R.string.menu_play),
-                            top = Color(0xFF63CC5E),
-                            bottom = Color(0xFF35A64B),
-                            edge = Color(0xFF217634),
-                            onClick = onPlay,
-                            modifier = Modifier.weight(1f)
-                        )
+                    // Three big modes, then six small ones: painted tiles, equal width, heights from their pictures.
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        PaintedTile(R.drawable.home_tile_race, 514f / 470f, stringResource(R.string.menu_play_online), onPlayOnline, Modifier.weight(1f))
+                        PaintedTile(R.drawable.home_tile_quick, 514f / 470f, stringResource(R.string.quick_match_title), onQuickMatch, Modifier.weight(1f), boost = xpEvent)
+                        PaintedTile(R.drawable.home_tile_offline, 514f / 470f, stringResource(R.string.menu_play), onPlay, Modifier.weight(1f))
+                    }
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        PaintedTile(R.drawable.home_tile_levels, 514f / 370f, stringResource(R.string.menu_levels), onLevels, Modifier.weight(1f))
+                        PaintedTile(R.drawable.home_tile_friends, 514f / 370f, stringResource(R.string.menu_friends), onFriends, Modifier.weight(1f), badgeCount = pendingFriendRequests)
+                        PaintedTile(R.drawable.home_tile_ach, 514f / 370f, stringResource(R.string.menu_achievements), onAchievements, Modifier.weight(1f), showBadge = hasUnseenAchievement)
+                    }
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        PaintedTile(R.drawable.home_tile_league, 514f / 374f, stringResource(R.string.league_title), onLeague, Modifier.weight(1f))
+                        PaintedTile(R.drawable.home_tile_store, 514f / 374f, stringResource(R.string.store_title), onStore, Modifier.weight(1f))
+                        PaintedTile(R.drawable.home_tile_settings, 514f / 363f, stringResource(R.string.menu_settings), onSettings, Modifier.weight(1f), showBadge = accountNotLinked)
                     }
 
-                    Spacer(modifier = Modifier.height(SECTION_GAP + 3.dp))
+                    Spacer(modifier = Modifier.height(SECTION_GAP))
 
-                    // The six small tiles stay together as one block, so spare height goes between sections, not between the tiles.
-                    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            GradientTile(
-                                icon = Icons.Filled.Map,
-                                label = stringResource(R.string.menu_levels),
-                                top = Color(0xFF3BCDB6), bottom = Color(0xFF15A08E), edge = Color(0xFF0C6F62),
-                                onClick = onLevels, compact = compact, modifier = Modifier.weight(1f)
-                            )
-                            GradientTile(
-                                icon = Icons.Filled.Group,
-                                label = stringResource(R.string.menu_friends),
-                                top = Color(0xFFFF86B4), bottom = Color(0xFFE64A8B), edge = Color(0xFFA62A62),
-                                onClick = onFriends, badgeCount = pendingFriendRequests, compact = compact, modifier = Modifier.weight(1f)
-                            )
-                            GradientTile(
-                                icon = Icons.Filled.EmojiEvents,
-                                label = stringResource(R.string.menu_achievements),
-                                top = Color(0xFFFFCB47), bottom = Color(0xFFF0A012), edge = Color(0xFFB36F05),
-                                onClick = onAchievements, showBadge = hasUnseenAchievement, compact = compact, modifier = Modifier.weight(1f)
-                            )
-                        }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            GradientTile(
-                                icon = Icons.Filled.Leaderboard,
-                                label = stringResource(R.string.league_title),
-                                top = Color(0xFF7C8CFF), bottom = Color(0xFF4353D8), edge = Color(0xFF2A3591),
-                                onClick = onLeague, compact = compact, modifier = Modifier.weight(1f)
-                            )
-                            GradientTile(
-                                icon = Icons.Filled.ShoppingBag,
-                                label = stringResource(R.string.store_title),
-                                top = Color(0xFF8AD65A), bottom = Color(0xFF3FA53A), edge = Color(0xFF276E24),
-                                onClick = onStore, compact = compact, modifier = Modifier.weight(1f)
-                            )
-                            GradientTile(
-                                icon = Icons.Filled.Settings,
-                                label = stringResource(R.string.menu_settings),
-                                top = Color(0xFF8AA0C2), bottom = Color(0xFF5D7599), edge = Color(0xFF3B4E6C),
-                                onClick = onSettings, showBadge = accountNotLinked, compact = compact, modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(SECTION_GAP + 3.dp))
-
-                    HomeChestsSection(compact = compact)
+                    HomeChestsSection(compact = true)
                 }
                 FitToHeight(
                     modifier = Modifier
@@ -372,6 +327,7 @@ fun MainMenuScreen(
                     content = content
                 )
             }
+        }
         }
         }
 
