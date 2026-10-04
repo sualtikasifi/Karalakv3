@@ -290,7 +290,8 @@ fun LeagueScreen(
                 modifier = Modifier.fillMaxWidth().offset(y = signHeight * 0.32f).height(signHeight * 0.36f),
                 contentAlignment = Alignment.Center
             ) {
-                LetteredText(stringResource(R.string.league_title), len(66f).value.sp)
+                val title = stringResource(R.string.league_title)
+                LetteredText(title, len(if (title.length > 11) 52f else 66f).value.sp)
             }
         }
 
