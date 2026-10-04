@@ -116,7 +116,7 @@ done
 shot 02_main_menu_after_consent
 P=s
 # Race a Friend: Create Room (top / scrolled), Join (keyboard), lobby of the bot room
-adb shell input tap 200 1140
+adb shell input tap 250 920
 sleep 5
 shot ${P}01_race
 adb shell input tap 540 1602
@@ -150,7 +150,7 @@ sleep 3
 adb shell input keyevent KEYCODE_BACK
 sleep 3
 # Play Offline
-adb shell input tap 880 1140
+adb shell input tap 830 920
 sleep 5
 shot ${P}08_offline_top
 adb shell input swipe 540 1700 540 400 400
@@ -159,7 +159,7 @@ shot ${P}09_offline_scrolled
 adb shell input keyevent KEYCODE_BACK
 sleep 3
 # Levels -> world list -> first world
-adb shell input tap 200 1488
+adb shell input tap 250 1171
 sleep 5
 shot ${P}10_worlds
 adb shell input tap 540 790

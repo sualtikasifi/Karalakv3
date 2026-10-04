@@ -80,7 +80,7 @@ fun JoinRoomScreen(
         val heightPx = with(density) { maxHeight.toPx() }
         val s = maxOf(widthPx / ArtW, heightPx / ArtH)
         val offX = (widthPx - ArtW * s) / 2f
-        val offY = (heightPx - ArtH * s) / 2f
+        val offY = 0f
         fun yOf(fraction: Float): Dp = with(density) { (offY + ArtH * s * fraction).toDp() }
         fun len(artPx: Float): Dp = with(density) { (artPx * s).toDp() }
 
@@ -88,6 +88,7 @@ fun JoinRoomScreen(
             painter = painterResource(R.drawable.bg_join),
             contentDescription = null,
             contentScale = ContentScale.Crop,
+            alignment = androidx.compose.ui.Alignment.TopCenter,
             modifier = Modifier.fillMaxSize()
         )
 

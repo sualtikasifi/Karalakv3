@@ -262,12 +262,13 @@ fun WaitingRoomScreen(
     val scenePxW = with(sceneDensity) { maxWidth.toPx() }
     val scenePxH = with(sceneDensity) { maxHeight.toPx() }
     val sceneScale = maxOf(scenePxW / LOBBY_ART_W, scenePxH / LOBBY_ART_H)
-    val sceneOffY = (scenePxH - LOBBY_ART_H * sceneScale) / 2f
+    val sceneOffY = 0f
     fun sceneY(fraction: Float): Dp = with(sceneDensity) { (sceneOffY + LOBBY_ART_H * sceneScale * fraction).toDp() }
     Image(
         painter = painterResource(R.drawable.bg_lobby),
         contentDescription = null,
         contentScale = ContentScale.Crop,
+        alignment = Alignment.TopCenter,
         modifier = Modifier.fillMaxSize()
     )
     Scaffold(

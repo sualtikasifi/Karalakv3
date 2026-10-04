@@ -112,7 +112,7 @@ fun AchievementsScreen(
         val heightPx = with(density) { maxHeight.toPx() }
         val sc = maxOf(widthPx / ArtW, heightPx / ArtH)
         val offX = (widthPx - ArtW * sc) / 2f
-        val offY = (heightPx - ArtH * sc) / 2f
+        val offY = 0f
         fun yOf(px: Float): Dp = with(density) { (offY + px * sc).toDp() }
         fun len(px: Float): Dp = with(density) { (px * sc).toDp() }
 
@@ -120,6 +120,7 @@ fun AchievementsScreen(
             painter = painterResource(R.drawable.bg_achievements),
             contentDescription = null,
             contentScale = ContentScale.Crop,
+            alignment = androidx.compose.ui.Alignment.TopCenter,
             modifier = Modifier.fillMaxSize()
         )
 
