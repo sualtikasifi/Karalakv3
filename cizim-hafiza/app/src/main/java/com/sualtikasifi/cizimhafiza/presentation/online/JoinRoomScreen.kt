@@ -61,6 +61,7 @@ private const val Well2Top = 0.5672f
 private const val WellHeight = 0.172f
 private const val WellLeft = 0.1269f
 private const val WellWidth = 0.7327f
+private const val LabelLeft = 0.215f
 
 /** Joining a friend's room: the workshop scene, a painted form panel with the name and code typed into its wells. */
 @Composable
@@ -120,12 +121,12 @@ fun JoinRoomScreen(
             Text(
                 text = stringResource(R.string.online_nickname_label),
                 style = label,
-                modifier = Modifier.offset(x = panelWidth * WellLeft, y = panelHeight * (Well1Top - 0.115f))
+                modifier = Modifier.offset(x = panelWidth * LabelLeft, y = panelHeight * (Well1Top - 0.115f))
             )
             Text(
                 text = stringResource(R.string.online_room_code_label),
                 style = label,
-                modifier = Modifier.offset(x = panelWidth * WellLeft, y = panelHeight * (Well2Top - 0.115f))
+                modifier = Modifier.offset(x = panelWidth * LabelLeft, y = panelHeight * (Well2Top - 0.108f))
             )
             WellField(
                 value = uiState.nickname,
@@ -204,7 +205,7 @@ private fun WellField(
     keyboardOptions: KeyboardOptions,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.graphicsLayer { alpha = if (enabled) 1f else 0.6f }, contentAlignment = Alignment.CenterStart) {
+    Box(modifier = modifier.graphicsLayer { alpha = if (enabled) 1f else 0.85f }, contentAlignment = Alignment.CenterStart) {
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
