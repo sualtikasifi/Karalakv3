@@ -113,6 +113,22 @@ for i in $(seq 1 20); do
   sleep 6
   if [ "$(consent_visible)" = "1" ]; then echo "consent form seen"; adb shell input tap 540 1352; sleep 3; break; fi
 done
+# If the tap landed on "Manage options", the data-preferences page is up: accept everything there.
+blue_at() {
+  adb exec-out screencap > "$OUT/_raw2.bin"
+  python3 - "$OUT/_raw2.bin" "$1" "$2" <<'PY'
+import sys, struct
+d = open(sys.argv[1], 'rb').read()
+w, h, fmt = struct.unpack('<III', d[:12])
+x, y = int(sys.argv[2]), int(sys.argv[3])
+p = 12 + (y * w + x) * 4
+r, g, b = d[p], d[p + 1], d[p + 2]
+print(1 if (r < 60 and 80 < g < 150 and b > 190) else 0)
+PY
+}
+for k in 1 2 3; do
+  if [ "$(blue_at 540 1628)" = "1" ] && [ "$(blue_at 540 1470)" = "1" ]; then echo "accepting all"; adb shell input tap 540 1628; sleep 4; fi
+done
 shot 02_main_menu_after_consent
 P=s
 # Race a Friend: Create Room (top / scrolled), Join (keyboard), lobby of the bot room
