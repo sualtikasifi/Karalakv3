@@ -64,7 +64,7 @@
 
     <!-- Online (friend-vs-friend) -->
     <string name="online_lobby_title">Race a Friend</string>
-    <string name="online_lobby_subtitle">Start at the same time, draw the same words, and see who scores more!</string>
+    <string name="online_lobby_subtitle">Remembering what you drew can be harder than quantum physics. Welcome to the funniest scribble battles!</string>
     <string name="online_create_room">Create Room</string>
     <string name="online_create_room_action">Create Room</string>
     <string name="online_waiting_room_title">Lobby</string>

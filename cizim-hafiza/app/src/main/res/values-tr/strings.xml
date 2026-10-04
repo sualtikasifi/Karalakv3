@@ -68,7 +68,7 @@
 
     <!-- Online (friend-vs-friend) -->
     <string name="online_lobby_title">Arkadaşınla Yarış</string>
-    <string name="online_lobby_subtitle">Aynı anda başlayın, aynı kelimeleri çizin, kim daha çok puan toplayacak görün!</string>
+    <string name="online_lobby_subtitle">Ne çizdiğini hatırlamak bazen kuantum fiziğinden daha zor olabilir. En komik karalama savaşlarına hoş geldin!</string>
     <string name="online_create_room">Oda Kur</string>
     <string name="online_create_room_action">Oda Oluştur</string>
     <string name="online_waiting_room_title">Lobi</string>
