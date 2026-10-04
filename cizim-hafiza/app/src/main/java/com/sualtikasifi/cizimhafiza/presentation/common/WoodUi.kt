@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -204,7 +206,16 @@ fun WoodScreen(
 
         action(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 6.dp).height(startHeight))
 
-        ScreenTopActions(onBack = onBack, modifier = Modifier.align(Alignment.TopStart))
+        Image(
+            painter = painterResource(R.drawable.join_back),
+            contentDescription = stringResource(R.string.cd_back),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(start = 16.dp, top = 12.dp)
+                .size(56.dp)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onBack)
+        )
     }
 }
 
@@ -321,7 +332,10 @@ fun PanelRow(label: String, content: @Composable () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = label,
-            style = PaintedStyle(color = InkBrown, fontSize = 13.sp, textAlign = TextAlign.Start),
+            style = PaintedStyle(
+                color = Color(0xFFFFEBC8), fontSize = 13.5.sp, textAlign = TextAlign.Start,
+                shadow = androidx.compose.ui.graphics.Shadow(Color(0xAA2A1005), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)
+            ),
             maxLines = 1,
             modifier = Modifier.padding(start = 4.dp, bottom = 3.dp)
         )

@@ -147,8 +147,6 @@ adb shell input keyevent KEYCODE_BACK
 sleep 3
 adb shell input keyevent KEYCODE_BACK
 sleep 3
-adb shell input keyevent KEYCODE_BACK
-sleep 3
 # Play Offline
 adb shell input tap 880 1140
 sleep 5

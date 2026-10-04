@@ -309,7 +309,7 @@ fun WaitingRoomScreen(
                 .verticalScroll(rememberScrollState())
                 // Starts under the painted sign.
                 .padding(top = sceneY(0.205f), bottom = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             RoomCodeCard(
@@ -329,11 +329,11 @@ fun WaitingRoomScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.height(46.dp).aspectRatio(720f / 233f)) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.height(38.dp).aspectRatio(720f / 233f)) {
                     Image(painter = painterResource(R.drawable.lobby_band), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-                    OutlinedLabel(stringResource(R.string.online_players_section_title), 19.sp)
+                    OutlinedLabel(stringResource(R.string.online_players_section_title), 17.sp)
                 }
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.height(40.dp).aspectRatio(568f / 173f)) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.height(34.dp).aspectRatio(568f / 173f)) {
                     Image(painter = painterResource(R.drawable.lobby_pill), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Icon(Icons.Filled.Person, contentDescription = null, tint = Color(0xFFE9801D), modifier = Modifier.size(18.dp))
@@ -497,7 +497,7 @@ fun WaitingRoomScreen(
 @Composable
 private fun RoomCodeCard(roomCode: String, onInvite: () -> Unit) {
     // lobby_codepanel is painted with its code well and its invite button; the texts are laid over them by fractions.
-    androidx.compose.foundation.layout.BoxWithConstraints(modifier = Modifier.fillMaxWidth().aspectRatio(753f / 388f)) {
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier = Modifier.fillMaxWidth(0.84f).aspectRatio(753f / 388f)) {
         val w = maxWidth
         val h = maxHeight
         Image(
@@ -889,7 +889,7 @@ private fun TeamColumn(
 }
 
 /** A fixed row height shared by [PlayerSlotCard] and [EmptySlotCard] so occupied and empty seats line up in the grid. */
-private val SLOT_HEIGHT = 64.dp
+private val SLOT_HEIGHT = 54.dp
 
 // bg_lobby is this size; its hanging sign is painted on it, so the title and the content start are placed by fractions.
 private const val LOBBY_ART_W = 841f
@@ -937,7 +937,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
     ) {
         Box(modifier = Modifier.fillMaxWidth().heightIn(min = SLOT_HEIGHT)) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // The level badge stands in for a profile picture — it's the
@@ -978,7 +978,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     // never changes the row's height — the card stays
                     // exactly SLOT_HEIGHT tall whether or not there's
                     // anything to show here right now.
-                    Box(modifier = Modifier.height(16.dp)) {
+                    Box(modifier = Modifier.height(13.dp)) {
                         Crossfade(targetState = activeReaction, label = "slot-status") { reaction ->
                             if (reaction != null) {
                                 val phraseTextRes = presetPhraseTextRes(reaction.messageKey)
@@ -1054,13 +1054,16 @@ private fun EmptySlotCard(onInvite: (() -> Unit)? = null, modifier: Modifier = M
             .heightIn(min = SLOT_HEIGHT)
             .then(if (onInvite != null) Modifier.clickable(onClick = onInvite) else Modifier)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.align(Alignment.Center).padding(6.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+            modifier = Modifier.align(Alignment.Center).padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
             Image(painter = painterResource(R.drawable.lobby_adduser), contentDescription = null, modifier = Modifier.size(26.dp))
             if (onInvite != null) {
-                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = stringResource(R.string.online_invite_friend_slot),
-                    style = PaintedStyle(color = DescriptionInk, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+                    style = PaintedStyle(color = DescriptionInk, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Start),
                     maxLines = 2
                 )
             }
