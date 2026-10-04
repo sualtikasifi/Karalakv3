@@ -26,6 +26,7 @@ on:
           - join.sh
           - lobby.sh
           - pages.sh
+          - friends.sh
   pull_request:
     paths:
       - ".github/workflows/smoke-test.yml"
