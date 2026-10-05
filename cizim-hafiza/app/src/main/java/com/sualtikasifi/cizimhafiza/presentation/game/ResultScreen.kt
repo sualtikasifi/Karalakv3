@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -1127,9 +1128,12 @@ private fun PaintedPill(
 }
 
 /**
- * Every drawing of the round, on the result screen itself: yours, and (Hızlı Eşleş) the
- * opponent's under them. Thumbnails are sized from the space available so they all fit without
- * scrolling; tapping one opens the replay.
+ * Every drawing of the round, on the result screen itself: yours, and (Hızlı Eşleş) the opponent's beside them.
+ *
+ * One drawing is shown BIG — as large as the space allows, with its word under it and its tick or cross on it — and a
+ * strip of small sheets underneath picks which one. Ten tiny thumbnails side by side made every drawing too small to
+ * read; this keeps the whole round one tap away without scrolling. Tapping the big sheet opens the stroke-by-stroke
+ * replay.
  */
 @Composable
 private fun ResultDrawings(
@@ -1142,152 +1146,157 @@ private fun ResultDrawings(
 ) {
     val context = LocalContext.current
     val ghost = state.ghost
-    val sections = if (ghost != null) 2 else 1
-    val count = state.items.size
+    var showGhost by remember { mutableStateOf(false) }
+    val items = if (showGhost && ghost != null) ghostItems else state.items
+    var picked by remember(showGhost) { mutableStateOf(0) }
+    val index = picked.coerceIn(0, (items.size - 1).coerceAtLeast(0))
+    val item = items.getOrNull(index)
+    val placeholders = state.items.size
+
     androidx.compose.foundation.layout.BoxWithConstraints(modifier = modifier) {
         val gap = 6.dp
-        val labelHeight = 26.dp
-        var columns = if (count == 5) 3 else 5
-        var cell = 0.dp
-        // Five drawings (the daily challenge) sit three over two, each row centred, not four over one.
-        for (c in if (count == 5) 3..3 else 4..10) {
-            val rows = (count + c - 1) / c
-            val byWidth = (maxWidth - gap * (c - 1)) / c
-            val usedByGaps = gap * (rows * sections + sections * 2) + labelHeight * sections
-            val byHeight = (maxHeight - usedByGaps) / (rows * sections)
-            val candidate = minOf(byWidth, byHeight, if (sections == 1) 180.dp else 124.dp)
-            if (candidate > cell) { cell = candidate; columns = c }
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(gap)) {
-            DrawingSection(
-                title = myName.ifBlank { stringResource(R.string.result_your_drawings) },
-                items = state.items,
-                columns = columns,
-                cell = cell,
-                gap = gap,
-                labelHeight = labelHeight,
-                onPreview = onPreview,
-                // The daily challenge has its own share button on its card; a second one here only doubled it.
-                onShare = if (state.daily != null) null else {
-                    {
-                    DrawingShareUtil.shareAllResults(
-                        context = context,
-                        totalScore = state.totalScore,
-                        correctCount = state.correctCount,
-                        wrongCount = state.wrongCount,
-                        fastestCorrectSeconds = state.fastestCorrectSeconds,
-                        items = state.items
+        val headerH = 32.dp
+        val captionH = 28.dp
+        val stripH = 46.dp
+        val availableWidth = maxWidth
+        val bigSize = minOf(maxWidth, maxHeight - headerH - captionH - stripH - gap * 3).coerceAtLeast(110.dp)
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(gap)
+        ) {
+            Box(modifier = Modifier.fillMaxWidth().height(headerH), contentAlignment = Alignment.Center) {
+                if (ghost != null) {
+                    GalleryToggle(
+                        opponentName = ghost.nickname,
+                        opponentReady = ghostItems.isNotEmpty(),
+                        showingOpponent = showGhost,
+                        onSelect = { showGhost = it }
                     )
-                    }
+                } else {
+                    LetteredText(
+                        text = myName.ifBlank { stringResource(R.string.result_your_drawings) },
+                        size = 16.sp,
+                        maxLines = 1,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp)
+                    )
                 }
-            )
-            if (ghost != null) {
-                DrawingSection(
-                    title = ghost.nickname,
-                    items = ghostItems,
-                    placeholders = count,
-                    columns = columns,
-                    cell = cell,
-                    gap = gap,
-                    labelHeight = labelHeight,
-                    onPreview = onPreview,
-                    onShare = null
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DrawingSection(
-    title: String,
-    items: List<ResultItem>,
-    columns: Int,
-    cell: androidx.compose.ui.unit.Dp,
-    gap: androidx.compose.ui.unit.Dp,
-    labelHeight: androidx.compose.ui.unit.Dp,
-    onPreview: (ResultItem) -> Unit,
-    onShare: (() -> Unit)?,
-    placeholders: Int = 0
-) {
-    Box(
-        modifier = Modifier.fillMaxWidth().height(labelHeight),
-        contentAlignment = Alignment.Center
-    ) {
-        LetteredText(
-            text = title,
-            size = 16.sp,
-            maxLines = 1,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 28.dp)
-        )
-        if (onShare != null) {
-            Icon(
-                imageVector = Icons.Filled.Share,
-                contentDescription = stringResource(R.string.share_all_drawings),
-                tint = Color.White,
-                modifier = Modifier.align(Alignment.CenterEnd).size(22.dp).clickable(onClick = onShare)
-            )
-        }
-    }
-    val total = if (items.isEmpty()) placeholders else items.size
-    val slots = List(total) { index -> items.getOrNull(index) }
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(gap), horizontalAlignment = Alignment.CenterHorizontally) {
-        slots.chunked(columns).forEach { rowItems ->
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally)) {
-                rowItems.forEach { item ->
-                    val note = RoundedCornerShape(6.dp)
-                    Box(modifier = Modifier.size(cell)) {
-                        if (item == null) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(note)
-                                    .background(Color(0x66FFF3DA))
+                // The daily challenge has its own share button on its card; a second one here only doubled it.
+                if (ghost == null && state.daily == null) {
+                    Icon(
+                        imageVector = Icons.Filled.Share,
+                        contentDescription = stringResource(R.string.share_all_drawings),
+                        tint = Color.White,
+                        modifier = Modifier.align(Alignment.CenterEnd).size(24.dp).clickable {
+                            DrawingShareUtil.shareAllResults(
+                                context = context,
+                                totalScore = state.totalScore,
+                                correctCount = state.correctCount,
+                                wrongCount = state.wrongCount,
+                                fastestCorrectSeconds = state.fastestCorrectSeconds,
+                                items = state.items
                             )
-                        } else {
-                            // A sheet from a spiral notebook, with the drawing on it.
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .shadow(3.dp, note)
-                                    .clip(note)
-                                    .background(Brush.verticalGradient(listOf(Color(0xFFFFF9EA), Color(0xFFF6E6C6))))
-                                    .border(1.dp, Color(0xFFD9BC8C), note)
-                                    .clickable { onPreview(item) }
-                            ) {
-                                StrokeCanvas(strokes = item.strokes, modifier = Modifier.fillMaxSize().padding(start = 7.dp, top = 2.dp, end = 2.dp, bottom = 2.dp))
-                                Column(
-                                    modifier = Modifier.align(Alignment.CenterStart).padding(start = 2.5.dp),
-                                    verticalArrangement = Arrangement.spacedBy(cell * 0.09f)
-                                ) {
-                                    repeat(5) { Box(Modifier.size(2.8.dp).background(Color(0xFFB59A7A), CircleShape)) }
-                                }
-                            }
-                            // The mark grows with the drawing it sits on: a green disc with a tick for a right
-                            // answer, a red disc with a cross for a wrong one, white-ringed so it reads on any paper.
-                            val badge = (cell.value * 0.22f).coerceIn(18f, 30f).dp
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(2.dp)
-                                    .size(badge)
-                                    .shadow(3.dp, CircleShape)
-                                    .clip(CircleShape)
-                                    .background(if (item.isCorrect) Color(0xFF34B24A) else Color(0xFFE53935))
-                                    .border(2.dp, Color.White, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = if (item.isCorrect) Icons.Filled.Check else Icons.Filled.Close,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(badge * 0.66f)
-                                )
-                            }
+                        }
+                    )
+                }
+            }
+
+            val sheet = RoundedCornerShape(10.dp)
+            Box(modifier = Modifier.size(bigSize)) {
+                if (item == null) {
+                    Box(Modifier.fillMaxSize().clip(sheet).background(Color(0x66FFF3DA)))
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .shadow(6.dp, sheet)
+                            .clip(sheet)
+                            .background(Brush.verticalGradient(listOf(Color(0xFFFFF9EA), Color(0xFFF6E6C6))))
+                            .border(1.5.dp, Color(0xFFD9BC8C), sheet)
+                            .clickable { onPreview(item) }
+                    ) {
+                        StrokeCanvas(
+                            strokes = item.strokes,
+                            modifier = Modifier.fillMaxSize().padding(start = 16.dp, top = 6.dp, end = 6.dp, bottom = 6.dp)
+                        )
+                        Column(
+                            modifier = Modifier.align(Alignment.CenterStart).padding(start = 5.dp),
+                            verticalArrangement = Arrangement.spacedBy(bigSize * 0.07f)
+                        ) {
+                            repeat(7) { Box(Modifier.size(5.dp).background(Color(0xFFB59A7A), CircleShape)) }
+                        }
+                    }
+                    ResultMark(
+                        correct = item.isCorrect,
+                        size = 34.dp,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(6.dp)
+                    )
+                }
+            }
+
+            Box(modifier = Modifier.fillMaxWidth().height(captionH), contentAlignment = Alignment.Center) {
+                if (item != null) {
+                    LetteredText(
+                        text = item.word.capitalizeForWordLanguage(wordLanguage),
+                        size = 20.sp,
+                        outline = if (item.isCorrect) Color(0xFF14602A) else Color(0xFF8A1C1C),
+                        maxLines = 1,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth().height(stripH).horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)
+            ) {
+                val total = if (items.isEmpty()) placeholders else items.size
+                // As big as 46dp, smaller when that many sheets would not fit the width side by side.
+                val cell = ((availableWidth - 28.dp - 6.dp * (total - 1).coerceAtLeast(0)) / total.coerceAtLeast(1)).coerceIn(30.dp, 46.dp)
+                repeat(total) { n ->
+                    val thumb = items.getOrNull(n)
+                    val note = RoundedCornerShape(6.dp)
+                    val isPicked = n == index
+                    Box(
+                        modifier = Modifier
+                            .size(cell)
+                            .clip(note)
+                            .background(if (thumb == null) Color(0x66FFF3DA) else Color(0xFFFFF3DA))
+                            .border(if (isPicked) 3.dp else 1.dp, if (isPicked) Color(0xFFF47721) else Color(0xFFD9BC8C), note)
+                            .clickable(enabled = thumb != null) { picked = n }
+                    ) {
+                        if (thumb != null) {
+                            StrokeCanvas(strokes = thumb.strokes, modifier = Modifier.fillMaxSize().padding(3.dp))
+                            ResultMark(
+                                correct = thumb.isCorrect,
+                                size = 16.dp,
+                                modifier = Modifier.align(Alignment.TopEnd).padding(1.dp)
+                            )
                         }
                     }
                 }
             }
         }
+    }
+}
+
+/** The green disc with a tick (right answer) or red disc with a cross (wrong one), white-ringed so it reads on any paper. */
+@Composable
+private fun ResultMark(correct: Boolean, size: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(size)
+            .shadow(3.dp, CircleShape)
+            .clip(CircleShape)
+            .background(if (correct) Color(0xFF34B24A) else Color(0xFFE53935))
+            .border((size.value * 0.07f).coerceAtLeast(1.5f).dp, Color.White, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = if (correct) Icons.Filled.Check else Icons.Filled.Close,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(size * 0.66f)
+        )
     }
 }

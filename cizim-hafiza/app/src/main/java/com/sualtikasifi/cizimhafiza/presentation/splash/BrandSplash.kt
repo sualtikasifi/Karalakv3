@@ -229,7 +229,7 @@ private val SplashColor = Color(0xFFB07F34)
 
 // First run: the logo holds, the scene fades in, the bar fills, the whole thing leaves. Later runs are quicker.
 private const val TOTAL_MILLIS = 2300
-private const val FAST_TOTAL_MILLIS = 1500
+private const val FAST_TOTAL_MILLIS = 1200
 private const val SKIP_MILLIS = 170
 private const val BAR_FROM = 380f
 private const val FADE_OUT_MILLIS = 260f

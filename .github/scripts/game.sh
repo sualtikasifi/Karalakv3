@@ -127,6 +127,8 @@ adb shell input tap 880 1150; sleep 6; dismiss; shot ${P}00_setup
 adb shell input tap 540 2230; sleep 5
 for i in $(seq 1 22); do
   sleep 11
+  # The 'Don't lose your progress' sign-in offer follows the first finished game and covers the result screen.
+  if [ $i -ge 15 ]; then tap_text "Later" || true; sleep 2; fi
   shot ${P}$(printf %02d $((i+1)))
 done
 adb logcat -d | grep -E "FATAL|AndroidRuntime" | head -30 > "$OUT/crash_g.txt"
