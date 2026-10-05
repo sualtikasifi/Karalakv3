@@ -120,13 +120,10 @@ fun BreakScreen(state: GamePhase.Break) {
             modifier = Modifier.offset(x = signCentreX - len(290f), y = yOf(0.172f) - len(48f)).size(len(580f), len(96f)),
             contentAlignment = Alignment.Center
         ) {
-            FitText(
-                text = stringResource(R.string.get_ready),
-                style = PaintedStyle(color = Color.White, fontSize = 30.sp * textScale, textAlign = TextAlign.Center),
-                maxLines = 2,
-                minScale = 0.55f,
-                modifier = Modifier.fillMaxSize()
-            )
+            val title = stringResource(R.string.get_ready)
+            // One line on the plank: sized so the whole title fits inside the painted board.
+            val titleSize = minOf(30f * textScale, len(520f).value / (0.6f * title.length)).sp
+            LetteredText(title, titleSize, maxLines = 1)
         }
 
         Column(
