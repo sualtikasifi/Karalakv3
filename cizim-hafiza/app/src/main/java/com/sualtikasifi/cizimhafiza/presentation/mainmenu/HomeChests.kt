@@ -255,7 +255,7 @@ internal fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, 
         animationSpec = infiniteRepeatable(tween(3400, easing = androidx.compose.animation.core.LinearEasing)),
         label = "orbit"
     )
-    Box(
+    androidx.compose.foundation.layout.BoxWithConstraints(
         modifier = modifier
             .fillMaxHeight()
             .graphicsLayer { scaleX = pulse; scaleY = pulse }
@@ -263,33 +263,36 @@ internal fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, 
             .border(if (ready) 3.dp else 2.dp, tier.borderColor().copy(alpha = if (ready) 1f else 0.85f), shape)
             .clickable(onClick = onClick)
     ) {
+        // On the painted home the slot is as tall as its painted frame, which differs from phone to phone; every
+        // part scales with it so the plate at the bottom can never be pushed out (it vanished on 16:9 screens).
+        val k = if (compact) (maxHeight / 104.dp).coerceIn(0.6f, 1.3f) else 1f
         ChestBackdrop(tier = tier, modifier = Modifier.matchParentSize())
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 3.dp, vertical = 6.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 3.dp, vertical = 6.dp * k),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(modifier = Modifier.height(if (compact) 42.dp else 54.dp), contentAlignment = Alignment.Center) {
-                ChestImage(tier = tier, width = if (compact) 48.dp else 62.dp)
+            Box(modifier = Modifier.height(if (compact) 44.dp * k else 54.dp), contentAlignment = Alignment.Center) {
+                ChestImage(tier = tier, width = if (compact) 50.dp * k else 62.dp)
             }
             // The name gets a fixed band of its own (two lines tall) so it can
             // never reach into the timer below, whatever the font scale; the
             // timer sits on a dark plate of its own, which also guarantees it
             // reads on every chest colour.
             Box(
-                modifier = Modifier.fillMaxWidth().height(if (compact) 14.dp else 26.dp),
+                modifier = Modifier.fillMaxWidth().height(if (compact) 16.dp * k else 26.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
+                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                     text = stringResource(tier.labelRes()),
-                    fontWeight = FontWeight.ExtraBold,
-                    color = tier.onBackdrop(),
-                    style = if (tier == ChestTier.RARE) androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.55f), Offset(0f, 2f), 4f)) else androidx.compose.ui.text.TextStyle.Default,
-                    textAlign = TextAlign.Center,
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
+                        color = tier.onBackdrop(),
+                        fontSize = if (compact) 11.sp * k else 11.sp,
+                        textAlign = TextAlign.Center,
+                        shadow = if (tier == ChestTier.RARE) androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.55f), Offset(0f, 2f), 4f) else null
+                    ),
                     maxLines = if (compact) 1 else 2,
-                    softWrap = !compact,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    fontSize = if (compact) 9.5.sp else 11.sp,
-                    lineHeight = 12.sp
+                    minScale = 0.7f,
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 2.dp)
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
@@ -313,7 +316,7 @@ internal fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, 
                 modifier = Modifier
                     .padding(horizontal = 7.dp)
                     .fillMaxWidth()
-                    .height(24.dp)
+                    .height(if (compact) 24.dp * k else 24.dp)
                     .drawWithContent {
                         drawContent()
                         if (unlocking || ready) {
@@ -355,7 +358,7 @@ internal fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, 
                             // Not started yet: just how long the chest takes (SS:DD), the same plate the countdown later uses.
                             else -> (tier.unlockDurationMillis / 60_000L).let { minutes -> "%02d:%02d".format(minutes / 60, minutes % 60) }
                         },
-                        fontSize = 12.sp,
+                        fontSize = if (compact) 12.sp * k else 12.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = if (unlocking) Color(0xFFFFE08A) else Color.White,
                         textAlign = TextAlign.Center,
@@ -412,15 +415,14 @@ internal fun HomeChestsPainted(
     val now by viewModel.nowMillis.collectAsState()
     var infoOpen by remember { mutableStateOf(false) }
 
-    Box(box(168f, 1434f, 440f, 1494f), contentAlignment = Alignment.CenterStart) {
-        Text(
-            text = stringResource(R.string.menu_chests),
-            style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
-                color = Color(0xFF2B1A10), fontSize = fs(40f), textAlign = TextAlign.Start
-            ),
-            maxLines = 1
-        )
-    }
+    com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+        text = stringResource(R.string.menu_chests),
+        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
+            color = Color(0xFF2B1A10), fontSize = fs(46f), textAlign = TextAlign.Start
+        ),
+        contentAlignment = Alignment.CenterStart,
+        modifier = box(166f, 1428f, 440f, 1498f)
+    )
     Box(box(480f, 1440f, 728f, 1504f), contentAlignment = Alignment.CenterEnd) {
         Text(
             text = stringResource(if ((0 until ChestSlots.SLOT_COUNT).all { slots.getOrNull(it) != null }) R.string.home_chests_full else R.string.home_chests_tagline),

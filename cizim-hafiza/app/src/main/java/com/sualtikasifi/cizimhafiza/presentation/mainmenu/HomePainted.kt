@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
@@ -46,6 +48,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
 import com.sualtikasifi.cizimhafiza.domain.model.DailyChallenge
 import com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState
 import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
+import com.sualtikasifi.cizimhafiza.presentation.common.FitText
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.LevelAvatar
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
@@ -57,7 +60,8 @@ import java.text.NumberFormat
 private const val ArtW = 841f
 private const val ArtH = 1870f
 private val HomeInk = Color(0xFF2B1A10)
-private val InkSoft2 = Color(0xFF6B5446)
+/** Secondary lettering on the parchment: dark enough to read on the painted grain (the old #6B5446 washed out). */
+private val HomeInkSoft = Color(0xFF4A3426)
 
 /**
  * The home screen as ONE painted scene (bg_home_scene): the picture carries every frame, tile and panel; this places the
@@ -98,41 +102,31 @@ internal fun PaintedHome(
     modifier: Modifier = Modifier
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val ux = maxWidth / ArtW
-        val uy = maxHeight / ArtH
-        val us = minOf(ux.value, uy.value)
-        fun fs(art: Float) = (art * us).sp
+        // ONE scale for both directions, so the picture is never stretched: on a phone shaped like it the picture fills
+        // the screen exactly; on a wider or taller one it is centred and the spare strips show a blurred copy of it.
+        val unit = minOf(maxWidth / ArtW, maxHeight / ArtH)
+        val offX = (maxWidth - unit * ArtW) / 2
+        val offY = (maxHeight - unit * ArtH) / 2
+        val us = unit.value
+        // Lettering on the scene follows the picture, not the system font-size setting (see FitLettered).
+        val fontScale0 = LocalDensity.current.fontScale
+        fun fs(art: Float) = (art * us / fontScale0).sp
         fun box(x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
-            Modifier.offset(ux * x0, uy * y0).size(ux * (x1 - x0), uy * (y1 - y0))
+            Modifier.offset(offX + unit * x0, offY + unit * y0).size(unit * (x1 - x0), unit * (y1 - y0))
         val noRipple = remember { MutableInteractionSource() }
 
         @Composable
         fun FitLettered(text: String, baseArt: Float, outline: Color?, maxLines: Int, modifier: Modifier, fill: Color = Color.White) {
-            Box(modifier, contentAlignment = Alignment.Center) {
-                BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    val fontScale = LocalDensity.current.fontScale
-                    val w = maxWidth.value
-                    val h = maxHeight.value
-                    val longest = text.split(' ').maxOf { it.length }.coerceAtLeast(1)
-                    val base = baseArt * us
-                    val len = text.length.coerceAtLeast(1)
-                    // One line when the text fits at the wanted size, otherwise as many lines as allowed.
-                    val lines = if (maxLines > 1 && 0.62f * len * base <= w * 0.92f) 1 else maxLines
-                    val byWord = w / (0.62f * longest)
-                    val byTotal = w * lines / (0.62f * len * 1.2f)
-                    val byHeight = h / (1.3f * lines)
-                    val dp = minOf(base, byWord, byTotal, byHeight)
-                    LetteredText(text, (dp / fontScale).sp, fill = fill, outline = outline, maxLines = lines)
-                }
-            }
+            // The lettering measures itself against the box it is laid in and shrinks to fit (see LetteredText).
+            LetteredText(text, fs(baseArt), fill = fill, outline = outline, maxLines = maxLines, modifier = modifier, minScale = 0.62f)
         }
 
-        Image(
-            painter = painterResource(R.drawable.bg_home_scene),
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier.fillMaxSize()
-        )
+        val scene = painterResource(R.drawable.bg_home_scene)
+        if (offX > 1.dp || offY > 1.dp) {
+            Image(scene, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(20.dp))
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)))
+        }
+        Image(scene, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(0f, 0f, ArtW, ArtH))
 
         // ── Top chips ──
         Box(box(40f, 258f, 256f, 326f).clickable(interactionSource = noRipple, indication = null, onClick = onGoldClick)) {}
@@ -170,13 +164,13 @@ internal fun PaintedHome(
                 )
                 Text(
                     text = "• " + stringResource(R.string.home_level_inline, progress.level),
-                    style = PaintedStyle(color = InkSoft2, fontSize = fs(26f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
+                    style = PaintedStyle(color = HomeInkSoft, fontSize = fs(26f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Start),
                     maxLines = 1
                 )
             }
         }
         Box(
-            box(222f, 400f, 380f, 447f).clickable(interactionSource = noRipple, indication = null, onClick = onRankClick),
+            box(222f, 400f, 488f, 447f).clickable(interactionSource = noRipple, indication = null, onClick = onRankClick),
             contentAlignment = Alignment.CenterStart
         ) {
             Row(
@@ -187,20 +181,20 @@ internal fun PaintedHome(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(text = progress.tier.rank.emoji, fontSize = fs(28f))
-                Text(
+                FitText(
                     text = stringResource(progress.tier.rank.nameRes),
-                    style = PaintedStyle(color = Color.White, fontSize = fs(32f), textAlign = TextAlign.Center),
-                    maxLines = 1
+                    style = PaintedStyle(color = Color.White, fontSize = fs(31f), textAlign = TextAlign.Start),
+                    minScale = 0.7f,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
             }
         }
-        Box(box(430f, 410f, 780f, 446f), contentAlignment = Alignment.CenterEnd) {
-            Text(
-                text = if (progress.isMaxLevel) "MAX" else stringResource(R.string.home_xp_to_next, progress.xpToNextLevel, progress.level + 1),
-                style = PaintedStyle(color = InkSoft2, fontSize = fs(30f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End),
-                maxLines = 1
-            )
-        }
+        FitText(
+            text = if (progress.isMaxLevel) "MAX" else stringResource(R.string.home_xp_to_next, progress.xpToNextLevel, progress.level + 1),
+            style = PaintedStyle(color = HomeInkSoft, fontSize = fs(29f), fontWeight = FontWeight.Bold, textAlign = TextAlign.End),
+            contentAlignment = Alignment.CenterEnd,
+            modifier = box(496f, 406f, 780f, 446f)
+        )
         Box(box(222f, 452f, 772f, 492f)) {
             XpBar(
                 fraction = progress.progressFraction,
@@ -244,31 +238,12 @@ internal fun PaintedHome(
             FitLettered("🔥 ${multiplier}x", 30f, null, 1, Modifier.fillMaxSize().padding(horizontal = 4.dp), fill = Color(0xFF8A3A00))
         }
         Box(box(394f, 628f, 594f, 676f), contentAlignment = Alignment.Center) {
-            Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                repeat(DailyChallenge.WORD_COUNT) { index ->
-                    val flag = flags.getOrNull(index)
-                    Box(
-                        modifier = Modifier
-                            .size((38f * us).dp)
-                            .background(
-                                when (flag) {
-                                    true -> Color(0xFF2EA043)
-                                    false -> Color(0xFFE53935)
-                                    null -> Color.White.copy(alpha = 0.2f)
-                                },
-                                CircleShape
-                            )
-                            .border(2.dp, Color.White.copy(alpha = 0.9f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        when (flag) {
-                            true -> Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.size((26f * us).dp))
-                            false -> Icon(Icons.Filled.Close, null, tint = Color.White, modifier = Modifier.size((26f * us).dp))
-                            null -> Unit
-                        }
-                    }
-                }
-            }
+            com.sualtikasifi.cizimhafiza.presentation.common.DailyPips(
+                flags = flags,
+                count = DailyChallenge.WORD_COUNT,
+                size = (33f * us).dp,
+                gap = (7f * us).dp
+            )
         }
         if (available) {
             Box(
@@ -278,32 +253,37 @@ internal fun PaintedHome(
                     .clickable(interactionSource = noRipple, indication = null, onClick = onDaily),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
+                FitText(
                     text = stringResource(R.string.daily_play_now).uppercase(androidx.compose.ui.text.intl.Locale.current.platformLocale) + " ▸",
                     style = PaintedStyle(color = Color(0xFF4A2600), fontSize = fs(34f), textAlign = TextAlign.Center),
-                    maxLines = 1
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp)
                 )
             }
         } else {
-            Box(box(294f, 696f, 396f, 736f), contentAlignment = Alignment.CenterStart) {
-                Text(
-                    text = midnightCountdownText(),
-                    style = PaintedStyle(color = Color.White, fontSize = fs(29f), textAlign = TextAlign.Start),
-                    maxLines = 1
+            // The countdown to tomorrow sits where the picture leaves room at the card's lower left.
+            FitText(
+                text = midnightCountdownText(),
+                style = PaintedStyle(
+                    color = Color.White, fontSize = fs(29f), textAlign = TextAlign.Center,
+                    shadow = androidx.compose.ui.graphics.Shadow(Color(0x88000000), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)
+                ),
+                minScale = 0.6f,
+                modifier = box(262f, 692f, 404f, 740f)
+            )
+            Row(
+                box(410f, 690f, 598f, 740f)
+                    .background(Brush.verticalGradient(listOf(Color(0xFF5BD070), Color(0xFF2EA043))), RoundedCornerShape(50))
+                    .border(2.dp, Color(0xFFB8F5CF), RoundedCornerShape(50))
+                    .padding(horizontal = (12f * us).dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.size((28f * us).dp))
+                Spacer(Modifier.size((4f * us).dp))
+                LetteredText(
+                    stringResource(R.string.daily_done_badge), fs(28f), outline = Color(0xFF14602A), maxLines = 1,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
-            }
-            Box(box(404f, 688f, 598f, 742f), contentAlignment = Alignment.Center) {
-                Row(
-                    modifier = Modifier
-                        .background(Brush.verticalGradient(listOf(Color(0xFF5BD070), Color(0xFF2EA043))), RoundedCornerShape(50))
-                        .border(2.dp, Color(0xFFB8F5CF), RoundedCornerShape(50))
-                        .padding(horizontal = (18f * us).dp, vertical = (6f * us).dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.size((30f * us).dp))
-                    LetteredText(stringResource(R.string.daily_done_badge), fs(29f), outline = Color(0xFF14602A), maxLines = 1)
-                }
             }
         }
 
@@ -313,13 +293,12 @@ internal fun PaintedHome(
         val goldReady = goldRemaining <= 0
         Box(box(34f, 538f, 244f, 754f).clickable(enabled = goldReady, interactionSource = noRipple, indication = null, onClick = onWatchGold)) {}
         FitLettered(stringResource(R.string.home_ad_gold_label), 36f, Color(0xFF8A4E12), 1, box(40f, 648f, 238f, 698f))
-        Box(box(98f, 702f, 226f, 742f), contentAlignment = Alignment.Center) {
-            Text(
-                text = if (goldReady) stringResource(R.string.home_ad_watch) else "⏳ " + hms(goldRemaining / 1000),
-                style = PaintedStyle(color = HomeInk, fontSize = fs(28f), textAlign = TextAlign.Center),
-                maxLines = 1
-            )
-        }
+        FitText(
+            text = if (goldReady) stringResource(R.string.home_ad_watch) else "⏳ " + hms(goldRemaining / 1000),
+            style = PaintedStyle(color = HomeInk, fontSize = fs(27f), textAlign = TextAlign.Center),
+            minScale = 0.6f,
+            modifier = box(94f, 702f, 230f, 742f)
+        )
 
         // Free chest ad (right)
         val midnight = remember(adChestAvailable) { com.sualtikasifi.cizimhafiza.util.TurkeyTime.nextMidnightMillis() }
@@ -347,12 +326,12 @@ internal fun PaintedHome(
             FitLettered(label, 31f, Color(0xFF241408), 2, box(lx0, ly0, lx1, ly1))
             content()
         }
-        Tile(30f, 776f, 288f, 1012f, 56f, 926f, 268f, 998f, stringResource(R.string.menu_play_online), onPlayOnline)
+        Tile(30f, 776f, 288f, 1012f, 50f, 918f, 274f, 1002f, stringResource(R.string.menu_play_online), onPlayOnline)
         Tile(294f, 776f, 552f, 1012f, 330f, 940f, 520f, 986f, stringResource(R.string.quick_match_title), onQuickMatch) {
             val boosted = xpEvent != null && xpEvent.endsAtMillis > System.currentTimeMillis()
             if (boosted && xpEvent != null) BoostBadge(xpEvent.multiplier, box(306f, 788f, 420f, 826f))
         }
-        Tile(558f, 776f, 816f, 1012f, 590f, 926f, 780f, 998f, stringResource(R.string.menu_play), onPlay)
+        Tile(558f, 776f, 816f, 1012f, 578f, 918f, 798f, 1002f, stringResource(R.string.menu_play), onPlay)
         Tile(30f, 1018f, 288f, 1204f, 50f, 1142f, 268f, 1188f, stringResource(R.string.menu_levels), onLevels)
         Tile(294f, 1018f, 552f, 1204f, 320f, 1142f, 526f, 1188f, stringResource(R.string.menu_friends), onFriends) {
             if (pendingFriendRequests > 0) CornerCount(box(484f, 1024f, 548f, 1072f), pendingFriendRequests)
