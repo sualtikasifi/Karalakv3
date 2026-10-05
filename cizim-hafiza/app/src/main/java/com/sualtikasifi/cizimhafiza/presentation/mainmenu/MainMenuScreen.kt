@@ -251,20 +251,13 @@ fun MainMenuScreen(
         }
 
         if (exitPromptOpen) {
-            AlertDialog(
-                onDismissRequest = { exitPromptOpen = false },
-                title = { Text(stringResource(R.string.exit_confirm_title)) },
-                text = { Text(stringResource(R.string.exit_confirm_message)) },
-                confirmButton = {
-                    TextButton(onClick = { exitPromptOpen = false; activity?.finish() }) {
-                        Text(stringResource(R.string.exit_confirm_yes))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { exitPromptOpen = false }) {
-                        Text(stringResource(R.string.exit_confirm_no))
-                    }
-                }
+            com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+                title = stringResource(R.string.exit_confirm_title),
+                message = stringResource(R.string.exit_confirm_message),
+                confirmText = stringResource(R.string.exit_confirm_yes),
+                dismissText = stringResource(R.string.exit_confirm_no),
+                onConfirm = { exitPromptOpen = false; activity?.finish() },
+                onDismiss = { exitPromptOpen = false }
             )
         }
 

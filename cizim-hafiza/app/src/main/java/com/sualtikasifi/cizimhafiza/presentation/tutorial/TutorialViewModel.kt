@@ -347,27 +347,27 @@ class TutorialViewModel @Inject constructor(
 
         val INTRO_COACH = TutorialCoach(
             R.string.tutorial_intro_title, R.string.tutorial_intro_body, "👋", R.string.tutorial_intro_button,
-            imageRes = R.drawable.tutorial_dino_wave
+            imageRes = R.drawable.brand_logo
         )
         val TIMED_COACH = TutorialCoach(
             R.string.tutorial_timed_title, R.string.tutorial_timed_body, "⏱️", R.string.tutorial_generic_button,
-            imageRes = R.drawable.tutorial_dino_watch
+            imageRes = R.drawable.qm_mascot
         )
         val LAST_WORD_COACH = TutorialCoach(
             R.string.tutorial_last_word_title, R.string.tutorial_last_word_body, "🎨", R.string.tutorial_generic_button,
-            imageRes = R.drawable.tutorial_dino_thumbsup
+            imageRes = R.drawable.brand_logo
         )
         val GUESS_INTRO_COACH = TutorialCoach(
             R.string.tutorial_guess_title, R.string.tutorial_guess_body, "🤔", R.string.tutorial_generic_button,
-            imageRes = R.drawable.tutorial_dino_thinking
+            imageRes = R.drawable.qm_mascot
         )
         val FREE_JOKER_COACH = TutorialCoach(
             R.string.tutorial_joker_free_title, R.string.tutorial_joker_free_body, "🎁", R.string.tutorial_generic_button,
-            imageRes = R.drawable.tutorial_dino_thumbsup
+            imageRes = R.drawable.brand_logo
         )
         val FINALE_COACH = TutorialCoach(
             R.string.tutorial_finale_title, R.string.tutorial_finale_body, "🎉", R.string.tutorial_finale_button,
-            imageRes = R.drawable.tutorial_dino_finale
+            imageRes = R.drawable.brand_logo
         )
     }
 }

@@ -82,6 +82,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 
 /** Stadium/pill shape used for every primary/secondary button and chip. */
@@ -654,17 +655,14 @@ fun ScreenTopActions(
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 20.dp)
+            .padding(start = 14.dp, end = 20.dp, top = 12.dp, bottom = 10.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RaisedIconButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.cd_back),
-                onClick = onBack
-            )
+            // The painted wooden arrow — the same one, at the same spot, as on every painted screen.
+            WoodBackArrow(onClick = onBack)
             if (trailing != null) {
                 Spacer(modifier = Modifier.weight(1f))
                 trailing()
@@ -677,15 +675,12 @@ fun ScreenTopActions(
         // padding is what keeps a long title from sliding under either
         // button rather than colliding with it.
         if (title != null) {
-            Text(
+            LetteredText(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                size = 26.sp,
                 modifier = Modifier
                     .align(Alignment.Center)
+                    .fillMaxWidth()
                     .padding(horizontal = TitleClearance)
             )
         }
@@ -726,23 +721,17 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
  * strength collage under real UI content read as noise rather than texture.
  */
 @Composable
-fun Modifier.screenBackground(): Modifier {
-    val top = MaterialTheme.colorScheme.background
-    val bottom = AppTheme.tokens.backgroundDeep
-    return this
-        .paint(painterResource(R.drawable.bg_karalak), contentScale = ContentScale.Crop)
-        // Veil strength comes from the palette: the collage is ink on white
-        // paper, so on a dark page it needs a much heavier veil or it glares
-        // through as a lit panel (see AppTokens.backgroundVeilTop).
+fun Modifier.screenBackground(): Modifier =
+    this
+        // The painted wood of the result and settings screens, so the pages still built on this modifier sit in the
+        // same world as the painted ones instead of on the old pencil-doodle paper. A warm parchment veil keeps it
+        // light enough for the dark body text and white cards these pages were laid out for.
+        .paint(painterResource(R.drawable.bg_result_wood), contentScale = ContentScale.Crop)
         .background(
             Brush.verticalGradient(
-                listOf(
-                    top.copy(alpha = AppTheme.tokens.backgroundVeilTop),
-                    bottom.copy(alpha = AppTheme.tokens.backgroundVeilBottom)
-                )
+                listOf(Color(0xFFFFF1D8).copy(alpha = 0.80f), Color(0xFFF6DDB4).copy(alpha = 0.72f))
             )
         )
-}
 
 /**
  * The app's own text input, replacing Material's OutlinedTextField everywhere.

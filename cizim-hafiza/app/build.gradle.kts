@@ -185,6 +185,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.browser)
     // Only for per-app language switching (AppCompatDelegate.setApplicationLocales) —
     // MainActivity extends AppCompatActivity just to make that API work, everything
     // else about the UI stays 100% Compose.

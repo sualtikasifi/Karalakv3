@@ -127,22 +127,18 @@ fun QuickMatchScreen(
     val matched = state is QuickMatchState.Found
     androidx.activity.compose.BackHandler(enabled = matched) { abandonConfirmOpen = true }
     if (abandonConfirmOpen) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { abandonConfirmOpen = false },
-            title = { Text(stringResource(R.string.quick_match_abandon_title)) },
-            text = { Text(stringResource(R.string.quick_match_abandon_message, GameConstants.QUICK_MATCH_ABANDON_PENALTY_XP)) },
-            confirmButton = {
-                androidx.compose.material3.TextButton(onClick = {
-                    abandonConfirmOpen = false
-                    viewModel.abandonMatch()
-                    onBack()
-                }) { Text(stringResource(R.string.quick_match_abandon_confirm, GameConstants.QUICK_MATCH_ABANDON_PENALTY_XP)) }
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            title = stringResource(R.string.quick_match_abandon_title),
+            message = stringResource(R.string.quick_match_abandon_message, GameConstants.QUICK_MATCH_ABANDON_PENALTY_XP),
+            confirmText = stringResource(R.string.quick_match_abandon_confirm, GameConstants.QUICK_MATCH_ABANDON_PENALTY_XP),
+            dismissText = stringResource(R.string.quick_match_abandon_keep),
+            destructive = true,
+            onConfirm = {
+                abandonConfirmOpen = false
+                viewModel.abandonMatch()
+                onBack()
             },
-            dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { abandonConfirmOpen = false }) {
-                    Text(stringResource(R.string.quick_match_abandon_keep))
-                }
-            }
+            onDismiss = { abandonConfirmOpen = false }
         )
     }
 
@@ -261,19 +257,10 @@ fun QuickMatchScreen(
                 }
             }
             if (matched) {
-                // The wood/neon button the new background's own art style
-                // calls for, in place of ScreenTopActions' plain round
-                // icon — every other state keeps that shared default.
-                Image(
-                    painter = painterResource(R.drawable.store_back_button),
-                    contentDescription = stringResource(R.string.cd_back),
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .statusBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 16.dp)
-                        .size(52.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .clickable { abandonConfirmOpen = true }
+                // Once matched, leaving costs XP, so the back button asks first.
+                com.sualtikasifi.cizimhafiza.presentation.common.PaintedBackButton(
+                    onClick = { abandonConfirmOpen = true },
+                    modifier = Modifier.align(Alignment.TopStart)
                 )
             } else {
                 ScreenTopActions(
@@ -378,17 +365,15 @@ private fun SearchingBody() {
                 modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 30.dp, bottom = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
+                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                     text = stringResource(R.string.quick_match_searching_title),
                     style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = ink, fontSize = 40.sp, textAlign = TextAlign.Center),
-                    maxLines = 1
+                    modifier = Modifier.fillMaxWidth()
                 )
-                val animatedDots = "…".takeIf { false }
-                Text(
+                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                     text = stringResource(R.string.quick_match_searching_title2),
                     style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFFF26A1B), fontSize = 34.sp, textAlign = TextAlign.Center),
-                    maxLines = 1,
-                    modifier = Modifier.graphicsLayer { alpha = 0.78f + 0.22f * (1f - kotlin.math.abs(dots.value - 1.5f) / 1.5f) }
+                    modifier = Modifier.fillMaxWidth().graphicsLayer { alpha = 0.78f + 0.22f * (1f - kotlin.math.abs(dots.value - 1.5f) / 1.5f) }
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Canvas(modifier = Modifier.width(190.dp).height(70.dp)) {
@@ -562,6 +547,8 @@ private fun PlayersSection(opponent: GhostRun, me: QuickMatchPlayerSnapshot) {
                 // only the level it bought. This is the floor XP for
                 // that level: a true lower bound, never a guess above it.
                 lifetimeXp = PlayerLevel.totalXpForLevel(opponent.level),
+                // The same face the result screen gives this opponent (see ResultScreen's versus card).
+                photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(opponent.nickname),
                 accent = MatchBlue,
                 ribbon = R.drawable.match_ribbon_blue,
                 modifier = Modifier.weight(1f)
@@ -606,6 +593,7 @@ private fun PlayerCard(
     level: Int,
     frameId: String,
     avatarUrl: String = "",
+    photo: com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto? = null,
     lifetimeXp: Int,
     accent: Color,
     ribbon: Int,
@@ -674,7 +662,7 @@ private fun PlayerCard(
             // decides which ring that level has actually earned.
             frame = AvatarFrame.resolve(frameId, level),
             size = PLAYER_AVATAR_SIZE,
-            photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(avatarUrl),
+            photo = photo ?: com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(avatarUrl),
             levelBadge = true
         )
         Spacer(modifier = Modifier.height(8.dp))

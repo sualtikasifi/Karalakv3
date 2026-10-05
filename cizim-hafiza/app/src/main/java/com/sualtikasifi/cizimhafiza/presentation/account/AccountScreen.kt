@@ -161,70 +161,58 @@ fun AccountScreen(
                 DangerZone(isDeleting = uiState.isDeleting, onDelete = viewModel::promptDeleteAccount)
                 Spacer(modifier = Modifier.height(16.dp))
             }
-            ScreenTopActions(onBack = onBack, modifier = Modifier.align(Alignment.TopStart))
+            ScreenTopActions(onBack = onBack, title = stringResource(R.string.account_title), modifier = Modifier.align(Alignment.TopStart))
         }
     }
 
     if (uiState.showSignOutPrompt) {
-        AlertDialog(
-            onDismissRequest = viewModel::dismissSignOutPrompt,
-            title = { Text(stringResource(R.string.account_sign_out_title)) },
-            text = { Text(stringResource(R.string.account_sign_out_message)) },
-            confirmButton = {
-                TextButton(onClick = viewModel::signOut) {
-                    Text(stringResource(R.string.account_sign_out_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::dismissSignOutPrompt) {
-                    Text(stringResource(R.string.account_sign_out_cancel))
-                }
-            }
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            title = stringResource(R.string.account_sign_out_title),
+            message = stringResource(R.string.account_sign_out_message),
+            confirmText = stringResource(R.string.account_sign_out_confirm),
+            dismissText = stringResource(R.string.account_sign_out_cancel),
+            onConfirm = viewModel::signOut,
+            onDismiss = viewModel::dismissSignOutPrompt
         )
     }
 
     if (uiState.showDeletePrompt) {
-        AlertDialog(
-            onDismissRequest = viewModel::dismissDeletePrompt,
-            title = { Text(stringResource(R.string.account_delete_title)) },
-            text = { Text(stringResource(R.string.account_delete_message)) },
-            confirmButton = {
-                TextButton(onClick = viewModel::confirmDeleteFirstStep) {
-                    Text(
-                        text = stringResource(R.string.account_delete_continue),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::dismissDeletePrompt) {
-                    Text(stringResource(R.string.account_delete_cancel))
-                }
-            }
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            title = stringResource(R.string.account_delete_title),
+            message = stringResource(R.string.account_delete_message),
+            confirmText = stringResource(R.string.account_delete_continue),
+            dismissText = stringResource(R.string.account_delete_cancel),
+            destructive = true,
+            onConfirm = viewModel::confirmDeleteFirstStep,
+            onDismiss = viewModel::dismissDeletePrompt
         )
     }
 
     // The second, separate confirmation. Different wording and the safe choice on the prominent side, so the
     // two taps cannot be made on autopilot.
     if (uiState.showDeleteFinalPrompt) {
-        AlertDialog(
-            onDismissRequest = viewModel::dismissDeletePrompt,
-            title = { Text(stringResource(R.string.account_delete_final_title)) },
-            text = { Text(stringResource(R.string.account_delete_final_message)) },
-            confirmButton = {
-                TextButton(onClick = viewModel::dismissDeletePrompt) {
-                    Text(stringResource(R.string.account_delete_final_keep))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::deleteAccount) {
-                    Text(
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog(
+            title = stringResource(R.string.account_delete_final_title),
+            onDismiss = viewModel::dismissDeletePrompt,
+            buttons = {
+                androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                    com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
                         text = stringResource(R.string.account_delete_final_confirm),
-                        color = MaterialTheme.colorScheme.error
+                        onClick = viewModel::deleteAccount,
+                        primary = false,
+                        danger = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
+                        text = stringResource(R.string.account_delete_final_keep),
+                        onClick = viewModel::dismissDeletePrompt,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
-        )
+        ) {
+            com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialogText(stringResource(R.string.account_delete_final_message))
+        }
     }
 
     // Feedback is one-shot: clear it once shown for long enough to read,

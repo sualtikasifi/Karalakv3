@@ -31,11 +31,15 @@ val DisplayFont = FontFamily(
     Font(R.font.baloo2_extrabold, FontWeight.ExtraBold)
 )
 
+// Body text is Baloo 2 as well now: the painted screens letter everything in it, and the Quicksand that windows,
+// lists and the remaining cream pages used read as a different app next to them. Baloo 2 ships no Regular, so
+// Normal maps to its Medium.
 val BodyFont = FontFamily(
-    Font(R.font.quicksand_regular, FontWeight.Normal),
-    Font(R.font.quicksand_medium, FontWeight.Medium),
-    Font(R.font.quicksand_semibold, FontWeight.SemiBold),
-    Font(R.font.quicksand_bold, FontWeight.Bold)
+    Font(R.font.baloo2_medium, FontWeight.Normal),
+    Font(R.font.baloo2_medium, FontWeight.Medium),
+    Font(R.font.baloo2_semibold, FontWeight.SemiBold),
+    Font(R.font.baloo2_bold, FontWeight.Bold),
+    Font(R.font.baloo2_extrabold, FontWeight.ExtraBold)
 )
 
 // Custom fonts carry their own vertical metrics, which Compose pads on top of

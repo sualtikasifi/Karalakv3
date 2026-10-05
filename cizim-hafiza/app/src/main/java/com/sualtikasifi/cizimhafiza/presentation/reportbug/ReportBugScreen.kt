@@ -184,10 +184,15 @@ fun ReportBugScreen(
             sliceYPx = 46,
             edge = 28.dp,
             edgeY = 21.dp,
+            // Greyed rather than see-through when there is nothing to send yet: at half opacity the button's own
+            // painted drop shadow showed through as a stray dark line under it.
+            tint = if (canSend) null else androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+                androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0.15f) }
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
-                .graphicsLayer { alpha = if (canSend) 1f else 0.55f }
+                .graphicsLayer { alpha = if (canSend) 1f else 0.85f }
                 .clickable(enabled = canSend, interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = viewModel::submit)
         ) {
             Row(
@@ -227,21 +232,13 @@ fun ReportBugScreen(
         Spacer(modifier = Modifier.height(12.dp))
     }
     if (uiState.isSubmitted) {
-        AlertDialog(
-            onDismissRequest = viewModel::dismissSuccess,
-            confirmButton = {
-                PrimaryButton(text = stringResource(R.string.close), onClick = viewModel::dismissSuccess)
-            },
-            icon = { IconWell(icon = Icons.Filled.CheckCircle, tint = AppTheme.tokens.success) },
-            text = {
-                Text(
-                    text = stringResource(R.string.report_bug_success),
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        )
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog(
+            title = stringResource(R.string.report_bug_success),
+            onDismiss = viewModel::dismissSuccess,
+            buttons = { com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(text = stringResource(R.string.close), onClick = viewModel::dismissSuccess, modifier = Modifier.fillMaxWidth()) }
+        ) {
+            IconWell(icon = Icons.Filled.CheckCircle, tint = AppTheme.tokens.success)
+        }
     }
     pendingDeleteId?.let { id ->
         ConfirmReportDeleteDialog(
@@ -268,21 +265,14 @@ fun ReportBugScreen(
 /** Confirm/cancel dialog for an irreversible delete — one report, or the whole history. */
 @Composable
 private fun ConfirmReportDeleteDialog(message: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.report_bug_delete_confirm_title)) },
-        text = { Text(message) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(
-                    text = stringResource(R.string.report_bug_delete_confirm_action),
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.report_bug_delete_confirm_cancel)) }
-        }
+    com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+        title = stringResource(R.string.report_bug_delete_confirm_title),
+        message = message,
+        confirmText = stringResource(R.string.report_bug_delete_confirm_action),
+        dismissText = stringResource(R.string.report_bug_delete_confirm_cancel),
+        destructive = true,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss
     )
 }
 

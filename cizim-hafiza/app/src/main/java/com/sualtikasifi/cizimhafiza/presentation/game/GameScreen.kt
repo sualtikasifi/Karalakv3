@@ -112,38 +112,28 @@ fun GameScreen(
     BackHandler(enabled = isActivelyPlaying) { showExitConfirm = true }
 
     if (showExitConfirm) {
-        AlertDialog(
-            onDismissRequest = { showExitConfirm = false },
-            title = { Text(stringResource(if (viewModel.isDailyChallenge) R.string.daily_exit_title else R.string.exit_game_title)) },
-            text = {
-                Text(
-                    if (viewModel.isDailyChallenge) {
-                        stringResource(R.string.daily_exit_message)
-                    } else if (viewModel.isQuickMatch) {
-                        stringResource(R.string.quick_match_exit_message, GameConstants.QUICK_MATCH_ABANDON_PENALTY_XP)
-                    } else {
-                        stringResource(R.string.exit_game_message)
-                    }
-                )
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            title = stringResource(if (viewModel.isDailyChallenge) R.string.daily_exit_title else R.string.exit_game_title),
+            message = if (viewModel.isDailyChallenge) {
+                stringResource(R.string.daily_exit_message)
+            } else if (viewModel.isQuickMatch) {
+                stringResource(R.string.quick_match_exit_message, GameConstants.QUICK_MATCH_ABANDON_PENALTY_XP)
+            } else {
+                stringResource(R.string.exit_game_message)
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    showExitConfirm = false
-                    if (viewModel.isDailyChallenge) {
-                        viewModel.forfeitDaily()
-                    } else {
-                        viewModel.abandonQuickMatch()
-                        onMainMenu()
-                    }
-                }) {
-                    Text(stringResource(R.string.exit_game_confirm))
+            confirmText = stringResource(R.string.exit_game_confirm),
+            dismissText = stringResource(R.string.exit_game_cancel),
+            destructive = true,
+            onConfirm = {
+                showExitConfirm = false
+                if (viewModel.isDailyChallenge) {
+                    viewModel.forfeitDaily()
+                } else {
+                    viewModel.abandonQuickMatch()
+                    onMainMenu()
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { showExitConfirm = false }) {
-                    Text(stringResource(R.string.exit_game_cancel))
-                }
-            }
+            onDismiss = { showExitConfirm = false }
         )
     }
 

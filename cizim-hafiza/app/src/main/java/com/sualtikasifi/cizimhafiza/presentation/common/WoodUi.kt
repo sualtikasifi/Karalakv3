@@ -115,12 +115,19 @@ fun LetteredText(
     fill: Color = Color.White,
     outline: Color? = TitleOutline,
     weight: FontWeight = FontWeight.ExtraBold,
-    maxLines: Int = 1
+    maxLines: Int = 1,
+    /** How far the lettering may shrink to fit the space it is given before it is ellipsised instead. */
+    minScale: Float = 0.55f
 ) {
     val density = LocalDensity.current
-    val strokeDp = (size.value * 0.11f).coerceIn(1.3f, 4.2f)
-    val base = PaintedStyle(fontSize = size, fontWeight = weight, textAlign = TextAlign.Center)
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    // The outline is drawn outside the glyphs, so the space it takes is kept out of what the letters may fill.
+    val strokeDp0 = (size.value * 0.11f).coerceIn(1.3f, 4.2f)
+    val full = PaintedStyle(fontSize = size, fontWeight = weight, textAlign = TextAlign.Center)
+    BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
+        // One fitted size for both layers: the outline and the fill have to break and shrink identically.
+        val scale = rememberFitScale(text, full, maxLines, minScale)
+        val base = full.scaledBy(scale)
+        val strokeDp = (strokeDp0 * scale).coerceAtLeast(1.1f)
         if (outline != null) {
             Text(
                 text,
@@ -129,7 +136,8 @@ fun LetteredText(
                     drawStyle = Stroke(width = with(density) { strokeDp.dp.toPx() }, join = StrokeJoin.Round),
                     shadow = androidx.compose.ui.graphics.Shadow(Color(0x66000000), androidx.compose.ui.geometry.Offset(0f, with(density) { 2.dp.toPx() }), with(density) { 3.dp.toPx() })
                 ),
-                maxLines = maxLines
+                maxLines = maxLines,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
         Text(
@@ -138,7 +146,8 @@ fun LetteredText(
                 color = fill,
                 shadow = if (outline == null) androidx.compose.ui.graphics.Shadow(Color(0x66A04000), androidx.compose.ui.geometry.Offset(0f, with(density) { 1.5.dp.toPx() }), with(density) { 2.dp.toPx() }) else null
             ),
-            maxLines = maxLines
+            maxLines = maxLines,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
     }
 }
@@ -432,7 +441,8 @@ fun ChoicePill(
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
     ) {
-        Text(
+        // Shrinks to stay on its line rather than wrapping ("🐶 Hayvanlar" used to break into emoji-over-word).
+        FitText(
             text = label,
             style = PaintedStyle(
                 color = if (selected) Color.White else InkBrown,
@@ -443,7 +453,8 @@ fun ChoicePill(
                 shadow = if (selected) androidx.compose.ui.graphics.Shadow(Color(0xFF8A3A00), androidx.compose.ui.geometry.Offset(0f, 2f), 3f) else null
             ),
             maxLines = maxLines,
-            modifier = Modifier.align(Alignment.Center).padding(horizontal = 4.dp)
+            minScale = 0.62f,
+            modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 6.dp)
         )
     }
 }

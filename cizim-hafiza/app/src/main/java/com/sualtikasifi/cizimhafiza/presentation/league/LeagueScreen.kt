@@ -700,13 +700,11 @@ private fun rewardExplainer(reward: LeagueReward): String = when (reward) {
 /** Shown once, the first time a won prize is actually handed over. */
 @Composable
 private fun PrizeWonDialog(reward: LeagueReward?, rank: Int, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            PrimaryButton(text = stringResource(R.string.close), onClick = onDismiss)
-        },
-        title = { Text(text = stringResource(R.string.league_prize_won_title, rank)) },
-        text = {
+    com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog(
+        title = stringResource(R.string.league_prize_won_title, rank),
+        onDismiss = onDismiss,
+        buttons = { com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(text = stringResource(R.string.close), onClick = onDismiss, modifier = Modifier.fillMaxWidth()) }
+    ) {
             Column {
                 if (reward is LeagueReward.Pen) {
                     PenStrokePreview(skin = reward.skin, modifier = Modifier.fillMaxWidth().height(40.dp))
@@ -720,15 +718,14 @@ private fun PrizeWonDialog(reward: LeagueReward?, rank: Int, onDismiss: () -> Un
                         }
                         Text(
                             text = stringResource(R.string.league_prize_won_body, rewardLabel(reward)),
-                            style = MaterialTheme.typography.bodyMedium
+                            style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(16.sp, 22.sp)
                         )
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                 }
                 MonthlyBonusRow()
             }
-        }
-    )
+    }
 }
 
 private fun LeagueTab.labelRes(): Int = when (this) {

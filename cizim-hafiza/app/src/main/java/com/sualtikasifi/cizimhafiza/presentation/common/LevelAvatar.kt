@@ -530,12 +530,6 @@ private fun PersonaFace(seed: String, mascot: @Composable () -> Unit) {
     val bucket = hash % 20
     when {
         bucket <= 2 -> mascot()
-        bucket <= 4 -> Canvas(modifier = Modifier.fillMaxSize()) {
-            drawRect(Color(0xFFDADCE0))
-            val w = size.width
-            drawCircle(Color.White, radius = w * 0.17f, center = Offset(w / 2f, w * 0.40f))
-            drawCircle(Color.White, radius = w * 0.34f, center = Offset(w / 2f, w * 1.02f))
-        }
         bucket <= 9 -> Box(
             modifier = Modifier.fillMaxSize().background(PersonaLetterColors[hash / 20 % PersonaLetterColors.size]),
             contentAlignment = Alignment.Center

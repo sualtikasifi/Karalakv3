@@ -215,10 +215,10 @@
 
     <!-- Word count / category selection -->
     <string name="select_word_count">Kaç kelimeyle oynamak istersin?</string>
-    <string name="select_category">Kategori seç (opsiyonel)</string>
+    <string name="select_category">Kategori seç (isteğe bağlı)</string>
     <string name="start_game">Başla</string>
     <string name="all_categories">Tümü</string>
-    <string name="select_difficulty">Zorluk seç (opsiyonel)</string>
+    <string name="select_difficulty">Zorluk seç (isteğe bağlı)</string>
     <string name="all_difficulties">Tümü</string>
     <string name="difficulty_easy">Kolay</string>
     <string name="difficulty_medium">Orta</string>
@@ -962,6 +962,7 @@
     <string name="result_claim">Ödülü Al</string>
     <string name="result_x2_button_amount">🎬 x2 · %1$d XP</string>
     <string name="result_claim_amount">Ödülü Al · %1$d XP</string>
+    <string name="result_continue">Devam</string>
     <string name="result_xp_daily">Günlük meydan okuma ödülün</string>
     <string name="result_xp_formula_mult">%1$d puan × %2$d bonus çarpanı</string>
     <string name="result_xp_formula_plain">%1$d puan = %1$d XP</string>
@@ -1150,7 +1151,7 @@
     <string name="home_chests_info_ok">Anladım</string>
     <string name="chest_info_step_win_title">Oyunu kazan</string>
     <string name="chest_info_step_win_body">Çevrimiçi modlarda rakiplerini geride bırak, oyunları kazan ve ödüllerini topla.</string>
-    <string name="chest_info_step_open_title">Kilidi aç</string>
+    <string name="chest_info_step_open_title">Süreyi başlat</string>
     <string name="chest_info_step_open_body">Kazandığın kasalara dokun ve geri sayım başlasın. Süresi dolan kasayı aç ve ödüllerini hemen al.</string>
     <string name="chest_info_step_slots_title">Yeni kasalara yer aç</string>
     <string name="chest_info_step_slots_body">%1$d yuvan dolduğunda yeni kasa düşmez. Sahip olduğun kasaları açarak ödülleri topla, bu şekilde yeni kasalara yer aç.</string>
@@ -1215,7 +1216,7 @@
     <string name="username_error_invalid">Ad 2–16 karakter olmalı; yalnızca harf, rakam, boşluk, _ . - kullanılabilir.</string>
     <string name="username_error_taken">Bu kullanıcı adı daha önce alınmış. Başka bir ad dene.</string>
     <string name="username_error_network">Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.</string>
-    <string name="home_level_inline">%1$d Seviye</string>
+    <string name="home_level_inline">Seviye %1$d</string>
     <string name="avatar_source_title">Profil görseli</string>
     <string name="avatar_source_karalak">Karalak</string>
     <string name="avatar_source_google">Google fotoğrafım</string>

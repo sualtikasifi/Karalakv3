@@ -176,10 +176,21 @@ fun SettingsScreen(
         NavRow(
             Icons.Filled.PrivacyTip, Color(0xFF34A853), stringResource(R.string.settings_privacy_policy),
             onClick = {
+                // A Custom Tab rather than handing off to the browser app: it opens over the game, in its colours,
+                // and back returns straight here (a bare ACTION_VIEW could land on the browser's first-run screen).
+                val uri = android.net.Uri.parse(PRIVACY_POLICY_URL)
                 runCatching {
-                    activity?.startActivity(
-                        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(PRIVACY_POLICY_URL))
-                    )
+                    androidx.browser.customtabs.CustomTabsIntent.Builder()
+                        .setShowTitle(true)
+                        .setDefaultColorSchemeParams(
+                            androidx.browser.customtabs.CustomTabColorSchemeParams.Builder()
+                                .setToolbarColor(android.graphics.Color.parseColor("#8A4E12"))
+                                .build()
+                        )
+                        .build()
+                        .launchUrl(context, uri)
+                }.onFailure {
+                    runCatching { activity?.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri)) }
                 }
             }
         )

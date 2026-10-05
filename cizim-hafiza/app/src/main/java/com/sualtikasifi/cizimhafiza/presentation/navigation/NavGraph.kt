@@ -97,7 +97,9 @@ fun CizimHafizaNavGraph(
     val activity = LocalContext.current as? Activity
     val applyStatusBarIcons = {
         activity?.window?.let { window ->
-            WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = !onDarkScreen
+            // Light icons everywhere: every screen now has a painted scene (or a cream page under the shared scrim below),
+            // and dark icons disappeared into the busy tops of the painted ones.
+            WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = false
         }
     }
     SideEffect { applyStatusBarIcons() }
@@ -508,6 +510,9 @@ fun CizimHafizaNavGraph(
             )
         }
     }
+
+        // A soft shade under the status bar so the white clock and battery read on any picture behind them.
+        com.sualtikasifi.cizimhafiza.presentation.common.StatusBarScrim(Modifier.align(Alignment.TopCenter))
 
         IncomingInviteBanner(
             invite = inviteState.invite,

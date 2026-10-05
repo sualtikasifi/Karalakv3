@@ -63,7 +63,7 @@ fun WordCountScreen(
                     label = { "${modeEmoji(it)}  ${modeLabel(it)}" },
                     isSelected = { uiState.selectedMode == it },
                     onSelect = viewModel::selectMode,
-                    maxLines = 2
+                    maxLines = 1
                 )
             }
             PanelRow(stringResource(R.string.select_category)) {
@@ -75,7 +75,7 @@ fun WordCountScreen(
                     label = { "${categoryEmoji(it)} ${it ?: stringResource(R.string.all_categories)}" },
                     isSelected = { uiState.selectedCategory == it },
                     onSelect = viewModel::selectCategory,
-                    maxLines = 2
+                    maxLines = 1
                 )
             }
             PanelRow(stringResource(R.string.select_difficulty)) {
@@ -87,7 +87,7 @@ fun WordCountScreen(
                     label = { if (it == null) stringResource(R.string.all_difficulties) else difficultyLabel(it) },
                     isSelected = { uiState.selectedDifficulty == it },
                     onSelect = viewModel::selectDifficulty,
-                    maxLines = 2
+                    maxLines = 1
                 )
             }
         }
@@ -98,7 +98,7 @@ fun WordCountScreen(
 // WordCategoryColors is (see Color.kt): the pool stores the display name and
 // replaces it when the language changes, so an English player used to get the
 // generic sparkle on every single category.
-private fun categoryEmoji(category: String?): String = when (category) {
+internal fun categoryEmoji(category: String?): String = when (category) {
     "Hayvanlar", "Animals" -> "🐶"
     "Eşyalar", "Objects" -> "🧺"
     "Meslekler", "Professions" -> "👮"

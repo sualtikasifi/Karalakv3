@@ -332,25 +332,16 @@ private fun PendingSentCard(duel: Duel, onDelete: () -> Unit) {
 
 @Composable
 private fun DuelResultDialog(recent: RecentDuel, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                when (recent.iWon) {
-                    true -> stringResource(R.string.duel_list_status_won)
-                    false -> stringResource(R.string.duel_list_status_lost)
-                    null -> stringResource(R.string.duel_list_status_tied)
-                }
-            )
+    com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog(
+        title = when (recent.iWon) {
+            true -> stringResource(R.string.duel_list_status_won)
+            false -> stringResource(R.string.duel_list_status_lost)
+            null -> stringResource(R.string.duel_list_status_tied)
         },
-        text = {
-            Column {
-                Text(stringResource(R.string.duel_result_score_format, stringResource(R.string.quick_match_you), recent.myScore))
-                Text(stringResource(R.string.duel_result_score_format, recent.otherName, recent.otherScore))
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
-        }
-    )
+        onDismiss = onDismiss,
+        buttons = { com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(text = stringResource(R.string.close), onClick = onDismiss, modifier = Modifier.fillMaxWidth()) }
+    ) {
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialogText(stringResource(R.string.duel_result_score_format, stringResource(R.string.quick_match_you), recent.myScore))
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialogText(stringResource(R.string.duel_result_score_format, recent.otherName, recent.otherScore))
+    }
 }

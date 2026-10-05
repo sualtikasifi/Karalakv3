@@ -81,24 +81,18 @@ fun OnlineGameScreen(
     BackHandler(enabled = isActivelyPlaying) { showExitConfirm = true }
 
     if (showExitConfirm) {
-        AlertDialog(
-            onDismissRequest = { showExitConfirm = false },
-            title = { Text(stringResource(R.string.exit_game_title)) },
-            text = { Text(stringResource(R.string.exit_game_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showExitConfirm = false
-                    viewModel.leaveRoom()
-                    onExit()
-                }) {
-                    Text(stringResource(R.string.exit_game_confirm))
-                }
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            title = stringResource(R.string.exit_game_title),
+            message = stringResource(R.string.exit_game_message),
+            confirmText = stringResource(R.string.exit_game_confirm),
+            dismissText = stringResource(R.string.exit_game_cancel),
+            destructive = true,
+            onConfirm = {
+                showExitConfirm = false
+                viewModel.leaveRoom()
+                onExit()
             },
-            dismissButton = {
-                TextButton(onClick = { showExitConfirm = false }) {
-                    Text(stringResource(R.string.exit_game_cancel))
-                }
-            }
+            onDismiss = { showExitConfirm = false }
         )
     }
 

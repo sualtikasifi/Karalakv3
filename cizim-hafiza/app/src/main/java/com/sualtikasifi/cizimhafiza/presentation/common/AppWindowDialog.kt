@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
@@ -62,26 +63,29 @@ fun AppWindowDialog(
                 .padding(horizontal = 16.dp, vertical = 48.dp),
             contentAlignment = Alignment.Center
         ) {
-            val shape = RoundedCornerShape(28.dp)
-            Column(
+            // The same parchment-in-a-wooden-frame panel as PaintedDialog, so every window in the game matches.
+            NinePatch(
+                res = R.drawable.league_card,
+                slicePx = 100,
+                edge = 24.dp,
                 modifier = Modifier
+                    .widthIn(max = 480.dp)
                     .fillMaxWidth()
                     .heightIn(max = maxHeight)
-                    .clip(shape)
-                    .background(Brush.verticalGradient(listOf(Color(0xFFFFF6E3), Color(0xFFFCE6BF))))
-                    .border(3.dp, Color(0xFFEBCB93), shape)
                     // Swallow taps on the panel itself so only the dim area closes it.
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
-                    .padding(16.dp)
             ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 20.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = if (centerTitle) Arrangement.Center else Arrangement.Start) {
-                    Text(
+                    FitText(
                         text = title,
-                        fontFamily = DisplayFont,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 22.sp,
-                        color = Color(0xFF3A2416),
-                        textAlign = if (centerTitle) androidx.compose.ui.text.style.TextAlign.Center else androidx.compose.ui.text.style.TextAlign.Start,
+                        style = PaintedStyle(
+                            color = Color(0xFF3A2416),
+                            fontSize = 23.sp,
+                            textAlign = if (centerTitle) androidx.compose.ui.text.style.TextAlign.Center else androidx.compose.ui.text.style.TextAlign.Start
+                        ),
+                        maxLines = 2,
+                        contentAlignment = if (centerTitle) Alignment.Center else Alignment.CenterStart,
                         modifier = if (centerTitle) Modifier.fillMaxWidth() else Modifier.weight(1f)
                     )
                     if (!centerTitle) Box(
@@ -105,6 +109,7 @@ fun AppWindowDialog(
                 } else {
                     content()
                 }
+            }
             }
         }
     }

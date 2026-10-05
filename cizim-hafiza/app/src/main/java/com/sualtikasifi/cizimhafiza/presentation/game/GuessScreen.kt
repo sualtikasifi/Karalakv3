@@ -773,9 +773,11 @@ private fun LiveXpBonusBadge(secondsLeft: Int, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .clip(CircleShape)
-            .background(color.copy(alpha = 0.16f * glow))
-            .border(1.dp, color.copy(alpha = glow), CircleShape)
-            .padding(horizontal = 10.dp, vertical = 6.dp)
+            // A solid pill in the stage colour with white lettering: the old 16%-tint with coloured text all but
+            // vanished on the painted orange board behind it.
+            .background(color.copy(alpha = 0.78f + 0.22f * glow))
+            .border(1.5.dp, Color.White.copy(alpha = 0.85f), CircleShape)
+            .padding(horizontal = 12.dp, vertical = 5.dp)
     ) {
         Text(
             // "bonus", not the plain xp_gained_format used for the actual
@@ -783,9 +785,11 @@ private fun LiveXpBonusBadge(secondsLeft: Int, modifier: Modifier = Modifier) {
             // is on TOP of the word's own base XP, not the whole reward, and
             // the badge used to read exactly like a total.
             text = stringResource(R.string.xp_live_bonus_format, bonus),
-            style = MaterialTheme.typography.labelMedium,
-            color = color,
-            fontWeight = FontWeight.Bold
+            style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
+                color = Color.White,
+                fontSize = 14.sp,
+                shadow = androidx.compose.ui.graphics.Shadow(Color(0x55000000), androidx.compose.ui.geometry.Offset(0f, 1.5f), 2f)
+            )
         )
     }
 }

@@ -302,7 +302,7 @@ fun ResultScreen(
                             onClick = onDoubleXp!!,
                             modifier = Modifier.weight(1f)
                         ) {
-                            LetteredText(stringResource(R.string.result_x2_button_amount, state.xpEarned * 2), 17.sp, outline = Color(0xFF8A3A00))
+                            LetteredText(stringResource(R.string.result_x2_button_amount, state.xpEarned * 2), 17.sp, outline = Color(0xFF8A3A00), modifier = Modifier.weight(1f, fill = false))
                         }
                     }
                     // Where the player's thumb lands, so the XP can fly from exactly there to the home bar.
@@ -338,9 +338,17 @@ fun ResultScreen(
                                 }
                             }
                     ) {
-                        Icon(Icons.Filled.CardGiftcard, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
-                        Spacer(Modifier.width(10.dp))
-                        LetteredText(stringResource(R.string.result_claim_amount, shownXp), 19.sp, outline = Color(0xFF8A3A00))
+                        if (shownXp > 0) {
+                            Icon(Icons.Filled.CardGiftcard, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+                            Spacer(Modifier.width(10.dp))
+                        }
+                        LetteredText(
+                    // Nothing to collect: the button simply moves on instead of offering "0 XP".
+                    if (shownXp > 0) stringResource(R.string.result_claim_amount, shownXp) else stringResource(R.string.result_continue),
+                    19.sp,
+                    outline = Color(0xFF8A3A00),
+                    modifier = Modifier.weight(1f, fill = false)
+                )
                     }
                 }
             }
@@ -415,10 +423,13 @@ fun ResultScreen(
     }
 
     shareChoiceFor?.let { item ->
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { if (!videoPreparing) shareChoiceFor = null },
-            title = { Text(stringResource(R.string.share_drawing_choose)) },
-            text = {
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog(
+            title = stringResource(R.string.share_drawing_choose),
+            onDismiss = { if (!videoPreparing) shareChoiceFor = null },
+            buttons = if (videoPreparing) null else {
+                { com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(text = stringResource(R.string.close), onClick = { shareChoiceFor = null }, primary = false, modifier = Modifier.fillMaxWidth()) }
+            }
+        ) {
                 if (videoPreparing) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         androidx.compose.material3.CircularProgressIndicator(modifier = Modifier.size(28.dp))
@@ -460,16 +471,7 @@ fun ResultScreen(
                         )
                     }
                 }
-            },
-            confirmButton = {},
-            dismissButton = {
-                if (!videoPreparing) {
-                    androidx.compose.material3.TextButton(onClick = { shareChoiceFor = null }) {
-                        Text(stringResource(R.string.close))
-                    }
-                }
-            }
-        )
+        }
     }
 
     val itemToReport = reportItem
@@ -818,13 +820,15 @@ private fun DailyChallengeResultCard(
         ) {
             Text(
                 text = stringResource(R.string.daily_challenge_result_title),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = PaintedStyle(color = InkBrown, fontSize = 17.sp, textAlign = TextAlign.Center)
             )
             Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = correctFlags.joinToString(" ") { if (it) "✅" else "❌" },
-                style = MaterialTheme.typography.titleMedium
+            com.sualtikasifi.cizimhafiza.presentation.common.DailyPips(
+                flags = correctFlags,
+                count = correctFlags.size.coerceAtLeast(com.sualtikasifi.cizimhafiza.domain.model.DailyChallenge.WORD_COUNT),
+                size = 30.dp,
+                emptyColor = Color(0x33795548),
+                rimColor = Color(0xFFFFF6E6)
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -870,13 +874,12 @@ private fun ResultLevelCard(progress: com.sualtikasifi.cizimhafiza.domain.model.
         val u = maxWidth / 940f
         fun fs(art: Float) = (u.value * art).sp
         Image(painterResource(R.drawable.res_level), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-        Box(modifier = Modifier.offset(u * 120f, u * 34f).size(u * 380f, u * 64f), contentAlignment = Alignment.CenterStart) {
-            Text(
-                text = stringResource(R.string.result_level_label, progress.level),
-                style = PaintedStyle(color = InkBrown, fontSize = fs(54f), textAlign = TextAlign.Start),
-                maxLines = 1
-            )
-        }
+        com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+            text = stringResource(R.string.result_level_label, progress.level),
+            style = PaintedStyle(color = InkBrown, fontSize = fs(54f), textAlign = TextAlign.Start),
+            contentAlignment = Alignment.CenterStart,
+            modifier = Modifier.offset(u * 120f, u * 34f).size(u * 360f, u * 64f)
+        )
         Box(modifier = Modifier.offset(u * 480f, u * 38f).size(u * 352f, u * 56f), contentAlignment = Alignment.CenterEnd) {
             if (leveledUp) {
                 Box(
@@ -885,10 +888,11 @@ private fun ResultLevelCard(progress: com.sualtikasifi.cizimhafiza.domain.model.
                         .padding(horizontal = 12.dp, vertical = 2.dp)
                 ) { LetteredText(stringResource(R.string.result_level_up), fs(32f), outline = Color(0xFF8A3A00)) }
             } else if (!progress.isMaxLevel) {
-                Text(
+                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                     text = stringResource(R.string.home_xp_to_next, progress.xpToNextLevel, progress.level + 1),
-                    style = PaintedStyle(color = InkBrown, fontSize = fs(30f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End),
-                    maxLines = 1
+                    style = PaintedStyle(color = InkBrown, fontSize = fs(30f), fontWeight = FontWeight.Bold, textAlign = TextAlign.End),
+                    contentAlignment = Alignment.CenterEnd,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
         }
@@ -980,10 +984,10 @@ private fun ResultSummaryCard(state: GamePhase.Result, shownXp: Int, xpDoubled: 
             }
             Image(painterResource(R.drawable.res_header), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
             Slot(350f, 88f, 690f, 160f) {
-                Text(
+                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                     text = stringResource(R.string.game_over),
                     style = PaintedStyle(color = Color(0xFF2B1A10), fontSize = fs(56f), textAlign = TextAlign.Center),
-                    maxLines = 1
+                    modifier = Modifier.fillMaxSize()
                 )
             }
             Slot(400f, 176f, 650f, 262f) {
@@ -991,14 +995,17 @@ private fun ResultSummaryCard(state: GamePhase.Result, shownXp: Int, xpDoubled: 
                     text = stringResource(R.string.xp_gained_format, shownXp),
                     size = fs(80f),
                     fill = Color(0xFFF26A1B),
-                    outline = null
+                    outline = null,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
-            Slot(390f, 262f, 660f, 304f) {
-                Text(
+            Slot(370f, 260f, 680f, 306f) {
+                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                     text = explanation,
                     style = DescriptionStyle(fs(29f), fs(31f)),
-                    maxLines = 2
+                    maxLines = 2,
+                    minScale = 0.62f,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
             Slot(380f, 304f, 660f, 378f) {
@@ -1013,10 +1020,10 @@ private fun ResultSummaryCard(state: GamePhase.Result, shownXp: Int, xpDoubled: 
                     state.fastestCorrectSeconds?.let {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Icon(Icons.Filled.Bolt, contentDescription = null, tint = Color(0xFFE08A00), modifier = Modifier.size(fs(40f).value.dp))
-                            Text(
+                            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                                 stringResource(R.string.fastest_correct, it),
                                 style = PaintedStyle(color = InkBrown, fontSize = fs(34f), textAlign = TextAlign.Center),
-                                maxLines = 1
+                                modifier = Modifier.weight(1f, fill = false)
                             )
                         }
                     }
@@ -1056,7 +1063,7 @@ private fun ChipPill(text: String, color: Color) {
             .padding(horizontal = 10.dp, vertical = 3.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(text, style = PaintedStyle(color = color, fontSize = 12.sp, textAlign = TextAlign.Center), maxLines = 1)
+        Text(text, style = PaintedStyle(color = color, fontSize = 12.sp, textAlign = TextAlign.Center), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -1098,7 +1105,7 @@ private fun PaintedPill(
             .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
     ) {
         Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
             content = content
@@ -1147,7 +1154,9 @@ private fun ResultDrawings(
                 gap = gap,
                 labelHeight = labelHeight,
                 onPreview = onPreview,
-                onShare = {
+                // The daily challenge has its own share button on its card; a second one here only doubled it.
+                onShare = if (state.daily != null) null else {
+                    {
                     DrawingShareUtil.shareAllResults(
                         context = context,
                         totalScore = state.totalScore,
@@ -1156,6 +1165,7 @@ private fun ResultDrawings(
                         fastestCorrectSeconds = state.fastestCorrectSeconds,
                         items = state.items
                     )
+                    }
                 }
             )
             if (ghost != null) {

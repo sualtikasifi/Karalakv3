@@ -148,6 +148,7 @@ fun JoinRoomScreen(
                 onValueChange = viewModel::setRoomCode,
                 enabled = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                placeholder = stringResource(R.string.friends_add_friend_hint),
                 modifier = Modifier
                     .offset(x = panelWidth * WellLeft, y = panelHeight * Well2Top)
                     .width(panelWidth * WellWidth)
@@ -208,9 +209,17 @@ private fun WellField(
     onValueChange: (String) -> Unit,
     enabled: Boolean,
     keyboardOptions: KeyboardOptions,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    placeholder: String? = null
 ) {
     Box(modifier = modifier.graphicsLayer { alpha = if (enabled) 1f else 0.85f }, contentAlignment = Alignment.CenterStart) {
+        if (placeholder != null && value.isEmpty()) {
+            Text(
+                text = placeholder,
+                style = PaintedStyle(color = Ink.copy(alpha = 0.38f), fontSize = 19.sp, fontWeight = FontWeight.Bold),
+                modifier = Modifier.padding(horizontal = 22.dp)
+            )
+        }
         BasicTextField(
             value = value,
             onValueChange = onValueChange,

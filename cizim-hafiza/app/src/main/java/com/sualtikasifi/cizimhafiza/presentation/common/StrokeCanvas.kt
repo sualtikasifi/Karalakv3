@@ -99,7 +99,7 @@ fun StrokeCanvas(
 internal class StrokeFit(
     private val minX: Float,
     private val minY: Float,
-    private val scale: Float,
+    val scale: Float,
     private val offsetX: Float,
     private val offsetY: Float
 ) {
@@ -159,7 +159,14 @@ internal fun DrawScope.drawFittedStroke(
     strokeColor: Color,
     strokeWidthPx: Float,
     startDistance: Float
-): Float = drawPenStroke(stroke.map(fit::map), penSkin, strokeColor, strokeWidthPx, startDistance)
+): Float = drawPenStroke(stroke.map(fit::map), penSkin, strokeColor, fittedStrokeWidth(strokeWidthPx, fit.scale), startDistance)
+
+/**
+ * The pen width scaled along with the drawing. A fixed width turned a drawing shrunk into a small thumbnail into a
+ * black blob (a calendar's grid lines, nine pixels thick at a tenth of the size, simply merged); capped so a small
+ * drawing blown up to fill a large canvas does not turn into a marker either.
+ */
+private fun fittedStrokeWidth(widthPx: Float, scale: Float): Float = (widthPx * scale).coerceIn(1.6f, widthPx * 1.5f)
 
 /**
  * Interactive drawing surface. Points are captured as raw [Offset]s while

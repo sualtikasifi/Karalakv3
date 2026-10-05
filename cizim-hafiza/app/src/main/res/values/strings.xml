@@ -948,6 +948,7 @@
     <string name="result_claim">Claim</string>
     <string name="result_x2_button_amount">🎬 x2 · %1$d XP</string>
     <string name="result_claim_amount">Claim · %1$d XP</string>
+    <string name="result_continue">Continue</string>
     <string name="result_xp_daily">Your daily challenge reward</string>
     <string name="result_xp_formula_mult">%1$d points × %2$d bonus multiplier</string>
     <string name="result_xp_formula_plain">%1$d points = %1$d XP</string>
@@ -1137,7 +1138,7 @@
     <string name="home_chests_info_ok">Got it</string>
     <string name="chest_info_step_win_title">Win the game</string>
     <string name="chest_info_step_win_body">Outplay your opponents in online modes, win games and collect your rewards.</string>
-    <string name="chest_info_step_open_title">Unlock</string>
+    <string name="chest_info_step_open_title">Start the timer</string>
     <string name="chest_info_step_open_body">Tap the chests you win to start the countdown. Open a chest once its time is up and get your rewards right away.</string>
     <string name="chest_info_step_slots_title">Make room for new chests</string>
     <string name="chest_info_step_slots_body">When your %1$d slots are full, no new chest drops. Open the chests you own to collect rewards and make room for new ones.</string>

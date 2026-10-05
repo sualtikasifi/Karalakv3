@@ -132,38 +132,26 @@ fun FriendsScreen(
     }
 
     uiState.confirmRemove?.let { friend ->
-        AlertDialog(
-            onDismissRequest = viewModel::dismissRemoveConfirm,
-            title = { Text(stringResource(R.string.friends_remove_confirm_title)) },
-            text = { Text(stringResource(R.string.friends_remove_confirm_message, friend.nickname)) },
-            confirmButton = {
-                TextButton(onClick = { viewModel.removeFriend(friend) }) {
-                    Text(stringResource(R.string.friends_remove_confirm_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::dismissRemoveConfirm) {
-                    Text(stringResource(R.string.friends_remove_confirm_cancel))
-                }
-            }
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            title = stringResource(R.string.friends_remove_confirm_title),
+            message = stringResource(R.string.friends_remove_confirm_message, friend.nickname),
+            confirmText = stringResource(R.string.friends_remove_confirm_confirm),
+            dismissText = stringResource(R.string.friends_remove_confirm_cancel),
+            destructive = true,
+            onConfirm = { viewModel.removeFriend(friend) },
+            onDismiss = viewModel::dismissRemoveConfirm
         )
     }
 
     uiState.confirmBlock?.let { friend ->
-        AlertDialog(
-            onDismissRequest = viewModel::dismissBlockConfirm,
-            title = { Text(stringResource(R.string.friends_block_confirm_title)) },
-            text = { Text(stringResource(R.string.friends_block_confirm_message, friend.nickname)) },
-            confirmButton = {
-                TextButton(onClick = { viewModel.blockFriend(friend) }) {
-                    Text(stringResource(R.string.friends_block_confirm_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::dismissBlockConfirm) {
-                    Text(stringResource(R.string.friends_block_confirm_cancel))
-                }
-            }
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            title = stringResource(R.string.friends_block_confirm_title),
+            message = stringResource(R.string.friends_block_confirm_message, friend.nickname),
+            confirmText = stringResource(R.string.friends_block_confirm_confirm),
+            dismissText = stringResource(R.string.friends_block_confirm_cancel),
+            destructive = true,
+            onConfirm = { viewModel.blockFriend(friend) },
+            onDismiss = viewModel::dismissBlockConfirm
         )
     }
 
@@ -229,6 +217,17 @@ fun FriendsScreen(
                 }
             }
         }
+        // The clipboard alone did not say where it leads.
+        LetteredText(
+            text = stringResource(R.string.duel_list_title),
+            size = 12.sp,
+            outline = Color(0xFF5A2815),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(end = 6.dp, top = 68.dp)
+                .width(76.dp)
+        )
 
         // Title on the hanging sign (plank centre is at 50% / 63% of the sprite).
         Sprite(R.drawable.fr_sign, 215f, 110f, 865f, 349f)

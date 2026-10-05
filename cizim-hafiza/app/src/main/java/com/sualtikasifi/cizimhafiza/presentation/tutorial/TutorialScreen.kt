@@ -10,6 +10,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -135,12 +140,20 @@ private fun CoachOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.75f)),
+            .background(Color(0xFF2B1A10).copy(alpha = 0.72f))
+            // Swallows taps so the screen underneath cannot be drawn on while the card is up.
+            .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = {}),
         contentAlignment = Alignment.Center
     ) {
-        RaisedCard(corner = 28.dp, modifier = Modifier.fillMaxWidth().padding(28.dp)) {
+        // The game's parchment-in-wood panel, the same as every other window.
+        com.sualtikasifi.cizimhafiza.presentation.common.NinePatch(
+            res = R.drawable.league_card,
+            slicePx = 100,
+            edge = 24.dp,
+            modifier = Modifier.widthIn(max = 460.dp).fillMaxWidth().padding(horizontal = 24.dp)
+        ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (coach.imageRes != null) {
@@ -153,29 +166,29 @@ private fun CoachOverlay(
                     Text(text = coach.emoji, style = MaterialTheme.typography.displaySmall)
                 }
                 Spacer(modifier = Modifier.height(10.dp))
-                Text(
+                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                     text = stringResource(coach.titleRes),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFF3A2416), fontSize = 25.sp, textAlign = TextAlign.Center),
+                    maxLines = 2,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     text = stringResource(coach.bodyRes),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(17.sp, 24.sp)
                 )
                 Spacer(modifier = Modifier.height(20.dp))
-                PrimaryButton(
+                com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
                     text = stringResource(coach.buttonRes),
                     onClick = onContinue,
+                    height = 56.dp,
+                    textSize = 20.sp,
                     modifier = Modifier.fillMaxWidth()
                 )
                 TextButton(onClick = onSkip) {
                     Text(
                         text = stringResource(R.string.tutorial_skip),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFF7A5A44), fontSize = 15.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                     )
                 }
             }

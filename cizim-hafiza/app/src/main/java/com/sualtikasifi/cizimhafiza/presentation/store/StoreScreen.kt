@@ -269,17 +269,10 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                     .align(Alignment.TopStart)
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                    .padding(start = 14.dp, end = 20.dp, top = 12.dp, bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Image(
-                    painter = painterResource(R.drawable.store_back_button),
-                    contentDescription = stringResource(R.string.cd_back),
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .clickable(onClick = onBack)
-                )
+                com.sualtikasifi.cizimhafiza.presentation.common.WoodBackArrow(onClick = onBack)
                 Spacer(modifier = Modifier.weight(1f))
                 GoldPill(gold = gold)
             }
@@ -506,7 +499,8 @@ private fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modif
             painter = painterResource(R.drawable.store_tab_plaque),
             contentDescription = null,
             contentScale = ContentScale.FillBounds,
-            alpha = 0.42f + 0.58f * glow.coerceIn(0f, 1f),
+            // Never see-through: at 42% the poster lettering painted behind the tabs showed through the plaque.
+            alpha = 0.88f + 0.12f * glow.coerceIn(0f, 1f),
             modifier = Modifier.matchParentSize()
         )
         Text(
@@ -609,7 +603,7 @@ private fun PenCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFF6E3).copy(alpha = 0.85f), Color(0xFFFCE6BF).copy(alpha = 0.85f))))
+            .background(Brush.verticalGradient(listOf(Color(0xFFFFF6E3).copy(alpha = 0.97f), Color(0xFFFCE6BF).copy(alpha = 0.97f))))
             .border(2.5.dp, if (equipped) AppTheme.tokens.success else accent.copy(alpha = 0.8f), shape)
             .padding(12.dp)
     ) {
@@ -655,7 +649,7 @@ private fun FrameCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFF6E3).copy(alpha = 0.85f), Color(0xFFFCE6BF).copy(alpha = 0.85f))))
+            .background(Brush.verticalGradient(listOf(Color(0xFFFFF6E3).copy(alpha = 0.97f), Color(0xFFFCE6BF).copy(alpha = 0.97f))))
             .border(2.5.dp, if (equipped) AppTheme.tokens.success else Color(0xFFEBCB93).copy(alpha = 0.85f), shape)
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -857,7 +851,7 @@ private fun JokerCard(
             // text, which needs a steadier, less busy surface behind it than
             // a short name/price row does to stay easily readable over the
             // photo backdrop.
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFF6E3).copy(alpha = 0.85f), Color(0xFFFCE6BF).copy(alpha = 0.85f))))
+            .background(Brush.verticalGradient(listOf(Color(0xFFFFF6E3).copy(alpha = 0.97f), Color(0xFFFCE6BF).copy(alpha = 0.97f))))
             .border(2.dp, Color(0xFFEBCB93).copy(alpha = 0.85f), shape)
             .padding(14.dp)
     ) {
@@ -868,9 +862,9 @@ private fun JokerCard(
                 Text(text = stringResource(type.descRes()), style = MaterialTheme.typography.bodySmall, color = Ink.copy(alpha = 0.75f))
             }
             Box(
-                modifier = Modifier.clip(RoundedCornerShape(50)).background(type.tint().copy(alpha = 0.15f)).padding(horizontal = 10.dp, vertical = 5.dp)
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFF26A1B).copy(alpha = 0.14f)).padding(horizontal = 10.dp, vertical = 5.dp)
             ) {
-                Text(text = stringResource(R.string.joker_owned, owned), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, color = type.tint())
+                Text(text = stringResource(R.string.joker_owned, owned), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB5441A))
             }
         }
         Spacer(modifier = Modifier.height(12.dp))

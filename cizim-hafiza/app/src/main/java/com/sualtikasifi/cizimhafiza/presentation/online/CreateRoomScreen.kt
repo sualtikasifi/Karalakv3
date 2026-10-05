@@ -91,7 +91,7 @@ fun CreateRoomScreen(
                     label = { stringResource(if (it) R.string.online_room_mode_team else R.string.online_room_mode_free_for_all) },
                     isSelected = { it == uiState.teamMode },
                     onSelect = viewModel::setTeamMode,
-                    maxLines = 2
+                    maxLines = 1
                 )
             }
             PanelRow(stringResource(R.string.select_category)) {
@@ -100,10 +100,10 @@ fun CreateRoomScreen(
                     columns = 4,
                     pillHeight = 40.dp,
                     textSize = 12.sp,
-                    label = { it ?: "🎨 " + stringResource(R.string.all_categories) },
+                    label = { "${com.sualtikasifi.cizimhafiza.presentation.wordcount.categoryEmoji(it)} ${it ?: stringResource(R.string.all_categories)}" },
                     isSelected = { uiState.selectedCategory == it },
                     onSelect = viewModel::selectCategory,
-                    maxLines = 2
+                    maxLines = 1
                 )
             }
             PanelRow(stringResource(R.string.select_difficulty)) {
@@ -115,7 +115,7 @@ fun CreateRoomScreen(
                     label = { if (it == null) stringResource(R.string.all_difficulties) else difficultyLabel(it) },
                     isSelected = { uiState.selectedDifficulty == it },
                     onSelect = viewModel::selectDifficulty,
-                    maxLines = 2
+                    maxLines = 1
                 )
             }
         }

@@ -478,23 +478,17 @@ fun WaitingRoomScreen(
     }
 
     kickTarget?.let { (targetUid, targetName) ->
-        AlertDialog(
-            onDismissRequest = { kickTarget = null },
-            title = { Text(stringResource(R.string.online_kick_confirm_title)) },
-            text = { Text(stringResource(R.string.online_kick_confirm_message, targetName)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.kickPlayer(targetUid, targetName)
-                    kickTarget = null
-                }) {
-                    Text(stringResource(R.string.online_kick_confirm_confirm))
-                }
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            title = stringResource(R.string.online_kick_confirm_title),
+            message = stringResource(R.string.online_kick_confirm_message, targetName),
+            confirmText = stringResource(R.string.online_kick_confirm_confirm),
+            dismissText = stringResource(R.string.online_kick_confirm_cancel),
+            destructive = true,
+            onConfirm = {
+                viewModel.kickPlayer(targetUid, targetName)
+                kickTarget = null
             },
-            dismissButton = {
-                TextButton(onClick = { kickTarget = null }) {
-                    Text(stringResource(R.string.online_kick_confirm_cancel))
-                }
-            }
+            onDismiss = { kickTarget = null }
         )
     }
 }
@@ -961,13 +955,14 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                 Spacer(modifier = Modifier.width(6.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
+                        // Shrinks before it ellipsises, so "Name (Sen)" keeps its "(Sen)" next to the host crown.
+                        com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                             text = if (slot.isYou) stringResource(R.string.online_you_label, slot.name) else slot.name,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontSize = 13.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
+                                color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, textAlign = TextAlign.Start
+                            ),
+                            minScale = 0.7f,
+                            contentAlignment = Alignment.CenterStart,
                             modifier = Modifier.weight(1f, fill = false)
                         )
                         if (slot.isHost) {

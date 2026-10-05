@@ -83,14 +83,12 @@ fun PaintedPage(
                         modifier = Modifier.offset(x = signWidth * 0.03f, y = signHeight * 0.26f).size(signWidth * 0.56f, signHeight * 0.5f),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
+                        FitText(
                             text = title,
-                            style = PaintedStyle(
-                                color = Color(0xFF2B1A10),
-                                fontSize = if (title.length > 11) 22.sp else 30.sp,
-                                textAlign = TextAlign.Center
-                            ),
-                            maxLines = 1
+                            style = PaintedStyle(color = Color(0xFF2B1A10), fontSize = 30.sp, textAlign = TextAlign.Center),
+                            maxLines = 1,
+                            minScale = 0.6f,
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                 }
@@ -102,7 +100,7 @@ fun PaintedPage(
                     .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                     .drawWithContent {
                         drawContent()
-                        val fade = 16.dp.toPx().coerceAtMost(size.height)
+                        val fade = 40.dp.toPx().coerceAtMost(size.height)
                         drawRect(
                             brush = Brush.verticalGradient(colorStops = arrayOf(0f to Color.Transparent, (fade / size.height) to Color.Black, 1f to Color.Black)),
                             blendMode = BlendMode.DstIn
