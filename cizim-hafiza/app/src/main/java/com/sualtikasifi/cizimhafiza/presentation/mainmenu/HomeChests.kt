@@ -66,6 +66,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.animation.core.Animatable
@@ -442,7 +443,7 @@ internal fun HomeChestsPainted(
         val (x0, x1) = slotX[index]
         val chest = slots.getOrNull(index)
         if (chest != null) {
-            Box(box(x0, 1494f, x1, 1674f)) {
+            Box(box(x0, 1494f, x1, 1674f).springIn(index = index, stepMs = 90, key = chest.id)) {
                 HomeChestSlot(
                     chest = chest,
                     nowMillis = now,

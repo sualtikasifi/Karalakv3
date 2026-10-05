@@ -1,6 +1,8 @@
 package com.sualtikasifi.cizimhafiza.presentation.friends
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
@@ -426,7 +428,8 @@ private fun FriendsPanel(uiState: FriendsUiState, viewModel: FriendsViewModel, s
                 )
             }
         }
-        items(uiState.friends, key = { it.uid }) { friend ->
+        itemsIndexed(uiState.friends, key = { _, f -> f.uid }) { friendIndex, friend ->
+          androidx.compose.foundation.layout.Box(Modifier.springIn(index = friendIndex.coerceAtMost(8), stepMs = 55)) {
             FriendRow(
                 friend = friend,
                 inviting = uiState.invitingFriendUid == friend.uid,
@@ -436,6 +439,7 @@ private fun FriendsPanel(uiState: FriendsUiState, viewModel: FriendsViewModel, s
                 onBlock = { viewModel.confirmBlockFriend(friend) },
                 onDuel = { onDuel(friend.uid, friend.nickname) }
             )
+          }
         }
         if (uiState.blockedUsers.isNotEmpty()) {
             item(key = "blocked-title") {

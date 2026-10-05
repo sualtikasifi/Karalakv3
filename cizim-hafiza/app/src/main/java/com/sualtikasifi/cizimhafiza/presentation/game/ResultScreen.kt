@@ -70,6 +70,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Videocam
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
+import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -199,14 +200,19 @@ fun ResultScreen(
                 .padding(bottom = if (showDesk) 52.dp * k else 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ResultSummaryCard(state = state, shownXp = shownXp, xpDoubled = xpDoubled, k = k)
+            // The three blocks drop in one after another: the card from above, the rest rising into place.
+            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().springIn(index = 0, fromY = -40)) {
+                ResultSummaryCard(state = state, shownXp = shownXp, xpDoubled = xpDoubled, k = k)
+            }
 
             if (levelProgress != null) {
-                ResultLevelCard(progress = levelProgress, gainedXp = shownXp, k = k)
+                androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().springIn(index = 2, stepMs = 90)) {
+                    ResultLevelCard(progress = levelProgress, gainedXp = shownXp, k = k)
+                }
             }
 
             Column(
-                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 14.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 14.dp).springIn(index = 4, stepMs = 90),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 state.duelOpponentName?.let { opponentName ->
@@ -352,6 +358,10 @@ fun ResultScreen(
                     }
                 }
             }
+        }
+        // A round that earned something is celebrated with a shower of paper, once.
+        if (state.xpEarned > 0 && state.correctCount > 0) {
+            com.sualtikasifi.cizimhafiza.presentation.common.ConfettiBurst(seed = state.totalScore * 31 + state.correctCount)
         }
     }
 
@@ -991,8 +1001,10 @@ private fun ResultSummaryCard(state: GamePhase.Result, shownXp: Int, xpDoubled: 
                 )
             }
             Slot(400f, 176f, 650f, 262f) {
+                // Counts up to the earned XP when the screen opens (and again when it doubles after the ad).
+                val xpCount by androidx.compose.animation.core.animateIntAsState(shownXp, androidx.compose.animation.core.tween(1100, easing = androidx.compose.animation.core.FastOutSlowInEasing), label = "xpCount")
                 LetteredText(
-                    text = stringResource(R.string.xp_gained_format, shownXp),
+                    text = stringResource(R.string.xp_gained_format, xpCount),
                     size = fs(80f),
                     fill = Color(0xFFF26A1B),
                     outline = null,

@@ -14,6 +14,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.getValue
+import com.sualtikasifi.cizimhafiza.presentation.common.breathing
+import com.sualtikasifi.cizimhafiza.presentation.common.glint
+import com.sualtikasifi.cizimhafiza.presentation.common.pressFlash
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
+import com.sualtikasifi.cizimhafiza.presentation.common.sceneIn
 import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -101,7 +110,7 @@ internal fun PaintedHome(
     onSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize().sceneIn()) {
         // ONE scale for both directions, so the picture is never stretched: on a phone shaped like it the picture fills
         // the screen exactly; on a wider or taller one it is centred and the spare strips show a blurred copy of it.
         val unit = minOf(maxWidth / ArtW, maxHeight / ArtH)
@@ -131,7 +140,9 @@ internal fun PaintedHome(
         // ── Top chips ──
         Box(box(40f, 258f, 256f, 326f).clickable(interactionSource = noRipple, indication = null, onClick = onGoldClick)) {}
         Box(box(116f, 270f, 198f, 314f), contentAlignment = Alignment.Center) {
-            LetteredText(NumberFormat.getIntegerInstance().format(gold), fs(31f), outline = Color(0xFF3A1E08), maxLines = 1)
+            // Counts to the new total whenever gold changes (a reward, a purchase) instead of jumping.
+            val goldShown by animateIntAsState(gold, tween(800, easing = FastOutSlowInEasing), label = "gold")
+            LetteredText(NumberFormat.getIntegerInstance().format(goldShown), fs(31f), outline = Color(0xFF3A1E08), maxLines = 1)
         }
         Box(box(264f, 258f, 512f, 326f).clickable(interactionSource = noRipple, indication = null, onClick = onPenClick).a11yButton(stringResource(pen.labelRes))) {}
         Box(
@@ -248,9 +259,11 @@ internal fun PaintedHome(
         if (available) {
             Box(
                 box(264f, 688f, 596f, 744f)
+                    .breathing(0.03f, 1100)
                     .background(Brush.verticalGradient(listOf(Color(0xFFFFE27A), Color(0xFFFFB300))), RoundedCornerShape(50))
                     .border(2.dp, Color(0xFFB36B00), RoundedCornerShape(50))
-                    .clickable(interactionSource = noRipple, indication = null, onClick = onDaily),
+                    .glint(2400, 0.55f, 40.dp)
+                    .pressable(pressedScale = 0.95f, onClick = onDaily),
                 contentAlignment = Alignment.Center
             ) {
                 FitText(
@@ -322,7 +335,7 @@ internal fun PaintedHome(
         // ── Tiles ──
         @Composable
         fun Tile(x0: Float, y0: Float, x1: Float, y1: Float, lx0: Float, ly0: Float, lx1: Float, ly1: Float, label: String, onClick: () -> Unit, content: @Composable () -> Unit = {}) {
-            Box(box(x0, y0, x1, y1).clickable(interactionSource = noRipple, indication = null, onClick = onClick).a11yButton(label)) {}
+            Box(box(x0, y0, x1, y1).pressFlash(corner = 24.dp, onClick = onClick).a11yButton(label)) {}
             FitLettered(label, 31f, Color(0xFF241408), 2, box(lx0, ly0, lx1, ly1))
             content()
         }

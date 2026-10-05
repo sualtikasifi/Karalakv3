@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.achievements
 
 import androidx.compose.animation.core.Animatable
+import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -147,7 +148,7 @@ fun AchievementsScreen(
                 AchievementProgressHeader(unlockedCount = unlockedCount, total = achievements.size)
             }
             itemsIndexed(achievements.chunked(3)) { rowIndex, row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.springIn(index = rowIndex.coerceAtMost(7), stepMs = 60)) {
                     row.forEachIndexed { col, item ->
                         AchievementChip(
                             item = item,

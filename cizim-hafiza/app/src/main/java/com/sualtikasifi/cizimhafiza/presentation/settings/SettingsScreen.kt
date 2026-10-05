@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.settings
 
 import android.Manifest
+import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 import android.content.pm.PackageManager
 import android.app.Activity
 import android.os.Build
@@ -116,13 +117,13 @@ fun SettingsScreen(
                 icon = Icons.AutoMirrored.Filled.VolumeUp, iconColor = Color(0xFFF26A1B),
                 label = stringResource(R.string.settings_sound),
                 checked = soundEnabled, onCheckedChange = viewModel::setSoundEnabled,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).springIn(index = 0, stepMs = 50)
             )
             SettingGridCell(
                 icon = Icons.Filled.MusicNote, iconColor = Color(0xFF2E86D6),
                 label = stringResource(R.string.settings_music),
                 checked = musicEnabled, onCheckedChange = viewModel::setMusicEnabled,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).springIn(index = 1, stepMs = 50)
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -131,7 +132,7 @@ fun SettingsScreen(
                 icon = Icons.Filled.Vibration, iconColor = Color(0xFF7B4FD6),
                 label = stringResource(R.string.settings_vibration),
                 checked = vibrationEnabled, onCheckedChange = viewModel::setVibrationEnabled,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).springIn(index = 2, stepMs = 50)
             )
             SettingGridCell(
                 icon = Icons.Filled.Notifications, iconColor = Color(0xFFF2A100),
@@ -157,24 +158,24 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
         LanguageRow(selectedLanguage = language, onLanguageSelected = viewModel::setLanguage)
         Spacer(modifier = Modifier.height(8.dp))
-        NavRow(Icons.Filled.School, Color(0xFF7B4FD6), stringResource(R.string.settings_replay_tutorial), onReplayTutorialClick)
+        NavRow(Icons.Filled.School, Color(0xFF7B4FD6), stringResource(R.string.settings_replay_tutorial), onReplayTutorialClick, index = 3)
         Spacer(modifier = Modifier.height(8.dp))
-        NavRow(Icons.Filled.BugReport, Color(0xFFE5483C), stringResource(R.string.report_bug_title), onReportBugClick)
+        NavRow(Icons.Filled.BugReport, Color(0xFFE5483C), stringResource(R.string.report_bug_title), onReportBugClick, index = 4)
         Spacer(modifier = Modifier.height(8.dp))
         NavRow(
-            Icons.Filled.AccountCircle, Color(0xFF2E86D6), stringResource(R.string.account_title), onAccountClick,
+            Icons.Filled.AccountCircle, Color(0xFF2E86D6), stringResource(R.string.account_title), onAccountClick, index = 5,
             showBadge = showAccountNudge, travelingLight = !accountLinked
         )
         Spacer(modifier = Modifier.height(8.dp))
         NavRow(
-            Icons.Filled.StarRate, Color(0xFFF2A100), stringResource(R.string.settings_rate_app),
+            Icons.Filled.StarRate, Color(0xFFF2A100), stringResource(R.string.settings_rate_app), index = 6,
             // Straight to the store listing, not Play Core's in-app review sheet — that API silently does nothing on a
             // sideloaded install or once its quota is spent, with no failure callback to fall back from.
             onClick = { activity?.let(AppReviewLauncher::openStoreListing) }
         )
         Spacer(modifier = Modifier.height(8.dp))
         NavRow(
-            Icons.Filled.PrivacyTip, Color(0xFF34A853), stringResource(R.string.settings_privacy_policy),
+            Icons.Filled.PrivacyTip, Color(0xFF34A853), stringResource(R.string.settings_privacy_policy), index = 7,
             onClick = {
                 // A Custom Tab rather than handing off to the browser app: it opens over the game, in its colours,
                 // and back returns straight here (a bare ACTION_VIEW could land on the browser's first-run screen).
@@ -293,6 +294,7 @@ private fun NavRow(
     iconColor: Color,
     label: String,
     onClick: () -> Unit,
+    index: Int = 0,
     showBadge: Boolean = false,
     /** A light that keeps travelling round the row's edge — draws the eye to it. */
     travelingLight: Boolean = false
@@ -303,7 +305,7 @@ private fun NavRow(
         title = label,
         onClick = onClick,
         badge = showBadge,
-        modifier = if (travelingLight) Modifier.travelingLight(20.dp) else Modifier,
+        modifier = (if (travelingLight) Modifier.travelingLight(20.dp) else Modifier).springIn(index = index, stepMs = 50),
         trailing = {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,

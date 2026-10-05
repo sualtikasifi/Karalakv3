@@ -72,6 +72,7 @@ fun AppWindowDialog(
                     .widthIn(max = 480.dp)
                     .fillMaxWidth()
                     .heightIn(max = maxHeight)
+                    .springIn(fromY = 44, stepMs = 0)
                     // Swallow taps on the panel itself so only the dim area closes it.
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
             ) {

@@ -1,6 +1,8 @@
 package com.sualtikasifi.cizimhafiza.presentation.game
 
 import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.graphicsLayer
+import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
@@ -235,7 +237,7 @@ fun DrawingScreen(
         val wordSize = (a(425f).value * 0.97f / (wordText.length.coerceAtLeast(1) * 0.5f)).coerceIn(19f, 34f * f)
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.offset(a(135f), a(236f)).size(a(425f), a(104f))
+            modifier = Modifier.offset(a(135f), a(236f)).size(a(425f), a(104f)).springIn(key = state.word.id, fromY = -26, stepMs = 0)
         ) {
             Text(
                 text = wordText,
@@ -244,10 +246,13 @@ fun DrawingScreen(
                 overflow = TextOverflow.Ellipsis
             )
         }
+        val underline = remember(state.word.id) { androidx.compose.animation.core.Animatable(0f) }
+        LaunchedEffect(state.word.id) { underline.animateTo(1f, androidx.compose.animation.core.tween(520, delayMillis = 160, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
         Box(
             modifier = Modifier
                 .offset(a(235f), a(343f))
                 .size(a(250f), a(8f))
+                .graphicsLayer { scaleX = underline.value; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f) }
                 .background(Color(0xFFF58A1F), RoundedCornerShape(50))
         )
 

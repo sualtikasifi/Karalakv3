@@ -39,6 +39,7 @@ fun DailyPips(
             val flag = flags.getOrNull(index)
             Box(
                 modifier = Modifier
+                    .popIn(trigger = flag != null, delayMs = index * 110)
                     .size(size)
                     .background(
                         when (flag) {

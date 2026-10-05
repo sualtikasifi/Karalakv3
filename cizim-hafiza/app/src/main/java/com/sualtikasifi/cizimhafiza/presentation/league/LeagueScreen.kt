@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.league
 
 import androidx.compose.foundation.Image
+import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -257,7 +258,10 @@ fun LeagueScreen(
                         shownTable.entries
                     }
                     itemsIndexed(visibleEntries, key = { _, entry -> entry.uid }) { index, entry ->
-                        LeagueRow(rank = index + 1, entry = entry, showTotalXp = uiState.tab == LeagueTab.Friends)
+                        // Rows slide up one after another when the table appears (the first dozen only).
+                        androidx.compose.foundation.layout.Box(Modifier.springIn(index = index.coerceAtMost(12), stepMs = 45, fromY = 36)) {
+                            LeagueRow(rank = index + 1, entry = entry, showTotalXp = uiState.tab == LeagueTab.Friends)
+                        }
                     }
                     if (uiState.tab == LeagueTab.Global) {
                         item(key = "rebuilt-note") {

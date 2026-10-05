@@ -1,6 +1,8 @@
 package com.sualtikasifi.cizimhafiza.presentation.tutorial
 
 import androidx.compose.foundation.Image
+import com.sualtikasifi.cizimhafiza.presentation.common.floating
+import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -150,7 +152,7 @@ private fun CoachOverlay(
             res = R.drawable.league_card,
             slicePx = 100,
             edge = 24.dp,
-            modifier = Modifier.widthIn(max = 460.dp).fillMaxWidth().padding(horizontal = 24.dp)
+            modifier = Modifier.widthIn(max = 460.dp).fillMaxWidth().padding(horizontal = 24.dp).springIn(key = coach.titleRes, fromY = 50, stepMs = 0)
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp),
@@ -160,7 +162,7 @@ private fun CoachOverlay(
                     Image(
                         painter = painterResource(coach.imageRes),
                         contentDescription = null,
-                        modifier = Modifier.size(140.dp)
+                        modifier = Modifier.size(140.dp).floating(amplitude = 4f, tilt = 3f)
                     )
                 } else {
                     Text(text = coach.emoji, style = MaterialTheme.typography.displaySmall)

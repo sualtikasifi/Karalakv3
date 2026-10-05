@@ -92,7 +92,9 @@ fun PaintedPillButton(
     enabled: Boolean = true,
     height: Dp = 52.dp,
     textSize: androidx.compose.ui.unit.TextUnit = 18.sp,
-    danger: Boolean = false
+    danger: Boolean = false,
+    /** A slow glint and breath on the main button of a window, so the eye lands on it. */
+    attention: Boolean = false
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -108,7 +110,9 @@ fun PaintedPillButton(
         },
         modifier = modifier
             .height(height)
+            .then(if (attention && enabled) Modifier.breathing(0.025f, 1300) else Modifier)
             .graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (enabled) 1f else 0.7f }
+            .then(if (attention && enabled) Modifier.glint(3000, 0.42f, height / 2) else Modifier)
             .clickable(enabled = enabled, interactionSource = interaction, indication = null, onClick = onClick)
     ) {
         if (primary) {
@@ -170,6 +174,7 @@ fun PaintedDialog(
                     .widthIn(max = 460.dp)
                     .fillMaxWidth()
                     .heightIn(max = maxHeight)
+                    .springIn(fromY = 44, stepMs = 0)
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
             ) {
                 Column(

@@ -1,6 +1,9 @@
 package com.sualtikasifi.cizimhafiza.presentation.online
 
 import androidx.compose.foundation.Image
+import com.sualtikasifi.cizimhafiza.presentation.common.glint
+import com.sualtikasifi.cizimhafiza.presentation.common.breathing
+import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -106,7 +109,8 @@ fun OnlineLobbyScreen(
             textColor = Color.White,
             outline = Color(0xFF0B4F5C),
             onClick = onCreateRoom,
-            modifier = Modifier.offset(x = x(0.5f) - len(290f), y = y(0.668f) - len(74f)).width(len(580f))
+            modifier = Modifier.offset(x = x(0.5f) - len(290f), y = y(0.668f) - len(74f)).width(len(580f)).springIn(index = 0, stepMs = 120, fromY = 60),
+            attention = true
         )
         RaceButton(
             image = R.drawable.race_btn_white,
@@ -115,7 +119,7 @@ fun OnlineLobbyScreen(
             textColor = ButtonOrange,
             outline = null,
             onClick = onJoinRoom,
-            modifier = Modifier.offset(x = x(0.5f) - len(290f), y = y(0.748f) - len(74f)).width(len(580f))
+            modifier = Modifier.offset(x = x(0.5f) - len(290f), y = y(0.748f) - len(74f)).width(len(580f)).springIn(index = 1, stepMs = 120, fromY = 60)
         )
 
         ScreenTopActions(onBack = onBack, modifier = Modifier.align(Alignment.TopStart))
@@ -131,7 +135,9 @@ private fun RaceButton(
     textColor: Color,
     outline: Color?,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** The main action of the screen: it breathes and glints. */
+    attention: Boolean = false
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -139,7 +145,9 @@ private fun RaceButton(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
+            .then(if (attention) Modifier.breathing(0.02f, 1500) else Modifier)
             .graphicsLayer { scaleX = scale; scaleY = scale }
+            .then(if (attention) Modifier.glint(3200, 0.4f, 34.dp) else Modifier)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
     ) {
         Image(painter = painterResource(image), contentDescription = null, contentScale = ContentScale.FillWidth, modifier = Modifier.fillMaxWidth())

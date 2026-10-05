@@ -217,7 +217,7 @@ fun WoodScreen(
         )
         }
 
-        action(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 6.dp).height(startHeight))
+        action(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 6.dp).height(startHeight).springIn(index = 5, stepMs = 70, fromY = 60))
 
         Image(
             painter = painterResource(R.drawable.join_back),
@@ -329,6 +329,7 @@ val LocalPanelScale = androidx.compose.runtime.compositionLocalOf { 1f }
 @Composable
 fun CompactPanel(content: @Composable ColumnScope.() -> Unit) {
     val k = LocalPanelScale.current
+    val rows = remember { RowCounter() }
     NinePatch(
         res = R.drawable.offline_panel,
         slicePx = 92,
@@ -338,15 +339,21 @@ fun CompactPanel(content: @Composable ColumnScope.() -> Unit) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 14.dp * k, bottom = 14.dp * k),
             verticalArrangement = Arrangement.spacedBy(8.dp * k),
-            content = content
+            content = { androidx.compose.runtime.CompositionLocalProvider(LocalRowCounter provides rows) { content() } }
         )
     }
 }
 
+/** Numbers the rows of a [CompactPanel] in the order they first appear, so they can spring in one after another. */
+class RowCounter { var next = 0 }
+val LocalRowCounter = androidx.compose.runtime.staticCompositionLocalOf<RowCounter?> { null }
+
 /** A small left-aligned caption above a row of choices. */
 @Composable
 fun PanelRow(label: String, content: @Composable () -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    val counter = LocalRowCounter.current
+    val order = remember { counter?.let { it.next++ } ?: 0 }
+    Column(modifier = Modifier.fillMaxWidth().springIn(index = order, stepMs = 70, fromY = 22)) {
         Text(
             text = label,
             style = PaintedStyle(
@@ -468,7 +475,9 @@ fun StartButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
         contentAlignment = Alignment.Center,
         modifier = modifier
             .aspectRatio(1015f / 246f)
+            .breathing(0.022f, 1400)
             .graphicsLayer { scaleX = scale; scaleY = scale }
+            .glint(3200, 0.38f, 30.dp)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
     ) {
         Image(painter = painterResource(R.drawable.offline_start), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())

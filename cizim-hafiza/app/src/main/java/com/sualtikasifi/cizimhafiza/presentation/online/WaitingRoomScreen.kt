@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.online
 
 import androidx.activity.compose.BackHandler
+import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.aspectRatio
@@ -914,7 +915,8 @@ private fun PlayerSlotCell(
     if (slot == null) {
         EmptySlotCard(onInvite = onInvite, modifier = modifier)
     } else {
-        PlayerSlotCard(slot = slot, activeReaction = activeReaction, modifier = modifier)
+        // A player arriving pops into the lobby (keyed on who it is, so a ready toggle does not replay it).
+        PlayerSlotCard(slot = slot, activeReaction = activeReaction, modifier = modifier.springIn(key = slot.uid, fromY = 18))
     }
 }
 
