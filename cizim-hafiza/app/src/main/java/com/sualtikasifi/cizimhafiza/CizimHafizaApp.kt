@@ -55,6 +55,14 @@ class CizimHafizaApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
 
+        // The two big pictures every cold start needs first — the opening scene, then the home scene under it — are
+        // decoded on a background thread right now, while the Activity is still being built, instead of on the main
+        // thread inside the first frames (see BackdropCache).
+        com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.preload(
+            this,
+            listOf(com.sualtikasifi.cizimhafiza.R.drawable.splash_art, com.sualtikasifi.cizimhafiza.R.drawable.bg_home_scene)
+        )
+
         // Must be installed before any Firebase call. Off by default — see GameConstants.APP_CHECK_ENABLED.
         if (com.sualtikasifi.cizimhafiza.util.GameConstants.APP_CHECK_ENABLED) runCatching {
             com.google.firebase.FirebaseApp.initializeApp(this)

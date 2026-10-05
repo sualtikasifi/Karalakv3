@@ -35,11 +35,19 @@ object BackdropCache {
 
     fun get(resources: Resources, id: Int): ImageBitmap {
         cache.get(id)?.let { return it }
-        val decoded = BitmapFactory.decodeResource(resources, id, BitmapFactory.Options().apply { inScaled = false })
-            ?.asImageBitmap() ?: throw IllegalStateException("Cannot decode drawable $id")
-        cache.put(id, decoded)
-        return decoded
+        // One decode per picture at a time: when the screen asks for a backdrop the background preload is still decoding,
+        // it waits for that result instead of decoding the same ~10 MB picture a second time in parallel.
+        synchronized(lockFor(id)) {
+            cache.get(id)?.let { return it }
+            val decoded = BitmapFactory.decodeResource(resources, id, BitmapFactory.Options().apply { inScaled = false })
+                ?.asImageBitmap() ?: throw IllegalStateException("Cannot decode drawable $id")
+            cache.put(id, decoded)
+            return decoded
+        }
     }
+
+    private val locks = HashMap<Int, Any>()
+    private fun lockFor(id: Int): Any = synchronized(locks) { locks.getOrPut(id) { Any() } }
 
     /** Decodes [ids] on a background thread, one after another, so they are waiting when their screens open. */
     fun preload(context: Context, ids: List<Int>) {
