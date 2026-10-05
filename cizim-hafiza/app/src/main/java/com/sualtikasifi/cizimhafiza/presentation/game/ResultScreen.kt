@@ -1158,6 +1158,7 @@ private fun ResultDrawings(
         val headerH = 32.dp
         val captionH = 28.dp
         val stripH = 46.dp
+        val availableWidth = maxWidth
         val bigSize = minOf(maxWidth, maxHeight - headerH - captionH - stripH - gap * 3).coerceAtLeast(110.dp)
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -1250,13 +1251,15 @@ private fun ResultDrawings(
                 horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)
             ) {
                 val total = if (items.isEmpty()) placeholders else items.size
+                // As big as 46dp, smaller when that many sheets would not fit the width side by side.
+                val cell = ((availableWidth - 28.dp - 6.dp * (total - 1).coerceAtLeast(0)) / total.coerceAtLeast(1)).coerceIn(30.dp, 46.dp)
                 repeat(total) { n ->
                     val thumb = items.getOrNull(n)
                     val note = RoundedCornerShape(6.dp)
                     val isPicked = n == index
                     Box(
                         modifier = Modifier
-                            .size(stripH)
+                            .size(cell)
                             .clip(note)
                             .background(if (thumb == null) Color(0x66FFF3DA) else Color(0xFFFFF3DA))
                             .border(if (isPicked) 3.dp else 1.dp, if (isPicked) Color(0xFFF47721) else Color(0xFFD9BC8C), note)

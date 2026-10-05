@@ -789,7 +789,9 @@ private fun LiveXpBonusBadge(secondsLeft: Int, modifier: Modifier = Modifier) {
             .border(1.5.dp, Color.White.copy(alpha = 0.85f), CircleShape)
             .padding(horizontal = 12.dp, vertical = 5.dp)
     ) {
-        Text(
+        com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+            modifier = Modifier.weight(1f),
+            minScale = 0.6f,
             // "bonus", not the plain xp_gained_format used for the actual
             // post-answer award (GuessScreen's feedback text) — this number
             // is on TOP of the word's own base XP, not the whole reward, and
