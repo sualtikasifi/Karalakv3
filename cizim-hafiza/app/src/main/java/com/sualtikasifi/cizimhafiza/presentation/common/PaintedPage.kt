@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.common
 
 import androidx.compose.foundation.Image
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -143,7 +144,7 @@ fun PaintedRow(
         edge = 20.dp,
         modifier = modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.pressable(pressedScale = 0.96f, onClick = onClick) else Modifier)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 12.dp, top = 11.dp, bottom = 11.dp),

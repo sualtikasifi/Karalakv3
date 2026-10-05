@@ -238,7 +238,7 @@ private fun WellField(
 private fun PaintedButton(text: String, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) 0.95f else 1f, label = "join-btn")
+    val scale by animateFloatAsState(if (pressed) 0.92f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f), label = "join-btn")
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier

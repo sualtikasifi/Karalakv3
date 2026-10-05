@@ -150,7 +150,7 @@ private fun HomeAdButton(
     )
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val press by animateFloatAsState(if (pressed) 0.95f else 1f, label = "adPress")
+    val press by animateFloatAsState(if (pressed) 0.92f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f), label = "adPress")
     val colors = if (ready) face else listOf(Color(0xFFB8B2A6), Color(0xFF8F897C))
     val rim = if (ready) edge else Color(0xFF5E584B)
     val shadow = androidx.compose.ui.text.TextStyle(

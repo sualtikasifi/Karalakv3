@@ -71,7 +71,7 @@ fun PaintedBackButton(onClick: () -> Unit, modifier: Modifier = Modifier, size: 
 fun WoodBackArrow(onClick: () -> Unit, modifier: Modifier = Modifier, size: Dp = 54.dp) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) 0.9f else 1f, label = "back")
+    val scale by animateFloatAsState(if (pressed) 0.92f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f), label = "back")
     Image(
         painter = painterResource(R.drawable.join_back),
         contentDescription = stringResource(R.string.cd_back),
@@ -98,7 +98,7 @@ fun PaintedPillButton(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed && enabled) 0.95f else 1f, label = "pill")
+    val scale by animateFloatAsState(if (pressed && enabled) 0.92f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f), label = "pill")
     NinePatch(
         res = if (primary) R.drawable.offline_pill_on else R.drawable.offline_pill_off,
         slicePx = 90,

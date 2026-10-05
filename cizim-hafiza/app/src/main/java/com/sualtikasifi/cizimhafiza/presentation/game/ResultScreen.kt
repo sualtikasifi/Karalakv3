@@ -1104,7 +1104,7 @@ private fun PaintedPill(
 ) {
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by androidx.compose.animation.core.animateFloatAsState(if (pressed) 0.97f else 1f, label = "pillPress")
+    val scale by androidx.compose.animation.core.animateFloatAsState(if (pressed) 0.92f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f), label = "pillPress")
     NinePatch(
         res = res,
         slicePx = 64,

@@ -439,14 +439,21 @@ fun ChoicePill(
     maxLines: Int = 1
 ) {
     val scale by animateFloatAsState(if (selected) 1.04f else 1f, label = "pill")
+    val source = remember { MutableInteractionSource() }
+    val held by source.collectIsPressedAsState()
+    val sink by animateFloatAsState(
+        if (held) 0.9f else 1f,
+        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f),
+        label = "pillSink"
+    )
     NinePatch(
         res = if (selected) R.drawable.offline_pill_on else R.drawable.offline_pill_off,
         slicePx = 90,
         edge = height / 2,
         modifier = modifier
             .height(height)
-            .graphicsLayer { scaleX = scale; scaleY = scale }
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+            .graphicsLayer { scaleX = scale * sink; scaleY = scale * sink }
+            .clickable(interactionSource = source, indication = null, onClick = onClick)
     ) {
         // Shrinks to stay on its line rather than wrapping ("🐶 Hayvanlar" used to break into emoji-over-word).
         FitText(
@@ -470,7 +477,7 @@ fun ChoicePill(
 fun StartButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) 0.95f else 1f, label = "start")
+    val scale by animateFloatAsState(if (pressed) 0.92f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f), label = "start")
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier

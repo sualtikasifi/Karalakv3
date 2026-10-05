@@ -401,7 +401,7 @@ internal fun GradientModeCard(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) 0.96f else 1f, label = "modePress")
+    val scale by animateFloatAsState(if (pressed) 0.92f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f), label = "modePress")
     val orbitAngle by rememberInfiniteTransition(label = "modeOrbit").animateFloat(
         initialValue = 0f,
         targetValue = 360f,
@@ -602,7 +602,7 @@ internal fun PaintedTile(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) 0.95f else 1f, label = "paintedTile")
+    val scale by animateFloatAsState(if (pressed) 0.92f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f), label = "paintedTile")
     var boostExpired by remember(boost?.endsAtMillis) { mutableStateOf(boost == null || System.currentTimeMillis() >= boost.endsAtMillis) }
     LaunchedEffect(boost?.endsAtMillis) {
         if (boost != null) {
@@ -668,7 +668,7 @@ internal fun GradientTile(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) 0.96f else 1f, label = "tilePress")
+    val scale by animateFloatAsState(if (pressed) 0.92f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f), label = "tilePress")
     Box(modifier = modifier.graphicsLayer { scaleX = scale; scaleY = scale }) {
         Column(
             modifier = Modifier

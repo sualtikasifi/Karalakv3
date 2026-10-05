@@ -40,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -166,7 +167,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                                     .clip(RoundedCornerShape(18.dp))
                                     .background(Color(0xFFFFE9C7))
                                     .border(2.dp, Color(0xFFF0B24E), RoundedCornerShape(18.dp))
-                                    .clickable(onClick = onAccount)
+                                    .pressable(pressedScale = 0.92f, onClick = onAccount)
                                     .padding(horizontal = 14.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -493,7 +494,7 @@ private fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modif
                 scaleY = lift
             }
             .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
+            .pressable(pressedScale = 0.92f, onClick = onClick)
     ) {
         Image(
             painter = painterResource(R.drawable.store_tab_plaque),
@@ -687,7 +688,7 @@ private fun PricePill(price: Int, canAfford: Boolean, onClick: () -> Unit) {
                 else Brush.verticalGradient(listOf(Color(0xFFFFB648).copy(alpha = 0.45f), Color(0xFFE8672A).copy(alpha = 0.45f)))
             )
             .border(1.5.dp, Color(0xFFB3401A).copy(alpha = if (canAfford) 0.7f else 0.35f), shape)
-            .clickable(onClick = onClick)
+            .pressable(pressedScale = 0.92f, onClick = onClick)
             // Symmetric now — the 4dp/10dp start/end split this used to have
             // (to leave room for a bulkier coin icon) left it visibly
             // off-balance sitting next to the Try button.
@@ -727,7 +728,7 @@ private fun TryButton(onClick: () -> Unit) {
         modifier = Modifier
             .height(TryRowHeight)
             .width(TryRowHeight * 2.86f)
-            .clickable(onClick = onClick)
+            .pressable(pressedScale = 0.92f, onClick = onClick)
     ) {
         Image(
             painter = painterResource(R.drawable.store_try_button),
@@ -744,7 +745,7 @@ private fun ActionPill(text: String, container: Color, content: Color, onClick: 
         modifier = Modifier
             .clip(RoundedCornerShape(50))
             .background(container)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.pressable(pressedScale = 0.92f, onClick = onClick) else Modifier)
             .padding(horizontal = 14.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -810,7 +811,7 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(50))
                 .background(Brush.verticalGradient(listOf(Color(0xFF3FBF63), Color(0xFF2E8B45))))
-                .clickable(onClick = onClaim)
+                .pressable(pressedScale = 0.92f, onClick = onClaim)
                 .padding(horizontal = 16.dp, vertical = 11.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center

@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -231,8 +232,16 @@ private fun ChunkyButton(
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val alpha = if (enabled) 1f else 0.42f
+    // Sinks into the page under the finger and springs back: the raised edge flattens (raisedSurface) while the
+    // whole button shrinks a little with a bounce.
+    val sink by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (pressed && enabled) 0.92f else 1f,
+        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f),
+        label = "chunkySink"
+    )
     Box(
         modifier = modifier
+            .graphicsLayer { scaleX = sink; scaleY = sink }
             .clickable(
                 enabled = enabled,
                 interactionSource = interaction,

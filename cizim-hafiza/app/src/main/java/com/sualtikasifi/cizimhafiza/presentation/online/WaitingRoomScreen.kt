@@ -555,7 +555,7 @@ private fun HintPlate(text: String, color: Color, modifier: Modifier = Modifier)
 private fun LobbyButton(text: String, green: Boolean, pulse: Float, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) 0.96f else 1f, label = "lobby-btn")
+    val scale by animateFloatAsState(if (pressed) 0.92f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f), label = "lobby-btn")
     NinePatch(
         res = if (green) R.drawable.lobby_btn_green else R.drawable.lobby_btn,
         slicePx = 86,
