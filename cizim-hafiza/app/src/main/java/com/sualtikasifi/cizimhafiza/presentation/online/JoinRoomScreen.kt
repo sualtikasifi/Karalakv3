@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.online
 
+import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -86,7 +87,7 @@ fun JoinRoomScreen(
         fun len(artPx: Float): Dp = with(density) { (artPx * s).toDp() }
 
         Image(
-            painter = painterResource(R.drawable.bg_join),
+            painter = cachedPainterResource(R.drawable.bg_join),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             alignment = androidx.compose.ui.Alignment.TopCenter,

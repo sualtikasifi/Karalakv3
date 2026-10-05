@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.league
 
+import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.foundation.Image
 import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 import androidx.compose.runtime.remember
@@ -144,7 +145,7 @@ fun LeagueScreen(
         fun len(px: Float): Dp = with(density) { (px * sc).toDp() }
 
         Image(
-            painter = painterResource(R.drawable.bg_league),
+            painter = cachedPainterResource(R.drawable.bg_league),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             alignment = androidx.compose.ui.Alignment.TopCenter,

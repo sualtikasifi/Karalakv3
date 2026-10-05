@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.achievements
 
+import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.animation.core.Animatable
 import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 import androidx.compose.animation.core.LinearEasing
@@ -120,7 +121,7 @@ fun AchievementsScreen(
         fun len(px: Float): Dp = with(density) { (px * sc).toDp() }
 
         Image(
-            painter = painterResource(R.drawable.bg_achievements),
+            painter = cachedPainterResource(R.drawable.bg_achievements),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             alignment = androidx.compose.ui.Alignment.TopCenter,

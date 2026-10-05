@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.splash
 
+import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import android.content.Context
 import android.provider.Settings
 import androidx.compose.animation.core.Animatable
@@ -32,7 +33,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -109,8 +109,7 @@ fun BrandSplash(onFinished: () -> Unit) {
         label = "stripes"
     )
 
-    val scene = painterResource(R.drawable.splash_art)
-    val mark = painterResource(R.drawable.splash_mark)
+    val scene = cachedPainterResource(R.drawable.splash_art)
 
     BoxWithConstraints(
         Modifier
@@ -130,14 +129,9 @@ fun BrandSplash(onFinished: () -> Unit) {
         val offX = (wPx - ART_W * cover) / 2f
         val offY = (hPx - ART_H * cover) / 2f
 
-        // The system splash's own frame, held for a moment and then handed over to the scene.
-        val sceneAlpha = phase(progress.value * total, MARK_HOLD, MARK_HOLD + CROSS_FADE)
-        Canvas(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - sceneAlpha }) {
-            val side = 288.dp.toPx()
-            translate(size.width / 2f - side / 2f, size.height / 2f - side / 2f) {
-                with(mark) { draw(Size(side, side)) }
-            }
-        }
+        // The scene is on screen from the first frame: no logo on a plain field first. (The system splash before it
+        // shows only the matching field colour, see splash_blank.)
+        val sceneAlpha = 1f
 
         Image(
             painter = scene,
@@ -237,8 +231,6 @@ private val SplashColor = Color(0xFFB07F34)
 private const val TOTAL_MILLIS = 2300
 private const val FAST_TOTAL_MILLIS = 1500
 private const val SKIP_MILLIS = 170
-private const val MARK_HOLD = 120f
-private const val CROSS_FADE = 300f
 private const val BAR_FROM = 380f
 private const val FADE_OUT_MILLIS = 260f
 private const val ZOOM = 0.05f

@@ -215,6 +215,19 @@ fun MainMenuScreen(
     // small tax on getting to "Oyna". Fitting the daily-challenge card and
     // level badge in without scrolling meant trimming sizes throughout
     // rather than letting any one element claim its old, roomier size.
+    // While the home screen sits idle, decode the pictures of the screens a player is most likely to open next, so
+    // their slide-in does not stop to do it. Held back a moment so it never competes with the first frames.
+    val appContext = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(900)
+        com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.preload(
+            appContext,
+            listOf(
+                R.drawable.bg_race, R.drawable.bg_offline, R.drawable.bg_result_wood, R.drawable.bg_draw,
+                R.drawable.bg_guess
+            )
+        )
+    }
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         com.sualtikasifi.cizimhafiza.presentation.common.CappedFontScale {
         PaintedHome(

@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.worldmap
 
+import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -84,7 +85,7 @@ fun WorldMapScreen(
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .paint(painterResource(R.drawable.bg_worlds), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
+                .paint(cachedPainterResource(R.drawable.bg_worlds), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
         ) {
             // The list lives below the sign, not under it: the sign stays fully visible while the cards scroll
             // and are cut off along its lower edge.

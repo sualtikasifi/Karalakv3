@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.levelmap
 
+import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.AnimatedContent
@@ -164,7 +165,7 @@ fun LevelMapScreen(
         Column(modifier = Modifier.fillMaxSize().verticalScroll(scroll)) {
             Box(modifier = Modifier.width(screenWidth).height(mapHeight)) {
                 Image(
-                    painter = painterResource(worldBackgroundRes(world?.id) ?: R.drawable.bg_world_1),
+                    painter = cachedPainterResource(worldBackgroundRes(world?.id) ?: R.drawable.bg_world_1),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxWidth().height(artHeight)

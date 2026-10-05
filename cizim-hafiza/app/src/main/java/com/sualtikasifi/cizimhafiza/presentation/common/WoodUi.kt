@@ -178,7 +178,7 @@ fun WoodScreen(
         fun len(artPx: Float): Dp = with(density) { (artPx * s).toDp() }
 
         Image(
-            painter = painterResource(R.drawable.bg_offline),
+            painter = cachedPainterResource(R.drawable.bg_offline),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             alignment = androidx.compose.ui.Alignment.TopCenter,

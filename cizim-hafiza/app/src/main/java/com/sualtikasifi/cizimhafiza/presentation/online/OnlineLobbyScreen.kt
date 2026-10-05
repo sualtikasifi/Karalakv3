@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.online
 
+import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.foundation.Image
 import com.sualtikasifi.cizimhafiza.presentation.common.glint
 import com.sualtikasifi.cizimhafiza.presentation.common.breathing
@@ -75,7 +76,7 @@ fun OnlineLobbyScreen(
         fun len(artPx: Float): Dp = with(density) { (artPx * s).toDp() }
 
         Image(
-            painter = painterResource(R.drawable.bg_race),
+            painter = cachedPainterResource(R.drawable.bg_race),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             alignment = androidx.compose.ui.Alignment.TopCenter,

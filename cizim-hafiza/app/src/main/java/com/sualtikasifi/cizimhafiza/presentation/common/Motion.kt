@@ -259,3 +259,50 @@ fun Modifier.sceneIn(): Modifier = composed {
     val p by animateFloatAsState(if (shown) 1f else 0f, tween(460, easing = FastOutSlowInEasing), label = "scene")
     graphicsLayer { alpha = 0.5f + 0.5f * p; translationY = (1f - p) * 16.dp.toPx() }
 }
+
+/** One sparkle's place in a [SparkleField]: a point in 0..1 of the field, and its size as a fraction of the field's width. */
+class SparkleSpot(val x: Float, val y: Float, val size: Float)
+
+/**
+ * Four-pointed stars that twinkle in and out round a picture, each on its own phase, turning as they go — the glitter
+ * that makes a reward look worth reaching for. Draws only while [active]; otherwise nothing is on screen.
+ */
+@Composable
+fun SparkleField(
+    spots: List<SparkleSpot>,
+    modifier: Modifier = Modifier,
+    active: Boolean = true,
+    color: Color = Color(0xFFFFF3B0),
+    periodMs: Int = 1900
+) {
+    if (!active) return
+    val t by rememberInfiniteTransition(label = "sparkles").animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(periodMs, easing = LinearEasing)),
+        label = "sparkleT"
+    )
+    Canvas(modifier = modifier) {
+        spots.forEachIndexed { i, spot ->
+            val phase = (t + i * 0.27f) % 1f
+            // Quick bloom, slow fade: it flashes rather than pulses.
+            val k = if (phase < 0.25f) phase / 0.25f else (1f - (phase - 0.25f) / 0.75f)
+            if (k <= 0.02f) return@forEachIndexed
+            val r = spot.size * size.width * (0.35f + 0.65f * k)
+            val c = Offset(spot.x * size.width, spot.y * size.height)
+            val turn = phase * 90f
+            rotate(turn, c) {
+                val p = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(c.x, c.y - r)
+                    quadraticTo(c.x, c.y, c.x + r, c.y)
+                    quadraticTo(c.x, c.y, c.x, c.y + r)
+                    quadraticTo(c.x, c.y, c.x - r, c.y)
+                    quadraticTo(c.x, c.y, c.x, c.y - r)
+                    close()
+                }
+                drawPath(p, color.copy(alpha = 0.95f * k))
+            }
+            drawCircle(Color.White.copy(alpha = 0.55f * k), radius = r * 0.22f, center = c)
+        }
+    }
+}

@@ -20,7 +20,7 @@
              before windowSplashScreenBackground below ever takes effect. -->
         <item name="android:windowBackground">@color/splash_background</item>
         <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_mark</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_blank</item>
         <item name="windowSplashScreenAnimationDuration">180</item>
         <item name="postSplashScreenTheme">@style/Theme.CizimHafiza</item>
     </style>

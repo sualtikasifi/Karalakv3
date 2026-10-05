@@ -1,6 +1,8 @@
 package com.sualtikasifi.cizimhafiza.presentation.mainmenu
 
+import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.foundation.Image
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,6 +26,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.pressFlash
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.common.sceneIn
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
@@ -71,6 +74,24 @@ private const val ArtH = 1870f
 private val HomeInk = Color(0xFF2B1A10)
 /** Secondary lettering on the parchment: dark enough to read on the painted grain (the old #6B5446 washed out). */
 private val HomeInkSoft = Color(0xFF4A3426)
+
+private val GoldSparkles = listOf(
+    com.sualtikasifi.cizimhafiza.presentation.common.SparkleSpot(0.20f, 0.18f, 0.075f),
+    com.sualtikasifi.cizimhafiza.presentation.common.SparkleSpot(0.82f, 0.26f, 0.06f),
+    com.sualtikasifi.cizimhafiza.presentation.common.SparkleSpot(0.12f, 0.62f, 0.05f),
+    com.sualtikasifi.cizimhafiza.presentation.common.SparkleSpot(0.88f, 0.70f, 0.07f),
+    com.sualtikasifi.cizimhafiza.presentation.common.SparkleSpot(0.52f, 0.06f, 0.055f)
+)
+private val ChestSparkles = listOf(
+    com.sualtikasifi.cizimhafiza.presentation.common.SparkleSpot(0.16f, 0.22f, 0.075f),
+    com.sualtikasifi.cizimhafiza.presentation.common.SparkleSpot(0.86f, 0.18f, 0.06f),
+    com.sualtikasifi.cizimhafiza.presentation.common.SparkleSpot(0.90f, 0.72f, 0.05f),
+    com.sualtikasifi.cizimhafiza.presentation.common.SparkleSpot(0.10f, 0.76f, 0.06f),
+    com.sualtikasifi.cizimhafiza.presentation.common.SparkleSpot(0.50f, 0.04f, 0.055f)
+)
+
+/** Lettering size of the "Reklam izle" pill on both ad cards, so the two read as one button. */
+private const val AdPillText = 27f
 
 /**
  * The home screen as ONE painted scene (bg_home_scene): the picture carries every frame, tile and panel; this places the
@@ -130,7 +151,7 @@ internal fun PaintedHome(
             LetteredText(text, fs(baseArt), fill = fill, outline = outline, maxLines = maxLines, modifier = modifier, minScale = 0.62f)
         }
 
-        val scene = painterResource(R.drawable.bg_home_scene)
+        val scene = cachedPainterResource(R.drawable.bg_home_scene)
         if (offX > 1.dp || offY > 1.dp) {
             Image(scene, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(20.dp))
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)))
@@ -139,7 +160,27 @@ internal fun PaintedHome(
 
         // ── Top chips ──
         Box(box(40f, 258f, 256f, 326f).clickable(interactionSource = noRipple, indication = null, onClick = onGoldClick)) {}
-        Box(box(116f, 270f, 198f, 314f), contentAlignment = Alignment.Center) {
+        // There is no way to buy gold, so the "+" button painted at the chip's right end has no business there. It was
+        // also the pill's end cap, so a new cap is drawn in its place: the same orange frame closing round the same
+        // dark well, and the number takes the freed middle.
+        Box(
+            box(194f, 261f, 252f, 325f)
+                .clip(RoundedCornerShape(topEnd = (34f * us).dp, bottomEnd = (34f * us).dp))
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color(0xFFFFD170), 0.05f to Color(0xFFF9B437), 0.78f to Color(0xFFFB9A29), 1f to Color(0xFFDC7017)
+                    )
+                )
+        ) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(top = (12f * us).dp, bottom = (12f * us).dp, end = (12f * us).dp)
+                    .clip(RoundedCornerShape(topEnd = (14f * us).dp, bottomEnd = (14f * us).dp))
+                    .background(Brush.verticalGradient(listOf(Color(0xFF4D240B), Color(0xFF6A3414))))
+            )
+        }
+        Box(box(112f, 270f, 238f, 314f), contentAlignment = Alignment.Center) {
             // Counts to the new total whenever gold changes (a reward, a purchase) instead of jumping.
             val goldShown by animateIntAsState(gold, tween(800, easing = FastOutSlowInEasing), label = "gold")
             LetteredText(NumberFormat.getIntegerInstance().format(goldShown), fs(31f), outline = Color(0xFF3A1E08), maxLines = 1)
@@ -163,6 +204,19 @@ internal fun PaintedHome(
             contentAlignment = Alignment.Center
         ) {
             LevelAvatar(level = progress.level, frame = frame, photo = photo, size = (132f * us).dp)
+            // A small pencil badge on the photo's top-right corner: the picture is a button, and this says what for.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = (4f * us).dp, y = (-2f * us).dp)
+                    .size((38f * us).dp)
+                    .breathing(0.08f, 1300)
+                    .background(Brush.verticalGradient(listOf(Color(0xFFFFB03D), Color(0xFFF26A1B))), CircleShape)
+                    .border(2.dp, Color.White, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Filled.Create, contentDescription = null, tint = Color.White, modifier = Modifier.size((22f * us).dp))
+            }
         }
         Box(box(224f, 350f, 780f, 394f), contentAlignment = Alignment.CenterStart) {
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -306,11 +360,22 @@ internal fun PaintedHome(
         val goldReady = goldRemaining <= 0
         Box(box(34f, 538f, 244f, 754f).clickable(enabled = goldReady, interactionSource = noRipple, indication = null, onClick = onWatchGold)) {}
         FitLettered(stringResource(R.string.home_ad_gold_label), 36f, Color(0xFF8A4E12), 1, box(40f, 648f, 238f, 698f))
+        // The coins are painted into the scene, so they cannot move on their own: glitter and a passing glint over them
+        // do the calling instead, while there is a reward to take.
+        com.sualtikasifi.cizimhafiza.presentation.common.SparkleField(
+            spots = GoldSparkles,
+            active = goldReady,
+            modifier = box(48f, 548f, 232f, 672f)
+        )
+        if (goldReady) {
+            Box(box(70f, 566f, 214f, 650f).glint(periodMs = 2600, strength = 0.38f, corner = 40.dp))
+        }
+        // The painted pill has its play icon on the left; the words centre in what is left of it (art 92..220).
         FitText(
             text = if (goldReady) stringResource(R.string.home_ad_watch) else "⏳ " + hms(goldRemaining / 1000),
-            style = PaintedStyle(color = HomeInk, fontSize = fs(27f), textAlign = TextAlign.Center),
+            style = PaintedStyle(color = HomeInk, fontSize = fs(AdPillText), textAlign = TextAlign.Center),
             minScale = 0.6f,
-            modifier = box(94f, 702f, 230f, 742f)
+            modifier = box(96f, 704f, 216f, 744f)
         )
 
         // Free chest ad (right)
@@ -319,16 +384,35 @@ internal fun PaintedHome(
         val chestRemaining = midnight - chestNow
         Box(box(616f, 538f, 808f, 754f).clickable(enabled = adChestAvailable, interactionSource = noRipple, indication = null, onClick = onWatchChest)) {}
         FitLettered(stringResource(R.string.home_ad_chest_label), 27f, Color(0xFF14549A), 2, box(634f, 640f, 796f, 706f))
+        // Same for the chest: it cannot move, so it glitters and catches the light while a free one is waiting.
+        com.sualtikasifi.cizimhafiza.presentation.common.SparkleField(
+            spots = ChestSparkles,
+            active = adChestAvailable,
+            color = Color(0xFFCFF0FF),
+            modifier = box(626f, 544f, 800f, 650f)
+        )
+        if (adChestAvailable) {
+            Box(box(660f, 560f, 776f, 640f).glint(periodMs = 2900, strength = 0.34f, corner = 30.dp))
+        }
+        // The same pill as the gold card's — same height and row, a play badge on the left and the same words centred in
+        // the rest — drawn here because the picture leaves this card's pill empty.
         Box(
-            box(654f, 708f, 792f, 746f)
-                .background(Color(0xCC183A6E), RoundedCornerShape(50))
-                .border(1.5.dp, Color(0x669CC4FF), RoundedCornerShape(50)),
-            contentAlignment = Alignment.Center
+            box(646f, 704f, 794f, 744f)
+                .background(Brush.verticalGradient(listOf(Color(0xFF2C5FA8), Color(0xFF163F7C))), RoundedCornerShape(50))
+                .border(1.5.dp, Color(0x889CC4FF), RoundedCornerShape(50)),
+            contentAlignment = Alignment.CenterStart
         ) {
-            Text(
+            Box(
+                modifier = Modifier.padding(start = (7f * us).dp).size((26f * us).dp).background(Color(0xFFFFE27A), RoundedCornerShape((7f * us).dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.PlayArrow, null, tint = Color(0xFF163F7C), modifier = Modifier.size((20f * us).dp))
+            }
+            FitText(
                 text = if (adChestAvailable) stringResource(R.string.home_ad_watch) else "⏳ " + hms(chestRemaining / 1000),
-                style = PaintedStyle(color = Color.White, fontSize = fs(28f), textAlign = TextAlign.Center),
-                maxLines = 1
+                style = PaintedStyle(color = Color.White, fontSize = fs(AdPillText), textAlign = TextAlign.Center),
+                minScale = 0.6f,
+                modifier = Modifier.fillMaxSize().padding(start = (38f * us).dp, end = (8f * us).dp)
             )
         }
 

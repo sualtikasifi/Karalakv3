@@ -64,7 +64,7 @@ fun PaintedPage(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(R.drawable.bg_result_wood),
+            painter = cachedPainterResource(R.drawable.bg_result_wood),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()

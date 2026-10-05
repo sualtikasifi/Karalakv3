@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.game
 
+import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -179,14 +180,14 @@ fun ResultScreen(
         val k = ((maxHeight - 24.dp) / 891.dp).coerceIn(0.68f, 1f)
         val showDesk = maxHeight >= 700.dp
         Image(
-            painter = painterResource(R.drawable.bg_result_wood),
+            painter = cachedPainterResource(R.drawable.bg_result_wood),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
         if (showDesk) {
             Image(
-                painter = painterResource(R.drawable.res_desk),
+                painter = cachedPainterResource(R.drawable.res_desk),
                 contentDescription = null,
                 contentScale = ContentScale.FillWidth,
                 modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()

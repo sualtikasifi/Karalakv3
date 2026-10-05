@@ -735,7 +735,7 @@ fun Modifier.screenBackground(): Modifier =
         // The painted wood of the result and settings screens, so the pages still built on this modifier sit in the
         // same world as the painted ones instead of on the old pencil-doodle paper. A warm parchment veil keeps it
         // light enough for the dark body text and white cards these pages were laid out for.
-        .paint(painterResource(R.drawable.bg_result_wood), contentScale = ContentScale.Crop)
+        .paint(cachedPainterResource(R.drawable.bg_result_wood), contentScale = ContentScale.Crop)
         .background(
             Brush.verticalGradient(
                 listOf(Color(0xFFFFF1D8).copy(alpha = 0.80f), Color(0xFFF6DDB4).copy(alpha = 0.72f))

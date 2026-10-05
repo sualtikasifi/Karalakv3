@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.friends
 
+import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.lazy.itemsIndexed
 import com.sualtikasifi.cizimhafiza.presentation.common.springIn
@@ -167,7 +168,7 @@ fun FriendsScreen(
         val keyboardController = LocalSoftwareKeyboardController.current
 
         Image(
-            painter = painterResource(R.drawable.bg_friends),
+            painter = cachedPainterResource(R.drawable.bg_friends),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             alignment = androidx.compose.ui.Alignment.TopCenter,

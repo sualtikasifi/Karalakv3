@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.online
 
+import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.activity.compose.BackHandler
 import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 import androidx.compose.animation.core.animateFloatAsState
@@ -267,7 +268,7 @@ fun WaitingRoomScreen(
     val sceneOffY = 0f
     fun sceneY(fraction: Float): Dp = with(sceneDensity) { (sceneOffY + LOBBY_ART_H * sceneScale * fraction).toDp() }
     Image(
-        painter = painterResource(R.drawable.bg_lobby),
+        painter = cachedPainterResource(R.drawable.bg_lobby),
         contentDescription = null,
         contentScale = ContentScale.Crop,
         alignment = Alignment.TopCenter,

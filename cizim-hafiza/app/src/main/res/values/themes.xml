@@ -18,7 +18,7 @@
          frame (see MainActivity.installSplashScreen()). Hands off to
          Theme.CizimHafiza automatically once the app is ready to draw.
 
-         The icon is @drawable/splash_mark, a purpose-built asset rather than
+         The icon is @drawable/splash_blank, a purpose-built asset rather than
          the launcher icon. Two reasons. The launcher icon is an adaptive
          icon whose background layer is white, and the splash paints that
          background as a white disc on the cream field — a hard-edged circle
@@ -45,7 +45,7 @@
              despite windowSplashScreenBackground already being correct. -->
         <item name="android:windowBackground">@color/splash_background</item>
         <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_mark</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_blank</item>
         <item name="postSplashScreenTheme">@style/Theme.CizimHafiza</item>
     </style>
 </resources>

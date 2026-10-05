@@ -360,7 +360,9 @@ private const val ArtHeight = 1870f
  */
 @Composable
 private fun ThreeSliceBackground(res: Int, topSrc: Int, bottomSrc: Int, topOffset: Dp = 0.dp, modifier: Modifier = Modifier) {
-    val img = ImageBitmap.imageResource(res)
+    // From the backdrop cache: decoding this 10 MB picture on the main thread used to stall the slide into the game.
+    val resources = androidx.compose.ui.platform.LocalContext.current.resources
+    val img = remember(res) { com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(resources, res) }
     Box(
         modifier = modifier.drawBehind {
             val k = size.width / img.width
