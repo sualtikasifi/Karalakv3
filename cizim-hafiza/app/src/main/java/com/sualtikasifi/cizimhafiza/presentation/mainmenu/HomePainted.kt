@@ -158,6 +158,30 @@ internal fun PaintedHome(
         }
         Image(scene, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(0f, 0f, ArtW, ArtH))
 
+        @Composable
+        fun AdPill(rect: Modifier, text: String) {
+            Row(
+                rect
+                    .background(Brush.verticalGradient(listOf(Color(0xFFFFF3D6), Color(0xFFFFD98A))), RoundedCornerShape(50))
+                    .border(2.dp, Color(0xFFE08A1B), RoundedCornerShape(50))
+                    .padding(horizontal = (6f * us).dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier.size((26f * us).dp).background(Color(0xFFF58A1F), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size((20f * us).dp))
+                }
+                FitText(
+                    text = text,
+                    style = PaintedStyle(color = HomeInk, fontSize = fs(AdPillText), textAlign = TextAlign.Center),
+                    minScale = 0.6f,
+                    modifier = Modifier.weight(1f).padding(horizontal = (4f * us).dp)
+                )
+            }
+        }
+
         // ── Top chips ──
         Box(box(40f, 258f, 256f, 326f).clickable(interactionSource = noRipple, indication = null, onClick = onGoldClick)) {}
         // There is no way to buy gold, so the "+" button painted at the chip's right end has no business there. It was
@@ -358,8 +382,8 @@ internal fun PaintedHome(
         val goldNow = rememberNowUntil(adGoldNextAt)
         val goldRemaining = adGoldNextAt - goldNow
         val goldReady = goldRemaining <= 0
-        Box(box(34f, 538f, 244f, 754f).clickable(enabled = goldReady, interactionSource = noRipple, indication = null, onClick = onWatchGold)) {}
-        FitLettered(stringResource(R.string.home_ad_gold_label), 36f, Color(0xFF8A4E12), 1, box(40f, 648f, 238f, 698f))
+        Box(box(34f, 538f, 230f, 754f).clickable(enabled = goldReady, interactionSource = noRipple, indication = null, onClick = onWatchGold)) {}
+        FitLettered(stringResource(R.string.home_ad_gold_label), 36f, Color(0xFF8A4E12), 1, box(40f, 648f, 226f, 698f))
         // The coins are painted into the scene, so they cannot move on their own: glitter and a passing glint over them
         // do the calling instead, while there is a reward to take.
         com.sualtikasifi.cizimhafiza.presentation.common.SparkleField(
@@ -370,13 +394,7 @@ internal fun PaintedHome(
         if (goldReady) {
             Box(box(70f, 566f, 214f, 650f).glint(periodMs = 2600, strength = 0.38f, corner = 40.dp))
         }
-        // The painted pill has its play icon on the left; the words centre in what is left of it (art 92..220).
-        FitText(
-            text = if (goldReady) stringResource(R.string.home_ad_watch) else "⏳ " + hms(goldRemaining / 1000),
-            style = PaintedStyle(color = HomeInk, fontSize = fs(AdPillText), textAlign = TextAlign.Center),
-            minScale = 0.6f,
-            modifier = box(96f, 704f, 216f, 744f)
-        )
+        AdPill(box(64f, 702f, 200f, 740f), if (goldReady) stringResource(R.string.home_ad_watch) else "⏳ " + hms(goldRemaining / 1000))
 
         // Free chest ad (right)
         val midnight = remember(adChestAvailable) { com.sualtikasifi.cizimhafiza.util.TurkeyTime.nextMidnightMillis() }
@@ -394,27 +412,9 @@ internal fun PaintedHome(
         if (adChestAvailable) {
             Box(box(660f, 560f, 776f, 640f).glint(periodMs = 2900, strength = 0.34f, corner = 30.dp))
         }
-        // The same pill as the gold card's — same height and row, a play badge on the left and the same words centred in
-        // the rest — drawn here because the picture leaves this card's pill empty.
-        Box(
-            box(646f, 704f, 794f, 744f)
-                .background(Brush.verticalGradient(listOf(Color(0xFF2C5FA8), Color(0xFF163F7C))), RoundedCornerShape(50))
-                .border(1.5.dp, Color(0x889CC4FF), RoundedCornerShape(50)),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Box(
-                modifier = Modifier.padding(start = (7f * us).dp).size((26f * us).dp).background(Color(0xFFFFE27A), RoundedCornerShape((7f * us).dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.PlayArrow, null, tint = Color(0xFF163F7C), modifier = Modifier.size((20f * us).dp))
-            }
-            FitText(
-                text = if (adChestAvailable) stringResource(R.string.home_ad_watch) else "⏳ " + hms(chestRemaining / 1000),
-                style = PaintedStyle(color = Color.White, fontSize = fs(AdPillText), textAlign = TextAlign.Center),
-                minScale = 0.6f,
-                modifier = Modifier.fillMaxSize().padding(start = (38f * us).dp, end = (8f * us).dp)
-            )
-        }
+        // The very same pill as the gold card's: both are drawn here (the picture leaves them empty), same size, same
+        // colours, same row, each centred in its card with the same gap to the card's frame.
+        AdPill(box(646f, 702f, 782f, 740f), if (adChestAvailable) stringResource(R.string.home_ad_watch) else "⏳ " + hms(chestRemaining / 1000))
 
         // ── Tiles ──
         @Composable

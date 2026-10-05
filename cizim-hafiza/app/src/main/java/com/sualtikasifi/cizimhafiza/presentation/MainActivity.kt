@@ -156,7 +156,17 @@ class MainActivity : AppCompatActivity() {
                     color = MaterialTheme.colorScheme.background,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    CizimHafizaNavGraph(
+                    // The whole app is composed one frame AFTER the opening scene is on screen. Composing the nav graph
+                    // (and decoding its first screen's pictures) inside the very first frame is what kept the plain
+                    // brown system splash up for seconds before the scene could appear; now that frame holds only
+                    // BrandSplash, so the scene shows almost at once and the app builds itself underneath while its
+                    // loading bar fills. Saved, so a rotation or language change recreate does not wait again.
+                    var appReady by rememberSaveable { mutableStateOf(false) }
+                    LaunchedEffect(Unit) {
+                        androidx.compose.runtime.withFrameNanos { }
+                        appReady = true
+                    }
+                    if (appReady) CizimHafizaNavGraph(
                         onNavControllerReady = { navController = it },
                         tutorialCompleted = tutorialCompleted
                     )

@@ -204,14 +204,24 @@ fun GuessScreen(
             fun a(v: Float): Dp = unit * v
             val boxHeight = maxHeight
             val compact = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+            // 0 = keyboard down, 1 = keyboard up. The scene does not snap between its two layouts the moment the first
+            // pixel of keyboard appears (the drawing frame used to stretch and the header jump while the keyboard
+            // slid); it eases from one to the other in step with the keyboard instead.
+            val compactT by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (compact) 1f else 0f,
+                animationSpec = androidx.compose.animation.core.tween(240, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                label = "guessKeyboard"
+            )
             val inset = with(LocalDensity.current) { WindowInsets.statusBars.getTop(this).toDp() }
             val f = (maxWidth.value / 411f).coerceIn(0.85f, 1.25f)
             val ink = Color(0xFF3A2A22)
             // Where the pills of the header should start: just under the status bar.
             val headTop = inset + 8.dp
-            val topFrom = if (compact) (HeaderTop - headTop / unit).coerceIn(0f, HeaderTop) else 0f
-            val shift = if (compact) 0.dp else (headTop - a(HeaderTop)).coerceAtLeast(0.dp)
-            val bottomTo = if (compact) 1595f else ArtH
+            val topFromUp = (HeaderTop - headTop / unit).coerceIn(0f, HeaderTop)
+            val shiftDown = (headTop - a(HeaderTop)).coerceAtLeast(0.dp)
+            val topFrom = topFromUp * compactT
+            val shift = shiftDown * (1f - compactT)
+            val bottomTo = ArtH + (1595f - ArtH) * compactT
             fun yTop(v: Float): Dp = shift + a(v - topFrom)
             fun yBottom(v: Float): Dp = boxHeight - a(bottomTo - v)
 
@@ -260,11 +270,11 @@ fun GuessScreen(
             }
             // Absent only for the first-launch tutorial's practice round, which has no real ViewModel/XP behind it to
             // show. Hidden while the keyboard is up: it is the widest thing in this row.
-            if (!compact) {
+            if (compactT < 0.99f) {
                 levelProgress?.let {
                     Box(
                         contentAlignment = Alignment.CenterStart,
-                        modifier = Modifier.offset(a(334f), yTop(150f)).size(a(190f), a(90f))
+                        modifier = Modifier.offset(a(334f), yTop(150f)).size(a(190f), a(90f)).graphicsLayer { alpha = 1f - compactT }
                     ) {
                         LiveLevelBadge(progress = it, frame = selectedFrame ?: AvatarFrame.highestUnlockedFor(it.level))
                     }
