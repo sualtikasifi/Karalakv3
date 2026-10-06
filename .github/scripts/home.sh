@@ -93,7 +93,7 @@ REC=$!
 sleep 1
 # Started from the launcher icon (dock, bottom right), as a player does: Android shows its own splash only for a
 # launcher start, never for `am start` from a shell.
-adb shell input keyevent KEYCODE_HOME; sleep 1
+adb shell input keyevent KEYCODE_HOME; sleep 1; tap_text "Wait" || true; sleep 1; adb shell input keyevent KEYCODE_HOME; sleep 1
 adb shell input tap 918 1970
 for i in $(seq 1 6); do shot m$(printf %02d $i); sleep 0.1; done
 wait $REC; sleep 1
