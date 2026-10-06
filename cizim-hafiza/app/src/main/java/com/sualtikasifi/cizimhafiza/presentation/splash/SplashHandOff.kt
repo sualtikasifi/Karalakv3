@@ -1,50 +1,20 @@
 package com.sualtikasifi.cizimhafiza.presentation.splash
 
-import androidx.annotation.MainThread
 import androidx.compose.runtime.mutableStateOf
 
 /**
- * The hand-over from the system splash to [BrandSplash].
+ * Tells [BrandSplash] when the system splash starts leaving.
  *
- * Android 12+ always opens an app on its own splash: one colour and one icon, nothing more (it cannot be turned off and
- * cannot hold a picture). Ours is held on screen until [BrandSplash] has drawn its first frame underneath it, then
- * slides up off it (MainActivity), so the painted scene is revealed rather than cut to. This object carries that
- * hand-shake across, on the main thread.
+ * Android 12+ always opens an app on its own splash: one colour and one icon (it cannot be turned off and cannot hold
+ * a picture). The moment the app's first frame is drawn it slides up off the window (MainActivity), revealing the
+ * painted scene that is already the window's background; [BrandSplash]'s loading bar starts filling from then on.
  */
 internal object SplashHandOff {
-    /** True once the system splash starts leaving — [BrandSplash] starts its timeline then. */
+    /** True once the system splash starts leaving. */
     val systemSplashGone = mutableStateOf(false)
 
-    private var pendingRemove: (() -> Unit)? = null
-    private var brandSplashDrawn = false
-
     /** A fresh cold start: forget whatever an earlier Activity in this process left here. */
-    @MainThread
     fun reset() {
         systemSplashGone.value = false
-        pendingRemove = null
-        brandSplashDrawn = false
-    }
-
-    /** The system splash is ready to go: send it off ([remove]) now if [BrandSplash] is already drawn, else once it is. */
-    @MainThread
-    fun hold(remove: () -> Unit) {
-        if (brandSplashDrawn) {
-            remove()
-            systemSplashGone.value = true
-        } else {
-            pendingRemove = remove
-        }
-    }
-
-    /** [BrandSplash]'s first frame is on screen (or a safety timeout fired): let the system splash go. */
-    @MainThread
-    fun brandSplashDrawn() {
-        brandSplashDrawn = true
-        pendingRemove?.let {
-            pendingRemove = null
-            it()
-            systemSplashGone.value = true
-        }
     }
 }

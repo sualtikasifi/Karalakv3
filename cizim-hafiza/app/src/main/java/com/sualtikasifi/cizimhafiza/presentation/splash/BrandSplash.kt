@@ -49,9 +49,9 @@ import kotlin.math.sin
  * The brand moment: the painted Karalak scene fades in over the system splash, drifts in slowly, twinkles, and a loading
  * bar fills underneath it before the app opens.
  *
- * Android 12+ always opens on its own splash (a colour and one icon, nothing more — see Theme.Karalak.Splash). That
- * splash is held over this screen until this screen's first frame is drawn, then slides up off it like a curtain, so
- * the scene is simply revealed underneath (MainActivity / SplashHandOff).
+ * Android 12+ always opens on its own splash (a colour and one icon, nothing more — see Theme.Karalak.Splash). When
+ * it goes, it slides up off the window, whose background is already this scene, so the scene is revealed underneath
+ * and this screen carries on from it (MainActivity / SplashHandOff).
  *
  * It is kept honestly short: [TOTAL_MILLIS] the first time the app is ever opened and a quicker [FAST_TOTAL_MILLIS] on
  * every cold start after that. It plays on cold start only (the caller's rememberSaveable), a tap skips to the end, and
@@ -82,13 +82,6 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
     val progress = remember { Animatable(0f) }
     // The scene only starts to lift once the timeline is done AND the app underneath is drawn (see appReady).
     val fadeOut = remember { Animatable(0f) }
-    // The system splash stays over this until this composable's first frame is drawn, then rises off it like a
-    // curtain (see MainActivity / SplashHandOff): the scene is already there underneath when it does.
-    LaunchedEffect(Unit) {
-        androidx.compose.runtime.withFrameNanos { }
-        androidx.compose.runtime.withFrameNanos { }
-        SplashHandOff.brandSplashDrawn()
-    }
     var skipped by remember { mutableStateOf(false) }
     val total = if (returning) FAST_TOTAL_MILLIS else TOTAL_MILLIS
 
@@ -140,11 +133,13 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
     BoxWithConstraints(
         Modifier
             .fillMaxSize()
-            .background(SplashColor)
+            // The fade wraps the background too: with the background outside it, the scene used to fade away onto a
+            // full-strength brown field, which flashed brown for a moment before the home screen.
             .graphicsLayer {
                 // Read inside the lambda so the fade re-runs in the draw phase only.
                 alpha = 1f - fadeOut.value
             }
+            .background(SplashColor)
             .pointerInput(Unit) { detectTapGestures { skipped = true } }
     ) {
         val density = LocalDensity.current

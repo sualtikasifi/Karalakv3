@@ -63,10 +63,7 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "MainActivity"
 
         /** The system splash rising off the opening scene. */
-        const val SPLASH_CURTAIN_MILLIS = 450L
-
-        /** At most this long is waited for the splash icon's own animation to finish before the curtain rises. */
-        const val SPLASH_ICON_WAIT_MAX_MILLIS = 700L
+        const val SPLASH_CURTAIN_MILLIS = 380L
 
     }
 
@@ -78,32 +75,27 @@ class MainActivity : AppCompatActivity() {
         val brandSplashComing = savedInstanceState == null
         if (brandSplashComing) com.sualtikasifi.cizimhafiza.presentation.splash.SplashHandOff.reset()
         installSplashScreen().setOnExitAnimationListener { splash ->
-            // The system splash (colour + animated icon) is held until BrandSplash has drawn the painted scene
-            // underneath it, lets its icon animation finish, then rises off the screen like a curtain — the scene is
-            // revealed, not cut to. Everything here is inside runCatching: a cosmetic transition must never be able
-            // to fail a launch, and whatever happens the splash is removed.
+            // The system splash goes the moment the app's first frame is drawn, and that frame is the painted
+            // opening scene (the window's background, see below). It rises off it like a curtain — revealed, not cut
+            // to — at once: the platform hands the splash over to the app without its icon, so holding it any longer
+            // only shows an empty colour. Inside runCatching: a cosmetic transition must never be able to fail a
+            // launch, and whatever happens the splash is removed.
+            com.sualtikasifi.cizimhafiza.presentation.splash.SplashHandOff.systemSplashGone.value = true
             if (!brandSplashComing) {
                 runCatching { splash.remove() }
                 return@setOnExitAnimationListener
             }
-            com.sualtikasifi.cizimhafiza.presentation.splash.SplashHandOff.hold {
-                runCatching {
-                    val view = splash.view
-                    // What is left of the icon's own animation (0 on the compat splash before Android 12).
-                    val iconLeft = runCatching {
-                        splash.iconAnimationStartMillis + splash.iconAnimationDurationMillis - System.currentTimeMillis()
-                    }.getOrDefault(0L).coerceIn(0L, SPLASH_ICON_WAIT_MAX_MILLIS)
-                    view.animate()
-                        .translationY(-view.height.toFloat())
-                        .setStartDelay(iconLeft)
-                        .setDuration(SPLASH_CURTAIN_MILLIS)
-                        .setInterpolator(android.view.animation.PathInterpolator(0.3f, 0f, 0.8f, 0.15f))
-                        .withEndAction { runCatching { splash.remove() } }
-                        .start()
-                }.onFailure {
-                    Log.w(TAG, "Splash exit animation skipped", it)
-                    runCatching { splash.remove() }
-                }
+            runCatching {
+                val view = splash.view
+                view.animate()
+                    .translationY(-view.height.toFloat())
+                    .setDuration(SPLASH_CURTAIN_MILLIS)
+                    .setInterpolator(android.view.animation.PathInterpolator(0.3f, 0f, 0.8f, 0.15f))
+                    .withEndAction { runCatching { splash.remove() } }
+                    .start()
+            }.onFailure {
+                Log.w(TAG, "Splash exit animation skipped", it)
+                runCatching { splash.remove() }
             }
         }
         super.onCreate(savedInstanceState)
@@ -203,8 +195,6 @@ class MainActivity : AppCompatActivity() {
                     com.sualtikasifi.cizimhafiza.presentation.splash.SplashSceneDrawable(scene.asAndroidBitmap())
                 )
             }
-            // Never leave the system splash up for good if BrandSplash cannot draw for some reason.
-            window.decorView.postDelayed({ com.sualtikasifi.cizimhafiza.presentation.splash.SplashHandOff.brandSplashDrawn() }, 4_000)
         }
         var contentShown = false
         fun showContent() {
