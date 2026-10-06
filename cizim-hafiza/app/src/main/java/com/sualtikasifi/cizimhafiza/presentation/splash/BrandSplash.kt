@@ -87,6 +87,8 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
 
     LaunchedEffect(animationsDisabled) {
         if (animationsDisabled) {
+            // No animation to play, but still no lifting the scene off an app that has not been drawn yet.
+            androidx.compose.runtime.snapshotFlow { appReadyState.value }.first { it }
             finish()
             return@LaunchedEffect
         }
