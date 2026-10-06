@@ -83,6 +83,13 @@ adb logcat -d -s StartupTiming | tee "$OUT/startup_timing.txt"
 adb shell am force-stop $PKG; sleep 3
 adb shell "am start -n $ACT" >/dev/null 2>&1 &
 for i in $(seq 1 14); do shot l$(printf %02d $i); sleep 0.2; done
+# The same with animations ON, the way players see it: the logo growing into the opening scene (m01..m14).
+adb shell settings put global animator_duration_scale 1; adb shell settings put global transition_animation_scale 1; adb shell settings put global window_animation_scale 1
+adb shell am force-stop $PKG; sleep 3
+adb shell "am start -n $ACT" >/dev/null 2>&1 &
+for i in $(seq 1 14); do shot m$(printf %02d $i); sleep 0.1; done
+sleep 4
+adb shell settings put global animator_duration_scale 0; adb shell settings put global transition_animation_scale 0; adb shell settings put global window_animation_scale 0
 
 # The slow emulator sometimes shows a system 'Pixel Launcher isn't responding' dialog; dismiss it and bring the app back.
 tap_text "Wait" || true
