@@ -176,6 +176,11 @@ adb shell input keyevent KEYCODE_BACK; sleep 2
 adb shell input tap 980 1855; sleep 3; shot c01_chest_info; adb shell input keyevent KEYCODE_BACK; sleep 2
 # Settings: open it from the tile, look at it, flip one switch, press-and-hold a row.
 adb shell input tap 880 1650; sleep 4; shot s01_settings
+# The same page once the battery exemption is granted (no battery card): the rows spread over the space it left.
+adb shell dumpsys deviceidle whitelist +$PKG >/dev/null 2>&1 || true
+adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input tap 880 1650; sleep 4; shot s06_settings_nocard
+adb shell dumpsys deviceidle whitelist -$PKG >/dev/null 2>&1 || true
+adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input tap 880 1650; sleep 4
 adb shell input tap 540 842; sleep 2; shot s02_settings_switch
 (adb shell input swipe 540 2012 540 2012 4000 &) ; sleep 2; shot s03_settings_press; sleep 4
 shot s05_account
