@@ -89,7 +89,7 @@ internal fun ResultHeader(title: String, xp: Int, explanation: String, onBack: (
             .drawWithContent {
                 drawContent()
                 drawRect(
-                    brush = Brush.verticalGradient(0.86f to Color.Black, 1f to Color.Transparent),
+                    brush = Brush.verticalGradient(0f to Color.Transparent, 0.07f to Color.Black, 0.86f to Color.Black, 1f to Color.Transparent),
                     blendMode = BlendMode.DstIn
                 )
             }

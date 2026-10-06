@@ -938,16 +938,44 @@ private fun PaintedPill(
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by androidx.compose.animation.core.animateFloatAsState(if (pressed) 0.92f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f), label = "pillPress")
+    val base = modifier
+        .height(height)
+        .graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (enabled) 1f else 0.55f }
+        .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
+    if (res == R.drawable.res_btn_claim) {
+        // The orange claim buttons are drawn, not stretched from the picture: the picture's square wooden corners
+        // and a stray dark mark on its lower edge showed once it was stretched to a full-width button.
+        val shape = RoundedCornerShape(50)
+        Box(
+            modifier = base
+                .shadow(5.dp, shape)
+                .background(Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16), Color(0xFFDD5F0B))), shape)
+                .border(2.5.dp, Color(0xFFA9440A), shape)
+        ) {
+            // The glossy band across the top of the pill.
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.42f)
+                    .padding(horizontal = 14.dp, vertical = 4.dp)
+                    .background(Brush.verticalGradient(listOf(Color(0x66FFFFFF), Color(0x00FFFFFF))), shape)
+            )
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                content = content
+            )
+        }
+        return
+    }
     NinePatch(
         res = res,
         slicePx = 64,
         sliceYPx = 46,
         edge = 28.dp,
         edgeY = 21.dp,
-        modifier = modifier
-            .height(height)
-            .graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (enabled) 1f else 0.55f }
-            .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
+        modifier = base
     ) {
         Row(
             modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
