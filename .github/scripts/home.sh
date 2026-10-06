@@ -125,6 +125,10 @@ P=n
 dismiss() { tap_text "Wait" || true; sleep 1; }
 adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 14; dismiss; handle_consent; sleep 3
 shot ${P}01_home
+# Press-and-hold on two painted areas, with a screenshot while the finger is still down: shows the "sink" (the tile caves in).
+(adb shell input swipe 204 1148 204 1148 4000 &) ; sleep 2; shot ${P}03_press_tile; sleep 3
+(adb shell input swipe 175 820 175 820 4000 &) ; sleep 2; shot ${P}04_press_card; sleep 3
+adb shell input keyevent KEYCODE_BACK; sleep 2
 adb shell wm size 1080x1920; sleep 4; adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 14; dismiss; handle_consent; sleep 3
 shot ${P}02_home_short
 adb shell wm size reset
