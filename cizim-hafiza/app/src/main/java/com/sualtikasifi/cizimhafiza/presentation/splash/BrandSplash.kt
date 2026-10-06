@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.sualtikasifi.cizimhafiza.R
+import kotlinx.coroutines.flow.first
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -57,7 +58,7 @@ import kotlin.math.sin
  * it is skipped outright when the device has animations turned off.
  */
 @Composable
-fun BrandSplash(onFinished: () -> Unit) {
+fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
     val context = LocalContext.current
     val animationsDisabled = remember {
         runCatching {
@@ -70,21 +71,33 @@ fun BrandSplash(onFinished: () -> Unit) {
         runCatching { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getBoolean(KEY_SEEN, false) }
             .getOrDefault(false)
     }
+    com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("BrandSplash composing (animationsDisabled=$animationsDisabled)")
     val finish = {
+        com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("BrandSplash finish()")
         runCatching { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putBoolean(KEY_SEEN, true).apply() }
         onFinished()
     }
 
+    val appReadyState = androidx.compose.runtime.rememberUpdatedState(appReady)
     val progress = remember { Animatable(0f) }
+    // The scene only starts to lift once the timeline is done AND the app underneath is drawn (see appReady).
+    val fadeOut = remember { Animatable(0f) }
     var skipped by remember { mutableStateOf(false) }
     val total = if (returning) FAST_TOTAL_MILLIS else TOTAL_MILLIS
 
     LaunchedEffect(animationsDisabled) {
         if (animationsDisabled) {
+            // No animation to play, but still no lifting the scene off an app that has not been drawn yet.
+            androidx.compose.runtime.snapshotFlow { appReadyState.value }.first { it }
             finish()
             return@LaunchedEffect
         }
         progress.animateTo(1f, tween(total, easing = LinearEasing))
+        // Never lift the scene off a screen that has nothing under it yet: on a slow phone the app below can still be
+        // composing when the timeline ends, and that gap used to show as a plain brown screen. The bar simply stays
+        // full until the app has drawn.
+        androidx.compose.runtime.snapshotFlow { appReadyState.value }.first { it }
+        fadeOut.animateTo(1f, tween(FADE_OUT_MILLIS.toInt(), easing = LinearEasing))
         finish()
     }
     // A second animateTo on the same Animatable cancels the first, so the timeline simply stops where the tap caught it
@@ -92,6 +105,8 @@ fun BrandSplash(onFinished: () -> Unit) {
     LaunchedEffect(skipped) {
         if (!skipped) return@LaunchedEffect
         progress.animateTo(1f, tween(SKIP_MILLIS, easing = LinearEasing))
+        androidx.compose.runtime.snapshotFlow { appReadyState.value }.first { it }
+        fadeOut.animateTo(1f, tween(FADE_OUT_MILLIS.toInt(), easing = LinearEasing))
         finish()
     }
 
@@ -117,7 +132,7 @@ fun BrandSplash(onFinished: () -> Unit) {
             .background(SplashColor)
             .graphicsLayer {
                 // Read inside the lambda so the fade re-runs in the draw phase only.
-                alpha = 1f - phase(progress.value * total, total - FADE_OUT_MILLIS, total.toFloat())
+                alpha = 1f - fadeOut.value
             }
             .pointerInput(Unit) { detectTapGestures { skipped = true } }
     ) {

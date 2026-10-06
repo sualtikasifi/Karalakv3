@@ -146,8 +146,12 @@ class MainActivity : AppCompatActivity() {
                 // background doesn't reach (behind the status bar during a
                 // transition, for a frame on first draw), and white there
                 // read as a seam against every page.
+                // Hoisted so the page colour can wait: while the opening scene is up, the Surface is see-through, so the
+                // scene already painted as the window's background shows through any frame in which BrandSplash itself
+                // has not been drawn yet (it used to flash plain cream there).
+                var brandSplashVisible by rememberSaveable { mutableStateOf(true) }
                 Surface(
-                    color = MaterialTheme.colorScheme.background,
+                    color = if (brandSplashVisible) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.background,
                     modifier = Modifier.fillMaxSize()
                 ) {
                     // The whole app is composed one frame AFTER the opening scene is on screen. Composing the nav graph
@@ -156,10 +160,17 @@ class MainActivity : AppCompatActivity() {
                     // BrandSplash, so the scene shows almost at once and the app builds itself underneath while its
                     // loading bar fills. Saved, so a rotation or language change recreate does not wait again.
                     var appReady by rememberSaveable { mutableStateOf(false) }
+                    // True once the app below has composed AND had a couple of frames to draw: only then may the opening
+                    // scene be lifted (see BrandSplash's appReady).
+                    var appDrawn by rememberSaveable { mutableStateOf(false) }
                     LaunchedEffect(Unit) {
                         androidx.compose.runtime.withFrameNanos { }
                         com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("nav graph starts composing")
                         appReady = true
+                        androidx.compose.runtime.withFrameNanos { }
+                        androidx.compose.runtime.withFrameNanos { }
+                        appDrawn = true
+                        com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("app drawn, scene may lift")
                     }
                     if (appReady) CizimHafizaNavGraph(
                         onNavControllerReady = { navController = it },
@@ -175,12 +186,12 @@ class MainActivity : AppCompatActivity() {
                     // opening costs no startup time. rememberSaveable, so a
                     // rotation or a language-change recreate does not replay
                     // it — only a genuinely cold start does.
-                    var brandSplashVisible by rememberSaveable { mutableStateOf(true) }
                     if (brandSplashVisible) {
-                        BrandSplash(onFinished = {
+                        BrandSplash(appReady = appDrawn, onFinished = {
                             brandSplashVisible = false
                             // The scene served as the window's background only to be there for the very first frame.
                             window.setBackgroundDrawableResource(R.color.splash_background)
+                            com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.evict(R.drawable.splash_art)
                         })
                     }
                 }

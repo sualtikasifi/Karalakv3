@@ -18,6 +18,10 @@
         <!-- See the base values/themes.xml copy of this style for why this
              line is here: the classic starting-window background, painted
              before windowSplashScreenBackground below ever takes effect. -->
+        <!-- No system "starting window" at all: that window is a plain colour (the brown players kept seeing for a
+             moment before the opening scene). Without it the launcher stays on screen until the app draws its first
+             frame, and that frame is already the opening scene (see MainActivity / SplashSceneDrawable). -->
+        <item name="android:windowDisablePreview">true</item>
         <item name="android:windowBackground">@color/splash_background</item>
         <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_blank</item>

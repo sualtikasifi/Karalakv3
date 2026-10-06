@@ -265,18 +265,21 @@ internal fun PaintedHome(
             }
         }
         Box(box(224f, 350f, 780f, 394f), contentAlignment = Alignment.CenterStart) {
-            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // The level sits on the SAME BASELINE as the name (they are two sizes, so aligning their bottoms or centres
+            // leaves the smaller one visibly floating).
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = nickname,
                     style = PaintedStyle(color = HomeInk, fontSize = fs(36f), textAlign = TextAlign.Start),
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
+                    modifier = Modifier.weight(1f, fill = false).alignByBaseline()
                 )
                 Text(
                     text = "• " + stringResource(R.string.home_level_inline, progress.level),
                     style = PaintedStyle(color = HomeInkSoft, fontSize = fs(26f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Start),
-                    maxLines = 1
+                    maxLines = 1,
+                    modifier = Modifier.alignByBaseline()
                 )
             }
         }
@@ -552,7 +555,7 @@ private fun Modifier.sunkenArt(
                     srcSize = IntSize(srcW.roundToInt(), srcH.roundToInt()),
                     dstOffset = IntOffset.Zero,
                     dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
-                    filterQuality = FilterQuality.High
+                    filterQuality = FilterQuality.Low
                 )
             }
         }
