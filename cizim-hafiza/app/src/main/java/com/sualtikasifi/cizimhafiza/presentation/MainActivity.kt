@@ -24,6 +24,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -133,27 +134,11 @@ class MainActivity : AppCompatActivity() {
             isAppearanceLightNavigationBars = true
         }
 
-        // Consent first, ads second — always in that order, and from an
-        // Activity because UMP needs one to present its form. This used to
-        // run unconditionally in the Application class, which meant ad
-        // requests went out in the EEA before anyone had been asked, in
-        // breach of both GDPR and AdMob's own policy. ensureConsent resolves
-        // silently for players in regions with no form requirement.
-        consentManager.ensureConsent(this) {
-            adManager.get().initializeIfConsented(consentManager)
-        }
-
         // Read once, here, rather than observed: the start destination is
         // fixed for the lifetime of this NavHost, and completing the
         // tutorial navigates away explicitly instead of re-deciding it.
         val tutorialCompleted = settingsRepository.tutorialCompleted
-        window.decorView.viewTreeObserver.addOnPreDrawListener(object : android.view.ViewTreeObserver.OnPreDrawListener {
-            override fun onPreDraw(): Boolean {
-                window.decorView.viewTreeObserver.removeOnPreDrawListener(this)
-                com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("first frame about to draw")
-                return true
-            }
-        })
+        val composeApp = {
         setContent {
             CizimHafizaTheme {
                 // The app's cream page color, not Surface's default white:
@@ -192,11 +177,54 @@ class MainActivity : AppCompatActivity() {
                     // it — only a genuinely cold start does.
                     var brandSplashVisible by rememberSaveable { mutableStateOf(true) }
                     if (brandSplashVisible) {
-                        BrandSplash(onFinished = { brandSplashVisible = false })
+                        BrandSplash(onFinished = {
+                            brandSplashVisible = false
+                            // The scene served as the window's background only to be there for the very first frame.
+                            window.setBackgroundDrawableResource(R.color.splash_background)
+                        })
                     }
                 }
             }
         }
+        }
+
+        // The opening scene is the window's own background, so the very first frame — the one that makes the system's
+        // plain splash go away — is already the scene. The app itself (consent, nav graph, everything) is composed
+        // right AFTER that frame is on screen, not inside it: the stretch before the first frame is then only process,
+        // Application and Activity start-up, no Compose work.
+        if (savedInstanceState == null) runCatching {
+            val scene = com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(resources, R.drawable.splash_art)
+            window.setBackgroundDrawable(
+                com.sualtikasifi.cizimhafiza.presentation.splash.SplashSceneDrawable(scene.asAndroidBitmap())
+            )
+        }
+        var contentShown = false
+        fun showContent() {
+            if (contentShown) return
+            contentShown = true
+            com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("scene on screen, composing the app")
+            // Consent first, ads second — always in that order, and from an
+            // Activity because UMP needs one to present its form. This used to
+            // run unconditionally in the Application class, which meant ad
+            // requests went out in the EEA before anyone had been asked, in
+            // breach of both GDPR and AdMob's own policy. ensureConsent resolves
+            // silently for players in regions with no form requirement.
+            consentManager.ensureConsent(this) {
+                adManager.get().initializeIfConsented(consentManager)
+            }
+            composeApp()
+        }
+        window.decorView.viewTreeObserver.addOnPreDrawListener(object : android.view.ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                window.decorView.viewTreeObserver.removeOnPreDrawListener(this)
+                com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("first frame about to draw")
+                // After this frame has been drawn.
+                window.decorView.post { showContent() }
+                return true
+            }
+        })
+        // Safety net: never leave the app without content if that first frame is somehow never drawn.
+        window.decorView.postDelayed({ showContent() }, 2000)
     }
 
     // With AndroidManifest.xml's configChanges="locale" now in place (see
