@@ -6,6 +6,6 @@
          screen and as the base window background so cold start never shows a
          plain white flash before Compose paints its first frame. -->
     <color name="splash_background">#B07F34</color>
-    <!-- The system splash's flat colour: the parchment cream of the game's cards, so the gold-ringed logo stands out on it. -->
-    <color name="splash_screen_background">#FFF3DC</color>
+    <!-- The system splash's flat colour: the average colour of the opening scene, so the scene appearing over it is a change of detail, not of colour. -->
+    <color name="splash_screen_background">#B0843E</color>
 </resources>

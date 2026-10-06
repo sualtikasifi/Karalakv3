@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "MainActivity"
 
         /** The system splash rising off the opening scene. */
-        const val SPLASH_CURTAIN_MILLIS = 380L
+        const val SPLASH_CURTAIN_MILLIS = 160L
 
     }
 
@@ -86,11 +86,12 @@ class MainActivity : AppCompatActivity() {
                 return@setOnExitAnimationListener
             }
             runCatching {
-                val view = splash.view
-                view.animate()
-                    .translationY(-view.height.toFloat())
+                // The system splash is only a flat colour now (its icon is blank), so it simply melts away to show the
+                // painted scene underneath: no logo, no moving panel — the game opens on its own splash alone.
+                splash.view.animate()
+                    .alpha(0f)
                     .setDuration(SPLASH_CURTAIN_MILLIS)
-                    .setInterpolator(android.view.animation.PathInterpolator(0.3f, 0f, 0.8f, 0.15f))
+                    .setInterpolator(android.view.animation.DecelerateInterpolator())
                     .withEndAction { runCatching { splash.remove() } }
                     .start()
             }.onFailure {

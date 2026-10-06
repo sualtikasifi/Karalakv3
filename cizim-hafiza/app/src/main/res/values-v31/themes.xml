@@ -28,8 +28,8 @@
              icon). Built the way the platform guidelines ask: one light, flat colour and the logo as a vector that
              animates in (under 1 s). MainActivity holds it until the painted opening scene is drawn underneath,
              then it rises off the scene like a curtain. -->
-        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_anim</item>
-        <item name="windowSplashScreenAnimationDuration">900</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+        <item name="windowSplashScreenAnimationDuration">200</item>
         <item name="postSplashScreenTheme">@style/Theme.CizimHafiza</item>
     </style>
 </resources>
