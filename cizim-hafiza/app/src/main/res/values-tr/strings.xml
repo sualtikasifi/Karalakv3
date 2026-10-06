@@ -445,6 +445,9 @@
     <string name="settings_battery_optimization_title">Bildirimler geç mi geliyor?</string>
     <string name="settings_battery_optimization_body">Telefonunun pil yöneticisi, uygulamayı açana kadar hatırlatmaları geciktirebilir. Karalak\'ı istisna yaparak zamanında gelmesini sağla.</string>
     <string name="settings_battery_optimization_action">Bildirim sorununu düzelt</string>
+    <string name="settings_battery_ok_title">Bildirimler hazır</string>
+    <string name="settings_battery_ok_body">Karalak hatırlatmaları zamanında gösterebilir. Bildirimleri istediğin zaman yukarıdan açıp kapatabilirsin.</string>
+    <string name="settings_sound_section">Ses ve Titreşim</string>
     <string name="notification_channel_name">Oyun hatırlatmaları</string>
     <string name="notification_channel_description">Karalak\'ı unutmayasın diye günde en fazla bir kez gönderilen hatırlatmalar.</string>
     <string name="notification_channel_invite_name">Arkadaş davetleri</string>
@@ -973,6 +976,23 @@
     <string name="result_gold_level">⭐ Bölüm yıldızı +%1$d altın</string>
     <string name="result_gold_daily">📅 Günlük ödül +%1$d altın</string>
     <string name="result_your_drawings">Çizimlerin</string>
+    <string name="result_stat_correct">Doğru tahmin</string>
+    <string name="result_stat_wrong">Yanlış tahmin</string>
+    <string name="result_stat_achievement">Başarım ödülü</string>
+    <string name="result_stat_level_gold">Bölüm yıldızı</string>
+    <string name="result_stat_daily_gold">Günlük ödül</string>
+    <string name="result_stat_stars">Yıldızların</string>
+    <string name="result_stat_fastest">En hızlı cevap</string>
+    <string name="result_stat_fastest_value">%1$.1f sn</string>
+    <string name="result_stat_quick">Günün ilk Hızlı Eşleş\'i</string>
+    <string name="result_stat_event">XP etkinliği</string>
+    <string name="result_stat_multiplier">XP ×%1$d</string>
+    <string name="result_gold_amount">+%1$d altın</string>
+    <string name="result_words_title">Çizdiğin %1$d Kelime</string>
+    <string name="result_x2_amount">x2 · %1$d XP</string>
+    <string name="result_watch_ad">Reklam izle</string>
+    <string name="daily_streak_label">Günlük seri</string>
+    <string name="daily_reward_won">Ödül kazanıldı!</string>
     <!-- Ana menü seviye kartı: seviye ilerlemesi ile rütbe ilerlemesi ayrı ayrı okunur -->
     <string name="level_xp_to_next_level">Bir sonraki seviyeye %1$d XP kaldı</string>
     <string name="level_max_reached">En yüksek seviyedesin!</string>
@@ -1348,6 +1368,8 @@
     <string name="chest_timer_hint">Başlattığında geri sayım başlar</string>
     <string name="get_ready_tag">Sıradaki aşama</string>
     <string name="get_ready_sub">Şimdi çizimleri tahmin etme sırası sende</string>
+    <string name="get_ready_line1">Tahmin aşamasına</string>
+    <string name="get_ready_line2">hazırlan</string>
     <string name="store_daily_joker_tag">GÜNÜN ÜCRETSİZ JOKERİ</string>
     <string name="store_daily_joker_action">Reklam izle, ücretsiz al</string>
     <string name="store_daily_joker_claimed">Ücretsiz jokerin eklendi!</string>

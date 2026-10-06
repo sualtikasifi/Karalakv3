@@ -163,6 +163,10 @@ fun QuickMatchScreen(
                     modifier = Modifier.fillMaxSize().alpha(foundBgAlpha)
                 )
             }
+            val searchingAlpha by animateFloatAsState(if (state is QuickMatchState.Searching) 1f else 0f, tween(450), label = "quick_match_search_scene")
+            if (searchingAlpha > 0f) {
+                SearchingScene(modifier = Modifier.alpha(searchingAlpha))
+            }
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -217,7 +221,8 @@ fun QuickMatchScreen(
                     // this Column restores the vertical layout each state was written for.
                     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     when (current) {
-                        QuickMatchState.Searching -> SearchingBody()
+                        // The search is its own painted scene (SearchingScene, behind this column).
+                        QuickMatchState.Searching -> Spacer(modifier = Modifier.height(1.dp))
                         is QuickMatchState.Found -> FoundBody(
                             opponent = current.opponent,
                             me = current.me,
@@ -272,183 +277,6 @@ fun QuickMatchScreen(
         }
     }
 }
-
-/**
- * The search: the magnifying-glass mascot with player bubbles drifting round it, a notepad saying what is going on, and a
- * pencil visibly sketching a squiggle, endlessly — the drawing-themed stand-in for a bare spinner, since what this app's
- * "opponent" actually did was draw. Built from sampled points rather than a real hand-drawn path: cheap every frame and
- * exactly reproducible.
- */
-@Composable
-private fun SearchingBody() {
-    val transition = rememberInfiniteTransition(label = "quick_match_draw")
-    // Draws left to right, pauses briefly at the end, then starts the next squiggle from scratch — a real sketch does
-    // not un-draw itself. State rather than `by`: read down in the Canvas, so the squiggle redraws without recomposing.
-    val progress = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(SQUIGGLE_DURATION_MS, easing = LinearEasing)),
-        label = "quick_match_draw_progress"
-    )
-    val tipScale = transition.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(tween(320, easing = LinearEasing), RepeatMode.Reverse),
-        label = "quick_match_tip_scale"
-    )
-    val bob = transition.animateFloat(
-        initialValue = -1f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "quick_match_bob"
-    )
-    // One bubble at a time lights up, going round the five of them.
-    val lit = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 5f,
-        animationSpec = infiniteRepeatable(tween(3000, easing = LinearEasing)),
-        label = "quick_match_lit"
-    )
-    val dots = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 3f,
-        animationSpec = infiniteRepeatable(tween(1500, easing = LinearEasing)),
-        label = "quick_match_dots"
-    )
-
-    val strokeColor = Color(0xFFF26A1B)
-    val trackColor = Color(0x33F26A1B)
-    val density = LocalDensity.current
-    val strokeWidthPx = with(density) { 4.5.dp.toPx() }
-    val tipRadiusPx = with(density) { 6.dp.toPx() }
-    val ink = Color(0xFF2B1A10)
-
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        // Mascot with the bubbles on an arc above it.
-        Box(modifier = Modifier.fillMaxWidth().height(206.dp), contentAlignment = Alignment.BottomCenter) {
-            val rings = intArrayOf(R.drawable.qm_ring0, R.drawable.qm_ring1, R.drawable.qm_ring2, R.drawable.qm_ring3, R.drawable.qm_ring4)
-            // x offset from the centre (dp), y from the top (dp) of the arc.
-            val spots = arrayOf(-132f to 92f, -70f to 22f, 0f to 0f, 70f to 22f, 132f to 92f)
-            rings.forEachIndexed { i, res ->
-                val d = ((lit.value - i + 5f) % 5f)
-                val glow = if (d < 1f) 1f - d else 0f
-                Image(
-                    painter = painterResource(res),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .offset(x = spots[i].first.dp, y = (spots[i].second + bob.value * (if (i % 2 == 0) 3f else -3f)).dp)
-                        .size(46.dp)
-                        .graphicsLayer {
-                            val sc = 1f + 0.18f * glow
-                            scaleX = sc; scaleY = sc
-                            alpha = 0.72f + 0.28f * glow
-                        }
-                )
-            }
-            Image(
-                painter = painterResource(R.drawable.qm_mascot),
-                contentDescription = null,
-                modifier = Modifier
-                    .width(176.dp)
-                    .offset(y = (bob.value * 3f).dp)
-            )
-        }
-        Spacer(modifier = Modifier.height(2.dp))
-        // The notepad.
-        com.sualtikasifi.cizimhafiza.presentation.common.NinePatch(
-            res = R.drawable.qm_pad,
-            slicePx = 120,
-            edge = 26.dp,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 30.dp, bottom = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                    text = stringResource(R.string.quick_match_searching_title),
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = ink, fontSize = 40.sp, textAlign = TextAlign.Center),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                    text = stringResource(R.string.quick_match_searching_title2),
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFFF26A1B), fontSize = 34.sp, textAlign = TextAlign.Center),
-                    modifier = Modifier.fillMaxWidth().graphicsLayer { alpha = 0.78f + 0.22f * (1f - kotlin.math.abs(dots.value - 1.5f) / 1.5f) }
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Canvas(modifier = Modifier.width(190.dp).height(70.dp)) {
-                    fun pointAt(t: Float): Offset {
-                        val x = t * size.width
-                        val y = size.height / 2f + sin(t * SQUIGGLE_CYCLES * (2f * PI.toFloat())) * (size.height * 0.34f)
-                        return Offset(x, y)
-                    }
-                    val fullPath = Path().apply {
-                        for (i in 0..SQUIGGLE_SAMPLES) {
-                            val point = pointAt(i / SQUIGGLE_SAMPLES.toFloat())
-                            if (i == 0) moveTo(point.x, point.y) else lineTo(point.x, point.y)
-                        }
-                    }
-                    drawPath(fullPath, color = trackColor, style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round))
-                    val drawnSamples = (SQUIGGLE_SAMPLES * progress.value).toInt().coerceIn(0, SQUIGGLE_SAMPLES)
-                    if (drawnSamples > 0) {
-                        val drawnPath = Path().apply {
-                            for (i in 0..drawnSamples) {
-                                val point = pointAt(i / SQUIGGLE_SAMPLES.toFloat())
-                                if (i == 0) moveTo(point.x, point.y) else lineTo(point.x, point.y)
-                            }
-                        }
-                        drawPath(drawnPath, color = strokeColor, style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round))
-                        val tip = pointAt(drawnSamples / SQUIGGLE_SAMPLES.toFloat())
-                        drawCircle(color = strokeColor, radius = tipRadiusPx * tipScale.value, center = tip)
-                    }
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = stringResource(R.string.quick_match_searching_sub),
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(15.sp, 20.sp),
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(14.dp))
-        // The reassurance card.
-        com.sualtikasifi.cizimhafiza.presentation.common.NinePatch(
-            res = R.drawable.league_card,
-            slicePx = 100,
-            edge = 22.dp,
-            modifier = Modifier.fillMaxWidth(0.92f)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier.size(46.dp).background(Color(0xFFFFE2B5), androidx.compose.foundation.shape.CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Filled.Groups, contentDescription = null, tint = Color(0xFFF26A1B), modifier = Modifier.size(28.dp))
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.quick_match_dont_worry),
-                        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = ink, fontSize = 18.sp, textAlign = TextAlign.Start),
-                        maxLines = 1
-                    )
-                    Text(
-                        stringResource(R.string.quick_match_dont_worry_body),
-                        style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(13.sp, 17.sp).copy(textAlign = TextAlign.Start)
-                    )
-                }
-            }
-        }
-    }
-}
-
-private const val SQUIGGLE_SAMPLES = 48
-private const val SQUIGGLE_CYCLES = 2.4f
-private const val SQUIGGLE_DURATION_MS = 1500
 
 /**
  * The moment a match is found, and the few seconds before it starts.

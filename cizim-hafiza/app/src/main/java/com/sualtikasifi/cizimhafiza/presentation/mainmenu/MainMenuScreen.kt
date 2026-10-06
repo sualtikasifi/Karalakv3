@@ -223,7 +223,7 @@ fun MainMenuScreen(
         com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.preload(
             appContext,
             listOf(
-                R.drawable.bg_race, R.drawable.bg_offline, R.drawable.bg_result_wood, R.drawable.bg_draw,
+                R.drawable.bg_race, R.drawable.bg_offline, R.drawable.bg_break, R.drawable.bg_result_wood, R.drawable.bg_draw,
                 R.drawable.bg_guess,
                 // The pages the home tiles open: their backdrop decoding on the main thread, right as the page slides
                 // in, was a visible hitch after the press animation.

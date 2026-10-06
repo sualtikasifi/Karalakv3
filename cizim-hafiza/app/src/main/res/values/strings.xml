@@ -437,6 +437,9 @@
     <string name="settings_battery_optimization_title">Notifications arriving late?</string>
     <string name="settings_battery_optimization_body">Your phone\'s battery manager can hold back reminders until you open the app. Exempt Karalak so they arrive on time.</string>
     <string name="settings_battery_optimization_action">Fix notification delivery</string>
+    <string name="settings_battery_ok_title">Notifications are ready</string>
+    <string name="settings_battery_ok_body">Karalak can remind you on time. Turn notifications on or off above whenever you like.</string>
+    <string name="settings_sound_section">Sound &amp; Vibration</string>
     <string name="notification_channel_name">Game reminders</string>
     <string name="notification_channel_description">Reminders sent at most once a day so you don\'t forget Karalak.</string>
     <string name="notification_channel_invite_name">Friend invites</string>
@@ -959,6 +962,23 @@
     <string name="result_gold_level">⭐ Level stars +%1$d gold</string>
     <string name="result_gold_daily">📅 Daily reward +%1$d gold</string>
     <string name="result_your_drawings">Your drawings</string>
+    <string name="result_stat_correct">Correct guesses</string>
+    <string name="result_stat_wrong">Wrong guesses</string>
+    <string name="result_stat_achievement">Achievement reward</string>
+    <string name="result_stat_level_gold">Level stars</string>
+    <string name="result_stat_daily_gold">Daily reward</string>
+    <string name="result_stat_stars">Your stars</string>
+    <string name="result_stat_fastest">Fastest answer</string>
+    <string name="result_stat_fastest_value">%1$.1f s</string>
+    <string name="result_stat_quick">First Quick Match today</string>
+    <string name="result_stat_event">XP event</string>
+    <string name="result_stat_multiplier">XP ×%1$d</string>
+    <string name="result_gold_amount">+%1$d gold</string>
+    <string name="result_words_title">Your %1$d words</string>
+    <string name="result_x2_amount">x2 · %1$d XP</string>
+    <string name="result_watch_ad">Watch an ad</string>
+    <string name="daily_streak_label">Daily streak</string>
+    <string name="daily_reward_won">Reward earned!</string>
     <!-- Home level card: level progress and rank progress read separately -->
     <string name="level_xp_to_next_level">%1$d XP to the next level</string>
     <string name="level_max_reached">You\'re at the top level!</string>
@@ -1335,6 +1355,8 @@
     <string name="chest_timer_hint">The countdown starts when you begin</string>
     <string name="get_ready_tag">Next up</string>
     <string name="get_ready_sub">Now it\'s your turn to guess the drawings</string>
+    <string name="get_ready_line1">Get ready for</string>
+    <string name="get_ready_line2">guessing!</string>
     <string name="store_daily_joker_tag">FREE JOKER OF THE DAY</string>
     <string name="store_daily_joker_action">Watch an ad, get it free</string>
     <string name="store_daily_joker_claimed">Your free joker was added!</string>
