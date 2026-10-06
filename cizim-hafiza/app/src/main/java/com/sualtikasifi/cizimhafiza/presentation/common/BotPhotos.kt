@@ -50,14 +50,21 @@ object BotPhotos {
         R.drawable.bot_photo_b27, R.drawable.bot_photo_b30, R.drawable.bot_photo_b33
     )
 
+    /** Hand-picked pictures that replace what a bot would otherwise get from its place in the list. */
+    private val OVERRIDES = mapOf(
+        "iremsu" to R.drawable.bot_photo_b35
+    )
+
     private val assigned: Map<String, Int> by lazy {
         var m = 0; var w = 0; var n = 0
         LeagueBots.NAMES.associateWith { name ->
-            when (name) {
+            // The counters still advance for an overridden name, so no other bot's picture shifts.
+            val fromList = when (name) {
                 in FEMALE_NAMES -> WOMEN[w++ % WOMEN.size]
                 in NEUTRAL_NAMES -> NEUTRAL[n++ % NEUTRAL.size]
                 else -> MEN[m++ % MEN.size]
             }
+            OVERRIDES[name] ?: fromList
         }
     }
 
