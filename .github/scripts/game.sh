@@ -138,8 +138,8 @@ off = 16 if (len(d) - 16) == w * h * 4 else 12
 def px(x, y):
     p = off + (y * w + x) * 4
     return d[p], d[p + 1], d[p + 2]
-r, g, b = px(470, 1560)
-r2, g2, b2 = px(300, 470)
+r, g, b = px(385, 1502)
+r2, g2, b2 = px(719, 321)
 print(1 if (r > 225 and g > 200 and 140 < b < 225) and (r2 > 150 and 60 < g2 < 140 and b2 < 90) else 0)
 PY
 }
