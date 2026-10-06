@@ -22,7 +22,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.runtime.getValue
 import com.sualtikasifi.cizimhafiza.presentation.common.breathing
 import com.sualtikasifi.cizimhafiza.presentation.common.glint
-import com.sualtikasifi.cizimhafiza.presentation.common.pressFlash
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.common.sceneIn
 import androidx.compose.ui.draw.blur
@@ -68,6 +67,25 @@ import com.sualtikasifi.cizimhafiza.presentation.common.a11yButton
 import com.sualtikasifi.cizimhafiza.presentation.common.nameRes
 import com.sualtikasifi.cizimhafiza.domain.model.XpAwards
 import java.text.NumberFormat
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.State
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import kotlin.math.roundToInt
 
 private const val ArtW = 841f
 private const val ArtH = 1870f
@@ -152,6 +170,18 @@ internal fun PaintedHome(
         }
 
         val scene = cachedPainterResource(R.drawable.bg_home_scene)
+        // The same picture, as pixels, for the press "sink" of the areas painted into it (see sunkenArt).
+        val sceneContext = androidx.compose.ui.platform.LocalContext.current
+        val sceneBitmap = remember {
+            runCatching { com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(sceneContext.resources, R.drawable.bg_home_scene) }.getOrNull()
+        }
+        val pixelsPerArtX = (sceneBitmap?.width ?: 1) / ArtW
+        val pixelsPerArtY = (sceneBitmap?.height ?: 1) / ArtH
+        fun sunk(sink: SinkState, x0: Float, y0: Float, x1: Float, y1: Float, cornerArt: Float): Modifier =
+            Modifier.sunkenArt(sink, sceneBitmap, x0 * pixelsPerArtX, y0 * pixelsPerArtY, (x1 - x0) * pixelsPerArtX, (y1 - y0) * pixelsPerArtY, (cornerArt * us).dp)
+        /** A live piece (label, pill, number) laid in [x0]..[y1] over an area whose centre is ([cx],[cy]) dips with it. */
+        fun follow(sink: SinkState, cx: Float, cy: Float, x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
+            Modifier.sinkWith(sink, (cx - x0) / (x1 - x0), (cy - y0) / (y1 - y0))
         if (offX > 1.dp || offY > 1.dp) {
             Image(scene, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(20.dp))
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)))
@@ -183,15 +213,27 @@ internal fun PaintedHome(
         }
 
         // ── Top chips ──
-        Box(box(40f, 258f, 256f, 326f).clickable(interactionSource = noRipple, indication = null, onClick = onGoldClick)) {}
-        Box(box(112f, 270f, 238f, 314f), contentAlignment = Alignment.Center) {
+        val goldChipSink = rememberSink(0.94f)
+        Box(
+            box(40f, 258f, 256f, 326f)
+                .then(sunk(goldChipSink, 40f, 258f, 256f, 326f, 34f))
+                .clickable(interactionSource = goldChipSink.source, indication = null, onClick = onGoldClick)
+        ) {}
+        Box(box(112f, 270f, 238f, 314f).then(follow(goldChipSink, 148f, 292f, 112f, 270f, 238f, 314f)), contentAlignment = Alignment.Center) {
             // Counts to the new total whenever gold changes (a reward, a purchase) instead of jumping.
             val goldShown by animateIntAsState(gold, tween(800, easing = FastOutSlowInEasing), label = "gold")
             LetteredText(NumberFormat.getIntegerInstance().format(goldShown), fs(31f), outline = Color(0xFF3A1E08), maxLines = 1)
         }
-        Box(box(264f, 258f, 512f, 326f).clickable(interactionSource = noRipple, indication = null, onClick = onPenClick).a11yButton(stringResource(pen.labelRes))) {}
+        val penChipSink = rememberSink(0.94f)
+        Box(
+            box(264f, 258f, 512f, 326f)
+                .then(sunk(penChipSink, 264f, 258f, 512f, 326f, 34f))
+                .clickable(interactionSource = penChipSink.source, indication = null, onClick = onPenClick)
+                .a11yButton(stringResource(pen.labelRes))
+        ) {}
         Box(
             box(282f, 262f, 344f, 322f)
+                .then(follow(penChipSink, 388f, 292f, 282f, 262f, 344f, 322f))
                 .padding(2.dp)
                 .background(Brush.verticalGradient(listOf(Color(0xFFFFD66B), Color(0xFFF0A21A))), CircleShape)
                 .border(2.dp, Color(0xFF8A4E12), CircleShape),
@@ -199,7 +241,7 @@ internal fun PaintedHome(
         ) {
             Icon(Icons.Filled.Create, contentDescription = null, tint = Color(0xFF5A2E0A), modifier = Modifier.size((30f * us).dp))
         }
-        FitLettered(stringResource(pen.labelRes), 27f, Color(0xFF3A1E08), 1, box(350f, 266f, 484f, 320f))
+        FitLettered(stringResource(pen.labelRes), 27f, Color(0xFF3A1E08), 1, box(350f, 266f, 484f, 320f).then(follow(penChipSink, 388f, 292f, 350f, 266f, 484f, 320f)))
 
         // ── Profile ──
         Box(
@@ -362,8 +404,13 @@ internal fun PaintedHome(
         val goldNow = rememberNowUntil(adGoldNextAt)
         val goldRemaining = adGoldNextAt - goldNow
         val goldReady = goldRemaining <= 0
-        Box(box(34f, 538f, 230f, 754f).clickable(enabled = goldReady, interactionSource = noRipple, indication = null, onClick = onWatchGold)) {}
-        FitLettered(stringResource(R.string.home_ad_gold_label), 36f, Color(0xFF8A4E12), 1, box(40f, 648f, 226f, 698f))
+        val goldCardSink = rememberSink(0.95f)
+        Box(
+            box(34f, 538f, 230f, 754f)
+                .then(sunk(goldCardSink, 34f, 538f, 230f, 754f, 26f))
+                .clickable(enabled = goldReady, interactionSource = goldCardSink.source, indication = null, onClick = onWatchGold)
+        ) {}
+        FitLettered(stringResource(R.string.home_ad_gold_label), 36f, Color(0xFF8A4E12), 1, box(40f, 648f, 226f, 698f).then(follow(goldCardSink, 132f, 646f, 40f, 648f, 226f, 698f)))
         // The coins are painted into the scene, so they cannot move on their own: glitter and a passing glint over them
         // do the calling instead, while there is a reward to take.
         com.sualtikasifi.cizimhafiza.presentation.common.SparkleField(
@@ -374,14 +421,19 @@ internal fun PaintedHome(
         if (goldReady) {
             Box(box(70f, 566f, 214f, 650f).glint(periodMs = 2600, strength = 0.38f, corner = 40.dp))
         }
-        AdPill(box(64f, 702f, 200f, 740f), if (goldReady) stringResource(R.string.home_ad_watch) else "⏳ " + hms(goldRemaining / 1000))
+        AdPill(box(64f, 702f, 200f, 740f).then(follow(goldCardSink, 132f, 646f, 64f, 702f, 200f, 740f)), if (goldReady) stringResource(R.string.home_ad_watch) else "⏳ " + hms(goldRemaining / 1000))
 
         // Free chest ad (right)
         val midnight = remember(adChestAvailable) { com.sualtikasifi.cizimhafiza.util.TurkeyTime.nextMidnightMillis() }
         val chestNow = rememberNowUntil(if (adChestAvailable) 0L else midnight)
         val chestRemaining = midnight - chestNow
-        Box(box(616f, 538f, 808f, 754f).clickable(enabled = adChestAvailable, interactionSource = noRipple, indication = null, onClick = onWatchChest)) {}
-        FitLettered(stringResource(R.string.home_ad_chest_label), 27f, Color(0xFF14549A), 2, box(634f, 640f, 796f, 706f))
+        val chestCardSink = rememberSink(0.95f)
+        Box(
+            box(616f, 538f, 808f, 754f)
+                .then(sunk(chestCardSink, 616f, 538f, 808f, 754f, 26f))
+                .clickable(enabled = adChestAvailable, interactionSource = chestCardSink.source, indication = null, onClick = onWatchChest)
+        ) {}
+        FitLettered(stringResource(R.string.home_ad_chest_label), 27f, Color(0xFF14549A), 2, box(634f, 640f, 796f, 706f).then(follow(chestCardSink, 712f, 646f, 634f, 640f, 796f, 706f)))
         // Same for the chest: it cannot move, so it glitters and catches the light while a free one is waiting.
         com.sualtikasifi.cizimhafiza.presentation.common.SparkleField(
             spots = ChestSparkles,
@@ -394,13 +446,19 @@ internal fun PaintedHome(
         }
         // The very same pill as the gold card's: both are drawn here (the picture leaves them empty), same size, same
         // colours, same row, each centred in its card with the same gap to the card's frame.
-        AdPill(box(646f, 702f, 782f, 740f), if (adChestAvailable) stringResource(R.string.home_ad_watch) else "⏳ " + hms(chestRemaining / 1000))
+        AdPill(box(646f, 702f, 782f, 740f).then(follow(chestCardSink, 712f, 646f, 646f, 702f, 782f, 740f)), if (adChestAvailable) stringResource(R.string.home_ad_watch) else "⏳ " + hms(chestRemaining / 1000))
 
         // ── Tiles ──
         @Composable
         fun Tile(x0: Float, y0: Float, x1: Float, y1: Float, lx0: Float, ly0: Float, lx1: Float, ly1: Float, label: String, onClick: () -> Unit, content: @Composable () -> Unit = {}) {
-            Box(box(x0, y0, x1, y1).pressFlash(corner = 24.dp, onClick = onClick).a11yButton(label)) {}
-            FitLettered(label, 31f, Color(0xFF241408), 2, box(lx0, ly0, lx1, ly1))
+            val sink = rememberSink(0.92f)
+            Box(
+                box(x0, y0, x1, y1)
+                    .then(sunk(sink, x0, y0, x1, y1, 26f))
+                    .clickable(interactionSource = sink.source, indication = null, onClick = onClick)
+                    .a11yButton(label)
+            ) {}
+            FitLettered(label, 31f, Color(0xFF241408), 2, box(lx0, ly0, lx1, ly1).then(follow(sink, (x0 + x1) / 2f, (y0 + y1) / 2f, lx0, ly0, lx1, ly1)))
             content()
         }
         Tile(30f, 776f, 288f, 1012f, 50f, 918f, 274f, 1002f, stringResource(R.string.menu_play_online), onPlayOnline)
@@ -448,3 +506,64 @@ private fun CornerCount(modifier: Modifier, count: Int) {
     }
 }
 
+
+
+/** Press state of an area painted into the scene: [scale] dips to [depth] while a finger is down and springs back. */
+private class SinkState(val source: MutableInteractionSource, val scale: State<Float>)
+
+@Composable
+private fun rememberSink(depth: Float = 0.9f): SinkState {
+    val source = remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
+    val scale = animateFloatAsState(
+        targetValue = if (pressed) depth else 1f,
+        animationSpec = spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMedium),
+        label = "sink"
+    )
+    return SinkState(source, scale)
+}
+
+/**
+ * The press "sink" for something that is PAINTED into the scene picture and so cannot scale itself: while pressed, the
+ * area's own pixels are drawn again, shrunk, over a darker recess that hides the full-size original — the button
+ * visibly caves in, like the room buttons do. [srcLeft]..[srcH] are the area's rectangle in the picture's own pixels.
+ */
+private fun Modifier.sunkenArt(
+    sink: SinkState,
+    scene: ImageBitmap?,
+    srcLeft: Float, srcTop: Float, srcW: Float, srcH: Float,
+    corner: Dp
+): Modifier = drawWithContent {
+    val k = sink.scale.value
+    if (scene != null && k < 0.9995f) {
+        val r = corner.toPx()
+        val grow = 3.dp.toPx()
+        val recessSize = Size(size.width + grow * 2, size.height + grow * 2)
+        drawRoundRect(Color(0xFF6B2D0C), Offset(-grow, -grow), recessSize, CornerRadius(r + grow))
+        drawRoundRect(
+            Brush.verticalGradient(listOf(Color(0x77000000), Color.Transparent), startY = -grow, endY = size.height * 0.35f),
+            Offset(-grow, -grow), recessSize, CornerRadius(r + grow)
+        )
+        scale(k, k, pivot = center) {
+            clipPath(Path().apply { addRoundRect(RoundRect(0f, 0f, size.width, size.height, CornerRadius(r))) }) {
+                drawImage(
+                    scene,
+                    srcOffset = IntOffset(srcLeft.roundToInt(), srcTop.roundToInt()),
+                    srcSize = IntSize(srcW.roundToInt(), srcH.roundToInt()),
+                    dstOffset = IntOffset.Zero,
+                    dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+                    filterQuality = FilterQuality.High
+                )
+            }
+        }
+    }
+    drawContent()
+}
+
+/** Makes a live piece laid over a painted area (its label, its pill) dip together with it, about the area's centre. */
+private fun Modifier.sinkWith(sink: SinkState, pivotX: Float, pivotY: Float): Modifier = graphicsLayer {
+    val k = sink.scale.value
+    scaleX = k
+    scaleY = k
+    transformOrigin = TransformOrigin(pivotX, pivotY)
+}

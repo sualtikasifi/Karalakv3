@@ -85,24 +85,6 @@ fun Modifier.pressable(
         .clickable(enabled = enabled, interactionSource = source, indication = null, onClick = onClick)
 }
 
-/**
- * A clickable region over painted art that lights up while held: a soft white wash over the rounded area, fading
- * back out. For hit areas laid on a picture, which cannot scale themselves the way a drawn button does.
- */
-fun Modifier.pressFlash(corner: androidx.compose.ui.unit.Dp = 22.dp, enabled: Boolean = true, onClick: () -> Unit): Modifier = composed {
-    val source = remember { MutableInteractionSource() }
-    val pressed by source.collectIsPressedAsState()
-    val wash by animateFloatAsState(if (pressed) 0.34f else 0f, tween(if (pressed) 60 else 240), label = "flash")
-    this
-        .drawWithContent {
-            drawContent()
-            if (wash > 0.004f) {
-                drawRoundRect(Color.White.copy(alpha = wash), cornerRadius = CornerRadius(corner.toPx()))
-            }
-        }
-        .clickable(enabled = enabled, interactionSource = source, indication = null, onClick = onClick)
-}
-
 /** A slow, gentle bob and tilt — for a mascot, a crown, a badge sitting idle. */
 fun Modifier.floating(amplitude: Float = 5f, tilt: Float = 2f, periodMs: Int = 2600): Modifier = composed {
     val t by rememberInfiniteTransition(label = "float").animateFloat(
