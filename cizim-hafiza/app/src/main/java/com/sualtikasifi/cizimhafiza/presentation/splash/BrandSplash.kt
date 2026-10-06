@@ -42,8 +42,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.sualtikasifi.cizimhafiza.R
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import androidx.compose.ui.res.imageResource
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -51,9 +49,9 @@ import kotlin.math.sin
  * The brand moment: the painted Karalak scene fades in over the system splash, drifts in slowly, twinkles, and a loading
  * bar fills underneath it before the app opens.
  *
- * The hand-off from the system splash (see Theme.Karalak.Splash) is a plain colour with the round logo in the middle; this
- * screen's first frame is exactly that — same colour, same logo, same place — and only then does the scene fade in over
- * it, so the player never sees a seam.
+ * Android 12+ always opens on its own splash (a colour and one icon, nothing more — see Theme.Karalak.Splash). That
+ * splash is held over this screen until this screen's first frame is drawn, then slides up off it like a curtain, so
+ * the scene is simply revealed underneath (MainActivity / SplashHandOff).
  *
  * It is kept honestly short: [TOTAL_MILLIS] the first time the app is ever opened and a quicker [FAST_TOTAL_MILLIS] on
  * every cold start after that. It plays on cold start only (the caller's rememberSaveable), a tap skips to the end, and
@@ -84,9 +82,8 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
     val progress = remember { Animatable(0f) }
     // The scene only starts to lift once the timeline is done AND the app underneath is drawn (see appReady).
     val fadeOut = remember { Animatable(0f) }
-    // 0 = the system splash's picture (logo on the colour), 1 = the scene, the logo grown into its painted mascot.
-    val morph = remember { Animatable(if (animationsDisabled) 1f else 0f) }
-    // Tell the system splash it may go once this composable's first frame (identical to it) is on screen.
+    // The system splash stays over this until this composable's first frame is drawn, then rises off it like a
+    // curtain (see MainActivity / SplashHandOff): the scene is already there underneath when it does.
     LaunchedEffect(Unit) {
         androidx.compose.runtime.withFrameNanos { }
         androidx.compose.runtime.withFrameNanos { }
@@ -102,14 +99,11 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
             finish()
             return@LaunchedEffect
         }
-        // The morph starts when the system splash is really gone (it is drawn over this until then).
+        // The bar starts filling when the curtain goes up, not while it still hides the scene.
         kotlinx.coroutines.withTimeoutOrNull(1_500) {
             androidx.compose.runtime.snapshotFlow { SplashHandOff.systemSplashGone.value }.first { it }
         }
-        kotlinx.coroutines.coroutineScope {
-            launch { morph.animateTo(1f, tween(MORPH_MILLIS, easing = FastOutSlowInEasing)) }
-            progress.animateTo(1f, tween(total, easing = LinearEasing))
-        }
+        progress.animateTo(1f, tween(total, easing = LinearEasing))
         // Never lift the scene off a screen that has nothing under it yet: on a slow phone the app below can still be
         // composing when the timeline ends, and that gap used to show as a plain brown screen. The bar simply stays
         // full until the app has drawn.
@@ -121,7 +115,6 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
     // and this one runs out the rest.
     LaunchedEffect(skipped) {
         if (!skipped) return@LaunchedEffect
-        launch { morph.animateTo(1f, tween(SKIP_MILLIS, easing = LinearEasing)) }
         progress.animateTo(1f, tween(SKIP_MILLIS, easing = LinearEasing))
         androidx.compose.runtime.snapshotFlow { appReadyState.value }.first { it }
         fadeOut.animateTo(1f, tween(FADE_OUT_MILLIS.toInt(), easing = LinearEasing))
@@ -162,19 +155,8 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
         val offX = (wPx - ART_W * cover) / 2f
         val offY = (hPx - ART_H * cover) / 2f
 
-        // The scene fades in around the logo while the logo grows into the scene's own mascot (see SplashHandOff).
-        val sceneAlpha by androidx.compose.runtime.remember { androidx.compose.runtime.derivedStateOf { phase(morph.value, 0.12f, 0.7f) } }
-        // Where the logo starts: exactly where the system splash drew it — its icon view when the platform said so,
-        // else the theme's own size (185dp across, see splash_window.xml) in the middle of the screen.
-        val handOffIcon = SplashHandOff.iconBounds.value
-        val startCx = handOffIcon?.centerX() ?: (wPx / 2f)
-        val startCy = handOffIcon?.centerY() ?: (hPx / 2f)
-        val startD = handOffIcon?.let { it.width() * LOGO_SHARE } ?: with(density) { 185.dp.toPx() }
-        // Where it ends: over the painted mascot, the dog's face on the dog's face.
-        val endCx = offX + LOGO_END_X * cover
-        val endCy = offY + LOGO_END_Y * cover
-        val endD = LOGO_END_D * cover
-        val logo = androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.splash_mark)
+        // The scene is on screen from the first frame (the system splash slides up off it).
+        val sceneAlpha = 1f
 
         Image(
             painter = scene,
@@ -241,25 +223,6 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
                 drawCircle(Color(0xFFFFF3B0).copy(alpha = 0.55f), inH * 0.95f, Offset(inL + fillW - inH * 0.3f, inT + inH / 2f))
             }
         }
-
-        Canvas(Modifier.fillMaxSize()) {
-            val m = morph.value
-            val a = 1f - phase(m, 0.45f, 1f)
-            if (a <= 0f) return@Canvas
-            val k = FastOutSlowInEasing.transform(m)
-            val d = startD + (endD - startD) * k
-            val cx = startCx + (endCx - startCx) * k
-            val cy = startCy + (endCy - startCy) * k
-            drawImage(
-                logo,
-                srcOffset = androidx.compose.ui.unit.IntOffset.Zero,
-                srcSize = androidx.compose.ui.unit.IntSize(logo.width, logo.height),
-                dstOffset = androidx.compose.ui.unit.IntOffset((cx - d / 2f).toInt(), (cy - d / 2f).toInt()),
-                dstSize = androidx.compose.ui.unit.IntSize(d.toInt(), d.toInt()),
-                alpha = a,
-                filterQuality = androidx.compose.ui.graphics.FilterQuality.Medium
-            )
-        }
     }
 }
 
@@ -296,14 +259,6 @@ private const val SKIP_MILLIS = 170
 private const val BAR_FROM = 380f
 private const val FADE_OUT_MILLIS = 260f
 private const val ZOOM = 0.05f
-private const val MORPH_MILLIS = 850
-
-// The logo's share of the system splash icon canvas (splash_logo: 500 of 780 px), and where it lands on the scene:
-// centred on the painted mascot at a size that puts the logo's dog face over the painted one (art units).
-private const val LOGO_SHARE = 500f / 780f
-private const val LOGO_END_X = 420f
-private const val LOGO_END_Y = 718f
-private const val LOGO_END_D = 900f
 
 private const val PREFS_NAME = "brand_splash"
 private const val KEY_SEEN = "seen"

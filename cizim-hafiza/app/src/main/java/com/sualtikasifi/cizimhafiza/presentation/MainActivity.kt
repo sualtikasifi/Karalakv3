@@ -62,6 +62,12 @@ class MainActivity : AppCompatActivity() {
     private companion object {
         private const val TAG = "MainActivity"
 
+        /** The system splash rising off the opening scene. */
+        const val SPLASH_CURTAIN_MILLIS = 450L
+
+        /** At most this long is waited for the splash icon's own animation to finish before the curtain rises. */
+        const val SPLASH_ICON_WAIT_MAX_MILLIS = 700L
+
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,29 +78,32 @@ class MainActivity : AppCompatActivity() {
         val brandSplashComing = savedInstanceState == null
         if (brandSplashComing) com.sualtikasifi.cizimhafiza.presentation.splash.SplashHandOff.reset()
         installSplashScreen().setOnExitAnimationListener { splash ->
-            // No exit animation of its own: BrandSplash's first frame is this very picture (the round logo on the
-            // field colour, in the same place), and BrandSplash turns it into the painted scene. So the system splash
-            // simply stays up until that identical frame is drawn underneath it, then goes (SplashHandOff).
-            //
-            // Where the platform really drew the logo is read off its icon view, because skins differ in size.
-            // getIconView() is @Nullable on API 31+ and androidx's `platformView.iconView!!` can throw (a hand-over
-            // with no icon, e.g. the first launch after install), so it is only ever touched inside runCatching: a
-            // cosmetic detail must never be able to fail a launch.
+            // The system splash (colour + animated icon) is held until BrandSplash has drawn the painted scene
+            // underneath it, lets its icon animation finish, then rises off the screen like a curtain — the scene is
+            // revealed, not cut to. Everything here is inside runCatching: a cosmetic transition must never be able
+            // to fail a launch, and whatever happens the splash is removed.
             if (!brandSplashComing) {
                 runCatching { splash.remove() }
                 return@setOnExitAnimationListener
             }
-            runCatching {
-                val icon = splash.iconView
-                if (icon.width > 0) {
-                    val at = IntArray(2)
-                    icon.getLocationInWindow(at)
-                    com.sualtikasifi.cizimhafiza.presentation.splash.SplashHandOff.iconBounds.value =
-                        android.graphics.RectF(at[0].toFloat(), at[1].toFloat(), (at[0] + icon.width).toFloat(), (at[1] + icon.height).toFloat())
-                }
-            }
             com.sualtikasifi.cizimhafiza.presentation.splash.SplashHandOff.hold {
-                runCatching { splash.remove() }.onFailure { Log.w(TAG, "Splash remove failed", it) }
+                runCatching {
+                    val view = splash.view
+                    // What is left of the icon's own animation (0 on the compat splash before Android 12).
+                    val iconLeft = runCatching {
+                        splash.iconAnimationStartMillis + splash.iconAnimationDurationMillis - System.currentTimeMillis()
+                    }.getOrDefault(0L).coerceIn(0L, SPLASH_ICON_WAIT_MAX_MILLIS)
+                    view.animate()
+                        .translationY(-view.height.toFloat())
+                        .setStartDelay(iconLeft)
+                        .setDuration(SPLASH_CURTAIN_MILLIS)
+                        .setInterpolator(android.view.animation.PathInterpolator(0.3f, 0f, 0.8f, 0.15f))
+                        .withEndAction { runCatching { splash.remove() } }
+                        .start()
+                }.onFailure {
+                    Log.w(TAG, "Splash exit animation skipped", it)
+                    runCatching { splash.remove() }
+                }
             }
         }
         super.onCreate(savedInstanceState)
@@ -183,12 +192,17 @@ class MainActivity : AppCompatActivity() {
         }
         }
 
-        // The window's own background is the system splash's picture (logo on the field colour), so nothing between
-        // the system splash and BrandSplash can show anything else. The app itself (consent, nav graph, everything) is composed
+        // The opening scene is the window's own background, so whatever shows when the system splash rises is already
+        // the scene. The app itself (consent, nav graph, everything) is composed
         // right AFTER that frame is on screen, not inside it: the stretch before the first frame is then only process,
         // Application and Activity start-up, no Compose work.
         if (savedInstanceState == null) {
-            window.setBackgroundDrawableResource(R.drawable.splash_window)
+            runCatching {
+                val scene = com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(resources, R.drawable.splash_art)
+                window.setBackgroundDrawable(
+                    com.sualtikasifi.cizimhafiza.presentation.splash.SplashSceneDrawable(scene.asAndroidBitmap())
+                )
+            }
             // Never leave the system splash up for good if BrandSplash cannot draw for some reason.
             window.decorView.postDelayed({ com.sualtikasifi.cizimhafiza.presentation.splash.SplashHandOff.brandSplashDrawn() }, 4_000)
         }
