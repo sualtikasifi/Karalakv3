@@ -445,6 +445,9 @@
     <string name="settings_battery_optimization_title">Bildirimler geç mi geliyor?</string>
     <string name="settings_battery_optimization_body">Telefonunun pil yöneticisi, uygulamayı açana kadar hatırlatmaları geciktirebilir. Karalak\'ı istisna yaparak zamanında gelmesini sağla.</string>
     <string name="settings_battery_optimization_action">Bildirim sorununu düzelt</string>
+    <string name="settings_battery_ok_title">Bildirimler hazır</string>
+    <string name="settings_battery_ok_body">Karalak hatırlatmaları zamanında gösterebilir. Bildirimleri istediğin zaman yukarıdan açıp kapatabilirsin.</string>
+    <string name="settings_sound_section">Ses ve Titreşim</string>
     <string name="notification_channel_name">Oyun hatırlatmaları</string>
     <string name="notification_channel_description">Karalak\'ı unutmayasın diye günde en fazla bir kez gönderilen hatırlatmalar.</string>
     <string name="notification_channel_invite_name">Arkadaş davetleri</string>

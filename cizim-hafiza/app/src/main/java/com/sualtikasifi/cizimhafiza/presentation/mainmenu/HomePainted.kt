@@ -512,10 +512,10 @@ private fun CornerCount(modifier: Modifier, count: Int) {
 
 
 /** Press state of an area painted into the scene: [scale] dips to [depth] while a finger is down and springs back. */
-private class SinkState(val source: MutableInteractionSource, val scale: State<Float>)
+internal class SinkState(val source: MutableInteractionSource, val scale: State<Float>)
 
 @Composable
-private fun rememberSink(depth: Float = 0.9f): SinkState {
+internal fun rememberSink(depth: Float = 0.9f): SinkState {
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val scale = animateFloatAsState(
@@ -531,7 +531,7 @@ private fun rememberSink(depth: Float = 0.9f): SinkState {
  * area's own pixels are drawn again, shrunk, over a darker recess that hides the full-size original — the button
  * visibly caves in, like the room buttons do. [srcLeft]..[srcH] are the area's rectangle in the picture's own pixels.
  */
-private fun Modifier.sunkenArt(
+internal fun Modifier.sunkenArt(
     sink: SinkState,
     scene: ImageBitmap?,
     srcLeft: Float, srcTop: Float, srcW: Float, srcH: Float,
@@ -564,7 +564,7 @@ private fun Modifier.sunkenArt(
 }
 
 /** Makes a live piece laid over a painted area (its label, its pill) dip together with it, about the area's centre. */
-private fun Modifier.sinkWith(sink: SinkState, pivotX: Float, pivotY: Float): Modifier = graphicsLayer {
+internal fun Modifier.sinkWith(sink: SinkState, pivotX: Float, pivotY: Float): Modifier = graphicsLayer {
     val k = sink.scale.value
     scaleX = k
     scaleY = k
