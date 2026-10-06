@@ -59,7 +59,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -192,6 +193,13 @@ fun GuessScreen(
         }
     }
 
+    // The XP earned so far this round: each answered word's award, counted once.
+    val xpByGuess = remember { androidx.compose.runtime.mutableStateMapOf<Int, Int>() }
+    LaunchedEffect(state.guessNumber, state.feedback) {
+        state.feedback?.let { xpByGuess[state.guessNumber] = it.xpAwarded }
+    }
+    val roundXp = xpByGuess.values.sum()
+
     var spotlightHole by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     val noRipple = remember { MutableInteractionSource() }
     Box(modifier = Modifier.fillMaxSize()) {
@@ -199,19 +207,55 @@ fun GuessScreen(
         // the joker row on the bottom band, and the drawing frame in between stretches to whatever height is left. With
         // the keyboard up, the desk props under the joker row and the lamp above the header are dropped so the drawing
         // keeps as much room as possible.
-        BoxWithConstraints(modifier = Modifier.fillMaxSize().imePadding()) {
+        // The keyboard never resizes the scene. The whole layout is set out ONCE for the keyboard being up — the
+        // drawing, the answer tray and the joker row all sit above where the keyboard goes — and the keyboard simply
+        // slides in over the desk underneath. Closing or opening it moves nothing (the drawing used to stretch and
+        // shrink with every open and close). The keyboard's height is learnt from the first time it opens and kept,
+        // so from then on even the very first frame is laid out right.
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val density = LocalDensity.current
+        val prefs = remember { context.getSharedPreferences("guess_layout", android.content.Context.MODE_PRIVATE) }
+        val imeNow = WindowInsets.ime.getBottom(density)
+        val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp
+        var keyboardPx by remember {
+            mutableStateOf(prefs.getInt("ime_px", with(density) { (screenH * 0.40f).dp.roundToPx() }))
+        }
+        LaunchedEffect(imeNow) {
+            // Only a fully open keyboard counts (the inset grows through its slide-in animation); a larger one than
+            // known replaces it, and a noticeably smaller one too (another keyboard app), but not a mid-slide value.
+            kotlinx.coroutines.delay(350)
+            val settled = imeNow
+            if (settled > with(density) { 120.dp.roundToPx() } && kotlin.math.abs(settled - keyboardPx) > with(density) { 8.dp.roundToPx() }) {
+                keyboardPx = settled
+                prefs.edit().putInt("ime_px", settled).apply()
+            }
+        }
+        val keyboardDp = with(density) { keyboardPx.toDp() }
+        // Under the keyboard: the desk the scene stands on, so nothing looks missing when the keyboard is closed.
+        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(keyboardDp + 2.dp)) {
+            androidx.compose.foundation.Image(
+                painter = com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource(R.drawable.bg_result_wood),
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                alignment = Alignment.BottomCenter,
+                modifier = Modifier.fillMaxSize()
+            )
+            StretchBackground(
+                res = R.drawable.bg_guess,
+                artHeight = ArtH,
+                topFrom = 1595f,
+                topEnd = ArtH,
+                bottomStart = ArtH,
+                bottomTo = ArtH,
+                modifier = Modifier.fillMaxWidth().aspectRatio(ArtW / (ArtH - 1595f))
+            )
+        }
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(bottom = keyboardDp)) {
             val unit = maxWidth / ArtW
             fun a(v: Float): Dp = unit * v
             val boxHeight = maxHeight
-            val compact = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-            // 0 = keyboard down, 1 = keyboard up. The scene does not snap between its two layouts the moment the first
-            // pixel of keyboard appears (the drawing frame used to stretch and the header jump while the keyboard
-            // slid); it eases from one to the other in step with the keyboard instead.
-            val compactT by androidx.compose.animation.core.animateFloatAsState(
-                targetValue = if (compact) 1f else 0f,
-                animationSpec = androidx.compose.animation.core.tween(240, easing = androidx.compose.animation.core.FastOutSlowInEasing),
-                label = "guessKeyboard"
-            )
+            // The layout is always the keyboard-up one (see above).
+            val compactT = 1f
             val inset = with(LocalDensity.current) { WindowInsets.statusBars.getTop(this).toDp() }
             val f = (maxWidth.value / 411f).coerceIn(0.85f, 1.25f)
             val ink = Color(0xFF3A2A22)
@@ -268,16 +312,23 @@ fun GuessScreen(
                     modifier = Modifier.size(24.dp * f)
                 )
             }
-            // Absent only for the first-launch tutorial's practice round, which has no real ViewModel/XP behind it to
-            // show. Hidden while the keyboard is up: it is the widest thing in this row.
-            if (compactT < 0.99f) {
-                levelProgress?.let {
-                    Box(
-                        contentAlignment = Alignment.CenterStart,
-                        modifier = Modifier.offset(a(334f), yTop(150f)).size(a(190f), a(90f)).graphicsLayer { alpha = 1f - compactT }
-                    ) {
-                        LiveLevelBadge(progress = it, frame = selectedFrame ?: AvatarFrame.highestUnlockedFor(it.level))
-                    }
+            // The XP this round has earned so far, in the cream pill of the header (painted into bg_guess).
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.offset(a(334f), yTop(158f)).size(a(188f), a(72f))
+            ) {
+                val xpShown by androidx.compose.animation.core.animateIntAsState(
+                    roundXp,
+                    androidx.compose.animation.core.tween(600),
+                    label = "roundXp"
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFF2A100), modifier = Modifier.size(20.dp * f))
+                    Text(
+                        text = stringResource(R.string.xp_gained_format, xpShown),
+                        style = PaintedStyle(color = Color(0xFFE8650F), fontSize = 18.sp * f, textAlign = TextAlign.Center),
+                        maxLines = 1
+                    )
                 }
             }
             // totalSeconds == 0 means this guess turn is untimed (the first-launch tutorial) — an empty ring reading
@@ -289,13 +340,19 @@ fun GuessScreen(
                 ) {
                     LiveXpBonusBadge(secondsLeft = state.secondsLeft)
                 }
+                // White until three seconds are left, then running smoothly to red as the clock reaches zero.
+                val redness by androidx.compose.animation.core.animateFloatAsState(
+                    targetValue = if (state.secondsLeft <= 3) ((3 - state.secondsLeft + 1) / 3f).coerceIn(0f, 1f) else 0f,
+                    animationSpec = androidx.compose.animation.core.tween(1000, easing = androidx.compose.animation.core.LinearEasing),
+                    label = "timerRed"
+                )
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .offset(a(722f), yTop(150f))
                         .size(a(98f))
                         .shadow(2.dp, CircleShape)
-                        .background(Color.White, CircleShape)
+                        .background(androidx.compose.ui.graphics.lerp(Color.White, Color(0xFFE53935), redness), CircleShape)
                         .border(1.dp, Color(0x33000000), CircleShape)
                 ) {
                     CircularCountdown(
@@ -304,7 +361,7 @@ fun GuessScreen(
                         ringColor = timerColor,
                         trackColor = Color(0xFFFFE3CC),
                         strokeWidth = 5.dp,
-                        textStyle = PaintedStyle(color = timerColor, fontSize = 22.sp * f),
+                        textStyle = PaintedStyle(color = if (redness > 0.5f) Color.White else timerColor, fontSize = 22.sp * f),
                         modifier = Modifier.fillMaxSize().padding(2.dp)
                     )
                 }
