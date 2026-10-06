@@ -588,60 +588,92 @@ private fun GhostVersusCard(
         }
     )
 
-    PaperPanel(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+    // One compact row (it used to be a tall card of its own and pushed the result off the screen): you on the left,
+    // the opponent on the right, each with their picture, name and score, and the outcome between them.
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(3.dp, shape)
+            .background(Brush.verticalGradient(listOf(Color(0xFFFFFAEE), Color(0xFFFFEFCF))), shape)
+            .border(2.dp, Color(0xFFE9A23B), shape)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        CompactDuelist(
+            name = myName.ifBlank { stringResource(R.string.quick_match_you) },
+            level = myLevel,
+            frame = myFrame,
+            photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(myAvatarUrl),
+            score = playerScore,
+            highlighted = won,
+            mirrored = false,
+            modifier = Modifier.weight(1f)
+        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 4.dp)) {
             Text(
                 text = outcome,
-                style = MaterialTheme.typography.titleSmall,
-                color = Color.White,
-                fontWeight = FontWeight.ExtraBold,
+                style = PaintedStyle(color = Color.White, fontSize = 13.sp, textAlign = TextAlign.Center),
+                maxLines = 1,
                 modifier = Modifier
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
                     .background(accent)
-                    .padding(horizontal = 14.dp, vertical = 2.dp)
+                    .padding(horizontal = 10.dp, vertical = 2.dp)
             )
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Duelist(
-                    name = stringResource(R.string.quick_match_you_named, myName.ifBlank { stringResource(R.string.quick_match_you) }),
-                    level = myLevel,
-                    frame = myFrame,
-                    photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(myAvatarUrl),
-                    score = playerScore,
-                    highlighted = won,
-                    modifier = Modifier.weight(1f)
+            Text(
+                text = stringResource(R.string.quick_match_versus),
+                style = PaintedStyle(color = Color(0xFF8A6A50), fontSize = 13.sp, textAlign = TextAlign.Center),
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+        CompactDuelist(
+            name = ghost.nickname,
+            level = ghost.level,
+            frame = AvatarFrame.resolve(ghost.frameId, ghost.level),
+            photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(ghost.nickname),
+            score = ghost.opponentScore,
+            highlighted = !won && !drew,
+            mirrored = true,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+/** One side of the compact versus row: the framed picture, and beside it the name over the score. */
+@Composable
+private fun CompactDuelist(
+    name: String,
+    level: Int,
+    frame: AvatarFrame,
+    photo: com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto,
+    score: Int,
+    highlighted: Boolean,
+    mirrored: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp, if (mirrored) Alignment.End else Alignment.Start)
+    ) {
+        val text: @Composable () -> Unit = {
+            Column(horizontalAlignment = if (mirrored) Alignment.End else Alignment.Start, modifier = Modifier.weight(1f, fill = false)) {
+                Text(
+                    text = name,
+                    style = PaintedStyle(color = InkBrown, fontSize = 14.sp, textAlign = if (mirrored) TextAlign.End else TextAlign.Start),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stringResource(R.string.quick_match_versus),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Duelist(
-                    name = ghost.nickname,
-                    level = ghost.level,
-                    frame = AvatarFrame.resolve(ghost.frameId, ghost.level),
-                    photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(ghost.nickname),
-                    score = ghost.opponentScore,
-                    highlighted = !won && !drew,
-                    modifier = Modifier.weight(1f)
+                Text(
+                    text = "$score",
+                    style = PaintedStyle(color = if (highlighted) AppTheme.tokens.success else InkBrown, fontSize = 22.sp),
+                    maxLines = 1
                 )
             }
         }
+        if (mirrored) text()
+        LevelAvatar(level = level, frame = frame, size = 40.dp, photo = photo)
+        if (!mirrored) text()
     }
 }
 
