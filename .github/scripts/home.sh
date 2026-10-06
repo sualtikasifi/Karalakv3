@@ -140,6 +140,7 @@ adb shell input tap 540 842; sleep 2; shot s02_settings_switch
 (adb shell input swipe 540 2012 540 2012 4000 &) ; sleep 2; shot s03_settings_press; sleep 3
 adb shell input keyevent KEYCODE_BACK; sleep 2
 # Quick match: the "Rakip aranıyor" scene shows only while the search runs, so shoot early and often.
+adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 14; dismiss; handle_consent; sleep 3
 adb shell input tap 540 1148; sleep 0.6; shot q01_search; sleep 0.8; shot q02_search; sleep 1.5; shot q03_search; sleep 4; shot q04_after
 adb shell input keyevent KEYCODE_BACK; sleep 2; tap_text "Wait" || true
 adb shell wm size 1080x1920; sleep 4; adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 14; dismiss; handle_consent; sleep 3
