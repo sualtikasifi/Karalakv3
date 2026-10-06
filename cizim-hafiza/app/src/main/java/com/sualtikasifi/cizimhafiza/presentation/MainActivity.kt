@@ -146,8 +146,12 @@ class MainActivity : AppCompatActivity() {
                 // background doesn't reach (behind the status bar during a
                 // transition, for a frame on first draw), and white there
                 // read as a seam against every page.
+                // Hoisted so the page colour can wait: while the opening scene is up, the Surface is see-through, so the
+                // scene already painted as the window's background shows through any frame in which BrandSplash itself
+                // has not been drawn yet (it used to flash plain cream there).
+                var brandSplashVisible by rememberSaveable { mutableStateOf(true) }
                 Surface(
-                    color = MaterialTheme.colorScheme.background,
+                    color = if (brandSplashVisible) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.background,
                     modifier = Modifier.fillMaxSize()
                 ) {
                     // The whole app is composed one frame AFTER the opening scene is on screen. Composing the nav graph
@@ -182,7 +186,6 @@ class MainActivity : AppCompatActivity() {
                     // opening costs no startup time. rememberSaveable, so a
                     // rotation or a language-change recreate does not replay
                     // it — only a genuinely cold start does.
-                    var brandSplashVisible by rememberSaveable { mutableStateOf(true) }
                     if (brandSplashVisible) {
                         BrandSplash(appReady = appDrawn, onFinished = {
                             brandSplashVisible = false

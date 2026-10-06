@@ -137,3 +137,4 @@ adb shell input keyevent KEYCODE_BACK; sleep 2
 adb shell wm size 1080x1920; sleep 4; adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 14; dismiss; handle_consent; sleep 3
 shot ${P}02_home_short
 adb shell wm size reset
+adb logcat -d -s StartupTiming > "$OUT/startup_timing_full.txt"

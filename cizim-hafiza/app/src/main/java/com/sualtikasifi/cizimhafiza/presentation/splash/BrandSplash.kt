@@ -71,7 +71,9 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
         runCatching { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getBoolean(KEY_SEEN, false) }
             .getOrDefault(false)
     }
+    com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("BrandSplash composing (animationsDisabled=$animationsDisabled)")
     val finish = {
+        com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("BrandSplash finish()")
         runCatching { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putBoolean(KEY_SEEN, true).apply() }
         onFinished()
     }
