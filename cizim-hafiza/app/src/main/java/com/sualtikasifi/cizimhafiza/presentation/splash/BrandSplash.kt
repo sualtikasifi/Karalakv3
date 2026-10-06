@@ -78,6 +78,8 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
 
     val appReadyState = androidx.compose.runtime.rememberUpdatedState(appReady)
     val progress = remember { Animatable(0f) }
+    // The scene only starts to lift once the timeline is done AND the app underneath is drawn (see appReady).
+    val fadeOut = remember { Animatable(0f) }
     var skipped by remember { mutableStateOf(false) }
     val total = if (returning) FAST_TOTAL_MILLIS else TOTAL_MILLIS
 
@@ -91,6 +93,7 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
         // composing when the timeline ends, and that gap used to show as a plain brown screen. The bar simply stays
         // full until the app has drawn.
         androidx.compose.runtime.snapshotFlow { appReadyState.value }.first { it }
+        fadeOut.animateTo(1f, tween(FADE_OUT_MILLIS.toInt(), easing = LinearEasing))
         finish()
     }
     // A second animateTo on the same Animatable cancels the first, so the timeline simply stops where the tap caught it
@@ -99,6 +102,7 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
         if (!skipped) return@LaunchedEffect
         progress.animateTo(1f, tween(SKIP_MILLIS, easing = LinearEasing))
         androidx.compose.runtime.snapshotFlow { appReadyState.value }.first { it }
+        fadeOut.animateTo(1f, tween(FADE_OUT_MILLIS.toInt(), easing = LinearEasing))
         finish()
     }
 
@@ -124,7 +128,7 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
             .background(SplashColor)
             .graphicsLayer {
                 // Read inside the lambda so the fade re-runs in the draw phase only.
-                alpha = 1f - phase(progress.value * total, total - FADE_OUT_MILLIS, total.toFloat())
+                alpha = 1f - fadeOut.value
             }
             .pointerInput(Unit) { detectTapGestures { skipped = true } }
     ) {
