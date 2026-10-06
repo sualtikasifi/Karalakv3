@@ -176,7 +176,11 @@ adb shell input keyevent KEYCODE_BACK; sleep 2
 # Settings: open it from the tile, look at it, flip one switch, press-and-hold a row.
 adb shell input tap 880 1650; sleep 4; shot s01_settings
 adb shell input tap 540 842; sleep 2; shot s02_settings_switch
-(adb shell input swipe 540 2012 540 2012 4000 &) ; sleep 2; shot s03_settings_press; sleep 3
+(adb shell input swipe 540 2012 540 2012 4000 &) ; sleep 2; shot s03_settings_press; sleep 4
+shot s05_account
+adb shell input keyevent KEYCODE_BACK; sleep 2
+adb shell input tap 540 1870; sleep 3; shot s04_report
+adb shell input keyevent KEYCODE_BACK; sleep 2
 adb shell input keyevent KEYCODE_BACK; sleep 2
 # Quick match: the "Rakip aranıyor" scene shows only while the search runs, so shoot early and often.
 adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 14; dismiss; handle_consent; sleep 3

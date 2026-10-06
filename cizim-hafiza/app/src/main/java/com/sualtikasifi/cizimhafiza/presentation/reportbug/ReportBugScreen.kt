@@ -1,5 +1,8 @@
 package com.sualtikasifi.cizimhafiza.presentation.reportbug
 
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -96,22 +99,49 @@ fun ReportBugScreen(
 
     // Scrolls only when it has to: the form fits a normal phone, the history of earlier reports grows below it.
     val cream = Color(0xFFFFEBC8)
-    PaintedPage(title = stringResource(R.string.report_bug_title), onBack = onBack) {
-        // A short intro card: gives the form a proper "what is this for" framing.
+    com.sualtikasifi.cizimhafiza.presentation.common.RoomPage(
+        title = stringResource(R.string.report_bug_title),
+        onBack = onBack,
+        // The mascot leaning on the sign's right end, as in the design.
+        beside = { signBottom ->
+            Box(Modifier.fillMaxWidth().height(signBottom), contentAlignment = Alignment.BottomEnd) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(R.drawable.mascot_pencil_wink),
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 4.dp, bottom = 6.dp).size(signBottom * 0.42f)
+                )
+            }
+        }
+    ) {
+        // A short intro card: what this form is for.
         NinePatch(res = R.drawable.league_card, slicePx = 100, edge = 22.dp, modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Box(
-                    modifier = Modifier.size(42.dp).background(Color(0xFFFFE2B5), CircleShape),
+                    modifier = Modifier.size(64.dp).background(Color(0xFFFFE2B5), CircleShape),
                     contentAlignment = Alignment.Center
-                ) { Icon(Icons.Filled.Feedback, contentDescription = null, tint = Color(0xFFF26A1B), modifier = Modifier.size(24.dp)) }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.report_bug_hint),
-                    style = DescriptionStyle(14.sp, 19.sp)
-                )
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(Brush.verticalGradient(listOf(Color(0xFFFFB54A), Color(0xFFF2861B))), RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) { Text("•••", style = PaintedStyle(color = Color.White, fontSize = 18.sp)) }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.report_bug_intro_title),
+                        style = PaintedStyle(color = Color(0xFF3B2314), fontSize = 18.sp, textAlign = TextAlign.Start)
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = stringResource(R.string.report_bug_intro_body),
+                        style = DescriptionStyle(13.sp, 18.sp).copy(textAlign = TextAlign.Start)
+                    )
+                }
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
@@ -162,7 +192,7 @@ fun ReportBugScreen(
         }
         Text(
             text = stringResource(R.string.report_bug_char_count_format, uiState.description.length, MAX_DESCRIPTION_LENGTH),
-            style = PaintedStyle(color = cream, fontSize = 12.sp, textAlign = TextAlign.End),
+            style = PaintedStyle(color = Color(0xFFFFEBC8), fontSize = 12.sp, textAlign = TextAlign.End, shadow = androidx.compose.ui.graphics.Shadow(Color(0xAA2A1005), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)),
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp, end = 6.dp)
         )
         uiState.errorMessage?.let { message ->
@@ -351,15 +381,16 @@ private fun ReportHistoryCard(report: BugReport, onDelete: () -> Unit) {
     }
 }
 
-/** A section label on the wooden wall: cream lettering with a soft shadow, left aligned. */
+/** A section label on a little wooden plank, like the design's "Bildirim Türü" and "Mesajın" boards. */
 @Composable
-private fun FormLabel(text: String, color: Color) {
-    Text(
-        text = text,
-        style = PaintedStyle(
-            color = color, fontSize = 16.sp, textAlign = TextAlign.Start,
-            shadow = androidx.compose.ui.graphics.Shadow(Color(0xAA2A1005), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)
-        ),
-        modifier = Modifier.padding(start = 4.dp)
-    )
+private fun FormLabel(text: String, @Suppress("UNUSED_PARAMETER") color: Color) {
+    Box(
+        modifier = Modifier
+            .shadow(3.dp, RoundedCornerShape(10.dp))
+            .background(Brush.verticalGradient(listOf(Color(0xFFB8702F), Color(0xFF8E4F1C))), RoundedCornerShape(10.dp))
+            .border(2.dp, Color(0xFF5E3317), RoundedCornerShape(10.dp))
+            .padding(horizontal = 18.dp, vertical = 6.dp)
+    ) {
+        LetteredText(text, 17.sp, outline = Color(0xFF4A2410))
+    }
 }
