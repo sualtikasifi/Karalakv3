@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
@@ -174,118 +175,152 @@ fun ResultScreen(
         }
     }
 
-    // One screen, no scrolling: the summary on top, every drawing (yours and the opponent's)
-    // in whatever room is left, the two claim buttons pinned underneath.
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        // The painted pieces shrink a little on a short phone so the drawings keep their room.
-        val k = ((maxHeight - 24.dp) / 891.dp).coerceIn(0.68f, 1f)
-        val showDesk = maxHeight >= 700.dp
+    val explanation = when {
+        xpDoubled -> stringResource(R.string.result_xp_doubled_note)
+        state.daily != null -> stringResource(R.string.result_xp_daily)
+        state.xpMultiplier > 1 && state.xpEarned == state.totalScore * state.xpMultiplier ->
+            stringResource(R.string.result_xp_formula_mult, state.totalScore, state.xpMultiplier)
+        state.xpEarned == state.totalScore -> stringResource(R.string.result_xp_formula_plain, state.totalScore)
+        else -> stringResource(R.string.result_xp_formula_extra, state.totalScore)
+    }
+    // Counts up to the earned XP when the screen opens (and again when it doubles after the ad).
+    val xpCount by androidx.compose.animation.core.animateIntAsState(
+        shownXp,
+        androidx.compose.animation.core.tween(1100, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+        label = "xpCount"
+    )
+    val stats = resultStats(state)
+
+    // The design top to bottom: the painted head (title, XP), the stat cards, the level, the daily challenge, every
+    // drawing of the round on its board — scrolling when a short phone cannot hold it all — and the two claim buttons
+    // pinned underneath.
+    Box(modifier = Modifier.fillMaxSize()) {
         Image(
-            painter = cachedPainterResource(R.drawable.bg_result_wood),
+            painter = cachedPainterResource(R.drawable.bg_break),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
-        if (showDesk) {
-            Image(
-                painter = cachedPainterResource(R.drawable.res_desk),
-                contentDescription = null,
-                contentScale = ContentScale.FillWidth,
-                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-            )
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(bottom = if (showDesk) 52.dp * k else 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // The three blocks drop in one after another: the card from above, the rest rising into place.
-            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().springIn(index = 0, fromY = -40)) {
-                ResultSummaryCard(state = state, shownXp = shownXp, xpDoubled = xpDoubled, k = k)
-            }
-
-            if (levelProgress != null) {
-                androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().springIn(index = 2, stepMs = 90)) {
-                    ResultLevelCard(progress = levelProgress, gainedXp = shownXp, k = k)
-                }
-            }
-
+        Box(Modifier.fillMaxSize().background(Color(0x33180A02)))
+        Column(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
             Column(
-                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 14.dp).springIn(index = 4, stepMs = 90),
+                modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                state.duelOpponentName?.let { opponentName ->
-                    Spacer(modifier = Modifier.height(6.dp))
-                    PaperPanel(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = stringResource(R.string.duel_challenge_sent, opponentName),
-                            style = PaintedStyle(color = InkBrown, fontSize = 15.sp, textAlign = TextAlign.Center),
-                            modifier = Modifier.fillMaxWidth().padding(6.dp)
-                        )
-                    }
-                }
-
-                state.ghost?.let { ghost ->
-                    Spacer(modifier = Modifier.height(6.dp))
-                    GhostVersusCard(
-                        ghost = ghost,
-                        playerScore = state.totalScore,
-                        myName = myName,
-                        myLevel = levelProgress?.level ?: 1,
-                        myFrame = myFrame,
-                        myAvatarUrl = myAvatarUrl
+                Box(Modifier.fillMaxWidth().statusBarsPadding().springIn(index = 0, fromY = -40)) {
+                    ResultHeader(
+                        title = stringResource(R.string.game_over),
+                        xp = xpCount,
+                        explanation = explanation,
+                        onBack = { if (!(xpDoubled && !startedDoubled)) onMainMenu() }
                     )
                 }
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    ResultStatGrid(stats, Modifier.fillMaxWidth().springIn(index = 1, stepMs = 90))
 
-                state.duelChallenger?.let { duel ->
-                    Spacer(modifier = Modifier.height(6.dp))
-                    DuelChallengerVersusCard(
-                        duel = duel,
-                        playerScore = state.totalScore,
-                        onRematch = onRematchDuel?.let { rematch ->
-                            { rematch(duel.challengerUid, duel.challengerName) }
+                    if (levelProgress != null) {
+                        Box(Modifier.fillMaxWidth().springIn(index = 2, stepMs = 90), contentAlignment = Alignment.Center) {
+                            ResultLevelCard(progress = levelProgress, gainedXp = shownXp, k = 1f)
                         }
-                    )
-                }
+                    }
 
-                state.daily?.let { daily ->
-                    Spacer(modifier = Modifier.height(6.dp))
-                    DailyChallengeResultCard(
-                        daily = daily,
-                        correctFlags = state.items.map { it.isCorrect },
-                        onShare = {
-                            DailyChallengeShareUtil.shareResult(
-                                context = context,
-                                correctFlags = state.items.map { it.isCorrect },
-                                streak = daily.streak
+                    state.duelOpponentName?.let { opponentName ->
+                        PaperPanel(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = stringResource(R.string.duel_challenge_sent, opponentName),
+                                style = PaintedStyle(color = InkBrown, fontSize = 15.sp, textAlign = TextAlign.Center),
+                                modifier = Modifier.fillMaxWidth().padding(6.dp)
                             )
                         }
+                    }
+
+                    state.ghost?.let { ghost ->
+                        GhostVersusCard(
+                            ghost = ghost,
+                            playerScore = state.totalScore,
+                            myName = myName,
+                            myLevel = levelProgress?.level ?: 1,
+                            myFrame = myFrame,
+                            myAvatarUrl = myAvatarUrl
+                        )
+                    }
+
+                    state.duelChallenger?.let { duel ->
+                        DuelChallengerVersusCard(
+                            duel = duel,
+                            playerScore = state.totalScore,
+                            onRematch = onRematchDuel?.let { rematch ->
+                                { rematch(duel.challengerUid, duel.challengerName) }
+                            }
+                        )
+                    }
+
+                    state.daily?.let { daily ->
+                        ResultDailyCard(
+                            daily = daily,
+                            correctFlags = state.items.map { it.isCorrect },
+                            onShare = {
+                                DailyChallengeShareUtil.shareResult(
+                                    context = context,
+                                    correctFlags = state.items.map { it.isCorrect },
+                                    streak = daily.streak
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth().springIn(index = 3, stepMs = 90)
+                        )
+                    }
+
+                    val ghost = state.ghost
+                    val boardItems = if (showingOpponentGallery && ghost != null) ghostItems else state.items
+                    ResultWordsBoard(
+                        title = if (showingOpponentGallery && ghost != null) ghost.nickname
+                        else stringResource(R.string.result_words_title, state.items.size),
+                        items = boardItems,
+                        placeholders = state.items.size,
+                        wordLanguage = wordLanguage,
+                        onPreview = { previewItem = it },
+                        // The daily challenge has its own share button on its card, and the opponent's drawings are
+                        // not the player's to pass on.
+                        onShareAll = if (ghost == null && state.daily == null) {
+                            {
+                                DrawingShareUtil.shareAllResults(
+                                    context = context,
+                                    totalScore = state.totalScore,
+                                    correctCount = state.correctCount,
+                                    wrongCount = state.wrongCount,
+                                    fastestCorrectSeconds = state.fastestCorrectSeconds,
+                                    items = state.items
+                                )
+                            }
+                        } else null,
+                        header = if (ghost != null) {
+                            {
+                                GalleryToggle(
+                                    opponentName = ghost.nickname,
+                                    opponentReady = ghostItems.isNotEmpty(),
+                                    showingOpponent = showingOpponentGallery,
+                                    onSelect = { showingOpponentGallery = it }
+                                )
+                            }
+                        } else null,
+                        modifier = Modifier.fillMaxWidth().springIn(index = 4, stepMs = 90)
                     )
+                    Spacer(Modifier.height(2.dp))
                 }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                ResultDrawings(
-                    state = state,
-                    ghostItems = ghostItems,
-                    onPreview = { previewItem = it },
-                    wordLanguage = wordLanguage,
-                    myName = myName,
-                    modifier = Modifier.weight(1f).fillMaxWidth()
-                )
             }
 
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 if (onLevelNextAction != null && nextActionLabel != null) {
                     PaintedPill(
                         res = R.drawable.res_btn_next,
-                        height = 50.dp * k,
+                        height = 50.dp,
                         onClick = onLevelNextAction,
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -302,15 +337,15 @@ fun ResultScreen(
                 // Always ends on the home screen. The XP is already banked: "Ödülü Al" just leaves
                 // (and says how much it is), "x2" watches an ad, pays the round a second time, then leaves.
                 val canDouble = onDoubleXp != null && state.xpEarned > 0 && GameConstants.ADMOB_ENABLED && !xpDoubled
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                     if (canDouble) {
                         PaintedPill(
                             res = R.drawable.res_btn_claim,
-                            height = 54.dp * k,
+                            height = 58.dp,
                             onClick = onDoubleXp!!,
                             modifier = Modifier.weight(1f)
                         ) {
-                            LetteredText(stringResource(R.string.result_x2_button_amount, state.xpEarned * 2), 17.sp, outline = Color(0xFF8A3A00), modifier = Modifier.weight(1f, fill = false))
+                            ClaimContent(Icons.Filled.Movie, stringResource(R.string.result_x2_amount, state.xpEarned * 2), stringResource(R.string.result_watch_ad))
                         }
                     }
                     // Where the player's thumb lands, so the XP can fly from exactly there to the home bar.
@@ -319,7 +354,7 @@ fun ResultScreen(
                     var claimCenter by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
                     PaintedPill(
                         res = R.drawable.res_btn_claim,
-                        height = 54.dp * k,
+                        height = 58.dp,
                         enabled = !(xpDoubled && !startedDoubled),
                         onClick = {
                             if (shownXp > 0 && levelProgress != null) {
@@ -346,17 +381,12 @@ fun ResultScreen(
                                 }
                             }
                     ) {
+                        // Nothing to collect: the button simply moves on instead of offering "0 XP".
                         if (shownXp > 0) {
-                            Icon(Icons.Filled.CardGiftcard, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
-                            Spacer(Modifier.width(10.dp))
+                            ClaimContent(Icons.Filled.CardGiftcard, stringResource(R.string.result_claim_amount, shownXp))
+                        } else {
+                            LetteredText(stringResource(R.string.result_continue), 19.sp, outline = Color(0xFF8A3A00))
                         }
-                        LetteredText(
-                    // Nothing to collect: the button simply moves on instead of offering "0 XP".
-                    if (shownXp > 0) stringResource(R.string.result_claim_amount, shownXp) else stringResource(R.string.result_continue),
-                    19.sp,
-                    outline = Color(0xFF8A3A00),
-                    modifier = Modifier.weight(1f, fill = false)
-                )
                     }
                 }
             }
@@ -810,69 +840,6 @@ private fun GalleryChip(label: String, selected: Boolean, enabled: Boolean, onCl
     }
 }
 
-/**
- * The daily-challenge half of the result screen: the streak that was just
- * extended, the XP it paid, and the one action that turns a private result
- * into something a friend sees.
- *
- * The ✅/❌ row is shown here as well as on the share card so what gets
- * posted is exactly what the player is looking at — no surprises about what
- * they're about to reveal.
- */
-@Composable
-private fun DailyChallengeResultCard(
-    daily: DailyResultSummary,
-    correctFlags: List<Boolean>,
-    onShare: () -> Unit
-) {
-    PaperPanel(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.daily_challenge_result_title),
-                style = PaintedStyle(color = InkBrown, fontSize = 17.sp, textAlign = TextAlign.Center)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            com.sualtikasifi.cizimhafiza.presentation.common.DailyPips(
-                flags = correctFlags,
-                count = correctFlags.size.coerceAtLeast(com.sualtikasifi.cizimhafiza.domain.model.DailyChallenge.WORD_COUNT),
-                size = 30.dp,
-                emptyColor = Color(0x33795548),
-                rimColor = Color(0xFFFFF6E6)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                StatPill(text = "🔥 ${daily.streak}", icon = null, contentColor = MaterialTheme.colorScheme.primary)
-                StatPill(
-                    text = stringResource(R.string.daily_challenge_xp_earned, daily.xpEarned),
-                    icon = null,
-                    contentColor = AppTheme.tokens.gold
-                )
-            }
-            if (daily.streakMultiplierIncreased) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = stringResource(R.string.daily_challenge_streak_multiplier_increased, daily.streakMultiplier),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            SecondaryButton(
-                text = stringResource(R.string.daily_challenge_share),
-                onClick = onShare,
-                icon = Icons.Filled.Share,
-                modifier = Modifier.fillMaxWidth(),
-                height = 44.dp
-            )
-        }
-    }
-}
-
 /** Where the round left the player on the level ladder, with the bar animating from where it started. */
 @Composable
 private fun ResultLevelCard(progress: com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState, gainedXp: Int, k: Float) {
@@ -886,11 +853,17 @@ private fun ResultLevelCard(progress: com.sualtikasifi.cizimhafiza.domain.model.
         val u = maxWidth / 940f
         fun fs(art: Float) = (u.value * art).sp
         Image(painterResource(R.drawable.res_level), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+        Image(
+            painterResource(R.drawable.lobby_crown),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.offset(u * 108f, u * 30f).size(u * 76f, u * 66f)
+        )
         com.sualtikasifi.cizimhafiza.presentation.common.FitText(
             text = stringResource(R.string.result_level_label, progress.level),
             style = PaintedStyle(color = InkBrown, fontSize = fs(54f), textAlign = TextAlign.Start),
             contentAlignment = Alignment.CenterStart,
-            modifier = Modifier.offset(u * 120f, u * 34f).size(u * 360f, u * 64f)
+            modifier = Modifier.offset(u * 196f, u * 34f).size(u * 290f, u * 64f)
         )
         Box(modifier = Modifier.offset(u * 480f, u * 38f).size(u * 352f, u * 56f), contentAlignment = Alignment.CenterEnd) {
             if (leveledUp) {
@@ -936,148 +909,6 @@ private fun ResultLevelCard(progress: com.sualtikasifi.cizimhafiza.domain.model.
                 maxLines = 1
             )
         }
-    }
-}
-
-/** A cream pill carrying a number, the hits / misses counters of the summary card. */
-@Composable
-private fun CountPill(icon: androidx.compose.ui.graphics.vector.ImageVector, tint: Color, value: Int, size: androidx.compose.ui.unit.TextUnit) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(size.value.dp * 0.95f))
-        Text(value.toString(), style = PaintedStyle(color = tint, fontSize = size, textAlign = TextAlign.Center), maxLines = 1)
-    }
-}
-
-/** A star of the level rating: gold with a darker edge when earned, a faint brown one when not. */
-@Composable
-private fun RatingStar(filled: Boolean, size: androidx.compose.ui.unit.Dp, description: String) {
-    Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
-        Icon(
-            Icons.Filled.Star,
-            contentDescription = description,
-            tint = if (filled) Color(0xFFB86A00) else Color(0x66795548),
-            modifier = Modifier.fillMaxSize()
-        )
-        Icon(
-            Icons.Filled.Star,
-            contentDescription = null,
-            tint = if (filled) Color(0xFFFFC21A) else Color(0x44C9A98A),
-            modifier = Modifier.fillMaxSize(0.8f)
-        )
-    }
-}
-
-/**
- * The round's summary on the painted "game over" card: the XP earned (big), the one-line sum that explains it, the stars
- * (or the fastest answer), hits / misses, and a chip for every bonus or gold source — each saying what it is.
- */
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-@Composable
-private fun ResultSummaryCard(state: GamePhase.Result, shownXp: Int, xpDoubled: Boolean, k: Float) {
-    val base = state.totalScore
-    val mult = state.xpMultiplier
-    val explanation = when {
-        xpDoubled -> stringResource(R.string.result_xp_doubled_note)
-        state.daily != null -> stringResource(R.string.result_xp_daily)
-        mult > 1 && state.xpEarned == base * mult -> stringResource(R.string.result_xp_formula_mult, base, mult)
-        state.xpEarned == base -> stringResource(R.string.result_xp_formula_plain, base)
-        else -> stringResource(R.string.result_xp_formula_extra, base)
-    }
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth(k).aspectRatio(940f / 505f)) {
-            val u = maxWidth / 940f
-            fun fs(art: Float) = (u.value * art).sp
-            @Composable
-            fun Slot(x0: Float, y0: Float, x1: Float, y1: Float, content: @Composable () -> Unit) {
-                Box(
-                    modifier = Modifier.offset(u * x0, u * y0).size(u * (x1 - x0), u * (y1 - y0)),
-                    contentAlignment = Alignment.Center
-                ) { content() }
-            }
-            Image(painterResource(R.drawable.res_header), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-            Slot(350f, 88f, 690f, 160f) {
-                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                    text = stringResource(R.string.game_over),
-                    style = PaintedStyle(color = Color(0xFF2B1A10), fontSize = fs(56f), textAlign = TextAlign.Center),
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-            Slot(400f, 176f, 650f, 262f) {
-                // Counts up to the earned XP when the screen opens (and again when it doubles after the ad).
-                val xpCount by androidx.compose.animation.core.animateIntAsState(shownXp, androidx.compose.animation.core.tween(1100, easing = androidx.compose.animation.core.FastOutSlowInEasing), label = "xpCount")
-                LetteredText(
-                    text = stringResource(R.string.xp_gained_format, xpCount),
-                    size = fs(80f),
-                    fill = Color(0xFFF26A1B),
-                    outline = null,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-            Slot(370f, 260f, 680f, 306f) {
-                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                    text = explanation,
-                    style = DescriptionStyle(fs(29f), fs(31f)),
-                    maxLines = 2,
-                    minScale = 0.62f,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-            Slot(380f, 304f, 660f, 378f) {
-                val stars = state.levelStars
-                if (stars != null) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(u * 14f), verticalAlignment = Alignment.CenterVertically) {
-                        repeat(3) { index ->
-                            RatingStar(index < stars, u * 66f, stringResource(R.string.stars_content_description, stars))
-                        }
-                    }
-                } else {
-                    state.fastestCorrectSeconds?.let {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Icon(Icons.Filled.Bolt, contentDescription = null, tint = Color(0xFFE08A00), modifier = Modifier.size(fs(40f).value.dp))
-                            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                                stringResource(R.string.fastest_correct, it),
-                                style = PaintedStyle(color = InkBrown, fontSize = fs(34f), textAlign = TextAlign.Center),
-                                modifier = Modifier.weight(1f, fill = false)
-                            )
-                        }
-                    }
-                }
-            }
-            Slot(352f, 388f, 510f, 462f) { CountPill(Icons.Filled.Check, Color(0xFF2EA043), state.correctCount, fs(46f)) }
-            Slot(534f, 388f, 692f, 462f) { CountPill(Icons.Filled.Close, Color(0xFFE23B32), state.wrongCount, fs(46f)) }
-        }
-        val quick = state.quickMatchDailyBonusApplied
-        val eventMult = if (state.xpEventMultiplierApplied) (mult / if (quick) 2 else 1).coerceAtLeast(2) else 0
-        val hasChips = quick || eventMult > 0 || state.goldFromAchievements > 0 || state.goldFromLevel > 0 || state.goldFromDaily > 0
-        if (hasChips) {
-            androidx.compose.foundation.layout.FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp)
-            ) {
-                if (quick) ChipPill(text = stringResource(R.string.result_bonus_quick), color = Color(0xFFB5441A))
-                if (eventMult > 0) ChipPill(text = stringResource(R.string.result_bonus_event, eventMult), color = Color(0xFFB5441A))
-                val gold = Color(0xFF9A6200)
-                if (state.goldFromAchievements > 0) ChipPill(text = stringResource(R.string.result_gold_achievement, state.goldFromAchievements), color = gold)
-                if (state.goldFromLevel > 0) ChipPill(text = stringResource(R.string.result_gold_level, state.goldFromLevel), color = gold)
-                if (state.goldFromDaily > 0) ChipPill(text = stringResource(R.string.result_gold_daily, state.goldFromDaily), color = gold)
-            }
-        }
-    }
-}
-
-/** A small cream pill naming a bonus or a gold source. */
-@Composable
-private fun ChipPill(text: String, color: Color) {
-    Box(
-        modifier = Modifier
-            .shadow(2.dp, RoundedCornerShape(50))
-            .background(Color(0xFFFFF3DA), RoundedCornerShape(50))
-            .border(1.2.dp, Color(0xFFE0B878), RoundedCornerShape(50))
-            .padding(horizontal = 10.dp, vertical = 3.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text, style = PaintedStyle(color = color, fontSize = 12.sp, textAlign = TextAlign.Center), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -1127,162 +958,9 @@ private fun PaintedPill(
     }
 }
 
-/**
- * Every drawing of the round, on the result screen itself: yours, and (Hızlı Eşleş) the opponent's beside them.
- *
- * One drawing is shown BIG — as large as the space allows, with its word under it and its tick or cross on it — and a
- * strip of small sheets underneath picks which one. Ten tiny thumbnails side by side made every drawing too small to
- * read; this keeps the whole round one tap away without scrolling. Tapping the big sheet opens the stroke-by-stroke
- * replay.
- */
-@Composable
-private fun ResultDrawings(
-    state: GamePhase.Result,
-    ghostItems: List<ResultItem>,
-    onPreview: (ResultItem) -> Unit,
-    wordLanguage: String,
-    myName: String,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val ghost = state.ghost
-    var showGhost by remember { mutableStateOf(false) }
-    val items = if (showGhost && ghost != null) ghostItems else state.items
-    var picked by remember(showGhost) { mutableStateOf(0) }
-    val index = picked.coerceIn(0, (items.size - 1).coerceAtLeast(0))
-    val item = items.getOrNull(index)
-    val placeholders = state.items.size
-
-    androidx.compose.foundation.layout.BoxWithConstraints(modifier = modifier) {
-        val gap = 6.dp
-        val headerH = 32.dp
-        val captionH = 28.dp
-        val stripH = 46.dp
-        val availableWidth = maxWidth
-        val bigSize = minOf(maxWidth, maxHeight - headerH - captionH - stripH - gap * 3).coerceAtLeast(110.dp)
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(gap)
-        ) {
-            Box(modifier = Modifier.fillMaxWidth().height(headerH), contentAlignment = Alignment.Center) {
-                if (ghost != null) {
-                    GalleryToggle(
-                        opponentName = ghost.nickname,
-                        opponentReady = ghostItems.isNotEmpty(),
-                        showingOpponent = showGhost,
-                        onSelect = { showGhost = it }
-                    )
-                } else {
-                    LetteredText(
-                        text = myName.ifBlank { stringResource(R.string.result_your_drawings) },
-                        size = 16.sp,
-                        maxLines = 1,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp)
-                    )
-                }
-                // The daily challenge has its own share button on its card; a second one here only doubled it.
-                if (ghost == null && state.daily == null) {
-                    Icon(
-                        imageVector = Icons.Filled.Share,
-                        contentDescription = stringResource(R.string.share_all_drawings),
-                        tint = Color.White,
-                        modifier = Modifier.align(Alignment.CenterEnd).size(24.dp).clickable {
-                            DrawingShareUtil.shareAllResults(
-                                context = context,
-                                totalScore = state.totalScore,
-                                correctCount = state.correctCount,
-                                wrongCount = state.wrongCount,
-                                fastestCorrectSeconds = state.fastestCorrectSeconds,
-                                items = state.items
-                            )
-                        }
-                    )
-                }
-            }
-
-            val sheet = RoundedCornerShape(10.dp)
-            Box(modifier = Modifier.size(bigSize)) {
-                if (item == null) {
-                    Box(Modifier.fillMaxSize().clip(sheet).background(Color(0x66FFF3DA)))
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .shadow(6.dp, sheet)
-                            .clip(sheet)
-                            .background(Brush.verticalGradient(listOf(Color(0xFFFFF9EA), Color(0xFFF6E6C6))))
-                            .border(1.5.dp, Color(0xFFD9BC8C), sheet)
-                            .clickable { onPreview(item) }
-                    ) {
-                        StrokeCanvas(
-                            strokes = item.strokes,
-                            modifier = Modifier.fillMaxSize().padding(start = 16.dp, top = 6.dp, end = 6.dp, bottom = 6.dp)
-                        )
-                        Column(
-                            modifier = Modifier.align(Alignment.CenterStart).padding(start = 5.dp),
-                            verticalArrangement = Arrangement.spacedBy(bigSize * 0.07f)
-                        ) {
-                            repeat(7) { Box(Modifier.size(5.dp).background(Color(0xFFB59A7A), CircleShape)) }
-                        }
-                    }
-                    ResultMark(
-                        correct = item.isCorrect,
-                        size = 34.dp,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(6.dp)
-                    )
-                }
-            }
-
-            Box(modifier = Modifier.fillMaxWidth().height(captionH), contentAlignment = Alignment.Center) {
-                if (item != null) {
-                    LetteredText(
-                        text = item.word.capitalizeForWordLanguage(wordLanguage),
-                        size = 20.sp,
-                        outline = if (item.isCorrect) Color(0xFF14602A) else Color(0xFF8A1C1C),
-                        maxLines = 1,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth().height(stripH).horizontalScroll(androidx.compose.foundation.rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)
-            ) {
-                val total = if (items.isEmpty()) placeholders else items.size
-                // As big as 46dp, smaller when that many sheets would not fit the width side by side.
-                val cell = ((availableWidth - 28.dp - 6.dp * (total - 1).coerceAtLeast(0)) / total.coerceAtLeast(1)).coerceIn(30.dp, 46.dp)
-                repeat(total) { n ->
-                    val thumb = items.getOrNull(n)
-                    val note = RoundedCornerShape(6.dp)
-                    val isPicked = n == index
-                    Box(
-                        modifier = Modifier
-                            .size(cell)
-                            .clip(note)
-                            .background(if (thumb == null) Color(0x66FFF3DA) else Color(0xFFFFF3DA))
-                            .border(if (isPicked) 3.dp else 1.dp, if (isPicked) Color(0xFFF47721) else Color(0xFFD9BC8C), note)
-                            .clickable(enabled = thumb != null) { picked = n }
-                    ) {
-                        if (thumb != null) {
-                            StrokeCanvas(strokes = thumb.strokes, modifier = Modifier.fillMaxSize().padding(3.dp))
-                            ResultMark(
-                                correct = thumb.isCorrect,
-                                size = 16.dp,
-                                modifier = Modifier.align(Alignment.TopEnd).padding(1.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 /** The green disc with a tick (right answer) or red disc with a cross (wrong one), white-ringed so it reads on any paper. */
 @Composable
-private fun ResultMark(correct: Boolean, size: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
+internal fun ResultMark(correct: Boolean, size: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(size)

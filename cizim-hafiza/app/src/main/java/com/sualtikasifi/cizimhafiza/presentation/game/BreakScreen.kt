@@ -112,13 +112,13 @@ fun BreakScreen(state: GamePhase.Break) {
         // ---- The sign: two lines, white then yellow, inside the plank between its paint splashes -----------------
         LetteredText(
             text = stringResource(R.string.get_ready_line1),
-            size = fs(56f),
+            size = fs(62f),
             modifier = box(186f, 262f, 660f, 330f),
             minScale = 0.5f
         )
         LetteredText(
             text = stringResource(R.string.get_ready_line2),
-            size = fs(74f),
+            size = fs(80f),
             fill = Color(0xFFFFD43B),
             modifier = box(232f, 326f, 612f, 406f),
             minScale = 0.5f

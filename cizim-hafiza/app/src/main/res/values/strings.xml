@@ -962,6 +962,23 @@
     <string name="result_gold_level">⭐ Level stars +%1$d gold</string>
     <string name="result_gold_daily">📅 Daily reward +%1$d gold</string>
     <string name="result_your_drawings">Your drawings</string>
+    <string name="result_stat_correct">Correct guesses</string>
+    <string name="result_stat_wrong">Wrong guesses</string>
+    <string name="result_stat_achievement">Achievement reward</string>
+    <string name="result_stat_level_gold">Level stars</string>
+    <string name="result_stat_daily_gold">Daily reward</string>
+    <string name="result_stat_stars">Your stars</string>
+    <string name="result_stat_fastest">Fastest answer</string>
+    <string name="result_stat_fastest_value">%1$.1f s</string>
+    <string name="result_stat_quick">First Quick Match today</string>
+    <string name="result_stat_event">XP event</string>
+    <string name="result_stat_multiplier">XP ×%1$d</string>
+    <string name="result_gold_amount">+%1$d gold</string>
+    <string name="result_words_title">Your %1$d words</string>
+    <string name="result_x2_amount">x2 · %1$d XP</string>
+    <string name="result_watch_ad">Watch an ad</string>
+    <string name="daily_streak_label">Daily streak</string>
+    <string name="daily_reward_won">Reward earned!</string>
     <!-- Home level card: level progress and rank progress read separately -->
     <string name="level_xp_to_next_level">%1$d XP to the next level</string>
     <string name="level_max_reached">You\'re at the top level!</string>
