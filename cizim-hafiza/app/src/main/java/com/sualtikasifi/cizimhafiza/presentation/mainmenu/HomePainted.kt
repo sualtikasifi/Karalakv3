@@ -184,26 +184,6 @@ internal fun PaintedHome(
 
         // ── Top chips ──
         Box(box(40f, 258f, 256f, 326f).clickable(interactionSource = noRipple, indication = null, onClick = onGoldClick)) {}
-        // There is no way to buy gold, so the "+" button painted at the chip's right end has no business there. It was
-        // also the pill's end cap, so a new cap is drawn in its place: the same orange frame closing round the same
-        // dark well, and the number takes the freed middle.
-        Box(
-            box(194f, 261f, 252f, 325f)
-                .clip(RoundedCornerShape(topEnd = (34f * us).dp, bottomEnd = (34f * us).dp))
-                .background(
-                    Brush.verticalGradient(
-                        0f to Color(0xFFFFD170), 0.05f to Color(0xFFF9B437), 0.78f to Color(0xFFFB9A29), 1f to Color(0xFFDC7017)
-                    )
-                )
-        ) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(top = (12f * us).dp, bottom = (12f * us).dp, end = (12f * us).dp)
-                    .clip(RoundedCornerShape(topEnd = (14f * us).dp, bottomEnd = (14f * us).dp))
-                    .background(Brush.verticalGradient(listOf(Color(0xFF4D240B), Color(0xFF6A3414))))
-            )
-        }
         Box(box(112f, 270f, 238f, 314f), contentAlignment = Alignment.Center) {
             // Counts to the new total whenever gold changes (a reward, a purchase) instead of jumping.
             val goldShown by animateIntAsState(gold, tween(800, easing = FastOutSlowInEasing), label = "gold")

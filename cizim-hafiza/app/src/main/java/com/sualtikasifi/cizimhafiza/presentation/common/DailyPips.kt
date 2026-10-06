@@ -31,31 +31,33 @@ fun DailyPips(
     size: Dp,
     modifier: Modifier = Modifier,
     gap: Dp = size * 0.25f,
-    emptyColor: Color = Color.White.copy(alpha = 0.2f),
+    emptyColor: Color = Color.White.copy(alpha = 0.22f),
     rimColor: Color = Color.White
 ) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.CenterVertically) {
         repeat(count) { index ->
             val flag = flags.getOrNull(index)
+            // The empty disc is always there (a word not played yet must read as an empty circle waiting to be filled);
+            // only its coloured fill and mark pop in once there is an answer.
             Box(
                 modifier = Modifier
-                    .popIn(trigger = flag != null, delayMs = index * 110)
                     .size(size)
-                    .background(
-                        when (flag) {
-                            true -> Color(0xFF2EA043)
-                            false -> Color(0xFFE53935)
-                            null -> emptyColor
-                        },
-                        CircleShape
-                    )
+                    .background(emptyColor, CircleShape)
                     .border((size.value * 0.06f).coerceIn(1f, 2.5f).dp, rimColor, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                when (flag) {
-                    true -> Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.fillMaxSize(0.68f))
-                    false -> Icon(Icons.Filled.Close, null, tint = Color.White, modifier = Modifier.fillMaxSize(0.68f))
-                    null -> Unit
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .popIn(trigger = flag != null, delayMs = index * 110)
+                        .background(if (flag == false) Color(0xFFE53935) else Color(0xFF2EA043), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    when (flag) {
+                        true -> Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.fillMaxSize(0.68f))
+                        false -> Icon(Icons.Filled.Close, null, tint = Color.White, modifier = Modifier.fillMaxSize(0.68f))
+                        null -> Unit
+                    }
                 }
             }
         }

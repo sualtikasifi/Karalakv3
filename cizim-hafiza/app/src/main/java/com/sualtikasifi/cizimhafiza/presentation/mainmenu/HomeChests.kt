@@ -416,22 +416,29 @@ internal fun HomeChestsPainted(
     val now by viewModel.nowMillis.collectAsState()
     var infoOpen by remember { mutableStateOf(false) }
 
-    com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-        text = stringResource(R.string.menu_chests),
-        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
-            color = Color(0xFF2B1A10), fontSize = fs(46f), textAlign = TextAlign.Start
-        ),
-        contentAlignment = Alignment.CenterStart,
-        modifier = box(166f, 1428f, 440f, 1498f)
-    )
-    Box(box(480f, 1440f, 728f, 1504f), contentAlignment = Alignment.CenterEnd) {
-        Text(
-            text = stringResource(if ((0 until ChestSlots.SLOT_COUNT).all { slots.getOrNull(it) != null }) R.string.home_chests_full else R.string.home_chests_tagline),
-            style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
-                color = Color(0xFF4A3426), fontSize = fs(23f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End, lineHeight = fs(27f)
-            ),
-            maxLines = 2
-        )
+    // Title and tagline share one baseline (the tagline is the small line that closes the same row), centred in the
+    // panel's header band.
+    val tagline = stringResource(if ((0 until ChestSlots.SLOT_COUNT).all { slots.getOrNull(it) != null }) R.string.home_chests_full else R.string.home_chests_tagline)
+    Box(box(166f, 1428f, 728f, 1498f), contentAlignment = Alignment.Center) {
+        androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = stringResource(R.string.menu_chests),
+                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
+                    color = Color(0xFF2B1A10), fontSize = fs(42f), textAlign = TextAlign.Start
+                ),
+                maxLines = 1,
+                modifier = Modifier.alignByBaseline()
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                text = tagline,
+                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
+                    color = Color(0xFF4A3426), fontSize = fs(if (tagline.length > 26) 20f else 23f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End
+                ),
+                maxLines = 1,
+                modifier = Modifier.alignByBaseline()
+            )
+        }
     }
     Box(
         box(731f, 1426f, 794f, 1490f)
@@ -453,15 +460,18 @@ internal fun HomeChestsPainted(
                 )
             }
         } else {
-            Box(box(x0 + 14f, 1594f, x1 - 14f, 1652f), contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(R.string.chest_slot_empty_title),
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
-                        color = Color(0xFF4A3426), fontSize = fs(27f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, lineHeight = fs(31f)
-                    ),
-                    maxLines = 2
-                )
-            }
+            // One line, the same size in all four slots: a fixed-width box centred on each slot (the painted slots differ
+            // by a few units, which used to make the label wrap in some and not in others).
+            val cx = (x0 + x1) / 2f
+            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                text = stringResource(R.string.chest_slot_empty_title),
+                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
+                    color = Color(0xFF4A3426), fontSize = fs(25f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center
+                ),
+                maxLines = 1,
+                minScale = 0.5f,
+                modifier = box(cx - 70f, 1596f, cx + 70f, 1650f)
+            )
         }
     }
 

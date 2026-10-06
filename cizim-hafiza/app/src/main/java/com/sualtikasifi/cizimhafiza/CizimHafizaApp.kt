@@ -53,6 +53,7 @@ class CizimHafizaApp : Application(), Configuration.Provider {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
+        com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("app.onCreate begin")
         super.onCreate()
 
         // The two big pictures every cold start needs first — the opening scene, then the home scene under it — are
@@ -62,6 +63,8 @@ class CizimHafizaApp : Application(), Configuration.Provider {
             this,
             listOf(com.sualtikasifi.cizimhafiza.R.drawable.splash_art, com.sualtikasifi.cizimhafiza.R.drawable.bg_home_scene)
         )
+
+        com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("app.onCreate after hilt")
 
         // Must be installed before any Firebase call. Off by default — see GameConstants.APP_CHECK_ENABLED.
         if (com.sualtikasifi.cizimhafiza.util.GameConstants.APP_CHECK_ENABLED) runCatching {
