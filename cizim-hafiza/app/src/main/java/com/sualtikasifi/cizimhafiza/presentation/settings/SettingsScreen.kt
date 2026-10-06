@@ -31,11 +31,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.PrivacyTip
-import androidx.compose.material.icons.filled.StarRate
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -134,20 +129,7 @@ fun SettingsScreen(
     val batteryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         ignoringOptimizations = batteryOk()
     }
-    // Also rechecked whenever the player comes back to this screen (from the system's battery settings, say), so the
-    // card goes away as soon as the exemption is in place, however it was granted.
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) ignoringOptimizations = batteryOk()
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
     val needsBatteryFix = notificationsEnabled && !ignoringOptimizations
-    // Without the card the scene is the same picture with the card taken out and the wall closed up behind it
-    // (bg_settings_compact): every row keeps the same place, there is just no empty card.
-    val sceneRes = if (needsBatteryFix) R.drawable.bg_settings else R.drawable.bg_settings_compact
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().sceneIn()) {
         // ONE scale in both directions, so the picture is never stretched; spare strips show a blurred copy of it.
@@ -161,9 +143,9 @@ fun SettingsScreen(
         fun box(x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
             Modifier.offset(offX + unit * x0, offY + unit * y0).size(unit * (x1 - x0), unit * (y1 - y0))
 
-        val scene = cachedPainterResource(sceneRes)
-        val sceneBitmap = remember(sceneRes) {
-            runCatching { BackdropCache.get(context.resources, sceneRes) }.getOrNull()
+        val scene = cachedPainterResource(R.drawable.bg_settings)
+        val sceneBitmap = remember {
+            runCatching { BackdropCache.get(context.resources, R.drawable.bg_settings) }.getOrNull()
         }
         val pxX = (sceneBitmap?.width ?: 1) / ArtW
         val pxY = (sceneBitmap?.height ?: 1) / ArtH
@@ -237,16 +219,16 @@ fun SettingsScreen(
         }
 
         // ---- Notification-delay card ---------------------------------------------------------------------------
-        if (needsBatteryFix) FitText(
-            text = stringResource(R.string.settings_battery_optimization_title),
+        FitText(
+            text = stringResource(if (needsBatteryFix) R.string.settings_battery_optimization_title else R.string.settings_battery_ok_title),
             style = PaintedStyle(color = Ink, fontSize = fs(30f), textAlign = TextAlign.Start),
             maxLines = 1,
             minScale = 0.6f,
             contentAlignment = Alignment.CenterStart,
             modifier = box(352f, 886f, 788f, 930f)
         )
-        if (needsBatteryFix) FitText(
-            text = stringResource(R.string.settings_battery_optimization_body),
+        FitText(
+            text = stringResource(if (needsBatteryFix) R.string.settings_battery_optimization_body else R.string.settings_battery_ok_body),
             style = DescriptionStyle(fs(22f), fs(29f)).copy(color = Ink, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
             maxLines = 4,
             minScale = 0.6f,
@@ -295,88 +277,24 @@ fun SettingsScreen(
         }
 
         // ---- Rows ----------------------------------------------------------------------------------------------
-        // With the battery card the rows are the ones painted into bg_settings, and the live parts sit on them. Without
-        // it the five rows are drawn here, as the same cream pills, spread evenly over the whole space from the sound
-        // card down to the privacy strip — no gap where the card was, no stretched picture. (bg_settings_compact is the
-        // same scene with the card cut out; these rows cover its painted ones completely.)
-        val liveRows = !needsBatteryFix
-        fun rowCy(index: Int): Float = if (liveRows) 977f + 167f * index else 1237f + 110f * index
-        val rowHalf = if (liveRows) 70f else 47f
         @Composable
-        fun SceneRow(
-            index: Int,
-            label: String,
-            icon: androidx.compose.ui.graphics.vector.ImageVector,
-            iconColor: Color,
-            onClick: () -> Unit,
-            extra: Modifier = Modifier,
-            badge: Boolean = false,
-            content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {}
-        ) {
-            val cy = rowCy(index)
+        fun SceneRow(cy: Float, label: String, onClick: () -> Unit, extra: Modifier = Modifier, content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {}) {
             val sink = rememberSink(0.95f)
-            val pill = RoundedCornerShape(50)
             Box(
-                box(44f, cy - rowHalf, 798f, cy + rowHalf)
-                    .then(if (liveRows) Modifier.sinkWith(sink, 0.5f, 0.5f) else sunk(sink, 52f, cy - 47f, 790f, cy + 47f, 40f))
+                box(52f, cy - 47f, 790f, cy + 47f)
+                    .then(sunk(sink, 52f, cy - 47f, 790f, cy + 47f, 40f))
                     .then(extra)
                     .clickable(interactionSource = sink.source, indication = null, onClick = onClick)
                     .a11yButton(label)
             ) {
-                if (liveRows) {
-                    // The painted row, drawn: a cream pill in an orange-brown rim with a soft drop shadow.
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .padding(vertical = (8f * us).dp)
-                            .shadow((4f * us).dp, pill)
-                            .background(Brush.verticalGradient(listOf(Color(0xFFFFF4DC), Color(0xFFFBE2B8))), pill)
-                            .border((4f * us).dp, Color(0xFFD9822B), pill)
-                    )
-                    Box(
-                        Modifier
-                            .align(Alignment.CenterStart)
-                            .padding(start = (24f * us).dp)
-                            .size((80f * us).dp)
-                            .shadow((3f * us).dp, CircleShape)
-                            .background(Brush.verticalGradient(listOf(androidx.compose.ui.graphics.lerp(iconColor, Color.White, 0.25f), iconColor)), CircleShape)
-                            .border((4f * us).dp, Color.White, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) { Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size((44f * us).dp)) }
-                    if (badge) {
-                        Box(
-                            Modifier
-                                .align(Alignment.CenterStart)
-                                .padding(start = (90f * us).dp, bottom = (56f * us).dp)
-                                .size((24f * us).dp)
-                                .background(Color(0xFFE53935), CircleShape)
-                                .border(2.dp, Color.White, CircleShape)
-                        )
-                    }
-                    Icon(
-                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = Ink,
-                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = (22f * us).dp).size((44f * us).dp)
-                    )
-                } else if (badge) {
-                    Box(
-                        Modifier
-                            .align(Alignment.TopStart)
-                            .padding(start = unit * (134f - 44f), top = unit * 6f)
-                            .size(unit * 24f)
-                            .background(Color(0xFFE53935), CircleShape)
-                            .border(2.dp, Color.White, CircleShape)
-                    )
-                }
-                Box(Modifier.fillMaxSize().then(if (liveRows) Modifier else Modifier.sinkWith(sink, 0.5f, 0.5f)), contentAlignment = Alignment.CenterStart) {
+                Box(Modifier.fillMaxSize().sinkWith(sink, 0.5f, 0.5f), contentAlignment = Alignment.CenterStart) {
                     FitText(
                         text = label,
-                        style = PaintedStyle(color = Ink, fontSize = fs(if (liveRows) 34f else 31f), textAlign = TextAlign.Start),
+                        style = PaintedStyle(color = Ink, fontSize = fs(31f), textAlign = TextAlign.Start),
                         maxLines = 1,
                         minScale = 0.6f,
                         contentAlignment = Alignment.CenterStart,
-                        modifier = Modifier.padding(start = unit * (178f - 44f)).width(unit * (470f - 178f))
+                        modifier = Modifier.padding(start = unit * (178f - 52f)).width(unit * (470f - 178f))
                     )
                     content()
                 }
@@ -390,8 +308,8 @@ fun SettingsScreen(
         // the UI locale, so the order does not reshuffle when the app's language changes).
         val languageLabels = SupportedLanguage.entries.associateWith { stringResource(it.labelRes) }
         val orderedLanguages = SupportedLanguage.entries.sortedWith(compareBy({ it != selectedLanguage }, { languageLabels.getValue(it) }))
-        SceneRow(0, stringResource(R.string.settings_language), Icons.Filled.Language, Color(0xFF2E86D6), onClick = { languageOpen = true }) {
-            Box(Modifier.align(Alignment.CenterEnd).padding(end = unit * (if (liveRows) 76f else 64f))) {
+        SceneRow(1237f, stringResource(R.string.settings_language), onClick = { languageOpen = true }) {
+            Box(Modifier.align(Alignment.CenterEnd).padding(end = unit * (790f - 726f))) {
                 Row(horizontalArrangement = Arrangement.spacedBy((10f * us).dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(text = selectedLanguage.flagEmoji, fontSize = fs(34f))
                     Text(
@@ -418,16 +336,18 @@ fun SettingsScreen(
                 }
             }
         }
-        SceneRow(1, stringResource(R.string.settings_replay_tutorial), Icons.Filled.School, Color(0xFF7B4FD6), onReplayTutorialClick)
-        SceneRow(2, stringResource(R.string.report_bug_title), Icons.Filled.BugReport, Color(0xFFE5483C), onReportBugClick)
+        SceneRow(1347f, stringResource(R.string.settings_replay_tutorial), onReplayTutorialClick)
+        SceneRow(1457f, stringResource(R.string.report_bug_title), onReportBugClick)
         SceneRow(
-            3, stringResource(R.string.account_title), Icons.Filled.AccountCircle, Color(0xFF2E86D6), onAccountClick,
+            1567f, stringResource(R.string.account_title), onAccountClick,
             // A light that keeps travelling round the row's edge until a Google account is linked.
-            extra = if (!accountLinked) Modifier.travelingLight((if (liveRows) 62f * us else 40f * us).dp) else Modifier,
-            badge = showAccountNudge
+            extra = if (!accountLinked) Modifier.travelingLight((40f * us).dp) else Modifier
         )
+        if (showAccountNudge) {
+            Box(box(134f, 1527f, 158f, 1551f).background(Color(0xFFE53935), CircleShape).border(2.dp, Color.White, CircleShape))
+        }
         SceneRow(
-            4, stringResource(R.string.settings_rate_app), Icons.Filled.StarRate, Color(0xFFF2A100),
+            1677f, stringResource(R.string.settings_rate_app),
             // Straight to the store listing, not Play Core's in-app review sheet — that API silently does nothing on a
             // sideloaded install or once its quota is spent, with no failure callback to fall back from.
             onClick = { activity?.let(AppReviewLauncher::openStoreListing) }
