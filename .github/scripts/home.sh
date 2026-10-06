@@ -88,7 +88,7 @@ adb shell settings put global animator_duration_scale 1; adb shell settings put 
 adb shell am force-stop $PKG; sleep 3
 adb logcat -c
 # A real video of the launch (screenshots are too slow to catch a splash), turned into a contact sheet of frames.
-adb shell screenrecord --time-limit 7 /sdcard/launch.mp4 &
+adb shell screenrecord --time-limit 20 /sdcard/launch.mp4 &
 REC=$!
 sleep 1
 adb shell "am start -n $ACT" >/dev/null 2>&1 &
@@ -100,15 +100,15 @@ if [ -f "$OUT/launch.mp4" ]; then
   python3 -c "import PIL" 2>/dev/null || python3 -m pip install -q pillow >/dev/null 2>&1 || true
   command -v ffmpeg >/dev/null || (sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1 || true)
   mkdir -p /tmp/lf && rm -f /tmp/lf/*.png
-  ffmpeg -loglevel error -i "$OUT/launch.mp4" -vf "fps=12,scale=180:-1" /tmp/lf/f%03d.png || true
+  ffmpeg -loglevel error -i "$OUT/launch.mp4" -vf "fps=8,scale=160:-1" /tmp/lf/f%03d.png || true
   python3 - "$OUT/launch_sheet.png" <<'PY'
 import sys, glob
 from PIL import Image
-fs = sorted(glob.glob('/tmp/lf/f*.png'))[:60]
+fs = sorted(glob.glob('/tmp/lf/f*.png'))[:160]
 if fs:
     ims = [Image.open(f).convert('RGB') for f in fs]
     w, h = ims[0].size
-    cols = 10
+    cols = 16
     rows = (len(ims) + cols - 1) // cols
     sheet = Image.new('RGB', (w * cols, h * rows), 'white')
     for i, im in enumerate(ims):
