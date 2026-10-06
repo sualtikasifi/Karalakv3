@@ -173,6 +173,7 @@ shot ${P}01_home
 (adb shell input swipe 204 1148 204 1148 4000 &) ; sleep 2; shot ${P}03_press_tile; sleep 3
 (adb shell input swipe 175 820 175 820 4000 &) ; sleep 2; shot ${P}04_press_card; sleep 3
 adb shell input keyevent KEYCODE_BACK; sleep 2
+adb shell input tap 980 1855; sleep 3; shot c01_chest_info; adb shell input keyevent KEYCODE_BACK; sleep 2
 # Settings: open it from the tile, look at it, flip one switch, press-and-hold a row.
 adb shell input tap 880 1650; sleep 4; shot s01_settings
 adb shell input tap 540 842; sleep 2; shot s02_settings_switch

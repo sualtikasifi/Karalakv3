@@ -60,7 +60,7 @@ fun AppWindowDialog(
             modifier = Modifier
                 .fillMaxSize()
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss)
-                .padding(horizontal = 16.dp, vertical = 48.dp),
+                .padding(horizontal = 16.dp, vertical = 24.dp),
             contentAlignment = Alignment.Center
         ) {
             // The same parchment-in-a-wooden-frame panel as PaintedDialog, so every window in the game matches.
@@ -76,7 +76,7 @@ fun AppWindowDialog(
                     // Swallow taps on the panel itself so only the dim area closes it.
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
             ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 20.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = if (centerTitle) Arrangement.Center else Arrangement.Start) {
                     FitText(
                         text = title,
@@ -101,11 +101,11 @@ fun AppWindowDialog(
                         Text("✕", color = Color(0xFF3A2416), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 if (footer != null) {
                     // Body scrolls, footer (the primary action) stays pinned so it can never be pushed off a short screen.
                     Column(modifier = if (scrollBody) Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()) else Modifier) { content() }
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     footer()
                 } else {
                     content()
