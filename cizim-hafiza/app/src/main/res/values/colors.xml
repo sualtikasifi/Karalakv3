@@ -6,6 +6,6 @@
          screen and as the base window background so cold start never shows a
          plain white flash before Compose paints its first frame. -->
     <color name="splash_background">#B07F34</color>
-    <!-- The system splash's flat colour: the average colour of the opening scene, so the scene appearing over it is a change of detail, not of colour. -->
-    <color name="splash_screen_background">#B0843E</color>
+    <!-- The system splash's flat colour: plain white, like any app that has no splash of its own (black in dark mode, see values-night). Android 12+ forces a flat-colour window before the app can draw; it cannot be removed, so it is made the colour the phone itself uses. -->
+    <color name="splash_screen_background">#FFFFFF</color>
 </resources>
