@@ -141,6 +141,7 @@ private class Particle(
  * playback reaches the end. No controls, no loop, no audio duplication
  * with the rest of the scene: the video carries its own sound.
  */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 private fun ChestOpeningVideo(tier: ChestTier, onEnded: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current

@@ -1,5 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.game
 
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.offset
@@ -47,6 +49,7 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -230,7 +233,19 @@ fun GuessScreen(
                 prefs.edit().putInt("ime_px", settled).apply()
             }
         }
-        val keyboardDp = with(density) { keyboardPx.toDp() }
+        // Space is kept for the keyboard while it is up or about to come up (the answer field asks for it at once).
+        // If it stays away (closed by the player, a hardware keyboard), the scene grows into that space instead of
+        // leaving an empty strip of desk, and eases back when the keyboard returns.
+        var keyboardExpected by remember { mutableStateOf(true) }
+        LaunchedEffect(imeNow > 0) {
+            if (imeNow > 0) keyboardExpected = true else { kotlinx.coroutines.delay(1_200); keyboardExpected = false }
+        }
+        val navBarDp = with(density) { WindowInsets.navigationBars.getBottom(density).toDp() }
+        val keyboardDp by androidx.compose.animation.core.animateDpAsState(
+            targetValue = if (keyboardExpected) with(density) { keyboardPx.toDp() } else navBarDp,
+            animationSpec = androidx.compose.animation.core.tween(280),
+            label = "keyboardSpace"
+        )
         // Under the keyboard: the desk the scene stands on, so nothing looks missing when the keyboard is closed.
         Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(keyboardDp + 2.dp)) {
             androidx.compose.foundation.Image(
@@ -303,7 +318,7 @@ fun GuessScreen(
                 modifier = Modifier
                     .offset(a(246f), yTop(158f))
                     .size(a(76f), a(74f))
-                    .clickable(interactionSource = noRipple, indication = null, onClick = onToggleMusic)
+                    .pressable(pressedScale = 0.88f, onClick = onToggleMusic)
             ) {
                 Icon(
                     imageVector = if (musicEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
@@ -348,21 +363,21 @@ fun GuessScreen(
                 )
                 Box(
                     contentAlignment = Alignment.Center,
+                    // The picture already paints the orange ring and its white face (centre 772, 187): this fills only the
+                    // face, so there is no second ring on top of the painted one.
                     modifier = Modifier
-                        .offset(a(722f), yTop(150f))
-                        .size(a(98f))
-                        .shadow(2.dp, CircleShape)
+                        .offset(a(731f), yTop(146f))
+                        .size(a(82f))
                         .background(androidx.compose.ui.graphics.lerp(Color.White, Color(0xFFE53935), redness), CircleShape)
-                        .border(1.dp, Color(0x33000000), CircleShape)
                 ) {
                     CircularCountdown(
                         secondsLeft = state.secondsLeft,
                         totalSeconds = state.totalSeconds,
                         ringColor = timerColor,
                         trackColor = Color(0xFFFFE3CC),
-                        strokeWidth = 5.dp,
-                        textStyle = PaintedStyle(color = if (redness > 0.5f) Color.White else timerColor, fontSize = 22.sp * f),
-                        modifier = Modifier.fillMaxSize().padding(2.dp)
+                        strokeWidth = 4.dp,
+                        textStyle = PaintedStyle(color = if (redness > 0.5f) Color.White else timerColor, fontSize = 20.sp * f),
+                        modifier = Modifier.fillMaxSize().padding(3.dp)
                     )
                 }
             }
@@ -462,13 +477,13 @@ fun GuessScreen(
             ) {
                 if (!canSubmit) {
                     Box(
-                        Modifier.fillMaxSize().background(Color(0x99EADBC8), RoundedCornerShape(50))
+                        Modifier.fillMaxSize().background(Color(0x66C9B08C), RoundedCornerShape(50))
                     )
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.alpha(if (canSubmit) 1f else 0.7f)
+                    modifier = Modifier.alpha(if (canSubmit) 1f else 0.92f)
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp * f))
                     LetteredText(stringResource(R.string.submit_guess), 19.sp * f, outline = Color(0xFF8A3A00))

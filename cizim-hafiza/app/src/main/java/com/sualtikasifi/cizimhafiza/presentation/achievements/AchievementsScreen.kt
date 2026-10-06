@@ -478,7 +478,7 @@ private fun AchievementChip(
                     scaleX = sc
                     scaleY = sc
                 }
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+                .pressable(pressedScale = 0.95f, onClick = onClick)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize().padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 13.dp),

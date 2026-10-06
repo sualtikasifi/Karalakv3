@@ -876,9 +876,9 @@ private fun JokerCard(
                 Row(
                     modifier = Modifier
                         .weight(1f)
+                        .pressable(pressedScale = 0.94f) { if (canAfford) onBuy(qty) else onCannotAfford() }
                         .clip(RoundedCornerShape(50))
                         .background(if (canAfford) Color(0xFF2B1A12) else Color(0xFF2B1A12).copy(alpha = 0.45f))
-                        .clickable { if (canAfford) onBuy(qty) else onCannotAfford() }
                         .padding(horizontal = 10.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center

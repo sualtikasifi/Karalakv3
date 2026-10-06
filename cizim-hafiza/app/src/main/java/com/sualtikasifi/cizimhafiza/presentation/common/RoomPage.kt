@@ -56,6 +56,8 @@ fun RoomPage(
             alignment = Alignment.TopCenter,
             modifier = Modifier.fillMaxSize()
         )
+        // The picture's own plank is smudged where its old lettering was wiped; a fresh board covers it, between the bolts.
+        SignBoard(Modifier.offset(offX + unit * 272f, unit * 319f).size(unit * 409f, unit * 188f))
         // The sign's plank, between its bolts.
         val words = title.split(' ')
         if (words.size >= 2 && title.length > 8) {
@@ -96,6 +98,48 @@ fun RoomPage(
             content = content
         )
         PaintedBackButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart))
+    }
+}
+
+/** A freshly drawn plank of the same orange wood as the sign it covers: crisp at any size, with grain, a rim and a sheen. */
+@Composable
+private fun SignBoard(modifier: Modifier = Modifier) {
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        val r = androidx.compose.ui.geometry.CornerRadius(size.height * 0.1f)
+        val rim = 3.dp.toPx()
+        drawRoundRect(Color(0xFF6B3410), cornerRadius = r)
+        val inner = androidx.compose.ui.geometry.Size(size.width - rim * 2, size.height - rim * 2)
+        val innerTop = androidx.compose.ui.geometry.Offset(rim, rim)
+        drawRoundRect(
+            brush = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFA83A), Color(0xFFF28A1E), Color(0xFFD9701A))),
+            topLeft = innerTop, size = inner,
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(r.x - rim * 0.6f)
+        )
+        // Grain: long, slightly wavering strokes.
+        val grain = listOf(0.14f, 0.27f, 0.41f, 0.55f, 0.68f, 0.82f)
+        grain.forEachIndexed { i, fy ->
+            val y = rim + inner.height * fy
+            val path = androidx.compose.ui.graphics.Path().apply {
+                moveTo(rim + inner.width * 0.04f, y)
+                cubicTo(
+                    rim + inner.width * 0.3f, y + (if (i % 2 == 0) 3f else -3f).dp.toPx(),
+                    rim + inner.width * 0.65f, y + (if (i % 2 == 0) -3f else 3f).dp.toPx(),
+                    rim + inner.width * 0.96f, y
+                )
+            }
+            drawPath(path, Color(0xFF9A4A10).copy(alpha = 0.22f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.6.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
+        }
+        // Sheen along the top edge and a soft shade along the bottom.
+        drawRoundRect(
+            brush = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.32f), Color.Transparent), endY = inner.height * 0.28f, startY = rim),
+            topLeft = innerTop, size = inner,
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(r.x - rim * 0.6f)
+        )
+        drawRoundRect(
+            brush = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF5A2408).copy(alpha = 0.3f)), startY = size.height * 0.72f, endY = size.height - rim),
+            topLeft = innerTop, size = inner,
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(r.x - rim * 0.6f)
+        )
     }
 }
 

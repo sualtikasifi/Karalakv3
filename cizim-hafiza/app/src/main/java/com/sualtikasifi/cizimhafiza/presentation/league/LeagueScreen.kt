@@ -193,7 +193,7 @@ fun LeagueScreen(
             // Alone on the friends table: say so, and offer the fix.
             if (uiState.tab == LeagueTab.Friends && !uiState.isLoading && (shownTable?.entries?.size ?: 0) <= 1) {
                 item(key = "friends-hint") {
-                    PaperPanel(modifier = Modifier.clickable(onClick = onFriends)) {
+                    PaperPanel(modifier = Modifier.pressable(pressedScale = 0.97f, onClick = onFriends)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(text = "🤝", style = PaintedStyle(fontSize = 28.sp))
                             Column(modifier = Modifier.weight(1f)) {
@@ -321,12 +321,7 @@ fun LeagueScreen(
                     .padding(end = 16.dp, top = 12.dp)
                     .size(56.dp)
                     .alpha(if (uiState.globalLoading) 0.55f else 1f)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        enabled = !uiState.globalLoading,
-                        onClick = viewModel::refreshGlobal
-                    ),
+                    .pressable(enabled = !uiState.globalLoading, pressedScale = 0.88f, onClick = viewModel::refreshGlobal),
                 contentAlignment = Alignment.Center
             ) {
                 Image(painterResource(R.drawable.league_wood), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
@@ -353,7 +348,7 @@ fun LeagueScreen(
                     modifier = Modifier
                         .weight(1f)
                         .height(44.dp)
-                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { viewModel.selectTab(tab) }
+                        .pressable(pressedScale = 0.93f) { viewModel.selectTab(tab) }
                 ) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         if (selected) {

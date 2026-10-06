@@ -1,5 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.chests
 
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
+
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -366,9 +368,9 @@ private fun ChestSlotTile(
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
                             modifier = Modifier
+                                .pressable(pressedScale = 0.92f, onClick = onSpeedup)
                                 .clip(RoundedCornerShape(50))
                                 .background(Color(0xFF2E8B45))
-                                .clickable(onClick = onSpeedup)
                                 .padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(5.dp)

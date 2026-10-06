@@ -469,7 +469,7 @@ fun AvatarPhotoFace(photo: AvatarPhoto, modifier: Modifier = Modifier) {
                 painter = painterResource(id = com.sualtikasifi.cizimhafiza.R.drawable.avatar_dino),
                 contentDescription = null,
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().graphicsLayer { scaleX = 1.38f; scaleY = 1.38f; translationY = size.height * 0.015f }
+                modifier = Modifier.fillMaxSize().graphicsLayer { scaleX = 1.05f; scaleY = 1.05f }
             )
         }
         when (photo) {

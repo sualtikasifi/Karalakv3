@@ -1,5 +1,13 @@
 package com.sualtikasifi.cizimhafiza.presentation.reportbug
 
+import androidx.compose.material.icons.filled.BugReport
+
+import androidx.compose.foundation.layout.wrapContentWidth
+
+import androidx.compose.ui.draw.drawBehind
+
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
+
 import androidx.compose.foundation.border
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -129,7 +137,7 @@ fun ReportBugScreen(
                             .size(44.dp)
                             .background(Brush.verticalGradient(listOf(Color(0xFFFFB54A), Color(0xFFF2861B))), RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
-                    ) { Text("•••", style = PaintedStyle(color = Color.White, fontSize = 18.sp)) }
+                    ) { Icon(Icons.Filled.BugReport, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp)) }
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -176,7 +184,7 @@ fun ReportBugScreen(
                 onValueChange = { if (it.length <= MAX_DESCRIPTION_LENGTH) viewModel.onDescriptionChanged(it) },
                 textStyle = PaintedStyle(color = InkBrown, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
                 cursorBrush = SolidColor(ButtonOrange),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp).padding(horizontal = 18.dp, vertical = 16.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 130.dp).padding(horizontal = 18.dp, vertical = 14.dp),
                 decorationBox = { inner ->
                     Box {
                         if (uiState.description.isEmpty()) {
@@ -208,36 +216,13 @@ fun ReportBugScreen(
         }
         Spacer(modifier = Modifier.height(10.dp))
         val canSend = uiState.description.isNotBlank() && !uiState.isSubmitting
-        NinePatch(
-            res = R.drawable.res_btn_claim,
-            slicePx = 64,
-            sliceYPx = 46,
-            edge = 28.dp,
-            edgeY = 21.dp,
-            // Greyed rather than see-through when there is nothing to send yet: at half opacity the button's own
-            // painted drop shadow showed through as a stray dark line under it.
-            tint = if (canSend) null else androidx.compose.ui.graphics.ColorFilter.colorMatrix(
-                androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0.15f) }
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .graphicsLayer { alpha = if (canSend) 1f else 0.85f }
-                .clickable(enabled = canSend, interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = viewModel::submit)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
-                Spacer(Modifier.width(10.dp))
-                LetteredText(
-                    stringResource(if (uiState.isSubmitting) R.string.report_bug_sending else R.string.report_bug_submit),
-                    20.sp, outline = Color(0xFF8A3A00)
-                )
-            }
-        }
+        SendButton(
+            text = stringResource(if (uiState.isSubmitting) R.string.report_bug_sending else R.string.report_bug_submit),
+            enabled = canSend,
+            busy = uiState.isSubmitting,
+            onClick = viewModel::submit,
+            modifier = Modifier.fillMaxWidth()
+        )
 
         if (myReports.isNotEmpty()) {
             Spacer(modifier = Modifier.height(18.dp))
@@ -250,7 +235,7 @@ fun ReportBugScreen(
                 Text(
                     text = stringResource(R.string.report_bug_delete_all),
                     style = PaintedStyle(color = Color(0xFFFFC2BA), fontSize = 14.sp, textAlign = TextAlign.End),
-                    modifier = Modifier.clickable { deleteAllRequested = true }.padding(8.dp)
+                    modifier = Modifier.pressable(pressedScale = 0.9f) { deleteAllRequested = true }.padding(8.dp)
                 )
             }
             Spacer(modifier = Modifier.height(6.dp))
@@ -377,6 +362,39 @@ private fun ReportHistoryCard(report: BugReport, onDelete: () -> Unit) {
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * The send button: a raised orange pill with a darker lip under it. With nothing written yet it turns a muted tan —
+ * still solid and legible rather than see-through, so it reads as "not yet", not as broken.
+ */
+@Composable
+private fun SendButton(text: String, enabled: Boolean, busy: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(50)
+    val top = if (enabled) Color(0xFFFFB63D) else Color(0xFFF6C98A)
+    val bottom = if (enabled) Color(0xFFF2761A) else Color(0xFFE59B50)
+    val lip = if (enabled) Color(0xFFA5470B) else Color(0xFFA9703A)
+    val rim = if (enabled) Color(0xFFFFE08A) else Color(0xFFFFE6BE)
+    Box(
+        modifier = modifier
+            .height(60.dp)
+            .pressable(enabled = enabled, pressedScale = 0.96f, onClick = onClick)
+            .drawBehind { drawRoundRect(lip, cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2)) }
+            .padding(bottom = 5.dp)
+            .background(Brush.verticalGradient(listOf(top, bottom)), shape)
+            .border(2.dp, rim.copy(alpha = 0.7f), shape),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+            if (busy) {
+                androidx.compose.material3.CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Color.White, strokeWidth = 3.dp)
+            } else {
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+            }
+            Spacer(Modifier.width(10.dp))
+            LetteredText(text, 22.sp, outline = if (enabled) Color(0xFF8A3A00) else Color(0xFF8A5A2A), modifier = Modifier.wrapContentWidth())
         }
     }
 }

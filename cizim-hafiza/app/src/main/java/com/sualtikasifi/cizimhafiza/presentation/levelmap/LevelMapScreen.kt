@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -64,6 +65,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -100,9 +102,6 @@ private val CoinSize = 58.dp
 /** Seconds counted on the PLAY button before a level opens. */
 private const val PlayCountdownSeconds = 3
 private val RingSize = 80.dp
-
-// How far up the artwork its bottom edge melts into the plain colour below it.
-private val FadeHeight = 130.dp
 
 @Composable
 fun LevelMapScreen(
@@ -146,7 +145,6 @@ fun LevelMapScreen(
         val artHeight = screenWidth * (ArtHeight / ArtWidth) * ArtStretch
         val mapHeight = artHeight + panelHeight + 72.dp
         val scale = artHeight.value / ArtHeight
-        val edge = Color(LevelArtBottomColors[world?.id] ?: 0xFF2F5D2B)
 
         // Brings the open stop into the upper part of the window whenever it changes (and once the first layout
         // has told the scroll state how far it can go).
@@ -170,19 +168,32 @@ fun LevelMapScreen(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxWidth().height(artHeight)
                 )
-                // Below the picture: its own bottom colour, so the ground seems to carry on under the panel.
+                // Below the picture: its own bottom strip, mirrored, so the scenery carries on under the panel in the same
+                // sharp painting instead of melting into a flat colour.
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .height(mapHeight - artHeight + FadeHeight)
-                        .background(
-                            Brush.verticalGradient(
-                                0f to Color.Transparent,
-                                (FadeHeight / (mapHeight - artHeight + FadeHeight)) to edge,
-                                1f to edge
-                            )
-                        )
+                        .height(mapHeight - artHeight)
+                        .clipToBounds()
+                        .graphicsLayer { scaleY = -1f },
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    Image(
+                        painter = cachedPainterResource(worldBackgroundRes(world?.id) ?: R.drawable.bg_world_1),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxWidth().requiredHeight(artHeight)
+                    )
+                }
+                // A shadow that deepens towards the bottom, so the mirrored strip reads as ground falling into shade
+                // under the card rather than as a copy of the scene.
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(mapHeight - artHeight)
+                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC0F2410))))
                 )
                 // A golden ring that travels from stop to stop, so moving on reads as walking along the path.
                 current?.let { open ->

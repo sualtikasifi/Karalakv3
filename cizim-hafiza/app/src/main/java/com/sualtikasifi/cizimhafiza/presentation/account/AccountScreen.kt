@@ -117,9 +117,9 @@ fun AccountScreen(
 
     com.sualtikasifi.cizimhafiza.presentation.common.RoomPage(title = stringResource(R.string.account_title), onBack = onBack) {
         ProfileHeader(uiState)
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         StatsRow(uiState)
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         AccountCard(
             uiState = uiState,
             onSignIn = viewModel::signIn,
@@ -224,12 +224,12 @@ private fun ProfileHeader(uiState: AccountUiState) {
         linked?.displayName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.account_guest_badge)
     }
     val progress = uiState.levelProgress
-    com.sualtikasifi.cizimhafiza.presentation.common.ParchmentCard(padding = 14.dp) {
+    com.sualtikasifi.cizimhafiza.presentation.common.ParchmentCard(padding = 12.dp) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             LevelAvatar(
                 level = uiState.level,
                 frame = uiState.frame,
-                size = 84.dp,
+                size = 70.dp,
                 photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(linked?.photoUrl)
             )
             Spacer(modifier = Modifier.size(12.dp))
@@ -241,11 +241,11 @@ private fun ProfileHeader(uiState: AccountUiState) {
                     overflow = TextOverflow.Ellipsis
                 )
                 RankLevelLabel(level = uiState.level, bullet = false)
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 StatusPill(linked = linked)
             }
         }
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             LevelStar(uiState.level)
             Spacer(modifier = Modifier.size(6.dp))
@@ -266,7 +266,7 @@ private fun ProfileHeader(uiState: AccountUiState) {
             }
         }
         Spacer(modifier = Modifier.height(4.dp))
-        Row(modifier = Modifier.fillMaxWidth().padding(start = 46.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(modifier = Modifier.fillMaxWidth().padding(start = 40.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
                 text = if (progress.isMaxLevel) stringResource(R.string.account_xp_max)
                 else stringResource(R.string.account_xp_progress, progress.xpIntoLevel, progress.xpForThisLevel),
@@ -287,7 +287,7 @@ private fun ProfileHeader(uiState: AccountUiState) {
 /** The level as a number on a gold star. */
 @Composable
 private fun LevelStar(level: Int) {
-    Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+    Box(modifier = Modifier.size(34.dp), contentAlignment = Alignment.Center) {
         Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFF8A4E12), modifier = Modifier.fillMaxSize())
         Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFB627), modifier = Modifier.fillMaxSize(0.82f))
         Text(
@@ -346,17 +346,17 @@ private fun StatsRow(uiState: AccountUiState) {
 @Composable
 private fun StatTile(emoji: String, value: String, label: String, pin: Color, modifier: Modifier = Modifier) {
     Box(modifier = modifier) {
-        com.sualtikasifi.cizimhafiza.presentation.common.ParchmentCard(padding = 8.dp, modifier = Modifier.padding(top = 6.dp)) {
+        com.sualtikasifi.cizimhafiza.presentation.common.ParchmentCard(padding = 6.dp, modifier = Modifier.padding(top = 6.dp)) {
             Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(emoji, fontSize = 28.sp)
+                Text(emoji, fontSize = 22.sp)
                 com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                     text = value,
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 21.sp, textAlign = TextAlign.Center),
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 19.sp, textAlign = TextAlign.Center),
                     modifier = Modifier.fillMaxWidth()
                 )
                 com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                     text = label,
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
                     minScale = 0.65f,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -395,22 +395,22 @@ private fun SectionHeader(icon: androidx.compose.ui.graphics.vector.ImageVector,
  */
 @Composable
 private fun AccountCard(uiState: AccountUiState, onSignIn: () -> Unit, onSignOut: () -> Unit, onDelete: () -> Unit) {
-    com.sualtikasifi.cizimhafiza.presentation.common.ParchmentCard(padding = 14.dp) {
+    com.sualtikasifi.cizimhafiza.presentation.common.ParchmentCard(padding = 12.dp) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(34.dp)
                     .shadow(3.dp, CircleShape)
                     .background(Brush.verticalGradient(listOf(Color(0xFFFFC04A), Color(0xFFF2861B))), CircleShape),
                 contentAlignment = Alignment.Center
-            ) { Icon(Icons.Filled.CloudSync, contentDescription = null, tint = PageInk, modifier = Modifier.size(26.dp)) }
-            Spacer(modifier = Modifier.size(12.dp))
+            ) { Icon(Icons.Filled.CloudSync, contentDescription = null, tint = PageInk, modifier = Modifier.size(20.dp)) }
+            Spacer(modifier = Modifier.size(10.dp))
             Text(
                 text = stringResource(R.string.account_section_account),
-                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 21.sp)
+                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 19.sp)
             )
         }
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         when {
             uiState.isSignedIn -> SyncStatusRow(lastBackupAtMillis = uiState.lastBackupAtMillis)
             uiState.isGoogleSignInConfigured -> Text(
@@ -423,7 +423,7 @@ private fun AccountCard(uiState: AccountUiState, onSignIn: () -> Unit, onSignOut
             )
         }
         if (uiState.isSignedIn || uiState.isGoogleSignInConfigured) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             if (uiState.isBusy) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     CircularProgressIndicator(modifier = Modifier.size(30.dp))
@@ -432,7 +432,7 @@ private fun AccountCard(uiState: AccountUiState, onSignIn: () -> Unit, onSignOut
                 com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
                     text = stringResource(R.string.account_sign_out),
                     onClick = onSignOut,
-                    height = 56.dp,
+                    height = 48.dp,
                     modifier = Modifier.fillMaxWidth()
                 )
             } else {
@@ -440,9 +440,9 @@ private fun AccountCard(uiState: AccountUiState, onSignIn: () -> Unit, onSignOut
             }
         }
         // Account deletion at the foot of the card, set apart by a rule: never one tap from something harmless.
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Box(Modifier.fillMaxWidth(0.7f).height(1.dp).align(Alignment.CenterHorizontally).background(Color(0x33795548)))
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         DangerZone(isDeleting = uiState.isDeleting, onDelete = onDelete)
     }
 }
@@ -460,7 +460,7 @@ private fun DangerZone(isDeleting: Boolean, onDelete: () -> Unit) {
                     .background(Color(0xFFFFF6EE))
                     .border(1.5.dp, Color(0xFFE5483C), RoundedCornerShape(16.dp))
                     .clickable(onClick = onDelete)
-                    .padding(horizontal = 18.dp, vertical = 10.dp),
+                    .padding(horizontal = 16.dp, vertical = 7.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -492,7 +492,7 @@ private fun SyncStatusRow(lastBackupAtMillis: Long?) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 12.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

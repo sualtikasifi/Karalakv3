@@ -1,5 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.chests
 
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
+
 import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -170,9 +172,9 @@ private fun ChestDetailDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .pressable(pressedScale = 0.95f, onClick = onSpeedup)
                                 .clip(RoundedCornerShape(50))
                                 .background(Color(0xFF2E8B45))
-                                .clickable(onClick = onSpeedup)
                                 .padding(horizontal = 16.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center

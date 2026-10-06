@@ -540,23 +540,38 @@ internal fun Modifier.sunkenArt(
     val k = sink.scale.value
     if (scene != null && k < 0.9995f) {
         val r = corner.toPx()
-        val grow = 3.dp.toPx()
-        val recessSize = Size(size.width + grow * 2, size.height + grow * 2)
-        drawRoundRect(Color(0xFF6B2D0C), Offset(-grow, -grow), recessSize, CornerRadius(r + grow))
-        drawRoundRect(
-            Brush.verticalGradient(listOf(Color(0x77000000), Color.Transparent), startY = -grow, endY = size.height * 0.35f),
-            Offset(-grow, -grow), recessSize, CornerRadius(r + grow)
+        // 0 at rest .. 1 at full depth, so every layer below fades in with the dip instead of popping.
+        val depthFrac = ((1f - k) / 0.08f).coerceIn(0f, 1f)
+        val shapePath = Path().apply { addRoundRect(RoundRect(0f, 0f, size.width, size.height, CornerRadius(r))) }
+        fun drawArt() = drawImage(
+            scene,
+            srcOffset = IntOffset(srcLeft.roundToInt(), srcTop.roundToInt()),
+            srcSize = IntSize(srcW.roundToInt(), srcH.roundToInt()),
+            dstOffset = IntOffset.Zero,
+            dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+            filterQuality = FilterQuality.Low
         )
+        // The socket: the tile's OWN picture (its frame and colours), darkened, so what is left around the dipped tile is
+        // the same tile in shadow — never a flat patch, never a hole in the scene.
+        clipPath(shapePath) {
+            drawArt()
+            drawRect(Color.Black.copy(alpha = 0.42f * depthFrac))
+            drawRect(
+                Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.35f * depthFrac), Color.Transparent), endY = size.height * 0.45f)
+            )
+        }
         scale(k, k, pivot = center) {
-            clipPath(Path().apply { addRoundRect(RoundRect(0f, 0f, size.width, size.height, CornerRadius(r))) }) {
-                drawImage(
-                    scene,
-                    srcOffset = IntOffset(srcLeft.roundToInt(), srcTop.roundToInt()),
-                    srcSize = IntSize(srcW.roundToInt(), srcH.roundToInt()),
-                    dstOffset = IntOffset.Zero,
-                    dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
-                    filterQuality = FilterQuality.Low
+            // A soft contact shadow hugging the dipped tile, built from a few widening, fading outlines.
+            for (i in 3 downTo 1) {
+                val g = i * 1.6.dp.toPx()
+                drawRoundRect(
+                    Color.Black.copy(alpha = 0.10f * depthFrac),
+                    Offset(-g, -g), Size(size.width + g * 2, size.height + g * 2), CornerRadius(r + g)
                 )
+            }
+            clipPath(shapePath) {
+                drawArt()
+                drawRect(Color.Black.copy(alpha = 0.10f * depthFrac))
             }
         }
     }

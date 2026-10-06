@@ -1,5 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.game
 
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
+
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.graphicsLayer
 import com.sualtikasifi.cizimhafiza.presentation.common.springIn
@@ -200,7 +202,7 @@ fun DrawingScreen(
             modifier = Modifier
                 .offset(a(593f), a(88f))
                 .size(a(97f), a(82f))
-                .clickable(interactionSource = noRipple, indication = null, onClick = onToggleMusic)
+                .pressable(pressedScale = 0.88f, onClick = onToggleMusic)
         ) {
             Icon(
                 imageVector = if (musicEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,

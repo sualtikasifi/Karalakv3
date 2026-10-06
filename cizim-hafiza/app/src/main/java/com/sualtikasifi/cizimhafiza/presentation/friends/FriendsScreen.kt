@@ -1,6 +1,9 @@
 package com.sualtikasifi.cizimhafiza.presentation.friends
 
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
+import com.sualtikasifi.cizimhafiza.presentation.mainmenu.SinkState
+import com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink
+import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -107,10 +110,12 @@ private fun SceneBox(
     scene: Scene, x0: Float, y0: Float, x1: Float, y1: Float,
     modifier: Modifier = Modifier,
     contentAlignment: Alignment = Alignment.Center,
+    sink: SinkState? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
     Box(
-        modifier = modifier.offset(scene.x(x0), scene.y(y0)).size(scene.len(x1 - x0), scene.len(y1 - y0)),
+        modifier = modifier.offset(scene.x(x0), scene.y(y0)).size(scene.len(x1 - x0), scene.len(y1 - y0))
+            .then(if (sink != null) Modifier.sinkWith(sink, 0.5f, 0.5f) else Modifier),
         contentAlignment = contentAlignment,
         content = content
     )
@@ -179,8 +184,8 @@ fun FriendsScreen(
         val noRipple = remember { MutableInteractionSource() }
 
         @Composable
-        fun Sprite(res: Int, x0: Float, y0: Float, x1: Float, y1: Float) {
-            SceneBox(scene, x0, y0, x1, y1) {
+        fun Sprite(res: Int, x0: Float, y0: Float, x1: Float, y1: Float, sink: SinkState? = null) {
+            SceneBox(scene, x0, y0, x1, y1, sink = sink) {
                 Image(painterResource(res), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
             }
         }
@@ -202,7 +207,7 @@ fun FriendsScreen(
                 .statusBarsPadding()
                 .padding(end = 16.dp, top = 12.dp)
                 .size(56.dp)
-                .clickable(interactionSource = noRipple, indication = null, onClick = onDuelList)
+                .pressable(pressedScale = 0.88f, onClick = onDuelList)
         ) {
             Image(
                 painter = painterResource(R.drawable.fr_clip),
@@ -268,12 +273,13 @@ fun FriendsScreen(
                 CircularProgressIndicator(modifier = Modifier.size(28.dp), color = ButtonOrange, strokeWidth = 3.dp)
             }
         }
-        Sprite(R.drawable.fr_orange_w, 350f, 684f, 730f, 792f)
-        SceneBox(scene, 350f, 684f, 730f, 792f) {
+        val shareSink = rememberSink(0.94f)
+        Sprite(R.drawable.fr_orange_w, 350f, 684f, 730f, 792f, shareSink)
+        SceneBox(scene, 350f, 684f, 730f, 792f, sink = shareSink) {
             val code = uiState.myFriendCode
             Box(
                 Modifier.fillMaxSize().then(
-                    if (code != null) Modifier.clickable(interactionSource = noRipple, indication = null) {
+                    if (code != null) Modifier.clickable(interactionSource = shareSink.source, indication = null) {
                         InviteShareUtil.shareFriendCode(context, code)
                     } else Modifier
                 ),
@@ -322,14 +328,15 @@ fun FriendsScreen(
             )
         }
         val canAdd = uiState.addFriendCodeInput.length == 6
-        Sprite(R.drawable.fr_orange_s, 790f, 955f, 1000f, 1083f)
-        SceneBox(scene, 795f, 975f, 935f, 1070f) {
+        val addSink = rememberSink(0.92f)
+        Sprite(R.drawable.fr_orange_s, 790f, 955f, 1000f, 1083f, addSink)
+        SceneBox(scene, 795f, 975f, 935f, 1070f, sink = addSink) {
             if (uiState.isAddingFriend) {
                 CircularProgressIndicator(modifier = Modifier.size(26.dp), color = Color.White, strokeWidth = 3.dp)
             } else {
                 Box(
                     Modifier.fillMaxSize().then(
-                        if (canAdd) Modifier.clickable(interactionSource = noRipple, indication = null) {
+                        if (canAdd) Modifier.clickable(interactionSource = addSink.source, indication = null) {
                             focusManager.clearFocus(force = true)
                             keyboardController?.hide()
                             viewModel.addFriend()
@@ -495,9 +502,9 @@ private fun OrangePill(text: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .height(30.dp)
+            .pressable(pressedScale = 0.9f, onClick = onClick)
             .background(Brush.verticalGradient(listOf(Color(0xFFFF9A3C), ButtonOrange)), RoundedCornerShape(15.dp))
             .border(BorderStroke(1.5.dp, Color(0xFFB04A0E)), RoundedCornerShape(15.dp))
-            .clickable(onClick = onClick)
             .padding(horizontal = 12.dp),
         contentAlignment = Alignment.Center
     ) { LetteredText(text, 13.sp) }
@@ -522,7 +529,7 @@ private fun FriendRow(
             OrangePill(stringResource(R.string.friends_invite_action), onInvite)
             Box {
                 Box(
-                    Modifier.size(34.dp).clickable { menuExpanded = true },
+                    Modifier.size(34.dp).pressable(pressedScale = 0.85f) { menuExpanded = true },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -564,7 +571,7 @@ private fun FriendRequestRow(request: FriendRequest, busy: Boolean, onAccept: ()
             Text(
                 stringResource(R.string.friends_request_decline),
                 style = PaintedStyle(color = DescriptionInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
-                modifier = Modifier.clickable(onClick = onDecline).padding(horizontal = 6.dp, vertical = 8.dp)
+                modifier = Modifier.pressable(pressedScale = 0.9f, onClick = onDecline).padding(horizontal = 6.dp, vertical = 8.dp)
             )
             OrangePill(stringResource(R.string.friends_request_accept), onAccept)
         }
