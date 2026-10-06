@@ -1351,6 +1351,8 @@
     <string name="chest_timer_hint">Başlattığında geri sayım başlar</string>
     <string name="get_ready_tag">Sıradaki aşama</string>
     <string name="get_ready_sub">Şimdi çizimleri tahmin etme sırası sende</string>
+    <string name="get_ready_line1">Tahmin aşamasına</string>
+    <string name="get_ready_line2">hazırlan</string>
     <string name="store_daily_joker_tag">GÜNÜN ÜCRETSİZ JOKERİ</string>
     <string name="store_daily_joker_action">Reklam izle, ücretsiz al</string>
     <string name="store_daily_joker_claimed">Ücretsiz jokerin eklendi!</string>

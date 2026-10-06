@@ -126,6 +126,27 @@ done
 shot ${P}01_menu
 adb shell input tap 880 1150; sleep 6; dismiss; shot ${P}00_setup
 adb shell input tap 540 2230; sleep 5
+# The "get ready to guess" countdown only lasts a few seconds: watch for it (the dial's cream disc under the orange
+# sign) and take two shots while it is up.
+break_visible() {
+  adb exec-out screencap > "$OUT/_raw.bin"
+  python3 - "$OUT/_raw.bin" <<'PY'
+import sys, struct
+d = open(sys.argv[1], 'rb').read()
+w, h, fmt = struct.unpack('<III', d[:12])
+off = 16 if (len(d) - 16) == w * h * 4 else 12
+def px(x, y):
+    p = off + (y * w + x) * 4
+    return d[p], d[p + 1], d[p + 2]
+r, g, b = px(470, 1560)
+r2, g2, b2 = px(300, 470)
+print(1 if (r > 225 and g > 200 and 140 < b < 225) and (r2 > 150 and 60 < g2 < 140 and b2 < 90) else 0)
+PY
+}
+for i in $(seq 1 150); do
+  if [ "$(break_visible)" = "1" ]; then echo "countdown seen"; shot ${P}_break1; sleep 1.3; shot ${P}_break2; break; fi
+  sleep 0.6
+done
 for i in $(seq 1 22); do
   sleep 11
   # The 'Don't lose your progress' sign-in offer follows the first finished game and covers the result screen.

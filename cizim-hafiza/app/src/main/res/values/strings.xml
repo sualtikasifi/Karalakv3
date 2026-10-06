@@ -1338,6 +1338,8 @@
     <string name="chest_timer_hint">The countdown starts when you begin</string>
     <string name="get_ready_tag">Next up</string>
     <string name="get_ready_sub">Now it\'s your turn to guess the drawings</string>
+    <string name="get_ready_line1">Get ready for</string>
+    <string name="get_ready_line2">guessing!</string>
     <string name="store_daily_joker_tag">FREE JOKER OF THE DAY</string>
     <string name="store_daily_joker_action">Watch an ad, get it free</string>
     <string name="store_daily_joker_claimed">Your free joker was added!</string>
