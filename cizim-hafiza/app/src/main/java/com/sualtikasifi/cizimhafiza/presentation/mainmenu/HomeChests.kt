@@ -429,16 +429,17 @@ internal fun HomeChestsPainted(
                 maxLines = 1,
                 modifier = Modifier.alignByBaseline()
             )
-            Spacer(Modifier.weight(1f))
-            Text(
-                text = tagline,
-                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
-                    color = Color(0xFF4A3426), fontSize = fs(if (tagline.length > 26) 20f else 23f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End
-                ),
-                maxLines = 1,
-                modifier = Modifier.alignByBaseline()
-            )
         }
+    }
+    // The tagline sits level with the info button beside it, not on the title's baseline.
+    Box(box(380f, 1426f, 724f, 1490f), contentAlignment = Alignment.CenterEnd) {
+        Text(
+            text = tagline,
+            style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
+                color = Color(0xFF4A3426), fontSize = fs(if (tagline.length > 26) 20f else 23f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End
+            ),
+            maxLines = 1
+        )
     }
     Box(
         box(731f, 1426f, 794f, 1490f)
