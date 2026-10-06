@@ -77,6 +77,7 @@ done
 echo "--- am start -W (times out on the software-rendered emulator, kept for reference):"; grep -E "Status|WaitTime" "$OUT/startup.txt"
 # The activity manager's own "Displayed" line is the reliable first-frame time here.
 adb logcat -d | grep "Displayed $PKG" | cut -c1-200 | tee "$OUT/startup_displayed.txt"
+adb logcat -d -s StartupTiming | tee "$OUT/startup_timing.txt"
 
 # The slow emulator sometimes shows a system 'Pixel Launcher isn't responding' dialog; dismiss it and bring the app back.
 tap_text "Wait" || true

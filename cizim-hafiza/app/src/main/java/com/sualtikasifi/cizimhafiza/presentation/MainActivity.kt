@@ -54,11 +54,11 @@ import javax.inject.Inject
 class MainActivity : AppCompatActivity() {
 
     @Inject lateinit var settingsRepository: SettingsRepository
-    @Inject lateinit var adManager: AdManager
+    @Inject lateinit var adManager: dagger.Lazy<AdManager>
     @Inject lateinit var consentManager: ConsentManager
     @Inject lateinit var musicPlayer: MusicPlayer
     @Inject lateinit var googleSignInLauncher: GoogleSignInLauncher
-    @Inject lateinit var autoBackupPublisher: AutoBackupPublisher
+    @Inject lateinit var autoBackupPublisher: dagger.Lazy<AutoBackupPublisher>
 
     private var navController: NavHostController? = null
 
@@ -73,6 +73,7 @@ class MainActivity : AppCompatActivity() {
         // Must run before super.onCreate()/setContent — shows the branded
         // splash (see Theme.Karalak.Splash) until Compose draws its first
         // frame instead of a plain platform default screen.
+        com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("activity.onCreate begin")
         installSplashScreen().setOnExitAnimationListener { splash ->
             // A plain cross-fade, and deliberately nothing more. BrandSplash
             // (see presentation/splash/) paints this exact cream field with
@@ -112,6 +113,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         super.onCreate(savedInstanceState)
+        com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("activity.super.onCreate done (Hilt injected)")
         // Two earlier attempts at the language-switch black flash targeted
         // what a recreate LOOKED like (this line; the transition override
         // below; android:windowBackground in themes.xml) without noticing
@@ -138,13 +140,20 @@ class MainActivity : AppCompatActivity() {
         // breach of both GDPR and AdMob's own policy. ensureConsent resolves
         // silently for players in regions with no form requirement.
         consentManager.ensureConsent(this) {
-            adManager.initializeIfConsented(consentManager)
+            adManager.get().initializeIfConsented(consentManager)
         }
 
         // Read once, here, rather than observed: the start destination is
         // fixed for the lifetime of this NavHost, and completing the
         // tutorial navigates away explicitly instead of re-deciding it.
         val tutorialCompleted = settingsRepository.tutorialCompleted
+        window.decorView.viewTreeObserver.addOnPreDrawListener(object : android.view.ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                window.decorView.viewTreeObserver.removeOnPreDrawListener(this)
+                com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("first frame about to draw")
+                return true
+            }
+        })
         setContent {
             CizimHafizaTheme {
                 // The app's cream page color, not Surface's default white:
@@ -164,6 +173,7 @@ class MainActivity : AppCompatActivity() {
                     var appReady by rememberSaveable { mutableStateOf(false) }
                     LaunchedEffect(Unit) {
                         androidx.compose.runtime.withFrameNanos { }
+                        com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("nav graph starts composing")
                         appReady = true
                     }
                     if (appReady) CizimHafizaNavGraph(
@@ -238,7 +248,7 @@ class MainActivity : AppCompatActivity() {
         // A safety net alongside AutoBackupPublisher's own debounced
         // trigger — catches a change (a cosmetic pick with no XP attached)
         // right before the player actually leaves, no-op if unlinked.
-        autoBackupPublisher.backupNowIfLinked()
+        autoBackupPublisher.get().backupNowIfLinked()
     }
 
     // arrives here instead of a fresh onCreate — so the new URI has to be

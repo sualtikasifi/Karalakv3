@@ -348,7 +348,7 @@ fun CompactPanel(content: @Composable ColumnScope.() -> Unit) {
 class RowCounter { var next = 0 }
 val LocalRowCounter = androidx.compose.runtime.staticCompositionLocalOf<RowCounter?> { null }
 
-/** A small left-aligned caption above a row of choices. */
+/** A small centred caption above a row of choices. */
 @Composable
 fun PanelRow(label: String, content: @Composable () -> Unit) {
     val counter = LocalRowCounter.current
@@ -357,11 +357,11 @@ fun PanelRow(label: String, content: @Composable () -> Unit) {
         Text(
             text = label,
             style = PaintedStyle(
-                color = Color(0xFFFFEBC8), fontSize = 13.5.sp, textAlign = TextAlign.Start,
+                color = Color(0xFFFFEBC8), fontSize = 13.5.sp, textAlign = TextAlign.Center,
                 shadow = androidx.compose.ui.graphics.Shadow(Color(0xAA2A1005), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)
             ),
             maxLines = 1,
-            modifier = Modifier.padding(start = 4.dp, bottom = 3.dp)
+            modifier = Modifier.fillMaxWidth().padding(bottom = 3.dp)
         )
         content()
     }
@@ -387,7 +387,7 @@ fun PillField(
             onValueChange = onValueChange,
             enabled = enabled,
             singleLine = true,
-            textStyle = PaintedStyle(color = InkBrown, fontSize = 16.sp, textAlign = TextAlign.Start),
+            textStyle = PaintedStyle(color = InkBrown, fontSize = 16.sp, textAlign = TextAlign.Center),
             keyboardOptions = keyboardOptions,
             cursorBrush = androidx.compose.ui.graphics.SolidColor(ButtonOrange),
             modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(horizontal = 18.dp)
@@ -409,7 +409,11 @@ fun <T> ChoiceGrid(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         items.chunked(columns).forEach { rowItems ->
+            val missing = columns - rowItems.size
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.fillMaxWidth()) {
+                // A short last row is centred under the full ones (half the missing width on each side) instead of
+                // hugging the left edge with a gap on the right.
+                if (missing > 0) Spacer(modifier = Modifier.weight(missing / 2f))
                 rowItems.forEach { item ->
                     ChoicePill(
                         label = label(item),
@@ -421,7 +425,7 @@ fun <T> ChoiceGrid(
                         maxLines = maxLines
                     )
                 }
-                repeat(columns - rowItems.size) { Spacer(modifier = Modifier.weight(1f)) }
+                if (missing > 0) Spacer(modifier = Modifier.weight(missing / 2f))
             }
         }
     }
