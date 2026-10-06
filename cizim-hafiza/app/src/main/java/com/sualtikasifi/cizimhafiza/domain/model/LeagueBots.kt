@@ -95,7 +95,7 @@ object LeagueBots {
             Bot(name, xp, minOf(MAX_SHOWN_LEVEL, levelForXp(startXp(periodId, index) + xp)))
         }
 
-    private val NAMES = listOf(
+    val NAMES = listOf(
         "memetcan", "ahmet734", "fthylmz", "uykuluadam", "kraduman", "fistikezmesi",
         "kadir007", "ceyda8821", "cananabaci", "yussuf", "deliomer", "ruzgargibi",
         "brkydmr", "burakreis", "gozluklucocuk", "mustfcn", "sagocu99", "yalnizkurt",

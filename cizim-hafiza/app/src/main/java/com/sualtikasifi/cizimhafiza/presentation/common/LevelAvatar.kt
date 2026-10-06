@@ -526,6 +526,16 @@ private val PersonaLetterColors = listOf(
  */
 @Composable
 private fun PersonaFace(seed: String, mascot: @Composable () -> Unit) {
+    // A league bot has a real-looking photo chosen by its name (see BotPhotos); anyone else keeps the generated face.
+    BotPhotos.drawableFor(seed)?.let { res ->
+        Image(
+            painter = androidx.compose.ui.res.painterResource(res),
+            contentDescription = null,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        return
+    }
     val hash = (seed.fold(11) { acc, c -> acc * 31 + c.code }) and Int.MAX_VALUE
     val bucket = hash % 20
     when {
