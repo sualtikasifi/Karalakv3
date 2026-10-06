@@ -53,17 +53,18 @@ private val InfoSoft = Color(0xFF7A5A44)
  */
 @Composable
 internal fun ChestInfoDialog(onDismiss: () -> Unit) {
-    val shortScreen = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < 760
     AppWindowDialog(
         title = stringResource(R.string.home_chests_info_title),
         onDismiss = onDismiss,
         centerTitle = true,
-        scrollBody = shortScreen,
+        // Always bounded: the "Anladım" button stays pinned under the body on every screen size, the body scrolls
+        // only if it ever has to (it used to be cut off at the bottom on phones that were not quite "short").
+        scrollBody = true,
         footer = {
             PrimaryButton(
                 text = stringResource(R.string.home_chests_info_ok),
                 onClick = onDismiss,
-                height = 50.dp,
+                height = 46.dp,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -71,7 +72,7 @@ internal fun ChestInfoDialog(onDismiss: () -> Unit) {
         InfoStep(1, "🏆", stringResource(R.string.chest_info_step_win_title), stringResource(R.string.chest_info_step_win_body), first = true, last = false)
         InfoStep(2, "⏳", stringResource(R.string.chest_info_step_open_title), stringResource(R.string.chest_info_step_open_body), first = false, last = false)
         InfoStep(3, "🔓", stringResource(R.string.chest_info_step_slots_title), stringResource(R.string.chest_info_step_slots_body, ChestSlots.SLOT_COUNT), first = false, last = true)
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = stringResource(R.string.chest_info_contents_title),
             fontFamily = DisplayFont,
@@ -81,11 +82,11 @@ internal fun ChestInfoDialog(onDismiss: () -> Unit) {
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(modifier = Modifier.height(6.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Spacer(modifier = Modifier.height(4.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             ChestTier.entries.forEach { tier -> InfoChestCard(tier) }
         }
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -120,7 +121,7 @@ private fun InfoStep(number: Int, emoji: String, title: String, body: String, fi
     ) {
         Box(
             modifier = Modifier
-                .width(36.dp)
+                .width(32.dp)
                 .fillMaxHeight()
                 .drawBehind {
                     val x = size.width / 2f
@@ -132,7 +133,7 @@ private fun InfoStep(number: Int, emoji: String, title: String, body: String, fi
         ) {
             Box(
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(28.dp)
                     .shadow(4.dp, CircleShape)
                     .clip(CircleShape)
                     .background(Brush.verticalGradient(listOf(Color(0xFFFFA24D), Color(0xFFF2611B))))
@@ -150,7 +151,7 @@ private fun InfoStep(number: Int, emoji: String, title: String, body: String, fi
         }
         Column(modifier = Modifier.weight(1f).padding(vertical = 2.dp)) {
             Text(text = "$emoji  $title", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.ExtraBold, color = InfoInk)
-            Text(text = body, fontSize = 12.sp, lineHeight = 15.sp, color = InfoSoft)
+            Text(text = body, fontSize = 12.sp, lineHeight = 14.sp, color = InfoSoft)
         }
     }
 }
@@ -165,12 +166,12 @@ private fun InfoChestCard(tier: ChestTier) {
             .clip(shape)
             .background(accent.copy(alpha = 0.10f))
             .border(1.5.dp, accent.copy(alpha = 0.5f), shape)
-            .padding(horizontal = 10.dp, vertical = 4.dp),
+            .padding(horizontal = 10.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Box(modifier = Modifier.width(48.dp), contentAlignment = Alignment.Center) {
-            ChestImage(tier = tier, width = 46.dp)
+        Box(modifier = Modifier.width(42.dp), contentAlignment = Alignment.Center) {
+            ChestImage(tier = tier, width = 40.dp)
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(0.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

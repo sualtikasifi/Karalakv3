@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.online
 
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.activity.compose.BackHandler
 import com.sualtikasifi.cizimhafiza.presentation.common.springIn
@@ -443,7 +444,7 @@ fun WaitingRoomScreen(
                 .statusBarsPadding()
                 .padding(start = 16.dp, top = 12.dp)
                 .size(56.dp)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                .pressable(pressedScale = 0.88f) {
                     viewModel.leaveRoom()
                     onLeave()
                 }

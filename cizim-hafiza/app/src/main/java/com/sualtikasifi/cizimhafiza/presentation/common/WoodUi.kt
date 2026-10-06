@@ -227,7 +227,7 @@ fun WoodScreen(
                 .statusBarsPadding()
                 .padding(start = 16.dp, top = 12.dp)
                 .size(56.dp)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onBack)
+                .pressable(pressedScale = 0.88f, onClick = onBack)
         )
     }
 }

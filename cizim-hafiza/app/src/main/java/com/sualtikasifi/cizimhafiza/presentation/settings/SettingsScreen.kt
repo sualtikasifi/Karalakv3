@@ -129,7 +129,20 @@ fun SettingsScreen(
     val batteryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         ignoringOptimizations = batteryOk()
     }
+    // Also rechecked whenever the player comes back to this screen (from the system's battery settings, say), so the
+    // card goes away as soon as the exemption is in place, however it was granted.
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) ignoringOptimizations = batteryOk()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     val needsBatteryFix = notificationsEnabled && !ignoringOptimizations
+    // Without the card the scene is the same picture with the card taken out and the wall closed up behind it
+    // (bg_settings_compact): every row keeps the same place, there is just no empty card.
+    val sceneRes = if (needsBatteryFix) R.drawable.bg_settings else R.drawable.bg_settings_compact
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().sceneIn()) {
         // ONE scale in both directions, so the picture is never stretched; spare strips show a blurred copy of it.
@@ -143,9 +156,9 @@ fun SettingsScreen(
         fun box(x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
             Modifier.offset(offX + unit * x0, offY + unit * y0).size(unit * (x1 - x0), unit * (y1 - y0))
 
-        val scene = cachedPainterResource(R.drawable.bg_settings)
-        val sceneBitmap = remember {
-            runCatching { BackdropCache.get(context.resources, R.drawable.bg_settings) }.getOrNull()
+        val scene = cachedPainterResource(sceneRes)
+        val sceneBitmap = remember(sceneRes) {
+            runCatching { BackdropCache.get(context.resources, sceneRes) }.getOrNull()
         }
         val pxX = (sceneBitmap?.width ?: 1) / ArtW
         val pxY = (sceneBitmap?.height ?: 1) / ArtH
@@ -219,16 +232,16 @@ fun SettingsScreen(
         }
 
         // ---- Notification-delay card ---------------------------------------------------------------------------
-        FitText(
-            text = stringResource(if (needsBatteryFix) R.string.settings_battery_optimization_title else R.string.settings_battery_ok_title),
+        if (needsBatteryFix) FitText(
+            text = stringResource(R.string.settings_battery_optimization_title),
             style = PaintedStyle(color = Ink, fontSize = fs(30f), textAlign = TextAlign.Start),
             maxLines = 1,
             minScale = 0.6f,
             contentAlignment = Alignment.CenterStart,
             modifier = box(352f, 886f, 788f, 930f)
         )
-        FitText(
-            text = stringResource(if (needsBatteryFix) R.string.settings_battery_optimization_body else R.string.settings_battery_ok_body),
+        if (needsBatteryFix) FitText(
+            text = stringResource(R.string.settings_battery_optimization_body),
             style = DescriptionStyle(fs(22f), fs(29f)).copy(color = Ink, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
             maxLines = 4,
             minScale = 0.6f,

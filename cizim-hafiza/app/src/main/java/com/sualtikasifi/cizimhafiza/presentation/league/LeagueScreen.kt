@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.league
 
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.foundation.Image
 import com.sualtikasifi.cizimhafiza.presentation.common.springIn
@@ -310,7 +311,7 @@ fun LeagueScreen(
                 .statusBarsPadding()
                 .padding(start = 16.dp, top = 12.dp)
                 .size(56.dp)
-                .clickable(interactionSource = backInteraction, indication = null, onClick = onBack)
+                .pressable(pressedScale = 0.88f, onClick = onBack)
         )
         if (uiState.tab == LeagueTab.Global) {
             Box(

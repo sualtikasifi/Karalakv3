@@ -200,8 +200,8 @@ class QuickMatchViewModel @Inject constructor(
         const val MAX_ATTEMPTS = 4
 
         /** How long "Rakip aranıyor" is shown at minimum, in millis. */
-        const val MIN_SEARCH_MS = 3_000L
-        const val MAX_SEARCH_MS = 8_000L
+        const val MIN_SEARCH_MS = 2_000L
+        const val MAX_SEARCH_MS = 5_000L
 
         /** How many recently-shown opponents [seen] remembers before it starts forgetting the oldest. */
         const val SEEN_CAP = 40

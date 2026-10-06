@@ -121,7 +121,7 @@ fun PaintedPage(
                 .statusBarsPadding()
                 .padding(start = 14.dp, top = 12.dp)
                 .size(54.dp)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onBack)
+                .pressable(pressedScale = 0.88f, onClick = onBack)
         )
     }
 }
