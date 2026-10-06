@@ -526,9 +526,13 @@ private fun JokerTile(
         label = "tileScale"
     )
     Box(
-        modifier = modifier
+        // [modifier] goes AFTER the offset and size: the tutorial's spotlight measures the tile through it, and
+        // measured before the offset it read the tile as sitting in the top-left corner — the hole and the pointing
+        // hand went there, and the real button stayed covered and untappable.
+        modifier = Modifier
             .offset(x, top)
             .size(width, height)
+            .then(modifier)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
     ) {

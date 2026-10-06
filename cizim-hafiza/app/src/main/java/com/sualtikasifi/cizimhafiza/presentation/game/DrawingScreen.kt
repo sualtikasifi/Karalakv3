@@ -234,16 +234,24 @@ fun DrawingScreen(
 
         // --- The word, on the notepad sign ---
         val wordText = state.word.text.capitalizeForWordLanguage(wordLanguage)
-        val wordSize = (a(425f).value * 0.97f / (wordText.length.coerceAtLeast(1) * 0.5f)).coerceIn(19f, 34f * f)
+        // Short words at full size on one line; long ones (or phrases) drop a little in size and run onto two or three
+        // lines inside the sign — measured, so nothing is ever cut off — breaking a single very long word with a hyphen
+        // rather than shrinking it to nothing.
+        val wordSize = (a(425f).value * 0.97f / (wordText.length.coerceAtLeast(1) * 0.5f)).coerceIn(24f, 34f * f)
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.offset(a(135f), a(236f)).size(a(425f), a(104f)).springIn(key = state.word.id, fromY = -26, stepMs = 0)
+            modifier = Modifier.offset(a(125f), a(232f)).size(a(445f), a(112f)).springIn(key = state.word.id, fromY = -26, stepMs = 0)
         ) {
-            Text(
+            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                 text = wordText,
-                style = PaintedStyle(color = ink, fontSize = wordSize.sp, textAlign = TextAlign.Center, lineHeight = (wordSize * 1.05f).sp),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                style = PaintedStyle(color = ink, fontSize = wordSize.sp, textAlign = TextAlign.Center, lineHeight = (wordSize * 1.02f).sp)
+                    .copy(
+                        hyphens = androidx.compose.ui.text.style.Hyphens.Auto,
+                        lineBreak = androidx.compose.ui.text.style.LineBreak.Heading
+                    ),
+                maxLines = 3,
+                minScale = 0.55f,
+                modifier = Modifier.fillMaxSize()
             )
         }
         val underline = remember(state.word.id) { androidx.compose.animation.core.Animatable(0f) }
