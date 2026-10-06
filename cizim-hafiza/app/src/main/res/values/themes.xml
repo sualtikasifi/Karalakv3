@@ -36,8 +36,8 @@
              moment before the opening scene). Without it the launcher stays on screen until the app draws its first
              frame, and that frame is already the opening scene (see MainActivity / SplashSceneDrawable). -->
         <item name="android:windowDisablePreview">true</item>
-        <item name="android:windowBackground">@color/splash_screen_background</item>
-        <item name="windowSplashScreenBackground">@color/splash_screen_background</item>
+        <item name="android:windowBackground">@drawable/splash_scene_window</item>
+        <item name="windowSplashScreenBackground">@android:color/transparent</item>
         <!-- Android 12+ always opens on this system splash (it cannot be turned off and holds only a colour and one
              icon). Built the way the platform guidelines ask: one light, flat colour and the logo as a vector that
              animates in (under 1 s). MainActivity holds it until the painted opening scene is drawn underneath,
