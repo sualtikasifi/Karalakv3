@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.sualtikasifi.cizimhafiza.R
+import kotlinx.coroutines.flow.first
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -57,7 +58,7 @@ import kotlin.math.sin
  * it is skipped outright when the device has animations turned off.
  */
 @Composable
-fun BrandSplash(onFinished: () -> Unit) {
+fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
     val context = LocalContext.current
     val animationsDisabled = remember {
         runCatching {
@@ -75,6 +76,7 @@ fun BrandSplash(onFinished: () -> Unit) {
         onFinished()
     }
 
+    val appReadyState = androidx.compose.runtime.rememberUpdatedState(appReady)
     val progress = remember { Animatable(0f) }
     var skipped by remember { mutableStateOf(false) }
     val total = if (returning) FAST_TOTAL_MILLIS else TOTAL_MILLIS
@@ -85,6 +87,10 @@ fun BrandSplash(onFinished: () -> Unit) {
             return@LaunchedEffect
         }
         progress.animateTo(1f, tween(total, easing = LinearEasing))
+        // Never lift the scene off a screen that has nothing under it yet: on a slow phone the app below can still be
+        // composing when the timeline ends, and that gap used to show as a plain brown screen. The bar simply stays
+        // full until the app has drawn.
+        androidx.compose.runtime.snapshotFlow { appReadyState.value }.first { it }
         finish()
     }
     // A second animateTo on the same Animatable cancels the first, so the timeline simply stops where the tap caught it
@@ -92,6 +98,7 @@ fun BrandSplash(onFinished: () -> Unit) {
     LaunchedEffect(skipped) {
         if (!skipped) return@LaunchedEffect
         progress.animateTo(1f, tween(SKIP_MILLIS, easing = LinearEasing))
+        androidx.compose.runtime.snapshotFlow { appReadyState.value }.first { it }
         finish()
     }
 

@@ -156,10 +156,17 @@ class MainActivity : AppCompatActivity() {
                     // BrandSplash, so the scene shows almost at once and the app builds itself underneath while its
                     // loading bar fills. Saved, so a rotation or language change recreate does not wait again.
                     var appReady by rememberSaveable { mutableStateOf(false) }
+                    // True once the app below has composed AND had a couple of frames to draw: only then may the opening
+                    // scene be lifted (see BrandSplash's appReady).
+                    var appDrawn by rememberSaveable { mutableStateOf(false) }
                     LaunchedEffect(Unit) {
                         androidx.compose.runtime.withFrameNanos { }
                         com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("nav graph starts composing")
                         appReady = true
+                        androidx.compose.runtime.withFrameNanos { }
+                        androidx.compose.runtime.withFrameNanos { }
+                        appDrawn = true
+                        com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("app drawn, scene may lift")
                     }
                     if (appReady) CizimHafizaNavGraph(
                         onNavControllerReady = { navController = it },
@@ -177,7 +184,7 @@ class MainActivity : AppCompatActivity() {
                     // it — only a genuinely cold start does.
                     var brandSplashVisible by rememberSaveable { mutableStateOf(true) }
                     if (brandSplashVisible) {
-                        BrandSplash(onFinished = {
+                        BrandSplash(appReady = appDrawn, onFinished = {
                             brandSplashVisible = false
                             // The scene served as the window's background only to be there for the very first frame.
                             window.setBackgroundDrawableResource(R.color.splash_background)
