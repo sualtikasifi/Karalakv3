@@ -43,6 +43,10 @@
              AppCompatDelegate.setApplicationLocales() triggers on a
              language switch, which is exactly what kept flashing dark
              despite windowSplashScreenBackground already being correct. -->
+        <!-- No system "starting window" at all: that window is a plain colour (the brown players kept seeing for a
+             moment before the opening scene). Without it the launcher stays on screen until the app draws its first
+             frame, and that frame is already the opening scene (see MainActivity / SplashSceneDrawable). -->
+        <item name="android:windowDisablePreview">true</item>
         <item name="android:windowBackground">@color/splash_background</item>
         <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_blank</item>

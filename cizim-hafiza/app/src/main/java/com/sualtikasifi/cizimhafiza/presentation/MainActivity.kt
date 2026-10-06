@@ -181,6 +181,7 @@ class MainActivity : AppCompatActivity() {
                             brandSplashVisible = false
                             // The scene served as the window's background only to be there for the very first frame.
                             window.setBackgroundDrawableResource(R.color.splash_background)
+                            com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.evict(R.drawable.splash_art)
                         })
                     }
                 }

@@ -78,6 +78,11 @@ echo "--- am start -W (times out on the software-rendered emulator, kept for ref
 # The activity manager's own "Displayed" line is the reliable first-frame time here.
 adb logcat -d | grep "Displayed $PKG" | cut -c1-200 | tee "$OUT/startup_displayed.txt"
 adb logcat -d -s StartupTiming | tee "$OUT/startup_timing.txt"
+# What the player sees while the app starts: a screenshot every few tenths of a second from the moment of launch
+# (l01..l14). A plain-colour first screenshot means the system's starting window is still showing.
+adb shell am force-stop $PKG; sleep 3
+adb shell "am start -n $ACT" >/dev/null 2>&1 &
+for i in $(seq 1 14); do shot l$(printf %02d $i); sleep 0.2; done
 
 # The slow emulator sometimes shows a system 'Pixel Launcher isn't responding' dialog; dismiss it and bring the app back.
 tap_text "Wait" || true

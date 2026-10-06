@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
  * bounded, so memory stays flat: the least recently used picture goes first.
  */
 object BackdropCache {
-    private val BUDGET_BYTES = minOf(96L * 1024 * 1024, Runtime.getRuntime().maxMemory() / 3).toInt()
+    private val BUDGET_BYTES = minOf(128L * 1024 * 1024, Runtime.getRuntime().maxMemory() / 3).toInt()
 
     private val cache = object : LruCache<Int, ImageBitmap>(BUDGET_BYTES) {
         override fun sizeOf(key: Int, value: ImageBitmap): Int = value.width * value.height * 4
@@ -48,6 +48,9 @@ object BackdropCache {
 
     private val locks = HashMap<Int, Any>()
     private fun lockFor(id: Int): Any = synchronized(locks) { locks.getOrPut(id) { Any() } }
+
+    /** Drops a picture that will not be needed again (the opening scene once the app is up), freeing its memory. */
+    fun evict(id: Int) { cache.remove(id) }
 
     /** Decodes [ids] on a background thread, one after another, so they are waiting when their screens open. */
     fun preload(context: Context, ids: List<Int>) {
