@@ -289,9 +289,18 @@ fun SettingsScreen(
             }
         }
 
-        // ---- Rows ----------------------------------------------------------------------------------------------
+        // ---- Rows ----
+        // Where a row painted at [y] (bg_settings) sits in the picture actually shown: without the battery card the
+        // card is cut out of the picture and the rows move up into its place, the gaps between them a little taller
+        // (bg_settings_compact) — never an empty stretch of wall where the card was.
+        fun rowY(y: Float): Float {
+            if (needsBatteryFix) return y
+            val gapsBefore = listOf(1163f, 1286f, 1396f, 1507f, 1617f, 1731f).count { it < y }
+            return y - 300f + 50f * gapsBefore
+        }
         @Composable
-        fun SceneRow(cy: Float, label: String, onClick: () -> Unit, extra: Modifier = Modifier, content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {}) {
+        fun SceneRow(cy0: Float, label: String, onClick: () -> Unit, extra: Modifier = Modifier, content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {}) {
+            val cy = rowY(cy0)
             val sink = rememberSink(0.95f)
             Box(
                 box(52f, cy - 47f, 790f, cy + 47f)
@@ -357,7 +366,7 @@ fun SettingsScreen(
             extra = if (!accountLinked) Modifier.travelingLight((40f * us).dp) else Modifier
         )
         if (showAccountNudge) {
-            Box(box(134f, 1527f, 158f, 1551f).background(Color(0xFFE53935), CircleShape).border(2.dp, Color.White, CircleShape))
+            Box(box(134f, rowY(1527f), 158f, rowY(1551f)).background(Color(0xFFE53935), CircleShape).border(2.dp, Color.White, CircleShape))
         }
         SceneRow(
             1677f, stringResource(R.string.settings_rate_app),

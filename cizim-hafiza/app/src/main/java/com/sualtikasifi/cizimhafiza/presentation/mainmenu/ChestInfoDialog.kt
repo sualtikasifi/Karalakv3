@@ -77,7 +77,7 @@ internal fun ChestInfoDialog(onDismiss: () -> Unit) {
             text = stringResource(R.string.chest_info_contents_title),
             fontFamily = DisplayFont,
             fontWeight = FontWeight.ExtraBold,
-            fontSize = 15.sp,
+            fontSize = 14.sp,
             color = InfoInk,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
@@ -97,10 +97,11 @@ internal fun ChestInfoDialog(onDismiss: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(text = "🎬", fontSize = 20.sp)
+            Text(text = "🎬", fontSize = 16.sp)
             Text(
                 text = stringResource(R.string.chest_info_speedup_tip),
-                style = MaterialTheme.typography.bodySmall,
+                fontSize = 11.sp,
+                lineHeight = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = InfoInk
             )
@@ -150,8 +151,8 @@ private fun InfoStep(number: Int, emoji: String, title: String, body: String, fi
             }
         }
         Column(modifier = Modifier.weight(1f).padding(vertical = 2.dp)) {
-            Text(text = "$emoji  $title", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.ExtraBold, color = InfoInk)
-            Text(text = body, fontSize = 12.sp, lineHeight = 14.sp, color = InfoSoft)
+            Text(text = "$emoji  $title", fontSize = 14.sp, lineHeight = 17.sp, fontWeight = FontWeight.ExtraBold, color = InfoInk)
+            Text(text = body, fontSize = 11.5.sp, lineHeight = 13.5.sp, color = InfoSoft)
         }
     }
 }
@@ -171,13 +172,13 @@ private fun InfoChestCard(tier: ChestTier) {
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Box(modifier = Modifier.width(42.dp), contentAlignment = Alignment.Center) {
-            ChestImage(tier = tier, width = 40.dp)
+            ChestImage(tier = tier, width = 34.dp)
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(0.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = stringResource(tier.labelRes()),
-                    style = MaterialTheme.typography.titleSmall,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = InfoInk,
                     modifier = Modifier.weight(1f, fill = false)
@@ -193,28 +194,21 @@ private fun InfoChestCard(tier: ChestTier) {
                         .padding(horizontal = 8.dp, vertical = 1.dp)
                 )
             }
+            // Gold and jokers (and the pen, for the rare chest) on one line: the window has to fit without scrolling.
             Text(
-                text = "🪙 " + stringResource(R.string.chest_detail_gold, tier.goldReward.first, tier.goldReward.last),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
+                text = listOfNotNull(
+                    "🪙 " + stringResource(R.string.chest_detail_gold, tier.goldReward.first, tier.goldReward.last),
+                    "🎲 " + when (tier) {
+                        ChestTier.SILVER -> stringResource(R.string.chest_detail_jokers_silver, 30)
+                        ChestTier.GOLD -> stringResource(R.string.chest_detail_jokers_gold, 30)
+                        ChestTier.RARE -> stringResource(R.string.chest_detail_jokers_rare, 40)
+                    },
+                    if (tier == ChestTier.RARE) "✏️ " + stringResource(R.string.chest_detail_pen, 12) else null
+                ).joinToString("\n"),
+                fontSize = 11.sp,
+                lineHeight = 13.sp,
                 color = InfoInk
             )
-            Text(
-                text = "🎲 " + when (tier) {
-                    ChestTier.SILVER -> stringResource(R.string.chest_detail_jokers_silver, 30)
-                    ChestTier.GOLD -> stringResource(R.string.chest_detail_jokers_gold, 30)
-                    ChestTier.RARE -> stringResource(R.string.chest_detail_jokers_rare, 40)
-                },
-                fontSize = 12.sp,
-                color = InfoSoft
-            )
-            if (tier == ChestTier.RARE) {
-                Text(
-                    text = "✏️ " + stringResource(R.string.chest_detail_pen, 12),
-                    fontSize = 12.sp,
-                    color = InfoSoft
-                )
-            }
         }
     }
 }
