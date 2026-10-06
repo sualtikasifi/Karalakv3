@@ -86,9 +86,41 @@ for i in $(seq 1 14); do shot l$(printf %02d $i); sleep 0.2; done
 # The same with animations ON, the way players see it: the logo growing into the opening scene (m01..m14).
 adb shell settings put global animator_duration_scale 1; adb shell settings put global transition_animation_scale 1; adb shell settings put global window_animation_scale 1
 adb shell am force-stop $PKG; sleep 3
-adb shell "am start -n $ACT" >/dev/null 2>&1 &
-for i in $(seq 1 14); do shot m$(printf %02d $i); sleep 0.1; done
-sleep 4
+adb logcat -c
+# A real video of the launch (screenshots are too slow to catch a splash), turned into a contact sheet of frames.
+adb shell screenrecord --time-limit 20 /sdcard/launch.mp4 &
+REC=$!
+sleep 1
+# Started from the launcher icon (dock, bottom right), as a player does: Android shows its own splash only for a
+# launcher start, never for `am start` from a shell.
+adb shell input keyevent KEYCODE_HOME; sleep 1; tap_text "Wait" || true; sleep 1; adb shell input keyevent KEYCODE_HOME; sleep 1
+adb shell input tap 918 1970
+for i in $(seq 1 6); do shot m$(printf %02d $i); sleep 0.1; done
+wait $REC; sleep 1
+adb pull /sdcard/launch.mp4 "$OUT/launch.mp4" >/dev/null 2>&1 || true
+adb logcat -d | grep -iE "splash|StartingSurface|StartingWindow|AnimatedVector|VectorDrawable" | cut -c1-240 > "$OUT/splash_log.txt" || true
+if [ -f "$OUT/launch.mp4" ]; then
+  python3 -c "import PIL" 2>/dev/null || python3 -m pip install -q pillow >/dev/null 2>&1 || true
+  command -v ffmpeg >/dev/null || (sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1 || true)
+  mkdir -p /tmp/lf && rm -f /tmp/lf/*.png
+  ffmpeg -loglevel error -i "$OUT/launch.mp4" -vf "fps=8,scale=160:-1" /tmp/lf/f%03d.png || true
+  python3 - "$OUT/launch_sheet.png" <<'PY'
+import sys, glob
+from PIL import Image
+fs = sorted(glob.glob('/tmp/lf/f*.png'))[:160]
+if fs:
+    ims = [Image.open(f).convert('RGB') for f in fs]
+    w, h = ims[0].size
+    cols = 16
+    rows = (len(ims) + cols - 1) // cols
+    sheet = Image.new('RGB', (w * cols, h * rows), 'white')
+    for i, im in enumerate(ims):
+        sheet.paste(im, ((i % cols) * w, (i // cols) * h))
+    sheet.save(sys.argv[1])
+PY
+  rm -f "$OUT/launch.mp4"
+fi
+sleep 2
 adb shell settings put global animator_duration_scale 0; adb shell settings put global transition_animation_scale 0; adb shell settings put global window_animation_scale 0
 
 # The slow emulator sometimes shows a system 'Pixel Launcher isn't responding' dialog; dismiss it and bring the app back.
@@ -144,7 +176,11 @@ adb shell input keyevent KEYCODE_BACK; sleep 2
 # Settings: open it from the tile, look at it, flip one switch, press-and-hold a row.
 adb shell input tap 880 1650; sleep 4; shot s01_settings
 adb shell input tap 540 842; sleep 2; shot s02_settings_switch
-(adb shell input swipe 540 2012 540 2012 4000 &) ; sleep 2; shot s03_settings_press; sleep 3
+(adb shell input swipe 540 2012 540 2012 4000 &) ; sleep 2; shot s03_settings_press; sleep 4
+shot s05_account
+adb shell input keyevent KEYCODE_BACK; sleep 2
+adb shell input tap 540 1870; sleep 3; shot s04_report
+adb shell input keyevent KEYCODE_BACK; sleep 2
 adb shell input keyevent KEYCODE_BACK; sleep 2
 # Quick match: the "Rakip aranıyor" scene shows only while the search runs, so shoot early and often.
 adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 14; dismiss; handle_consent; sleep 3

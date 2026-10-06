@@ -1,5 +1,10 @@
 package com.sualtikasifi.cizimhafiza.presentation.account
 
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -110,58 +115,24 @@ fun AccountScreen(
         if (uiState.restartRequired) AppRestarter.restart(context)
     }
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .screenBackground()
-                    .padding(padding)
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                Spacer(modifier = Modifier.height(TopActionsClearance))
-
-                ProfileHeader(uiState)
-                Spacer(modifier = Modifier.height(10.dp))
-                StatsRow(uiState)
-                Spacer(modifier = Modifier.height(10.dp))
-                AccountCard(
-                    uiState = uiState,
-                    onSignIn = viewModel::signIn,
-                    onSignOut = viewModel::promptSignOut
-                )
-
-                uiState.message?.let { message ->
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Text(
-                        text = message.asString(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = AppTheme.tokens.success,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                uiState.errorMessage?.let { message ->
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Text(
-                        text = message.asString(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                // Offered whether or not a Google account is signed in: an
-                // anonymous player still has a uid with a profile, a friends
-                // list and a league entry under it, and Play's requirement is
-                // about the data, not about how the account was created.
-                Spacer(modifier = Modifier.height(24.dp))
-                DangerZone(isDeleting = uiState.isDeleting, onDelete = viewModel::promptDeleteAccount)
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-            ScreenTopActions(onBack = onBack, title = stringResource(R.string.account_title), modifier = Modifier.align(Alignment.TopStart))
+    com.sualtikasifi.cizimhafiza.presentation.common.RoomPage(title = stringResource(R.string.account_title), onBack = onBack) {
+        ProfileHeader(uiState)
+        Spacer(modifier = Modifier.height(10.dp))
+        StatsRow(uiState)
+        Spacer(modifier = Modifier.height(10.dp))
+        AccountCard(
+            uiState = uiState,
+            onSignIn = viewModel::signIn,
+            onSignOut = viewModel::promptSignOut,
+            onDelete = viewModel::promptDeleteAccount
+        )
+        uiState.message?.let { message ->
+            Spacer(modifier = Modifier.height(10.dp))
+            FeedbackLine(message.asString(), AppTheme.tokens.success)
+        }
+        uiState.errorMessage?.let { message ->
+            Spacer(modifier = Modifier.height(10.dp))
+            FeedbackLine(message.asString(), MaterialTheme.colorScheme.error)
         }
     }
 
@@ -226,9 +197,25 @@ fun AccountScreen(
     }
 }
 
+/** A result line (saved / failed) on a cream strip so it reads over the painted table. */
+@Composable
+private fun FeedbackLine(text: String, color: Color) {
+    Text(
+        text = text,
+        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = color, fontSize = 15.sp, textAlign = TextAlign.Center),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color(0xF2FFF6E4))
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    )
+}
+
+private val PageInk = Color(0xFF3B2314)
+
 /**
- * The top of the page: the player's frame and picture, their name, and the level / rank line that turns over
- * every five seconds (the same label the league table and the lobby use), with progress to the next level.
+ * The top of the page on a parchment card: the player's frame and picture, their name, the rank line, who the profile
+ * belongs to, and the level star heading the bar to the next level.
  */
 @Composable
 private fun ProfileHeader(uiState: AccountUiState) {
@@ -237,64 +224,77 @@ private fun ProfileHeader(uiState: AccountUiState) {
         linked?.displayName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.account_guest_badge)
     }
     val progress = uiState.levelProgress
-    RaisedCard(corner = 28.dp, modifier = Modifier.fillMaxWidth()) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(MaterialTheme.colorScheme.primaryContainer, Color.Transparent)
-                        )
-                    )
+    com.sualtikasifi.cizimhafiza.presentation.common.ParchmentCard(padding = 14.dp) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            LevelAvatar(
+                level = uiState.level,
+                frame = uiState.frame,
+                size = 84.dp,
+                photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(linked?.photoUrl)
             )
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LevelAvatar(
-                        level = uiState.level,
-                        frame = uiState.frame,
-                        size = 76.dp,
-                        photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(linked?.photoUrl)
-                    )
-                    Spacer(modifier = Modifier.size(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = name,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        RankLevelLabel(level = uiState.level, bullet = false)
-                        Spacer(modifier = Modifier.height(6.dp))
-                        StatusPill(linked = linked)
-                    }
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                LinearProgressIndicator(
-                    progress = { progress.progressFraction },
-                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape)
+            Spacer(modifier = Modifier.size(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = name,
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 24.sp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(
-                        text = if (progress.isMaxLevel) stringResource(R.string.account_xp_max)
-                        else stringResource(R.string.account_xp_progress, progress.xpIntoLevel, progress.xpForThisLevel),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    if (!progress.isMaxLevel) {
-                        Text(
-                            text = stringResource(R.string.account_xp_to_next, progress.xpToNextLevel),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                RankLevelLabel(level = uiState.level, bullet = false)
+                Spacer(modifier = Modifier.height(6.dp))
+                StatusPill(linked = linked)
             }
         }
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            LevelStar(uiState.level)
+            Spacer(modifier = Modifier.size(6.dp))
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(14.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF4A2A18))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(progress.progressFraction.coerceIn(0.04f, 1f))
+                        .clip(CircleShape)
+                        .background(Brush.verticalGradient(listOf(Color(0xFFFFC04A), Color(0xFFF58A1F))))
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(modifier = Modifier.fillMaxWidth().padding(start = 46.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+                text = if (progress.isMaxLevel) stringResource(R.string.account_xp_max)
+                else stringResource(R.string.account_xp_progress, progress.xpIntoLevel, progress.xpForThisLevel),
+                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 13.sp),
+                maxLines = 1
+            )
+            if (!progress.isMaxLevel) {
+                Text(
+                    text = stringResource(R.string.account_xp_to_next, progress.xpToNextLevel),
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFF8A6A50), fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+/** The level as a number on a gold star. */
+@Composable
+private fun LevelStar(level: Int) {
+    Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+        Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFF8A4E12), modifier = Modifier.fillMaxSize())
+        Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFB627), modifier = Modifier.fillMaxSize(0.82f))
+        Text(
+            text = level.toString(),
+            style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color.White, fontSize = 13.sp, shadow = androidx.compose.ui.graphics.Shadow(Color(0xFF5A2815), blurRadius = 2f)),
+            modifier = Modifier.padding(top = 3.dp)
+        )
     }
 }
 
@@ -332,51 +332,45 @@ private fun StatusPill(linked: AuthState.Linked?) {
     }
 }
 
-/** Three figures worth glancing at: total XP, games played, best streak. */
+/** Three figures worth glancing at: total XP, games played, best streak — each a note pinned to the wall. */
 @Composable
 private fun StatsRow(uiState: AccountUiState) {
     val number = remember { java.text.NumberFormat.getIntegerInstance() }
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-        StatTile(
-            value = number.format(uiState.levelProgress.totalXp),
-            label = stringResource(R.string.account_stat_xp),
-            modifier = Modifier.weight(1f)
-        )
-        StatTile(
-            value = number.format(uiState.gamesPlayed),
-            label = stringResource(R.string.account_stat_games),
-            modifier = Modifier.weight(1f)
-        )
-        StatTile(
-            value = number.format(uiState.bestStreak),
-            label = stringResource(R.string.account_stat_streak),
-            modifier = Modifier.weight(1f)
-        )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        StatTile("⭐", number.format(uiState.levelProgress.totalXp), stringResource(R.string.account_stat_xp), Color(0xFF34A853), Modifier.weight(1f))
+        StatTile("🎮", number.format(uiState.gamesPlayed), stringResource(R.string.account_stat_games), Color(0xFF2E86D6), Modifier.weight(1f))
+        StatTile("📅", number.format(uiState.bestStreak), stringResource(R.string.account_stat_streak), Color(0xFFE5483C), Modifier.weight(1f))
     }
 }
 
 @Composable
-private fun StatTile(value: String, label: String, modifier: Modifier = Modifier) {
-    RaisedCard(corner = 18.dp, modifier = modifier) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                maxLines = 2
-            )
+private fun StatTile(emoji: String, value: String, label: String, pin: Color, modifier: Modifier = Modifier) {
+    Box(modifier = modifier) {
+        com.sualtikasifi.cizimhafiza.presentation.common.ParchmentCard(padding = 8.dp, modifier = Modifier.padding(top = 6.dp)) {
+            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(emoji, fontSize = 28.sp)
+                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                    text = value,
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 21.sp, textAlign = TextAlign.Center),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                    text = label,
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+                    minScale = 0.65f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
+        // The pin holding the note up.
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .size(14.dp)
+                .shadow(2.dp, CircleShape)
+                .background(pin, CircleShape)
+                .border(2.dp, Color.White.copy(alpha = 0.6f), CircleShape)
+        )
     }
 }
 
@@ -400,63 +394,82 @@ private fun SectionHeader(icon: androidx.compose.ui.graphics.vector.ImageVector,
  * action that fits (sign in, or sign out).
  */
 @Composable
-private fun AccountCard(uiState: AccountUiState, onSignIn: () -> Unit, onSignOut: () -> Unit) {
-    RaisedCard(corner = 22.dp, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
-            SectionHeader(Icons.Filled.CloudSync, stringResource(R.string.account_section_account))
-            Spacer(modifier = Modifier.height(8.dp))
-            when {
-                uiState.isSignedIn -> SyncStatusRow(lastBackupAtMillis = uiState.lastBackupAtMillis)
-                uiState.isGoogleSignInConfigured -> Text(
-                    text = stringResource(R.string.account_guest_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                else -> Text(
-                    text = stringResource(R.string.account_not_configured_message),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (uiState.isSignedIn || uiState.isGoogleSignInConfigured) {
-                Spacer(modifier = Modifier.height(10.dp))
-                if (uiState.isBusy) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                        CircularProgressIndicator(modifier = Modifier.size(30.dp))
-                    }
-                } else if (uiState.isSignedIn) {
-                    SecondaryButton(
-                        text = stringResource(R.string.account_sign_out),
-                        icon = Icons.AutoMirrored.Filled.Logout,
-                        onClick = onSignOut,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else {
-                    GoogleSignInButton(onClick = onSignIn, modifier = Modifier.fillMaxWidth())
+private fun AccountCard(uiState: AccountUiState, onSignIn: () -> Unit, onSignOut: () -> Unit, onDelete: () -> Unit) {
+    com.sualtikasifi.cizimhafiza.presentation.common.ParchmentCard(padding = 14.dp) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .shadow(3.dp, CircleShape)
+                    .background(Brush.verticalGradient(listOf(Color(0xFFFFC04A), Color(0xFFF2861B))), CircleShape),
+                contentAlignment = Alignment.Center
+            ) { Icon(Icons.Filled.CloudSync, contentDescription = null, tint = PageInk, modifier = Modifier.size(26.dp)) }
+            Spacer(modifier = Modifier.size(12.dp))
+            Text(
+                text = stringResource(R.string.account_section_account),
+                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 21.sp)
+            )
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        when {
+            uiState.isSignedIn -> SyncStatusRow(lastBackupAtMillis = uiState.lastBackupAtMillis)
+            uiState.isGoogleSignInConfigured -> Text(
+                text = stringResource(R.string.account_guest_hint),
+                style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(14.sp, 19.sp).copy(color = PageInk, textAlign = TextAlign.Start)
+            )
+            else -> Text(
+                text = stringResource(R.string.account_not_configured_message),
+                style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(14.sp, 19.sp).copy(color = PageInk, textAlign = TextAlign.Start)
+            )
+        }
+        if (uiState.isSignedIn || uiState.isGoogleSignInConfigured) {
+            Spacer(modifier = Modifier.height(12.dp))
+            if (uiState.isBusy) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    CircularProgressIndicator(modifier = Modifier.size(30.dp))
                 }
+            } else if (uiState.isSignedIn) {
+                com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
+                    text = stringResource(R.string.account_sign_out),
+                    onClick = onSignOut,
+                    height = 56.dp,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                GoogleSignInButton(onClick = onSignIn, modifier = Modifier.fillMaxWidth())
             }
         }
+        // Account deletion at the foot of the card, set apart by a rule: never one tap from something harmless.
+        Spacer(modifier = Modifier.height(12.dp))
+        Box(Modifier.fillMaxWidth(0.7f).height(1.dp).align(Alignment.CenterHorizontally).background(Color(0x33795548)))
+        Spacer(modifier = Modifier.height(12.dp))
+        DangerZone(isDeleting = uiState.isDeleting, onDelete = onDelete)
     }
 }
 
-/** Account deletion, set apart at the bottom so it is never one tap from something harmless. */
+/** Account deletion: a red outlined pill with a bin. */
 @Composable
 private fun DangerZone(isDeleting: Boolean, onDelete: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         if (isDeleting) {
             CircularProgressIndicator(modifier = Modifier.size(28.dp))
         } else {
-            Text(
-                text = stringResource(R.string.account_delete_action),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center,
+            Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(14.dp))
-                    .border(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFFFF6EE))
+                    .border(1.5.dp, Color(0xFFE5483C), RoundedCornerShape(16.dp))
                     .clickable(onClick = onDelete)
-                    .padding(horizontal = 18.dp, vertical = 10.dp)
-            )
+                    .padding(horizontal = 18.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(Icons.Filled.Delete, contentDescription = null, tint = Color(0xFFE5483C), modifier = Modifier.size(20.dp))
+                Text(
+                    text = stringResource(R.string.account_delete_action),
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFFD63A2E), fontSize = 15.sp)
+                )
+            }
         }
     }
 }

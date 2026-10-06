@@ -415,6 +415,8 @@
     <!-- Report bug -->
     <string name="report_bug_title">Sorun Bildir</string>
     <string name="report_bug_hint">Bir öneri mi getirdin, yoksa bir sorunla mı karşılaştın? Kısaca anlat, cihaz bilgilerinle birlikte bize ulaşsın.</string>
+    <string name="report_bug_intro_title">Bir sorun mu yaşıyorsun?</string>
+    <string name="report_bug_intro_body">Karşılaştığın bir hatayı, önerini veya sorunu bizimle paylaşabilirsin. En kısa sürede dönüş yapacağız.</string>
     <string name="report_bug_category_label">Bildirim Türü</string>
     <string name="report_bug_category_suggestion">Öneri</string>
     <string name="report_bug_category_complaint">Şikayet</string>

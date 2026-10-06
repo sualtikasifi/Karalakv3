@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.achievements
 
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.animation.core.Animatable
 import com.sualtikasifi.cizimhafiza.presentation.common.springIn
@@ -194,7 +195,7 @@ fun AchievementsScreen(
                 .statusBarsPadding()
                 .padding(start = 16.dp, top = 12.dp)
                 .size(56.dp)
-                .clickable(interactionSource = backInteraction, indication = null, onClick = onBack)
+                .pressable(pressedScale = 0.88f, onClick = onBack)
         )
 
         selectedAchievement?.let { item ->

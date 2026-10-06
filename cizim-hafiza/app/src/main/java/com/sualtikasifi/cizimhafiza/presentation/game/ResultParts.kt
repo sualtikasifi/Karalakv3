@@ -77,7 +77,7 @@ private val XpOrange = Color(0xFFF2541B)
 
 /**
  * The head of the result screen: the painted picture with the title lettered on its sign and the round's XP (counting up)
- * with the line that explains it on the plate under the sign. Its bottom edge melts into the wall behind the cards.
+ * with the line that explains it on the plate under the sign. Its edges are kept sharp (no fade into the wall).
  */
 @Composable
 internal fun ResultHeader(title: String, xp: Int, explanation: String, onBack: () -> Unit) {
@@ -85,14 +85,7 @@ internal fun ResultHeader(title: String, xp: Int, explanation: String, onBack: (
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(HeadW / HeadH)
-            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-            .drawWithContent {
-                drawContent()
-                drawRect(
-                    brush = Brush.verticalGradient(0f to Color.Transparent, 0.07f to Color.Black, 0.86f to Color.Black, 1f to Color.Transparent),
-                    blendMode = BlendMode.DstIn
-                )
-            }
+
     ) {
         val u = maxWidth / HeadW
         val fontScale0 = LocalDensity.current.fontScale
@@ -181,7 +174,7 @@ private fun StatCard(stat: ResultStat, modifier: Modifier) {
     val shape = RoundedCornerShape(16.dp)
     Row(
         modifier = modifier
-            .height(58.dp)
+            .height(52.dp)
             .shadow(3.dp, shape)
             .background(Brush.verticalGradient(listOf(Color(0xFFFFFAEE), Color(0xFFFFEFCF))), shape)
             .border(2.dp, CardBorder, shape)
@@ -389,7 +382,7 @@ internal fun ResultWordsBoard(
                 .border(2.dp, Color(0xFF6B3A18), RoundedCornerShape(10.dp)),
             contentAlignment = Alignment.Center
         ) {
-            LetteredText(title, 19.sp, maxLines = 1, modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp))
+            if (header != null) header() else LetteredText(title, 19.sp, maxLines = 1, modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp))
             if (onShareAll != null) {
                 Box(
                     modifier = Modifier
@@ -402,10 +395,6 @@ internal fun ResultWordsBoard(
                     contentAlignment = Alignment.Center
                 ) { Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp)) }
             }
-        }
-        if (header != null) {
-            Spacer(Modifier.height(8.dp))
-            header()
         }
         Spacer(Modifier.height(10.dp))
         val total = if (items.isEmpty()) placeholders else items.size
@@ -432,7 +421,7 @@ internal fun ResultWordsBoard(
 @Composable
 private fun WordSheet(number: Int, item: ResultItem?, wordLanguage: String, onClick: (ResultItem) -> Unit, modifier: Modifier) {
     val sheet = RoundedCornerShape(8.dp)
-    Box(modifier = modifier.aspectRatio(0.86f)) {
+    Box(modifier = modifier.aspectRatio(0.95f)) {
         Box(
             modifier = Modifier
                 .fillMaxSize()

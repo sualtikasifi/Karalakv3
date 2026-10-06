@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.friends
 
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -193,7 +194,7 @@ fun FriendsScreen(
                 .statusBarsPadding()
                 .padding(start = 16.dp, top = 12.dp)
                 .size(56.dp)
-                .clickable(interactionSource = noRipple, indication = null, onClick = onBack)
+                .pressable(pressedScale = 0.88f, onClick = onBack)
         )
         Box(
             modifier = Modifier

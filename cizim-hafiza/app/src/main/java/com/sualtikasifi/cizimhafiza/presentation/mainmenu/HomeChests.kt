@@ -419,7 +419,8 @@ internal fun HomeChestsPainted(
     // Title and tagline share one baseline (the tagline is the small line that closes the same row), centred in the
     // panel's header band.
     val tagline = stringResource(if ((0 until ChestSlots.SLOT_COUNT).all { slots.getOrNull(it) != null }) R.string.home_chests_full else R.string.home_chests_tagline)
-    Box(box(166f, 1428f, 728f, 1498f), contentAlignment = Alignment.Center) {
+    // Level with the painted chest beside it (its middle sits at about 1450).
+    Box(box(166f, 1416f, 728f, 1486f), contentAlignment = Alignment.Center) {
         androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.menu_chests),
