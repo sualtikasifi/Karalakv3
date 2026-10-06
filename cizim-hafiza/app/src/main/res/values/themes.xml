@@ -18,18 +18,7 @@
          frame (see MainActivity.installSplashScreen()). Hands off to
          Theme.CizimHafiza automatically once the app is ready to draw.
 
-         The icon is @drawable/splash_blank, a purpose-built asset rather than
-         the launcher icon. Two reasons. The launcher icon is an adaptive
-         icon whose background layer is white, and the splash paints that
-         background as a white disc on the cream field — a hard-edged circle
-         that belongs to the launcher grid, not to this screen. And the mark
-         has to line up, to the pixel, with BrandSplash's first frame (see
-         presentation/splash/BrandSplash.kt), which continues this screen in
-         Compose: an icon without its own background is drawn into a 288dp
-         canvas, splash_mark's artwork occupies a known 52% of its frame, so
-         Compose can reproduce the same 150dp mark in the same place and the
-         hand-off has nothing to reveal. Change the framing of one and the
-         other has to follow. -->
+         The icon is the round Karalak logo (@drawable/splash_logo), see below. -->
     <style name="Theme.Karalak.Splash" parent="Theme.SplashScreen">
         <!-- The classic starting-window attribute, not just
              windowSplashScreenBackground below. Android paints a "starting
@@ -49,7 +38,11 @@
         <item name="android:windowDisablePreview">true</item>
         <item name="android:windowBackground">@color/splash_background</item>
         <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_blank</item>
+        <!-- Android 12+ always shows this system splash on launch (it cannot be turned off, and it can only hold a
+             colour and one centred icon, never a full picture). Left empty it read as a plain brown screen, so it
+             carries the round Karalak logo; the painted scene then fades in over it (see MainActivity). The logo
+             fills 64% of its canvas so the platform's circular icon mask (2/3 of the canvas) never clips its rim. -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
         <item name="postSplashScreenTheme">@style/Theme.CizimHafiza</item>
     </style>
 </resources>

@@ -24,7 +24,11 @@
         <item name="android:windowDisablePreview">true</item>
         <item name="android:windowBackground">@color/splash_background</item>
         <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_blank</item>
+        <!-- Android 12+ always shows this system splash on launch (it cannot be turned off, and it can only hold a
+             colour and one centred icon, never a full picture). Left empty it read as a plain brown screen, so it
+             carries the round Karalak logo; the painted scene then fades in over it (see MainActivity). The logo
+             fills 64% of its canvas so the platform's circular icon mask (2/3 of the canvas) never clips its rim. -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
         <item name="windowSplashScreenAnimationDuration">180</item>
         <item name="postSplashScreenTheme">@style/Theme.CizimHafiza</item>
     </style>
