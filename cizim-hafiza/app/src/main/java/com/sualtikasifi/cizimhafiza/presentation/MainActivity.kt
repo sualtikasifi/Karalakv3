@@ -66,8 +66,8 @@ class MainActivity : AppCompatActivity() {
     private companion object {
         private const val TAG = "MainActivity"
 
-        /** Matches BrandSplash's own opening hold, so the two overlap exactly. */
-        const val SPLASH_EXIT_MILLIS = 180L
+        /** How long the system splash (logo on the field colour) takes to fade into the painted scene. */
+        const val SPLASH_EXIT_MILLIS = 320L
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,14 +76,8 @@ class MainActivity : AppCompatActivity() {
         // frame instead of a plain platform default screen.
         com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("activity.onCreate begin")
         installSplashScreen().setOnExitAnimationListener { splash ->
-            // A plain cross-fade, and deliberately nothing more. BrandSplash
-            // (see presentation/splash/) paints this exact cream field with
-            // this exact mark at this exact size as its own first frame, so
-            // there is nothing for the hand-off to reveal — moving or
-            // scaling the system splash on the way out would only break a
-            // seam that is otherwise invisible. The mark rises and the
-            // pencil starts writing after this fade has finished, not
-            // during it.
+            // A plain cross-fade: the system splash (round logo on the field colour) dissolves into the painted
+            // opening scene, which is already the window's background underneath it.
             //
             // Note what is NOT read here: splash.iconView. On API 31+ the
             // platform owns the splash view and getIconView() is documented

@@ -144,8 +144,8 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
         val offX = (wPx - ART_W * cover) / 2f
         val offY = (hPx - ART_H * cover) / 2f
 
-        // The scene is on screen from the first frame: no logo on a plain field first. (The system splash before it
-        // shows only the matching field colour, see splash_blank.)
+        // The scene is on screen from the first frame. (The system splash before it shows the round logo on the field
+        // colour and fades into this scene, see MainActivity.)
         val sceneAlpha = 1f
 
         Image(
