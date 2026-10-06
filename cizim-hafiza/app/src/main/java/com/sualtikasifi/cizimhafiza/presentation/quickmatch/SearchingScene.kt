@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -69,26 +70,17 @@ private val Ink = Color(0xFF3B2314)
  */
 @Composable
 internal fun SearchingScene(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "qm_search")
-    // State rather than `by`: read inside the Canvas / graphicsLayer lambdas, so the animation never recomposes.
-    val cycle = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = Doodles.size.toFloat(),
-        animationSpec = infiniteRepeatable(tween(DOODLE_MS * Doodles.size, easing = LinearEasing)),
-        label = "qm_doodle"
-    )
-    val dots = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 4f,
-        animationSpec = infiniteRepeatable(tween(1600, easing = LinearEasing)),
-        label = "qm_dots"
-    )
-    val sway = transition.animateFloat(
-        initialValue = -1f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(2400), RepeatMode.Reverse),
-        label = "qm_sway"
-    )
+    // One clock for everything that moves here, driven by frames rather than by animators: it keeps running even
+    // when the phone's animation scale is turned off (an endless spinner stand-in must never sit frozen).
+    // Read only inside draw / graphicsLayer lambdas, so it never recomposes the scene.
+    val clock = remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        val start = androidx.compose.runtime.withFrameMillis { it }
+        while (true) androidx.compose.runtime.withFrameMillis { clock.longValue = it - start }
+    }
+    val cycle = androidx.compose.runtime.remember { androidx.compose.runtime.derivedStateOf { (clock.longValue % (DOODLE_MS.toLong() * Doodles.size)) / DOODLE_MS.toFloat() } }
+    val dots = androidx.compose.runtime.remember { androidx.compose.runtime.derivedStateOf { (clock.longValue % 1600L) / 400f } }
+    val sway = androidx.compose.runtime.remember { androidx.compose.runtime.derivedStateOf { sin(clock.longValue / 2400f * PI.toFloat()) } }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val unit = maxOf(maxWidth / ArtW, maxHeight / ArtH)
@@ -98,7 +90,10 @@ internal fun SearchingScene(modifier: Modifier = Modifier) {
         val fontScale0 = LocalDensity.current.fontScale
         fun fs(art: Float) = (art * us / fontScale0).sp
         fun box(x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
-            Modifier.offset(offX + unit * x0, offY + unit * y0).size(unit * (x1 - x0), unit * (y1 - y0))
+            Modifier.offset(offX + unit * x0, offY + unit * y0)
+                // Unbounded: the picture is wider than the screen, and a plain size() would be clamped to it.
+                .wrapContentSize(Alignment.TopStart, unbounded = true)
+                .size(unit * (x1 - x0), unit * (y1 - y0))
 
         Image(
             painter = cachedPainterResource(R.drawable.bg_qm_search),
