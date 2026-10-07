@@ -147,7 +147,10 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
+            val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
+            LaunchedEffect(tab) { gridState.scrollToItem(0) }
             LazyVerticalGrid(
+                state = gridState,
                 columns = GridCells.Fixed(2),
                 modifier = Modifier
                     .fillMaxSize()
@@ -671,14 +674,14 @@ private fun PenCard(
         val w = maxWidth
         val h = maxHeight
         Image(painterResource(skin.cardRes()), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
-        Column(Modifier.offset(w * 0.25f, h * 0.43f).size(w * 0.68f, h * 0.27f)) {
+        Column(Modifier.offset(w * 0.34f, h * 0.42f).size(w * 0.6f, h * 0.27f)) {
             Text(text = stringResource(skin.labelRes), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Ink, maxLines = 1)
             skin.taglineRes()?.let {
                 Text(text = stringResource(it), fontSize = 10.sp, lineHeight = 11.sp, color = Ink.copy(alpha = 0.7f), maxLines = 1)
             }
         }
         Row(
-            Modifier.offset(w * 0.24f, h * 0.72f).size(w * 0.70f, h * 0.20f),
+            Modifier.offset(w * 0.3f, h * 0.72f).size(w * 0.64f, h * 0.2f),
             horizontalArrangement = Arrangement.spacedBy(w * 0.03f)
         ) {
             val m = Modifier.weight(1f).fillMaxHeight()
@@ -751,7 +754,7 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
         ),
         label = "daily-joker-glow"
     )
-    BoxWithConstraints(Modifier.fillMaxWidth().padding(bottom = 26.dp)) {
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(bottom = 36.dp)) {
         val w = maxWidth
         val h = w / 2.8f
         Box(Modifier.fillMaxWidth().height(h)) {
@@ -784,7 +787,7 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
         }
         PaintedPill(
             R.drawable.st_pill_green,
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth(0.84f).height(42.dp),
+            Modifier.align(Alignment.BottomCenter).offset(y = 6.dp).fillMaxWidth(0.84f).height(42.dp),
             onClick = onClaim
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
