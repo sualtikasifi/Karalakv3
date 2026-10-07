@@ -271,24 +271,24 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             // The title, lettered on the wooden sign (x 190..650, y 298..448 of the picture).
             Column(
                 modifier = Modifier
-                    .offset((artOffX + 190f * artScale).dp, (296f * artScale).dp)
+                    .offset((artOffX + 190f * artScale).dp, (277f * artScale).dp)
                     .size((460f * artScale).dp, (152f * artScale).dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Top
             ) {
                 com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
                     text = stringResource(R.string.app_name),
-                    size = (96f * artScale / fontScale0).sp,
+                    size = (84f * artScale / fontScale0).sp,
                     fill = Color(0xFFFFC21A),
                     outline = Color(0xFF4E2406),
-                    modifier = Modifier.fillMaxWidth().height((96f * artScale * 1.25f).dp)
+                    modifier = Modifier.fillMaxWidth().height((100f * artScale).dp)
                 )
                 com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
                     text = stringResource(R.string.store_title),
-                    size = (56f * artScale / fontScale0).sp,
+                    size = (48f * artScale / fontScale0).sp,
                     fill = Color.White,
                     outline = Color(0xFF4E2406),
-                    modifier = Modifier.fillMaxWidth().height((56f * artScale * 1.3f).dp)
+                    modifier = Modifier.fillMaxWidth().height((60f * artScale).dp)
                 )
             }
 
@@ -696,10 +696,10 @@ private fun PenCard(
         val w = maxWidth
         val h = maxHeight
         Image(painterResource(skin.cardRes()), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
-        Column(Modifier.offset(w * 0.34f, h * 0.42f).size(w * 0.6f, h * 0.27f)) {
+        Column(Modifier.offset(w * 0.4f, h * 0.42f).size(w * 0.55f, h * 0.27f)) {
             Text(text = stringResource(skin.labelRes), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Ink, maxLines = 1)
             skin.taglineRes()?.let {
-                Text(text = stringResource(it), fontSize = 10.sp, lineHeight = 11.sp, color = Ink.copy(alpha = 0.7f), maxLines = 1)
+                Text(text = stringResource(it), fontSize = 9.5.sp, lineHeight = 11.sp, color = Ink.copy(alpha = 0.7f), maxLines = 1)
             }
         }
         Row(
@@ -776,10 +776,11 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
         ),
         label = "daily-joker-glow"
     )
-    BoxWithConstraints(Modifier.fillMaxWidth().padding(bottom = 36.dp)) {
+    Box(Modifier.fillMaxWidth().padding(bottom = 30.dp)) {
+    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(2.4f)) {
         val w = maxWidth
-        val h = w / 2.8f
-        Box(Modifier.fillMaxWidth().height(h)) {
+        val h = maxHeight
+        Box(Modifier.fillMaxSize()) {
             Image(painterResource(R.drawable.st_card_daily), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
             com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.56f, Modifier.offset(w * 0.186f - h * 0.28f, h * 0.56f - h * 0.28f))
             Column(Modifier.offset(w * 0.31f, h * 0.27f).size(w * 0.4f, h * 0.5f)) {
@@ -809,7 +810,7 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
         }
         PaintedPill(
             R.drawable.st_pill_green,
-            Modifier.align(Alignment.BottomCenter).offset(y = 6.dp).fillMaxWidth(0.84f).height(42.dp),
+            Modifier.align(Alignment.BottomCenter).offset(y = 30.dp).fillMaxWidth(0.84f).height(42.dp),
             onClick = onClaim
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -830,6 +831,7 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
             }
         }
     }
+}
 }
 
 /** One joker row on its painted card: its tile, name, what it does, how many you have, and two ways to buy (1, or a discounted bundle of 5). */
