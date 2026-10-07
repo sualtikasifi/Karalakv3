@@ -12,6 +12,7 @@ adb wait-for-device
 adb shell input keyevent 82 || true
 adb install -r -t "$APK"
 adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
+adb shell settings put global hide_error_dialogs 1 || true
 adb shell "run-as $PKG mkdir -p shared_prefs"
 printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boolean name=\"tutorial_completed\" value=\"true\" /><boolean name=\"feature_tour_seen\" value=\"true\" /></map>" \
   | adb shell "run-as $PKG sh -c 'cat > shared_prefs/cizim_hafiza_settings.xml'"
@@ -53,9 +54,12 @@ adb shell am start -n $ACT
 sleep 8
 sleep 20
 clear_overlays
-for try in 1 2 3; do
+# The ads consent form (if it shows) is answered with the same tap home.sh uses; harmless on the bare home screen.
+adb shell input tap 540 1678; sleep 4
+clear_overlays
+for try in 1 2 3 4 5 6; do
   adb shell input tap 543 1674
-  sleep 5
+  sleep 6
   clear_overlays
   [ -n "$(find_xy Kalemler)" ] && break
 done
