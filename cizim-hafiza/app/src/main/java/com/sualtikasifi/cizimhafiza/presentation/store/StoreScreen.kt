@@ -16,6 +16,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.offset
+import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -181,10 +187,10 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            TabChip(stringResource(R.string.store_tab_jokers), selected = tab == 0, modifier = Modifier.weight(1f)) { selectTab(0) }
-                            TabChip(stringResource(R.string.store_tab_pens), selected = tab == 1, modifier = Modifier.weight(1f)) { selectTab(1) }
-                            TabChip(stringResource(R.string.store_tab_frames), selected = tab == 2, modifier = Modifier.weight(1f)) { selectTab(2) }
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                            TabChip(stringResource(R.string.store_tab_jokers), R.drawable.st_ic_crown, selected = tab == 0, modifier = Modifier.weight(1f)) { selectTab(0) }
+                            TabChip(stringResource(R.string.store_tab_pens), R.drawable.st_ic_pencil, selected = tab == 1, modifier = Modifier.weight(1f)) { selectTab(1) }
+                            TabChip(stringResource(R.string.store_tab_frames), R.drawable.st_ic_image, selected = tab == 2, modifier = Modifier.weight(1f)) { selectTab(2) }
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                     }
@@ -464,74 +470,6 @@ private fun GoldPill(gold: Int) {
     }
 }
 
-/**
- * Just the plaque art the game handed over — no extra border box or dark
- * scrim drawn around it, since a second frame stacked on top of the
- * artwork's own baked-in wood-and-neon edge read as a mistake, not a
- * selection state. The unselected look is the SAME image, only dimmed via
- * [Image]'s own alpha, plus a muted text colour; nothing new is drawn.
- *
- * Sized by this fixed height rather than by the label the way a plain pill
- * would be, so all three tabs land at one common size regardless of word
- * length ("Kalemler" vs "Jokerler") — each call site gives this
- * `Modifier.weight(1f)` in its Row, so the three share the row evenly.
- */
-@Composable
-private fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    // The plaque brightens, lifts a touch and the underline grows when a tab is chosen, instead of snapping.
-    val glow by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (selected) 1f else 0f,
-        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = 380f),
-        label = "tabGlow"
-    )
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .height(50.dp)
-            .graphicsLayer {
-                val lift = 1f + 0.05f * glow
-                scaleX = lift
-                scaleY = lift
-            }
-            .clip(RoundedCornerShape(16.dp))
-            .pressable(pressedScale = 0.92f, onClick = onClick)
-    ) {
-        Image(
-            painter = painterResource(R.drawable.store_tab_plaque),
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-            // Never see-through: at 42% the poster lettering painted behind the tabs showed through the plaque.
-            alpha = 0.88f + 0.12f * glow.coerceIn(0f, 1f),
-            modifier = Modifier.matchParentSize()
-        )
-        Text(
-            text = label,
-            fontFamily = DisplayFont,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 15.sp,
-            color = if (selected) TabLabelSelected else TabLabelUnselected,
-            style = TextStyle(shadow = Shadow(color = Color(0xFF1E0F04), offset = Offset(0f, 2f), blurRadius = 3f)),
-            maxLines = 1,
-            textAlign = TextAlign.Center
-        )
-        // The plaque's glow alone was too easy to miss on the busy wood photo.
-        if (glow > 0.01f) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 7.dp)
-                    .width((30f * glow).coerceAtLeast(0f).dp)
-                    .height(3.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(Color(0xFFFFC94D))
-            )
-        }
-    }
-}
-
-private val TabLabelSelected = Color(0xFFFFE9C2)
-private val TabLabelUnselected = Color(0xFFD8C3A6)
-
 /** A wavy stroke in the pen's colours — what the pen actually draws. */
 @Composable
 private fun PenPreview(skin: PenSkin, modifier: Modifier = Modifier.fillMaxWidth().height(64.dp)) {
@@ -560,6 +498,145 @@ private fun PenPreview(skin: PenSkin, modifier: Modifier = Modifier.fillMaxWidth
     }
 }
 
+/** One tab of the store: the painted wooden plaque (orange when chosen, brown otherwise) with its little picture and word. */
+@Composable
+private fun TabChip(label: String, icon: Int, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    // The plaque lifts a touch when chosen, instead of snapping.
+    val glow by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (selected) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = 380f),
+        label = "tabGlow"
+    )
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .height(52.dp)
+            .graphicsLayer {
+                val lift = 1f + 0.05f * glow
+                scaleX = lift
+                scaleY = lift
+            }
+            .pressable(pressedScale = 0.92f, onClick = onClick)
+    ) {
+        NinePatch(
+            res = if (selected) R.drawable.st_tab_on else R.drawable.st_tab_off,
+            slicePx = 70,
+            edge = 16.dp,
+            modifier = Modifier.matchParentSize()
+        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Image(painterResource(icon), contentDescription = null, modifier = Modifier.height(21.dp).width(23.dp), contentScale = ContentScale.Fit)
+            Text(
+                text = label,
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 13.sp,
+                color = if (selected) Color.White else Color(0xFFFFE9C2),
+                style = TextStyle(shadow = Shadow(color = Color(0xFF3A1A04), offset = Offset(0f, 2f), blurRadius = 3f)),
+                maxLines = 1
+            )
+        }
+    }
+}
+
+/** A painted glossy button (orange / blue / green) that stretches to any size without squashing its round ends. */
+@Composable
+private fun PaintedPill(
+    res: Int,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onClick: (() -> Unit)? = null,
+    content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .graphicsLayer { alpha = if (enabled) 1f else 0.55f }
+            .then(if (onClick != null) Modifier.pressable(pressedScale = 0.92f, onClick = onClick) else Modifier)
+    ) {
+        NinePatch(res = res, slicePx = 72, edge = 18.dp, modifier = Modifier.matchParentSize())
+        content()
+    }
+}
+
+private val PillTextShadow = TextStyle(shadow = Shadow(color = Color(0xFF4A2200), offset = Offset(0f, 2f), blurRadius = 2f))
+
+@Composable
+private fun CoinPrice(price: Int, size: androidx.compose.ui.unit.TextUnit = 14.sp, coin: androidx.compose.ui.unit.Dp = 18.dp) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(coin))
+        Text(
+            text = NumberFormat.getIntegerInstance().format(price),
+            fontFamily = DisplayFont,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = size,
+            color = Color.White,
+            style = PillTextShadow,
+            maxLines = 1
+        )
+    }
+}
+
+/** The painted "Dene" button: a play badge and the word. */
+@Composable
+private fun TryPill(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    PaintedPill(R.drawable.st_pill_orange, modifier = modifier, onClick = onClick) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Box(Modifier.size(16.dp).clip(CircleShape).background(Color(0xFF4A2410)), contentAlignment = Alignment.Center) {
+                androidx.compose.material3.Icon(
+                    androidx.compose.material.icons.Icons.Filled.PlayArrow,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(12.dp)
+                )
+            }
+            Text(
+                text = stringResource(R.string.store_try),
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 12.sp,
+                color = Color.White,
+                style = PillTextShadow,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+/** What a card's main button says once the item is bought: green "Kullanımda" while worn, orange "Kuşan" otherwise. */
+@Composable
+private fun OwnedPill(equipped: Boolean, onEquip: () -> Unit, modifier: Modifier = Modifier) {
+    PaintedPill(
+        res = if (equipped) R.drawable.st_pill_green else R.drawable.st_pill_orange,
+        modifier = modifier,
+        onClick = if (equipped) null else onEquip
+    ) {
+        Text(
+            text = stringResource(if (equipped) R.string.store_equipped else R.string.store_equip),
+            fontFamily = DisplayFont,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 12.sp,
+            color = Color.White,
+            style = PillTextShadow,
+            maxLines = 1
+        )
+    }
+}
+
+private fun PenSkin.cardRes(): Int = when (this) {
+    PenSkin.COPPER -> R.drawable.st_pen_copper
+    PenSkin.EMERALD -> R.drawable.st_pen_emerald
+    PenSkin.RUBY -> R.drawable.st_pen_ruby
+    PenSkin.SAPPHIRE -> R.drawable.st_pen_sapphire
+    PenSkin.CANDY -> R.drawable.st_pen_candy
+    PenSkin.ICE -> R.drawable.st_pen_ice
+    PenSkin.SAKURA -> R.drawable.st_pen_sakura
+    PenSkin.SUNRISE -> R.drawable.st_pen_sunrise
+    PenSkin.NIGHT -> R.drawable.st_pen_night
+    PenSkin.DIAMOND -> R.drawable.st_pen_diamond
+    else -> R.drawable.st_pen_copper
+}
+
 /** Each store pen's one-line flavour text under its name — see values(-tr)/strings.xml's pen_*_tagline entries. Null for every non-store pen, which this screen never shows. */
 private fun PenSkin.taglineRes(): Int? = when (this) {
     PenSkin.COPPER -> R.string.pen_copper_tagline
@@ -575,17 +652,9 @@ private fun PenSkin.taglineRes(): Int? = when (this) {
     else -> null
 }
 
-/** The most saturated of a pen's colours, for a card border that reads as "this pen" at a glance — picking the first colour outright washed out badly on Ice (pale CFF3FF first, vivid 6FD3FF second) and Candy (vivid FF5FA2 first, but plain white second would've won on a "last colour" rule instead). */
-private fun PenSkin.accentColor(): Color =
-    colors.map { Color(it) }.maxByOrNull { c -> (maxOf(c.red, c.green, c.blue) - minOf(c.red, c.green, c.blue)) } ?: Color(0xFFEBCB93)
-
 /**
- * The pens grid's own card shape — a 2-column vertical layout (preview on
- * top, name, a one-line tagline, then price/Dene at the bottom), bordered in
- * the pen's own colour rather than the neutral tan [FrameCard] uses, so the
- * grid reads as a rack of distinct pens rather than one repeated template.
- * [FrameCard] shares this same overall shape but skips the tagline and Try
- * button, which frames have no equivalent of.
+ * One pen on the rack: the painted card already holds the pen and its stroke; the name, the one-line
+ * flavour text and the two buttons (price or "Kuşan", and "Dene") are drawn live on top of it.
  */
 @Composable
 private fun PenCard(
@@ -598,42 +667,33 @@ private fun PenCard(
     onCannotAfford: () -> Unit,
     onTry: () -> Unit
 ) {
-    val shape = RoundedCornerShape(22.dp)
-    val accent = skin.accentColor()
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFF6E3).copy(alpha = 0.97f), Color(0xFFFCE6BF).copy(alpha = 0.97f))))
-            .border(2.5.dp, if (equipped) AppTheme.tokens.success else accent.copy(alpha = 0.8f), shape)
-            .padding(12.dp)
-    ) {
-        PenPreview(skin, modifier = Modifier.fillMaxWidth().height(56.dp))
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = stringResource(skin.labelRes), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = Ink, maxLines = 1)
-        skin.taglineRes()?.let { tagline ->
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(text = stringResource(tagline), style = MaterialTheme.typography.labelSmall, color = Ink.copy(alpha = 0.6f), maxLines = 1)
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            when {
-                equipped -> ActionPill(stringResource(R.string.store_equipped), AppTheme.tokens.success, Color.White, null)
-                owned -> ActionPill(stringResource(R.string.store_equip), Color(0xFFFF7A21), Color.White, onEquip)
-                else -> PricePill(price = skin.storePrice, canAfford = canAfford, onClick = { if (canAfford) onBuy() else onCannotAfford() })
+    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(1.3f)) {
+        val w = maxWidth
+        val h = maxHeight
+        Image(painterResource(skin.cardRes()), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
+        Column(Modifier.offset(w * 0.25f, h * 0.43f).size(w * 0.68f, h * 0.27f)) {
+            Text(text = stringResource(skin.labelRes), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Ink, maxLines = 1)
+            skin.taglineRes()?.let {
+                Text(text = stringResource(it), fontSize = 10.sp, lineHeight = 11.sp, color = Ink.copy(alpha = 0.7f), maxLines = 1)
             }
-            TryButton(onClick = onTry)
+        }
+        Row(
+            Modifier.offset(w * 0.24f, h * 0.72f).size(w * 0.70f, h * 0.20f),
+            horizontalArrangement = Arrangement.spacedBy(w * 0.03f)
+        ) {
+            val m = Modifier.weight(1f).fillMaxHeight()
+            when {
+                owned -> OwnedPill(equipped, onEquip, m)
+                else -> PaintedPill(R.drawable.st_pill_orange, m, enabled = canAfford, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
+                    CoinPrice(skin.storePrice, size = 12.sp, coin = 16.dp)
+                }
+            }
+            TryPill(onTry, m)
         }
     }
 }
 
-/**
- * The frames grid's own card — same 2-column vertical shape as [PenCard]
- * (large preview on top, name, then the buy/equip row), instead of the
- * cramped horizontal row this used to share with pens: a ring's whole point
- * is the artwork, and a 60×52dp thumbnail squeezed beside two lines of text
- * left it too small to actually tell one frame from another at a glance.
- */
+/** One avatar ring on the shelf: the live ring picture on the painted card, its name, and the buy / wear button. */
 @Composable
 private fun FrameCard(
     frame: AvatarFrame,
@@ -645,122 +705,43 @@ private fun FrameCard(
     onEquip: () -> Unit,
     onCannotAfford: () -> Unit
 ) {
-    val shape = RoundedCornerShape(22.dp)
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFF6E3).copy(alpha = 0.97f), Color(0xFFFCE6BF).copy(alpha = 0.97f))))
-            .border(2.5.dp, if (equipped) AppTheme.tokens.success else Color(0xFFEBCB93).copy(alpha = 0.85f), shape)
-            .padding(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(1.18f)) {
+        val w = maxWidth
+        val h = maxHeight
+        Image(painterResource(R.drawable.st_card_frame), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
         Image(
             painter = painterResource(frame.drawableRes),
             contentDescription = null,
             contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxWidth().height(104.dp)
+            modifier = Modifier.offset(w * 0.2f, h * 0.09f).size(w * 0.6f, h * 0.5f)
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = name, fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = Ink, maxLines = 1)
-        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = name,
+            fontFamily = DisplayFont,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 13.sp,
+            color = Ink,
+            maxLines = 1,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.offset(w * 0.08f, h * 0.60f).size(w * 0.84f, h * 0.14f)
+        )
+        val m = Modifier.offset(w * 0.17f, h * 0.75f).size(w * 0.66f, h * 0.17f)
         when {
-            equipped -> ActionPill(stringResource(R.string.store_equipped), AppTheme.tokens.success, Color.White, null)
-            owned -> ActionPill(stringResource(R.string.store_equip), Color(0xFFFF7A21), Color.White, onEquip)
-            else -> PricePill(price = frame.storePrice, canAfford = canAfford, onClick = { if (canAfford) onBuy() else onCannotAfford() })
+            owned -> OwnedPill(equipped, onEquip, m)
+            else -> PaintedPill(R.drawable.st_pill_orange, m, enabled = canAfford, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
+                CoinPrice(frame.storePrice, size = 13.sp, coin = 17.dp)
+            }
         }
     }
 }
 
-/** The compact buy price used inline in [PenCard]/[FrameCard] — a bigger, standalone version lives in [PurchaseConfirmDialog]. */
-@Composable
-private fun PricePill(price: Int, canAfford: Boolean, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(50)
-    Row(
-        modifier = Modifier
-            .height(TryRowHeight)
-            .clip(shape)
-            // The same warm gold/orange the Dene button art is painted in
-            // (was a near-black pill) — the two now read as one matched set
-            // instead of a dark "buy" button next to a bright "try" one.
-            .background(
-                if (canAfford) Brush.verticalGradient(listOf(Color(0xFFFFB648), Color(0xFFE8672A)))
-                else Brush.verticalGradient(listOf(Color(0xFFFFB648).copy(alpha = 0.45f), Color(0xFFE8672A).copy(alpha = 0.45f)))
-            )
-            .border(1.5.dp, Color(0xFFB3401A).copy(alpha = if (canAfford) 0.7f else 0.35f), shape)
-            .pressable(pressedScale = 0.92f, onClick = onClick)
-            // Symmetric now — the 4dp/10dp start/end split this used to have
-            // (to leave room for a bulkier coin icon) left it visibly
-            // off-balance sitting next to the Try button.
-            .padding(horizontal = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(20.dp))
-        Text(
-            text = NumberFormat.getIntegerInstance().format(price),
-            fontFamily = DisplayFont,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 13.sp,
-            color = Color.White
-        )
-    }
-}
-
-/** Shared height for [PricePill] and [TryButton] so the two sit level and the same size next to each other. */
-private val TryRowHeight = 29.07.dp
-
 /**
- * The game's own glossy button art, in place of the plain bordered-text
- * link this used to be. [TryRowHeight] matches [PricePill] exactly; the
- * artwork itself is cropped tight to its opaque pill shape (no leftover
- * transparent margin from the source canvas), at that shape's own ~2.86:1
- * aspect ratio, so the two buttons read as the same size sitting side by
- * side instead of the Try pill looking shrunken inside its own bounding box.
- */
-@Composable
-private fun TryButton(onClick: () -> Unit) {
-    // A plain Image with .height().width() on it measured noticeably short
-    // here — the fixed Box + matchParentSize() pairing is the same fix
-    // TabChip needed from the exact same kind of intrinsic-size mismatch,
-    // so it's used again rather than re-debugging the same root cause twice.
-    Box(
-        modifier = Modifier
-            .height(TryRowHeight)
-            .width(TryRowHeight * 2.86f)
-            .pressable(pressedScale = 0.92f, onClick = onClick)
-    ) {
-        Image(
-            painter = painterResource(R.drawable.store_try_button),
-            contentDescription = stringResource(R.string.store_try),
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier.matchParentSize()
-        )
-    }
-}
-
-@Composable
-private fun ActionPill(text: String, container: Color, content: Color, onClick: (() -> Unit)?) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(container)
-            .then(if (onClick != null) Modifier.pressable(pressedScale = 0.92f, onClick = onClick) else Modifier)
-            .padding(horizontal = 14.dp, vertical = 7.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = text, fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = content)
-    }
-}
-
-/** One joker row: what it does, how many the player has, and two ways to buy (1, or a discounted bundle). */
-/**
- * Today's free joker: art, name and a green "watch an ad" button. Shown only
- * while unclaimed — once taken the card is simply gone until tomorrow's.
+ * Today's free joker on its painted card (the gift is part of the picture): the joker's own tile in the frame, its
+ * name and what it does, and a green "watch an ad" button that hangs over the card's lower edge. Shown only while
+ * unclaimed — once taken the card is simply gone until tomorrow's.
  */
 @Composable
 private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
-    val shape = RoundedCornerShape(24.dp)
     val glow = androidx.compose.animation.core.rememberInfiniteTransition(label = "daily-joker").animateFloat(
         initialValue = 0.55f,
         targetValue = 1f,
@@ -770,135 +751,116 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
         ),
         label = "daily-joker-glow"
     )
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .drawBehind {
-                drawRoundRect(
-                    color = Color(0xFFFFC94D).copy(alpha = 0.32f * glow.value),
-                    topLeft = androidx.compose.ui.geometry.Offset(-5.dp.toPx(), -5.dp.toPx()),
-                    size = androidx.compose.ui.geometry.Size(size.width + 10.dp.toPx(), size.height + 10.dp.toPx()),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(29.dp.toPx())
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(bottom = 20.dp)) {
+        val w = maxWidth
+        val h = w / 3.0f
+        Box(Modifier.fillMaxWidth().height(h)) {
+            Image(painterResource(R.drawable.st_card_daily), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
+            com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.56f, Modifier.offset(w * 0.186f - h * 0.28f, h * 0.505f - h * 0.28f))
+            Column(Modifier.offset(w * 0.31f, h * 0.3f).size(w * 0.4f, h * 0.62f)) {
+                Text(text = stringResource(type.labelRes()), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Ink, maxLines = 1)
+                Text(text = stringResource(type.descRes()), fontSize = 10.5.sp, lineHeight = 12.sp, color = Ink.copy(alpha = 0.78f), maxLines = 3)
+            }
+            // The wooden tag, glowing gently, hanging over the card's top-left corner.
+            Box(
+                Modifier
+                    .offset(w * 0.07f, (-h * 0.1f))
+                    .size(w * 0.5f, h * 0.34f)
+                    .graphicsLayer { alpha = 0.82f + 0.18f * glow.value },
+                contentAlignment = Alignment.Center
+            ) {
+                NinePatch(res = R.drawable.st_plaque, slicePx = 70, edge = 22.dp, modifier = Modifier.matchParentSize())
+                Text(
+                    text = stringResource(R.string.store_daily_joker_tag),
+                    fontFamily = DisplayFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 9.5.sp,
+                    letterSpacing = 0.3.sp,
+                    color = Color(0xFF3A1A04),
+                    maxLines = 1,
+                    modifier = Modifier.padding(horizontal = 14.dp)
                 )
             }
-            .clip(shape)
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFF1CC), Color(0xFFFFDD8A))))
-            .border(2.5.dp, Color(0xFFF0B24E), shape)
-            .padding(14.dp)
-    ) {
-        Text(
-            text = stringResource(R.string.store_daily_joker_tag),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 1.sp,
-            color = Color(0xFF8A4B00),
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .background(Color(0xFFFFC94D).copy(alpha = 0.55f))
-                .padding(horizontal = 10.dp, vertical = 3.dp)
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, 64.dp)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = stringResource(type.labelRes()), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = Ink)
-                Text(text = stringResource(type.descRes()), style = MaterialTheme.typography.bodySmall, color = Ink.copy(alpha = 0.8f))
-            }
         }
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Brush.verticalGradient(listOf(Color(0xFF3FBF63), Color(0xFF2E8B45))))
-                .pressable(pressedScale = 0.92f, onClick = onClaim)
-                .padding(horizontal = 16.dp, vertical = 11.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+        PaintedPill(
+            R.drawable.st_pill_green,
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth(0.84f).height(40.dp),
+            onClick = onClaim
         ) {
-            androidx.compose.material3.Icon(
-                androidx.compose.material.icons.Icons.Filled.PlayCircle,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(22.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = stringResource(R.string.store_daily_joker_action),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material3.Icon(
+                    androidx.compose.material.icons.Icons.Filled.PlayCircle,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp)
+                )
+                Text(
+                    text = stringResource(R.string.store_daily_joker_action),
+                    fontFamily = DisplayFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 14.sp,
+                    color = Color.White,
+                    style = TextStyle(shadow = Shadow(color = Color(0xFF0E3A06), offset = Offset(0f, 2f), blurRadius = 2f))
+                )
+            }
         }
     }
 }
 
+/** One joker row on its painted card: its tile, name, what it does, how many you have, and two ways to buy (1, or a discounted bundle of 5). */
 @Composable
 private fun JokerCard(
     type: JokerType,
     owned: Int,
     gold: Int,
     onBuy: (Int) -> Unit,
-    onCannotAfford: () -> Unit,
-    onTry: (() -> Unit)? = null
+    onCannotAfford: () -> Unit
 ) {
-    val shape = RoundedCornerShape(24.dp)
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            // Same slightly-transparent treatment as StoreCard, but a touch
-            // less see-through — this card carries two lines of description
-            // text, which needs a steadier, less busy surface behind it than
-            // a short name/price row does to stay easily readable over the
-            // photo backdrop.
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFF6E3).copy(alpha = 0.97f), Color(0xFFFCE6BF).copy(alpha = 0.97f))))
-            .border(2.dp, Color(0xFFEBCB93).copy(alpha = 0.85f), shape)
-            .padding(14.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, 64.dp)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = stringResource(type.labelRes()), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, color = Ink)
-                Text(text = stringResource(type.descRes()), style = MaterialTheme.typography.bodySmall, color = Ink.copy(alpha = 0.75f))
-            }
-            Box(
-                modifier = Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFF26A1B).copy(alpha = 0.14f)).padding(horizontal = 10.dp, vertical = 5.dp)
-            ) {
-                Text(text = stringResource(R.string.joker_owned, owned), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB5441A))
-            }
+    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(3.0f)) {
+        val w = maxWidth
+        val h = maxHeight
+        Image(painterResource(R.drawable.st_card_joker), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
+        com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.56f, Modifier.offset(w * 0.186f - h * 0.28f, h * 0.515f - h * 0.28f))
+        Column(Modifier.offset(w * 0.31f, h * 0.08f).size(w * 0.46f, h * 0.44f)) {
+            Text(text = stringResource(type.labelRes()), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Ink, maxLines = 1)
+            Text(text = stringResource(type.descRes()), fontSize = 10.5.sp, lineHeight = 12.sp, color = Ink.copy(alpha = 0.78f), maxLines = 2)
         }
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = h * 0.1f, end = w * 0.07f)
+                .clip(RoundedCornerShape(50))
+                .background(Color(0xFFF26A1B).copy(alpha = 0.16f))
+                .padding(horizontal = 8.dp, vertical = 3.dp)
+        ) {
+            Text(text = stringResource(R.string.joker_owned, owned), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB5441A), maxLines = 1)
+        }
+        Row(
+            Modifier.offset(w * 0.31f, h * 0.53f).size(w * 0.62f, h * 0.37f),
+            horizontalArrangement = Arrangement.spacedBy(w * 0.015f)
+        ) {
             listOf(1, JokerType.BULK_QUANTITY).forEach { qty ->
                 val price = type.priceFor(qty)
                 val canAfford = gold >= price
-                Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .pressable(pressedScale = 0.94f) { if (canAfford) onBuy(qty) else onCannotAfford() }
-                        .clip(RoundedCornerShape(50))
-                        .background(if (canAfford) Color(0xFF2B1A12) else Color(0xFF2B1A12).copy(alpha = 0.45f))
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                PaintedPill(
+                    res = if (qty == 1) R.drawable.st_pill_orange else R.drawable.st_pill_blue,
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    enabled = canAfford,
+                    onClick = { if (canAfford) onBuy(qty) else onCannotAfford() }
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = if (qty == 1) stringResource(R.string.joker_buy_one) else stringResource(R.string.joker_buy_bulk, qty, JokerType.BULK_DISCOUNT_PERCENT),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.85f),
-                            maxLines = 1
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(20.dp))
+                    if (qty == 1) {
+                        CoinPrice(price)
+                    } else {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = NumberFormat.getIntegerInstance().format(price),
-                                fontFamily = DisplayFont,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 15.sp,
-                                color = Color.White
+                                text = stringResource(R.string.joker_buy_bulk, qty, JokerType.BULK_DISCOUNT_PERCENT),
+                                fontSize = 8.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White.copy(alpha = 0.95f),
+                                style = PillTextShadow,
+                                maxLines = 1
                             )
+                            CoinPrice(price, size = 13.sp, coin = 15.dp)
                         }
                     }
                 }
