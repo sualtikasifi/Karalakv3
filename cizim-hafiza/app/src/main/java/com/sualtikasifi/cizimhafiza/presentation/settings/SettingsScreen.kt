@@ -16,6 +16,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -133,9 +136,13 @@ fun SettingsScreen(
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().sceneIn()) {
         // ONE scale in both directions, so the picture is never stretched; spare strips show a blurred copy of it.
-        val unit = minOf(maxWidth / ArtW, maxHeight / ArtH)
+        // The picture is fitted into the space ABOVE the system navigation bar: the page is edge to edge, and the
+        // privacy strip at the foot of the picture used to sit under the phone's own buttons where it could not be tapped.
+        val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        val usableHeight = maxHeight - navInset
+        val unit = minOf(maxWidth / ArtW, usableHeight / ArtH)
         val offX = (maxWidth - unit * ArtW) / 2
-        val offY = (maxHeight - unit * ArtH) / 2
+        val offY = (usableHeight - unit * ArtH) / 2
         val us = unit.value
         // Lettering on the scene follows the picture, not the system font-size setting.
         val fontScale0 = LocalDensity.current.fontScale

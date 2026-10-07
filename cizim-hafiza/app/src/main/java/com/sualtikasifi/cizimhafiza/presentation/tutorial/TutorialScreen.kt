@@ -118,14 +118,16 @@ fun TutorialScreen(
         }
 
         coach?.let { message ->
-            CoachOverlay(
-                coach = message,
-                onContinue = viewModel::dismissCoach,
-                onSkip = {
-                    viewModel.completeTutorial()
-                    onFinished()
-                }
-            )
+            val skip = {
+                viewModel.completeTutorial()
+                onFinished()
+            }
+            if (message.titleRes == R.string.tutorial_intro_title) {
+                // The very first card is the full welcome scene (painted workshop + card), not the dark scrim.
+                WelcomeScene(onStart = viewModel::dismissCoach, onSkip = skip)
+            } else {
+                CoachOverlay(coach = message, onContinue = viewModel::dismissCoach, onSkip = skip)
+            }
         }
     }
 }

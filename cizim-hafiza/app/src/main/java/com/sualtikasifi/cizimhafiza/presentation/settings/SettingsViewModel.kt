@@ -64,10 +64,18 @@ class SettingsViewModel @Inject constructor(
         settingsRepository.setMusicEnabled(enabled)
         settingsRepository.setVibrationEnabled(enabled)
     }
-    fun setVibrationEnabled(enabled: Boolean) = settingsRepository.setVibrationEnabled(enabled)
+    /** Turning vibration on also turns the master switch on: a lit "Titreşim" under a dark "Tüm Sesler" makes no sense. */
+    fun setVibrationEnabled(enabled: Boolean) {
+        settingsRepository.setVibrationEnabled(enabled)
+        if (enabled) settingsRepository.setSoundEnabled(true)
+    }
     val musicEnabled: StateFlow<Boolean> = settingsRepository.musicEnabled
 
-    fun setMusicEnabled(enabled: Boolean) = settingsRepository.setMusicEnabled(enabled)
+    /** Turning music on also turns the master switch on, for the same reason as [setVibrationEnabled]. */
+    fun setMusicEnabled(enabled: Boolean) {
+        settingsRepository.setMusicEnabled(enabled)
+        if (enabled) settingsRepository.setSoundEnabled(true)
+    }
 
     fun setNotificationsEnabled(enabled: Boolean) = settingsRepository.setNotificationsEnabled(enabled)
 
