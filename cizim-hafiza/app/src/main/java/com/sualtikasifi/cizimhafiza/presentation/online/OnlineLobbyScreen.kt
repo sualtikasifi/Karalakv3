@@ -115,9 +115,19 @@ fun OnlineLobbyScreen(
                 .size(len(540f), len(paperH * 0.6f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
+            // A felt-tip scrawl, like the doodles on the paper it is written on.
+            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                 text = stringResource(R.string.online_lobby_subtitle),
-                style = DescriptionStyle(fs(29f), fs(37f))
+                style = androidx.compose.ui.text.TextStyle(
+                    fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.ScribbleFont,
+                    fontSize = fs(41f),
+                    lineHeight = fs(43f),
+                    color = Color(0xFF4A2814),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                ),
+                maxLines = 4,
+                minScale = 0.7f,
+                modifier = Modifier.fillMaxSize()
             )
         }
 
