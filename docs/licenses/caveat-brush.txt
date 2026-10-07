@@ -1,0 +1,4 @@
+Caveat Brush (res/font/caveat_brush.ttf)
+Copyright 2015 The Caveat Brush Project Authors (https://github.com/googlefonts/caveat-brush)
+Licensed under the SIL Open Font License, Version 1.1 — https://openfontlicense.org
+The font is bundled unmodified.

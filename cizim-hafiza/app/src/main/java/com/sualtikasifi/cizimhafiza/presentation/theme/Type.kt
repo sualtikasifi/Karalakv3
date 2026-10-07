@@ -31,6 +31,12 @@ val DisplayFont = FontFamily(
     Font(R.font.baloo2_extrabold, FontWeight.ExtraBold)
 )
 
+/**
+ * [ScribbleFont] — Caveat Brush (SIL OFL). A felt-tip scrawl for the odd line that should sound like a doodle rather than
+ * a label: short, jokey captions on the painted pages. It is small on the line (low x-height), so size it a few sp up.
+ */
+val ScribbleFont = FontFamily(Font(R.font.caveat_brush, FontWeight.Normal))
+
 // Body text is Baloo 2 as well now: the painted screens letter everything in it, and the Quicksand that windows,
 // lists and the remaining cream pages used read as a different app next to them. Baloo 2 ships no Regular, so
 // Normal maps to its Medium.

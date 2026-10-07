@@ -30,6 +30,26 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import com.sualtikasifi.cizimhafiza.presentation.common.a11yButton
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache
+import com.sualtikasifi.cizimhafiza.presentation.common.FitText
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedBackButton
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
+import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
+import com.sualtikasifi.cizimhafiza.presentation.common.sceneIn
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudDone
@@ -115,25 +135,281 @@ fun AccountScreen(
         if (uiState.restartRequired) AppRestarter.restart(context)
     }
 
-    com.sualtikasifi.cizimhafiza.presentation.common.RoomPage(title = stringResource(R.string.account_title), onBack = onBack) {
-        ProfileHeader(uiState)
-        Spacer(modifier = Modifier.height(8.dp))
-        StatsRow(uiState)
-        Spacer(modifier = Modifier.height(8.dp))
-        AccountCard(
-            uiState = uiState,
-            onSignIn = viewModel::signIn,
-            onSignOut = viewModel::promptSignOut,
-            onDelete = viewModel::promptDeleteAccount
+    val linked = uiState.authState as? AuthState.Linked
+    val progress = uiState.levelProgress
+    val number = remember { java.text.NumberFormat.getIntegerInstance() }
+
+    // The page is the workshop picture (bg_account) with the cards painted into it; everything that changes — the
+    // name, the figures, the bar, the buttons — is laid over it by the picture's own coordinates.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().sceneIn()) {
+        val unit = minOf(maxWidth / ArtW, maxHeight / ArtH)
+        val offX = (maxWidth - unit * ArtW) / 2
+        val offY = (maxHeight - unit * ArtH) / 2
+        val us = unit.value
+        val fontScale0 = LocalDensity.current.fontScale
+        fun fs(art: Float) = (art * us / fontScale0).sp
+        fun box(x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
+            Modifier.offset(offX + unit * x0, offY + unit * y0).requiredSize(unit * (x1 - x0), unit * (y1 - y0))
+
+        val scene = cachedPainterResource(R.drawable.bg_account)
+        if (offX > 1.dp || offY > 1.dp) {
+            Image(scene, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(20.dp))
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)))
+        }
+        Image(scene, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(0f, 0f, ArtW, ArtH))
+
+        // ---- The sign ------------------------------------------------------------------------------------------
+        LetteredText(
+            text = stringResource(R.string.account_title),
+            size = fs(104f),
+            fill = Color(0xFFFFC21F),
+            outline = Color(0xFF5A2815),
+            modifier = box(262f, 320f, 538f, 440f),
+            minScale = 0.5f
         )
-        uiState.message?.let { message ->
-            Spacer(modifier = Modifier.height(10.dp))
-            FeedbackLine(message.asString(), AppTheme.tokens.success)
+
+        // ---- Profile card --------------------------------------------------------------------------------------
+        val name = uiState.nickname.ifBlank {
+            linked?.displayName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.account_guest_badge)
         }
-        uiState.errorMessage?.let { message ->
-            Spacer(modifier = Modifier.height(10.dp))
-            FeedbackLine(message.asString(), MaterialTheme.colorScheme.error)
+        Box(box(92f, 545f, 242f, 695f), contentAlignment = Alignment.Center) {
+            LevelAvatar(
+                level = uiState.level,
+                frame = uiState.frame,
+                size = (150f * us).dp,
+                photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(linked?.photoUrl)
+            )
         }
+        FitText(
+            text = name,
+            style = PaintedStyle(color = PageInk, fontSize = fs(48f), textAlign = TextAlign.Start),
+            maxLines = 1,
+            minScale = 0.55f,
+            contentAlignment = Alignment.CenterStart,
+            modifier = box(268f, 540f, 770f, 600f)
+        )
+        Box(box(268f, 604f, 770f, 648f), contentAlignment = Alignment.CenterStart) {
+            RankLevelLabel(level = uiState.level, bullet = false)
+        }
+        // Who the profile belongs to: a green pill with a tick for a linked Google account, a plain one for a guest.
+        Row(
+            box(268f, 654f, 774f, 712f)
+                .clip(CircleShape)
+                .background(if (linked != null) Color(0xFFDDEEDD) else Color(0xFFEFE3CF))
+                .padding(horizontal = (18f * us).dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy((10f * us).dp)
+        ) {
+            Icon(
+                imageVector = if (linked != null) Icons.Filled.Check else Icons.Filled.Person,
+                contentDescription = null,
+                tint = if (linked != null) AppTheme.tokens.success else Color(0xFF8A6A50),
+                modifier = Modifier.size((30f * us).dp)
+            )
+            FitText(
+                text = if (linked != null) {
+                    listOfNotNull(stringResource(R.string.account_google_linked), linked.email).joinToString(" · ")
+                } else {
+                    stringResource(R.string.account_guest_badge)
+                },
+                style = PaintedStyle(color = PageInk, fontSize = fs(27f), textAlign = TextAlign.Start),
+                maxLines = 1,
+                minScale = 0.6f,
+                contentAlignment = Alignment.CenterStart,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        // The level star and the bar it heads.
+        Box(box(76f, 706f, 156f, 786f), contentAlignment = Alignment.Center) {
+            Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFF8A4E12), modifier = Modifier.fillMaxSize())
+            Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFB627), modifier = Modifier.fillMaxSize(0.84f))
+            LetteredText(uiState.level.toString(), fs(30f), outline = Color(0xFF5A2815), modifier = Modifier.padding(top = (6f * us).dp))
+        }
+        Box(
+            box(166f, 726f, 736f, 762f)
+                .clip(CircleShape)
+                .background(Color(0xFF4A2A18))
+        ) {
+            val fraction by androidx.compose.animation.core.animateFloatAsState(
+                progress.progressFraction.coerceIn(0f, 1f),
+                androidx.compose.animation.core.tween(700),
+                label = "xpBar"
+            )
+            Box(
+                Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(fraction.coerceAtLeast(0.05f))
+                    .clip(CircleShape)
+                    .background(Brush.verticalGradient(listOf(Color(0xFFFFC04A), Color(0xFFF58A1F))))
+            )
+        }
+        Text(
+            text = if (progress.isMaxLevel) stringResource(R.string.account_xp_max)
+            else stringResource(R.string.account_xp_progress, progress.xpIntoLevel, progress.xpForThisLevel),
+            style = PaintedStyle(color = PageInk, fontSize = fs(26f), textAlign = TextAlign.Start),
+            maxLines = 1,
+            modifier = box(168f, 764f, 450f, 800f)
+        )
+        if (!progress.isMaxLevel) {
+            Text(
+                text = stringResource(R.string.account_xp_to_next, progress.xpToNextLevel),
+                style = PaintedStyle(color = Color(0xFF8A6A50), fontSize = fs(23f), fontWeight = FontWeight.Bold, textAlign = TextAlign.End),
+                maxLines = 1,
+                modifier = box(430f, 766f, 736f, 800f)
+            )
+        }
+
+        // ---- The three figures ---------------------------------------------------------------------------------
+        val stats = listOf(
+            Triple(number.format(uiState.levelProgress.totalXp), stringResource(R.string.account_stat_xp), 24f),
+            Triple(number.format(uiState.gamesPlayed), stringResource(R.string.account_stat_games), 294f),
+            Triple(number.format(uiState.bestStreak), stringResource(R.string.account_stat_streak), 566f)
+        )
+        stats.forEach { (value, label, x) ->
+            FitText(
+                text = value,
+                style = PaintedStyle(color = PageInk, fontSize = fs(46f), textAlign = TextAlign.Center),
+                maxLines = 1,
+                minScale = 0.5f,
+                modifier = box(x + 24f, 922f, x + 228f, 974f)
+            )
+            FitText(
+                text = label,
+                style = PaintedStyle(color = PageInk, fontSize = fs(25f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+                maxLines = 1,
+                minScale = 0.55f,
+                modifier = box(x + 16f, 970f, x + 236f, 1002f)
+            )
+        }
+
+        // ---- Account and backup --------------------------------------------------------------------------------
+        FitText(
+            text = stringResource(R.string.account_section_account),
+            style = PaintedStyle(color = PageInk, fontSize = fs(44f), textAlign = TextAlign.Start),
+            maxLines = 1,
+            minScale = 0.55f,
+            contentAlignment = Alignment.CenterStart,
+            modifier = box(190f, 1066f, 740f, 1134f)
+        )
+        val backedUp = uiState.lastBackupAtMillis != null
+        // The strip's painted tick says "saved": only true for a signed-in account that has been backed up, so for
+        // anyone else a disc in the strip's own colour covers it and shows what is really the case.
+        if (!(uiState.isSignedIn && backedUp)) {
+            Box(
+                box(88f, 1160f, 148f, 1220f)
+                    .clip(CircleShape)
+                    .background(Color(0xFFD9E5D0)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (uiState.isSignedIn) Icons.Filled.CloudSync else Icons.Filled.CloudOff,
+                    contentDescription = null,
+                    tint = Color(0xFF8A6A50),
+                    modifier = Modifier.size((38f * us).dp)
+                )
+            }
+        }
+        val strip1: String
+        val strip2: String?
+        when {
+            uiState.isSignedIn -> {
+                strip1 = stringResource(if (backedUp) R.string.account_sync_on else R.string.account_sync_pending)
+                strip2 = uiState.lastBackupAtMillis?.let {
+                    stringResource(R.string.account_last_backup_format, rememberBackupTimestamp(it))
+                } ?: stringResource(R.string.account_never_backed_up)
+            }
+            uiState.isGoogleSignInConfigured -> { strip1 = stringResource(R.string.account_guest_hint); strip2 = null }
+            else -> { strip1 = stringResource(R.string.account_not_configured_message); strip2 = null }
+        }
+        FitText(
+            text = strip1,
+            style = PaintedStyle(color = PageInk, fontSize = fs(31f), textAlign = TextAlign.Start),
+            maxLines = if (strip2 == null) 2 else 1,
+            minScale = 0.55f,
+            contentAlignment = Alignment.CenterStart,
+            modifier = if (strip2 == null) box(166f, 1158f, 742f, 1222f) else box(166f, 1158f, 742f, 1198f)
+        )
+        if (strip2 != null) {
+            FitText(
+                text = strip2,
+                style = PaintedStyle(color = Color(0xFF7A5A40), fontSize = fs(25f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
+                maxLines = 1,
+                minScale = 0.55f,
+                contentAlignment = Alignment.CenterStart,
+                modifier = box(166f, 1196f, 742f, 1228f)
+            )
+        }
+
+        // ---- Sign out / sign in --------------------------------------------------------------------------------
+        when {
+            uiState.isBusy -> Box(box(120f, 1292f, 720f, 1460f), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(modifier = Modifier.size(40.dp))
+            }
+            uiState.isSignedIn -> Box(
+                box(120f, 1292f, 720f, 1292f + 172f)
+                    .pressable(pressedScale = 0.95f, onClick = viewModel::promptSignOut)
+                    .a11yButton(stringResource(R.string.account_sign_out)),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(painterResource(R.drawable.account_btn), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((14f * us).dp)) {
+                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.White, modifier = Modifier.size((56f * us).dp))
+                    LetteredText(stringResource(R.string.account_sign_out), fs(56f), outline = Color(0xFF8A3A00))
+                }
+            }
+            uiState.isGoogleSignInConfigured -> Box(box(130f, 1318f, 710f, 1440f), contentAlignment = Alignment.Center) {
+                GoogleSignInButton(onClick = viewModel::signIn, modifier = Modifier.fillMaxWidth())
+            }
+        }
+
+        // ---- Delete --------------------------------------------------------------------------------------------
+        // Offered whether or not a Google account is signed in: an anonymous player still has a uid with a profile, a
+        // friends list and a league entry under it, and Play's requirement is about the data, not about how the
+        // account was created.
+        Box(box(120f, 1490f, 720f, 1570f), contentAlignment = Alignment.Center) {
+            if (uiState.isDeleting) {
+                CircularProgressIndicator(modifier = Modifier.size(32.dp))
+            } else {
+                Row(
+                    Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(50))
+                        .background(Color(0xFFFFF6EE))
+                        .border((4f * us).dp, Color(0xFFD63A2E), RoundedCornerShape(50))
+                        .pressable(pressedScale = 0.96f, onClick = viewModel::promptDeleteAccount)
+                        .a11yButton(stringResource(R.string.account_delete_action)),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(Icons.Filled.Delete, contentDescription = null, tint = Color(0xFFD63A2E), modifier = Modifier.size((40f * us).dp))
+                    Spacer(Modifier.size((12f * us).dp))
+                    FitText(
+                        text = stringResource(R.string.account_delete_action),
+                        style = PaintedStyle(color = Color(0xFFD63A2E), fontSize = fs(31f)),
+                        maxLines = 1,
+                        minScale = 0.55f,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                }
+            }
+        }
+
+        // ---- Saved / failed ------------------------------------------------------------------------------------
+        val note = uiState.message?.asString() to uiState.errorMessage?.asString()
+        (note.first ?: note.second)?.let { text ->
+            FitText(
+                text = text,
+                style = PaintedStyle(color = if (note.first != null) AppTheme.tokens.success else MaterialTheme.colorScheme.error, fontSize = fs(30f), textAlign = TextAlign.Center),
+                maxLines = 2,
+                minScale = 0.6f,
+                modifier = box(60f, 1590f, 780f, 1670f)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color(0xF2FFF6E4))
+                    .padding(horizontal = 10.dp)
+            )
+        }
+
+        PaintedBackButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart))
     }
 
     if (uiState.showSignOutPrompt) {
@@ -197,440 +473,10 @@ fun AccountScreen(
     }
 }
 
-/** A result line (saved / failed) on a cream strip so it reads over the painted table. */
-@Composable
-private fun FeedbackLine(text: String, color: Color) {
-    Text(
-        text = text,
-        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = color, fontSize = 15.sp, textAlign = TextAlign.Center),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(Color(0xF2FFF6E4))
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-    )
-}
 
+private const val ArtW = 841f
+private const val ArtH = 1870f
 private val PageInk = Color(0xFF3B2314)
-
-/**
- * The top of the page on a parchment card: the player's frame and picture, their name, the rank line, who the profile
- * belongs to, and the level star heading the bar to the next level.
- */
-@Composable
-private fun ProfileHeader(uiState: AccountUiState) {
-    val linked = uiState.authState as? AuthState.Linked
-    val name = uiState.nickname.ifBlank {
-        linked?.displayName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.account_guest_badge)
-    }
-    val progress = uiState.levelProgress
-    com.sualtikasifi.cizimhafiza.presentation.common.ParchmentCard(padding = 12.dp) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            LevelAvatar(
-                level = uiState.level,
-                frame = uiState.frame,
-                size = 70.dp,
-                photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(linked?.photoUrl)
-            )
-            Spacer(modifier = Modifier.size(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = name,
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 24.sp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                RankLevelLabel(level = uiState.level, bullet = false)
-                Spacer(modifier = Modifier.height(4.dp))
-                StatusPill(linked = linked)
-            }
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            LevelStar(uiState.level)
-            Spacer(modifier = Modifier.size(6.dp))
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(14.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF4A2A18))
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(progress.progressFraction.coerceIn(0.04f, 1f))
-                        .clip(CircleShape)
-                        .background(Brush.verticalGradient(listOf(Color(0xFFFFC04A), Color(0xFFF58A1F))))
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(modifier = Modifier.fillMaxWidth().padding(start = 40.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(
-                text = if (progress.isMaxLevel) stringResource(R.string.account_xp_max)
-                else stringResource(R.string.account_xp_progress, progress.xpIntoLevel, progress.xpForThisLevel),
-                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 13.sp),
-                maxLines = 1
-            )
-            if (!progress.isMaxLevel) {
-                Text(
-                    text = stringResource(R.string.account_xp_to_next, progress.xpToNextLevel),
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFF8A6A50), fontSize = 12.sp, fontWeight = FontWeight.Bold),
-                    maxLines = 1
-                )
-            }
-        }
-    }
-}
-
-/** The level as a number on a gold star. */
-@Composable
-private fun LevelStar(level: Int) {
-    Box(modifier = Modifier.size(34.dp), contentAlignment = Alignment.Center) {
-        Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFF8A4E12), modifier = Modifier.fillMaxSize())
-        Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFB627), modifier = Modifier.fillMaxSize(0.82f))
-        Text(
-            text = level.toString(),
-            style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color.White, fontSize = 13.sp, shadow = androidx.compose.ui.graphics.Shadow(Color(0xFF5A2815), blurRadius = 2f)),
-            modifier = Modifier.padding(top = 3.dp)
-        )
-    }
-}
-
-/** "Linked with Google · address" or "Guest account": who this profile belongs to, in one line. */
-@Composable
-private fun StatusPill(linked: AuthState.Linked?) {
-    val isLinked = linked != null
-    Row(
-        modifier = Modifier
-            .clip(CircleShape)
-            .background(
-                if (isLinked) AppTheme.tokens.successContainer else MaterialTheme.colorScheme.surfaceVariant
-            )
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = if (isLinked) Icons.Filled.Check else Icons.Filled.Person,
-            contentDescription = null,
-            tint = if (isLinked) AppTheme.tokens.success else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(16.dp)
-        )
-        Spacer(modifier = Modifier.size(6.dp))
-        Text(
-            text = if (isLinked) {
-                listOfNotNull(stringResource(R.string.account_google_linked), linked?.email).joinToString(" · ")
-            } else {
-                stringResource(R.string.account_guest_badge)
-            },
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-/** Three figures worth glancing at: total XP, games played, best streak — each a note pinned to the wall. */
-@Composable
-private fun StatsRow(uiState: AccountUiState) {
-    val number = remember { java.text.NumberFormat.getIntegerInstance() }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        StatTile("⭐", number.format(uiState.levelProgress.totalXp), stringResource(R.string.account_stat_xp), Color(0xFF34A853), Modifier.weight(1f))
-        StatTile("🎮", number.format(uiState.gamesPlayed), stringResource(R.string.account_stat_games), Color(0xFF2E86D6), Modifier.weight(1f))
-        StatTile("📅", number.format(uiState.bestStreak), stringResource(R.string.account_stat_streak), Color(0xFFE5483C), Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun StatTile(emoji: String, value: String, label: String, pin: Color, modifier: Modifier = Modifier) {
-    Box(modifier = modifier) {
-        com.sualtikasifi.cizimhafiza.presentation.common.ParchmentCard(padding = 6.dp, modifier = Modifier.padding(top = 6.dp)) {
-            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(emoji, fontSize = 22.sp)
-                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                    text = value,
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 19.sp, textAlign = TextAlign.Center),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                    text = label,
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
-                    minScale = 0.65f,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
-        // The pin holding the note up.
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .size(14.dp)
-                .shadow(2.dp, CircleShape)
-                .background(pin, CircleShape)
-                .border(2.dp, Color.White.copy(alpha = 0.6f), CircleShape)
-        )
-    }
-}
-
-/** Small section heading used on the page's cards: an icon well and a title. */
-@Composable
-private fun SectionHeader(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        IconWell(icon = icon, size = 32.dp)
-        Spacer(modifier = Modifier.size(10.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-/**
- * Sign-in state and backup in one card: who the profile is tied to, whether progress is safe, and the single
- * action that fits (sign in, or sign out).
- */
-@Composable
-private fun AccountCard(uiState: AccountUiState, onSignIn: () -> Unit, onSignOut: () -> Unit, onDelete: () -> Unit) {
-    com.sualtikasifi.cizimhafiza.presentation.common.ParchmentCard(padding = 12.dp) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .shadow(3.dp, CircleShape)
-                    .background(Brush.verticalGradient(listOf(Color(0xFFFFC04A), Color(0xFFF2861B))), CircleShape),
-                contentAlignment = Alignment.Center
-            ) { Icon(Icons.Filled.CloudSync, contentDescription = null, tint = PageInk, modifier = Modifier.size(20.dp)) }
-            Spacer(modifier = Modifier.size(10.dp))
-            Text(
-                text = stringResource(R.string.account_section_account),
-                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = PageInk, fontSize = 19.sp)
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        when {
-            uiState.isSignedIn -> SyncStatusRow(lastBackupAtMillis = uiState.lastBackupAtMillis)
-            uiState.isGoogleSignInConfigured -> Text(
-                text = stringResource(R.string.account_guest_hint),
-                style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(14.sp, 19.sp).copy(color = PageInk, textAlign = TextAlign.Start)
-            )
-            else -> Text(
-                text = stringResource(R.string.account_not_configured_message),
-                style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(14.sp, 19.sp).copy(color = PageInk, textAlign = TextAlign.Start)
-            )
-        }
-        if (uiState.isSignedIn || uiState.isGoogleSignInConfigured) {
-            Spacer(modifier = Modifier.height(8.dp))
-            if (uiState.isBusy) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                    CircularProgressIndicator(modifier = Modifier.size(30.dp))
-                }
-            } else if (uiState.isSignedIn) {
-                com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
-                    text = stringResource(R.string.account_sign_out),
-                    onClick = onSignOut,
-                    height = 48.dp,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            } else {
-                GoogleSignInButton(onClick = onSignIn, modifier = Modifier.fillMaxWidth())
-            }
-        }
-        // Account deletion at the foot of the card, set apart by a rule: never one tap from something harmless.
-        Spacer(modifier = Modifier.height(8.dp))
-        Box(Modifier.fillMaxWidth(0.7f).height(1.dp).align(Alignment.CenterHorizontally).background(Color(0x33795548)))
-        Spacer(modifier = Modifier.height(8.dp))
-        DangerZone(isDeleting = uiState.isDeleting, onDelete = onDelete)
-    }
-}
-
-/** Account deletion: a red outlined pill with a bin. */
-@Composable
-private fun DangerZone(isDeleting: Boolean, onDelete: () -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        if (isDeleting) {
-            CircularProgressIndicator(modifier = Modifier.size(28.dp))
-        } else {
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFFFFF6EE))
-                    .border(1.5.dp, Color(0xFFE5483C), RoundedCornerShape(16.dp))
-                    .clickable(onClick = onDelete)
-                    .padding(horizontal = 16.dp, vertical = 7.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(Icons.Filled.Delete, contentDescription = null, tint = Color(0xFFE5483C), modifier = Modifier.size(20.dp))
-                Text(
-                    text = stringResource(R.string.account_delete_action),
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFFD63A2E), fontSize = 15.sp)
-                )
-            }
-        }
-    }
-}
-
-/**
- * States the sync guarantee in the one place a player would look for it —
- * replacing the two buttons that used to imply syncing was their job.
- *
- * The two states are told apart deliberately. This row used to show the
- * green "kaydedildi" tick unconditionally, so an account whose progress had
- * never once reached the cloud was still reassured that it had — which is
- * the exact false comfort behind the account that was lost. A backup that
- * has not happened yet now looks like one that has not happened yet.
- */
-@Composable
-private fun SyncStatusRow(lastBackupAtMillis: Long?) {
-    val backedUp = lastBackupAtMillis != null
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 12.dp, vertical = 7.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = if (backedUp) Icons.Filled.CloudDone else Icons.Filled.CloudSync,
-            contentDescription = null,
-            tint = if (backedUp) AppTheme.tokens.success else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.size(10.dp))
-        Column {
-            Text(
-                text = stringResource(
-                    if (backedUp) R.string.account_sync_on else R.string.account_sync_pending
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = lastBackupAtMillis?.let {
-                    stringResource(R.string.account_last_backup_format, rememberBackupTimestamp(it))
-                } ?: stringResource(R.string.account_never_backed_up),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-/**
- * Shown signed in or out: an anonymous player has a nickname too (it is
- * what friends and league tables already show).
- *
- * Explicitly saved, unlike the Oda Kur/Koda Katıl fields it used to copy.
- * Writing on every keystroke meant clearing the field wrote a BLANK name,
- * and a blank name is exactly what util.ProfileNameSynchronizer refills
- * from the Google account — so deleting your name put the old one straight
- * back, mid-deletion. A name that only leaves the screen when the player
- * says so has no such window, and it also gives the write somewhere to
- * report from: this is the one field in the app that also travels to two
- * servers (see AccountViewModel.saveNickname).
- */
-@Composable
-private fun NicknameCard(
-    editable: Boolean,
-    draft: String,
-    canSave: Boolean,
-    saveState: NicknameSaveState,
-    error: Int?,
-    onDraftChange: (String) -> Unit,
-    onSave: () -> Unit
-) {
-    RaisedCard(corner = 22.dp, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
-            SectionHeader(Icons.Filled.Person, stringResource(R.string.account_section_username))
-            Spacer(modifier = Modifier.height(12.dp))
-            AppTextField(
-                value = draft,
-                onValueChange = onDraftChange,
-                enabled = editable,
-                label = stringResource(R.string.account_nickname_label),
-                placeholder = stringResource(R.string.account_nickname_hint),
-                // Autocorrect off is not cosmetic here. With it on, the IME
-                // keeps a composing region over the whole word, and backspace
-                // deletes that region rather than a character — which is why
-                // clearing this field wiped a word at a time. A nickname is
-                // not a dictionary word anyway, so there was never anything
-                // for autocorrect to usefully do.
-                keyboardOptions = KeyboardOptions(
-                    autoCorrectEnabled = false,
-                    capitalization = KeyboardCapitalization.None,
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(onDone = { if (canSave) onSave() }),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            if (error != null) {
-                Text(
-                    text = stringResource(error),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-            if (editable) {
-                Text(
-                    text = stringResource(R.string.username_change_taken_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                NicknameSaveButton(canSave = canSave, saveState = saveState, onSave = onSave)
-            } else {
-                Text(
-                    text = stringResource(R.string.nickname_locked_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-/**
- * One button carrying all three states, rather than a button plus a
- * separate toast: the confirmation belongs where the action was, and a
- * message that appears somewhere else is a message that gets missed.
- */
-@Composable
-private fun NicknameSaveButton(canSave: Boolean, saveState: NicknameSaveState, onSave: () -> Unit) {
-    val saved = saveState == NicknameSaveState.Saved
-    // Animated rather than swapped so the button does not jump between
-    // states — it settles into the confirmation and back out of it.
-    val face by animateColorAsState(
-        targetValue = if (saved) AppTheme.tokens.success else MaterialTheme.colorScheme.primary,
-        animationSpec = tween(320),
-        label = "nickname_save_face"
-    )
-
-    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        when (saveState) {
-            NicknameSaveState.Saving -> CircularProgressIndicator(modifier = Modifier.size(26.dp))
-            else -> PrimaryButton(
-                text = stringResource(
-                    if (saved) R.string.account_nickname_saved else R.string.account_nickname_save
-                ),
-                icon = if (saved) Icons.Filled.Check else Icons.Filled.Save,
-                onClick = onSave,
-                // Stays visible once saved so the confirmation has something
-                // to sit on; there is simply nothing left to save.
-                enabled = canSave,
-                height = 50.dp,
-                face = face,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-    }
-}
 
 /**
  * "bugün 14:32" for a backup from today, "dün 14:32" for yesterday, the

@@ -1,5 +1,14 @@
 package com.sualtikasifi.cizimhafiza.presentation.reportbug
 
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.Image
 import androidx.compose.material.icons.filled.BugReport
 
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -105,146 +114,183 @@ fun ReportBugScreen(
     var pendingDeleteId by remember { mutableStateOf<String?>(null) }
     var deleteAllRequested by remember { mutableStateOf(false) }
 
-    // Scrolls only when it has to: the form fits a normal phone, the history of earlier reports grows below it.
-    val cream = Color(0xFFFFEBC8)
-    com.sualtikasifi.cizimhafiza.presentation.common.RoomPage(
-        title = stringResource(R.string.report_bug_title),
-        onBack = onBack,
-        // The mascot leaning on the sign's right end, as in the design.
-        beside = { signBottom ->
-            Box(Modifier.fillMaxWidth().height(signBottom), contentAlignment = Alignment.BottomEnd) {
-                androidx.compose.foundation.Image(
-                    painter = androidx.compose.ui.res.painterResource(R.drawable.mascot_pencil_wink),
+    // The page is the workshop room with the cards, buttons and labels of the design laid over it as drawn pieces
+    // (rp_* in drawable-nodpi, cut from the design sheet). It scrolls when it has to: the form fits a normal phone, the
+    // history of earlier reports grows below it.
+    val ink = Color(0xFF3B2314)
+    val canSend = uiState.description.isNotBlank() && !uiState.isSubmitting
+    Box(modifier = Modifier.fillMaxSize()) {
+        androidx.compose.foundation.Image(
+            painter = com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource(R.drawable.bg_report),
+            contentDescription = null,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            alignment = Alignment.TopCenter,
+            modifier = Modifier.fillMaxSize()
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 14.dp)
+                .padding(bottom = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // The sign: both dogs leaning on the plank, the title lettered across it in two lines.
+            BoxWithConstraints(Modifier.fillMaxWidth(0.86f).padding(top = 6.dp)) {
+                val signW = maxWidth
+                Image(
+                    painter = painterResource(R.drawable.rp_sign),
                     contentDescription = null,
-                    modifier = Modifier.padding(end = 4.dp, bottom = 6.dp).size(signBottom * 0.42f)
+                    contentScale = ContentScale.FillWidth,
+                    modifier = Modifier.fillMaxWidth()
                 )
-            }
-        }
-    ) {
-        // A short intro card: what this form is for.
-        NinePatch(res = R.drawable.league_card, slicePx = 100, edge = 22.dp, modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Box(
-                    modifier = Modifier.size(64.dp).background(Color(0xFFFFE2B5), CircleShape),
-                    contentAlignment = Alignment.Center
+                val words = stringResource(R.string.report_bug_title).split(' ')
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = signW * 0.085f)
+                        .fillMaxWidth(0.72f)
+                        .height(signW * 0.31f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(Brush.verticalGradient(listOf(Color(0xFFFFB54A), Color(0xFFF2861B))), RoundedCornerShape(12.dp)),
-                        contentAlignment = Alignment.Center
-                    ) { Icon(Icons.Filled.BugReport, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp)) }
+                    LetteredText(
+                        text = words.first(),
+                        size = (signW.value * 0.17f).sp,
+                        fill = Color(0xFFFFC21F),
+                        outline = Color(0xFF5A2815),
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        minScale = 0.45f
+                    )
+                    if (words.size > 1) LetteredText(
+                        text = words.drop(1).joinToString(" "),
+                        size = (signW.value * 0.17f).sp,
+                        outline = Color(0xFF5A2815),
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        minScale = 0.45f
+                    )
                 }
-                Column(modifier = Modifier.weight(1f)) {
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // What this form is for.
+            NinePatch(res = R.drawable.rp_card_big, slicePx = 110, sliceYPx = 110, edge = 34.dp, edgeY = 34.dp, modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 30.dp, vertical = 22.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
                         text = stringResource(R.string.report_bug_intro_title),
-                        style = PaintedStyle(color = Color(0xFF3B2314), fontSize = 18.sp, textAlign = TextAlign.Start)
+                        style = PaintedStyle(color = ink, fontSize = 19.sp, textAlign = TextAlign.Center)
                     )
-                    Spacer(modifier = Modifier.height(3.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = stringResource(R.string.report_bug_intro_body),
-                        style = DescriptionStyle(13.sp, 18.sp).copy(textAlign = TextAlign.Start)
+                        style = DescriptionStyle(14.sp, 20.sp).copy(color = ink, textAlign = TextAlign.Center)
                     )
                 }
             }
-        }
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-        FormLabel(stringResource(R.string.report_bug_category_label), cream)
-        Spacer(modifier = Modifier.height(6.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            ChoicePill(
-                label = stringResource(R.string.report_bug_category_suggestion),
-                selected = uiState.category == BugReportCategory.SUGGESTION,
-                onClick = { viewModel.onCategorySelected(BugReportCategory.SUGGESTION) },
-                modifier = Modifier.weight(1f),
-                height = 48.dp,
-                textSize = 17.sp
-            )
-            ChoicePill(
-                label = stringResource(R.string.report_bug_category_complaint),
-                selected = uiState.category == BugReportCategory.COMPLAINT,
-                onClick = { viewModel.onCategorySelected(BugReportCategory.COMPLAINT) },
-                modifier = Modifier.weight(1f),
-                height = 48.dp,
-                textSize = 17.sp
-            )
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-
-        FormLabel(stringResource(R.string.report_bug_description_label), cream)
-        Spacer(modifier = Modifier.height(6.dp))
-        NinePatch(res = R.drawable.league_card, slicePx = 100, edge = 20.dp, modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp)) {
-            BasicTextField(
-                value = uiState.description,
-                onValueChange = { if (it.length <= MAX_DESCRIPTION_LENGTH) viewModel.onDescriptionChanged(it) },
-                textStyle = PaintedStyle(color = InkBrown, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
-                cursorBrush = SolidColor(ButtonOrange),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 130.dp).padding(horizontal = 18.dp, vertical = 14.dp),
-                decorationBox = { inner ->
-                    Box {
-                        if (uiState.description.isEmpty()) {
-                            Text(
-                                stringResource(R.string.report_bug_placeholder),
-                                style = PaintedStyle(color = Color(0xFF9C8F82), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start)
-                            )
-                        }
-                        inner()
-                    }
-                }
-            )
-        }
-        Text(
-            text = stringResource(R.string.report_bug_char_count_format, uiState.description.length, MAX_DESCRIPTION_LENGTH),
-            style = PaintedStyle(color = Color(0xFFFFEBC8), fontSize = 12.sp, textAlign = TextAlign.End, shadow = androidx.compose.ui.graphics.Shadow(Color(0xAA2A1005), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)),
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, end = 6.dp)
-        )
-        uiState.errorMessage?.let { message ->
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = message.asString(),
-                style = PaintedStyle(color = Color(0xFFFFD6D0), fontSize = 14.sp, textAlign = TextAlign.Center),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xCC3B1E08), RoundedCornerShape(14.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-            )
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        val canSend = uiState.description.isNotBlank() && !uiState.isSubmitting
-        SendButton(
-            text = stringResource(if (uiState.isSubmitting) R.string.report_bug_sending else R.string.report_bug_submit),
-            enabled = canSend,
-            busy = uiState.isSubmitting,
-            onClick = viewModel::submit,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        if (myReports.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(18.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                LetteredText(stringResource(R.string.report_bug_history_title), 18.sp)
-                Text(
-                    text = stringResource(R.string.report_bug_delete_all),
-                    style = PaintedStyle(color = Color(0xFFFFC2BA), fontSize = 14.sp, textAlign = TextAlign.End),
-                    modifier = Modifier.pressable(pressedScale = 0.9f) { deleteAllRequested = true }.padding(8.dp)
+            FormLabel(stringResource(R.string.report_bug_category_label), Modifier.align(Alignment.Start))
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.fillMaxWidth()) {
+                CategoryPill(
+                    label = stringResource(R.string.report_bug_category_suggestion),
+                    res = R.drawable.rp_pill_orange,
+                    selected = uiState.category == BugReportCategory.SUGGESTION,
+                    onClick = { viewModel.onCategorySelected(BugReportCategory.SUGGESTION) },
+                    modifier = Modifier.weight(1f)
+                )
+                CategoryPill(
+                    label = stringResource(R.string.report_bug_category_complaint),
+                    res = R.drawable.rp_pill_blue,
+                    selected = uiState.category == BugReportCategory.COMPLAINT,
+                    onClick = { viewModel.onCategorySelected(BugReportCategory.COMPLAINT) },
+                    modifier = Modifier.weight(1f)
                 )
             }
             Spacer(modifier = Modifier.height(6.dp))
-            myReports.forEach { report ->
-                ReportHistoryCard(report, onDelete = { pendingDeleteId = report.id })
-                Spacer(modifier = Modifier.height(8.dp))
+
+            FormLabel(stringResource(R.string.report_bug_description_label), Modifier.align(Alignment.Start))
+            Spacer(modifier = Modifier.height(4.dp))
+            NinePatch(
+                res = R.drawable.rp_card_msg, slicePx = 120, sliceYPx = 96, edge = 44.dp, edgeY = 36.dp,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 170.dp)
+            ) {
+                BasicTextField(
+                    value = uiState.description,
+                    onValueChange = { if (it.length <= MAX_DESCRIPTION_LENGTH) viewModel.onDescriptionChanged(it) },
+                    textStyle = PaintedStyle(color = InkBrown, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
+                    cursorBrush = SolidColor(ButtonOrange),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp).padding(horizontal = 30.dp, vertical = 26.dp),
+                    decorationBox = { inner ->
+                        Box {
+                            if (uiState.description.isEmpty()) {
+                                Text(
+                                    stringResource(R.string.report_bug_placeholder),
+                                    style = PaintedStyle(color = Color(0xFF9C8F82), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start)
+                                )
+                            }
+                            inner()
+                        }
+                    }
+                )
             }
+            Text(
+                text = stringResource(R.string.report_bug_char_count_format, uiState.description.length, MAX_DESCRIPTION_LENGTH),
+                style = PaintedStyle(color = Color(0xFFFFEBC8), fontSize = 13.sp, textAlign = TextAlign.End, shadow = androidx.compose.ui.graphics.Shadow(Color(0xCC2A1005), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)),
+                modifier = Modifier.fillMaxWidth().padding(top = 2.dp, end = 10.dp)
+            )
+            uiState.errorMessage?.let { message ->
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = message.asString(),
+                    style = PaintedStyle(color = Color(0xFFFFD6D0), fontSize = 14.sp, textAlign = TextAlign.Center),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xCC3B1E08), RoundedCornerShape(14.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            SendButton(
+                text = stringResource(if (uiState.isSubmitting) R.string.report_bug_sending else R.string.report_bug_submit),
+                enabled = canSend,
+                busy = uiState.isSubmitting,
+                onClick = viewModel::submit,
+                modifier = Modifier.fillMaxWidth(0.9f)
+            )
+
+            if (myReports.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(18.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FormLabel(stringResource(R.string.report_bug_history_title), Modifier)
+                    Text(
+                        text = stringResource(R.string.report_bug_delete_all),
+                        style = PaintedStyle(color = Color(0xFFD63A2E), fontSize = 14.sp, textAlign = TextAlign.End),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(Color(0xF2FFF6EE))
+                            .pressable(pressedScale = 0.92f) { deleteAllRequested = true }
+                            .padding(horizontal = 14.dp, vertical = 7.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                myReports.forEach { report ->
+                    ReportHistoryCard(report, onDelete = { pendingDeleteId = report.id })
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
         }
-        Spacer(modifier = Modifier.height(12.dp))
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedBackButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart))
     }
     if (uiState.isSubmitted) {
         com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog(
@@ -367,48 +413,68 @@ private fun ReportHistoryCard(report: BugReport, onDelete: () -> Unit) {
 }
 
 /**
- * The send button: a raised orange pill with a darker lip under it. With nothing written yet it turns a muted tan —
- * still solid and legible rather than see-through, so it reads as "not yet", not as broken.
+ * The send button: the design's orange pill in its leaf wreath. With nothing written yet it goes grey and still —
+ * solid and legible rather than see-through, so it reads as "not yet", not as broken.
  */
 @Composable
 private fun SendButton(text: String, enabled: Boolean, busy: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(50)
-    val top = if (enabled) Color(0xFFFFB63D) else Color(0xFFF6C98A)
-    val bottom = if (enabled) Color(0xFFF2761A) else Color(0xFFE59B50)
-    val lip = if (enabled) Color(0xFFA5470B) else Color(0xFFA9703A)
-    val rim = if (enabled) Color(0xFFFFE08A) else Color(0xFFFFE6BE)
-    Box(
+    NinePatch(
+        res = R.drawable.rp_pill_orange,
+        slicePx = 120,
+        sliceYPx = 90,
+        edge = 44.dp,
+        edgeY = 32.dp,
+        tint = if (enabled) null else androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+            androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0.12f) }
+        ),
         modifier = modifier
-            .height(60.dp)
-            .pressable(enabled = enabled, pressedScale = 0.96f, onClick = onClick)
-            .drawBehind { drawRoundRect(lip, cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2)) }
-            .padding(bottom = 5.dp)
-            .background(Brush.verticalGradient(listOf(top, bottom)), shape)
-            .border(2.dp, rim.copy(alpha = 0.7f), shape),
-        contentAlignment = Alignment.Center
+            .height(82.dp)
+            .pressable(enabled = enabled, pressedScale = 0.95f, onClick = onClick)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 44.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
             if (busy) {
-                androidx.compose.material3.CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Color.White, strokeWidth = 3.dp)
+                androidx.compose.material3.CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 3.dp)
             } else {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
             }
             Spacer(Modifier.width(10.dp))
-            LetteredText(text, 22.sp, outline = if (enabled) Color(0xFF8A3A00) else Color(0xFF8A5A2A), modifier = Modifier.wrapContentWidth())
+            LetteredText(text, 25.sp, outline = if (enabled) Color(0xFF8A3A00) else Color(0xFF6E6A66), modifier = Modifier.wrapContentWidth())
         }
     }
 }
 
-/** A section label on a little wooden plank, like the design's "Bildirim Türü" and "Mesajın" boards. */
+/** One of the two category pills: the design's orange (Öneri) or blue (Şikayet); the one not chosen is greyed and a touch smaller. */
 @Composable
-private fun FormLabel(text: String, @Suppress("UNUSED_PARAMETER") color: Color) {
-    Box(
-        modifier = Modifier
-            .shadow(3.dp, RoundedCornerShape(10.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFFB8702F), Color(0xFF8E4F1C))), RoundedCornerShape(10.dp))
-            .border(2.dp, Color(0xFF5E3317), RoundedCornerShape(10.dp))
-            .padding(horizontal = 18.dp, vertical = 6.dp)
+private fun CategoryPill(label: String, res: Int, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val scale by androidx.compose.animation.core.animateFloatAsState(if (selected) 1f else 0.94f, label = "pillSel")
+    NinePatch(
+        res = res,
+        slicePx = 120,
+        sliceYPx = 90,
+        edge = 40.dp,
+        edgeY = 28.dp,
+        tint = if (selected) null else androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+            androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0.2f) }
+        ),
+        modifier = modifier
+            .height(72.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (selected) 1f else 0.85f }
+            .pressable(pressedScale = 0.94f, onClick = onClick)
     ) {
-        LetteredText(text, 17.sp, outline = Color(0xFF4A2410))
+        Box(Modifier.fillMaxSize().padding(horizontal = 40.dp), contentAlignment = Alignment.Center) {
+            LetteredText(label, 21.sp, outline = Color(0xFF3A1A06), modifier = Modifier.fillMaxWidth(), minScale = 0.6f)
+        }
+    }
+}
+
+/** A section label on the design's little wooden plank ("Bildirim Türü", "Mesajın"). */
+@Composable
+private fun FormLabel(text: String, modifier: Modifier = Modifier) {
+    NinePatch(res = R.drawable.rp_label, slicePx = 36, sliceYPx = 36, edge = 12.dp, edgeY = 12.dp, modifier = modifier.wrapContentWidth()) {
+        LetteredText(text, 17.sp, outline = Color(0xFF4A2410), modifier = Modifier.padding(horizontal = 22.dp, vertical = 9.dp).wrapContentWidth())
     }
 }

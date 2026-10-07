@@ -236,9 +236,17 @@ fun GuessScreen(
         // Space is kept for the keyboard while it is up or about to come up (the answer field asks for it at once).
         // If it stays away (closed by the player, a hardware keyboard), the scene grows into that space instead of
         // leaving an empty strip of desk, and eases back when the keyboard returns.
-        var keyboardExpected by remember { mutableStateOf(true) }
-        LaunchedEffect(imeNow > 0) {
-            if (imeNow > 0) keyboardExpected = true else { kotlinx.coroutines.delay(1_200); keyboardExpected = false }
+        // The tutorial's joker lessons keep the keyboard away on purpose (the joker button is the only thing to do), so
+        // there nothing is reserved from the first frame: the scene used to open at "keyboard up" size with an empty
+        // strip under it and only grow into the whole screen a second later.
+        val lesson = jokerSpotlight != null
+        var keyboardExpected by remember { mutableStateOf(!lesson) }
+        LaunchedEffect(imeNow > 0, lesson) {
+            when {
+                lesson -> keyboardExpected = false
+                imeNow > 0 -> keyboardExpected = true
+                else -> { kotlinx.coroutines.delay(1_200); keyboardExpected = false }
+            }
         }
         val navBarDp = with(density) { WindowInsets.navigationBars.getBottom(density).toDp() }
         val keyboardDp by androidx.compose.animation.core.animateDpAsState(

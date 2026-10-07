@@ -139,7 +139,7 @@ step t04_draw1_drawn 1
 
 # --- Word 1 is untimed: "Sonraki Kelime" moves on; then the timed words end by themselves --------------
 clear_overlays
-adb shell input tap 852 2240
+adb shell input tap 852 1892
 step t05_after_word1 3
 tap_btn
 step t06_draw2 3

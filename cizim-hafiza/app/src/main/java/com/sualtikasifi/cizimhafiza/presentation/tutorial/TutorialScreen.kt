@@ -118,14 +118,22 @@ fun TutorialScreen(
         }
 
         coach?.let { message ->
-            CoachOverlay(
-                coach = message,
-                onContinue = viewModel::dismissCoach,
-                onSkip = {
-                    viewModel.completeTutorial()
-                    onFinished()
-                }
-            )
+            val skip = {
+                viewModel.completeTutorial()
+                onFinished()
+            }
+            if (message.titleRes == R.string.tutorial_intro_title) {
+                // The very first card is the full welcome scene (painted workshop + card), not the dark scrim.
+                WelcomeScene(onStart = viewModel::dismissCoach, onSkip = skip)
+            } else {
+                CoachOverlay(
+                    coach = message,
+                    onContinue = viewModel::dismissCoach,
+                    onSkip = skip,
+                    // The last card has nothing left to skip: it only starts the game.
+                    showSkip = message.titleRes != R.string.tutorial_finale_title
+                )
+            }
         }
     }
 }
@@ -134,7 +142,8 @@ fun TutorialScreen(
 private fun CoachOverlay(
     coach: TutorialCoach,
     onContinue: () -> Unit,
-    onSkip: () -> Unit
+    onSkip: () -> Unit,
+    showSkip: Boolean = true
 ) {
     // Opaque scrim: while a coaching card is up the timer underneath is
     // stopped anyway (see TutorialViewModel), so there's nothing behind it
@@ -187,11 +196,13 @@ private fun CoachOverlay(
                     textSize = 20.sp,
                     modifier = Modifier.fillMaxWidth()
                 )
-                TextButton(onClick = onSkip) {
-                    Text(
-                        text = stringResource(R.string.tutorial_skip),
-                        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFF7A5A44), fontSize = 15.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                    )
+                if (showSkip) {
+                    TextButton(onClick = onSkip) {
+                        Text(
+                            text = stringResource(R.string.tutorial_skip),
+                            style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFF7A5A44), fontSize = 15.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                        )
+                    }
                 }
             }
         }
