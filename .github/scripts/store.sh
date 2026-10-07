@@ -53,9 +53,12 @@ adb shell am start -n $ACT
 sleep 8
 sleep 20
 clear_overlays
-adb shell input tap 543 1674
-sleep 5
-clear_overlays
+for try in 1 2 3; do
+  adb shell input tap 543 1674
+  sleep 5
+  clear_overlays
+  [ -n "$(find_xy Kalemler)" ] && break
+done
 shot 01_jokers
 adb shell input swipe 540 1800 540 900 400
 sleep 2
