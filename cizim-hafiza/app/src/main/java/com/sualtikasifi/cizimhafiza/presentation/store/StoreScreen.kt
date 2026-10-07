@@ -751,15 +751,15 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
         ),
         label = "daily-joker-glow"
     )
-    BoxWithConstraints(Modifier.fillMaxWidth().padding(bottom = 20.dp)) {
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(bottom = 26.dp)) {
         val w = maxWidth
-        val h = w / 3.0f
+        val h = w / 2.8f
         Box(Modifier.fillMaxWidth().height(h)) {
             Image(painterResource(R.drawable.st_card_daily), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
-            com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.56f, Modifier.offset(w * 0.186f - h * 0.28f, h * 0.505f - h * 0.28f))
-            Column(Modifier.offset(w * 0.31f, h * 0.3f).size(w * 0.4f, h * 0.62f)) {
+            com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.56f, Modifier.offset(w * 0.186f - h * 0.28f, h * 0.56f - h * 0.28f))
+            Column(Modifier.offset(w * 0.31f, h * 0.27f).size(w * 0.4f, h * 0.5f)) {
                 Text(text = stringResource(type.labelRes()), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Ink, maxLines = 1)
-                Text(text = stringResource(type.descRes()), fontSize = 10.5.sp, lineHeight = 12.sp, color = Ink.copy(alpha = 0.78f), maxLines = 3)
+                Text(text = stringResource(type.descRes()), fontSize = 10.5.sp, lineHeight = 12.sp, color = Ink.copy(alpha = 0.78f), maxLines = 2)
             }
             // The wooden tag, glowing gently, hanging over the card's top-left corner.
             Box(
@@ -784,7 +784,7 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
         }
         PaintedPill(
             R.drawable.st_pill_green,
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth(0.84f).height(40.dp),
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth(0.84f).height(42.dp),
             onClick = onClaim
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -816,27 +816,32 @@ private fun JokerCard(
     onBuy: (Int) -> Unit,
     onCannotAfford: () -> Unit
 ) {
-    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(3.0f)) {
+    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(2.7f)) {
         val w = maxWidth
         val h = maxHeight
         Image(painterResource(R.drawable.st_card_joker), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
-        com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.56f, Modifier.offset(w * 0.186f - h * 0.28f, h * 0.515f - h * 0.28f))
-        Column(Modifier.offset(w * 0.31f, h * 0.08f).size(w * 0.46f, h * 0.44f)) {
-            Text(text = stringResource(type.labelRes()), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Ink, maxLines = 1)
+        com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.54f, Modifier.offset(w * 0.186f - h * 0.27f, h * 0.515f - h * 0.27f))
+        Column(Modifier.offset(w * 0.31f, h * 0.09f).size(w * 0.62f, h * 0.42f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(type.labelRes()),
+                    fontFamily = DisplayFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 14.sp,
+                    color = Ink,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(6.dp))
+                Box(Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFF26A1B).copy(alpha = 0.16f)).padding(horizontal = 7.dp, vertical = 2.dp)) {
+                    Text(text = stringResource(R.string.joker_owned, owned), fontSize = 9.5.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB5441A), maxLines = 1)
+                }
+            }
             Text(text = stringResource(type.descRes()), fontSize = 10.5.sp, lineHeight = 12.sp, color = Ink.copy(alpha = 0.78f), maxLines = 2)
         }
-        Box(
-            Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = h * 0.1f, end = w * 0.07f)
-                .clip(RoundedCornerShape(50))
-                .background(Color(0xFFF26A1B).copy(alpha = 0.16f))
-                .padding(horizontal = 8.dp, vertical = 3.dp)
-        ) {
-            Text(text = stringResource(R.string.joker_owned, owned), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB5441A), maxLines = 1)
-        }
         Row(
-            Modifier.offset(w * 0.31f, h * 0.53f).size(w * 0.62f, h * 0.37f),
+            Modifier.offset(w * 0.31f, h * 0.52f).size(w * 0.62f, h * 0.38f),
             horizontalArrangement = Arrangement.spacedBy(w * 0.015f)
         ) {
             listOf(1, JokerType.BULK_QUANTITY).forEach { qty ->
@@ -851,16 +856,17 @@ private fun JokerCard(
                     if (qty == 1) {
                         CoinPrice(price)
                     } else {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy((-1).dp)) {
                             Text(
                                 text = stringResource(R.string.joker_buy_bulk, qty, JokerType.BULK_DISCOUNT_PERCENT),
-                                fontSize = 8.5.sp,
+                                fontSize = 8.sp,
+                                lineHeight = 9.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White.copy(alpha = 0.95f),
                                 style = PillTextShadow,
                                 maxLines = 1
                             )
-                            CoinPrice(price, size = 13.sp, coin = 15.dp)
+                            CoinPrice(price, size = 13.sp, coin = 14.dp)
                         }
                     }
                 }

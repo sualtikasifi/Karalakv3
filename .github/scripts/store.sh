@@ -58,7 +58,7 @@ clear_overlays
 adb shell input tap 540 1678; sleep 4
 clear_overlays
 for try in 1 2 3 4 5 6; do
-  [ -n "$(find_xy Kalemler)" ] && break
+  [ -n "$(find_xy Pens)" ] && break
   adb shell input tap 543 1674
   sleep 6
   clear_overlays
@@ -67,7 +67,7 @@ shot 01_jokers
 adb shell input swipe 540 1800 540 900 400
 sleep 2
 shot 02_jokers_scrolled
-xy=$(find_xy "Kalemler"); [ -n "$xy" ] && adb shell input tap $xy
+xy=$(find_xy "Pens"); [ -n "$xy" ] && adb shell input tap $xy
 sleep 3
 clear_overlays
 shot 03_pens
@@ -80,7 +80,7 @@ shot 05_pens_end
 adb shell input swipe 540 600 540 2000 400
 adb shell input swipe 540 600 540 2000 400
 sleep 2
-xy=$(find_xy "Çerçeveler"); [ -n "$xy" ] && adb shell input tap $xy
+xy=$(find_xy "Frames"); [ -n "$xy" ] && adb shell input tap $xy
 sleep 3
 clear_overlays
 shot 06_frames
