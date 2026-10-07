@@ -92,15 +92,9 @@ import java.text.NumberFormat
 
 private val Ink = Color(0xFF3A2416)
 
-/**
- * How far the scrolling grid starts from the top. [R.drawable.store_bg]
- * bakes its own "Karalak Mağaza" signage into roughly the top fifth of the
- * image (measured off the source art: the "Mağaza" plaque's bottom edge
- * sits at ~22% of the image height), so the tab row starts right under that
- * signage instead of at the usual
- * [com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance].
- */
-private val StoreTopClearance = 178.dp
+// st_bg is this size: the workshop with an empty wooden sign; the title is lettered live on the sign.
+private const val BgW = 841f
+private const val BgH = 1870f
 
 private sealed interface Pending {
     data class PenItem(val skin: PenSkin) : Pending
@@ -146,7 +140,12 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
     }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        Box(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            // The picture fills the screen from the top, cropped at the sides or foot when the phone is not quite its shape.
+            val artScale = maxOf(maxWidth.value / BgW, maxHeight.value / BgH)
+            val fontScale0 = androidx.compose.ui.platform.LocalDensity.current.fontScale
+            val artOffX = (maxWidth.value - BgW * artScale) / 2f
+            Image(painterResource(R.drawable.st_bg), contentDescription = null, contentScale = ContentScale.Crop, alignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize())
             val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
             LaunchedEffect(tab) { gridState.scrollToItem(0) }
             LazyVerticalGrid(
@@ -159,10 +158,9 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                     // "Karalak Mağaza" signage baked in, so this screen draws
                     // no title text of its own — see StoreTopClearance below
                     // for why the scrolling content starts as low as it does.
-                    .paint(painterResource(R.drawable.store_bg), contentScale = ContentScale.Crop)
                     .padding(padding)
                     .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(top = StoreTopClearance, bottom = 24.dp),
+                contentPadding = PaddingValues(top = (506f * artScale).dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -268,6 +266,30 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                         ) }
                     }
                 }
+            }
+
+            // The title, lettered on the wooden sign (x 190..650, y 298..448 of the picture).
+            Column(
+                modifier = Modifier
+                    .offset((artOffX + 190f * artScale).dp, (296f * artScale).dp)
+                    .size((460f * artScale).dp, (152f * artScale).dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                    text = stringResource(R.string.app_name),
+                    size = (96f * artScale / fontScale0).sp,
+                    fill = Color(0xFFFFC21A),
+                    outline = Color(0xFF4E2406),
+                    modifier = Modifier.fillMaxWidth().height((96f * artScale * 1.25f).dp)
+                )
+                com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                    text = stringResource(R.string.store_title),
+                    size = (56f * artScale / fontScale0).sp,
+                    fill = Color.White,
+                    outline = Color(0xFF4E2406),
+                    modifier = Modifier.fillMaxWidth().height((56f * artScale * 1.3f).dp)
+                )
             }
 
             // Floats over the backdrop rather than scrolling with the grid,
