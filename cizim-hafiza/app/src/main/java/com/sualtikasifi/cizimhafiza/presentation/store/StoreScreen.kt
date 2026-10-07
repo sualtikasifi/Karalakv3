@@ -148,52 +148,51 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             Image(painterResource(R.drawable.st_bg), contentDescription = null, contentScale = ContentScale.Crop, alignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize())
             val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
             LaunchedEffect(tab) { gridState.scrollToItem(0) }
+            // The sign and the tabs stay where the picture puts them; only the shelf of cards below the tabs scrolls
+            // (and is cut off at the tabs' foot), so nothing drawn live can ever sit in front of the cards.
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = padding.calculateBottomPadding())
+                    .padding(top = (540f * artScale).dp)
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                    TabChip(stringResource(R.string.store_tab_jokers), R.drawable.st_ic_crown, selected = tab == 0, modifier = Modifier.weight(1f)) { selectTab(0) }
+                    TabChip(stringResource(R.string.store_tab_pens), R.drawable.st_ic_pencil, selected = tab == 1, modifier = Modifier.weight(1f)) { selectTab(1) }
+                    TabChip(stringResource(R.string.store_tab_frames), R.drawable.st_ic_image, selected = tab == 2, modifier = Modifier.weight(1f)) { selectTab(2) }
+                }
             LazyVerticalGrid(
                 state = gridState,
                 columns = GridCells.Fixed(2),
                 modifier = Modifier
-                    .fillMaxSize()
-                    // The workshop-corner photo backdrop, in place of the
-                    // shared doodle-paper background: it already carries the
-                    // "Karalak Mağaza" signage baked in, so this screen draws
-                    // no title text of its own — see StoreTopClearance below
-                    // for why the scrolling content starts as low as it does.
-                    .padding(padding)
+                    .weight(1f)
+                    .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(top = (506f * artScale).dp, bottom = 24.dp),
+                contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        // A guest's purchases live on this phone only: say so once they own something.
-                        if (isGuest && (owned.isNotEmpty() || jokerCounts.values.any { it > 0 })) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(18.dp))
-                                    .background(Color(0xFFFFE9C7))
-                                    .border(2.dp, Color(0xFFF0B24E), RoundedCornerShape(18.dp))
-                                    .pressable(pressedScale = 0.92f, onClick = onAccount)
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Text(text = "☁", style = MaterialTheme.typography.titleLarge)
-                                Text(
-                                    text = stringResource(R.string.store_guest_warning),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
+                // A guest's purchases live on this phone only: say so once they own something.
+                if (isGuest && (owned.isNotEmpty() || jokerCounts.values.any { it > 0 })) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(Color(0xFFFFE9C7))
+                                .border(2.dp, Color(0xFFF0B24E), RoundedCornerShape(18.dp))
+                                .pressable(pressedScale = 0.92f, onClick = onAccount)
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text(text = "☁", style = MaterialTheme.typography.titleLarge)
+                            Text(
+                                text = stringResource(R.string.store_guest_warning),
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.weight(1f)
+                            )
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                            TabChip(stringResource(R.string.store_tab_jokers), R.drawable.st_ic_crown, selected = tab == 0, modifier = Modifier.weight(1f)) { selectTab(0) }
-                            TabChip(stringResource(R.string.store_tab_pens), R.drawable.st_ic_pencil, selected = tab == 1, modifier = Modifier.weight(1f)) { selectTab(1) }
-                            TabChip(stringResource(R.string.store_tab_frames), R.drawable.st_ic_image, selected = tab == 2, modifier = Modifier.weight(1f)) { selectTab(2) }
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
                     }
                 }
 
@@ -266,6 +265,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                         ) }
                     }
                 }
+            }
             }
 
             // The title, lettered on the wooden sign (x 190..650, y 298..448 of the picture).
@@ -588,6 +588,9 @@ private val PillTextShadow = TextStyle(shadow = Shadow(color = Color(0xFF4A2200)
 
 @Composable
 private fun CoinPrice(price: Int, size: androidx.compose.ui.unit.TextUnit = 14.sp, coin: androidx.compose.ui.unit.Dp = 18.dp) {
+    val long = price >= 10_000
+    val size = if (long) size * 0.82f else size
+    val coin = if (long) coin * 0.85f else coin
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(coin))
         Text(
@@ -696,14 +699,14 @@ private fun PenCard(
         val w = maxWidth
         val h = maxHeight
         Image(painterResource(skin.cardRes()), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
-        Column(Modifier.offset(w * 0.4f, h * 0.42f).size(w * 0.55f, h * 0.27f)) {
-            Text(text = stringResource(skin.labelRes), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Ink, maxLines = 1)
+        Column(Modifier.offset(w * 0.4f, h * 0.5f).size(w * 0.55f, h * 0.25f)) {
+            Text(text = stringResource(skin.labelRes), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, lineHeight = 15.sp, color = Ink, maxLines = 1)
             skin.taglineRes()?.let {
-                Text(text = stringResource(it), fontSize = 9.5.sp, lineHeight = 11.sp, color = Ink.copy(alpha = 0.7f), maxLines = 1)
+                Text(text = stringResource(it), fontSize = 9.sp, lineHeight = 10.sp, color = Ink.copy(alpha = 0.7f), maxLines = 1)
             }
         }
         Row(
-            Modifier.offset(w * 0.3f, h * 0.72f).size(w * 0.64f, h * 0.2f),
+            Modifier.offset(w * 0.3f, h * 0.765f).size(w * 0.64f, h * 0.17f),
             horizontalArrangement = Arrangement.spacedBy(w * 0.03f)
         ) {
             val m = Modifier.weight(1f).fillMaxHeight()
@@ -761,14 +764,13 @@ private fun FrameCard(
 }
 
 /**
- * Today's free joker on its painted card (the gift is part of the picture): the joker's own tile in the frame, its
- * name and what it does, and a green "watch an ad" button that hangs over the card's lower edge. Shown only while
- * unclaimed — once taken the card is simply gone until tomorrow's.
+ * Today's free joker on its painted card (the gift is part of the picture): the joker's own tile, its name and what
+ * it does, with the green "watch an ad" button under the card. Shown only while unclaimed.
  */
 @Composable
 private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
     val glow = androidx.compose.animation.core.rememberInfiniteTransition(label = "daily-joker").animateFloat(
-        initialValue = 0.55f,
+        initialValue = 0.82f,
         targetValue = 1f,
         animationSpec = androidx.compose.animation.core.infiniteRepeatable(
             androidx.compose.animation.core.tween(900),
@@ -776,23 +778,22 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
         ),
         label = "daily-joker-glow"
     )
-    Box(Modifier.fillMaxWidth().padding(bottom = 30.dp)) {
-    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(2.4f)) {
-        val w = maxWidth
-        val h = maxHeight
-        Box(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(2.462f)) {
+            val w = maxWidth
+            val h = maxHeight
             Image(painterResource(R.drawable.st_card_daily), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
-            com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.56f, Modifier.offset(w * 0.186f - h * 0.28f, h * 0.56f - h * 0.28f))
-            Column(Modifier.offset(w * 0.31f, h * 0.27f).size(w * 0.4f, h * 0.5f)) {
+            com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.5f, Modifier.offset(w * 0.1f, h * 0.27f))
+            Column(Modifier.offset(w * 0.3f, h * 0.27f).size(w * 0.37f, h * 0.55f)) {
                 Text(text = stringResource(type.labelRes()), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Ink, maxLines = 1)
-                Text(text = stringResource(type.descRes()), fontSize = 10.5.sp, lineHeight = 12.sp, color = Ink.copy(alpha = 0.78f), maxLines = 2)
+                Text(text = stringResource(type.descRes()), fontSize = 11.sp, lineHeight = 13.sp, color = Ink.copy(alpha = 0.8f), maxLines = 3)
             }
-            // The wooden tag, glowing gently, hanging over the card's top-left corner.
+            // The wooden tag hangs over the card's top-left edge.
             Box(
                 Modifier
-                    .offset(w * 0.07f, (-h * 0.1f))
-                    .size(w * 0.5f, h * 0.34f)
-                    .graphicsLayer { alpha = 0.82f + 0.18f * glow.value },
+                    .offset(w * 0.07f, -(h * 0.12f))
+                    .size(w * 0.5f, h * 0.3f)
+                    .graphicsLayer { alpha = glow.value },
                 contentAlignment = Alignment.Center
             ) {
                 NinePatch(res = R.drawable.st_plaque, slicePx = 70, edge = 22.dp, modifier = Modifier.matchParentSize())
@@ -801,18 +802,14 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
                     fontFamily = DisplayFont,
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 9.5.sp,
-                    letterSpacing = 0.3.sp,
                     color = Color(0xFF3A1A04),
                     maxLines = 1,
                     modifier = Modifier.padding(horizontal = 14.dp)
                 )
             }
         }
-        PaintedPill(
-            R.drawable.st_pill_green,
-            Modifier.align(Alignment.BottomCenter).offset(y = 30.dp).fillMaxWidth(0.84f).height(42.dp),
-            onClick = onClaim
-        ) {
+        Spacer(Modifier.height(6.dp))
+        PaintedPill(R.drawable.st_pill_green, Modifier.fillMaxWidth(0.84f).height(44.dp), onClick = onClaim) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 androidx.compose.material3.Icon(
                     androidx.compose.material.icons.Icons.Filled.PlayCircle,
@@ -826,12 +823,12 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 14.sp,
                     color = Color.White,
+                    maxLines = 1,
                     style = TextStyle(shadow = Shadow(color = Color(0xFF0E3A06), offset = Offset(0f, 2f), blurRadius = 2f))
                 )
             }
         }
     }
-}
 }
 
 /** One joker row on its painted card: its tile, name, what it does, how many you have, and two ways to buy (1, or a discounted bundle of 5). */
@@ -843,33 +840,37 @@ private fun JokerCard(
     onBuy: (Int) -> Unit,
     onCannotAfford: () -> Unit
 ) {
-    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(2.7f)) {
+    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(2.416f)) {
         val w = maxWidth
         val h = maxHeight
         Image(painterResource(R.drawable.st_card_joker), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
-        com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.54f, Modifier.offset(w * 0.186f - h * 0.27f, h * 0.515f - h * 0.27f))
-        Column(Modifier.offset(w * 0.31f, h * 0.09f).size(w * 0.62f, h * 0.42f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = stringResource(type.labelRes()),
-                    fontFamily = DisplayFont,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 14.sp,
-                    color = Ink,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(Modifier.width(6.dp))
-                Box(Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFF26A1B).copy(alpha = 0.16f)).padding(horizontal = 7.dp, vertical = 2.dp)) {
-                    Text(text = stringResource(R.string.joker_owned, owned), fontSize = 9.5.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB5441A), maxLines = 1)
-                }
-            }
-            Text(text = stringResource(type.descRes()), fontSize = 10.5.sp, lineHeight = 12.sp, color = Ink.copy(alpha = 0.78f), maxLines = 2)
+        com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.42f, Modifier.offset(w * 0.1f, h * 0.3f))
+        Row(Modifier.offset(w * 0.34f, h * 0.12f).size(w * 0.56f, h * 0.2f), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(type.labelRes()),
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 14.sp,
+                color = Ink,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
         }
+        Box(Modifier.offset(w * 0.1f, h * 0.74f).clip(RoundedCornerShape(50)).background(Color(0xFFFFE6C2)).padding(horizontal = 8.dp, vertical = 2.dp)) {
+            Text(text = stringResource(R.string.joker_owned, owned), fontSize = 9.5.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB5441A), maxLines = 1)
+        }
+        Text(
+            text = stringResource(type.descRes()),
+            fontSize = 10.5.sp,
+            lineHeight = 12.sp,
+            color = Ink.copy(alpha = 0.78f),
+            maxLines = 2,
+            modifier = Modifier.offset(w * 0.34f, h * 0.32f).size(w * 0.56f, h * 0.2f)
+        )
         Row(
-            Modifier.offset(w * 0.31f, h * 0.52f).size(w * 0.62f, h * 0.38f),
-            horizontalArrangement = Arrangement.spacedBy(w * 0.015f)
+            Modifier.offset(w * 0.34f, h * 0.58f).size(w * 0.56f, h * 0.27f),
+            horizontalArrangement = Arrangement.spacedBy(w * 0.02f)
         ) {
             listOf(1, JokerType.BULK_QUANTITY).forEach { qty ->
                 val price = type.priceFor(qty)
@@ -883,7 +884,7 @@ private fun JokerCard(
                     if (qty == 1) {
                         CoinPrice(price)
                     } else {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy((-1).dp)) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy((-2).dp)) {
                             Text(
                                 text = stringResource(R.string.joker_buy_bulk, qty, JokerType.BULK_DISCOUNT_PERCENT),
                                 fontSize = 8.sp,
