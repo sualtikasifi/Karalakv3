@@ -58,10 +58,10 @@ clear_overlays
 adb shell input tap 540 1678; sleep 4
 clear_overlays
 for try in 1 2 3 4 5 6; do
+  [ -n "$(find_xy Kalemler)" ] && break
   adb shell input tap 543 1674
   sleep 6
   clear_overlays
-  [ -n "$(find_xy Kalemler)" ] && break
 done
 shot 01_jokers
 adb shell input swipe 540 1800 540 900 400
