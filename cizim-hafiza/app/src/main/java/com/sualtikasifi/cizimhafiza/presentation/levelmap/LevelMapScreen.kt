@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.levelmap
 
+import androidx.compose.ui.graphics.asAndroidBitmap
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -168,32 +169,27 @@ fun LevelMapScreen(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxWidth().height(artHeight)
                 )
-                // Below the picture: its own bottom strip, mirrored, so the scenery carries on under the panel in the same
-                // sharp painting instead of melting into a flat colour.
+                // Below the picture the scenery melts into a plain, soft colour — the picture's own bottom-edge colour,
+                // deepening to shade under the panel — instead of a mirrored copy that ended in a hard line where the
+                // picture stops. The fade starts well inside the picture so there is no edge to find.
+                val edge = rememberBottomEdgeColor(worldBackgroundRes(world?.id) ?: R.drawable.bg_world_1)
+                val shade = androidx.compose.ui.graphics.lerp(edge, Color(0xFF0C1A0B), 0.55f)
+                val fadeHeight = 140.dp
+                val fogHeight = (mapHeight - artHeight) + fadeHeight
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .height(mapHeight - artHeight)
-                        .clipToBounds()
-                        .graphicsLayer { scaleY = -1f },
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    Image(
-                        painter = cachedPainterResource(worldBackgroundRes(world?.id) ?: R.drawable.bg_world_1),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxWidth().requiredHeight(artHeight)
-                    )
-                }
-                // A shadow that deepens towards the bottom, so the mirrored strip reads as ground falling into shade
-                // under the card rather than as a copy of the scene.
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .height(mapHeight - artHeight)
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC0F2410))))
+                        .height(fogHeight)
+                        .background(
+                            Brush.verticalGradient(
+                                colorStops = arrayOf(
+                                    0f to Color.Transparent,
+                                    (fadeHeight / fogHeight) to edge,
+                                    1f to shade
+                                )
+                            )
+                        )
                 )
                 // A golden ring that travels from stop to stop, so moving on reads as walking along the path.
                 current?.let { open ->
@@ -497,4 +493,34 @@ private fun worldBackgroundRes(worldId: Int?): Int? = when (worldId) {
     8 -> R.drawable.bg_world_8
     9 -> R.drawable.bg_world_9
     else -> null
+}
+
+/**
+ * The average colour of the bottom edge of a world's artwork (a band of the last few percent of its rows), cached per
+ * picture: what the scenery fades into under the level panel.
+ */
+@Composable
+private fun rememberBottomEdgeColor(res: Int): Color {
+    val resources = androidx.compose.ui.platform.LocalContext.current.resources
+    return remember(res) {
+        runCatching {
+            val bitmap = com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(resources, res).asAndroidBitmap()
+            val w = bitmap.width
+            val h = bitmap.height
+            var r = 0L; var g = 0L; var b = 0L; var n = 0
+            val y0 = (h * 0.94f).toInt()
+            var y = y0
+            while (y < h) {
+                var x = 0
+                while (x < w) {
+                    val px = bitmap.getPixel(x, y)
+                    r += android.graphics.Color.red(px); g += android.graphics.Color.green(px); b += android.graphics.Color.blue(px)
+                    n++
+                    x += 12
+                }
+                y += 4
+            }
+            if (n == 0) Color(0xFF2F5D2B) else Color(r.toInt() / n, g.toInt() / n, b.toInt() / n)
+        }.getOrDefault(Color(0xFF2F5D2B))
+    }
 }
