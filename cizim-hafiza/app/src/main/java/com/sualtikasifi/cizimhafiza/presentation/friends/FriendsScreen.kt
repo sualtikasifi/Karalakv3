@@ -87,6 +87,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.ButtonOrange
 import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionInk
 import com.sualtikasifi.cizimhafiza.presentation.common.InkBrown
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.FitText
 import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.util.InviteShareUtil
@@ -246,27 +247,33 @@ fun FriendsScreen(
 
         // ── Code card ──
         Sprite(R.drawable.fr_panel_wide, 70f, 380f, 1010f, 835f)
-        SceneBox(scene, 215f, 452f, 865f, 508f) {
-            Text(
+        SceneBox(scene, 190f, 438f, 890f, 520f) {
+            FitText(
                 stringResource(R.string.friends_my_code_label),
-                style = PaintedStyle(color = InkBrown, fontSize = scene.fs(42f), textAlign = TextAlign.Center)
+                style = PaintedStyle(color = InkBrown, fontSize = scene.fs(60f), textAlign = TextAlign.Center),
+                maxLines = 1,
+                minScale = 0.6f,
+                modifier = Modifier.fillMaxSize()
             )
         }
-        SceneBox(scene, 235f, 510f, 845f, 585f) {
-            Text(
+        SceneBox(scene, 215f, 524f, 865f, 626f) {
+            FitText(
                 stringResource(R.string.friends_invite_reward_hint),
                 style = PaintedStyle(
-                    color = DescriptionInk, fontSize = scene.fs(25f), fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center, lineHeight = scene.fs(31f)
-                )
+                    color = DescriptionInk, fontSize = scene.fs(36f), fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center, lineHeight = scene.fs(42f)
+                ),
+                maxLines = 3,
+                minScale = 0.6f,
+                modifier = Modifier.fillMaxSize()
             )
         }
-        SceneBox(scene, 270f, 590f, 810f, 670f) {
+        SceneBox(scene, 230f, 626f, 850f, 716f) {
             val code = uiState.myFriendCode
             if (code != null) {
                 Text(
                     code,
-                    style = PaintedStyle(color = InkBrown, fontSize = scene.fs(66f), textAlign = TextAlign.Center, letterSpacing = scene.fs(12f)),
+                    style = PaintedStyle(color = InkBrown, fontSize = scene.fs(78f), textAlign = TextAlign.Center, letterSpacing = scene.fs(12f)),
                     maxLines = 1
                 )
             } else {
@@ -274,8 +281,8 @@ fun FriendsScreen(
             }
         }
         val shareSink = rememberSink(0.94f)
-        Sprite(R.drawable.fr_orange_w, 350f, 684f, 730f, 792f, shareSink)
-        SceneBox(scene, 350f, 684f, 730f, 792f, sink = shareSink) {
+        Sprite(R.drawable.fr_orange_w, 330f, 722f, 750f, 818f, shareSink)
+        SceneBox(scene, 330f, 722f, 750f, 818f, sink = shareSink) {
             val code = uiState.myFriendCode
             Box(
                 Modifier.fillMaxSize().then(

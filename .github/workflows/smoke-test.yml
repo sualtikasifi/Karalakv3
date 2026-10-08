@@ -21,6 +21,7 @@ on:
           - tutorial.sh
           - worlds.sh
           - store.sh
+          - duel.sh
           - race.sh
           - offline.sh
           - createroom.sh

@@ -135,6 +135,11 @@ fun LeagueScreen(
     val uiState by viewModel.uiState.collectAsState()
     val table = uiState.table
     val shownTable = if (uiState.tab == LeagueTab.Friends) table else uiState.global?.table
+    var tableIntro by androidx.compose.runtime.remember(uiState.tab, shownTable == null) { androidx.compose.runtime.mutableStateOf(true) }
+    androidx.compose.runtime.LaunchedEffect(uiState.tab, shownTable == null) {
+        kotlinx.coroutines.delay(1_500)
+        tableIntro = false
+    }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val density = LocalDensity.current
@@ -260,8 +265,9 @@ fun LeagueScreen(
                         shownTable.entries
                     }
                     itemsIndexed(visibleEntries, key = { _, entry -> entry.uid }) { index, entry ->
-                        // Rows slide up one after another when the table appears (the first dozen only).
-                        androidx.compose.foundation.layout.Box(Modifier.springIn(index = index.coerceAtMost(12), stepMs = 45, fromY = 36)) {
+                        // Rows slide up one after another only while the table first appears; rows scrolled into view
+                        // later show at once (they used to slide in late, which looked like slow loading).
+                        androidx.compose.foundation.layout.Box(if (tableIntro && index < 9) Modifier.springIn(index = index, stepMs = 45, fromY = 36) else Modifier) {
                             LeagueRow(rank = index + 1, entry = entry, showTotalXp = uiState.tab == LeagueTab.Friends)
                         }
                     }

@@ -241,17 +241,21 @@ fun GuessScreen(
         // strip under it and only grow into the whole screen a second later.
         val lesson = jokerSpotlight != null
         var keyboardExpected by remember { mutableStateOf(!lesson) }
+        // Once the keyboard has been up, closing it gives the space back at once; the wait below is only for the
+        // very start, while the answer field is still asking for the keyboard for the first time.
+        var keyboardWasUp by remember { mutableStateOf(false) }
         LaunchedEffect(imeNow > 0, lesson) {
             when {
                 lesson -> keyboardExpected = false
-                imeNow > 0 -> keyboardExpected = true
+                imeNow > 0 -> { keyboardWasUp = true; keyboardExpected = true }
+                keyboardWasUp -> keyboardExpected = false
                 else -> { kotlinx.coroutines.delay(1_200); keyboardExpected = false }
             }
         }
         val navBarDp = with(density) { WindowInsets.navigationBars.getBottom(density).toDp() }
         val keyboardDp by androidx.compose.animation.core.animateDpAsState(
             targetValue = if (keyboardExpected) with(density) { keyboardPx.toDp() } else navBarDp,
-            animationSpec = androidx.compose.animation.core.tween(280),
+            animationSpec = androidx.compose.animation.core.tween(160),
             label = "keyboardSpace"
         )
         // Under the keyboard: the desk the scene stands on, so nothing looks missing when the keyboard is closed.

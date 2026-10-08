@@ -107,6 +107,12 @@ fun AchievementsScreen(
     viewModel: AchievementsViewModel = hiltViewModel()
 ) {
     val achievements by viewModel.achievements.collectAsState()
+    // The first rows slide in when the page opens; rows scrolled into view later must simply be there.
+    var listIntro by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(1_500)
+        listIntro = false
+    }
     val unlockedCount = achievements.count { it.unlocked }
     // Tapping a chip explains what it takes to earn it.
     var selectedAchievement by remember { mutableStateOf<AchievementUiItem?>(null) }
@@ -150,7 +156,7 @@ fun AchievementsScreen(
                 AchievementProgressHeader(unlockedCount = unlockedCount, total = achievements.size)
             }
             itemsIndexed(achievements.chunked(3)) { rowIndex, row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.springIn(index = rowIndex.coerceAtMost(7), stepMs = 60)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = if (listIntro && rowIndex < 8) Modifier.springIn(index = rowIndex, stepMs = 60) else Modifier) {
                     row.forEachIndexed { col, item ->
                         AchievementChip(
                             item = item,
