@@ -164,7 +164,7 @@ fun AccountScreen(
             size = fs(104f),
             fill = Color(0xFFFFC21F),
             outline = Color(0xFF5A2815),
-            modifier = box(262f, 320f, 538f, 440f),
+            modifier = box(270f, 325f, 546f, 445f),
             minScale = 0.5f
         )
 

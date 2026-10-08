@@ -1397,4 +1397,5 @@
     <string name="quick_match_dont_worry">Merak etme!</string>
     <string name="quick_match_dont_worry_body">Kısa süre içinde seninle aynı seviyede bir rakip bulacağız.</string>
     <string name="drawing_time_joker">+10 sn</string>
+    <string name="duel_list_incoming_play">Oyna</string>
 </resources>

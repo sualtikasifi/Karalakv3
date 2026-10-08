@@ -1384,4 +1384,5 @@
     <string name="quick_match_dont_worry">Don\'t worry!</string>
     <string name="quick_match_dont_worry_body">We will find you an opponent at your level in no time.</string>
     <string name="drawing_time_joker">+10 s</string>
+    <string name="duel_list_incoming_play">Play</string>
 </resources>
