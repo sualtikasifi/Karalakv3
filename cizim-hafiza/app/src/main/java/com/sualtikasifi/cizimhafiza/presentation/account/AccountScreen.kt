@@ -159,12 +159,19 @@ fun AccountScreen(
         Image(scene, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(0f, 0f, ArtW, ArtH))
 
         // ---- The sign ------------------------------------------------------------------------------------------
+        // The painted sign in the picture was cut off at its left side, so a whole one is laid over it.
+        Image(
+            painterResource(R.drawable.ac_sign),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds,
+            modifier = box(130f, 132f, 710f, 132f + 580f * 733f / 1100f)
+        )
         LetteredText(
             text = stringResource(R.string.account_title),
             size = fs(104f),
             fill = Color.White,
             outline = Color(0xFF5A2815),
-            modifier = box(270f, 325f, 546f, 445f),
+            modifier = box(219f, 345f, 639f, 458f),
             minScale = 0.5f
         )
 
