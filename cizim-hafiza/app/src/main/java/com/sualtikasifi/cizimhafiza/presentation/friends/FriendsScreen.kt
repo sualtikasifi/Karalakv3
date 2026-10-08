@@ -246,8 +246,8 @@ fun FriendsScreen(
         }
 
         // ── Code card ──
-        Sprite(R.drawable.fr_panel_wide, 70f, 380f, 1010f, 940f)
-        SceneBox(scene, 190f, 432f, 890f, 508f) {
+        Sprite(R.drawable.fr_panel_wide, 70f, 380f, 1010f, 958f)
+        SceneBox(scene, 190f, 456f, 890f, 528f) {
             FitText(
                 stringResource(R.string.friends_my_code_label),
                 style = PaintedStyle(color = InkBrown, fontSize = scene.fs(60f), textAlign = TextAlign.Center),
@@ -256,7 +256,7 @@ fun FriendsScreen(
                 modifier = Modifier.fillMaxSize()
             )
         }
-        SceneBox(scene, 215f, 510f, 865f, 592f) {
+        SceneBox(scene, 215f, 530f, 865f, 606f) {
             FitText(
                 stringResource(R.string.friends_invite_reward_hint),
                 style = PaintedStyle(
@@ -271,7 +271,7 @@ fun FriendsScreen(
         // The code in its frame: one cell per digit. The frame is 640 wide, its cells sit at fixed shares of it.
         val frameW = 640f
         val frameH = frameW * 337f / 1000f
-        val frameTop = 596f
+        val frameTop = 612f
         Sprite(R.drawable.fr_code_frame, (ArtW - frameW) / 2f, frameTop, (ArtW + frameW) / 2f, frameTop + frameH)
         val code = uiState.myFriendCode
         val cellCentres = floatArrayOf(401f, 632f, 865f, 1099f, 1334f, 1570f)
@@ -294,8 +294,8 @@ fun FriendsScreen(
             }
         }
         val shareSink = rememberSink(0.94f)
-        Sprite(R.drawable.fr_orange_w, 330f, 832f, 750f, 928f, shareSink)
-        SceneBox(scene, 330f, 832f, 750f, 928f, sink = shareSink) {
+        Sprite(R.drawable.fr_orange_w, 330f, 846f, 750f, 942f, shareSink)
+        SceneBox(scene, 330f, 846f, 750f, 942f, sink = shareSink) {
             Box(
                 Modifier.fillMaxSize().then(
                     if (code != null) Modifier.clickable(interactionSource = shareSink.source, indication = null) {
@@ -312,7 +312,7 @@ fun FriendsScreen(
         }
 
         // Everything below the code card sits lower than the picture's own cards: the card grew to hold the code frame.
-        val lower = Scene(s, scene.offX, scene.offY + 105f * s, density)
+        val lower = Scene(s, scene.offX, scene.offY + 120f * s, density)
         // ── Add a friend ──
         Sprite(R.drawable.fr_ribbon, 70f, 835f, 470f, 948f, sc = lower)
         SceneBox(lower, 110f, 850f, 440f, 935f) {
