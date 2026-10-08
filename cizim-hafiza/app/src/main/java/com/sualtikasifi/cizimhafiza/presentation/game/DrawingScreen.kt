@@ -432,34 +432,53 @@ private fun ToolButton(
     }
 }
 
-/** The "+ time" joker as a painted orange pill with its remaining count. */
+/**
+ * The "+10 sn" joker: a glossy painted orange button with the joker's tile, the lettered label and the remaining
+ * count as a small badge on its corner; it dims when none are left and sinks a little under the finger.
+ */
 @Composable
 private fun TimeJokerPill(count: Int, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val type = com.sualtikasifi.cizimhafiza.domain.model.JokerType.EXTRA_TIME
     val active = enabled && count > 0
-    val orange = Color(0xFFF26A1B)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = modifier
-            .alpha(if (active) 1f else 0.5f)
-            .shadow(2.dp, RoundedCornerShape(50))
-            .background(Brush.verticalGradient(listOf(Color(0xFFFF8A3A), orange)), RoundedCornerShape(50))
-            .clip(RoundedCornerShape(50))
-            .clickable(enabled = active, onClick = onClick)
-            .padding(start = 8.dp, end = 6.dp, top = 5.dp, bottom = 5.dp)
-    ) {
-        com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, 26.dp)
-        Text(
-            text = stringResource(type.shortRes()),
-            style = PaintedStyle(color = Color.White, fontSize = 15.sp),
-            maxLines = 1
-        )
+    Box(modifier = modifier.alpha(if (active) 1f else 0.55f)) {
         Box(
-            modifier = Modifier.size(24.dp).background(Color.White, CircleShape),
+            modifier = Modifier
+                .padding(top = 7.dp, end = 8.dp)
+                .height(40.dp)
+                .pressable(enabled = active, pressedScale = 0.92f, onClick = onClick),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            com.sualtikasifi.cizimhafiza.presentation.common.NinePatch(
+                res = R.drawable.st_pill_orange,
+                slicePx = 72,
+                edge = 20.dp,
+                modifier = Modifier.matchParentSize()
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(start = 7.dp, end = 16.dp)
+            ) {
+                com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, 28.dp)
+                com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                    text = stringResource(R.string.drawing_time_joker),
+                    size = 16.sp,
+                    outline = Color(0xFF8A3A00),
+                    modifier = Modifier.width(54.dp).height(24.dp),
+                    minScale = 0.7f
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(22.dp)
+                .shadow(2.dp, CircleShape)
+                .background(Color(0xFF3A2112), CircleShape)
+                .border(1.5.dp, Color(0xFFFFC94D), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text(count.toString(), style = PaintedStyle(color = orange, fontSize = 13.sp, textAlign = TextAlign.Center), maxLines = 1)
+            Text(count.toString(), style = PaintedStyle(color = Color.White, fontSize = 12.sp, textAlign = TextAlign.Center), maxLines = 1)
         }
     }
 }

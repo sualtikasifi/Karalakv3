@@ -242,20 +242,15 @@ fun AccountScreen(
                     .clip(CircleShape)
                     .background(Brush.verticalGradient(listOf(Color(0xFFFFC04A), Color(0xFFF58A1F))))
             )
-        }
-        Text(
-            text = if (progress.isMaxLevel) stringResource(R.string.account_xp_max)
-            else stringResource(R.string.account_xp_progress, progress.xpIntoLevel, progress.xpForThisLevel),
-            style = PaintedStyle(color = PageInk, fontSize = fs(26f), textAlign = TextAlign.Start),
-            maxLines = 1,
-            modifier = box(168f, 764f, 450f, 800f)
-        )
-        if (!progress.isMaxLevel) {
+            // The figure sits inside the bar, at its start, in white with a dark edge so it reads on the orange and on the dark part.
             Text(
-                text = stringResource(R.string.account_xp_to_next, progress.xpToNextLevel),
-                style = PaintedStyle(color = Color(0xFF8A6A50), fontSize = fs(23f), fontWeight = FontWeight.Bold, textAlign = TextAlign.End),
+                text = if (progress.isMaxLevel) stringResource(R.string.account_xp_max)
+                else stringResource(R.string.account_xp_progress, progress.xpIntoLevel, progress.xpForThisLevel),
+                style = PaintedStyle(
+                    color = Color.White, fontSize = fs(26f), fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Start
+                ).copy(shadow = androidx.compose.ui.graphics.Shadow(Color(0xCC3A1A08), androidx.compose.ui.geometry.Offset(0f, 2f), 4f)),
                 maxLines = 1,
-                modifier = box(430f, 766f, 736f, 800f)
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = (16f * us).dp)
             )
         }
 
@@ -352,10 +347,15 @@ fun AccountScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Image(painterResource(R.drawable.account_btn), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((14f * us).dp)) {
-                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.White, modifier = Modifier.size((56f * us).dp))
-                    LetteredText(stringResource(R.string.account_sign_out), fs(56f), outline = Color(0xFF8A3A00))
-                }
+                // The lettering is centred on the button itself; the icon waits at its start.
+                Icon(
+                    Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.White,
+                    modifier = Modifier.align(Alignment.CenterStart).padding(start = (46f * us).dp).size((56f * us).dp)
+                )
+                LetteredText(
+                    stringResource(R.string.account_sign_out), fs(56f), outline = Color(0xFF8A3A00),
+                    modifier = Modifier.fillMaxWidth(0.62f).height((86f * us).dp), minScale = 0.5f
+                )
             }
             uiState.isGoogleSignInConfigured -> Box(box(130f, 1318f, 710f, 1440f), contentAlignment = Alignment.Center) {
                 GoogleSignInButton(onClick = viewModel::signIn, modifier = Modifier.fillMaxWidth())

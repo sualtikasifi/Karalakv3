@@ -115,13 +115,14 @@ fun OnlineLobbyScreen(
                 .size(len(540f), len(paperH * 0.6f)),
             contentAlignment = Alignment.Center
         ) {
-            // A felt-tip scrawl, like the doodles on the paper it is written on.
+            // Baloo 2 SemiBold: the felt-tip scrawl tried here first was too hard to read.
             com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                 text = stringResource(R.string.online_lobby_subtitle),
                 style = androidx.compose.ui.text.TextStyle(
-                    fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.ScribbleFont,
-                    fontSize = fs(41f),
-                    lineHeight = fs(43f),
+                    fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                    fontSize = fs(40f),
+                    lineHeight = fs(46f),
                     color = Color(0xFF4A2814),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 ),

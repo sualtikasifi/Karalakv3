@@ -128,6 +128,22 @@ fun LetteredText(
         val scale = rememberFitScale(text, full, maxLines, minScale)
         val base = full.scaledBy(scale)
         val strokeDp = (strokeDp0 * scale).coerceAtLeast(1.1f)
+        // Page-title sized lettering also gets a wide, soft shadow underneath, so a title laid on a painted sign reads
+        // as part of the picture instead of as text put on afterwards.
+        if (size.value >= 26f) {
+            val d = size.value
+            Text(
+                text,
+                style = base.copy(
+                    color = Color(0x40000000),
+                    drawStyle = Stroke(width = with(density) { (strokeDp + 1.5f).dp.toPx() }, join = StrokeJoin.Round),
+                    shadow = androidx.compose.ui.graphics.Shadow(Color(0x66200C00), androidx.compose.ui.geometry.Offset(0f, with(density) { (d * 0.09f).dp.toPx() }), with(density) { (d * 0.16f).dp.toPx() })
+                ),
+                maxLines = maxLines,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.offset(y = (d * 0.07f).dp)
+            )
+        }
         if (outline != null) {
             Text(
                 text,
