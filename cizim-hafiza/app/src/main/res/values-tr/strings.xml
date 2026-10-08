@@ -119,7 +119,7 @@
     <string name="chat_hazir_misin">Hazır mısın?</string>
     <string name="chat_bol_sans">Bol şans! 🍀</string>
     <string name="chat_iyi_eglenceler">İyi eğlenceler!</string>
-    <string name="chat_hos_geldin">Hoş geldin!</string>
+    <string name="chat_hos_geldin">Hoşgeldin!</string>
     <string name="chat_harikasin">Harikasın! 🎉</string>
     <string name="chat_super_cizim">Süper çizim!</string>
     <string name="chat_bildin">Bildin! 🙌</string>
@@ -1398,4 +1398,8 @@
     <string name="quick_match_dont_worry_body">Kısa süre içinde seninle aynı seviyede bir rakip bulacağız.</string>
     <string name="drawing_time_joker">+10 sn</string>
     <string name="duel_list_incoming_play">Oyna</string>
+    <string name="online_lobby_line1">Ne çizdiğini hatırlamak, bazen</string>
+    <string name="online_lobby_line2">kuantum fiziğinden bile daha zor olabilir.</string>
+    <string name="online_lobby_line3">Karalama Savaşlarına</string>
+    <string name="online_lobby_line4">Hoşgeldin!</string>
 </resources>

@@ -106,7 +106,7 @@ internal fun SearchingScene(modifier: Modifier = Modifier) {
         LetteredText(
             text = stringResource(R.string.quick_match_searching_title),
             size = fs(118f),
-            fill = Color(0xFFFFC21F),
+            fill = Color.White,
             outline = Color(0xFF5A2815),
             modifier = box(278f, 340f, 686f, 432f),
             minScale = 0.45f

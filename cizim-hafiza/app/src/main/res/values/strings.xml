@@ -1385,4 +1385,8 @@
     <string name="quick_match_dont_worry_body">We will find you an opponent at your level in no time.</string>
     <string name="drawing_time_joker">+10 s</string>
     <string name="duel_list_incoming_play">Play</string>
+    <string name="online_lobby_line1">Remembering what you drew</string>
+    <string name="online_lobby_line2">can be harder than quantum physics.</string>
+    <string name="online_lobby_line3">Welcome to the funniest</string>
+    <string name="online_lobby_line4">scribble battles!</string>
 </resources>
