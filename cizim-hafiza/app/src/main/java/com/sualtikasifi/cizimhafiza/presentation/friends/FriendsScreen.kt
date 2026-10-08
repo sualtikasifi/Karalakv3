@@ -256,7 +256,7 @@ fun FriendsScreen(
                 modifier = Modifier.fillMaxSize()
             )
         }
-        SceneBox(scene, 150f, 524f, 930f, 626f) {
+        SceneBox(scene, 215f, 524f, 865f, 626f) {
             FitText(
                 stringResource(R.string.friends_invite_reward_hint),
                 style = PaintedStyle(
