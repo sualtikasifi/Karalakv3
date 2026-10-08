@@ -75,7 +75,7 @@ fun DuelListScreen(
 
     Box(modifier = Modifier.fillMaxSize().sceneIn()) {
         Image(
-            painter = cachedPainterResource(R.drawable.bg_report),
+            painter = cachedPainterResource(R.drawable.du_bg),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             alignment = Alignment.TopCenter,
