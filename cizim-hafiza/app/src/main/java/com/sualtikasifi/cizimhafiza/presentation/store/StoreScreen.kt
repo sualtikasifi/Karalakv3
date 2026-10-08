@@ -271,15 +271,15 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             // The title, lettered on the wooden sign (x 190..650, y 298..448 of the picture).
             Column(
                 modifier = Modifier
-                    .offset((artOffX + 190f * artScale).dp, (277f * artScale).dp)
-                    .size((460f * artScale).dp, (152f * artScale).dp),
+                    .offset((artOffX + 225f * artScale).dp, (280f * artScale).dp)
+                    .size((404f * artScale).dp, (160f * artScale).dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
                 com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
                     text = stringResource(R.string.app_name),
                     size = (84f * artScale / fontScale0).sp,
-                    fill = Color(0xFFFFC21A),
+                    fill = Color.White,
                     outline = Color(0xFF4E2406),
                     modifier = Modifier.fillMaxWidth().height((100f * artScale).dp)
                 )

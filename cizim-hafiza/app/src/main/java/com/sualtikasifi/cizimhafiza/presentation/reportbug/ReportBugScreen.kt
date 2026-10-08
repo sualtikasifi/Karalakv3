@@ -159,7 +159,7 @@ fun ReportBugScreen(
                     LetteredText(
                         text = words.first(),
                         size = (signW.value * 0.17f).sp,
-                        fill = Color(0xFFFFC21F),
+                        fill = Color.White,
                         outline = Color(0xFF5A2815),
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         minScale = 0.45f

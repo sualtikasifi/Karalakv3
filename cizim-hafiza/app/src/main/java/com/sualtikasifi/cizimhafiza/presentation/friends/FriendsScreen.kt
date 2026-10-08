@@ -185,8 +185,8 @@ fun FriendsScreen(
         val noRipple = remember { MutableInteractionSource() }
 
         @Composable
-        fun Sprite(res: Int, x0: Float, y0: Float, x1: Float, y1: Float, sink: SinkState? = null) {
-            SceneBox(scene, x0, y0, x1, y1, sink = sink) {
+        fun Sprite(res: Int, x0: Float, y0: Float, x1: Float, y1: Float, sink: SinkState? = null, sc: Scene = scene) {
+            SceneBox(sc, x0, y0, x1, y1, sink = sink) {
                 Image(painterResource(res), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
             }
         }
@@ -246,8 +246,8 @@ fun FriendsScreen(
         }
 
         // ── Code card ──
-        Sprite(R.drawable.fr_panel_wide, 70f, 380f, 1010f, 835f)
-        SceneBox(scene, 190f, 438f, 890f, 520f) {
+        Sprite(R.drawable.fr_panel_wide, 70f, 380f, 1010f, 940f)
+        SceneBox(scene, 190f, 432f, 890f, 508f) {
             FitText(
                 stringResource(R.string.friends_my_code_label),
                 style = PaintedStyle(color = InkBrown, fontSize = scene.fs(60f), textAlign = TextAlign.Center),
@@ -256,34 +256,46 @@ fun FriendsScreen(
                 modifier = Modifier.fillMaxSize()
             )
         }
-        SceneBox(scene, 215f, 524f, 865f, 626f) {
+        SceneBox(scene, 215f, 510f, 865f, 592f) {
             FitText(
                 stringResource(R.string.friends_invite_reward_hint),
                 style = PaintedStyle(
                     color = DescriptionInk, fontSize = scene.fs(36f), fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center, lineHeight = scene.fs(42f)
                 ),
-                maxLines = 3,
+                maxLines = 2,
                 minScale = 0.6f,
                 modifier = Modifier.fillMaxSize()
             )
         }
-        SceneBox(scene, 230f, 626f, 850f, 716f) {
-            val code = uiState.myFriendCode
-            if (code != null) {
-                Text(
-                    code,
-                    style = PaintedStyle(color = InkBrown, fontSize = scene.fs(78f), textAlign = TextAlign.Center, letterSpacing = scene.fs(12f)),
-                    maxLines = 1
-                )
-            } else {
+        // The code in its frame: one cell per digit. The frame is 640 wide, its cells sit at fixed shares of it.
+        val frameW = 640f
+        val frameH = frameW * 337f / 1000f
+        val frameTop = 596f
+        Sprite(R.drawable.fr_code_frame, (ArtW - frameW) / 2f, frameTop, (ArtW + frameW) / 2f, frameTop + frameH)
+        val code = uiState.myFriendCode
+        val cellCentres = floatArrayOf(401f, 632f, 865f, 1099f, 1334f, 1570f)
+        cellCentres.forEachIndexed { i, cx ->
+            val centreX = (ArtW - frameW) / 2f + cx / 1977f * frameW
+            val centreY = frameTop + 349f / 667f * frameH
+            SceneBox(scene, centreX - 30f, centreY - 40f, centreX + 30f, centreY + 40f) {
+                if (code != null && i < code.length) {
+                    Text(
+                        code[i].toString(),
+                        style = PaintedStyle(color = InkBrown, fontSize = scene.fs(62f), textAlign = TextAlign.Center),
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+        if (code == null) {
+            SceneBox(scene, 440f, frameTop + 70f, 640f, frameTop + 150f) {
                 CircularProgressIndicator(modifier = Modifier.size(28.dp), color = ButtonOrange, strokeWidth = 3.dp)
             }
         }
         val shareSink = rememberSink(0.94f)
-        Sprite(R.drawable.fr_orange_w, 330f, 722f, 750f, 818f, shareSink)
-        SceneBox(scene, 330f, 722f, 750f, 818f, sink = shareSink) {
-            val code = uiState.myFriendCode
+        Sprite(R.drawable.fr_orange_w, 330f, 832f, 750f, 928f, shareSink)
+        SceneBox(scene, 330f, 832f, 750f, 928f, sink = shareSink) {
             Box(
                 Modifier.fillMaxSize().then(
                     if (code != null) Modifier.clickable(interactionSource = shareSink.source, indication = null) {
@@ -299,34 +311,36 @@ fun FriendsScreen(
             }
         }
 
+        // Everything below the code card sits lower than the picture's own cards: the card grew to hold the code frame.
+        val lower = Scene(s, scene.offX, scene.offY + 105f * s, density)
         // ── Add a friend ──
-        Sprite(R.drawable.fr_ribbon, 70f, 835f, 470f, 948f)
-        SceneBox(scene, 110f, 850f, 440f, 935f) {
-            LetteredText(stringResource(R.string.friends_add_friend_label), scene.fs(40f))
+        Sprite(R.drawable.fr_ribbon, 70f, 835f, 470f, 948f, sc = lower)
+        SceneBox(lower, 110f, 850f, 440f, 935f) {
+            LetteredText(stringResource(R.string.friends_add_friend_label), lower.fs(40f))
         }
         NinePatch(
             res = R.drawable.fr_cream_b, slicePx = 120, sliceYPx = 100,
-            edge = scene.len(55f), edgeY = scene.len(50f),
-            modifier = Modifier.offset(scene.x(70f), scene.y(963f)).size(scene.len(710f), scene.len(110f))
+            edge = lower.len(55f), edgeY = lower.len(50f),
+            modifier = Modifier.offset(lower.x(70f), lower.y(957f)).size(lower.len(710f), lower.len(122f))
         )
-        SceneBox(scene, 100f, 963f, 750f, 1073f, contentAlignment = Alignment.CenterStart) {
+        SceneBox(lower, 100f, 957f, 750f, 1079f, contentAlignment = Alignment.CenterStart) {
             BasicTextField(
                 value = uiState.addFriendCodeInput,
                 onValueChange = viewModel::setAddFriendCodeInput,
                 singleLine = true,
                 textStyle = PaintedStyle(
-                    color = InkBrown, fontSize = scene.fs(44f), fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Start, letterSpacing = scene.fs(4f)
+                    color = InkBrown, fontSize = lower.fs(44f), fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Start, letterSpacing = lower.fs(4f)
                 ),
                 cursorBrush = SolidColor(ButtonOrange),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = scene.len(14f)),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = lower.len(14f)),
                 decorationBox = { inner ->
                     Box(contentAlignment = Alignment.CenterStart) {
                         if (uiState.addFriendCodeInput.isEmpty()) {
                             Text(
                                 stringResource(R.string.friends_add_friend_hint),
-                                style = PaintedStyle(color = Color(0xFF9C8F82), fontSize = scene.fs(44f), fontWeight = FontWeight.SemiBold)
+                                style = PaintedStyle(color = Color(0xFF9C8F82), fontSize = lower.fs(44f), fontWeight = FontWeight.SemiBold)
                             )
                         }
                         inner()
@@ -336,8 +350,8 @@ fun FriendsScreen(
         }
         val canAdd = uiState.addFriendCodeInput.length == 6
         val addSink = rememberSink(0.92f)
-        Sprite(R.drawable.fr_orange_s, 790f, 955f, 1000f, 1083f, addSink)
-        SceneBox(scene, 795f, 975f, 935f, 1070f, sink = addSink) {
+        Sprite(R.drawable.fr_orange_s, 790f, 955f, 1000f, 1083f, addSink, sc = lower)
+        SceneBox(lower, 797f, 973f, 952f, 1069f, sink = addSink) {
             if (uiState.isAddingFriend) {
                 CircularProgressIndicator(modifier = Modifier.size(26.dp), color = Color.White, strokeWidth = 3.dp)
             } else {
@@ -352,27 +366,27 @@ fun FriendsScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     LetteredText(
-                        stringResource(R.string.friends_add_button), scene.fs(44f),
+                        stringResource(R.string.friends_add_button), lower.fs(44f),
                         modifier = Modifier.alpha(if (canAdd) 1f else 0.6f)
                     )
                 }
             }
         }
-        SceneBox(scene, 110f, 1088f, 970f, 1142f) {
-            FriendsMessage(uiState.infoMessage, uiState.errorMessage, scene)
+        SceneBox(lower, 110f, 1088f, 970f, 1142f) {
+            FriendsMessage(uiState.infoMessage, uiState.errorMessage, lower)
         }
 
         // ── Friends list ──
-        Sprite(R.drawable.fr_ribbon, 70f, 1150f, 490f, 1269f)
-        SceneBox(scene, 105f, 1168f, 455f, 1252f) {
-            LetteredText(stringResource(R.string.friends_list_title), scene.fs(40f))
+        Sprite(R.drawable.fr_ribbon, 70f, 1150f, 490f, 1269f, sc = lower)
+        SceneBox(lower, 105f, 1168f, 455f, 1252f) {
+            LetteredText(stringResource(R.string.friends_list_title), lower.fs(40f))
         }
         NinePatch(
-            res = R.drawable.fr_panel_big, slicePx = 170, edge = scene.len(85f),
-            modifier = Modifier.offset(scene.x(70f), scene.y(1255f)).size(scene.len(940f), scene.len(595f))
+            res = R.drawable.fr_panel_big, slicePx = 170, edge = lower.len(85f),
+            modifier = Modifier.offset(lower.x(70f), lower.y(1255f)).size(lower.len(940f), lower.len(595f))
         )
-        SceneBox(scene, 135f, 1315f, 945f, 1790f, contentAlignment = Alignment.TopCenter) {
-            FriendsPanel(uiState, viewModel, scene, onDuel)
+        SceneBox(lower, 135f, 1315f, 945f, 1790f, contentAlignment = Alignment.TopCenter) {
+            FriendsPanel(uiState, viewModel, lower, onDuel)
         }
     }
 }

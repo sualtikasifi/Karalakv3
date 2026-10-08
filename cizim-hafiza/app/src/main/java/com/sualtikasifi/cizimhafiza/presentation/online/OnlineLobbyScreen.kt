@@ -14,6 +14,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -115,21 +118,25 @@ fun OnlineLobbyScreen(
                 .size(len(540f), len(paperH * 0.6f)),
             contentAlignment = Alignment.Center
         ) {
-            // Baloo 2 SemiBold: the felt-tip scrawl tried here first was too hard to read.
-            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                text = stringResource(R.string.online_lobby_subtitle),
-                style = androidx.compose.ui.text.TextStyle(
-                    fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                    fontSize = fs(40f),
-                    lineHeight = fs(46f),
-                    color = Color(0xFF4A2814),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                ),
-                maxLines = 4,
-                minScale = 0.7f,
-                modifier = Modifier.fillMaxSize()
-            )
+            // Four short lines, broken where the sentence breathes, all at one size.
+            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                listOf(R.string.online_lobby_line1, R.string.online_lobby_line2, R.string.online_lobby_line3, R.string.online_lobby_line4).forEach { line ->
+                    com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                        text = stringResource(line),
+                        style = androidx.compose.ui.text.TextStyle(
+                            fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                            fontSize = fs(40f),
+                            lineHeight = fs(46f),
+                            color = Color(0xFF4A2814),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        ),
+                        maxLines = 1,
+                        minScale = 0.6f,
+                        modifier = Modifier.fillMaxWidth().weight(1f)
+                    )
+                }
+            }
         }
 
         RaceButton(

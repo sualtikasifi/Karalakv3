@@ -162,7 +162,7 @@ fun AccountScreen(
         LetteredText(
             text = stringResource(R.string.account_title),
             size = fs(104f),
-            fill = Color(0xFFFFC21F),
+            fill = Color.White,
             outline = Color(0xFF5A2815),
             modifier = box(270f, 325f, 546f, 445f),
             minScale = 0.5f
@@ -220,10 +220,13 @@ fun AccountScreen(
             )
         }
         // The level star and the bar it heads.
-        Box(box(76f, 706f, 156f, 786f), contentAlignment = Alignment.Center) {
+        Box(box(60f, 690f, 168f, 798f), contentAlignment = Alignment.Center) {
             Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFF8A4E12), modifier = Modifier.fillMaxSize())
             Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFB627), modifier = Modifier.fillMaxSize(0.84f))
-            LetteredText(uiState.level.toString(), fs(30f), outline = Color(0xFF5A2815), modifier = Modifier.padding(top = (6f * us).dp))
+            LetteredText(
+                uiState.level.toString(), fs(if (uiState.level >= 10) 28f else 34f), outline = Color(0xFF5A2815),
+                modifier = Modifier.padding(top = (8f * us).dp).requiredSize(unit * 74f, unit * 56f), minScale = 0.6f
+            )
         }
         Box(
             box(166f, 726f, 736f, 762f)
@@ -250,7 +253,7 @@ fun AccountScreen(
                     color = Color.White, fontSize = fs(26f), fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Start
                 ).copy(shadow = androidx.compose.ui.graphics.Shadow(Color(0xCC3A1A08), androidx.compose.ui.geometry.Offset(0f, 2f), 4f)),
                 maxLines = 1,
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = (16f * us).dp)
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = (16f * us).dp).offset(y = -(2.5f * us).dp)
             )
         }
 
@@ -347,14 +350,10 @@ fun AccountScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Image(painterResource(R.drawable.account_btn), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-                // The lettering is centred on the button itself; the icon waits at its start.
-                Icon(
-                    Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.White,
-                    modifier = Modifier.align(Alignment.CenterStart).padding(start = (46f * us).dp).size((56f * us).dp)
-                )
+                // The lettering is centred on the button itself.
                 LetteredText(
                     stringResource(R.string.account_sign_out), fs(56f), outline = Color(0xFF8A3A00),
-                    modifier = Modifier.fillMaxWidth(0.62f).height((86f * us).dp), minScale = 0.5f
+                    modifier = Modifier.fillMaxWidth(0.7f).height((86f * us).dp), minScale = 0.5f
                 )
             }
             uiState.isGoogleSignInConfigured -> Box(box(130f, 1318f, 710f, 1440f), contentAlignment = Alignment.Center) {

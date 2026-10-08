@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -82,21 +81,24 @@ fun DuelListScreen(
             modifier = Modifier.fillMaxSize()
         )
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 14.dp)
-                .navigationBarsPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier.fillMaxSize().statusBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // The title stays where it is; only the cards below it scroll.
             Image(
                 painter = painterResource(R.drawable.du_title),
                 contentDescription = stringResource(R.string.duel_list_title),
-                modifier = Modifier.fillMaxWidth(0.82f).aspectRatio(1000f / 347f).padding(top = 6.dp).springIn(index = 0, stepMs = 0, fromY = 20)
+                modifier = Modifier.fillMaxWidth(0.82f).aspectRatio(1000f / 347f).padding(top = 6.dp, bottom = 4.dp)
             )
-
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             // --- Incoming: challenges to play + friend requests to answer ---
             DuelCard(R.drawable.du_card_a, 434f, stringResource(R.string.duel_list_requests_title), Modifier.springIn(index = 1, stepMs = 70, fromY = 30)) {
                 if (uiState.isLoading) {
@@ -147,6 +149,7 @@ fun DuelListScreen(
                 }
             }
             Spacer(Modifier.height(24.dp))
+            }
         }
         Image(
             painter = painterResource(R.drawable.du_back),
