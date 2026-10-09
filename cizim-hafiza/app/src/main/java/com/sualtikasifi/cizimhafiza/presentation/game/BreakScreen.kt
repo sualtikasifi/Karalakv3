@@ -62,7 +62,7 @@ private val Outline = Color(0xFF4A2410)
 
 /**
  * The pause between drawing and guessing, on its painted workshop: the mascot leans over a gold dial under the hanging
- * sign. The title is lettered on the sign in two lines (white, then yellow), the line under it is written on the paper
+ * sign. The title is lettered on the sign in two white lines, the line under it is written on the paper
  * strip, and the dial counts down: the orange arc runs smoothly between whole seconds instead of jumping, the numeral
  * pops in on every tick, and a soft ring keeps spreading out of the dial so the wait reads as something charging up.
  */
@@ -109,7 +109,7 @@ fun BreakScreen(state: GamePhase.Break) {
         }
         Image(scene, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(0f, 0f, ArtW, ArtH))
 
-        // ---- The sign: two lines, white then yellow, inside the plank between its paint splashes -----------------
+        // ---- The sign: two white lines, inside the plank between its paint splashes -----------------
         LetteredText(
             text = stringResource(R.string.get_ready_line1),
             size = fs(62f),
@@ -120,7 +120,6 @@ fun BreakScreen(state: GamePhase.Break) {
         LetteredText(
             text = stringResource(R.string.get_ready_line2),
             size = fs(80f),
-            fill = Color(0xFFFFD43B),
             modifier = box(232f, 326f, 612f, 406f),
             minScale = 0.5f,
             title = true

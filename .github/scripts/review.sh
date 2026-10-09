@@ -21,6 +21,7 @@ adb install -r -t "$APK"
 # ads-consent tap further down only for the UMP form, not this one).
 adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
 adb logcat -c
+adb shell settings put global hide_error_dialogs 1 || true
 
 # Skip the first-run tutorial: it is a plain boolean in the app's settings file, and the
 # debug build is debuggable so run-as can write it.
@@ -76,6 +77,7 @@ done
 echo "--- am start -W (times out on the software-rendered emulator, kept for reference):"; grep -E "Status|WaitTime" "$OUT/startup.txt"
 # The activity manager's own "Displayed" line is the reliable first-frame time here.
 adb logcat -d | grep "Displayed $PKG" | cut -c1-200 | tee "$OUT/startup_displayed.txt"
+adb logcat -d -s StartupTiming | tee "$OUT/startup_timing.txt"
 
 # The slow emulator sometimes shows a system 'Pixel Launcher isn't responding' dialog; dismiss it and bring the app back.
 tap_text "Wait" || true
@@ -112,21 +114,37 @@ for i in $(seq 1 20); do
   if [ "$(consent_visible)" = "1" ]; then echo "consent form seen"; adb shell input tap 540 1678; sleep 3; break; fi
 done
 shot 02_main_menu_after_consent
-P=${P:-a}
 P=r
-# Every section starts from a fresh main menu, so one missed tap cannot shift the rest.
-fresh() { adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 12; tap_text "Wait" || true; }
-# Waiting room: the room code in its well
-fresh; adb shell input tap 200 1160; sleep 6; adb shell input tap 540 1602; sleep 6; adb shell input tap 540 2200; sleep 15; shot ${P}01_waiting
-# Settings -> report a problem, then with the keyboard up
-fresh; adb shell input tap 880 1680; sleep 6; shot ${P}02_settings
-adb shell input tap 540 1870; sleep 6; shot ${P}03_report
-adb shell input swipe 540 1600 540 900 300; sleep 2; shot ${P}04_report_scrolled
+dismiss() { tap_text "Wait" || true; sleep 1; }
+# Every section starts from a fresh main menu (system dialogs and the ads form dealt with), so one missed tap cannot
+# shift the rest.
+fresh() {
+  adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 12; dismiss; sleep 2
+  for i in 1 2 3 4 5 6; do
+    if [ "$(consent_visible)" = "1" ]; then echo "consent"; adb shell input tap 540 1678; sleep 3; break; fi
+    sleep 3
+  done
+  dismiss
+}
+# Settings -> report a problem (top, scrolled, keyboard up)
+fresh; adb shell input tap 880 1690; sleep 6; dismiss; shot ${P}01_settings
+adb shell input tap 540 1870; sleep 6; shot ${P}02_report
+adb shell input swipe 540 1700 540 900 300; sleep 2; shot ${P}03_report_scrolled
 adb shell input swipe 540 900 540 1700 300; sleep 2
-adb shell input tap 540 1560; sleep 4; shot ${P}05_report_keyboard
-# A drawing turn to its last seconds (sparks round the drawing area), then the guess screen
-fresh; adb shell input tap 880 1160; sleep 6; shot ${P}06_offline
-adb shell input tap 540 2200
-for i in $(seq 10 69); do sleep 1.2; shot ${P}2${i}_draw; done
+adb shell input tap 540 1560; sleep 4; shot ${P}04_report_keyboard
+# Quick match: the searching sign
+fresh; adb shell input tap 540 1150; sleep 1.5; shot ${P}05_search; sleep 2; shot ${P}06_search
+# Waiting room: the room code in its well
+fresh; adb shell input tap 200 1150; sleep 6; shot ${P}07_race; adb shell input tap 540 1602; sleep 6; adb shell input tap 540 2200; sleep 15; dismiss; shot ${P}08_waiting
+# An offline game played to its end: the drawing's last seconds (sparks), the guess screen, the result screen
+fresh; adb shell input tap 880 1150; sleep 6; dismiss; shot ${P}09_setup
+adb shell input tap 540 2230
+for i in $(seq 10 44); do sleep 1.2; shot ${P}1${i}_draw; done
+for i in $(seq 1 22); do
+  sleep 11
+  if [ $i -ge 15 ]; then tap_text "Later" || true; sleep 2; fi
+  shot ${P}3$(printf %02d $i)
+done
+adb shell input swipe 540 1700 540 700 400; sleep 2; shot ${P}400_result_scrolled
 adb logcat -d | grep -E "FATAL|AndroidRuntime" | head -40 > "$OUT/crash.txt"
 if grep -q "FATAL EXCEPTION" "$OUT/crash.txt"; then echo "APP CRASHED"; cat "$OUT/crash.txt"; exit 1; fi

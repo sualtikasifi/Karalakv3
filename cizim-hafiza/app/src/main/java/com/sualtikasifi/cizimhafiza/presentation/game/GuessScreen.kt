@@ -376,12 +376,20 @@ fun GuessScreen(
                     androidx.compose.animation.core.tween(600),
                     label = "roundXp"
                 )
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFF2A100), modifier = Modifier.size(20.dp * f))
-                    Text(
+                // Kept inside the pill however many digits the total grows to: the figure shrinks to fit rather than
+                // running out of its right side.
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+                    modifier = Modifier.fillMaxSize().padding(horizontal = a(16f))
+                ) {
+                    Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFF2A100), modifier = Modifier.size(18.dp * f))
+                    com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                         text = stringResource(R.string.xp_gained_format, xpShown),
                         style = PaintedStyle(color = Color(0xFFE8650F), fontSize = 18.sp * f, textAlign = TextAlign.Center),
-                        maxLines = 1
+                        maxLines = 1,
+                        minScale = 0.55f,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                 }
             }
