@@ -22,6 +22,7 @@ on:
           - worlds.sh
           - store.sh
           - duel.sh
+          - league2.sh
           - race.sh
           - offline.sh
           - createroom.sh
