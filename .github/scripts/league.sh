@@ -107,12 +107,18 @@ for i in $(seq 1 20); do
   if [ "$(consent_visible)" = "1" ]; then echo "consent form seen"; adb shell input tap 540 1678; sleep 3; break; fi
 done
 shot 02_main_menu_after_consent
+# The ads consent form can still come up late on this slow emulator: answer it before opening the league.
+for i in 1 2 3 4 5 6; do
+  if [ "$(consent_visible)" = "1" ]; then adb shell input tap 540 1678; sleep 3; break; fi
+  sleep 5
+done
 # Monthly League: friends tab, then global tab, then scrolled
 adb shell input tap 200 1680
 sleep 6
 shot 61_league_friends
 adb shell input tap 800 485
 sleep 8
+if [ "$(consent_visible)" = "1" ]; then adb shell input tap 540 1678; sleep 3; adb shell input tap 800 485; sleep 6; fi
 shot 62_league_global
 adb shell input swipe 540 1900 540 800 400
 sleep 2

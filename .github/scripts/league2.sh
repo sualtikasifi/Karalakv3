@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Walks the first-launch tutorial in an emulator, step by step, with a screenshot (and a UI dump) after each:
-# Opens the Levels (worlds) page in an emulator and takes screenshots: top, scrolled once, scrolled to the end.
-# Run through .github/workflows/smoke-test.yml with script=worlds.sh.
+# Opens the Monthly League: friends tab, then global tab (consent / ANR dialogs dismissed).
+# Run through .github/workflows/smoke-test.yml with script=league2.sh.
 set -u
 PKG=com.sualtikasifi.cizimhafiza
 ACT=$PKG/.presentation.MainActivity
@@ -12,6 +12,7 @@ adb wait-for-device
 adb shell input keyevent 82 || true
 adb install -r -t "$APK"
 adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
+adb shell settings put global hide_error_dialogs 1 || true
 adb shell "run-as $PKG mkdir -p shared_prefs"
 printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boolean name=\"tutorial_completed\" value=\"true\" /><boolean name=\"feature_tour_seen\" value=\"true\" /></map>" \
   | adb shell "run-as $PKG sh -c 'cat > shared_prefs/cizim_hafiza_settings.xml'"
@@ -51,35 +52,15 @@ PY
 }
 adb shell am start -n $ACT
 sleep 8
-sleep 50
-adb shell input tap 540 1678
-sleep 4
-shot 00_menu
-adb shell input tap 200 1140
-sleep 5
+sleep 20
 clear_overlays
-shot 05_race
-adb shell input tap 540 1602
-sleep 4
+adb shell input tap 540 1678; sleep 4
 clear_overlays
-shot 08_createroom
-adb shell input swipe 540 1700 540 600 400
-sleep 2
-shot 09_createroom_scrolled
-# Create the room, then send a reaction and a phrase from the chat bar so the own player card shows a message.
-for label in "Oda Oluştur" "Create Room" "Create"; do
-  xy=$(find_xy "$label"); [ -n "$xy" ] && { adb shell input tap $xy; break; }
-done
-sleep 18
+adb shell input tap 200 1680
+sleep 6
 clear_overlays
-shot 10_lobby
-adb shell input tap 528 2187
-sleep 1
-shot 11_lobby_emoji
-adb shell input tap 438 2187
-sleep 3
-shot 12_lobby_picker
-adb shell input tap 112 1880
-sleep 1
-shot 13_lobby_message
-adb logcat -d | grep -E "FATAL|AndroidRuntime|Exception" | head -40 > "$OUT/crash_createroom.txt"
+shot 61_league_friends
+adb shell input tap 800 485
+sleep 8
+clear_overlays
+shot 62_league_global

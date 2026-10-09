@@ -49,7 +49,12 @@ object RankLabelClock {
  * [bullet] puts the "• " in front, for a label that sits beside a name rather than under it.
  */
 @Composable
-fun RankLevelLabel(level: Int, modifier: Modifier = Modifier, bullet: Boolean = true) {
+fun RankLevelLabel(
+    level: Int,
+    modifier: Modifier = Modifier,
+    bullet: Boolean = true,
+    style: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.labelSmall
+) {
     val showRank by RankLabelClock.showRank.collectAsState()
     val rankName = stringResource(LevelTier.forLevel(level).rank.nameRes)
     val levelText = stringResource(R.string.home_level_inline, level)
@@ -64,7 +69,7 @@ fun RankLevelLabel(level: Int, modifier: Modifier = Modifier, bullet: Boolean = 
     ) { rank ->
         Text(
             text = (if (bullet) "• " else "") + if (rank) rankName else levelText,
-            style = MaterialTheme.typography.labelSmall,
+            style = style,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,

@@ -264,6 +264,8 @@ fun NinePatch(
     tint: androidx.compose.ui.graphics.ColorFilter? = null,
     sliceYPx: Int = slicePx,
     edgeY: Dp = edge,
+    /** False lets a wide corner piece (a clock on the end of a pill) keep its full width on a short strip. */
+    clampEdgeToHeight: Boolean = true,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     val img: ImageBitmap = ImageBitmap.imageResource(res)
@@ -273,7 +275,7 @@ fun NinePatch(
         modifier = modifier.drawBehind {
             val w = size.width.toInt()
             val h = size.height.toInt()
-            val d = minOf(edgePx, w / 2, h / 2)
+            val d = if (clampEdgeToHeight) minOf(edgePx, w / 2, h / 2) else minOf(edgePx, w / 2)
             val dY = minOf(edgeYPx, w / 2, h / 2)
             val sx = intArrayOf(0, slicePx, img.width - slicePx, img.width)
             val sy = intArrayOf(0, sliceYPx, img.height - sliceYPx, img.height)
