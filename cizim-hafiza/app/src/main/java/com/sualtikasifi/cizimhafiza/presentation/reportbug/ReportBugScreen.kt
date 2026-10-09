@@ -6,6 +6,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.Image
@@ -133,69 +136,72 @@ fun ReportBugScreen(
                 .verticalScroll(rememberScrollState())
                 .statusBarsPadding()
                 .navigationBarsPadding()
+                .imePadding()
                 .padding(horizontal = 14.dp)
-                .padding(bottom = 16.dp),
+                .padding(bottom = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // The sign: both dogs leaning on the plank, the title lettered across it in two lines.
-            BoxWithConstraints(Modifier.fillMaxWidth(0.86f).padding(top = 6.dp)) {
+            // The sign: both dogs leaning on the plank, the title lettered across it in two lines. rp_sign is 1291 x 918;
+            // the plank's face runs from 12% to 85% of its width and from 39% to 59% of its width down from the top.
+            BoxWithConstraints(Modifier.fillMaxWidth(0.8f).padding(top = 2.dp)) {
                 val signW = maxWidth
                 Image(
                     painter = painterResource(R.drawable.rp_sign),
                     contentDescription = null,
                     contentScale = ContentScale.FillWidth,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().aspectRatio(1291f / 918f)
                 )
                 val words = stringResource(R.string.report_bug_title).split(' ')
                 Column(
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = signW * 0.085f)
-                        .fillMaxWidth(0.72f)
-                        .height(signW * 0.31f),
+                        .offset(x = signW * 0.155f, y = signW * 0.385f)
+                        .width(signW * 0.66f)
+                        .height(signW * 0.21f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
                     LetteredText(
                         text = words.first(),
-                        size = (signW.value * 0.17f).sp,
+                        size = (signW.value * 0.1f).sp,
                         fill = Color.White,
                         outline = Color(0xFF5A2815),
                         modifier = Modifier.fillMaxWidth().weight(1f),
-                        minScale = 0.45f
+                        minScale = 0.6f,
+                        title = true
                     )
                     if (words.size > 1) LetteredText(
                         text = words.drop(1).joinToString(" "),
-                        size = (signW.value * 0.17f).sp,
+                        size = (signW.value * 0.1f).sp,
                         outline = Color(0xFF5A2815),
                         modifier = Modifier.fillMaxWidth().weight(1f),
-                        minScale = 0.45f
+                        minScale = 0.6f,
+                        title = true
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(2.dp))
+
+            // What this form is for.
+            NinePatch(res = R.drawable.rp_card_big, slicePx = 110, sliceYPx = 110, edge = 34.dp, edgeY = 34.dp, modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(R.string.report_bug_intro_title),
+                        style = PaintedStyle(color = ink, fontSize = 18.sp, textAlign = TextAlign.Center)
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = stringResource(R.string.report_bug_intro_body),
+                        style = DescriptionStyle(13.5.sp, 18.sp).copy(color = ink, textAlign = TextAlign.Center)
                     )
                 }
             }
             Spacer(modifier = Modifier.height(6.dp))
 
-            // What this form is for.
-            NinePatch(res = R.drawable.rp_card_big, slicePx = 110, sliceYPx = 110, edge = 34.dp, edgeY = 34.dp, modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 30.dp, vertical = 22.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = stringResource(R.string.report_bug_intro_title),
-                        style = PaintedStyle(color = ink, fontSize = 19.sp, textAlign = TextAlign.Center)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = stringResource(R.string.report_bug_intro_body),
-                        style = DescriptionStyle(14.sp, 20.sp).copy(color = ink, textAlign = TextAlign.Center)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-
             FormLabel(stringResource(R.string.report_bug_category_label), Modifier.align(Alignment.Start))
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.fillMaxWidth()) {
                 CategoryPill(
                     label = stringResource(R.string.report_bug_category_suggestion),
@@ -212,20 +218,20 @@ fun ReportBugScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             FormLabel(stringResource(R.string.report_bug_description_label), Modifier.align(Alignment.Start))
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             NinePatch(
                 res = R.drawable.rp_card_msg, slicePx = 120, sliceYPx = 96, edge = 44.dp, edgeY = 36.dp,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 170.dp)
+                modifier = Modifier.fillMaxWidth().heightIn(min = 138.dp)
             ) {
                 BasicTextField(
                     value = uiState.description,
                     onValueChange = { if (it.length <= MAX_DESCRIPTION_LENGTH) viewModel.onDescriptionChanged(it) },
                     textStyle = PaintedStyle(color = InkBrown, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
                     cursorBrush = SolidColor(ButtonOrange),
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp).padding(horizontal = 30.dp, vertical = 26.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 118.dp).padding(horizontal = 30.dp, vertical = 24.dp),
                     decorationBox = { inner ->
                         Box {
                             if (uiState.description.isEmpty()) {
@@ -255,13 +261,12 @@ fun ReportBugScreen(
                         .padding(horizontal = 12.dp, vertical = 8.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
             SendButton(
                 text = stringResource(if (uiState.isSubmitting) R.string.report_bug_sending else R.string.report_bug_submit),
                 enabled = canSend,
                 busy = uiState.isSubmitting,
                 onClick = viewModel::submit,
-                modifier = Modifier.fillMaxWidth(0.9f)
+                modifier = Modifier.fillMaxWidth(0.84f)
             )
 
             if (myReports.isNotEmpty()) {
@@ -288,7 +293,7 @@ fun ReportBugScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         }
         com.sualtikasifi.cizimhafiza.presentation.common.PaintedBackButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart))
     }
@@ -428,7 +433,7 @@ private fun SendButton(text: String, enabled: Boolean, busy: Boolean, onClick: (
             androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0.12f) }
         ),
         modifier = modifier
-            .height(82.dp)
+            .height(70.dp)
             .pressable(enabled = enabled, pressedScale = 0.95f, onClick = onClick)
     ) {
         Row(
@@ -442,7 +447,7 @@ private fun SendButton(text: String, enabled: Boolean, busy: Boolean, onClick: (
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
             }
             Spacer(Modifier.width(10.dp))
-            LetteredText(text, 25.sp, outline = if (enabled) Color(0xFF8A3A00) else Color(0xFF6E6A66), modifier = Modifier.wrapContentWidth())
+            LetteredText(text, 23.sp, outline = if (enabled) Color(0xFF8A3A00) else Color(0xFF6E6A66), modifier = Modifier.wrapContentWidth())
         }
     }
 }
@@ -461,12 +466,12 @@ private fun CategoryPill(label: String, res: Int, selected: Boolean, onClick: ()
             androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0.2f) }
         ),
         modifier = modifier
-            .height(72.dp)
+            .height(62.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (selected) 1f else 0.85f }
             .pressable(pressedScale = 0.94f, onClick = onClick)
     ) {
         Box(Modifier.fillMaxSize().padding(horizontal = 40.dp), contentAlignment = Alignment.Center) {
-            LetteredText(label, 21.sp, outline = Color(0xFF3A1A06), modifier = Modifier.fillMaxWidth(), minScale = 0.6f)
+            LetteredText(label, 20.sp, outline = Color(0xFF3A1A06), modifier = Modifier.fillMaxWidth(), minScale = 0.6f)
         }
     }
 }
@@ -475,6 +480,6 @@ private fun CategoryPill(label: String, res: Int, selected: Boolean, onClick: ()
 @Composable
 private fun FormLabel(text: String, modifier: Modifier = Modifier) {
     NinePatch(res = R.drawable.rp_label, slicePx = 36, sliceYPx = 36, edge = 12.dp, edgeY = 12.dp, modifier = modifier.wrapContentWidth()) {
-        LetteredText(text, 17.sp, outline = Color(0xFF4A2410), modifier = Modifier.padding(horizontal = 22.dp, vertical = 9.dp).wrapContentWidth())
+        LetteredText(text, 17.sp, outline = Color(0xFF4A2410), modifier = Modifier.padding(horizontal = 20.dp, vertical = 7.dp).wrapContentWidth())
     }
 }

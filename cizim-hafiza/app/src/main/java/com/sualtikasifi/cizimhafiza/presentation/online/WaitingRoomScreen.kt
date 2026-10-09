@@ -434,7 +434,7 @@ fun WaitingRoomScreen(
             modifier = Modifier.fillMaxWidth().offset(y = sceneY(0.147f) - 25.dp),
             contentAlignment = Alignment.Center
         ) {
-            LetteredText(signTitle, 34.sp)
+            LetteredText(signTitle, 34.sp, title = true)
         }
         Image(
             painter = painterResource(R.drawable.join_back),
@@ -516,14 +516,16 @@ private fun RoomCodeCard(roomCode: String, onInvite: () -> Unit, widthFraction: 
             maxLines = 1,
             modifier = Modifier.align(Alignment.TopCenter).offset(y = h * 0.1f)
         )
+        // The code well's inside runs from 17.5% to 85% across and 25.8% to 51.6% down the picture; the code is
+        // centred in it by its ink, so neither the font's tall ascent nor the spacing after the last digit shifts it.
         Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.offset(x = w * 0.17f, y = h * 0.26f).width(w * 0.68f).height(h * 0.265f)
+            modifier = Modifier.offset(x = w * 0.175f, y = h * 0.258f).width(w * 0.675f).height(h * 0.258f)
         ) {
-            Text(
+            com.sualtikasifi.cizimhafiza.presentation.common.InkCenteredText(
                 text = roomCode,
-                style = PaintedStyle(color = DescriptionInk, fontSize = 30.sp * k, fontWeight = FontWeight.ExtraBold, letterSpacing = 8.sp * k),
-                maxLines = 1
+                color = DescriptionInk,
+                fontSize = 30.sp * k,
+                letterSpacing = 8.sp * k
             )
         }
         Box(

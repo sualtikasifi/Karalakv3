@@ -289,9 +289,6 @@ fun DrawingScreen(
                     penSkin = penSkin,
                     modifier = Modifier.fillMaxSize()
                 )
-                if (state.isWarning) {
-                    Box(Modifier.fillMaxSize().border(3.dp, timerColor.copy(alpha = 0.55f), RoundedCornerShape(a(20f))))
-                }
                 if (!state.isUntimed) {
                     TimeJokerPill(
                         count = timeJokerCount,
@@ -300,6 +297,11 @@ fun DrawingScreen(
                         modifier = Modifier.align(Alignment.TopEnd).padding(top = a(8f), end = a(10f))
                     )
                 }
+            }
+            // The last seconds: sparks fly off the drawing area's edges, more and more of them, instead of a red frame.
+            // Laid over the canvas unclipped, so they spill out around it; it takes no touches.
+            if (!state.isUntimed && state.secondsLeft in 1..GameConstants.WARNING_THRESHOLD_SECONDS + 1) {
+                EdgeSparkles(Modifier.offset(a(36f), a(438f) + topShift).size(a(770f), canvasHeight))
             }
         }
 

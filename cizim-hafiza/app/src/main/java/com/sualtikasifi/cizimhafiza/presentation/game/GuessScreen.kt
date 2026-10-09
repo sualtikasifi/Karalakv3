@@ -85,6 +85,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -218,7 +219,8 @@ fun GuessScreen(
         val context = androidx.compose.ui.platform.LocalContext.current
         val density = LocalDensity.current
         val prefs = remember { context.getSharedPreferences("guess_layout", android.content.Context.MODE_PRIVATE) }
-        val imeNow = WindowInsets.ime.getBottom(density)
+        val imeInsets = WindowInsets.ime
+        val imeNow = imeInsets.getBottom(density)
         val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp
         var keyboardPx by remember {
             mutableStateOf(prefs.getInt("ime_px", with(density) { (screenH * 0.40f).dp.roundToPx() }))
@@ -233,29 +235,54 @@ fun GuessScreen(
                 prefs.edit().putInt("ime_px", settled).apply()
             }
         }
+        val lesson = jokerSpotlight != null
         // Space is kept for the keyboard while it is up or about to come up (the answer field asks for it at once).
         // If it stays away (closed by the player, a hardware keyboard), the scene grows into that space instead of
         // leaving an empty strip of desk, and eases back when the keyboard returns.
         // The tutorial's joker lessons keep the keyboard away on purpose (the joker button is the only thing to do), so
         // there nothing is reserved from the first frame: the scene used to open at "keyboard up" size with an empty
         // strip under it and only grow into the whole screen a second later.
-        val lesson = jokerSpotlight != null
         var keyboardExpected by remember { mutableStateOf(!lesson) }
-        // Once the keyboard has been up, closing it gives the space back at once; the wait below is only for the
+        // Once the keyboard has been up, closing it gives the space back at once — on the very first frame of its
+        // slide down, not after it is gone, so the desk under it is hardly ever seen; the wait below is only for the
         // very start, while the answer field is still asking for the keyboard for the first time.
         var keyboardWasUp by remember { mutableStateOf(false) }
-        LaunchedEffect(imeNow > 0, lesson) {
-            when {
-                lesson -> keyboardExpected = false
-                imeNow > 0 -> { keyboardWasUp = true; keyboardExpected = true }
-                keyboardWasUp -> keyboardExpected = false
-                else -> { kotlinx.coroutines.delay(1_200); keyboardExpected = false }
+        LaunchedEffect(lesson) {
+            if (lesson) {
+                keyboardExpected = false
+                return@LaunchedEffect
+            }
+            val firstWait = launch {
+                kotlinx.coroutines.delay(1_200)
+                if (!keyboardWasUp) keyboardExpected = false
+            }
+            var prev = 0
+            androidx.compose.runtime.snapshotFlow { imeInsets.getBottom(density) }.collect { now ->
+                when {
+                    now > prev && now > 0 -> {
+                        keyboardWasUp = true
+                        keyboardExpected = true
+                        firstWait.cancel()
+                    }
+                    // Sliding down (a smaller keyboard swapped in stays above 90% of the known height and is ignored).
+                    now < prev && keyboardWasUp && now < keyboardPx * 0.9f -> keyboardExpected = false
+                }
+                prev = now
+            }
+        }
+        // A keyboard that has settled open always gets its space (the safety net for the slide-down guess above).
+        LaunchedEffect(imeNow, lesson) {
+            kotlinx.coroutines.delay(350)
+            if (!lesson && imeNow > with(density) { 120.dp.roundToPx() }) {
+                keyboardWasUp = true
+                keyboardExpected = true
             }
         }
         val navBarDp = with(density) { WindowInsets.navigationBars.getBottom(density).toDp() }
         val keyboardDp by androidx.compose.animation.core.animateDpAsState(
             targetValue = if (keyboardExpected) with(density) { keyboardPx.toDp() } else navBarDp,
-            animationSpec = androidx.compose.animation.core.tween(160),
+            // Growing into the freed space is instant; making room again eases a little behind the rising keyboard.
+            animationSpec = if (keyboardExpected) androidx.compose.animation.core.tween(160) else androidx.compose.animation.core.snap(),
             label = "keyboardSpace"
         )
         // Under the keyboard: the desk the scene stands on, so nothing looks missing when the keyboard is closed.

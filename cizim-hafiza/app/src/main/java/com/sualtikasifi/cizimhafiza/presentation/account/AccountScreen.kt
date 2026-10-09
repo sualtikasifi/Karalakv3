@@ -172,7 +172,8 @@ fun AccountScreen(
             fill = Color.White,
             outline = Color(0xFF5A2815),
             modifier = box(219f, 345f, 639f, 458f),
-            minScale = 0.5f
+            minScale = 0.5f,
+            title = true
         )
 
         // ---- Profile card --------------------------------------------------------------------------------------

@@ -111,7 +111,8 @@ internal fun ResultHeader(title: String, xp: Int, explanation: String, onBack: (
             fill = Color(0xFFFFD84D),
             outline = Color(0xFF4A2410),
             modifier = box(492f, 150f, 874f, 246f),
-            minScale = 0.5f
+            minScale = 0.5f,
+            title = true
         )
         Row(
             modifier = box(500f, 266f, 852f, 316f),

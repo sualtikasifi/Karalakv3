@@ -41,6 +41,7 @@ on:
           - splash.sh
           - titles.sh
           - draw.sh
+          - review.sh
   pull_request:
     paths:
       - ".github/workflows/smoke-test.yml"

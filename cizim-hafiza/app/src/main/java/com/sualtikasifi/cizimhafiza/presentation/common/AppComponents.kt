@@ -687,6 +687,7 @@ fun ScreenTopActions(
             LetteredText(
                 text = title,
                 size = 26.sp,
+                title = true,
                 modifier = Modifier
                     .align(Alignment.Center)
                     .fillMaxWidth()

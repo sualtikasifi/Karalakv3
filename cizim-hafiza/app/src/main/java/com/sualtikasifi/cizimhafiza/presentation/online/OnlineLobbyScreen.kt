@@ -33,6 +33,8 @@ import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 import com.sualtikasifi.cizimhafiza.presentation.common.breathing
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
+import com.sualtikasifi.cizimhafiza.presentation.common.rememberFitScale
+import com.sualtikasifi.cizimhafiza.presentation.common.scaledBy
 import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 
 // The layout is drawn on a canvas of this size; every piece is placed in these units and scaled with the window, so
@@ -81,7 +83,7 @@ fun OnlineLobbyScreen(
         )
 
         // The dogs and their sign; the title goes on the plank (lower half of the picture).
-        val signH = SignW * 399f / 472f
+        val signH = SignW * 1005f / 1200f
         Image(
             painter = painterResource(R.drawable.race2_sign),
             contentDescription = null,
@@ -96,6 +98,7 @@ fun OnlineLobbyScreen(
             size = fs(70f),
             outline = Color(0xFF5A2815),
             maxLines = 2,
+            title = true,
             modifier = Modifier
                 .offset(x(ArtW / 2 - 290f), y(SignTop + signH * 0.54f))
                 .size(len(580f), len(signH * 0.38f))
@@ -112,29 +115,33 @@ fun OnlineLobbyScreen(
                 .size(len(PaperW), len(paperH))
                 .springIn(index = 1, stepMs = 100, fromY = 40)
         )
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
-                .offset(x(ArtW / 2 - 270f), y(PaperTop + paperH * 0.25f))
-                .size(len(540f), len(paperH * 0.6f)),
+                .offset(x(ArtW / 2 - 280f), y(PaperTop + paperH * 0.25f))
+                .size(len(560f), len(paperH * 0.6f)),
             contentAlignment = Alignment.Center
         ) {
-            // Four short lines, broken where the sentence breathes, all at one size.
+            // Three short lines, broken where the sentence breathes (the greeting kept whole on the last one), all
+            // at one size: the longest line decides how far they all shrink.
+            val lines = listOf(
+                stringResource(R.string.online_lobby_line1),
+                stringResource(R.string.online_lobby_line2),
+                stringResource(R.string.online_lobby_line3) + " " + stringResource(R.string.online_lobby_line4)
+            )
+            val style = androidx.compose.ui.text.TextStyle(
+                fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                fontSize = fs(43f),
+                lineHeight = fs(49f),
+                color = Color(0xFF4A2814),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            val scale = lines.minOf { rememberFitScale(it, style, maxLines = 1, minScale = 0.6f) }
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                listOf(R.string.online_lobby_line1, R.string.online_lobby_line2, R.string.online_lobby_line3, R.string.online_lobby_line4).forEach { line ->
-                    com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                        text = stringResource(line),
-                        style = androidx.compose.ui.text.TextStyle(
-                            fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                            fontSize = fs(40f),
-                            lineHeight = fs(46f),
-                            color = Color(0xFF4A2814),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        ),
-                        maxLines = 1,
-                        minScale = 0.6f,
-                        modifier = Modifier.fillMaxWidth().weight(1f)
-                    )
+                lines.forEach { line ->
+                    Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        Text(text = line, style = style.scaledBy(scale), maxLines = 1, softWrap = false)
+                    }
                 }
             }
         }
@@ -147,7 +154,7 @@ fun OnlineLobbyScreen(
             onClick = onCreateRoom,
             modifier = Modifier
                 .offset(x(ArtW / 2 - BtnW / 2), y(Btn1Top))
-                .size(len(BtnW), len(BtnW * 108f / 449f))
+                .size(len(BtnW), len(BtnW * 211f / 900f))
                 .springIn(index = 2, stepMs = 100, fromY = 60),
             attention = true
         )
@@ -159,7 +166,7 @@ fun OnlineLobbyScreen(
             onClick = onJoinRoom,
             modifier = Modifier
                 .offset(x(ArtW / 2 - BtnW / 2), y(Btn2Top))
-                .size(len(BtnW), len(BtnW * 113f / 450f))
+                .size(len(BtnW), len(BtnW * 222f / 900f))
                 .springIn(index = 3, stepMs = 100, fromY = 60)
         )
 

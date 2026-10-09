@@ -584,7 +584,6 @@
     <string name="level_locked">Locked</string>
     <string name="world_locked_message">Finish the previous world</string>
     <string name="world_progress_format">%1$d/10 completed</string>
-    <string name="map_current_position">You are here</string>
     <string name="next_level">Next Level</string>
     <string name="stars_content_description">%1$d stars</string>
 
