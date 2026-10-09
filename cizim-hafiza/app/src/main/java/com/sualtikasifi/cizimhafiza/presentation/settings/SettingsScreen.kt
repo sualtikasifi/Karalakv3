@@ -171,7 +171,8 @@ fun SettingsScreen(
             text = stringResource(R.string.menu_settings),
             size = fs(80f),
             modifier = box(196f, 186f, 500f, 276f),
-            minScale = 0.5f
+            minScale = 0.5f,
+            title = true
         )
 
         // ---- "Ses ve Titreşim" card ----------------------------------------------------------------------------
@@ -179,7 +180,8 @@ fun SettingsScreen(
             text = stringResource(R.string.settings_sound_section),
             size = fs(36f),
             modifier = box(112f, 358f, 374f, 406f),
-            minScale = 0.5f
+            minScale = 0.5f,
+            title = true
         )
 
         @Composable

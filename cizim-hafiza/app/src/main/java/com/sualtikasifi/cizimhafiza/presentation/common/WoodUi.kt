@@ -117,7 +117,9 @@ fun LetteredText(
     weight: FontWeight = FontWeight.ExtraBold,
     maxLines: Int = 1,
     /** How far the lettering may shrink to fit the space it is given before it is ellipsised instead. */
-    minScale: Float = 0.55f
+    minScale: Float = 0.55f,
+    /** A page title: always gets the wide soft shadow, however small the screen makes it. */
+    title: Boolean = false
 ) {
     val density = LocalDensity.current
     // The outline is drawn outside the glyphs, so the space it takes is kept out of what the letters may fill.
@@ -128,10 +130,11 @@ fun LetteredText(
         val scale = rememberFitScale(text, full, maxLines, minScale)
         val base = full.scaledBy(scale)
         val strokeDp = (strokeDp0 * scale).coerceAtLeast(1.1f)
-        // Page-title sized lettering also gets a wide, soft shadow underneath, so a title laid on a painted sign reads
-        // as part of the picture instead of as text put on afterwards.
-        if (size.value >= 26f) {
-            val d = size.value
+        // Page titles (and any title-sized lettering) also get a wide, soft shadow underneath, so a title laid on a
+        // painted sign reads as part of the picture instead of as text put on afterwards. Titles are sized from the
+        // screen width, so on a narrow phone they can come out small; their shadow keeps a floor so it still shows.
+        if (title || size.value >= 26f) {
+            val d = (size.value * scale).coerceAtLeast(22f)
             Text(
                 text,
                 style = base.copy(
@@ -206,7 +209,7 @@ fun WoodScreen(
             modifier = Modifier.offset(x = signCentreX - len(300f), y = yOf(0.172f) - len(47f)).width(len(600f)),
             contentAlignment = Alignment.Center
         ) {
-            LetteredText(title, with(density) { (46f * s).toSp() })
+            LetteredText(title, with(density) { (46f * s).toSp() }, title = true)
         }
 
         val compact = maxHeight < 780.dp

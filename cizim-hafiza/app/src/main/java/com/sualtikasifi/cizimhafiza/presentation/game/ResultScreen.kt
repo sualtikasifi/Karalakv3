@@ -4,6 +4,8 @@ import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.windowInsetsTopHeight
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -207,7 +209,19 @@ fun ResultScreen(
                 modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box(Modifier.fillMaxWidth().statusBarsPadding().springIn(index = 0, fromY = -40)) {
+                // The painted head runs up under the status bar (its top rows mirrored into that strip), so no sliver of
+                // the page's backdrop shows above it as a separate layer.
+                Column(Modifier.fillMaxWidth().springIn(index = 0, fromY = -40)) {
+                    androidx.compose.foundation.Image(
+                        painter = cachedPainterResource(R.drawable.res_head2),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        alignment = Alignment.TopCenter,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .windowInsetsTopHeight(androidx.compose.foundation.layout.WindowInsets.statusBars)
+                            .graphicsLayer { scaleY = -1f }
+                    )
                     ResultHeader(
                         title = stringResource(R.string.game_over),
                         xp = xpCount,
@@ -314,7 +328,8 @@ fun ResultScreen(
             }
 
             Column(
-                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 8.dp),
+                // Lifted clear of the bottom edge (and the gesture bar's swipe zone) rather than sitting right on it.
+                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 22.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 if (onLevelNextAction != null && nextActionLabel != null) {
@@ -827,48 +842,58 @@ private fun GalleryToggle(
     onSelect: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    // Two equal pills filling the plank, so a long name shrinks inside its own pill instead of pushing out of the frame.
+    Row(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         GalleryChip(
             label = stringResource(R.string.quick_match_gallery_yours),
             selected = !showingOpponent,
             enabled = true,
-            onClick = { onSelect(false) }
+            onClick = { onSelect(false) },
+            modifier = Modifier.weight(1f)
         )
         GalleryChip(
             label = opponentName,
             selected = showingOpponent,
             enabled = opponentReady,
-            onClick = { onSelect(true) }
+            onClick = { onSelect(true) },
+            modifier = Modifier.weight(1f)
         )
     }
 }
 
+/** One side of the gallery switch: orange and lettered when chosen, cream with brown ink when not. */
 @Composable
-private fun GalleryChip(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
-    val container = when {
-        selected -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.surface
-    }
-    val content = when {
-        selected -> MaterialTheme.colorScheme.onPrimary
-        enabled -> MaterialTheme.colorScheme.onSurface
-        else -> AppTheme.tokens.textFaint
-    }
+private fun GalleryChip(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
     Box(
-        modifier = Modifier
-            .clip(CircleShape)
-            .background(container)
-            .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .height(30.dp)
+            .clip(shape)
+            .background(
+                if (selected) Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16)))
+                else Brush.verticalGradient(listOf(Color(0xFFFFF6E2), Color(0xFFF3DFBA)))
+            )
+            .border(1.5.dp, if (selected) Color(0xFFA9440A) else Color(0xFF8A5A2E), shape)
+            .graphicsLayer { alpha = if (enabled || selected) 1f else 0.6f }
             .clickable(enabled = enabled && !selected, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 7.dp)
+            .padding(horizontal = 10.dp)
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = content,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+        if (selected) {
+            LetteredText(label, 15.sp, outline = Color(0xFF8A3A00), minScale = 0.6f, modifier = Modifier.fillMaxWidth())
+        } else {
+            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                text = label,
+                style = PaintedStyle(color = InkBrown, fontSize = 15.sp, textAlign = TextAlign.Center),
+                maxLines = 1,
+                minScale = 0.6f,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }
 
@@ -884,7 +909,8 @@ private fun ResultLevelCard(progress: com.sualtikasifi.cizimhafiza.domain.model.
     BoxWithConstraints(modifier = Modifier.fillMaxWidth(k).aspectRatio(940f / 204f)) {
         val u = maxWidth / 940f
         fun fs(art: Float) = (u.value * art).sp
-        Image(painterResource(R.drawable.res_level), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+        // A whole framed card (the old picture was a strip cut out of a bigger one, its frame cut off on both sides).
+        NinePatch(res = R.drawable.league_card, slicePx = 100, edge = u * 70f, modifier = Modifier.fillMaxSize())
         Image(
             painterResource(R.drawable.lobby_crown),
             contentDescription = null,

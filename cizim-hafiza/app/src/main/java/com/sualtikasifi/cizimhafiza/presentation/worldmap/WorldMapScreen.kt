@@ -55,8 +55,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
-import com.sualtikasifi.cizimhafiza.presentation.common.TintedBadge
-import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 
 // The artwork carries its own "Dünyalar" sign; the list starts below it. 0.265 of the window height is where the
 // sign's lower edge falls in bg_worlds (a 9:20 picture, cropped to fill), plus a little air.
@@ -211,14 +209,6 @@ private fun WorldBanner(card: WorldCardState, onClick: () -> Unit) {
                         .padding(5.dp)
                 )
             }
-        }
-        if (card.isCurrent) {
-            TintedBadge(
-                text = stringResource(R.string.map_current_position),
-                container = AppTheme.tokens.gold,
-                content = Color.White,
-                modifier = Modifier.align(Alignment.BottomStart).padding(start = 22.dp, bottom = 12.dp)
-            )
         }
     }
 }

@@ -111,7 +111,8 @@ internal fun ResultHeader(title: String, xp: Int, explanation: String, onBack: (
             fill = Color(0xFFFFD84D),
             outline = Color(0xFF4A2410),
             modifier = box(492f, 150f, 874f, 246f),
-            minScale = 0.5f
+            minScale = 0.5f,
+            title = true
         )
         Row(
             modifier = box(500f, 266f, 852f, 316f),
@@ -375,15 +376,15 @@ internal fun ResultWordsBoard(
         Box(
             modifier = Modifier
                 .padding(top = 6.dp)
-                .fillMaxWidth(0.86f)
-                .height(40.dp)
+                .fillMaxWidth(if (header != null) 0.94f else 0.86f)
+                .height(if (header != null) 42.dp else 40.dp)
                 .shadow(3.dp, RoundedCornerShape(10.dp))
                 .background(Brush.verticalGradient(listOf(Color(0xFFC98543), Color(0xFFA9662F))), RoundedCornerShape(10.dp))
                 .border(2.dp, Color(0xFF6B3A18), RoundedCornerShape(10.dp)),
             contentAlignment = Alignment.Center
         ) {
             if (header != null) header() else LetteredText(title, 19.sp, maxLines = 1, modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp))
-            if (onShareAll != null) {
+            if (onShareAll != null && header == null) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)

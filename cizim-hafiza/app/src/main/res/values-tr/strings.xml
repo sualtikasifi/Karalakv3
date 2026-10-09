@@ -592,7 +592,6 @@
     <string name="level_locked">Kilitli</string>
     <string name="world_locked_message">Önceki dünyayı tamamla</string>
     <string name="world_progress_format">%1$d/10 tamamlandı</string>
-    <string name="map_current_position">Buradasın</string>
     <string name="next_level">Sonraki Bölüm</string>
     <string name="stars_content_description">%1$d yıldız</string>
 

@@ -88,6 +88,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionInk
 import com.sualtikasifi.cizimhafiza.presentation.common.InkBrown
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.FitText
+import com.sualtikasifi.cizimhafiza.presentation.common.InkCenteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.util.InviteShareUtil
@@ -104,6 +105,13 @@ private class Scene(val s: Float, val offX: Float, val offY: Float, val density:
     fun y(px: Float): Dp = with(density) { (offY + px * s).toDp() }
     fun len(px: Float): Dp = with(density) { (px * s).toDp() }
     fun fs(px: Float) = len(px).value.sp
+}
+
+/** [text] split at the space that leaves its two halves closest in length (unchanged when it has no space). */
+private fun balancedTwoLines(text: String): String {
+    val mid = text.length / 2
+    val cut = text.indices.filter { text[it] == ' ' }.minByOrNull { kotlin.math.abs(it - mid) } ?: return text
+    return text.substring(0, cut) + "\n" + text.substring(cut + 1)
 }
 
 @Composable
@@ -242,7 +250,7 @@ fun FriendsScreen(
         // Title on the hanging sign (plank centre is at 50% / 63% of the sprite).
         Sprite(R.drawable.fr_sign, 215f, 110f, 865f, 349f)
         SceneBox(scene, 290f, 205f, 790f, 315f) {
-            LetteredText(stringResource(R.string.online_friends_entry), scene.fs(62f))
+            LetteredText(stringResource(R.string.online_friends_entry), scene.fs(62f), title = true)
         }
 
         // ── Code card ──
@@ -256,12 +264,13 @@ fun FriendsScreen(
                 modifier = Modifier.fillMaxSize()
             )
         }
-        SceneBox(scene, 215f, 530f, 865f, 606f) {
+        // Two lines of about the same length, broken by hand at the word nearest the middle.
+        SceneBox(scene, 175f, 524f, 905f, 612f) {
             FitText(
-                stringResource(R.string.friends_invite_reward_hint),
+                balancedTwoLines(stringResource(R.string.friends_invite_reward_hint)),
                 style = PaintedStyle(
-                    color = DescriptionInk, fontSize = scene.fs(36f), fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center, lineHeight = scene.fs(42f)
+                    color = DescriptionInk, fontSize = scene.fs(40f), fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center, lineHeight = scene.fs(44f)
                 ),
                 maxLines = 2,
                 minScale = 0.6f,
@@ -278,13 +287,10 @@ fun FriendsScreen(
         cellCentres.forEachIndexed { i, cx ->
             val centreX = (ArtW - frameW) / 2f + cx / 1977f * frameW
             val centreY = frameTop + 349f / 667f * frameH
+            // Centred in its cell by the digit's own ink (the font's line box sits it visibly off-centre).
             SceneBox(scene, centreX - 30f, centreY - 40f, centreX + 30f, centreY + 40f) {
                 if (code != null && i < code.length) {
-                    Text(
-                        code[i].toString(),
-                        style = PaintedStyle(color = InkBrown, fontSize = scene.fs(62f), textAlign = TextAlign.Center),
-                        maxLines = 1
-                    )
+                    InkCenteredText(code[i].toString(), color = InkBrown, fontSize = scene.fs(62f))
                 }
             }
         }
@@ -316,7 +322,7 @@ fun FriendsScreen(
         // ── Add a friend ──
         Sprite(R.drawable.fr_ribbon, 70f, 835f, 470f, 948f, sc = lower)
         SceneBox(lower, 110f, 850f, 440f, 935f) {
-            LetteredText(stringResource(R.string.friends_add_friend_label), lower.fs(40f))
+            LetteredText(stringResource(R.string.friends_add_friend_label), lower.fs(40f), title = true)
         }
         NinePatch(
             res = R.drawable.fr_cream_b, slicePx = 120, sliceYPx = 100,
@@ -379,7 +385,7 @@ fun FriendsScreen(
         // ── Friends list ──
         Sprite(R.drawable.fr_ribbon, 70f, 1150f, 490f, 1269f, sc = lower)
         SceneBox(lower, 105f, 1168f, 455f, 1252f) {
-            LetteredText(stringResource(R.string.friends_list_title), lower.fs(40f))
+            LetteredText(stringResource(R.string.friends_list_title), lower.fs(40f), title = true)
         }
         NinePatch(
             res = R.drawable.fr_panel_big, slicePx = 170, edge = lower.len(85f),

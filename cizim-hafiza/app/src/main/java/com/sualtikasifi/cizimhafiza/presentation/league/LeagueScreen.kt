@@ -304,7 +304,7 @@ fun LeagueScreen(
                 contentAlignment = Alignment.Center
             ) {
                 val title = stringResource(R.string.league_title)
-                LetteredText(title, len(if (title.length > 11) 52f else 66f).value.sp)
+                LetteredText(title, len(if (title.length > 11) 52f else 66f).value.sp, title = true)
             }
         }
 

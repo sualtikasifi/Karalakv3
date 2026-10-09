@@ -281,14 +281,16 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                     size = (84f * artScale / fontScale0).sp,
                     fill = Color.White,
                     outline = Color(0xFF4E2406),
-                    modifier = Modifier.fillMaxWidth().height((100f * artScale).dp)
+                    modifier = Modifier.fillMaxWidth().height((100f * artScale).dp),
+                    title = true
                 )
                 com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
                     text = stringResource(R.string.store_title),
                     size = (48f * artScale / fontScale0).sp,
                     fill = Color.White,
                     outline = Color(0xFF4E2406),
-                    modifier = Modifier.fillMaxWidth().height((60f * artScale).dp)
+                    modifier = Modifier.fillMaxWidth().height((60f * artScale).dp),
+                    title = true
                 )
             }
 
