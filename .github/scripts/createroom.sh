@@ -70,18 +70,16 @@ shot 09_createroom_scrolled
 for label in "Oda Oluştur" "Create Room" "Create"; do
   xy=$(find_xy "$label"); [ -n "$xy" ] && { adb shell input tap $xy; break; }
 done
-sleep 10
+sleep 18
 clear_overlays
 shot 10_lobby
 adb shell input tap 528 2187
 sleep 1
 shot 11_lobby_emoji
-sleep 6
 adb shell input tap 438 2187
 sleep 3
-shot 12_lobby_phrases
-xy=$(find_xy "fun"); [ -z "$xy" ] && xy=$(find_xy "Good")
-[ -n "$xy" ] && adb shell input tap $xy || adb shell input tap 540 1900
+shot 12_lobby_picker
+adb shell input tap 112 1880
 sleep 1
 shot 13_lobby_message
 adb logcat -d | grep -E "FATAL|AndroidRuntime|Exception" | head -40 > "$OUT/crash_createroom.txt"
