@@ -114,27 +114,19 @@ done
 shot 02_main_menu_after_consent
 P=${P:-a}
 P=r
-back() { adb shell input keyevent KEYCODE_BACK; sleep 3; }
-# Friends (code cells, invite line, the line under the share button)
-adb shell input tap 540 1488; sleep 7; shot ${P}01_friends; back
-# Levels (no "you are here" tag)
-adb shell input tap 200 1488; sleep 7; shot ${P}02_worlds; back
-# Play with friends: sign, three-line text, buttons; then create / join
-adb shell input tap 200 1140; sleep 6; shot ${P}03_race
-adb shell input tap 540 1602; sleep 6; shot ${P}04_create; back
-adb shell input tap 540 1798; sleep 6; shot ${P}05_join; back
-back
-# Settings -> report a problem
-adb shell input tap 880 1650; sleep 5; shot ${P}06_settings
-adb shell input tap 540 1870; sleep 5; shot ${P}07_report
-adb shell input tap 540 1500; sleep 3; shot ${P}08_report_keyboard
-back; back; back
-# Achievements, league titles
-adb shell input tap 880 1488; sleep 6; shot ${P}09_achievements; back
-adb shell input tap 200 1680; sleep 6; adb shell input tap 800 485; sleep 8; shot ${P}10_league; back; back
-# A drawing turn, to its last seconds (sparks round the drawing area)
-adb shell input tap 880 1140; sleep 5; shot ${P}11_offline
+# Every section starts from a fresh main menu, so one missed tap cannot shift the rest.
+fresh() { adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 12; tap_text "Wait" || true; }
+# Waiting room: the room code in its well
+fresh; adb shell input tap 200 1160; sleep 6; adb shell input tap 540 1602; sleep 6; adb shell input tap 540 2200; sleep 15; shot ${P}01_waiting
+# Settings -> report a problem, then with the keyboard up
+fresh; adb shell input tap 880 1680; sleep 6; shot ${P}02_settings
+adb shell input tap 540 1870; sleep 6; shot ${P}03_report
+adb shell input swipe 540 1600 540 900 300; sleep 2; shot ${P}04_report_scrolled
+adb shell input swipe 540 900 540 1700 300; sleep 2
+adb shell input tap 540 1560; sleep 4; shot ${P}05_report_keyboard
+# A drawing turn to its last seconds (sparks round the drawing area), then the guess screen
+fresh; adb shell input tap 880 1160; sleep 6; shot ${P}06_offline
 adb shell input tap 540 2200
-for i in $(seq -w 1 30); do sleep 1.5; shot ${P}2${i}_draw; done
+for i in $(seq 10 69); do sleep 1.2; shot ${P}2${i}_draw; done
 adb logcat -d | grep -E "FATAL|AndroidRuntime" | head -40 > "$OUT/crash.txt"
 if grep -q "FATAL EXCEPTION" "$OUT/crash.txt"; then echo "APP CRASHED"; cat "$OUT/crash.txt"; exit 1; fi
