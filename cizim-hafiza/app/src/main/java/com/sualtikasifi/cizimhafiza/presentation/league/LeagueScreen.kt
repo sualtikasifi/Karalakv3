@@ -387,6 +387,7 @@ fun LeagueScreen(
                 edge = (38f * 170f / 164f).dp,
                 sliceYPx = 40,
                 edgeY = (38f * 40f / 164f).dp,
+                clampEdgeToHeight = false,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .offset(y = yOf(556f))
