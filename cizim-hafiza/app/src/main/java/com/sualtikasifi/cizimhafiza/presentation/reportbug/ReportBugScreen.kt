@@ -162,7 +162,7 @@ fun ReportBugScreen(
                 ) {
                     LetteredText(
                         text = words.first(),
-                        size = (signW.value * 0.1f).sp,
+                        size = (signW.value * 0.135f).sp,
                         fill = Color.White,
                         outline = Color(0xFF5A2815),
                         modifier = Modifier.fillMaxWidth().weight(1f),
@@ -171,7 +171,7 @@ fun ReportBugScreen(
                     )
                     if (words.size > 1) LetteredText(
                         text = words.drop(1).joinToString(" "),
-                        size = (signW.value * 0.1f).sp,
+                        size = (signW.value * 0.135f).sp,
                         outline = Color(0xFF5A2815),
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         minScale = 0.6f,
