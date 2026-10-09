@@ -66,4 +66,17 @@ shot 08_createroom
 adb shell input swipe 540 1700 540 600 400
 sleep 2
 shot 09_createroom_scrolled
+# Create the room, then send a reaction and a phrase from the chat bar so the own player card shows a message.
+for label in "Oda Oluştur" "Create Room" "Create"; do
+  xy=$(find_xy "$label"); [ -n "$xy" ] && { adb shell input tap $xy; break; }
+done
+sleep 10
+clear_overlays
+shot 10_lobby
+adb shell input tap 478 2124
+sleep 3
+shot 11_lobby_phrases
+adb shell input tap 540 1700
+sleep 2
+shot 12_lobby_message
 adb logcat -d | grep -E "FATAL|AndroidRuntime|Exception" | head -40 > "$OUT/crash_createroom.txt"
