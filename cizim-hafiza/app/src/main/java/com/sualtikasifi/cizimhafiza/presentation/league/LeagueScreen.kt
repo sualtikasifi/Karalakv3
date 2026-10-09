@@ -381,10 +381,12 @@ fun LeagueScreen(
         if (timerText != null) {
             NinePatch(
                 res = R.drawable.league_timer,
-                slicePx = 135,
-                edge = 31.dp,
+                // The whole clock (170 of the picture's 532 x 164 px) is one corner piece, drawn at the picture's own
+                // proportions (38 dp tall = 164 px), so it is never squeezed sideways.
+                slicePx = 170,
+                edge = (38f * 170f / 164f).dp,
                 sliceYPx = 40,
-                edgeY = 9.dp,
+                edgeY = (38f * 40f / 164f).dp,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .offset(y = yOf(556f))
@@ -392,7 +394,7 @@ fun LeagueScreen(
                     .widthIn(min = 190.dp)
             ) {
                 Box(
-                    modifier = Modifier.padding(start = 40.dp, end = 18.dp).heightIn(min = 38.dp),
+                    modifier = Modifier.padding(start = 44.dp, end = 18.dp).heightIn(min = 38.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
