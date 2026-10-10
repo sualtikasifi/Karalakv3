@@ -348,9 +348,31 @@ val LocalPanelScale = androidx.compose.runtime.compositionLocalOf { 1f }
  * the screen at once instead of being a stack of separate framed sections.
  */
 @Composable
-fun CompactPanel(content: @Composable ColumnScope.() -> Unit) {
+fun CompactPanel(paper: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
     val k = LocalPanelScale.current
     val rows = remember { RowCounter() }
+    if (paper) {
+        // The painted paper board (offline_paper, 1099 x 1431 px): leaf corners, doodles and splashes sit in the four
+        // corner pieces (250 px across, 520 px down) and only the plain paper between them stretches, so nothing is
+        // ever squashed. One dp is about 3.3 picture px at a normal phone width.
+        NinePatch(
+            res = R.drawable.offline_paper,
+            slicePx = 250,
+            edge = 76.dp,
+            sliceYPx = 520,
+            edgeY = 158.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(start = 34.dp, end = 34.dp, top = 36.dp * k, bottom = 42.dp * k),
+                verticalArrangement = Arrangement.spacedBy(8.dp * k),
+                content = {
+                    androidx.compose.runtime.CompositionLocalProvider(LocalRowCounter provides rows, LocalPanelPaper provides true) { content() }
+                }
+            )
+        }
+        return
+    }
     NinePatch(
         res = R.drawable.offline_panel,
         slicePx = 92,
@@ -365,6 +387,9 @@ fun CompactPanel(content: @Composable ColumnScope.() -> Unit) {
     }
 }
 
+/** True inside a paper-board [CompactPanel]: captions are dark ink instead of cream. */
+val LocalPanelPaper = androidx.compose.runtime.staticCompositionLocalOf { false }
+
 /** Numbers the rows of a [CompactPanel] in the order they first appear, so they can spring in one after another. */
 class RowCounter { var next = 0 }
 val LocalRowCounter = androidx.compose.runtime.staticCompositionLocalOf<RowCounter?> { null }
@@ -375,11 +400,12 @@ fun PanelRow(label: String, content: @Composable () -> Unit) {
     val counter = LocalRowCounter.current
     val order = remember { counter?.let { it.next++ } ?: 0 }
     Column(modifier = Modifier.fillMaxWidth().springIn(index = order, stepMs = 70, fromY = 22)) {
+        val onPaper = LocalPanelPaper.current
         Text(
             text = label,
             style = PaintedStyle(
-                color = Color(0xFFFFEBC8), fontSize = 13.5.sp, textAlign = TextAlign.Center,
-                shadow = androidx.compose.ui.graphics.Shadow(Color(0xAA2A1005), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)
+                color = if (onPaper) InkBrown else Color(0xFFFFEBC8), fontSize = 13.5.sp, textAlign = TextAlign.Center,
+                shadow = if (onPaper) null else androidx.compose.ui.graphics.Shadow(Color(0xAA2A1005), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)
             ),
             maxLines = 1,
             modifier = Modifier.fillMaxWidth().padding(bottom = 3.dp)

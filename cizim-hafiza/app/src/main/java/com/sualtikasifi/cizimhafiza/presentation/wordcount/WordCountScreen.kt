@@ -42,7 +42,7 @@ fun WordCountScreen(
             )
         }
     ) {
-        CompactPanel {
+        CompactPanel(paper = true) {
             PanelRow(stringResource(R.string.select_word_count)) {
                 ChoiceGrid(
                     items = uiState.availableCounts,
