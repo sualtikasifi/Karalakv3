@@ -12,6 +12,7 @@ adb wait-for-device
 adb shell input keyevent 82 || true
 adb install -r -t "$APK"
 adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
+adb shell settings put global hide_error_dialogs 1 || true
 adb shell "run-as $PKG mkdir -p shared_prefs"
 printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boolean name=\"tutorial_completed\" value=\"true\" /><boolean name=\"feature_tour_seen\" value=\"true\" /></map>" \
   | adb shell "run-as $PKG sh -c 'cat > shared_prefs/cizim_hafiza_settings.xml'"
