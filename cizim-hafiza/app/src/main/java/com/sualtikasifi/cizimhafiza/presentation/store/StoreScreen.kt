@@ -671,7 +671,7 @@ private fun PenCard(
         val h = maxHeight
         Image(painterResource(skin.cardRes()), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
         // Name and tagline hug each other; the button sits clear of the card's lower frame.
-        Column(Modifier.offset(w * 0.4f, h * 0.465f).size(w * 0.55f, h * 0.2f)) {
+        Column(Modifier.offset(w * 0.4f, h * 0.425f).size(w * 0.55f, h * 0.24f)) {
             Text(
                 text = stringResource(skin.labelRes),
                 style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Ink, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 16.sp),
@@ -686,7 +686,7 @@ private fun PenCard(
             }
         }
         // One wide button: buy (price) or wear. There is no trying a pen before buying it.
-        val m = Modifier.offset(w * 0.34f, h * 0.69f).size(w * 0.56f, h * 0.19f)
+        val m = Modifier.offset(w * 0.34f, h * 0.7f).size(w * 0.56f, h * 0.18f)
         when {
             owned -> OwnedPill(equipped, onEquip, m)
             else -> PaintedPill(R.drawable.st_pill_orange, m, enabled = canAfford, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
