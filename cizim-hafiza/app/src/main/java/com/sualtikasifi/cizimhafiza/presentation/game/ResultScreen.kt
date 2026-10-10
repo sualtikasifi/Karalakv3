@@ -197,10 +197,13 @@ fun ResultScreen(
     // drawing of the round on its board — scrolling when a short phone cannot hold it all — and the two claim buttons
     // pinned underneath.
     Box(modifier = Modifier.fillMaxSize()) {
+        // The empty workshop: the countdown's backdrop used to be here, and its big dog and dial peeked out between the
+        // cards.
         Image(
-            painter = cachedPainterResource(R.drawable.bg_break),
+            painter = cachedPainterResource(R.drawable.du_bg),
             contentDescription = null,
             contentScale = ContentScale.Crop,
+            alignment = Alignment.TopCenter,
             modifier = Modifier.fillMaxSize()
         )
         Box(Modifier.fillMaxSize().background(Color(0x33180A02)))
@@ -230,8 +233,7 @@ fun ResultScreen(
                     )
                 }
                 Column(
-                    // Tucked a little under the head, whose foot now fades out, so no strip of backdrop shows between them.
-                    modifier = Modifier.fillMaxWidth().offset(y = (-14).dp).padding(horizontal = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
