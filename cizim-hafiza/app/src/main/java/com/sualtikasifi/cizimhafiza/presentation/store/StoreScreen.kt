@@ -122,7 +122,6 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
     val dailyJoker by viewModel.dailyJoker.collectAsState()
     val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
     var pending by remember { mutableStateOf<Pending?>(null) }
-    var tryingPen by remember { mutableStateOf<PenSkin?>(null) }
     // The toast's own id changes on every fire, even for the same message
     // twice in a row, so re-showing it (declined, tried again, still short)
     // restarts its animation and its timer instead of doing nothing.
@@ -206,8 +205,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                             canAfford = gold >= skin.storePrice,
                             onBuy = { pending = Pending.PenItem(skin) },
                             onEquip = { viewModel.equipPen(skin) },
-                            onCannotAfford = { showToast(R.string.store_not_enough, isError = true) },
-                            onTry = { tryingPen = skin }
+                            onCannotAfford = { showToast(R.string.store_not_enough, isError = true) }
                         ) }
                     }
                 } else if (tab == 0) {
@@ -324,8 +322,6 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             }
         }
     }
-
-    tryingPen?.let { skin -> PenTryDialog(skin = skin, onDismiss = { tryingPen = null }) }
 
     pending?.let { item ->
         val name = when (item) {
@@ -607,32 +603,6 @@ private fun CoinPrice(price: Int, size: androidx.compose.ui.unit.TextUnit = 14.s
     }
 }
 
-/** The painted "Dene" button: a play badge and the word. */
-@Composable
-private fun TryPill(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    PaintedPill(R.drawable.st_pill_orange, modifier = modifier, onClick = onClick) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Box(Modifier.size(16.dp).clip(CircleShape).background(Color(0xFF4A2410)), contentAlignment = Alignment.Center) {
-                androidx.compose.material3.Icon(
-                    androidx.compose.material.icons.Icons.Filled.PlayArrow,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(12.dp)
-                )
-            }
-            Text(
-                text = stringResource(R.string.store_try),
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 12.sp,
-                color = Color.White,
-                style = PillTextShadow,
-                maxLines = 1
-            )
-        }
-    }
-}
-
 /** What a card's main button says once the item is bought: green "Kullanımda" while worn, orange "Kuşan" otherwise. */
 @Composable
 private fun OwnedPill(equipped: Boolean, onEquip: () -> Unit, modifier: Modifier = Modifier) {
@@ -694,8 +664,7 @@ private fun PenCard(
     canAfford: Boolean,
     onBuy: () -> Unit,
     onEquip: () -> Unit,
-    onCannotAfford: () -> Unit,
-    onTry: () -> Unit
+    onCannotAfford: () -> Unit
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(1.3f)) {
         val w = maxWidth
@@ -707,18 +676,13 @@ private fun PenCard(
                 Text(text = stringResource(it), fontSize = 9.sp, lineHeight = 10.sp, color = Ink.copy(alpha = 0.7f), maxLines = 1)
             }
         }
-        Row(
-            Modifier.offset(w * 0.3f, h * 0.765f).size(w * 0.64f, h * 0.17f),
-            horizontalArrangement = Arrangement.spacedBy(w * 0.03f)
-        ) {
-            val m = Modifier.weight(1f).fillMaxHeight()
-            when {
-                owned -> OwnedPill(equipped, onEquip, m)
-                else -> PaintedPill(R.drawable.st_pill_orange, m, enabled = canAfford, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
-                    CoinPrice(skin.storePrice, size = 12.sp, coin = 16.dp)
-                }
+        // One wide button: buy (price) or wear. There is no trying a pen before buying it.
+        val m = Modifier.offset(w * 0.34f, h * 0.755f).size(w * 0.56f, h * 0.19f)
+        when {
+            owned -> OwnedPill(equipped, onEquip, m)
+            else -> PaintedPill(R.drawable.st_pill_orange, m, enabled = canAfford, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
+                CoinPrice(skin.storePrice, size = 14.sp, coin = 18.dp)
             }
-            TryPill(onTry, m)
         }
     }
 }
@@ -899,45 +863,6 @@ private fun JokerCard(
                     }
                 }
             }
-        }
-    }
-}
-
-/** Scribble with a pen before buying it: a small paper canvas that draws with the pen's real colours. */
-@Composable
-private fun PenTryDialog(skin: PenSkin, onDismiss: () -> Unit) {
-    var strokes by remember { mutableStateOf(emptyList<com.sualtikasifi.cizimhafiza.domain.model.DrawingStroke>()) }
-    com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog(
-        title = stringResource(R.string.store_try_title, stringResource(skin.labelRes)),
-        onDismiss = onDismiss
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color.White)
-                .border(2.dp, Color(0xFFEBCB93), RoundedCornerShape(20.dp))
-        ) {
-            com.sualtikasifi.cizimhafiza.presentation.common.DrawableCanvas(
-                liveStrokes = strokes,
-                onStrokeFinished = { strokes = strokes + listOf(it) },
-                penSkin = skin,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-            com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton(
-                text = stringResource(R.string.store_try_clear),
-                onClick = { strokes = emptyList() },
-                modifier = Modifier.weight(1f)
-            )
-            com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton(
-                text = stringResource(R.string.close),
-                onClick = onDismiss,
-                modifier = Modifier.weight(1f)
-            )
         }
     }
 }
