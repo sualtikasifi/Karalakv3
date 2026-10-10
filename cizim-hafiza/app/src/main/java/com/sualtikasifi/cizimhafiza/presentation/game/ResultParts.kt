@@ -8,7 +8,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -49,6 +48,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -380,15 +380,23 @@ internal fun ResultWordsBoard(
         // The paper as drawn holds 505 px; anything more stretches the band.
         val extra = (gridH + u * 40f - u * 505f).coerceAtLeast(0.dp)
         Box(Modifier.fillMaxWidth().height(u * 988f + extra)) {
-            NinePatch(
-                res = R.drawable.res_words_board,
-                slicePx = 140,
-                edge = u * 140f,
-                sliceYPx = 647,
-                edgeY = u * 647f,
-                clampEdgeToHeight = false,
-                modifier = Modifier.matchParentSize()
-            )
+            // Drawn in three slices across the full width: rows 0..647 and 648..988 at the picture's own scale, and
+            // the single paper row 647 stretched to fill whatever height the sheets need in between.
+            val board = androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.res_words_board)
+            androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
+                val w = size.width.toInt()
+                val k = size.width / board.width
+                val topH = (647 * k).toInt()
+                val botSrc = board.height - 648
+                val botH = (botSrc * k).toInt()
+                val h = size.height.toInt()
+                drawImage(board, androidx.compose.ui.unit.IntOffset(0, 0), androidx.compose.ui.unit.IntSize(board.width, 647),
+                    dstOffset = androidx.compose.ui.unit.IntOffset(0, 0), dstSize = androidx.compose.ui.unit.IntSize(w, topH))
+                drawImage(board, androidx.compose.ui.unit.IntOffset(0, 647), androidx.compose.ui.unit.IntSize(board.width, 1),
+                    dstOffset = androidx.compose.ui.unit.IntOffset(0, topH), dstSize = androidx.compose.ui.unit.IntSize(w, (h - botH - topH).coerceAtLeast(0) + 1))
+                drawImage(board, androidx.compose.ui.unit.IntOffset(0, 648), androidx.compose.ui.unit.IntSize(board.width, botSrc),
+                    dstOffset = androidx.compose.ui.unit.IntOffset(0, h - botH), dstSize = androidx.compose.ui.unit.IntSize(w, botH))
+            }
             // The title on the plank, with the share button at its right end.
             Box(
                 modifier = Modifier.offset(u * 466f, u * 236f).size(u * 835f, u * 146f),
