@@ -74,12 +74,12 @@ PY
 }
 adb shell am start -n $ACT
 sleep 8
-sleep 22
+sleep 40
 adb shell input tap 540 1678
 sleep 4
 clear_overlays
 shot qs_home
 adb shell input tap 540 1148
-sleep 0.4; shot qs_01
-sleep 0.8; shot qs_02
-sleep 1.2; shot qs_03
+sleep 1.5; shot qs_01
+sleep 1.0; shot qs_02
+sleep 1.0; shot qs_03
