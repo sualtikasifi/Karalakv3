@@ -54,6 +54,8 @@ adb shell am start -n $ACT
 sleep 8
 sleep 20
 clear_overlays
+adb shell input tap 540 1678; sleep 4
+clear_overlays
 shot mf_home
 adb shell input tap 540 1148
 sleep 3
