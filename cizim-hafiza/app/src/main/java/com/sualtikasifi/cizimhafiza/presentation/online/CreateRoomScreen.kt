@@ -62,7 +62,7 @@ fun CreateRoomScreen(
             }
         }
     ) {
-        CompactPanel {
+        CompactPanel(paper = true) {
             PanelRow(stringResource(R.string.online_nickname_label)) {
                 PillField(
                     value = uiState.nickname,
