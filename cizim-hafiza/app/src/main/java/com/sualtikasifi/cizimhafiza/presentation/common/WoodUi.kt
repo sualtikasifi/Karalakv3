@@ -213,13 +213,13 @@ fun WoodScreen(
         }
 
         val compact = maxHeight < 780.dp
-        val startHeight = if (compact) 80.dp else 92.dp
+        val startHeight = if (compact) 74.dp else 84.dp
         // Everything between the sign and the action scrolls; the cards melt away at the top edge.
         androidx.compose.runtime.CompositionLocalProvider(LocalPanelScale provides if (compact) 0.85f else 1f) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = yOf(0.222f), bottom = startHeight + 14.dp)
+                .padding(top = yOf(0.212f), bottom = startHeight + 20.dp)
                 .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                 .drawWithContent {
                     drawContent()
