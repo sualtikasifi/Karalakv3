@@ -961,7 +961,9 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(slot.avatarUrl)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Column(modifier = Modifier.weight(1f)) {
+                // The whole text column sits a little above the card's middle: its last line (the chat message) used to run
+                // into the card's lower frame.
+                Column(modifier = Modifier.weight(1f).offset(y = (-3).dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         // Shrinks before it ellipsises, so "Name (Sen)" keeps its "(Sen)" next to the host crown.
                         com.sualtikasifi.cizimhafiza.presentation.common.FitText(
@@ -982,7 +984,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     // type as the league table's rows (see RankLevelLabel).
                     com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(
                         level = slot.level, bullet = false,
-                        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(fontSize = 11.sp, lineHeight = 13.sp, textAlign = TextAlign.Start)
+                        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(fontSize = 11.sp, lineHeight = 14.sp, textAlign = TextAlign.Start)
                     )
                     // A chat message takes over this exact spot instead of
                     // opening a bubble above the card. A fixed-height Box
@@ -991,14 +993,14 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     // never changes the row's height — the card stays
                     // exactly SLOT_HEIGHT tall whether or not there's
                     // anything to show here right now.
-                    Box(modifier = Modifier.height(15.dp)) {
+                    Box(modifier = Modifier.height(17.dp)) {
                         Crossfade(targetState = activeReaction, label = "slot-status") { reaction ->
                             if (reaction != null) {
                                 val phraseTextRes = presetPhraseTextRes(reaction.messageKey)
                                 Text(
                                     text = phraseTextRes?.let { stringResource(it) } ?: reaction.emoji,
                                     style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
-                                        color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, lineHeight = 13.sp, textAlign = TextAlign.Start
+                                        color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, lineHeight = 16.sp, textAlign = TextAlign.Start
                                     ),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
@@ -1007,7 +1009,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                                 Text(
                                     text = stringResource(R.string.online_pending_badge),
                                     style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
-                                        color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, lineHeight = 13.sp, textAlign = TextAlign.Start
+                                        color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, lineHeight = 16.sp, textAlign = TextAlign.Start
                                     ),
                                     maxLines = 1
                                 )
