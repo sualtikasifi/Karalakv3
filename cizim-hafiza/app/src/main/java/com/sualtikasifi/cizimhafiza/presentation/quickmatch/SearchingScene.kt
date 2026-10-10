@@ -103,6 +103,14 @@ internal fun SearchingScene(modifier: Modifier = Modifier) {
         )
 
         // ---- The sign ------------------------------------------------------------------------------------------
+        // The workshop picture has no sign of its own (it was painted out): the blank hanging sign is laid on it, and the
+        // title is lettered on that.
+        Image(
+            painter = cachedPainterResource(R.drawable.qm_sign),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds,
+            modifier = box(100f, 192f, 840f, 567f)
+        )
         LetteredText(
             text = stringResource(R.string.quick_match_searching_title),
             size = fs(118f),
