@@ -364,7 +364,7 @@ fun CompactPanel(paper: Boolean = false, content: @Composable ColumnScope.() -> 
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(start = 34.dp, end = 34.dp, top = 52.dp * k, bottom = 46.dp * k),
+                modifier = Modifier.fillMaxWidth().padding(start = 34.dp, end = 34.dp, top = 52.dp * k, bottom = 64.dp * k),
                 verticalArrangement = Arrangement.spacedBy(8.dp * k),
                 content = {
                     androidx.compose.runtime.CompositionLocalProvider(LocalRowCounter provides rows, LocalPanelPaper provides true) { content() }
@@ -423,10 +423,19 @@ fun PillField(
     enabled: Boolean = true,
     keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default
 ) {
+    val onPaper = LocalPanelPaper.current
     NinePatch(
         res = R.drawable.offline_pill_off,
         slicePx = 90,
         edge = 20.dp,
+        tint = if (onPaper) androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+            androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
+                0.93f, 0f, 0f, 0f, -4f,
+                0f, 0.86f, 0f, 0f, -6f,
+                0f, 0f, 0.72f, 0f, -8f,
+                0f, 0f, 0f, 1f, 0f
+            ))
+        ) else null,
         modifier = modifier.fillMaxWidth().height(40.dp * LocalPanelScale.current).graphicsLayer { alpha = if (enabled) 1f else 0.7f }
     ) {
         androidx.compose.foundation.text.BasicTextField(
@@ -497,10 +506,20 @@ fun ChoicePill(
         animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f),
         label = "pillSink"
     )
+    val onPaper = LocalPanelPaper.current
     NinePatch(
         res = if (selected) R.drawable.offline_pill_on else R.drawable.offline_pill_off,
         slicePx = 90,
         edge = height / 2,
+        // On the paper board the free (cream) pills would vanish into the paper: they get a warm tan tint.
+        tint = if (onPaper && !selected) androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+            androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
+                0.93f, 0f, 0f, 0f, -4f,
+                0f, 0.86f, 0f, 0f, -6f,
+                0f, 0f, 0.72f, 0f, -8f,
+                0f, 0f, 0f, 1f, 0f
+            ))
+        ) else null,
         modifier = modifier
             .height(height)
             .graphicsLayer { scaleX = scale * sink; scaleY = scale * sink }
