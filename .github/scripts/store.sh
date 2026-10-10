@@ -64,8 +64,6 @@ for try in 1 2 3 4 5 6; do
   clear_overlays
 done
 shot 01_jokers
-# Press-and-hold on the free-joker button with a shot while the finger is still down: the whole button should cave in.
-(adb shell input swipe 540 1292 540 1292 4000 &) ; sleep 2; shot 01b_press_daily; sleep 3
 adb shell input swipe 540 1800 540 900 400
 sleep 2
 shot 02_jokers_scrolled
