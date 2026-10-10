@@ -396,13 +396,17 @@ private fun AchievementDetailDialog(item: AchievementUiItem, onClaim: () -> Unit
                         PrimaryButton(
                             text = stringResource(R.string.achievement_claim_button),
                             onClick = onClaim,
-                            modifier = Modifier.fillMaxWidth()
+                            // Narrower and lower than the page's usual button, so it stays clear of the two leaf
+                            // clusters in the card's bottom corners.
+                            modifier = Modifier.fillMaxWidth(0.62f),
+                            height = 46.dp
                         )
                     } else {
                         PrimaryButton(
                             text = stringResource(R.string.close),
                             onClick = onDismiss,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(0.62f),
+                            height = 46.dp
                         )
                     }
                 }

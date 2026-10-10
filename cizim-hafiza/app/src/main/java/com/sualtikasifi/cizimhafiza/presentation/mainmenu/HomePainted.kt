@@ -264,7 +264,7 @@ internal fun PaintedHome(
                 Icon(Icons.Filled.Create, contentDescription = null, tint = Color.White, modifier = Modifier.size((22f * us).dp))
             }
         }
-        Box(box(224f, 350f, 780f, 394f), contentAlignment = Alignment.CenterStart) {
+        Box(box(224f, 357f, 780f, 399f), contentAlignment = Alignment.CenterStart) {
             // The level sits on the SAME BASELINE as the name (they are two sizes, so aligning their bottoms or centres
             // leaves the smaller one visibly floating).
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -16,6 +16,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenArt
+import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -266,28 +268,27 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             }
             }
 
-            // The title, lettered on the wooden sign (x 190..650, y 298..448 of the picture).
-            Column(
+            // The title, lettered on the wooden plank: both words in ONE size, one under the other 48 picture px apart,
+            // the pair centred on the plank's face (x 425, y 364 of the 841 x 1870 picture; measured on a screenshot).
+            Box(
                 modifier = Modifier
-                    .offset((artOffX + 225f * artScale).dp, (300f * artScale).dp)
-                    .size((404f * artScale).dp, (130f * artScale).dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top
+                    .offset((artOffX + (425f - 190f) * artScale).dp, ((364f - 70f) * artScale).dp)
+                    .size((380f * artScale).dp, (140f * artScale).dp)
             ) {
                 com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
                     text = stringResource(R.string.app_name),
-                    size = (84f * artScale / fontScale0).sp,
+                    size = (66f * artScale / fontScale0).sp,
                     fill = Color.White,
                     outline = Color(0xFF4E2406),
-                    modifier = Modifier.fillMaxWidth().height((70f * artScale).dp),
+                    modifier = Modifier.align(Alignment.Center).offset(y = (-24f * artScale).dp).fillMaxWidth().height((68f * artScale).dp),
                     title = true
                 )
                 com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
                     text = stringResource(R.string.store_title),
-                    size = (62f * artScale / fontScale0).sp,
+                    size = (66f * artScale / fontScale0).sp,
                     fill = Color.White,
                     outline = Color(0xFF4E2406),
-                    modifier = Modifier.fillMaxWidth().height((60f * artScale).dp),
+                    modifier = Modifier.align(Alignment.Center).offset(y = (24f * artScale).dp).fillMaxWidth().height((68f * artScale).dp),
                     title = true
                 )
             }
@@ -671,17 +672,20 @@ private fun PenCard(
         val h = maxHeight
         Image(painterResource(skin.cardRes()), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
         // Name and tagline hug each other; the button sits clear of the card's lower frame.
-        Column(Modifier.offset(w * 0.4f, h * 0.425f).size(w * 0.55f, h * 0.24f)) {
+        // The text clips at its own line box, so each line is given room for its descenders and the tagline is
+        // pulled up against the name with an offset instead of a tight line height.
+        Column(Modifier.offset(w * 0.4f, h * 0.415f).size(w * 0.55f, h * 0.27f)) {
             Text(
                 text = stringResource(skin.labelRes),
-                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Ink, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 16.sp),
+                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Ink, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 18.sp),
                 maxLines = 1
             )
             skin.taglineRes()?.let {
                 Text(
                     text = stringResource(it),
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Ink.copy(alpha = 0.7f), fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, lineHeight = 11.sp),
-                    maxLines = 1
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Ink.copy(alpha = 0.7f), fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, lineHeight = 14.sp),
+                    maxLines = 1,
+                    modifier = Modifier.offset(y = (-4).dp)
                 )
             }
         }
@@ -777,31 +781,41 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
                 maxLines = 3
             )
         }
-        // The green button (x 305..995, y 508..625 of the picture) with its words and a play mark.
-        Row(
+        // The green button (x 309..994, y 509..616 of the picture): the whole button caves in under the finger,
+        // not just its words (the picture's own pixels are drawn again, shrunk, over a darker recess).
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val sheet = remember { runCatching { com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(context.resources, R.drawable.st_daily_full) }.getOrNull() }
+        val sink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.93f)
+        val pxK = (sheet?.width ?: 1300) / 1300f
+        Box(
             modifier = Modifier
-                .offset(u * 305f, u * 508f)
-                .size(u * 690f, u * 117f)
-                .pressable(pressedScale = 0.95f, onClick = onClaim),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+                .offset(u * 309f, u * 509f)
+                .size(u * 685f, u * 107f)
+                .sunkenArt(sink, sheet, 309f * pxK, 509f * pxK, 685f * pxK, 107f * pxK, u * 53f)
+                .clickable(interactionSource = sink.source, indication = null, onClick = onClaim)
         ) {
-            androidx.compose.material3.Icon(
-                androidx.compose.material.icons.Icons.Filled.PlayCircle,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(u * 62f)
-            )
-            Spacer(Modifier.width(u * 16f))
-            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                text = stringResource(R.string.store_daily_joker_action),
-                style = androidx.compose.ui.text.TextStyle(
-                    fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(52f), color = Color.White,
-                    shadow = Shadow(Color(0xFF0E3A06), Offset(0f, 3f), 3f)
-                ),
-                maxLines = 1, minScale = 0.5f,
-                modifier = Modifier.width(u * 470f).height(u * 76f)
-            )
+            Row(
+                modifier = Modifier.fillMaxSize().sinkWith(sink, 0.5f, 0.5f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                androidx.compose.material3.Icon(
+                    androidx.compose.material.icons.Icons.Filled.PlayCircle,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(u * 62f)
+                )
+                Spacer(Modifier.width(u * 16f))
+                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                    text = stringResource(R.string.store_daily_joker_action),
+                    style = androidx.compose.ui.text.TextStyle(
+                        fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(52f), color = Color.White,
+                        shadow = Shadow(Color(0xFF0E3A06), Offset(0f, 3f), 3f)
+                    ),
+                    maxLines = 1, minScale = 0.5f,
+                    modifier = Modifier.width(u * 470f).height(u * 76f)
+                )
+            }
         }
     }
 }
@@ -861,7 +875,7 @@ private fun JokerCard(
                     if (qty == 1) {
                         CoinPrice(price)
                     } else {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy((-2).dp)) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy((-2).dp), modifier = Modifier.offset(y = 4.dp)) {
                             com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                                 text = stringResource(R.string.joker_buy_bulk, qty, JokerType.BULK_DISCOUNT_PERCENT),
                                 style = PillTextShadow.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.95f), textAlign = TextAlign.Center),
