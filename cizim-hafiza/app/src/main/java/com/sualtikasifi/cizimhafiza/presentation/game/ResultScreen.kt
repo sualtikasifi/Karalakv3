@@ -1050,7 +1050,7 @@ private fun DrawingPreviewScene(
             strokes = item.strokes,
             showReplayButton = false,
             externalReplay = replay,
-            modifier = box(181f, 589f, 661f, 1069f)
+            modifier = box(188f, 590f, 648f, 1050f)
                 .clip(androidx.compose.foundation.shape.RoundedCornerShape(unit * 26f))
                 .background(AppTheme.tokens.canvasPaper)
         )
