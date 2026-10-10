@@ -364,7 +364,7 @@ fun CompactPanel(paper: Boolean = false, content: @Composable ColumnScope.() -> 
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(start = 34.dp, end = 34.dp, top = 36.dp * k, bottom = 42.dp * k),
+                modifier = Modifier.fillMaxWidth().padding(start = 34.dp, end = 34.dp, top = 52.dp * k, bottom = 46.dp * k),
                 verticalArrangement = Arrangement.spacedBy(8.dp * k),
                 content = {
                     androidx.compose.runtime.CompositionLocalProvider(LocalRowCounter provides rows, LocalPanelPaper provides true) { content() }

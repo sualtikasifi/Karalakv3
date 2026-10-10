@@ -269,10 +269,10 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             }
 
             // The title, lettered on the wooden plank: both words in ONE size, one under the other 48 picture px apart,
-            // the pair centred on the plank's face (x 425, y 357 of the 841 x 1870 picture; measured on a screenshot).
+            // the pair centred on the plank's face (x 425, y 349 of the 841 x 1870 picture; measured on a screenshot).
             Box(
                 modifier = Modifier
-                    .offset((artOffX + (425f - 190f) * artScale).dp, ((357f - 70f) * artScale).dp)
+                    .offset((artOffX + (425f - 190f) * artScale).dp, ((349f - 70f) * artScale).dp)
                     .size((380f * artScale).dp, (140f * artScale).dp)
             ) {
                 com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
