@@ -204,7 +204,7 @@ private fun StatCard(stat: ResultStat, u: Dp, leafOnRight: Boolean, modifier: Mo
             modifier = Modifier.fillMaxSize()
         )
         Row(
-            modifier = Modifier.fillMaxSize().padding(start = u * (if (leafOnRight) 22f else 36f), end = u * (if (leafOnRight) 36f else 22f)),
+            modifier = Modifier.fillMaxSize().padding(top = u * 6f, start = u * (if (leafOnRight) 22f else 36f), end = u * (if (leafOnRight) 46f else 22f)),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(u * 6f)
         ) {
@@ -224,14 +224,14 @@ private fun StatCard(stat: ResultStat, u: Dp, leafOnRight: Boolean, modifier: Mo
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
                 FitText(
                     text = stat.label,
-                    style = PaintedStyle(color = ResultInk, fontSize = fs(27f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+                    style = PaintedStyle(color = ResultInk, fontSize = fs(25f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
                     maxLines = 1,
                     minScale = 0.6f,
                     modifier = Modifier.fillMaxWidth()
                 )
                 FitText(
                     text = stat.value,
-                    style = PaintedStyle(color = stat.valueColor, fontSize = fs(50f), textAlign = TextAlign.Center),
+                    style = PaintedStyle(color = stat.valueColor, fontSize = fs(46f), textAlign = TextAlign.Center),
                     maxLines = 1,
                     minScale = 0.5f,
                     modifier = Modifier.fillMaxWidth()
@@ -404,7 +404,7 @@ internal fun ResultWordsBoard(
         val gap = k * 8f
         val sheetW = (k * 632f - gap * (perRow - 1)) / perRow
         val gridH = sheetW / 0.95f * rows + gap * (rows - 1)
-        val boardH = maxOf(k * 300f, k * 138f + gridH + k * 36f)
+        val boardH = maxOf(k * 300f, k * 138f + gridH + k * 48f)
         Box(Modifier.fillMaxWidth().height(boardH)) {
             val board = androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.rs_board)
             androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
