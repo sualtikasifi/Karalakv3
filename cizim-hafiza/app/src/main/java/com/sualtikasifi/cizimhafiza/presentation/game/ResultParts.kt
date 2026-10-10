@@ -60,6 +60,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.ResultItem
 import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.FitText
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.StrokeCanvas
 import com.sualtikasifi.cizimhafiza.presentation.common.a11yButton
@@ -67,78 +68,96 @@ import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.util.capitalizeForWordLanguage
 
-// res_head2 is the top of the result design: the mascot with the trophy, the "Oyun Bitti!" sign and the XP plate under
-// it, on the workshop wall. 941 x 372 picture units.
-private const val HeadW = 941f
-private const val HeadH = 372f
+// The result screen is laid out in the design's own units: 841 wide, everything else measured against that.
+internal const val ResArtW = 841f
+
+// rs_head (663 x 415 px): the back button, the mascot with the trophy and the empty sign, shown 720 units wide and
+// centred; the XP plate (rs_xp) overlaps the wreath's lower edge.
+private const val HeadShown = 720f
+private const val HeadScale = HeadShown / 663f
+private const val HeadTop = 6f
+private const val PlateTop = 440f
+private const val PlateH = 100f
+internal const val HeadBlockH = PlateTop + PlateH
 
 internal val ResultInk = Color(0xFF3B2314)
-private val CardBorder = Color(0xFFE9A23B)
 private val XpOrange = Color(0xFFF2541B)
 
 /**
- * The head of the result screen: the painted picture with the title lettered on its sign and the round's XP (counting up)
- * with the line that explains it on the plate under the sign. Its edges are kept sharp (no fade into the wall).
+ * The head of the result screen: the painted picture with the title lettered on its sign and, on the plate under it, the
+ * round's XP (counting up) with the line that explains it.
  */
 @Composable
 internal fun ResultHeader(title: String, xp: Int, explanation: String, onBack: () -> Unit) {
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(HeadW / HeadH)
-
+            .aspectRatio(ResArtW / HeadBlockH)
     ) {
-        val u = maxWidth / HeadW
+        val u = maxWidth / ResArtW
         val fontScale0 = LocalDensity.current.fontScale
         fun fs(art: Float) = (art * u.value / fontScale0).sp
         fun box(x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
             Modifier.offset(u * x0, u * y0).size(u * (x1 - x0), u * (y1 - y0))
+        // A point of the head picture (px) in design units.
+        fun hx(px: Float) = (ResArtW - HeadShown) / 2f + px * HeadScale
+        fun hy(py: Float) = HeadTop + py * HeadScale
 
-        // res_head3 is the painted head with its lower edge fading out, so the dog and the leaves melt into the
-        // page instead of ending on a straight cut.
         Image(
-            painter = cachedPainterResource(R.drawable.res_head3),
+            painter = cachedPainterResource(R.drawable.rs_head),
             contentDescription = null,
             contentScale = ContentScale.FillBounds,
-            modifier = Modifier.fillMaxSize()
+            modifier = box(hx(0f), hy(0f), hx(663f), hy(415f))
         )
         // The painted back button: leaves the same way the claim button does (the XP is already banked).
         Box(
-            box(25f, 35f, 128f, 128f)
+            box(hx(2f), hy(18f), hx(118f), hy(136f))
                 .pressable(pressedScale = 0.9f, onClick = onBack)
                 .a11yButton(stringResource(R.string.cd_back))
         )
         LetteredText(
             text = title,
-            size = fs(84f),
+            size = fs(80f),
             fill = Color(0xFFFFD84D),
             outline = Color(0xFF4A2410),
-            modifier = box(492f, 150f, 874f, 246f),
+            modifier = box(hx(100f), hy(280f), hx(555f), hy(362f)),
             minScale = 0.5f,
             title = true
         )
-        Row(
-            modifier = box(500f, 266f, 852f, 316f),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            StarBadge(u * 46f)
-            Spacer(Modifier.width(u * 14f))
-            LetteredText(
-                text = stringResource(R.string.xp_gained_format, xp),
-                size = fs(56f),
-                fill = XpOrange,
-                outline = null,
-                modifier = Modifier.weight(1f, fill = false)
+        // The plate: stretched to 480 wide, its leaf corners and frame kept at the picture's own size.
+        Box(box((ResArtW - 480f) / 2f, PlateTop, (ResArtW + 480f) / 2f, PlateTop + PlateH)) {
+            NinePatch(
+                res = R.drawable.rs_xp,
+                slicePx = 46,
+                edge = u * 46f,
+                sliceYPx = 40,
+                edgeY = u * 40f,
+                modifier = Modifier.fillMaxSize()
             )
+            Column(
+                modifier = Modifier.fillMaxSize().padding(start = u * 30f, end = u * 30f, top = u * 12f, bottom = u * 10f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Row(modifier = Modifier.height(u * 50f), verticalAlignment = Alignment.CenterVertically) {
+                    StarBadge(u * 42f)
+                    Spacer(Modifier.width(u * 12f))
+                    LetteredText(
+                        text = stringResource(R.string.xp_gained_format, xp),
+                        size = fs(50f),
+                        fill = XpOrange,
+                        outline = null
+                    )
+                }
+                FitText(
+                    text = explanation,
+                    style = PaintedStyle(color = ResultInk, fontSize = fs(24f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+                    maxLines = 1,
+                    minScale = 0.6f,
+                    modifier = Modifier.fillMaxWidth().height(u * 28f)
+                )
+            }
         }
-        FitText(
-            text = explanation,
-            style = PaintedStyle(color = ResultInk, fontSize = fs(25f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
-            maxLines = 1,
-            minScale = 0.6f,
-            modifier = box(500f, 314f, 852f, 348f)
-        )
     }
 }
 
@@ -150,8 +169,7 @@ private fun StarBadge(size: Dp) {
         Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFC21A), modifier = Modifier.fillMaxSize(0.8f))
     }
 }
-
-/** What a stat card shows on its left: a picture from the game's art, or an icon in a coloured disc. */
+/** What a stat card shows on its left: a painted disc or picture, or an icon in a coloured disc. */
 internal sealed interface StatIcon {
     data class Art(val res: Int) : StatIcon
     data class Disc(val icon: ImageVector, val color: Color) : StatIcon
@@ -159,59 +177,66 @@ internal sealed interface StatIcon {
 
 internal data class ResultStat(val icon: StatIcon, val label: String, val value: String, val valueColor: Color)
 
-/** The round's numbers as cream cards two to a row (an odd last one centred): hits, misses, stars, gold, bonuses. */
+/** The round's numbers as painted cards two to a row (an odd last one centred): hits, misses, stars, gold, bonuses. */
 @Composable
-internal fun ResultStatGrid(stats: List<ResultStat>, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+internal fun ResultStatGrid(stats: List<ResultStat>, u: Dp, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(u * 8f)) {
         stats.chunked(2).forEach { pair ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(u * 12f), modifier = Modifier.fillMaxWidth()) {
                 if (pair.size == 1) Spacer(Modifier.weight(0.5f))
-                pair.forEach { StatCard(it, Modifier.weight(1f)) }
+                pair.forEachIndexed { i, stat -> StatCard(stat, u, leafOnRight = pair.size == 1 || i == 1, modifier = Modifier.weight(1f)) }
                 if (pair.size == 1) Spacer(Modifier.weight(0.5f))
             }
         }
     }
 }
 
+// rs_card_a has its leaf on the right edge, rs_card_b on the left: the outer edges of the grid carry them.
 @Composable
-private fun StatCard(stat: ResultStat, modifier: Modifier) {
-    val shape = RoundedCornerShape(16.dp)
-    Row(
-        modifier = modifier
-            .height(52.dp)
-            .shadow(3.dp, shape)
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFFAEE), Color(0xFFFFEFCF))), shape)
-            .border(2.dp, CardBorder, shape)
-            .padding(horizontal = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        when (val icon = stat.icon) {
-            is StatIcon.Art -> Image(painterResource(icon.res), contentDescription = null, modifier = Modifier.size(38.dp))
-            is StatIcon.Disc -> Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .shadow(2.dp, CircleShape)
-                    .background(Brush.verticalGradient(listOf(androidx.compose.ui.graphics.lerp(icon.color, Color.White, 0.25f), icon.color)), CircleShape)
-                    .border(1.5.dp, Color.White, CircleShape),
-                contentAlignment = Alignment.Center
-            ) { Icon(icon.icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp)) }
-        }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-            FitText(
-                text = stat.label,
-                style = PaintedStyle(color = ResultInk, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
-                maxLines = 1,
-                minScale = 0.65f,
-                modifier = Modifier.fillMaxWidth()
-            )
-            FitText(
-                text = stat.value,
-                style = PaintedStyle(color = stat.valueColor, fontSize = 20.sp, textAlign = TextAlign.Center),
-                maxLines = 1,
-                minScale = 0.6f,
-                modifier = Modifier.fillMaxWidth()
-            )
+private fun StatCard(stat: ResultStat, u: Dp, leafOnRight: Boolean, modifier: Modifier) {
+    val fontScale0 = LocalDensity.current.fontScale
+    fun fs(art: Float) = (art * u.value / fontScale0).sp
+    Box(modifier = modifier.height(u * 108f)) {
+        Image(
+            painter = cachedPainterResource(if (leafOnRight) R.drawable.rs_card_a else R.drawable.rs_card_b),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.fillMaxSize()
+        )
+        Row(
+            modifier = Modifier.fillMaxSize().padding(start = u * (if (leafOnRight) 22f else 36f), end = u * (if (leafOnRight) 36f else 22f)),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(u * 6f)
+        ) {
+            Box(Modifier.size(u * 74f), contentAlignment = Alignment.Center) {
+                when (val icon = stat.icon) {
+                    is StatIcon.Art -> Image(painterResource(icon.res), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+                    is StatIcon.Disc -> Box(
+                        modifier = Modifier
+                            .fillMaxSize(0.92f)
+                            .shadow(2.dp, CircleShape)
+                            .background(Brush.verticalGradient(listOf(androidx.compose.ui.graphics.lerp(icon.color, Color.White, 0.25f), icon.color)), CircleShape)
+                            .border(1.5.dp, Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) { Icon(icon.icon, contentDescription = null, tint = Color.White, modifier = Modifier.fillMaxSize(0.62f)) }
+                }
+            }
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+                FitText(
+                    text = stat.label,
+                    style = PaintedStyle(color = ResultInk, fontSize = fs(27f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+                    maxLines = 1,
+                    minScale = 0.6f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                FitText(
+                    text = stat.value,
+                    style = PaintedStyle(color = stat.valueColor, fontSize = fs(50f), textAlign = TextAlign.Center),
+                    maxLines = 1,
+                    minScale = 0.5f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }
@@ -223,29 +248,29 @@ internal fun resultStats(state: GamePhase.Result): List<ResultStat> {
     val red = Color(0xFFE23B32)
     val orange = Color(0xFFE8650F)
     val list = mutableListOf(
-        ResultStat(StatIcon.Disc(Icons.Filled.Check, Color(0xFF34B24A)), stringResource(R.string.result_stat_correct), state.correctCount.toString(), green),
-        ResultStat(StatIcon.Disc(Icons.Filled.Close, Color(0xFFE53935)), stringResource(R.string.result_stat_wrong), state.wrongCount.toString(), red)
+        ResultStat(StatIcon.Art(R.drawable.rs_ic_check), stringResource(R.string.result_stat_correct), state.correctCount.toString(), green),
+        ResultStat(StatIcon.Art(R.drawable.rs_ic_x), stringResource(R.string.result_stat_wrong), state.wrongCount.toString(), red)
     )
     val stars = state.levelStars
     if (stars != null) {
-        list += ResultStat(StatIcon.Disc(Icons.Filled.Star, Color(0xFFF2A100)), stringResource(R.string.result_stat_stars), "★".repeat(stars) + "☆".repeat((3 - stars).coerceAtLeast(0)), orange)
+        list += ResultStat(StatIcon.Art(R.drawable.rs_ic_star), stringResource(R.string.result_stat_stars), "★".repeat(stars) + "☆".repeat((3 - stars).coerceAtLeast(0)), orange)
     } else {
         state.fastestCorrectSeconds?.let {
-            list += ResultStat(StatIcon.Disc(Icons.Filled.Bolt, Color(0xFFF2A100)), stringResource(R.string.result_stat_fastest), stringResource(R.string.result_stat_fastest_value, it), orange)
+            list += ResultStat(StatIcon.Art(R.drawable.rs_ic_bolt), stringResource(R.string.result_stat_fastest), stringResource(R.string.result_stat_fastest_value, it), orange)
         }
     }
     if (state.goldFromAchievements > 0) {
         list += ResultStat(StatIcon.Art(R.drawable.icon_league_trophy), stringResource(R.string.result_stat_achievement), stringResource(R.string.result_gold_amount, state.goldFromAchievements), orange)
     }
     if (state.goldFromLevel > 0) {
-        list += ResultStat(StatIcon.Disc(Icons.Filled.Star, Color(0xFFF2A100)), stringResource(R.string.result_stat_level_gold), stringResource(R.string.result_gold_amount, state.goldFromLevel), orange)
+        list += ResultStat(StatIcon.Art(R.drawable.rs_ic_crown), stringResource(R.string.result_stat_level_gold), stringResource(R.string.result_gold_amount, state.goldFromLevel), orange)
     }
     if (state.goldFromDaily > 0) {
         list += ResultStat(StatIcon.Art(R.drawable.daily_calendar_icon), stringResource(R.string.result_stat_daily_gold), stringResource(R.string.result_gold_amount, state.goldFromDaily), orange)
     }
     val quick = state.quickMatchDailyBonusApplied
     if (quick) {
-        list += ResultStat(StatIcon.Disc(Icons.Filled.Bolt, Color(0xFFE8650F)), stringResource(R.string.result_stat_quick), stringResource(R.string.result_stat_multiplier, 2), orange)
+        list += ResultStat(StatIcon.Art(R.drawable.rs_ic_bolt), stringResource(R.string.result_stat_quick), stringResource(R.string.result_stat_multiplier, 2), orange)
     }
     val mult = state.xpMultiplier
     val eventMult = if (state.xpEventMultiplierApplied) (mult / if (quick) 2 else 1).coerceAtLeast(2) else 0
@@ -254,7 +279,6 @@ internal fun resultStats(state: GamePhase.Result): List<ResultStat> {
     }
     return list
 }
-
 /**
  * The daily-challenge card: the ten answers as ticks and crosses, the streak and the XP it paid, and the green button
  * that shares exactly what is shown here.
@@ -351,9 +375,10 @@ internal fun GreenButton(text: String, onClick: () -> Unit, modifier: Modifier =
 }
 
 /**
- * Every drawing of the round on a wooden board: a plank with "Çizdiğin 10 Kelime" across its top and the sheets in rows
- * of five, each with its number, its tick or cross, the drawing and the word. Tapping a sheet opens the replay. [items]
- * may still be empty (the opponent's drawings loading): then [placeholders] empty sheets keep the board's shape.
+ * Every drawing of the round on the painted board (rs_board, 714 x 300 px): the dog peeking over the frame, the wooden
+ * plank with the title, and the paper below it with the sheets in rows of five, each with its number, its tick or cross,
+ * the drawing and the word. Tapping a sheet opens the replay. [items] may still be empty (the opponent's drawings
+ * loading): then [placeholders] empty sheets keep the board's shape.
  */
 @Composable
 internal fun ResultWordsBoard(
@@ -366,48 +391,47 @@ internal fun ResultWordsBoard(
     modifier: Modifier = Modifier,
     header: (@Composable () -> Unit)? = null
 ) {
-    // The painted board (res_words_board, 1420 x 988 px): the dog and the plank on top, the paper below. Row 647 of
-    // the picture is plain paper and frame, so that one row is what stretches when the sheets need more room; the
-    // rest is drawn at the picture's own proportions. The title sits on the plank (x 466..1301, y 228..390), the
-    // sheets on the paper (x 70..1350, y 420..925).
+    // The board is drawn in three slices at the picture's own scale: rows 0..170 (dog, plank, the paper's top), the one
+    // paper row 170 stretched to whatever height the sheets need, and rows 171..300 (the rest of the paper, the frame).
+    // The plank is at x 285..575, y 56..114; the paper at x 36..668, y 134..268.
     BoxWithConstraints(modifier = modifier) {
-        val u = maxWidth / 1420f
+        val k = maxWidth / 714f
+        val fontScale0 = LocalDensity.current.fontScale
+        fun fs(px: Float) = (px * k.value / fontScale0).sp
         val total = if (items.isEmpty()) placeholders else items.size
         val perRow = 5
         val rows = ((total + perRow - 1) / perRow).coerceAtLeast(1)
-        val sheetW = (maxWidth - u * 140f - 6.dp * (perRow - 1)) / perRow
-        val gridH = sheetW / 0.95f * rows + 10.dp * (rows - 1)
-        // The paper as drawn holds 505 px; anything more stretches the band.
-        val extra = (gridH + u * 40f - u * 505f).coerceAtLeast(0.dp)
-        Box(Modifier.fillMaxWidth().height(u * 988f + extra)) {
-            // Drawn in three slices across the full width: rows 0..647 and 648..988 at the picture's own scale, and
-            // the single paper row 647 stretched to fill whatever height the sheets need in between.
-            val board = androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.res_words_board)
+        val gap = k * 8f
+        val sheetW = (k * 632f - gap * (perRow - 1)) / perRow
+        val gridH = sheetW / 0.95f * rows + gap * (rows - 1)
+        val boardH = maxOf(k * 300f, k * 138f + gridH + k * 36f)
+        Box(Modifier.fillMaxWidth().height(boardH)) {
+            val board = androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.rs_board)
             androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
                 val w = size.width.toInt()
-                val k = size.width / board.width
-                val topH = (647 * k).toInt()
-                val botSrc = board.height - 648
-                val botH = (botSrc * k).toInt()
+                val kk = size.width / board.width
+                val topH = (170 * kk).toInt()
+                val botSrc = board.height - 171
+                val botH = (botSrc * kk).toInt()
                 val h = size.height.toInt()
-                drawImage(board, androidx.compose.ui.unit.IntOffset(0, 0), androidx.compose.ui.unit.IntSize(board.width, 647),
+                drawImage(board, androidx.compose.ui.unit.IntOffset(0, 0), androidx.compose.ui.unit.IntSize(board.width, 170),
                     dstOffset = androidx.compose.ui.unit.IntOffset(0, 0), dstSize = androidx.compose.ui.unit.IntSize(w, topH))
-                drawImage(board, androidx.compose.ui.unit.IntOffset(0, 647), androidx.compose.ui.unit.IntSize(board.width, 1),
+                drawImage(board, androidx.compose.ui.unit.IntOffset(0, 170), androidx.compose.ui.unit.IntSize(board.width, 1),
                     dstOffset = androidx.compose.ui.unit.IntOffset(0, topH), dstSize = androidx.compose.ui.unit.IntSize(w, (h - botH - topH).coerceAtLeast(0) + 1))
-                drawImage(board, androidx.compose.ui.unit.IntOffset(0, 648), androidx.compose.ui.unit.IntSize(board.width, botSrc),
+                drawImage(board, androidx.compose.ui.unit.IntOffset(0, 171), androidx.compose.ui.unit.IntSize(board.width, botSrc),
                     dstOffset = androidx.compose.ui.unit.IntOffset(0, h - botH), dstSize = androidx.compose.ui.unit.IntSize(w, botH))
             }
             // The title on the plank, with the share button at its right end.
             Box(
-                modifier = Modifier.offset(u * 466f, u * 236f).size(u * 835f, u * 146f),
+                modifier = Modifier.offset(k * 285f, k * 56f).size(k * 290f, k * 58f),
                 contentAlignment = Alignment.Center
             ) {
                 if (header != null) {
-                    Box(Modifier.fillMaxWidth().padding(horizontal = 6.dp)) { header() }
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 2.dp)) { header() }
                 } else {
                     LetteredText(
-                        title, 19.sp, maxLines = 1,
-                        modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = if (onShareAll != null) 44.dp else 12.dp),
+                        title, fs(36f), maxLines = 1,
+                        modifier = Modifier.fillMaxWidth().padding(start = k * 8f, end = if (onShareAll != null) k * 50f else k * 8f),
                         title = true
                     )
                 }
@@ -415,21 +439,21 @@ internal fun ResultWordsBoard(
                     Box(
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
-                            .padding(end = 14.dp)
-                            .size(30.dp)
+                            .padding(end = k * 6f)
+                            .size(k * 42f)
                             .background(Color(0x33FFFFFF), CircleShape)
                             .pressable(pressedScale = 0.88f, onClick = onShareAll)
                             .a11yButton(stringResource(R.string.share_all_drawings)),
                         contentAlignment = Alignment.Center
-                    ) { Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp)) }
+                    ) { Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(k * 28f)) }
                 }
             }
             Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxWidth().padding(start = u * 70f, end = u * 70f, top = u * 440f)
+                verticalArrangement = Arrangement.spacedBy(gap),
+                modifier = Modifier.fillMaxWidth().padding(start = k * 40f, end = k * 42f, top = k * 139f)
             ) {
                 (0 until total).chunked(perRow).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(gap), modifier = Modifier.fillMaxWidth()) {
                         row.forEach { n ->
                             WordSheet(
                                 number = n + 1,
@@ -446,7 +470,6 @@ internal fun ResultWordsBoard(
         }
     }
 }
-
 @Composable
 private fun WordSheet(number: Int, item: ResultItem?, wordLanguage: String, onClick: (ResultItem) -> Unit, modifier: Modifier) {
     val sheet = RoundedCornerShape(8.dp)

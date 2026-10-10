@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -55,6 +56,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import com.sualtikasifi.cizimhafiza.presentation.common.ButtonOrange
 import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle
+import com.sualtikasifi.cizimhafiza.presentation.common.FitText
 import com.sualtikasifi.cizimhafiza.presentation.common.InkBrown
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
@@ -81,6 +83,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -193,10 +196,14 @@ fun ResultScreen(
     )
     val stats = resultStats(state)
 
-    // The design top to bottom: the painted head (title, XP), the stat cards, the level, the daily challenge, every
-    // drawing of the round on its board — scrolling when a short phone cannot hold it all — and the two claim buttons
-    // pinned underneath.
-    Box(modifier = Modifier.fillMaxSize()) {
+    // The design top to bottom, all in its own 841-wide units so it holds together on any phone: the painted head (back
+    // button, title, XP plate), the stat cards, the level, the match comparison, the daily challenge, every drawing of the
+    // round on its board, and the two claim buttons pinned underneath. A tall phone shows it all at once; a short one
+    // scrolls the middle.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val u = maxWidth / ResArtW
+        val fontScale0 = LocalDensity.current.fontScale
+        fun fs(art: Float) = (art * u.value / fontScale0).sp
         // The empty workshop: the countdown's backdrop used to be here, and its big dog and dial peeked out between the
         // cards.
         Image(
@@ -212,19 +219,8 @@ fun ResultScreen(
                 modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // The painted head runs up under the status bar (its top rows mirrored into that strip), so no sliver of
-                // the page's backdrop shows above it as a separate layer.
-                Column(Modifier.fillMaxWidth().springIn(index = 0, fromY = -40)) {
-                    androidx.compose.foundation.Image(
-                        painter = cachedPainterResource(R.drawable.res_head3),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        alignment = Alignment.TopCenter,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .windowInsetsTopHeight(androidx.compose.foundation.layout.WindowInsets.statusBars)
-                            .graphicsLayer { scaleY = -1f }
-                    )
+                Spacer(Modifier.windowInsetsTopHeight(androidx.compose.foundation.layout.WindowInsets.statusBars))
+                Box(Modifier.fillMaxWidth().springIn(index = 0, fromY = -40)) {
                     ResultHeader(
                         title = stringResource(R.string.game_over),
                         xp = xpCount,
@@ -233,15 +229,15 @@ fun ResultScreen(
                     )
                 }
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = u * 40f),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(u * 10f)
                 ) {
-                    ResultStatGrid(stats, Modifier.fillMaxWidth().springIn(index = 1, stepMs = 90))
+                    ResultStatGrid(stats, u, Modifier.fillMaxWidth().springIn(index = 1, stepMs = 90))
 
                     if (levelProgress != null) {
                         Box(Modifier.fillMaxWidth().springIn(index = 2, stepMs = 90), contentAlignment = Alignment.Center) {
-                            ResultLevelCard(progress = levelProgress, gainedXp = shownXp, k = 1f)
+                            ResultLevelCard(progress = levelProgress, gainedXp = shownXp)
                         }
                     }
 
@@ -262,7 +258,8 @@ fun ResultScreen(
                             myName = myName,
                             myLevel = levelProgress?.level ?: 1,
                             myFrame = myFrame,
-                            myAvatarUrl = myAvatarUrl
+                            myAvatarUrl = myAvatarUrl,
+                            u = u
                         )
                     }
 
@@ -270,6 +267,7 @@ fun ResultScreen(
                         DuelChallengerVersusCard(
                             duel = duel,
                             playerScore = state.totalScore,
+                            u = u,
                             onRematch = onRematchDuel?.let { rematch ->
                                 { rematch(duel.challengerUid, duel.challengerName) }
                             }
@@ -332,8 +330,8 @@ fun ResultScreen(
 
             Column(
                 // Lifted clear of the bottom edge (and the gesture bar's swipe zone) rather than sitting right on it.
-                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 22.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                modifier = Modifier.fillMaxWidth().padding(start = u * 40f, end = u * 40f, top = u * 8f, bottom = u * 36f),
+                verticalArrangement = Arrangement.spacedBy(u * 8f)
             ) {
                 if (onLevelNextAction != null && nextActionLabel != null) {
                     PaintedPill(
@@ -355,24 +353,33 @@ fun ResultScreen(
                 // Always ends on the home screen. The XP is already banked: "Ödülü Al" just leaves
                 // (and says how much it is), "x2" watches an ad, pays the round a second time, then leaves.
                 val canDouble = onDoubleXp != null && state.xpEarned > 0 && GameConstants.ADMOB_ENABLED && !xpDoubled
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(u * 14f), modifier = Modifier.fillMaxWidth()) {
                     if (canDouble) {
-                        PaintedPill(
-                            res = R.drawable.res_btn_claim,
-                            height = 58.dp,
+                        ArtButton(
+                            res = R.drawable.rs_btn_ad,
+                            u = u,
                             onClick = onDoubleXp!!,
                             modifier = Modifier.weight(1f)
                         ) {
-                            ClaimContent(Icons.Filled.Movie, stringResource(R.string.result_x2_amount, state.xpEarned * 2), stringResource(R.string.result_watch_ad))
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                LetteredText(stringResource(R.string.result_x2_amount, state.xpEarned * 2), fs(40f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.6f, modifier = Modifier.offset(y = -(u * 9f)))
+                                FitText(
+                                    text = stringResource(R.string.result_watch_ad),
+                                    style = PaintedStyle(color = Color.White, fontSize = fs(24f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+                                    maxLines = 1,
+                                    minScale = 0.6f,
+                                    modifier = Modifier.align(Alignment.BottomCenter).offset(y = -(u * 8f)).fillMaxWidth().height(u * 30f)
+                                )
+                            }
                         }
                     }
                     // Where the player's thumb lands, so the XP can fly from exactly there to the home bar.
                     var claimTapWindowPos by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
                     var claimTopLeft by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
                     var claimCenter by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-                    PaintedPill(
-                        res = R.drawable.res_btn_claim,
-                        height = 58.dp,
+                    ArtButton(
+                        res = R.drawable.rs_btn_claim,
+                        u = u,
                         enabled = !(xpDoubled && !startedDoubled),
                         onClick = {
                             if (shownXp > 0 && levelProgress != null) {
@@ -400,10 +407,11 @@ fun ResultScreen(
                             }
                     ) {
                         // Nothing to collect: the button simply moves on instead of offering "0 XP".
-                        if (shownXp > 0) {
-                            ClaimContent(Icons.Filled.CardGiftcard, stringResource(R.string.result_claim_amount, shownXp))
-                        } else {
-                            LetteredText(stringResource(R.string.result_continue), 19.sp, outline = Color(0xFF8A3A00))
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            LetteredText(
+                                if (shownXp > 0) stringResource(R.string.result_claim_amount, shownXp) else stringResource(R.string.result_continue),
+                                fs(38f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f
+                            )
                         }
                     }
                 }
@@ -589,15 +597,85 @@ private fun GhostVersusCard(
     myName: String,
     myLevel: Int,
     myFrame: AvatarFrame,
-    myAvatarUrl: String
+    myAvatarUrl: String,
+    u: androidx.compose.ui.unit.Dp
 ) {
-    val won = playerScore > ghost.opponentScore
-    val drew = playerScore == ghost.opponentScore
-    val accent = when {
-        drew -> MaterialTheme.colorScheme.onSurfaceVariant
-        won -> AppTheme.tokens.success
-        else -> MaterialTheme.colorScheme.error
+    VersusCard(
+        leftName = myName.ifBlank { stringResource(R.string.quick_match_you) },
+        leftScore = playerScore,
+        leftAvatar = {
+            LevelAvatar(
+                level = myLevel,
+                frame = myFrame,
+                size = u * 84f,
+                photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(myAvatarUrl)
+            )
+        },
+        rightName = ghost.nickname,
+        rightScore = ghost.opponentScore,
+        rightAvatar = {
+            LevelAvatar(
+                level = ghost.level,
+                frame = AvatarFrame.resolve(ghost.frameId, ghost.level),
+                size = u * 84f,
+                photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(ghost.nickname)
+            )
+        },
+        u = u
+    )
+}
+
+/**
+ * The comparison against a duel's challenger — same card as [GhostVersusCard], a friend instead of a recorded opponent.
+ * Shown the instant this round finishes: the challenger's score has been sitting on the duel document since they sent it,
+ * so there is nothing left to wait on.
+ *
+ * [onRematch] is only non-null when the caller actually wants the button offered — see ResultScreen's duelChallenger
+ * branch, which only passes one when the screen itself was handed an onRematchDuel callback.
+ */
+@Composable
+private fun DuelChallengerVersusCard(
+    duel: DuelChallengerSummary,
+    playerScore: Int,
+    u: androidx.compose.ui.unit.Dp,
+    onRematch: (() -> Unit)?
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(u * 8f)) {
+        VersusCard(
+            leftName = stringResource(R.string.quick_match_you),
+            leftScore = playerScore,
+            leftAvatar = null,
+            rightName = duel.challengerName,
+            rightScore = duel.challengerScore,
+            rightAvatar = null,
+            u = u
+        )
+        if (onRematch != null) {
+            SecondaryButton(
+                text = stringResource(R.string.duel_rematch_action),
+                onClick = onRematch,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
+}
+
+/**
+ * The painted versus card: you on the left, them on the right, each with name and score (and a picture when there is one),
+ * the outcome on a pill between them over "VS", and a crown on the card's top edge when the player won.
+ */
+@Composable
+private fun VersusCard(
+    leftName: String,
+    leftScore: Int,
+    leftAvatar: (@Composable () -> Unit)?,
+    rightName: String,
+    rightScore: Int,
+    rightAvatar: (@Composable () -> Unit)?,
+    u: androidx.compose.ui.unit.Dp
+) {
+    val won = leftScore > rightScore
+    val drew = leftScore == rightScore
     val outcome = stringResource(
         when {
             drew -> R.string.quick_match_drew
@@ -605,231 +683,75 @@ private fun GhostVersusCard(
             else -> R.string.quick_match_lost
         }
     )
-
-    // One compact row (it used to be a tall card of its own and pushed the result off the screen): you on the left,
-    // the opponent on the right, each with their picture, name and score, and the outcome between them.
-    val shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(3.dp, shape)
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFFAEE), Color(0xFFFFEFCF))), shape)
-            .border(2.dp, Color(0xFFE9A23B), shape)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        CompactDuelist(
-            name = myName.ifBlank { stringResource(R.string.quick_match_you) },
-            level = myLevel,
-            frame = myFrame,
-            photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(myAvatarUrl),
-            score = playerScore,
-            highlighted = won,
-            mirrored = false,
-            modifier = Modifier.weight(1f)
+    val pill = when {
+        drew -> Color(0xFF8A6A50)
+        won -> Color(0xFF2EA043)
+        else -> Color(0xFFD23B2E)
+    }
+    val winGreen = Color(0xFF1F9A3A)
+    val loseRed = Color(0xFF8E1F1F)
+    val fontScale0 = LocalDensity.current.fontScale
+    fun fs(art: Float) = (art * u.value / fontScale0).sp
+    val cardW = 761f
+    Box(Modifier.fillMaxWidth().height(u * 128f)) {
+        NinePatch(
+            res = R.drawable.rs_vs,
+            slicePx = 80,
+            edge = u * 65f,
+            sliceYPx = 64,
+            edgeY = u * 52f,
+            modifier = Modifier.fillMaxSize()
         )
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 4.dp)) {
-            Text(
-                text = outcome,
-                style = PaintedStyle(color = Color.White, fontSize = 13.sp, textAlign = TextAlign.Center),
+        @Composable
+        fun side(name: String, score: Int, avatar: (@Composable () -> Unit)?, right: Boolean, scoreColor: Color) {
+            val avatarX = if (right) cardW - 24f - 84f else 24f
+            val textX = if (avatar == null) (if (right) cardW - 40f - 200f else 40f) else if (right) cardW - 128f - 200f else 128f
+            if (avatar != null) Box(Modifier.offset(u * avatarX, u * 22f).size(u * 84f)) { avatar() }
+            FitText(
+                text = name,
+                style = PaintedStyle(color = ResultInk, fontSize = fs(30f), textAlign = if (right) TextAlign.End else TextAlign.Start),
                 maxLines = 1,
-                modifier = Modifier
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
-                    .background(accent)
-                    .padding(horizontal = 10.dp, vertical = 2.dp)
+                minScale = 0.55f,
+                contentAlignment = if (right) Alignment.CenterEnd else Alignment.CenterStart,
+                modifier = Modifier.offset(u * textX, u * 20f).size(u * 200f, u * 38f)
             )
-            Text(
-                text = stringResource(R.string.quick_match_versus),
-                style = PaintedStyle(color = Color(0xFF8A6A50), fontSize = 13.sp, textAlign = TextAlign.Center),
-                modifier = Modifier.padding(top = 2.dp)
+            FitText(
+                text = score.toString(),
+                style = PaintedStyle(color = scoreColor, fontSize = fs(58f), textAlign = if (right) TextAlign.End else TextAlign.Start),
+                maxLines = 1,
+                minScale = 0.5f,
+                contentAlignment = if (right) Alignment.CenterEnd else Alignment.CenterStart,
+                modifier = Modifier.offset(u * textX, u * 56f).size(u * 200f, u * 62f)
             )
         }
-        CompactDuelist(
-            name = ghost.nickname,
-            level = ghost.level,
-            frame = AvatarFrame.resolve(ghost.frameId, ghost.level),
-            photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(ghost.nickname),
-            score = ghost.opponentScore,
-            highlighted = !won && !drew,
-            mirrored = true,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-/** One side of the compact versus row: the framed picture, and beside it the name over the score. */
-@Composable
-private fun CompactDuelist(
-    name: String,
-    level: Int,
-    frame: AvatarFrame,
-    photo: com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto,
-    score: Int,
-    highlighted: Boolean,
-    mirrored: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp, if (mirrored) Alignment.End else Alignment.Start)
-    ) {
-        val text: @Composable () -> Unit = {
-            Column(horizontalAlignment = if (mirrored) Alignment.End else Alignment.Start, modifier = Modifier.weight(1f, fill = false)) {
-                Text(
-                    text = name,
-                    style = PaintedStyle(color = InkBrown, fontSize = 14.sp, textAlign = if (mirrored) TextAlign.End else TextAlign.Start),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "$score",
-                    style = PaintedStyle(color = if (highlighted) AppTheme.tokens.success else InkBrown, fontSize = 22.sp),
-                    maxLines = 1
-                )
-            }
-        }
-        if (mirrored) text()
-        LevelAvatar(level = level, frame = frame, size = 40.dp, photo = photo)
-        if (!mirrored) text()
-    }
-}
-
-/** One side of the Quick Match comparison: picture in its frame, name, the rank/level label, and the score. */
-@Composable
-private fun Duelist(
-    name: String,
-    level: Int,
-    frame: AvatarFrame,
-    photo: com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto,
-    score: Int,
-    highlighted: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        LevelAvatar(level = level, frame = frame, size = 52.dp, photo = photo)
-        Spacer(modifier = Modifier.height(3.dp))
-        Text(
-            text = name,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(level = level, bullet = false)
-        Text(
-            text = "$score",
-            style = MaterialTheme.typography.headlineSmall,
-            color = if (highlighted) AppTheme.tokens.success else MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.ExtraBold
-        )
-    }
-}
-
-@Composable
-private fun VersusSide(
-    name: String,
-    score: Int,
-    highlighted: Boolean,
-    avatar: (@Composable () -> Unit)?
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // Only the opponent gets a ring. The player already knows what their
-        // own looks like, and a second one here would make the card read as
-        // two strangers rather than as "you against them".
-        avatar?.invoke()
-        if (avatar != null) Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = name,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = "$score",
-            style = MaterialTheme.typography.titleLarge,
-            color = if (highlighted) AppTheme.tokens.success else MaterialTheme.colorScheme.onSurface,
-            fontWeight = if (highlighted) FontWeight.Bold else FontWeight.Normal
-        )
-    }
-}
-
-/**
- * The comparison against a duel's challenger — same shape as [GhostVersusCard],
- * a friend instead of a recorded opponent. Shown the instant this round
- * finishes: the challenger's score has been sitting on the duel document
- * since they sent it, so there is nothing left to wait on.
- *
- * [onRematch] is only non-null when the caller actually wants the button
- * offered — see ResultScreen's duelChallenger branch, which only passes one
- * when the screen itself was handed an onRematchDuel callback.
- */
-@Composable
-private fun DuelChallengerVersusCard(duel: DuelChallengerSummary, playerScore: Int, onRematch: (() -> Unit)?) {
-    val won = playerScore > duel.challengerScore
-    val drew = playerScore == duel.challengerScore
-    val accent = when {
-        drew -> MaterialTheme.colorScheme.onSurfaceVariant
-        won -> AppTheme.tokens.success
-        else -> MaterialTheme.colorScheme.error
-    }
-
-    PaperPanel(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        side(leftName, leftScore, leftAvatar, right = false, scoreColor = if (won) winGreen else if (drew) ResultInk else loseRed)
+        side(rightName, rightScore, rightAvatar, right = true, scoreColor = if (!won && !drew) winGreen else if (drew) ResultInk else loseRed)
+        Box(
+            modifier = Modifier
+                .offset(u * (cardW - 190f) / 2f, u * 26f)
+                .size(u * 190f, u * 40f)
+                .clip(RoundedCornerShape(50))
+                .background(pill)
+                .border(2.dp, Color(0x55FFFFFF), RoundedCornerShape(50)),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = stringResource(
-                    when {
-                        drew -> R.string.quick_match_drew
-                        won -> R.string.quick_match_won
-                        else -> R.string.quick_match_lost
-                    }
-                ),
-                style = MaterialTheme.typography.titleSmall,
-                color = accent,
-                fontWeight = FontWeight.Bold
+            LetteredText(outcome, fs(28f), outline = Color(0xFF1B3A10), maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth().padding(horizontal = u * 8f))
+        }
+        Text(
+            text = stringResource(R.string.quick_match_versus),
+            style = PaintedStyle(color = Color(0xFF8A6A50), fontSize = fs(36f), textAlign = TextAlign.Center),
+            modifier = Modifier.offset(u * (cardW - 190f) / 2f, u * 74f).width(u * 190f)
+        )
+        if (won) {
+            Image(
+                painterResource(R.drawable.lobby_crown),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.offset(u * (cardW - 76f) / 2f, -(u * 32f)).size(u * 76f, u * 66f)
             )
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                VersusSide(
-                    name = stringResource(R.string.quick_match_you),
-                    score = playerScore,
-                    highlighted = won,
-                    avatar = null
-                )
-                Text(
-                    text = stringResource(R.string.quick_match_versus),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                VersusSide(
-                    name = duel.challengerName,
-                    score = duel.challengerScore,
-                    highlighted = !won && !drew,
-                    avatar = null
-                )
-            }
-            if (onRematch != null) {
-                Spacer(modifier = Modifier.height(10.dp))
-                SecondaryButton(
-                    text = stringResource(R.string.duel_rematch_action),
-                    onClick = onRematch,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
         }
     }
 }
-
 /**
  * Two chips over the gallery: your ten drawings, or theirs.
  *
@@ -902,77 +824,107 @@ private fun GalleryChip(label: String, selected: Boolean, enabled: Boolean, onCl
 
 /** Where the round left the player on the level ladder, with the bar animating from where it started. */
 @Composable
-private fun ResultLevelCard(progress: com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState, gainedXp: Int, k: Float) {
+private fun ResultLevelCard(progress: com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState, gainedXp: Int) {
     val before = com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState.forXp(progress.totalXp - gainedXp)
     val leveledUp = before.level < progress.level
     val fraction = remember { androidx.compose.animation.core.Animatable(if (leveledUp) 0f else before.progressFraction) }
     LaunchedEffect(progress.totalXp) {
         fraction.animateTo(progress.progressFraction, androidx.compose.animation.core.tween(1100))
     }
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth(k).aspectRatio(940f / 204f)) {
-        val u = maxWidth / 940f
-        fun fs(art: Float) = (u.value * art).sp
-        // A whole framed card (the old picture was a strip cut out of a bigger one, its frame cut off on both sides).
-        NinePatch(res = R.drawable.league_card, slicePx = 100, edge = u * 70f, modifier = Modifier.fillMaxSize())
+    // rs_level_blank (698 x 140 px) is the card with its crown; the lettering and the live bar go where the design has them.
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth().aspectRatio(698f / 140f)) {
+        val s = maxWidth / 698f
+        val fontScale0 = LocalDensity.current.fontScale
+        fun fs(px: Float) = (px * s.value / fontScale0).sp
         Image(
-            painterResource(R.drawable.lobby_crown),
+            painter = cachedPainterResource(R.drawable.rs_level_blank),
             contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.offset(u * 108f, u * 30f).size(u * 76f, u * 66f)
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.fillMaxSize()
         )
-        com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+        FitText(
             text = stringResource(R.string.result_level_label, progress.level),
-            style = PaintedStyle(color = InkBrown, fontSize = fs(54f), textAlign = TextAlign.Start),
+            style = PaintedStyle(color = InkBrown, fontSize = fs(38f), textAlign = TextAlign.Start),
             contentAlignment = Alignment.CenterStart,
-            modifier = Modifier.offset(u * 196f, u * 34f).size(u * 290f, u * 64f)
+            modifier = Modifier.offset(s * 156f, s * 17f).size(s * 230f, s * 48f)
         )
-        Box(modifier = Modifier.offset(u * 480f, u * 38f).size(u * 352f, u * 56f), contentAlignment = Alignment.CenterEnd) {
+        Box(modifier = Modifier.offset(s * 380f, s * 20f).size(s * 262f, s * 42f), contentAlignment = Alignment.CenterEnd) {
             if (leveledUp) {
                 Box(
                     modifier = Modifier
                         .background(Brush.verticalGradient(listOf(Color(0xFFFFA64D), ButtonOrange)), RoundedCornerShape(50))
-                        .padding(horizontal = 12.dp, vertical = 2.dp)
-                ) { LetteredText(stringResource(R.string.result_level_up), fs(32f), outline = Color(0xFF8A3A00)) }
+                        .padding(horizontal = s * 12f, vertical = s * 1f)
+                ) { LetteredText(stringResource(R.string.result_level_up), fs(26f), outline = Color(0xFF8A3A00)) }
             } else if (!progress.isMaxLevel) {
-                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                FitText(
                     text = stringResource(R.string.home_xp_to_next, progress.xpToNextLevel, progress.level + 1),
-                    style = PaintedStyle(color = InkBrown, fontSize = fs(30f), fontWeight = FontWeight.Bold, textAlign = TextAlign.End),
+                    style = PaintedStyle(color = InkBrown, fontSize = fs(25f), fontWeight = FontWeight.Bold, textAlign = TextAlign.End),
                     contentAlignment = Alignment.CenterEnd,
                     modifier = Modifier.fillMaxSize()
                 )
             }
         }
-        // The XP bar: a tan track, an orange fill and the little dot at its far end, as painted in the picture.
+        // The XP bar: a tan track, an orange fill and the little dot at its far end.
         Box(
             modifier = Modifier
-                .offset(u * 118f, u * 102f)
-                .size(u * 714f, u * 30f)
+                .offset(s * 84f, s * 71f)
+                .size(s * 534f, s * 27f)
                 .background(Color(0xFFE6D3B3), RoundedCornerShape(50))
+                .border(s * 1.5f, Color(0xFFC9AE86), RoundedCornerShape(50))
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
                     .fillMaxWidth(fraction.value.coerceIn(0.04f, 1f))
-                    .background(Brush.verticalGradient(listOf(Color(0xFFFFA23A), Color(0xFFF58A1F))), RoundedCornerShape(50))
+                    .background(Brush.verticalGradient(listOf(Color(0xFFFFA23A), Color(0xFFF2701A))), RoundedCornerShape(50))
             )
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .padding(end = u * 12f)
-                    .size(u * 12f)
+                    .padding(end = s * 9f)
+                    .size(s * 9f)
                     .background(Color(0xFFF58A1F), CircleShape)
             )
         }
-        Box(modifier = Modifier.offset(u * 120f, u * 140f).size(u * 420f, u * 40f), contentAlignment = Alignment.CenterStart) {
+        Box(modifier = Modifier.offset(s * 86f, s * 99f).size(s * 300f, s * 26f), contentAlignment = Alignment.CenterStart) {
             Text(
                 text = stringResource(R.string.home_xp_format, progress.xpIntoLevel, progress.xpForThisLevel),
-                style = PaintedStyle(color = InkBrown, fontSize = fs(31f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
+                style = PaintedStyle(color = InkBrown, fontSize = fs(22f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
                 maxLines = 1
             )
         }
     }
 }
 
+/** One of the screen's wide painted buttons: the picture's icon and leaves kept at its own size, [content] in the middle. */
+@Composable
+private fun ArtButton(
+    res: Int,
+    u: androidx.compose.ui.unit.Dp,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable BoxScope.() -> Unit
+) {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by androidx.compose.animation.core.animateFloatAsState(if (pressed) 0.92f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f), label = "artPress")
+    // The pictures are 104 px tall and drawn 100 units tall; the left 150 px carry the leaf and the painted icon.
+    NinePatch(
+        res = res,
+        slicePx = 150,
+        edge = u * 144f,
+        sliceYPx = 40,
+        edgeY = u * 38f,
+        clampEdgeToHeight = false,
+        modifier = modifier
+            .height(u * 100f)
+            .graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (enabled) 1f else 0.55f }
+            .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
+    ) {
+        Box(Modifier.fillMaxSize().padding(start = u * 140f, end = u * 38f), content = content)
+    }
+}
 /** A parchment panel for the extra cards (quick match, duel, daily challenge). */
 @Composable
 private fun PaperPanel(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
