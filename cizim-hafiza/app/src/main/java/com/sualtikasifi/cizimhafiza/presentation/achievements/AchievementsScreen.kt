@@ -17,6 +17,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
@@ -285,131 +286,125 @@ private fun rewardText(achievement: Achievement): String = when (achievement.rew
     AchievementRewardType.GOLD -> stringResource(R.string.achievement_gold_reward, achievement.goldReward)
 }
 
+/**
+ * The achievement window on its painted card (ach_dialog, 1016 x 1394 px): the badge sits on the golden coin at the
+ * top, the title is lettered on the red ribbon, and everything else is written on the paper below. Every position
+ * below is a share of the card's real width, so the picture is never stretched.
+ */
 @Composable
 private fun AchievementDetailDialog(item: AchievementUiItem, onClaim: () -> Unit, onDismiss: () -> Unit) {
-    // A custom dialog rather than a stock AlertDialog: this is the app's one
-    // "what did I earn / what am I chasing" moment, and Material's default
-    // (small icon, plain title, run of body text, a text button) had none of
-    // the app's own language in it — no raised card, no medallion, no
-    // separation between the condition and the reward.
-    Dialog(onDismissRequest = onDismiss) {
-        WarmCard(corner = 30.dp, raise = 8.dp, modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 26.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // The badge itself, on a tinted disc ringed like the main
-                // menu's logo medallion — gold once earned, muted while it
-                // is still locked.
+    Dialog(onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 18.dp), contentAlignment = Alignment.Center) {
+            val cardW = minOf(maxWidth, 400.dp)
+            val u = cardW / 1016f
+            val ink = Color(0xFF3B2314)
+            val fontScale0 = androidx.compose.ui.platform.LocalDensity.current.fontScale
+            fun fs(px: Float) = (px * u.value / fontScale0).sp
+            Box(Modifier.width(cardW).height(u * 1394f)) {
+                Image(
+                    painter = androidx.compose.ui.res.painterResource(R.drawable.ach_dialog),
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
+                    modifier = Modifier.matchParentSize()
+                )
+                // The badge on the coin (the coin's face is about 215 px across, centred at 503 / 265).
                 Box(
-                    modifier = Modifier
-                        .size(88.dp)
-                        .background(
-                            if (item.unlocked) AppTheme.tokens.gold.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surfaceVariant,
-                            CircleShape
-                        )
-                        .border(3.dp, if (item.unlocked) AppTheme.tokens.gold else AppTheme.tokens.edge, CircleShape),
+                    Modifier.offset(u * 398f, u * 160f).size(u * 210f, u * 210f),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = item.achievement.emoji,
-                        style = MaterialTheme.typography.displaySmall,
+                        fontSize = fs(120f),
                         modifier = Modifier.alpha(if (item.unlocked) 1f else 0.45f)
                     )
                 }
-
-                Spacer(modifier = Modifier.height(14.dp))
-                Text(
+                // The title on the ribbon.
+                com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
                     text = stringResource(item.achievement.titleRes),
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+                    size = fs(64f),
+                    outline = Color(0xFF8A2A10),
+                    modifier = Modifier.offset(u * 250f, u * 372f).size(u * 520f, u * 100f),
+                    minScale = 0.5f
                 )
-
-                Spacer(modifier = Modifier.height(10.dp))
-                TintedBadge(
-                    text = stringResource(
-                        when {
-                            item.unlocked && item.claimed -> R.string.achievement_claimed_label
-                            item.unlocked -> R.string.achievement_unlocked_label
-                            else -> R.string.achievement_locked_label
-                        }
-                    ),
-                    container = if (item.unlocked) AppTheme.tokens.successContainer else MaterialTheme.colorScheme.surfaceVariant,
-                    content = if (item.unlocked) AppTheme.tokens.success else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                if (!item.unlocked) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = stringResource(
-                            R.string.achievement_progress_format,
-                            item.currentValue.coerceAtMost(item.achievement.target),
-                            item.achievement.target
-                        ),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(18.dp))
-                // The condition sits in its own inset panel so it reads as
-                // the answer to the label above it rather than as one more
-                // line of text in a stack. The description is already
-                // phrased as the condition (e.g. "Toplamda 250 puana
-                // ulaştın"), whether the player is still chasing it or
-                // reading it after the fact.
+                // Everything else on the paper (x 90..930, y 570..1320).
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier.offset(u * 100f, u * 570f).size(u * 820f, u * 740f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    Text(
+                    TintedBadge(
                         text = stringResource(
-                            if (item.unlocked) R.string.achievement_condition_label else R.string.achievement_unlock_hint_label
+                            when {
+                                item.unlocked && item.claimed -> R.string.achievement_claimed_label
+                                item.unlocked -> R.string.achievement_unlocked_label
+                                else -> R.string.achievement_locked_label
+                            }
                         ),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        container = if (item.unlocked) AppTheme.tokens.successContainer else Color(0xFFEFE3CF),
+                        content = if (item.unlocked) AppTheme.tokens.success else Color(0xFF7A5A40)
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = stringResource(item.achievement.descriptionRes),
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .background(AppTheme.tokens.gold.copy(alpha = 0.16f), PillShape)
-                        .padding(horizontal = 18.dp, vertical = 10.dp)
-                ) {
-                    Text(text = "\uD83C\uDFC6", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        text = rewardText(item.achievement),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = rewardColor(item.achievement)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(22.dp))
-                if (item.unlocked && !item.claimed) {
-                    PrimaryButton(
-                        text = stringResource(R.string.achievement_claim_button),
-                        onClick = onClaim,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else {
-                    PrimaryButton(
-                        text = stringResource(R.string.close),
-                        onClick = onDismiss,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    if (!item.unlocked) {
+                        Text(
+                            text = stringResource(
+                                R.string.achievement_progress_format,
+                                item.currentValue.coerceAtMost(item.achievement.target),
+                                item.achievement.target
+                            ),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color(0xFF7A5A40)
+                        )
+                    }
+                    // The condition in its own inset panel.
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0x66FFFFFF), RoundedCornerShape(18.dp))
+                            .border(1.5.dp, Color(0x55C98543), RoundedCornerShape(18.dp))
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = stringResource(
+                                if (item.unlocked) R.string.achievement_condition_label else R.string.achievement_unlock_hint_label
+                            ),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color(0xFF7A5A40)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(item.achievement.descriptionRes),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = ink,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .background(AppTheme.tokens.gold.copy(alpha = 0.22f), PillShape)
+                            .padding(horizontal = 18.dp, vertical = 8.dp)
+                    ) {
+                        Text(text = "\uD83C\uDFC6", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = rewardText(item.achievement),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = rewardColor(item.achievement)
+                        )
+                    }
+                    if (item.unlocked && !item.claimed) {
+                        PrimaryButton(
+                            text = stringResource(R.string.achievement_claim_button),
+                            onClick = onClaim,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        PrimaryButton(
+                            text = stringResource(R.string.close),
+                            onClick = onDismiss,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         }
