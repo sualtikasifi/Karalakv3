@@ -416,7 +416,7 @@
     <string name="report_bug_title">Sorun Bildir</string>
     <string name="report_bug_hint">Bir öneri mi getirdin, yoksa bir sorunla mı karşılaştın? Kısaca anlat, cihaz bilgilerinle birlikte bize ulaşsın.</string>
     <string name="report_bug_intro_title">Bir sorun mu yaşıyorsun?</string>
-    <string name="report_bug_intro_body">Karşılaştığın bir hatayı, önerini veya sorunu bizimle paylaşabilirsin. En kısa sürede dönüş yapacağız.</string>
+    <string name="report_bug_intro_body">Karşılaştığın bir hatayı, önerini veya sorunu bizimle paylaşabilirsin. En kısa sürede talebini inceleyeceğiz.</string>
     <string name="report_bug_category_label">Bildirim Türü</string>
     <string name="report_bug_category_suggestion">Öneri</string>
     <string name="report_bug_category_complaint">Şikayet</string>
@@ -726,7 +726,7 @@
     <string name="account_xp_max">En üst seviyedesin</string>
     <string name="account_guest_hint">Google hesabını bağla: ilerlemen yedeklensin, başka bir telefonda da kaldığın yerden devam et.</string>
     <string name="account_danger_title">Tehlikeli bölge</string>
-    <string name="league_friends_total_caption">Arkadaşlar · toplam XP</string>
+    <string name="league_friends_total_caption">Arkadaşlar · Toplam XP</string>
     <string name="league_reward_top3">İlk 3\'e</string>
     <string name="league_monthly_title">Bu ayki XP\'in</string>
     <string name="league_monthly_rank">Sıran #%1$d</string>

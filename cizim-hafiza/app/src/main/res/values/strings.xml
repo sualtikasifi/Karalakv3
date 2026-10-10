@@ -408,7 +408,7 @@
     <string name="report_bug_title">Report a Bug</string>
     <string name="report_bug_hint">Got a suggestion, or ran into a problem? Briefly describe it — your device info comes along with it.</string>
     <string name="report_bug_intro_title">Having a problem?</string>
-    <string name="report_bug_intro_body">Share a bug you ran into, an idea or a problem with us. We will get back to you as soon as we can.</string>
+    <string name="report_bug_intro_body">Share a bug you ran into, an idea or a problem with us. We will look into your request as soon as possible.</string>
     <string name="report_bug_category_label">Report Type</string>
     <string name="report_bug_category_suggestion">Suggestion</string>
     <string name="report_bug_category_complaint">Complaint</string>
@@ -716,7 +716,7 @@
     <string name="account_xp_max">You are at the top level</string>
     <string name="account_guest_hint">Link your Google account to back up your progress and pick up where you left off on another phone.</string>
     <string name="account_danger_title">Danger zone</string>
-    <string name="league_friends_total_caption">Friends · total XP</string>
+    <string name="league_friends_total_caption">Friends · Total XP</string>
     <string name="league_reward_top3">for the top 3</string>
     <string name="league_monthly_title">Your XP this month</string>
     <string name="league_monthly_rank">Rank #%1$d</string>
