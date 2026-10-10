@@ -80,6 +80,4 @@ sleep 4
 clear_overlays
 shot qs_home
 adb shell input tap 540 1148
-sleep 1.5; shot qs_01
-sleep 1.0; shot qs_02
-sleep 1.0; shot qs_03
+for i in 1 2 3 4 5 6 7 8; do shot qs_0$i; sleep 0.3; done
