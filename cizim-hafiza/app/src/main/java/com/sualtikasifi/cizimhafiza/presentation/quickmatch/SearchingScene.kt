@@ -57,8 +57,8 @@ import kotlin.math.sin
 // bg_qm_search is this size: the workshop with the hanging sign, the two mascots drawing and the long table between
 // them. It is scaled to fill the screen's height (a phone is narrower than the picture, so its sides are trimmed —
 // only wall and table out there) and everything live is laid over it by the picture's own coordinates.
-private const val ArtW = 941f
-private const val ArtH = 1670f
+private const val ArtW = 841f
+private const val ArtH = 1870f
 
 private val Ink = Color(0xFF3B2314)
 
@@ -109,29 +109,29 @@ internal fun SearchingScene(modifier: Modifier = Modifier) {
             painter = cachedPainterResource(R.drawable.qm_sign),
             contentDescription = null,
             contentScale = ContentScale.FillBounds,
-            modifier = box(100f, 192f, 840f, 567f)
+            modifier = box(60f, 190f, 780f, 555f)
         )
         LetteredText(
             text = stringResource(R.string.quick_match_searching_title),
-            size = fs(118f),
+            size = fs(106f),
             fill = Color.White,
             outline = Color(0xFF5A2815),
-            modifier = box(278f, 340f, 686f, 432f),
+            modifier = box(233f, 334f, 630f, 424f),
             minScale = 0.45f,
             title = true
         )
         val second = stringResource(R.string.quick_match_searching_title2).trimEnd('…', '.', ' ')
         Row(
-            modifier = box(270f, 416f, 694f, 482f),
+            modifier = box(225f, 408f, 637f, 472f),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            LetteredText(second, fs(66f), outline = Color(0xFF5A2815), modifier = Modifier.weight(1f, fill = false), minScale = 0.45f, title = true)
+            LetteredText(second, fs(60f), outline = Color(0xFF5A2815), modifier = Modifier.weight(1f, fill = false), minScale = 0.45f, title = true)
             // Three dots that fill in one by one, then start over; their room is always kept so the line never shifts.
             repeat(3) { i ->
                 LetteredText(
                     ".",
-                    fs(66f),
+                    fs(60f),
                     outline = Color(0xFF5A2815),
                     modifier = Modifier.graphicsLayer { alpha = if (dots.value >= i + 1f) 1f else 0.18f },
                     title = true
@@ -141,7 +141,7 @@ internal fun SearchingScene(modifier: Modifier = Modifier) {
 
         // ---- The sheet on the table, and the pencil drawing on it ---------------------------------------------
         Box(
-            modifier = box(262f, 1030f, 680f, 1338f)
+            modifier = box(215f, 1110f, 625f, 1415f)
                 .graphicsLayer {
                     rotationZ = -3f + sway.value * 0.6f
                 }
@@ -171,7 +171,7 @@ internal fun SearchingScene(modifier: Modifier = Modifier) {
 
         // ---- What is going on ----------------------------------------------------------------------------------
         Column(
-            modifier = box(150f, 1372f, 790f, 1500f)
+            modifier = box(70f, 1480f, 770f, 1610f)
                 .shadow(androidx.compose.ui.unit.Dp(6f), RoundedCornerShape(50))
                 .background(Brush.verticalGradient(listOf(Color(0xFFFFF8E8), Color(0xFFFCE9C8))), RoundedCornerShape(50))
                 .border(androidx.compose.ui.unit.Dp(2f), Color(0xFFE9A23B), RoundedCornerShape(50))
@@ -181,14 +181,14 @@ internal fun SearchingScene(modifier: Modifier = Modifier) {
         ) {
             FitText(
                 text = stringResource(R.string.quick_match_searching_sub),
-                style = PaintedStyle(color = Ink, fontSize = fs(28f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+                style = PaintedStyle(color = Ink, fontSize = fs(26f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
                 maxLines = 2,
                 minScale = 0.6f,
                 modifier = Modifier.fillMaxWidth().weight(1f)
             )
             FitText(
                 text = stringResource(R.string.quick_match_dont_worry_body),
-                style = PaintedStyle(color = Color(0xFFB5531A), fontSize = fs(22f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
+                style = PaintedStyle(color = Color(0xFFB5531A), fontSize = fs(20f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
                 maxLines = 1,
                 minScale = 0.6f,
                 modifier = Modifier.fillMaxWidth()
