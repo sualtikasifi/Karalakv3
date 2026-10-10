@@ -21,6 +21,7 @@ on:
           - tutorial.sh
           - worlds.sh
           - store.sh
+          - qs.sh
           - duel.sh
           - league2.sh
           - race.sh
