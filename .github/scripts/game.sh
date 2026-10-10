@@ -153,4 +153,7 @@ for i in $(seq 1 22); do
   if [ $i -ge 15 ]; then tap_text "Later" || true; sleep 2; fi
   shot ${P}$(printf %02d $((i+1)))
 done
+# The result screen is up by now: open the first drawing's window.
+adb shell input tap 180 1640; sleep 2; shot ${P}98_preview
+adb shell input tap 750 1700; sleep 1; shot ${P}99_preview_replay
 adb logcat -d | grep -E "FATAL|AndroidRuntime" | head -30 > "$OUT/crash_g.txt"
