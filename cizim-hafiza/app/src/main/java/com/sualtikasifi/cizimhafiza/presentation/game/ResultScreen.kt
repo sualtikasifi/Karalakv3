@@ -59,6 +59,9 @@ import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.FitText
 import com.sualtikasifi.cizimhafiza.presentation.common.InkBrown
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
+import com.sualtikasifi.cizimhafiza.presentation.common.a11yButton
+import androidx.compose.foundation.layout.wrapContentSize
 import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import androidx.compose.material.icons.filled.Refresh
@@ -431,66 +434,21 @@ fun ResultScreen(
     if (itemToPreview != null) {
         Dialog(
             onDismissRequest = { previewItem = null },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
+            properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
         ) {
             BackHandler { previewItem = null }
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.94f))
-            ) {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Replayed rather than shown finished: the order the
-                    // strokes went down in is the part of a drawing a
-                    // thumbnail throws away, and it is most of what makes
-                    // somebody else's attempt funny.
-                    ReplayableDrawing(
-                        strokes = itemToPreview.strokes,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(MaterialTheme.shapes.large)
-                            .background(AppTheme.tokens.canvasPaper)
-                    )
-                    Text(
-                        text = itemToPreview.word.capitalizeForWordLanguage(wordLanguage),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.surface,
-                        modifier = Modifier.padding(top = 18.dp, bottom = 20.dp)
-                    )
-                    // Share your own, report somebody else's. The header
-                    // already withholds sharing for the opponent's gallery on
-                    // the grounds that their drawings are not the player's to
-                    // pass on; this preview used to offer it anyway.
-                    if (showingOpponentGallery && onReportOpponentDrawing != null) {
-                        SecondaryButton(
-                            text = stringResource(R.string.report_drawing_action),
-                            onClick = { reportItem = itemToPreview },
-                            icon = Icons.Filled.Flag,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    } else {
-                        PrimaryButton(
-                            text = stringResource(R.string.share_drawing),
-                            onClick = { shareChoiceFor = itemToPreview },
-                            icon = Icons.Filled.Share,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+            DrawingPreviewScene(
+                item = itemToPreview,
+                wordLanguage = wordLanguage,
+                reporting = showingOpponentGallery && onReportOpponentDrawing != null,
+                onClose = { previewItem = null },
+                // Share your own, report somebody else's. The header already withholds sharing for the opponent's gallery on
+                // the grounds that their drawings are not the player's to pass on.
+                onAction = {
+                    if (showingOpponentGallery && onReportOpponentDrawing != null) reportItem = itemToPreview
+                    else shareChoiceFor = itemToPreview
                 }
-                RaisedIconButton(
-                    icon = Icons.Filled.Close,
-                    contentDescription = stringResource(R.string.close),
-                    onClick = { previewItem = null },
-                    modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
-                )
-            }
+            )
         }
     }
 
@@ -1037,5 +995,98 @@ internal fun ResultMark(correct: Boolean, size: androidx.compose.ui.unit.Dp, mod
             tint = Color.White,
             modifier = Modifier.size(size * 0.66f)
         )
+    }
+}
+
+
+// rs_dialog_bg is the design's whole picture: the workshop, the board with the dog and the cat, its paper, the close and
+// replay buttons and the empty orange pill. Everything live is laid over it by the picture's own coordinates (841 x 1870).
+private const val PreviewW = 841f
+private const val PreviewH = 1870f
+
+/**
+ * The window a tapped drawing opens in: the drawing replays on the board's paper, its word is lettered on the board's
+ * plank, the painted replay button plays it again, the painted cross closes it and the orange pill underneath is the
+ * share (or, for the opponent's drawings, report) button.
+ */
+@Composable
+private fun DrawingPreviewScene(
+    item: ResultItem,
+    wordLanguage: String,
+    reporting: Boolean,
+    onClose: () -> Unit,
+    onAction: () -> Unit
+) {
+    var replay by remember { mutableStateOf(0) }
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color(0xFF2A1708))) {
+        val unit = maxOf(maxWidth / PreviewW, maxHeight / PreviewH)
+        val offX = (maxWidth - unit * PreviewW) / 2
+        val offY = (maxHeight - unit * PreviewH) / 2
+        val fontScale0 = LocalDensity.current.fontScale
+        fun fs(art: Float) = (art * unit.value / fontScale0).sp
+        fun box(x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
+            Modifier.offset(offX + unit * x0, offY + unit * y0)
+                // Unbounded: the picture can be wider or taller than the screen, and a plain size() would be clamped to it.
+                .wrapContentSize(Alignment.TopStart, unbounded = true)
+                .size(unit * (x1 - x0), unit * (y1 - y0))
+
+        Image(
+            painter = cachedPainterResource(R.drawable.rs_dialog_bg),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds,
+            modifier = box(0f, 0f, PreviewW, PreviewH)
+        )
+        // The word, on the board's plank.
+        LetteredText(
+            text = item.word.capitalizeForWordLanguage(wordLanguage),
+            size = fs(54f),
+            outline = Color(0xFF4A2410),
+            modifier = box(215f, 478f, 690f, 548f),
+            minScale = 0.45f,
+            title = true
+        )
+        // The drawing, on a white sheet in the middle of the paper (the replay button sits on its lower right corner's side).
+        ReplayableDrawing(
+            strokes = item.strokes,
+            showReplayButton = false,
+            externalReplay = replay,
+            modifier = box(181f, 589f, 661f, 1069f)
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(unit * 26f))
+                .background(AppTheme.tokens.canvasPaper)
+        )
+        // The painted buttons, made live.
+        Box(
+            box(704f, 188f, 828f, 316f)
+                .pressable(pressedScale = 0.9f, onClick = onClose)
+                .a11yButton(stringResource(R.string.close))
+        )
+        Box(
+            box(650f, 1000f, 800f, 1140f)
+                .pressable(pressedScale = 0.9f, onClick = { replay++ })
+                .a11yButton(stringResource(R.string.replay_drawing))
+        )
+        Box(
+            box(150f, 1205f, 692f, 1345f)
+                .pressable(pressedScale = 0.95f, onClick = onAction)
+                .a11yButton(stringResource(if (reporting) R.string.report_drawing_action else R.string.share_drawing)),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                Icon(
+                    if (reporting) Icons.Filled.Flag else Icons.Filled.Share,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(unit * 56f)
+                )
+                Spacer(Modifier.width(unit * 14f))
+                LetteredText(
+                    stringResource(if (reporting) R.string.report_drawing_action else R.string.share_drawing),
+                    fs(54f),
+                    outline = Color(0xFF8A3A00),
+                    minScale = 0.5f,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+            }
+        }
     }
 }

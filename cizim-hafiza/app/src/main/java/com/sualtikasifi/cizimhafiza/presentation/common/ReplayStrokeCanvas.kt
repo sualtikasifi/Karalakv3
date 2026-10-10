@@ -129,13 +129,23 @@ fun ReplayableDrawing(
     modifier: Modifier = Modifier,
     strokeColor: Color = PenColor,
     strokeWidthPx: Float = 9f,
-    penSkin: PenSkin? = null
+    penSkin: PenSkin? = null,
+    /** False when the screen draws its own replay button (see [externalReplay]). */
+    showReplayButton: Boolean = true,
+    /** Bumped by a screen's own replay button: every increase plays the drawing again from the start. */
+    externalReplay: Int = 0
 ) {
     // Keyed on the drawing: opening a different one starts its own playback
     // from zero instead of inheriting the previous drawing's finished state
     // and showing a replay button over a blank canvas.
     var playToken by remember(strokes) { mutableIntStateOf(0) }
     var finished by remember(strokes) { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(externalReplay) {
+        if (externalReplay > 0) {
+            finished = false
+            playToken++
+        }
+    }
 
     Box(modifier = modifier) {
         ReplayStrokeCanvas(
@@ -147,7 +157,7 @@ fun ReplayableDrawing(
             playToken = playToken,
             onFinished = { finished = true }
         )
-        if (finished) {
+        if (finished && showReplayButton) {
             RaisedIconButton(
                 icon = Icons.Filled.Replay,
                 contentDescription = stringResource(R.string.replay_drawing),
