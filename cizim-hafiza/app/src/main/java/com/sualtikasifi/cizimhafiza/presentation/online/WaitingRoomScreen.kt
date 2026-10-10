@@ -433,7 +433,7 @@ fun WaitingRoomScreen(
         // Centred on the plank's front face (268..440 of the 2401-px picture), nudged down a little because the
         // lettering's line box leaves room for descenders that "Lobi" does not have.
         Box(
-            modifier = Modifier.fillMaxWidth().offset(y = sceneY(354f / 2401f) - 30.dp + 3.dp).height(60.dp),
+            modifier = Modifier.fillMaxWidth().offset(y = sceneY(354f / 2401f) - 30.dp + 1.dp).height(60.dp),
             contentAlignment = Alignment.Center
         ) {
             LetteredText(signTitle, 34.sp, title = true)
