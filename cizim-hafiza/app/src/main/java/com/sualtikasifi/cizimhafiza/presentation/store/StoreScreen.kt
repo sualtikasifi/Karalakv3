@@ -785,10 +785,16 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
             val w = maxWidth
             val h = maxHeight
             Image(painterResource(R.drawable.st_card_daily), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
-            com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.5f, Modifier.offset(w * 0.1f, h * 0.27f))
-            Column(Modifier.offset(w * 0.3f, h * 0.27f).size(w * 0.37f, h * 0.55f)) {
-                Text(text = stringResource(type.labelRes()), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Ink, maxLines = 1)
-                Text(text = stringResource(type.descRes()), fontSize = 11.sp, lineHeight = 13.sp, color = Ink.copy(alpha = 0.8f), maxLines = 3)
+            com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.46f, Modifier.offset(w * 0.1f, h * 0.29f))
+            // The text stays between the joker's tile and the painted stars / gift at the right.
+            Column(Modifier.offset(w * 0.32f, h * 0.27f).size(w * 0.29f, h * 0.55f)) {
+                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                    text = stringResource(type.labelRes()),
+                    style = androidx.compose.ui.text.TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Ink, textAlign = TextAlign.Start),
+                    maxLines = 1, minScale = 0.6f, contentAlignment = Alignment.CenterStart,
+                    modifier = Modifier.fillMaxWidth().height(20.dp)
+                )
+                Text(text = stringResource(type.descRes()), fontSize = 10.sp, lineHeight = 12.sp, color = Ink.copy(alpha = 0.8f), maxLines = 3)
             }
             // The wooden tag hangs over the card's top-left edge.
             Box(
@@ -847,28 +853,23 @@ private fun JokerCard(
         val h = maxHeight
         Image(painterResource(R.drawable.st_card_joker), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
         com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.42f, Modifier.offset(w * 0.1f, h * 0.3f))
-        Row(Modifier.offset(w * 0.34f, h * 0.12f).size(w * 0.56f, h * 0.2f), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = stringResource(type.labelRes()),
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 14.sp,
-                color = Ink,
-                maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-        }
+        // Title and description stay left of the painted stars (they start at about 0.68 of the card's width).
+        com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+            text = stringResource(type.labelRes()),
+            style = androidx.compose.ui.text.TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Ink, textAlign = TextAlign.Start),
+            maxLines = 1, minScale = 0.6f, contentAlignment = Alignment.CenterStart,
+            modifier = Modifier.offset(w * 0.34f, h * 0.12f).size(w * 0.33f, h * 0.2f)
+        )
         Box(Modifier.offset(w * 0.1f, h * 0.74f).clip(RoundedCornerShape(50)).background(Color(0xFFFFE6C2)).padding(horizontal = 8.dp, vertical = 2.dp)) {
             Text(text = stringResource(R.string.joker_owned, owned), fontSize = 9.5.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB5441A), maxLines = 1)
         }
         Text(
             text = stringResource(type.descRes()),
-            fontSize = 10.5.sp,
-            lineHeight = 12.sp,
+            fontSize = 9.5.sp,
+            lineHeight = 11.sp,
             color = Ink.copy(alpha = 0.78f),
-            maxLines = 2,
-            modifier = Modifier.offset(w * 0.34f, h * 0.32f).size(w * 0.56f, h * 0.2f)
+            maxLines = 3,
+            modifier = Modifier.offset(w * 0.34f, h * 0.32f).size(w * 0.33f, h * 0.27f)
         )
         Row(
             Modifier.offset(w * 0.34f, h * 0.58f).size(w * 0.56f, h * 0.27f),
@@ -887,14 +888,11 @@ private fun JokerCard(
                         CoinPrice(price)
                     } else {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy((-2).dp)) {
-                            Text(
+                            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                                 text = stringResource(R.string.joker_buy_bulk, qty, JokerType.BULK_DISCOUNT_PERCENT),
-                                fontSize = 8.sp,
-                                lineHeight = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White.copy(alpha = 0.95f),
-                                style = PillTextShadow,
-                                maxLines = 1
+                                style = PillTextShadow.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.95f), textAlign = TextAlign.Center),
+                                maxLines = 1, minScale = 0.6f,
+                                modifier = Modifier.fillMaxWidth(0.82f).height(11.dp)
                             )
                             CoinPrice(price, size = 13.sp, coin = 14.dp)
                         }
