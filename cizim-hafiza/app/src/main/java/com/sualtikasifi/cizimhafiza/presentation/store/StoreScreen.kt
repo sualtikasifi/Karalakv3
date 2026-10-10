@@ -269,10 +269,10 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             }
 
             // The title, lettered on the wooden plank: both words in ONE size, one under the other 48 picture px apart,
-            // the pair centred on the plank's face (x 425, y 364 of the 841 x 1870 picture; measured on a screenshot).
+            // the pair centred on the plank's face (x 425, y 357 of the 841 x 1870 picture; measured on a screenshot).
             Box(
                 modifier = Modifier
-                    .offset((artOffX + (425f - 190f) * artScale).dp, ((364f - 70f) * artScale).dp)
+                    .offset((artOffX + (425f - 190f) * artScale).dp, ((357f - 70f) * artScale).dp)
                     .size((380f * artScale).dp, (140f * artScale).dp)
             ) {
                 com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
@@ -672,20 +672,22 @@ private fun PenCard(
         val h = maxHeight
         Image(painterResource(skin.cardRes()), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
         // Name and tagline hug each other; the button sits clear of the card's lower frame.
-        // The text clips at its own line box, so each line is given room for its descenders and the tagline is
-        // pulled up against the name with an offset instead of a tight line height.
-        Column(Modifier.offset(w * 0.4f, h * 0.415f).size(w * 0.55f, h * 0.27f)) {
-            Text(
+        // Name and tagline are right-aligned, ending where the button ends: the pen (and its charm, like Buz's snowflake)
+        // fills the card's left side, so text growing from the left used to run into it. The text clips at its own
+        // line box, so each line has room for its descenders and the tagline is pulled up to the name by an offset.
+        Column(Modifier.offset(w * 0.42f, h * 0.415f).size(w * 0.48f, h * 0.27f), horizontalAlignment = Alignment.End) {
+            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                 text = stringResource(skin.labelRes),
-                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Ink, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 18.sp),
-                maxLines = 1
+                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Ink, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 18.sp, textAlign = TextAlign.End),
+                maxLines = 1, minScale = 0.65f, contentAlignment = Alignment.CenterEnd,
+                modifier = Modifier.fillMaxWidth().height(20.dp)
             )
             skin.taglineRes()?.let {
-                Text(
+                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                     text = stringResource(it),
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Ink.copy(alpha = 0.7f), fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, lineHeight = 14.sp),
-                    maxLines = 1,
-                    modifier = Modifier.offset(y = (-4).dp)
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Ink.copy(alpha = 0.7f), fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, lineHeight = 14.sp, textAlign = TextAlign.End),
+                    maxLines = 1, minScale = 0.7f, contentAlignment = Alignment.CenterEnd,
+                    modifier = Modifier.fillMaxWidth().height(15.dp).offset(y = (-3).dp)
                 )
             }
         }
