@@ -253,13 +253,10 @@ internal fun resultStats(state: GamePhase.Result): List<ResultStat> {
         ResultStat(StatIcon.Art(R.drawable.rs_ic_check), stringResource(R.string.result_stat_correct), state.correctCount.toString(), green),
         ResultStat(StatIcon.Art(R.drawable.rs_ic_x), stringResource(R.string.result_stat_wrong), state.wrongCount.toString(), red)
     )
+    // (The fastest-answer card used to follow here; it is gone to leave room for the drawings.)
     val stars = state.levelStars
     if (stars != null) {
         list += ResultStat(StatIcon.Art(R.drawable.rs_ic_star), stringResource(R.string.result_stat_stars), "★".repeat(stars) + "☆".repeat((3 - stars).coerceAtLeast(0)), orange)
-    } else {
-        state.fastestCorrectSeconds?.let {
-            list += ResultStat(StatIcon.Art(R.drawable.rs_ic_bolt), stringResource(R.string.result_stat_fastest), stringResource(R.string.result_stat_fastest_value, it), orange)
-        }
     }
     if (state.goldFromAchievements > 0) {
         list += ResultStat(StatIcon.Art(R.drawable.icon_league_trophy), stringResource(R.string.result_stat_achievement), stringResource(R.string.result_gold_amount, state.goldFromAchievements), orange)

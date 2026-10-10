@@ -418,8 +418,8 @@ private fun ReportHistoryCard(report: BugReport, onDelete: () -> Unit) {
 }
 
 /**
- * The send button: the design's orange pill in its leaf wreath. With nothing written yet it goes grey and still —
- * solid and legible rather than see-through, so it reads as "not yet", not as broken.
+ * The send button: the design's orange pill in its leaf wreath. It always looks the same; with nothing written yet a tap
+ * simply does nothing (the view model refuses an empty message too).
  */
 @Composable
 private fun SendButton(text: String, enabled: Boolean, busy: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -429,9 +429,6 @@ private fun SendButton(text: String, enabled: Boolean, busy: Boolean, onClick: (
         sliceYPx = 90,
         edge = 44.dp,
         edgeY = 32.dp,
-        tint = if (enabled) null else androidx.compose.ui.graphics.ColorFilter.colorMatrix(
-            androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0.12f) }
-        ),
         modifier = modifier
             .height(70.dp)
             .pressable(enabled = enabled, pressedScale = 0.95f, onClick = onClick)
@@ -447,7 +444,7 @@ private fun SendButton(text: String, enabled: Boolean, busy: Boolean, onClick: (
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
             }
             Spacer(Modifier.width(10.dp))
-            LetteredText(text, 23.sp, outline = if (enabled) Color(0xFF8A3A00) else Color(0xFF6E6A66), modifier = Modifier.wrapContentWidth())
+            LetteredText(text, 23.sp, outline = Color(0xFF8A3A00), modifier = Modifier.wrapContentWidth())
         }
     }
 }
