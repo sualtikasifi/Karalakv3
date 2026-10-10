@@ -339,16 +339,16 @@ private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart
             }
             Box(Modifier.fillMaxWidth().height(u * 1650f)) {
                 // The splash with "Rakibin Hazır!" lettered into it, and the sign under it.
-                Pic(R.drawable.mf_title, 450, 257, 1.36f, 115f, 104f)
-                Pic(R.drawable.mf_tag, 354, 106, 1.12f, 222f, 452f)
+                Pic(R.drawable.mf_title, 450, 257, 1.24f, 141f, 92f)
+                Pic(R.drawable.mf_tag, 354, 106, 1.0f, 243f, 424f)
                 Box(
-                    Modifier.offset(u * (222f + 354f * 1.12f * 0.18f), u * (452f + 106f * 1.12f * 0.1f))
-                        .size(u * 354f * 1.12f * 0.64f, u * 106f * 1.12f * 0.68f),
+                    Modifier.offset(u * (243f + 354f * 0.18f), u * (424f + 106f * 0.1f))
+                        .size(u * 354f * 0.64f, u * 106f * 0.68f),
                     contentAlignment = Alignment.Center
                 ) {
                     FitText(
                         text = stringResource(R.string.quick_match_found_tagline),
-                        style = PaintedStyle(color = Color(0xFF2B1A10), fontSize = fs(38f), textAlign = TextAlign.Center, lineHeight = fs(42f)),
+                        style = PaintedStyle(color = Color(0xFF2B1A10), fontSize = fs(34f), textAlign = TextAlign.Center, lineHeight = fs(37f)),
                         maxLines = 2,
                         minScale = 0.5f,
                         modifier = Modifier.fillMaxSize()
