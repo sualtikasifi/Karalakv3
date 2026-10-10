@@ -269,8 +269,8 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             // The title, lettered on the wooden sign (x 190..650, y 298..448 of the picture).
             Column(
                 modifier = Modifier
-                    .offset((artOffX + 225f * artScale).dp, (280f * artScale).dp)
-                    .size((404f * artScale).dp, (180f * artScale).dp),
+                    .offset((artOffX + 225f * artScale).dp, (300f * artScale).dp)
+                    .size((404f * artScale).dp, (130f * artScale).dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
@@ -279,7 +279,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                     size = (84f * artScale / fontScale0).sp,
                     fill = Color.White,
                     outline = Color(0xFF4E2406),
-                    modifier = Modifier.fillMaxWidth().height((98f * artScale).dp),
+                    modifier = Modifier.fillMaxWidth().height((70f * artScale).dp),
                     title = true
                 )
                 com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
@@ -287,7 +287,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                     size = (62f * artScale / fontScale0).sp,
                     fill = Color.White,
                     outline = Color(0xFF4E2406),
-                    modifier = Modifier.fillMaxWidth().height((80f * artScale).dp),
+                    modifier = Modifier.fillMaxWidth().height((60f * artScale).dp),
                     title = true
                 )
             }
@@ -670,14 +670,23 @@ private fun PenCard(
         val w = maxWidth
         val h = maxHeight
         Image(painterResource(skin.cardRes()), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
-        Column(Modifier.offset(w * 0.4f, h * 0.5f).size(w * 0.55f, h * 0.25f)) {
-            Text(text = stringResource(skin.labelRes), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, lineHeight = 15.sp, color = Ink, maxLines = 1)
+        // Name and tagline hug each other; the button sits clear of the card's lower frame.
+        Column(Modifier.offset(w * 0.4f, h * 0.465f).size(w * 0.55f, h * 0.2f)) {
+            Text(
+                text = stringResource(skin.labelRes),
+                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Ink, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 16.sp),
+                maxLines = 1
+            )
             skin.taglineRes()?.let {
-                Text(text = stringResource(it), fontSize = 9.sp, lineHeight = 10.sp, color = Ink.copy(alpha = 0.7f), maxLines = 1)
+                Text(
+                    text = stringResource(it),
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Ink.copy(alpha = 0.7f), fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, lineHeight = 11.sp),
+                    maxLines = 1
+                )
             }
         }
         // One wide button: buy (price) or wear. There is no trying a pen before buying it.
-        val m = Modifier.offset(w * 0.34f, h * 0.755f).size(w * 0.56f, h * 0.19f)
+        val m = Modifier.offset(w * 0.34f, h * 0.69f).size(w * 0.56f, h * 0.19f)
         when {
             owned -> OwnedPill(equipped, onEquip, m)
             else -> PaintedPill(R.drawable.st_pill_orange, m, enabled = canAfford, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
@@ -824,8 +833,15 @@ private fun JokerCard(
             maxLines = 1, minScale = 0.6f, contentAlignment = Alignment.CenterStart,
             modifier = Modifier.offset(w * 0.34f, h * 0.12f).size(w * 0.33f, h * 0.2f)
         )
-        Box(Modifier.offset(w * 0.1f, h * 0.74f).clip(RoundedCornerShape(50)).background(Color(0xFFFFE6C2)).padding(horizontal = 8.dp, vertical = 2.dp)) {
-            Text(text = stringResource(R.string.joker_owned, owned), fontSize = 9.5.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB5441A), maxLines = 1)
+        // "Sende: n" sits straight under the joker's tile, centred on it, with no plate behind it.
+        Box(Modifier.offset(w * 0.1f, h * 0.74f).width(h * 0.42f), contentAlignment = Alignment.Center) {
+            Text(
+                text = stringResource(R.string.joker_owned, owned),
+                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
+                    color = Color(0xFF9A3412), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center
+                ),
+                maxLines = 1
+            )
         }
         Text(
             text = stringResource(type.descRes()),
