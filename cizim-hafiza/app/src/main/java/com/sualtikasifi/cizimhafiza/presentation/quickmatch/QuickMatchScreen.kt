@@ -94,7 +94,11 @@ import com.sualtikasifi.cizimhafiza.domain.model.GhostRuns
 import com.sualtikasifi.cizimhafiza.domain.model.LevelTier
 import com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel
 import com.sualtikasifi.cizimhafiza.domain.model.PlayerRank
+import com.sualtikasifi.cizimhafiza.presentation.common.FitText
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.LevelAvatar
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
+import androidx.compose.ui.graphics.Brush
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
 import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
@@ -154,15 +158,6 @@ fun QuickMatchScreen(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
-            val foundBgAlpha by animateFloatAsState(if (matched) 1f else 0f, tween(600), label = "quick_match_found_bg")
-            if (foundBgAlpha > 0f) {
-                Image(
-                    painter = painterResource(R.drawable.match_found_bg),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().alpha(foundBgAlpha)
-                )
-            }
             val searchingAlpha by animateFloatAsState(if (state is QuickMatchState.Searching) 1f else 0f, tween(450), label = "quick_match_search_scene")
             if (searchingAlpha > 0f) {
                 SearchingScene(modifier = Modifier.alpha(searchingAlpha))
@@ -185,8 +180,7 @@ fun QuickMatchScreen(
                 // everywhere else's. The Found state needs much more room:
                 // its own background bakes the "Rakibin Hazır!" signage into
                 // roughly the top quarter of the image.
-                val topClearance by animateDpAsState(if (matched) MatchFoundTopClearance else TopActionsClearance, tween(500, easing = FastOutSlowInEasing), label = "quick_match_top_clearance")
-                Spacer(modifier = Modifier.height(topClearance))
+                Spacer(modifier = Modifier.height(TopActionsClearance))
 
                 // Centred as one block when it fits, scrollable when it does
                 // not — same pattern as MainMenuScreen's own masthead+tiles
@@ -223,11 +217,8 @@ fun QuickMatchScreen(
                     when (current) {
                         // The search is its own painted scene (SearchingScene, behind this column).
                         QuickMatchState.Searching -> Spacer(modifier = Modifier.height(1.dp))
-                        is QuickMatchState.Found -> FoundBody(
-                            opponent = current.opponent,
-                            me = current.me,
-                            onStart = { viewModel.onMatchStarted(current.opponent); onStart(current.opponent) }
-                        )
+                        // The found moment is its own full-screen scene (FoundScene, over this column).
+                        is QuickMatchState.Found -> Spacer(modifier = Modifier.height(1.dp))
                         QuickMatchState.Empty -> MessageBody(
                             title = stringResource(R.string.quick_match_empty_title),
                             body = stringResource(R.string.quick_match_empty_body),
@@ -262,6 +253,16 @@ fun QuickMatchScreen(
                 }
                 }
             }
+            (state as? QuickMatchState.Found)?.let { found ->
+                val sceneAlpha = remember { Animatable(0f) }
+                LaunchedEffect(Unit) { sceneAlpha.animateTo(1f, tween(600)) }
+                FoundScene(
+                    opponent = found.opponent,
+                    me = found.me,
+                    onStart = { viewModel.onMatchStarted(found.opponent); onStart(found.opponent) },
+                    modifier = Modifier.graphicsLayer { alpha = sceneAlpha.value }
+                )
+            }
             if (matched) {
                 // Once matched, leaving costs XP, so the back button asks first.
                 com.sualtikasifi.cizimhafiza.presentation.common.PaintedBackButton(
@@ -289,18 +290,12 @@ fun QuickMatchScreen(
  * makes a recorded round feel like a match: that the two of you are about
  * to begin at the same moment.
  *
- * Losing the reroll button follows from losing the score. It existed so a
- * player could decline an opponent who looked unbeatable; with nothing to
- * judge, declining is just a slower way of starting.
- *
- * Dressed up well past a plain card on purpose: this is the one moment
- * Quick Match has to make a stranger's recorded round feel like an event
- * rather than a database read — a masthead, a "taped note" card and a
- * cheering mascot, the same voice the brand already uses on MainMenuScreen
- * and in tutorial art, not a one-off skin invented for this screen alone.
+ * Laid out as a painted scene in the design's own 841-wide units (see [MfArtW]): the workshop wall, the "Rakibin Hazır!"
+ * splash and its sign, the two player cards hanging side by side with the VS between them, the mascots, the countdown
+ * plank with its live bar, and the three tips.
  */
 @Composable
-private fun FoundBody(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart: () -> Unit) {
+private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart: () -> Unit, modifier: Modifier = Modifier) {
     val start by rememberUpdatedState(onStart)
     val progress = remember { Animatable(0f) }
     // Keyed on the run so a genuinely new opponent restarts the countdown,
@@ -314,372 +309,243 @@ private fun FoundBody(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart:
         start()
     }
     // Derived, so this composable wakes once a second when the DIGIT changes
-    // rather than on every frame of the animation. Reading progress.value
-    // directly here recomposed the whole card — opponent avatar, sparkles and
-    // all — sixty times a second for the length of the countdown, which is
-    // exactly the moment before the match starts.
+    // rather than on every frame of the animation.
     val secondsLeft by remember(progress) {
         derivedStateOf {
             ceil((1f - progress.value) * (COUNTDOWN_MS / 1000f)).toInt().coerceAtLeast(1)
         }
     }
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        PlayersSection(opponent = opponent, me = me)
-        Spacer(modifier = Modifier.height(16.dp))
-        CountdownBanner(secondsLeft)
-        Spacer(modifier = Modifier.height(16.dp))
-        TipsRow()
-        Spacer(modifier = Modifier.height(10.dp))
-    }
-}
-
-/**
- * How far the Found state's content starts from the top. [R.drawable.match_found_bg]
- * bakes its own "Karalak" + "Rakibin Hazır!" signage into roughly the top
- * quarter of the image (measured off the source art), so the player cards
- * start right under that signage instead of at the usual
- * [com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance].
- */
-private val MatchFoundTopClearance = 215.dp
-
-/**
- * Both players' cards side by side, with the VS mark and a small paper note
- * overlapping the gap between them — the one part of the new background art
- * that couldn't be baked in, since it has to show two different real players.
- */
-@Composable
-private fun PlayersSection(opponent: GhostRun, me: QuickMatchPlayerSnapshot) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(28.dp)
-        ) {
-            PlayerCard(
-                fromLeft = true,
-                nickname = me.nickname,
-                level = me.level,
-                frameId = me.frameId,
-                avatarUrl = me.avatarUrl,
-                // Real, not derived — this is the player's own account.
-                lifetimeXp = me.lifetimeXp,
-                accent = MatchRed,
-                ribbon = R.drawable.match_ribbon_red,
-                modifier = Modifier.weight(1f)
-            )
-            PlayerCard(
-                fromLeft = false,
-                nickname = opponent.nickname,
-                level = opponent.level,
-                frameId = opponent.frameId,
-                // The exact figure was never recorded with the round —
-                // only the level it bought. This is the floor XP for
-                // that level: a true lower bound, never a guess above it.
-                lifetimeXp = PlayerLevel.totalXpForLevel(opponent.level),
-                // The same face the result screen gives this opponent (see ResultScreen's versus card).
-                photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(opponent.nickname),
-                accent = MatchBlue,
-                ribbon = R.drawable.match_ribbon_blue,
-                modifier = Modifier.weight(1f)
-            )
-        }
-        // Pops in once the two cards have landed on either side of it.
-        val vsScale = remember { Animatable(0f) }
-        LaunchedEffect(Unit) {
-            delay(350)
-            vsScale.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 300f))
-        }
+    Box(modifier = modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(R.drawable.match_vs),
-            contentDescription = stringResource(R.string.quick_match_versus),
-            modifier = Modifier
-                .align(Alignment.Center)
-                .size(64.dp)
-                .graphicsLayer {
-                    scaleX = vsScale.value
-                    scaleY = vsScale.value
-                }
+            painter = cachedPainterResource(R.drawable.mf_bg),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
         )
+        BoxWithConstraints(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            val u = maxWidth / MfArtW
+            val fontScale0 = LocalDensity.current.fontScale
+            fun fs(art: Float) = (art * u.value / fontScale0).sp
+            // A picture from the sheet (px) drawn at [scale] design units per px, its top-left at (x, y).
+            @Composable
+            fun Pic(res: Int, wPx: Int, hPx: Int, scale: Float, x: Float, y: Float, modifier: Modifier = Modifier) {
+                Image(
+                    painter = painterResource(res),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillBounds,
+                    modifier = modifier.offset(u * x, u * y).size(u * wPx * scale, u * hPx * scale)
+                )
+            }
+            Box(Modifier.fillMaxWidth().height(u * 1650f)) {
+                // The splash with "Rakibin Hazır!" lettered into it, and the sign under it.
+                Pic(R.drawable.mf_title, 450, 257, 1.36f, 115f, 104f)
+                Pic(R.drawable.mf_tag, 354, 106, 1.12f, 222f, 452f)
+                Box(
+                    Modifier.offset(u * (222f + 354f * 1.12f * 0.18f), u * (452f + 106f * 1.12f * 0.1f))
+                        .size(u * 354f * 1.12f * 0.64f, u * 106f * 1.12f * 0.68f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    FitText(
+                        text = stringResource(R.string.quick_match_found_tagline),
+                        style = PaintedStyle(color = Color(0xFF2B1A10), fontSize = fs(38f), textAlign = TextAlign.Center, lineHeight = fs(42f)),
+                        maxLines = 2,
+                        minScale = 0.5f,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                // The two players, hanging from their ropes; the VS pops in between them once they have landed.
+                MatchCard(
+                    u = u, fromLeft = true, x = 20f, y = 541f,
+                    card = R.drawable.mf_card_r, cardW = 290, cardH = 384, centerX = 148f,
+                    ribbon = R.drawable.mf_ribbon_r,
+                    nickname = me.nickname, level = me.level, frameId = me.frameId, avatarUrl = me.avatarUrl,
+                    // Real, not derived — this is the player's own account.
+                    lifetimeXp = me.lifetimeXp
+                )
+                MatchCard(
+                    u = u, fromLeft = false, x = 507f, y = 534f,
+                    card = R.drawable.mf_card_b, cardW = 266, cardH = 392, centerX = 133f,
+                    ribbon = R.drawable.mf_ribbon_b,
+                    nickname = opponent.nickname, level = opponent.level, frameId = opponent.frameId,
+                    // The exact figure was never recorded with the round — only the level it bought. This is the floor
+                    // XP for that level: a true lower bound, never a guess above it.
+                    lifetimeXp = PlayerLevel.totalXpForLevel(opponent.level),
+                    // The same face the result screen gives this opponent (see ResultScreen's versus card).
+                    photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(opponent.nickname)
+                )
+                val vsScale = remember { Animatable(0f) }
+                LaunchedEffect(Unit) {
+                    delay(350)
+                    vsScale.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 300f))
+                }
+                Pic(
+                    R.drawable.mf_vs, 275, 252, 0.9f, 297f, 664f,
+                    Modifier.graphicsLayer { scaleX = vsScale.value; scaleY = vsScale.value }
+                )
+
+                // The mascots peek over the plank.
+                Pic(R.drawable.mf_mascots, 479, 291, 1.1f, 157f, 940f)
+
+                // The countdown plank: its clock and leaves kept at the picture's own size, the wood between stretched, the
+                // bar and its words live.
+                Box(Modifier.offset(u * 25f, u * 1235f).size(u * 790f, u * 148f)) {
+                    com.sualtikasifi.cizimhafiza.presentation.common.NinePatch(
+                        res = R.drawable.mf_plank,
+                        slicePx = 175,
+                        edge = u * 175f,
+                        sliceYPx = 40,
+                        edgeY = u * 40f,
+                        clampEdgeToHeight = false,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    LetteredText(
+                        text = stringResource(if (secondsLeft == 1) R.string.quick_match_starting_in_one else R.string.quick_match_starting_in, secondsLeft),
+                        size = fs(34f),
+                        outline = Color(0xFF3B1A08),
+                        maxLines = 1,
+                        minScale = 0.5f,
+                        modifier = Modifier.offset(u * 168f, u * 34f).size(u * 560f, u * 40f)
+                    )
+                    // The bar: a dark groove with a golden rim and the yellow fill growing along it.
+                    Box(
+                        modifier = Modifier
+                            .offset(u * 160f, u * 76f)
+                            .size(u * 580f, u * 36f)
+                            .clip(RoundedCornerShape(50))
+                            .background(Brush.verticalGradient(listOf(Color(0xFF3A1F0E), Color(0xFF5A3418))))
+                            .border(u * 2.5f, Color(0xFFF2B33A), RoundedCornerShape(50))
+                            .padding(u * 4f)
+                    ) {
+                        Box(
+                            Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth()
+                                .drawBehind {
+                                    val w = size.width * progress.value.coerceIn(0.03f, 1f)
+                                    drawRoundRect(
+                                        brush = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFE867), Color(0xFFF7B500))),
+                                        size = Size(w, size.height),
+                                        cornerRadius = CornerRadius(size.height / 2f)
+                                    )
+                                }
+                        )
+                    }
+                }
+
+                // Three short facts about the round ahead.
+                val tipTexts = listOf(
+                    stringResource(R.string.quick_match_tip_words, GhostRuns.RUN_WORD_COUNT),
+                    stringResource(R.string.quick_match_tip_scoring),
+                    stringResource(R.string.quick_match_tip_fun)
+                )
+                val tips = listOf(
+                    Triple(R.drawable.mf_tip1, 225 to 197, 24f),
+                    Triple(R.drawable.mf_tip2, 227 to 197, 296f),
+                    Triple(R.drawable.mf_tip3, 229 to 197, 568f)
+                )
+                tips.forEachIndexed { i, (res, size, x) ->
+                    Pic(res, size.first, size.second, 1.1f, x, 1405f)
+                    // The words go where the picture's own lettering was: the lower half of the note.
+                    Box(
+                        Modifier.offset(u * (x + 30f), u * (1405f + 100f * 1.1f)).size(u * (size.first * 1.1f - 60f), u * 94f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        FitText(
+                            text = tipTexts[i],
+                            style = PaintedStyle(color = Color(0xFF3B2314), fontSize = fs(29f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = fs(32f)),
+                            maxLines = 3,
+                            minScale = 0.55f,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
-/** The ribbon's own dominant colour, sampled off the art — also doubles as each card's border/rank-ribbon accent. */
-private val MatchRed = Color(0xFFE23A1E)
-private val MatchBlue = Color(0xFF1E7FE0)
+private const val MfArtW = 841f
 
 /**
- * One player's card: a crown for flourish, an avatar in its earned frame, a
- * name on the game's own ribbon art, an XP badge, and a rank ribbon — the
- * same facts for "you" and for the opponent, so the pair reads as a match
- * between two people rather than a stranger being introduced. Neither side
- * is marked as ahead — see FoundBody's own doc comment on why no score
- * appears here.
+ * One player's card: the painted card with its own picture hung from the rope, the avatar in its earned frame (with the
+ * level on it), the name on the game's ribbon and the XP under it. [x], [y] place the card's picture; [centerX] is the
+ * middle of its paper in the picture's own pixels. Slides in from its own side with a small overshoot.
  */
 @Composable
-private fun PlayerCard(
+private fun MatchCard(
+    u: androidx.compose.ui.unit.Dp,
     fromLeft: Boolean,
+    x: Float,
+    y: Float,
+    card: Int,
+    cardW: Int,
+    cardH: Int,
+    centerX: Float,
+    ribbon: Int,
     nickname: String,
     level: Int,
     frameId: String,
     avatarUrl: String = "",
     photo: com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto? = null,
-    lifetimeXp: Int,
-    accent: Color,
-    ribbon: Int,
-    modifier: Modifier = Modifier
+    lifetimeXp: Int
 ) {
-    val shape = RoundedCornerShape(22.dp)
-    val rank = LevelTier.forLevel(level).rank
-    // Slides in from its own side with a small overshoot, then keeps a soft
-    // glow pulsing round its border. Every animated value is read inside a
-    // draw/graphics lambda (as State, not delegated) so the pulse repaints
-    // the card without recomposing it — avatar, ribbon and all.
+    val s = 1.18f
+    val fontScale0 = LocalDensity.current.fontScale
+    fun fs(art: Float) = (art * u.value / fontScale0).sp
     val slide = remember { Animatable(if (fromLeft) -1f else 1f) }
     LaunchedEffect(Unit) { slide.animateTo(0f, spring(dampingRatio = 0.6f, stiffness = 170f)) }
-    val pulse = rememberInfiniteTransition(label = "player_card_pulse")
-    val glow = pulse.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1100, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "player_card_glow"
-    )
-    val crownBob = pulse.animateFloat(
-        initialValue = 0f,
-        targetValue = -4f,
-        animationSpec = infiniteRepeatable(tween(800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "player_card_crown"
-    )
-    Column(
-        modifier = modifier
+    Box(
+        modifier = Modifier
+            .offset(u * x, u * y)
+            .size(u * cardW * s, u * cardH * s)
             .graphicsLayer {
                 translationX = slide.value * size.width
                 alpha = (1f - kotlin.math.abs(slide.value)).coerceIn(0f, 1f)
             }
-            .drawBehind {
-                val spread = 7.dp.toPx() * glow.value
-                drawRoundRect(
-                    color = accent.copy(alpha = 0.28f * glow.value),
-                    topLeft = Offset(-spread, -spread),
-                    size = Size(size.width + spread * 2, size.height + spread * 2),
-                    cornerRadius = CornerRadius(22.dp.toPx() + spread)
-                )
-            }
-            .clip(shape)
-            .background(Color(0xE6221812))
-            .drawBehind {
-                val w = 2.5.dp.toPx()
-                drawRoundRect(
-                    color = accent.copy(alpha = 0.55f + 0.45f * glow.value),
-                    topLeft = Offset(w / 2, w / 2),
-                    size = Size(size.width - w, size.height - w),
-                    cornerRadius = CornerRadius(22.dp.toPx()),
-                    style = Stroke(width = w)
-                )
-            }
-            .padding(top = 14.dp, bottom = 12.dp, start = 8.dp, end = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "👑",
-            fontSize = 18.sp,
-            modifier = Modifier.graphicsLayer { translationY = crownBob.value.dp.toPx() }
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        LevelAvatar(
-            level = level,
-            // The stored name is only a preference; resolve() is what
-            // decides which ring that level has actually earned.
-            frame = AvatarFrame.resolve(frameId, level),
-            size = PLAYER_AVATAR_SIZE,
-            photo = photo ?: com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(avatarUrl),
-            levelBadge = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.fillMaxWidth().height(32.dp)
-        ) {
-            Image(
-                painter = painterResource(ribbon),
-                contentDescription = null,
-                contentScale = ContentScale.FillBounds,
-                modifier = Modifier.matchParentSize()
-            )
-            Text(
-                text = nickname,
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                color = Color.White,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 16.dp)
+        Image(painterResource(card), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+        val cx = centerX * s
+        val avatar = 190f
+        Box(Modifier.offset(u * (cx - avatar / 2f), u * (190f * s - avatar / 2f)).size(u * avatar)) {
+            LevelAvatar(
+                level = level,
+                // The stored name is only a preference; resolve() is what decides which ring that level has actually earned.
+                frame = AvatarFrame.resolve(frameId, level),
+                size = u * avatar,
+                photo = photo ?: com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(avatarUrl),
+                levelBadge = true
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        XpBadge(lifetimeXp)
-        Spacer(modifier = Modifier.height(8.dp))
-        RankRibbon(rank = rank, accent = accent)
-    }
-}
-
-private val PLAYER_AVATAR_SIZE = 76.dp
-
-/** "⭐ 6416 XP" as a small pill, rather than plain text — the one stat this card shows gets to look like a badge. */
-@Composable
-private fun XpBadge(xp: Int) {
-    Row(
-        modifier = Modifier
-            .background(Color.White.copy(alpha = 0.14f), RoundedCornerShape(50))
-            .padding(horizontal = 10.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = "⭐", fontSize = 11.sp)
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = stringResource(R.string.level_total_xp, xp),
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White
-        )
-    }
-}
-
-/**
- * A small pennant — pointed at both ends via a hand-drawn Path, since no
- * asset was provided for this element specifically (only the wide name
- * ribbon was). Shows the player's existing [PlayerRank] (the app's real
- * level-tier title), coloured to match the card it sits in.
- */
-@Composable
-private fun RankRibbon(rank: PlayerRank, accent: Color, modifier: Modifier = Modifier) {
-    Box(modifier = modifier.height(26.dp), contentAlignment = Alignment.Center) {
-        Canvas(modifier = Modifier.matchParentSize()) {
-            val notch = size.height * 0.45f
-            val path = Path().apply {
-                moveTo(notch, 0f)
-                lineTo(size.width - notch, 0f)
-                lineTo(size.width, size.height / 2f)
-                lineTo(size.width - notch, size.height)
-                lineTo(notch, size.height)
-                lineTo(0f, size.height / 2f)
-                close()
-            }
-            drawPath(path, color = accent)
+        val ribbonW = 292f
+        Box(
+            Modifier.offset(u * (cx - ribbonW / 2f), u * (290f * s - 30f)).size(u * ribbonW, u * 60f),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(painterResource(ribbon), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+            FitText(
+                text = nickname,
+                style = PaintedStyle(color = Color.White, fontSize = fs(30f), textAlign = TextAlign.Center, shadow = androidx.compose.ui.graphics.Shadow(Color(0x99000000), Offset(0f, 2f), 4f)),
+                maxLines = 1,
+                minScale = 0.5f,
+                modifier = Modifier.fillMaxSize().padding(horizontal = u * 34f, vertical = u * 4f)
+            )
         }
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp),
-            modifier = Modifier.padding(horizontal = 12.dp)
+            Modifier.offset(u * (cx - 120f), u * (337f * s - 22f)).size(u * 240f, u * 44f),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = rank.emoji, fontSize = 10.sp)
+            Image(painterResource(R.drawable.mf_star), contentDescription = null, modifier = Modifier.size(u * 40f))
+            Spacer(Modifier.width(u * 8f))
             Text(
-                text = stringResource(rank.nameRes),
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 10.sp,
-                color = Color.White,
+                text = stringResource(R.string.level_total_xp, lifetimeXp),
+                style = PaintedStyle(color = Color(0xFF3B2314), fontSize = fs(32f)),
                 maxLines = 1
             )
         }
     }
-}
-
-/**
- * The countdown itself — the game's own glowing pill art (its clock icon and
- * "…" are already baked into the two ends) with just the seconds text laid
- * over the middle, in place of the plain orange banner this used to be.
- */
-@Composable
-private fun CountdownBanner(secondsLeft: Int) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(COUNTDOWN_BAR_ASPECT)
-            .paint(painterResource(R.drawable.match_countdown_bar), contentScale = ContentScale.FillBounds),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = stringResource(if (secondsLeft == 1) R.string.quick_match_starting_in_one else R.string.quick_match_starting_in, secondsLeft),
-            fontFamily = DisplayFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 15.sp,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            // Keeps the text off the bar's own baked-in clock icon (left)
-            // and "…" (right) — asymmetric because the two ends aren't.
-            modifier = Modifier.padding(start = 68.dp, end = 52.dp)
-        )
-    }
-}
-
-private const val COUNTDOWN_BAR_ASPECT = 1272f / 202f
-
-/** Three short facts about the round ahead, in place of the single explainer sentence this used to be. */
-@Composable
-private fun TipsRow() {
-    // IntrinsicSize.Max + fillMaxHeight on each card: all three take the height
-    // of the tallest, so a longer sentence no longer makes one box bigger.
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)
-    ) {
-        TipCard(emoji = "📝", text = stringResource(R.string.quick_match_tip_words, GhostRuns.RUN_WORD_COUNT), modifier = Modifier.weight(1f))
-        TipCard(emoji = "🏆", text = stringResource(R.string.quick_match_tip_scoring), modifier = Modifier.weight(1f))
-        TipCard(emoji = "😊", text = stringResource(R.string.quick_match_tip_fun), modifier = Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun TipCard(emoji: String, text: String, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxHeight()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xCC1E1610))
-            .padding(horizontal = 8.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(text = emoji, fontSize = 20.sp)
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-            maxLines = 3
-        )
-    }
-}
-
-/**
- * The two mascots high-fiving over a VS spark: the "match found" moment as an
- * illustration. Fully static — an earlier version bobbed and tilted it
- * forever, which (even scaled down inside its own box, see the git history
- * on this file for that attempt) still read as unwanted motion rather than
- * as life, so it was dropped rather than tuned further. A still picture,
- * held for the few seconds before the match starts, is what actually reads
- * as a clean loading moment.
- *
- * Sized down from an earlier 0.8f: this is the last thing in FoundBody's
- * (non-scrolling) Column, under the players section, the countdown and the
- * tips row — at 0.8f the total stack ran taller than the available height on
- * a typical phone, and this was what got clipped by the screen's own bottom
- * edge as a result. Smaller leaves real clearance instead of depending on
- * every other piece above it staying exactly as short as it is today.
- */
-@Composable
-private fun MatchMascot() {
-    Image(
-        painter = painterResource(R.drawable.match_high_five),
-        contentDescription = null,
-        modifier = Modifier
-            .fillMaxWidth(0.58f)
-            .aspectRatio(840f / 446f)
-    )
 }
 
 private const val COUNTDOWN_MS = 5_000
