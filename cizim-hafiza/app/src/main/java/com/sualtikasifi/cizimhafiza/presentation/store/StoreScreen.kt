@@ -739,75 +739,69 @@ private fun FrameCard(
 }
 
 /**
- * Today's free joker on its painted card (the gift is part of the picture): the joker's own tile, its name and what
- * it does, with the green "watch an ad" button under the card. Shown only while unclaimed.
+ * Today's free joker, all in one painted picture (st_daily_full, 1300 x 665 px): the wooden plank with the crown, the
+ * paper with the gift, and the green button underneath, all inside one frame. The title is lettered on the plank, the
+ * joker's own tile and its name and description on the paper, and the button's words on the button. Shown only while
+ * unclaimed — once taken the card is simply gone until tomorrow's.
  */
 @Composable
 private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
-    val glow = androidx.compose.animation.core.rememberInfiniteTransition(label = "daily-joker").animateFloat(
-        initialValue = 0.82f,
-        targetValue = 1f,
-        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
-            androidx.compose.animation.core.tween(900),
-            androidx.compose.animation.core.RepeatMode.Reverse
-        ),
-        label = "daily-joker-glow"
-    )
-    Column(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(2.462f)) {
-            val w = maxWidth
-            val h = maxHeight
-            Image(painterResource(R.drawable.st_card_daily), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
-            com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.46f, Modifier.offset(w * 0.1f, h * 0.29f))
-            // The text stays between the joker's tile and the painted stars / gift at the right.
-            Column(Modifier.offset(w * 0.32f, h * 0.27f).size(w * 0.29f, h * 0.55f)) {
-                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                    text = stringResource(type.labelRes()),
-                    style = androidx.compose.ui.text.TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Ink, textAlign = TextAlign.Start),
-                    maxLines = 1, minScale = 0.6f, contentAlignment = Alignment.CenterStart,
-                    modifier = Modifier.fillMaxWidth().height(20.dp)
-                )
-                Text(text = stringResource(type.descRes()), fontSize = 10.sp, lineHeight = 12.sp, color = Ink.copy(alpha = 0.8f), maxLines = 3)
-            }
-            // The wooden tag hangs over the card's top-left edge.
-            Box(
-                Modifier
-                    .offset(w * 0.07f, -(h * 0.12f))
-                    .size(w * 0.5f, h * 0.3f)
-                    .graphicsLayer { alpha = glow.value },
-                contentAlignment = Alignment.Center
-            ) {
-                NinePatch(res = R.drawable.st_plaque, slicePx = 70, edge = 22.dp, modifier = Modifier.matchParentSize())
-                Text(
-                    text = stringResource(R.string.store_daily_joker_tag),
-                    fontFamily = DisplayFont,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 9.5.sp,
-                    color = Color(0xFF3A1A04),
-                    maxLines = 1,
-                    modifier = Modifier.padding(horizontal = 14.dp)
-                )
-            }
+    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(1300f / 665f)) {
+        val u = maxWidth / 1300f
+        val fontScale0 = androidx.compose.ui.platform.LocalDensity.current.fontScale
+        fun fs(px: Float) = (px * u.value / fontScale0).sp
+        Image(painterResource(R.drawable.st_daily_full), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
+        // The title on the plank, to the right of the crown.
+        com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+            text = stringResource(R.string.store_daily_joker_tag),
+            style = androidx.compose.ui.text.TextStyle(
+                fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(54f),
+                color = Color(0xFFFFF4D6), textAlign = TextAlign.Center,
+                shadow = Shadow(Color(0xFF5A2410), Offset(0f, 3f), 4f)
+            ),
+            maxLines = 1, minScale = 0.5f,
+            modifier = Modifier.offset(u * 440f, u * 78f).size(u * 560f, u * 78f)
+        )
+        // The joker's tile on the paper's left, its name and description beside it.
+        com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, u * 220f, Modifier.offset(u * 135f, u * 242f))
+        Column(Modifier.offset(u * 400f, u * 250f).size(u * 470f, u * 230f), verticalArrangement = Arrangement.Center) {
+            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                text = stringResource(type.labelRes()),
+                style = androidx.compose.ui.text.TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(46f), color = Ink, textAlign = TextAlign.Start),
+                maxLines = 1, minScale = 0.6f, contentAlignment = Alignment.CenterStart,
+                modifier = Modifier.fillMaxWidth().height(u * 60f)
+            )
+            Text(
+                text = stringResource(type.descRes()),
+                style = androidx.compose.ui.text.TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.SemiBold, fontSize = fs(36f), lineHeight = fs(44f), color = Ink.copy(alpha = 0.85f)),
+                maxLines = 3
+            )
         }
-        Spacer(Modifier.height(6.dp))
-        PaintedPill(R.drawable.st_pill_green, Modifier.fillMaxWidth(0.84f).height(44.dp), onClick = onClaim) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                androidx.compose.material3.Icon(
-                    androidx.compose.material.icons.Icons.Filled.PlayCircle,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp)
-                )
-                Text(
-                    text = stringResource(R.string.store_daily_joker_action),
-                    fontFamily = DisplayFont,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 14.sp,
-                    color = Color.White,
-                    maxLines = 1,
-                    style = TextStyle(shadow = Shadow(color = Color(0xFF0E3A06), offset = Offset(0f, 2f), blurRadius = 2f))
-                )
-            }
+        // The green button (x 305..995, y 508..625 of the picture) with its words and a play mark.
+        Row(
+            modifier = Modifier
+                .offset(u * 305f, u * 508f)
+                .size(u * 690f, u * 117f)
+                .pressable(pressedScale = 0.95f, onClick = onClaim),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            androidx.compose.material3.Icon(
+                androidx.compose.material.icons.Icons.Filled.PlayCircle,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(u * 62f)
+            )
+            Spacer(Modifier.width(u * 16f))
+            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                text = stringResource(R.string.store_daily_joker_action),
+                style = androidx.compose.ui.text.TextStyle(
+                    fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(52f), color = Color.White,
+                    shadow = Shadow(Color(0xFF0E3A06), Offset(0f, 3f), 3f)
+                ),
+                maxLines = 1, minScale = 0.5f,
+                modifier = Modifier.width(u * 470f).height(u * 76f)
+            )
         }
     }
 }
