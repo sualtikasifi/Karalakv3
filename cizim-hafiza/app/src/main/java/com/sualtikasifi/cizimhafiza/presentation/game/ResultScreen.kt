@@ -213,7 +213,7 @@ fun ResultScreen(
                 // the page's backdrop shows above it as a separate layer.
                 Column(Modifier.fillMaxWidth().springIn(index = 0, fromY = -40)) {
                     androidx.compose.foundation.Image(
-                        painter = cachedPainterResource(R.drawable.res_head2),
+                        painter = cachedPainterResource(R.drawable.res_head3),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         alignment = Alignment.TopCenter,
@@ -230,7 +230,8 @@ fun ResultScreen(
                     )
                 }
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                    // Tucked a little under the head, whose foot now fades out, so no strip of backdrop shows between them.
+                    modifier = Modifier.fillMaxWidth().offset(y = (-14).dp).padding(horizontal = 12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
@@ -335,7 +336,7 @@ fun ResultScreen(
                 if (onLevelNextAction != null && nextActionLabel != null) {
                     PaintedPill(
                         res = R.drawable.res_btn_next,
-                        height = 50.dp,
+                        height = 52.dp,
                         onClick = onLevelNextAction,
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -1000,15 +1001,22 @@ private fun PaintedPill(
         .height(height)
         .graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (enabled) 1f else 0.55f }
         .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
-    if (res == R.drawable.res_btn_claim) {
-        // The orange claim buttons are drawn, not stretched from the picture: the picture's square wooden corners
-        // and a stray dark mark on its lower edge showed once it was stretched to a full-width button.
+    if (res == R.drawable.res_btn_claim || res == R.drawable.res_btn_next) {
+        // Both buttons are drawn, not stretched from their pictures: the pictures' square wooden corners (and a
+        // stray dark mark on the orange one's lower edge) showed once stretched to a full-width button.
         val shape = RoundedCornerShape(50)
+        val cream = res == R.drawable.res_btn_next
         Box(
             modifier = base
                 .shadow(5.dp, shape)
-                .background(Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16), Color(0xFFDD5F0B))), shape)
-                .border(2.5.dp, Color(0xFFA9440A), shape)
+                .background(
+                    Brush.verticalGradient(
+                        if (cream) listOf(Color(0xFFFFF7E6), Color(0xFFFCE3B4), Color(0xFFF5CD8A))
+                        else listOf(Color(0xFFFFB14E), Color(0xFFF47A16), Color(0xFFDD5F0B))
+                    ),
+                    shape
+                )
+                .border(2.5.dp, if (cream) Color(0xFFD08A2E) else Color(0xFFA9440A), shape)
         ) {
             // The glossy band across the top of the pill.
             Box(

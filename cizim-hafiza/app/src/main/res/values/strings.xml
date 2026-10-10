@@ -975,7 +975,7 @@
     <string name="result_stat_event">XP event</string>
     <string name="result_stat_multiplier">XP ×%1$d</string>
     <string name="result_gold_amount">+%1$d gold</string>
-    <string name="result_words_title">Your %1$d words</string>
+    <string name="result_words_title">Your words</string>
     <string name="result_x2_amount">x2 · %1$d XP</string>
     <string name="result_watch_ad">Watch an ad</string>
     <string name="daily_streak_label">Daily streak</string>
