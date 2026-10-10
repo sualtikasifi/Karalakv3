@@ -219,7 +219,7 @@ fun WoodScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = yOf(0.212f), bottom = startHeight + 20.dp)
+                .padding(top = yOf(0.212f), bottom = startHeight + 30.dp)
                 .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                 .drawWithContent {
                     drawContent()
@@ -236,7 +236,7 @@ fun WoodScreen(
         )
         }
 
-        action(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 6.dp).height(startHeight).springIn(index = 5, stepMs = 70, fromY = 60))
+        action(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 18.dp).height(startHeight).springIn(index = 5, stepMs = 70, fromY = 60))
 
         Image(
             painter = painterResource(R.drawable.join_back),
