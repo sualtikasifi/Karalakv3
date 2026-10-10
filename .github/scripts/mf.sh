@@ -54,14 +54,11 @@ adb shell am start -n $ACT
 sleep 8
 sleep 20
 clear_overlays
-adb shell input tap 540 1678; sleep 4
-clear_overlays
-for try in 1 2 3 4 5 6; do
-  adb shell input tap 540 1148
-  sleep 3
-  clear_overlays
-  shot mf_try$try
-done
-sleep 4; shot mf_01
-sleep 4; shot mf_02
-sleep 8; shot mf_03
+shot mf_home
+adb shell input tap 540 1148
+sleep 3
+shot mf_01
+sleep 2
+shot mf_02
+sleep 6
+shot mf_03

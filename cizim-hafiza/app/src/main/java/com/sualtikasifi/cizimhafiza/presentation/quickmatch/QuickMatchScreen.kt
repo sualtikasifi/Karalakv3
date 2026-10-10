@@ -548,7 +548,7 @@ private fun MatchCard(
     }
 }
 
-private const val COUNTDOWN_MS = 40_000
+private const val COUNTDOWN_MS = 120_000
 
 /** Whole hours left, rounded up so "1 saat" never means "in three minutes". */
 private fun hoursRemaining(untilMillis: Long): Int {
