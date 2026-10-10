@@ -268,21 +268,19 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             }
             }
 
-            // The title, lettered on the wooden plank: both words in ONE size, one under the other, the pair centred on
-            // the plank's face (x 425, y 362 of the 841 x 1870 picture).
-            Column(
+            // The title, lettered on the wooden plank: both words in ONE size, one under the other 48 picture px apart,
+            // the pair centred on the plank's face (x 425, y 364 of the 841 x 1870 picture; measured on a screenshot).
+            Box(
                 modifier = Modifier
-                    .offset((artOffX + (425f - 190f) * artScale).dp, ((362f - 70f) * artScale).dp)
-                    .size((380f * artScale).dp, (140f * artScale).dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .offset((artOffX + (425f - 190f) * artScale).dp, ((364f - 70f) * artScale).dp)
+                    .size((380f * artScale).dp, (140f * artScale).dp)
             ) {
                 com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
                     text = stringResource(R.string.app_name),
                     size = (66f * artScale / fontScale0).sp,
                     fill = Color.White,
                     outline = Color(0xFF4E2406),
-                    modifier = Modifier.fillMaxWidth().height((68f * artScale).dp),
+                    modifier = Modifier.align(Alignment.Center).offset(y = (-24f * artScale).dp).fillMaxWidth().height((68f * artScale).dp),
                     title = true
                 )
                 com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
@@ -290,7 +288,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                     size = (66f * artScale / fontScale0).sp,
                     fill = Color.White,
                     outline = Color(0xFF4E2406),
-                    modifier = Modifier.fillMaxWidth().height((68f * artScale).dp),
+                    modifier = Modifier.align(Alignment.Center).offset(y = (24f * artScale).dp).fillMaxWidth().height((68f * artScale).dp),
                     title = true
                 )
             }
