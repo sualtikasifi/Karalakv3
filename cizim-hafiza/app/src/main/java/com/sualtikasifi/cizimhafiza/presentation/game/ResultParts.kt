@@ -75,6 +75,8 @@ internal const val ResArtW = 841f
 // centred; the XP plate (rs_xp) overlaps the wreath's lower edge.
 private const val HeadShown = 720f
 private const val HeadScale = HeadShown / 663f
+// The sign sits a little left of the picture's middle; shifting the picture by this puts the sign on the screen's centre.
+private const val HeadShift = 7f
 private const val HeadTop = 6f
 private const val PlateTop = 440f
 private const val PlateH = 100f
@@ -100,7 +102,7 @@ internal fun ResultHeader(title: String, xp: Int, explanation: String, onBack: (
         fun box(x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
             Modifier.offset(u * x0, u * y0).size(u * (x1 - x0), u * (y1 - y0))
         // A point of the head picture (px) in design units.
-        fun hx(px: Float) = (ResArtW - HeadShown) / 2f + px * HeadScale
+        fun hx(px: Float) = (ResArtW - HeadShown) / 2f + HeadShift + px * HeadScale
         fun hy(py: Float) = HeadTop + py * HeadScale
 
         Image(
@@ -118,9 +120,9 @@ internal fun ResultHeader(title: String, xp: Int, explanation: String, onBack: (
         LetteredText(
             text = title,
             size = fs(80f),
-            fill = Color(0xFFFFD84D),
+            fill = Color.White,
             outline = Color(0xFF4A2410),
-            modifier = box(hx(100f), hy(280f), hx(555f), hy(362f)),
+            modifier = box(hx(95f), hy(268f), hx(555f), hy(350f)),
             minScale = 0.5f,
             title = true
         )
@@ -227,14 +229,14 @@ private fun StatCard(stat: ResultStat, u: Dp, leafOnRight: Boolean, modifier: Mo
                     style = PaintedStyle(color = ResultInk, fontSize = fs(25f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
                     maxLines = 1,
                     minScale = 0.6f,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().offset(y = u * 8f)
                 )
                 FitText(
                     text = stat.value,
                     style = PaintedStyle(color = stat.valueColor, fontSize = fs(46f), textAlign = TextAlign.Center),
                     maxLines = 1,
                     minScale = 0.5f,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().offset(y = -(u * 8f))
                 )
             }
         }
@@ -423,7 +425,7 @@ internal fun ResultWordsBoard(
             }
             // The title on the plank, with the share button at its right end.
             Box(
-                modifier = Modifier.offset(k * 285f, k * 56f).size(k * 290f, k * 58f),
+                modifier = Modifier.offset(k * 272f, k * 56f).size(k * 316f, k * 58f),
                 contentAlignment = Alignment.Center
             ) {
                 if (header != null) {

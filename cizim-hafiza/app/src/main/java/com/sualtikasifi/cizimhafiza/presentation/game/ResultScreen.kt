@@ -315,6 +315,7 @@ fun ResultScreen(
                         header = if (ghost != null) {
                             {
                                 GalleryToggle(
+                                    yourName = myName.ifBlank { stringResource(R.string.quick_match_gallery_yours) },
                                     opponentName = ghost.nickname,
                                     opponentReady = ghostItems.isNotEmpty(),
                                     showingOpponent = showingOpponentGallery,
@@ -354,11 +355,14 @@ fun ResultScreen(
                 // (and says how much it is), "x2" watches an ad, pays the round a second time, then leaves.
                 val canDouble = onDoubleXp != null && state.xpEarned > 0 && GameConstants.ADMOB_ENABLED && !xpDoubled
                 Row(horizontalArrangement = Arrangement.spacedBy(u * 14f), modifier = Modifier.fillMaxWidth()) {
-                    if (canDouble) {
+                    run {
+                        // Always there, as in the design; dimmed and inert when this round cannot be doubled (nothing
+                        // earned, no ad available, or already doubled).
                         ArtButton(
                             res = R.drawable.rs_btn_ad,
                             u = u,
-                            onClick = onDoubleXp!!,
+                            enabled = canDouble,
+                            onClick = { onDoubleXp?.invoke() },
                             modifier = Modifier.weight(1f)
                         ) {
                             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -409,7 +413,7 @@ fun ResultScreen(
                         // Nothing to collect: the button simply moves on instead of offering "0 XP".
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                             LetteredText(
-                                if (shownXp > 0) stringResource(R.string.result_claim_amount, shownXp) else stringResource(R.string.result_continue),
+                                stringResource(R.string.result_claim_amount, shownXp),
                                 fs(38f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f
                             )
                         }
@@ -704,8 +708,8 @@ private fun VersusCard(
         )
         @Composable
         fun side(name: String, score: Int, avatar: (@Composable () -> Unit)?, right: Boolean, scoreColor: Color) {
-            val avatarX = if (right) cardW - 24f - 84f else 24f
-            val textX = if (avatar == null) (if (right) cardW - 40f - 200f else 40f) else if (right) cardW - 128f - 200f else 128f
+            val avatarX = if (right) cardW - 44f - 84f else 44f
+            val textX = if (avatar == null) (if (right) cardW - 50f - 190f else 50f) else if (right) cardW - 148f - 190f else 148f
             if (avatar != null) Box(Modifier.offset(u * avatarX, u * 22f).size(u * 84f)) { avatar() }
             FitText(
                 text = name,
@@ -713,7 +717,7 @@ private fun VersusCard(
                 maxLines = 1,
                 minScale = 0.55f,
                 contentAlignment = if (right) Alignment.CenterEnd else Alignment.CenterStart,
-                modifier = Modifier.offset(u * textX, u * 20f).size(u * 200f, u * 38f)
+                modifier = Modifier.offset(u * textX, u * 22f).size(u * 190f, u * 36f)
             )
             FitText(
                 text = score.toString(),
@@ -721,15 +725,15 @@ private fun VersusCard(
                 maxLines = 1,
                 minScale = 0.5f,
                 contentAlignment = if (right) Alignment.CenterEnd else Alignment.CenterStart,
-                modifier = Modifier.offset(u * textX, u * 56f).size(u * 200f, u * 62f)
+                modifier = Modifier.offset(u * textX, u * 44f).size(u * 190f, u * 60f)
             )
         }
         side(leftName, leftScore, leftAvatar, right = false, scoreColor = if (won) winGreen else if (drew) ResultInk else loseRed)
         side(rightName, rightScore, rightAvatar, right = true, scoreColor = if (!won && !drew) winGreen else if (drew) ResultInk else loseRed)
         Box(
             modifier = Modifier
-                .offset(u * (cardW - 190f) / 2f, u * 26f)
-                .size(u * 190f, u * 40f)
+                .offset(u * (cardW - 190f) / 2f, u * 22f)
+                .size(u * 190f, u * 38f)
                 .clip(RoundedCornerShape(50))
                 .background(pill)
                 .border(2.dp, Color(0x55FFFFFF), RoundedCornerShape(50)),
@@ -739,8 +743,8 @@ private fun VersusCard(
         }
         Text(
             text = stringResource(R.string.quick_match_versus),
-            style = PaintedStyle(color = Color(0xFF8A6A50), fontSize = fs(36f), textAlign = TextAlign.Center),
-            modifier = Modifier.offset(u * (cardW - 190f) / 2f, u * 74f).width(u * 190f)
+            style = PaintedStyle(color = Color(0xFF8A6A50), fontSize = fs(32f), textAlign = TextAlign.Center),
+            modifier = Modifier.offset(u * (cardW - 190f) / 2f, u * 60f).width(u * 190f)
         )
         if (won) {
             Image(
@@ -761,6 +765,7 @@ private fun VersusCard(
  */
 @Composable
 private fun GalleryToggle(
+    yourName: String,
     opponentName: String,
     opponentReady: Boolean,
     showingOpponent: Boolean,
@@ -773,19 +778,20 @@ private fun GalleryToggle(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // The longer name gets the wider pill, so neither is cut when the other is short.
         GalleryChip(
-            label = stringResource(R.string.quick_match_gallery_yours),
+            label = yourName,
             selected = !showingOpponent,
             enabled = true,
             onClick = { onSelect(false) },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(yourName.length.coerceAtLeast(5).toFloat())
         )
         GalleryChip(
             label = opponentName,
             selected = showingOpponent,
             enabled = opponentReady,
             onClick = { onSelect(true) },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(opponentName.length.coerceAtLeast(5).toFloat())
         )
     }
 }
@@ -806,16 +812,16 @@ private fun GalleryChip(label: String, selected: Boolean, enabled: Boolean, onCl
             .border(1.5.dp, if (selected) Color(0xFFA9440A) else Color(0xFF8A5A2E), shape)
             .graphicsLayer { alpha = if (enabled || selected) 1f else 0.6f }
             .clickable(enabled = enabled && !selected, onClick = onClick)
-            .padding(horizontal = 10.dp)
+            .padding(horizontal = 6.dp)
     ) {
         if (selected) {
-            LetteredText(label, 15.sp, outline = Color(0xFF8A3A00), minScale = 0.6f, modifier = Modifier.fillMaxWidth())
+            LetteredText(label, 15.sp, outline = Color(0xFF8A3A00), minScale = 0.4f, modifier = Modifier.fillMaxWidth())
         } else {
             com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                 text = label,
                 style = PaintedStyle(color = InkBrown, fontSize = 15.sp, textAlign = TextAlign.Center),
                 maxLines = 1,
-                minScale = 0.6f,
+                minScale = 0.4f,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -842,11 +848,18 @@ private fun ResultLevelCard(progress: com.sualtikasifi.cizimhafiza.domain.model.
             contentScale = ContentScale.FillBounds,
             modifier = Modifier.fillMaxSize()
         )
+        // The crown is drawn here (not painted into the card) so it can sit level with the "Seviye" line.
+        Image(
+            painterResource(R.drawable.lobby_crown),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.offset(s * 88f, s * 21f).size(s * 46f, s * 40f)
+        )
         FitText(
             text = stringResource(R.string.result_level_label, progress.level),
             style = PaintedStyle(color = InkBrown, fontSize = fs(38f), textAlign = TextAlign.Start),
             contentAlignment = Alignment.CenterStart,
-            modifier = Modifier.offset(s * 156f, s * 17f).size(s * 230f, s * 48f)
+            modifier = Modifier.offset(s * 146f, s * 17f).size(s * 240f, s * 48f)
         )
         Box(modifier = Modifier.offset(s * 380f, s * 20f).size(s * 262f, s * 42f), contentAlignment = Alignment.CenterEnd) {
             if (leveledUp) {
