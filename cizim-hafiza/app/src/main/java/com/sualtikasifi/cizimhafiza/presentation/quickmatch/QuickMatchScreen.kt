@@ -520,7 +520,7 @@ private fun MatchCard(
         }
         val ribbonW = 292f
         Box(
-            Modifier.offset(u * (cx - ribbonW / 2f), u * (290f * s - 30f)).size(u * ribbonW, u * 60f),
+            Modifier.offset(u * (cx - ribbonW / 2f), u * (290f * s - 28f)).size(u * ribbonW, u * 54f),
             contentAlignment = Alignment.Center
         ) {
             Image(painterResource(ribbon), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
@@ -533,7 +533,7 @@ private fun MatchCard(
             )
         }
         Row(
-            Modifier.offset(u * (cx - 120f), u * (337f * s - 22f)).size(u * 240f, u * 44f),
+            Modifier.offset(u * (cx - 120f), u * (337f * s - 30f)).size(u * 240f, u * 40f),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -541,7 +541,7 @@ private fun MatchCard(
             Spacer(Modifier.width(u * 8f))
             Text(
                 text = stringResource(R.string.level_total_xp, lifetimeXp),
-                style = PaintedStyle(color = Color(0xFF3B2314), fontSize = fs(32f)),
+                style = PaintedStyle(color = Color(0xFF3B2314), fontSize = fs(30f)),
                 maxLines = 1
             )
         }
