@@ -25,9 +25,31 @@ step() { sleep "${2:-2}"; clear_overlays; shot "$1"; dump "$1"; }
 clear_overlays() {
   local xy
   for label in "Wait" "Consent"; do
-    xy=$(find_xy "$label")
+    xy=$(find_exact "$label")
     if [ -n "$xy" ]; then echo "overlay: tapping '$label' at $xy"; adb shell input tap $xy; sleep 2; fi
   done
+}
+
+# Centre of the first node whose text / description is exactly $1 ("" when there is none).
+find_exact() {
+  dump _tmp
+  python3 - "$1" "$OUT/_tmp.xml" <<'PY'
+import sys, re, xml.etree.ElementTree as ET
+label, path = sys.argv[1].lower(), sys.argv[2]
+try:
+    tree = ET.parse(path)
+except Exception:
+    sys.exit(0)
+for n in tree.iter('node'):
+    t = (n.get('text') or '').strip().lower()
+    d = (n.get('content-desc') or '').strip().lower()
+    if label in (t, d):
+        m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', n.get('bounds') or '')
+        if m:
+            x1, y1, x2, y2 = map(int, m.groups())
+            print((x1 + x2) // 2, (y1 + y2) // 2)
+            break
+PY
 }
 
 # Centre of the first node whose text / description contains $1 ("" when there is none).
