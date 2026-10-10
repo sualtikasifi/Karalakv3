@@ -54,6 +54,8 @@ sleep 8
 sleep 50
 adb shell input tap 540 1678
 sleep 4
+clear_overlays
+for i in 1 2 3; do adb shell input tap 540 1678; sleep 3; clear_overlays; done
 shot 00_menu
 adb shell input tap 200 1140
 sleep 5
