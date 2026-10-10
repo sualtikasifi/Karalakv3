@@ -1018,6 +1018,7 @@
     <string name="quick_match_tip_words">You\'ll both draw the same %1$d words</string>
     <string name="quick_match_tip_scoring">Scores are compared when the match ends</string>
     <string name="quick_match_tip_fun">Relax and enjoy the game!</string>
+    <string name="quick_match_found_tagline">Great!\nMatch found.</string>
     <string name="quick_match_starting_in">Match starts in %1$d seconds</string>
     <string name="quick_match_starting_in_one">Match starts in %1$d second</string>
     <string name="quick_match_good_luck">Good luck!</string>
