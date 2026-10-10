@@ -380,7 +380,8 @@ fun LeagueScreen(
         }
         if (timerText != null) {
             NinePatch(
-                res = R.drawable.league_timer,
+                // The friends board never resets, so its strip carries a star (XP) instead of the countdown's clock.
+                res = if (uiState.tab == LeagueTab.Friends) R.drawable.league_timer_star else R.drawable.league_timer,
                 // The whole clock (170 of the picture's 532 x 164 px) is one corner piece, drawn at the picture's own
                 // proportions (38 dp tall = 164 px), so it is never squeezed sideways.
                 slicePx = 170,
