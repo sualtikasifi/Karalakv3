@@ -989,7 +989,7 @@
     <string name="result_stat_event">XP etkinliği</string>
     <string name="result_stat_multiplier">XP ×%1$d</string>
     <string name="result_gold_amount">+%1$d altın</string>
-    <string name="result_words_title">Çizdiğin %1$d Kelime</string>
+    <string name="result_words_title">Çizdiğin Kelimeler</string>
     <string name="result_x2_amount">x2 · %1$d XP</string>
     <string name="result_watch_ad">Reklam izle</string>
     <string name="daily_streak_label">Günlük seri</string>
@@ -1368,7 +1368,7 @@
     <string name="chest_timer_total">Açılma süresi</string>
     <string name="chest_timer_hint">Başlattığında geri sayım başlar</string>
     <string name="get_ready_tag">Sıradaki aşama</string>
-    <string name="get_ready_sub">Şimdi çizimleri tahmin etme sırası sende</string>
+    <string name="get_ready_sub">Şimdi sıra, çizimlerini tahmin etmekte</string>
     <string name="get_ready_line1">Tahmin aşamasına</string>
     <string name="get_ready_line2">hazırlan</string>
     <string name="store_daily_joker_tag">GÜNÜN ÜCRETSİZ JOKERİ</string>

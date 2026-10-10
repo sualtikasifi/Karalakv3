@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -93,8 +94,10 @@ internal fun ResultHeader(title: String, xp: Int, explanation: String, onBack: (
         fun box(x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
             Modifier.offset(u * x0, u * y0).size(u * (x1 - x0), u * (y1 - y0))
 
+        // res_head3 is the painted head with its lower edge fading out, so the dog and the leaves melt into the
+        // page instead of ending on a straight cut.
         Image(
-            painter = cachedPainterResource(R.drawable.res_head2),
+            painter = cachedPainterResource(R.drawable.res_head3),
             contentDescription = null,
             contentScale = ContentScale.FillBounds,
             modifier = Modifier.fillMaxSize()
@@ -363,56 +366,81 @@ internal fun ResultWordsBoard(
     modifier: Modifier = Modifier,
     header: (@Composable () -> Unit)? = null
 ) {
-    val frame = RoundedCornerShape(20.dp)
-    Column(
-        modifier = modifier
-            .shadow(6.dp, frame)
-            .background(Brush.verticalGradient(listOf(Color(0xFFA9662F), Color(0xFF8A4F22))), frame)
-            .border(3.dp, Color(0xFF5E3317), frame)
-            .padding(start = 8.dp, end = 8.dp, bottom = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // The title plank, hanging over the board's top edge.
-        Box(
-            modifier = Modifier
-                .padding(top = 6.dp)
-                .fillMaxWidth(if (header != null) 0.94f else 0.86f)
-                .height(if (header != null) 42.dp else 40.dp)
-                .shadow(3.dp, RoundedCornerShape(10.dp))
-                .background(Brush.verticalGradient(listOf(Color(0xFFC98543), Color(0xFFA9662F))), RoundedCornerShape(10.dp))
-                .border(2.dp, Color(0xFF6B3A18), RoundedCornerShape(10.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            if (header != null) header() else LetteredText(title, 19.sp, maxLines = 1, modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp))
-            if (onShareAll != null && header == null) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 8.dp)
-                        .size(30.dp)
-                        .background(Color(0x33FFFFFF), CircleShape)
-                        .pressable(pressedScale = 0.88f, onClick = onShareAll)
-                        .a11yButton(stringResource(R.string.share_all_drawings)),
-                    contentAlignment = Alignment.Center
-                ) { Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp)) }
-            }
-        }
-        Spacer(Modifier.height(10.dp))
+    // The painted board (res_words_board, 1420 x 988 px): the dog and the plank on top, the paper below. Row 647 of
+    // the picture is plain paper and frame, so that one row is what stretches when the sheets need more room; the
+    // rest is drawn at the picture's own proportions. The title sits on the plank (x 466..1301, y 228..390), the
+    // sheets on the paper (x 70..1350, y 420..925).
+    BoxWithConstraints(modifier = modifier) {
+        val u = maxWidth / 1420f
         val total = if (items.isEmpty()) placeholders else items.size
         val perRow = 5
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-            (0 until total).chunked(perRow).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                    row.forEach { n ->
-                        WordSheet(
-                            number = n + 1,
-                            item = items.getOrNull(n),
-                            wordLanguage = wordLanguage,
-                            onClick = onPreview,
-                            modifier = Modifier.weight(1f)
-                        )
+        val rows = ((total + perRow - 1) / perRow).coerceAtLeast(1)
+        val sheetW = (maxWidth - u * 140f - 6.dp * (perRow - 1)) / perRow
+        val gridH = sheetW / 0.95f * rows + 10.dp * (rows - 1)
+        // The paper as drawn holds 505 px; anything more stretches the band.
+        val extra = (gridH + u * 40f - u * 505f).coerceAtLeast(0.dp)
+        Box(Modifier.fillMaxWidth().height(u * 988f + extra)) {
+            // Drawn in three slices across the full width: rows 0..647 and 648..988 at the picture's own scale, and
+            // the single paper row 647 stretched to fill whatever height the sheets need in between.
+            val board = androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.res_words_board)
+            androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
+                val w = size.width.toInt()
+                val k = size.width / board.width
+                val topH = (647 * k).toInt()
+                val botSrc = board.height - 648
+                val botH = (botSrc * k).toInt()
+                val h = size.height.toInt()
+                drawImage(board, androidx.compose.ui.unit.IntOffset(0, 0), androidx.compose.ui.unit.IntSize(board.width, 647),
+                    dstOffset = androidx.compose.ui.unit.IntOffset(0, 0), dstSize = androidx.compose.ui.unit.IntSize(w, topH))
+                drawImage(board, androidx.compose.ui.unit.IntOffset(0, 647), androidx.compose.ui.unit.IntSize(board.width, 1),
+                    dstOffset = androidx.compose.ui.unit.IntOffset(0, topH), dstSize = androidx.compose.ui.unit.IntSize(w, (h - botH - topH).coerceAtLeast(0) + 1))
+                drawImage(board, androidx.compose.ui.unit.IntOffset(0, 648), androidx.compose.ui.unit.IntSize(board.width, botSrc),
+                    dstOffset = androidx.compose.ui.unit.IntOffset(0, h - botH), dstSize = androidx.compose.ui.unit.IntSize(w, botH))
+            }
+            // The title on the plank, with the share button at its right end.
+            Box(
+                modifier = Modifier.offset(u * 466f, u * 236f).size(u * 835f, u * 146f),
+                contentAlignment = Alignment.Center
+            ) {
+                if (header != null) {
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 6.dp)) { header() }
+                } else {
+                    LetteredText(
+                        title, 19.sp, maxLines = 1,
+                        modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = if (onShareAll != null) 44.dp else 12.dp),
+                        title = true
+                    )
+                }
+                if (onShareAll != null && header == null) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 14.dp)
+                            .size(30.dp)
+                            .background(Color(0x33FFFFFF), CircleShape)
+                            .pressable(pressedScale = 0.88f, onClick = onShareAll)
+                            .a11yButton(stringResource(R.string.share_all_drawings)),
+                        contentAlignment = Alignment.Center
+                    ) { Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp)) }
+                }
+            }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = u * 70f, end = u * 70f, top = u * 440f)
+            ) {
+                (0 until total).chunked(perRow).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                        row.forEach { n ->
+                            WordSheet(
+                                number = n + 1,
+                                item = items.getOrNull(n),
+                                wordLanguage = wordLanguage,
+                                onClick = onPreview,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        repeat(perRow - row.size) { Spacer(Modifier.weight(1f)) }
                     }
-                    repeat(perRow - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
@@ -472,10 +500,17 @@ private fun WordSheet(number: Int, item: ResultItem?, wordLanguage: String, onCl
 internal fun RowScope.ClaimContent(icon: ImageVector, line1: String, line2: String? = null) {
     Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
     Spacer(Modifier.width(8.dp))
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f, fill = false)) {
-        LetteredText(line1, if (line2 == null) 18.sp else 17.sp, outline = Color(0xFF8A3A00))
+    // Both buttons letter their main line in the same size and on the same line across the pair; the second
+    // line (only the ad button has one) hangs below it without moving it.
+    Box(modifier = Modifier.weight(1f, fill = false), contentAlignment = Alignment.Center) {
+        LetteredText(line1, 18.sp, outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.7f)
         if (line2 != null) {
-            Text(line2, style = DescriptionStyle(12.sp).copy(color = Color.White, fontWeight = FontWeight.Bold), maxLines = 1)
+            Text(
+                line2,
+                style = DescriptionStyle(10.sp).copy(color = Color.White, fontWeight = FontWeight.Bold),
+                maxLines = 1,
+                modifier = Modifier.align(Alignment.BottomCenter).offset(y = 13.dp)
+            )
         }
     }
 }

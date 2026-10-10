@@ -110,18 +110,21 @@ fun BreakScreen(state: GamePhase.Break) {
         Image(scene, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(0f, 0f, ArtW, ArtH))
 
         // ---- The sign: two white lines, inside the plank between its paint splashes -----------------
+        // Both lines in one size: the first line ("Tahmin aşamasına") is the longer one, so that size is set by what
+        // it needs to fit between the splashes, and the second line simply uses the same.
+        val signSize = fs(52f)
         LetteredText(
             text = stringResource(R.string.get_ready_line1),
-            size = fs(62f),
-            modifier = box(186f, 262f, 660f, 330f),
-            minScale = 0.5f,
+            size = signSize,
+            modifier = box(186f, 264f, 660f, 330f),
+            minScale = 1f,
             title = true
         )
         LetteredText(
             text = stringResource(R.string.get_ready_line2),
-            size = fs(80f),
-            modifier = box(232f, 326f, 612f, 406f),
-            minScale = 0.5f,
+            size = signSize,
+            modifier = box(186f, 330f, 660f, 396f),
+            minScale = 1f,
             title = true
         )
 
