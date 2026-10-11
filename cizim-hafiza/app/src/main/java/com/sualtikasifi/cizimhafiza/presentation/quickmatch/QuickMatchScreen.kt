@@ -342,9 +342,9 @@ private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart
                 // The sign is drawn over the lettering's lower edge at exactly the place it has in the design, so the two read as one
                 // picture (no cut, no fade between them).
                 Pic(R.drawable.mf_title, 450, 272, 1.2f, 150f, 62f)
-                Pic(R.drawable.mf_tag, 354, 106, 1.2f, 150f + 68f * 1.2f, 62f + 266f * 1.2f)
+                Pic(R.drawable.mf_tag, 354, 106, 1.2f, (841f - 354f * 1.2f) / 2f, 62f + 266f * 1.2f)
                 Box(
-                    Modifier.offset(u * (231.6f + 354f * 1.2f * 0.18f), u * (381.2f + 106f * 1.2f * 0.1f))
+                    Modifier.offset(u * ((841f - 354f * 1.2f) / 2f + 354f * 1.2f * 0.18f), u * (381.2f + 106f * 1.2f * 0.1f))
                         .size(u * 354f * 1.2f * 0.64f, u * 106f * 1.2f * 0.68f),
                     contentAlignment = Alignment.Center
                 ) {
