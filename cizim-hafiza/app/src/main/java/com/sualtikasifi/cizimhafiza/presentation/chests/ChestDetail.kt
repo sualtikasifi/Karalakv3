@@ -11,6 +11,19 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -149,93 +162,153 @@ private fun ChestDetailDialog(
             onBubbleDone()
         }
     }
-    AppWindowDialog(
-        title = stringResource(tier.labelRes()),
-        onDismiss = onDismiss,
-        footer = {
-            when {
-                ready -> {
-                    Text(
-                        text = stringResource(R.string.chest_detail_ready),
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = AppTheme.tokens.success
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    PrimaryButton(text = stringResource(R.string.chests_open_button), onClick = onOpen, modifier = Modifier.fillMaxWidth())
-                }
-    
-                unlocking -> {
-                    if (speedupAvailable) {
-                        Row(
+    // The design's window: a wooden frame with vines, the dog and the cat peeking over its sign (the chest's name lettered
+    // on it), a painted close button, the chest on its stump, what it can hold, the timer and the one button that fits.
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        androidx.compose.foundation.layout.BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss)
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            val w = minOf(maxWidth, 430.dp)
+            val maxH = maxHeight
+            val headW = w * 0.96f
+            val headH = headW * 340f / 540f
+            // How far down the head picture the plank's middle is: the frame starts there, so the sign overlaps its edge.
+            val frameTop = headH * 0.70f
+            val sign = Color(0xFFFFE08A)
+            Box(
+                modifier = Modifier
+                    .width(w)
+                    .heightIn(max = maxH)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
+            ) {
+                Column(modifier = Modifier.fillMaxWidth().heightIn(max = maxH)) {
+                    Spacer(Modifier.height(frameTop))
+                    NinePatch(
+                        res = R.drawable.cd_frame,
+                        slicePx = 96,
+                        edge = 40.dp,
+                        modifier = Modifier.fillMaxWidth().weight(1f, fill = false)
+                    ) {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .pressable(pressedScale = 0.95f, onClick = onSpeedup)
-                                .clip(RoundedCornerShape(50))
-                                .background(Color(0xFF2E8B45))
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                                .verticalScroll(rememberScrollState())
+                                .padding(start = 30.dp, end = 30.dp, top = (headH - frameTop) + 6.dp, bottom = 30.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(Icons.Filled.PlayCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
-                            Spacer(modifier = Modifier.size(8.dp))
-                            Text(
-                                text = stringResource(R.string.chest_speedup_button),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White
-                            )
-                            Spacer(modifier = Modifier.size(8.dp))
-                            Box(
-                                modifier = Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFFFE066)).padding(horizontal = 9.dp, vertical = 3.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.chest_speedup_badge),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF3A2416)
+                            ChestStage(tier = tier, bubble = bubble, wobble = wiggle.value, onTapChest = onTapChest)
+                            Spacer(modifier = Modifier.height(10.dp))
+                            ChestContentsPanel(tier = tier)
+                            if (!ready) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                ChestTimerPlate(chest = chest, nowMillis = nowMillis, unlocking = unlocking)
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            when {
+                                ready -> {
+                                    LetteredText(stringResource(R.string.chest_detail_ready), 20.sp, fill = Color(0xFFB8F5A0), outline = Color(0xFF1B5E20), modifier = Modifier.fillMaxWidth())
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    PillSprite(R.drawable.cd_btn_gr, 334f / 103f, stringResource(R.string.chests_open_button), Color(0xFF1B5E20), onOpen)
+                                }
+                                unlocking -> {
+                                    if (speedupAvailable) {
+                                        PillSprite(
+                                            R.drawable.cd_btn_gr, 334f / 103f,
+                                            stringResource(R.string.chest_speedup_button) + "  " + stringResource(R.string.chest_speedup_badge),
+                                            Color(0xFF1B5E20), onSpeedup
+                                        )
+                                    } else {
+                                        NoteStrip(stringResource(R.string.chest_speedup_used_today))
+                                    }
+                                }
+                                anotherUnlocking -> NoteStrip(stringResource(R.string.chest_slot_busy))
+                                else -> PillSprite(
+                                    R.drawable.cd_btn_or, 336f / 98f,
+                                    stringResource(R.string.chests_start_button) + " · " + stringResource(R.string.chest_duration_hours, tier.durationHours()),
+                                    Color(0xFF8A3A00), onStart
                                 )
                             }
                         }
-                    } else {
-                        Text(
-                            text = stringResource(R.string.chest_speedup_used_today),
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
-    
-                anotherUnlocking -> Text(
-                    text = stringResource(R.string.chest_slot_busy),
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                Image(
+                    painter = painterResource(R.drawable.cd_head),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillBounds,
+                    modifier = Modifier.align(Alignment.TopCenter).width(headW).height(headH)
                 )
-    
-                else -> PrimaryButton(
-                    text = stringResource(R.string.chests_start_button) + " · " + stringResource(R.string.chest_duration_hours, tier.durationHours()),
-                    onClick = onStart,
-                    modifier = Modifier.fillMaxWidth()
+                // The name on the sign: the plank is the lower part of the head picture.
+                LetteredText(
+                    text = stringResource(tier.labelRes()),
+                    size = (headW.value * 0.095f).sp,
+                    fill = sign,
+                    outline = Color(0xFF5A2815),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(y = headH * 0.55f)
+                        .width(headW * 0.66f)
+                        .height(headH * 0.2f),
+                    minScale = 0.5f,
+                    title = true
+                )
+                Image(
+                    painter = painterResource(R.drawable.cd_close),
+                    contentDescription = stringResource(R.string.close),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 4.dp, end = 0.dp)
+                        .size(58.dp)
+                        .pressable(pressedScale = 0.9f, onClick = onDismiss)
                 )
             }
         }
+    }
+}
+
+/** A painted pill button (the picture with its leaves) with lettering on it. */
+@Composable
+private fun PillSprite(res: Int, aspect: Float, text: String, outline: Color, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth(0.9f)
+            .aspectRatio(aspect)
+            .pressable(pressedScale = 0.95f, onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
-        ChestStage(tier = tier, bubble = bubble, wobble = wiggle.value, onTapChest = onTapChest)
+        Image(painter = painterResource(res), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+        LetteredText(text, 22.sp, outline = outline, modifier = Modifier.fillMaxWidth(0.62f), minScale = 0.5f)
+    }
+}
 
-        Spacer(modifier = Modifier.height(14.dp))
-
-        ChestContentsPanel(tier = tier)
-
-        if (!ready) {
-            Spacer(modifier = Modifier.height(12.dp))
-            ChestTimerPlate(chest = chest, nowMillis = nowMillis, unlocking = unlocking)
-        }
+/** The dashed note strip at the bottom of the design ("another chest is opening — wait for it"). */
+@Composable
+private fun NoteStrip(text: String) {
+    val shape = RoundedCornerShape(50)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(Color(0xFFFBEFD6))
+            .border(1.5.dp, Color(0xFFD9BC8C), shape)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("🎁", fontSize = 18.sp)
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF4A3426),
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -252,9 +325,9 @@ private fun ChestContentsPanel(tier: ChestTier) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(tier.accent().copy(alpha = 0.10f))
-            .border(1.5.dp, tier.accent().copy(alpha = 0.45f), RoundedCornerShape(18.dp))
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .background(Brush.verticalGradient(listOf(Color(0xFFFFF8E8), Color(0xFFFCEACB))))
+            .border(1.5.dp, Color(0xFFE5C48F), RoundedCornerShape(18.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -293,9 +366,17 @@ private fun ChestContentsPanel(tier: ChestTier) {
 
 @Composable
 private fun ContentsRow(emoji: String, text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(50))
+            .background(Color(0xFFF7E6C6))
+            .padding(horizontal = 4.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
         Box(
-            modifier = Modifier.size(28.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color.White.copy(alpha = 0.85f)),
+            modifier = Modifier.size(30.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color.White).border(1.5.dp, Color(0xFFE5C48F), androidx.compose.foundation.shape.CircleShape),
             contentAlignment = Alignment.Center
         ) { Text(text = emoji, fontSize = 15.sp) }
         Text(
@@ -398,32 +479,38 @@ private fun SpeechBubble(text: String) {
 }
 
 
-/** The tier's own backdrop with the chest on it, tappable, with the chest's answer as a speech bubble above. */
+/** The tier's own backdrop with the chest on its stump, tappable, with the chest's answer as a speech bubble above. */
 @Composable
 private fun ChestStage(tier: ChestTier, bubble: Bubble?, wobble: Float, onTapChest: () -> Unit) {
     // Scales with the screen so a short phone still has room for the timer and the action button.
-    val stageHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.30f).coerceIn(170f, 282f)
-    val chestWidth = stageHeight * 0.84f
+    val stageHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.25f).coerceIn(150f, 230f)
+    val chestWidth = stageHeight * 0.74f
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(stageHeight.dp)
-            .clip(RoundedCornerShape(22.dp))
-            .border(3.dp, tier.borderColor(), RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(18.dp))
+            .border(2.dp, tier.borderColor(), RoundedCornerShape(18.dp))
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onTapChest),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.BottomCenter
     ) {
         ChestBackdrop(tier = tier, modifier = Modifier.matchParentSize())
+        Image(
+            painter = painterResource(R.drawable.cd_stump),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier.fillMaxWidth(1.02f).offset(y = 6.dp)
+        )
         Box(
             modifier = Modifier
-                .padding(top = 40.dp)
+                .padding(bottom = (stageHeight * 0.15f).dp)
                 .graphicsLayer { rotationZ = wobble * 6f }
         ) {
             ChestImage(tier = tier, width = chestWidth.dp)
         }
         AnimatedVisibility(
             visible = bubble != null,
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 10.dp, start = 16.dp, end = 16.dp),
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp, start = 16.dp, end = 16.dp),
             enter = fadeIn(tween(120)) + scaleIn(initialScale = 0.7f),
             exit = fadeOut(tween(160)) + scaleOut(targetScale = 0.9f)
         ) {
