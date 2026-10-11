@@ -56,6 +56,7 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var musicPlayer: MusicPlayer
     @Inject lateinit var googleSignInLauncher: GoogleSignInLauncher
     @Inject lateinit var autoBackupPublisher: dagger.Lazy<AutoBackupPublisher>
+    @Inject lateinit var networkMonitor: com.sualtikasifi.cizimhafiza.util.NetworkMonitor
 
     private var navController: NavHostController? = null
 
@@ -126,6 +127,8 @@ class MainActivity : AppCompatActivity() {
         val tutorialCompleted = settingsRepository.tutorialCompleted
         val composeApp = {
         setContent {
+            val online by networkMonitor.isOnline.collectAsState()
+            androidx.compose.runtime.CompositionLocalProvider(com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline provides online) {
             CizimHafizaTheme {
                 // The app's cream page color, not Surface's default white:
                 // this is what shows through anywhere a screen's own
@@ -181,6 +184,7 @@ class MainActivity : AppCompatActivity() {
                         })
                     }
                 }
+            }
             }
         }
         }

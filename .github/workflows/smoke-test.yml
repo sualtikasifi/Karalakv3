@@ -21,6 +21,7 @@ on:
           - tutorial.sh
           - worlds.sh
           - store.sh
+          - offline_net.sh
           - chest.sh
           - qs.sh
           - duel.sh

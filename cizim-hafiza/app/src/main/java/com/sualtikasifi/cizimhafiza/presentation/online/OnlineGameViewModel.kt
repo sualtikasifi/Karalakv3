@@ -118,6 +118,7 @@ class OnlineGameViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val ghostRunRepository: GhostRunRepository,
     private val xpEventRepository: XpEventRepository,
+    private val networkMonitor: com.sualtikasifi.cizimhafiza.util.NetworkMonitor,
     botRoomEngine: BotRoomEngine
 ) : ViewModel() {
 
@@ -256,6 +257,15 @@ class OnlineGameViewModel @Inject constructor(
     private var currentDrawingTotal = 0
 
     private var timerJob: Job? = null
+
+    private val _connectionLost = MutableStateFlow(false)
+
+    /**
+     * True when the match ran out with no internet, so the result could not reach the room. The clock never waits for the
+     * connection (the time that passes while offline is not given back); if it comes back before the end the match simply
+     * carries on, and only a match that ENDS offline stops here, with a notice the player confirms before going home.
+     */
+    val connectionLost: StateFlow<Boolean> = _connectionLost
 
     private val recoveryJson = Json { ignoreUnknownKeys = true }
 
@@ -729,15 +739,24 @@ class OnlineGameViewModel @Inject constructor(
         // score fields (a separate, faster write) landed fine, but the
         // drawings never did, leaving the comparison screen's galleries
         // empty even though the scores showed up correctly.
-        runCatching {
-            onlineGameRepository.submitResult(
-                roomCode = roomCode,
-                totalScore = totalScore,
-                correctCount = correctCount,
-                wrongCount = wrongCount,
-                fastestCorrectMs = fastest,
-                items = items
-            )
+        // A write with no connection would wait for one without end: give it a moment, and if the phone is still
+        // offline the match is over for this player (see connectionLost).
+        val sent = kotlinx.coroutines.withTimeoutOrNull(12_000L) {
+            if (!networkMonitor.isOnline.value) null
+            else runCatching {
+                onlineGameRepository.submitResult(
+                    roomCode = roomCode,
+                    totalScore = totalScore,
+                    correctCount = correctCount,
+                    wrongCount = wrongCount,
+                    fastestCorrectMs = fastest,
+                    items = items
+                )
+            }
+        }
+        if (sent == null && !networkMonitor.isOnline.value) {
+            _connectionLost.value = true
+            return
         }
 
         // Left behind as a Hızlı Eşleş opponent, same as a solo free-play

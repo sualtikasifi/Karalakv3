@@ -1390,4 +1390,10 @@
     <string name="online_lobby_line2">can be harder than quantum physics.</string>
     <string name="online_lobby_line3">Welcome to the funniest</string>
     <string name="online_lobby_line4">scribble battles!</string>
+    <string name="offline_needed">An internet connection is required</string>
+    <string name="offline_screen_title">No internet</string>
+    <string name="offline_screen_body">You need an internet connection to play this. Play Offline and Levels work without it.</string>
+    <string name="online_game_lost_title">Connection lost</string>
+    <string name="online_game_lost_body">You had no internet when the game ended, so the result could not be sent. Return home and keep playing offline.</string>
+    <string name="online_game_lost_ok">OK</string>
 </resources>

@@ -351,11 +351,13 @@ fun CizimHafizaNavGraph(
         }
 
         composable(Screen.OnlineLobby) {
+            com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {
             OnlineLobbyScreen(
                 onBack = { navController.popBackStack() },
                 onCreateRoom = { navController.navigate(Screen.OnlineCreateRoom) },
                 onJoinRoom = { navController.navigate(Screen.OnlineJoinRoomBase) }
             )
+            }
         }
 
         composable(
@@ -369,6 +371,7 @@ fun CizimHafizaNavGraph(
             ),
             deepLinks = listOf(navDeepLink { uriPattern = Screen.FriendInviteDeepLinkPattern })
         ) {
+            com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {
             FriendsScreen(
                 onNavigateToWaitingRoom = { roomCode ->
                     navController.navigate(Screen.onlineWaitingRoomRoute(roomCode)) {
@@ -381,6 +384,7 @@ fun CizimHafizaNavGraph(
                 },
                 onDuelList = { navController.navigate(Screen.DuelList) }
             )
+            }
         }
 
         composable(
@@ -407,6 +411,7 @@ fun CizimHafizaNavGraph(
         }
 
         composable(Screen.DuelList) {
+            com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {
             DuelListScreen(
                 onBack = { navController.popBackStack() },
                 // Runs the opponent's own round through the ordinary game
@@ -417,13 +422,17 @@ fun CizimHafizaNavGraph(
                     }
                 }
             )
+            }
         }
 
         composable(Screen.League) {
+            com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {
             LeagueScreen(onBack = { navController.popBackStack() }, onFriends = { navController.navigate(Screen.FriendsBase) })
+            }
         }
 
         composable(Screen.OnlineCreateRoom) {
+            com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {
             CreateRoomScreen(
                 onBack = { navController.popBackStack() },
                 onRoomCreated = { roomCode ->
@@ -432,6 +441,7 @@ fun CizimHafizaNavGraph(
                     }
                 }
             )
+            }
         }
 
         composable(
@@ -445,6 +455,7 @@ fun CizimHafizaNavGraph(
             ),
             deepLinks = listOf(navDeepLink { uriPattern = Screen.InviteDeepLinkPattern })
         ) {
+            com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {
             JoinRoomScreen(
                 onBack = { navController.popBackStack() },
                 onJoined = { roomCode ->
@@ -453,6 +464,7 @@ fun CizimHafizaNavGraph(
                     }
                 }
             )
+            }
         }
 
         composable(

@@ -757,7 +757,7 @@ private fun StreakRescueDialog(lostStreak: Int, onRescue: () -> Unit, onDismiss:
                 Spacer(modifier = Modifier.height(20.dp))
                 PrimaryButton(
                     text = stringResource(R.string.streak_rescue_action),
-                    onClick = onRescue,
+                    onClick = com.sualtikasifi.cizimhafiza.presentation.common.adOnly(onRescue),
                     icon = Icons.Filled.PlayCircle,
                     height = 54.dp,
                     modifier = Modifier.fillMaxWidth()

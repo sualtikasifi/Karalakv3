@@ -332,20 +332,23 @@ fun DrawingScreen(
                 // screen's hint (see GameViewModel/OnlineGameViewModel.useDrawingHint). Hidden entirely while ads
                 // are off: the offer is the ad.
                 val label = stringResource(if (hintRequested) R.string.loading_hint else R.string.watch_ad_for_extra_time)
+                val hintOnline = com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current
+                val hintTap = com.sualtikasifi.cizimhafiza.presentation.common.adOnly {
+                    if (!hintRequested) {
+                        hintRequested = true
+                        onHintClick()
+                    }
+                }
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
+                        .graphicsLayer { alpha = if (hintOnline) 1f else 0.55f }
                         .size(a(230f), a(82f))
                         .shadow(2.dp, RoundedCornerShape(50))
                         .background(Color.White, RoundedCornerShape(50))
                         .border(2.dp, Color(0xFFF26A1B), RoundedCornerShape(50))
                         .clip(RoundedCornerShape(50))
-                        .clickable(enabled = !hintRequested) {
-                            if (!hintRequested) {
-                                hintRequested = true
-                                onHintClick()
-                            }
-                        }
+                        .clickable(enabled = !hintRequested, onClick = hintTap)
                 ) {
                     Text(label, style = PaintedStyle(color = Color(0xFFF26A1B), fontSize = 15.sp * f), maxLines = 1, modifier = Modifier.padding(horizontal = 8.dp))
                 }

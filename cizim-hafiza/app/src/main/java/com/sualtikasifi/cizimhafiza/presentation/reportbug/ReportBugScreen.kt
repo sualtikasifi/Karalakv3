@@ -122,6 +122,7 @@ fun ReportBugScreen(
     // history of earlier reports grows below it.
     val ink = Color(0xFF3B2314)
     val canSend = uiState.description.isNotBlank() && !uiState.isSubmitting
+    val isOnline = com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current
     Box(modifier = Modifier.fillMaxSize()) {
         androidx.compose.foundation.Image(
             painter = com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource(R.drawable.bg_report),
@@ -265,8 +266,8 @@ fun ReportBugScreen(
                 text = stringResource(if (uiState.isSubmitting) R.string.report_bug_sending else R.string.report_bug_submit),
                 enabled = canSend,
                 busy = uiState.isSubmitting,
-                onClick = viewModel::submit,
-                modifier = Modifier.fillMaxWidth(0.84f)
+                onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::submit),
+                modifier = Modifier.fillMaxWidth(0.84f).graphicsLayer { alpha = if (isOnline) 1f else 0.55f }
             )
 
             if (myReports.isNotEmpty()) {

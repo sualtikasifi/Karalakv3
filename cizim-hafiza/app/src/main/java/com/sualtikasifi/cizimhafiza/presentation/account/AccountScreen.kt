@@ -74,6 +74,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -151,6 +152,7 @@ fun AccountScreen(
         fun box(x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
             Modifier.offset(offX + unit * x0, offY + unit * y0).requiredSize(unit * (x1 - x0), unit * (y1 - y0))
 
+        val online = com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current
         val scene = cachedPainterResource(R.drawable.bg_account)
         if (offX > 1.dp || offY > 1.dp) {
             Image(scene, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(20.dp))
@@ -365,7 +367,10 @@ fun AccountScreen(
                 )
             }
             uiState.isGoogleSignInConfigured -> Box(box(130f, 1318f, 710f, 1440f), contentAlignment = Alignment.Center) {
-                GoogleSignInButton(onClick = viewModel::signIn, modifier = Modifier.fillMaxWidth())
+                GoogleSignInButton(
+                    onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::signIn),
+                    modifier = Modifier.fillMaxWidth().graphicsLayer { alpha = if (online) 1f else 0.55f }
+                )
             }
         }
 
@@ -380,10 +385,11 @@ fun AccountScreen(
                 Row(
                     Modifier
                         .fillMaxSize()
+                        .graphicsLayer { alpha = if (online) 1f else 0.55f }
                         .clip(RoundedCornerShape(50))
                         .background(Color(0xFFFFF6EE))
                         .border((4f * us).dp, Color(0xFFD63A2E), RoundedCornerShape(50))
-                        .pressable(pressedScale = 0.96f, onClick = viewModel::promptDeleteAccount)
+                        .pressable(pressedScale = 0.96f, onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::promptDeleteAccount))
                         .a11yButton(stringResource(R.string.account_delete_action)),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center

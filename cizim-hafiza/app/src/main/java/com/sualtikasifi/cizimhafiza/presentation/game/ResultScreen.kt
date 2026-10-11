@@ -356,7 +356,8 @@ fun ResultScreen(
                             res = R.drawable.rs_btn_ad,
                             u = u,
                             enabled = canDouble,
-                            onClick = { onDoubleXp?.invoke() },
+                            veiled = !com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current,
+                            onClick = com.sualtikasifi.cizimhafiza.presentation.common.adOnly { onDoubleXp?.invoke() },
                             modifier = Modifier.weight(1f)
                         ) {
                             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -869,6 +870,8 @@ private fun ArtButton(
     enabled: Boolean = true,
     /** Room kept on the left for a painted icon (the ad button's clapper); 0 for a button whose lettering is centred. */
     iconRoom: Float = 140f,
+    /** Faded like a disabled button but still tappable (an ad button with no internet explains itself when tapped). */
+    veiled: Boolean = false,
     content: @Composable BoxScope.() -> Unit
 ) {
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
@@ -884,7 +887,7 @@ private fun ArtButton(
         clampEdgeToHeight = false,
         modifier = modifier
             .height(u * 100f)
-            .graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (enabled) 1f else 0.55f }
+            .graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (enabled && !veiled) 1f else 0.55f }
             .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
     ) {
         Box(Modifier.fillMaxSize().padding(start = u * (if (iconRoom > 0f) iconRoom else 38f), end = u * 38f), content = content)

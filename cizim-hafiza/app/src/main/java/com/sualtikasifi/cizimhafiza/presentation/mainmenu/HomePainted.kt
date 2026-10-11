@@ -156,6 +156,8 @@ internal fun PaintedHome(
         val offX = (maxWidth - unit * ArtW) / 2
         val offY = (maxHeight - unit * ArtH) / 2
         val us = unit.value
+        val online = com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current
+        val veil = Color(0x70EADBC4)
         // Lettering on the scene follows the picture, not the system font-size setting (see FitLettered).
         val fontScale0 = LocalDensity.current.fontScale
         fun fs(art: Float) = (art * us / fontScale0).sp
@@ -330,6 +332,7 @@ internal fun PaintedHome(
             ))
         }
         val available = dailyState.isAvailableToday
+        val dailyTap = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(onDaily)
         if (available) {
             Image(
                 painter = painterResource(R.drawable.home_daily_card),
@@ -366,7 +369,7 @@ internal fun PaintedHome(
                     .background(Brush.verticalGradient(listOf(Color(0xFFFFE27A), Color(0xFFFFB300))), RoundedCornerShape(50))
                     .border(2.dp, Color(0xFFB36B00), RoundedCornerShape(50))
                     .glint(2400, 0.55f, 40.dp)
-                    .pressable(pressedScale = 0.95f, onClick = onDaily),
+                    .pressable(pressedScale = 0.95f, onClick = dailyTap),
                 contentAlignment = Alignment.Center
             ) {
                 FitText(
@@ -403,6 +406,9 @@ internal fun PaintedHome(
             }
         }
 
+        // No internet: the daily challenge (a source of rewarded ads) is veiled like the other online tiles.
+        if (!online) Box(box(236f, 538f, 608f, 756f).clip(RoundedCornerShape(26.dp)).background(veil))
+
         // Ad gold (left)
         val goldNow = rememberNowUntil(adGoldNextAt)
         val goldRemaining = adGoldNextAt - goldNow
@@ -411,8 +417,9 @@ internal fun PaintedHome(
         Box(
             box(34f, 538f, 230f, 754f)
                 .then(sunk(goldCardSink, 34f, 538f, 230f, 754f, 26f))
-                .clickable(enabled = goldReady, interactionSource = goldCardSink.source, indication = null, onClick = onWatchGold)
+                .clickable(enabled = goldReady, interactionSource = goldCardSink.source, indication = null, onClick = com.sualtikasifi.cizimhafiza.presentation.common.adOnly(onWatchGold))
         ) {}
+        if (!online) Box(box(34f, 538f, 230f, 754f).clip(RoundedCornerShape(26.dp)).background(veil))
         FitLettered(stringResource(R.string.home_ad_gold_label), 36f, Color(0xFF8A4E12), 1, box(40f, 648f, 226f, 698f).then(follow(goldCardSink, 132f, 646f, 40f, 648f, 226f, 698f)))
         // The coins are painted into the scene, so they cannot move on their own: glitter and a passing glint over them
         // do the calling instead, while there is a reward to take.
@@ -434,8 +441,9 @@ internal fun PaintedHome(
         Box(
             box(616f, 538f, 808f, 754f)
                 .then(sunk(chestCardSink, 616f, 538f, 808f, 754f, 26f))
-                .clickable(enabled = adChestAvailable, interactionSource = chestCardSink.source, indication = null, onClick = onWatchChest)
+                .clickable(enabled = adChestAvailable, interactionSource = chestCardSink.source, indication = null, onClick = com.sualtikasifi.cizimhafiza.presentation.common.adOnly(onWatchChest))
         ) {}
+        if (!online) Box(box(616f, 538f, 808f, 754f).clip(RoundedCornerShape(26.dp)).background(veil))
         FitLettered(stringResource(R.string.home_ad_chest_label), 27f, Color(0xFF14549A), 2, box(634f, 640f, 796f, 706f).then(follow(chestCardSink, 712f, 646f, 634f, 640f, 796f, 706f)))
         // Same for the chest: it cannot move, so it glitters and catches the light while a free one is waiting.
         com.sualtikasifi.cizimhafiza.presentation.common.SparkleField(
@@ -453,31 +461,34 @@ internal fun PaintedHome(
 
         // ── Tiles ──
         @Composable
-        fun Tile(x0: Float, y0: Float, x1: Float, y1: Float, lx0: Float, ly0: Float, lx1: Float, ly1: Float, label: String, onClick: () -> Unit, content: @Composable () -> Unit = {}) {
+        fun Tile(x0: Float, y0: Float, x1: Float, y1: Float, lx0: Float, ly0: Float, lx1: Float, ly1: Float, label: String, onClick: () -> Unit, needsNet: Boolean = false, content: @Composable () -> Unit = {}) {
             val sink = rememberSink(0.92f)
+            val tap = if (needsNet) com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(onClick) else onClick
             Box(
                 box(x0, y0, x1, y1)
                     .then(sunk(sink, x0, y0, x1, y1, 26f))
-                    .clickable(interactionSource = sink.source, indication = null, onClick = onClick)
+                    .clickable(interactionSource = sink.source, indication = null, onClick = tap)
                     .a11yButton(label)
             ) {}
+            // No internet: the tile stays but is veiled; tapping it says why it is closed.
+            if (needsNet && !online) Box(box(x0, y0, x1, y1).clip(RoundedCornerShape(26.dp)).background(veil))
             FitLettered(label, 31f, Color(0xFF241408), 2, box(lx0, ly0, lx1, ly1).then(follow(sink, (x0 + x1) / 2f, (y0 + y1) / 2f, lx0, ly0, lx1, ly1)))
             content()
         }
-        Tile(30f, 776f, 288f, 1012f, 50f, 918f, 274f, 1002f, stringResource(R.string.menu_play_online), onPlayOnline)
-        Tile(294f, 776f, 552f, 1012f, 330f, 940f, 520f, 986f, stringResource(R.string.quick_match_title), onQuickMatch) {
+        Tile(30f, 776f, 288f, 1012f, 50f, 918f, 274f, 1002f, stringResource(R.string.menu_play_online), onPlayOnline, needsNet = true)
+        Tile(294f, 776f, 552f, 1012f, 330f, 940f, 520f, 986f, stringResource(R.string.quick_match_title), onQuickMatch, needsNet = true) {
             val boosted = xpEvent != null && xpEvent.endsAtMillis > System.currentTimeMillis()
             if (boosted && xpEvent != null) BoostBadge(xpEvent.multiplier, box(306f, 788f, 420f, 826f))
         }
         Tile(558f, 776f, 816f, 1012f, 578f, 918f, 798f, 1002f, stringResource(R.string.menu_play), onPlay)
         Tile(30f, 1018f, 288f, 1204f, 50f, 1142f, 268f, 1188f, stringResource(R.string.menu_levels), onLevels)
-        Tile(294f, 1018f, 552f, 1204f, 320f, 1142f, 526f, 1188f, stringResource(R.string.menu_friends), onFriends) {
+        Tile(294f, 1018f, 552f, 1204f, 320f, 1142f, 526f, 1188f, stringResource(R.string.menu_friends), onFriends, needsNet = true) {
             if (pendingFriendRequests > 0) CornerCount(box(484f, 1024f, 548f, 1072f), pendingFriendRequests)
         }
         Tile(558f, 1018f, 816f, 1204f, 584f, 1142f, 792f, 1188f, stringResource(R.string.menu_achievements), onAchievements) {
             if (hasUnseenAchievement) CornerDot(box(764f, 1028f, 804f, 1068f))
         }
-        Tile(30f, 1210f, 288f, 1398f, 50f, 1332f, 268f, 1380f, stringResource(R.string.league_title), onLeague)
+        Tile(30f, 1210f, 288f, 1398f, 50f, 1332f, 268f, 1380f, stringResource(R.string.league_title), onLeague, needsNet = true)
         Tile(294f, 1210f, 552f, 1398f, 340f, 1332f, 510f, 1380f, stringResource(R.string.store_title), onStore)
         Tile(558f, 1210f, 816f, 1398f, 590f, 1332f, 786f, 1380f, stringResource(R.string.menu_settings), onSettings) {
             if (accountNotLinked) CornerDot(box(766f, 1218f, 806f, 1258f))
