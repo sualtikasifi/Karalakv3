@@ -378,7 +378,7 @@ internal fun ResultWordsBoard(
         val gap = k * 8f
         val sheetW = (k * 632f - gap * (perRow - 1)) / perRow
         val gridH = sheetW / 0.95f * rows + gap * (rows - 1)
-        val boardH = maxOf(k * 300f, k * 138f + gridH + k * 48f)
+        val boardH = maxOf(k * 300f, k * 138f + gridH + k * 70f)
         Box(Modifier.fillMaxWidth().height(boardH)) {
             val board = androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.rs_board)
             androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
@@ -452,7 +452,7 @@ private fun WordSheet(number: Int, item: ResultItem?, wordLanguage: String, onCl
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = 6.dp, end = 4.dp)
-                .shadow(3.dp, sheet)
+                .shadow(2.dp, sheet)
                 .clip(sheet)
                 .background(if (item == null) Color(0x99FFF3DA) else Color(0xFFFFF6E2))
                 .border(1.dp, Color(0xFFD9BC8C), sheet)
