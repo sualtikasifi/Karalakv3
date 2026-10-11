@@ -81,6 +81,8 @@ private const val HeadTop = 6f
 private const val PlateTop = 440f
 private const val PlateH = 100f
 internal const val HeadBlockH = PlateTop + PlateH
+// Without the XP plate (the daily challenge shows its reward on its own card) the head ends with the picture.
+private const val HeadOnlyH = HeadTop + 415f * HeadScale + 4f
 
 internal val ResultInk = Color(0xFF3B2314)
 private val XpOrange = Color(0xFFF2541B)
@@ -90,11 +92,11 @@ private val XpOrange = Color(0xFFF2541B)
  * round's XP (counting up) with the line that explains it.
  */
 @Composable
-internal fun ResultHeader(title: String, xp: Int, explanation: String, onBack: () -> Unit) {
+internal fun ResultHeader(title: String, xp: Int, explanation: String, onBack: () -> Unit, showXp: Boolean = true) {
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(ResArtW / HeadBlockH)
+            .aspectRatio(ResArtW / (if (showXp) HeadBlockH else HeadOnlyH))
     ) {
         val u = maxWidth / ResArtW
         val fontScale0 = LocalDensity.current.fontScale
@@ -127,7 +129,7 @@ internal fun ResultHeader(title: String, xp: Int, explanation: String, onBack: (
             title = true
         )
         // The plate: stretched to 480 wide, its leaf corners and frame kept at the picture's own size.
-        Box(box((ResArtW - 480f) / 2f, PlateTop, (ResArtW + 480f) / 2f, PlateTop + PlateH)) {
+        if (showXp) Box(box((ResArtW - 480f) / 2f, PlateTop, (ResArtW + 480f) / 2f, PlateTop + PlateH)) {
             NinePatch(
                 res = R.drawable.rs_xp,
                 slicePx = 46,
@@ -284,24 +286,24 @@ internal fun resultStats(state: GamePhase.Result): List<ResultStat> {
  */
 @Composable
 internal fun ResultDailyCard(daily: DailyResultSummary, correctFlags: List<Boolean>, onShare: () -> Unit, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(18.dp)
     Column(
         modifier = modifier
             .shadow(4.dp, shape)
             .background(Brush.verticalGradient(listOf(Color(0xFFFFF8E6), Color(0xFFFCEACB))), shape)
-            .border(3.dp, Color(0xFFE8A13A), shape)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .border(2.5.dp, Color(0xFFE8A13A), shape)
+            .padding(horizontal = 12.dp, vertical = 7.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = stringResource(R.string.daily_challenge_result_title),
-            style = PaintedStyle(color = ResultInk, fontSize = 19.sp, textAlign = TextAlign.Center)
+            style = PaintedStyle(color = ResultInk, fontSize = 16.sp, textAlign = TextAlign.Center)
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
         val count = correctFlags.size.coerceAtLeast(com.sualtikasifi.cizimhafiza.domain.model.DailyChallenge.WORD_COUNT)
         BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            // As big as 32dp, smaller when that many would not fit side by side.
-            val pip = (maxWidth / (count * 1.25f)).coerceAtMost(32.dp)
+            // As big as 24dp, smaller when that many would not fit side by side.
+            val pip = (maxWidth / (count * 1.25f)).coerceAtMost(24.dp)
             com.sualtikasifi.cizimhafiza.presentation.common.DailyPips(
                 flags = correctFlags,
                 count = count,
@@ -310,40 +312,40 @@ internal fun ResultDailyCard(daily: DailyResultSummary, correctFlags: List<Boole
                 rimColor = Color(0xFFFFF6E6)
             )
         }
-        Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+        Spacer(Modifier.height(5.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             DailyPill("🔥", daily.streak.toString(), stringResource(R.string.daily_streak_label), Color(0xFFE8650F), Modifier.weight(1f))
             DailyPill("⭐", stringResource(R.string.daily_challenge_xp_earned, daily.xpEarned), stringResource(R.string.daily_reward_won), Color(0xFFE8650F), Modifier.weight(1f))
         }
         if (daily.streakMultiplierIncreased) {
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(3.dp))
             Text(
                 text = stringResource(R.string.daily_challenge_streak_multiplier_increased, daily.streakMultiplier),
-                style = PaintedStyle(color = Color(0xFFB5441A), fontSize = 14.sp, textAlign = TextAlign.Center)
+                style = PaintedStyle(color = Color(0xFFB5441A), fontSize = 12.sp, textAlign = TextAlign.Center)
             )
         }
-        Spacer(Modifier.height(10.dp))
-        GreenButton(text = stringResource(R.string.daily_challenge_share), onClick = onShare, modifier = Modifier.fillMaxWidth(0.9f))
+        Spacer(Modifier.height(5.dp))
+        GreenButton(text = stringResource(R.string.daily_challenge_share), onClick = onShare, modifier = Modifier.fillMaxWidth(0.8f), height = 38.dp)
     }
 }
 
 @Composable
 private fun DailyPill(emoji: String, value: String, label: String, valueColor: Color, modifier: Modifier) {
-    val shape = RoundedCornerShape(18.dp)
+    val shape = RoundedCornerShape(14.dp)
     Column(
         modifier = modifier
             .background(Color.White, shape)
             .border(1.5.dp, Color(0xFFEBCB9A), shape)
-            .padding(vertical = 6.dp, horizontal = 8.dp),
+            .padding(vertical = 3.dp, horizontal = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(emoji, fontSize = 18.sp)
-            Text(value, style = PaintedStyle(color = valueColor, fontSize = 20.sp, textAlign = TextAlign.Center), maxLines = 1)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(emoji, fontSize = 15.sp)
+            Text(value, style = PaintedStyle(color = valueColor, fontSize = 17.sp, textAlign = TextAlign.Center), maxLines = 1)
         }
         FitText(
             text = label,
-            style = PaintedStyle(color = ResultInk, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+            style = PaintedStyle(color = ResultInk, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
             maxLines = 1,
             minScale = 0.7f,
             modifier = Modifier.fillMaxWidth()
@@ -353,11 +355,11 @@ private fun DailyPill(emoji: String, value: String, label: String, valueColor: C
 
 /** The green "share" button of the design: a glossy pill with a share mark and white lettering. */
 @Composable
-internal fun GreenButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+internal fun GreenButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, height: Dp = 52.dp) {
     val shape = RoundedCornerShape(50)
     Row(
         modifier = modifier
-            .height(52.dp)
+            .height(height)
             .pressable(pressedScale = 0.95f, onClick = onClick)
             .shadow(4.dp, shape)
             .background(Brush.verticalGradient(listOf(Color(0xFF7EDC5C), Color(0xFF34A83A), Color(0xFF248A2E))), shape)
@@ -367,9 +369,9 @@ internal fun GreenButton(text: String, onClick: () -> Unit, modifier: Modifier =
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
-        Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
+        Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(height * 0.5f))
         Spacer(Modifier.width(10.dp))
-        LetteredText(text, 21.sp, outline = Color(0xFF1B5E20), modifier = Modifier.weight(1f, fill = false))
+        LetteredText(text, (height.value * 0.4f).sp, outline = Color(0xFF1B5E20), modifier = Modifier.weight(1f, fill = false))
     }
 }
 
