@@ -228,7 +228,9 @@ fun ResultScreen(
                         title = stringResource(R.string.game_over),
                         xp = xpCount,
                         explanation = explanation,
-                        onBack = { if (!(xpDoubled && !startedDoubled)) onMainMenu() }
+                        onBack = { if (!(xpDoubled && !startedDoubled)) onMainMenu() },
+                        // The daily challenge shows its reward on its own card, so its head ends with the picture.
+                        showXp = state.daily == null
                     )
                 }
                 Column(
