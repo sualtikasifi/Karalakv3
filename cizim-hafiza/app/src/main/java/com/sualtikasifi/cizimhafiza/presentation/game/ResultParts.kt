@@ -73,30 +73,26 @@ internal const val ResArtW = 841f
 
 // rs_head (663 x 415 px): the back button, the mascot with the trophy and the empty sign, shown 720 units wide and
 // centred; the XP plate (rs_xp) overlaps the wreath's lower edge.
-private const val HeadShown = 720f
+private const val HeadShown = 690f
 private const val HeadScale = HeadShown / 663f
 // The sign sits a little left of the picture's middle; shifting the picture by this puts the sign on the screen's centre.
 private const val HeadShift = 7f
-private const val HeadTop = 6f
+private const val HeadTop = 0f
 private const val PlateTop = 440f
 private const val PlateH = 100f
-internal const val HeadBlockH = PlateTop + PlateH
-// Without the XP plate (the daily challenge shows its reward on its own card) the head ends with the picture.
-private const val HeadOnlyH = HeadTop + 415f * HeadScale + 4f
+// The XP plate is gone (the round's XP is the last stat card now), so the head is the picture alone.
+internal const val HeadBlockH = HeadTop + 415f * HeadScale + 2f
 
 internal val ResultInk = Color(0xFF3B2314)
-private val XpOrange = Color(0xFFF2541B)
+internal val XpOrange = Color(0xFFF2541B)
 
-/**
- * The head of the result screen: the painted picture with the title lettered on its sign and, on the plate under it, the
- * round's XP (counting up) with the line that explains it.
- */
+/** The head of the result screen: the painted picture with the title lettered on its sign. */
 @Composable
-internal fun ResultHeader(title: String, xp: Int, explanation: String, onBack: () -> Unit, showXp: Boolean = true) {
+internal fun ResultHeader(title: String, onBack: () -> Unit) {
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(ResArtW / (if (showXp) HeadBlockH else HeadOnlyH))
+            .aspectRatio(ResArtW / HeadBlockH)
     ) {
         val u = maxWidth / ResArtW
         val fontScale0 = LocalDensity.current.fontScale
@@ -128,40 +124,6 @@ internal fun ResultHeader(title: String, xp: Int, explanation: String, onBack: (
             minScale = 0.5f,
             title = true
         )
-        // The plate: stretched to 480 wide, its leaf corners and frame kept at the picture's own size.
-        if (showXp) Box(box((ResArtW - 480f) / 2f, PlateTop, (ResArtW + 480f) / 2f, PlateTop + PlateH)) {
-            NinePatch(
-                res = R.drawable.rs_xp,
-                slicePx = 46,
-                edge = u * 46f,
-                sliceYPx = 40,
-                edgeY = u * 40f,
-                modifier = Modifier.fillMaxSize()
-            )
-            Column(
-                modifier = Modifier.fillMaxSize().padding(start = u * 30f, end = u * 30f, top = u * 12f, bottom = u * 10f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Row(modifier = Modifier.height(u * 50f), verticalAlignment = Alignment.CenterVertically) {
-                    StarBadge(u * 42f)
-                    Spacer(Modifier.width(u * 12f))
-                    LetteredText(
-                        text = stringResource(R.string.xp_gained_format, xp),
-                        size = fs(50f),
-                        fill = XpOrange,
-                        outline = null
-                    )
-                }
-                FitText(
-                    text = explanation,
-                    style = PaintedStyle(color = ResultInk, fontSize = fs(24f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
-                    maxLines = 1,
-                    minScale = 0.6f,
-                    modifier = Modifier.fillMaxWidth().height(u * 28f)
-                )
-            }
-        }
     }
 }
 
@@ -179,7 +141,8 @@ internal sealed interface StatIcon {
     data class Disc(val icon: ImageVector, val color: Color) : StatIcon
 }
 
-internal data class ResultStat(val icon: StatIcon, val label: String, val value: String, val valueColor: Color)
+/** [headline]: one centred line over the whole card (the round's XP), no icon, no label. */
+internal data class ResultStat(val icon: StatIcon, val label: String, val value: String, val valueColor: Color, val headline: Boolean = false)
 
 /** The round's numbers as painted cards two to a row (an odd last one centred): hits, misses, stars, gold, bonuses. */
 @Composable
@@ -207,6 +170,16 @@ private fun StatCard(stat: ResultStat, u: Dp, leafOnRight: Boolean, modifier: Mo
             contentScale = ContentScale.FillBounds,
             modifier = Modifier.fillMaxSize()
         )
+        if (stat.headline) {
+            FitText(
+                text = stat.value,
+                style = PaintedStyle(color = stat.valueColor, fontSize = fs(46f), textAlign = TextAlign.Center),
+                maxLines = 1,
+                minScale = 0.45f,
+                modifier = Modifier.fillMaxSize().padding(top = u * 6f, start = u * 40f, end = u * 40f)
+            )
+            return@Box
+        }
         Row(
             modifier = Modifier.fillMaxSize().padding(top = u * 6f, start = u * (if (leafOnRight) 22f else 36f), end = u * (if (leafOnRight) 46f else 22f)),
             verticalAlignment = Alignment.CenterVertically,
@@ -247,7 +220,7 @@ private fun StatCard(stat: ResultStat, u: Dp, leafOnRight: Boolean, modifier: Mo
 
 /** The ready-made stat cards for a round: always hits and misses, then whatever else it paid. */
 @Composable
-internal fun resultStats(state: GamePhase.Result): List<ResultStat> {
+internal fun resultStats(state: GamePhase.Result, xp: Int, withXpCard: Boolean): List<ResultStat> {
     val green = Color(0xFF2EA043)
     val red = Color(0xFFE23B32)
     val orange = Color(0xFFE8650F)
@@ -270,13 +243,13 @@ internal fun resultStats(state: GamePhase.Result): List<ResultStat> {
         list += ResultStat(StatIcon.Art(R.drawable.daily_calendar_icon), stringResource(R.string.result_stat_daily_gold), stringResource(R.string.result_gold_amount, state.goldFromDaily), orange)
     }
     val quick = state.quickMatchDailyBonusApplied
-    if (quick) {
-        list += ResultStat(StatIcon.Art(R.drawable.rs_ic_bolt), stringResource(R.string.result_stat_quick), stringResource(R.string.result_stat_multiplier, 2), orange)
-    }
     val mult = state.xpMultiplier
     val eventMult = if (state.xpEventMultiplierApplied) (mult / if (quick) 2 else 1).coerceAtLeast(2) else 0
     if (eventMult > 0) {
         list += ResultStat(StatIcon.Disc(Icons.Filled.Celebration, Color(0xFF8E44D6)), stringResource(R.string.result_stat_event), stringResource(R.string.result_stat_multiplier, eventMult), orange)
+    }
+    if (withXpCard) {
+        list += ResultStat(StatIcon.Art(R.drawable.rs_ic_star), "", stringResource(R.string.result_xp_won, xp), XpOrange, headline = true)
     }
     return list
 }

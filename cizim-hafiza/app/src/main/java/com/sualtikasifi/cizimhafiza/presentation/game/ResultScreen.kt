@@ -183,21 +183,14 @@ fun ResultScreen(
         }
     }
 
-    val explanation = when {
-        xpDoubled -> stringResource(R.string.result_xp_doubled_note)
-        state.daily != null -> stringResource(R.string.result_xp_daily)
-        state.xpMultiplier > 1 && state.xpEarned == state.totalScore * state.xpMultiplier ->
-            stringResource(R.string.result_xp_formula_mult, state.totalScore, state.xpMultiplier)
-        state.xpEarned == state.totalScore -> stringResource(R.string.result_xp_formula_plain, state.totalScore)
-        else -> stringResource(R.string.result_xp_formula_extra, state.totalScore)
-    }
     // Counts up to the earned XP when the screen opens (and again when it doubles after the ad).
     val xpCount by androidx.compose.animation.core.animateIntAsState(
         shownXp,
         androidx.compose.animation.core.tween(1100, easing = androidx.compose.animation.core.FastOutSlowInEasing),
         label = "xpCount"
     )
-    val stats = resultStats(state)
+    // The daily challenge shows its reward on its own card, so only the other rounds get the "N XP won" card.
+    val stats = resultStats(state, xpCount, withXpCard = state.daily == null)
 
     // The design top to bottom, all in its own 841-wide units so it holds together on any phone: the painted head (back
     // button, title, XP plate), the stat cards, the level, the match comparison, the daily challenge, every drawing of the
@@ -226,11 +219,7 @@ fun ResultScreen(
                 Box(Modifier.fillMaxWidth().springIn(index = 0, fromY = -40)) {
                     ResultHeader(
                         title = stringResource(R.string.game_over),
-                        xp = xpCount,
-                        explanation = explanation,
-                        onBack = { if (!(xpDoubled && !startedDoubled)) onMainMenu() },
-                        // The daily challenge shows its reward on its own card, so its head ends with the picture.
-                        showXp = state.daily == null
+                        onBack = { if (!(xpDoubled && !startedDoubled)) onMainMenu() }
                     )
                 }
                 Column(

@@ -952,6 +952,7 @@
     <string name="result_claim">Claim</string>
     <string name="result_x2_button_amount">🎬 x2 · %1$d XP</string>
     <string name="result_claim_amount">Claim · %1$d XP</string>
+    <string name="result_xp_won">You won %1$d XP!</string>
     <string name="result_continue">Continue</string>
     <string name="result_xp_daily">Your daily challenge reward</string>
     <string name="result_xp_formula_mult">%1$d points × %2$d bonus multiplier</string>

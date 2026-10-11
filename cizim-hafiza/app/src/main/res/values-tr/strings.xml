@@ -966,6 +966,7 @@
     <string name="result_claim">Ödülü Al</string>
     <string name="result_x2_button_amount">🎬 x2 · %1$d XP</string>
     <string name="result_claim_amount">Ödülü Al · %1$d XP</string>
+    <string name="result_xp_won">%1$d XP Kazandın!</string>
     <string name="result_continue">Devam</string>
     <string name="result_xp_daily">Günlük meydan okuma ödülün</string>
     <string name="result_xp_formula_mult">%1$d puan × %2$d bonus çarpanı</string>
