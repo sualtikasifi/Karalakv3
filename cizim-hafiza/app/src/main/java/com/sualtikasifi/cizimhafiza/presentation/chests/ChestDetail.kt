@@ -177,7 +177,7 @@ private fun ChestDetailDialog(
         ) {
             val w = minOf(maxWidth, 430.dp)
             val maxH = maxHeight
-            val headW = w * 0.96f
+            val headW = w * 0.82f
             val headH = headW * 340f / 540f
             // How far down the head picture the plank's middle is: the frame starts there, so the sign overlaps its edge.
             val frameTop = headH * 0.70f
@@ -200,17 +200,17 @@ private fun ChestDetailDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .verticalScroll(rememberScrollState())
-                                .padding(start = 30.dp, end = 30.dp, top = (headH - frameTop) + 6.dp, bottom = 30.dp),
+                                .padding(start = 30.dp, end = 30.dp, top = (headH - frameTop) + 2.dp, bottom = 26.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             ChestStage(tier = tier, bubble = bubble, wobble = wiggle.value, onTapChest = onTapChest)
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             ChestContentsPanel(tier = tier)
                             if (!ready) {
-                                Spacer(modifier = Modifier.height(10.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
                                 ChestTimerPlate(chest = chest, nowMillis = nowMillis, unlocking = unlocking)
                             }
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             when {
                                 ready -> {
                                     LetteredText(stringResource(R.string.chest_detail_ready), 20.sp, fill = Color(0xFFB8F5A0), outline = Color(0xFF1B5E20), modifier = Modifier.fillMaxWidth())
@@ -327,8 +327,8 @@ private fun ChestContentsPanel(tier: ChestTier) {
             .clip(RoundedCornerShape(18.dp))
             .background(Brush.verticalGradient(listOf(Color(0xFFFFF8E8), Color(0xFFFCEACB))))
             .border(1.5.dp, Color(0xFFE5C48F), RoundedCornerShape(18.dp))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(9.dp)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(
@@ -371,7 +371,7 @@ private fun ContentsRow(emoji: String, text: String) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(50))
             .background(Color(0xFFF7E6C6))
-            .padding(horizontal = 4.dp, vertical = 3.dp),
+            .padding(horizontal = 4.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -381,9 +381,10 @@ private fun ContentsRow(emoji: String, text: String) {
         ) { Text(text = emoji, fontSize = 15.sp) }
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF4A3426)
+            color = Color(0xFF4A3426),
+            modifier = Modifier.weight(1f)
         )
     }
 }
@@ -404,7 +405,7 @@ private fun ChestTimerPlate(chest: Chest, nowMillis: Long, unlocking: Boolean) {
             .clip(shape)
             .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF3B2617), Color(0xFF1C1109))))
             .border(2.dp, amber.copy(alpha = 0.85f), shape)
-            .padding(horizontal = 18.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -417,16 +418,15 @@ private fun ChestTimerPlate(chest: Chest, nowMillis: Long, unlocking: Boolean) {
                 color = amber.copy(alpha = 0.9f)
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = formatCountdown(if (unlocking) chest.remainingMillis(nowMillis) else chest.tier.unlockDurationMillis),
             textAlign = TextAlign.Center,
             fontFamily = DisplayFont,
             fontWeight = FontWeight.ExtraBold,
-            fontSize = 40.sp,
+            fontSize = 34.sp,
             color = Color(0xFFFFE08A)
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         if (unlocking) {
             LinearProgressIndicator(
                 progress = { chest.unlockProgress(nowMillis) },
@@ -483,8 +483,8 @@ private fun SpeechBubble(text: String) {
 @Composable
 private fun ChestStage(tier: ChestTier, bubble: Bubble?, wobble: Float, onTapChest: () -> Unit) {
     // Scales with the screen so a short phone still has room for the timer and the action button.
-    val stageHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.25f).coerceIn(150f, 230f)
-    val chestWidth = stageHeight * 0.74f
+    val stageHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.18f).coerceIn(130f, 190f)
+    val chestWidth = stageHeight * 0.78f
     Box(
         modifier = Modifier
             .fillMaxWidth()
