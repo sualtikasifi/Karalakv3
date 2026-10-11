@@ -113,25 +113,25 @@ internal fun SearchingScene(modifier: Modifier = Modifier) {
         )
         LetteredText(
             text = stringResource(R.string.quick_match_searching_title),
-            size = fs(118f),
+            size = fs(82f),
             fill = Color.White,
             outline = Color(0xFF5A2815),
-            modifier = box(205f, 326f, 636f, 430f),
+            modifier = box(160f, 308f, 681f, 404f),
             minScale = 0.45f,
             title = true
         )
         val second = stringResource(R.string.quick_match_searching_title2).trimEnd('…', '.', ' ')
         Row(
-            modifier = box(195f, 422f, 646f, 490f),
+            modifier = box(160f, 396f, 681f, 492f),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            LetteredText(second, fs(68f), outline = Color(0xFF5A2815), modifier = Modifier.weight(1f, fill = false), minScale = 0.45f, title = true)
+            LetteredText(second, fs(82f), outline = Color(0xFF5A2815), modifier = Modifier.weight(1f, fill = false), minScale = 0.45f, title = true)
             // Three dots that fill in one by one, then start over; their room is always kept so the line never shifts.
             repeat(3) { i ->
                 LetteredText(
                     ".",
-                    fs(68f),
+                    fs(82f),
                     outline = Color(0xFF5A2815),
                     modifier = Modifier.graphicsLayer { alpha = if (dots.value >= i + 1f) 1f else 0.18f },
                     title = true
