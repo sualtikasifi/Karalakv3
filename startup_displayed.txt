@@ -1,0 +1,2 @@
+10-11 06:43:11.303   517   536 I ActivityTaskManager: Displayed com.sualtikasifi.cizimhafiza/.presentation.MainActivity for user 0: +3s854ms
+10-11 06:43:18.050   517   536 I ActivityTaskManager: Displayed com.sualtikasifi.cizimhafiza/.presentation.MainActivity for user 0: +4s344ms

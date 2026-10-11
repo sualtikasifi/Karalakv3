@@ -1,0 +1,21 @@
+Starting: Intent { cmp=com.sualtikasifi.cizimhafiza/.presentation.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.sualtikasifi.cizimhafiza/.presentation.MainActivity
+TotalTime: 3854
+WaitTime: 3885
+Complete
+Starting: Intent { cmp=com.sualtikasifi.cizimhafiza/.presentation.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.sualtikasifi.cizimhafiza/.presentation.MainActivity
+TotalTime: 4344
+WaitTime: 4414
+Complete
+Starting: Intent { cmp=com.sualtikasifi.cizimhafiza/.presentation.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.sualtikasifi.cizimhafiza/.presentation.MainActivity
+TotalTime: 4171
+WaitTime: 4216
+Complete

@@ -1,0 +1,19 @@
+--------- beginning of main
+10-11 06:43:09.329  3905  3905 I StartupTiming: app.onCreate begin +2168ms
+10-11 06:43:09.479  3905  3905 I StartupTiming: app.onCreate after hilt +2318ms
+10-11 06:43:09.922  3905  3905 I StartupTiming: activity.onCreate begin +2762ms
+10-11 06:43:10.096  3905  3905 I StartupTiming: activity.super.onCreate done (Hilt injected) +2935ms
+10-11 06:43:10.469  3905  3905 I StartupTiming: first frame about to draw +3309ms
+10-11 06:43:10.930  3905  3905 I StartupTiming: scene on screen, composing the app +3721ms
+10-11 06:43:16.018  4424  4424 I StartupTiming: app.onCreate begin +2184ms
+10-11 06:43:16.066  4424  4424 I StartupTiming: app.onCreate after hilt +2232ms
+10-11 06:43:16.354  4424  4424 I StartupTiming: activity.onCreate begin +2520ms
+10-11 06:43:16.781  4424  4424 I StartupTiming: activity.super.onCreate done (Hilt injected) +2946ms
+10-11 06:43:17.191  4424  4424 I StartupTiming: first frame about to draw +3357ms
+10-11 06:43:17.883  4424  4424 I StartupTiming: scene on screen, composing the app +4045ms
+10-11 06:43:24.287  4823  4823 I StartupTiming: app.onCreate begin +2008ms
+10-11 06:43:24.355  4823  4823 I StartupTiming: app.onCreate after hilt +2077ms
+10-11 06:43:24.687  4823  4823 I StartupTiming: activity.onCreate begin +2408ms
+10-11 06:43:24.839  4823  4823 I StartupTiming: activity.super.onCreate done (Hilt injected) +2561ms
+10-11 06:43:25.142  4823  4823 I StartupTiming: first frame about to draw +2864ms
+10-11 06:43:25.687  4823  4823 I StartupTiming: scene on screen, composing the app +3409ms
