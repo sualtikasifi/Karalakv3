@@ -48,6 +48,35 @@ except Exception:
 for n in tree.iter('node'):
     t = (n.get('text') or '').strip().lower()
     d = (n.get('content-desc') or '').strip().lower()
+    if label in (t, d):
+        m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', n.get('bounds') or '')
+        if m:
+            x1, y1, x2, y2 = map(int, m.groups())
+            print((x1 + x2) // 2, (y1 + y2) // 2)
+            break
+PY
+}
+
+# Centre of the first node whose text / description contains $1 ("" when there is none).
+find_xy() {
+  dump _tmp
+  python3 - "$1" "$OUT/_tmp.xml" <<'PY'
+import sys, re, xml.etree.ElementTree as ET
+label, path = sys.argv[1].lower(), sys.argv[2]
+try:
+    tree = ET.parse(path)
+except Exception:
+    sys.exit(0)
+for n in tree.iter('node'):
+    t = (n.get('text') or '') + ' ' + (n.get('content-desc') or '')
+    if label in t.lower():
+        m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', n.get('bounds') or '')
+        if m:
+            x1, y1, x2, y2 = map(int, m.groups())
+            print((x1 + x2) // 2, (y1 + y2) // 2)
+            break
+PY
+}
 adb shell am start -n $ACT
 sleep 8
 sleep 25
