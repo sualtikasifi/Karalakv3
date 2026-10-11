@@ -389,6 +389,7 @@ fun ResultScreen(
                     ArtButton(
                         res = R.drawable.rs_btn_claim,
                         u = u,
+                        iconRoom = 0f,
                         enabled = !(xpDoubled && !startedDoubled),
                         onClick = {
                             if (shownXp > 0 && levelProgress != null) {
@@ -877,6 +878,8 @@ private fun ArtButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    /** Room kept on the left for a painted icon (the ad button's clapper); 0 for a button whose lettering is centred. */
+    iconRoom: Float = 140f,
     content: @Composable BoxScope.() -> Unit
 ) {
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
@@ -895,7 +898,7 @@ private fun ArtButton(
             .graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (enabled) 1f else 0.55f }
             .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
     ) {
-        Box(Modifier.fillMaxSize().padding(start = u * 140f, end = u * 38f), content = content)
+        Box(Modifier.fillMaxSize().padding(start = u * (if (iconRoom > 0f) iconRoom else 38f), end = u * 38f), content = content)
     }
 }
 /** A parchment panel for the extra cards (quick match, duel, daily challenge). */
