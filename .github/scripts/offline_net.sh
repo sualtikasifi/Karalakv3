@@ -76,7 +76,7 @@ adb shell am start -n $ACT
 sleep 8
 sleep 30
 clear_overlays
-adb shell input tap 540 1678; sleep 4
+sleep 4
 clear_overlays
 shot n01_online
 adb shell svc wifi disable; adb shell svc data disable; adb shell cmd connectivity airplane-mode enable || true
