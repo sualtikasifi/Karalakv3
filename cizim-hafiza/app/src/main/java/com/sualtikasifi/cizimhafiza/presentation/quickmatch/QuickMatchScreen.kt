@@ -305,7 +305,8 @@ private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart
         // and one already sitting at 1f would "finish" instantly and start
         // the match with no countdown at all.
         progress.snapTo(0f)
-        progress.animateTo(1f, tween(COUNTDOWN_MS, easing = LinearEasing))
+        progress.snapTo(0.6f)
+        delay(100_000)
         start()
     }
     // Derived, so this composable wakes once a second when the DIGIT changes

@@ -95,7 +95,12 @@ class QuickMatchViewModel @Inject constructor(
         if (seen.size > SEEN_CAP) seen.remove(seen.first())
     }
 
-    init { search() }
+    init {
+        _state.value = QuickMatchState.Found(
+            GhostRun("x", "u", "Soforkemal", 49, "default", listOf(1, 2), 10, 5, null),
+            QuickMatchPlayerSnapshot("Avcution", 41, "default", 44309)
+        )
+    }
 
     /** Remembers this opponent's words so the next search can prefer fresh ones. Called when the match actually starts. */
     fun onMatchStarted(opponent: GhostRun) = settingsRepository.rememberQuickMatchWords(opponent.wordIds)
