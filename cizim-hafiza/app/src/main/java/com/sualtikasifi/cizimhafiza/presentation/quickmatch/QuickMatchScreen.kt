@@ -339,16 +339,18 @@ private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart
             }
             Box(Modifier.fillMaxWidth().height(u * 1650f)) {
                 // The splash with "Rakibin Hazır!" lettered into it, and the sign under it.
-                Pic(R.drawable.mf_title, 450, 257, 1.24f, 141f, 92f)
-                Pic(R.drawable.mf_tag, 354, 97, 1.0f, 243f, 428f)
+                // The sign is drawn over the lettering's lower edge at exactly the place it has in the design, so the two read as one
+                // picture (no cut, no fade between them).
+                Pic(R.drawable.mf_title, 450, 272, 1.2f, 150f, 62f)
+                Pic(R.drawable.mf_tag, 354, 106, 1.2f, 150f + 68f * 1.2f, 62f + 266f * 1.2f)
                 Box(
-                    Modifier.offset(u * (243f + 354f * 0.18f), u * (428f + 97f * 0.1f))
-                        .size(u * 354f * 0.64f, u * 97f * 0.68f),
+                    Modifier.offset(u * (231.6f + 354f * 1.2f * 0.18f), u * (381.2f + 106f * 1.2f * 0.1f))
+                        .size(u * 354f * 1.2f * 0.64f, u * 106f * 1.2f * 0.68f),
                     contentAlignment = Alignment.Center
                 ) {
                     FitText(
                         text = stringResource(R.string.quick_match_found_tagline),
-                        style = PaintedStyle(color = Color(0xFF2B1A10), fontSize = fs(34f), textAlign = TextAlign.Center, lineHeight = fs(37f)),
+                        style = PaintedStyle(color = Color(0xFF2B1A10), fontSize = fs(38f), textAlign = TextAlign.Center, lineHeight = fs(41f)),
                         maxLines = 2,
                         minScale = 0.5f,
                         modifier = Modifier.fillMaxSize()
@@ -386,7 +388,7 @@ private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart
                 )
 
                 // The mascots peek over the plank.
-                Pic(R.drawable.mf_mascots, 479, 291, 1.1f, 157f, 940f)
+                Pic(R.drawable.mf_mascots, 479, 291, 1.1f, 157f, 966f)
 
                 // The countdown plank: its clock and leaves kept at the picture's own size, the wood between stretched, the
                 // bar and its words live.
