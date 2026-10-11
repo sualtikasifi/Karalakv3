@@ -131,6 +131,7 @@ private fun ChestDetailDialog(
     onSpeedup: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val isOnline = com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current
     val tier = chest.tier
     val ready = chest.isReady(nowMillis)
     val unlocking = chest.unlockStartedAtMillis != null && !ready
@@ -172,7 +173,8 @@ private fun ChestDetailDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .pressable(pressedScale = 0.95f, onClick = onSpeedup)
+                                .graphicsLayer { alpha = if (isOnline) 1f else 0.55f }
+                                .pressable(pressedScale = 0.95f, onClick = com.sualtikasifi.cizimhafiza.presentation.common.adOnly(onSpeedup))
                                 .clip(RoundedCornerShape(50))
                                 .background(Color(0xFF2E8B45))
                                 .padding(horizontal = 16.dp, vertical = 10.dp),

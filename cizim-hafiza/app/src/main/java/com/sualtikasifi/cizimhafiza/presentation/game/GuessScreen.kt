@@ -546,20 +546,23 @@ fun GuessScreen(
             val firstCount = jokers[firstType] ?: 0
             val letterCountCount = jokers[countType] ?: 0
             val hintAvailable = !state.hintUsed && state.hintLetter == null && GameConstants.ADMOB_ENABLED
+            val hintOnline = com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current
+            val hintTap = com.sualtikasifi.cizimhafiza.presentation.common.adOnly {
+                // Countdown is paused (see useHint) the instant this is tapped, so the label changes to make clear
+                // something is happening.
+                if (!hintRequested) {
+                    hintRequested = true
+                    onHintClick()
+                }
+            }
             JokerTile(
                 x = a(48f), top = tileTop, width = a(172f), height = tileH,
                 label = stringResource(if (hintRequested) R.string.loading_hint else R.string.guess_tile_hint),
                 labelColor = Color(0xFFB4501A), outline = null,
                 enabled = hintAvailable && !hintRequested && !isAnswered,
                 badge = null, badgeColor = Color.Unspecified,
-                onClick = {
-                    // Countdown is paused (see useHint) the instant this is tapped, so the label changes to make clear
-                    // something is happening.
-                    if (!hintRequested) {
-                        hintRequested = true
-                        onHintClick()
-                    }
-                },
+                onClick = hintTap,
+                forceVeil = hintAvailable && !hintOnline,
                 icon = { Icon(Icons.Filled.PlayCircle, contentDescription = null, tint = Color(0xFFF26A1B), modifier = Modifier.size(a(66f))) }
             )
             JokerTile(
@@ -635,7 +638,9 @@ private fun JokerTile(
     badgeColor: Color,
     onClick: () -> Unit,
     icon: @Composable () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Veiled like a disabled tile but still tappable (an ad tile with no internet explains itself when tapped). */
+    forceVeil: Boolean = false
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -687,7 +692,7 @@ private fun JokerTile(
                 )
             }
         }
-        if (!enabled) {
+        if (!enabled || forceVeil) {
             Box(Modifier.fillMaxSize().background(Color(0x99F1E3D0), RoundedCornerShape(height * 0.17f)))
         }
     }

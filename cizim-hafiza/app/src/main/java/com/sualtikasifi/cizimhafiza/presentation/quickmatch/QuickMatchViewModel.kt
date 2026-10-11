@@ -62,7 +62,8 @@ class QuickMatchViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val penaltyRepository: PenaltyRepository,
     private val wordPoolSynchronizer: WordPoolSynchronizer,
-    private val avatarPhotoResolver: com.sualtikasifi.cizimhafiza.util.AvatarPhotoResolver
+    private val avatarPhotoResolver: com.sualtikasifi.cizimhafiza.util.AvatarPhotoResolver,
+    private val networkMonitor: com.sualtikasifi.cizimhafiza.util.NetworkMonitor
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<QuickMatchState>(QuickMatchState.Searching)
@@ -104,6 +105,11 @@ class QuickMatchViewModel @Inject constructor(
     fun abandonMatch() = settingsRepository.applyQuickMatchAbandonPenalty()
 
     fun search() {
+        // Offline, Firestore would still hand back recorded opponents from its cache: a match needs the server, so none.
+        if (!networkMonitor.isOnline.value) {
+            _state.value = QuickMatchState.Failed
+            return
+        }
         _state.value = QuickMatchState.Searching
         viewModelScope.launch {
             // Before anything else touches WordDao: a search that ran ahead

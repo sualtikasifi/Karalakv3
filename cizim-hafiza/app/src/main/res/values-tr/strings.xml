@@ -1403,4 +1403,10 @@
     <string name="online_lobby_line2">kuantum fiziğinden bile daha zor olabilir.</string>
     <string name="online_lobby_line3">Karalama Savaşlarına</string>
     <string name="online_lobby_line4">Hoşgeldin!</string>
+    <string name="offline_needed">İnternet bağlantısı gerekiyor</string>
+    <string name="offline_screen_title">İnternet yok</string>
+    <string name="offline_screen_body">Bu bölümü oynamak için internete bağlanman gerekiyor. Çevrimdışı Oyna ve Seviyeler internetsiz de açık.</string>
+    <string name="online_game_lost_title">Bağlantı kesildi</string>
+    <string name="online_game_lost_body">Oyun bittiğinde internet bağlantın yoktu, bu yüzden sonuç gönderilemedi. Ana sayfaya dönüp çevrimdışı devam edebilirsin.</string>
+    <string name="online_game_lost_ok">Tamam</string>
 </resources>

@@ -70,6 +70,7 @@ fun OnlineGameScreen(
     val selectedPen by viewModel.selectedPen.collectAsState()
     var showExitConfirm by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val connectionLost by viewModel.connectionLost.collectAsState()
 
     LaunchedEffect(phase) {
         if (phase is GamePhase.Result) {
@@ -79,6 +80,20 @@ fun OnlineGameScreen(
 
     val isActivelyPlaying = phase is GamePhase.Drawing || phase is GamePhase.Break || phase is GamePhase.Guessing
     BackHandler(enabled = isActivelyPlaying) { showExitConfirm = true }
+
+    // The match ended with no internet: told once, confirmed, and back to the home screen (which carries on offline).
+    if (connectionLost) {
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            title = stringResource(R.string.online_game_lost_title),
+            message = stringResource(R.string.online_game_lost_body),
+            confirmText = stringResource(R.string.online_game_lost_ok),
+            onConfirm = {
+                viewModel.leaveRoom()
+                onExit()
+            },
+            onDismiss = {}
+        )
+    }
 
     if (showExitConfirm) {
         com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
