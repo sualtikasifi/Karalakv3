@@ -1403,7 +1403,5 @@
     <string name="next_drawing">Next drawing</string>
     <string name="result_stat_play_gold">Word gold</string>
     <string name="online_reward_format">+%1$d XP  ·  +%2$d gold</string>
-    <string name="preview_first_drawing">This is the first drawing</string>
-    <string name="preview_last_drawing">This is the last drawing</string>
     <string name="guess_transition_locked">Not available while the word changes</string>
 </resources>
