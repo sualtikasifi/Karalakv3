@@ -143,6 +143,8 @@ class BackupRepositoryImpl @Inject constructor(
             periodId = com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()),
             adGoldNextAt = settingsRepository.adGoldNextAtMillis.value,
             adChestDay = settingsRepository.adChestNextAtMillis.value,
+            loginStreak = settingsRepository.loginStreak,
+            loginLastClaimDay = settingsRepository.loginLastClaimDay,
             claimedAchievementIds = achievementDao.getClaimedIds(),
             claimsSaved = true,
             dailyResult = daily.lastResult?.let { r ->
@@ -485,6 +487,7 @@ class BackupRepositoryImpl @Inject constructor(
             if (snapshot.periodXpVersion >= 2) snapshot.periodXp else 0,
             snapshot.periodId, snapshot.adGoldNextAt, snapshot.adChestDay
         )
+        settingsRepository.restoreLoginStreak(snapshot.loginStreak, snapshot.loginLastClaimDay)
         settingsRepository.restoreOneTimePrompts(snapshot.ratingPromptShown == 1, snapshot.quickMatchGames)
         dailyChallengeRepository.replaceWithAccount(
             lastCompletedEpochDay = snapshot.dailyLastCompletedEpochDay,

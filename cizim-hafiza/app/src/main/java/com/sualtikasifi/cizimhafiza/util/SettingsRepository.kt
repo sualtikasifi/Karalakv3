@@ -703,6 +703,43 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     // --- Home-screen ad rewards: 500 gold every 4 hours, and one free
     // mid-tier chest per calendar day (resets at local midnight). ---
 
+    // --- Giriş Serisi (login streak) ---
+
+    /** Consecutive days whose login reward was taken. */
+    var loginStreak: Int
+        get() = prefs.getInt(KEY_LOGIN_STREAK, 0)
+        private set(value) = prefs.edit { putInt(KEY_LOGIN_STREAK, value) }
+
+    /** Epoch day (Türkiye) of the last login reward taken, -1 if none. */
+    var loginLastClaimDay: Long
+        get() = prefs.getLong(KEY_LOGIN_LAST_CLAIM_DAY, -1L)
+        private set(value) = prefs.edit { putLong(KEY_LOGIN_LAST_CLAIM_DAY, value) }
+
+    /**
+     * Records that [today]'s login reward is taken and moves the streak on: [continuing] false starts it over at one
+     * (the player chose to start again, or never had a streak), true carries [streakBefore] on. One commit, so a
+     * process that dies in the middle cannot leave the day marked without the streak having moved.
+     */
+    @Synchronized
+    fun recordLoginClaim(today: Long, streakBefore: Int, continuing: Boolean): Int {
+        val newStreak = (if (continuing) streakBefore else 0) + 1
+        prefs.edit(commit = true) {
+            putInt(KEY_LOGIN_STREAK, newStreak)
+            putLong(KEY_LOGIN_LAST_CLAIM_DAY, today)
+        }
+        return newStreak
+    }
+
+    /** Puts an account's streak back after a restore: whichever claim is more recent wins. */
+    fun restoreLoginStreak(streak: Int, lastClaimDay: Long) {
+        if (lastClaimDay > loginLastClaimDay) {
+            prefs.edit(commit = true) {
+                putInt(KEY_LOGIN_STREAK, streak)
+                putLong(KEY_LOGIN_LAST_CLAIM_DAY, lastClaimDay)
+            }
+        }
+    }
+
     private val _adGoldNextAtMillis = MutableStateFlow(prefs.getLong(KEY_AD_GOLD_NEXT_AT, 0L))
     val adGoldNextAtMillis: StateFlow<Long> = _adGoldNextAtMillis.asStateFlow()
 
@@ -1065,6 +1102,9 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         // Gold and chests are this account's economy, not the phone's — left
         // behind, a new account would inherit somebody else's gold and
         // half-opened chests.
+        // The login streak is this account's too.
+        remove(KEY_LOGIN_STREAK)
+        remove(KEY_LOGIN_LAST_CLAIM_DAY)
         putInt(KEY_GOLD_BALANCE, 0)
         remove(KEY_OWNED_STORE_IDS)
         remove(KEY_JOKERS)
@@ -1392,6 +1432,8 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_CHEST_SLOTS = "chest_slots"
         const val KEY_CHEST_CYCLE_SEED = "chest_cycle_seed"
         const val KEY_CHEST_CYCLE_INDEX = "chest_cycle_index"
+        const val KEY_LOGIN_STREAK = "login_streak"
+        const val KEY_LOGIN_LAST_CLAIM_DAY = "login_last_claim_day"
         const val KEY_AD_GOLD_NEXT_AT = "ad_gold_next_at"
         const val KEY_AD_CHEST_NEXT_AT = "ad_chest_next_at"
         const val AD_CHEST_COOLDOWN_MILLIS = 4 * 60 * 60 * 1000L

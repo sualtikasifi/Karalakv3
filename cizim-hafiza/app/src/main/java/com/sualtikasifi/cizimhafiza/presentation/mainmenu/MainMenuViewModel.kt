@@ -69,8 +69,96 @@ class MainMenuViewModel @Inject constructor(
     private val referralRewardClaimer: ReferralRewardClaimer,
     private val usernameRepository: com.sualtikasifi.cizimhafiza.util.UsernameRepository,
     private val achievementUnlocker: com.sualtikasifi.cizimhafiza.util.AchievementUnlocker,
-    xpEventRepository: com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository
+    xpEventRepository: com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository,
+    private val serverClock: com.sualtikasifi.cizimhafiza.domain.repository.ServerClock
 ) : ViewModel() {
+
+    // --- Giriş Serisi (login streak) ---
+
+    private val _loginPopup = MutableStateFlow<LoginPopup?>(null)
+    /** The daily login window while there is something to show in it, else null. */
+    val loginPopup: StateFlow<LoginPopup?> = _loginPopup.asStateFlow()
+
+    /** Chests the login reward gave, opened one after another once the window has closed. */
+    private val _loginChests = MutableStateFlow<List<com.sualtikasifi.cizimhafiza.domain.model.ChestReward>>(emptyList())
+    val loginChests: StateFlow<List<com.sualtikasifi.cizimhafiza.domain.model.ChestReward>> = _loginChests.asStateFlow()
+    private var pendingLoginChests: List<com.sualtikasifi.cizimhafiza.domain.model.ChestReward> = emptyList()
+
+    private var loginDay = 0L
+    private var loginChecking = false
+    private var loginHandled = false
+
+    /**
+     * Asks whether today's login reward is waiting and, if so, opens the window. Needs the internet: "today" comes from
+     * the server (see ServerClock), so a phone whose clock was moved cannot collect early. Cheap on the days it is
+     * already taken — the phone's own date settles that without a server call. Safe to call again (e.g. when the
+     * connection comes back): it does nothing once handled or while a check is running.
+     */
+    fun checkLoginStreak() {
+        if (loginHandled || loginChecking || _loginPopup.value != null) return
+        if (com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay() == settingsRepository.loginLastClaimDay) {
+            loginHandled = true
+            return
+        }
+        loginChecking = true
+        viewModelScope.launch {
+            val today = serverClock.todayEpochDay()
+            loginChecking = false
+            today ?: return@launch
+            loginDay = today
+            loginHandled = true
+            _loginPopup.value = when (val state = com.sualtikasifi.cizimhafiza.domain.model.LoginStreaks.evaluate(
+                settingsRepository.loginStreak, settingsRepository.loginLastClaimDay, today
+            )) {
+                com.sualtikasifi.cizimhafiza.domain.model.LoginStreakState.ClaimedToday -> null
+                is com.sualtikasifi.cizimhafiza.domain.model.LoginStreakState.Claimable -> LoginPopup.Claim(state.streakBefore)
+                is com.sualtikasifi.cizimhafiza.domain.model.LoginStreakState.Missed -> LoginPopup.Missed(state.lostStreak)
+            }
+        }
+    }
+
+    fun claimLoginReward() {
+        val popup = _loginPopup.value as? LoginPopup.Claim ?: return
+        val rewards = com.sualtikasifi.cizimhafiza.domain.model.LoginStreakRewards
+        val day = rewards.cycleDayFor(popup.streakBefore)
+        val reward = rewards.forDay(day)
+        val newStreak = settingsRepository.recordLoginClaim(loginDay, popup.streakBefore, continuing = true)
+        if (reward.gold > 0) settingsRepository.earnGold(reward.gold)
+        if (reward.xp > 0) settingsRepository.addXp(reward.xp)
+        reward.joker?.let { settingsRepository.addJoker(it, 1) }
+        val milestone = rewards.milestoneFor(newStreak)
+        // Chests are opened on the spot, after the window closes (see consumeLoginPopup).
+        pendingLoginChests = listOfNotNull(reward.chest, milestone).map { settingsRepository.openChestNow(it) }
+        _loginPopup.value = LoginPopup.Claimed(day, reward, newStreak, milestone)
+    }
+
+    /** The streak was broken: a watched ad carries it on, as if no day had been missed. */
+    fun rescueLoginStreak(activity: Activity) {
+        val popup = _loginPopup.value as? LoginPopup.Missed ?: return
+        adManager.maybeShowRewarded(activity, "login_streak_rescue") { outcome ->
+            when (outcome) {
+                RewardedOutcome.EARNED -> _loginPopup.value = LoginPopup.Claim(popup.lostStreak, rescued = true)
+                RewardedOutcome.SKIPPED -> Unit
+                else -> _streakToast.value = StreakToast.AdUnavailable
+            }
+        }
+    }
+
+    fun restartLoginStreak() {
+        if (_loginPopup.value is LoginPopup.Missed) _loginPopup.value = LoginPopup.Claim(0)
+    }
+
+    /** Closes the window; if the reward just taken included chests, they open now. */
+    fun consumeLoginPopup() {
+        val wasClaimed = _loginPopup.value is LoginPopup.Claimed
+        _loginPopup.value = null
+        if (wasClaimed && pendingLoginChests.isNotEmpty()) {
+            _loginChests.value = pendingLoginChests
+            pendingLoginChests = emptyList()
+        }
+    }
+
+    fun consumeLoginChest() { _loginChests.value = _loginChests.value.drop(1) }
 
     /** The 2x XP event while one is running (null otherwise) — drives the home banner and the Hızlı Eşleş glow. */
     val xpEvent: StateFlow<com.sualtikasifi.cizimhafiza.domain.repository.XpEvent?> = xpEventRepository.live
@@ -387,4 +475,21 @@ class MainMenuViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = 0
     )
+}
+
+/** What the daily login window is showing. */
+sealed interface LoginPopup {
+    /** Today's reward can be taken after [streakBefore] days in a row; [rescued] when an ad just saved a broken streak. */
+    data class Claim(val streakBefore: Int, val rescued: Boolean = false) : LoginPopup
+
+    /** A day was missed: the [lostStreak]-day streak can be saved with an ad or started over. */
+    data class Missed(val lostStreak: Int) : LoginPopup
+
+    /** The reward was just taken: [day] of the calendar, the streak now [newStreak] days, plus a [milestone] chest on every 30th. */
+    data class Claimed(
+        val day: Int,
+        val reward: com.sualtikasifi.cizimhafiza.domain.model.LoginDayReward,
+        val newStreak: Int,
+        val milestone: com.sualtikasifi.cizimhafiza.domain.model.ChestTier?
+    ) : LoginPopup
 }
