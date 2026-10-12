@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -134,33 +135,30 @@ fun DrawingReportsScreen(
             ) {
                 Spacer(modifier = Modifier.height(TopActionsClearance))
 
-                // Two lines of two rather than four across: a fourth chip on
-                // one line leaves each about 80dp, which cuts "Dedektör" in
-                // half on a narrow phone.
-                listOf(
-                    listOf(ReportsTab.Queue, ReportsTab.Pool, ReportsTab.League),
-                    listOf(ReportsTab.Feedback, ReportsTab.Reports, ReportsTab.Detector),
-                    listOf(ReportsTab.XpEvent, ReportsTab.DailyChallenge, ReportsTab.Stats),
-                    listOf(ReportsTab.Coupons)
-                ).forEach { row ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        row.forEach { tab ->
-                            SelectableChip(
-                                label = stringResource(tab.labelRes()),
-                                selected = uiState.tab == tab,
-                                onClick = { viewModel.selectTab(tab) },
-                                modifier = Modifier.weight(1f),
-                                verticalPadding = 10.dp,
-                                style = MaterialTheme.typography.bodySmall,
-                                fillWidth = true
-                            )
-                        }
+                // One row of small chips that scrolls sideways: ten tabs used to take four full rows of the screen before
+                // any content started.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 6.dp)
+                        .horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf(
+                        ReportsTab.Queue, ReportsTab.Pool, ReportsTab.Feedback, ReportsTab.Reports, ReportsTab.Detector,
+                        ReportsTab.League, ReportsTab.XpEvent, ReportsTab.DailyChallenge, ReportsTab.Stats, ReportsTab.Coupons
+                    ).forEach { tab ->
+                        SelectableChip(
+                            label = stringResource(tab.labelRes()),
+                            selected = uiState.tab == tab,
+                            onClick = { viewModel.selectTab(tab) },
+                            horizontalPadding = 12.dp,
+                            verticalPadding = 6.dp,
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 1
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.height(2.dp))
 
                 // A refused decision is a line above the list, never a
                 // replacement for it. Blanking the screen on a failed write
