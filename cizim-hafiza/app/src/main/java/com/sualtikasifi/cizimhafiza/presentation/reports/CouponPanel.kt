@@ -3,6 +3,7 @@ package com.sualtikasifi.cizimhafiza.presentation.reports
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -123,108 +124,118 @@ class CouponAdminViewModel @Inject constructor(
 internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     LaunchedEffect(Unit) { viewModel.refresh() }
-    Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-        Text(
-            text = "Oyuncu kodu Ayarlar'daki kupon alanına yazar. Tek ortak kod için kullanım hakkını (örn. 10) gir, her kazanana ayrı kod için aşağıdan adet seç.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 10.dp)
-        )
-        AppTextField(
-            value = state.gold,
-            onValueChange = { v -> viewModel.update { copy(gold = v.filter(Char::isDigit).take(6)) } },
-            label = "Altın",
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-        )
-        AppTextField(
-            value = state.xp,
-            onValueChange = { v -> viewModel.update { copy(xp = v.filter(Char::isDigit).take(6)) } },
-            label = "XP",
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-        )
-        Text("Kasa adedi (en fazla ${CouponCodes.MAX_CHESTS})", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(bottom = 6.dp))
-        listOf(ChestTier.SILVER to "Çırak", ChestTier.GOLD to "Sanatçı", ChestTier.RARE to "Sürpriz").forEach { (tier, name) ->
-            Text(name, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 4.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 8.dp)) {
-                (0..CouponCodes.MAX_CHESTS).forEach { n ->
-                    SelectableChip(
-                        label = n.toString(),
-                        selected = (state.chests[tier] ?: 0) == n,
-                        onClick = { viewModel.update { copy(chests = chests + (tier to n)) } },
-                        verticalPadding = 10.dp
-                    )
-                }
-            }
+    val compact = MaterialTheme.typography.labelMedium
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)
+    ) {
+        // Reward: gold and XP side by side, then one stepper line per chest tier.
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            AppTextField(
+                value = state.gold,
+                onValueChange = { v -> viewModel.update { copy(gold = v.filter(Char::isDigit).take(6)) } },
+                label = "Altın",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1f)
+            )
+            AppTextField(
+                value = state.xp,
+                onValueChange = { v -> viewModel.update { copy(xp = v.filter(Char::isDigit).take(6)) } },
+                label = "XP",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1f)
+            )
         }
-        Text("Her kazanana ayrı kod", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(bottom = 6.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 10.dp)) {
-            listOf(0, 3, 5, 10, 20).forEach { n ->
-                SelectableChip(
-                    label = if (n == 0) "Hayır, tek ortak kod" else "$n kod",
-                    selected = state.separateCodes == n,
-                    onClick = { viewModel.update { copy(separateCodes = n) } },
-                    verticalPadding = 10.dp
+        Text("Kasa (hemen açılır, toplam en fazla ${CouponCodes.MAX_CHESTS})", style = compact, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+            listOf(ChestTier.SILVER to "Çırak", ChestTier.GOLD to "Sanatçı", ChestTier.RARE to "Sürpriz").forEach { (tier, name) ->
+                ChestStepper(
+                    name = name,
+                    count = state.chests[tier] ?: 0,
+                    onChange = { n -> viewModel.update { copy(chests = chests + (tier to n.coerceIn(0, CouponCodes.MAX_CHESTS))) } },
+                    modifier = Modifier.weight(1f)
                 )
             }
+        }
+        // How it is given out.
+        Text("Dağıtım", style = compact, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf(0, 3, 5, 10, 20).forEach { n ->
+                SelectableChip(
+                    label = if (n == 0) "Tek ortak kod" else "$n ayrı kod",
+                    selected = state.separateCodes == n,
+                    onClick = { viewModel.update { copy(separateCodes = n) } },
+                    horizontalPadding = 12.dp,
+                    verticalPadding = 6.dp,
+                    style = compact
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            if (state.separateCodes == 0) {
+                AppTextField(
+                    value = state.maxUses,
+                    onValueChange = { v -> viewModel.update { copy(maxUses = v.filter(Char::isDigit).take(5)) } },
+                    label = "Kaç kişi",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            AppTextField(
+                value = state.days,
+                onValueChange = { v -> viewModel.update { copy(days = v.filter(Char::isDigit).take(3)) } },
+                label = "Gün (0 = süresiz)",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1f)
+            )
         }
         if (state.separateCodes == 0) {
             AppTextField(
-                value = state.maxUses,
-                onValueChange = { v -> viewModel.update { copy(maxUses = v.filter(Char::isDigit).take(5)) } },
-                label = "Kaç kişi kullanabilir",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-            )
-            AppTextField(
                 value = state.customCode,
                 onValueChange = { v -> viewModel.update { copy(customCode = v.uppercase().filter { it.isLetterOrDigit() || it == '-' }.take(CouponCodes.MAX_LENGTH)) } },
-                label = "Kod (boş bırakırsan otomatik üretilir)",
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                label = "Kod (boşsa otomatik)",
+                modifier = Modifier.fillMaxWidth()
             )
         }
-        AppTextField(
-            value = state.days,
-            onValueChange = { v -> viewModel.update { copy(days = v.filter(Char::isDigit).take(3)) } },
-            label = "Kaç gün geçerli (0 = süresiz)",
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
-        )
-        PrimaryButton(
-            text = "Kodu oluştur",
-            onClick = viewModel::create,
-            enabled = !state.busy,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-        )
-        state.message?.let {
-            Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 8.dp))
-        }
+        PrimaryButton(text = "Kodu oluştur", onClick = viewModel::create, enabled = !state.busy, modifier = Modifier.fillMaxWidth())
+        state.message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         if (state.lastCreated.isNotEmpty()) {
-            Text("Yeni kodlar (basılı tutup kopyalayabilirsin):", style = MaterialTheme.typography.labelLarge)
             androidx.compose.foundation.text.selection.SelectionContainer {
-                Text(
-                    state.lastCreated.joinToString("\n"),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 14.dp)
-                )
+                Text(state.lastCreated.joinToString("\n"), style = MaterialTheme.typography.titleSmall)
             }
         }
-        Text("Son kodlar", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 6.dp, bottom = 6.dp))
+        if (state.recent.isNotEmpty()) {
+            Text("Son kodlar", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
+        }
         state.recent.forEach { c ->
             val reward = listOfNotNull(
                 c.gold.takeIf { it > 0 }?.let { "$it altın" },
                 c.xp.takeIf { it > 0 }?.let { "$it XP" },
-                c.chests[ChestTier.SILVER]?.let { "$it Çırak kasa" },
-                c.chests[ChestTier.GOLD]?.let { "$it Sanatçı kasa" },
-                c.chests[ChestTier.RARE]?.let { "$it Sürpriz kasa" }
+                c.chests[ChestTier.SILVER]?.let { "$it Çırak" },
+                c.chests[ChestTier.GOLD]?.let { "$it Sanatçı" },
+                c.chests[ChestTier.RARE]?.let { "$it Sürpriz" }
             ).joinToString(", ")
-            val until = if (c.expiresAtMillis > 0) " · " + SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(c.expiresAtMillis)) + "'e kadar" else ""
+            val until = if (c.expiresAtMillis > 0) " · " + SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(c.expiresAtMillis)) else ""
             Text(
-                text = "${c.code} — $reward — ${c.usedCount}/${c.maxUses}$until",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(bottom = 4.dp)
+                text = "${c.code} · $reward · ${c.usedCount}/${c.maxUses}$until",
+                style = MaterialTheme.typography.bodySmall
             )
+        }
+    }
+}
+
+/** One chest tier's count with a minus and a plus beside it — three of these fit on one line. */
+@Composable
+private fun ChestStepper(name: String, count: Int, onChange: (Int) -> Unit, modifier: Modifier = Modifier) {
+    Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally, modifier = modifier) {
+        Text(name, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+        Row(
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            SelectableChip(label = "−", selected = false, onClick = { onChange(count - 1) }, horizontalPadding = 10.dp, verticalPadding = 4.dp)
+            Text(count.toString(), style = MaterialTheme.typography.titleMedium)
+            SelectableChip(label = "+", selected = false, onClick = { onChange(count + 1) }, horizontalPadding = 10.dp, verticalPadding = 4.dp)
         }
     }
 }

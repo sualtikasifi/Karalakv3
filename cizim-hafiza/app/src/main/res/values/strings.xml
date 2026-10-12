@@ -1422,4 +1422,5 @@
     <string name="online_finished_title">You finished!</string>
     <string name="online_score_label">points</string>
     <string name="online_players_done">%1$d / %2$d players done</string>
+    <string name="coupon_clear">Clear</string>
 </resources>

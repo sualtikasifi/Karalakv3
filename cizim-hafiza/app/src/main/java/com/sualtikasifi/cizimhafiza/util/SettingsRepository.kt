@@ -331,6 +331,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val updated = _goldBalance.value + amount
         prefs.edit { putInt(KEY_GOLD_BALANCE, updated); sealEconomy(gold = updated) }
         _goldBalance.value = updated
+        HomeShownStats.pendingGold += amount
     }
 
     /** The one-time "what is new" tour (chests, jokers, store) has been shown. */
@@ -806,6 +807,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         prefs.edit { putInt(KEY_LIFETIME_XP, updated) }
         _lifetimeXp.value = updated
         addPeriodXp(amount)
+        HomeShownStats.pendingXp += amount
     }
 
     /**

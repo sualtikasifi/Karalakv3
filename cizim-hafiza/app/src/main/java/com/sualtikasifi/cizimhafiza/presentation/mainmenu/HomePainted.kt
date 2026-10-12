@@ -20,6 +20,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import com.sualtikasifi.cizimhafiza.presentation.common.breathing
 import com.sualtikasifi.cizimhafiza.presentation.common.glint
@@ -168,21 +169,35 @@ internal fun PaintedHome(
 
         // Gold and XP climb from what this screen showed last time to the real values, so a match's winnings are
         // seen arriving instead of just being there (see HomeShownStats).
-        val goldStart = remember { com.sualtikasifi.cizimhafiza.util.HomeShownStats.gold ?: gold }
-        val xpStart = remember { com.sualtikasifi.cizimhafiza.util.HomeShownStats.totalXp ?: progress.totalXp }
+        val goldStart = remember { (gold - com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingGold).coerceIn(0, gold) }
+        val xpStart = remember { (progress.totalXp - com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingXp).coerceIn(0, progress.totalXp) }
         val goldAnim = remember { androidx.compose.animation.core.Animatable(goldStart.toFloat()) }
         val xpAnim = remember { androidx.compose.animation.core.Animatable(xpStart.toFloat()) }
+        // Only a real win animates (and shows its "+N"). Any other change — the numbers arriving a moment after the screen
+        // first draws, a restore — just takes its value, so the lifetime total never climbs from zero.
+        var goldGain by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+        var xpGain by remember { androidx.compose.runtime.mutableIntStateOf(0) }
         LaunchedEffect(gold) {
-            if (goldAnim.value.toInt() != gold) goldAnim.animateTo(gold.toFloat(), tween(1400, easing = FastOutSlowInEasing))
-            com.sualtikasifi.cizimhafiza.util.HomeShownStats.gold = gold
+            val earned = com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingGold
+            com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingGold = 0
+            if (earned > 0 && goldAnim.value.toInt() != gold) {
+                goldGain = earned
+                goldAnim.animateTo(gold.toFloat(), tween(1400, easing = FastOutSlowInEasing))
+            } else {
+                goldAnim.snapTo(gold.toFloat())
+            }
         }
         LaunchedEffect(progress.totalXp) {
-            if (xpAnim.value.toInt() != progress.totalXp) xpAnim.animateTo(progress.totalXp.toFloat(), tween(1600, easing = FastOutSlowInEasing))
-            com.sualtikasifi.cizimhafiza.util.HomeShownStats.totalXp = progress.totalXp
+            val earned = com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingXp
+            com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingXp = 0
+            if (earned > 0 && xpAnim.value.toInt() != progress.totalXp) {
+                xpGain = earned
+                xpAnim.animateTo(progress.totalXp.toFloat(), tween(1600, easing = FastOutSlowInEasing))
+            } else {
+                xpAnim.snapTo(progress.totalXp.toFloat())
+            }
         }
         val shownProgress = com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState.forXp(xpAnim.value.toInt())
-        val goldGain = (gold - goldStart).coerceAtLeast(0)
-        val xpGain = (progress.totalXp - xpStart).coerceAtLeast(0)
 
         @Composable
         fun FitLettered(text: String, baseArt: Float, outline: Color?, maxLines: Int, modifier: Modifier, fill: Color = Color.White) {
