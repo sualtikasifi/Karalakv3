@@ -645,7 +645,7 @@ private fun DuelChallengerVersusCard(
  * the outcome on a pill between them over "VS", and a crown on the card's top edge when the player won.
  */
 @Composable
-private fun VersusCard(
+internal fun VersusCard(
     leftName: String,
     leftScore: Int,
     leftAvatar: (@Composable () -> Unit)?,
@@ -774,7 +774,7 @@ private fun GalleryToggle(
 
 /** One side of the gallery switch: orange and lettered when chosen, cream with brown ink when not. */
 @Composable
-private fun GalleryChip(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+internal fun GalleryChip(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
     Box(
         contentAlignment = Alignment.Center,
@@ -893,7 +893,7 @@ private fun ResultLevelCard(progress: com.sualtikasifi.cizimhafiza.domain.model.
 
 /** One of the screen's wide painted buttons: the picture's icon and leaves kept at its own size, [content] in the middle. */
 @Composable
-private fun ArtButton(
+internal fun ArtButton(
     res: Int,
     u: androidx.compose.ui.unit.Dp,
     onClick: () -> Unit,
@@ -926,7 +926,7 @@ private fun ArtButton(
 }
 /** A parchment panel for the extra cards (quick match, duel, daily challenge). */
 @Composable
-private fun PaperPanel(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+internal fun PaperPanel(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     NinePatch(
         res = R.drawable.league_card,
         slicePx = 100,
@@ -1038,7 +1038,7 @@ private const val PreviewH = 1870f
  * share (or, for the opponent's drawings, report) button.
  */
 @Composable
-private fun DrawingPreviewScene(
+internal fun DrawingPreviewScene(
     item: ResultItem,
     position: Int?,
     total: Int,

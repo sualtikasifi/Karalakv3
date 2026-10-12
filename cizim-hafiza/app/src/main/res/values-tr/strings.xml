@@ -1432,4 +1432,7 @@
     <string name="coupon_error_wait">Çok fazla yanlış deneme. Biraz bekle.</string>
     <string name="reports_tab_coupons">Kupon</string>
     <string name="joker_bought_title">Joker alındı!</string>
+    <string name="online_finished_title">Bitirdin!</string>
+    <string name="online_score_label">puan</string>
+    <string name="online_players_done">%1$d / %2$d oyuncu bitirdi</string>
 </resources>

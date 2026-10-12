@@ -1,47 +1,41 @@
 package com.sualtikasifi.cizimhafiza.presentation.online
 
 import android.app.Activity
-import androidx.compose.foundation.BorderStroke
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items as columnItems
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import com.sualtikasifi.cizimhafiza.presentation.common.previewSwipe
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -51,37 +45,54 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.data.bot.BotRoomEngine
+import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
+import com.sualtikasifi.cizimhafiza.domain.model.OnlinePlayer
 import com.sualtikasifi.cizimhafiza.domain.model.ResultItem
 import com.sualtikasifi.cizimhafiza.presentation.common.BotMascot
 import com.sualtikasifi.cizimhafiza.presentation.common.BotMascotPose
 import com.sualtikasifi.cizimhafiza.presentation.common.ChestWonDialog
-import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
-import com.sualtikasifi.cizimhafiza.domain.model.LevelTier
-import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
+import com.sualtikasifi.cizimhafiza.presentation.common.FitText
+import com.sualtikasifi.cizimhafiza.presentation.common.InkBrown
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.LevelAvatar
-import com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton
-import com.sualtikasifi.cizimhafiza.presentation.common.SelectableChip
-import com.sualtikasifi.cizimhafiza.presentation.common.ReplayableDrawing
-import com.sualtikasifi.cizimhafiza.presentation.common.StrokeCanvas
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.RatingPromptDialog
 import com.sualtikasifi.cizimhafiza.presentation.common.ReportDrawingDialog
 import com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState
 import com.sualtikasifi.cizimhafiza.presentation.common.SignInPromptDialog
-import com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton
+import com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf
+import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import com.sualtikasifi.cizimhafiza.presentation.common.currentWordLanguage
-import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
-import com.sualtikasifi.cizimhafiza.util.capitalizeForWordLanguage
+import com.sualtikasifi.cizimhafiza.presentation.common.springIn
+import com.sualtikasifi.cizimhafiza.presentation.game.ArtButton
+import com.sualtikasifi.cizimhafiza.presentation.game.DrawingPreviewScene
+import com.sualtikasifi.cizimhafiza.presentation.game.GalleryChip
+import com.sualtikasifi.cizimhafiza.presentation.game.PaperPanel
+import com.sualtikasifi.cizimhafiza.presentation.game.ResArtW
+import com.sualtikasifi.cizimhafiza.presentation.game.ResultHeader
+import com.sualtikasifi.cizimhafiza.presentation.game.ResultInk
+import com.sualtikasifi.cizimhafiza.presentation.game.ResultStat
+import com.sualtikasifi.cizimhafiza.presentation.game.ResultStatGrid
+import com.sualtikasifi.cizimhafiza.presentation.game.ResultWordsBoard
+import com.sualtikasifi.cizimhafiza.presentation.game.StatIcon
+import com.sualtikasifi.cizimhafiza.presentation.game.VersusCard
+import com.sualtikasifi.cizimhafiza.presentation.game.XpOrange
+import com.sualtikasifi.cizimhafiza.util.DrawingShareUtil
 import com.sualtikasifi.cizimhafiza.util.placementEmoji
 
 @Composable
@@ -96,32 +107,22 @@ fun OnlineResultScreen(
     val room = uiState.room
     val myUid = viewModel.myUid
     val me = room?.players?.find { it.uid == myUid }
-    // pendingNextRound players (joined mid-round — see OnlinePlayer.kt)
-    // never played this round: excluded from every comparison below, same
-    // as OnlineResultViewModel excludes them from the "is everyone done"
-    // check.
-    // left=true players have to go too, not just pendingNextRound ones —
-    // OnlineResultViewModel already excludes both when it decides the round
-    // is over, and without the same rule here a single player quitting
-    // mid-match leaves everyone else stuck on "waiting for the others"
-    // forever, since a departed player's finished flag never flips.
+    // pendingNextRound players (joined mid-round) never played this round, and left=true players will never finish it:
+    // both are left out of every comparison below, the same way OnlineResultViewModel leaves them out of "is everyone
+    // done" — otherwise one player quitting would keep everybody else waiting for ever.
     val others = room?.players?.filter { it.uid != myUid && !it.pendingNextRound && !it.left } ?: emptyList()
     val context = LocalContext.current
     var ratingPromptDismissed by remember { mutableStateOf(false) }
     var signInPromptDismissed by remember { mutableStateOf(false) }
     var chestWonDismissed by remember { mutableStateOf(false) }
 
-    // Shown once the finished-round comparison is actually on-screen (the
-    // same condition the content below waits on) — see AdManager's
-    // placement doc. Keyed on the boolean so it only fires the instant this
-    // flips from waiting to showing, not on every uiState update.
+    // The interstitial is asked for once, the moment the finished comparison is actually showing.
     val resultIsShowing = others.isNotEmpty() && others.all { it.finished }
     LaunchedEffect(resultIsShowing) {
         if (resultIsShowing) {
             (context as? Activity)?.let { viewModel.showInterstitial(it) }
         }
     }
-
     LaunchedEffect(uiState.navigateToRematchRoomCode) {
         uiState.navigateToRematchRoomCode?.let(onRematchStarted)
     }
@@ -131,419 +132,245 @@ fun OnlineResultScreen(
 
     if (room == null || me == null) {
         Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .screenBackground()
-                .padding(padding), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
         return
     }
 
-    // Not everyone has submitted their result yet — an unfinished player's
-    // totalScore field is still the pre-game 0, so showing the comparison
-    // now would misleadingly look like they already lost. Wait until
-    // everyone's genuinely finished.
-    //
-    // No chat/emoji dock here on purpose (there used to be one): sending a
-    // reaction into a round that is already over and whose comparison
-    // hasn't opened yet had nowhere real to land, and it turned this pure
-    // waiting moment into something that looked like it was still asking
-    // for input. Just the wait, centered.
+    // Not everyone has submitted yet: an unfinished player's score is still the pre-game 0, so showing the comparison now
+    // would make them look like they had already lost. Until then, a waiting scene of its own — no chat dock (a message
+    // sent into a round that is over has nowhere to land).
     if (others.isEmpty() || others.any { !it.finished }) {
-        Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .screenBackground()
-                    .padding(padding)
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = stringResource(R.string.online_you_finished, me.totalScore),
-                        style = MaterialTheme.typography.headlineMedium,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    CircularProgressIndicator()
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = stringResource(R.string.online_waiting_for_opponent_result),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-        }
+        OnlineWaitingScene(me = me, others = others, myUid = myUid, onBack = onMainMenu)
         return
     }
 
     var previewItem by remember { mutableStateOf<ResultItem?>(null) }
     var reportItem by remember { mutableStateOf<ResultItem?>(null) }
 
-    // "others" already excludes pendingNextRound joiners — this round's
-    // comparison is only ever between the players who actually played it.
-    val roundPlayers = listOfNotNull(me) + others
+    val roundPlayers = listOf(me) + others
     val ranked = roundPlayers.sortedByDescending { it.totalScore }
     val myPlacement = ranked.indexOfFirst { it.uid == myUid } + 1
-    // Shown in the leaderboard (tagged red, see PlayerScoreCard) but kept
-    // OUT of ranked/roundPlayers — those still drive myPlacement, team
-    // totals and the "is everyone finished" gate above, none of which
-    // should ever wait on or rank someone who is no longer here.
+    // Shown in the standings, tagged, but kept out of ranked/roundPlayers: those drive the placement and the team totals.
     val leftPlayers = room.players.filter { it.uid != myUid && it.left && !it.pendingNextRound }
-    val teamMode = room?.teamMode == true
+    val teamMode = room.teamMode
     val teamATotal = roundPlayers.filter { it.teamId == "A" }.sumOf { it.totalScore }
     val teamBTotal = roundPlayers.filter { it.teamId == "B" }.sumOf { it.totalScore }
-    val myTeamWon: Boolean? = when {
-        !teamMode || me?.teamId == null || teamATotal == teamBTotal -> null
-        me.teamId == "A" -> teamATotal > teamBTotal
-        else -> teamBTotal > teamATotal
-    }
+    val selectedUid = uiState.selectedUid ?: myUid
+    val selectedPlayer = roundPlayers.find { it.uid == selectedUid } ?: me
+    val galleryItems = uiState.itemsByUid[selectedUid].orEmpty()
+    val isMine = selectedUid == myUid
+    val reportable = !isMine && selectedUid != BotRoomEngine.BOT_UID
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .screenBackground()
-                .padding(padding).padding(horizontal = 20.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.game_over),
-                style = MaterialTheme.typography.titleLarge,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Text(
-                text = if (teamMode) {
-                    when (myTeamWon) {
-                        true -> stringResource(R.string.online_team_result_won)
-                        false -> stringResource(R.string.online_team_result_lost)
-                        null -> stringResource(R.string.online_team_result_tied)
-                    }
-                } else {
-                    stringResource(R.string.online_result_placement, myPlacement)
-                },
-                style = MaterialTheme.typography.headlineSmall,
-                color = when {
-                    teamMode && myTeamWon == true -> AppTheme.tokens.success
-                    teamMode -> MaterialTheme.colorScheme.onSurfaceVariant
-                    myPlacement == 1 -> AppTheme.tokens.success
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
-            )
-
-            if (teamMode) {
-                TeamScoreSummary(teamATotal = teamATotal, teamBTotal = teamBTotal, myTeamId = me?.teamId)
-            }
-
-            // Leaderboard: a scrollable list (not a fixed 2-up row) since a
-            // room can have up to GameConstants.MAX_ROOM_SIZE players.
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 12.dp).heightIn(max = 240.dp)
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val u = maxWidth / ResArtW
+        val fontScale0 = LocalDensity.current.fontScale
+        fun fs(art: Float) = (art * u.value / fontScale0).sp
+        Image(
+            painter = cachedPainterResource(R.drawable.du_bg),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            alignment = Alignment.TopCenter,
+            modifier = Modifier.fillMaxSize()
+        )
+        Box(Modifier.fillMaxSize().background(Color(0x33180A02)))
+        Column(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
+            Column(
+                modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val myScore = ranked.find { it.uid == myUid }?.totalScore ?: 0
-                columnItems(ranked, key = { it.uid }) { player ->
-                    val rank = ranked.indexOf(player) + 1
-                    val mascotPose = when {
-                        player.uid != BotRoomEngine.BOT_UID -> null
-                        player.totalScore < myScore -> BotMascotPose.SAD
-                        else -> BotMascotPose.HAPPY
-                    }
-                    PlayerScoreCard(
-                        rank = rank,
-                        name = player.displayName,
-                        level = player.level,
-                        frameId = player.frameId,
-                        avatarUrl = player.avatarUrl,
-                        score = player.totalScore,
-                        correctCount = player.correctCount,
-                        totalWords = player.correctCount + player.wrongCount,
-                        isYou = player.uid == myUid,
-                        ready = player.uid in room.rematchVotes,
-                        mascotPose = mascotPose
-                    )
+                Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+                Box(Modifier.fillMaxWidth().springIn(index = 0, fromY = -40)) {
+                    ResultHeader(title = stringResource(R.string.game_over), onBack = onMainMenu)
                 }
-                // Left the room after this round finished — still shown (a
-                // silently vanishing row read as a bug) but tagged red and
-                // with no rank, since there is nothing left to compare their
-                // score against.
-                columnItems(leftPlayers, key = { it.uid }) { player ->
-                    PlayerScoreCard(
-                        rank = null,
-                        name = player.displayName,
-                        level = player.level,
-                        frameId = player.frameId,
-                        avatarUrl = player.avatarUrl,
-                        score = player.totalScore,
-                        correctCount = player.correctCount,
-                        totalWords = player.correctCount + player.wrongCount,
-                        isYou = false,
-                        left = true
-                    )
-                }
-            }
-
-            // What this round paid out — the per-word XP, the match bonus and the gold — so a finished room is seen to
-            // have paid, instead of the numbers only turning up on the home screen.
-            if (uiState.xpEarned > 0 || uiState.goldEarned > 0) {
-                Text(
-                    text = stringResource(R.string.online_reward_format, uiState.xpEarned, uiState.goldEarned),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            }
-
-            // Whose drawing gallery to show — a scrollable row of player-name
-            // chips (not a binary toggle) since there can be up to
-            // GameConstants.MAX_ROOM_SIZE players. These have to be
-            // *selectable* chips rather than plain buttons: with a room this
-            // size, an unhighlighted row gives no clue whose drawings are
-            // currently on screen.
-            Text(
-                text = stringResource(R.string.online_whose_drawings),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
-            ) {
-                roundPlayers.forEach { player ->
-                    val label = if (player.uid == myUid) {
-                        stringResource(R.string.online_you_label, player.displayName)
-                    } else {
-                        player.displayName
-                    }
-                    SelectableChip(
-                        label = label,
-                        selected = player.uid == uiState.selectedUid,
-                        onClick = { viewModel.selectPlayer(player.uid) },
-                        horizontalPadding = 14.dp,
-                        verticalPadding = 10.dp,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-
-            val items = uiState.itemsByUid[uiState.selectedUid] ?: emptyList()
-            if (uiState.isLoadingItems) {
-                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = u * 40f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(u * 10f)
                 ) {
-                    items(items) { item ->
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box {
-                                StrokeCanvas(
-                                    strokes = item.strokes,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .aspectRatio(1f)
-                                        .clip(MaterialTheme.shapes.medium)
-                                        .background(AppTheme.tokens.canvasPaper)
-                                        .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.medium)
-                                        .clickable { previewItem = item }
+                    // ---- How the round went: the versus card for two (or the two teams), a standings card for more ----
+                    Box(Modifier.fillMaxWidth().springIn(index = 1, stepMs = 90)) {
+                        when {
+                            teamMode -> {
+                                val mineIsB = me.teamId == "B"
+                                val myTeam = if (mineIsB) teamBTotal else teamATotal
+                                val theirTeam = if (mineIsB) teamATotal else teamBTotal
+                                VersusCard(
+                                    leftName = stringResource(if (mineIsB) R.string.online_team_b else R.string.online_team_a),
+                                    leftScore = myTeam,
+                                    leftAvatar = null,
+                                    rightName = stringResource(if (mineIsB) R.string.online_team_a else R.string.online_team_b),
+                                    rightScore = theirTeam,
+                                    rightAvatar = null,
+                                    u = u
                                 )
-                                val badgeColor = if (item.isCorrect) AppTheme.tokens.success else MaterialTheme.colorScheme.error
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(4.dp)
-                                        .size(20.dp)
-                                        .clip(CircleShape)
-                                        .background(badgeColor),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = if (item.isCorrect) Icons.Filled.Check else Icons.Filled.Close,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.surface,
-                                        modifier = Modifier.size(14.dp)
+                            }
+                            roundPlayers.size == 2 -> {
+                                val other = others.first()
+                                VersusCard(
+                                    leftName = me.displayName,
+                                    leftScore = me.totalScore,
+                                    leftAvatar = { LevelAvatar(me.level, AvatarFrame.resolve(me.frameId, me.level), size = u * 84f, photo = avatarPhotoOf(me.avatarUrl)) },
+                                    rightName = other.displayName,
+                                    rightScore = other.totalScore,
+                                    rightAvatar = { PlayerPicture(other, u * 84f) },
+                                    u = u
+                                )
+                            }
+                            else -> StandingsCard(
+                                ranked = ranked,
+                                left = leftPlayers,
+                                myUid = myUid,
+                                rematchVotes = room.rematchVotes,
+                                placement = myPlacement,
+                                u = u
+                            )
+                        }
+                    }
+
+                    // ---- Your numbers, and what the round paid ----
+                    val stats = buildList {
+                        add(ResultStat(StatIcon.Art(R.drawable.rs_ic_check), stringResource(R.string.result_stat_correct), me.correctCount.toString(), Color(0xFF2EA043)))
+                        add(ResultStat(StatIcon.Art(R.drawable.rs_ic_x), stringResource(R.string.result_stat_wrong), me.wrongCount.toString(), Color(0xFFE23B32)))
+                        if (uiState.goldEarned > 0) {
+                            add(ResultStat(StatIcon.Art(R.drawable.icon_gold_coin), stringResource(R.string.result_stat_play_gold), stringResource(R.string.result_gold_amount, uiState.goldEarned), Color(0xFFE8650F)))
+                        }
+                        if (uiState.xpEarned > 0) {
+                            add(ResultStat(StatIcon.Art(R.drawable.rs_ic_star), "", stringResource(R.string.result_xp_won, uiState.xpEarned), XpOrange, headline = true))
+                        }
+                    }
+                    ResultStatGrid(stats, u, Modifier.fillMaxWidth().springIn(index = 2, stepMs = 90))
+
+                    // ---- Everyone's drawings, one player at a time ----
+                    ResultWordsBoard(
+                        title = if (isMine) stringResource(R.string.result_words_title, me.correctCount + me.wrongCount) else selectedPlayer.displayName,
+                        items = galleryItems,
+                        placeholders = (me.correctCount + me.wrongCount).coerceAtLeast(room.wordCount),
+                        wordLanguage = wordLanguage,
+                        onPreview = { previewItem = it },
+                        onShareAll = if (isMine && galleryItems.isNotEmpty()) {
+                            {
+                                DrawingShareUtil.shareAllResults(
+                                    context = context,
+                                    totalScore = me.totalScore,
+                                    correctCount = me.correctCount,
+                                    wrongCount = me.wrongCount,
+                                    fastestCorrectSeconds = me.fastestCorrectMs?.let { it / 1000.0 },
+                                    items = galleryItems
+                                )
+                            }
+                        } else null,
+                        header = {
+                            // One pill per player, side by side for two and scrolling for more.
+                            Row(
+                                // Two pills share the plank; more than two scroll (weights need a bounded row).
+                                modifier = Modifier.fillMaxWidth().then(if (roundPlayers.size > 2) Modifier.horizontalScroll(rememberScrollState()) else Modifier).padding(horizontal = 6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                roundPlayers.forEach { player ->
+                                    val ready = uiState.itemsByUid[player.uid].orEmpty().isNotEmpty()
+                                    GalleryChip(
+                                        label = player.displayName,
+                                        selected = player.uid == selectedUid,
+                                        enabled = ready || player.uid == myUid,
+                                        onClick = { viewModel.selectPlayer(player.uid) },
+                                        modifier = if (roundPlayers.size <= 2) Modifier.weight(1f) else Modifier.width(110.dp)
                                     )
                                 }
                             }
-                            Text(
-                                text = item.word.capitalizeForWordLanguage(wordLanguage),
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth().padding(top = 2.dp)
-                            )
+                        },
+                        modifier = Modifier.fillMaxWidth().springIn(index = 3, stepMs = 90)
+                    )
+
+                    // ---- Chat and the rematch vote ----
+                    PaperPanel(modifier = Modifier.fillMaxWidth()) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            ChatRow(reactions = uiState.reactions, myUid = myUid, players = room.players)
+                            ReactionSendRow(onSend = viewModel::sendReaction, modifier = Modifier.padding(top = 4.dp))
+                            if (uiState.rematchBlockedByNewJoiner) {
+                                Text(
+                                    text = stringResource(R.string.online_rematch_blocked_message),
+                                    style = PaintedStyle(color = InkBrown, fontSize = 14.sp, textAlign = TextAlign.Center),
+                                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                                )
+                            } else if (room.rematchVotes.isNotEmpty()) {
+                                Text(
+                                    text = stringResource(
+                                        R.string.online_rematch_ready_count,
+                                        room.rematchVotes.count { uid -> roundPlayers.any { it.uid == uid } },
+                                        roundPlayers.size
+                                    ),
+                                    style = PaintedStyle(color = Color(0xFF1F9A3A), fontSize = 14.sp, textAlign = TextAlign.Center),
+                                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                                )
+                            }
                         }
                     }
+                    Spacer(Modifier.height(2.dp))
                 }
             }
 
-            // A persistent row, not the old pop-up overlay: a message
-            // arriving used to insert a solid card right where the gallery
-            // above it was, which read as the drawing being wiped out from
-            // under the player. This row's height never changes, and the
-            // full history lives one tap away instead of disappearing after
-            // a couple of seconds.
-            ChatRow(reactions = uiState.reactions, myUid = myUid, players = room.players, modifier = Modifier.padding(top = 8.dp))
-            ReactionSendRow(onSend = viewModel::sendReaction, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
-
-            if (uiState.rematchBlockedByNewJoiner) {
-                Text(
-                    text = stringResource(R.string.online_rematch_blocked_message),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
-                )
-            }
-
-            // The rings say who; this says how many are still missing, which
-            // is the question actually being asked while everyone waits.
-            if (room.rematchVotes.isNotEmpty() && !uiState.rematchBlockedByNewJoiner) {
-                Text(
-                    text = stringResource(
-                        R.string.online_rematch_ready_count,
-                        room.rematchVotes.count { uid -> roundPlayers.any { it.uid == uid } },
-                        roundPlayers.size
-                    ),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = AppTheme.tokens.success,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
-                )
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
-                SecondaryButton(text = stringResource(R.string.main_menu), onClick = onMainMenu, modifier = Modifier.weight(1f))
-                PrimaryButton(
-                    text = stringResource(if (uiState.rematchRequested) R.string.online_rematch_waiting else R.string.play_again),
+            // ---- The two buttons, pinned under the scrolling part ----
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = u * 40f, end = u * 40f, top = u * 8f, bottom = u * 36f),
+                horizontalArrangement = Arrangement.spacedBy(u * 14f)
+            ) {
+                ArtButton(res = R.drawable.rs_btn_claim, u = u, iconRoom = 0f, onClick = onMainMenu, modifier = Modifier.weight(1f)) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        LetteredText(stringResource(R.string.main_menu), fs(38f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f)
+                    }
+                }
+                val waitingForOthers = uiState.rematchRequested
+                ArtButton(
+                    res = R.drawable.rs_btn_claim,
+                    u = u,
+                    iconRoom = 0f,
+                    enabled = !waitingForOthers && !uiState.rematchBlockedByNewJoiner,
                     onClick = viewModel::requestRematch,
-                    enabled = !uiState.rematchRequested && !uiState.rematchBlockedByNewJoiner,
                     modifier = Modifier.weight(1f)
-                )
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        LetteredText(
+                            stringResource(if (waitingForOthers) R.string.online_rematch_waiting else R.string.play_again),
+                            fs(38f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f
+                        )
+                    }
+                }
             }
         }
     }
 
-    val itemToPreview = previewItem
-    if (itemToPreview != null) {
+    // ---- The drawing window: the same one the solo result opens, with share for yours and report for theirs ----
+    previewItem?.let { item ->
+        val position = galleryItems.indexOf(item)
         Dialog(
             onDismissRequest = { previewItem = null },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
+            properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
         ) {
-            val galleryItems = uiState.itemsByUid[uiState.selectedUid].orEmpty()
-            val position = galleryItems.indexOf(itemToPreview)
-            val onPrevious: (() -> Unit)? = if (position > 0) ({ previewItem = galleryItems[position - 1] }) else null
-            val onNext: (() -> Unit)? = if (position in 0 until galleryItems.size - 1) ({ previewItem = galleryItems[position + 1] }) else null
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.92f))
-                    .previewSwipe(onPrevious, onNext)
-            ) {
-                Column(
-                    modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // See the solo result screen: a drawing opened on its
-                    // own replays itself, the grid of thumbnails behind it
-                    // does not.
-                    androidx.compose.runtime.key(itemToPreview) {
-                        ReplayableDrawing(
-                            strokes = itemToPreview.strokes,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(1f)
-                                .clip(MaterialTheme.shapes.large)
-                                .background(AppTheme.tokens.canvasPaper)
-                                .border(2.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.large)
-                        )
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.padding(top = 16.dp)
-                    ) {
-                        if (galleryItems.size > 1) {
-                            IconButton(onClick = { onPrevious?.invoke() }) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                    contentDescription = stringResource(R.string.previous_drawing),
-                                    tint = MaterialTheme.colorScheme.surface,
-                                    modifier = Modifier.size(36.dp)
-                                )
-                            }
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = itemToPreview.word.capitalizeForWordLanguage(wordLanguage),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.surface
-                            )
-                            if (galleryItems.size > 1 && position >= 0) {
-                                Text(
-                                    text = "${position + 1} / ${galleryItems.size}",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
-                                )
-                            }
-                        }
-                        if (galleryItems.size > 1) {
-                            IconButton(onClick = { onNext?.invoke() }) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                    contentDescription = stringResource(R.string.next_drawing),
-                                    tint = MaterialTheme.colorScheme.surface,
-                                    modifier = Modifier.size(36.dp)
-                                )
-                            }
-                        }
-                    }
-                    // Only somebody else's work, and never the bot's — there
-                    // is no author behind either your own drawing or Sude's
-                    // for a report to be about.
-                    val reportable = uiState.selectedUid != null &&
-                        uiState.selectedUid != myUid &&
-                        uiState.selectedUid != BotRoomEngine.BOT_UID
-                    if (reportable) {
-                        SecondaryButton(
-                            text = stringResource(R.string.report_drawing_action),
-                            onClick = { reportItem = itemToPreview },
-                            icon = Icons.Filled.Flag,
-                            modifier = Modifier.padding(top = 18.dp).fillMaxWidth()
-                        )
-                    }
+            BackHandler { previewItem = null }
+            DrawingPreviewScene(
+                item = item,
+                position = if (position >= 0) position + 1 else null,
+                total = galleryItems.size,
+                onPrevious = if (position > 0) ({ previewItem = galleryItems[position - 1] }) else null,
+                onNext = if (position in 0 until galleryItems.size - 1) ({ previewItem = galleryItems[position + 1] }) else null,
+                wordLanguage = wordLanguage,
+                reporting = reportable,
+                onClose = { previewItem = null },
+                onAction = {
+                    if (reportable) reportItem = item
+                    else DrawingShareUtil.shareDrawingOnTemplate(context, item.word, item.strokes)
                 }
-                IconButton(
-                    onClick = { previewItem = null },
-                    modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
-                ) {
-                    Icon(imageVector = Icons.Filled.Close, contentDescription = stringResource(R.string.close), tint = MaterialTheme.colorScheme.surface)
-                }
-            }
+            )
         }
     }
 
-    val itemToReport = reportItem
-    if (itemToReport != null) {
+    reportItem?.let { itemToReport ->
         ReportDrawingDialog(
-            word = itemToReport.word.capitalizeForWordLanguage(wordLanguage),
+            word = itemToReport.word,
             sendState = uiState.reportState,
             onReport = { reason -> viewModel.reportSelectedPlayersDrawing(itemToReport, reason) },
             onDismiss = {
@@ -554,9 +381,7 @@ fun OnlineResultScreen(
         )
     }
 
-    // Local, not derived from uiState — see ResultScreen's matching comment:
-    // the underlying flag only ever decides eligibility once, dismissing it
-    // here is what actually takes it off screen.
+    // Local, not derived from uiState: the flag only decides eligibility once, dismissing is what takes it off screen.
     if (uiState.showRatingPrompt && !ratingPromptDismissed) {
         RatingPromptDialog(
             onRate = {
@@ -580,147 +405,192 @@ fun OnlineResultScreen(
     }
 }
 
-/** 2v2 rooms only (see OnlineRoom.teamMode) — each team's summed totalScore, shown above the individual leaderboard. */
+/** A player's picture: the bot's mascot, or their frame with their photo or level. */
 @Composable
-private fun TeamScoreSummary(teamATotal: Int, teamBTotal: Int, myTeamId: String?) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        TeamScoreCard(
-            title = stringResource(R.string.online_team_a),
-            score = teamATotal,
-            isMine = myTeamId == "A",
-            isWinning = teamATotal > teamBTotal,
-            modifier = Modifier.weight(1f)
-        )
-        TeamScoreCard(
-            title = stringResource(R.string.online_team_b),
-            score = teamBTotal,
-            isMine = myTeamId == "B",
-            isWinning = teamBTotal > teamATotal,
-            modifier = Modifier.weight(1f)
-        )
+private fun PlayerPicture(player: OnlinePlayer, size: androidx.compose.ui.unit.Dp) {
+    if (player.uid == BotRoomEngine.BOT_UID) {
+        BotMascot(pose = BotMascotPose.HAPPY, modifier = Modifier.size(size))
+    } else {
+        LevelAvatar(player.level, AvatarFrame.resolve(player.frameId, player.level), size = size, photo = avatarPhotoOf(player.avatarUrl))
     }
 }
 
+/**
+ * The scene a player who is already done waits in, until the others have finished: the studio from the lobby, one paper
+ * card with their own score and a line for every player — a tick when they are done, an hourglass while they are not.
+ */
 @Composable
-private fun TeamScoreCard(title: String, score: Int, isMine: Boolean, isWinning: Boolean, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isWinning) AppTheme.tokens.success.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant
-        ),
-        border = if (isMine) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
-    ) {
+private fun OnlineWaitingScene(me: OnlinePlayer, others: List<OnlinePlayer>, myUid: String?, onBack: () -> Unit) {
+    BackHandler(onBack = onBack)
+    val everyone = listOf(me) + others
+    val doneCount = everyone.count { it.finished }
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val u = maxWidth / ResArtW
+        val fontScale0 = LocalDensity.current.fontScale
+        fun fs(art: Float) = (art * u.value / fontScale0).sp
+        Image(
+            painter = cachedPainterResource(R.drawable.bg_lobby),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            alignment = Alignment.TopCenter,
+            modifier = Modifier.fillMaxSize()
+        )
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0x66180A02), Color(0x22180A02), Color(0x88180A02)))))
         Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.fillMaxSize().navigationBarsPadding().padding(horizontal = u * 56f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text(text = title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(text = score.toString(), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            LetteredText(
+                text = stringResource(R.string.online_finished_title),
+                size = fs(78f),
+                outline = Color(0xFF4A2410),
+                maxLines = 1,
+                minScale = 0.5f,
+                title = true,
+                modifier = Modifier.fillMaxWidth().springIn(index = 0, fromY = -40)
+            )
+            Spacer(Modifier.height(u * 18f))
+            PaperPanel(modifier = Modifier.fillMaxWidth().springIn(index = 1, stepMs = 90)) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = me.totalScore.toString(),
+                        style = PaintedStyle(color = XpOrange, fontSize = fs(110f), textAlign = TextAlign.Center),
+                        maxLines = 1
+                    )
+                    Text(
+                        text = stringResource(R.string.online_score_label),
+                        style = PaintedStyle(color = InkBrown, fontSize = fs(34f), textAlign = TextAlign.Center)
+                    )
+                    Spacer(Modifier.height(u * 14f))
+                    everyone.forEach { player ->
+                        WaitingRow(player = player, isYou = player.uid == myUid, u = u)
+                    }
+                    Spacer(Modifier.height(u * 12f))
+                    val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "waitPulse")
+                    val alpha by pulse.animateFloat(
+                        initialValue = 0.45f,
+                        targetValue = 1f,
+                        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                            androidx.compose.animation.core.tween(900),
+                            androidx.compose.animation.core.RepeatMode.Reverse
+                        ),
+                        label = "waitPulseAlpha"
+                    )
+                    Text(
+                        text = stringResource(R.string.online_waiting_for_opponent_result),
+                        style = PaintedStyle(color = ResultInk, fontSize = fs(30f), textAlign = TextAlign.Center),
+                        modifier = Modifier.fillMaxWidth().graphicsLayer { this.alpha = alpha }
+                    )
+                    Text(
+                        text = stringResource(R.string.online_players_done, doneCount, everyone.size),
+                        style = PaintedStyle(color = Color(0xFF8A6A50), fontSize = fs(26f), textAlign = TextAlign.Center),
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun PlayerScoreCard(
-    rank: Int?,
-    name: String,
-    level: Int,
-    frameId: String?,
-    avatarUrl: String = "",
-    score: Int,
-    correctCount: Int,
-    totalWords: Int,
-    isYou: Boolean,
-    /** Has voted for a rematch — the whole row turns green, plus a ring on their avatar. */
-    ready: Boolean = false,
-    /** Left the room after this round — the whole row turns red instead of showing a rank. */
-    left: Boolean = false,
-    mascotPose: BotMascotPose? = null,
-    modifier: Modifier = Modifier
-) {
-    val containerColor = when {
-        left -> MaterialTheme.colorScheme.errorContainer
-        ready -> AppTheme.tokens.successContainer
-        else -> MaterialTheme.colorScheme.surface
-    }
-    Card(
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        modifier = modifier.fillMaxWidth()
+private fun WaitingRow(player: OnlinePlayer, isYou: Boolean, u: androidx.compose.ui.unit.Dp) {
+    val fontScale0 = LocalDensity.current.fontScale
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(vertical = u * 4f)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        PlayerPicture(player, u * 64f)
+        Spacer(Modifier.width(u * 14f))
+        FitText(
+            text = if (isYou) stringResource(R.string.online_you_label, player.displayName) else player.displayName,
+            style = PaintedStyle(color = ResultInk, fontSize = (30f * u.value / fontScale0).sp, textAlign = TextAlign.Start),
+            maxLines = 1,
+            minScale = 0.55f,
+            contentAlignment = Alignment.CenterStart,
+            modifier = Modifier.weight(1f)
+        )
+        Box(
+            modifier = Modifier
+                .size(u * 48f)
+                .background(if (player.finished) Color(0xFF2EA043) else Color(0xFFE0B25C), CircleShape),
+            contentAlignment = Alignment.Center
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = rank?.let { placementEmoji(it) ?: "$it." } ?: "•",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(end = 10.dp)
-                )
-                if (mascotPose != null) {
-                    BotMascot(pose = mascotPose, modifier = Modifier.padding(end = 8.dp))
-                } else {
-                    LevelAvatar(
-                        level = level,
-                        frame = AvatarFrame.resolve(frameId, level),
-                        photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(avatarUrl),
-                        levelBadge = true,
-                        size = 42.dp,
-                        ready = ready,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                }
-                Column {
-                    Text(
-                        text = if (isYou) stringResource(R.string.online_you_label, name) else name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    if (left) {
-                        // No rank tier line here — leaving mid-comparison is
-                        // the one thing worth saying about this row instead.
-                        Text(
-                            text = stringResource(R.string.online_player_left_lobby),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    } else {
-                        // Same treatment as the lobby slot (see
-                        // WaitingRoomScreen.PlayerSlotCard): the rank is worn
-                        // under the name, in the display face, so it reads as a
-                        // title rather than as more of the nickname. The result
-                        // table is the other place people look each other up.
-                        val tier = LevelTier.forLevel(level).rank
-                        Text(
-                            text = "${tier.emoji} ${stringResource(tier.nameRes)}",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontSize = 11.sp,
-                            lineHeight = 14.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        // The score alone doesn't say how the round actually went
-                        // — "8/10 doğru" is what makes this a result table rather
-                        // than just a ranking.
-                        if (totalWords > 0) {
-                            Text(
-                                text = stringResource(R.string.online_correct_of_total, correctCount, totalWords),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-            Text(
-                text = "$score",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary
+            Icon(
+                imageVector = if (player.finished) Icons.Filled.Check else Icons.Filled.HourglassTop,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(u * 30f)
             )
         }
     }
 }
 
+/**
+ * The standings for three or more players, on a paper card: place, picture, name, how many they got right, and their score.
+ * A player who left after the round is listed too (a row that vanished read as a bug), tagged and without a place.
+ */
+@Composable
+private fun StandingsCard(
+    ranked: List<OnlinePlayer>,
+    left: List<OnlinePlayer>,
+    myUid: String?,
+    rematchVotes: Collection<String>,
+    placement: Int,
+    u: androidx.compose.ui.unit.Dp
+) {
+    val fontScale0 = LocalDensity.current.fontScale
+    fun fs(art: Float) = (art * u.value / fontScale0).sp
+    PaperPanel(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(u * 6f)) {
+            FitText(
+                text = stringResource(R.string.online_result_placement, placement),
+                style = PaintedStyle(
+                    color = if (placement == 1) Color(0xFF1F9A3A) else ResultInk,
+                    fontSize = fs(38f),
+                    textAlign = TextAlign.Center
+                ),
+                maxLines = 1,
+                minScale = 0.6f,
+                modifier = Modifier.fillMaxWidth()
+            )
+            (ranked.map { it to false } + left.map { it to true }).forEachIndexed { index, (player, hasLeft) ->
+                val rank = if (hasLeft) null else ranked.indexOf(player) + 1
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = rank?.let { placementEmoji(it) ?: "$it." } ?: "•",
+                        style = PaintedStyle(color = ResultInk, fontSize = fs(34f), textAlign = TextAlign.Center),
+                        modifier = Modifier.width(u * 58f)
+                    )
+                    PlayerPicture(player, u * 66f)
+                    Spacer(Modifier.width(u * 12f))
+                    Column(modifier = Modifier.weight(1f)) {
+                        FitText(
+                            text = if (player.uid == myUid) stringResource(R.string.online_you_label, player.displayName) else player.displayName,
+                            style = PaintedStyle(color = if (hasLeft) Color(0xFF8E1F1F) else ResultInk, fontSize = fs(30f), textAlign = TextAlign.Start),
+                            maxLines = 1,
+                            minScale = 0.55f,
+                            contentAlignment = Alignment.CenterStart,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Text(
+                            text = if (hasLeft) stringResource(R.string.online_player_left_lobby)
+                            else stringResource(R.string.online_correct_of_total, player.correctCount, player.correctCount + player.wrongCount),
+                            style = PaintedStyle(color = if (hasLeft) Color(0xFF8E1F1F) else Color(0xFF8A6A50), fontSize = fs(22f), textAlign = TextAlign.Start),
+                            maxLines = 1
+                        )
+                    }
+                    if (!hasLeft && player.uid in rematchVotes) {
+                        Icon(Icons.Filled.Check, contentDescription = null, tint = Color(0xFF2EA043), modifier = Modifier.size(u * 34f))
+                        Spacer(Modifier.width(u * 6f))
+                    }
+                    Text(
+                        text = player.totalScore.toString(),
+                        style = PaintedStyle(color = XpOrange, fontSize = fs(46f), textAlign = TextAlign.End),
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
+}
