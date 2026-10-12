@@ -356,22 +356,38 @@ fun ResultScreen(
                         // Always there, as in the design; dimmed and inert when this round cannot be doubled (nothing
                         // earned, no ad available, or already doubled).
                         ArtButton(
-                            res = R.drawable.rs_btn_ad,
+                            res = R.drawable.rs_btn_claim,
                             u = u,
+                            iconRoom = 0f,
                             enabled = canDouble,
                             veiled = !com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current,
                             onClick = com.sualtikasifi.cizimhafiza.presentation.common.adOnly { onDoubleXp?.invoke() },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                LetteredText(stringResource(R.string.result_x2_amount, state.xpEarned * 2), fs(40f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.6f, modifier = Modifier.offset(y = -(u * 9f)))
-                                FitText(
-                                    text = stringResource(R.string.result_watch_ad),
-                                    style = PaintedStyle(color = Color.White, fontSize = fs(24f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
-                                    maxLines = 1,
-                                    minScale = 0.6f,
-                                    modifier = Modifier.align(Alignment.BottomCenter).offset(y = -(u * 8f)).fillMaxWidth().height(u * 30f)
-                                )
+                            // Both lines centred in the button, the clapper beside the small line's left; nothing can run
+                            // past the button because each line shrinks to the room it has.
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                LetteredText(stringResource(R.string.result_x2_amount, state.xpEarned * 2), fs(40f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth())
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxWidth().height(u * 30f)
+                                ) {
+                                    Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 26f))
+                                    Spacer(Modifier.width(u * 6f))
+                                    FitText(
+                                        text = stringResource(R.string.result_watch_ad),
+                                        style = PaintedStyle(color = Color.White, fontSize = fs(24f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Start),
+                                        maxLines = 1,
+                                        minScale = 0.5f,
+                                        contentAlignment = Alignment.CenterStart,
+                                        modifier = Modifier.weight(1f, fill = false)
+                                    )
+                                }
                             }
                         }
                     }
@@ -858,12 +874,18 @@ private fun ResultLevelCard(progress: com.sualtikasifi.cizimhafiza.domain.model.
                     .size(s * 9f)
                     .background(Color(0xFFF58A1F), CircleShape)
             )
-        }
-        Box(modifier = Modifier.offset(s * 86f, s * 99f).size(s * 300f, s * 26f), contentAlignment = Alignment.CenterStart) {
+            // The figures sit inside the bar, at its left, in white (with a soft shadow so they read on the tan part too).
             Text(
                 text = stringResource(R.string.home_xp_format, progress.xpIntoLevel, progress.xpForThisLevel),
-                style = PaintedStyle(color = InkBrown, fontSize = fs(22f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
-                maxLines = 1
+                style = PaintedStyle(
+                    color = Color.White,
+                    fontSize = fs(19f),
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Start,
+                    shadow = androidx.compose.ui.graphics.Shadow(Color(0xAA5A2A08), androidx.compose.ui.geometry.Offset(0f, 1.5f), 3f)
+                ),
+                maxLines = 1,
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = s * 14f)
             )
         }
     }
@@ -1028,6 +1050,10 @@ private fun DrawingPreviewScene(
     onAction: () -> Unit
 ) {
     var replay by remember(item) { mutableStateOf(0) }
+    // Tapping an arrow at either end of the list does nothing but say so, for two seconds.
+    var notice by remember { mutableStateOf<String?>(null) }
+    val noticeFirst = stringResource(R.string.preview_first_drawing)
+    val noticeLast = stringResource(R.string.preview_last_drawing)
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -1056,7 +1082,7 @@ private fun DrawingPreviewScene(
             text = item.word.capitalizeForWordLanguage(wordLanguage),
             size = fs(54f),
             outline = Color(0xFF4A2410),
-            modifier = box(215f, 478f, 690f, 548f),
+            modifier = box(190f, 478f, 660f, 548f),
             minScale = 0.45f,
             title = true
         )
@@ -1073,8 +1099,9 @@ private fun DrawingPreviewScene(
         }
         // Previous / next drawing: round arrows on the sheet's sides (a flick across the window does the same).
         if (position != null && total > 1) {
-            PreviewArrow(box(120f, 780f, 200f, 860f), left = true, enabled = onPrevious != null, onClick = { onPrevious?.invoke() })
-            PreviewArrow(box(636f, 780f, 716f, 860f), left = false, enabled = onNext != null, onClick = { onNext?.invoke() })
+            PreviewArrow(box(72f, 780f, 152f, 860f), left = true, onClick = { if (onPrevious != null) onPrevious() else notice = noticeFirst })
+            PreviewArrow(box(684f, 780f, 764f, 860f), left = false, onClick = { if (onNext != null) onNext() else notice = noticeLast })
+            notice?.let { PreviewNotice(it, box(190f, 1130f, 660f, 1190f), fs(34f)) { notice = null } }
             LetteredText(
                 text = "$position / $total",
                 size = fs(40f),
@@ -1122,12 +1149,11 @@ private fun DrawingPreviewScene(
 
 /** One round arrow beside the previewed drawing; faded and inert at either end of the list. */
 @Composable
-private fun PreviewArrow(modifier: Modifier, left: Boolean, enabled: Boolean, onClick: () -> Unit) {
+private fun PreviewArrow(modifier: Modifier, left: Boolean, onClick: () -> Unit) {
     Box(
         modifier = modifier
-            .graphicsLayer { alpha = if (enabled) 1f else 0.3f }
             .background(Color(0xCC4A2410), CircleShape)
-            .then(if (enabled) Modifier.pressable(pressedScale = 0.88f, onClick = onClick) else Modifier)
+            .pressable(pressedScale = 0.88f, onClick = onClick)
             .a11yButton(stringResource(if (left) R.string.previous_drawing else R.string.next_drawing)),
         contentAlignment = Alignment.Center
     ) {
@@ -1137,5 +1163,17 @@ private fun PreviewArrow(modifier: Modifier, left: Boolean, enabled: Boolean, on
             tint = Color.White,
             modifier = Modifier.fillMaxSize(0.8f)
         )
+    }
+}
+
+/** The two-second note a preview shows when an arrow is tapped at the end of the list. */
+@Composable
+private fun PreviewNotice(text: String, modifier: Modifier, fontSize: androidx.compose.ui.unit.TextUnit, onDone: () -> Unit) {
+    LaunchedEffect(text) {
+        kotlinx.coroutines.delay(2_000)
+        onDone()
+    }
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        LetteredText(text, fontSize, outline = Color(0xFF4A2410), maxLines = 1, minScale = 0.5f)
     }
 }

@@ -1416,4 +1416,6 @@
     <string name="next_drawing">Sonraki çizim</string>
     <string name="result_stat_play_gold">Kelime altını</string>
     <string name="online_reward_format">+%1$d XP  ·  +%2$d altın</string>
+    <string name="preview_first_drawing">Bu ilk çizim</string>
+    <string name="preview_last_drawing">Bu son çizim</string>
 </resources>

@@ -447,6 +447,16 @@ fun OnlineResultScreen(
             onDismissRequest = { previewItem = null },
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
+            // Tapping an arrow at either end of the list does nothing but say so, for two seconds.
+            var previewNotice by remember { mutableStateOf<String?>(null) }
+            val noticeFirst = stringResource(R.string.preview_first_drawing)
+            val noticeLast = stringResource(R.string.preview_last_drawing)
+            androidx.compose.runtime.LaunchedEffect(previewNotice) {
+                if (previewNotice != null) {
+                    kotlinx.coroutines.delay(2_000)
+                    previewNotice = null
+                }
+            }
             val galleryItems = uiState.itemsByUid[uiState.selectedUid].orEmpty()
             val position = galleryItems.indexOf(itemToPreview)
             val onPrevious: (() -> Unit)? = if (position > 0) ({ previewItem = galleryItems[position - 1] }) else null
@@ -475,17 +485,25 @@ fun OnlineResultScreen(
                                 .border(2.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.large)
                         )
                     }
+                    previewNotice?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.surface,
+                            modifier = Modifier.padding(top = 12.dp)
+                        )
+                    }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.padding(top = 16.dp)
                     ) {
                         if (galleryItems.size > 1) {
-                            IconButton(onClick = { onPrevious?.invoke() }, enabled = onPrevious != null) {
+                            IconButton(onClick = { if (onPrevious != null) onPrevious() else previewNotice = noticeFirst }) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                                     contentDescription = stringResource(R.string.previous_drawing),
-                                    tint = MaterialTheme.colorScheme.surface.copy(alpha = if (onPrevious != null) 1f else 0.3f),
+                                    tint = MaterialTheme.colorScheme.surface,
                                     modifier = Modifier.size(36.dp)
                                 )
                             }
@@ -505,11 +523,11 @@ fun OnlineResultScreen(
                             }
                         }
                         if (galleryItems.size > 1) {
-                            IconButton(onClick = { onNext?.invoke() }, enabled = onNext != null) {
+                            IconButton(onClick = { if (onNext != null) onNext() else previewNotice = noticeLast }) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                     contentDescription = stringResource(R.string.next_drawing),
-                                    tint = MaterialTheme.colorScheme.surface.copy(alpha = if (onNext != null) 1f else 0.3f),
+                                    tint = MaterialTheme.colorScheme.surface,
                                     modifier = Modifier.size(36.dp)
                                 )
                             }
