@@ -691,6 +691,7 @@ private fun DrawingPreviewDialog(item: ResultItem, onDismiss: () -> Unit) {
             ) {
                 ReplayableDrawing(
                     strokes = item.strokes,
+                    penSkin = item.pen(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)

@@ -86,10 +86,12 @@ import com.sualtikasifi.cizimhafiza.presentation.game.PaperPanel
 import com.sualtikasifi.cizimhafiza.presentation.game.ResArtW
 import com.sualtikasifi.cizimhafiza.presentation.game.ResultHeader
 import com.sualtikasifi.cizimhafiza.presentation.game.ResultInk
+import com.sualtikasifi.cizimhafiza.presentation.game.MiniStat
+import com.sualtikasifi.cizimhafiza.presentation.game.ResultPairRow
+import com.sualtikasifi.cizimhafiza.presentation.game.StatIcon
 import com.sualtikasifi.cizimhafiza.presentation.game.ResultStat
 import com.sualtikasifi.cizimhafiza.presentation.game.ResultStatGrid
 import com.sualtikasifi.cizimhafiza.presentation.game.ResultWordsBoard
-import com.sualtikasifi.cizimhafiza.presentation.game.StatIcon
 import com.sualtikasifi.cizimhafiza.presentation.game.VersusCard
 import com.sualtikasifi.cizimhafiza.presentation.game.XpOrange
 import com.sualtikasifi.cizimhafiza.util.DrawingShareUtil
@@ -231,17 +233,18 @@ fun OnlineResultScreen(
                     }
 
                     // ---- Your numbers, and what the round paid ----
-                    val stats = buildList {
-                        add(ResultStat(StatIcon.Art(R.drawable.rs_ic_check), stringResource(R.string.result_stat_correct), me.correctCount.toString(), Color(0xFF2EA043)))
-                        add(ResultStat(StatIcon.Art(R.drawable.rs_ic_x), stringResource(R.string.result_stat_wrong), me.wrongCount.toString(), Color(0xFFE23B32)))
-                        if (uiState.goldEarned > 0) {
-                            add(ResultStat(StatIcon.Art(R.drawable.icon_gold_coin), stringResource(R.string.result_stat_play_gold), stringResource(R.string.result_gold_amount, uiState.goldEarned), Color(0xFFE8650F)))
-                        }
-                        if (uiState.xpEarned > 0) {
-                            add(ResultStat(StatIcon.Art(R.drawable.rs_ic_star), "", stringResource(R.string.result_xp_won, uiState.xpEarned), XpOrange, headline = true))
-                        }
-                    }
-                    ResultStatGrid(stats, u, Modifier.fillMaxWidth().springIn(index = 2, stepMs = 90))
+                    ResultPairRow(
+                        left = listOf(
+                            MiniStat(StatIcon.Art(R.drawable.rs_ic_check), me.correctCount.toString(), Color(0xFF2EA043)),
+                            MiniStat(StatIcon.Art(R.drawable.rs_ic_x), me.wrongCount.toString(), Color(0xFFE23B32))
+                        ),
+                        right = buildList {
+                            if (uiState.goldEarned > 0) add(MiniStat(StatIcon.Art(R.drawable.icon_gold_coin), "+" + uiState.goldEarned, Color(0xFFE8650F)))
+                            if (uiState.xpEarned > 0) add(MiniStat(StatIcon.Art(R.drawable.ls_star), uiState.xpEarned.toString() + " XP", XpOrange))
+                        },
+                        u = u,
+                        modifier = Modifier.springIn(index = 2, stepMs = 90)
+                    )
 
                     // ---- Everyone's drawings, one player at a time ----
                     ResultWordsBoard(
@@ -263,10 +266,17 @@ fun OnlineResultScreen(
                             }
                         } else null,
                         header = {
-                            // One pill per player, side by side for two and scrolling for more.
+                            // One pill per player, side by side for two; a room holds up to 8, so more than two slide sideways,
+                            // with a soft fade at whichever end still has players hidden behind it.
+                            val chipScroll = rememberScrollState()
+                            LaunchedEffect(selectedUid, roundPlayers.size) {
+                                val index = roundPlayers.indexOfFirst { it.uid == selectedUid }
+                                if (roundPlayers.size > 2 && index >= 0) chipScroll.animateScrollTo(index * 116 * 3)
+                            }
+                            Box(Modifier.fillMaxWidth()) {
                             Row(
                                 // Two pills share the plank; more than two scroll (weights need a bounded row).
-                                modifier = Modifier.fillMaxWidth().then(if (roundPlayers.size > 2) Modifier.horizontalScroll(rememberScrollState()) else Modifier).padding(horizontal = 6.dp),
+                                modifier = Modifier.fillMaxWidth().then(if (roundPlayers.size > 2) Modifier.horizontalScroll(chipScroll) else Modifier).padding(horizontal = 6.dp),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -281,15 +291,20 @@ fun OnlineResultScreen(
                                     )
                                 }
                             }
+                            if (roundPlayers.size > 2 && chipScroll.canScrollBackward) {
+                                Box(Modifier.align(Alignment.CenterStart).width(18.dp).height(30.dp).background(Brush.horizontalGradient(listOf(Color(0xCC8A4A12), Color.Transparent))))
+                            }
+                            if (roundPlayers.size > 2 && chipScroll.canScrollForward) {
+                                Box(Modifier.align(Alignment.CenterEnd).width(18.dp).height(30.dp).background(Brush.horizontalGradient(listOf(Color.Transparent, Color(0xCC8A4A12)))))
+                            }
+                            }
                         },
                         modifier = Modifier.fillMaxWidth().springIn(index = 3, stepMs = 90)
                     )
 
                     // ---- Chat and the rematch vote ----
-                    PaperPanel(modifier = Modifier.fillMaxWidth()) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            ChatRow(reactions = uiState.reactions, myUid = myUid, players = room.players)
-                            ReactionSendRow(onSend = viewModel::sendReaction, modifier = Modifier.padding(top = 4.dp))
+                    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                            ReactionSendRow(onSend = viewModel::sendReaction, reactions = uiState.reactions, myUid = myUid, players = room.players)
                             if (uiState.rematchBlockedByNewJoiner) {
                                 Text(
                                     text = stringResource(R.string.online_rematch_blocked_message),
@@ -307,7 +322,6 @@ fun OnlineResultScreen(
                                     modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
                                 )
                             }
-                        }
                     }
                     Spacer(Modifier.height(2.dp))
                 }
@@ -407,7 +421,7 @@ fun OnlineResultScreen(
 
 /** A player's picture: the bot's mascot, or their frame with their photo or level. */
 @Composable
-private fun PlayerPicture(player: OnlinePlayer, size: androidx.compose.ui.unit.Dp) {
+internal fun PlayerPicture(player: OnlinePlayer, size: androidx.compose.ui.unit.Dp) {
     if (player.uid == BotRoomEngine.BOT_UID) {
         BotMascot(pose = BotMascotPose.HAPPY, modifier = Modifier.size(size))
     } else {

@@ -17,6 +17,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.PrivacyTip
@@ -268,7 +270,7 @@ fun SettingsScreen(
             }
         }
         Row(
-            box(352f, 884f, 792f, 952f).graphicsLayer { translationX = shake.value * density },
+            box(352f, 884f, 754f, 952f).graphicsLayer { translationX = shake.value * density },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy((10f * us).dp)
         ) {
@@ -325,11 +327,11 @@ fun SettingsScreen(
                     )
                 }
             }
+        }
             val useLabel = stringResource(R.string.coupon_use)
+            // The redeem button has the row below, on the left of "how to get codes".
             Box(
-                Modifier
-                    .width(unit * 150f)
-                    .fillMaxHeight()
+                box(352f, 962f, 544f, 1030f)
                     .shadow(if (canUse) (3 * us).dp else 0.dp, RoundedCornerShape(50))
                     .background(
                         Brush.verticalGradient(
@@ -356,7 +358,6 @@ fun SettingsScreen(
                         minScale = 0.6f,
                         modifier = Modifier.padding(horizontal = (8f * us).dp)
                     )
-                }
             }
         }
         // A chest from a code opens straight away with its opening animation (several, one after another).
@@ -369,7 +370,7 @@ fun SettingsScreen(
         // What came of the last try, as a pill with its own icon: what was won (green), or why not (red).
         var lastMessage by remember { mutableStateOf<CouponMessage?>(null) }
         LaunchedEffect(couponState.message) { couponState.message?.let { lastMessage = it } }
-        Box(box(352f, 962f, 792f, 1040f), contentAlignment = Alignment.CenterStart) {
+        Box(box(352f, 1042f, 754f, 1100f), contentAlignment = Alignment.CenterStart) {
             androidx.compose.animation.AnimatedVisibility(
                 visible = couponState.message != null,
                 enter = androidx.compose.animation.fadeIn(tween(160)) + androidx.compose.animation.slideInVertically(tween(220)) { it / 3 },
@@ -413,10 +414,105 @@ fun SettingsScreen(
                 }
             }
         }
+        // ---- How to win a code: the other half of the row under "Kullan", opening a page that points to the socials --
+        var couponInfoOpen by remember { mutableStateOf(false) }
+        val infoLabel = stringResource(R.string.coupon_how_button)
+        Row(
+            box(554f, 962f, 754f, 1030f)
+                .shadow((3 * us).dp, RoundedCornerShape(50))
+                .background(Brush.verticalGradient(listOf(Color(0xFFFFF3D6), Color(0xFFFFD98A))), RoundedCornerShape(50))
+                .border((2.5f * us).dp, Color(0xFFE08A1B), RoundedCornerShape(50))
+                .pressable(pressedScale = 0.95f) { couponInfoOpen = true }
+                .a11yButton(infoLabel)
+                .padding(horizontal = (16f * us).dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy((8f * us).dp)
+        ) {
+            Icon(Icons.Filled.Info, contentDescription = null, tint = Ink, modifier = Modifier.size((34f * us).dp))
+            FitText(
+                text = infoLabel,
+                style = PaintedStyle(color = Ink, fontSize = fs(22f), textAlign = TextAlign.Start).copy(
+                    lineHeight = fs(25f),
+                    platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                    lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                        androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+                        androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+                    )
+                ),
+                maxLines = 2,
+                minScale = 0.6f,
+                contentAlignment = Alignment.CenterStart,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        if (couponInfoOpen) {
+            val openLink = { url: String ->
+                runCatching { activity?.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) }
+                Unit
+            }
+            if (androidx.compose.ui.res.booleanResource(R.bool.coupon_how_painted_art)) {
+                // The painted window (ls_coupon_frame, 987 x 1371): its buttons are part of the picture, so live, invisible
+                // buttons sit over them and cave in by redrawing their own pixels while pressed.
+                androidx.compose.ui.window.Dialog(
+                    onDismissRequest = { couponInfoOpen = false },
+                    properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+                ) {
+                    BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+                        val frameW = minOf(maxWidth, (maxHeight - 24.dp) * 987f / 1371f)
+                        val k = frameW / 987f
+                        val frameBitmap = remember { runCatching { BackdropCache.get(context.resources, R.drawable.ls_coupon_frame) }.getOrNull() }
+                        val px = (frameBitmap?.width ?: 987) / 987f
+                        @Composable
+                        fun Hit(x0: Float, y0: Float, x1: Float, y1: Float, corner: Float, label: String, onClick: () -> Unit) {
+                            val sink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.94f)
+                            Box(
+                                Modifier
+                                    .offset(k * x0, k * y0)
+                                    .size(k * (x1 - x0), k * (y1 - y0))
+                                    .sunkenArt(sink, frameBitmap, x0 * px, y0 * px, (x1 - x0) * px, (y1 - y0) * px, k * corner)
+                                    .clickable(interactionSource = sink.source, indication = null, onClick = onClick)
+                                    .a11yButton(label)
+                            )
+                        }
+                        Box(Modifier.size(frameW, k * 1371f)) {
+                            Image(androidx.compose.ui.res.painterResource(R.drawable.ls_coupon_frame), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                            Hit(841f, 294f, 966f, 419f, 62f, stringResource(R.string.coupon_how_close)) { couponInfoOpen = false }
+                            Hit(150f, 818f, 852f, 976f, 70f, stringResource(R.string.coupon_how_instagram)) { openLink("https://www.instagram.com/karalakapp") }
+                            Hit(150f, 1004f, 852f, 1154f, 70f, stringResource(R.string.coupon_how_tiktok)) { openLink("https://www.tiktok.com/@karalakapp") }
+                            Hit(360f, 1199f, 625f, 1270f, 30f, stringResource(R.string.coupon_how_close)) { couponInfoOpen = false }
+                        }
+                    }
+                }
+            } else {
+            androidx.compose.ui.window.Dialog(onDismissRequest = { couponInfoOpen = false }) {
+                Column(
+                    Modifier
+                        .background(Color(0xFFFFF8EA), RoundedCornerShape(28.dp))
+                        .border(3.dp, Color(0xFFC9A46A), RoundedCornerShape(28.dp))
+                        .padding(22.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Text(stringResource(R.string.coupon_how_title), style = PaintedStyle(color = Ink, fontSize = 24.sp, textAlign = TextAlign.Start))
+                    Text(stringResource(R.string.coupon_how_body), style = DescriptionStyle(16.sp, 22.sp).copy(color = Ink))
+                    androidx.compose.material3.Button(
+                        onClick = { openLink("https://www.instagram.com/karalakapp") },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text(stringResource(R.string.coupon_how_instagram)) }
+                    androidx.compose.material3.Button(
+                        onClick = { openLink("https://www.tiktok.com/@karalakapp") },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text(stringResource(R.string.coupon_how_tiktok)) }
+                    androidx.compose.material3.TextButton(onClick = { couponInfoOpen = false }, modifier = Modifier.align(Alignment.End)) {
+                        Text(stringResource(R.string.coupon_how_close))
+                    }
+                }
+            }
+            }
+        }
         if (needsBatteryFix) {
             val fixLabel = stringResource(R.string.settings_battery_optimization_action)
             Row(
-                box(355f, 1054f, 792f, 1136f)
+                box(355f, 1108f, 754f, 1190f)
                     .shadow((3 * us).dp, RoundedCornerShape(50))
                     .background(Brush.verticalGradient(listOf(Color(0xFFFFD75E), Color(0xFFF7A81B))), RoundedCornerShape(50))
                     .border((2.5f * us).dp, Color(0xFFE08A1B), RoundedCornerShape(50))

@@ -17,6 +17,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenArt
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.size
@@ -779,20 +780,19 @@ internal fun GalleryChip(label: String, selected: Boolean, enabled: Boolean, onC
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .height(30.dp)
+            .height(25.dp)
             .clip(shape)
             .background(
-                if (selected) Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16)))
-                else Brush.verticalGradient(listOf(Color(0xFFFFF6E2), Color(0xFFF3DFBA)))
+                // The one being looked at is the light (white) pill; the others are orange, waiting to be picked.
+                if (selected) Brush.verticalGradient(listOf(Color(0xFFFFFBF0), Color(0xFFF3DFBA)))
+                else Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16)))
             )
-            .border(1.5.dp, if (selected) Color(0xFFA9440A) else Color(0xFF8A5A2E), shape)
+            .border(1.5.dp, if (selected) Color(0xFF8A5A2E) else Color(0xFFA9440A), shape)
             .graphicsLayer { alpha = if (enabled || selected) 1f else 0.6f }
             .clickable(enabled = enabled && !selected, onClick = onClick)
             .padding(horizontal = 6.dp)
     ) {
         if (selected) {
-            LetteredText(label, 15.sp, outline = Color(0xFF8A3A00), minScale = 0.4f, modifier = Modifier.fillMaxWidth())
-        } else {
             com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                 text = label,
                 style = PaintedStyle(color = InkBrown, fontSize = 15.sp, textAlign = TextAlign.Center),
@@ -800,6 +800,8 @@ internal fun GalleryChip(label: String, selected: Boolean, enabled: Boolean, onC
                 minScale = 0.4f,
                 modifier = Modifier.fillMaxWidth()
             )
+        } else {
+            LetteredText(label, 15.sp, outline = Color(0xFF8A3A00), minScale = 0.4f, modifier = Modifier.fillMaxWidth())
         }
     }
 }
@@ -1050,6 +1052,13 @@ internal fun DrawingPreviewScene(
     onAction: () -> Unit
 ) {
     var replay by remember(item) { mutableStateOf(0) }
+    // The close cross, the replay disc and the share plank are PAINTED into the picture, so they cave in by redrawing
+    // their own pixels (see sunkenArt) while the live, invisible button on top of them is pressed.
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val sceneBitmap = remember { runCatching { com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(context.resources, R.drawable.rs_dialog_bg) }.getOrNull() }
+    val closeSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.86f)
+    val replaySink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.88f)
+    val actionSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.94f)
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -1078,7 +1087,7 @@ internal fun DrawingPreviewScene(
             text = item.word.capitalizeForWordLanguage(wordLanguage),
             size = fs(54f),
             outline = Color(0xFF4A2410),
-            modifier = box(190f, 478f, 660f, 548f),
+            modifier = box(190f, 462f, 660f, 532f),
             minScale = 0.45f,
             title = true
         )
@@ -1086,6 +1095,7 @@ internal fun DrawingPreviewScene(
         androidx.compose.runtime.key(item) {
             ReplayableDrawing(
                 strokes = item.strokes,
+                penSkin = item.pen(),
                 showReplayButton = false,
                 externalReplay = replay,
                 modifier = box(188f, 590f, 648f, 1050f)
@@ -1095,49 +1105,53 @@ internal fun DrawingPreviewScene(
         }
         // Previous / next drawing: round arrows on the sheet's sides (a flick across the window does the same).
         if (position != null && total > 1) {
-            PreviewArrow(box(72f, 780f, 152f, 860f), left = true, onClick = { onPrevious?.invoke() })
-            PreviewArrow(box(684f, 780f, 764f, 860f), left = false, onClick = { onNext?.invoke() })
+            PreviewArrow(box(94f, 780f, 174f, 860f), left = true, onClick = { onPrevious?.invoke() })
+            PreviewArrow(box(666f, 780f, 746f, 860f), left = false, onClick = { onNext?.invoke() })
             LetteredText(
                 text = "$position / $total",
                 size = fs(40f),
                 outline = Color(0xFF4A2410),
-                modifier = box(300f, 1062f, 540f, 1120f),
+                modifier = box(300f, 1052f, 540f, 1110f),
                 minScale = 0.5f
             )
         }
         // The painted buttons, made live.
+        fun sunk(sink: com.sualtikasifi.cizimhafiza.presentation.mainmenu.SinkState, x0: Float, y0: Float, x1: Float, y1: Float, corner: Float): Modifier =
+            Modifier.sunkenArt(sink, sceneBitmap, x0, y0, x1 - x0, y1 - y0, unit * corner)
         Box(
             box(704f, 188f, 828f, 316f)
-                .pressable(pressedScale = 0.9f, onClick = onClose)
+                .then(sunk(closeSink, 704f, 188f, 828f, 316f, 34f))
+                .clickable(interactionSource = closeSink.source, indication = null, onClick = onClose)
                 .a11yButton(stringResource(R.string.close))
         )
         Box(
             box(650f, 1000f, 800f, 1140f)
-                .pressable(pressedScale = 0.9f, onClick = { replay++ })
+                .then(sunk(replaySink, 650f, 1000f, 800f, 1140f, 70f))
+                .clickable(interactionSource = replaySink.source, indication = null, onClick = { replay++ })
                 .a11yButton(stringResource(R.string.replay_drawing))
         )
         Box(
             box(150f, 1205f, 692f, 1345f)
-                .pressable(pressedScale = 0.95f, onClick = onAction)
+                .then(sunk(actionSink, 150f, 1205f, 692f, 1345f, 70f))
+                .clickable(interactionSource = actionSink.source, indication = null, onClick = onAction)
                 .a11yButton(stringResource(if (reporting) R.string.report_drawing_action else R.string.share_drawing)),
             contentAlignment = Alignment.Center
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                Icon(
-                    if (reporting) Icons.Filled.Flag else Icons.Filled.Share,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(unit * 56f)
-                )
-                Spacer(Modifier.width(unit * 14f))
-                LetteredText(
-                    stringResource(if (reporting) R.string.report_drawing_action else R.string.share_drawing),
-                    fs(54f),
-                    outline = Color(0xFF8A3A00),
-                    minScale = 0.5f,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-            }
+            // Just the word, centred on the plank (the lettering's line box sits a little low, so it is lifted back).
+            LetteredText(
+                stringResource(if (reporting) R.string.report_drawing_action else R.string.share_drawing),
+                fs(54f),
+                outline = Color(0xFF8A3A00),
+                minScale = 0.5f,
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .offset(y = unit * 1f)
+                    .graphicsLayer {
+                        val k = actionSink.scale.value
+                        scaleX = k
+                        scaleY = k
+                    }
+            )
         }
     }
 }

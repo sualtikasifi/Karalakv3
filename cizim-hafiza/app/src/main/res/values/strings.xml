@@ -1437,4 +1437,12 @@
     <string name="login_streak_milestone">🎉 Day %1$d bonus: a Surprise chest is opening!</string>
     <string name="login_reward_joker">Joker</string>
     <string name="login_reward_chest">Chest</string>
+    <string name="coupon_how_button">How to get codes</string>
+    <string name="coupon_how_title">How do I get a coupon code?</string>
+    <string name="coupon_how_body">We share coupon codes on our social media accounts @karalakapp. Follow us on Instagram and TikTok so you don\'t miss them!</string>
+    <string name="coupon_how_instagram">Instagram @karalakapp</string>
+    <string name="coupon_how_tiktok">TikTok @karalakapp</string>
+    <string name="coupon_how_close">Close</string>
+    <string name="login_streak_subtitle">Log in every day, never miss a reward!</string>
+    <string name="online_chat_empty_window">No messages yet. Send a ready-made one below!</string>
 </resources>

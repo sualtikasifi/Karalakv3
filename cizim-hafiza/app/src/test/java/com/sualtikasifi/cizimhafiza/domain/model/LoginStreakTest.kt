@@ -53,7 +53,7 @@ class LoginStreakTest {
     fun `every day of the calendar gives something`() {
         (1..LoginStreakRewards.CYCLE_DAYS).forEach { day ->
             val r = LoginStreakRewards.forDay(day)
-            assert(r.gold > 0 || r.xp > 0 || r.joker != null || r.chest != null) { "day $day is empty" }
+            assert(r.gold > 0 || r.xp > 0 || r.jokers.isNotEmpty() || r.chest != null) { "day $day is empty" }
         }
     }
 }

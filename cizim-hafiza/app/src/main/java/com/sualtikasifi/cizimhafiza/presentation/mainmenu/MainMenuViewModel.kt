@@ -96,6 +96,8 @@ class MainMenuViewModel @Inject constructor(
      */
     fun checkLoginStreak() {
         if (loginHandled || loginChecking || _loginPopup.value != null) return
+        // Already taken today by the phone's own date: nothing to ask the server. (A moved clock cannot take a day early:
+        // anything that is not settled by this check goes to the server's date below.)
         if (com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay() == settingsRepository.loginLastClaimDay) {
             loginHandled = true
             return
@@ -104,6 +106,7 @@ class MainMenuViewModel @Inject constructor(
         viewModelScope.launch {
             val today = serverClock.todayEpochDay()
             loginChecking = false
+            // No server answer, no window: "today" is only ever the server's day, never the phone's.
             today ?: return@launch
             loginDay = today
             loginHandled = true
@@ -119,13 +122,18 @@ class MainMenuViewModel @Inject constructor(
 
     fun claimLoginReward() {
         val popup = _loginPopup.value as? LoginPopup.Claim ?: return
+        // One reward per day: if this day is already recorded (a second tap, a second window), nothing more is paid.
+        if (settingsRepository.loginLastClaimDay >= loginDay) {
+            _loginPopup.value = null
+            return
+        }
         val rewards = com.sualtikasifi.cizimhafiza.domain.model.LoginStreakRewards
         val day = rewards.cycleDayFor(popup.streakBefore)
         val reward = rewards.forDay(day)
         val newStreak = settingsRepository.recordLoginClaim(loginDay, popup.streakBefore, continuing = true)
         if (reward.gold > 0) settingsRepository.earnGold(reward.gold)
         if (reward.xp > 0) settingsRepository.addXp(reward.xp)
-        reward.joker?.let { settingsRepository.addJoker(it, 1) }
+        reward.jokers.forEach { settingsRepository.addJoker(it, 1) }
         val milestone = rewards.milestoneFor(newStreak)
         // Chests are opened on the spot, after the window closes (see consumeLoginPopup).
         pendingLoginChests = listOfNotNull(reward.chest, milestone).map { settingsRepository.openChestNow(it) }

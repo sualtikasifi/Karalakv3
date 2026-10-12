@@ -9,6 +9,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +21,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -33,6 +38,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Menu
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -206,177 +215,225 @@ fun ReactionSendRow(
     onSend: (emoji: String, messageKey: String) -> Unit,
     modifier: Modifier = Modifier,
     phraseUsageCounts: Map<String, Int> = emptyMap(),
-    emojiUsageCounts: Map<String, Int> = emptyMap()
+    emojiUsageCounts: Map<String, Int> = emptyMap(),
+    reactions: List<Reaction> = emptyList(),
+    myUid: String? = null,
+    players: List<OnlinePlayer> = emptyList()
 ) {
-    var sheetOpen by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
+    var historyOpen by remember { mutableStateOf(false) }
     var pickerOpen by remember { mutableStateOf(false) }
-    val pickerSheetState = rememberModalBottomSheetState()
+    var phrasesOpen by remember { mutableStateOf(false) }
     // Most-sent-from-this-device first, least/never-sent last — sortedByDescending
     // is stable, so phrases tied on usage (typically 0) keep the catalog's
     // own order instead of shuffling every recomposition.
     val orderedPhrases = remember(phraseUsageCounts) {
         PRESET_PHRASES.sortedByDescending { phraseUsageCounts[it.key] ?: 0 }
     }
-    val quickEmojis = remember(emojiUsageCounts) {
-        EMOJI_CATALOG.sortedByDescending { emojiUsageCounts[it.key] ?: 0 }.take(5)
+    val orderedEmojis = remember(emojiUsageCounts) {
+        EMOJI_CATALOG.sortedByDescending { emojiUsageCounts[it.key] ?: 0 }
     }
 
-    com.sualtikasifi.cizimhafiza.presentation.common.NinePatch(
-        res = R.drawable.lobby_chatbar,
-        slicePx = 205,
-        edge = 38.dp,
-        modifier = modifier.fillMaxWidth().height(76.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxSize().padding(horizontal = 30.dp, vertical = 14.dp)
-        ) {
-            Surface(
-                onClick = { sheetOpen = true },
-                shape = PillShape,
-                color = MaterialTheme.colorScheme.primary
+    // The dock is one painted piece (ls_dock, 1740 x 904 px): the dog and the leaves above a cream plank for the ready
+    // phrases and a brown one for the emojis. Everything inside is placed in the picture's own units, so it scales with it.
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val s = maxWidth / 1740f
+        val fontScale0 = androidx.compose.ui.platform.LocalDensity.current.fontScale
+        fun fs(px: Float) = (px * s.value / fontScale0).sp
+        Box(Modifier.fillMaxWidth().height(s * 904f)) {
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(R.drawable.ls_dock),
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
+                modifier = Modifier.fillMaxSize()
+            )
+            // Cream plank: the chat button (opens the whole conversation) and the phrases, sliding sideways.
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .offset(s * 166f, s * 394f)
+                    .size(s * 132f, s * 132f)
+                    .clip(CircleShape)
+                    .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16))))
+                    .border(s * 5f, Color(0xFFA9440A), CircleShape)
+                    .clickable { historyOpen = true }
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
-                ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Chat,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = stringResource(R.string.reaction_chat_button),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        style = MaterialTheme.typography.labelMedium
-                    )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Chat,
+                    contentDescription = stringResource(R.string.reaction_chat_button),
+                    tint = Color.White,
+                    modifier = Modifier.size(s * 76f)
+                )
+            }
+            // Phrases, most used first from the left; the last button opens every phrase in a window.
+            androidx.compose.foundation.lazy.LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(s * 14f),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.offset(s * 318f, s * 394f).size(s * 1090f, s * 132f)
+            ) {
+                items(orderedPhrases.size, key = { orderedPhrases[it].key }) { i ->
+                    val phrase = orderedPhrases[i]
+                    DockChip(stringResource(phrase.textRes), s, fs(58f), light = true) { onSend("", phrase.key) }
                 }
             }
-
-            Box(
-                modifier = Modifier
-                    .width(1.dp)
-                    .height(28.dp)
-                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-            )
-
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            DockAllButton(
+                icon = Icons.Filled.Menu,
+                description = stringResource(R.string.reaction_chat_sheet_title),
+                s = s,
+                onBrown = false,
+                modifier = Modifier.offset(s * 1428f, s * 394f).size(s * 132f, s * 132f)
+            ) { phrasesOpen = true }
+            // Brown plank: the same, for emojis.
+            androidx.compose.foundation.lazy.LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(s * 8f),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.offset(s * 130f, s * 636f).size(s * 1290f, s * 128f)
             ) {
-                Surface(
-                    onClick = { pickerOpen = true },
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                    modifier = Modifier.weight(1f).aspectRatio(1f)
-                ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Icon(
-                            imageVector = Icons.Filled.Add,
-                            contentDescription = stringResource(R.string.reaction_emoji_picker_content_description),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
+                items(orderedEmojis.size, key = { orderedEmojis[it].key }) { i ->
+                    val preset = orderedEmojis[i]
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(s * 128f)
+                            .clip(CircleShape)
+                            .clickable { onSend(preset.emoji, preset.key) }
+                    ) {
+                        Text(text = preset.emoji, fontSize = fs(84f))
+                    }
+                }
+            }
+            DockAllButton(
+                icon = Icons.Filled.Apps,
+                description = stringResource(R.string.reaction_emoji_picker_content_description),
+                s = s,
+                onBrown = true,
+                modifier = Modifier.offset(s * 1448f, s * 642f).size(s * 116f, s * 116f)
+            ) { pickerOpen = true }
+        }
+    }
+
+    if (historyOpen) {
+        ChatHistoryDialog(reactions = reactions, myUid = myUid, players = players, onSend = onSend, onDismiss = { historyOpen = false })
+    }
+
+    // Every ready phrase, in the same most-used-first order as the dock.
+    if (phrasesOpen) {
+        PaintedDialog(
+            title = stringResource(R.string.reaction_chat_sheet_title),
+            onDismiss = { phrasesOpen = false },
+            buttons = {
+                PaintedPillButton(text = stringResource(R.string.close), onClick = { phrasesOpen = false }, modifier = Modifier.fillMaxWidth())
+            }
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                orderedPhrases.forEach { phrase ->
+                    val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(shape)
+                            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16))))
+                            .border(2.dp, Color(0xFFA9440A), shape)
+                            .clickable {
+                                phrasesOpen = false
+                                onSend("", phrase.key)
+                            }
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = stringResource(phrase.textRes),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
-                quickEmojis.forEach { preset ->
-                    // Square (via aspectRatio, not a fixed size) so the shape
-                    // is always a true circle regardless of how wide its
-                    // weighted share of the row ends up — sizing purely from
-                    // the emoji glyph's own metrics (which aren't square)
-                    // could clip it into an oval that cuts into the
-                    // character at its wider axis.
-                    Surface(
-                        onClick = { onSend(preset.emoji, preset.key) },
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.weight(1f).aspectRatio(1f)
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            Text(text = preset.emoji, fontSize = 17.sp)
-                        }
-                    }
-                }
             }
         }
     }
 
+    // Every emoji, again most used first.
     if (pickerOpen) {
-        ModalBottomSheet(onDismissRequest = { pickerOpen = false }, sheetState = pickerSheetState) {
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                Text(
-                    text = stringResource(R.string.reaction_emoji_sheet_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(6),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 260.dp)
-                ) {
-                    gridItems(EMOJI_CATALOG, key = { it.key }) { preset ->
-                        Surface(
-                            onClick = {
-                                pickerOpen = false
-                                onSend(preset.emoji, preset.key)
-                            },
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.aspectRatio(1f)
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Text(text = preset.emoji, fontSize = 20.sp)
+        PaintedDialog(
+            title = stringResource(R.string.reaction_emoji_sheet_title),
+            onDismiss = { pickerOpen = false },
+            buttons = {
+                PaintedPillButton(text = stringResource(R.string.close), onClick = { pickerOpen = false }, modifier = Modifier.fillMaxWidth())
+            }
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                orderedEmojis.chunked(5).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        row.forEach { preset ->
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(1f)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFF8E3B4))
+                                    .clickable {
+                                        pickerOpen = false
+                                        onSend(preset.emoji, preset.key)
+                                    }
+                            ) {
+                                Text(text = preset.emoji, fontSize = 26.sp)
                             }
                         }
+                        repeat(5 - row.size) { Spacer(Modifier.weight(1f)) }
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
+}
 
-    if (sheetOpen) {
-        ModalBottomSheet(onDismissRequest = { sheetOpen = false }, sheetState = sheetState) {
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                Text(
-                    text = stringResource(R.string.reaction_chat_sheet_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.height(360.dp)
-                ) {
-                    items(orderedPhrases, key = { it.key }) { phrase ->
-                        Surface(
-                            onClick = {
-                                sheetOpen = false
-                                // No emoji of its own — the phrase text (which
-                                // may already contain one inline, e.g. "Selam! 👋")
-                                // is the whole message. See ReactionOverlay's
-                                // phrase branch for how this renders.
-                                onSend("", phrase.key)
-                            },
-                            shape = MaterialTheme.shapes.medium,
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = stringResource(phrase.textRes),
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-        }
+/** The round button at the right end of a plank of the dock that opens the full list. */
+@Composable
+private fun DockAllButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    description: String,
+    s: androidx.compose.ui.unit.Dp,
+    onBrown: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(s * 30f)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .clip(shape)
+            .background(
+                if (onBrown) androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF8A5530), Color(0xFF6A3E1E)))
+                else androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16)))
+            )
+            .border(s * 5f, if (onBrown) Color(0xFFD9A55A) else Color(0xFFA9440A), shape)
+            .clickable(onClick = onClick)
+    ) {
+        Icon(imageVector = icon, contentDescription = description, tint = Color.White, modifier = Modifier.size(s * 70f))
+    }
+}
+/** A ready phrase on the cream plank of the dock: an orange pill. */
+@Composable
+private fun DockChip(text: String, s: androidx.compose.ui.unit.Dp, size: androidx.compose.ui.unit.TextUnit, light: Boolean, onClick: () -> Unit) {
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxHeight(0.86f)
+            .clip(shape)
+            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16))))
+            .border(s * 4f, Color(0xFFA9440A), shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = s * 34f)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = size, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+            color = Color.White,
+            maxLines = 1
+        )
     }
 }
 
@@ -487,7 +544,13 @@ fun ReactionOverlay(reactions: List<Reaction>, myUid: String?, players: List<Onl
  * on its own.
  */
 @Composable
-fun ChatRow(reactions: List<Reaction>, myUid: String?, players: List<OnlinePlayer>, modifier: Modifier = Modifier) {
+fun ChatRow(
+    reactions: List<Reaction>,
+    myUid: String?,
+    players: List<OnlinePlayer>,
+    modifier: Modifier = Modifier,
+    onSend: ((emoji: String, messageKey: String) -> Unit)? = null
+) {
     var historyOpen by remember { mutableStateOf(false) }
     RaisedCard(corner = 18.dp, onClick = { historyOpen = true }, modifier = modifier.fillMaxWidth()) {
         Row(
@@ -533,60 +596,162 @@ fun ChatRow(reactions: List<Reaction>, myUid: String?, players: List<OnlinePlaye
         }
     }
     if (historyOpen) {
-        ChatHistoryDialog(reactions = reactions, myUid = myUid, players = players, onDismiss = { historyOpen = false })
+        ChatHistoryDialog(reactions = reactions, myUid = myUid, players = players, onSend = onSend, onDismiss = { historyOpen = false })
     }
 }
 
-/** The "window-style" full history [ChatRow] opens on tap — every message this match, oldest first. */
+/**
+ * The chat window [ChatRow] opens on tap: the painted "Sohbet" frame with every message of the match, oldest first, and
+ * — on the frame's bottom plank — the ready-made phrases and emojis to answer with (there is no typing in this game).
+ * Everything is laid out in the frame picture's own units (1024 x 1536), so it scales with it.
+ */
 @Composable
-private fun ChatHistoryDialog(reactions: List<Reaction>, myUid: String?, players: List<OnlinePlayer>, onDismiss: () -> Unit) {
+private fun ChatHistoryDialog(
+    reactions: List<Reaction>,
+    myUid: String?,
+    players: List<OnlinePlayer>,
+    onSend: ((emoji: String, messageKey: String) -> Unit)?,
+    onDismiss: () -> Unit
+) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        RaisedCard(corner = 24.dp, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).heightIn(max = 480.dp)) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.Chat, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Text(
-                        text = stringResource(R.string.online_chat_history_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.weight(1f)
-                    )
+        androidx.compose.foundation.layout.BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onDismiss),
+            contentAlignment = Alignment.Center
+        ) {
+            val frameW = minOf(maxWidth - 8.dp, (maxHeight - 16.dp) / 1.5f)
+            val u = frameW / 1024f
+            val fontScale0 = androidx.compose.ui.platform.LocalDensity.current.fontScale
+            fun fs(px: Float) = (px * u.value / fontScale0).sp
+            Box(
+                Modifier
+                    .size(frameW, frameW * 1.5f)
+                    .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {}
+            ) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(R.drawable.ls_chat_frame),
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
+                    modifier = Modifier.fillMaxSize()
+                )
+                // The painted X at the top right.
+                Box(
+                    Modifier
+                        .offset(u * 836f, u * 186f)
+                        .size(u * 132f, u * 132f)
+                        .clip(CircleShape)
+                        .clickable(onClick = onDismiss)
+                )
+                // Messages, on the paper.
+                val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+                LaunchedEffect(reactions.size) {
+                    if (reactions.isNotEmpty()) listState.animateScrollToItem(reactions.lastIndex)
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                if (reactions.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.online_chat_row_empty),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 24.dp)
-                    )
-                } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        items(reactions) { reaction ->
-                            val senderName = if (reaction.uid == myUid) {
-                                stringResource(R.string.online_you_label, "").trim()
-                            } else {
-                                players.find { it.uid == reaction.uid }?.displayName.orEmpty()
-                            }
-                            val text = presetPhraseTextRes(reaction.messageKey)?.let { stringResource(it) } ?: reaction.emoji
-                            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                if (senderName.isNotBlank()) {
+                Box(Modifier.offset(u * 130f, u * 332f).size(u * 772f, u * 936f)) {
+                    if (reactions.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.online_chat_empty_window),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = fs(34f)),
+                            color = Color(0xFF8A5A2E),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.align(Alignment.Center).padding(horizontal = u * 40f)
+                        )
+                    } else {
+                        LazyColumn(
+                            state = listState,
+                            verticalArrangement = Arrangement.spacedBy(u * 14f),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(reactions.size) { index ->
+                                val reaction = reactions[index]
+                                val mine = reaction.uid == myUid
+                                val sender = players.find { it.uid == reaction.uid }
+                                val name = if (mine) stringResource(R.string.online_you_label, "").trim() else sender?.displayName.orEmpty()
+                                val text = presetPhraseTextRes(reaction.messageKey)?.let { stringResource(it) } ?: reaction.emoji
+                                val time = remember(reaction.sentAtMillis) {
+                                    java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(reaction.sentAtMillis))
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                    if (sender != null) PlayerPicture(sender, u * 76f) else Spacer(Modifier.size(u * 76f))
+                                    Spacer(Modifier.width(u * 10f))
+                                    Column(
+                                        Modifier
+                                            .widthIn(max = u * 470f)
+                                            .background(
+                                                if (mine) Color(0xFFCFE4FA) else Color(0xFFF8E3B4),
+                                                androidx.compose.foundation.shape.RoundedCornerShape(u * 26f)
+                                            )
+                                            .padding(horizontal = u * 22f, vertical = u * 10f)
+                                    ) {
+                                        if (name.isNotBlank()) {
+                                            Text(
+                                                text = name,
+                                                style = MaterialTheme.typography.labelMedium.copy(fontSize = fs(30f)),
+                                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                                color = if (mine) Color(0xFF1F5FA8) else Color(0xFFE8650F),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                        Text(
+                                            text = text,
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = fs(34f)),
+                                            color = Color(0xFF3A2416)
+                                        )
+                                    }
+                                    Spacer(Modifier.weight(1f, fill = true))
                                     Text(
-                                        text = senderName,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
+                                        text = time,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = fs(26f)),
+                                        color = Color(0xFF8A5A2E)
                                     )
                                 }
-                                Text(text = text, style = MaterialTheme.typography.bodyMedium)
                             }
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-                androidx.compose.material3.TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
-                    Text(stringResource(R.string.close))
+                // The answers, on the bottom plank: ready-made phrases and emojis, scrolling sideways.
+                if (onSend != null) {
+                    androidx.compose.foundation.lazy.LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(u * 12f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = u * 10f),
+                        modifier = Modifier.offset(u * 126f, u * 1322f).size(u * 786f, u * 96f)
+                    ) {
+                        items(PRESET_PHRASES.size) { i ->
+                            val phrase = PRESET_PHRASES[i]
+                            ChatChip(stringResource(phrase.textRes), u, fs(30f)) { onSend("", phrase.key) }
+                        }
+                        items(EMOJI_CATALOG.size) { i ->
+                            val e = EMOJI_CATALOG[i]
+                            ChatChip(e.emoji, u, fs(36f)) { onSend(e.emoji, e.key) }
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ChatChip(text: String, u: androidx.compose.ui.unit.Dp, size: androidx.compose.ui.unit.TextUnit, onClick: () -> Unit) {
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .height(u * 72f)
+            .clip(shape)
+            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16))))
+            .border(1.5.dp, Color(0xFFA9440A), shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = u * 22f)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = size, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+            color = Color.White,
+            maxLines = 1
+        )
     }
 }

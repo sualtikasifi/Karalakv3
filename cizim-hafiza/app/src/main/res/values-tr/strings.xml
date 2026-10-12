@@ -1450,4 +1450,12 @@
     <string name="login_streak_milestone">🎉 %1$d. gün bonusu: Sürpriz kasa açılıyor!</string>
     <string name="login_reward_joker">Joker</string>
     <string name="login_reward_chest">Kasa</string>
+    <string name="coupon_how_button">Kodlar nasıl kazanılır?</string>
+    <string name="coupon_how_title">Kupon kodunu nasıl kazanırım?</string>
+    <string name="coupon_how_body">Kupon kodlarını @karalakapp sosyal medya hesaplarımızdan paylaşıyoruz. Kaçırmamak için bizi Instagram ve TikTok\'ta takip et!</string>
+    <string name="coupon_how_instagram">Instagram @karalakapp</string>
+    <string name="coupon_how_tiktok">TikTok @karalakapp</string>
+    <string name="coupon_how_close">Kapat</string>
+    <string name="login_streak_subtitle">Her gün giriş yap, ödülleri kaçırma!</string>
+    <string name="online_chat_empty_window">Henüz mesaj yok. Aşağıdan hazır bir mesaj gönder!</string>
 </resources>

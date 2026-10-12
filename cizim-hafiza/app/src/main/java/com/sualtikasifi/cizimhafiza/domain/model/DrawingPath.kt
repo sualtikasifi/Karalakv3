@@ -31,4 +31,13 @@ data class DrawingResult(
  * comparison, JSON-encoded via [kotlinx.serialization].
  */
 @Serializable
-data class ResultItem(val word: String, val isCorrect: Boolean, val strokes: List<DrawingStroke>)
+data class ResultItem(
+    val word: String,
+    val isCorrect: Boolean,
+    val strokes: List<DrawingStroke>,
+    /** The [PenSkin] name the drawer drew with, so a result shows each drawing in its own pen; null for older drawings (plain ink). */
+    val penSkin: String? = null
+) {
+    /** The pen to draw this item with. Not level-gated: it is somebody else's pen as often as it is ours. */
+    fun pen(): PenSkin? = penSkin?.let { name -> PenSkin.entries.find { it.name == name } }
+}

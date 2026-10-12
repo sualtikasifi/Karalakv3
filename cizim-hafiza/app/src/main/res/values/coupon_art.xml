@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The painted "how to get codes" window carries Turkish lettering: only the Turkish resources turn it on. -->
+    <bool name="coupon_how_painted_art">false</bool>
+</resources>

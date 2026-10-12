@@ -4,7 +4,8 @@ package com.sualtikasifi.cizimhafiza.domain.model
 data class LoginDayReward(
     val gold: Int = 0,
     val xp: Int = 0,
-    val joker: JokerType? = null,
+    /** One of each is given. */
+    val jokers: List<JokerType> = emptyList(),
     val chest: ChestTier? = null
 )
 
@@ -22,11 +23,11 @@ object LoginStreakRewards {
     fun forDay(day: Int): LoginDayReward = when (day) {
         1 -> LoginDayReward(gold = 100)
         2 -> LoginDayReward(gold = 150)
-        3 -> LoginDayReward(joker = JokerType.FIRST_LETTER)
+        3 -> LoginDayReward(jokers = JokerType.entries)
         4 -> LoginDayReward(gold = 200)
-        5 -> LoginDayReward(chest = ChestTier.SILVER)
+        5 -> LoginDayReward(chest = ChestTier.GOLD)
         6 -> LoginDayReward(gold = 300)
-        else -> LoginDayReward(gold = 500, chest = ChestTier.GOLD)
+        else -> LoginDayReward(chest = ChestTier.RARE)
     }
 
     /** The calendar position (1..7) of the reward the player gets after [streakBefore] claimed days in a row. */

@@ -771,7 +771,7 @@ class OnlineGameViewModel @Inject constructor(
         val fastest = results.filter { it.isCorrect }.minOfOrNull { it.responseTimeMs }
         val correctCount = results.count { it.isCorrect }
         val wrongCount = results.count { !it.isCorrect }
-        val items = results.map { ResultItem(it.word.text, it.isCorrect, it.strokes) }
+        val items = results.map { ResultItem(it.word.text, it.isCorrect, it.strokes, selectedPen.value.name) }
 
         settingsRepository.lastOnlineRoundXp = roundXpEarned
 

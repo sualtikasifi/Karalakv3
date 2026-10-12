@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -380,7 +381,9 @@ internal fun ResultWordsBoard(
         val rows = ((total + perRow - 1) / perRow).coerceAtLeast(1)
         val gap = k * 8f
         val sheetW = (k * 632f - gap * (perRow - 1)) / perRow
-        val gridH = sheetW / 0.95f * rows + gap * (rows - 1)
+        // Ten drawings (two rows) fit on the board; a longer round scrolls inside the paper instead of growing the board.
+        val shownRows = rows.coerceAtMost(2)
+        val gridH = sheetW / 0.95f * shownRows + gap * (shownRows - 1)
         val boardH = maxOf(k * 300f, k * 138f + gridH + k * 70f)
         Box(Modifier.fillMaxWidth().height(boardH)) {
             val board = androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.rs_board)
@@ -427,7 +430,10 @@ internal fun ResultWordsBoard(
             }
             Column(
                 verticalArrangement = Arrangement.spacedBy(gap),
-                modifier = Modifier.fillMaxWidth().padding(start = k * 40f, end = k * 42f, top = k * 139f)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = k * 40f, end = k * 42f, top = k * 139f)
+                    .then(if (rows > 2) Modifier.height(gridH + k * 4f).verticalScroll(androidx.compose.foundation.rememberScrollState()) else Modifier)
             ) {
                 (0 until total).chunked(perRow).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(gap), modifier = Modifier.fillMaxWidth()) {
@@ -478,7 +484,7 @@ private fun WordSheet(number: Int, item: ResultItem?, wordLanguage: String, onCl
                     modifier = Modifier.padding(start = 5.dp, top = 2.dp)
                 )
                 Column(modifier = Modifier.fillMaxSize().padding(start = 8.dp, end = 3.dp, top = 12.dp, bottom = 2.dp)) {
-                    StrokeCanvas(strokes = item.strokes, modifier = Modifier.weight(1f).fillMaxWidth())
+                    StrokeCanvas(strokes = item.strokes, modifier = Modifier.weight(1f).fillMaxWidth(), penSkin = item.pen())
                     FitText(
                         text = item.word.capitalizeForWordLanguage(wordLanguage),
                         style = PaintedStyle(color = ResultInk, fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
@@ -511,6 +517,71 @@ internal fun RowScope.ClaimContent(icon: ImageVector, line1: String, line2: Stri
                 maxLines = 1,
                 modifier = Modifier.align(Alignment.BottomCenter).offset(y = 13.dp)
             )
+        }
+    }
+}
+
+/** One figure inside a [ResultPairRow] card: its picture and value. */
+internal data class MiniStat(val icon: StatIcon, val value: String, val valueColor: Color)
+
+/**
+ * The compact form of the stat cards: ONE row of two painted cards, each holding two figures side by side (hits and
+ * misses on the left; gold and XP on the right). A side with nothing in it is left out and the other takes the row.
+ */
+@Composable
+internal fun ResultPairRow(left: List<MiniStat>, right: List<MiniStat>, u: Dp, modifier: Modifier = Modifier) {
+    val cards = listOf(left, right).filter { it.isNotEmpty() }
+    Row(horizontalArrangement = Arrangement.spacedBy(u * 12f), modifier = modifier.fillMaxWidth()) {
+        if (cards.size == 1) Spacer(Modifier.weight(0.25f))
+        cards.forEachIndexed { i, items ->
+            PairCard(items, u, leafOnRight = cards.size == 1 || i == 1, modifier = Modifier.weight(1f))
+        }
+        if (cards.size == 1) Spacer(Modifier.weight(0.25f))
+    }
+}
+
+@Composable
+private fun PairCard(items: List<MiniStat>, u: Dp, leafOnRight: Boolean, modifier: Modifier) {
+    val fontScale0 = LocalDensity.current.fontScale
+    fun fs(art: Float) = (art * u.value / fontScale0).sp
+    Box(modifier = modifier.height(u * 96f)) {
+        Image(
+            painter = cachedPainterResource(if (leafOnRight) R.drawable.rs_card_a else R.drawable.rs_card_b),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.fillMaxSize()
+        )
+        Row(
+            modifier = Modifier.fillMaxSize().padding(top = u * 6f, start = u * (if (leafOnRight) 22f else 40f), end = u * (if (leafOnRight) 50f else 22f)),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            items.forEach { item ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(u * 4f),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(Modifier.size(u * 54f), contentAlignment = Alignment.Center) {
+                        when (val icon = item.icon) {
+                            is StatIcon.Art -> Image(
+                                painterResource(icon.res), contentDescription = null, contentScale = ContentScale.Fit,
+                                // The bare star is a touch larger than the other pictures: it has no disc around it.
+                                modifier = if (icon.res == R.drawable.ls_star) Modifier.size(u * 36f) else Modifier.fillMaxSize()
+                            )
+                            is StatIcon.Disc -> Icon(icon.icon, contentDescription = null, tint = icon.color, modifier = Modifier.fillMaxSize(0.8f))
+                        }
+                    }
+                    FitText(
+                        text = item.value,
+                        style = PaintedStyle(color = item.valueColor, fontSize = fs(38f), textAlign = TextAlign.Start),
+                        maxLines = 1,
+                        minScale = 0.5f,
+                        contentAlignment = Alignment.CenterStart,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
         }
     }
 }

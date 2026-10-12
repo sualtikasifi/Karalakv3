@@ -259,7 +259,9 @@ class OnlineResultViewModel @Inject constructor(
                     // Chests are earned ONLY here — a won real online-room
                     // match — never from solo play, Hızlı Eşleş or the daily
                     // challenge (see SettingsRepository.awardChestForWin).
-                    val won = placement == 1 && roundPlayers.size >= 2
+                    // A tie for first is nobody's win: no win gold, XP or chest for any of the tied players.
+                    val tiedForFirst = placement == 1 && ranked.count { it.totalScore == me.totalScore } > 1
+                    val won = placement == 1 && !tiedForFirst && roundPlayers.size >= 2
                     val gold = me.correctCount * GameConstants.GOLD_PER_CORRECT_WORD +
                         (if (won) GameConstants.ONLINE_WIN_GOLD else 0) +
                         newlyUnlocked.size * GameConstants.ACHIEVEMENT_GOLD
@@ -267,9 +269,9 @@ class OnlineResultViewModel @Inject constructor(
                     val roundXp = settingsRepository.lastOnlineRoundXp
                     val matchXp = XpAwards.ONLINE_MATCH + if (won) XpAwards.ONLINE_WIN else 0
                     settingsRepository.lastOnlineRoundXp = 0
-                    val chestAward = if (placement == 1) settingsRepository.awardChestForWinOrPay() else null
+                    val chestAward = if (placement == 1 && !tiedForFirst) settingsRepository.awardChestForWinOrPay() else null
                     val chestWon = chestAward?.chest
-                    val chestLost = placement == 1 && chestWon == null
+                    val chestLost = placement == 1 && !tiedForFirst && chestWon == null
                     _uiState.update {
                         it.copy(
                             showSignInPrompt = PostMatchPrompts.shouldShowSignIn(settingsRepository, authRepository.authState.value),

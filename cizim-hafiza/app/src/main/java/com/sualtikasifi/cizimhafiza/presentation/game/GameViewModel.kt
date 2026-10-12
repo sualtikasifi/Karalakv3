@@ -1113,7 +1113,7 @@ class GameViewModel @Inject constructor(
         } else null
 
         val fastest = results.filter { it.isCorrect }.minOfOrNull { it.responseTimeMs }
-        val resultItems = results.map { ResultItem(it.word.text, it.isCorrect, it.strokes) }
+        val resultItems = results.map { ResultItem(it.word.text, it.isCorrect, it.strokes, selectedPen.value.name) }
 
         // Günlük Meydan Okuma has no drawn-vs-typed check the way Hızlı Eşleş
         // does (see GhostRunRepository.record below, which never runs for a

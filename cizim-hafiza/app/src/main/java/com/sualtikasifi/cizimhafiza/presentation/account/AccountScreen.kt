@@ -173,7 +173,7 @@ fun AccountScreen(
             size = fs(104f),
             fill = Color.White,
             outline = Color(0xFF5A2815),
-            modifier = box(219f, 345f, 639f, 458f),
+            modifier = box(219f, 325f, 639f, 438f),
             minScale = 0.5f,
             title = true
         )
@@ -229,17 +229,9 @@ fun AccountScreen(
                 modifier = Modifier.weight(1f)
             )
         }
-        // The level star and the bar it heads.
-        Box(box(60f, 690f, 168f, 798f), contentAlignment = Alignment.Center) {
-            Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFF8A4E12), modifier = Modifier.fillMaxSize())
-            Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFB627), modifier = Modifier.fillMaxSize(0.84f))
-            LetteredText(
-                uiState.level.toString(), fs(if (uiState.level >= 10) 28f else 34f), outline = Color(0xFF5A2815),
-                modifier = Modifier.padding(top = (8f * us).dp).requiredSize(unit * 74f, unit * 56f), minScale = 0.6f
-            )
-        }
+        // The XP bar.
         Box(
-            box(166f, 726f, 736f, 762f)
+            box(92f, 726f, 736f, 762f)
                 .clip(CircleShape)
                 .background(Color(0xFF4A2A18))
         ) {
@@ -291,13 +283,18 @@ fun AccountScreen(
         }
 
         // ---- Account and backup --------------------------------------------------------------------------------
+        // The painted sync disc at the strip's left is covered with the parchment, fading out at its edge.
+        Box(
+            box(64f, 1048f, 176f, 1160f)
+                .background(Brush.radialGradient(0.62f to Color(0xFFFBF0D4), 1f to Color(0x00FBF0D4)), CircleShape)
+        )
         FitText(
             text = stringResource(R.string.account_section_account),
             style = PaintedStyle(color = PageInk, fontSize = fs(44f), textAlign = TextAlign.Start),
             maxLines = 1,
             minScale = 0.55f,
             contentAlignment = Alignment.CenterStart,
-            modifier = box(190f, 1066f, 740f, 1134f)
+            modifier = box(100f, 1066f, 740f, 1134f)
         )
         val backedUp = uiState.lastBackupAtMillis != null
         // The strip's painted tick says "saved": only true for a signed-in account that has been backed up, so for
@@ -363,7 +360,7 @@ fun AccountScreen(
                 // The lettering is centred on the button itself.
                 LetteredText(
                     stringResource(R.string.account_sign_out), fs(56f), outline = Color(0xFF8A3A00),
-                    modifier = Modifier.fillMaxWidth(0.7f).height((86f * us).dp), minScale = 0.5f
+                    modifier = Modifier.offset(y = (-10f * us).dp).fillMaxWidth(0.7f).height((86f * us).dp), minScale = 0.5f
                 )
             }
             uiState.isGoogleSignInConfigured -> Box(box(130f, 1318f, 710f, 1440f), contentAlignment = Alignment.Center) {

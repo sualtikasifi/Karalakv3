@@ -297,6 +297,9 @@ fun WaitingRoomScreen(
                 emojiUsageCounts = emojiUsageCounts,
                 onToggleReady = viewModel::toggleReady,
                 onStartGame = viewModel::startGame,
+                reactions = uiState.reactions,
+                myUid = myUid,
+                players = room?.players.orEmpty(),
                 onSendReaction = viewModel::sendReaction
             )
         }
@@ -307,8 +310,8 @@ fun WaitingRoomScreen(
         // grid sits still inside the viewport, and this scrolls only as a
         // fallback on a short phone or a full 8-slot room — it no longer
         // sways up and down on its own the way the lazily-measured list did.
-        val compact = screenHeight < 780.dp
-        androidx.compose.runtime.CompositionLocalProvider(LocalSlotHeight provides if (compact) 46.dp else 54.dp) {
+        val compact = screenHeight < 900.dp
+        androidx.compose.runtime.CompositionLocalProvider(LocalSlotHeight provides if (compact) 36.dp else 54.dp) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -316,7 +319,7 @@ fun WaitingRoomScreen(
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
                 // Starts under the painted sign.
-                .padding(top = sceneY(0.205f), bottom = 12.dp),
+                .padding(top = sceneY(0.205f) - 58.dp, bottom = 0.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -386,7 +389,7 @@ fun WaitingRoomScreen(
                 // room reads as "being filled in" rather than a short list.
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     playerSlots.chunked(2).forEach { rowSlots ->
                         Row(
@@ -411,11 +414,11 @@ fun WaitingRoomScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier
-                        .padding(vertical = 4.dp)
+                        .padding(vertical = 0.dp)
                         .background(Color(0xCC3B1E08), RoundedCornerShape(18.dp))
-                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                        .padding(horizontal = 14.dp, vertical = 2.dp)
                 ) {
-                    Image(painter = painterResource(R.drawable.lobby_hourglass), contentDescription = null, modifier = Modifier.height(30.dp))
+                    Image(painter = painterResource(R.drawable.lobby_hourglass), contentDescription = null, modifier = Modifier.height(24.dp))
                     Text(
                         text = stringResource(R.string.online_waiting_for_friend),
                         style = PaintedStyle(color = Color(0xFFFFF1D6), fontSize = 15.sp, fontWeight = FontWeight.Bold),
@@ -539,7 +542,6 @@ private fun RoomCodeCard(roomCode: String, onInvite: () -> Unit, widthFraction: 
                 .height(h * 0.27f)
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onInvite)
         ) {
-            Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.align(Alignment.CenterStart).padding(start = w * 0.07f).size(22.dp * k))
             OutlinedLabel(stringResource(R.string.online_invite_friend), 20.sp * k, outline = Color(0xFF8A3A00))
         }
     }
@@ -625,7 +627,10 @@ private fun WaitingRoomActions(
     emojiUsageCounts: Map<String, Int>,
     onToggleReady: () -> Unit,
     onStartGame: () -> Unit,
-    onSendReaction: (String, String) -> Unit
+    onSendReaction: (String, String) -> Unit,
+    reactions: List<com.sualtikasifi.cizimhafiza.domain.model.Reaction>,
+    myUid: String?,
+    players: List<OnlinePlayer>
 ) {
     Column(
         modifier = Modifier
@@ -649,7 +654,10 @@ private fun WaitingRoomActions(
         // anyone joining a moment later sees it if it is still fresh.
         ReactionSendRow(
             onSend = onSendReaction,
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier = Modifier.padding(bottom = 4.dp),
+            reactions = reactions,
+            myUid = myUid,
+            players = players,
             phraseUsageCounts = phraseUsageCounts,
             emojiUsageCounts = emojiUsageCounts
         )
@@ -674,28 +682,20 @@ private fun WaitingRoomActions(
                 if (!allReady) teamImbalanceHint?.let { hint ->
                     HintPlate(stringResource(hint), Color(0xFFFFF1D6), Modifier.padding(bottom = 8.dp))
                 }
-                // The ready button stays for everybody, host included, so "Hazır" can always be taken back.
-                // Once everyone is ready the host's start button joins it and the others are told who they wait for.
-                if (allReady && countdownSeconds == null && !isStarting) {
-                    if (isHost) {
-                        LobbyButton(
-                            text = stringResource(R.string.online_start_game),
-                            green = false,
-                            pulse = 0f,
-                            onClick = onStartGame,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    } else {
-                        HintPlate(stringResource(R.string.online_waiting_for_host), Color(0xFFFFF1D6))
-                    }
+                // One button for everybody. Once everyone is ready the host's turns into "Oyunu Başlat"; the others are told
+                // who they wait for.
+                val hostCanStart = allReady && isHost && countdownSeconds == null && !isStarting
+                if (allReady && !isHost && countdownSeconds == null && !isStarting) {
+                    HintPlate(stringResource(R.string.online_waiting_for_host), Color(0xFFFFF1D6))
                     Spacer(modifier = Modifier.height(12.dp))
                 }
                 ReadyButton(
                     amReady = amReady,
                     countdownSeconds = countdownSeconds,
                     locked = isStarting,
-                    onClick = onToggleReady,
-                    modifier = Modifier.fillMaxWidth()
+                    onClick = if (hostCanStart) onStartGame else onToggleReady,
+                    modifier = Modifier.fillMaxWidth(),
+                    startLabel = if (hostCanStart) stringResource(R.string.online_start_game) else null
                 )
             }
         }
@@ -712,7 +712,8 @@ private fun ReadyButton(
     countdownSeconds: Int?,
     locked: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    startLabel: String? = null
 ) {
     val green = AppTheme.tokens.success
     val counting = countdownSeconds != null
@@ -780,7 +781,7 @@ private fun ReadyButton(
             }
     ) {
         LobbyButton(
-            text = countdownSeconds?.toString() ?: stringResource(R.string.online_ready),
+            text = countdownSeconds?.toString() ?: startLabel ?: stringResource(R.string.online_ready),
             green = amReady || counting,
             pulse = if (amReady || counting) 0f else blink,
             onClick = { if (!counting && !locked) onClick() },
