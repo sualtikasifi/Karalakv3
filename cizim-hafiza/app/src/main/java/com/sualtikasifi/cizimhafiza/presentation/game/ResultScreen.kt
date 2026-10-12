@@ -1050,10 +1050,6 @@ private fun DrawingPreviewScene(
     onAction: () -> Unit
 ) {
     var replay by remember(item) { mutableStateOf(0) }
-    // Tapping an arrow at either end of the list does nothing but say so, for two seconds.
-    var notice by remember { mutableStateOf<String?>(null) }
-    val noticeFirst = stringResource(R.string.preview_first_drawing)
-    val noticeLast = stringResource(R.string.preview_last_drawing)
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -1099,9 +1095,8 @@ private fun DrawingPreviewScene(
         }
         // Previous / next drawing: round arrows on the sheet's sides (a flick across the window does the same).
         if (position != null && total > 1) {
-            PreviewArrow(box(72f, 780f, 152f, 860f), left = true, onClick = { if (onPrevious != null) onPrevious() else notice = noticeFirst })
-            PreviewArrow(box(684f, 780f, 764f, 860f), left = false, onClick = { if (onNext != null) onNext() else notice = noticeLast })
-            notice?.let { PreviewNotice(it, box(190f, 1130f, 660f, 1190f), fs(34f)) { notice = null } }
+            PreviewArrow(box(72f, 780f, 152f, 860f), left = true, onClick = { onPrevious?.invoke() })
+            PreviewArrow(box(684f, 780f, 764f, 860f), left = false, onClick = { onNext?.invoke() })
             LetteredText(
                 text = "$position / $total",
                 size = fs(40f),
@@ -1163,17 +1158,5 @@ private fun PreviewArrow(modifier: Modifier, left: Boolean, onClick: () -> Unit)
             tint = Color.White,
             modifier = Modifier.fillMaxSize(0.8f)
         )
-    }
-}
-
-/** The two-second note a preview shows when an arrow is tapped at the end of the list. */
-@Composable
-private fun PreviewNotice(text: String, modifier: Modifier, fontSize: androidx.compose.ui.unit.TextUnit, onDone: () -> Unit) {
-    LaunchedEffect(text) {
-        kotlinx.coroutines.delay(2_000)
-        onDone()
-    }
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        LetteredText(text, fontSize, outline = Color(0xFF4A2410), maxLines = 1, minScale = 0.5f)
     }
 }
