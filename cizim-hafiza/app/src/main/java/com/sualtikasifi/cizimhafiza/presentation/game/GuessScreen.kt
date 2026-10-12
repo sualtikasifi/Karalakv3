@@ -165,6 +165,17 @@ fun GuessScreen(
     // resolves: the button comes back, and a line says why nothing
     // happened.
     var adErrorShown by remember { mutableStateOf(false) }
+    // Between two words the jokers and "Atla" keep their normal look but do nothing; tapping one says why, for two seconds.
+    var transitionNoteShown by remember { mutableStateOf(false) }
+    val onTransitionTap: () -> Unit = { transitionNoteShown = true }
+    if (transitionNoteShown) {
+        LaunchedEffect(Unit) {
+            delay(2_000)
+            transitionNoteShown = false
+        }
+    }
+    // A new word ends the note at once.
+    LaunchedEffect(state.guessNumber) { transitionNoteShown = false }
     LaunchedEffect(adUnavailable) {
         if (adUnavailable) {
             hintRequested = false
@@ -583,7 +594,8 @@ fun GuessScreen(
                 x = a(48f), top = tileTop, width = a(172f), height = tileH,
                 label = stringResource(if (hintRequested) R.string.loading_hint else R.string.guess_tile_hint),
                 labelColor = Color(0xFFB4501A), outline = null,
-                enabled = hintAvailable && !hintRequested && !isAnswered,
+                enabled = hintAvailable && !hintRequested,
+                inTransition = isAnswered, onLockedTap = onTransitionTap,
                 badge = null, badgeColor = Color.Unspecified,
                 onClick = hintTap,
                 forceVeil = hintAvailable && !hintOnline,
@@ -593,7 +605,8 @@ fun GuessScreen(
                 x = a(237f), top = tileTop, width = a(171f), height = tileH,
                 label = stringResource(firstType.shortRes()),
                 labelColor = Color.White, outline = Color(0xFF4A1F8A),
-                enabled = !isAnswered && state.hintLetter == null && firstCount > 0,
+                enabled = state.hintLetter == null && firstCount > 0,
+                inTransition = isAnswered, onLockedTap = onTransitionTap,
                 badge = firstCount, badgeColor = Color(0xFF6A2DBF),
                 modifier = Modifier.onGloballyPositioned {
                     if (jokerSpotlight?.type == firstType) spotlightHole = it.boundsInWindow()
@@ -605,7 +618,8 @@ fun GuessScreen(
                 x = a(426f), top = tileTop, width = a(178f), height = tileH,
                 label = stringResource(countType.shortRes()),
                 labelColor = Color.White, outline = Color(0xFF0B4F8A),
-                enabled = !isAnswered && state.letterCount == null && letterCountCount > 0,
+                enabled = state.letterCount == null && letterCountCount > 0,
+                inTransition = isAnswered, onLockedTap = onTransitionTap,
                 badge = letterCountCount, badgeColor = Color(0xFF1B7FE0),
                 modifier = Modifier.onGloballyPositioned {
                     if (jokerSpotlight?.type == countType) spotlightHole = it.boundsInWindow()
@@ -617,11 +631,22 @@ fun GuessScreen(
                 x = a(621f), top = tileTop, width = a(176f), height = tileH,
                 label = stringResource(R.string.skip_guess),
                 labelColor = Color(0xFF4A2A10), outline = null,
-                enabled = !isAnswered && (onSkip == null || state.canSkip),
+                enabled = onSkip == null || state.canSkip,
+                inTransition = isAnswered, onLockedTap = onTransitionTap,
                 badge = null, badgeColor = Color.Unspecified,
                 onClick = { if (onSkip != null) onSkip() else onSubmit("") },
                 icon = { Icon(Icons.Filled.SkipNext, contentDescription = null, tint = Color(0xFF4A2A10), modifier = Modifier.size(a(66f))) }
             )
+            if (transitionNoteShown) {
+                Text(
+                    text = stringResource(R.string.guess_transition_locked),
+                    style = PaintedStyle(color = Color.White, fontSize = 12.sp, textAlign = TextAlign.Center),
+                    modifier = Modifier
+                        .offset(a(60f), tileTop - 22.dp)
+                        .background(Color(0xCC8A2A10), RoundedCornerShape(50))
+                        .padding(horizontal = 12.dp, vertical = 3.dp)
+                )
+            }
             if (adErrorShown) {
                 Text(
                     text = stringResource(R.string.ad_unavailable),
@@ -664,7 +689,10 @@ private fun JokerTile(
     icon: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     /** Veiled like a disabled tile but still tappable (an ad tile with no internet explains itself when tapped). */
-    forceVeil: Boolean = false
+    forceVeil: Boolean = false,
+    /** Between words: the tile keeps its normal look, does nothing, and [onLockedTap] explains why. */
+    inTransition: Boolean = false,
+    onLockedTap: () -> Unit = {}
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -682,7 +710,12 @@ private fun JokerTile(
             .size(width, height)
             .then(modifier)
             .graphicsLayer { scaleX = scale; scaleY = scale }
-            .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                enabled = enabled || inTransition,
+                onClick = if (inTransition) onLockedTap else onClick
+            )
     ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
