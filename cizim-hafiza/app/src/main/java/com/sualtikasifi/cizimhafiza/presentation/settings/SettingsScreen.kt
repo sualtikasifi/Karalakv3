@@ -30,6 +30,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
@@ -48,6 +52,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -247,20 +255,39 @@ fun SettingsScreen(
         // ---- Kupon kodu (the card's old title and text gave way to it; the fix button below stays) ------------------
         val couponState by viewModel.coupon.collectAsState()
         val couponKeyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+        val canUse = couponState.code.isNotBlank() && !couponState.busy
+        val useCoupon = {
+            couponKeyboard?.hide()
+            viewModel.redeemCoupon()
+        }
+        // A wrong code shakes the field; a right one has its own confirmation below.
+        val shake = remember { androidx.compose.animation.core.Animatable(0f) }
+        LaunchedEffect(couponState.message) {
+            if (couponState.message is CouponMessage.Error) {
+                for (d in listOf(14f, -14f, 10f, -10f, 5f, 0f)) shake.animateTo(d, tween(55))
+            }
+        }
         Row(
-            box(352f, 884f, 792f, 952f),
+            box(352f, 884f, 792f, 952f).graphicsLayer { translationX = shake.value * density },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy((10f * us).dp)
         ) {
-            Box(
+            Row(
                 Modifier
                     .weight(1f)
                     .fillMaxHeight()
                     .background(Color(0xFFFFF8EA), RoundedCornerShape(50))
-                    .border((2.5f * us).dp, Color(0xFFC9A46A), RoundedCornerShape(50))
-                    .padding(horizontal = (20f * us).dp),
-                contentAlignment = Alignment.CenterStart
+                    .border((2.5f * us).dp, if (couponState.message is CouponMessage.Error) Color(0xFFD9534F) else Color(0xFFC9A46A), RoundedCornerShape(50))
+                    .padding(start = (16f * us).dp, end = (10f * us).dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Icon(
+                    Icons.Filled.ConfirmationNumber,
+                    contentDescription = null,
+                    tint = Color(0xFFC77A14),
+                    modifier = Modifier.size((38f * us).dp)
+                )
+                Spacer(Modifier.width((10f * us).dp))
                 androidx.compose.foundation.text.BasicTextField(
                     value = couponState.code,
                     onValueChange = viewModel::setCouponCode,
@@ -270,45 +297,66 @@ fun SettingsScreen(
                         capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Characters,
                         imeAction = androidx.compose.ui.text.input.ImeAction.Done
                     ),
-                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = {
-                        couponKeyboard?.hide()
-                        viewModel.redeemCoupon()
-                    }),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { useCoupon() }),
                     decorationBox = { inner ->
-                        if (couponState.code.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.coupon_hint),
-                                style = PaintedStyle(color = Ink.copy(alpha = 0.45f), fontSize = fs(28f), textAlign = TextAlign.Start),
-                                maxLines = 1
-                            )
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (couponState.code.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.coupon_hint),
+                                    style = PaintedStyle(color = Ink.copy(alpha = 0.45f), fontSize = fs(27f), textAlign = TextAlign.Start),
+                                    maxLines = 1
+                                )
+                            }
+                            inner()
                         }
-                        inner()
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.weight(1f)
                 )
+                if (couponState.code.isNotEmpty() && !couponState.busy) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.coupon_clear),
+                        tint = Ink.copy(alpha = 0.5f),
+                        modifier = Modifier
+                            .size((40f * us).dp)
+                            .clip(CircleShape)
+                            .clickable { viewModel.setCouponCode("") }
+                            .padding((8f * us).dp)
+                    )
+                }
             }
             val useLabel = stringResource(R.string.coupon_use)
             Box(
                 Modifier
                     .width(unit * 150f)
                     .fillMaxHeight()
-                    .shadow((3 * us).dp, RoundedCornerShape(50))
-                    .background(Brush.verticalGradient(listOf(Color(0xFFFFD75E), Color(0xFFF7A81B))), RoundedCornerShape(50))
-                    .border((2.5f * us).dp, Color(0xFFE08A1B), RoundedCornerShape(50))
-                    .pressable(pressedScale = 0.95f) {
-                        couponKeyboard?.hide()
-                        viewModel.redeemCoupon()
-                    }
+                    .shadow(if (canUse) (3 * us).dp else 0.dp, RoundedCornerShape(50))
+                    .background(
+                        Brush.verticalGradient(
+                            if (canUse) listOf(Color(0xFFFFD75E), Color(0xFFF7A81B)) else listOf(Color(0xFFEADCC0), Color(0xFFD9C7A4))
+                        ),
+                        RoundedCornerShape(50)
+                    )
+                    .border((2.5f * us).dp, if (canUse) Color(0xFFE08A1B) else Color(0xFFBFA77A), RoundedCornerShape(50))
+                    .then(if (canUse) Modifier.pressable(pressedScale = 0.95f) { useCoupon() } else Modifier)
                     .a11yButton(useLabel),
                 contentAlignment = Alignment.Center
             ) {
-                FitText(
-                    text = if (couponState.busy) "…" else useLabel,
-                    style = PaintedStyle(color = Ink, fontSize = fs(29f), textAlign = TextAlign.Center),
-                    maxLines = 1,
-                    minScale = 0.6f,
-                    modifier = Modifier.padding(horizontal = (8f * us).dp)
-                )
+                if (couponState.busy) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size((30f * us).dp),
+                        strokeWidth = (3.5f * us).dp,
+                        color = Ink
+                    )
+                } else {
+                    FitText(
+                        text = useLabel,
+                        style = PaintedStyle(color = if (canUse) Ink else Ink.copy(alpha = 0.45f), fontSize = fs(29f), textAlign = TextAlign.Center),
+                        maxLines = 1,
+                        minScale = 0.6f,
+                        modifier = Modifier.padding(horizontal = (8f * us).dp)
+                    )
+                }
             }
         }
         // A chest from a code opens straight away with its opening animation (several, one after another).
@@ -318,30 +366,52 @@ fun SettingsScreen(
                 com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog(reward = reward, onDismiss = viewModel::consumeCouponChest)
             }
         }
-        // What came of the last try: what was won, or why not.
-        couponState.message?.let { message ->
-            val ok = message as? CouponMessage.Ok
-            val text = if (ok != null) {
-                buildList {
-                    if (ok.gold > 0) add(stringResource(R.string.coupon_won_gold, ok.gold))
-                    if (ok.xp > 0) add(stringResource(R.string.coupon_won_xp, ok.xp))
-                    if (ok.chests > 0) add(stringResource(R.string.coupon_won_chest, ok.chests))
-                }.joinToString("  ·  ").ifBlank { stringResource(R.string.coupon_won_nothing) }
-            } else {
-                stringResource((message as CouponMessage.Error).res)
+        // What came of the last try, as a pill with its own icon: what was won (green), or why not (red).
+        var lastMessage by remember { mutableStateOf<CouponMessage?>(null) }
+        LaunchedEffect(couponState.message) { couponState.message?.let { lastMessage = it } }
+        Box(box(352f, 962f, 792f, 1040f), contentAlignment = Alignment.CenterStart) {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = couponState.message != null,
+                enter = androidx.compose.animation.fadeIn(tween(160)) + androidx.compose.animation.slideInVertically(tween(220)) { it / 3 },
+                exit = androidx.compose.animation.fadeOut(tween(160))
+            ) {
+                val message = lastMessage
+                val ok = message as? CouponMessage.Ok
+                val text = when {
+                    ok != null -> buildList {
+                        if (ok.gold > 0) add(stringResource(R.string.coupon_won_gold, ok.gold))
+                        if (ok.xp > 0) add(stringResource(R.string.coupon_won_xp, ok.xp))
+                        if (ok.chests > 0) add(stringResource(R.string.coupon_won_chest, ok.chests))
+                    }.joinToString("  ·  ").ifBlank { stringResource(R.string.coupon_won_nothing) }
+                    message is CouponMessage.Error -> stringResource(message.res)
+                    else -> ""
+                }
+                val tint = if (ok != null) Color(0xFF2E7D32) else Color(0xFFB3261E)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(tint.copy(alpha = 0.12f), RoundedCornerShape((22f * us).dp))
+                        .border((2f * us).dp, tint.copy(alpha = 0.55f), RoundedCornerShape((22f * us).dp))
+                        .padding(horizontal = (14f * us).dp)
+                ) {
+                    Icon(
+                        if (ok != null) Icons.Filled.CheckCircle else Icons.Filled.ErrorOutline,
+                        contentDescription = null,
+                        tint = tint,
+                        modifier = Modifier.size((42f * us).dp)
+                    )
+                    Spacer(Modifier.width((10f * us).dp))
+                    FitText(
+                        text = text,
+                        style = DescriptionStyle(fs(24f), fs(28f)).copy(color = tint, fontWeight = FontWeight.Bold, textAlign = TextAlign.Start),
+                        maxLines = 2,
+                        minScale = 0.6f,
+                        contentAlignment = Alignment.CenterStart,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
-            FitText(
-                text = text,
-                style = DescriptionStyle(fs(24f), fs(30f)).copy(
-                    color = if (ok != null) Color(0xFF2E7D32) else Color(0xFFB3261E),
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Start
-                ),
-                maxLines = 3,
-                minScale = 0.6f,
-                contentAlignment = Alignment.TopStart,
-                modifier = box(364f, 962f, 790f, 1044f)
-            )
         }
         if (needsBatteryFix) {
             val fixLabel = stringResource(R.string.settings_battery_optimization_action)
