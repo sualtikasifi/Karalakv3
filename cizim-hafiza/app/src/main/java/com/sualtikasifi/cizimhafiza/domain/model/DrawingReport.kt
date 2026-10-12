@@ -92,13 +92,16 @@ object DrawingReports {
      * What a report is scoped to.
      *
      * A recorded round is identified by its run id. An online room's drawing
-     * has no run, so it is scoped to the room and the player inside it —
-     * which still gives one report per reporter per opponent per room.
+     * has no run, so it is scoped to the room, the player inside it AND the word —
+     * one report per reporter per drawing. It used to stop at the player, so a
+     * second report from the same room (another word, or the rematch) rewrote
+     * the first one's document, which the rules refuse (reports are never
+     * edited) — the report just failed and never reached the panel.
      */
     fun scopeKeyForRun(runId: String): String = sanitize(runId)
 
-    fun scopeKeyForRoom(roomCode: String, reportedUid: String): String =
-        sanitize(roomCode) + "_" + sanitize(reportedUid)
+    fun scopeKeyForRoom(roomCode: String, reportedUid: String, word: String): String =
+        sanitize(roomCode) + "_" + sanitize(reportedUid) + "_" + sanitize(word).take(40)
 
     /**
      * A document id may not contain a slash, and a run id built by

@@ -73,6 +73,7 @@ interface WordDao {
         WHERE (:category IS NULL OR category = :category)
         AND (:difficultyName IS NULL OR difficulty = :difficultyName)
         AND approved = 1
+        AND (LENGTH(TRIM(text)) - LENGTH(REPLACE(TRIM(text), ' ', ''))) < 2
         ORDER BY RANDOM()
         LIMIT :limit
         """
@@ -90,6 +91,7 @@ interface WordDao {
         WHERE (:category IS NULL OR category = :category)
         AND (:difficultyName IS NULL OR difficulty = :difficultyName)
         AND approved = 1
+        AND (LENGTH(TRIM(text)) - LENGTH(REPLACE(TRIM(text), ' ', ''))) < 2
         AND id NOT IN (:excludeIds)
         ORDER BY RANDOM()
         LIMIT :limit
@@ -99,6 +101,30 @@ interface WordDao {
         limit: Int,
         category: String?,
         difficultyName: String?,
+        excludeIds: List<Int>
+    ): List<WordEntity>
+
+    // Several categories and/or difficulties at once ("Birden fazla seç"): [allCategories]/[allDifficulties] = 1 means
+    // "no filter" on that side (the list is then ignored, but must not be empty for SQL's IN).
+    // Words of three or more words are left out of every draw — too hard to draw and to guess.
+    @Query(
+        """
+        SELECT * FROM words
+        WHERE (:allCategories = 1 OR category IN (:categories))
+        AND (:allDifficulties = 1 OR difficulty IN (:difficultyNames))
+        AND approved = 1
+        AND (LENGTH(TRIM(text)) - LENGTH(REPLACE(TRIM(text), ' ', ''))) < 2
+        AND id NOT IN (:excludeIds)
+        ORDER BY RANDOM()
+        LIMIT :limit
+        """
+    )
+    suspend fun getRandomWordsMulti(
+        limit: Int,
+        allCategories: Int,
+        categories: List<String>,
+        allDifficulties: Int,
+        difficultyNames: List<String>,
         excludeIds: List<Int>
     ): List<WordEntity>
 
@@ -131,6 +157,7 @@ interface WordDao {
         """
         SELECT * FROM words
         WHERE approved = 1
+        AND (LENGTH(TRIM(text)) - LENGTH(REPLACE(TRIM(text), ' ', ''))) < 2
         ORDER BY CASE difficulty WHEN 'EASY' THEN 0 WHEN 'MEDIUM' THEN 1 WHEN 'HARD' THEN 2 ELSE 3 END, category, text
         """
     )

@@ -26,6 +26,9 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import com.sualtikasifi.cizimhafiza.presentation.common.previewSwipe
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Flag
@@ -290,6 +293,18 @@ fun OnlineResultScreen(
                 }
             }
 
+            // What this round paid out — the per-word XP, the match bonus and the gold — so a finished room is seen to
+            // have paid, instead of the numbers only turning up on the home screen.
+            if (uiState.xpEarned > 0 || uiState.goldEarned > 0) {
+                Text(
+                    text = stringResource(R.string.online_reward_format, uiState.xpEarned, uiState.goldEarned),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+
             // Whose drawing gallery to show — a scrollable row of player-name
             // chips (not a binary toggle) since there can be up to
             // GameConstants.MAX_ROOM_SIZE players. These have to be
@@ -432,10 +447,15 @@ fun OnlineResultScreen(
             onDismissRequest = { previewItem = null },
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
+            val galleryItems = uiState.itemsByUid[uiState.selectedUid].orEmpty()
+            val position = galleryItems.indexOf(itemToPreview)
+            val onPrevious: (() -> Unit)? = if (position > 0) ({ previewItem = galleryItems[position - 1] }) else null
+            val onNext: (() -> Unit)? = if (position in 0 until galleryItems.size - 1) ({ previewItem = galleryItems[position + 1] }) else null
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.92f))
+                    .previewSwipe(onPrevious, onNext)
             ) {
                 Column(
                     modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(24.dp),
@@ -444,21 +464,57 @@ fun OnlineResultScreen(
                     // See the solo result screen: a drawing opened on its
                     // own replays itself, the grid of thumbnails behind it
                     // does not.
-                    ReplayableDrawing(
-                        strokes = itemToPreview.strokes,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(MaterialTheme.shapes.large)
-                            .background(AppTheme.tokens.canvasPaper)
-                            .border(2.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.large)
-                    )
-                    Text(
-                        text = itemToPreview.word.capitalizeForWordLanguage(wordLanguage),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.surface,
+                    androidx.compose.runtime.key(itemToPreview) {
+                        ReplayableDrawing(
+                            strokes = itemToPreview.strokes,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .clip(MaterialTheme.shapes.large)
+                                .background(AppTheme.tokens.canvasPaper)
+                                .border(2.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.large)
+                        )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.padding(top = 16.dp)
-                    )
+                    ) {
+                        if (galleryItems.size > 1) {
+                            IconButton(onClick = { onPrevious?.invoke() }, enabled = onPrevious != null) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                    contentDescription = stringResource(R.string.previous_drawing),
+                                    tint = MaterialTheme.colorScheme.surface.copy(alpha = if (onPrevious != null) 1f else 0.3f),
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = itemToPreview.word.capitalizeForWordLanguage(wordLanguage),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.surface
+                            )
+                            if (galleryItems.size > 1 && position >= 0) {
+                                Text(
+                                    text = "${position + 1} / ${galleryItems.size}",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+                        if (galleryItems.size > 1) {
+                            IconButton(onClick = { onNext?.invoke() }, enabled = onNext != null) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    contentDescription = stringResource(R.string.next_drawing),
+                                    tint = MaterialTheme.colorScheme.surface.copy(alpha = if (onNext != null) 1f else 0.3f),
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+                        }
+                    }
                     // Only somebody else's work, and never the bot's — there
                     // is no author behind either your own drawing or Sude's
                     // for a report to be about.

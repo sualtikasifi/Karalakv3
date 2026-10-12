@@ -70,6 +70,18 @@ object GameConstants {
     // Time limit to answer each guess. Timing out counts as skipped (wrong/0 points).
     const val GUESS_DURATION_SECONDS = 10
 
+    /**
+     * Time to answer one word: the base [GUESS_DURATION_SECONDS], plus a second for every letter past the seventh
+     * (spaces do not count), up to [GUESS_DURATION_MAX_SECONDS]. A long word takes longer to type out, and a flat ten
+     * seconds made the longest ones nearly unanswerable.
+     */
+    fun guessDurationSeconds(wordText: String): Int {
+        val letters = wordText.count { it.isLetter() }
+        return (GUESS_DURATION_SECONDS + (letters - 7).coerceAtLeast(0)).coerceAtMost(GUESS_DURATION_MAX_SECONDS)
+    }
+
+    const val GUESS_DURATION_MAX_SECONDS = 18
+
     // Rewarded-ad hint bonus: the guess countdown is paused for the whole ad
     // (load + watch), then resumed with this many extra seconds added on
     // top of wherever it was paused — the point of watching is to actually
@@ -133,6 +145,12 @@ object GameConstants {
     val APP_CHECK_ENABLED: Boolean = !BuildConfig.DEBUG
 
     // --- Gold from playing (chests are not the only source) ---
+
+    /** Gold for every word answered correctly, in every mode but the daily challenge (which pays its own). */
+    const val GOLD_PER_CORRECT_WORD = 1
+
+    /** Extra gold for winning an online room with at least one opponent. */
+    const val ONLINE_WIN_GOLD = 5
 
     /** Gold per achievement unlocked. */
     const val ACHIEVEMENT_GOLD = 15

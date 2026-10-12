@@ -16,6 +16,10 @@ class GetWordsForGameUseCase @Inject constructor(
     suspend operator fun invoke(count: Int, category: String?, difficulty: Difficulty? = null): List<Word> =
         repository.getRandomWords(count, category, difficulty)
 
+    /** Several categories and/or difficulties at once (empty set = all) — see [GameRepository.getRandomWordsFor]. */
+    suspend operator fun invoke(count: Int, categories: List<String>, difficulties: Set<Difficulty>): List<Word> =
+        repository.getRandomWordsFor(count, categories, difficulties)
+
     /** Level map entry point — [difficultyMix] carries one or two difficulties, each with its own exact word count. */
     suspend operator fun invoke(category: String?, difficultyMix: Map<Difficulty, Int>): List<Word> =
         repository.getRandomWordsMix(category, difficultyMix)

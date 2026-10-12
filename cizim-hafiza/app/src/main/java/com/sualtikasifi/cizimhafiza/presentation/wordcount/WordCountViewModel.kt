@@ -19,8 +19,8 @@ data class WordCountUiState(
     val availableCounts: List<Int> = GameConstants.WORD_COUNT_OPTIONS,
     val selectedCount: Int = GameConstants.WORD_COUNT_OPTIONS.first(),
     val categories: List<String> = emptyList(),
-    val selectedCategory: String? = null, // null = all categories
-    val selectedDifficulty: Difficulty? = null, // null = all difficulties
+    val selectedCategories: Set<String> = emptySet(), // empty = all categories; several can be chosen
+    val selectedDifficulties: Set<Difficulty> = emptySet(), // empty = all difficulties; several can be chosen
     val selectedMode: GameMode = GameMode.NORMAL
 )
 
@@ -51,13 +51,20 @@ class WordCountViewModel @Inject constructor(
         _uiState.update { it.copy(selectedCount = count) }
     }
 
-    fun selectCategory(category: String?) {
-        _uiState.update { it.copy(selectedCategory = category) }
+    /** Tapping a category adds or removes it; the "Tümü" chip (null) clears the choice. */
+    fun toggleCategory(category: String?) {
+        _uiState.update {
+            it.copy(selectedCategories = if (category == null) emptySet() else it.selectedCategories.toggled(category))
+        }
     }
 
-    fun selectDifficulty(difficulty: Difficulty?) {
-        _uiState.update { it.copy(selectedDifficulty = difficulty) }
+    fun toggleDifficulty(difficulty: Difficulty?) {
+        _uiState.update {
+            it.copy(selectedDifficulties = if (difficulty == null) emptySet() else it.selectedDifficulties.toggled(difficulty))
+        }
     }
+
+    private fun <T> Set<T>.toggled(item: T): Set<T> = if (item in this) this - item else this + item
 
     fun selectMode(mode: GameMode) {
         _uiState.update { it.copy(selectedMode = mode) }

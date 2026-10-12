@@ -133,6 +133,8 @@ import com.sualtikasifi.cizimhafiza.util.GameConstants
 fun GuessScreen(
     state: GamePhase.Guessing,
     onSubmit: (String) -> Unit,
+    /** "Atla" parks the word for a second look at the end. Null (the tutorial) keeps the plain skip-as-wrong. */
+    onSkip: (() -> Unit)? = null,
     onAnswerChanged: (String) -> Unit = {},
     onHintClick: () -> Unit = {},
     jokers: Map<com.sualtikasifi.cizimhafiza.domain.model.JokerType, Int> = emptyMap(),
@@ -151,7 +153,7 @@ fun GuessScreen(
     val wordLanguage = currentWordLanguage()
     val backDescription = stringResource(R.string.cd_back)
     var answer by remember(state.guessNumber) { mutableStateOf("") }
-    val isAnswered = state.feedback != null
+    val isAnswered = state.feedback != null || state.skipSavedSeconds != null
     val timerColor = if (state.isWarning) TimerWarning else MaterialTheme.colorScheme.primary
 
     // Guards against a double-tap firing two rewarded-ad loads for the same
@@ -347,7 +349,7 @@ fun GuessScreen(
                 modifier = Modifier.offset(a(118f), yTop(158f)).size(a(114f), a(74f))
             ) {
                 Text(
-                    text = "${state.guessNumber} / ${state.totalGuesses}",
+                    text = "${state.guessNumber.coerceAtMost(state.totalGuesses)} / ${state.totalGuesses}",
                     style = PaintedStyle(color = ink, fontSize = 17.sp * f, textAlign = TextAlign.Center),
                     maxLines = 1
                 )
@@ -400,13 +402,20 @@ fun GuessScreen(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier.offset(a(532f), yTop(158f)).size(a(184f), a(74f))
                 ) {
-                    LiveXpBonusBadge(secondsLeft = state.secondsLeft)
+                    // Keyed to the time already used, not the time left: a long word gets a longer clock, but the speed bonus
+                    // is still earned in the first seconds.
+                    LiveXpBonusBadge(secondsLeft = state.secondsLeft - (state.totalSeconds - GameConstants.GUESS_DURATION_SECONDS).coerceAtLeast(0))
                 }
                 // White until three seconds are left, then running smoothly to red as the clock reaches zero.
                 val redness by androidx.compose.animation.core.animateFloatAsState(
                     targetValue = if (state.secondsLeft <= 3) ((3 - state.secondsLeft + 1) / 3f).coerceIn(0f, 1f) else 0f,
                     animationSpec = androidx.compose.animation.core.tween(1000, easing = androidx.compose.animation.core.LinearEasing),
                     label = "timerRed"
+                )
+                val pulse by androidx.compose.animation.core.animateFloatAsState(
+                    targetValue = if (state.skipSavedSeconds != null) 1.22f else 1f,
+                    animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.35f, stiffness = 300f),
+                    label = "timerPulse"
                 )
                 Box(
                     contentAlignment = Alignment.Center,
@@ -415,6 +424,7 @@ fun GuessScreen(
                     modifier = Modifier
                         .offset(a(731f), yTop(146f))
                         .size(a(82f))
+                        .graphicsLayer { scaleX = pulse; scaleY = pulse }
                         .background(androidx.compose.ui.graphics.lerp(Color.White, Color(0xFFE53935), redness), CircleShape)
                 ) {
                     CircularCountdown(
@@ -443,12 +453,26 @@ fun GuessScreen(
                 // Correct/wrong feedback is drawn ON TOP of the canvas rather than appended below it, so the layout
                 // never moves when an answer lands.
                 GuessFeedbackOverlay(
-                    visible = isAnswered,
+                    visible = state.feedback != null,
                     feedback = state.feedback,
                     guessNumber = state.guessNumber,
                     wordLanguage = wordLanguage,
                     modifier = Modifier.align(Alignment.Center)
                 )
+
+                if (state.isRevisit) {
+                    Text(
+                        text = stringResource(R.string.guess_revisit),
+                        style = PaintedStyle(color = Color.White, fontSize = 13.sp * f, textAlign = TextAlign.Center),
+                        maxLines = 1,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 10.dp)
+                            .background(Color(0xCC8A2A10), RoundedCornerShape(50))
+                            .padding(horizontal = 14.dp, vertical = 4.dp)
+                    )
+                }
+                state.skipSavedSeconds?.let { SkipSavedChip(seconds = it, modifier = Modifier.align(Alignment.Center)) }
 
                 // Revealed hints sit on the drawing itself instead of taking rows of their own below it.
                 //
@@ -593,9 +617,9 @@ fun GuessScreen(
                 x = a(621f), top = tileTop, width = a(176f), height = tileH,
                 label = stringResource(R.string.skip_guess),
                 labelColor = Color(0xFF4A2A10), outline = null,
-                enabled = !isAnswered,
+                enabled = !isAnswered && (onSkip == null || state.canSkip),
                 badge = null, badgeColor = Color.Unspecified,
-                onClick = { onSubmit("") },
+                onClick = { if (onSkip != null) onSkip() else onSubmit("") },
                 icon = { Icon(Icons.Filled.SkipNext, contentDescription = null, tint = Color(0xFF4A2A10), modifier = Modifier.size(a(66f))) }
             )
             if (adErrorShown) {
@@ -932,4 +956,30 @@ private fun LiveXpBonusBadge(secondsLeft: Int, modifier: Modifier = Modifier) {
             )
         )
     }
+}
+
+/** The "time saved" note shown over the drawing for the moment after "Atla": it pops in, then drifts up and fades. */
+@Composable
+private fun SkipSavedChip(seconds: Int, modifier: Modifier = Modifier) {
+    val progress = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) {
+        progress.animateTo(1f, androidx.compose.animation.core.tween(1_000, easing = androidx.compose.animation.core.LinearEasing))
+    }
+    val p = progress.value
+    val pop = androidx.compose.animation.core.FastOutSlowInEasing.transform((p / 0.25f).coerceIn(0f, 1f))
+    val fade = if (p < 0.7f) 1f else (1f - (p - 0.7f) / 0.3f)
+    Text(
+        text = stringResource(R.string.guess_skip_saved, seconds),
+        style = PaintedStyle(color = Color.White, fontSize = 20.sp, textAlign = TextAlign.Center),
+        maxLines = 1,
+        modifier = modifier
+            .graphicsLayer {
+                scaleX = 0.6f + 0.4f * pop
+                scaleY = 0.6f + 0.4f * pop
+                alpha = fade
+                translationY = -40f * p * density
+            }
+            .background(Color(0xE6E8650F), RoundedCornerShape(50))
+            .padding(horizontal = 18.dp, vertical = 8.dp)
+    )
 }

@@ -172,6 +172,7 @@ fun GameScreen(
             is GamePhase.Guessing -> GuessScreen(
                 state = current,
                 onSubmit = viewModel::submitGuess,
+                onSkip = viewModel::skipGuess,
                 onAnswerChanged = viewModel::onAnswerChanged,
                 onHintClick = { (context as? Activity)?.let { viewModel.useHint(it) } },
                 jokers = jokerCounts,

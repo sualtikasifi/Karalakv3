@@ -200,7 +200,35 @@ class FriendRepositoryImpl @Inject constructor(
                     Friend(uid = doc.id, nickname = nickname)
                 } ?: emptyList()
                 emit(friends)
+                refreshStaleNicknames(uid, friends)
             }
+    }
+
+    /** When each friend's name was last compared with their live profile — see [refreshStaleNicknames]. */
+    private val nicknameCheckedAtMillis = mutableMapOf<String, Long>()
+
+    /**
+     * A friendship stores the other player's name as it was the day it was made, so a friend who later renamed
+     * themselves (a guest who signed in with Google and picked a real username, say) stayed under the old name here.
+     * Each friend's public profile is compared with the stored copy, at most once every [NICKNAME_RECHECK_MS], and
+     * the stored copy is corrected in this player's OWN friends list — the listener above then re-emits it.
+     */
+    private fun refreshStaleNicknames(myUid: String, friends: List<Friend>) {
+        val now = System.currentTimeMillis()
+        val due = friends.filter { now - (nicknameCheckedAtMillis[it.uid] ?: 0L) > NICKNAME_RECHECK_MS }
+        if (due.isEmpty()) return
+        due.forEach { nicknameCheckedAtMillis[it.uid] = now }
+        scope.launch {
+            due.forEach { friend ->
+                runCatching {
+                    val live = users.document(friend.uid).get().await().getString("nickname")?.takeIf { it.isNotBlank() }
+                    if (live != null && live != friend.nickname) {
+                        users.document(myUid).collection("friends").document(friend.uid)
+                            .update("nickname", live).await()
+                    }
+                }
+            }
+        }
     }
 
     override suspend fun addFriendByCode(code: String, myNickname: String): Result<AddFriendOutcome> = runCatching {
@@ -612,6 +640,8 @@ class FriendRepositoryImpl @Inject constructor(
         }
 
     private companion object {
+        /** How long a friend's stored name is trusted before it is compared with their live profile again. */
+        const val NICKNAME_RECHECK_MS = 30 * 60_000L
         const val TAG = "FriendRepository"
         /** See profileFetchedAtMillis — long enough to collapse a burst of table opens, short enough that a friend's finished game shows up the same session. */
         const val PROFILE_CACHE_TTL_MILLIS = 10 * 60 * 1000L

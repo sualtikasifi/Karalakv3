@@ -186,8 +186,8 @@ fun CizimHafizaNavGraph(
 
         composable(Screen.WordCountSelect) {
             WordCountScreen(
-                onStart = { count, category, difficulty, mode ->
-                    navController.navigate(Screen.gameRoute(count, category, difficulty, mode))
+                onStart = { count, categories, difficulties, mode ->
+                    navController.navigate(Screen.gameRoute(count, categories, difficulties, mode))
                 },
                 onBack = { navController.popBackStack() }
             )

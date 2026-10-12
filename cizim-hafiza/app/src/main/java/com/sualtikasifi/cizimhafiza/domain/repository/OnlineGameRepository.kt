@@ -23,7 +23,7 @@ interface OnlineGameRepository {
         displayName: String,
         wordCount: Int,
         category: String?,
-        difficulty: Difficulty?,
+        difficulties: Set<Difficulty>,
         mode: GameMode,
         teamMode: Boolean = false
     ): Result<String>

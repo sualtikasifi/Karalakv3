@@ -25,6 +25,9 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import com.sualtikasifi.cizimhafiza.presentation.common.previewSwipe
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.foundation.rememberScrollState
@@ -430,8 +433,14 @@ fun ResultScreen(
             properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
         ) {
             BackHandler { previewItem = null }
+            val galleryItems = if (showingOpponentGallery && state.ghost != null) ghostItems else state.items
+            val position = galleryItems.indexOf(itemToPreview)
             DrawingPreviewScene(
                 item = itemToPreview,
+                position = if (position >= 0) position + 1 else null,
+                total = galleryItems.size,
+                onPrevious = if (position > 0) ({ previewItem = galleryItems[position - 1] }) else null,
+                onNext = if (position in 0 until galleryItems.size - 1) ({ previewItem = galleryItems[position + 1] }) else null,
                 wordLanguage = wordLanguage,
                 reporting = showingOpponentGallery && onReportOpponentDrawing != null,
                 onClose = { previewItem = null },
@@ -1009,13 +1018,22 @@ private const val PreviewH = 1870f
 @Composable
 private fun DrawingPreviewScene(
     item: ResultItem,
+    position: Int?,
+    total: Int,
+    onPrevious: (() -> Unit)?,
+    onNext: (() -> Unit)?,
     wordLanguage: String,
     reporting: Boolean,
     onClose: () -> Unit,
     onAction: () -> Unit
 ) {
-    var replay by remember { mutableStateOf(0) }
-    BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color(0xFF2A1708))) {
+    var replay by remember(item) { mutableStateOf(0) }
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF2A1708))
+            .previewSwipe(onPrevious, onNext)
+    ) {
         val unit = maxOf(maxWidth / PreviewW, maxHeight / PreviewH)
         val offX = (maxWidth - unit * PreviewW) / 2
         val offY = (maxHeight - unit * PreviewH) / 2
@@ -1043,14 +1061,28 @@ private fun DrawingPreviewScene(
             title = true
         )
         // The drawing, on a white sheet in the middle of the paper (the replay button sits on its lower right corner's side).
-        ReplayableDrawing(
-            strokes = item.strokes,
-            showReplayButton = false,
-            externalReplay = replay,
-            modifier = box(188f, 590f, 648f, 1050f)
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(unit * 26f))
-                .background(AppTheme.tokens.canvasPaper)
-        )
+        androidx.compose.runtime.key(item) {
+            ReplayableDrawing(
+                strokes = item.strokes,
+                showReplayButton = false,
+                externalReplay = replay,
+                modifier = box(188f, 590f, 648f, 1050f)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(unit * 26f))
+                    .background(AppTheme.tokens.canvasPaper)
+            )
+        }
+        // Previous / next drawing: round arrows on the sheet's sides (a flick across the window does the same).
+        if (position != null && total > 1) {
+            PreviewArrow(box(120f, 780f, 200f, 860f), left = true, enabled = onPrevious != null, onClick = { onPrevious?.invoke() })
+            PreviewArrow(box(636f, 780f, 716f, 860f), left = false, enabled = onNext != null, onClick = { onNext?.invoke() })
+            LetteredText(
+                text = "$position / $total",
+                size = fs(40f),
+                outline = Color(0xFF4A2410),
+                modifier = box(300f, 1062f, 540f, 1120f),
+                minScale = 0.5f
+            )
+        }
         // The painted buttons, made live.
         Box(
             box(704f, 188f, 828f, 316f)
@@ -1085,5 +1117,25 @@ private fun DrawingPreviewScene(
                 )
             }
         }
+    }
+}
+
+/** One round arrow beside the previewed drawing; faded and inert at either end of the list. */
+@Composable
+private fun PreviewArrow(modifier: Modifier, left: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = modifier
+            .graphicsLayer { alpha = if (enabled) 1f else 0.3f }
+            .background(Color(0xCC4A2410), CircleShape)
+            .then(if (enabled) Modifier.pressable(pressedScale = 0.88f, onClick = onClick) else Modifier)
+            .a11yButton(stringResource(if (left) R.string.previous_drawing else R.string.next_drawing)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = if (left) Icons.AutoMirrored.Filled.KeyboardArrowLeft else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.fillMaxSize(0.8f)
+        )
     }
 }

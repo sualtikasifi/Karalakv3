@@ -1409,4 +1409,11 @@
     <string name="online_game_lost_title">Bağlantı kesildi</string>
     <string name="online_game_lost_body">Oyun bittiğinde internet bağlantın yoktu, bu yüzden sonuç gönderilemedi. Ana sayfaya dönüp çevrimdışı devam edebilirsin.</string>
     <string name="online_game_lost_ok">Tamam</string>
+    <string name="guess_revisit">Bu çizim tekrar inceleniyor</string>
+    <string name="guess_skip_saved">⏱ %1$d sn kaydedildi</string>
+    <string name="online_player_left">%1$s odadan ayrıldı</string>
+    <string name="previous_drawing">Önceki çizim</string>
+    <string name="next_drawing">Sonraki çizim</string>
+    <string name="result_stat_play_gold">Kelime altını</string>
+    <string name="online_reward_format">+%1$d XP  ·  +%2$d altın</string>
 </resources>

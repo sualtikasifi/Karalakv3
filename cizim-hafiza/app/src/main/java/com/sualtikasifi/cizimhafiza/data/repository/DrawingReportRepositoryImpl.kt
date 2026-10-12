@@ -58,7 +58,7 @@ class DrawingReportRepositoryImpl @Inject constructor(
         strokes: List<DrawingStroke>,
         reason: DrawingReportReason
     ): Result<Unit> = submit(
-        scopeKey = DrawingReports.scopeKeyForRoom(roomCode, reportedUid),
+        scopeKey = DrawingReports.scopeKeyForRoom(roomCode, reportedUid, word),
         // Deliberately blank: an online drawing belongs to no recorded round,
         // and stamping one here would make isRetired() count it against a
         // round it has nothing to do with.

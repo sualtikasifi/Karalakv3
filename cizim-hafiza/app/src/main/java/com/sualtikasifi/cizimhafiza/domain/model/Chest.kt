@@ -45,7 +45,7 @@ object ChestSlots {
     /** How much a watched rewarded ad takes off a running unlock (once per day). */
     const val SPEEDUP_MILLIS = 2 * 60 * 60 * 1000L
 
-    // A 240-long cycle, 75% / 20% / 5% — a per-account SHUFFLE of a fixed
+    // A 240-long cycle, 60% / 30% / 10% (it was 75 / 20 / 5, and nearly every win handed out a Çırak) — a per-account SHUFFLE of a fixed
     // multiset rather than a fresh weighted roll every time. A genuinely
     // random roll can hand out zero rares in a hundred chests and feel
     // broken even though it technically isn't; a shuffled fixed cycle
@@ -53,9 +53,9 @@ object ChestSlots {
     // rare falls. See SettingsRepository.chestCycleSeed/chestCycleIndex for
     // how [seed] and [cycleIndex] are chosen and advanced.
     const val CYCLE_LENGTH = 240
-    private const val SILVER_COUNT = 180
-    private const val GOLD_COUNT = 48
-    private const val RARE_COUNT = 12
+    private const val SILVER_COUNT = 144
+    private const val GOLD_COUNT = 72
+    private const val RARE_COUNT = 24
 
     fun tierAt(seed: Long, cycleIndex: Int): ChestTier {
         val bag = buildList {

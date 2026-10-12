@@ -239,6 +239,8 @@ class OnlineGameViewModel @Inject constructor(
     private var roundXpEarned = 0
 
     private var guessPos = 0
+    /** Seconds left on a skipped word, keyed by result index — the revisit counts down from there. */
+    private val skippedSeconds = mutableMapOf<Int, Int>()
     private var guessShownAtMillis = 0L
 
     // One rewarded-ad hint per whole match (not per word) — see useHint().
@@ -552,6 +554,7 @@ class OnlineGameViewModel @Inject constructor(
     private fun startGuessPhase() {
         guessOrder = results.indices.shuffled()
         guessPos = 0
+        skippedSeconds.clear()
         showCurrentGuess()
     }
 
@@ -560,9 +563,46 @@ class OnlineGameViewModel @Inject constructor(
         revealedHintLetter = null
         revealedLetterCount = null
         revealedLetterGroups = null
-        currentGuessTotal = GameConstants.GUESS_DURATION_SECONDS
-        runGuessCountdown(startSecondsLeft = currentGuessTotal)
+        currentGuessTotal = GameConstants.guessDurationSeconds(results[guessOrder[guessPos]].word.text)
+        val resumeSeconds = skippedSeconds.remove(guessOrder[guessPos])
+        if (resumeSeconds != null) {
+            // A skipped word comes back with the time it had left; the time it already used stays spent.
+            guessShownAtMillis -= (currentGuessTotal - resumeSeconds) * 1000L
+            runGuessCountdown(startSecondsLeft = resumeSeconds)
+        } else {
+            runGuessCountdown(startSecondsLeft = currentGuessTotal)
+        }
     }
+
+    /**
+     * "Atla": parks the current word at the end of the queue with the seconds it still had. Once per word, and not
+     * when it is the only word left. The word comes back last, counting down from the saved time.
+     */
+    fun skipGuess() {
+        val current = _phase.value as? GamePhase.Guessing ?: return
+        if (current.feedback != null || current.skipSavedSeconds != null || !current.canSkip) return
+        timerJob?.cancel()
+        val wordIndex = guessOrder[guessPos]
+        skippedSeconds[wordIndex] = current.secondsLeft
+        guessOrder = guessOrder + wordIndex
+        guessPos++
+        revealedHintLetter = null
+        revealedLetterCount = null
+        revealedLetterGroups = null
+        currentGuessTotal = GameConstants.GUESS_DURATION_SECONDS
+        saveActiveSnapshot(OnlineRecoveryStage.GUESSING)
+        _phase.value = current.copy(skipSavedSeconds = current.secondsLeft)
+        soundManager.playCountdownTick()
+        viewModelScope.launch {
+            delay(1_100) // the "time saved" animation
+            showCurrentGuess()
+        }
+    }
+
+    private fun isRevisitNow(): Boolean = guessOrder.indexOf(guessOrder[guessPos]) < guessPos
+
+    /** Once per word: not on a revisit, and not when no other word is left to show first. */
+    private fun canSkipNow(): Boolean = !isRevisitNow() && guessPos < guessOrder.size - 1
 
     /**
      * Runs (or resumes) the guess countdown from [startSecondsLeft] down to 1.
@@ -593,7 +633,9 @@ class OnlineGameViewModel @Inject constructor(
                     hintUsed = hintUsedThisMatch,
                     hintLetter = revealedHintLetter,
                     letterCount = revealedLetterCount,
-                    letterGroups = revealedLetterGroups
+                    letterGroups = revealedLetterGroups,
+                    isRevisit = isRevisitNow(),
+                    canSkip = canSkipNow()
                 )
                 delay(1_000)
             }
@@ -731,6 +773,8 @@ class OnlineGameViewModel @Inject constructor(
         val wrongCount = results.count { !it.isCorrect }
         val items = results.map { ResultItem(it.word.text, it.isCorrect, it.strokes) }
 
+        settingsRepository.lastOnlineRoundXp = roundXpEarned
+
         // Submitted BEFORE the phase flips to Result: OnlineGameScreen
         // navigates away (and this ViewModel gets cleared, cancelling its
         // viewModelScope) the instant it observes GamePhase.Result. If the
@@ -739,24 +783,43 @@ class OnlineGameViewModel @Inject constructor(
         // score fields (a separate, faster write) landed fine, but the
         // drawings never did, leaving the comparison screen's galleries
         // empty even though the scores showed up correctly.
-        // A write with no connection would wait for one without end: give it a moment, and if the phone is still
-        // offline the match is over for this player (see connectionLost).
-        val sent = kotlinx.coroutines.withTimeoutOrNull(12_000L) {
-            if (!networkMonitor.isOnline.value) null
-            else runCatching {
-                onlineGameRepository.submitResult(
-                    roomCode = roomCode,
-                    totalScore = totalScore,
-                    correctCount = correctCount,
-                    wrongCount = wrongCount,
-                    fastestCorrectMs = fastest,
-                    items = items
-                )
+        // Retried until it lands. It used to be cut off after a fixed 12 s,
+        // and a slow-but-working connection (the drawings are the heaviest
+        // write of the match) hit that limit: the upload was abandoned
+        // half-done, the player's finished flag never got set, and the other
+        // side's result screen waited on drawings that were never coming.
+        // Only genuinely being offline ends the match for this player (see
+        // connectionLost); a slow connection just takes longer.
+        var sent = false
+        var attempt = 0
+        while (!sent) {
+            if (!networkMonitor.isOnline.value) {
+                // Give a flaky connection a short moment to come back first.
+                val back = kotlinx.coroutines.withTimeoutOrNull(12_000L) {
+                    networkMonitor.isOnline.first { it }
+                }
+                if (back == null) {
+                    _connectionLost.value = true
+                    return
+                }
             }
-        }
-        if (sent == null && !networkMonitor.isOnline.value) {
-            _connectionLost.value = true
-            return
+            sent = kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                kotlinx.coroutines.withTimeoutOrNull(40_000L) { runCatching {
+                    onlineGameRepository.submitResult(
+                        roomCode = roomCode,
+                        totalScore = totalScore,
+                        correctCount = correctCount,
+                        wrongCount = wrongCount,
+                        fastestCorrectMs = fastest,
+                        items = items
+                    )
+                }.isSuccess } == true
+            }
+            if (!sent) {
+                attempt++
+                if (attempt >= 8) break
+                delay(1_000L * attempt)
+            }
         }
 
         // Left behind as a Hızlı Eşleş opponent, same as a solo free-play

@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import com.sualtikasifi.cizimhafiza.presentation.common.breathing
 import com.sualtikasifi.cizimhafiza.presentation.common.glint
@@ -165,6 +166,24 @@ internal fun PaintedHome(
             Modifier.offset(offX + unit * x0, offY + unit * y0).size(unit * (x1 - x0), unit * (y1 - y0))
         val noRipple = remember { MutableInteractionSource() }
 
+        // Gold and XP climb from what this screen showed last time to the real values, so a match's winnings are
+        // seen arriving instead of just being there (see HomeShownStats).
+        val goldStart = remember { com.sualtikasifi.cizimhafiza.util.HomeShownStats.gold ?: gold }
+        val xpStart = remember { com.sualtikasifi.cizimhafiza.util.HomeShownStats.totalXp ?: progress.totalXp }
+        val goldAnim = remember { androidx.compose.animation.core.Animatable(goldStart.toFloat()) }
+        val xpAnim = remember { androidx.compose.animation.core.Animatable(xpStart.toFloat()) }
+        LaunchedEffect(gold) {
+            if (goldAnim.value.toInt() != gold) goldAnim.animateTo(gold.toFloat(), tween(1400, easing = FastOutSlowInEasing))
+            com.sualtikasifi.cizimhafiza.util.HomeShownStats.gold = gold
+        }
+        LaunchedEffect(progress.totalXp) {
+            if (xpAnim.value.toInt() != progress.totalXp) xpAnim.animateTo(progress.totalXp.toFloat(), tween(1600, easing = FastOutSlowInEasing))
+            com.sualtikasifi.cizimhafiza.util.HomeShownStats.totalXp = progress.totalXp
+        }
+        val shownProgress = com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState.forXp(xpAnim.value.toInt())
+        val goldGain = (gold - goldStart).coerceAtLeast(0)
+        val xpGain = (progress.totalXp - xpStart).coerceAtLeast(0)
+
         @Composable
         fun FitLettered(text: String, baseArt: Float, outline: Color?, maxLines: Int, modifier: Modifier, fill: Color = Color.White) {
             // The lettering measures itself against the box it is laid in and shrinks to fit (see LetteredText).
@@ -223,7 +242,7 @@ internal fun PaintedHome(
         ) {}
         Box(box(112f, 270f, 238f, 314f).then(follow(goldChipSink, 148f, 292f, 112f, 270f, 238f, 314f)), contentAlignment = Alignment.Center) {
             // Counts to the new total whenever gold changes (a reward, a purchase) instead of jumping.
-            val goldShown by animateIntAsState(gold, tween(800, easing = FastOutSlowInEasing), label = "gold")
+            val goldShown = goldAnim.value.toInt()
             LetteredText(NumberFormat.getIntegerInstance().format(goldShown), fs(31f), outline = Color(0xFF3A1E08), maxLines = 1)
         }
         val penChipSink = rememberSink(0.94f)
@@ -251,7 +270,7 @@ internal fun PaintedHome(
                 .a11yButton(stringResource(R.string.avatar_frame_change_cd)),
             contentAlignment = Alignment.Center
         ) {
-            LevelAvatar(level = progress.level, frame = frame, photo = photo, size = (132f * us).dp)
+            LevelAvatar(level = shownProgress.level, frame = frame, photo = photo, size = (132f * us).dp)
             // A small pencil badge on the photo's top-right corner: the picture is a button, and this says what for.
             Box(
                 modifier = Modifier
@@ -278,7 +297,7 @@ internal fun PaintedHome(
                     modifier = Modifier.weight(1f, fill = false).alignByBaseline()
                 )
                 Text(
-                    text = "• " + stringResource(R.string.home_level_inline, progress.level),
+                    text = "• " + stringResource(R.string.home_level_inline, shownProgress.level),
                     style = PaintedStyle(color = HomeInkSoft, fontSize = fs(26f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Start),
                     maxLines = 1,
                     modifier = Modifier.alignByBaseline()
@@ -296,9 +315,9 @@ internal fun PaintedHome(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text(text = progress.tier.rank.emoji, fontSize = fs(28f))
+                Text(text = shownProgress.tier.rank.emoji, fontSize = fs(28f))
                 FitText(
-                    text = stringResource(progress.tier.rank.nameRes),
+                    text = stringResource(shownProgress.tier.rank.nameRes),
                     style = PaintedStyle(color = Color.White, fontSize = fs(31f), textAlign = TextAlign.Start),
                     minScale = 0.7f,
                     modifier = Modifier.weight(1f, fill = false)
@@ -306,18 +325,21 @@ internal fun PaintedHome(
             }
         }
         FitText(
-            text = if (progress.isMaxLevel) "MAX" else stringResource(R.string.home_xp_to_next, progress.xpToNextLevel, progress.level + 1),
+            text = if (shownProgress.isMaxLevel) "MAX" else stringResource(R.string.home_xp_to_next, shownProgress.xpToNextLevel, shownProgress.level + 1),
             style = PaintedStyle(color = HomeInkSoft, fontSize = fs(29f), fontWeight = FontWeight.Bold, textAlign = TextAlign.End),
             contentAlignment = Alignment.CenterEnd,
             modifier = box(496f, 406f, 780f, 446f)
         )
         Box(box(222f, 452f, 772f, 492f)) {
             XpBar(
-                fraction = progress.progressFraction,
-                label = stringResource(R.string.home_xp_format, progress.xpIntoLevel, progress.xpForThisLevel),
+                fraction = shownProgress.progressFraction,
+                label = stringResource(R.string.home_xp_format, shownProgress.xpIntoLevel, shownProgress.xpForThisLevel),
                 modifier = Modifier.fillMaxSize()
             )
         }
+
+        if (xpGain > 0) GainFloat("+${NumberFormat.getIntegerInstance().format(xpGain)} XP", fs(30f), box(540f, 396f, 780f, 450f))
+        if (goldGain > 0) GainFloat("+${NumberFormat.getIntegerInstance().format(goldGain)}", fs(30f), box(110f, 226f, 250f, 272f))
 
         // ── Cards ──
         val tintMatrix = remember {
@@ -595,4 +617,23 @@ internal fun Modifier.sinkWith(sink: SinkState, pivotX: Float, pivotY: Float): M
     scaleX = k
     scaleY = k
     transformOrigin = TransformOrigin(pivotX, pivotY)
+}
+
+/** "+12 XP" / "+30": appears next to a number that just climbed, drifts up and fades — once. */
+@Composable
+private fun GainFloat(text: String, fontSize: androidx.compose.ui.unit.TextUnit, modifier: Modifier) {
+    val progress = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(350)
+        progress.animateTo(1f, tween(1800, easing = androidx.compose.animation.core.LinearEasing))
+    }
+    val p = progress.value
+    if (p <= 0f || p >= 1f) return
+    val fade = if (p < 0.15f) p / 0.15f else if (p > 0.7f) (1f - p) / 0.3f else 1f
+    Box(
+        modifier = modifier.graphicsLayer { alpha = fade; translationY = -60f * p * density },
+        contentAlignment = Alignment.Center
+    ) {
+        LetteredText(text, fontSize, fill = Color(0xFFFFE066), outline = Color(0xFF3A1E08), maxLines = 1, minScale = 0.6f)
+    }
 }

@@ -292,6 +292,7 @@ fun WaitingRoomScreen(
                 isStarting = uiState.isStarting,
                 countdownSeconds = uiState.countdownSeconds,
                 errorMessage = uiState.errorMessage,
+                leftNotice = uiState.leftNotice,
                 phraseUsageCounts = phraseUsageCounts,
                 emojiUsageCounts = emojiUsageCounts,
                 onToggleReady = viewModel::toggleReady,
@@ -619,6 +620,7 @@ private fun WaitingRoomActions(
     isStarting: Boolean,
     countdownSeconds: Int?,
     errorMessage: UiText?,
+    leftNotice: UiText? = null,
     phraseUsageCounts: Map<String, Int>,
     emojiUsageCounts: Map<String, Int>,
     onToggleReady: () -> Unit,
@@ -654,6 +656,9 @@ private fun WaitingRoomActions(
 
         errorMessage?.let { message ->
             HintPlate(message.asString(), Color(0xFFFFD6D0), Modifier.padding(bottom = 8.dp))
+        }
+        leftNotice?.let { message ->
+            HintPlate(message.asString(), Color(0xFFFFF1D6), Modifier.padding(bottom = 8.dp))
         }
 
         when {

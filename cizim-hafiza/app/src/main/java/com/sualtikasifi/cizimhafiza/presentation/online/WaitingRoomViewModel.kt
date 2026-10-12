@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.util.UiText
+import kotlinx.coroutines.Job
 
 data class WaitingRoomUiState(
     val room: OnlineRoom? = null,
@@ -46,7 +47,9 @@ data class WaitingRoomUiState(
     // What this player just asked for with the ready button, shown (and toggled from) at once instead of waiting for
     // the room snapshot to echo it back; dropped as soon as the server agrees. Without it a quick second tap read a stale
     // value and re-sent the same state, so "Hazır" could not be taken back.
-    val readyOverride: Boolean? = null
+    val readyOverride: Boolean? = null,
+    /** "X odadan ayrıldı", shown for a few seconds when someone drops out of the lobby. */
+    val leftNotice: UiText? = null
 )
 
 @HiltViewModel
@@ -149,6 +152,31 @@ class WaitingRoomViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Tells the lobby who just left. Worked out from the room snapshot the lobby already listens to — comparing who was
+     * here a moment ago with who is here now — so it costs no extra listener and no extra Firestore reads. A clean exit
+     * (leaveRoom) and a dropped connection (presence timeout) both show up this way.
+     */
+    private var knownOthers: Map<String, String> = emptyMap()
+    private var noticeJob: Job? = null
+
+    private fun noticeDepartures(room: OnlineRoom?) {
+        room ?: return
+        val now = System.currentTimeMillis()
+        val others = room.players
+            .filter { it.uid != myUid && it.uid != BotRoomEngine.BOT_UID && it.isPresent(now) }
+            .associate { it.uid to it.displayName }
+        val gone = knownOthers.filterKeys { it !in others }
+        knownOthers = others
+        val name = gone.values.firstOrNull() ?: return
+        _uiState.update { it.copy(leftNotice = UiText.of(R.string.online_player_left, name)) }
+        noticeJob?.cancel()
+        noticeJob = viewModelScope.launch {
+            delay(5_000)
+            _uiState.update { it.copy(leftNotice = null) }
+        }
+    }
+
     val roomCode: String = checkNotNull(savedStateHandle["roomCode"])
     val myUid: String? get() = onlineGameRepository.currentUid
 
@@ -176,6 +204,7 @@ class WaitingRoomViewModel @Inject constructor(
             onlineGameRepository.observeRoom(roomCode)
                 .catch { _uiState.update { it.copy(errorMessage = UiText.of(R.string.error_room_listener_failed)) } }
                 .collect { room ->
+                    noticeDepartures(room)
                     val serverReady = room?.players?.find { it.uid == myUid }?.ready
                     _uiState.update {
                         it.copy(
@@ -250,7 +279,7 @@ class WaitingRoomViewModel @Inject constructor(
                         null
                     } else {
                         runCatching { getWordsByIdsUseCase(wordIds) }.getOrDefault(emptyList())
-                            .sumOf { GameConstants.drawingDurationSeconds(it.difficulty) + GameConstants.GUESS_DURATION_SECONDS }
+                            .sumOf { GameConstants.drawingDurationSeconds(it.difficulty) + GameConstants.guessDurationSeconds(it.text) }
                     }
                     _uiState.update { it.copy(estimatedRoundSeconds = estimate) }
                 }
@@ -292,7 +321,11 @@ class WaitingRoomViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 // Words first, so a failure here never leaves a countdown running towards nothing.
-                val words = getWordsForGameUseCase(room.wordCount, room.category, room.difficulty)
+                val words = getWordsForGameUseCase(
+                    room.wordCount,
+                    com.sualtikasifi.cizimhafiza.domain.model.WordFilter.decodeCategories(room.category),
+                    room.difficulties
+                )
                 // The host's own button counts down at once, without waiting for the room snapshot to echo the stamp back.
                 beginCountdown()
                 onlineGameRepository.startCountdown(roomCode)

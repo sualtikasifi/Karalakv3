@@ -2,6 +2,7 @@ package com.sualtikasifi.cizimhafiza.presentation.navigation
 
 import com.sualtikasifi.cizimhafiza.domain.model.DailyChallenge
 import com.sualtikasifi.cizimhafiza.domain.model.Difficulty
+import com.sualtikasifi.cizimhafiza.domain.model.WordFilter
 import com.sualtikasifi.cizimhafiza.domain.model.GameMode
 import com.sualtikasifi.cizimhafiza.domain.model.GhostRun
 import com.sualtikasifi.cizimhafiza.domain.model.GhostRuns
@@ -80,8 +81,10 @@ object Screen {
     const val AllCategoriesArg = "all"
     const val AllDifficultiesArg = "all"
 
-    fun gameRoute(wordCount: Int, category: String?, difficulty: Difficulty?, mode: GameMode): String =
-        "game/$wordCount/${category ?: AllCategoriesArg}/${difficulty?.name ?: AllDifficultiesArg}/${mode.name}"
+    fun gameRoute(wordCount: Int, categories: Set<String>, difficulties: Set<Difficulty>, mode: GameMode): String =
+        "game/$wordCount/" +
+            "${WordFilter.encodeCategories(categories) ?: AllCategoriesArg}/" +
+            "${WordFilter.encodeDifficulties(difficulties) ?: AllDifficultiesArg}/${mode.name}"
 
     // opponentName is url-encoded: unlike category/difficulty (fixed enum-ish
     // values), a nickname is free text that can contain Turkish letters,

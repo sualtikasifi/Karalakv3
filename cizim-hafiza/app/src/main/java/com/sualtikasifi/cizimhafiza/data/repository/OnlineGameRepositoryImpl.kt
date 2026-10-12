@@ -6,6 +6,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
 import com.sualtikasifi.cizimhafiza.domain.model.Difficulty
+import com.sualtikasifi.cizimhafiza.domain.model.WordFilter
 import com.sualtikasifi.cizimhafiza.domain.model.GameMode
 import com.sualtikasifi.cizimhafiza.domain.model.KickedUser
 import com.sualtikasifi.cizimhafiza.domain.model.OnlinePlayer
@@ -70,7 +71,7 @@ class OnlineGameRepositoryImpl @Inject constructor(
         displayName: String,
         wordCount: Int,
         category: String?,
-        difficulty: Difficulty?,
+        difficulties: Set<Difficulty>,
         mode: GameMode,
         teamMode: Boolean
     ): Result<String> = runCatching {
@@ -89,7 +90,7 @@ class OnlineGameRepositoryImpl @Inject constructor(
                         "status" to RoomStatus.WAITING.name,
                         "wordCount" to wordCount.toLong(),
                         "category" to category,
-                        "difficulty" to difficulty?.name,
+                        "difficulty" to WordFilter.encodeDifficulties(difficulties),
                         "mode" to mode.name,
                         "wordIds" to emptyList<Long>(),
                         // The creator always opens on Team A — the only
@@ -527,7 +528,7 @@ class OnlineGameRepositoryImpl @Inject constructor(
             ?: RoomStatus.WAITING
         val wordCount = (get("wordCount") as? Number)?.toInt() ?: 10
         val category = getString("category")
-        val difficulty = getString("difficulty")?.let { runCatching { Difficulty.valueOf(it) }.getOrNull() }
+        val difficulties = WordFilter.decodeDifficulties(getString("difficulty"))
         val mode = getString("mode")?.let { runCatching { GameMode.valueOf(it) }.getOrNull() } ?: GameMode.NORMAL
         val wordIds = (get("wordIds") as? List<*>)?.mapNotNull { (it as? Number)?.toInt() } ?: emptyList()
         val startedAt = (get("startedAt") as? Number)?.toLong()
@@ -566,7 +567,7 @@ class OnlineGameRepositoryImpl @Inject constructor(
             status = status,
             wordCount = wordCount,
             category = category,
-            difficulty = difficulty,
+            difficulties = difficulties,
             mode = mode,
             wordIds = wordIds,
             players = players,

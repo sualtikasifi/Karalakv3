@@ -140,9 +140,9 @@ class GameViewModel @Inject constructor(
     private val wordCount: Int = savedStateHandle.get<String>(Screen.ArgWordCount)?.toIntOrNull() ?: 10
     private val category: String? = savedStateHandle.get<String>(Screen.ArgCategory)
         ?.takeUnless { it == Screen.AllCategoriesArg }
-    private val difficulty: Difficulty? = savedStateHandle.get<String>(Screen.ArgDifficulty)
+    private val difficulties: Set<Difficulty> = savedStateHandle.get<String>(Screen.ArgDifficulty)
         ?.takeUnless { it == Screen.AllDifficultiesArg }
-        ?.let { runCatching { Difficulty.valueOf(it) }.getOrNull() }
+        .let { com.sualtikasifi.cizimhafiza.domain.model.WordFilter.decodeDifficulties(it) }
     private val mode: GameMode = savedStateHandle.get<String>(Screen.ArgMode)
         ?.let { runCatching { GameMode.valueOf(it) }.getOrNull() }
         ?: GameMode.NORMAL
@@ -310,6 +310,8 @@ class GameViewModel @Inject constructor(
 
     private var guessOrder: List<Int> = emptyList()
     private var guessPos = 0
+    /** Seconds left on a skipped word, keyed by result index — the revisit counts down from there. */
+    private val skippedSeconds = mutableMapOf<Int, Int>()
     private var guessShownAtMillis = 0L
 
     // One rewarded-ad hint per whole match (not per word) — see useHint().
@@ -564,7 +566,11 @@ class GameViewModel @Inject constructor(
             val config = LevelCatalog.levelConfig(worldId, levelIndex)
             getWordsForGameUseCase(null, config.difficultyMix)
         } else {
-            getWordsForGameUseCase(wordCount, category, difficulty)
+            getWordsForGameUseCase(
+                wordCount,
+                com.sualtikasifi.cizimhafiza.domain.model.WordFilter.decodeCategories(category),
+                difficulties
+            )
         }
     }
 
@@ -785,6 +791,7 @@ class GameViewModel @Inject constructor(
     private fun startGuessPhase() {
         guessOrder = results.indices.shuffled()
         guessPos = 0
+        skippedSeconds.clear()
         showCurrentGuess()
     }
 
@@ -793,8 +800,41 @@ class GameViewModel @Inject constructor(
         revealedHintLetter = null
         revealedLetterCount = null
         revealedLetterGroups = null
+        currentGuessTotal = GameConstants.guessDurationSeconds(results[guessOrder[guessPos]].word.text)
+        val resumeSeconds = skippedSeconds.remove(guessOrder[guessPos])
+        if (resumeSeconds != null) {
+            // A skipped word comes back with the time it had left. The time it already used up stays spent, so the
+            // speed bonus is still measured from the original first look.
+            guessShownAtMillis -= (currentGuessTotal - resumeSeconds) * 1000L
+            runGuessCountdown(startSecondsLeft = resumeSeconds)
+        } else {
+            runGuessCountdown(startSecondsLeft = currentGuessTotal)
+        }
+    }
+
+    /**
+     * "Atla": parks the current word at the end of the queue with the seconds it still had. Once per word, and not
+     * when it is the only word left. The word comes back last, counting down from the saved time.
+     */
+    fun skipGuess() {
+        val current = _phase.value as? GamePhase.Guessing ?: return
+        if (current.feedback != null || current.skipSavedSeconds != null || !current.canSkip) return
+        timerJob?.cancel()
+        val wordIndex = guessOrder[guessPos]
+        skippedSeconds[wordIndex] = current.secondsLeft
+        guessOrder = guessOrder + wordIndex
+        guessPos++
+        revealedHintLetter = null
+        revealedLetterCount = null
+        revealedLetterGroups = null
         currentGuessTotal = GameConstants.GUESS_DURATION_SECONDS
-        runGuessCountdown(startSecondsLeft = currentGuessTotal)
+        saveActiveSnapshot(RecoveryStage.GUESSING)
+        _phase.value = current.copy(skipSavedSeconds = current.secondsLeft)
+        soundManager.playCountdownTick()
+        viewModelScope.launch {
+            delay(1_100) // the "time saved" animation
+            showCurrentGuess()
+        }
     }
 
     /**
@@ -826,7 +866,9 @@ class GameViewModel @Inject constructor(
                     hintUsed = hintUsedThisMatch,
                     hintLetter = revealedHintLetter,
                     letterCount = revealedLetterCount,
-                    letterGroups = revealedLetterGroups
+                    letterGroups = revealedLetterGroups,
+                    isRevisit = isRevisitNow(),
+                    canSkip = canSkipNow()
                 )
                 ticker.awaitTick()
             }
@@ -891,6 +933,11 @@ class GameViewModel @Inject constructor(
             }
         }
     }
+
+    private fun isRevisitNow(): Boolean = guessOrder.indexOf(guessOrder[guessPos]) < guessPos
+
+    /** Once per word: not on a revisit, and not when no other word is left to show first. */
+    private fun canSkipNow(): Boolean = !isRevisitNow() && guessPos < guessOrder.size - 1
 
     /** Called on every keystroke; auto-submits the moment the typed text exactly matches the word. */
     fun onAnswerChanged(text: String) {
@@ -985,7 +1032,8 @@ class GameViewModel @Inject constructor(
         val goldFromAchievements = newlyUnlocked.size * GameConstants.ACHIEVEMENT_GOLD
         var goldFromLevel = 0
         var goldFromDaily = 0
-        var goldEarned = goldFromAchievements
+        val goldFromPlay = if (isDaily) 0 else results.count { it.isCorrect } * GameConstants.GOLD_PER_CORRECT_WORD
+        var goldEarned = goldFromAchievements + goldFromPlay
 
         // Spends today's Quick Match bonus only now that the round actually
         // finished — see quickMatchDailyBonusPending, decided at
@@ -1189,6 +1237,7 @@ class GameViewModel @Inject constructor(
             goldFromAchievements = goldFromAchievements,
             goldFromLevel = goldFromLevel,
             goldFromDaily = goldFromDaily,
+            goldFromPlay = goldFromPlay,
             xpMultiplier = effectiveXpMultiplier,
             quickMatchDailyBonusApplied = quickMatchDailyBonusPending,
             xpEventMultiplierApplied = xpEventMultiplierOnly > 1,
@@ -1311,6 +1360,7 @@ class GameViewModel @Inject constructor(
         pendingStroke = emptyList()
         guessOrder = emptyList()
         guessPos = 0
+        skippedSeconds.clear()
         hintUsedThisMatch = false
         revealedHintLetter = null
         revealedLetterCount = null
