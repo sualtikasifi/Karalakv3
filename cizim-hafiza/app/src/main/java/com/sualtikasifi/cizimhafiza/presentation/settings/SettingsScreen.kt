@@ -318,7 +318,7 @@ fun SettingsScreen(
                 buildList {
                     if (ok.gold > 0) add(stringResource(R.string.coupon_won_gold, ok.gold))
                     if (ok.xp > 0) add(stringResource(R.string.coupon_won_xp, ok.xp))
-                    ok.chest?.let { add(stringResource(R.string.coupon_won_chest)) }
+                    if (ok.chests > 0) add(stringResource(R.string.coupon_won_chest, ok.chests))
                 }.joinToString("  ·  ").ifBlank { stringResource(R.string.coupon_won_nothing) }
             } else {
                 stringResource((message as CouponMessage.Error).res)

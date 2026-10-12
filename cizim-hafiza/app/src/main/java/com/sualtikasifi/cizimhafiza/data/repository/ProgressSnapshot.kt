@@ -77,7 +77,10 @@ data class ProgressSnapshot(
     val periodId: Long = -1L,
     /** 2 from the version that reads the month's XP against the current month; older backups' periodXp is not trusted. */
     val periodXpVersion: Int = 0,
-    /** Home-screen ad rewards: when the 500-gold ad unlocks again, and the day the free chest was last taken. */
+    /**
+     * Home-screen ad rewards: when the 500-gold ad unlocks again, and when the free-chest ad does (it was once the day
+     * the chest was last taken, hence the name; older backups hold a small day number, which reads as "ready").
+     */
     val adGoldNextAt: Long = 0L,
     val adChestDay: Long = -1L,
     /** Which unlocked achievements had their reward collected, so a reinstall does not hand rewards out twice or lose uncollected ones. */

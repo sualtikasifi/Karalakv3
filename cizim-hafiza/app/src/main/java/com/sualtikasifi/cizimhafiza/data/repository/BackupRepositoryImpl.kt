@@ -142,7 +142,7 @@ class BackupRepositoryImpl @Inject constructor(
             periodXpVersion = 2,
             periodId = com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()),
             adGoldNextAt = settingsRepository.adGoldNextAtMillis.value,
-            adChestDay = settingsRepository.adChestDay.value,
+            adChestDay = settingsRepository.adChestNextAtMillis.value,
             claimedAchievementIds = achievementDao.getClaimedIds(),
             claimsSaved = true,
             dailyResult = daily.lastResult?.let { r ->
@@ -516,7 +516,12 @@ class BackupRepositoryImpl @Inject constructor(
         // as unclaimed would let its reward be collected again here.
         val now = System.currentTimeMillis()
         snapshot.unlockedAchievementIds.forEach { id ->
-            achievementDao.insert(UnlockedAchievementEntity(id = id, unlockedAtMillis = now, seen = true, claimed = !snapshot.claimsSaved || id in snapshot.claimedAchievementIds))
+            val claimed = !snapshot.claimsSaved || id in snapshot.claimedAchievementIds
+            achievementDao.insert(UnlockedAchievementEntity(id = id, unlockedAtMillis = now, seen = true, claimed = claimed))
+            // The insert above leaves a row that is already there alone, so a leftover row from this device's own
+            // history (an older copy of the database, say) kept its own "not collected yet" and the reward could be
+            // collected a second time. The account's record of what was collected is the one that counts.
+            achievementDao.setClaimed(id, claimed)
         }
     }
 

@@ -1289,7 +1289,7 @@
     <string name="store_in_store">Mağazada</string>
     <string name="chest_speedup_button">Reklam İzle</string>
     <string name="chest_speedup_badge">−2 sa</string>
-    <string name="chest_speedup_done">Kasanın süresi 3 saat kısaldı!</string>
+    <string name="chest_speedup_done">Kasanın süresi 2 saat kısaldı!</string>
     <string name="chest_speedup_unavailable">Şu an reklam yok, biraz sonra tekrar dene.</string>
     <string name="chest_speedup_used_today">Bugünkü hızlandırma hakkını kullandın.</string>
     <string name="home_chests_info_line">%1$s: %2$d dk (%3$d sa)</string>
@@ -1421,14 +1421,15 @@
     <string name="coupon_use">Kullan</string>
     <string name="coupon_won_gold">+%1$d altın</string>
     <string name="coupon_won_xp">+%1$d XP</string>
-    <string name="coupon_won_chest">+1 kasa</string>
+    <string name="coupon_won_chest">+%1$d kasa</string>
     <string name="coupon_won_nothing">Kod kabul edildi</string>
     <string name="coupon_error_not_found">Kod bulunamadı. Kontrol edip tekrar dene.</string>
     <string name="coupon_error_expired">Bu kodun süresi dolmuş.</string>
     <string name="coupon_error_exhausted">Bu kodun hakkı bitmiş.</string>
     <string name="coupon_error_used">Bu kodu zaten kullandın.</string>
-    <string name="coupon_error_chest_full">Bu kod kasa veriyor, kasa yuvaların dolu. Önce bir kasa aç.</string>
+    <string name="coupon_error_chest_full">Bu kod kasa veriyor ve yeterli boş kasa yuvan yok. Önce biraz kasa aç.</string>
     <string name="coupon_error_network">Sunucuya ulaşılamadı. Bağlantını kontrol et.</string>
     <string name="coupon_error_wait">Çok fazla yanlış deneme. Biraz bekle.</string>
     <string name="reports_tab_coupons">Kupon</string>
+    <string name="joker_bought_title">Joker alındı!</string>
 </resources>

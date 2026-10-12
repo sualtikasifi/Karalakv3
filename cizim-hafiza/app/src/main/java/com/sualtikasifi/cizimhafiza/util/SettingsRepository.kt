@@ -608,8 +608,8 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         return chest
     }
 
-    /** Whether a chest could be put away right now — asked before a coupon that gives one is used up. */
-    fun hasFreeChestSlot(): Boolean = _chestSlots.value.any { it == null }
+    /** How many chests could be put away right now — asked before a coupon that gives chests is used up. */
+    fun freeChestSlots(): Int = _chestSlots.value.count { it == null }
 
     /** Puts a chest of [tier] into the first free slot (a coupon's chest); null when every slot is taken. */
     @Synchronized
@@ -715,13 +715,14 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     private val _adGoldNextAtMillis = MutableStateFlow(prefs.getLong(KEY_AD_GOLD_NEXT_AT, 0L))
     val adGoldNextAtMillis: StateFlow<Long> = _adGoldNextAtMillis.asStateFlow()
 
-    private val _adChestDay = MutableStateFlow(prefs.getLong(KEY_AD_CHEST_DAY, -1L))
-    val adChestDay: StateFlow<Long> = _adChestDay.asStateFlow()
+    private val _adChestNextAt = MutableStateFlow(prefs.getLong(KEY_AD_CHEST_NEXT_AT, 0L))
+    /** When the free-chest ad can be taken again (epoch millis); 0 while one is ready. */
+    val adChestNextAtMillis: StateFlow<Long> = _adChestNextAt.asStateFlow()
 
     @Synchronized
     fun isAdGoldReady(now: Long = System.currentTimeMillis()): Boolean = now >= _adGoldNextAtMillis.value
 
-    /** Pays [AD_GOLD_AMOUNT] gold and starts the 4-hour cooldown; false while the cooldown is still running. */
+    /** Pays [AD_GOLD_AMOUNT] gold and starts the 3-hour cooldown; false while the cooldown is still running. */
     @Synchronized
     fun claimAdGold(): Boolean {
         val now = System.currentTimeMillis()
@@ -734,15 +735,16 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     }
 
     @Synchronized
-    fun isAdChestReady(): Boolean = _adChestDay.value != com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
+    fun isAdChestReady(now: Long = System.currentTimeMillis()): Boolean = now >= _adChestNextAt.value
 
-    /** Rolls and pays a free mid-tier chest without needing a slot; null if today's was already taken. */
+    /** Rolls and pays a free mid-tier chest without needing a slot and starts the 4-hour wait; null while that wait is still running. */
     @Synchronized
     fun claimAdChest(): ChestReward? {
-        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
-        if (_adChestDay.value == today) return null
-        val reward = payChestOutright(ChestTier.GOLD) { putLong(KEY_AD_CHEST_DAY, today) }
-        _adChestDay.value = today
+        val now = System.currentTimeMillis()
+        if (now < _adChestNextAt.value) return null
+        val next = now + AD_CHEST_COOLDOWN_MILLIS
+        val reward = payChestOutright(ChestTier.GOLD) { putLong(KEY_AD_CHEST_NEXT_AT, next) }
+        _adChestNextAt.value = next
         return reward
     }
     @Synchronized
@@ -877,7 +879,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
      * reinstall is never a way to collect a reward twice).
      */
     @Synchronized
-    fun restoreEngagement(periodXp: Int, periodId: Long, adGoldNextAt: Long, adChestDay: Long) {
+    fun restoreEngagement(periodXp: Int, periodId: Long, adGoldNextAt: Long, adChestNextAt: Long) {
         val currentPeriod = LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today())
         if (periodId == currentPeriod && periodXp > _periodXp.value) {
             prefs.edit {
@@ -890,9 +892,9 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             prefs.edit { putLong(KEY_AD_GOLD_NEXT_AT, adGoldNextAt) }
             _adGoldNextAtMillis.value = adGoldNextAt
         }
-        if (adChestDay > _adChestDay.value) {
-            prefs.edit { putLong(KEY_AD_CHEST_DAY, adChestDay) }
-            _adChestDay.value = adChestDay
+        if (adChestNextAt > _adChestNextAt.value) {
+            prefs.edit { putLong(KEY_AD_CHEST_NEXT_AT, adChestNextAt) }
+            _adChestNextAt.value = adChestNextAt
         }
     }
 
@@ -1399,9 +1401,10 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_CHEST_CYCLE_SEED = "chest_cycle_seed"
         const val KEY_CHEST_CYCLE_INDEX = "chest_cycle_index"
         const val KEY_AD_GOLD_NEXT_AT = "ad_gold_next_at"
-        const val KEY_AD_CHEST_DAY = "ad_chest_day"
+        const val KEY_AD_CHEST_NEXT_AT = "ad_chest_next_at"
+        const val AD_CHEST_COOLDOWN_MILLIS = 4 * 60 * 60 * 1000L
         const val AD_GOLD_AMOUNT = 500
-        const val AD_GOLD_COOLDOWN_MILLIS = 4 * 60 * 60 * 1000L
+        const val AD_GOLD_COOLDOWN_MILLIS = 3 * 60 * 60 * 1000L
         const val KEY_CURRENT_STREAK = "current_streak"
         const val KEY_NOTIFICATION_PERMISSION_REQUESTED = "notification_permission_requested"
         const val KEY_LAST_REMINDER_EPOCH_DAY = "last_reminder_epoch_day"

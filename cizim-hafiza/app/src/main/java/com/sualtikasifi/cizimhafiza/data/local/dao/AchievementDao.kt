@@ -15,6 +15,14 @@ interface AchievementDao {
     @Query("SELECT id FROM unlocked_achievements")
     suspend fun getUnlockedIds(): List<String>
 
+    /** Changes when a reward is collected — the auto backup watches it, so a claim is never left out of the cloud copy. */
+    @Query("SELECT COUNT(*) FROM unlocked_achievements WHERE claimed = 1")
+    fun observeClaimedCount(): Flow<Int>
+
+    /** Sets the collected flag outright (the insert above ignores rows that already exist) — used when an account is restored. */
+    @Query("UPDATE unlocked_achievements SET claimed = :claimed WHERE id = :id")
+    suspend fun setClaimed(id: String, claimed: Boolean)
+
     // IGNORE, not REPLACE: unlockedAtMillis should never move once set — a
     // duplicate insert attempt (shouldn't normally happen, since the check
     // is against getUnlockedIds first) must not overwrite the original
