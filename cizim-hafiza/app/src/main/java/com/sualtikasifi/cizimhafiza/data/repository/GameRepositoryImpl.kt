@@ -50,6 +50,54 @@ class GameRepositoryImpl @Inject constructor(
         return getRandomWordsMix(category, DifficultyMix.allDifficulties(count))
     }
 
+    override suspend fun getRandomWordsFor(
+        count: Int,
+        categories: List<String>,
+        difficulties: Set<Difficulty>
+    ): List<Word> {
+        if (categories.size <= 1 && difficulties.size <= 1) {
+            return getRandomWords(count, categories.firstOrNull(), difficulties.firstOrNull())
+        }
+        val quotas: Map<Difficulty, Int> = if (difficulties.isEmpty()) {
+            DifficultyMix.allDifficulties(count)
+        } else {
+            val ordered = difficulties.sortedBy { it.ordinal }
+            val base = count / ordered.size
+            val extra = count % ordered.size
+            ordered.mapIndexed { i, d -> d to base + if (i < extra) 1 else 0 }.toMap()
+        }
+        // Words seen in recent games in ANY of the chosen categories are avoided first, as with a single category.
+        val recentIds = categories.flatMap {
+            drawingResultDao.getRecentWordIds(it, GameConstants.RECENT_WORD_EXCLUSION_WINDOW)
+        }.distinct()
+        val allCategories = if (categories.isEmpty()) 1 else 0
+        val categoryArgs = categories.ifEmpty { listOf("") }
+        val picked = mutableListOf<WordEntity>()
+        for ((difficulty, n) in quotas) {
+            if (n <= 0) continue
+            val avoiding = wordDao.getRandomWordsMulti(
+                n, allCategories, categoryArgs, 0, listOf(difficulty.name), recentIds + picked.map { it.id }
+            )
+            picked += avoiding
+            if (avoiding.size < n) {
+                // A thin pool tops up from recently seen words instead of shorting the round.
+                picked += wordDao.getRandomWordsMulti(
+                    n - avoiding.size, allCategories, categoryArgs, 0, listOf(difficulty.name), picked.map { it.id }
+                )
+            }
+        }
+        if (picked.size < count) {
+            // Still short (a chosen difficulty has too few words in these categories): fill from the same
+            // categories at any of the chosen difficulties, then give up quietly with what there is.
+            val allDifficulties = if (difficulties.isEmpty()) 1 else 0
+            picked += wordDao.getRandomWordsMulti(
+                count - picked.size, allCategories, categoryArgs, allDifficulties,
+                difficulties.map { it.name }.ifEmpty { listOf("") }, picked.map { it.id }
+            )
+        }
+        return picked.shuffled().map(WordEntity::toDomain)
+    }
+
     // A free-play round narrowed to one specific category draws independently
     // of every other round with no shared memory, so without this, the same
     // word can easily resurface a session or two later — worst for a thin

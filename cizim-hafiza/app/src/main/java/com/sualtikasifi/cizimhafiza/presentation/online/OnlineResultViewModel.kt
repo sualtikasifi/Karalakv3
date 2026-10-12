@@ -20,6 +20,8 @@ import com.sualtikasifi.cizimhafiza.domain.usecase.GetWordsForGameUseCase
 import com.sualtikasifi.cizimhafiza.domain.usecase.SaveOnlineGameSessionUseCase
 import com.sualtikasifi.cizimhafiza.presentation.navigation.Screen
 import com.sualtikasifi.cizimhafiza.util.PostMatchPrompts
+import com.sualtikasifi.cizimhafiza.util.GameConstants
+import com.sualtikasifi.cizimhafiza.domain.model.XpAwards
 import com.sualtikasifi.cizimhafiza.util.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -54,6 +56,9 @@ data class OnlineResultUiState(
     /** Non-null exactly once, right after a 1st-place finish that found a free chest slot. */
     val chestWon: Chest? = null,
     val chestLost: Boolean = false,
+    /** What this round paid out, shown once the standings are in: per-word XP + the match bonus, and gold. */
+    val xpEarned: Int = 0,
+    val goldEarned: Int = 0,
 )
 
 @HiltViewModel
@@ -116,11 +121,12 @@ class OnlineResultViewModel @Inject constructor(
 
     private companion object {
         /** Extra passes for a player whose drawings had not landed yet — see loadItems. */
-        const val ITEM_FETCH_RETRIES = 3
-        const val ITEM_FETCH_RETRY_DELAY_MS = 700L
+        const val ITEM_FETCH_ATTEMPTS = 25
+        const val ITEM_FETCH_RETRY_DELAY_MS = 500L
     }
     private var hasTriggeredRematchReset = false
     private var hasLoadedItems = false
+    private val requestedUids = mutableSetOf<String>()
 
     init {
         // Harmless/no-op for any other room — only ever drives room 130246
@@ -132,7 +138,7 @@ class OnlineResultViewModel @Inject constructor(
         // updating until the listener recovers, same as a brief network drop.
         viewModelScope.launch {
             onlineGameRepository.observeRoom(roomCode).catch { }.collect { room ->
-                _uiState.update { it.copy(room = room) }
+                _uiState.update { it.copy(room = room, selectedUid = it.selectedUid ?: myUid) }
                 if (room == null) return@collect
 
                 // Forced back to the lobby elsewhere (a joiner appeared
@@ -166,9 +172,21 @@ class OnlineResultViewModel @Inject constructor(
                 // would keep this screen's "everyone's done" condition (and
                 // the rematch-vote count below) permanently unsatisfiable.
                 val activePlayers = room.players.filterNot { it.pendingNextRound || it.left }
-                if (!hasLoadedItems && activePlayers.size >= 2 && activePlayers.all { it.finished }) {
+                // Each player's drawings are fetched the moment THEY are
+                // finished — not once everyone is. submitResult writes the
+                // drawings before the finished flag, so the flag is the
+                // promise they are there; waiting for the slowest player
+                // before even starting made every gallery appear late.
+                room.players.filter { it.finished && it.uid !in requestedUids }.forEach { player ->
+                    requestedUids += player.uid
+                    loadPlayerItems(player.uid)
+                }
+                // Counted over everyone who started the round, so an opponent who quit half-way does not cost the
+                // players who finished it their match reward.
+                val started = room.players.filterNot { it.pendingNextRound }
+                if (!hasLoadedItems && started.size >= 2 && activePlayers.isNotEmpty() && activePlayers.all { it.finished }) {
                     hasLoadedItems = true
-                    loadItems(room, myUid)
+                    recordSession(room, myUid)
                 }
 
                 _uiState.update { it.copy(rematchBlockedByNewJoiner = room.players.any { p -> p.pendingNextRound }) }
@@ -182,43 +200,41 @@ class OnlineResultViewModel @Inject constructor(
         }
     }
 
-    private fun loadItems(room: OnlineRoom, myUidLocal: String?) {
+    /**
+     * Fetches one player's drawings, retrying until they arrive.
+     *
+     * A single failed or too-early read used to leave that player's gallery
+     * blank for the whole screen. An empty result is never a real answer —
+     * every round has one item per word — so it is simply retried, with
+     * growing pauses, for about a minute. Drawings that already arrived are
+     * never replaced.
+     */
+    private fun loadPlayerItems(uid: String) {
+        viewModelScope.launch {
+            var attempt = 0
+            while (attempt < ITEM_FETCH_ATTEMPTS) {
+                val items = runCatching { onlineGameRepository.getPlayerResultItems(roomCode, uid) }
+                    .getOrDefault(emptyList())
+                if (items.isNotEmpty()) {
+                    _uiState.update {
+                        it.copy(itemsByUid = it.itemsByUid + (uid to items))
+                    }
+                    break
+                }
+                attempt++
+                delay(ITEM_FETCH_RETRY_DELAY_MS * attempt.coerceAtMost(6))
+            }
+            if (uid == myUid || attempt >= ITEM_FETCH_ATTEMPTS) {
+                _uiState.update { it.copy(isLoadingItems = false) }
+            }
+        }
+    }
+
+    private fun recordSession(room: OnlineRoom, myUidLocal: String?) {
         val me = room.players.find { it.uid == myUidLocal }
         viewModelScope.launch {
-            // A network failure fetching any player's drawings must not
-            // crash the app right as the match concludes, nor leave
-            // isLoadingItems stuck true forever — fall back to an empty
-            // gallery for whichever player's fetch failed (scores still
-            // come from `room`, so the result screen stays useful).
-            var itemsByUid = fetchAllItems(room)
-            _uiState.update { it.copy(itemsByUid = itemsByUid, selectedUid = myUidLocal, isLoadingItems = false) }
-
-            // Then keep trying for anyone who came back empty-handed.
-            //
-            // submitResult now writes a player's drawings before flipping
-            // their finished flag, so by the time this screen loads they
-            // should all be there — but "should" is doing real work in a
-            // sentence about somebody else's phone on somebody else's
-            // network. A single failed read used to mean that player's
-            // gallery stayed blank for the whole screen, because the load
-            // ran exactly once. The screen is already up and usable while
-            // this runs; each pass only fills in gaps and can never blank
-            // out drawings that already arrived.
-            val expectedUids = room.players.filterNot { it.pendingNextRound || it.left }.map { it.uid }
-            var attempt = 0
-            while (attempt < ITEM_FETCH_RETRIES && expectedUids.any { itemsByUid[it].isNullOrEmpty() }) {
-                delay(ITEM_FETCH_RETRY_DELAY_MS * (attempt + 1))
-                val retry = fetchAllItems(room)
-                itemsByUid = itemsByUid.keys.plus(retry.keys).associateWith { uid ->
-                    itemsByUid[uid]?.takeIf { it.isNotEmpty() } ?: retry[uid].orEmpty()
-                }
-                _uiState.update { it.copy(itemsByUid = itemsByUid) }
-                attempt++
-            }
-
-            // Recorded once per finished round (loadItems only ever runs
-            // once per ViewModel instance, guarded by hasLoadedItems — a
-            // rematch gets a brand new OnlineResultViewModel next round).
+            // Recorded once per finished round (guarded by hasLoadedItems —
+            // a rematch gets a brand new OnlineResultViewModel next round).
             //
             // Ranked over the players who actually PLAYED this round, not
             // room.players: a pendingNextRound joiner sat the round out in the
@@ -232,7 +248,7 @@ class OnlineResultViewModel @Inject constructor(
                 if (placement > 0) {
                     // Return value (newly unlocked achievements) isn't needed
                     // here — see GameViewModel.finishGame's matching comment.
-                    saveOnlineGameSessionUseCase(
+                    val newlyUnlocked = saveOnlineGameSessionUseCase(
                         totalScore = me.totalScore,
                         wordCount = room.wordCount,
                         correctCount = me.correctCount,
@@ -243,6 +259,14 @@ class OnlineResultViewModel @Inject constructor(
                     // Chests are earned ONLY here — a won real online-room
                     // match — never from solo play, Hızlı Eşleş or the daily
                     // challenge (see SettingsRepository.awardChestForWin).
+                    val won = placement == 1 && roundPlayers.size >= 2
+                    val gold = me.correctCount * GameConstants.GOLD_PER_CORRECT_WORD +
+                        (if (won) GameConstants.ONLINE_WIN_GOLD else 0) +
+                        newlyUnlocked.size * GameConstants.ACHIEVEMENT_GOLD
+                    if (gold > 0) settingsRepository.earnGold(gold)
+                    val roundXp = settingsRepository.lastOnlineRoundXp
+                    val matchXp = XpAwards.ONLINE_MATCH + if (won) XpAwards.ONLINE_WIN else 0
+                    settingsRepository.lastOnlineRoundXp = 0
                     val chestAward = if (placement == 1) settingsRepository.awardChestForWinOrPay() else null
                     val chestWon = chestAward?.chest
                     val chestLost = placement == 1 && chestWon == null
@@ -251,22 +275,15 @@ class OnlineResultViewModel @Inject constructor(
                             showSignInPrompt = PostMatchPrompts.shouldShowSignIn(settingsRepository, authRepository.authState.value),
                             showRatingPrompt = false,
                             chestWon = chestWon,
-                            chestLost = chestLost
+                            chestLost = chestLost,
+                            xpEarned = roundXp + matchXp,
+                            goldEarned = gold
                         )
                     }
                 }
             }
         }
     }
-
-    private suspend fun fetchAllItems(room: OnlineRoom): Map<String, List<ResultItem>> =
-        runCatching {
-            coroutineScope {
-                room.players
-                    .map { player -> player.uid to async { onlineGameRepository.getPlayerResultItems(roomCode, player.uid) } }
-                    .associate { (uid, deferred) -> uid to (runCatching { deferred.await() }.getOrDefault(emptyList())) }
-            }
-        }.getOrDefault(emptyMap())
 
     /** Called once when the finished-round comparison is actually showing — see AdManager's placement doc. */
     fun showInterstitial(activity: Activity, onDismissed: () -> Unit = {}) {
@@ -316,7 +333,11 @@ class OnlineResultViewModel @Inject constructor(
             // this ViewModel's own room observer will retry via the next
             // room update either way. Must not crash on a network blip.
             runCatching {
-                val words = getWordsForGameUseCase(room.wordCount, room.category, room.difficulty)
+                val words = getWordsForGameUseCase(
+                    room.wordCount,
+                    com.sualtikasifi.cizimhafiza.domain.model.WordFilter.decodeCategories(room.category),
+                    room.difficulties
+                )
                 onlineGameRepository.resetForRematch(roomCode, words.map { it.id })
             }
         }

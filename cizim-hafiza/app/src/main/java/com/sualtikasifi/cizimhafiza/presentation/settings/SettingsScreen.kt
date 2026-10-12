@@ -129,6 +129,30 @@ fun SettingsScreen(
     val batteryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         ignoringOptimizations = batteryOk()
     }
+    // The result callback above is not enough on its own: some phones report it the moment the settings screen
+    // opens, before the player has changed anything, and the card then stayed on "fix it" until the screen was left
+    // and re-entered. Coming back to this screen at all (RESUMED) re-reads the real state, and once more shortly
+    // after, because a few phones apply the change a beat late.
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    var resumeTick by remember { mutableIntStateOf(0) }
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                ignoringOptimizations = batteryOk()
+                resumeTick++
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    androidx.compose.runtime.LaunchedEffect(resumeTick) {
+        if (resumeTick > 0) {
+            kotlinx.coroutines.delay(600)
+            ignoringOptimizations = batteryOk()
+            kotlinx.coroutines.delay(1_400)
+            ignoringOptimizations = batteryOk()
+        }
+    }
     val needsBatteryFix = notificationsEnabled && !ignoringOptimizations
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().sceneIn()) {

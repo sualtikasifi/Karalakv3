@@ -341,6 +341,9 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     /** Gold earned by playing (achievements, level stars, daily challenge). Sealed like every other economy write. */
     fun earnGold(amount: Int) = addGold(amount)
 
+    /** XP the online round just finished paid out per word — handed from the match screen to its result screen (memory only). */
+    @Volatile var lastOnlineRoundXp: Int = 0
+
     // --- Economy tamper seal (see EconomyGuard). Every write of gold / jokers /
     // store items also writes the seal in the SAME edit, so the two can never
     // disagree after a crash. ---

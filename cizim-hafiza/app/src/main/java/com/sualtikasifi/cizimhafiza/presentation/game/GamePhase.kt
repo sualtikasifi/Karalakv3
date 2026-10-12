@@ -52,7 +52,13 @@ sealed interface GamePhase {
         /** Letter count revealed by the Harf Sayısı joker, only for THIS word. */
         val letterCount: Int? = null,
         /** Letters per word ("Gün batımı" → [3, 6]) so the guess screen can draw one blank per letter, with a gap between words. Null until the joker is used. */
-        val letterGroups: List<Int>? = null
+        val letterGroups: List<Int>? = null,
+        /** True when this word was skipped earlier and is now back for its second look. */
+        val isRevisit: Boolean = false,
+        /** Whether the "Atla" button may be used on this word (once per word, and never on the last one left). */
+        val canSkip: Boolean = false,
+        /** Non-null for the moment right after "Atla": the seconds that were left and are now saved for the revisit. */
+        val skipSavedSeconds: Int? = null
     ) : GamePhase
 
     // @Serializable so a finished match can be checkpointed into
@@ -100,6 +106,8 @@ sealed interface GamePhase {
         val goldFromAchievements: Int = 0,
         val goldFromLevel: Int = 0,
         val goldFromDaily: Int = 0,
+        /** Gold for the words answered correctly (not paid by the daily challenge, which has its own). */
+        val goldFromPlay: Int = 0,
         /** The XP multiplier this round paid at (1 = none): the daily Hızlı Eşleş bonus and any running XP event, multiplied. */
         val xpMultiplier: Int = 1,
         /** True when [xpEarned] includes the first-Quick-Match-of-the-day 2x bonus. */

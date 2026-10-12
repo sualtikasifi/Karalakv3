@@ -25,7 +25,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.PanelRow
 
 @Composable
 fun WordCountScreen(
-    onStart: (count: Int, category: String?, difficulty: Difficulty?, mode: GameMode) -> Unit,
+    onStart: (count: Int, categories: Set<String>, difficulties: Set<Difficulty>, mode: GameMode) -> Unit,
     onBack: () -> Unit,
     viewModel: WordCountViewModel = hiltViewModel()
 ) {
@@ -37,7 +37,7 @@ fun WordCountScreen(
         action = { modifier ->
             StartButton(
                 text = stringResource(R.string.start_game),
-                onClick = { onStart(uiState.selectedCount, uiState.selectedCategory, uiState.selectedDifficulty, uiState.selectedMode) },
+                onClick = { onStart(uiState.selectedCount, uiState.selectedCategories, uiState.selectedDifficulties, uiState.selectedMode) },
                 modifier = modifier
             )
         }
@@ -73,8 +73,8 @@ fun WordCountScreen(
                     pillHeight = 40.dp,
                     textSize = 12.sp,
                     label = { "${categoryEmoji(it)} ${it ?: stringResource(R.string.all_categories)}" },
-                    isSelected = { uiState.selectedCategory == it },
-                    onSelect = viewModel::selectCategory,
+                    isSelected = { if (it == null) uiState.selectedCategories.isEmpty() else it in uiState.selectedCategories },
+                    onSelect = viewModel::toggleCategory,
                     maxLines = 1
                 )
             }
@@ -85,8 +85,8 @@ fun WordCountScreen(
                     pillHeight = 38.dp,
                     textSize = 13.sp,
                     label = { if (it == null) stringResource(R.string.all_difficulties) else difficultyLabel(it) },
-                    isSelected = { uiState.selectedDifficulty == it },
-                    onSelect = viewModel::selectDifficulty,
+                    isSelected = { if (it == null) uiState.selectedDifficulties.isEmpty() else it in uiState.selectedDifficulties },
+                    onSelect = viewModel::toggleDifficulty,
                     maxLines = 1
                 )
             }

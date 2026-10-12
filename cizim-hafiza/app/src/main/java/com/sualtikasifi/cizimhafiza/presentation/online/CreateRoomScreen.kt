@@ -101,8 +101,8 @@ fun CreateRoomScreen(
                     pillHeight = 40.dp,
                     textSize = 12.sp,
                     label = { "${com.sualtikasifi.cizimhafiza.presentation.wordcount.categoryEmoji(it)} ${it ?: stringResource(R.string.all_categories)}" },
-                    isSelected = { uiState.selectedCategory == it },
-                    onSelect = viewModel::selectCategory,
+                    isSelected = { if (it == null) uiState.selectedCategories.isEmpty() else it in uiState.selectedCategories },
+                    onSelect = viewModel::toggleCategory,
                     maxLines = 1
                 )
             }
@@ -113,8 +113,8 @@ fun CreateRoomScreen(
                     pillHeight = 38.dp,
                     textSize = 13.sp,
                     label = { if (it == null) stringResource(R.string.all_difficulties) else difficultyLabel(it) },
-                    isSelected = { uiState.selectedDifficulty == it },
-                    onSelect = viewModel::selectDifficulty,
+                    isSelected = { if (it == null) uiState.selectedDifficulties.isEmpty() else it in uiState.selectedDifficulties },
+                    onSelect = viewModel::toggleDifficulty,
                     maxLines = 1
                 )
             }

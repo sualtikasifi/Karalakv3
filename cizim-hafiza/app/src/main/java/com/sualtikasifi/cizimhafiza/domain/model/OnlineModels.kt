@@ -72,7 +72,8 @@ data class OnlineRoom(
     val status: RoomStatus,
     val wordCount: Int,
     val category: String?,
-    val difficulty: Difficulty?,
+    /** Empty = every difficulty. Several can be chosen when the room is created (see WordFilter). */
+    val difficulties: Set<Difficulty>,
     val mode: GameMode,
     val wordIds: List<Int>,
     val players: List<OnlinePlayer>,

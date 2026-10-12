@@ -24,8 +24,9 @@ data class CreateRoomUiState(
     val availableCounts: List<Int> = GameConstants.WORD_COUNT_OPTIONS,
     val selectedCount: Int = GameConstants.WORD_COUNT_OPTIONS.first(),
     val categories: List<String> = emptyList(),
-    val selectedCategory: String? = null,
-    val selectedDifficulty: Difficulty? = null,
+    /** Empty = every category / difficulty; several can be chosen. */
+    val selectedCategories: Set<String> = emptySet(),
+    val selectedDifficulties: Set<Difficulty> = emptySet(),
     val nickname: String = "",
     val teamMode: Boolean = false,
     val isCreating: Boolean = false,
@@ -54,8 +55,14 @@ class CreateRoomViewModel @Inject constructor(
     }
 
     fun selectCount(count: Int) = _uiState.update { it.copy(selectedCount = count) }
-    fun selectCategory(category: String?) = _uiState.update { it.copy(selectedCategory = category) }
-    fun selectDifficulty(difficulty: Difficulty?) = _uiState.update { it.copy(selectedDifficulty = difficulty) }
+    /** Tapping a category adds or removes it; the "Tümü" chip (null) clears the choice. */
+    fun toggleCategory(category: String?) = _uiState.update {
+        it.copy(selectedCategories = if (category == null) emptySet() else it.selectedCategories.toggled(category))
+    }
+    fun toggleDifficulty(difficulty: Difficulty?) = _uiState.update {
+        it.copy(selectedDifficulties = if (difficulty == null) emptySet() else it.selectedDifficulties.toggled(difficulty))
+    }
+    private fun <T> Set<T>.toggled(item: T): Set<T> = if (item in this) this - item else this + item
     // Persisted on every keystroke, not just on submit: the nickname is
     // shared with Koda Katıl (both screens seed themselves from
     // SettingsRepository), and saving it only when a room was actually
@@ -91,8 +98,8 @@ class CreateRoomViewModel @Inject constructor(
             onlineGameRepository.createRoom(
                 displayName = nickname,
                 wordCount = state.selectedCount,
-                category = state.selectedCategory,
-                difficulty = state.selectedDifficulty,
+                category = com.sualtikasifi.cizimhafiza.domain.model.WordFilter.encodeCategories(state.selectedCategories),
+                difficulties = state.selectedDifficulties,
                 mode = GameMode.NORMAL,
                 teamMode = state.teamMode
             ).onSuccess { code ->

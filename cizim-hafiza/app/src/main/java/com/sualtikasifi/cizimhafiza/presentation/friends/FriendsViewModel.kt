@@ -260,7 +260,7 @@ class FriendsViewModel @Inject constructor(
                 displayName = nickname,
                 wordCount = GameConstants.WORD_COUNT_OPTIONS.first(),
                 category = null,
-                difficulty = null,
+                difficulties = emptySet(),
                 mode = GameMode.NORMAL
             ).onSuccess { roomCode ->
                 // The room itself already exists at this point regardless of

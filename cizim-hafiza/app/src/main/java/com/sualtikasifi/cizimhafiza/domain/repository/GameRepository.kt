@@ -11,6 +11,12 @@ interface GameRepository {
     /** [difficulty] null ("Tümü") draws with the DifficultyMix curve, not pure uniform random — see GameRepositoryImpl. */
     suspend fun getRandomWords(count: Int, category: String?, difficulty: Difficulty?): List<Word>
 
+    /**
+     * Several categories and/or difficulties at once; an empty set means "all" on that side. With no difficulty
+     * chosen the DifficultyMix curve applies, otherwise the count is shared evenly between the chosen ones.
+     */
+    suspend fun getRandomWordsFor(count: Int, categories: List<String>, difficulties: Set<Difficulty>): List<Word>
+
     /** One or more difficulties each with their own exact word count — used by the level map's pure and mixed-difficulty steps. */
     suspend fun getRandomWordsMix(category: String?, mix: Map<Difficulty, Int>): List<Word>
 

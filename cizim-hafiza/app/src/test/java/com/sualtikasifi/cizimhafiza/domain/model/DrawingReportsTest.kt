@@ -49,9 +49,16 @@ class DrawingReportsTest {
 
     @Test
     fun `room reports are scoped per opponent, not per room`() {
-        val a = DrawingReports.idFor(DrawingReports.scopeKeyForRoom("WXYZ", "playerA"), uid)
-        val b = DrawingReports.idFor(DrawingReports.scopeKeyForRoom("WXYZ", "playerB"), uid)
+        val a = DrawingReports.idFor(DrawingReports.scopeKeyForRoom("WXYZ", "playerA", "kedi"), uid)
+        val b = DrawingReports.idFor(DrawingReports.scopeKeyForRoom("WXYZ", "playerB", "kedi"), uid)
         assertNotEquals("Reporting two players in one room must be two reports", a, b)
+    }
+
+    @Test
+    fun `room reports are scoped per drawing of the same opponent`() {
+        val a = DrawingReports.idFor(DrawingReports.scopeKeyForRoom("WXYZ", "playerA", "kedi"), uid)
+        val b = DrawingReports.idFor(DrawingReports.scopeKeyForRoom("WXYZ", "playerA", "köpek"), uid)
+        assertNotEquals("Two drawings of one opponent must be two reports", a, b)
     }
 
     @Test
