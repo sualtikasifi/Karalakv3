@@ -1436,4 +1436,18 @@
     <string name="online_score_label">puan</string>
     <string name="online_players_done">%1$d / %2$d oyuncu bitirdi</string>
     <string name="coupon_clear">Temizle</string>
+    <string name="login_streak_title">Giriş Serisi</string>
+    <string name="login_streak_days">%1$d günlük seri</string>
+    <string name="login_streak_day_n">%1$d. gün</string>
+    <string name="login_streak_claim">Ödülü Al</string>
+    <string name="login_streak_claimed_title">Ödül alındı!</string>
+    <string name="login_streak_great">Harika!</string>
+    <string name="login_streak_missed_title">Serin bozuldu!</string>
+    <string name="login_streak_missed_message">%1$d günlük serin kesildi. Bir reklam izleyip devam edebilir ya da baştan başlayabilirsin.</string>
+    <string name="login_streak_save">Reklam izle, seriyi kurtar</string>
+    <string name="login_streak_restart">Baştan başla</string>
+    <string name="login_streak_rescued">Seri kurtarıldı! Bugünün ödülünü al.</string>
+    <string name="login_streak_milestone">🎉 %1$d. gün bonusu: Sürpriz kasa açılıyor!</string>
+    <string name="login_reward_joker">Joker</string>
+    <string name="login_reward_chest">Kasa</string>
 </resources>

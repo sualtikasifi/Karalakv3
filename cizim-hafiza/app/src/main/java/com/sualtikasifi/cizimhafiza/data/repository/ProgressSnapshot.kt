@@ -83,6 +83,9 @@ data class ProgressSnapshot(
      */
     val adGoldNextAt: Long = 0L,
     val adChestDay: Long = -1L,
+    /** Giriş Serisi: consecutive days claimed and the epoch day of the last claim. */
+    val loginStreak: Int = 0,
+    val loginLastClaimDay: Long = -1L,
     /** Which unlocked achievements had their reward collected, so a reinstall does not hand rewards out twice or lose uncollected ones. */
     val claimedAchievementIds: List<String> = emptyList(),
     /** True when [claimedAchievementIds] is meaningful; older backups lack it and treat every unlock as already collected. */
@@ -136,6 +139,8 @@ data class ProgressSnapshot(
         "periodXpVersion" to periodXpVersion,
         "adGoldNextAt" to adGoldNextAt,
         "adChestDay" to adChestDay,
+        "loginStreak" to loginStreak,
+        "loginLastClaimDay" to loginLastClaimDay,
         "claimedAchievementIds" to claimedAchievementIds,
         "claimsSaved" to claimsSaved,
         "dailyResult" to dailyResult,
@@ -187,6 +192,8 @@ data class ProgressSnapshot(
             periodXpVersion = data.int("periodXpVersion"),
             adGoldNextAt = data.long("adGoldNextAt"),
             adChestDay = data.long("adChestDay", absent = -1L),
+            loginStreak = data.int("loginStreak"),
+            loginLastClaimDay = data.long("loginLastClaimDay", absent = -1L),
             claimedAchievementIds = data.strings("claimedAchievementIds"),
             claimsSaved = data["claimsSaved"] as? Boolean ?: false,
             dailyResult = data.str("dailyResult"),

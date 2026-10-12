@@ -343,6 +343,33 @@ fun MainMenuScreen(
             com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog(reward = reward, onDismiss = viewModel::consumeFreeChestReward)
         }
 
+        // Giriş Serisi: once a day, on the first entry, over everything else. It needs the internet (today comes from the
+        // server), so the check runs once the connection is there. Held back while the daily-streak rescue is on screen.
+        val loginPopup by viewModel.loginPopup.collectAsState()
+        val loginChests by viewModel.loginChests.collectAsState()
+        val onlineNow = com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current
+        LaunchedEffect(onlineNow) { if (onlineNow) viewModel.checkLoginStreak() }
+        val rescueOnScreen = dailyState.rescuableStreak > 0 && GameConstants.ADMOB_ENABLED
+        if (!rescueOnScreen && freeChestReward == null) {
+            loginPopup?.let { popup ->
+                LoginStreakDialog(
+                    popup = popup,
+                    onClaim = viewModel::claimLoginReward,
+                    onRescue = { activity?.let(viewModel::rescueLoginStreak) },
+                    onRestart = viewModel::restartLoginStreak,
+                    onClose = viewModel::consumeLoginPopup
+                )
+            }
+        }
+        // The chests a login reward gave open on the spot, one after another, once its window is closed.
+        if (loginPopup == null) {
+            loginChests.firstOrNull()?.let { reward ->
+                androidx.compose.runtime.key(loginChests.size) {
+                    com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog(reward = reward, onDismiss = viewModel::consumeLoginChest)
+                }
+            }
+        }
+
         if (rankLadderOpen) {
             RankLadderSheet(progress = levelProgress, onDismiss = { rankLadderOpen = false })
         }
