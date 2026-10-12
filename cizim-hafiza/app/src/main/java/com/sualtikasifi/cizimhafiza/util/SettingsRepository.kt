@@ -608,19 +608,9 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         return chest
     }
 
-    /** How many chests could be put away right now — asked before a coupon that gives chests is used up. */
-    fun freeChestSlots(): Int = _chestSlots.value.count { it == null }
-
-    /** Puts a chest of [tier] into the first free slot (a coupon's chest); null when every slot is taken. */
+    /** Opens a chest of [tier] on the spot (a coupon's chest): its reward is paid at once and no slot is needed. */
     @Synchronized
-    fun grantChest(tier: ChestTier): Chest? {
-        val slots = _chestSlots.value
-        val freeIndex = slots.indexOfFirst { it == null }
-        if (freeIndex < 0) return null
-        val chest = Chest(id = UUID.randomUUID().toString(), tier = tier)
-        saveChestSlots(slots.toMutableList().apply { this[freeIndex] = chest })
-        return chest
-    }
+    fun openChestNow(tier: ChestTier): ChestReward = payChestOutright(tier)
 
     /** A won match's chest award: [chest] is null when every slot was full, in which case nothing drops. */
     data class ChestAward(val chest: Chest?, val instantReward: ChestReward?)

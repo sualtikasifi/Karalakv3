@@ -11,7 +11,7 @@ data class Coupon(
     val code: String,
     val gold: Int = 0,
     val xp: Int = 0,
-    /** How many chests of each tier it gives (at most [CouponCodes.MAX_CHESTS] in all — the player has that many slots). */
+    /** How many chests of each tier it gives (at most [CouponCodes.MAX_CHESTS] in all); each is opened on the spot, so no slot is needed. */
     val chests: Map<ChestTier, Int> = emptyMap(),
     val maxUses: Int = 1,
     val usedCount: Int = 0,
@@ -28,8 +28,6 @@ sealed interface RedeemResult {
     data object Expired : RedeemResult
     data object Exhausted : RedeemResult
     data object AlreadyUsed : RedeemResult
-    /** The code gives chests and there are not enough free slots — nothing was used up, try again after opening some. */
-    data object ChestSlotsFull : RedeemResult
     data object NetworkError : RedeemResult
 }
 
@@ -38,7 +36,7 @@ object CouponCodes {
     const val MAX_LENGTH = 24
     const val MAX_GOLD = 100_000
     const val MAX_XP = 100_000
-    const val MAX_CHESTS = 4
+    const val MAX_CHESTS = 10
 
     // No 0/O/1/I/L: a code is read off a post or a message and typed by hand.
     private const val ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"

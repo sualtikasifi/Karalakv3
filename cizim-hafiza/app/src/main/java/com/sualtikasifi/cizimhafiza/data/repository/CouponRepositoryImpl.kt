@@ -29,7 +29,7 @@ class CouponRepositoryImpl @Inject constructor(
         return auth.signInAnonymously().await().user?.uid ?: throw IllegalStateException("auth-failed")
     }
 
-    override suspend fun redeem(rawCode: String, freeChestSlots: Int): RedeemResult {
+    override suspend fun redeem(rawCode: String): RedeemResult {
         val code = CouponCodes.normalize(rawCode) ?: return RedeemResult.Invalid
         return try {
             val uid = requireUid()
@@ -43,7 +43,6 @@ class CouponRepositoryImpl @Inject constructor(
                 if (coupon.expiresAtMillis > 0 && now >= coupon.expiresAtMillis) return@runTransaction RedeemResult.Expired
                 if (coupon.usedCount >= coupon.maxUses) return@runTransaction RedeemResult.Exhausted
                 if (tx.get(redemptionRef).exists()) return@runTransaction RedeemResult.AlreadyUsed
-                if (coupon.chestCount > freeChestSlots) return@runTransaction RedeemResult.ChestSlotsFull
                 tx.set(redemptionRef, mapOf("redeemedAt" to now))
                 tx.update(couponRef, "usedCount", (coupon.usedCount + 1).toLong())
                 RedeemResult.Success(coupon.copy(usedCount = coupon.usedCount + 1))

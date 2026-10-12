@@ -311,6 +311,13 @@ fun SettingsScreen(
                 )
             }
         }
+        // A chest from a code opens straight away with its opening animation (several, one after another).
+        couponState.chestRewards.firstOrNull()?.let { reward ->
+            // Keyed on how many are left, so each chest starts its own opening from the beginning.
+            androidx.compose.runtime.key(couponState.chestRewards.size) {
+                com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog(reward = reward, onDismiss = viewModel::consumeCouponChest)
+            }
+        }
         // What came of the last try: what was won, or why not.
         couponState.message?.let { message ->
             val ok = message as? CouponMessage.Ok
