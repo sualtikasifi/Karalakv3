@@ -67,6 +67,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -416,9 +417,9 @@ private fun JokerBoughtCelebration(type: JokerType, quantity: Int, onDone: () ->
                         val c = center
                         val glow = Brush.radialGradient(listOf(Color(0xFFFFE08A).copy(alpha = 0.85f), Color.Transparent), center = c, radius = size.minDimension / 2f)
                         drawCircle(glow, radius = size.minDimension / 2f * breathe, center = c)
-                        androidx.compose.ui.graphics.drawscope.rotate(angle, c) {
+                        rotate(angle, c) {
                             repeat(12) { i ->
-                                androidx.compose.ui.graphics.drawscope.rotate(i * 30f, c) {
+                                rotate(i * 30f, c) {
                                     drawLine(
                                         color = Color(0xFFFFE9A8).copy(alpha = 0.55f),
                                         start = Offset(c.x, c.y - size.minDimension * 0.18f),
