@@ -1,13 +1,14 @@
 package com.sualtikasifi.cizimhafiza.util
 
 /**
- * What the home screen last showed for gold and total XP, kept in memory for the life of the process.
+ * Gold and XP earned by playing since the home screen last drew its numbers, kept in memory for the life of the process.
  *
- * The home screen counts its numbers up from here to the real values when it opens: a match paid out somewhere else
- * (the game and result screens), and without a remembered "before" the home screen could only ever draw the final
- * numbers, never the climb. Null until the first time the screen has drawn them.
+ * The home screen counts its numbers up from "what they were before" to the real values when it opens, so a match's
+ * winnings are seen arriving. "Before" is the real value minus what was earned in between — never a remembered or
+ * assumed older value, which on a fresh start made the whole lifetime total climb from zero. Nothing earned, nothing
+ * animates.
  */
 object HomeShownStats {
-    @Volatile var gold: Int? = null
-    @Volatile var totalXp: Int? = null
+    @Volatile var pendingGold: Int = 0
+    @Volatile var pendingXp: Int = 0
 }
