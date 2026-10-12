@@ -61,22 +61,22 @@ class SettingsViewModel @Inject constructor(
         }
         _coupon.update { it.copy(busy = true, message = null) }
         viewModelScope.launch {
-            val result = couponRepository.redeem(state.code, freeChestSlots = settingsRepository.freeChestSlots())
+            val result = couponRepository.redeem(state.code)
             val message = when (result) {
                 is RedeemResult.Success -> {
                     couponFailures = 0
                     val coupon = result.coupon
                     if (coupon.gold > 0) settingsRepository.earnGold(coupon.gold)
                     if (coupon.xp > 0) settingsRepository.addXp(coupon.xp)
-                    var chestsGiven = 0
-                    coupon.chests.forEach { (tier, n) -> repeat(n) { if (settingsRepository.grantChest(tier) != null) chestsGiven++ } }
-                    CouponMessage.Ok(coupon.gold, coupon.xp, chestsGiven)
+                    // Chests are not put away: each is opened right now, one opening animation after another.
+                    val opened = coupon.chests.flatMap { (tier, n) -> List(n) { settingsRepository.openChestNow(tier) } }
+                    if (opened.isNotEmpty()) _coupon.update { it.copy(chestRewards = it.chestRewards + opened) }
+                    CouponMessage.Ok(coupon.gold, coupon.xp, opened.size)
                 }
                 RedeemResult.Invalid, RedeemResult.NotFound -> miss(R.string.coupon_error_not_found)
                 RedeemResult.Expired -> miss(R.string.coupon_error_expired)
                 RedeemResult.Exhausted -> miss(R.string.coupon_error_exhausted)
                 RedeemResult.AlreadyUsed -> CouponMessage.Error(R.string.coupon_error_used)
-                RedeemResult.ChestSlotsFull -> CouponMessage.Error(R.string.coupon_error_chest_full)
                 RedeemResult.NetworkError -> CouponMessage.Error(R.string.coupon_error_network)
             }
             _coupon.update {
@@ -84,6 +84,9 @@ class SettingsViewModel @Inject constructor(
             }
         }
     }
+
+    /** The chest on screen has finished opening: the next one (if the code gave several) comes up. */
+    fun consumeCouponChest() = _coupon.update { it.copy(chestRewards = it.chestRewards.drop(1)) }
 
     private fun miss(@androidx.annotation.StringRes res: Int): CouponMessage {
         couponFailures++
@@ -162,7 +165,9 @@ class SettingsViewModel @Inject constructor(
 data class CouponUiState(
     val code: String = "",
     val busy: Boolean = false,
-    val message: CouponMessage? = null
+    val message: CouponMessage? = null,
+    /** Chests a code just gave, waiting to be opened in turn. */
+    val chestRewards: List<com.sualtikasifi.cizimhafiza.domain.model.ChestReward> = emptyList()
 )
 
 sealed interface CouponMessage {

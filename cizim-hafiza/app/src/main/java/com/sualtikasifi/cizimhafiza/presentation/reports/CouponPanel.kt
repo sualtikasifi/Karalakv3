@@ -79,7 +79,7 @@ class CouponAdminViewModel @Inject constructor(
         val days = s.days.toIntOrNull() ?: 0
         val problem = when {
             gold !in 0..CouponCodes.MAX_GOLD || xp !in 0..CouponCodes.MAX_XP -> "Altın ve XP 0 ile ${CouponCodes.MAX_GOLD} arasında olmalı."
-            s.chests.values.sum() > CouponCodes.MAX_CHESTS -> "En fazla ${CouponCodes.MAX_CHESTS} kasa verilebilir (oyuncunun ${CouponCodes.MAX_CHESTS} kasa yuvası var)."
+            s.chests.values.sum() > CouponCodes.MAX_CHESTS -> "En fazla ${CouponCodes.MAX_CHESTS} kasa verilebilir (her biri sırayla açılır)."
             gold == 0 && xp == 0 && s.chests.values.sum() == 0 -> "En az bir ödül seç."
             maxUses < 1 -> "Kullanım hakkı en az 1 olmalı."
             s.separateCodes == 0 && s.customCode.isNotBlank() && CouponCodes.normalize(s.customCode) == null ->
