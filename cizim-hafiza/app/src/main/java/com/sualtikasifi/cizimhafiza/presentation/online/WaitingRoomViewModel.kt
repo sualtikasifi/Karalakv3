@@ -279,7 +279,7 @@ class WaitingRoomViewModel @Inject constructor(
                         null
                     } else {
                         runCatching { getWordsByIdsUseCase(wordIds) }.getOrDefault(emptyList())
-                            .sumOf { GameConstants.drawingDurationSeconds(it.difficulty) + GameConstants.guessDurationSeconds(it.text) }
+                            .sumOf { GameConstants.drawingDurationSeconds(it.difficulty) + GameConstants.guessDurationSeconds(it.text, it.difficulty) }
                     }
                     _uiState.update { it.copy(estimatedRoundSeconds = estimate) }
                 }
