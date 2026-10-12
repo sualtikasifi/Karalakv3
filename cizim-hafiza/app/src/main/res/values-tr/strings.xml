@@ -1417,4 +1417,18 @@
     <string name="result_stat_play_gold">Kelime altını</string>
     <string name="online_reward_format">+%1$d XP  ·  +%2$d altın</string>
     <string name="guess_transition_locked">Kelime geçişinde kullanılamaz</string>
+    <string name="coupon_hint">Kupon kodu</string>
+    <string name="coupon_use">Kullan</string>
+    <string name="coupon_won_gold">+%1$d altın</string>
+    <string name="coupon_won_xp">+%1$d XP</string>
+    <string name="coupon_won_chest">+1 kasa</string>
+    <string name="coupon_won_nothing">Kod kabul edildi</string>
+    <string name="coupon_error_not_found">Kod bulunamadı. Kontrol edip tekrar dene.</string>
+    <string name="coupon_error_expired">Bu kodun süresi dolmuş.</string>
+    <string name="coupon_error_exhausted">Bu kodun hakkı bitmiş.</string>
+    <string name="coupon_error_used">Bu kodu zaten kullandın.</string>
+    <string name="coupon_error_chest_full">Bu kod kasa veriyor, kasa yuvaların dolu. Önce bir kasa aç.</string>
+    <string name="coupon_error_network">Sunucuya ulaşılamadı. Bağlantını kontrol et.</string>
+    <string name="coupon_error_wait">Çok fazla yanlış deneme. Biraz bekle.</string>
+    <string name="reports_tab_coupons">Kupon</string>
 </resources>

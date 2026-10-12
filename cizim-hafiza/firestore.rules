@@ -713,6 +713,34 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Kupon kodları. Bir kod, belgenin kendisidir (coupons/{KOD}): oyuncu tek bir kodu okuyabilir ama kodları
+    // listeleyemez, yani tahmin yürütmekten başka yoldan kod bulamaz. Kullanım sayacı yalnızca bir artar ve
+    // yalnızca aynı işlemde bu hesabın redemptions belgesiyle birlikte; bu yüzden bir kod maxUses'tan fazla ve
+    // aynı hesapla iki kez kullanılamaz. Kod oluşturmak sadece geliştirici hesabına açık.
+    match /coupons/{code} {
+      allow get: if signedIn();
+      allow list, create, delete: if reviewer();
+      allow update: if reviewer()
+                    || (signedIn()
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount'])
+                        && request.resource.data.usedCount == resource.data.usedCount + 1
+                        && request.resource.data.usedCount <= resource.data.maxUses
+                        && (resource.data.expiresAt == 0 || request.time.toMillis() < resource.data.expiresAt)
+                        && existsAfter(/databases/$(database)/documents/coupons/$(code)/redemptions/$(request.auth.uid)));
+
+      match /redemptions/{uid} {
+        allow get: if signedIn() && request.auth.uid == uid;
+        allow list: if reviewer();
+        allow create: if signedIn()
+                      && request.auth.uid == uid
+                      && get(/databases/$(database)/documents/coupons/$(code)).data.usedCount
+                         < get(/databases/$(database)/documents/coupons/$(code)).data.maxUses
+                      && getAfter(/databases/$(database)/documents/coupons/$(code)).data.usedCount
+                         == get(/databases/$(database)/documents/coupons/$(code)).data.usedCount + 1;
+        allow update, delete: if false;
+      }
+    }
+
     match /bugReports/{reportId} {
       allow create: if signedIn()
                     && request.resource.data.uid == request.auth.uid

@@ -1404,4 +1404,18 @@
     <string name="result_stat_play_gold">Word gold</string>
     <string name="online_reward_format">+%1$d XP  ·  +%2$d gold</string>
     <string name="guess_transition_locked">Not available while the word changes</string>
+    <string name="coupon_hint">Coupon code</string>
+    <string name="coupon_use">Redeem</string>
+    <string name="coupon_won_gold">+%1$d gold</string>
+    <string name="coupon_won_xp">+%1$d XP</string>
+    <string name="coupon_won_chest">+1 chest</string>
+    <string name="coupon_won_nothing">Code accepted</string>
+    <string name="coupon_error_not_found">Code not found. Check it and try again.</string>
+    <string name="coupon_error_expired">This code has expired.</string>
+    <string name="coupon_error_exhausted">This code has been used up.</string>
+    <string name="coupon_error_used">You have already used this code.</string>
+    <string name="coupon_error_chest_full">This code gives a chest — open one first, your chest slots are full.</string>
+    <string name="coupon_error_network">Could not reach the server. Check your connection.</string>
+    <string name="coupon_error_wait">Too many wrong tries. Wait a moment.</string>
+    <string name="reports_tab_coupons">Coupons</string>
 </resources>
