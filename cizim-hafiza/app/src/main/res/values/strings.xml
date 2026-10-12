@@ -1433,7 +1433,7 @@
     <string name="login_streak_missed_message">Your %1$d-day streak was cut off. Watch an ad to carry on, or start again.</string>
     <string name="login_streak_save">Watch an ad, save the streak</string>
     <string name="login_streak_restart">Start again</string>
-    <string name="login_streak_rescued">Streak saved! Take today's reward.</string>
+    <string name="login_streak_rescued">Streak saved! Take today\'s reward.</string>
     <string name="login_streak_milestone">🎉 Day %1$d bonus: a Surprise chest is opening!</string>
     <string name="login_reward_joker">Joker</string>
     <string name="login_reward_chest">Chest</string>
