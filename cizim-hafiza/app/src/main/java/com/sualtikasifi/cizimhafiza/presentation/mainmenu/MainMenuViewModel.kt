@@ -141,7 +141,7 @@ class MainMenuViewModel @Inject constructor(
     val adGoldNextAtMillis: StateFlow<Long> = settingsRepository.adGoldNextAtMillis
 
     /** Epoch day the free ad chest was last taken; anything but today means it is available. */
-    val adChestDay: StateFlow<Long> = settingsRepository.adChestDay
+    val adChestNextAtMillis: StateFlow<Long> = settingsRepository.adChestNextAtMillis
 
     private val _freeChestReward = MutableStateFlow<com.sualtikasifi.cizimhafiza.domain.model.ChestReward?>(null)
     /** The free ad chest just opened, for the opening scene; cleared by [consumeFreeChestReward]. */

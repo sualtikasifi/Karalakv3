@@ -151,7 +151,7 @@ fun MainMenuScreen(
     val accountNotLinked by viewModel.accountNotLinked.collectAsState()
     val xpEvent by viewModel.xpEvent.collectAsState()
     val adGoldNextAt by viewModel.adGoldNextAtMillis.collectAsState()
-    val adChestDay by viewModel.adChestDay.collectAsState()
+    val adChestNextAt by viewModel.adChestNextAtMillis.collectAsState()
     val freeChestReward by viewModel.freeChestReward.collectAsState()
     val pendingFriendRequests by viewModel.pendingFriendRequests.collectAsState()
     val nickname by viewModel.nickname.collectAsState()
@@ -243,7 +243,7 @@ fun MainMenuScreen(
             xpEvent = xpEvent,
             dailyState = dailyState,
             adGoldNextAt = adGoldNextAt,
-            adChestAvailable = adChestDay != today,
+            adChestNextAt = adChestNextAt,
             pendingFriendRequests = pendingFriendRequests,
             hasUnseenAchievement = hasUnseenAchievement,
             accountNotLinked = accountNotLinked,

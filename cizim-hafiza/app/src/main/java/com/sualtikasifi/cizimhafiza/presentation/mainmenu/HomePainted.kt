@@ -128,7 +128,7 @@ internal fun PaintedHome(
     xpEvent: com.sualtikasifi.cizimhafiza.domain.repository.XpEvent?,
     dailyState: com.sualtikasifi.cizimhafiza.util.DailyChallengeState,
     adGoldNextAt: Long,
-    adChestAvailable: Boolean,
+    adChestNextAt: Long,
     pendingFriendRequests: Int,
     hasUnseenAchievement: Boolean,
     accountNotLinked: Boolean,
@@ -456,9 +456,9 @@ internal fun PaintedHome(
         AdPill(box(64f, 702f, 200f, 740f).then(follow(goldCardSink, 132f, 646f, 64f, 702f, 200f, 740f)), if (goldReady) stringResource(R.string.home_ad_watch) else "⏳ " + hms(goldRemaining / 1000))
 
         // Free chest ad (right)
-        val midnight = remember(adChestAvailable) { com.sualtikasifi.cizimhafiza.util.TurkeyTime.nextMidnightMillis() }
-        val chestNow = rememberNowUntil(if (adChestAvailable) 0L else midnight)
-        val chestRemaining = midnight - chestNow
+        val chestNow = rememberNowUntil(adChestNextAt)
+        val chestRemaining = adChestNextAt - chestNow
+        val adChestAvailable = chestRemaining <= 0
         val chestCardSink = rememberSink(0.95f)
         Box(
             box(616f, 538f, 808f, 754f)

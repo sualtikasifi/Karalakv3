@@ -142,7 +142,7 @@ class BackupRepositoryImpl @Inject constructor(
             periodXpVersion = 2,
             periodId = com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()),
             adGoldNextAt = settingsRepository.adGoldNextAtMillis.value,
-            adChestDay = settingsRepository.adChestDay.value,
+            adChestDay = settingsRepository.adChestNextAtMillis.value,
             claimedAchievementIds = achievementDao.getClaimedIds(),
             claimsSaved = true,
             dailyResult = daily.lastResult?.let { r ->
