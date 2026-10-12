@@ -800,7 +800,7 @@ class GameViewModel @Inject constructor(
         revealedHintLetter = null
         revealedLetterCount = null
         revealedLetterGroups = null
-        currentGuessTotal = GameConstants.guessDurationSeconds(results[guessOrder[guessPos]].word.text)
+        currentGuessTotal = results[guessOrder[guessPos]].word.let { GameConstants.guessDurationSeconds(it.text, it.difficulty) }
         val resumeSeconds = skippedSeconds.remove(guessOrder[guessPos])
         if (resumeSeconds != null) {
             // A skipped word comes back with the time it had left. The time it already used up stays spent, so the

@@ -71,16 +71,22 @@ object GameConstants {
     const val GUESS_DURATION_SECONDS = 10
 
     /**
-     * Time to answer one word: the base [GUESS_DURATION_SECONDS], plus a second for every letter past the seventh
-     * (spaces do not count), up to [GUESS_DURATION_MAX_SECONDS]. A long word takes longer to type out, and a flat ten
-     * seconds made the longest ones nearly unanswerable.
+     * Time to answer one word. The base follows the word's difficulty — the same ladder the drawing time uses, so a
+     * word that is quick to draw is quick to answer and a hard one gets more — and a word longer than ten letters
+     * (spaces do not count) earns a second per extra letter. Never more than [GUESS_DURATION_MAX_SECONDS]: the
+     * flat-per-letter version gave long words up to 18 seconds, which made a match drag.
      */
-    fun guessDurationSeconds(wordText: String): Int {
+    fun guessDurationSeconds(wordText: String, difficulty: Difficulty): Int {
+        val base = when (difficulty) {
+            Difficulty.EASY -> 8
+            Difficulty.MEDIUM -> GUESS_DURATION_SECONDS
+            Difficulty.HARD -> 12
+        }
         val letters = wordText.count { it.isLetter() }
-        return (GUESS_DURATION_SECONDS + (letters - 7).coerceAtLeast(0)).coerceAtMost(GUESS_DURATION_MAX_SECONDS)
+        return (base + (letters - 10).coerceAtLeast(0)).coerceAtMost(GUESS_DURATION_MAX_SECONDS)
     }
 
-    const val GUESS_DURATION_MAX_SECONDS = 18
+    const val GUESS_DURATION_MAX_SECONDS = 13
 
     // Rewarded-ad hint bonus: the guess countdown is paused for the whole ad
     // (load + watch), then resumed with this many extra seconds added on

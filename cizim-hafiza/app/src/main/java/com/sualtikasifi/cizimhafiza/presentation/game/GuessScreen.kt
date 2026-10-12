@@ -415,7 +415,7 @@ fun GuessScreen(
                 ) {
                     // Keyed to the time already used, not the time left: a long word gets a longer clock, but the speed bonus
                     // is still earned in the first seconds.
-                    LiveXpBonusBadge(secondsLeft = state.secondsLeft - (state.totalSeconds - GameConstants.GUESS_DURATION_SECONDS).coerceAtLeast(0))
+                    LiveXpBonusBadge(secondsLeft = state.secondsLeft - (state.totalSeconds - GameConstants.GUESS_DURATION_SECONDS))
                 }
                 // White until three seconds are left, then running smoothly to red as the clock reaches zero.
                 val redness by androidx.compose.animation.core.animateFloatAsState(
