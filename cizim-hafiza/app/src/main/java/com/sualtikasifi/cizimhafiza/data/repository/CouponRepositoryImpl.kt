@@ -29,7 +29,7 @@ class CouponRepositoryImpl @Inject constructor(
         return auth.signInAnonymously().await().user?.uid ?: throw IllegalStateException("auth-failed")
     }
 
-    override suspend fun redeem(rawCode: String, chestSlotFree: Boolean): RedeemResult {
+    override suspend fun redeem(rawCode: String, freeChestSlots: Int): RedeemResult {
         val code = CouponCodes.normalize(rawCode) ?: return RedeemResult.Invalid
         return try {
             val uid = requireUid()
@@ -43,7 +43,7 @@ class CouponRepositoryImpl @Inject constructor(
                 if (coupon.expiresAtMillis > 0 && now >= coupon.expiresAtMillis) return@runTransaction RedeemResult.Expired
                 if (coupon.usedCount >= coupon.maxUses) return@runTransaction RedeemResult.Exhausted
                 if (tx.get(redemptionRef).exists()) return@runTransaction RedeemResult.AlreadyUsed
-                if (coupon.chest != null && !chestSlotFree) return@runTransaction RedeemResult.ChestSlotsFull
+                if (coupon.chestCount > freeChestSlots) return@runTransaction RedeemResult.ChestSlotsFull
                 tx.set(redemptionRef, mapOf("redeemedAt" to now))
                 tx.update(couponRef, "usedCount", (coupon.usedCount + 1).toLong())
                 RedeemResult.Success(coupon.copy(usedCount = coupon.usedCount + 1))
@@ -59,7 +59,9 @@ class CouponRepositoryImpl @Inject constructor(
             mapOf(
                 "gold" to coupon.gold.toLong(),
                 "xp" to coupon.xp.toLong(),
-                "chest" to (coupon.chest?.name ?: ""),
+                "chestSilver" to (coupon.chests[ChestTier.SILVER] ?: 0).toLong(),
+                "chestGold" to (coupon.chests[ChestTier.GOLD] ?: 0).toLong(),
+                "chestRare" to (coupon.chests[ChestTier.RARE] ?: 0).toLong(),
                 "maxUses" to coupon.maxUses.toLong(),
                 "usedCount" to 0L,
                 "expiresAt" to coupon.expiresAtMillis,
@@ -77,7 +79,14 @@ class CouponRepositoryImpl @Inject constructor(
         code = id,
         gold = (getLong("gold") ?: 0L).toInt().coerceIn(0, CouponCodes.MAX_GOLD),
         xp = (getLong("xp") ?: 0L).toInt().coerceIn(0, CouponCodes.MAX_XP),
-        chest = getString("chest")?.let { name -> ChestTier.entries.find { it.name == name } },
+        chests = buildMap {
+            val silver = (getLong("chestSilver") ?: 0L).toInt().coerceIn(0, CouponCodes.MAX_CHESTS)
+            val gold = (getLong("chestGold") ?: 0L).toInt().coerceIn(0, CouponCodes.MAX_CHESTS)
+            val rare = (getLong("chestRare") ?: 0L).toInt().coerceIn(0, CouponCodes.MAX_CHESTS)
+            if (silver > 0) put(ChestTier.SILVER, silver)
+            if (gold > 0) put(ChestTier.GOLD, gold)
+            if (rare > 0) put(ChestTier.RARE, rare)
+        },
         maxUses = (getLong("maxUses") ?: 1L).toInt(),
         usedCount = (getLong("usedCount") ?: 0L).toInt(),
         expiresAtMillis = getLong("expiresAt") ?: 0L

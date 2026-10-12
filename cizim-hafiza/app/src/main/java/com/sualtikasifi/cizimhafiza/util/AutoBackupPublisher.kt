@@ -35,7 +35,8 @@ class AutoBackupPublisher @Inject constructor(
     private val authRepository: AuthRepository,
     private val backupRepository: BackupRepository,
     private val settingsRepository: SettingsRepository,
-    private val dailyChallengeRepository: DailyChallengeRepository
+    private val dailyChallengeRepository: DailyChallengeRepository,
+    private val achievementDao: com.sualtikasifi.cizimhafiza.data.local.dao.AchievementDao
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -65,7 +66,9 @@ class AutoBackupPublisher @Inject constructor(
                     settingsRepository.chestSlots,
                     settingsRepository.goldBalance,
                     settingsRepository.jokerCounts,
-                    settingsRepository.ownedStoreIds
+                    settingsRepository.ownedStoreIds,
+                    // A collected achievement reward moves gold or XP too, but the flag itself is what a restore reads.
+                    achievementDao.observeClaimedCount()
                 )
             ) { Unit }
 

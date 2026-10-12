@@ -41,7 +41,8 @@ import javax.inject.Inject
 data class CouponAdminState(
     val gold: String = "",
     val xp: String = "",
-    val chest: ChestTier? = null,
+    /** How many chests of each tier the code gives. */
+    val chests: Map<ChestTier, Int> = emptyMap(),
     val maxUses: String = "10",
     val days: String = "7",
     /** Several single-use codes at once ("her kazanana ayrı kod"); 1 = one code with [maxUses] uses. */
@@ -78,7 +79,8 @@ class CouponAdminViewModel @Inject constructor(
         val days = s.days.toIntOrNull() ?: 0
         val problem = when {
             gold !in 0..CouponCodes.MAX_GOLD || xp !in 0..CouponCodes.MAX_XP -> "Altın ve XP 0 ile ${CouponCodes.MAX_GOLD} arasında olmalı."
-            gold == 0 && xp == 0 && s.chest == null -> "En az bir ödül seç."
+            s.chests.values.sum() > CouponCodes.MAX_CHESTS -> "En fazla ${CouponCodes.MAX_CHESTS} kasa verilebilir (oyuncunun ${CouponCodes.MAX_CHESTS} kasa yuvası var)."
+            gold == 0 && xp == 0 && s.chests.values.sum() == 0 -> "En az bir ödül seç."
             maxUses < 1 -> "Kullanım hakkı en az 1 olmalı."
             s.separateCodes == 0 && s.customCode.isNotBlank() && CouponCodes.normalize(s.customCode) == null ->
                 "Kod 4-24 karakter olmalı, sadece harf, rakam ve tire."
@@ -100,7 +102,7 @@ class CouponAdminViewModel @Inject constructor(
             val done = mutableListOf<String>()
             var failed = false
             for (code in codes) {
-                couponRepository.create(Coupon(code, gold, xp, s.chest, maxUses, 0, expires))
+                couponRepository.create(Coupon(code, gold, xp, s.chests.filterValues { it > 0 }, maxUses, 0, expires))
                     .onSuccess { done += code }
                     .onFailure { failed = true }
             }
@@ -142,15 +144,18 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
-        Text("Kasa", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(bottom = 6.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 10.dp)) {
-            listOf<ChestTier?>(null, ChestTier.SILVER, ChestTier.GOLD, ChestTier.RARE).forEach { tier ->
-                SelectableChip(
-                    label = when (tier) { null -> "Yok"; ChestTier.SILVER -> "Çırak"; ChestTier.GOLD -> "Sanatçı"; ChestTier.RARE -> "Sürpriz" },
-                    selected = state.chest == tier,
-                    onClick = { viewModel.update { copy(chest = tier) } },
-                    verticalPadding = 10.dp
-                )
+        Text("Kasa adedi (en fazla ${CouponCodes.MAX_CHESTS})", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(bottom = 6.dp))
+        listOf(ChestTier.SILVER to "Çırak", ChestTier.GOLD to "Sanatçı", ChestTier.RARE to "Sürpriz").forEach { (tier, name) ->
+            Text(name, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 4.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 8.dp)) {
+                (0..CouponCodes.MAX_CHESTS).forEach { n ->
+                    SelectableChip(
+                        label = n.toString(),
+                        selected = (state.chests[tier] ?: 0) == n,
+                        onClick = { viewModel.update { copy(chests = chests + (tier to n)) } },
+                        verticalPadding = 10.dp
+                    )
+                }
             }
         }
         Text("Her kazanana ayrı kod", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(bottom = 6.dp))
@@ -210,7 +215,9 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
             val reward = listOfNotNull(
                 c.gold.takeIf { it > 0 }?.let { "$it altın" },
                 c.xp.takeIf { it > 0 }?.let { "$it XP" },
-                c.chest?.let { when (it) { ChestTier.SILVER -> "Çırak"; ChestTier.GOLD -> "Sanatçı"; ChestTier.RARE -> "Sürpriz" } + " kasa" }
+                c.chests[ChestTier.SILVER]?.let { "$it Çırak kasa" },
+                c.chests[ChestTier.GOLD]?.let { "$it Sanatçı kasa" },
+                c.chests[ChestTier.RARE]?.let { "$it Sürpriz kasa" }
             ).joinToString(", ")
             val until = if (c.expiresAtMillis > 0) " · " + SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(c.expiresAtMillis)) + "'e kadar" else ""
             Text(

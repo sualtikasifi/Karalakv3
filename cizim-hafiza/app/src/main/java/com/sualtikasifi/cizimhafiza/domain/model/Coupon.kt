@@ -11,12 +11,14 @@ data class Coupon(
     val code: String,
     val gold: Int = 0,
     val xp: Int = 0,
-    val chest: ChestTier? = null,
+    /** How many chests of each tier it gives (at most [CouponCodes.MAX_CHESTS] in all — the player has that many slots). */
+    val chests: Map<ChestTier, Int> = emptyMap(),
     val maxUses: Int = 1,
     val usedCount: Int = 0,
     val expiresAtMillis: Long = 0L
 ) {
-    val hasReward: Boolean get() = gold > 0 || xp > 0 || chest != null
+    val chestCount: Int get() = chests.values.sum()
+    val hasReward: Boolean get() = gold > 0 || xp > 0 || chestCount > 0
 }
 
 sealed interface RedeemResult {
@@ -26,7 +28,7 @@ sealed interface RedeemResult {
     data object Expired : RedeemResult
     data object Exhausted : RedeemResult
     data object AlreadyUsed : RedeemResult
-    /** The code gives a chest and every chest slot is taken — nothing was used up, try again after opening one. */
+    /** The code gives chests and there are not enough free slots — nothing was used up, try again after opening some. */
     data object ChestSlotsFull : RedeemResult
     data object NetworkError : RedeemResult
 }
@@ -36,6 +38,7 @@ object CouponCodes {
     const val MAX_LENGTH = 24
     const val MAX_GOLD = 100_000
     const val MAX_XP = 100_000
+    const val MAX_CHESTS = 4
 
     // No 0/O/1/I/L: a code is read off a post or a message and typed by hand.
     private const val ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"

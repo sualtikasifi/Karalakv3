@@ -124,6 +124,8 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
     val dailyJoker by viewModel.dailyJoker.collectAsState()
     val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
     var pending by remember { mutableStateOf<Pending?>(null) }
+    // The joker just bought, while its celebration plays.
+    var boughtJoker by remember { mutableStateOf<Pending.JokerItem?>(null) }
     // The toast's own id changes on every fire, even for the same message
     // twice in a row, so re-showing it (declined, tried again, still short)
     // restarts its animation and its timer instead of doing nothing.
@@ -325,6 +327,8 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
         }
     }
 
+    boughtJoker?.let { JokerBoughtCelebration(it.type, it.quantity) { boughtJoker = null } }
+
     pending?.let { item ->
         val name = when (item) {
             is Pending.PenItem -> stringResource(item.skin.labelRes)
@@ -354,11 +358,99 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                     is Pending.FrameItem -> viewModel.buyFrame(item.frame)
                     is Pending.JokerItem -> viewModel.buyJoker(item.type, item.quantity)
                 }
-                showToast(if (ok) R.string.store_bought else R.string.store_not_enough, isError = !ok)
+                if (ok && item is Pending.JokerItem) boughtJoker = item
+                else showToast(if (ok) R.string.store_bought else R.string.store_not_enough, isError = !ok)
                 pending = null
             },
             onDismiss = { pending = null }
         )
+    }
+}
+
+/**
+ * What a bought joker does: the screen dims, the joker pops in with a bounce on a slowly turning burst of light, its
+ * name and "+N" settle under it and a shower of confetti falls over all of it. It closes itself after a moment, or on a tap.
+ */
+@Composable
+private fun JokerBoughtCelebration(type: JokerType, quantity: Int, onDone: () -> Unit) {
+    LaunchedEffect(Unit) {
+        delay(2_800)
+        onDone()
+    }
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDone,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+    ) {
+        val pop = remember { androidx.compose.animation.core.Animatable(0.15f) }
+        val label = remember { androidx.compose.animation.core.Animatable(0f) }
+        LaunchedEffect(Unit) {
+            pop.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.38f, stiffness = 170f))
+        }
+        LaunchedEffect(Unit) {
+            delay(350)
+            label.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 300f))
+        }
+        val spin = androidx.compose.animation.core.rememberInfiniteTransition(label = "boughtSpin")
+        val angle by spin.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = androidx.compose.animation.core.infiniteRepeatable(tween(9_000, easing = androidx.compose.animation.core.LinearEasing)),
+            label = "boughtAngle"
+        )
+        val breathe by spin.animateFloat(
+            initialValue = 0.94f,
+            targetValue = 1.06f,
+            animationSpec = androidx.compose.animation.core.infiniteRepeatable(tween(700), androidx.compose.animation.core.RepeatMode.Reverse),
+            label = "boughtBreathe"
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xCC1B0E04))
+                .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onDone),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(modifier = Modifier.size(280.dp), contentAlignment = Alignment.Center) {
+                    Canvas(modifier = Modifier.fillMaxSize().graphicsLayer { scaleX = pop.value; scaleY = pop.value }) {
+                        val c = center
+                        val glow = Brush.radialGradient(listOf(Color(0xFFFFE08A).copy(alpha = 0.85f), Color.Transparent), center = c, radius = size.minDimension / 2f)
+                        drawCircle(glow, radius = size.minDimension / 2f * breathe, center = c)
+                        androidx.compose.ui.graphics.drawscope.rotate(angle, c) {
+                            repeat(12) { i ->
+                                androidx.compose.ui.graphics.drawscope.rotate(i * 30f, c) {
+                                    drawLine(
+                                        color = Color(0xFFFFE9A8).copy(alpha = 0.55f),
+                                        start = Offset(c.x, c.y - size.minDimension * 0.18f),
+                                        end = Offset(c.x, c.y - size.minDimension * 0.5f),
+                                        strokeWidth = 10.dp.toPx(),
+                                        cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(
+                        type,
+                        130.dp,
+                        modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value; rotationZ = (1f - pop.value.coerceAtMost(1f)) * -25f }
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.joker_bought_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.White,
+                    modifier = Modifier.graphicsLayer { alpha = label.value; translationY = (1f - label.value) * 40f }
+                )
+                Text(
+                    text = stringResource(type.labelRes()) + "  +" + quantity,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = Color(0xFFFFD75E),
+                    modifier = Modifier.padding(top = 6.dp).graphicsLayer { alpha = label.value; scaleX = 0.7f + 0.3f * label.value; scaleY = 0.7f + 0.3f * label.value }
+                )
+            }
+            com.sualtikasifi.cizimhafiza.presentation.common.ConfettiBurst(count = 90, seed = 41 + quantity)
+        }
     }
 }
 

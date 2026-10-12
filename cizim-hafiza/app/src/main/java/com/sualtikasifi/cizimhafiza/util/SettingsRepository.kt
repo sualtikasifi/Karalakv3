@@ -608,8 +608,8 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         return chest
     }
 
-    /** Whether a chest could be put away right now — asked before a coupon that gives one is used up. */
-    fun hasFreeChestSlot(): Boolean = _chestSlots.value.any { it == null }
+    /** How many chests could be put away right now — asked before a coupon that gives chests is used up. */
+    fun freeChestSlots(): Int = _chestSlots.value.count { it == null }
 
     /** Puts a chest of [tier] into the first free slot (a coupon's chest); null when every slot is taken. */
     @Synchronized
