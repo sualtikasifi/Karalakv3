@@ -8,7 +8,14 @@ import com.sualtikasifi.cizimhafiza.data.local.WordPoolSynchronizer
 import com.sualtikasifi.cizimhafiza.domain.model.SupportedLanguage
 import com.sualtikasifi.cizimhafiza.domain.repository.AuthRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.AuthState
+import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
+import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
+import com.sualtikasifi.cizimhafiza.domain.model.RedeemResult
+import com.sualtikasifi.cizimhafiza.domain.repository.CouponRepository
 import com.sualtikasifi.cizimhafiza.util.SettingsRepository
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,8 +30,69 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val wordPoolSynchronizer: WordPoolSynchronizer,
+    private val couponRepository: CouponRepository,
     authRepository: AuthRepository
 ) : ViewModel() {
+
+    // --- Kupon kodu ---
+
+    private val _coupon = MutableStateFlow(CouponUiState())
+    val coupon: StateFlow<CouponUiState> = _coupon.asStateFlow()
+
+    private var couponFailures = 0
+    private var couponLockedUntilMillis = 0L
+
+    fun setCouponCode(text: String) {
+        _coupon.update {
+            it.copy(code = text.uppercase().filter { c -> c.isLetterOrDigit() || c == '-' }.take(CouponCodes.MAX_LENGTH), message = null)
+        }
+    }
+
+    /**
+     * Uses the typed code. After five misses in a row the box rests for half a minute, so the field cannot be used
+     * to guess codes one after another.
+     */
+    fun redeemCoupon() {
+        val state = _coupon.value
+        if (state.busy || state.code.isBlank()) return
+        val now = System.currentTimeMillis()
+        if (now < couponLockedUntilMillis) {
+            _coupon.update { it.copy(message = CouponMessage.Error(R.string.coupon_error_wait)) }
+            return
+        }
+        _coupon.update { it.copy(busy = true, message = null) }
+        viewModelScope.launch {
+            val result = couponRepository.redeem(state.code, chestSlotFree = settingsRepository.hasFreeChestSlot())
+            val message = when (result) {
+                is RedeemResult.Success -> {
+                    couponFailures = 0
+                    val coupon = result.coupon
+                    if (coupon.gold > 0) settingsRepository.earnGold(coupon.gold)
+                    if (coupon.xp > 0) settingsRepository.addXp(coupon.xp)
+                    val chestGiven = coupon.chest?.let { settingsRepository.grantChest(it) != null } == true
+                    CouponMessage.Ok(coupon.gold, coupon.xp, if (chestGiven) coupon.chest else null)
+                }
+                RedeemResult.Invalid, RedeemResult.NotFound -> miss(R.string.coupon_error_not_found)
+                RedeemResult.Expired -> miss(R.string.coupon_error_expired)
+                RedeemResult.Exhausted -> miss(R.string.coupon_error_exhausted)
+                RedeemResult.AlreadyUsed -> CouponMessage.Error(R.string.coupon_error_used)
+                RedeemResult.ChestSlotsFull -> CouponMessage.Error(R.string.coupon_error_chest_full)
+                RedeemResult.NetworkError -> CouponMessage.Error(R.string.coupon_error_network)
+            }
+            _coupon.update {
+                it.copy(busy = false, message = message, code = if (message is CouponMessage.Ok) "" else it.code)
+            }
+        }
+    }
+
+    private fun miss(@androidx.annotation.StringRes res: Int): CouponMessage {
+        couponFailures++
+        if (couponFailures >= 5) {
+            couponFailures = 0
+            couponLockedUntilMillis = System.currentTimeMillis() + 30_000L
+        }
+        return CouponMessage.Error(res)
+    }
 
     val soundEnabled: StateFlow<Boolean> = settingsRepository.soundEnabled
 
@@ -89,4 +157,15 @@ class SettingsViewModel @Inject constructor(
         wordPoolSynchronizer.syncAsync()
     }
 
+}
+
+data class CouponUiState(
+    val code: String = "",
+    val busy: Boolean = false,
+    val message: CouponMessage? = null
+)
+
+sealed interface CouponMessage {
+    data class Ok(val gold: Int, val xp: Int, val chest: ChestTier?) : CouponMessage
+    data class Error(@androidx.annotation.StringRes val res: Int) : CouponMessage
 }

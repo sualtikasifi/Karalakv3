@@ -7,6 +7,8 @@ import com.sualtikasifi.cizimhafiza.data.repository.BotTrainingRepositoryImpl
 import com.sualtikasifi.cizimhafiza.data.repository.BugReportRepositoryImpl
 import com.sualtikasifi.cizimhafiza.data.repository.DetectorEventRepositoryImpl
 import com.sualtikasifi.cizimhafiza.data.repository.DrawingReportRepositoryImpl
+import com.sualtikasifi.cizimhafiza.data.repository.CouponRepositoryImpl
+import com.sualtikasifi.cizimhafiza.domain.repository.CouponRepository
 import com.sualtikasifi.cizimhafiza.data.repository.ModerationRepositoryImpl
 import com.sualtikasifi.cizimhafiza.data.repository.PenaltyRepositoryImpl
 import com.sualtikasifi.cizimhafiza.data.repository.DifficultyReviewRepositoryImpl
@@ -97,6 +99,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindBugReportRepository(impl: BugReportRepositoryImpl): BugReportRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCouponRepository(impl: CouponRepositoryImpl): CouponRepository
 
     @Binds
     @Singleton

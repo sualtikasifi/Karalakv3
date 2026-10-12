@@ -244,23 +244,98 @@ fun SettingsScreen(
             }
         }
 
-        // ---- Notification-delay card ---------------------------------------------------------------------------
-        FitText(
-            text = stringResource(if (needsBatteryFix) R.string.settings_battery_optimization_title else R.string.settings_battery_ok_title),
-            style = PaintedStyle(color = Ink, fontSize = fs(30f), textAlign = TextAlign.Start),
-            maxLines = 1,
-            minScale = 0.6f,
-            contentAlignment = Alignment.CenterStart,
-            modifier = box(352f, 886f, 788f, 930f)
-        )
-        FitText(
-            text = stringResource(if (needsBatteryFix) R.string.settings_battery_optimization_body else R.string.settings_battery_ok_body),
-            style = DescriptionStyle(fs(22f), fs(29f)).copy(color = Ink, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
-            maxLines = 4,
-            minScale = 0.6f,
-            contentAlignment = Alignment.TopStart,
-            modifier = box(376f, 938f, 790f, 1044f)
-        )
+        // ---- Kupon kodu (the card's old title and text gave way to it; the fix button below stays) ------------------
+        val couponState by viewModel.coupon.collectAsState()
+        val couponKeyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+        Row(
+            box(352f, 884f, 792f, 952f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy((10f * us).dp)
+        ) {
+            Box(
+                Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .background(Color(0xFFFFF8EA), RoundedCornerShape(50))
+                    .border((2.5f * us).dp, Color(0xFFC9A46A), RoundedCornerShape(50))
+                    .padding(horizontal = (20f * us).dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                androidx.compose.foundation.text.BasicTextField(
+                    value = couponState.code,
+                    onValueChange = viewModel::setCouponCode,
+                    singleLine = true,
+                    textStyle = PaintedStyle(color = Ink, fontSize = fs(30f), textAlign = TextAlign.Start),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Characters,
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                    ),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = {
+                        couponKeyboard?.hide()
+                        viewModel.redeemCoupon()
+                    }),
+                    decorationBox = { inner ->
+                        if (couponState.code.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.coupon_hint),
+                                style = PaintedStyle(color = Ink.copy(alpha = 0.45f), fontSize = fs(28f), textAlign = TextAlign.Start),
+                                maxLines = 1
+                            )
+                        }
+                        inner()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            val useLabel = stringResource(R.string.coupon_use)
+            Box(
+                Modifier
+                    .width(unit * 150f)
+                    .fillMaxHeight()
+                    .shadow((3 * us).dp, RoundedCornerShape(50))
+                    .background(Brush.verticalGradient(listOf(Color(0xFFFFD75E), Color(0xFFF7A81B))), RoundedCornerShape(50))
+                    .border((2.5f * us).dp, Color(0xFFE08A1B), RoundedCornerShape(50))
+                    .pressable(pressedScale = 0.95f) {
+                        couponKeyboard?.hide()
+                        viewModel.redeemCoupon()
+                    }
+                    .a11yButton(useLabel),
+                contentAlignment = Alignment.Center
+            ) {
+                FitText(
+                    text = if (couponState.busy) "…" else useLabel,
+                    style = PaintedStyle(color = Ink, fontSize = fs(29f), textAlign = TextAlign.Center),
+                    maxLines = 1,
+                    minScale = 0.6f,
+                    modifier = Modifier.padding(horizontal = (8f * us).dp)
+                )
+            }
+        }
+        // What came of the last try: what was won, or why not.
+        couponState.message?.let { message ->
+            val ok = message as? CouponMessage.Ok
+            val text = if (ok != null) {
+                buildList {
+                    if (ok.gold > 0) add(stringResource(R.string.coupon_won_gold, ok.gold))
+                    if (ok.xp > 0) add(stringResource(R.string.coupon_won_xp, ok.xp))
+                    ok.chest?.let { add(stringResource(R.string.coupon_won_chest)) }
+                }.joinToString("  ·  ").ifBlank { stringResource(R.string.coupon_won_nothing) }
+            } else {
+                stringResource((message as CouponMessage.Error).res)
+            }
+            FitText(
+                text = text,
+                style = DescriptionStyle(fs(24f), fs(30f)).copy(
+                    color = if (ok != null) Color(0xFF2E7D32) else Color(0xFFB3261E),
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Start
+                ),
+                maxLines = 3,
+                minScale = 0.6f,
+                contentAlignment = Alignment.TopStart,
+                modifier = box(364f, 962f, 790f, 1044f)
+            )
+        }
         if (needsBatteryFix) {
             val fixLabel = stringResource(R.string.settings_battery_optimization_action)
             Row(
