@@ -6,13 +6,13 @@ package com.sualtikasifi.cizimhafiza.domain.model
  */
 enum class JokerType(val price: Int) {
     /** Reveals the first letter of the word being guessed. */
-    FIRST_LETTER(120),
+    FIRST_LETTER(200),
 
     /** Shows how many letters the word being guessed has. */
-    LETTER_COUNT(80),
+    LETTER_COUNT(150),
 
     /** Adds extra time to the current drawing turn. */
-    EXTRA_TIME(150);
+    EXTRA_TIME(250);
 
     companion object {
         /** Buying this many at once is discounted. */

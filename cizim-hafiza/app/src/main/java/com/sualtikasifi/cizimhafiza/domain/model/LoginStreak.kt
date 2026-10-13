@@ -21,12 +21,12 @@ object LoginStreakRewards {
 
     /** [day] is the position in the cycle, 1..[CYCLE_DAYS]. */
     fun forDay(day: Int): LoginDayReward = when (day) {
-        1 -> LoginDayReward(gold = 100)
-        2 -> LoginDayReward(gold = 150)
+        1 -> LoginDayReward(gold = 300)
+        2 -> LoginDayReward(gold = 400)
         3 -> LoginDayReward(jokers = JokerType.entries)
-        4 -> LoginDayReward(gold = 200)
+        4 -> LoginDayReward(gold = 500)
         5 -> LoginDayReward(chest = ChestTier.GOLD)
-        6 -> LoginDayReward(gold = 300)
+        6 -> LoginDayReward(gold = 800)
         else -> LoginDayReward(chest = ChestTier.RARE)
     }
 
