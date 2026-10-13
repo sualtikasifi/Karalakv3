@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -69,7 +70,6 @@ import com.sualtikasifi.cizimhafiza.presentation.common.ConfettiExplosion
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
-import com.sualtikasifi.cizimhafiza.presentation.common.dotGridBackground
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont
 import com.sualtikasifi.cizimhafiza.util.SettingsRepository
@@ -179,10 +179,14 @@ private fun RuneMap(
         modifier = modifier
             .fillMaxSize()
             .clip(shape)
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFF1CF), Color(0xFFF1D49B))))
-            .dotGridBackground(dotColor = Color(0x33805020), spacing = 26.dp, radius = 1.6.dp)
-            .border(BorderStroke(4.dp, Color(0xFF9A5B22)), shape)
+            .background(Color(0xFFE9D3A6))
     ) {
+        Image(
+            painter = painterResource(R.drawable.rune_map_bg),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
         val mapWidth = maxWidth
         val mapHeight = maxHeight
         val density = LocalDensity.current
@@ -301,62 +305,58 @@ private fun RuneIcon(key: String, emoji: String, size: Dp, modifier: Modifier = 
     }
 }
 
+/** The painted tile of [rune]: ornate for the root and keystones, otherwise coloured by branch, cream when open, grey when locked. */
+private fun tileArt(rune: Rune, owned: Boolean, unlocked: Boolean): Int = when {
+    rune.id == RuneTree.ROOT_ID -> R.drawable.rune_root
+    rune.isKeystone && (owned || unlocked) -> R.drawable.rune_keystone
+    !owned && !unlocked -> R.drawable.rune_tile_gray
+    !owned -> R.drawable.rune_tile_cream
+    else -> when (rune.branch) {
+        RuneBranch.ROOT, RuneBranch.GOLD -> R.drawable.rune_tile_gold
+        RuneBranch.CHEST -> R.drawable.rune_tile_red
+        RuneBranch.LUCK -> R.drawable.rune_tile_pink
+    }
+}
+
 @Composable
 private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, affordable: Boolean, selected: Boolean, onClick: () -> Unit) {
-    val (light, dark) = branchColors(rune.branch)
     val owned = level >= 1
     val size = tileSize(rune)
+    val keystone = rune.isKeystone && (owned || unlocked) && rune.id != RuneTree.ROOT_ID
     val shapeTile = if (rune.id == RuneTree.ROOT_ID) CircleShape else RoundedCornerShape(if (rune.isKeystone) 22.dp else 17.dp)
     val pulse = rememberInfiniteTransition(label = "runePulse")
     val glow by pulse.animateFloat(0.2f, 0.75f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "runeGlow")
     Box(modifier = Modifier.size(size).pressable(pressedScale = 0.92f, onClick = onClick), contentAlignment = Alignment.Center) {
         if (affordable && !selected) {
-            Box(Modifier.size(size + 12.dp).alpha(glow).background(Color(0xFFFFE066), shapeTile))
+            Box(Modifier.size(size + 14.dp).alpha(glow).background(Color(0xFFFFE066), shapeTile))
         }
-        Box(
-            modifier = Modifier
-                .size(if (selected) size + 6.dp else size)
-                .clip(shapeTile)
-                .background(
-                    when {
-                        owned -> Brush.verticalGradient(listOf(light, dark))
-                        unlocked -> Brush.verticalGradient(listOf(Color(0xFFFFF6DD), Color(0xFFE6CE9C)))
-                        else -> Brush.verticalGradient(listOf(Color(0xFFB4A892), Color(0xFF7E7360)))
-                    }
-                )
-                .border(
-                    width = if (selected) 5.dp else 4.dp,
-                    color = when {
-                        selected -> Color.White
-                        owned && level >= rune.maxLevel && rune.id != RuneTree.ROOT_ID -> Color(0xFFFFF0A0)
-                        owned -> Color(0xFFFFF3C4)
-                        unlocked -> dark
-                        else -> Color(0xFF5E5547)
-                    },
-                    shape = shapeTile
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            // A soft highlight across the top, like the glossy tiles of the mock-up.
-            Box(
-                Modifier.align(Alignment.TopCenter).fillMaxWidth().size(size / 2.4f)
-                    .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = if (owned) 0.35f else 0.18f), Color.Transparent)))
-            )
+        if (selected) {
+            Box(Modifier.size(size + 10.dp).background(Color.White, shapeTile))
+        }
+        Image(
+            painter = painterResource(tileArt(rune, owned, unlocked)),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            // The keystone art carries a crown on top, so it is a little taller than wide.
+            modifier = if (keystone) Modifier.requiredSize(size, size * 1.17f) else Modifier.fillMaxSize()
+        )
+        Box(Modifier.offset(y = if (keystone) size * 0.08f else 0.dp), contentAlignment = Alignment.Center) {
             if (unlocked || owned) {
-                RuneIcon(rune.effect.iconKey, rune.effect.emoji, size * 0.55f, Modifier.alpha(if (owned || rune.id == RuneTree.ROOT_ID) 1f else 0.8f))
+                RuneIcon(rune.effect.iconKey, rune.effect.emoji, size * 0.56f, Modifier.alpha(if (owned || rune.id == RuneTree.ROOT_ID) 1f else 0.6f))
             } else {
-                RuneIcon("lock", "🔒", size * 0.5f, Modifier.alpha(0.7f))
+                RuneIcon("lock", "🔒", size * 0.5f, Modifier.alpha(0.85f))
             }
         }
         if (rune.maxLevel > 1 && rune.id != RuneTree.ROOT_ID) {
             Row(
-                modifier = Modifier.align(Alignment.BottomCenter).offset(y = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                modifier = Modifier.align(Alignment.BottomCenter).offset(y = 9.dp),
+                horizontalArrangement = Arrangement.spacedBy(1.dp)
             ) {
                 repeat(rune.maxLevel) { i ->
-                    Box(
-                        Modifier.size(9.dp).background(if (i < level) Color(0xFFFFD35E) else Color(0xFF6A4A2A), CircleShape)
-                            .border(1.5.dp, Color.White, CircleShape)
+                    Image(
+                        painter = painterResource(if (i < level) R.drawable.rune_pip_full else R.drawable.rune_pip_empty),
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp)
                     )
                 }
             }
@@ -369,13 +369,12 @@ private fun LockedTile(selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(62.dp)
-            .pressable(pressedScale = 0.94f, onClick = onClick)
-            .clip(RoundedCornerShape(17.dp))
-            .background(Brush.verticalGradient(listOf(Color(0x66B4A892), Color(0x667E7360))))
-            .border(BorderStroke(if (selected) 4.dp else 3.dp, Color(0x885E5547)), RoundedCornerShape(17.dp)),
+            .pressable(pressedScale = 0.94f, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        RuneIcon("soon", "🔒", 30.dp, Modifier.alpha(0.55f))
+        if (selected) Box(Modifier.size(72.dp).background(Color.White, RoundedCornerShape(19.dp)))
+        Image(painterResource(R.drawable.rune_tile_gray), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().alpha(0.75f))
+        RuneIcon("q", "🔒", 34.dp, Modifier.alpha(0.9f))
     }
 }
 
@@ -440,13 +439,11 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, gold: Int, onBuy: (
     val level = RuneTree.levelOf(levels, rune.id)
     val unlocked = RuneTree.isUnlocked(levels, rune)
     val cost = RuneTree.nextCost(levels, rune)
-    val (light, dark) = branchColors(rune.branch)
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(
-            Modifier.size(58.dp).clip(RoundedCornerShape(16.dp)).background(Brush.verticalGradient(listOf(light, dark)))
-                .border(3.dp, Color(0xFFFFF3C4), RoundedCornerShape(16.dp)),
-            contentAlignment = Alignment.Center
-        ) { RuneIcon(rune.effect.iconKey, rune.effect.emoji, 34.dp) }
+        Box(Modifier.size(62.dp), contentAlignment = Alignment.Center) {
+            Image(painterResource(tileArt(rune, level >= 1, true)), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+            RuneIcon(rune.effect.iconKey, rune.effect.emoji, 36.dp)
+        }
         Column(Modifier.weight(1f)) {
             Text(
                 text = stringResource(rune.nameRes),
