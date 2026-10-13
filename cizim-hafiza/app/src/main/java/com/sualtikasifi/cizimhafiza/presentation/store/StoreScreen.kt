@@ -363,11 +363,25 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             )
             return@let
         }
-        PurchaseConfirmDialog(
-            preview = preview,
+        CosmeticPurchaseDialog(
             name = name,
             price = price,
             gold = gold,
+            preview = { u ->
+                when (item) {
+                    is Pending.PenItem -> Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(u * 44f))
+                            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF5A3A24), Color(0xFF2B1A12))))
+                            .border(u * 8f, Color(0xFFD9892B), RoundedCornerShape(u * 44f))
+                            .padding(u * 40f)
+                    ) { PenPreview(item.skin, Modifier.fillMaxWidth().height(u * 220f)) }
+                    is Pending.FrameItem -> Image(painterResource(item.frame.drawableRes), contentDescription = null, modifier = Modifier.size(u * 380f))
+                    is Pending.JokerItem -> Unit
+                }
+            },
             onConfirm = {
                 val ok = when (item) {
                     is Pending.PenItem -> viewModel.buyPen(item.skin)
@@ -1038,27 +1052,55 @@ private fun TabEntrance(tab: Int, direction: Int, openedAt: Long, index: Int, co
 private const val BuyArtW = 1086f
 private const val BuyArtH = 1448f
 
+/** Where the painted pieces sit on one purchase picture, in the picture's own pixels (1086 x 1448). */
+private class BuyArtSpec(
+    val close: FloatArray,
+    val cancel: FloatArray,
+    val confirm: FloatArray,
+    /** x, y, width, height of the price on the dark plank. */
+    val price: FloatArray,
+    /** x, y, size of the coin to draw on the plank, or null when the picture already has one. */
+    val coin: FloatArray?,
+    /** x, y, width, height of the "not enough gold" note. */
+    val warn: FloatArray
+)
+
+private val JokerBuySpec = BuyArtSpec(
+    close = floatArrayOf(865f, 150f, 1020f, 310f),
+    cancel = floatArrayOf(118f, 1072f, 532f, 1224f),
+    confirm = floatArrayOf(552f, 1072f, 982f, 1226f),
+    price = floatArrayOf(485f, 938f, 260f, 104f),
+    coin = null,
+    warn = floatArrayOf(300f, 868f, 490f, 56f)
+)
+
+/** The empty frame (buy_frame): paper for a preview, the dark plank for the price, the same three buttons. */
+private val FrameBuySpec = BuyArtSpec(
+    close = floatArrayOf(895f, 150f, 1060f, 320f),
+    cancel = floatArrayOf(95f, 1060f, 535f, 1225f),
+    confirm = floatArrayOf(550f, 1060f, 995f, 1225f),
+    price = floatArrayOf(465f, 912f, 290f, 108f),
+    coin = floatArrayOf(335f, 912f, 108f),
+    warn = floatArrayOf(300f, 838f, 490f, 50f)
+)
+
 /**
- * The joker purchase window: one painted picture per joker (title, close, the joker tile, the price plank and both
- * buttons are all in it). Only the price, the "×N" and the missing-gold note are written over it; the three painted
- * buttons cave in under the finger like the rest of the game's painted buttons (the picture's own pixels are drawn
- * again, shrunk, over a darker recess — see sunkenArt).
+ * A painted purchase window: the picture ([art]) carries the title, the close button, the plank and both buttons;
+ * only the price, a "not enough gold" note and whatever [content] adds (a "×N" badge, a preview, a name) are written
+ * over it. The three painted buttons cave in under the finger like the rest of the game's painted buttons (the
+ * picture's own pixels are drawn again, shrunk, over a darker recess — see sunkenArt).
  */
 @Composable
-private fun JokerPurchaseDialog(
-    type: JokerType,
-    quantity: Int,
+private fun PaintedPurchaseDialog(
+    art: Int,
+    spec: BuyArtSpec,
     price: Int,
     gold: Int,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    content: @Composable androidx.compose.foundation.layout.BoxScope.(u: androidx.compose.ui.unit.Dp, fs: (Float) -> androidx.compose.ui.unit.TextUnit) -> Unit = { _, _ -> }
 ) {
     val canAfford = gold >= price
-    val art = when (type) {
-        JokerType.FIRST_LETTER -> R.drawable.joker_buy_first
-        JokerType.EXTRA_TIME -> R.drawable.joker_buy_time
-        JokerType.LETTER_COUNT -> R.drawable.joker_buy_count
-    }
     androidx.compose.ui.window.Dialog(
         onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
@@ -1072,13 +1114,14 @@ private fun JokerPurchaseDialog(
             val frameW = minOf(maxWidth - 16.dp, (maxHeight - 24.dp) * (BuyArtW / BuyArtH))
             val u = frameW / BuyArtW
             val fontScale0 = androidx.compose.ui.platform.LocalDensity.current.fontScale
-            fun fs(px: Float) = (px * u.value / fontScale0).sp
+            val fs: (Float) -> androidx.compose.ui.unit.TextUnit = { px -> (px * u.value / fontScale0).sp }
             val context = androidx.compose.ui.platform.LocalContext.current
             val sheet = remember(art) { runCatching { com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(context.resources, art) }.getOrNull() }
             val pxK = (sheet?.width ?: BuyArtW.toInt()) / BuyArtW
 
             @Composable
-            fun PaintedButton(x0: Float, y0: Float, x1: Float, y1: Float, corner: Float, enabled: Boolean, onClick: () -> Unit) {
+            fun PaintedButton(r: FloatArray, corner: Float, enabled: Boolean, onClick: () -> Unit) {
+                val (x0, y0, x1, y1) = r
                 val sink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.92f)
                 Box(
                     modifier = Modifier
@@ -1105,35 +1148,21 @@ private fun JokerPurchaseDialog(
                     contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
                     modifier = Modifier.fillMaxSize()
                 )
-                // The painted X.
-                PaintedButton(865f, 150f, 1020f, 310f, 78f, true, onDismiss)
-                // How many are being bought, on the left of the paper.
-                if (quantity > 1) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .offset(u * 120f, u * 330f)
-                            .size(u * 150f, u * 150f)
-                            .clip(CircleShape)
-                            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16))))
-                            .border(u * 7f, Color.White, CircleShape)
-                    ) {
-                        com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
-                            text = "×$quantity",
-                            size = fs(62f),
-                            outline = Color(0xFF8A3A06),
-                            maxLines = 1,
-                            modifier = Modifier.size(u * 120f, u * 90f)
-                        )
-                    }
+                content(u, fs)
+                // The price, on the dark plank (with its own coin when the picture has none).
+                spec.coin?.let { c ->
+                    Image(
+                        painter = painterResource(R.drawable.icon_gold_coin),
+                        contentDescription = null,
+                        modifier = Modifier.offset(u * c[0], u * c[1]).size(u * c[2])
+                    )
                 }
-                // The price, on the dark plank beside the coin.
                 com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
                     text = NumberFormat.getIntegerInstance().format(price),
                     size = fs(76f),
                     outline = Color(0xFF1A0E08),
                     maxLines = 1,
-                    modifier = Modifier.offset(u * 485f, u * 938f).size(u * 260f, u * 104f)
+                    modifier = Modifier.offset(u * spec.price[0], u * spec.price[1]).size(u * spec.price[2], u * spec.price[3])
                 )
                 if (!canAfford) {
                     // How much is missing, just above the plank.
@@ -1145,15 +1174,83 @@ private fun JokerPurchaseDialog(
                         ),
                         maxLines = 1, minScale = 0.6f,
                         modifier = Modifier
-                            .offset(u * 300f, u * 868f)
-                            .size(u * 490f, u * 56f)
-                            .clip(RoundedCornerShape(u * 28f))
+                            .offset(u * spec.warn[0], u * spec.warn[1])
+                            .size(u * spec.warn[2], u * spec.warn[3])
+                            .clip(RoundedCornerShape(u * 25f))
                             .background(Color(0xFFFFE3D6))
                     )
                 }
-                PaintedButton(118f, 1072f, 532f, 1224f, 76f, true, onDismiss)
-                PaintedButton(552f, 1072f, 982f, 1226f, 76f, canAfford, onConfirm)
+                PaintedButton(spec.close, 78f, true, onDismiss)
+                PaintedButton(spec.cancel, 76f, true, onDismiss)
+                PaintedButton(spec.confirm, 76f, canAfford, onConfirm)
             }
         }
+    }
+}
+
+/** The joker purchase window: one painted picture per joker, with a "×N" badge when several are bought. */
+@Composable
+private fun JokerPurchaseDialog(
+    type: JokerType,
+    quantity: Int,
+    price: Int,
+    gold: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val art = when (type) {
+        JokerType.FIRST_LETTER -> R.drawable.joker_buy_first
+        JokerType.EXTRA_TIME -> R.drawable.joker_buy_time
+        JokerType.LETTER_COUNT -> R.drawable.joker_buy_count
+    }
+    PaintedPurchaseDialog(art, JokerBuySpec, price, gold, onConfirm, onDismiss) { u, fs ->
+        if (quantity > 1) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .offset(u * 120f, u * 330f)
+                    .size(u * 150f, u * 150f)
+                    .clip(CircleShape)
+                    .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16))))
+                    .border(u * 7f, Color.White, CircleShape)
+            ) {
+                com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                    text = "×$quantity",
+                    size = fs(62f),
+                    outline = Color(0xFF8A3A06),
+                    maxLines = 1,
+                    modifier = Modifier.size(u * 120f, u * 90f)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The pen / avatar-frame purchase window, on the empty painted frame: the thing being bought is shown big on the
+ * paper (on a dark showcase board for a pen, so every colour reads) with its name under it.
+ */
+@Composable
+private fun CosmeticPurchaseDialog(
+    name: String,
+    price: Int,
+    gold: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    preview: @Composable (u: androidx.compose.ui.unit.Dp) -> Unit
+) {
+    PaintedPurchaseDialog(R.drawable.buy_frame, FrameBuySpec, price, gold, onConfirm, onDismiss) { u, fs ->
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.offset(u * 150f, u * 330f).size(u * 790f, u * 400f)
+        ) { preview(u) }
+        com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+            text = name,
+            style = androidx.compose.ui.text.TextStyle(
+                fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(64f), color = Ink, textAlign = TextAlign.Center
+            ),
+            maxLines = 1, minScale = 0.5f,
+            modifier = Modifier.offset(u * 150f, u * 745f).size(u * 790f, u * 90f)
+        )
     }
 }
