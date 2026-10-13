@@ -348,6 +348,21 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                 is Pending.JokerItem -> com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(item.type, 72.dp)
             }
         }
+        if (item is Pending.JokerItem) {
+            JokerPurchaseDialog(
+                type = item.type,
+                quantity = item.quantity,
+                price = price,
+                gold = gold,
+                onConfirm = {
+                    val ok = viewModel.buyJoker(item.type, item.quantity)
+                    if (ok) boughtJoker = item else showToast(R.string.store_not_enough, isError = true)
+                    pending = null
+                },
+                onDismiss = { pending = null }
+            )
+            return@let
+        }
         PurchaseConfirmDialog(
             preview = preview,
             name = name,
@@ -1017,4 +1032,128 @@ private fun TabEntrance(tab: Int, direction: Int, openedAt: Long, index: Int, co
             scaleY = scale
         }
     ) { content() }
+}
+
+
+private const val BuyArtW = 1086f
+private const val BuyArtH = 1448f
+
+/**
+ * The joker purchase window: one painted picture per joker (title, close, the joker tile, the price plank and both
+ * buttons are all in it). Only the price, the "×N" and the missing-gold note are written over it; the three painted
+ * buttons cave in under the finger like the rest of the game's painted buttons (the picture's own pixels are drawn
+ * again, shrunk, over a darker recess — see sunkenArt).
+ */
+@Composable
+private fun JokerPurchaseDialog(
+    type: JokerType,
+    quantity: Int,
+    price: Int,
+    gold: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val canAfford = gold >= price
+    val art = when (type) {
+        JokerType.FIRST_LETTER -> R.drawable.joker_buy_first
+        JokerType.EXTRA_TIME -> R.drawable.joker_buy_time
+        JokerType.LETTER_COUNT -> R.drawable.joker_buy_count
+    }
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        androidx.compose.foundation.layout.BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onDismiss),
+            contentAlignment = Alignment.Center
+        ) {
+            val frameW = minOf(maxWidth - 16.dp, (maxHeight - 24.dp) * (BuyArtW / BuyArtH))
+            val u = frameW / BuyArtW
+            val fontScale0 = androidx.compose.ui.platform.LocalDensity.current.fontScale
+            fun fs(px: Float) = (px * u.value / fontScale0).sp
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val sheet = remember(art) { runCatching { com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(context.resources, art) }.getOrNull() }
+            val pxK = (sheet?.width ?: BuyArtW.toInt()) / BuyArtW
+
+            @Composable
+            fun PaintedButton(x0: Float, y0: Float, x1: Float, y1: Float, corner: Float, enabled: Boolean, onClick: () -> Unit) {
+                val sink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.92f)
+                Box(
+                    modifier = Modifier
+                        .offset(u * x0, u * y0)
+                        .size(u * (x1 - x0), u * (y1 - y0))
+                        .sunkenArt(sink, sheet, x0 * pxK, y0 * pxK, (x1 - x0) * pxK, (y1 - y0) * pxK, u * corner)
+                        .clickable(enabled = enabled, interactionSource = sink.source, indication = null, onClick = onClick)
+                ) {
+                    // Not affordable: the painted button is veiled, so it reads as unavailable.
+                    if (!enabled) {
+                        Box(Modifier.fillMaxSize().clip(RoundedCornerShape(u * corner)).background(Color.White.copy(alpha = 0.45f)))
+                    }
+                }
+            }
+
+            Box(
+                Modifier
+                    .size(frameW, frameW * (BuyArtH / BuyArtW))
+                    .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {}
+            ) {
+                Image(
+                    painter = painterResource(art),
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
+                    modifier = Modifier.fillMaxSize()
+                )
+                // The painted X.
+                PaintedButton(865f, 150f, 1020f, 310f, 78f, true, onDismiss)
+                // How many are being bought, on the left of the paper.
+                if (quantity > 1) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .offset(u * 120f, u * 330f)
+                            .size(u * 150f, u * 150f)
+                            .clip(CircleShape)
+                            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16))))
+                            .border(u * 7f, Color.White, CircleShape)
+                    ) {
+                        com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                            text = "×$quantity",
+                            size = fs(62f),
+                            outline = Color(0xFF8A3A06),
+                            maxLines = 1,
+                            modifier = Modifier.size(u * 120f, u * 90f)
+                        )
+                    }
+                }
+                // The price, on the dark plank beside the coin.
+                com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                    text = NumberFormat.getIntegerInstance().format(price),
+                    size = fs(76f),
+                    outline = Color(0xFF1A0E08),
+                    maxLines = 1,
+                    modifier = Modifier.offset(u * 485f, u * 938f).size(u * 260f, u * 104f)
+                )
+                if (!canAfford) {
+                    // How much is missing, just above the plank.
+                    com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                        text = "⚠ " + stringResource(R.string.store_missing_gold, price - gold),
+                        style = androidx.compose.ui.text.TextStyle(
+                            fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(34f),
+                            color = Color(0xFFB3401A), textAlign = TextAlign.Center
+                        ),
+                        maxLines = 1, minScale = 0.6f,
+                        modifier = Modifier
+                            .offset(u * 300f, u * 868f)
+                            .size(u * 490f, u * 56f)
+                            .clip(RoundedCornerShape(u * 28f))
+                            .background(Color(0xFFFFE3D6))
+                    )
+                }
+                PaintedButton(118f, 1072f, 532f, 1224f, 76f, true, onDismiss)
+                PaintedButton(552f, 1072f, 982f, 1226f, 76f, canAfford, onConfirm)
+            }
+        }
+    }
 }
