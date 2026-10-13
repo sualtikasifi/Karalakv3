@@ -321,7 +321,7 @@ fun WaitingRoomScreen(
                 // Starts under the painted sign.
                 // A little air under the last row, so "waiting for friends" is never cut by the chat dock when the
                 // content is a hair taller than the screen (it scrolls the rest into view).
-                .padding(top = sceneY(0.205f) - 58.dp, bottom = 16.dp),
+                .padding(top = sceneY(0.205f) - 58.dp, bottom = if (others.isEmpty()) 52.dp else 16.dp),
             verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -411,28 +411,31 @@ fun WaitingRoomScreen(
                 }
             }
 
-            if (others.isEmpty()) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .padding(vertical = 0.dp)
-                        .background(Color(0xCC3B1E08), RoundedCornerShape(18.dp))
-                        .padding(horizontal = 14.dp, vertical = 2.dp)
-                ) {
-                    Image(painter = painterResource(R.drawable.lobby_hourglass), contentDescription = null, modifier = Modifier.height(24.dp))
-                    Text(
-                        text = stringResource(R.string.online_waiting_for_friend),
-                        style = PaintedStyle(color = Color(0xFFFFF1D6), fontSize = 15.sp, fontWeight = FontWeight.Bold),
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-
             if (isHost && room?.kickedUsers?.isNotEmpty() == true) {
                 KickedUsersSection(kickedUsers = room.kickedUsers, onUnban = viewModel::unbanPlayer)
             }
         }
+        }
+        // "Waiting for friends", pinned just above the chat dock instead of at the end of the scrolling list: a list that
+        // is a little taller than the screen used to cut it in half. The list leaves room for it (bottom padding above).
+        if (others.isEmpty()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(padding)
+                    .padding(bottom = 8.dp)
+                    .background(Color(0xCC3B1E08), RoundedCornerShape(18.dp))
+                    .padding(horizontal = 14.dp, vertical = 4.dp)
+            ) {
+                Image(painter = painterResource(R.drawable.lobby_hourglass), contentDescription = null, modifier = Modifier.height(24.dp))
+                Text(
+                    text = stringResource(R.string.online_waiting_for_friend),
+                    style = PaintedStyle(color = Color(0xFFFFF1D6), fontSize = 15.sp, fontWeight = FontWeight.Bold),
+                    textAlign = TextAlign.Center
+                )
+            }
         }
         // The title, written on the painted sign.
         val signTitle = stringResource(R.string.online_waiting_room_title)
