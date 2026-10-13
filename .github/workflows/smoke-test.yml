@@ -29,6 +29,7 @@ on:
           - race.sh
           - offline.sh
           - createroom.sh
+          - lobbywait.sh
           - join.sh
           - lobby.sh
           - pages.sh

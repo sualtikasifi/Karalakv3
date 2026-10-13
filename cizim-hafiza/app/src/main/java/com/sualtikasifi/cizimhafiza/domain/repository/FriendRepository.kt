@@ -23,6 +23,12 @@ interface FriendRepository {
      */
     suspend fun addFriendByCode(code: String, myNickname: String): Result<AddFriendOutcome>
 
+    /**
+     * The same as [addFriendByCode] for somebody already identified by uid (a player met in a lobby), so no code is
+     * needed. Same outcomes: a request sent, a friendship closed because they had asked first, or already friends.
+     */
+    suspend fun sendFriendRequestToUid(friendUid: String, friendNickname: String, myNickname: String): Result<AddFriendOutcome>
+
     /** Requests waiting on this player's answer — see [acceptFriendRequest]. */
     fun observeFriendRequests(): Flow<List<FriendRequest>>
 

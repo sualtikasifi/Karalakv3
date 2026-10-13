@@ -171,6 +171,7 @@ fun WaitingRoomScreen(
     }
 
     var kickTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var friendTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
     var invitePickerOpen by remember { mutableStateOf(false) }
     val friends by viewModel.friends.collectAsState()
     val inviteState by viewModel.inviteState.collectAsState()
@@ -223,7 +224,10 @@ fun WaitingRoomScreen(
                 { kickTarget = player.uid to player.displayName }
             } else null,
             teamId = player.teamId,
-            onSwitchTeam = null
+            onSwitchTeam = null,
+            onTap = if (!isBot && friends.none { it.uid == player.uid }) {
+                { friendTarget = player.uid to player.displayName }
+            } else null
         )
     }
     // In the permanent bot room, Sude always takes the very first slot
@@ -321,8 +325,8 @@ fun WaitingRoomScreen(
                 // Starts under the painted sign.
                 // A little air under the last row, so "waiting for friends" is never cut by the chat dock when the
                 // content is a hair taller than the screen (it scrolls the rest into view).
-                .padding(top = sceneY(0.205f) - 58.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 6.dp),
+                .padding(top = sceneY(0.205f) - 58.dp, bottom = if (others.isEmpty()) 34.dp else 16.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             RoomCodeCard(
@@ -391,7 +395,7 @@ fun WaitingRoomScreen(
                 // room reads as "being filled in" rather than a short list.
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 6.dp)
+                    verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 4.dp)
                 ) {
                     playerSlots.chunked(2).forEach { rowSlots ->
                         Row(
@@ -411,28 +415,31 @@ fun WaitingRoomScreen(
                 }
             }
 
-            if (others.isEmpty()) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .padding(vertical = 0.dp)
-                        .background(Color(0xCC3B1E08), RoundedCornerShape(18.dp))
-                        .padding(horizontal = 14.dp, vertical = 2.dp)
-                ) {
-                    Image(painter = painterResource(R.drawable.lobby_hourglass), contentDescription = null, modifier = Modifier.height(24.dp))
-                    Text(
-                        text = stringResource(R.string.online_waiting_for_friend),
-                        style = PaintedStyle(color = Color(0xFFFFF1D6), fontSize = 15.sp, fontWeight = FontWeight.Bold),
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-
             if (isHost && room?.kickedUsers?.isNotEmpty() == true) {
                 KickedUsersSection(kickedUsers = room.kickedUsers, onUnban = viewModel::unbanPlayer)
             }
         }
+        }
+        // "Waiting for friends", pinned just above the chat dock instead of at the end of the scrolling list: a list that
+        // is a little taller than the screen used to cut it in half. The list leaves room for it (bottom padding above).
+        if (others.isEmpty()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(padding)
+                    .padding(bottom = 4.dp)
+                    .background(Color(0xCC3B1E08), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 14.dp, vertical = 2.dp)
+            ) {
+                Image(painter = painterResource(R.drawable.lobby_hourglass), contentDescription = null, modifier = Modifier.height(20.dp))
+                Text(
+                    text = stringResource(R.string.online_waiting_for_friend),
+                    style = PaintedStyle(color = Color(0xFFFFF1D6), fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                    textAlign = TextAlign.Center
+                )
+            }
         }
         // The title, written on the painted sign.
         val signTitle = stringResource(R.string.online_waiting_room_title)
@@ -486,6 +493,20 @@ fun WaitingRoomScreen(
         ) {
             TintedBadge(text = message.asString())
         }
+    }
+
+    friendTarget?.let { (targetUid, targetName) ->
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            title = stringResource(R.string.online_friend_add_title),
+            message = stringResource(R.string.online_friend_add_message, targetName),
+            confirmText = stringResource(R.string.online_friend_add_confirm),
+            dismissText = stringResource(R.string.online_kick_confirm_cancel),
+            onConfirm = {
+                viewModel.sendFriendRequest(targetUid, targetName)
+                friendTarget = null
+            },
+            onDismiss = { friendTarget = null }
+        )
     }
 
     kickTarget?.let { (targetUid, targetName) ->
@@ -876,7 +897,9 @@ private data class PlayerSlotUiState(
     val onKick: (() -> Unit)?,
     val teamId: String? = null,
     /** Non-null only on the current player's own slot, only in a team room — see WaitingRoomScreen's mySlot. */
-    val onSwitchTeam: (() -> Unit)? = null
+    val onSwitchTeam: (() -> Unit)? = null,
+    /** Tapping the card — set on somebody who is not a friend yet, to offer a friend request. */
+    val onTap: (() -> Unit)? = null
 )
 
 /** One 2v2 team's column: a header and its (padded-to-TEAM_SIZE) slots stacked vertically. */
@@ -950,7 +973,9 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
         slicePx = 90,
         edge = 22.dp,
         tint = readyTint,
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth().then(
+            if (slot.onTap != null) Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = slot.onTap) else Modifier
+        )
     ) {
         Box(modifier = Modifier.fillMaxWidth().heightIn(min = LocalSlotHeight.current)) {
             Row(

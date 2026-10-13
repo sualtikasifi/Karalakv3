@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# Creates a room and takes screenshots of the waiting room (lobby) at the normal screen height and at two shorter ones,
+# to check that nothing at the bottom (the "waiting for friends" pill) is cut off by the chat dock.
+# Run through .github/workflows/smoke-test.yml with script=lobbywait.sh.
+set -u
+PKG=com.sualtikasifi.cizimhafiza
+ACT=$PKG/.presentation.MainActivity
+OUT=smoke-out
+mkdir -p "$OUT"
+APK=$(ls cizim-hafiza/app/build/outputs/apk/debug/*.apk | head -1)
+adb wait-for-device
+adb shell input keyevent 82 || true
+adb install -r -t "$APK"
+adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
+adb shell settings put global hide_error_dialogs 1 || true
+adb shell "run-as $PKG mkdir -p shared_prefs"
+printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boolean name=\"tutorial_completed\" value=\"true\" /><boolean name=\"feature_tour_seen\" value=\"true\" /></map>" \
+  | adb shell "run-as $PKG sh -c 'cat > shared_prefs/cizim_hafiza_settings.xml'"
+shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
+dump() { adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "$OUT/$1.xml" >/dev/null 2>&1; }
+step() { sleep "${2:-2}"; clear_overlays; shot "$1"; dump "$1"; }
+
+# System dialogs on this slow emulator ("Pixel Launcher isn't responding") and the ads consent form can land over
+# the app at any moment and swallow taps; dismiss them whenever they are on screen.
+clear_overlays() {
+  local xy
+  for label in "Wait" "Consent"; do
+    xy=$(find_exact "$label")
+    if [ -n "$xy" ]; then echo "overlay: tapping '$label' at $xy"; adb shell input tap $xy; sleep 2; fi
+  done
+}
+
+# Centre of the first node whose text / description is exactly $1 ("" when there is none).
+find_exact() {
+  dump _tmp
+  python3 - "$1" "$OUT/_tmp.xml" <<'PY'
+import sys, re, xml.etree.ElementTree as ET
+label, path = sys.argv[1].lower(), sys.argv[2]
+try:
+    tree = ET.parse(path)
+except Exception:
+    sys.exit(0)
+for n in tree.iter('node'):
+    t = (n.get('text') or '').strip().lower()
+    d = (n.get('content-desc') or '').strip().lower()
+    if label in (t, d):
+        m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', n.get('bounds') or '')
+        if m:
+            x1, y1, x2, y2 = map(int, m.groups())
+            print((x1 + x2) // 2, (y1 + y2) // 2)
+            break
+PY
+}
+
+# Centre of the first node whose text / description contains $1 ("" when there is none).
+find_xy() {
+  dump _tmp
+  python3 - "$1" "$OUT/_tmp.xml" <<'PY'
+import sys, re, xml.etree.ElementTree as ET
+label, path = sys.argv[1].lower(), sys.argv[2]
+try:
+    tree = ET.parse(path)
+except Exception:
+    sys.exit(0)
+for n in tree.iter('node'):
+    t = (n.get('text') or '') + ' ' + (n.get('content-desc') or '')
+    if label in t.lower():
+        m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', n.get('bounds') or '')
+        if m:
+            x1, y1, x2, y2 = map(int, m.groups())
+            print((x1 + x2) // 2, (y1 + y2) // 2)
+            break
+PY
+}
+adb shell am start -n $ACT
+sleep 8
+sleep 50
+# The ads consent form and then the daily login-streak window open on launch and cover the menu: dismiss the consent,
+# claim the reward, let it play, and repeat until the menu is clear.
+for i in 1 2 3; do
+  clear_overlays
+  xy=$(find_xy "Claim reward"); [ -z "$xy" ] && xy=$(find_xy "Ödülü Al")
+  if [ -n "$xy" ]; then echo "claiming at $xy"; adb shell input tap $xy; sleep 9; fi
+  shot "00_claim_$i"
+done
+clear_overlays
+# Text-based navigation (the menu layout changes with the daily popups): Race a Friend, then Create Room.
+xy=$(find_xy "Race a Friend"); [ -z "$xy" ] && xy=$(find_xy "Arkadaşınla Yarış"); [ -z "$xy" ] && xy="200 1232"
+echo "race at $xy"
+adb shell input tap $xy
+sleep 5
+clear_overlays
+shot 05_race
+adb shell input tap 540 1602
+sleep 4
+clear_overlays
+shot 08_createroom
+# The painted Create Room button at the bottom (the title above it has the same words, so no text search).
+adb shell input tap 540 2176
+sleep 18
+clear_overlays
+shot 10_lobby
+for h in 2100 1900 1700; do
+  adb shell wm size 1080x$h
+  sleep 6
+  clear_overlays
+  shot "20_lobby_${h}"
+done
+adb shell wm size reset
+adb logcat -d | grep -E "FATAL|AndroidRuntime|Exception" | head -40 > "$OUT/crash_lobbywait.txt"

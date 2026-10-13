@@ -652,15 +652,30 @@ private fun LockedScene(untilMillis: Long, onUnlocked: () -> Unit) {
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
-        // The live countdown, under KAPALI.
-        com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
-            text = countdown,
-            size = fs(78f),
-            fill = androidx.compose.ui.graphics.Color(0xFFC2321B),
-            outline = null,
-            maxLines = 1,
-            modifier = Modifier.offset(x(110f), y(990f)).size(len(620f), len(96f))
-        )
+        // The live countdown, under KAPALI: cream digits on a dark wooden pill, so it reads against the paper.
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .offset(x(190f), y(992f))
+                .size(len(460f), len(92f))
+                .clip(RoundedCornerShape(len(46f)))
+                .background(androidx.compose.ui.graphics.Color(0xFF4A2814))
+                .border(len(5f), androidx.compose.ui.graphics.Color(0xFFD9892B), RoundedCornerShape(len(46f)))
+        ) {
+            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                text = countdown,
+                style = androidx.compose.ui.text.TextStyle(
+                    fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
+                    fontSize = fs(68f),
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                    color = androidx.compose.ui.graphics.Color(0xFFFFE7B0),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                ),
+                maxLines = 1,
+                minScale = 0.6f,
+                modifier = Modifier.fillMaxSize().padding(horizontal = len(24f))
+            )
+        }
         // Why, and what still works.
         com.sualtikasifi.cizimhafiza.presentation.common.FitText(
             text = stringResource(R.string.lock_screen_body),

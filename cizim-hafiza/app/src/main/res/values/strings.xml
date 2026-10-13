@@ -103,6 +103,9 @@
     <string name="online_kick_confirm_title">Kick player</string>
     <string name="online_kick_confirm_message">%1$s will be removed and unable to rejoin for 30 minutes. Are you sure?</string>
     <string name="online_kick_confirm_confirm">Kick</string>
+    <string name="online_friend_add_title">Add friend?</string>
+    <string name="online_friend_add_message">Send a friend request to %1$s?</string>
+    <string name="online_friend_add_confirm">Send</string>
     <string name="online_kick_confirm_cancel">Cancel</string>
     <string name="online_kicked_users_section_title">Kicked players</string>
     <string name="online_kicked_user_remaining_format">%1$s — %2$d min</string>
