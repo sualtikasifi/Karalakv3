@@ -190,6 +190,12 @@ private fun RuneMap(
         // How far the map reaches from the middle, so panning can bring every node to the centre.
         val reachX = remember { (RuneTree.all.map { abs(it.x) } + RuneTree.placeholders.map { abs(it.x) }).max() }
         val reachY = remember { (RuneTree.all.map { abs(it.y) } + RuneTree.placeholders.map { abs(it.y) }).max() }
+        // Zooming out goes as far as it takes to see the whole map at once (all nodes and a little margin).
+        val minScale = remember(mapWidth, mapHeight) {
+            val w = with(density) { mapWidth.toPx() }
+            val h = with(density) { mapHeight.toPx() }
+            minOf(w / ((2 * reachX + 1.4f) * spacingPx), h / ((2 * reachY + 1.4f) * spacingPx)).coerceIn(0.12f, 0.6f)
+        }
         var scale by remember { mutableFloatStateOf(0.78f) }
         var pan by remember { mutableStateOf(Offset.Zero) }
 
@@ -198,7 +204,7 @@ private fun RuneMap(
                 .fillMaxSize()
                 .pointerInput(Unit) {
                     detectTransformGestures { _, panChange, zoom, _ ->
-                        scale = (scale * zoom).coerceIn(0.45f, 1.5f)
+                        scale = (scale * zoom).coerceIn(minScale, 1.5f)
                         val limX = reachX * spacingPx * scale
                         val limY = reachY * spacingPx * scale
                         pan = Offset((pan.x + panChange.x).coerceIn(-limX, limX), (pan.y + panChange.y).coerceIn(-limY, limY))
