@@ -40,6 +40,7 @@ import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Menu
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -603,7 +604,7 @@ fun ChatRow(
 /**
  * The chat window [ChatRow] opens on tap: the painted "Sohbet" frame with every message of the match, oldest first, and
  * — on the frame's bottom plank — the ready-made phrases and emojis to answer with (there is no typing in this game).
- * Everything is laid out in the frame picture's own units (1024 x 1536), so it scales with it.
+ * Everything is laid out in the frame picture's own units (941 x 1672), so it scales with it.
  */
 @Composable
 private fun ChatHistoryDialog(
@@ -620,13 +621,13 @@ private fun ChatHistoryDialog(
                 .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onDismiss),
             contentAlignment = Alignment.Center
         ) {
-            val frameW = minOf(maxWidth - 8.dp, (maxHeight - 16.dp) / 1.5f)
-            val u = frameW / 1024f
+            val frameW = minOf(maxWidth - 8.dp, (maxHeight - 16.dp) / (1672f / 941f))
+            val u = frameW / 941f
             val fontScale0 = androidx.compose.ui.platform.LocalDensity.current.fontScale
             fun fs(px: Float) = (px * u.value / fontScale0).sp
             Box(
                 Modifier
-                    .size(frameW, frameW * 1.5f)
+                    .size(frameW, frameW * (1672f / 941f))
                     .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {}
             ) {
                 androidx.compose.foundation.Image(
@@ -635,20 +636,38 @@ private fun ChatHistoryDialog(
                     contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
                     modifier = Modifier.fillMaxSize()
                 )
-                // The painted X at the top right.
-                Box(
-                    Modifier
-                        .offset(u * 836f, u * 186f)
-                        .size(u * 132f, u * 132f)
-                        .clip(CircleShape)
-                        .clickable(onClick = onDismiss)
+                // The title, on the top plank.
+                LetteredText(
+                    text = stringResource(R.string.online_chat_history_title),
+                    size = fs(84f),
+                    outline = Color(0xFF5A2815),
+                    maxLines = 1,
+                    title = true,
+                    modifier = Modifier.offset(u * 230f, u * 66f).size(u * 480f, u * 112f)
                 )
+                // The close badge, on the frame's top right corner.
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .offset(u * 770f, u * 30f)
+                        .size(u * 96f, u * 96f)
+                        .clip(CircleShape)
+                        .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFF6A5A), Color(0xFFD42A1E))))
+                        .border(u * 6f, Color.White, CircleShape)
+                        .clickable(onClick = onDismiss)
+                ) {
+                    Text(
+                        text = "✕",
+                        style = MaterialTheme.typography.titleMedium.copy(fontSize = fs(54f), fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold),
+                        color = Color.White
+                    )
+                }
                 // Messages, on the paper.
                 val listState = androidx.compose.foundation.lazy.rememberLazyListState()
                 LaunchedEffect(reactions.size) {
                     if (reactions.isNotEmpty()) listState.animateScrollToItem(reactions.lastIndex)
                 }
-                Box(Modifier.offset(u * 130f, u * 332f).size(u * 772f, u * 936f)) {
+                Box(Modifier.offset(u * 140f, u * 262f).size(u * 662f, u * 1150f)) {
                     if (reactions.isEmpty()) {
                         Text(
                             text = stringResource(R.string.online_chat_empty_window),
@@ -673,11 +692,11 @@ private fun ChatHistoryDialog(
                                     java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(reaction.sentAtMillis))
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                    if (sender != null) PlayerPicture(sender, u * 76f) else Spacer(Modifier.size(u * 76f))
+                                    if (sender != null) PlayerPicture(sender, u * 70f) else Spacer(Modifier.size(u * 70f))
                                     Spacer(Modifier.width(u * 10f))
                                     Column(
                                         Modifier
-                                            .widthIn(max = u * 470f)
+                                            .widthIn(max = u * 400f)
                                             .background(
                                                 if (mine) Color(0xFFCFE4FA) else Color(0xFFF8E3B4),
                                                 androidx.compose.foundation.shape.RoundedCornerShape(u * 26f)
@@ -716,8 +735,8 @@ private fun ChatHistoryDialog(
                     androidx.compose.foundation.lazy.LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(u * 12f),
                         verticalAlignment = Alignment.CenterVertically,
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = u * 10f),
-                        modifier = Modifier.offset(u * 126f, u * 1322f).size(u * 786f, u * 96f)
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = u * 6f),
+                        modifier = Modifier.offset(u * 215f, u * 1496f).size(u * 512f, u * 90f)
                     ) {
                         items(PRESET_PHRASES.size) { i ->
                             val phrase = PRESET_PHRASES[i]
@@ -740,7 +759,7 @@ private fun ChatChip(text: String, u: androidx.compose.ui.unit.Dp, size: android
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .height(u * 72f)
+            .height(u * 64f)
             .clip(shape)
             .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16))))
             .border(1.5.dp, Color(0xFFA9440A), shape)
