@@ -84,10 +84,10 @@ for i in 1 2 3; do
   shot "00_claim_$i"
 done
 clear_overlays
-adb shell input tap 540 1678
-sleep 4
-shot 00_menu
-adb shell input tap 200 1140
+# Text-based navigation (the menu layout changes with the daily popups): Race a Friend, then Create Room.
+xy=$(find_xy "Race a Friend"); [ -z "$xy" ] && xy=$(find_xy "Arkadaşınla Yarış"); [ -z "$xy" ] && xy="200 1232"
+echo "race at $xy"
+adb shell input tap $xy
 sleep 5
 clear_overlays
 shot 05_race
@@ -95,10 +95,6 @@ adb shell input tap 540 1602
 sleep 4
 clear_overlays
 shot 08_createroom
-adb shell input swipe 540 1700 540 600 400
-sleep 2
-shot 09_createroom_scrolled
-# Create the room, then send a reaction and a phrase from the chat bar so the own player card shows a message.
 # The painted Create Room button at the bottom (the title above it has the same words, so no text search).
 adb shell input tap 540 2176
 sleep 18
