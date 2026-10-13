@@ -147,7 +147,7 @@ fun DrawingReportsScreen(
                 ) {
                     listOf(
                         ReportsTab.Queue, ReportsTab.Pool, ReportsTab.Feedback, ReportsTab.Reports, ReportsTab.Detector,
-                        ReportsTab.League, ReportsTab.XpEvent, ReportsTab.DailyChallenge, ReportsTab.Stats, ReportsTab.Coupons
+                        ReportsTab.League, ReportsTab.XpEvent, ReportsTab.DailyChallenge, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks
                     ).forEach { tab ->
                         SelectableChip(
                             label = stringResource(tab.labelRes()),
@@ -208,7 +208,7 @@ fun DrawingReportsScreen(
                     // the `when` below, which is taken before this is used.
                     ReportsTab.League -> 0
                     // Same story as League — see the XpEvent branch below.
-                    ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons -> 0
+                    ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks -> 0
                     ReportsTab.DailyChallenge -> uiState.dailyChallengeQueue.size
                 }
                 val firstLoad = when (uiState.tab) {
@@ -237,6 +237,8 @@ fun DrawingReportsScreen(
                     uiState.tab == ReportsTab.Stats -> StatsPanel()
 
                     uiState.tab == ReportsTab.Coupons -> CouponPanel()
+
+                    uiState.tab == ReportsTab.Locks -> LocksPanel()
 
                     // Also not a list — a status line plus start/stop
                     // buttons, same shape as the League branch above.
@@ -277,7 +279,7 @@ fun DrawingReportsScreen(
                                     // intercepts this tab before this ever
                                     // runs, kept only for exhaustiveness.
                                     ReportsTab.League -> R.string.reports_tab_league
-                                    ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons -> R.string.reports_tab_xp_event
+                                    ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks -> R.string.reports_tab_xp_event
                                     ReportsTab.DailyChallenge -> R.string.reports_daily_challenge_empty
                                 }
                             ),
@@ -347,7 +349,7 @@ fun DrawingReportsScreen(
                             // own branch above and never gets this far.
                             ReportsTab.League -> Unit
                             // Same — see the XpEvent branch above.
-                            ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons -> Unit
+                            ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks -> Unit
                             ReportsTab.DailyChallenge -> items(
                                 uiState.dailyChallengeQueue,
                                 key = { it.id }
@@ -1158,6 +1160,7 @@ private fun ReportsTab.labelRes(): Int = when (this) {
     ReportsTab.DailyChallenge -> R.string.reports_tab_daily_challenge
     ReportsTab.Stats -> R.string.reports_tab_stats
     ReportsTab.Coupons -> R.string.reports_tab_coupons
+    ReportsTab.Locks -> R.string.reports_tab_locks
 }
 
 /**

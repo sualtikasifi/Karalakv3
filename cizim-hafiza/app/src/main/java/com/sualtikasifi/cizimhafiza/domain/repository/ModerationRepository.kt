@@ -131,6 +131,15 @@ interface ModerationRepository {
      */
     suspend fun upholdReport(report: DrawingReport): Result<Unit>
 
+    /** Accounts locked out of the online modes right now, longest lockout first. */
+    suspend fun activeLocks(): Result<List<com.sualtikasifi.cizimhafiza.domain.model.ActiveLock>>
+
+    /**
+     * Cancels one violation: the lockout ends now, one strike is taken off the account's count, and a penalty its
+     * device has not applied yet no longer takes any XP or gold. XP and gold already taken are not given back.
+     */
+    suspend fun cancelLock(lock: com.sualtikasifi.cizimhafiza.domain.model.ActiveLock): Result<Unit>
+
     /** Throws a report out as unfounded — nothing happens to the drawer. */
     suspend fun dismissReport(reportId: String): Result<Unit>
 }

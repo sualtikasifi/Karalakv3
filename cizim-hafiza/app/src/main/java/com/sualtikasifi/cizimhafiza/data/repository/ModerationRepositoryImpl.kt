@@ -362,4 +362,42 @@ class ModerationRepositoryImpl @Inject constructor(
         firestore.collection("drawingReports").document(reportId).delete().await()
         Unit
     }
+
+    override suspend fun activeLocks(): Result<List<com.sualtikasifi.cizimhafiza.domain.model.ActiveLock>> = runCatching {
+        val now = System.currentTimeMillis()
+        penalties.whereGreaterThan("lockedUntil", now).get().await().documents
+            .map { doc ->
+                val uid = doc.getString("uid").orEmpty()
+                val nickname = runCatching {
+                    firestore.collection("users").document(uid).get().await().getString("nickname").orEmpty()
+                }.getOrDefault("")
+                com.sualtikasifi.cizimhafiza.domain.model.ActiveLock(
+                    penaltyId = doc.id,
+                    uid = uid,
+                    nickname = nickname,
+                    strike = (doc.getLong("strike") ?: 1L).toInt(),
+                    lockedUntilMillis = doc.getLong("lockedUntil") ?: 0L,
+                    createdAtMillis = doc.getLong("createdAt") ?: 0L
+                )
+            }
+            .sortedByDescending { it.lockedUntilMillis }
+    }
+
+    override suspend fun cancelLock(lock: com.sualtikasifi.cizimhafiza.domain.model.ActiveLock): Result<Unit> = runCatching {
+        val doc = penalties.document(lock.penaltyId).get().await()
+        val notAppliedYet = (doc.getLong("appliedAt") ?: 0L) == 0L
+        val previous = runCatching { (strikes.document(lock.uid).get().await().getLong("count") ?: 0L).toInt() }.getOrDefault(0)
+        val now = System.currentTimeMillis()
+        val update = mutableMapOf<String, Any>("lockedUntil" to 0L, "canceledAt" to now)
+        if (notAppliedYet) {
+            // Its device has not taken anything yet and now never will; marking it applied also stops its window.
+            update["xpRevoked"] = 0L
+            update["goldRevoked"] = 0L
+            update["appliedAt"] = now
+        }
+        val batch = firestore.batch()
+        batch.update(penalties.document(lock.penaltyId), update)
+        batch.set(strikes.document(lock.uid), mapOf("count" to (previous - 1).coerceAtLeast(0).toLong(), "updatedAt" to now))
+        batch.commit().await()
+    }
 }

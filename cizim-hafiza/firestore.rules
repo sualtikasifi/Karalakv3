@@ -652,7 +652,7 @@ service cloud.firestore {
     // and one that already applied it never applies it twice.
     match /penalties/{penaltyId} {
       // A player reads only their own; the reviewer writes them.
-      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || reviewer());
       // Reviewer only. This used to be any signed-in player, which meant
       // anybody could write a penalty against anybody else and have their XP
       // taken away the next time they opened the app.
@@ -662,10 +662,12 @@ service cloud.firestore {
       // a local flag would be gone with the old install and the XP would come
       // off a second time. Everything else stays immutable, so a penalty
       // cannot be softened or withdrawn by its own target.
-      allow update: if signedIn()
-                    && resource.data.uid == request.auth.uid
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['appliedAt'])
-                    && resource.data.appliedAt == 0;
+      // The reviewer may also edit one (cancelling a lockout from the developer panel).
+      allow update: if reviewer()
+                    || (signedIn()
+                        && resource.data.uid == request.auth.uid
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['appliedAt'])
+                        && resource.data.appliedAt == 0);
       allow delete: if false;
     }
 
