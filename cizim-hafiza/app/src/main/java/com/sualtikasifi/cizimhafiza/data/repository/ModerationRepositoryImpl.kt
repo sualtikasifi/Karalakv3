@@ -5,6 +5,7 @@ import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.sualtikasifi.cizimhafiza.domain.model.Moderation
+import com.sualtikasifi.cizimhafiza.domain.model.DrawingReport
 import com.sualtikasifi.cizimhafiza.domain.model.PendingDailyChallenge
 import com.sualtikasifi.cizimhafiza.domain.model.PendingRun
 import com.sualtikasifi.cizimhafiza.domain.model.ResultItem
@@ -323,5 +324,48 @@ class ModerationRepositoryImpl @Inject constructor(
             )
         )
         batch.commit().await()
+    }
+
+    override suspend fun upholdReport(report: DrawingReport, xpToRevoke: Int, goldToRevoke: Int): Result<Unit> = runCatching {
+        val uid = report.reportedUid
+        require(uid.isNotEmpty()) { "Report ${report.id} has no drawer" }
+        val previous = runCatching {
+            (strikes.document(uid).get().await().getLong("count") ?: 0L).toInt()
+        }.getOrDefault(0)
+        val strike = previous + 1
+        val lockedUntil = if (strike % Moderation.STRIKES_BEFORE_LOCKOUT == 0) {
+            System.currentTimeMillis() + Moderation.LOCKOUT_MILLIS
+        } else {
+            0L
+        }
+        // Every report of this same drawing goes with it (same drawer, same word, same run) — one
+        // drawing is one offence however many players reported it.
+        val siblings = runCatching {
+            firestore.collection("drawingReports").whereEqualTo("reportedUid", uid).get().await().documents
+                .filter { it.getString("word") == report.word && it.getString("runId").orEmpty() == report.runId }
+                .map { it.id }
+        }.getOrDefault(emptyList())
+
+        val batch = firestore.batch()
+        (siblings + report.id).distinct().forEach { batch.delete(firestore.collection("drawingReports").document(it)) }
+        batch.set(
+            penalties.document(),
+            mapOf(
+                "uid" to uid,
+                "xpRevoked" to xpToRevoke.coerceAtLeast(0).toLong(),
+                "goldRevoked" to goldToRevoke.coerceAtLeast(0).toLong(),
+                "strike" to strike.toLong(),
+                "lockedUntil" to lockedUntil,
+                "appliedAt" to 0L,
+                "createdAt" to System.currentTimeMillis()
+            )
+        )
+        batch.set(strikes.document(uid), mapOf("count" to strike.toLong(), "updatedAt" to System.currentTimeMillis()))
+        batch.commit().await()
+    }
+
+    override suspend fun dismissReport(reportId: String): Result<Unit> = runCatching {
+        firestore.collection("drawingReports").document(reportId).delete().await()
+        Unit
     }
 }

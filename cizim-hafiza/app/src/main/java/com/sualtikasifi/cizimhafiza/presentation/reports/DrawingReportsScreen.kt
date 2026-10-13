@@ -122,6 +122,7 @@ fun DrawingReportsScreen(
     // Delete is irreversible, so both the single-row and "delete all" taps
     // stage a confirmation rather than firing immediately.
     var pendingDeleteFeedbackId by remember { mutableStateOf<String?>(null) }
+    var pendingUpholdReport by remember { mutableStateOf<ReportedDrawing?>(null) }
     var deleteAllFeedbackRequested by remember { mutableStateOf(false) }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
@@ -332,7 +333,14 @@ fun DrawingReportsScreen(
                                     )
                                 }
                             ReportsTab.Reports ->
-                                items(uiState.reports, key = { it.report.id }) { ReportRow(it) }
+                                items(uiState.reports, key = { it.report.id }) { entry ->
+                                    ReportRow(
+                                        entry,
+                                        busy = uiState.decidingReportId != null,
+                                        onDismiss = { viewModel.dismissReport(entry) },
+                                        onUphold = { pendingUpholdReport = entry }
+                                    )
+                                }
                             ReportsTab.Detector ->
                                 items(uiState.refusals, key = { it.event.id }) { RefusalRow(it) }
                             // Unreachable: the League tab is handled by its
@@ -394,6 +402,23 @@ fun DrawingReportsScreen(
                 DrawingPreviewDialog(item = item, onDismiss = { previewItem = null })
             }
 
+            pendingUpholdReport?.let { entry ->
+                val (xp, gold) = com.sualtikasifi.cizimhafiza.domain.model.Moderation.reportPenalty(entry.report.reason)
+                AlertDialog(
+                    onDismissRequest = { pendingUpholdReport = null },
+                    title = { Text(stringResource(R.string.reports_uphold_title)) },
+                    text = { Text(stringResource(R.string.reports_uphold_body, xp, gold)) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.upholdReport(entry)
+                            pendingUpholdReport = null
+                        }) { Text(stringResource(R.string.reports_uphold_confirm)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { pendingUpholdReport = null }) { Text(stringResource(R.string.reports_feedback_delete_confirm_cancel)) }
+                    }
+                )
+            }
             pendingDeleteFeedbackId?.let { id ->
                 ConfirmDeleteDialog(
                     title = stringResource(R.string.reports_feedback_delete_confirm_title),
@@ -742,8 +767,9 @@ private fun DrawingPreviewDialog(item: ResultItem, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun ReportRow(entry: ReportedDrawing) {
+private fun ReportRow(entry: ReportedDrawing, busy: Boolean, onDismiss: () -> Unit, onUphold: () -> Unit) {
     RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
+        Column {
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -790,6 +816,26 @@ private fun ReportRow(entry: ReportedDrawing) {
                     color = MaterialTheme.colorScheme.outline
                 )
             }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            SecondaryButton(
+                text = stringResource(R.string.reports_dismiss),
+                onClick = onDismiss,
+                enabled = !busy,
+                icon = Icons.Filled.Check,
+                modifier = Modifier.weight(1f)
+            )
+            PrimaryButton(
+                text = stringResource(R.string.reports_uphold),
+                onClick = onUphold,
+                enabled = !busy,
+                icon = Icons.Filled.Block,
+                modifier = Modifier.weight(1f)
+            )
+        }
         }
     }
 }

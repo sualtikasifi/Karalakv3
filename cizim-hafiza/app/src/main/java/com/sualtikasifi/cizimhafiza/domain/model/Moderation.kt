@@ -57,7 +57,9 @@ data class Penalty(
      * streak to 0 (see PenaltyRepositoryImpl.applyOutstanding), since a
      * streak built partly on typed-not-drawn words was never really kept.
      */
-    val breaksDailyStreak: Boolean = false
+    val breaksDailyStreak: Boolean = false,
+    /** Gold taken back on top of [xpRevoked] — only a penalty decided from a player report carries any. */
+    val goldRevoked: Int = 0
 )
 
 /**
@@ -145,4 +147,16 @@ object Moderation {
      * asks for the next three when the reviewer reaches the bottom.
      */
     const val REVIEW_PAGE_SIZE = 3
+
+    /**
+     * What upholding a player's report of a drawing costs the drawer, by reason: XP and gold taken
+     * back. The gold is a multiple of the XP because gold is the currency players feel; both are
+     * sized against what a play session pays (10 gold a word), so a scribble costs about a round
+     * of earnings and an offensive drawing about a day's. The strike ladder above applies on top.
+     */
+    fun reportPenalty(reason: DrawingReportReason): Pair<Int, Int> = when (reason) {
+        DrawingReportReason.MEANINGLESS -> 20 to 100
+        DrawingReportReason.WRITTEN -> 50 to 200
+        DrawingReportReason.OFFENSIVE -> 100 to 500
+    }
 }

@@ -710,7 +710,9 @@ service cloud.firestore {
       // A report is a fact about a moment; it is never edited, and it is not
       // withdrawable — being able to take one back would let a reporter
       // un-retire a round on request.
-      allow update, delete: if false;
+      allow update: if false;
+      // Only the reviewer can clear one — upholding it (with a penalty) or throwing it out.
+      allow delete: if reviewer();
     }
 
     // Kupon kodları. Bir kod, belgenin kendisidir (coupons/{KOD}): oyuncu tek bir kodu okuyabilir ama kodları

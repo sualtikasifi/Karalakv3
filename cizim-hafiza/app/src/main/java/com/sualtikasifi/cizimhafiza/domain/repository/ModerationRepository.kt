@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.domain.repository
 
+import com.sualtikasifi.cizimhafiza.domain.model.DrawingReport
 import com.sualtikasifi.cizimhafiza.domain.model.PendingDailyChallenge
 import com.sualtikasifi.cizimhafiza.domain.model.PendingRun
 import com.sualtikasifi.cizimhafiza.domain.model.ResultItem
@@ -122,4 +123,14 @@ interface ModerationRepository {
      * once this device's own penalty write is applied.
      */
     suspend fun rejectDailyChallenge(id: String, xpToRevoke: Int): Result<Unit>
+
+    /**
+     * Upholds a player's report: writes a penalty (XP and gold back, one more strike, a lockout on
+     * every third) against the drawer and clears every report of that same drawing, so it cannot be
+     * punished twice. Amounts come from [com.sualtikasifi.cizimhafiza.domain.model.Moderation.reportPenalty].
+     */
+    suspend fun upholdReport(report: DrawingReport, xpToRevoke: Int, goldToRevoke: Int): Result<Unit>
+
+    /** Throws a report out as unfounded — nothing happens to the drawer. */
+    suspend fun dismissReport(reportId: String): Result<Unit>
 }
