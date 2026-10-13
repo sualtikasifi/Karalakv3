@@ -118,6 +118,8 @@ data class DrawingReportsUiState(
     val feedbackLoaded: Boolean = false,
     val feedbackFailed: Boolean = false,
     val reports: List<ReportedDrawing> = emptyList(),
+    /** The report whose verdict is being written right now (buttons off meanwhile). */
+    val decidingReportId: String? = null,
     val refusals: List<RefusedRound> = emptyList(),
     val evidenceLoading: Boolean = false,
     val evidenceLoaded: Boolean = false,
@@ -487,6 +489,39 @@ class DrawingReportsViewModel @Inject constructor(
     }
 
     /** The word was drawn honestly — just clears the row, no penalty. */
+    /** Upholds a player report: XP and gold taken back from the drawer, a strike, and the drawing's reports cleared. */
+    fun upholdReport(entry: ReportedDrawing) {
+        val (xp, gold) = com.sualtikasifi.cizimhafiza.domain.model.Moderation.reportPenalty(entry.report.reason)
+        decideReport(entry, upheld = true) { moderationRepository.upholdReport(entry.report, xp, gold) }
+    }
+
+    /** Throws a report out as unfounded; nothing happens to the drawer. */
+    fun dismissReport(entry: ReportedDrawing) =
+        decideReport(entry, upheld = false) { moderationRepository.dismissReport(entry.report.id) }
+
+    private fun decideReport(entry: ReportedDrawing, upheld: Boolean, action: suspend () -> Result<Unit>) {
+        if (_uiState.value.decidingReportId != null) return
+        _uiState.value = _uiState.value.copy(decidingReportId = entry.report.id, decisionFailed = false, decisionError = null)
+        viewModelScope.launch {
+            val result = action()
+            _uiState.value = if (result.isFailure) {
+                _uiState.value.copy(
+                    decidingReportId = null,
+                    decisionFailed = true,
+                    decisionError = result.exceptionOrNull()?.describe()
+                )
+            } else {
+                // The drawer's other reports of the same drawing went too when upholding — drop them from the list as well.
+                val gone = _uiState.value.reports.filter {
+                    it.report.id == entry.report.id ||
+                        (it.report.reportedUid == entry.report.reportedUid && it.report.word == entry.report.word &&
+                            it.report.runId == entry.report.runId && upheld)
+                }.map { it.report.id }.toSet()
+                _uiState.value.copy(reports = _uiState.value.reports.filterNot { it.report.id in gone }, decidingReportId = null)
+            }
+        }
+    }
+
     fun approveDailyChallenge(item: PendingDailyChallenge) =
         decideDailyChallenge(item) { moderationRepository.approveDailyChallenge(item.id) }
 

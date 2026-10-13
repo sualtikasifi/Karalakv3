@@ -429,7 +429,11 @@ private fun PenaltyDialog(penalty: Penalty, onDismiss: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = stringResource(R.string.penalty_body, penalty.xpRevoked),
+                    text = if (penalty.goldRevoked > 0) {
+                        stringResource(R.string.penalty_body_report, penalty.xpRevoked, penalty.goldRevoked)
+                    } else {
+                        stringResource(R.string.penalty_body, penalty.xpRevoked)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center

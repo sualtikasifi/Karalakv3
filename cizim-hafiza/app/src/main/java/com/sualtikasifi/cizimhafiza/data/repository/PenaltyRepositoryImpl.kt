@@ -66,7 +66,8 @@ class PenaltyRepositoryImpl @Inject constructor(
                 strike = (doc.getLong("strike") ?: 1L).toInt(),
                 lockedUntilMillis = doc.getLong("lockedUntil") ?: 0L,
                 createdAtMillis = doc.getLong("createdAt") ?: 0L,
-                breaksDailyStreak = doc.getBoolean("breaksDailyStreak") ?: false
+                breaksDailyStreak = doc.getBoolean("breaksDailyStreak") ?: false,
+                goldRevoked = (doc.getLong("goldRevoked") ?: 0L).toInt()
             )
             // Marked BEFORE the local effect, not after. If the write fails
             // the penalty is simply applied on the next launch instead; if it
@@ -78,6 +79,7 @@ class PenaltyRepositoryImpl @Inject constructor(
             if (!marked) continue
 
             settingsRepository.revokeXp(penalty.xpRevoked)
+            settingsRepository.revokeGold(penalty.goldRevoked)
             settingsRepository.penaltiesApplied = settingsRepository.penaltiesApplied + 1
             if (penalty.breaksDailyStreak) dailyChallengeRepository.breakStreak()
             applied += penalty

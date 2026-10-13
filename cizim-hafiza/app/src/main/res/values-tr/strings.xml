@@ -1144,6 +1144,12 @@
     <string name="penalty_body">Hızlı Eşleş turlarından birinde, kelimeleri çizmek yerine çizim alanına yazdığın görüldü. O turdan kazandığın %1$d XP geri alındı.</string>
     <string name="penalty_strikes">Bu %1$d. ihlalin. %2$d ihlal daha yaparsan Hızlı Eşleş ve Arkadaşınla Yarış 24 saat boyunca kapanır. Sayaç sıfırlanmaz.</string>
     <string name="penalty_locked">Bu %1$d. ihlalin. Hızlı Eşleş ve Arkadaşınla Yarış 24 saat boyunca kapalı.</string>
+    <string name="penalty_body_report">Bir çizimin başka oyuncular tarafından bildirildi ve incelemede kurallara aykırı bulundu. %1$d XP ve %2$d altın geri alındı.</string>
+    <string name="reports_dismiss">Haksız</string>
+    <string name="reports_uphold">Cezalandır</string>
+    <string name="reports_uphold_title">Çizimin sahibi cezalandırılsın mı?</string>
+    <string name="reports_uphold_body">%1$d XP ve %2$d altın geri alınır, bir ihlal yazılır (her 3. ihlalde 24 saat çevrimiçi kilit). Aynı çizimin diğer bildirimleri de silinir.</string>
+    <string name="reports_uphold_confirm">Cezalandır</string>
     <string name="penalty_understood">Anladım</string>
     <string name="quick_match_locked_title">Bu mod geçici olarak kapalı</string>
     <string name="quick_match_locked_body">Üst üste üç turun ihlal nedeniyle geçersiz sayıldı. Hızlı Eşleş ve Arkadaşınla Yarış yaklaşık %1$d saat sonra tekrar açılacak.</string>

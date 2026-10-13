@@ -334,6 +334,15 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         HomeShownStats.pendingGold += amount
     }
 
+    /** Takes gold back after a moderation penalty. Never below zero; sealed like every other economy write. */
+    @Synchronized
+    fun revokeGold(amount: Int) {
+        if (amount <= 0) return
+        val updated = (_goldBalance.value - amount).coerceAtLeast(0)
+        prefs.edit(commit = true) { putInt(KEY_GOLD_BALANCE, updated); sealEconomy(gold = updated) }
+        _goldBalance.value = updated
+    }
+
     /** The one-time "what is new" tour (chests, jokers, store) has been shown. */
     var featureTourSeen: Boolean
         get() = prefs.getBoolean(KEY_FEATURE_TOUR_SEEN, false)
