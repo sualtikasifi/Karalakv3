@@ -37,6 +37,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -285,6 +286,71 @@ fun SparkleField(
                 drawPath(p, color.copy(alpha = 0.95f * k))
             }
             drawCircle(Color.White.copy(alpha = 0.55f * k), radius = r * 0.22f, center = c)
+        }
+    }
+}
+
+
+private class Shard(val angle: Float, val power: Float, val size: Float, val spin: Float, val lift: Float, val color: Color, val round: Boolean)
+
+/**
+ * Coloured paper that bursts outward from one point ([originX]/[originY] are fractions of the area) like a popper, slows
+ * down in the air, then drifts down a little while it fades out. Draws nothing once finished.
+ */
+@Composable
+fun ConfettiExplosion(
+    modifier: Modifier = Modifier,
+    count: Int = 90,
+    durationMs: Int = 1700,
+    seed: Int = 11,
+    originX: Float = 0.5f,
+    originY: Float = 0.45f,
+    startDelayMs: Int = 0
+) {
+    val palette = remember {
+        listOf(Color(0xFFFF5E5E), Color(0xFFFFC93C), Color(0xFF4FD08A), Color(0xFF5EB6FF), Color(0xFFB78BFF), Color(0xFFFF8FB8), Color(0xFFFF9A3C))
+    }
+    val shards = remember(seed) {
+        val r = Random(seed)
+        List(count) {
+            Shard(
+                angle = r.nextFloat() * 2f * PI.toFloat(),
+                power = 0.25f + r.nextFloat() * 0.75f,
+                size = 6f + r.nextFloat() * 8f,
+                spin = (r.nextFloat() - 0.5f) * 16f,
+                lift = r.nextFloat() * 0.12f,
+                color = palette[r.nextInt(palette.size)],
+                round = r.nextFloat() < 0.3f
+            )
+        }
+    }
+    val t = remember(seed) { Animatable(0f) }
+    LaunchedEffect(seed) {
+        delay(startDelayMs.toLong())
+        t.animateTo(1f, tween(durationMs, easing = LinearEasing))
+    }
+    if (t.value <= 0f || t.value >= 1f) return
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val ox = size.width * originX
+        val oy = size.height * originY
+        val reach = size.minDimension * 0.62f
+        shards.forEach { c ->
+            val local = t.value
+            // Fast out of the origin, braking hard: 1 - (1 - t)^3.
+            val out = 1f - (1f - local) * (1f - local) * (1f - local)
+            val dist = reach * c.power * out
+            val x = ox + cos(c.angle) * dist + sin(local * 7f + c.angle * 5f) * 6f
+            // Then gravity pulls it down while it fades.
+            val y = oy + sin(c.angle) * dist - size.height * c.lift * out + size.height * 0.22f * local * local
+            val alpha = (1f - ((local - 0.6f) / 0.4f).coerceIn(0f, 1f))
+            val px = c.size.dp.toPx()
+            if (c.round) {
+                drawCircle(c.color.copy(alpha = alpha), radius = px * 0.5f, center = Offset(x, y))
+            } else {
+                rotate(local * c.spin * 57f, Offset(x, y)) {
+                    drawRect(c.color.copy(alpha = alpha), topLeft = Offset(x - px / 2f, y - px * 0.3f), size = androidx.compose.ui.geometry.Size(px, px * 0.6f))
+                }
+            }
         }
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import com.sualtikasifi.cizimhafiza.presentation.common.dotGridBackground
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenArt
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -91,6 +92,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.nameRes
 import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 import com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 
 private val Ink = Color(0xFF3A2416)
@@ -374,7 +376,9 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(u * 44f))
-                            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF5A3A24), Color(0xFF2B1A12))))
+                            // The drawing screen's own paper: cream with a fine dot grid.
+                            .background(AppTheme.tokens.canvasPaper)
+                            .dotGridBackground(dotColor = AppTheme.tokens.canvasGrid, spacing = 22.dp, radius = 1.2.dp)
                             .border(u * 8f, Color(0xFFD9892B), RoundedCornerShape(u * 44f))
                             .padding(u * 40f)
                     ) { PenPreview(item.skin, Modifier.fillMaxWidth().height(u * 220f)) }
@@ -403,12 +407,25 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
  */
 @Composable
 private fun JokerBoughtCelebration(type: JokerType, quantity: Int, onDone: () -> Unit) {
+    // Everything fades out together at the end (after a moment, or on a tap) instead of vanishing.
+    val fade = remember { androidx.compose.animation.core.Animatable(1f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var closing by remember { mutableStateOf(false) }
+    val close: () -> Unit = {
+        if (!closing) {
+            closing = true
+            scope.launch {
+                fade.animateTo(0f, tween(260))
+                onDone()
+            }
+        }
+    }
     LaunchedEffect(Unit) {
-        delay(2_800)
-        onDone()
+        delay(2_600)
+        close()
     }
     androidx.compose.ui.window.Dialog(
-        onDismissRequest = onDone,
+        onDismissRequest = close,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         val pop = remember { androidx.compose.animation.core.Animatable(0.15f) }
@@ -436,8 +453,9 @@ private fun JokerBoughtCelebration(type: JokerType, quantity: Int, onDone: () ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .graphicsLayer { alpha = fade.value }
                 .background(Color(0xCC1B0E04))
-                .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onDone),
+                .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = close),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -479,7 +497,9 @@ private fun JokerBoughtCelebration(type: JokerType, quantity: Int, onDone: () ->
                     modifier = Modifier.padding(top = 6.dp).graphicsLayer { alpha = label.value; scaleX = 0.7f + 0.3f * label.value; scaleY = 0.7f + 0.3f * label.value }
                 )
             }
-            com.sualtikasifi.cizimhafiza.presentation.common.ConfettiBurst(count = 90, seed = 41 + quantity)
+            com.sualtikasifi.cizimhafiza.presentation.common.ConfettiExplosion(count = 70, durationMs = 1700, seed = 41 + quantity, originY = 0.42f)
+            // A second, smaller pop a beat later.
+            com.sualtikasifi.cizimhafiza.presentation.common.ConfettiExplosion(count = 45, durationMs = 1500, seed = 97 + quantity, originY = 0.42f, startDelayMs = 280)
         }
     }
 }
@@ -1137,9 +1157,16 @@ private fun PaintedPurchaseDialog(
                 }
             }
 
+            // Rises from the bottom of the screen, fast.
+            val enter = remember { androidx.compose.animation.core.Animatable(0f) }
+            LaunchedEffect(Unit) { enter.animateTo(1f, tween(260, easing = androidx.compose.animation.core.LinearOutSlowInEasing)) }
             Box(
                 Modifier
                     .size(frameW, frameW * (BuyArtH / BuyArtW))
+                    .graphicsLayer {
+                        translationY = (1f - enter.value) * (size.height * 0.5f + 160.dp.toPx())
+                        alpha = (enter.value * 2.5f).coerceIn(0f, 1f)
+                    }
                     .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {}
             ) {
                 Image(
