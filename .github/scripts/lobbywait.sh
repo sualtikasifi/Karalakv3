@@ -99,9 +99,8 @@ adb shell input swipe 540 1700 540 600 400
 sleep 2
 shot 09_createroom_scrolled
 # Create the room, then send a reaction and a phrase from the chat bar so the own player card shows a message.
-for label in "Oda Oluştur" "Create Room" "Create"; do
-  xy=$(find_xy "$label"); [ -n "$xy" ] && { adb shell input tap $xy; break; }
-done
+# The painted Create Room button at the bottom (the title above it has the same words, so no text search).
+adb shell input tap 540 2176
 sleep 18
 clear_overlays
 shot 10_lobby
