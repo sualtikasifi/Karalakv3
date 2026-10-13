@@ -123,20 +123,18 @@ object Moderation {
 
     /**
      * The lockout for the [strike]-th offence (lifetime, never reset — an approved round does not clear it, or somebody
-     * could alternate a cheated round with an honest one and never climb the ladder). Graduated and short: a first
-     * offence is only a warning, then 30 minutes, 2 hours, 6 hours and finally a day for every later one. An
-     * offensive drawing ([DrawingReportReason.OFFENSIVE]) is never let off with nothing — at least an hour.
+     * could alternate a cheated round with an honest one and never climb the ladder): 6 hours, 12 hours, a day,
+     * 3 days, and 7 days for every later one.
      */
-    fun lockoutMillisFor(strike: Int, reason: DrawingReportReason? = null): Long {
-        val minute = 60L * 1000L
-        val ladder = when {
-            strike <= 1 -> 0L
-            strike == 2 -> 30 * minute
-            strike == 3 -> 2 * 60 * minute
-            strike == 4 -> 6 * 60 * minute
-            else -> 24 * 60 * minute
+    fun lockoutMillisFor(strike: Int, @Suppress("UNUSED_PARAMETER") reason: DrawingReportReason? = null): Long {
+        val hour = 60L * 60L * 1000L
+        return when {
+            strike <= 1 -> 6 * hour
+            strike == 2 -> 12 * hour
+            strike == 3 -> 24 * hour
+            strike == 4 -> 72 * hour
+            else -> 168 * hour
         }
-        return if (reason == DrawingReportReason.OFFENSIVE) maxOf(ladder, 60 * minute) else ladder
     }
 
     /** How much heavier a report penalty gets with each offence: x1, x2 … capped at x5. */
