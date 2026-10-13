@@ -336,11 +336,13 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
 
     /** Takes gold back after a moderation penalty. Never below zero; sealed like every other economy write. */
     @Synchronized
-    fun revokeGold(amount: Int) {
-        if (amount <= 0) return
-        val updated = (_goldBalance.value - amount).coerceAtLeast(0)
+    fun revokeGold(amount: Int): Int {
+        if (amount <= 0) return 0
+        val lost = minOf(amount, _goldBalance.value)
+        val updated = _goldBalance.value - lost
         prefs.edit(commit = true) { putInt(KEY_GOLD_BALANCE, updated); sealEconomy(gold = updated) }
         _goldBalance.value = updated
+        return lost
     }
 
     /** The one-time "what is new" tour (chests, jokers, store) has been shown. */
@@ -812,8 +814,9 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
      * half-written pair would either lose the penalty or repeat it.
      */
     @Synchronized
-    fun revokeXp(amount: Int) {
-        if (amount <= 0) return
+    fun revokeXp(amount: Int): Int {
+        if (amount <= 0) return 0
+        val lost = minOf(amount, _lifetimeXp.value)
         val updated = (_lifetimeXp.value - amount).coerceAtLeast(0)
         val period = (_periodXp.value - amount).coerceAtLeast(0)
         prefs.edit(commit = true) {
@@ -822,6 +825,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         }
         _lifetimeXp.value = updated
         _periodXp.value = period
+        return lost
     }
 
     /**

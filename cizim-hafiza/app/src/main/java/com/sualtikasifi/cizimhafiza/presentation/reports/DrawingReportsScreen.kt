@@ -403,7 +403,7 @@ fun DrawingReportsScreen(
             }
 
             pendingUpholdReport?.let { entry ->
-                val (xp, gold) = com.sualtikasifi.cizimhafiza.domain.model.Moderation.reportPenalty(entry.report.reason)
+                val (xp, gold) = com.sualtikasifi.cizimhafiza.domain.model.Moderation.reportPenalty(entry.report.reason, 1)
                 AlertDialog(
                     onDismissRequest = { pendingUpholdReport = null },
                     title = { Text(stringResource(R.string.reports_uphold_title)) },

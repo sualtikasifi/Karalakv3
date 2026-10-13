@@ -445,18 +445,16 @@ private fun PenaltyDialog(penalty: Penalty, onDismiss: () -> Unit) {
                 // which is the point.
                 Text(
                     text = if (penalty.lockedUntilMillis > 0L) {
-                        stringResource(R.string.penalty_locked, penalty.strike)
+                        val lockMillis = (penalty.lockedUntilMillis - penalty.createdAtMillis).coerceAtLeast(0L)
+                        val minutes = ((lockMillis + 59_999L) / 60_000L).toInt().coerceAtLeast(1)
+                        val duration = if (minutes < 60) {
+                            stringResource(R.string.lock_duration_minutes, minutes)
+                        } else {
+                            stringResource(R.string.lock_duration_hours, (minutes + 59) / 60)
+                        }
+                        stringResource(R.string.penalty_locked, penalty.strike, duration)
                     } else {
-                        stringResource(
-                            R.string.penalty_strikes,
-                            penalty.strike,
-                            // Distance to the NEXT multiple, not to three: the
-                            // count is lifetime and every third offence costs
-                            // a day, so offence 4 is two away from a lockout,
-                            // not "already past it".
-                            Moderation.STRIKES_BEFORE_LOCKOUT -
-                                penalty.strike % Moderation.STRIKES_BEFORE_LOCKOUT
-                        )
+                        stringResource(R.string.penalty_strikes, penalty.strike)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,

@@ -491,8 +491,7 @@ class DrawingReportsViewModel @Inject constructor(
     /** The word was drawn honestly — just clears the row, no penalty. */
     /** Upholds a player report: XP and gold taken back from the drawer, a strike, and the drawing's reports cleared. */
     fun upholdReport(entry: ReportedDrawing) {
-        val (xp, gold) = com.sualtikasifi.cizimhafiza.domain.model.Moderation.reportPenalty(entry.report.reason)
-        decideReport(entry, upheld = true) { moderationRepository.upholdReport(entry.report, xp, gold) }
+        decideReport(entry, upheld = true) { moderationRepository.upholdReport(entry.report) }
     }
 
     /** Throws a report out as unfounded; nothing happens to the drawer. */

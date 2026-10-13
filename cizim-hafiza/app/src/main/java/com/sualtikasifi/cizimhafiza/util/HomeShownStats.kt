@@ -11,4 +11,8 @@ package com.sualtikasifi.cizimhafiza.util
 object HomeShownStats {
     @Volatile var pendingGold: Int = 0
     @Volatile var pendingXp: Int = 0
+
+    /** Gold and XP just taken back by a moderation penalty — the home screen counts them DOWN, with a red "-N". */
+    @Volatile var pendingGoldLoss: Int = 0
+    @Volatile var pendingXpLoss: Int = 0
 }

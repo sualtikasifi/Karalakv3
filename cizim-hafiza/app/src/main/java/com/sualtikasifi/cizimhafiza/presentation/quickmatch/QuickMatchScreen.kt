@@ -236,10 +236,11 @@ fun QuickMatchScreen(
                             // Hours remaining rather than a timestamp: "14
                             // saat" is something a player can act on, a date
                             // and time is something they have to work out.
-                            body = hoursRemaining(current.untilMillis).let { hours ->
+                            body = minutesRemaining(current.untilMillis).let { minutes ->
                                 stringResource(
-                                    if (hours == 1) R.string.quick_match_locked_body_one else R.string.quick_match_locked_body,
-                                    hours
+                                    R.string.quick_match_locked_body,
+                                    if (minutes < 60) stringResource(R.string.lock_duration_minutes, minutes)
+                                    else stringResource(R.string.lock_duration_hours, (minutes + 59) / 60)
                                 )
                             },
                             // No retry button — there is nothing to retry
@@ -552,11 +553,11 @@ private fun MatchCard(
 
 private const val COUNTDOWN_MS = 5_000
 
-/** Whole hours left, rounded up so "1 saat" never means "in three minutes". */
-private fun hoursRemaining(untilMillis: Long): Int {
+/** Whole minutes left, rounded up. */
+private fun minutesRemaining(untilMillis: Long): Int {
     val left = untilMillis - System.currentTimeMillis()
-    if (left <= 0L) return 0
-    return ((left + 3_599_999L) / 3_600_000L).toInt()
+    if (left <= 0L) return 1
+    return ((left + 59_999L) / 60_000L).toInt()
 }
 
 @Composable

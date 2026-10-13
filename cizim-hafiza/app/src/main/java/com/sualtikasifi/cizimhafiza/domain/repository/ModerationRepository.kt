@@ -127,9 +127,9 @@ interface ModerationRepository {
     /**
      * Upholds a player's report: writes a penalty (XP and gold back, one more strike, a lockout on
      * every third) against the drawer and clears every report of that same drawing, so it cannot be
-     * punished twice. Amounts come from [com.sualtikasifi.cizimhafiza.domain.model.Moderation.reportPenalty].
+     * punished twice. Amounts and lockout come from the drawer's strike count — see Moderation.reportPenalty and Moderation.lockoutMillisFor.
      */
-    suspend fun upholdReport(report: DrawingReport, xpToRevoke: Int, goldToRevoke: Int): Result<Unit>
+    suspend fun upholdReport(report: DrawingReport): Result<Unit>
 
     /** Throws a report out as unfounded — nothing happens to the drawer. */
     suspend fun dismissReport(reportId: String): Result<Unit>
