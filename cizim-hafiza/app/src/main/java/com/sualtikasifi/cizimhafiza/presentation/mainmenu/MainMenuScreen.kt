@@ -145,6 +145,7 @@ fun MainMenuScreen(
     onChests: () -> Unit,
     onStore: () -> Unit,
     onLeague: () -> Unit,
+    onRunes: () -> Unit = {},
     viewModel: MainMenuViewModel = hiltViewModel()
 ) {
     val hasUnseenAchievement by viewModel.hasUnseenAchievement.collectAsState()
@@ -163,6 +164,7 @@ fun MainMenuScreen(
     val selectedFrame by viewModel.selectedFrame.collectAsState()
     val selectedPen by viewModel.selectedPen.collectAsState()
     val gold by viewModel.goldBalance.collectAsState()
+    val runeReady by viewModel.runeReady.collectAsState()
     val avatarFrameItems by viewModel.avatarFrameItems.collectAsState()
     val avatarPhoto by viewModel.avatarPhoto.collectAsState()
     val avatarSource by viewModel.avatarSource.collectAsState()
@@ -262,7 +264,9 @@ fun MainMenuScreen(
             onAchievements = onAchievements,
             onLeague = onLeague,
             onStore = onStore,
-            onSettings = onSettings
+            onSettings = onSettings,
+            runeReady = runeReady,
+            onRunes = onRunes
         )
         }
 

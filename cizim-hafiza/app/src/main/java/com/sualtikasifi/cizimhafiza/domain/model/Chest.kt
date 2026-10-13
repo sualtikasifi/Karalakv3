@@ -83,12 +83,20 @@ object ChestLoot {
     private const val PEN_DROP_CHANCE = 0.12f
     private const val PEN_DROP_MAX_PRICE = 6_500
 
-    fun roll(tier: ChestTier, ownedStoreIds: Set<String>, rnd: kotlin.random.Random = kotlin.random.Random): ChestReward {
-        val gold = tier.goldReward.random(rnd)
+    fun roll(
+        tier: ChestTier,
+        ownedStoreIds: Set<String>,
+        rnd: kotlin.random.Random = kotlin.random.Random,
+        /** Rune bonus: percent added to the gold, and percentage points added to each extra-joker chance. */
+        goldPercent: Int = 0,
+        jokerBonusPercent: Int = 0
+    ): ChestReward {
+        val gold = tier.goldReward.random(rnd).let { it + it * goldPercent / 100 }
+        val bonus = jokerBonusPercent / 100f
         val jokerRolls = when (tier) {
-            ChestTier.SILVER -> if (rnd.nextFloat() < 0.30f) 1 else 0
-            ChestTier.GOLD -> 1 + if (rnd.nextFloat() < 0.30f) 1 else 0
-            ChestTier.RARE -> 2 + if (rnd.nextFloat() < 0.40f) 1 else 0
+            ChestTier.SILVER -> if (rnd.nextFloat() < 0.30f + bonus) 1 else 0
+            ChestTier.GOLD -> 1 + if (rnd.nextFloat() < 0.30f + bonus) 1 else 0
+            ChestTier.RARE -> 2 + if (rnd.nextFloat() < 0.40f + bonus) 1 else 0
         }
         val jokers = mutableMapOf<JokerType, Int>()
         repeat(jokerRolls) {

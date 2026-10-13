@@ -145,6 +145,7 @@ class BackupRepositoryImpl @Inject constructor(
             adChestDay = settingsRepository.adChestNextAtMillis.value,
             loginStreak = settingsRepository.loginStreak,
             loginLastClaimDay = settingsRepository.loginLastClaimDay,
+            runeLevels = settingsRepository.runeLevels.value,
             claimedAchievementIds = achievementDao.getClaimedIds(),
             claimsSaved = true,
             dailyResult = daily.lastResult?.let { r ->
@@ -488,6 +489,7 @@ class BackupRepositoryImpl @Inject constructor(
             snapshot.periodId, snapshot.adGoldNextAt, snapshot.adChestDay
         )
         settingsRepository.restoreLoginStreak(snapshot.loginStreak, snapshot.loginLastClaimDay)
+        settingsRepository.restoreRuneLevels(snapshot.runeLevels)
         settingsRepository.restoreOneTimePrompts(snapshot.ratingPromptShown == 1, snapshot.quickMatchGames)
         dailyChallengeRepository.replaceWithAccount(
             lastCompletedEpochDay = snapshot.dailyLastCompletedEpochDay,

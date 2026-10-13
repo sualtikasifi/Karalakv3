@@ -149,7 +149,11 @@ internal fun PaintedHome(
     onLeague: () -> Unit,
     onStore: () -> Unit,
     onSettings: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** A rune can be bought now — the mascot shows a pulsing badge. */
+    runeReady: Boolean = false,
+    /** Opens Karalak Rünleri: the mascot at the top right is its door. */
+    onRunes: () -> Unit = {}
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize().sceneIn()) {
         // ONE scale for both directions, so the picture is never stretched: on a phone shaped like it the picture fills
@@ -288,6 +292,35 @@ internal fun PaintedHome(
             Icon(Icons.Filled.Create, contentDescription = null, tint = Color(0xFF5A2E0A), modifier = Modifier.size((30f * us).dp))
         }
         FitLettered(stringResource(pen.labelRes), 27f, Color(0xFF3A1E08), 1, box(350f, 266f, 484f, 320f).then(follow(penChipSink, 388f, 292f, 350f, 266f, 484f, 320f)))
+
+        // ── The mascot (top right) opens the rune map ──
+        Box(
+            box(520f, 86f, 760f, 300f)
+                .pressable(pressedScale = 0.96f, onClick = onRunes)
+                .a11yButton(stringResource(R.string.rune_screen_title))
+        ) {}
+        if (runeReady) {
+            val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "runeBadge")
+            val k by pulse.animateFloat(
+                initialValue = 0.9f,
+                targetValue = 1.15f,
+                animationSpec = androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(700), androidx.compose.animation.core.RepeatMode.Reverse),
+                label = "runeBadgeScale"
+            )
+            Box(
+                box(690f, 92f, 748f, 150f).graphicsLayer { scaleX = k; scaleY = k },
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    Modifier.fillMaxSize()
+                        .background(Brush.verticalGradient(listOf(Color(0xFFFF7A59), Color(0xFFD42A1E))), CircleShape)
+                        .border(2.dp, Color.White, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    LetteredText("!", fs(34f), outline = Color(0xFF5A0F08), maxLines = 1)
+                }
+            }
+        }
 
         // ── Profile ──
         Box(
