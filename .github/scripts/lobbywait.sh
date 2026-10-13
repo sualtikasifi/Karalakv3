@@ -75,6 +75,14 @@ PY
 adb shell am start -n $ACT
 sleep 8
 sleep 50
+# The daily login-streak window now opens on launch and covers the menu: claim it, let the reward play, close what is left.
+for label in "Claim reward" "Ödülü Al"; do
+  xy=$(find_xy "$label"); [ -n "$xy" ] && { echo "claiming at $xy"; adb shell input tap $xy; sleep 6; break; }
+done
+shot 00a_after_claim
+adb shell input keyevent 4 || true
+sleep 2
+shot 00b_after_back
 adb shell input tap 540 1678
 sleep 4
 shot 00_menu
