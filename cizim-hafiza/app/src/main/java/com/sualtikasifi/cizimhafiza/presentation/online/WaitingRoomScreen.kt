@@ -171,6 +171,7 @@ fun WaitingRoomScreen(
     }
 
     var kickTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var friendTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
     var invitePickerOpen by remember { mutableStateOf(false) }
     val friends by viewModel.friends.collectAsState()
     val inviteState by viewModel.inviteState.collectAsState()
@@ -223,7 +224,10 @@ fun WaitingRoomScreen(
                 { kickTarget = player.uid to player.displayName }
             } else null,
             teamId = player.teamId,
-            onSwitchTeam = null
+            onSwitchTeam = null,
+            onTap = if (!isBot && friends.none { it.uid == player.uid }) {
+                { friendTarget = player.uid to player.displayName }
+            } else null
         )
     }
     // In the permanent bot room, Sude always takes the very first slot
@@ -489,6 +493,20 @@ fun WaitingRoomScreen(
         ) {
             TintedBadge(text = message.asString())
         }
+    }
+
+    friendTarget?.let { (targetUid, targetName) ->
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            title = stringResource(R.string.online_friend_add_title),
+            message = stringResource(R.string.online_friend_add_message, targetName),
+            confirmText = stringResource(R.string.online_friend_add_confirm),
+            dismissText = stringResource(R.string.online_kick_confirm_cancel),
+            onConfirm = {
+                viewModel.sendFriendRequest(targetUid, targetName)
+                friendTarget = null
+            },
+            onDismiss = { friendTarget = null }
+        )
     }
 
     kickTarget?.let { (targetUid, targetName) ->
@@ -879,7 +897,9 @@ private data class PlayerSlotUiState(
     val onKick: (() -> Unit)?,
     val teamId: String? = null,
     /** Non-null only on the current player's own slot, only in a team room — see WaitingRoomScreen's mySlot. */
-    val onSwitchTeam: (() -> Unit)? = null
+    val onSwitchTeam: (() -> Unit)? = null,
+    /** Tapping the card — set on somebody who is not a friend yet, to offer a friend request. */
+    val onTap: (() -> Unit)? = null
 )
 
 /** One 2v2 team's column: a header and its (padded-to-TEAM_SIZE) slots stacked vertically. */
@@ -953,7 +973,9 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
         slicePx = 90,
         edge = 22.dp,
         tint = readyTint,
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth().then(
+            if (slot.onTap != null) Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = slot.onTap) else Modifier
+        )
     ) {
         Box(modifier = Modifier.fillMaxWidth().heightIn(min = LocalSlotHeight.current)) {
             Row(

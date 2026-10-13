@@ -79,6 +79,24 @@ class WaitingRoomViewModel @Inject constructor(
 
     fun consumeInviteMessage() = _inviteState.update { it.copy(message = null) }
 
+    /** Asks a player met in this lobby to be friends; the result is reported over the lobby like an invite's. */
+    fun sendFriendRequest(uid: String, name: String) {
+        val nickname = settingsRepository.nicknameOrDefault
+        viewModelScope.launch {
+            val message = friendRepository.sendFriendRequestToUid(uid, name, nickname).fold(
+                onSuccess = { outcome ->
+                    when (outcome) {
+                        is com.sualtikasifi.cizimhafiza.domain.model.AddFriendOutcome.RequestSent -> UiText.of(R.string.info_friend_request_sent, outcome.nickname)
+                        is com.sualtikasifi.cizimhafiza.domain.model.AddFriendOutcome.Added -> UiText.of(R.string.info_friend_added, outcome.friend.nickname)
+                        is com.sualtikasifi.cizimhafiza.domain.model.AddFriendOutcome.AlreadyFriends -> UiText.of(R.string.info_friend_already, outcome.friend.nickname)
+                    }
+                },
+                onFailure = { UiText.of(R.string.error_friend_add_failed) }
+            )
+            _inviteState.update { it.copy(message = message) }
+        }
+    }
+
     /** Invites [friend] into THIS room — see [friends]. */
     fun inviteFriendToRoom(friend: Friend) {
         if (_inviteState.value.sendingToUid != null) return

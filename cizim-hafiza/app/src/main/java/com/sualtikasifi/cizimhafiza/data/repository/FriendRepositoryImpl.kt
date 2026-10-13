@@ -245,12 +245,23 @@ class FriendRepositoryImpl @Inject constructor(
         if (friendUid == uid) throw CannotAddSelfException()
         val friendNickname = users.document(friendUid).get().await().getString("nickname")
             ?: context.getString(R.string.default_nickname)
+        requestFriend(uid, friendUid, friendNickname, myNickname)
+    }
+
+    override suspend fun sendFriendRequestToUid(friendUid: String, friendNickname: String, myNickname: String): Result<AddFriendOutcome> = runCatching {
+        val uid = requireUid()
+        if (friendUid == uid) throw CannotAddSelfException()
+        requestFriend(uid, friendUid, friendNickname, myNickname)
+    }
+
+    /** The part of adding a friend that is the same however the other player was found. */
+    private suspend fun requestFriend(uid: String, friendUid: String, friendNickname: String, myNickname: String): AddFriendOutcome {
         val friend = Friend(uid = friendUid, nickname = friendNickname)
 
         // Already friends: say so rather than sending a request that would
         // sit in their list asking for something they already gave.
         if (users.document(uid).collection("friends").document(friendUid).get().await().exists()) {
-            return@runCatching AddFriendOutcome.AlreadyFriends(friend)
+            return AddFriendOutcome.AlreadyFriends(friend)
         }
 
         // They asked first. Two people each holding the other's request want
@@ -260,7 +271,7 @@ class FriendRepositoryImpl @Inject constructor(
         val theirRequest = users.document(uid).collection("friendRequests").document(friendUid).get().await()
         if (theirRequest.exists()) {
             writeFriendship(uid, myNickname, friendUid, friendNickname, clearRequestOn = uid)
-            return@runCatching AddFriendOutcome.Added(friend)
+            return AddFriendOutcome.Added(friend)
         }
 
         // The normal path. One write, into THEIR inbox, carrying nothing but
@@ -268,7 +279,7 @@ class FriendRepositoryImpl @Inject constructor(
         users.document(friendUid).collection("friendRequests").document(uid).set(
             mapOf("fromNickname" to myNickname, "sentAt" to System.currentTimeMillis())
         ).await()
-        AddFriendOutcome.RequestSent(friendNickname)
+        return AddFriendOutcome.RequestSent(friendNickname)
     }
 
     override fun observeFriendRequests(): Flow<List<FriendRequest>> =

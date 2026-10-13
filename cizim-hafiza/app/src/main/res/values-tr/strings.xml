@@ -107,6 +107,9 @@
     <string name="online_kick_confirm_title">Oyuncuyu at</string>
     <string name="online_kick_confirm_message">%1$s odadan atılıp 30 dakika tekrar giremeyecek. Emin misin?</string>
     <string name="online_kick_confirm_confirm">At</string>
+    <string name="online_friend_add_title">Arkadaş ekle?</string>
+    <string name="online_friend_add_message">%1$s adlı oyuncuya arkadaşlık isteği gönderilsin mi?</string>
+    <string name="online_friend_add_confirm">Gönder</string>
     <string name="online_kick_confirm_cancel">Vazgeç</string>
     <string name="online_kicked_users_section_title">Atılanlar</string>
     <string name="online_kicked_user_remaining_format">%1$s — %2$d dk</string>
