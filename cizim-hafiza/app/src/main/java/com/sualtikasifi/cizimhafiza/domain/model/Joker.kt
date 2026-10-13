@@ -20,8 +20,10 @@ enum class JokerType(val price: Int) {
         const val BULK_DISCOUNT_PERCENT = 15
     }
 
-    fun priceFor(quantity: Int): Int =
-        if (quantity >= BULK_QUANTITY) (price * quantity * (100 - BULK_DISCOUNT_PERCENT)) / 100 else price * quantity
+    fun priceFor(quantity: Int, extraDiscountPercent: Int = 0): Int {
+        val base = if (quantity >= BULK_QUANTITY) (price * quantity * (100 - BULK_DISCOUNT_PERCENT)) / 100 else price * quantity
+        return if (extraDiscountPercent > 0) base * (100 - extraDiscountPercent) / 100 else base
+    }
 }
 
 /**

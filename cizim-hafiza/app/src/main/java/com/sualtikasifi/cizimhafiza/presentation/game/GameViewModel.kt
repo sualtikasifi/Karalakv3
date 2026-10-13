@@ -1029,7 +1029,7 @@ class GameViewModel @Inject constructor(
         soundManager.playGameOver()
         // Gold earned by playing (not only by winning chests): achievements,
         // improving a level's stars, and the daily challenge. Paid once, below.
-        val goldFromAchievements = newlyUnlocked.size * GameConstants.ACHIEVEMENT_GOLD
+        val goldFromAchievements = newlyUnlocked.size * settingsRepository.achievementGold()
         var goldFromLevel = 0
         var goldFromDaily = 0
         val goldFromPlay = if (isDaily) 0 else results.count { it.isCorrect } * settingsRepository.goldPerCorrectWord()
@@ -1064,7 +1064,7 @@ class GameViewModel @Inject constructor(
             settingsRepository.addXp(bonus)
             roundXpEarned += bonus
             // Gold only for stars beyond the best already earned — replaying a cleared level pays none.
-            goldFromLevel = (it - previousBestStars).coerceAtLeast(0) * GameConstants.LEVEL_GOLD_PER_NEW_STAR
+            goldFromLevel = (it - previousBestStars).coerceAtLeast(0) * settingsRepository.starGold()
             goldEarned += goldFromLevel
         }
 
@@ -1093,7 +1093,7 @@ class GameViewModel @Inject constructor(
             )
             settingsRepository.addXp(xpAwarded)
             roundXpEarned += xpAwarded
-            goldFromDaily = GameConstants.dailyChallengeGold(updated.currentStreak)
+            goldFromDaily = settingsRepository.dailyChallengeGold(updated.currentStreak)
             goldEarned += goldFromDaily
             DailyResultSummary(
                 streak = updated.currentStreak,
