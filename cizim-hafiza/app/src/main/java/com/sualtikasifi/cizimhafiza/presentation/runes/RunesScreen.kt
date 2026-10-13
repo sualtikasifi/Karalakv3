@@ -8,6 +8,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.layout.height
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -386,15 +392,12 @@ private fun InfoCard(
     onBuy: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val shape = RoundedCornerShape(22.dp)
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 140.dp)
-            .clip(shape)
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFF6DD), Color(0xFFF3DDAA))))
-            .border(BorderStroke(3.dp, Color(0xFF9A5B22)), shape)
-            .padding(12.dp),
+            .heightIn(min = 150.dp)
+            .sliced(R.drawable.rune_ui_card, srcCorner = 58, dstCorner = 26.dp)
+            .padding(horizontal = 24.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.Center
     ) {
         val rune = selected?.let { RuneTree.get(it) }
@@ -479,20 +482,21 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, gold: Int, onBuy: (
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(if (reached) Color(0xFFFFF3C4) else Color(0xFFF7EBCD))
-                    .border(BorderStroke(if (isNext || reached) 2.5.dp else 1.5.dp, if (reached) Color(0xFFE59A12) else if (isNext) Color(0xFFE59A12).copy(alpha = 0.6f) else Color(0xFFCDB98A)), RoundedCornerShape(14.dp))
-                    .padding(vertical = 6.dp),
+                    .sliced(
+                        if (reached) R.drawable.rune_ui_box_gold else if (isNext) R.drawable.rune_ui_box_empty else R.drawable.rune_ui_box_gray,
+                        srcCorner = 40, dstCorner = 14.dp
+                    )
+                    .padding(vertical = 8.dp, horizontal = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box(Modifier.size(12.dp).background(if (reached) Color(0xFFFFB400) else Color(0xFFB9AA88), CircleShape))
+                Image(painterResource(if (reached) R.drawable.rune_pip_full else R.drawable.rune_pip_empty), null, modifier = Modifier.size(14.dp))
                 Text(stringResource(R.string.rune_level_n, n), style = MaterialTheme.typography.labelSmall, color = Ink.copy(alpha = 0.8f))
                 Text(
                     tileText(rune.effect.unit, rune.perLevel * n),
                     fontFamily = DisplayFont,
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 18.sp,
-                    color = if (reached) Color(0xFFE5701A) else Ink.copy(alpha = 0.75f)
+                    color = if (reached) Ink else if (isNext) Ink.copy(alpha = 0.85f) else Color.White
                 )
                 Text(stringResource(rune.effect.labelRes), style = MaterialTheme.typography.labelSmall, color = Ink.copy(alpha = 0.7f), textAlign = TextAlign.Center)
             }
@@ -513,11 +517,53 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, gold: Int, onBuy: (
                 )
                 Spacer(Modifier.size(4.dp))
             }
-            PrimaryButton(
-                text = stringResource(R.string.rune_buy, NumberFormat.getIntegerInstance().format(cost)),
-                onClick = { onBuy(rune.id) },
-                enabled = gold >= cost,
-                modifier = Modifier.fillMaxWidth()
+            val canBuy = gold >= cost
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+                    .pressable(pressedScale = 0.96f, onClick = { if (canBuy) onBuy(rune.id) })
+                    .sliced(if (canBuy) R.drawable.rune_ui_btn_green else R.drawable.rune_ui_btn_gray, srcCorner = 73, dstCorner = 27.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Image(painterResource(R.drawable.icon_gold_coin), null, modifier = Modifier.size(26.dp))
+                    Text(
+                        text = stringResource(R.string.rune_buy, NumberFormat.getIntegerInstance().format(cost)),
+                        fontFamily = DisplayFont,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 20.sp,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Paints [res] behind the content as a nine-slice: the corners keep their size ([srcCorner] px of the art drawn at [dstCorner]),
+ * the edges and the middle stretch. A frame can then be any size without its studs or round ends getting squashed.
+ */
+@Composable
+private fun Modifier.sliced(@DrawableRes res: Int, srcCorner: Int, dstCorner: Dp): Modifier {
+    val bmp = ImageBitmap.imageResource(res)
+    return drawBehind {
+        val c = srcCorner
+        val d = dstCorner.toPx().roundToInt().coerceAtMost(minOf(size.width, size.height).toInt() / 2)
+        val w = size.width.roundToInt()
+        val h = size.height.roundToInt()
+        val xs = intArrayOf(0, c, bmp.width - c, bmp.width)
+        val ys = intArrayOf(0, c, bmp.height - c, bmp.height)
+        val dx = intArrayOf(0, d, w - d, w)
+        val dy = intArrayOf(0, d, h - d, h)
+        for (r in 0 until 3) for (q in 0 until 3) {
+            drawImage(
+                bmp,
+                srcOffset = IntOffset(xs[q], ys[r]),
+                srcSize = IntSize(xs[q + 1] - xs[q], ys[r + 1] - ys[r]),
+                dstOffset = IntOffset(dx[q], dy[r]),
+                dstSize = IntSize(dx[q + 1] - dx[q], dy[r + 1] - dy[r])
             )
         }
     }
