@@ -1153,6 +1153,14 @@
     <string name="lock_duration_minutes">%1$d dakika</string>
     <string name="lock_duration_days">%1$d gün</string>
     <string name="lock_duration_hours">%1$d saat</string>
+    <string name="lock_countdown_days">%1$d gün %2$s</string>
+    <string name="lock_screen_body">Çizimin inceleme sonucu kurallara aykırı bulundu. Hızlı Eşleş ve Arkadaşınla Yarış süre dolana kadar kapalı. Çevrimdışı oynamaya devam edebilirsin.</string>
+    <string name="reports_tab_locks">Kilitler</string>
+    <string name="locks_empty">Şu an çevrimiçi kilidi olan kullanıcı yok.</string>
+    <string name="locks_line">%1$d. ihlal · kalan %2$s</string>
+    <string name="locks_cancel">İhlali iptal et</string>
+    <string name="locks_cancel_title">İhlal iptal edilsin mi?</string>
+    <string name="locks_cancel_body">Kilit hemen kalkar, ihlal sayacı 1 azalır. Zaten alınmış XP ve altın geri verilmez.</string>
     <string name="penalty_understood">Anladım</string>
     <string name="quick_match_locked_title">Bu mod geçici olarak kapalı</string>
     <string name="quick_match_locked_body">İhlal nedeniyle bu mod geçici olarak kapalı. Hızlı Eşleş ve Arkadaşınla Yarış yaklaşık %1$s sonra tekrar açılacak.</string>

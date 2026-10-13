@@ -109,6 +109,16 @@ data class ReviewerIdentity(
     val isReviewer: Boolean
 )
 
+/** An account that cannot play online right now because of a penalty — see ModerationRepository.activeLocks. */
+data class ActiveLock(
+    val penaltyId: String,
+    val uid: String,
+    val nickname: String,
+    val strike: Int,
+    val lockedUntilMillis: Long,
+    val createdAtMillis: Long
+)
+
 object Moderation {
 
     /**

@@ -1140,6 +1140,14 @@
     <string name="lock_duration_minutes">%1$d minutes</string>
     <string name="lock_duration_days">%1$d days</string>
     <string name="lock_duration_hours">%1$d hours</string>
+    <string name="lock_countdown_days">%1$d d %2$s</string>
+    <string name="lock_screen_body">A drawing of yours was found against the rules in review. Quick Match and Play with Friends stay closed until the timer ends. You can keep playing offline.</string>
+    <string name="reports_tab_locks">Locks</string>
+    <string name="locks_empty">Nobody is locked out of online play right now.</string>
+    <string name="locks_line">Offence %1$d · %2$s left</string>
+    <string name="locks_cancel">Cancel violation</string>
+    <string name="locks_cancel_title">Cancel this violation?</string>
+    <string name="locks_cancel_body">The lockout ends now and the offence count drops by 1. XP and gold already taken are not given back.</string>
     <string name="penalty_understood">Understood</string>
     <string name="quick_match_locked_title">This mode is temporarily closed</string>
     <string name="quick_match_locked_body">This mode is closed for a while because of a violation. Quick Match and Play with Friends reopen in about %1$s.</string>

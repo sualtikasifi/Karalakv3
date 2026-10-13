@@ -267,6 +267,9 @@ fun QuickMatchScreen(
                     modifier = Modifier.graphicsLayer { alpha = sceneAlpha.value }
                 )
             }
+            (state as? QuickMatchState.Locked)?.let { locked ->
+                LockedScene(untilMillis = locked.untilMillis, onUnlocked = viewModel::search)
+            }
             if (matched) {
                 // Once matched, leaving costs XP, so the back button asks first.
                 com.sualtikasifi.cizimhafiza.presentation.common.PaintedBackButton(
@@ -599,6 +602,78 @@ private fun MessageBody(
             onClick = onAction,
             icon = Icons.Filled.Refresh,
             modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+
+private const val LockArtW = 841f
+private const val LockArtH = 1870f
+
+/**
+ * The lockout screen: the painted "Bu mod geçici olarak KAPALI" picture (see bg_locked), with the reason and a live
+ * countdown written into the empty part of its paper. Laid out in the picture's own units so it scales with it.
+ */
+@Composable
+private fun LockedScene(untilMillis: Long, onUnlocked: () -> Unit) {
+    var now by remember { androidx.compose.runtime.mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(untilMillis) {
+        while (true) {
+            now = System.currentTimeMillis()
+            if (now >= untilMillis) {
+                onUnlocked()
+                break
+            }
+            delay(1000)
+        }
+    }
+    val left = (untilMillis - now).coerceAtLeast(0L) / 1000L
+    val days = left / 86_400L
+    val clock = String.format(java.util.Locale.US, "%02d:%02d:%02d", (left % 86_400L) / 3600L, (left % 3600L) / 60L, left % 60L)
+    val countdown = if (days > 0) stringResource(R.string.lock_countdown_days, days.toInt(), clock) else clock
+
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val widthPx = with(density) { maxWidth.toPx() }
+        val heightPx = with(density) { maxHeight.toPx() }
+        // Crop to fill, centred; the pieces keep their place on the picture.
+        val s = maxOf(widthPx / LockArtW, heightPx / LockArtH)
+        val offX = (widthPx - LockArtW * s) / 2f
+        val offY = (heightPx - LockArtH * s) / 2f
+        val fontScale0 = density.fontScale
+        fun x(art: Float) = with(density) { (offX + art * s).toDp() }
+        fun y(art: Float) = with(density) { (offY + art * s).toDp() }
+        fun len(art: Float) = with(density) { (art * s).toDp() }
+        fun fs(art: Float) = with(density) { (art * s / fontScale0).toSp() }
+
+        Image(
+            painter = cachedPainterResource(R.drawable.bg_locked),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        // The live countdown, under KAPALI.
+        com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+            text = countdown,
+            size = fs(78f),
+            fill = androidx.compose.ui.graphics.Color(0xFFC2321B),
+            outline = null,
+            maxLines = 1,
+            modifier = Modifier.offset(x(110f), y(990f)).size(len(620f), len(96f))
+        )
+        // Why, and what still works.
+        com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+            text = stringResource(R.string.lock_screen_body),
+            style = androidx.compose.ui.text.TextStyle(
+                fontSize = fs(31f),
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                color = androidx.compose.ui.graphics.Color(0xFF4A2814),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                lineHeight = fs(37f)
+            ),
+            maxLines = 4,
+            minScale = 0.6f,
+            modifier = Modifier.offset(x(110f), y(1088f)).size(len(620f), len(118f))
         )
     }
 }
