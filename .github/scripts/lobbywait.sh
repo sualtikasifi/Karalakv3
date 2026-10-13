@@ -75,14 +75,15 @@ PY
 adb shell am start -n $ACT
 sleep 8
 sleep 50
-# The daily login-streak window now opens on launch and covers the menu: claim it, let the reward play, close what is left.
-for label in "Claim reward" "Ödülü Al"; do
-  xy=$(find_xy "$label"); [ -n "$xy" ] && { echo "claiming at $xy"; adb shell input tap $xy; sleep 6; break; }
+# The ads consent form and then the daily login-streak window open on launch and cover the menu: dismiss the consent,
+# claim the reward, let it play, and repeat until the menu is clear.
+for i in 1 2 3; do
+  clear_overlays
+  xy=$(find_xy "Claim reward"); [ -z "$xy" ] && xy=$(find_xy "Ödülü Al")
+  if [ -n "$xy" ]; then echo "claiming at $xy"; adb shell input tap $xy; sleep 9; fi
+  shot "00_claim_$i"
 done
-shot 00a_after_claim
-adb shell input keyevent 4 || true
-sleep 2
-shot 00b_after_back
+clear_overlays
 adb shell input tap 540 1678
 sleep 4
 shot 00_menu
