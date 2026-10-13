@@ -319,8 +319,10 @@ fun WaitingRoomScreen(
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
                 // Starts under the painted sign.
-                .padding(top = sceneY(0.205f) - 58.dp, bottom = 0.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+                // A little air under the last row, so "waiting for friends" is never cut by the chat dock when the
+                // content is a hair taller than the screen (it scrolls the rest into view).
+                .padding(top = sceneY(0.205f) - 58.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             RoomCodeCard(
@@ -389,7 +391,7 @@ fun WaitingRoomScreen(
                 // room reads as "being filled in" rather than a short list.
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 6.dp)
                 ) {
                     playerSlots.chunked(2).forEach { rowSlots ->
                         Row(
