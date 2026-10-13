@@ -484,7 +484,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     /** Buys [quantity] jokers at [JokerType.priceFor]; false if the balance can't cover it. */
     @Synchronized
     fun purchaseJoker(type: JokerType, quantity: Int): Boolean {
-        val price = type.priceFor(quantity)
+        val price = type.priceFor(quantity, RuneEffects.jokerDiscountPercent(_runeLevels.value))
         if (quantity <= 0 || _goldBalance.value < price) return false
         val updatedGold = _goldBalance.value - price
         val updatedJokers = _jokerCounts.value + (type to ((_jokerCounts.value[type] ?: 0) + quantity))
@@ -514,7 +514,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val type = com.sualtikasifi.cizimhafiza.domain.model.DailyJoker.typeFor(today)
         prefs.edit { putLong(KEY_DAILY_JOKER_DAY, today) }
         _dailyJokerDay.value = today
-        addJoker(type, 1)
+        addJoker(type, 1 + RuneEffects.extraDailyJokers(_runeLevels.value))
         return type
     }
 
@@ -759,6 +759,18 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
 
     /** Gold for one correct word with the runes applied. */
     fun goldPerCorrectWord(): Int = RuneEffects.goldPerWord(_runeLevels.value, GameConstants.GOLD_PER_CORRECT_WORD)
+
+    /** Gold of one achievement with the runes applied. */
+    fun achievementGold(): Int = RuneEffects.achievementGold(_runeLevels.value, GameConstants.ACHIEVEMENT_GOLD)
+
+    /** Gold of one new level star with the runes applied. */
+    fun starGold(): Int = RuneEffects.starGold(_runeLevels.value, GameConstants.LEVEL_GOLD_PER_NEW_STAR)
+
+    /** Gold of the daily challenge at [streakDays] with the runes applied. */
+    fun dailyChallengeGold(streakDays: Int): Int = RuneEffects.dailyGold(_runeLevels.value, GameConstants.dailyChallengeGold(streakDays))
+
+    /** Percent off joker prices from the runes. */
+    fun jokerDiscountPercent(): Int = RuneEffects.jokerDiscountPercent(_runeLevels.value)
 
     /** Gold for an online room win with the runes applied. */
     fun onlineWinGold(): Int = RuneEffects.winGold(_runeLevels.value, GameConstants.ONLINE_WIN_GOLD)

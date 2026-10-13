@@ -264,7 +264,7 @@ class OnlineResultViewModel @Inject constructor(
                     val won = placement == 1 && !tiedForFirst && roundPlayers.size >= 2
                     val gold = me.correctCount * settingsRepository.goldPerCorrectWord() +
                         (if (won) settingsRepository.onlineWinGold() else 0) +
-                        newlyUnlocked.size * GameConstants.ACHIEVEMENT_GOLD
+                        newlyUnlocked.size * settingsRepository.achievementGold()
                     if (gold > 0) settingsRepository.earnGold(gold)
                     val roundXp = settingsRepository.lastOnlineRoundXp
                     val matchXp = XpAwards.ONLINE_MATCH + if (won) XpAwards.ONLINE_WIN else 0

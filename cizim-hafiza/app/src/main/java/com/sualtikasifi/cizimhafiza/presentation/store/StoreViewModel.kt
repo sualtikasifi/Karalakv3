@@ -41,6 +41,11 @@ class StoreViewModel @Inject constructor(
     fun buyPen(skin: PenSkin): Boolean = settingsRepository.purchaseStoreItem(penId(skin), skin.storePrice)
     fun buyFrame(frame: AvatarFrame): Boolean = settingsRepository.purchaseStoreItem(frameId(frame), frame.storePrice)
 
+    /** Percent off joker prices from the runes. */
+    val jokerDiscountPercent: StateFlow<Int> = settingsRepository.runeLevels
+        .map { com.sualtikasifi.cizimhafiza.domain.model.RuneEffects.jokerDiscountPercent(it) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, settingsRepository.jokerDiscountPercent())
+
     val jokerCounts: StateFlow<Map<com.sualtikasifi.cizimhafiza.domain.model.JokerType, Int>> = settingsRepository.jokerCounts
     fun buyJoker(type: com.sualtikasifi.cizimhafiza.domain.model.JokerType, quantity: Int): Boolean = settingsRepository.purchaseJoker(type, quantity)
 

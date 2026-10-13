@@ -111,6 +111,7 @@ private sealed interface Pending {
 @Composable
 fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: StoreViewModel = hiltViewModel()) {
     val gold by viewModel.gold.collectAsState()
+    val jokerDiscount by viewModel.jokerDiscountPercent.collectAsState()
     val isGuest by viewModel.isGuest.collectAsState()
     val owned by viewModel.owned.collectAsState()
     val selectedPen by viewModel.selectedPenId.collectAsState()
@@ -232,6 +233,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                                 type = type,
                                 owned = jokerCounts[type] ?: 0,
                                 gold = gold,
+                                discountPercent = jokerDiscount,
                                 onBuy = { qty -> pending = Pending.JokerItem(type, qty) },
                                 onCannotAfford = { showToast(R.string.store_not_enough, isError = true) }
                             )
@@ -341,7 +343,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
         val price = when (item) {
             is Pending.PenItem -> item.skin.storePrice
             is Pending.FrameItem -> item.frame.storePrice
-            is Pending.JokerItem -> item.type.priceFor(item.quantity)
+            is Pending.JokerItem -> item.type.priceFor(item.quantity, jokerDiscount)
         }
         val preview: @Composable () -> Unit = {
             when (item) {
@@ -971,6 +973,7 @@ private fun JokerCard(
     type: JokerType,
     owned: Int,
     gold: Int,
+    discountPercent: Int,
     onBuy: (Int) -> Unit,
     onCannotAfford: () -> Unit
 ) {
@@ -1009,7 +1012,7 @@ private fun JokerCard(
             horizontalArrangement = Arrangement.spacedBy(w * 0.02f)
         ) {
             listOf(1, JokerType.BULK_QUANTITY).forEach { qty ->
-                val price = type.priceFor(qty)
+                val price = type.priceFor(qty, discountPercent)
                 val canAfford = gold >= price
                 PaintedPill(
                     res = if (qty == 1) R.drawable.st_pill_orange else R.drawable.st_pill_blue,
