@@ -9,9 +9,9 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 enum class ChestTier(val unlockDurationMillis: Long, val goldReward: IntRange) {
-    SILVER(2 * 60 * 60 * 1000L, 25..45),
-    GOLD(3 * 60 * 60 * 1000L, 80..140),
-    RARE(6 * 60 * 60 * 1000L, 260..480)
+    SILVER(2 * 60 * 60 * 1000L, 150..250),
+    GOLD(3 * 60 * 60 * 1000L, 450..700),
+    RARE(6 * 60 * 60 * 1000L, 1500..2500)
 }
 
 /**
@@ -71,9 +71,9 @@ object ChestSlots {
  * What a chest pays out — the rarer the chest, the more gold, the more
  * jokers, and (for the top tier only) a chance at a store pen.
  *
- *  - Çırak (common):    25–45 gold;   30% chance of 1 joker.
- *  - Sanatçı (rare):    80–140 gold;  1 joker guaranteed, 30% chance of a 2nd.
- *  - Sürpriz (legendary): 260–480 gold; 2 jokers guaranteed, 40% chance of a 3rd,
+ *  - Çırak (common):    150–250 gold;   30% chance of 1 joker.
+ *  - Sanatçı (rare):    450–700 gold;  1 joker guaranteed, 30% chance of a 2nd.
+ *  - Sürpriz (legendary): 1500–2500 gold; 2 jokers guaranteed, 40% chance of a 3rd,
  *                         and a 12% chance of a store pen worth up to 6.500 gold
  *                         that the player does not own yet.
  *

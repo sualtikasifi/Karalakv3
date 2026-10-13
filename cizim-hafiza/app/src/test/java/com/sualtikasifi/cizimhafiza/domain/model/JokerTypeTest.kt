@@ -18,7 +18,7 @@ class JokerTypeTest {
             assertTrue(bundle < it.price * JokerType.BULK_QUANTITY)
             assertTrue(bundle > 0)
         }
-        assertEquals(510, JokerType.FIRST_LETTER.priceFor(5)) // 5 x 120 less 15%
+        assertEquals(850, JokerType.FIRST_LETTER.priceFor(5)) // 5 x 200 less 15%
     }
 
     @Test

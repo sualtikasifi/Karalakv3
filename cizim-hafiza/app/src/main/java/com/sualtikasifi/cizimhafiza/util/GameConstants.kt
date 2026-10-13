@@ -153,16 +153,16 @@ object GameConstants {
     // --- Gold from playing (chests are not the only source) ---
 
     /** Gold for every word answered correctly, in every mode but the daily challenge (which pays its own). */
-    const val GOLD_PER_CORRECT_WORD = 1
+    const val GOLD_PER_CORRECT_WORD = 10
 
     /** Extra gold for winning an online room with at least one opponent. */
-    const val ONLINE_WIN_GOLD = 5
+    const val ONLINE_WIN_GOLD = 100
 
     /** Gold per achievement unlocked. */
-    const val ACHIEVEMENT_GOLD = 15
+    const val ACHIEVEMENT_GOLD = 100
 
     /** Gold per star gained beyond a level's previous best. */
-    const val LEVEL_GOLD_PER_NEW_STAR = 12
+    const val LEVEL_GOLD_PER_NEW_STAR = 50
 
     /** Flat gold paid alongside the pen/frame prize to every monthly league podium finisher — see LeagueViewModel.collectPrize. */
     const val LEAGUE_MONTHLY_GOLD = 10_000
@@ -170,14 +170,14 @@ object GameConstants {
     /** Flat XP paid alongside the pen/frame prize to every monthly league podium finisher — see LeagueViewModel.collectPrize. */
     const val LEAGUE_MONTHLY_XP = 10_000
 
-    private const val DAILY_GOLD_BASE = 30
-    private const val DAILY_GOLD_PER_STREAK_DAY = 5
+    private const val DAILY_GOLD_BASE = 300
+    private const val DAILY_GOLD_PER_STREAK_DAY = 30
     private const val DAILY_GOLD_STREAK_CAP_DAYS = 10
 
     /** XP taken from a player who cancels a Hızlı Eşleş after being matched, or quits the match half-way. */
     const val QUICK_MATCH_ABANDON_PENALTY_XP = 25
 
-    /** Gold for finishing the daily challenge: 30 + 5 per streak day, streak counted up to 10 days (max 80). */
+    /** Gold for finishing the daily challenge: 300 + 30 per streak day, streak counted up to 10 days (max 600). */
     fun dailyChallengeGold(streakDays: Int): Int =
         DAILY_GOLD_BASE + streakDays.coerceIn(0, DAILY_GOLD_STREAK_CAP_DAYS) * DAILY_GOLD_PER_STREAK_DAY
 
