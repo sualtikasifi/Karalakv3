@@ -262,8 +262,8 @@ class OnlineResultViewModel @Inject constructor(
                     // A tie for first is nobody's win: no win gold, XP or chest for any of the tied players.
                     val tiedForFirst = placement == 1 && ranked.count { it.totalScore == me.totalScore } > 1
                     val won = placement == 1 && !tiedForFirst && roundPlayers.size >= 2
-                    val gold = me.correctCount * GameConstants.GOLD_PER_CORRECT_WORD +
-                        (if (won) GameConstants.ONLINE_WIN_GOLD else 0) +
+                    val gold = me.correctCount * settingsRepository.goldPerCorrectWord() +
+                        (if (won) settingsRepository.onlineWinGold() else 0) +
                         newlyUnlocked.size * GameConstants.ACHIEVEMENT_GOLD
                     if (gold > 0) settingsRepository.earnGold(gold)
                     val roundXp = settingsRepository.lastOnlineRoundXp

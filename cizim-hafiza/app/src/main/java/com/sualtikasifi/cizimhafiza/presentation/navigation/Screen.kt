@@ -46,6 +46,9 @@ object Screen {
     /** "Kasalarım" — the 4 chest slots (see SettingsRepository.chestSlots), reached from the main menu. */
     const val Chests = "chests"
     const val Store = "store"
+
+    /** "Karalak Rünleri" — the rune map, opened from the mascot on the home screen. */
+    const val Runes = "runes"
     const val Account = "account"
     const val Tutorial = "tutorial"
 

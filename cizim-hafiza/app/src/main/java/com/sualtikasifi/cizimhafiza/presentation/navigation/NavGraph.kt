@@ -151,7 +151,8 @@ fun CizimHafizaNavGraph(
                 onDailyChallenge = { navController.navigate(Screen.dailyChallengeRoute()) },
                 onChests = { navController.navigate(Screen.Chests) },
                 onStore = { navController.navigate(Screen.Store) },
-                onLeague = { navController.navigate(Screen.League) }
+                onLeague = { navController.navigate(Screen.League) },
+                onRunes = { navController.navigate(Screen.Runes) }
             )
         }
 
@@ -282,6 +283,10 @@ fun CizimHafizaNavGraph(
 
         composable(Screen.Store) {
             com.sualtikasifi.cizimhafiza.presentation.store.StoreScreen(onBack = { navController.popBackStack() }, onAccount = { navController.navigate(Screen.Account) })
+        }
+
+        composable(Screen.Runes) {
+            com.sualtikasifi.cizimhafiza.presentation.runes.RunesScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Screen.Chests) {

@@ -20,6 +20,8 @@ import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
 import com.sualtikasifi.cizimhafiza.domain.model.ChestSlots
 import com.sualtikasifi.cizimhafiza.domain.model.JokerType
 import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
+import com.sualtikasifi.cizimhafiza.domain.model.RuneEffects
+import com.sualtikasifi.cizimhafiza.domain.model.RuneTree
 import com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel
 import com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod
 import kotlinx.serialization.encodeToString
@@ -636,7 +638,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     fun awardChestForWinOrPay(): ChestAward = ChestAward(awardChestForWin(), null)
 
     private fun payChestOutright(tier: ChestTier, extraEdit: android.content.SharedPreferences.Editor.() -> Unit = {}): ChestReward {
-        val reward = ChestLoot.roll(tier, _ownedStoreIds.value)
+        val reward = ChestLoot.roll(tier, _ownedStoreIds.value, goldPercent = RuneEffects.chestGoldPercent(_runeLevels.value), jokerBonusPercent = RuneEffects.chestJokerBonusPercent(_runeLevels.value))
         val updatedGold = _goldBalance.value + reward.gold
         val updatedJokers = _jokerCounts.value.toMutableMap().apply {
             reward.jokers.forEach { (type, n) -> this[type] = (this[type] ?: 0) + n }
@@ -678,7 +680,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val index = slots.indexOfFirst { it?.id == chestId }
         val chest = slots.getOrNull(index) ?: return null
         if (!chest.isReady(System.currentTimeMillis())) return null
-        val reward = ChestLoot.roll(chest.tier, _ownedStoreIds.value)
+        val reward = ChestLoot.roll(chest.tier, _ownedStoreIds.value, goldPercent = RuneEffects.chestGoldPercent(_runeLevels.value), jokerBonusPercent = RuneEffects.chestJokerBonusPercent(_runeLevels.value))
 
         val updatedGold = _goldBalance.value + reward.gold
         val updatedJokers = _jokerCounts.value.toMutableMap().apply {
@@ -713,6 +715,53 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
 
     // --- Home-screen ad rewards: 500 gold every 4 hours, and one free
     // mid-tier chest per calendar day (resets at local midnight). ---
+
+    // --- Karalak Rünleri (rune map): levels bought with gold, see domain/model/Rune.kt ---
+
+    private fun readRuneLevels(): Map<String, Int> = runCatching {
+        prefs.getString(KEY_RUNE_LEVELS, null)?.let { Json.decodeFromString<Map<String, Int>>(it) }
+    }.getOrNull().orEmpty()
+
+    private val _runeLevels = MutableStateFlow(readRuneLevels())
+    val runeLevels: StateFlow<Map<String, Int>> = _runeLevels.asStateFlow()
+
+    /**
+     * Buys the next level of [id]: false when it is not open yet, already at its max, or the gold is not there. The gold
+     * and the level land in one commit, like every other purchase here.
+     */
+    @Synchronized
+    fun buyRune(id: String): Boolean {
+        val rune = RuneTree.get(id) ?: return false
+        val levels = _runeLevels.value
+        if (!RuneTree.isUnlocked(levels, rune)) return false
+        val cost = RuneTree.nextCost(levels, rune) ?: return false
+        if (cost <= 0 || _goldBalance.value < cost) return false
+        val updatedGold = _goldBalance.value - cost
+        val updatedLevels = levels + (id to RuneTree.levelOf(levels, id) + 1)
+        prefs.edit(commit = true) {
+            putInt(KEY_GOLD_BALANCE, updatedGold)
+            putString(KEY_RUNE_LEVELS, Json.encodeToString(updatedLevels))
+            sealEconomy(gold = updatedGold)
+        }
+        _goldBalance.value = updatedGold
+        _runeLevels.value = updatedLevels
+        return true
+    }
+
+    /** Puts an account's runes back after a restore: per rune, the higher level wins. */
+    fun restoreRuneLevels(saved: Map<String, Int>) {
+        if (saved.isEmpty()) return
+        val merged = (_runeLevels.value.keys + saved.keys).associateWith { maxOf(_runeLevels.value[it] ?: 0, saved[it] ?: 0) }
+        if (merged == _runeLevels.value) return
+        prefs.edit(commit = true) { putString(KEY_RUNE_LEVELS, Json.encodeToString(merged)) }
+        _runeLevels.value = merged
+    }
+
+    /** Gold for one correct word with the runes applied. */
+    fun goldPerCorrectWord(): Int = RuneEffects.goldPerWord(_runeLevels.value, GameConstants.GOLD_PER_CORRECT_WORD)
+
+    /** Gold for an online room win with the runes applied. */
+    fun onlineWinGold(): Int = RuneEffects.winGold(_runeLevels.value, GameConstants.ONLINE_WIN_GOLD)
 
     // --- Giriş Serisi (login streak) ---
 
@@ -1117,6 +1166,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         // half-opened chests.
         // The login streak is this account's too.
         remove(KEY_LOGIN_STREAK)
+        remove(KEY_RUNE_LEVELS)
         remove(KEY_LOGIN_LAST_CLAIM_DAY)
         putInt(KEY_GOLD_BALANCE, 0)
         remove(KEY_OWNED_STORE_IDS)
@@ -1445,6 +1495,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_CHEST_SLOTS = "chest_slots"
         const val KEY_CHEST_CYCLE_SEED = "chest_cycle_seed"
         const val KEY_CHEST_CYCLE_INDEX = "chest_cycle_index"
+        const val KEY_RUNE_LEVELS = "rune_levels"
         const val KEY_LOGIN_STREAK = "login_streak"
         const val KEY_LOGIN_LAST_CLAIM_DAY = "login_last_claim_day"
         const val KEY_AD_GOLD_NEXT_AT = "ad_gold_next_at"

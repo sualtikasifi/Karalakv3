@@ -1032,7 +1032,7 @@ class GameViewModel @Inject constructor(
         val goldFromAchievements = newlyUnlocked.size * GameConstants.ACHIEVEMENT_GOLD
         var goldFromLevel = 0
         var goldFromDaily = 0
-        val goldFromPlay = if (isDaily) 0 else results.count { it.isCorrect } * GameConstants.GOLD_PER_CORRECT_WORD
+        val goldFromPlay = if (isDaily) 0 else results.count { it.isCorrect } * settingsRepository.goldPerCorrectWord()
         var goldEarned = goldFromAchievements + goldFromPlay
 
         // Spends today's Quick Match bonus only now that the round actually

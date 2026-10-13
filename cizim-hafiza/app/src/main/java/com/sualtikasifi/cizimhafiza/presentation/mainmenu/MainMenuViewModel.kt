@@ -131,7 +131,7 @@ class MainMenuViewModel @Inject constructor(
         val day = rewards.cycleDayFor(popup.streakBefore)
         val reward = rewards.forDay(day)
         val newStreak = settingsRepository.recordLoginClaim(loginDay, popup.streakBefore, continuing = true)
-        if (reward.gold > 0) settingsRepository.earnGold(reward.gold)
+        if (reward.gold > 0) settingsRepository.earnGold(com.sualtikasifi.cizimhafiza.domain.model.RuneEffects.loginGold(settingsRepository.runeLevels.value, reward.gold))
         if (reward.xp > 0) settingsRepository.addXp(reward.xp)
         reward.jokers.forEach { settingsRepository.addJoker(it, 1) }
         val milestone = rewards.milestoneFor(newStreak)
@@ -337,6 +337,11 @@ class MainMenuViewModel @Inject constructor(
         )
 
     val goldBalance: StateFlow<Int> = settingsRepository.goldBalance
+
+    /** A rune can be bought right now — the home screen's mascot shows a badge for it. */
+    val runeReady: StateFlow<Boolean> = combine(settingsRepository.goldBalance, settingsRepository.runeLevels) { gold, levels ->
+        com.sualtikasifi.cizimhafiza.domain.model.RuneTree.anyAffordable(levels, gold)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
     val featureTourSeen: Boolean get() = settingsRepository.featureTourSeen
     fun markFeatureTourSeen() { settingsRepository.featureTourSeen = true }
     val nicknameRenameUsed: StateFlow<Boolean> = settingsRepository.nicknameRenameUsed
