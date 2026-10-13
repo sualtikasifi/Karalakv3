@@ -171,6 +171,8 @@ private fun RuneMap(
             .dotGridBackground(dotColor = Color(0x33805020), spacing = 26.dp, radius = 1.6.dp)
             .border(BorderStroke(4.dp, Color(0xFF9A5B22)), shape)
     ) {
+        val mapWidth = maxWidth
+        val mapHeight = maxHeight
         val density = androidx.compose.ui.platform.LocalDensity.current
         val spacingPx = with(density) { Spacing.toPx() }
         // The tree spreads from about x -2..3, y -2..1: start with its middle in the middle of the panel.
@@ -188,8 +190,8 @@ private fun RuneMap(
                     }
                 }
         ) {
-            val cx = maxWidth / 2
-            val cy = maxHeight / 2
+            val cx = mapWidth / 2
+            val cy = mapHeight / 2
             Box(Modifier.fillMaxSize().offset { androidx.compose.ui.unit.IntOffset(pan.x.roundToInt(), pan.y.roundToInt()) }) {
                 // The paths.
                 Canvas(Modifier.fillMaxSize()) {
