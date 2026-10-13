@@ -122,20 +122,25 @@ object Moderation {
 
 
     /**
-     * Rejected rounds between lockouts.
-     *
-     * The count is lifetime and never resets — not even for an approved
-     * round. Somebody who alternates a cheated round with an honest one
-     * would otherwise sit permanently at one strike and never reach a
-     * lockout at all, which is the obvious way to game a consecutive count.
-     *
-     * The lockout fires on every multiple instead: offences 3, 6, 9 and so
-     * on each cost a day. Carrying the count past a lockout without this
-     * would make every later offence an instant lockout.
+     * The lockout for the [strike]-th offence (lifetime, never reset — an approved round does not clear it, or somebody
+     * could alternate a cheated round with an honest one and never climb the ladder). Graduated and short: a first
+     * offence is only a warning, then 30 minutes, 2 hours, 6 hours and finally a day for every later one. An
+     * offensive drawing ([DrawingReportReason.OFFENSIVE]) is never let off with nothing — at least an hour.
      */
-    const val STRIKES_BEFORE_LOCKOUT = 3
+    fun lockoutMillisFor(strike: Int, reason: DrawingReportReason? = null): Long {
+        val minute = 60L * 1000L
+        val ladder = when {
+            strike <= 1 -> 0L
+            strike == 2 -> 30 * minute
+            strike == 3 -> 2 * 60 * minute
+            strike == 4 -> 6 * 60 * minute
+            else -> 24 * 60 * minute
+        }
+        return if (reason == DrawingReportReason.OFFENSIVE) maxOf(ladder, 60 * minute) else ladder
+    }
 
-    const val LOCKOUT_MILLIS = 24L * 60L * 60L * 1000L
+    /** How much heavier a report penalty gets with each offence: x1, x2 … capped at x5. */
+    fun strikeMultiplier(strike: Int): Int = strike.coerceIn(1, 5)
 
     /**
      * Rounds fetched in one page of the review queue.
@@ -149,14 +154,17 @@ object Moderation {
     const val REVIEW_PAGE_SIZE = 3
 
     /**
-     * What upholding a player's report of a drawing costs the drawer, by reason: XP and gold taken
-     * back. The gold is a multiple of the XP because gold is the currency players feel; both are
-     * sized against what a play session pays (10 gold a word), so a scribble costs about a round
-     * of earnings and an offensive drawing about a day's. The strike ladder above applies on top.
+     * What upholding a player's report costs the drawer at the [strike]-th offence: XP and gold taken back. The base
+     * is sized against what play pays (10 gold a word, about 2.500 gold a day) so it is felt, then multiplied by
+     * [strikeMultiplier]. Returns XP to gold.
      */
-    fun reportPenalty(reason: DrawingReportReason): Pair<Int, Int> = when (reason) {
-        DrawingReportReason.MEANINGLESS -> 20 to 100
-        DrawingReportReason.WRITTEN -> 50 to 200
-        DrawingReportReason.OFFENSIVE -> 100 to 500
+    fun reportPenalty(reason: DrawingReportReason, strike: Int = 1): Pair<Int, Int> {
+        val (xp, gold) = when (reason) {
+            DrawingReportReason.MEANINGLESS -> 150 to 750
+            DrawingReportReason.WRITTEN -> 400 to 2000
+            DrawingReportReason.OFFENSIVE -> 800 to 4000
+        }
+        val m = strikeMultiplier(strike)
+        return xp * m to gold * m
     }
 }

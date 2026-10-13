@@ -27,7 +27,7 @@ import javax.inject.Singleton
  *  - `penalties/{id}` — one per rejected round, applied by the offending
  *    device (see PenaltyRepositoryImpl).
  *  - `moderationStrikes/{uid}` — lifetime rejections. Never cleared: see
- *    Moderation.STRIKES_BEFORE_LOCKOUT.
+ *    Moderation.lockoutMillisFor.
  *
  * See firestore.rules: the pool is created only by these copies, so a client
  * can no longer write itself into the pool at all.
@@ -196,14 +196,10 @@ class ModerationRepositoryImpl @Inject constructor(
         // Every third offence, not "three or more": the count never resets,
         // so `>=` would lock the account out on every offence from the third
         // onwards.
-        val lockedUntil = if (strike % Moderation.STRIKES_BEFORE_LOCKOUT == 0) {
-            // The reviewer's clock, stored absolute. Computing it on the
-            // offending device would let somebody sit out a lockout by moving
-            // their own clock forward.
-            System.currentTimeMillis() + Moderation.LOCKOUT_MILLIS
-        } else {
-            0L
-        }
+        // The reviewer's clock, stored absolute. Computing it on the offending device would let somebody sit out a
+        // lockout by moving their own clock forward.
+        val lockMillis = Moderation.lockoutMillisFor(strike)
+        val lockedUntil = if (lockMillis > 0L) System.currentTimeMillis() + lockMillis else 0L
 
         val batch = firestore.batch()
         batch.delete(pendingRuns.document(runId))
@@ -326,18 +322,16 @@ class ModerationRepositoryImpl @Inject constructor(
         batch.commit().await()
     }
 
-    override suspend fun upholdReport(report: DrawingReport, xpToRevoke: Int, goldToRevoke: Int): Result<Unit> = runCatching {
+    override suspend fun upholdReport(report: DrawingReport): Result<Unit> = runCatching {
         val uid = report.reportedUid
         require(uid.isNotEmpty()) { "Report ${report.id} has no drawer" }
         val previous = runCatching {
             (strikes.document(uid).get().await().getLong("count") ?: 0L).toInt()
         }.getOrDefault(0)
         val strike = previous + 1
-        val lockedUntil = if (strike % Moderation.STRIKES_BEFORE_LOCKOUT == 0) {
-            System.currentTimeMillis() + Moderation.LOCKOUT_MILLIS
-        } else {
-            0L
-        }
+        val lockMillis = Moderation.lockoutMillisFor(strike, report.reason)
+        val lockedUntil = if (lockMillis > 0L) System.currentTimeMillis() + lockMillis else 0L
+        val (xpToRevoke, goldToRevoke) = Moderation.reportPenalty(report.reason, strike)
         // Every report of this same drawing goes with it (same drawer, same word, same run) — one
         // drawing is one offence however many players reported it.
         val siblings = runCatching {

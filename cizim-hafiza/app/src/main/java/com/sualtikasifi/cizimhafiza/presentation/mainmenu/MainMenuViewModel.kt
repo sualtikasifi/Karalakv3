@@ -195,11 +195,28 @@ class MainMenuViewModel @Inject constructor(
             // Silent and empty on every ordinary launch, and its failures are
             // swallowed inside the repository: a network hiccup must never
             // stand between a player and their main menu.
-            _penaltyWarning.value = penaltyRepository.applyOutstanding().firstOrNull()
+            val found = penaltyRepository.outstanding()
+            if (found.isEmpty()) return@launch
+            outstandingPenalties = found
+            // One window for everything found, with the totals — nothing is taken until the player acknowledges it.
+            _penaltyWarning.value = found.first().copy(
+                xpRevoked = found.sumOf { it.xpRevoked },
+                goldRevoked = found.sumOf { it.goldRevoked },
+                strike = found.maxOf { it.strike },
+                lockedUntilMillis = found.maxOf { it.lockedUntilMillis }
+            )
         }
     }
 
-    fun dismissPenaltyWarning() { _penaltyWarning.value = null }
+    private var outstandingPenalties: List<Penalty> = emptyList()
+
+    /** "Anladım": the window closes, and only now do the XP and gold come off — the home screen counts them down. */
+    fun dismissPenaltyWarning() {
+        _penaltyWarning.value = null
+        val toApply = outstandingPenalties
+        outstandingPenalties = emptyList()
+        if (toApply.isNotEmpty()) viewModelScope.launch { penaltyRepository.apply(toApply) }
+    }
 
     val dailyState: StateFlow<DailyChallengeState> = dailyChallengeRepository.state
 

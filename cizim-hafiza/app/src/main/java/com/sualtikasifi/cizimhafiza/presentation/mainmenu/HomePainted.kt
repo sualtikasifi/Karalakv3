@@ -180,7 +180,12 @@ internal fun PaintedHome(
         LaunchedEffect(gold) {
             val earned = com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingGold
             com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingGold = 0
-            if (earned > 0 && goldAnim.value.toInt() != gold) {
+            val lost = com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingGoldLoss
+            com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingGoldLoss = 0
+            if (lost > 0 && goldAnim.value.toInt() != gold) {
+                goldGain = -lost
+                goldAnim.animateTo(gold.toFloat(), tween(1800, easing = FastOutSlowInEasing))
+            } else if (earned > 0 && goldAnim.value.toInt() != gold) {
                 goldGain = earned
                 goldAnim.animateTo(gold.toFloat(), tween(1400, easing = FastOutSlowInEasing))
             } else {
@@ -190,7 +195,12 @@ internal fun PaintedHome(
         LaunchedEffect(progress.totalXp) {
             val earned = com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingXp
             com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingXp = 0
-            if (earned > 0 && xpAnim.value.toInt() != progress.totalXp) {
+            val lost = com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingXpLoss
+            com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingXpLoss = 0
+            if (lost > 0 && xpAnim.value.toInt() != progress.totalXp) {
+                xpGain = -lost
+                xpAnim.animateTo(progress.totalXp.toFloat(), tween(1800, easing = FastOutSlowInEasing))
+            } else if (earned > 0 && xpAnim.value.toInt() != progress.totalXp) {
                 xpGain = earned
                 xpAnim.animateTo(progress.totalXp.toFloat(), tween(1600, easing = FastOutSlowInEasing))
             } else {
@@ -353,8 +363,8 @@ internal fun PaintedHome(
             )
         }
 
-        if (xpGain > 0) GainFloat("+${NumberFormat.getIntegerInstance().format(xpGain)} XP", fs(30f), box(540f, 396f, 780f, 450f))
-        if (goldGain > 0) GainFloat("+${NumberFormat.getIntegerInstance().format(goldGain)}", fs(30f), box(110f, 226f, 250f, 272f))
+        androidx.compose.runtime.key(xpGain) { if (xpGain != 0) GainFloat("${if (xpGain > 0) "+" else "-"}${NumberFormat.getIntegerInstance().format(kotlin.math.abs(xpGain))} XP", fs(30f), box(540f, 396f, 780f, 450f), loss = xpGain < 0) }
+        androidx.compose.runtime.key(goldGain) { if (goldGain != 0) GainFloat("${if (goldGain > 0) "+" else "-"}${NumberFormat.getIntegerInstance().format(kotlin.math.abs(goldGain))}", fs(30f), box(110f, 226f, 250f, 272f), loss = goldGain < 0) }
 
         // ── Cards ──
         val tintMatrix = remember {
@@ -636,7 +646,7 @@ internal fun Modifier.sinkWith(sink: SinkState, pivotX: Float, pivotY: Float): M
 
 /** "+12 XP" / "+30": appears next to a number that just climbed, drifts up and fades — once. */
 @Composable
-private fun GainFloat(text: String, fontSize: androidx.compose.ui.unit.TextUnit, modifier: Modifier) {
+private fun GainFloat(text: String, fontSize: androidx.compose.ui.unit.TextUnit, modifier: Modifier, loss: Boolean = false) {
     val progress = remember { androidx.compose.animation.core.Animatable(0f) }
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(350)
@@ -646,9 +656,9 @@ private fun GainFloat(text: String, fontSize: androidx.compose.ui.unit.TextUnit,
     if (p <= 0f || p >= 1f) return
     val fade = if (p < 0.15f) p / 0.15f else if (p > 0.7f) (1f - p) / 0.3f else 1f
     Box(
-        modifier = modifier.graphicsLayer { alpha = fade; translationY = -60f * p * density },
+        modifier = modifier.graphicsLayer { alpha = fade; translationY = (if (loss) 60f else -60f) * p * density },
         contentAlignment = Alignment.Center
     ) {
-        LetteredText(text, fontSize, fill = Color(0xFFFFE066), outline = Color(0xFF3A1E08), maxLines = 1, minScale = 0.6f)
+        LetteredText(text, fontSize, fill = if (loss) Color(0xFFFF5A4D) else Color(0xFFFFE066), outline = Color(0xFF3A1E08), maxLines = 1, minScale = 0.6f)
     }
 }

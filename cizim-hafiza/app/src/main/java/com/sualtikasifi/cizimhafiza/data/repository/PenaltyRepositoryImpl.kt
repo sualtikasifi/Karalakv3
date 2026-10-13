@@ -32,15 +32,14 @@ class PenaltyRepositoryImpl @Inject constructor(
 
     private val penalties get() = firestore.collection("penalties")
 
-    override suspend fun applyOutstanding(): List<Penalty> {
+    override suspend fun outstanding(): List<Penalty> {
         // Deliberately NOT signing in anonymously to find out. This runs on
         // every launch and a signed-out device has no penalties by
         // definition; creating an account just to check would be a write on
         // the cold path for nothing.
         val uid = auth.currentUser?.uid ?: return emptyList()
-        // Even an empty answer costs a server read, and it is empty on nearly every launch.
-        // A penalty is a record that waits for its device, so looking every few hours instead
-        // of every start loses nothing a player could notice.
+        // Even an empty answer costs a server read, and it is empty on nearly every launch. A penalty waits for its
+        // device, so looking every half hour instead of every start loses nothing a player could notice.
         val now = System.currentTimeMillis()
         if (now - settingsRepository.lastPenaltyCheckMillis < PENALTY_CHECK_INTERVAL_MILLIS) return emptyList()
         val queried = runCatching {
@@ -51,15 +50,11 @@ class PenaltyRepositoryImpl @Inject constructor(
                 .await()
                 .documents
         }.onFailure { Log.w(TAG, "Could not read penalties", it) }.getOrNull()
-        // Only a query that actually answered counts as a check; a failure retries next launch.
-        if (queried != null) settingsRepository.lastPenaltyCheckMillis = now
-        val outstanding = queried.orEmpty()
-
-        if (outstanding.isEmpty()) return emptyList()
-
-        val applied = mutableListOf<Penalty>()
-        for (doc in outstanding) {
-            val penalty = Penalty(
+        // Only a query that actually answered AND found nothing counts as a check: a penalty that was found but not yet
+        // acknowledged is shown again on the next launch.
+        if (queried != null && queried.isEmpty()) settingsRepository.lastPenaltyCheckMillis = now
+        return queried.orEmpty().map { doc ->
+            Penalty(
                 id = doc.id,
                 uid = uid,
                 xpRevoked = (doc.getLong("xpRevoked") ?: 0L).toInt(),
@@ -69,24 +64,29 @@ class PenaltyRepositoryImpl @Inject constructor(
                 breaksDailyStreak = doc.getBoolean("breaksDailyStreak") ?: false,
                 goldRevoked = (doc.getLong("goldRevoked") ?: 0L).toInt()
             )
-            // Marked BEFORE the local effect, not after. If the write fails
-            // the penalty is simply applied on the next launch instead; if it
-            // were the other way round, a crash in between would take the XP
-            // again every time the app opened.
-            val marked = runCatching {
-                penalties.document(doc.id).update("appliedAt", System.currentTimeMillis()).await()
-            }.onFailure { Log.w(TAG, "Could not mark penalty ${doc.id} applied", it) }.isSuccess
-            if (!marked) continue
+        }.sortedByDescending { it.createdAtMillis }
+    }
 
+    override suspend fun apply(penalties: List<Penalty>) {
+        var applied = 0
+        for (penalty in penalties) {
+            // Marked BEFORE the local effect, not after. If the write fails the penalty is simply applied the next time
+            // the window is acknowledged; if it were the other way round, a crash in between would take the XP again
+            // every time the app opened.
+            val marked = runCatching {
+                this.penalties.document(penalty.id).update("appliedAt", System.currentTimeMillis()).await()
+            }.onFailure { Log.w(TAG, "Could not mark penalty ${penalty.id} applied", it) }.isSuccess
+            if (!marked) continue
+            // The loss is noted for the home screen BEFORE the balances change, so its count-down sees both together.
+            com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingXpLoss += minOf(penalty.xpRevoked, settingsRepository.lifetimeXp.value)
+            com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingGoldLoss += minOf(penalty.goldRevoked, settingsRepository.goldBalance.value)
             settingsRepository.revokeXp(penalty.xpRevoked)
             settingsRepository.revokeGold(penalty.goldRevoked)
             settingsRepository.penaltiesApplied = settingsRepository.penaltiesApplied + 1
             if (penalty.breaksDailyStreak) dailyChallengeRepository.breakStreak()
-            applied += penalty
+            applied++
         }
-
-        if (applied.isNotEmpty()) revokeAchievementsNoLongerEarned()
-        return applied.sortedByDescending { it.createdAtMillis }
+        if (applied > 0) revokeAchievementsNoLongerEarned()
     }
 
     /**
@@ -155,6 +155,6 @@ class PenaltyRepositoryImpl @Inject constructor(
         const val TAG = "Penalties"
 
         /** How often the launch-time penalty check actually asks the server. */
-        const val PENALTY_CHECK_INTERVAL_MILLIS = 3 * 60 * 60 * 1000L
+        const val PENALTY_CHECK_INTERVAL_MILLIS = 30 * 60 * 1000L
     }
 }
