@@ -239,8 +239,11 @@ fun QuickMatchScreen(
                             body = minutesRemaining(current.untilMillis).let { minutes ->
                                 stringResource(
                                     R.string.quick_match_locked_body,
-                                    if (minutes < 60) stringResource(R.string.lock_duration_minutes, minutes)
-                                    else stringResource(R.string.lock_duration_hours, (minutes + 59) / 60)
+                                    when {
+                                        minutes < 60 -> stringResource(R.string.lock_duration_minutes, minutes)
+                                        minutes >= 24 * 60 -> stringResource(R.string.lock_duration_days, (minutes + 24 * 60 - 1) / (24 * 60))
+                                        else -> stringResource(R.string.lock_duration_hours, (minutes + 59) / 60)
+                                    }
                                 )
                             },
                             // No retry button — there is nothing to retry
