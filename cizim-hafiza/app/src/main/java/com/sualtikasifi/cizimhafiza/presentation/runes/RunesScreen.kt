@@ -7,6 +7,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.ui.text.font.FontStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.WoodBackArrow
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -494,6 +495,17 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, gold: Int, onBuy: (
                 fontSize = 21.sp,
                 color = Ink
             )
+            // A one-line bit of flavour under the name (rune_<id>_flavor), when the rune has one.
+            val context = LocalContext.current
+            val flavorId = remember(rune.id) { context.resources.getIdentifier("rune_${rune.id}_flavor", "string", context.packageName) }
+            if (flavorId != 0) {
+                Text(
+                    text = stringResource(flavorId),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontStyle = FontStyle.Italic,
+                    color = Color(0xFF8A5A2B)
+                )
+            }
             Text(
                 text = if (rune.id == RuneTree.ROOT_ID) stringResource(R.string.rune_root_desc) else stringResource(rune.effect.descRes, rune.perLevel),
                 style = MaterialTheme.typography.bodyMedium,
