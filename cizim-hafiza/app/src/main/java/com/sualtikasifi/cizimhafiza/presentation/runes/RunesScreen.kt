@@ -5,9 +5,11 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import kotlin.math.atan2
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.graphics.ImageBitmap
@@ -52,7 +54,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -198,6 +199,9 @@ private fun RuneMap(
         )
         val mapWidth = maxWidth
         val mapHeight = maxHeight
+        val pathLocked = ImageBitmap.imageResource(R.drawable.rune_path_locked)
+        val pathOpen = ImageBitmap.imageResource(R.drawable.rune_path_open)
+        val pathOwned = ImageBitmap.imageResource(R.drawable.rune_path_owned)
         val density = LocalDensity.current
         val spacingPx = with(density) { Spacing.toPx() }
         // How far the map reaches from the middle, so panning can bring every node to the centre.
@@ -235,32 +239,42 @@ private fun RuneMap(
                     scaleY = scale
                 }
             ) {
-                // The paths.
+                // The paths: a painted rope tiled along each link (dashed trail while locked, beige rope when open, gold once owned).
                 Canvas(Modifier.fillMaxSize()) {
                     fun point(x: Float, y: Float) = Offset(cx.toPx() + x * spacingPx, cy.toPx() + y * spacingPx)
+                    fun path(from: Offset, to: Offset, tile: ImageBitmap, thickness: Float, alpha: Float = 1f) {
+                        val length = (to - from).getDistance()
+                        val angle = Math.toDegrees(atan2((to.y - from.y).toDouble(), (to.x - from.x).toDouble())).toFloat()
+                        val h = thickness.roundToInt()
+                        val w = (tile.width * thickness / tile.height).roundToInt().coerceAtLeast(1)
+                        withTransform({
+                            translate(from.x, from.y)
+                            rotate(angle, Offset.Zero)
+                        }) {
+                            clipRect(0f, -thickness / 2, length, thickness / 2) {
+                                var x = 0
+                                while (x < length) {
+                                    drawImage(tile, dstOffset = IntOffset(x, -h / 2), dstSize = IntSize(w, h), alpha = alpha)
+                                    x += w
+                                }
+                            }
+                        }
+                    }
                     RuneTree.all.forEach { rune ->
                         rune.requires.forEach { parentId ->
                             val parent = RuneTree.get(parentId) ?: return@forEach
                             val owned = RuneTree.levelOf(levels, rune.id) >= 1
                             val open = RuneTree.isUnlocked(levels, rune)
-                            drawLine(
-                                color = if (owned) branchColors(rune.branch).second else Color(0xFF7A4A22).copy(alpha = if (open) 0.5f else 0.22f),
-                                start = point(parent.x, parent.y),
-                                end = point(rune.x, rune.y),
-                                strokeWidth = if (owned) 9.dp.toPx() else 6.dp.toPx(),
-                                cap = StrokeCap.Round
+                            path(
+                                point(parent.x, parent.y), point(rune.x, rune.y),
+                                if (owned) pathOwned else if (open) pathOpen else pathLocked,
+                                (if (owned || open) 20.dp else 14.dp).toPx()
                             )
                         }
                     }
                     RuneTree.placeholders.forEach { p ->
                         val from = p.parent?.let { RuneTree.placeholders[it] }
-                        drawLine(
-                            color = Color(0xFF7A4A22).copy(alpha = 0.18f),
-                            start = point(from?.x ?: 0f, from?.y ?: 0f),
-                            end = point(p.x, p.y),
-                            strokeWidth = 5.dp.toPx(),
-                            cap = StrokeCap.Round
-                        )
+                        path(point(from?.x ?: 0f, from?.y ?: 0f), point(p.x, p.y), pathLocked, 12.dp.toPx(), alpha = 0.55f)
                     }
                 }
                 RuneTree.placeholders.forEachIndexed { i, p ->
