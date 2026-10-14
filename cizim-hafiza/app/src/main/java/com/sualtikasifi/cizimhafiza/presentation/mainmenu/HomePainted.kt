@@ -309,17 +309,14 @@ internal fun PaintedHome(
                 label = "runeBadgeScale"
             )
             Box(
-                box(690f, 92f, 748f, 150f).graphicsLayer { scaleX = k; scaleY = k },
+                box(682f, 84f, 752f, 154f).graphicsLayer { scaleX = k; scaleY = k },
                 contentAlignment = Alignment.Center
             ) {
-                Box(
-                    Modifier.fillMaxSize()
-                        .background(Brush.verticalGradient(listOf(Color(0xFFFF7A59), Color(0xFFD42A1E))), CircleShape)
-                        .border(2.dp, Color.White, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    LetteredText("!", fs(34f), outline = Color(0xFF5A0F08), maxLines = 1)
-                }
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(R.drawable.badge_upgrade),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
 
