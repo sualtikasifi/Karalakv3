@@ -252,7 +252,7 @@ class WaitingRoomViewModel @Inject constructor(
         }
         viewModelScope.launch {
             onlineGameRepository.observeReactions(roomCode)
-                .catch { }
+                .catch { com.sualtikasifi.cizimhafiza.util.NonFatal.report("WaitingRoomViewModel", "listener failed", it) }
                 .collect { reactions -> _uiState.update { it.copy(reactions = reactions) } }
         }
         // Presence heartbeat. Without it a lobby can't tell a player who

@@ -37,7 +37,7 @@ class RuneConfigRepository @Inject constructor(
                     }
                     emit(snapshot?.data)
                 }
-            }.catch { }.collect { data -> apply(data) }
+            }.catch { com.sualtikasifi.cizimhafiza.util.NonFatal.report("RuneConfigRepository", "listener failed", it) }.collect { data -> apply(data) }
         }
     }
 

@@ -1607,4 +1607,10 @@
     <string name="rune_locked">Open the rune it\'s linked to first.</string>
     <string name="rune_hint_next">Next stop: %1$s · %2$s gold</string>
     <string name="rune_hint_all">Every open rune is done. New paths are on the way!</string>
+    <string name="coupon_panel_chests">Chests (opened at once, at most %1$d in all)</string>
+    <string name="coupon_panel_distribution">Distribution</string>
+    <string name="coupon_panel_recent">Recent codes</string>
+    <string name="result_stat_win_gold">Win gold</string>
+    <string name="result_stat_rune_bonus">From runes</string>
+    <string name="result_rune_bonus_line">From your runes: +%1$d gold</string>
 </resources>

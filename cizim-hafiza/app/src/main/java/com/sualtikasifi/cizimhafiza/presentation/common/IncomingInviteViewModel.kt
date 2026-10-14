@@ -45,7 +45,7 @@ class IncomingInviteViewModel @Inject constructor(
             friendRepository.observeIncomingInvites()
                 // A banner that can't load shouldn't itself crash the app —
                 // fail silently and just show nothing until it recovers.
-                .catch { }
+                .catch { com.sualtikasifi.cizimhafiza.util.NonFatal.report("IncomingInviteViewModel", "listener failed", it) }
                 .collect { invites ->
                     pendingInvites = invites
                     _uiState.update { state ->

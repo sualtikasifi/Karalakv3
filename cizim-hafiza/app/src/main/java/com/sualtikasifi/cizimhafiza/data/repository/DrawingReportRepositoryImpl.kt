@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.data.repository
 
+import com.sualtikasifi.cizimhafiza.util.NonFatal
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -120,7 +121,7 @@ class DrawingReportRepositoryImpl @Inject constructor(
             .get()
             .await()
             .size() >= DrawingReports.REPORTS_TO_RETIRE
-    }.onFailure { Log.w(TAG, "Retirement check failed for $runId", it) }.getOrDefault(false)
+    }.onFailure { NonFatal.report(TAG, "Retirement check failed for $runId", it) }.getOrDefault(false)
 
     override suspend fun recentReports(limit: Int): Result<List<DrawingReport>> = runCatching {
         reports.orderBy("submittedAt", Query.Direction.DESCENDING)

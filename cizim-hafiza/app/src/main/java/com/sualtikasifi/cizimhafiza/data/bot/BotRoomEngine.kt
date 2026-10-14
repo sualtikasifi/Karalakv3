@@ -167,7 +167,7 @@ class BotRoomEngine @Inject constructor(
                 }
                 emit(snapshot)
             }
-        }.catch { }.collect { snapshot ->
+        }.catch { com.sualtikasifi.cizimhafiza.util.NonFatal.report("BotRoomEngine", "listener failed", it) }.collect { snapshot ->
             latestRoom = snapshot?.takeIf { it.exists() }
             if (snapshot == null || !snapshot.exists()) return@collect
             runCatching { handleRoomChange(snapshot) }
@@ -461,7 +461,7 @@ class BotRoomEngine @Inject constructor(
                     }
                     emit(snapshot)
                 }
-        }.catch { }.collect { snapshot ->
+        }.catch { com.sualtikasifi.cizimhafiza.util.NonFatal.report("BotRoomEngine", "listener failed", it) }.collect { snapshot ->
             if (snapshot == null) return@collect
 
             snapshot.documentChanges

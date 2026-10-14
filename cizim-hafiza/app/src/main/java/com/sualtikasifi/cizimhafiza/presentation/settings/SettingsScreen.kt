@@ -517,18 +517,19 @@ fun SettingsScreen(
                     .background(Brush.verticalGradient(listOf(Color(0xFFFFD75E), Color(0xFFF7A81B))), RoundedCornerShape(50))
                     .border((2.5f * us).dp, Color(0xFFE08A1B), RoundedCornerShape(50))
                     .pressable(pressedScale = 0.95f) {
+                        // The battery-optimization list, where the player switches Karalak off themselves. The direct
+                        // "ignore for this app" request needs REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, which Play does not
+                        // allow for a game, so it is not used; the app's own settings page is the fallback.
                         runCatching {
-                            batteryLauncher.launch(
-                                android.content.Intent(
-                                    android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                                    android.net.Uri.parse("package:${context.packageName}")
-                                )
-                            )
+                            batteryLauncher.launch(android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
                         }.onFailure {
-                            // Some OEM builds refuse the direct-request intent — the general battery settings
-                            // screen is the fallback every device actually has.
                             runCatching {
-                                batteryLauncher.launch(android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                                batteryLauncher.launch(
+                                    android.content.Intent(
+                                        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        android.net.Uri.parse("package:${context.packageName}")
+                                    )
+                                )
                             }
                         }
                     }

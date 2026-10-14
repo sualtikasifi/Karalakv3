@@ -47,6 +47,7 @@ class CizimHafizaApp : Application(), Configuration.Provider {
     @Inject lateinit var profileNameSynchronizer: Lazy<ProfileNameSynchronizer>
     @Inject lateinit var xpEventRepository: Lazy<com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository>
     @Inject lateinit var runeConfigRepository: Lazy<com.sualtikasifi.cizimhafiza.data.repository.RuneConfigRepository>
+    @Inject lateinit var economyConfigRepository: Lazy<com.sualtikasifi.cizimhafiza.data.repository.EconomyConfigRepository>
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
@@ -169,6 +170,8 @@ class CizimHafizaApp : Application(), Configuration.Provider {
             guarded("xp event listener") { xpEventRepository.get().startListening() }
             // The rune map's pace (ring levels, price factor) from config/runes.
             guarded("rune config listener") { runeConfigRepository.get().startListening() }
+            // The economy's amounts (gold per word, ad gold, daily gold…) from config/economy.
+            guarded("economy config listener") { economyConfigRepository.get().startListening() }
             // Gives a signed-in player their Google name when they haven't
             // picked one — app-wide rather than on the Hesap screen, since the
             // name is what every other player sees in lobbies and the league.

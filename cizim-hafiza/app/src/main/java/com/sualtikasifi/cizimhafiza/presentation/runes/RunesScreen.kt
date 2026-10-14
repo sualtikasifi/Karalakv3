@@ -74,6 +74,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.Rune
 import com.sualtikasifi.cizimhafiza.domain.model.RuneBranch
@@ -98,12 +100,39 @@ import kotlin.math.roundToInt
 
 @HiltViewModel
 class RunesViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val analytics: com.sualtikasifi.cizimhafiza.util.GameAnalytics
 ) : ViewModel() {
     val gold = settingsRepository.goldBalance
     val levels = settingsRepository.runeLevels
     val xp = settingsRepository.lifetimeXp
-    fun buy(id: String): Boolean = settingsRepository.buyRune(id)
+
+    init {
+        // A ring that has opened since the last visit is reported once (see GameAnalytics.ringOpened).
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(levels, xp) { l, x -> l to com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.levelForXp(x) }
+                .collect { (l, playerLevel) ->
+                    (2..4).filter { RuneTree.ringOpen(l, it, playerLevel) && settingsRepository.firstRingOpening(it) }
+                        .forEach { analytics.ringOpened(it, playerLevel, l.values.sum()) }
+                }
+        }
+    }
+
+    fun buy(id: String): Boolean {
+        val bought = settingsRepository.buyRune(id)
+        if (bought) RuneTree.get(id)?.let { rune ->
+            analytics.runeBought(
+                runeId = id,
+                level = RuneTree.levelOf(settingsRepository.runeLevels.value, id),
+                ring = rune.ring,
+                playerLevel = settingsRepository.playerLevelNow(),
+                goldLeft = settingsRepository.goldBalance.value
+            )
+        }
+        return bought
+    }
+
+    fun statusOpened() = analytics.runeStatusOpened()
 
     /** Today's state of the once-a-day / once-a-month abilities, for the status window. */
     fun abilityState() = RuneAbilityState(
@@ -161,7 +190,10 @@ fun RunesScreen(onBack: () -> Unit, viewModel: RunesViewModel = hiltViewModel())
                 gold = gold,
                 selected = selected,
                 onSelect = { id ->
-                    if (id == RuneTree.ROOT_ID) status = viewModel.abilityState()
+                    if (id == RuneTree.ROOT_ID) {
+                        status = viewModel.abilityState()
+                        viewModel.statusOpened()
+                    }
                     else selected = if (selected == id) null else id
                 },
                 onClear = { selected = null },
@@ -562,7 +594,7 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, playerLevel: Int, g
         }
         return
     }
-    if (unlocked && !RuneTree.ringOpen(levels, rune.ring, playerLevel)) {
+    if (unlocked && level < 1 && !RuneTree.ringOpen(levels, rune.ring, playerLevel)) {
         // A sealed ring: say what opens it and where the player stands, and show nothing of what is behind it.
         val percent = (RuneTree.ringProgress(levels, rune.ring - 1) * 100).toInt()
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -686,6 +718,8 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, playerLevel: Int, g
     when {
         cost == null -> Text(stringResource(R.string.rune_maxed), fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E7A45), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         !unlocked -> Text(stringResource(R.string.rune_locked), style = MaterialTheme.typography.bodyMedium, color = Color(0xFFB3401A), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+        // Already owned in a ring that is closed again (the level dropped after an XP penalty): what it gives stays, the next level waits.
+        !RuneTree.ringOpen(levels, rune.ring, playerLevel) -> Text(stringResource(R.string.rune_status_ring_locked, RuneGates.levelFor(rune.ring)), style = MaterialTheme.typography.bodyMedium, color = Color(0xFFB3401A), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         else -> {
             val canBuy = gold >= cost
             Box(

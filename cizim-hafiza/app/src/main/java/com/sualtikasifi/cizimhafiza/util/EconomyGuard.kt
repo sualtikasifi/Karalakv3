@@ -31,7 +31,12 @@ object EconomyGuard {
     /** False on a fresh install, after a wipe, and on a new phone — nothing exists to compare against yet. */
     fun hasKey(): Boolean = runCatching { keyStore().containsAlias(ALIAS) }.getOrDefault(false)
 
-    private fun key(): SecretKey {
+    /** The key, fetched from the Keystore once: every gold change signs, and a Keystore lookup each time was the slow part. */
+    @Volatile private var cachedKey: SecretKey? = null
+
+    private fun key(): SecretKey = cachedKey ?: synchronized(this) { cachedKey ?: loadKey().also { cachedKey = it } }
+
+    private fun loadKey(): SecretKey {
         val store = keyStore()
         (store.getKey(ALIAS, null) as? SecretKey)?.let { return it }
         val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_HMAC_SHA256, PROVIDER)

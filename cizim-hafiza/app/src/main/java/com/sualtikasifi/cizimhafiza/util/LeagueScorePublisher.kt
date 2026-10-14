@@ -100,7 +100,7 @@ class LeagueScorePublisher @Inject constructor(
             // stored on a failed publish would suppress the retry that is
             // the whole point of re-publishing at app start.
             settingsRepository.publishedLeagueScoreSignature = snapshot.signature
-        }.onFailure { Log.w(TAG, "League score not published", it) }
+        }.onFailure { NonFatal.report(TAG, "League score not published", it) }
     }
 
     private data class Snapshot(

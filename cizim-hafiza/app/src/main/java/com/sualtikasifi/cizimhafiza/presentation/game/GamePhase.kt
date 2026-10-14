@@ -108,6 +108,10 @@ sealed interface GamePhase {
         val goldFromDaily: Int = 0,
         /** Gold for the words answered correctly (not paid by the daily challenge, which has its own). */
         val goldFromPlay: Int = 0,
+        /** A won Quick Match's win gold. */
+        val goldFromWin: Int = 0,
+        /** The share of [goldEarned] the runes added (already counted in the fields above). */
+        val runeBonusGold: Int = 0,
         /** The XP multiplier this round paid at (1 = none): the daily Hızlı Eşleş bonus and any running XP event, multiplied. */
         val xpMultiplier: Int = 1,
         /** True when [xpEarned] includes the first-Quick-Match-of-the-day 2x bonus. */

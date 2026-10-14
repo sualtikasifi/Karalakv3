@@ -1620,4 +1620,10 @@
     <string name="rune_locked">Önce bağlı olduğu rünü aç.</string>
     <string name="rune_hint_next">Sıradaki durak: %1$s · %2$s altın</string>
     <string name="rune_hint_all">Açık rünlerin hepsi tamam. Yeni yollar yolda!</string>
+    <string name="coupon_panel_chests">Kasa (hemen açılır, toplam en fazla %1$d)</string>
+    <string name="coupon_panel_distribution">Dağıtım</string>
+    <string name="coupon_panel_recent">Son kodlar</string>
+    <string name="result_stat_win_gold">Zafer altını</string>
+    <string name="result_stat_rune_bonus">Rün katkısı</string>
+    <string name="result_rune_bonus_line">Rünlerin katkısı: +%1$d altın</string>
 </resources>
