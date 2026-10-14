@@ -10,6 +10,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -61,6 +62,11 @@ class ChestsViewModel @Inject constructor(
     fun consumeLastReward() {
         _lastReward.value = null
     }
+
+    /** True while a chest waits in the Yedek Yuva rune's reserve slot. */
+    val reserveWaiting: StateFlow<Boolean> = settingsRepository.chestReserve
+        .map { it != null }
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, settingsRepository.chestReserve.value != null)
 
     /** True while the Anahtarcı rune is bought and today's instant open is unused. */
     val instantAvailable: StateFlow<Boolean> = kotlinx.coroutines.flow.combine(

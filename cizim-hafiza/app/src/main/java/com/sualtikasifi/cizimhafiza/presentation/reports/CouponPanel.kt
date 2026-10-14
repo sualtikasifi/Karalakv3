@@ -1,6 +1,8 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.res.stringResource
+import com.sualtikasifi.cizimhafiza.R
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -146,7 +148,7 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                 modifier = Modifier.weight(1f)
             )
         }
-        Text("Kasa (hemen açılır, toplam en fazla ${CouponCodes.MAX_CHESTS})", style = compact, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.coupon_panel_chests, CouponCodes.MAX_CHESTS), style = compact, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
             listOf(ChestTier.SILVER to "Çırak", ChestTier.GOLD to "Sanatçı", ChestTier.RARE to "Sürpriz").forEach { (tier, name) ->
                 ChestStepper(
@@ -158,7 +160,7 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
             }
         }
         // How it is given out.
-        Text("Dağıtım", style = compact, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.coupon_panel_distribution), style = compact, color = MaterialTheme.colorScheme.onSurfaceVariant)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf(0, 3, 5, 10, 20).forEach { n ->
                 SelectableChip(
@@ -205,7 +207,7 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
             }
         }
         if (state.recent.isNotEmpty()) {
-            Text("Son kodlar", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
+            Text(stringResource(R.string.coupon_panel_recent), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
         }
         state.recent.forEach { c ->
             val reward = listOfNotNull(

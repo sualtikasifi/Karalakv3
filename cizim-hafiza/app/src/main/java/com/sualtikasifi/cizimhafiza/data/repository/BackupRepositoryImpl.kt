@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.data.repository
 
+import com.sualtikasifi.cizimhafiza.util.NonFatal
 import android.content.Context
 import android.util.Log
 import androidx.core.content.edit
@@ -176,7 +177,10 @@ class BackupRepositoryImpl @Inject constructor(
         // already durably queued it (see FirebaseModule) and sends it when
         // the connection returns, so timing out means "not confirmed yet",
         // not "not saved".
-        withTimeout(BACKUP_TIMEOUT_MS) { backupDoc(uid).set(snapshot.toFirestoreMap()).await() }
+        // sealedAt is the server's own time: firestore.rules (plausibleBackup) measures how much gold and XP may have grown since the last save by it.
+        withTimeout(BACKUP_TIMEOUT_MS) {
+            backupDoc(uid).set(snapshot.toFirestoreMap() + ("sealedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp())).await()
+        }
         // The device's own copy, kept in step with every cloud write. Costs
         // one small preference write and is what makes progress survive a
         // sign-out whose upload never actually landed.
@@ -223,7 +227,7 @@ class BackupRepositoryImpl @Inject constructor(
             }
         }
         true
-    }.onFailure { Log.w(TAG, "recoverIfEmptied failed", it) }
+    }.onFailure { NonFatal.report(TAG, "recoverIfEmptied failed", it) }
 
     /**
      * The device's own copy of an account's progress, kept alongside the
@@ -278,7 +282,7 @@ class BackupRepositoryImpl @Inject constructor(
                 // found regardless of how many uids happened in between.
                 signedInEmail()?.let { putString(emailArchiveKey(it), encoded) }
             }
-        }.onFailure { Log.w(TAG, "Local archive write failed for $uid", it) }
+        }.onFailure { NonFatal.report(TAG, "Local archive write failed for $uid", it) }
     }
 
     /**
@@ -293,7 +297,7 @@ class BackupRepositoryImpl @Inject constructor(
     private fun decodeArchive(raw: String?): ProgressSnapshot? {
         if (raw == null) return null
         return runCatching { json.decodeFromString<ProgressSnapshot>(raw) }
-            .onFailure { Log.w(TAG, "Local archive unreadable", it) }
+            .onFailure { NonFatal.report(TAG, "Local archive unreadable", it) }
             .getOrNull()
     }
 
@@ -356,7 +360,7 @@ class BackupRepositoryImpl @Inject constructor(
     private suspend fun wipeAccountScopedState() {
         settingsRepository.clearAccountScopedState()
         runCatching { dailyChallengeRepository.clearAccountScopedState() }
-            .onFailure { Log.w(TAG, "wipe: daily challenge state survived", it) }
+            .onFailure { NonFatal.report(TAG, "wipe: daily challenge state survived", it) }
         wipeAccountTables()
 
         // The one invariant worth failing loudly over: if this is still not
@@ -378,13 +382,13 @@ class BackupRepositoryImpl @Inject constructor(
      */
     private suspend fun wipeAccountTables() {
         runCatching { levelProgressDao.deleteAll() }
-            .onFailure { Log.w(TAG, "wipe: level progress survived", it) }
+            .onFailure { NonFatal.report(TAG, "wipe: level progress survived", it) }
         runCatching { achievementDao.deleteAll() }
-            .onFailure { Log.w(TAG, "wipe: achievements survived", it) }
+            .onFailure { NonFatal.report(TAG, "wipe: achievements survived", it) }
         runCatching { gameSessionDao.deleteAll() }
-            .onFailure { Log.w(TAG, "wipe: game sessions survived", it) }
+            .onFailure { NonFatal.report(TAG, "wipe: game sessions survived", it) }
         runCatching { drawingResultDao.deleteAll() }
-            .onFailure { Log.w(TAG, "wipe: drawing results survived", it) }
+            .onFailure { NonFatal.report(TAG, "wipe: drawing results survived", it) }
     }
 
     /**
@@ -401,7 +405,7 @@ class BackupRepositoryImpl @Inject constructor(
     private suspend fun adoptSignedInAccount(): Boolean {
         val uid = authRepository.ensureSignedIn()
         val remote = runCatching { backupDoc(uid).get().await().toSnapshot() }
-            .onFailure { Log.w(TAG, "Cloud backup unreadable for $uid", it) }
+            .onFailure { NonFatal.report(TAG, "Cloud backup unreadable for $uid", it) }
             .getOrNull()
         val archived = readArchive(uid)
         val restored = ProgressSnapshot.richer(remote, archived)
@@ -420,7 +424,7 @@ class BackupRepositoryImpl @Inject constructor(
             // genuinely starts at level 1, which is the whole point.
             settingsRepository.clearAccountScopedState()
             runCatching { dailyChallengeRepository.clearAccountScopedState() }
-                .onFailure { Log.w(TAG, "wipe: daily challenge state survived", it) }
+                .onFailure { NonFatal.report(TAG, "wipe: daily challenge state survived", it) }
             prefs.edit(commit = true) { remove(KEY_LAST_BACKUP_AT) }
             _lastBackupAtMillis.value = null
             return false

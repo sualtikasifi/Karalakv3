@@ -107,7 +107,6 @@ import com.sualtikasifi.cizimhafiza.presentation.chests.formatCountdown
 import com.sualtikasifi.cizimhafiza.presentation.chests.onBackdrop
 import com.sualtikasifi.cizimhafiza.presentation.chests.ChestsViewModel
 import com.sualtikasifi.cizimhafiza.presentation.chests.accent
-import com.sualtikasifi.cizimhafiza.presentation.chests.durationHours
 import com.sualtikasifi.cizimhafiza.presentation.chests.glow
 import com.sualtikasifi.cizimhafiza.presentation.chests.remainingMillis
 import com.sualtikasifi.cizimhafiza.presentation.common.LevelAvatar

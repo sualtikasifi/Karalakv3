@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.data.repository
 
+import com.sualtikasifi.cizimhafiza.util.NonFatal
 import android.app.Activity
 import android.content.Context
 import android.util.Log
@@ -160,11 +161,11 @@ class AuthRepositoryImpl @Inject constructor(
             // THEMSELVES from someone else's friends list, and after the
             // switch this uid can never do that again.
             val migratedFriends = runCatching { friendRepository.prepareFriendMigration() }
-                .onFailure { Log.w(TAG, "signInWithGoogle: prepareFriendMigration failed", it) }
+                .onFailure { NonFatal.report(TAG, "signInWithGoogle: prepareFriendMigration failed", it) }
                 .getOrDefault(emptyList())
             auth.signInWithCredential(credential).await()
             runCatching { friendRepository.adoptMigratedFriends(migratedFriends) }
-                .onFailure { Log.w(TAG, "signInWithGoogle: adoptMigratedFriends failed", it) }
+                .onFailure { NonFatal.report(TAG, "signInWithGoogle: adoptMigratedFriends failed", it) }
             SignInOutcome.SwitchedToAccount
         }.onSuccess {
             // See refreshAuthState's doc — a link does not fire
@@ -172,7 +173,7 @@ class AuthRepositoryImpl @Inject constructor(
             // "Bağlı değil" until the app was relaunched.
             refreshAuthState()
         }.onFailure { error ->
-            Log.w(TAG, "signInWithGoogle failed", error)
+            NonFatal.report(TAG, "signInWithGoogle failed", error)
         }
     }
 
@@ -184,7 +185,7 @@ class AuthRepositoryImpl @Inject constructor(
         // complaint.
         webClientId?.let { clientId ->
             runCatching { googleSignInClient(clientId).signOut().await() }
-                .onFailure { Log.w(TAG, "signOut: Google client sign-out failed", it) }
+                .onFailure { NonFatal.report(TAG, "signOut: Google client sign-out failed", it) }
         }
         auth.signOut()
         // Every repository here assumes a uid exists (FriendRepositoryImpl's
@@ -198,12 +199,12 @@ class AuthRepositoryImpl @Inject constructor(
         // happened locally, and every caller of ensureSignedIn() creates
         // the anonymous session on demand anyway the moment one is needed.
         runCatching { auth.signInAnonymously().await() }
-            .onFailure { Log.w(TAG, "signOut: anonymous re-sign-in deferred", it) }
+            .onFailure { NonFatal.report(TAG, "signOut: anonymous re-sign-in deferred", it) }
         Unit
     }.onSuccess {
         refreshAuthState()
     }.onFailure {
-        Log.w(TAG, "signOut failed", it)
+        NonFatal.report(TAG, "signOut failed", it)
     }
 
     override suspend fun updateDisplayName(name: String): Result<Unit> = runCatching {
@@ -220,7 +221,7 @@ class AuthRepositoryImpl @Inject constructor(
         // next launch.
         refreshAuthState()
     }.onFailure {
-        Log.w(TAG, "updateDisplayName failed", it)
+        NonFatal.report(TAG, "updateDisplayName failed", it)
     }
 
     private fun googleSignInClient(idTokenAudience: String): GoogleSignInClient {
@@ -269,7 +270,7 @@ class AuthRepositoryImpl @Inject constructor(
                 ?: return Result.failure(LinkFailureException(LinkFailure.Other("No ID token returned")))
             Result.success(GoogleAuthProvider.getCredential(idToken, null))
         } catch (e: ApiException) {
-            Log.w(TAG, "Google sign-in failed: statusCode=${e.statusCode}", e)
+            NonFatal.report(TAG, "Google sign-in failed: statusCode=${e.statusCode}", e)
             when (e.statusCode) {
                 GoogleSignInStatusCodes.SIGN_IN_CANCELLED -> Result.failure(LinkFailureException(LinkFailure.Cancelled))
                 // The STATUS CODE, not just the message. Play Services returns
@@ -290,7 +291,7 @@ class AuthRepositoryImpl @Inject constructor(
             // IllegalStateException if no Activity ever bound it — must
             // still leave a trace instead of vanishing into a bare
             // Result.failure the UI resets from with nothing to show.
-            Log.w(TAG, "Google sign-in threw unexpectedly: ${e::class.simpleName}", e)
+            NonFatal.report(TAG, "Google sign-in threw unexpectedly: ${e::class.simpleName}", e)
             Result.failure(LinkFailureException(LinkFailure.Other(e.message)))
         }
     }

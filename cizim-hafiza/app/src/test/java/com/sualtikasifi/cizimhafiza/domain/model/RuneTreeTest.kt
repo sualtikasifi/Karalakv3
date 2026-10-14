@@ -25,12 +25,18 @@ class RuneTreeTest {
     }
 
     @Test
-    fun theMapIsBigAndEachRingHasItsOwnPrice() {
-        assertTrue(RuneTree.all.size >= 85)
+    fun eachEffectHasOneNodeAndEachRingHasItsOwnPrice() {
+        val stats = RuneTree.all.filter { it.effect.unit != RuneUnit.FLAG && it.effect != RuneEffect.NONE }
+        assertEquals(stats.size, stats.map { it.effect }.toSet().size)
         fun ringCost(ring: Int) = RuneTree.all.filter { it.ring == ring }.sumOf { it.costs.sum() }
-        assertTrue("ring 1 ${ringCost(1)}", ringCost(1) in 400_000..550_000)
-        assertTrue("ring 2 ${ringCost(2)}", ringCost(2) in 550_000..750_000)
-        assertTrue("ring 3 ${ringCost(3)}", ringCost(3) in 850_000..1_150_000)
+        assertTrue("ring 1 ${ringCost(1)}", ringCost(1) in 150_000..200_000)
+        assertTrue("ring 2 ${ringCost(2)}", ringCost(2) in 380_000..460_000)
+        assertTrue("ring 3 ${ringCost(3)}", ringCost(3) in 300_000..400_000)
+    }
+
+    @Test
+    fun everyAbilityIsTheEndOfAPath() {
+        RuneTree.all.filter { it.effect.unit == RuneUnit.FLAG && it.effect != RuneEffect.STYLE }.forEach { assertTrue(it.id, it.isKeystone) }
     }
 
     @Test
@@ -50,12 +56,10 @@ class RuneTreeTest {
     @Test
     fun theStackedEffectsStayUnderTheirCeilings() {
         val everything = RuneTree.all.associate { it.id to it.maxLevel }
-        assertTrue(RuneEffects.goldPerWord(everything, 100) <= 100 + 60 + 20 + 1)
-        assertTrue(RuneEffects.chestGoldPercent(everything) <= 80)
-        assertTrue(RuneEffects.xpPercent(everything) <= 45)
-        assertTrue(RuneEffects.chestTimeReductionPercent(everything) <= 30)
-        assertTrue(RuneEffects.adCooldownReductionPercent(everything) <= 30)
-        assertTrue(RuneEffects.chestJokerBonusPercent(everything) <= 30)
+        RuneEffect.entries.forEach { effect ->
+            val cap = RuneEffects.capOf(effect) ?: return@forEach
+            assertTrue(effect.name, RuneEffects.total(everything, effect) <= cap)
+        }
     }
 
     @Test
@@ -86,10 +90,10 @@ class RuneTreeTest {
     @Test
     fun aRuneOpensOnlyOnceItsNeighbourIsBought() {
         val word = RuneTree.get(RuneTree.WORD_GOLD)!!
-        val login = RuneTree.get(RuneTree.LOGIN_GOLD)!!
+        val win = RuneTree.get(RuneTree.WIN_GOLD)!!
         assertTrue(RuneTree.isUnlocked(emptyMap(), word))
-        assertFalse(RuneTree.isUnlocked(emptyMap(), login))
-        assertTrue(RuneTree.isUnlocked(mapOf(RuneTree.WORD_GOLD to 1), login))
+        assertFalse(RuneTree.isUnlocked(emptyMap(), win))
+        assertTrue(RuneTree.isUnlocked(mapOf(RuneTree.WORD_GOLD to 1), win))
     }
 
     @Test
@@ -102,20 +106,26 @@ class RuneTreeTest {
     }
 
     @Test
-    fun levelsOfTheSameEffectAddUp() {
-        val a = RuneTree.get("word_gold")!!
-        val b = RuneTree.get("word_2")!!
-        val levels = mapOf(a.id to 3, b.id to 2)
-        assertEquals(3 * a.perLevel + 2 * b.perLevel, RuneEffects.total(levels, RuneEffect.WORD))
-        assertEquals(100, RuneEffects.goldPerWord(emptyMap(), 100))
-        assertEquals(100 + 3 * a.perLevel, RuneEffects.goldPerWord(mapOf(a.id to 3), 100))
+    fun theWordRuneGrowsTheRoundsWholeGold() {
+        val a = RuneTree.get(RuneTree.WORD_GOLD)!!
+        assertEquals(3 * a.perLevel, RuneEffects.total(mapOf(a.id to 3), RuneEffect.WORD))
+        assertEquals(60, RuneEffects.wordGold(emptyMap(), 60))
+        // Six words of 10 gold at +8%: 64 for the round, where 10 per word rounded down would have paid nothing extra.
+        assertEquals(64, RuneEffects.wordGold(mapOf(a.id to 1), 60))
+    }
+
+    @Test
+    fun levelsAboveTheMaxAreHeldToIt() {
+        val a = RuneTree.get(RuneTree.WORD_GOLD)!!
+        assertEquals(a.maxLevel, RuneTree.levelOf(mapOf(a.id to 999), a.id))
+        assertEquals(0, RuneTree.levelOf(mapOf("gone" to 3), "gone"))
     }
 
     @Test
     fun theDiscountIsCappedAndNothingIsFreeByDefault() {
         assertEquals(0, RuneEffects.jokerDiscountPercent(emptyMap()))
         val all = RuneTree.all.associate { it.id to it.maxLevel }
-        assertTrue(RuneEffects.jokerDiscountPercent(all) <= 60)
+        assertTrue(RuneEffects.jokerDiscountPercent(all) <= 40)
         assertEquals(100, JokerType.FIRST_LETTER.priceFor(1, 0).let { 100 })
     }
 

@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.data.repository
 
+import com.sualtikasifi.cizimhafiza.util.NonFatal
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -46,7 +47,7 @@ class DetectorEventRepositoryImpl @Inject constructor(
                 // Swallowed on purpose: this is bookkeeping about a round that
                 // is already over and already paid out. A player must never
                 // see anything because a telemetry write failed.
-                .onFailure { Log.w(TAG, "Detector event not recorded", it) }
+                .onFailure { NonFatal.report(TAG, "Detector event not recorded", it) }
         }
     }
 

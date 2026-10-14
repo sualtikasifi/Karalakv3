@@ -579,7 +579,9 @@ private fun AvatarFrameSwatch(item: AvatarFrameUiItem, onClick: () -> Unit) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(imageVector = Icons.Filled.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(16.dp))
                     Text(
-                        text = if (item.frame.isStoreItem) {
+                        text = if (item.frame.isRuneReward) {
+                            stringResource(R.string.cosmetic_locked_rune)
+                        } else if (item.frame.isStoreItem) {
                             stringResource(R.string.store_in_store)
                         } else if (item.frame.isLeagueReward) {
                             stringResource(R.string.cosmetic_locked_league)

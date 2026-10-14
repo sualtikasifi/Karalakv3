@@ -86,6 +86,7 @@ fun ChestsScreen(
     val slots by viewModel.chestSlots.collectAsState()
     val gold by viewModel.goldBalance.collectAsState()
     val now by viewModel.nowMillis.collectAsState()
+    val reserveWaiting by viewModel.reserveWaiting.collectAsState()
     val lastReward by viewModel.lastReward.collectAsState()
     val speedupAvailable by viewModel.speedupAvailable.collectAsState()
     val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
@@ -153,7 +154,7 @@ fun ChestsScreen(
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = stringResource(R.string.chests_hint),
+                            text = stringResource(R.string.chests_hint) + if (reserveWaiting) "\n" + stringResource(R.string.home_chests_reserve) else "",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -401,12 +402,12 @@ private fun ChestSlotTile(
                     }
                 }
                 anotherUnlocking -> StatusPill(
-                    text = "${stringResource(R.string.chest_slot_waiting)} · ${stringResource(R.string.chest_duration_hours, tier.durationHours())}",
+                    text = "${stringResource(R.string.chest_slot_waiting)} · ${tier.durationText()}",
                     container = Color.Black.copy(alpha = 0.3f),
                     content = Color.White
                 )
                 else -> StatusPill(
-                    text = "${stringResource(R.string.chests_start_button)} · ${stringResource(R.string.chest_duration_hours, tier.durationHours())}",
+                    text = "${stringResource(R.string.chests_start_button)} · ${tier.durationText()}",
                     container = if (tier == ChestTier.RARE) Color(0xFFFFC72E) else tier.accent(),
                     content = if (tier == ChestTier.RARE) Color(0xFF3A1A00) else Color.White
                 )

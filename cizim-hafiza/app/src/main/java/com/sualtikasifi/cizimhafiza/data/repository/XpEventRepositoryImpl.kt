@@ -43,7 +43,7 @@ class XpEventRepositoryImpl @Inject constructor(
                     }
                     emit(snapshot?.data?.let { parse(it) })
                 }
-            }.catch { }.collect { event ->
+            }.catch { com.sualtikasifi.cizimhafiza.util.NonFatal.report("XpEventRepositoryImpl", "listener failed", it) }.collect { event ->
                 _live.value = event
                 liveReady = true
             }

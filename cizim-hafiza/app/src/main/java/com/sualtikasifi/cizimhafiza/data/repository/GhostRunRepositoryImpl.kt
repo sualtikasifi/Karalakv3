@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.data.repository
 
+import com.sualtikasifi.cizimhafiza.util.NonFatal
 import android.content.Context
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
@@ -106,7 +107,7 @@ class GhostRunRepositoryImpl @Inject constructor(
     ) {
         scope.launch {
             runCatching { write(wordIds, mode, perWord, items, xpEarned) }
-                .onFailure { Log.w(TAG, "Ghost run not recorded", it) }
+                .onFailure { NonFatal.report(TAG, "Ghost run not recorded", it) }
         }
     }
 
@@ -353,7 +354,7 @@ class GhostRunRepositoryImpl @Inject constructor(
                 ?.mapNotNull { (it as? Number)?.toInt() }
                 ?.takeIf { it.size >= GhostRuns.RUN_WORD_COUNT }
                 ?.also { cachedTrainedIds = it }
-        }.onFailure { Log.w(TAG, "Bot opponent index unavailable", it) }.getOrNull()
+        }.onFailure { NonFatal.report(TAG, "Bot opponent index unavailable", it) }.getOrNull()
     }
 
     /**
@@ -506,7 +507,7 @@ class GhostRunRepositoryImpl @Inject constructor(
                 batch.delete(ghostRunItems.document(it.id))
             }
             batch.commit().await()
-        }.onFailure { Log.w(TAG, "Ghost run prune skipped", it) }
+        }.onFailure { NonFatal.report(TAG, "Ghost run prune skipped", it) }
     }
 
     private companion object {

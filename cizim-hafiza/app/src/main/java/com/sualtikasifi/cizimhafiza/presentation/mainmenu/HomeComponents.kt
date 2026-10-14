@@ -109,7 +109,6 @@ import com.sualtikasifi.cizimhafiza.presentation.chests.formatCountdown
 import com.sualtikasifi.cizimhafiza.presentation.chests.onBackdrop
 import com.sualtikasifi.cizimhafiza.presentation.chests.ChestsViewModel
 import com.sualtikasifi.cizimhafiza.presentation.chests.accent
-import com.sualtikasifi.cizimhafiza.presentation.chests.durationHours
 import com.sualtikasifi.cizimhafiza.presentation.chests.glow
 import com.sualtikasifi.cizimhafiza.presentation.chests.remainingMillis
 import com.sualtikasifi.cizimhafiza.presentation.common.LevelAvatar
@@ -748,7 +747,7 @@ internal fun PenPickerSheet(items: List<PenSkinUiItem>, onSelect: (PenSkin) -> U
                         )
                         if (!item.unlocked) {
                             Text(
-                                text = when { item.skin.isStoreItem -> stringResource(R.string.store_in_store); item.skin.isLeagueReward -> stringResource(R.string.cosmetic_locked_league); else -> stringResource(R.string.avatar_frame_locked_level, item.skin.unlockLevel) },
+                                text = when { item.skin.isRuneReward -> stringResource(R.string.cosmetic_locked_rune); item.skin.isStoreItem -> stringResource(R.string.store_in_store); item.skin.isLeagueReward -> stringResource(R.string.cosmetic_locked_league); else -> stringResource(R.string.avatar_frame_locked_level, item.skin.unlockLevel) },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

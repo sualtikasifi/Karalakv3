@@ -85,7 +85,7 @@ class UsernameRepository @Inject constructor(
                 if (claimNew(uid, "Karalak" + Random.nextInt(100, upper))) return
             }
         } catch (e: Exception) {
-            Log.w(TAG, "ensureUsername failed", e)
+            NonFatal.report(TAG, "ensureUsername failed", e)
         }
     }
 
@@ -147,7 +147,7 @@ class UsernameRepository @Inject constructor(
             publish(uid, name, changes = changes, locked = final)
             UsernameClaimResult.Success
         } catch (e: Exception) {
-            Log.w(TAG, "change failed", e)
+            NonFatal.report(TAG, "change failed", e)
             UsernameClaimResult.NetworkError
         }
     }
@@ -165,7 +165,7 @@ class UsernameRepository @Inject constructor(
         if (done) settingsRepository.lockUsername(settingsRepository.nickname.value.trim())
         done
     } catch (e: Exception) {
-        Log.w(TAG, "offerAlreadyMade failed", e)
+        NonFatal.report(TAG, "offerAlreadyMade failed", e)
         true
     }
 
@@ -179,7 +179,7 @@ class UsernameRepository @Inject constructor(
         runCatching {
             val uid = authRepository.ensureSignedIn()
             users.document(uid).set(mapOf("usernameOffered" to true), SetOptions.merge()).await()
-        }.onFailure { Log.w(TAG, "markOffered failed", it) }
+        }.onFailure { NonFatal.report(TAG, "markOffered failed", it) }
     }
 
     /** Keeps the current name and makes it permanent. */
@@ -192,7 +192,7 @@ class UsernameRepository @Inject constructor(
             settingsRepository.lockUsername(name)
             UsernameClaimResult.Success
         } catch (e: Exception) {
-            Log.w(TAG, "lock failed", e)
+            NonFatal.report(TAG, "lock failed", e)
             UsernameClaimResult.NetworkError
         }
     }

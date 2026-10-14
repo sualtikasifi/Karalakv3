@@ -84,7 +84,7 @@ class LeagueViewModel @Inject constructor(
 
         viewModelScope.launch {
             friendRepository.observeLeagueTable()
-                .catch { } // a listener retry (see firestoreFlow) is invisible here; the last good table just stays on screen
+                .catch { com.sualtikasifi.cizimhafiza.util.NonFatal.report("LeagueViewModel", "listener failed", it) } // a listener retry (see firestoreFlow) is invisible here; the last good table just stays on screen
                 .collect { table -> _uiState.update { it.copy(table = table, isLoading = false) } }
         }
 

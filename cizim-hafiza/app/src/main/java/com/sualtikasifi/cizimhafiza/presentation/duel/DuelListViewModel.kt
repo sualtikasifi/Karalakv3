@@ -76,7 +76,7 @@ class DuelListViewModel @Inject constructor(
     init {
         // Duels this player answered on an older version have no on-phone copy yet; listening here copies them
         // in once (the repository archives whatever a snapshot carries). Nothing is shown from this stream.
-        duelRepository.observeCompletedReceivedDuels().catch { }.launchIn(viewModelScope)
+        duelRepository.observeCompletedReceivedDuels().catch { com.sualtikasifi.cizimhafiza.util.NonFatal.report("DuelListViewModel", "listener failed", it) }.launchIn(viewModelScope)
     }
 
     // Finished duels come from the phone's own history; the server listeners below only feed that history

@@ -104,7 +104,7 @@ class AutoBackupPublisher @Inject constructor(
     private suspend fun runBackup() {
         backupRepository.recoverIfEmptied()
             .onSuccess { recovered -> if (recovered) Log.w(TAG, "Recovered an emptied account before backing up") }
-        backupRepository.backupNow().onFailure { Log.w(TAG, "Auto backup failed", it) }
+        backupRepository.backupNow().onFailure { NonFatal.report(TAG, "Auto backup failed", it) }
     }
 
     private companion object {

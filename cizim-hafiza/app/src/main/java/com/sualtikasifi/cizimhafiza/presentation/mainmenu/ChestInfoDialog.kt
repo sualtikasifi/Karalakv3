@@ -37,7 +37,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.ChestSlots
 import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
 import com.sualtikasifi.cizimhafiza.presentation.chests.ChestImage
 import com.sualtikasifi.cizimhafiza.presentation.chests.accent
-import com.sualtikasifi.cizimhafiza.presentation.chests.durationHours
+import com.sualtikasifi.cizimhafiza.presentation.chests.durationText
 import com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
 import com.sualtikasifi.cizimhafiza.presentation.common.labelRes
@@ -184,7 +184,7 @@ private fun InfoChestCard(tier: ChestTier) {
                     modifier = Modifier.weight(1f, fill = false)
                 )
                 Text(
-                    text = "⏱ " + stringResource(R.string.chest_duration_hours, tier.durationHours()),
+                    text = "⏱ " + tier.durationText(),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,

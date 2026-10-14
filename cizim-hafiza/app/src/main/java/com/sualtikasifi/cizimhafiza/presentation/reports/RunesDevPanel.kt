@@ -38,6 +38,9 @@ class RunesDevViewModel @Inject constructor(
 
     /** Takes every rune level back and returns the gold they cost, which is paid back too. */
     fun resetAll(): Int = settingsRepository.resetRunes()
+
+    /** Gives every rune its top level without paying, to look at the whole map. */
+    fun unlockAll() = settingsRepository.unlockAllRunes()
 }
 
 /** The developer panel's rune tab: one button that undoes every rune upgrade, for testing the map from the start. */
@@ -69,6 +72,11 @@ fun RunesDevPanel(viewModel: RunesDevViewModel = hiltViewModel()) {
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
+                PrimaryButton(
+                    text = stringResource(R.string.runes_dev_unlock),
+                    onClick = viewModel::unlockAll,
+                    modifier = Modifier.fillMaxWidth()
+                )
                 PrimaryButton(
                     text = stringResource(R.string.runes_dev_reset),
                     onClick = { confirm = true },

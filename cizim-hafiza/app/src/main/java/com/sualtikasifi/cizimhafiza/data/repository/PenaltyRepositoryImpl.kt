@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.data.repository
 
+import com.sualtikasifi.cizimhafiza.util.NonFatal
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -49,7 +50,7 @@ class PenaltyRepositoryImpl @Inject constructor(
                 .get()
                 .await()
                 .documents
-        }.onFailure { Log.w(TAG, "Could not read penalties", it) }.getOrNull()
+        }.onFailure { NonFatal.report(TAG, "Could not read penalties", it) }.getOrNull()
         // Only a query that actually answered AND found nothing counts as a check: a penalty that was found but not yet
         // acknowledged is shown again on the next launch.
         if (queried != null && queried.isEmpty()) settingsRepository.lastPenaltyCheckMillis = now
@@ -75,7 +76,7 @@ class PenaltyRepositoryImpl @Inject constructor(
             // every time the app opened.
             val marked = runCatching {
                 this.penalties.document(penalty.id).update("appliedAt", System.currentTimeMillis()).await()
-            }.onFailure { Log.w(TAG, "Could not mark penalty ${penalty.id} applied", it) }.isSuccess
+            }.onFailure { NonFatal.report(TAG, "Could not mark penalty ${penalty.id} applied", it) }.isSuccess
             if (!marked) continue
             // The loss is noted for the home screen BEFORE the balances change, so its count-down sees both together.
             com.sualtikasifi.cizimhafiza.util.HomeShownStats.pendingXpLoss += minOf(penalty.xpRevoked, settingsRepository.lifetimeXp.value)
@@ -119,7 +120,7 @@ class PenaltyRepositoryImpl @Inject constructor(
                 Log.i(TAG, "Revoking ${lost.size} achievement(s) after penalty")
                 achievementDao.deleteByIds(lost)
             }
-        }.onFailure { Log.w(TAG, "Could not re-check achievements", it) }
+        }.onFailure { NonFatal.report(TAG, "Could not re-check achievements", it) }
     }
 
     /**
@@ -148,7 +149,7 @@ class PenaltyRepositoryImpl @Inject constructor(
                 .mapNotNull { it.getLong("lockedUntil") }
                 .maxOrNull()
                 ?.takeIf { it > now }
-        }.onFailure { Log.w(TAG, "Could not read lockout", it) }.getOrNull()
+        }.onFailure { NonFatal.report(TAG, "Could not read lockout", it) }.getOrNull()
     }
 
     private companion object {

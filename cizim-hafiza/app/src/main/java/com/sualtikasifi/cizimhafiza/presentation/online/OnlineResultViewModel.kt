@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sualtikasifi.cizimhafiza.domain.model.RoundRewards
 import com.sualtikasifi.cizimhafiza.ads.AdManager
 import com.sualtikasifi.cizimhafiza.data.bot.BotRoomEngine
 import com.sualtikasifi.cizimhafiza.domain.model.Chest
@@ -59,6 +60,8 @@ data class OnlineResultUiState(
     /** What this round paid out, shown once the standings are in: per-word XP + the match bonus, and gold. */
     val xpEarned: Int = 0,
     val goldEarned: Int = 0,
+    /** The share of [goldEarned] the runes added. */
+    val runeBonusGold: Int = 0,
 )
 
 @HiltViewModel
@@ -137,7 +140,7 @@ class OnlineResultViewModel @Inject constructor(
         // .catch{} keeps that from crashing the app; the screen just stops
         // updating until the listener recovers, same as a brief network drop.
         viewModelScope.launch {
-            onlineGameRepository.observeRoom(roomCode).catch { }.collect { room ->
+            onlineGameRepository.observeRoom(roomCode).catch { com.sualtikasifi.cizimhafiza.util.NonFatal.report("OnlineResultViewModel", "listener failed", it) }.collect { room ->
                 _uiState.update { it.copy(room = room, selectedUid = it.selectedUid ?: myUid) }
                 if (room == null) return@collect
 
@@ -194,7 +197,7 @@ class OnlineResultViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            onlineGameRepository.observeReactions(roomCode).catch { }.collect { reactions ->
+            onlineGameRepository.observeReactions(roomCode).catch { com.sualtikasifi.cizimhafiza.util.NonFatal.report("OnlineResultViewModel", "listener failed", it) }.collect { reactions ->
                 _uiState.update { it.copy(reactions = reactions) }
             }
         }
@@ -263,12 +266,17 @@ class OnlineResultViewModel @Inject constructor(
                     val tiedForFirst = placement == 1 && ranked.count { it.totalScore == me.totalScore } > 1
                     val won = placement == 1 && !tiedForFirst && roundPlayers.size >= 2
                     // The room runes (friends, founder, Dostluk Bağı) grow what a room round pays.
-                    val gold = settingsRepository.roomGold(
-                        me.correctCount * settingsRepository.goldPerCorrectWord() +
-                            (if (won) settingsRepository.onlineWinGold() else 0) +
-                            newlyUnlocked.size * settingsRepository.achievementGold(),
-                        asHost = room.hostUid == myUidLocal
+                    // Dostluk Bağı's daily +50% is only spent on a round that pays something.
+                    val raw = RoundRewards.roomRaw(me.correctCount, won, newlyUnlocked.size)
+                    val breakdown = RoundRewards.room(
+                        levels = settingsRepository.runeLevels.value,
+                        correctCount = me.correctCount,
+                        won = won,
+                        newAchievements = newlyUnlocked.size,
+                        asHost = room.hostUid == myUidLocal,
+                        bestFriendBonus = raw > 0 && settingsRepository.takeBestFriendBonus()
                     )
+                    val gold = breakdown.total
                     if (gold > 0) settingsRepository.earnGold(gold)
                     val roundXp = settingsRepository.lastOnlineRoundXp
                     val matchXp = XpAwards.ONLINE_MATCH + if (won) XpAwards.ONLINE_WIN else 0
@@ -283,7 +291,8 @@ class OnlineResultViewModel @Inject constructor(
                             chestWon = chestWon,
                             chestLost = chestLost,
                             xpEarned = roundXp + matchXp,
-                            goldEarned = gold
+                            goldEarned = gold,
+                            runeBonusGold = breakdown.runeBonus
                         )
                     }
                 }

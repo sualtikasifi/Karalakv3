@@ -22,6 +22,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.JokerType
 import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
 import com.sualtikasifi.cizimhafiza.domain.model.RuneEffects
 import com.sualtikasifi.cizimhafiza.domain.model.RuneEffect
+import com.sualtikasifi.cizimhafiza.domain.model.RuneLive
 import com.sualtikasifi.cizimhafiza.domain.model.RuneRewards
 import com.sualtikasifi.cizimhafiza.domain.model.RuneTree
 import com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel
@@ -51,8 +52,17 @@ import kotlin.random.Random
  * blocking the lock across a coroutine suspension point.
  */
 @Singleton
-class SettingsRepository @Inject constructor(@ApplicationContext private val context: Context) {
+class SettingsRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val ledger: EconomyLedger,
+    private val runes: RuneStore,
+    private val chests: ChestStore
+) {
 
+    // Gameplay writes (gold, chests, purchases, runes) are ONE edit each, applied asynchronously: a single apply() lands
+    // whole or not at all, Android flushes it before the app is stopped, and the disk write stays off the main thread.
+    // Only the paths that must be on disk before something else reads it back (penalties, restore, account switch)
+    // still commit synchronously.
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     /**
@@ -323,82 +333,41 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         return runCatching { Json.decodeFromString<Map<String, Int>>(raw) }.getOrDefault(emptyMap())
     }
 
-    // --- Gold (spent, eventually, in a cosmetics shop — not built yet).
-    // Earned ONLY from opening a chest, never directly from a match. ---
+    // --- The economy lives in three stores of its own: the wallet (EconomyLedger), the rune map (RuneStore) and the
+    // chests (ChestStore). The members below hand straight through to them, so the screens keep one place to ask. ---
 
-    private val _goldBalance = MutableStateFlow(prefs.getInt(KEY_GOLD_BALANCE, 0))
-    val goldBalance: StateFlow<Int> = _goldBalance.asStateFlow()
+    val goldBalance: StateFlow<Int> get() = ledger.goldBalance
+    val jokerCounts: StateFlow<Map<JokerType, Int>> get() = ledger.jokerCounts
+    val ownedStoreIds: StateFlow<Set<String>> get() = ledger.ownedStoreIds
 
-    @Synchronized
-    private fun addGold(amount: Int) {
-        if (amount <= 0) return
-        val updated = _goldBalance.value + amount
-        prefs.edit { putInt(KEY_GOLD_BALANCE, updated); sealEconomy(gold = updated) }
-        _goldBalance.value = updated
-        HomeShownStats.pendingGold += amount
-    }
+    /** Gold earned by playing (rounds, achievements, daily challenge). Sealed like every other economy write. */
+    fun earnGold(amount: Int) = ledger.addGold(amount)
 
     /** Takes gold back after a moderation penalty. Never below zero; sealed like every other economy write. */
-    @Synchronized
-    fun revokeGold(amount: Int): Int {
-        if (amount <= 0) return 0
-        val lost = minOf(amount, _goldBalance.value)
-        val updated = _goldBalance.value - lost
-        prefs.edit(commit = true) { putInt(KEY_GOLD_BALANCE, updated); sealEconomy(gold = updated) }
-        _goldBalance.value = updated
-        return lost
-    }
+    fun revokeGold(amount: Int): Int = ledger.revokeGold(amount)
+
+    /** Buys [id] for [price] gold. False if already owned or the balance is too low. */
+    fun purchaseStoreItem(id: String, price: Int): Boolean = ledger.purchaseStoreItem(id, price)
+
+    /** Puts a store item straight into the collection (chest drop) — no gold changes hands. */
+    fun grantStoreItem(id: String) = ledger.grantStoreItem(id)
+
+    fun addJoker(type: JokerType, quantity: Int) = ledger.addJoker(type, quantity)
+
+    /** Spends one joker; false if none are left. */
+    fun useJoker(type: JokerType): Boolean = ledger.useJoker(type)
+
+    /** Buys [quantity] jokers at [JokerType.priceFor] with the discount runes; false if the balance can't cover it. */
+    fun purchaseJoker(type: JokerType, quantity: Int): Boolean =
+        ledger.purchaseJoker(type, quantity, type.priceFor(quantity, RuneEffects.jokerDiscountPercent(runes.levels)))
 
     /** The one-time "what is new" tour (chests, jokers, store) has been shown. */
     var featureTourSeen: Boolean
         get() = prefs.getBoolean(KEY_FEATURE_TOUR_SEEN, false)
         set(value) = prefs.edit { putBoolean(KEY_FEATURE_TOUR_SEEN, value) }
 
-    /** Gold earned by playing (achievements, level stars, daily challenge). Sealed like every other economy write. */
-    fun earnGold(amount: Int) = addGold(amount)
-
     /** XP the online round just finished paid out per word — handed from the match screen to its result screen (memory only). */
     @Volatile var lastOnlineRoundXp: Int = 0
-
-    // --- Economy tamper seal (see EconomyGuard). Every write of gold / jokers /
-    // store items also writes the seal in the SAME edit, so the two can never
-    // disagree after a crash. ---
-
-    private fun economyPayload(gold: Int, jokers: Map<JokerType, Int>, owned: Set<String>): String =
-        "$gold|" + jokers.entries.filter { it.value != 0 }.sortedBy { it.key.name }.joinToString(",") { "${it.key.name}=${it.value}" } +
-            "|" + owned.sorted().joinToString(",")
-
-    private fun android.content.SharedPreferences.Editor.sealEconomy(
-        gold: Int = _goldBalance.value,
-        jokers: Map<JokerType, Int> = _jokerCounts.value,
-        owned: Set<String> = _ownedStoreIds.value
-    ) {
-        putString(KEY_ECONOMY_SEAL, EconomyGuard.sign(economyPayload(gold, jokers, owned)))
-    }
-
-    // --- Store (mağaza). Ids are "pen:<PenSkin.name>" / "frame:<AvatarFrame.name>". ---
-
-    private val _ownedStoreIds = MutableStateFlow(prefs.getStringSet(KEY_OWNED_STORE_IDS, emptySet())?.toSet() ?: emptySet())
-    val ownedStoreIds: StateFlow<Set<String>> = _ownedStoreIds.asStateFlow()
-
-    /** Buys [id] for [price] gold. False if already owned or the balance is too low. */
-    @Synchronized
-    fun purchaseStoreItem(id: String, price: Int): Boolean {
-        if (price <= 0 || id in _ownedStoreIds.value || _goldBalance.value < price) return false
-        val updatedGold = _goldBalance.value - price
-        val updatedOwned = _ownedStoreIds.value + id
-        // One commit for the deduction AND the grant — spendGold()+a second
-        // apply() used to split these; a crash in between lost the player's
-        // gold with nothing granted for it.
-        prefs.edit(commit = true) {
-            putInt(KEY_GOLD_BALANCE, updatedGold)
-            putStringSet(KEY_OWNED_STORE_IDS, updatedOwned)
-            sealEconomy(gold = updatedGold, owned = updatedOwned)
-        }
-        _goldBalance.value = updatedGold
-        _ownedStoreIds.value = updatedOwned
-        return true
-    }
 
     // --- Hızlı Eşleş word variety: the last words this player was dealt. ---
 
@@ -417,98 +386,13 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         prefs.edit { putString(KEY_QM_RECENT_WORDS, Json.encodeToString(updated)) }
     }
 
-    // --- Jokers (consumables): bought in the store or dropped from chests. ---
-
-    private fun loadJokers(): Map<JokerType, Int> =
-        prefs.getString(KEY_JOKERS, null)
-            ?.let { runCatching { Json.decodeFromString<Map<String, Int>>(it) }.getOrNull() }
-            ?.mapNotNull { (name, n) -> runCatching { JokerType.valueOf(name) }.getOrNull()?.let { it to n } }
-            ?.toMap()
-            ?: emptyMap()
-
-    private val _jokerCounts = MutableStateFlow(loadJokers())
-    val jokerCounts: StateFlow<Map<JokerType, Int>> = _jokerCounts.asStateFlow()
-
-    // Off the main thread: EconomyGuard's first call generates (or reads) an
-    // AndroidKeyStore key, which can synchronously cost 50-200ms on some
-    // devices — enough to visibly drop frames right at cold start otherwise.
-    init { repoScope.launch { verifyEconomy() } }
-
-    /**
-     * Checks the stored economy against its seal on every start. No key yet
-     * (fresh install, new phone, first launch after this feature) means
-     * nothing can be compared, so the current numbers are trusted and
-     * sealed. A key with a missing or wrong seal means the numbers were
-     * edited from outside: the economy is reset to zero.
-     */
-    @Synchronized
-    private fun verifyEconomy() {
-        val payload = economyPayload(_goldBalance.value, _jokerCounts.value, _ownedStoreIds.value)
-        val seal = prefs.getString(KEY_ECONOMY_SEAL, null)
-        when {
-            !EconomyGuard.hasKey() -> prefs.edit { sealEconomy() }
-            seal != null && EconomyGuard.verify(payload, seal) -> Unit
-            else -> {
-                android.util.Log.w("SettingsRepository", "Economy seal mismatch — resetting gold, jokers and store items")
-                prefs.edit {
-                    putInt(KEY_GOLD_BALANCE, 0)
-                    remove(KEY_OWNED_STORE_IDS)
-                    remove(KEY_JOKERS)
-                    sealEconomy(0, emptyMap(), emptySet())
-                }
-                _goldBalance.value = 0
-                _ownedStoreIds.value = emptySet()
-                _jokerCounts.value = emptyMap()
-            }
-        }
-    }
-
-    private fun saveJokers(counts: Map<JokerType, Int>) {
-        prefs.edit { putString(KEY_JOKERS, Json.encodeToString(counts.mapKeys { it.key.name })); sealEconomy(jokers = counts) }
-        _jokerCounts.value = counts
-    }
-
-    @Synchronized
-    fun addJoker(type: JokerType, quantity: Int) {
-        if (quantity <= 0) return
-        saveJokers(_jokerCounts.value + (type to ((_jokerCounts.value[type] ?: 0) + quantity)))
-    }
-
-    /** Spends one joker; false if none are left. */
-    @Synchronized
-    fun useJoker(type: JokerType): Boolean {
-        val have = _jokerCounts.value[type] ?: 0
-        if (have <= 0) return false
-        saveJokers(_jokerCounts.value + (type to (have - 1)))
-        return true
-    }
-
-    /** Buys [quantity] jokers at [JokerType.priceFor]; false if the balance can't cover it. */
-    @Synchronized
-    fun purchaseJoker(type: JokerType, quantity: Int): Boolean {
-        val price = type.priceFor(quantity, RuneEffects.jokerDiscountPercent(_runeLevels.value))
-        if (quantity <= 0 || _goldBalance.value < price) return false
-        val updatedGold = _goldBalance.value - price
-        val updatedJokers = _jokerCounts.value + (type to ((_jokerCounts.value[type] ?: 0) + quantity))
-        // One commit for the deduction AND the grant — see purchaseStoreItem's
-        // comment for why splitting these across two apply() calls is unsafe.
-        prefs.edit(commit = true) {
-            putInt(KEY_GOLD_BALANCE, updatedGold)
-            putString(KEY_JOKERS, Json.encodeToString(updatedJokers.mapKeys { it.key.name }))
-            sealEconomy(gold = updatedGold, jokers = updatedJokers)
-        }
-        _goldBalance.value = updatedGold
-        _jokerCounts.value = updatedJokers
-        return true
-    }
-
     // --- The daily rewarded-ad joker: one per local calendar day. Device-scoped
     // (deliberately absent from the account backup and its clear) so signing out
     // and back in cannot claim the same day's joker twice. ---
     private val _dailyJokerDay = MutableStateFlow(prefs.getLong(KEY_DAILY_JOKER_DAY, -1L))
     val dailyJokerDay: StateFlow<Long> = _dailyJokerDay.asStateFlow()
 
-    /** Hands over today's [DailyJoker] and records the day; null if it was already claimed. */
+    /** Hands over today's [DailyJoker] (plus the Sabah Jokeri runes' extra) and records the day; null if already claimed. */
     @Synchronized
     fun claimDailyJoker(): JokerType? {
         val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
@@ -516,377 +400,60 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val type = com.sualtikasifi.cizimhafiza.domain.model.DailyJoker.typeFor(today)
         prefs.edit { putLong(KEY_DAILY_JOKER_DAY, today) }
         _dailyJokerDay.value = today
-        addJoker(type, 1 + RuneEffects.extraDailyJokers(_runeLevels.value))
+        ledger.addJoker(type, 1 + RuneEffects.extraDailyJokers(runes.levels))
         return type
     }
 
-    /** Puts a store item straight into the collection (chest drop) — no gold changes hands. */
-    @Synchronized
-    fun grantStoreItem(id: String) {
-        if (id in _ownedStoreIds.value) return
-        val updated = _ownedStoreIds.value + id
-        prefs.edit { putStringSet(KEY_OWNED_STORE_IDS, updated); sealEconomy(owned = updated) }
-        _ownedStoreIds.value = updated
-    }
+    // --- Chests (see ChestStore) ---
 
-    // --- Rewarded-ad chest speed-up: once per local calendar day. ---
-
-    private val _chestSpeedupDay = MutableStateFlow(prefs.getLong(KEY_CHEST_SPEEDUP_DAY, -1L))
-    val chestSpeedupDay: StateFlow<Long> = _chestSpeedupDay.asStateFlow()
-
-    /** Takes [millis] off the running countdown of [chestId]. False if today's speed-up is spent or that chest is not counting down. */
-    @Synchronized
-    fun speedUpChest(chestId: String, millis: Long): Boolean {
-        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
-        if (_chestSpeedupDay.value == today) return false
-        val slots = _chestSlots.value
-        val index = slots.indexOfFirst { it?.id == chestId }
-        val chest = slots.getOrNull(index) ?: return false
-        val started = chest.unlockStartedAtMillis ?: return false
-        if (chest.isReady(System.currentTimeMillis())) return false
-        saveChestSlots(slots.toMutableList().apply { this[index] = chest.copy(unlockStartedAtMillis = started - millis) })
-        prefs.edit { putLong(KEY_CHEST_SPEEDUP_DAY, today) }
-        _chestSpeedupDay.value = today
-        return true
-    }
-
-    // --- Chests (kasalar) — see domain.model.Chest/ChestSlots. Won only
-    // from a WON real online-room match (see OnlineResultViewModel), never
-    // from solo play, Hızlı Eşleş or the daily challenge. ---
-
-    private val _chestSlots = MutableStateFlow(loadChestSlots())
-    val chestSlots: StateFlow<List<Chest?>> = _chestSlots.asStateFlow()
-
-    // Re-arm the "chest ready" alarm on every start — see ChestReadyNotifier.
-    // Off the main thread too: AlarmManager IPC at construction time is the
-    // same class of cold-start stutter as the economy check above.
-    init { repoScope.launch { com.sualtikasifi.cizimhafiza.notifications.ChestReadyNotifier.sync(context, _chestSlots.value) } }
-
-    private fun loadChestSlots(): List<Chest?> {
-        val raw = prefs.getString(KEY_CHEST_SLOTS, null)
-            ?: return List(ChestSlots.SLOT_COUNT) { null }
-        return runCatching { Json.decodeFromString<List<Chest?>>(raw) }
-            .getOrDefault(List(ChestSlots.SLOT_COUNT) { null })
-    }
-
-    private fun saveChestSlots(slots: List<Chest?>) {
-        prefs.edit { putString(KEY_CHEST_SLOTS, Json.encodeToString(slots)) }
-        com.sualtikasifi.cizimhafiza.notifications.ChestReadyNotifier.sync(context, slots)
-        _chestSlots.value = slots
-    }
-
-    /** The stored seed as-is (0 = never generated) — reading it for a backup must not create one. */
-    val chestCycleSeedForBackup: Long get() = prefs.getLong(KEY_CHEST_CYCLE_SEED, 0L)
-    val chestCycleIndexForBackup: Int get() = prefs.getInt(KEY_CHEST_CYCLE_INDEX, 0)
-
-    /**
-     * Generated once per account, the first time it is ever needed, and
-     * never changed again — this is what makes [ChestSlots.tierAt] a
-     * reproducible per-account SHUFFLE rather than a fresh roll every call.
-     * 0L is treated as "not yet generated" rather than a legal seed (a
-     * one-in-2^64 chance of actually rolling zero from Random.nextLong() is
-     * an acceptable cost for not needing a separate "has a seed" flag).
-     */
-    private var chestCycleSeed: Long
-        get() {
-            val existing = prefs.getLong(KEY_CHEST_CYCLE_SEED, 0L)
-            if (existing != 0L) return existing
-            val fresh = Random.nextLong().takeIf { it != 0L } ?: 1L
-            prefs.edit { putLong(KEY_CHEST_CYCLE_SEED, fresh) }
-            return fresh
-        }
-        set(value) = prefs.edit { putLong(KEY_CHEST_CYCLE_SEED, value) }
-
-    /** How many chests this account has ever been AWARDED (not opened) — see [ChestSlots.tierAt]. */
-    private var chestCycleIndex: Int
-        get() = prefs.getInt(KEY_CHEST_CYCLE_INDEX, 0)
-        set(value) = prefs.edit { putInt(KEY_CHEST_CYCLE_INDEX, value) }
-
-    /**
-     * Advances the draw cycle regardless of whether a slot is free —
-     * leaving all [ChestSlots.SLOT_COUNT] slots full for too long costs the
-     * chest the cycle would otherwise have handed out. That is deliberate:
-     * it is what makes leaving chests unopened actually cost something,
-     * instead of a queue nothing is ever lost from. Returns the awarded
-     * chest only if a slot was free to put it in; null still means the win
-     * counted (the cycle moved on), just that nothing appeared on screen.
-     */
-    @Synchronized
-    fun awardChestForWin(): Chest? {
-        val seed = chestCycleSeed
-        val index = chestCycleIndex
-        chestCycleIndex = index + 1
-        val slots = _chestSlots.value
-        val freeIndex = slots.indexOfFirst { it == null }
-        if (freeIndex < 0) {
-            // Every slot is taken: with the Yedek Yuva rune the chest waits in one reserve slot instead of being lost.
-            if (RuneEffects.has(_runeLevels.value, RuneEffect.RESERVE) && loadChestReserve() == null) {
-                saveChestReserve(Chest(id = UUID.randomUUID().toString(), tier = ChestSlots.tierAt(seed, index)))
-            }
-            return null
-        }
-        val chest = Chest(id = UUID.randomUUID().toString(), tier = ChestSlots.tierAt(seed, index))
-        saveChestSlots(slots.toMutableList().apply { this[freeIndex] = chest })
-        return chest
-    }
-
-    /** Opens a chest of [tier] on the spot (a coupon's chest): its reward is paid at once and no slot is needed. */
-    @Synchronized
-    fun openChestNow(tier: ChestTier): ChestReward = payChestOutright(tier)
+    val chestSlots: StateFlow<List<Chest?>> get() = chests.chestSlots
+    val chestReserve: StateFlow<Chest?> get() = chests.chestReserve
+    val chestSpeedupDay: StateFlow<Long> get() = chests.chestSpeedupDay
+    val chestCycleSeedForBackup: Long get() = chests.chestCycleSeedForBackup
+    val chestCycleIndexForBackup: Int get() = chests.chestCycleIndexForBackup
 
     /** A won match's chest award: [chest] is null when every slot was full, in which case nothing drops. */
     data class ChestAward(val chest: Chest?, val instantReward: ChestReward?)
 
-    /**
-     * A win's chest goes into a free slot; with every slot taken nothing drops (the win still pays
-     * its XP and gold) and [ChestAward.chest] is null. The tier cycle still advances, so leaving
-     * chests unopened costs the chest that would have come.
-     */
-    @Synchronized
-    fun awardChestForWinOrPay(): ChestAward = ChestAward(awardChestForWin(), null)
+    fun awardChestForWin(): Chest? = chests.awardChestForWin()
+    fun awardChestForWinOrPay(): ChestAward = ChestAward(chests.awardChestForWin(), null)
 
-    private fun payChestOutright(tier: ChestTier, extraEdit: android.content.SharedPreferences.Editor.() -> Unit = {}): ChestReward {
-        val reward = ChestLoot.roll(tier, _ownedStoreIds.value, goldPercent = RuneEffects.chestGoldPercent(_runeLevels.value), jokerBonusPercent = RuneEffects.chestJokerBonusPercent(_runeLevels.value))
-        val updatedGold = _goldBalance.value + reward.gold
-        val updatedJokers = _jokerCounts.value.toMutableMap().apply {
-            reward.jokers.forEach { (type, n) -> this[type] = (this[type] ?: 0) + n }
-        }
-        val updatedOwned = reward.penDrop?.let { _ownedStoreIds.value + "pen:${it.name}" } ?: _ownedStoreIds.value
-        prefs.edit(commit = true) {
-            putInt(KEY_GOLD_BALANCE, updatedGold)
-            putString(KEY_JOKERS, Json.encodeToString(updatedJokers.mapKeys { it.key.name }))
-            putStringSet(KEY_OWNED_STORE_IDS, updatedOwned)
-            extraEdit()
-            sealEconomy(gold = updatedGold, jokers = updatedJokers, owned = updatedOwned)
-        }
-        _goldBalance.value = updatedGold
-        _jokerCounts.value = updatedJokers
-        _ownedStoreIds.value = updatedOwned
-        return reward
-    }
+    /** Opens a chest of [tier] on the spot (a coupon's chest): its reward is paid at once and no slot is needed. */
+    fun openChestNow(tier: ChestTier): ChestReward = chests.payOutright(tier)
+    fun startUnlockingChest(chestId: String): Boolean = chests.startUnlocking(chestId)
+    fun openChestIfReady(chestId: String): ChestReward? = chests.openIfReady(chestId)
+    fun instantOpenChest(chestId: String): Boolean = chests.instantOpen(chestId)
+    fun speedUpChest(chestId: String, millis: Long): Boolean = chests.speedUp(chestId, millis)
 
-    /** False while another chest is still counting down — one timer at a time, but a chest that is done waiting does not count. */
-    @Synchronized
-    fun startUnlockingChest(chestId: String): Boolean {
-        val slots = _chestSlots.value
-        // A finished-but-unopened chest no longer blocks the queue: only a timer that is still running does.
-        val now = System.currentTimeMillis()
-        if (slots.any { it?.unlockStartedAtMillis != null && !it.isReady(now) }) return false
-        val index = slots.indexOfFirst { it?.id == chestId }
-        val chest = slots.getOrNull(index) ?: return false
-        if (chest.unlockStartedAtMillis != null) return false
-        saveChestSlots(
-            // The time runes move the start back, so the chest is ready that much sooner.
-            slots.toMutableList().apply { this[index] = chest.copy(unlockStartedAtMillis = System.currentTimeMillis() - chest.tier.unlockDurationMillis * RuneEffects.chestTimeReductionPercent(_runeLevels.value) / 100) }
-        )
-        return true
-    }
+    // --- Karalak Rünleri (see RuneStore) ---
 
-    /** Grants the reward and empties the slot — null if the chest isn't ready yet or doesn't exist any more. */
-    @Synchronized
-    fun openChestIfReady(chestId: String): ChestReward? {
-        val slots = _chestSlots.value
-        val index = slots.indexOfFirst { it?.id == chestId }
-        val chest = slots.getOrNull(index) ?: return null
-        if (!chest.isReady(System.currentTimeMillis())) return null
-        val reward = ChestLoot.roll(chest.tier, _ownedStoreIds.value, goldPercent = RuneEffects.chestGoldPercent(_runeLevels.value), jokerBonusPercent = RuneEffects.chestJokerBonusPercent(_runeLevels.value))
-
-        val updatedGold = _goldBalance.value + reward.gold
-        val updatedJokers = _jokerCounts.value.toMutableMap().apply {
-            reward.jokers.forEach { (type, n) -> this[type] = (this[type] ?: 0) + n }
-        }
-        val updatedOwned = reward.penDrop?.let { _ownedStoreIds.value + "pen:${it.name}" } ?: _ownedStoreIds.value
-        val updatedSlots = slots.toMutableList().apply { this[index] = loadChestReserve() }
-        // The chest waiting in reserve takes the slot that just freed up.
-        val reserveMoved = updatedSlots[index] != null
-
-        // One commit for the whole payout, not the four-plus separate
-        // apply() calls (addGold/addJoker per type/grantStoreItem/saveChestSlots)
-        // this used to be. Those are async and independently ordered on
-        // disk, so a process death between "reward granted" and "slot
-        // cleared" could leave the reward paid but the chest still sitting
-        // there ready to open again — a real double-grant path. Landing the
-        // reward and the slot-clear in the same commit makes that
-        // impossible: either both happened or neither did.
-        prefs.edit(commit = true) {
-            putInt(KEY_GOLD_BALANCE, updatedGold)
-            putString(KEY_JOKERS, Json.encodeToString(updatedJokers.mapKeys { it.key.name }))
-            putStringSet(KEY_OWNED_STORE_IDS, updatedOwned)
-            putString(KEY_CHEST_SLOTS, Json.encodeToString(updatedSlots))
-            if (reserveMoved) remove(KEY_CHEST_RESERVE)
-            sealEconomy(gold = updatedGold, jokers = updatedJokers, owned = updatedOwned)
-        }
-        _goldBalance.value = updatedGold
-        _jokerCounts.value = updatedJokers
-        _ownedStoreIds.value = updatedOwned
-        _chestSlots.value = updatedSlots
-        com.sualtikasifi.cizimhafiza.notifications.ChestReadyNotifier.sync(context, updatedSlots)
-        return reward
-    }
-
-
-    // --- Runes that touch the chests and the rooms ---
-
-    private fun loadChestReserve(): Chest? = runCatching {
-        prefs.getString(KEY_CHEST_RESERVE, null)?.let { Json.decodeFromString<Chest>(it) }
-    }.getOrNull()
-
-    private fun saveChestReserve(chest: Chest) {
-        prefs.edit(commit = true) { putString(KEY_CHEST_RESERVE, Json.encodeToString(chest)) }
-    }
-
-    /** True while a chest waits in the reserve slot (the Yedek Yuva rune). */
-    fun hasReservedChest(): Boolean = loadChestReserve() != null
-
-    private fun todayEpoch(): Long = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
-
-    /** The Anahtarcı rune is bought and today's instant open is still unused. */
-    fun instantChestAvailable(): Boolean =
-        RuneEffects.has(_runeLevels.value, RuneEffect.INSTANT) && prefs.getLong(KEY_INSTANT_CHEST_DAY, -1L) != todayEpoch()
-
-    /** Opens a counting-down chest at once (once a day, Anahtarcı rune): the countdown is moved to the past. False if not possible. */
-    @Synchronized
-    fun instantOpenChest(chestId: String): Boolean {
-        if (!instantChestAvailable()) return false
-        val slots = _chestSlots.value
-        val index = slots.indexOfFirst { it?.id == chestId }
-        val chest = slots.getOrNull(index) ?: return false
-        val now = System.currentTimeMillis()
-        if (chest.unlockStartedAtMillis == null || chest.isReady(now)) return false
-        prefs.edit(commit = true) { putLong(KEY_INSTANT_CHEST_DAY, todayEpoch()) }
-        saveChestSlots(slots.toMutableList().apply { this[index] = chest.copy(unlockStartedAtMillis = now - chest.tier.unlockDurationMillis) })
-        return true
-    }
-
-    /**
-     * Gold for an online room with the room runes applied: the friend-room runes always, the founder runes when [asHost],
-     * and the Dostluk Bağı rune's +50% once a day. [base] is what the round paid before the runes.
-     */
-    @Synchronized
-    fun roomGold(base: Int, asHost: Boolean): Int {
-        if (base <= 0) return base
-        var percent = RuneEffects.roomGoldPercent(_runeLevels.value, asHost)
-        if (RuneEffects.has(_runeLevels.value, RuneEffect.BEST) && prefs.getLong(KEY_BEST_FRIEND_DAY, -1L) != todayEpoch()) {
-            percent += 50
-            prefs.edit { putLong(KEY_BEST_FRIEND_DAY, todayEpoch()) }
-        }
-        return base + base * percent / 100
-    }
-
-    /** Extra gold for runs of three right words in a row (the Zincir Ustası rune): 10 per full three, within each run. */
-    fun chainBonusGold(correctInOrder: List<Boolean>): Int {
-        if (!RuneEffects.has(_runeLevels.value, RuneEffect.STREAK)) return 0
-        var run = 0
-        var bonus = 0
-        for (ok in correctInOrder) {
-            if (ok) { run++; if (run % 3 == 0) bonus += CHAIN_BONUS_GOLD } else run = 0
-        }
-        return bonus
-    }
-
-    /** The Şanslı Zar rune: a joker to add to a claimed login reward, or null (25% chance when the rune is bought). */
-    fun luckyDiceJoker(): JokerType? =
-        if (RuneEffects.has(_runeLevels.value, RuneEffect.DICE) && Random.nextInt(100) < 25) JokerType.entries.random() else null
-
-    /** The Seri Sigortası rune: once a month a missed day does not break the login streak. True when it was just used. */
-    @Synchronized
-    fun useStreakInsurance(): Boolean {
-        if (!RuneEffects.has(_runeLevels.value, RuneEffect.INSURE)) return false
-        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()
-        val month = today.year * 100 + today.monthValue
-        if (prefs.getInt(KEY_INSURANCE_MONTH, 0) == month) return false
-        prefs.edit(commit = true) { putInt(KEY_INSURANCE_MONTH, month) }
-        return true
-    }
-
-    // --- Home-screen ad rewards: 500 gold every 4 hours, and one free
-    // mid-tier chest per calendar day (resets at local midnight). ---
-
-    // --- Karalak Rünleri (rune map): levels bought with gold, see domain/model/Rune.kt ---
-
-    private fun readRuneLevels(): Map<String, Int> = runCatching {
-        prefs.getString(KEY_RUNE_LEVELS, null)?.let { Json.decodeFromString<Map<String, Int>>(it) }
-    }.getOrNull().orEmpty()
-
-    private val _runeLevels = MutableStateFlow(readRuneLevels())
-    val runeLevels: StateFlow<Map<String, Int>> = _runeLevels.asStateFlow()
-
-    /**
-     * Buys the next level of [id]: false when it is not open yet, already at its max, or the gold is not there. The gold
-     * and the level land in one commit, like every other purchase here.
-     */
-    @Synchronized
-    fun buyRune(id: String): Boolean {
-        val rune = RuneTree.get(id) ?: return false
-        val levels = _runeLevels.value
-        if (!RuneTree.canBuy(levels, rune, playerLevelNow())) return false
-        val cost = RuneTree.nextCost(levels, rune) ?: return false
-        if (cost <= 0 || _goldBalance.value < cost) return false
-        val updatedGold = _goldBalance.value - cost
-        val updatedLevels = levels + (id to RuneTree.levelOf(levels, id) + 1)
-        prefs.edit(commit = true) {
-            putInt(KEY_GOLD_BALANCE, updatedGold)
-            putString(KEY_RUNE_LEVELS, Json.encodeToString(updatedLevels))
-            sealEconomy(gold = updatedGold)
-        }
-        _goldBalance.value = updatedGold
-        _runeLevels.value = updatedLevels
-        // A style rune hands over a store pen or frame the first time it is bought.
-        if (RuneTree.levelOf(levels, id) == 0) RuneRewards.storeItem[id]?.let { grantStoreItem(it) }
-        return true
-    }
+    val runeLevels: StateFlow<Map<String, Int>> get() = runes.runeLevels
 
     /** The player's level, from the lifetime XP. */
     fun playerLevelNow(): Int = PlayerLevel.levelForXp(_lifetimeXp.value)
 
-    /**
-     * Developer tool: takes every rune level back, pays back the gold they cost (at the designed price) and clears the
-     * rune-bound daily flags so the map can be tried again from the start. Returns the gold paid back.
-     */
-    @Synchronized
-    fun resetRunes(): Int {
-        val levels = _runeLevels.value
-        val refund = RuneTree.all.filter { it.id != RuneTree.ROOT_ID }.sumOf { r -> r.costs.take(RuneTree.levelOf(levels, r.id)).sum() }
-        val updatedGold = _goldBalance.value + refund
-        prefs.edit(commit = true) {
-            putInt(KEY_GOLD_BALANCE, updatedGold)
-            putString(KEY_RUNE_LEVELS, Json.encodeToString(emptyMap<String, Int>()))
-            remove(KEY_INSTANT_CHEST_DAY)
-            remove(KEY_BEST_FRIEND_DAY)
-            remove(KEY_INSURANCE_MONTH)
-            sealEconomy(gold = updatedGold)
-        }
-        _goldBalance.value = updatedGold
-        _runeLevels.value = emptyMap()
-        return refund
-    }
-
-    /** Puts an account's runes back after a restore: per rune, the higher level wins. */
-    fun restoreRuneLevels(saved: Map<String, Int>) {
-        if (saved.isEmpty()) return
-        val merged = (_runeLevels.value.keys + saved.keys).associateWith { maxOf(_runeLevels.value[it] ?: 0, saved[it] ?: 0) }
-        if (merged == _runeLevels.value) return
-        prefs.edit(commit = true) { putString(KEY_RUNE_LEVELS, Json.encodeToString(merged)) }
-        _runeLevels.value = merged
-    }
-
-    /** Gold for one correct word with the runes applied. */
-    fun goldPerCorrectWord(): Int = RuneEffects.goldPerWord(_runeLevels.value, GameConstants.GOLD_PER_CORRECT_WORD)
-
-    /** Gold of one achievement with the runes applied. */
-    fun achievementGold(): Int = RuneEffects.achievementGold(_runeLevels.value, GameConstants.ACHIEVEMENT_GOLD)
-
-    /** Gold of one new level star with the runes applied. */
-    fun starGold(): Int = RuneEffects.starGold(_runeLevels.value, GameConstants.LEVEL_GOLD_PER_NEW_STAR)
-
-    /** Gold of the daily challenge at [streakDays] with the runes applied. */
-    fun dailyChallengeGold(streakDays: Int): Int = RuneEffects.dailyGold(_runeLevels.value, GameConstants.dailyChallengeGold(streakDays))
+    fun buyRune(id: String): Boolean = runes.buy(id, playerLevelNow())
+    fun resetRunes(): Int = runes.reset()
+    fun unlockAllRunes() = runes.unlockAll()
+    fun restoreRuneLevels(saved: Map<String, Int>) = runes.restore(saved)
+    fun instantChestAvailable(): Boolean = runes.instantChestAvailable()
+    fun bestFriendBonusAvailable(): Boolean = runes.bestFriendBonusAvailable()
+    fun takeBestFriendBonus(): Boolean = runes.takeBestFriendBonus()
+    fun streakInsuranceAvailable(): Boolean = runes.streakInsuranceAvailable()
+    fun useStreakInsurance(): Boolean = runes.useStreakInsurance()
+    fun luckyDiceJoker(): JokerType? = runes.luckyDiceJoker()
 
     /** Percent off joker prices from the runes. */
-    fun jokerDiscountPercent(): Int = RuneEffects.jokerDiscountPercent(_runeLevels.value)
+    fun jokerDiscountPercent(): Int = RuneEffects.jokerDiscountPercent(runes.levels)
 
-    /** Gold for an online room win with the runes applied. */
-    fun onlineWinGold(): Int = RuneEffects.winGold(_runeLevels.value, GameConstants.ONLINE_WIN_GOLD)
+    /** True the first time it is asked for [ring] on this device: the "ring opened" Analytics event is sent once. */
+    @Synchronized
+    fun firstRingOpening(ring: Int): Boolean {
+        val key = "$KEY_RING_OPEN_LOGGED_PREFIX$ring"
+        if (prefs.getBoolean(key, false)) return false
+        prefs.edit { putBoolean(key, true) }
+        return true
+    }
 
     // --- Giriş Serisi (login streak) ---
 
@@ -908,7 +475,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     @Synchronized
     fun recordLoginClaim(today: Long, streakBefore: Int, continuing: Boolean): Int {
         val newStreak = (if (continuing) streakBefore else 0) + 1
-        prefs.edit(commit = true) {
+        prefs.edit {
             putInt(KEY_LOGIN_STREAK, newStreak)
             putLong(KEY_LOGIN_LAST_CLAIM_DAY, today)
         }
@@ -940,10 +507,10 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     fun claimAdGold(): Boolean {
         val now = System.currentTimeMillis()
         if (now < _adGoldNextAtMillis.value) return false
-        val next = now + AD_GOLD_COOLDOWN_MILLIS * (100 - RuneEffects.adCooldownReductionPercent(_runeLevels.value)) / 100
-        prefs.edit(commit = true) { putLong(KEY_AD_GOLD_NEXT_AT, next) }
+        val next = now + AD_GOLD_COOLDOWN_MILLIS * (100 - RuneEffects.adCooldownReductionPercent(runes.levels)) / 100
+        prefs.edit { putLong(KEY_AD_GOLD_NEXT_AT, next) }
         _adGoldNextAtMillis.value = next
-        addGold(AD_GOLD_AMOUNT)
+        ledger.addGold(AD_GOLD_AMOUNT)
         return true
     }
 
@@ -955,8 +522,8 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     fun claimAdChest(): ChestReward? {
         val now = System.currentTimeMillis()
         if (now < _adChestNextAt.value) return null
-        val next = now + AD_CHEST_COOLDOWN_MILLIS * (100 - RuneEffects.adCooldownReductionPercent(_runeLevels.value)) / 100
-        val reward = payChestOutright(ChestTier.GOLD) { putLong(KEY_AD_CHEST_NEXT_AT, next) }
+        val next = now + AD_CHEST_COOLDOWN_MILLIS * (100 - RuneEffects.adCooldownReductionPercent(runes.levels)) / 100
+        val reward = chests.payOutright(ChestTier.GOLD) { putLong(KEY_AD_CHEST_NEXT_AT, next) }
         _adChestNextAt.value = next
         return reward
     }
@@ -1029,7 +596,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         if (amount <= 0) return
         // The XP runes speed up the player's LEVEL only; the league (period) XP stays exactly what was earned, so a rune
         // never buys a better league place.
-        val gained = amount + amount * RuneEffects.xpPercent(_runeLevels.value) / 100
+        val gained = amount + amount * RuneEffects.xpPercent(runes.levels) / 100
         val updated = _lifetimeXp.value + gained
         prefs.edit { putInt(KEY_LIFETIME_XP, updated) }
         _lifetimeXp.value = updated
@@ -1235,10 +802,9 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         _phraseUsageCounts.value = emptyMap()
         _emojiUsageCounts.value = emptyMap()
         _earnedLeagueRewardIds.value = emptySet()
-        _goldBalance.value = 0
-        _ownedStoreIds.value = emptySet()
-        _jokerCounts.value = emptyMap()
-        _chestSlots.value = List(ChestSlots.SLOT_COUNT) { null }
+        ledger.publish(0, emptyMap(), emptySet())
+        chests.publishAccount(List(ChestSlots.SLOT_COUNT) { null })
+        runes.publishCleared()
     }
 
     /**
@@ -1294,19 +860,12 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         // half-opened chests.
         // The login streak is this account's too.
         remove(KEY_LOGIN_STREAK)
-        remove(KEY_RUNE_LEVELS)
         remove(KEY_LOGIN_LAST_CLAIM_DAY)
-        putInt(KEY_GOLD_BALANCE, 0)
-        remove(KEY_OWNED_STORE_IDS)
-        remove(KEY_JOKERS)
-        sealEconomy(0, emptyMap(), emptySet())
-        remove(KEY_CHEST_SLOTS)
-        remove(KEY_CHEST_RESERVE)
-        remove(KEY_INSTANT_CHEST_DAY)
-        remove(KEY_BEST_FRIEND_DAY)
-        remove(KEY_INSURANCE_MONTH)
-        remove(KEY_CHEST_CYCLE_SEED)
-        putInt(KEY_CHEST_CYCLE_INDEX, 0)
+        // The runes are cleared AND resealed, and shown cleared in memory by the caller: before, the in-memory levels of
+        // the previous account survived and were merged into the next one's on restore.
+        with(runes) { stageClear() }
+        with(ledger) { stageEconomy(0, emptyMap(), emptySet()) }
+        with(chests) { stageClear() }
         // LeagueScorePublisher skips the write when the signature it
         // last published still matches. Carried over, the new account
         // would look like it had already published — and would never
@@ -1393,15 +952,8 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             // Chest slots travel with the account (see ChestBackupCodec), along
             // with the seed/position of the tier cycle so the next chests
             // keep following the same shuffle after a reinstall.
-            putString(KEY_CHEST_SLOTS, Json.encodeToString(chestSlots))
-            if (restoredChestCycleSeed != 0L) {
-                putLong(KEY_CHEST_CYCLE_SEED, restoredChestCycleSeed)
-                putInt(KEY_CHEST_CYCLE_INDEX, restoredChestCycleIndex)
-            }
-            putInt(KEY_GOLD_BALANCE, goldBalance)
-            putStringSet(KEY_OWNED_STORE_IDS, ownedStoreIds)
-            putString(KEY_JOKERS, Json.encodeToString(jokerCounts.mapKeys { it.key.name }))
-            sealEconomy(goldBalance, jokerCounts, ownedStoreIds)
+            with(chests) { stageRestore(chestSlots, restoredChestCycleSeed, restoredChestCycleIndex) }
+            with(ledger) { stageEconomy(goldBalance, jokerCounts, ownedStoreIds) }
         }
         _periodXp.value = 0
         _phraseUsageCounts.value = emptyMap()
@@ -1414,11 +966,10 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         _usernameOfferPending.value = false
         _selectedAvatarFrameId.value = frame
         _selectedPenSkinId.value = pen
-        _goldBalance.value = goldBalance
-        _ownedStoreIds.value = ownedStoreIds
-        _jokerCounts.value = jokerCounts
-        _chestSlots.value = chestSlots
-        com.sualtikasifi.cizimhafiza.notifications.ChestReadyNotifier.sync(context, chestSlots)
+        ledger.publish(goldBalance, jokerCounts, ownedStoreIds)
+        chests.publishAccount(chestSlots)
+        // The account's runes come back through restoreRuneLevels, merged into an empty map — not into the last account's.
+        runes.publishCleared()
     }
 
     fun setNotificationsEnabled(enabled: Boolean) {
@@ -1587,7 +1138,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         }
     }
 
-    private companion object {
+    internal companion object {
         const val PREFS_NAME = "cizim_hafiza_settings"
         const val KEY_MUSIC = "music_enabled"
         const val KEY_SOUND = "sound_enabled"
@@ -1620,6 +1171,8 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_JOKERS = "joker_counts"
         const val KEY_FEATURE_TOUR_SEEN = "feature_tour_seen"
         const val KEY_ECONOMY_SEAL = "economy_seal"
+        const val KEY_RUNE_SEAL = "rune_seal"
+        const val KEY_RING_OPEN_LOGGED_PREFIX = "rune_ring_open_logged_"
         const val KEY_QM_RECENT_WORDS = "qm_recent_words"
         const val QM_RECENT_WORDS_CAP = 300
         const val KEY_CHEST_SPEEDUP_DAY = "chest_speedup_day"
@@ -1632,14 +1185,14 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_INSTANT_CHEST_DAY = "instant_chest_day"
         const val KEY_BEST_FRIEND_DAY = "best_friend_day"
         const val KEY_INSURANCE_MONTH = "streak_insurance_month"
-        const val CHAIN_BONUS_GOLD = 10
         const val KEY_LOGIN_STREAK = "login_streak"
         const val KEY_LOGIN_LAST_CLAIM_DAY = "login_last_claim_day"
         const val KEY_AD_GOLD_NEXT_AT = "ad_gold_next_at"
         const val KEY_AD_CHEST_NEXT_AT = "ad_chest_next_at"
-        const val AD_CHEST_COOLDOWN_MILLIS = 4 * 60 * 60 * 1000L
-        const val AD_GOLD_AMOUNT = 500
-        const val AD_GOLD_COOLDOWN_MILLIS = 3 * 60 * 60 * 1000L
+        // From config/economy (see EconomyConfig).
+        val AD_CHEST_COOLDOWN_MILLIS: Long get() = EconomyConfig.adChestCooldownHours * 60 * 60 * 1000L
+        val AD_GOLD_AMOUNT: Int get() = EconomyConfig.adGoldAmount
+        val AD_GOLD_COOLDOWN_MILLIS: Long get() = EconomyConfig.adGoldCooldownHours * 60 * 60 * 1000L
         const val KEY_CURRENT_STREAK = "current_streak"
         const val KEY_NOTIFICATION_PERMISSION_REQUESTED = "notification_permission_requested"
         const val KEY_LAST_REMINDER_EPOCH_DAY = "last_reminder_epoch_day"

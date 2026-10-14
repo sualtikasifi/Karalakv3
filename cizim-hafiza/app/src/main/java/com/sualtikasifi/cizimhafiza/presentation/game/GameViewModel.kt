@@ -6,6 +6,7 @@ import android.os.SystemClock
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sualtikasifi.cizimhafiza.domain.model.RoundRewards
 import com.sualtikasifi.cizimhafiza.ads.AdManager
 import com.sualtikasifi.cizimhafiza.ads.RewardedOutcome
 import com.sualtikasifi.cizimhafiza.data.local.WordPoolSynchronizer
@@ -1029,12 +1030,9 @@ class GameViewModel @Inject constructor(
         soundManager.playGameOver()
         // Gold earned by playing (not only by winning chests): achievements,
         // improving a level's stars, and the daily challenge. Paid once, below.
-        val goldFromAchievements = newlyUnlocked.size * settingsRepository.achievementGold()
-        var goldFromLevel = 0
-        var goldFromDaily = 0
-        val goldFromPlay = if (isDaily) 0 else results.count { it.isCorrect } * settingsRepository.goldPerCorrectWord() +
-            settingsRepository.chainBonusGold(results.map { it.isCorrect })
-        var goldEarned = goldFromAchievements + goldFromPlay
+        // The inputs of the round's gold, gathered below; RoundRewards.solo works out the amounts.
+        var newStars = 0
+        var dailyStreak: Int? = null
 
         // Spends today's Quick Match bonus only now that the round actually
         // finished — see quickMatchDailyBonusPending, decided at
@@ -1065,8 +1063,7 @@ class GameViewModel @Inject constructor(
             settingsRepository.addXp(bonus)
             roundXpEarned += bonus
             // Gold only for stars beyond the best already earned — replaying a cleared level pays none.
-            goldFromLevel = (it - previousBestStars).coerceAtLeast(0) * settingsRepository.starGold()
-            goldEarned += goldFromLevel
+            newStars = (it - previousBestStars).coerceAtLeast(0)
         }
 
         // Bookkeeping for today's challenge: streak, freezes and the XP that
@@ -1094,8 +1091,7 @@ class GameViewModel @Inject constructor(
             )
             settingsRepository.addXp(xpAwarded)
             roundXpEarned += xpAwarded
-            goldFromDaily = settingsRepository.dailyChallengeGold(updated.currentStreak)
-            goldEarned += goldFromDaily
+            dailyStreak = updated.currentStreak
             DailyResultSummary(
                 streak = updated.currentStreak,
                 xpEarned = xpAwarded,
@@ -1196,8 +1192,18 @@ class GameViewModel @Inject constructor(
             )
         }
 
-        if (goldEarned > 0) settingsRepository.earnGold(goldEarned)
         val quickMatchWon = ghost != null && totalScore > ghost.totalScore
+        // A Quick Match win pays the same win gold as an online room win (the Zafer Altını rune included).
+        val gold = RoundRewards.solo(
+            levels = settingsRepository.runeLevels.value,
+            correctInOrder = results.map { it.isCorrect },
+            isDaily = isDaily,
+            newAchievements = newlyUnlocked.size,
+            newStars = newStars,
+            dailyStreak = dailyStreak,
+            quickMatchWon = quickMatchWon
+        )
+        if (gold.total > 0) settingsRepository.earnGold(gold.total)
         if (ghost != null) {
             settingsRepository.recordQuickMatchFinished()
             settingsRepository.markRatingDueIfEligible()
@@ -1234,11 +1240,13 @@ class GameViewModel @Inject constructor(
                 )
             },
             xpEarned = roundXpEarned,
-            goldEarned = goldEarned,
-            goldFromAchievements = goldFromAchievements,
-            goldFromLevel = goldFromLevel,
-            goldFromDaily = goldFromDaily,
-            goldFromPlay = goldFromPlay,
+            goldEarned = gold.total,
+            goldFromAchievements = gold.achievements,
+            goldFromLevel = gold.level,
+            goldFromDaily = gold.daily,
+            goldFromPlay = gold.play,
+            goldFromWin = gold.win,
+            runeBonusGold = gold.runeBonus,
             xpMultiplier = effectiveXpMultiplier,
             quickMatchDailyBonusApplied = quickMatchDailyBonusPending,
             xpEventMultiplierApplied = xpEventMultiplierOnly > 1,

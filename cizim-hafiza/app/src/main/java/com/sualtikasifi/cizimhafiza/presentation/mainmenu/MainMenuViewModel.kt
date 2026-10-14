@@ -117,7 +117,9 @@ class MainMenuViewModel @Inject constructor(
                 is com.sualtikasifi.cizimhafiza.domain.model.LoginStreakState.Claimable -> LoginPopup.Claim(state.streakBefore)
                 // The Seri Sigortası rune: once a month a missed day is forgiven and the streak carries on.
                 is com.sualtikasifi.cizimhafiza.domain.model.LoginStreakState.Missed ->
-                    if (settingsRepository.useStreakInsurance()) LoginPopup.Claim(state.lostStreak, rescued = true) else LoginPopup.Missed(state.lostStreak)
+                    // Only a single missed day is forgiven; the cover is spent when the reward is taken, not when the window opens.
+                    if (settingsRepository.loginLastClaimDay == today - 2 && settingsRepository.streakInsuranceAvailable()) LoginPopup.Claim(state.lostStreak, rescued = true, insured = true)
+                    else LoginPopup.Missed(state.lostStreak)
             }
         }
     }
@@ -129,11 +131,13 @@ class MainMenuViewModel @Inject constructor(
             _loginPopup.value = null
             return
         }
+        if (popup.insured) settingsRepository.useStreakInsurance()
         val rewards = com.sualtikasifi.cizimhafiza.domain.model.LoginStreakRewards
         val day = rewards.cycleDayFor(popup.streakBefore)
         val reward = rewards.forDay(day)
         val newStreak = settingsRepository.recordLoginClaim(loginDay, popup.streakBefore, continuing = true)
-        if (reward.gold > 0) settingsRepository.earnGold(com.sualtikasifi.cizimhafiza.domain.model.RuneEffects.loginGold(settingsRepository.runeLevels.value, reward.gold))
+        val gold = com.sualtikasifi.cizimhafiza.domain.model.RuneEffects.loginGold(settingsRepository.runeLevels.value, reward.gold)
+        if (gold > 0) settingsRepository.earnGold(gold)
         if (reward.xp > 0) settingsRepository.addXp(reward.xp)
         // The Şanslı Zar rune sometimes adds a joker to the day's reward; it is shown in the window with the rest.
         val dice = settingsRepository.luckyDiceJoker()
@@ -142,7 +146,7 @@ class MainMenuViewModel @Inject constructor(
         val milestone = rewards.milestoneFor(newStreak)
         // Chests are opened on the spot, after the window closes (see consumeLoginPopup).
         pendingLoginChests = listOfNotNull(reward.chest, milestone).map { settingsRepository.openChestNow(it) }
-        _loginPopup.value = LoginPopup.Claimed(day, reward.copy(jokers = jokers), newStreak, milestone)
+        _loginPopup.value = LoginPopup.Claimed(day, reward.copy(gold = gold, jokers = jokers), newStreak, milestone)
     }
 
     /** The streak was broken: a watched ad carries it on, as if no day had been missed. */
@@ -515,7 +519,7 @@ class MainMenuViewModel @Inject constructor(
 /** What the daily login window is showing. */
 sealed interface LoginPopup {
     /** Today's reward can be taken after [streakBefore] days in a row; [rescued] when an ad just saved a broken streak. */
-    data class Claim(val streakBefore: Int, val rescued: Boolean = false) : LoginPopup
+    data class Claim(val streakBefore: Int, val rescued: Boolean = false, val insured: Boolean = false) : LoginPopup
 
     /** A day was missed: the [lostStreak]-day streak can be saved with an ad or started over. */
     data class Missed(val lostStreak: Int) : LoginPopup

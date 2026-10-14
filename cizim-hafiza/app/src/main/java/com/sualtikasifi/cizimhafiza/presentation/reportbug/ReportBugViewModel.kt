@@ -39,7 +39,7 @@ class ReportBugViewModel @Inject constructor(
     // strictly write-only: send it, get a "thanks" toast, and never hear
     // anything again, which reads as shouting into a void.
     val myReports: StateFlow<List<BugReport>> = repository.observeMyReports()
-        .catch { } // a listener retry (see firestoreFlow) is invisible here; the last good list just stays on screen
+        .catch { com.sualtikasifi.cizimhafiza.util.NonFatal.report("ReportBugViewModel", "listener failed", it) } // a listener retry (see firestoreFlow) is invisible here; the last good list just stays on screen
         .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = emptyList())
 
     fun onDescriptionChanged(text: String) {

@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.data.repository
 
+import com.sualtikasifi.cizimhafiza.util.NonFatal
 import android.content.Context
 import android.util.Log
 import com.sualtikasifi.cizimhafiza.R
@@ -366,7 +367,7 @@ class FriendRepositoryImpl @Inject constructor(
             batch.delete(users.document(friend.uid).collection("friends").document(uid))
         }
         runCatching { batch.commit().await() }
-            .onFailure { Log.w(TAG, "prepareFriendMigration: detach batch failed", it) }
+            .onFailure { NonFatal.report(TAG, "prepareFriendMigration: detach batch failed", it) }
         return friends
     }
 
@@ -388,7 +389,7 @@ class FriendRepositoryImpl @Inject constructor(
             )
         }
         runCatching { batch.commit().await() }
-            .onFailure { Log.w(TAG, "adoptMigratedFriends failed", it) }
+            .onFailure { NonFatal.report(TAG, "adoptMigratedFriends failed", it) }
     }
 
     override fun observeIncomingInvites(): Flow<List<MatchInvite>> = firestoreFlow("invites") { emit, onError ->

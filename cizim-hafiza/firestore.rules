@@ -401,6 +401,11 @@ service cloud.firestore {
     }
 
     // The rune map's pace (when each ring opens, the price factor): readable by everyone signed in, written by reviewers.
+    match /config/economy {
+      allow read: if signedIn();
+      allow write: if reviewer();
+    }
+
     match /config/runes {
       allow read: if signedIn();
       allow write: if reviewer();
@@ -460,6 +465,33 @@ service cloud.firestore {
       return growth <= allowed && stampOk;
     }
 
+    // The cloud save (users/{uid}/backup/state) is restored into the game as
+    // it stands, so a hand-written one would be a free fortune. Every save is
+    // stamped with the server's time (sealedAt), and between two saves gold and
+    // XP may grow only by a burst plus a steady hourly rate — far above honest
+    // play (a whole day of rounds, ads and chests is a few tens of thousands of
+    // gold), far below a cheat. The first save of an account (nothing to
+    // measure against) is held to a fixed ceiling instead. Rune levels and
+    // jokers are bounded too; the game itself clamps rune levels to each rune's
+    // top on restore.
+    function plausibleBackup() {
+      let after = request.resource.data;
+      let existing = resource != null;
+      let hasStamp = existing && 'sealedAt' in resource.data && resource.data.sealedAt is timestamp;
+      let hours = hasStamp ? (request.time.toMillis() - resource.data.sealedAt.toMillis()) / 3600000 : 0;
+      let goldBefore = (hasStamp && 'goldBalance' in resource.data) ? resource.data.goldBalance : 0;
+      let xpBefore = (hasStamp && 'lifetimeXp' in resource.data) ? resource.data.lifetimeXp : 0;
+      return after.sealedAt == request.time
+             && after.goldBalance is int && after.goldBalance >= 0 && after.goldBalance <= 20000000
+             && after.lifetimeXp is int && after.lifetimeXp >= 0 && after.lifetimeXp <= 5000000
+             && (hasStamp
+                 ? (after.goldBalance - goldBefore <= 300000 + hours * 60000
+                    && after.lifetimeXp - xpBefore <= 30000 + hours * 3000)
+                 : (after.goldBalance <= 1500000))
+             && (!('runeLevels' in after) || (after.runeLevels is map && after.runeLevels.size() <= 40))
+             && (!('jokerCounts' in after) || (after.jokerCounts is list && after.jokerCounts.size() <= 20));
+    }
+
     match /users/{uid} {
       // Public profile: nickname, friendCode, level/frame, and the weekly
       // league score (see C1 / WeeklyLeague). Readable by anyone signed in —
@@ -506,9 +538,12 @@ service cloud.firestore {
       }
 
       // Cloud save of local progress (XP, achievements, level stars,
-      // cosmetics) so a new phone can restore it. Strictly owner-only.
+      // cosmetics) so a new phone can restore it. Strictly owner-only — and,
+      // since a restore puts these numbers straight back into the game, held
+      // to plausibleBackup(): a raw write cannot hand an account a fortune.
       match /backup/{docId} {
-        allow read, write: if signedIn() && request.auth.uid == uid;
+        allow read, delete: if signedIn() && request.auth.uid == uid;
+        allow create, update: if signedIn() && request.auth.uid == uid && plausibleBackup();
       }
 
       match /friends/{friendUid} {

@@ -287,8 +287,7 @@ fun CizimHafizaNavGraph(
 
         composable(Screen.Runes) {
             com.sualtikasifi.cizimhafiza.presentation.runes.RunesScreen(
-                onBack = { navController.popBackStack() },
-                onStore = { navController.navigate(Screen.Store) }
+                onBack = { navController.popBackStack() }
             )
         }
 

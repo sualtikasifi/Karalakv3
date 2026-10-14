@@ -246,6 +246,13 @@ internal fun resultStats(state: GamePhase.Result, xp: Int, withXpCard: Boolean):
     if (state.goldFromDaily > 0) {
         list += ResultStat(StatIcon.Art(R.drawable.daily_calendar_icon), stringResource(R.string.result_stat_daily_gold), stringResource(R.string.result_gold_amount, state.goldFromDaily), orange)
     }
+    if (state.goldFromWin > 0) {
+        list += ResultStat(StatIcon.Art(R.drawable.icon_league_trophy), stringResource(R.string.result_stat_win_gold), stringResource(R.string.result_gold_amount, state.goldFromWin), orange)
+    }
+    // What the runes added — already inside the amounts above, shown so the rune map is felt where the gold lands.
+    if (state.runeBonusGold > 0) {
+        list += ResultStat(StatIcon.Art(R.drawable.rune_root), stringResource(R.string.result_stat_rune_bonus), stringResource(R.string.result_gold_amount, state.runeBonusGold), orange)
+    }
     val quick = state.quickMatchDailyBonusApplied
     val mult = state.xpMultiplier
     val eventMult = if (state.xpEventMultiplierApplied) (mult / if (quick) 2 else 1).coerceAtLeast(2) else 0

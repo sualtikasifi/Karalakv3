@@ -35,8 +35,8 @@ class StoreViewModel @Inject constructor(
     val selectedPenId: StateFlow<String> = settingsRepository.selectedPenSkinId
     val selectedFrameId: StateFlow<String> = settingsRepository.selectedAvatarFrameId
 
-    val pens: List<PenSkin> = PenSkin.entries.filter { it.isStoreItem }.sortedBy { it.storePrice }
-    val frames: List<AvatarFrame> = AvatarFrame.entries.filter { it.isStoreItem }.sortedBy { it.storePrice }
+    val pens: List<PenSkin> = PenSkin.entries.filter { it.isSoldInStore }.sortedBy { it.storePrice }
+    val frames: List<AvatarFrame> = AvatarFrame.entries.filter { it.isSoldInStore }.sortedBy { it.storePrice }
 
     fun buyPen(skin: PenSkin): Boolean = settingsRepository.purchaseStoreItem(penId(skin), skin.storePrice)
     fun buyFrame(frame: AvatarFrame): Boolean = settingsRepository.purchaseStoreItem(frameId(frame), frame.storePrice)

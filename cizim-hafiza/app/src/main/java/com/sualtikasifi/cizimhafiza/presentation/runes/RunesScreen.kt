@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -73,10 +74,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.Rune
 import com.sualtikasifi.cizimhafiza.domain.model.RuneBranch
+import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
+import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
 import com.sualtikasifi.cizimhafiza.domain.model.RuneGates
+import com.sualtikasifi.cizimhafiza.domain.model.RuneRewards
+import com.sualtikasifi.cizimhafiza.presentation.common.nameRes
 import com.sualtikasifi.cizimhafiza.domain.model.RuneTree
 import com.sualtikasifi.cizimhafiza.domain.model.RuneUnit
 import com.sualtikasifi.cizimhafiza.presentation.common.ConfettiExplosion
@@ -93,27 +100,63 @@ import kotlin.math.roundToInt
 
 @HiltViewModel
 class RunesViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val analytics: com.sualtikasifi.cizimhafiza.util.GameAnalytics
 ) : ViewModel() {
     val gold = settingsRepository.goldBalance
     val levels = settingsRepository.runeLevels
     val xp = settingsRepository.lifetimeXp
-    fun buy(id: String): Boolean = settingsRepository.buyRune(id)
+
+    init {
+        // A ring that has opened since the last visit is reported once (see GameAnalytics.ringOpened).
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(levels, xp) { l, x -> l to com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.levelForXp(x) }
+                .collect { (l, playerLevel) ->
+                    (2..4).filter { RuneTree.ringOpen(l, it, playerLevel) && settingsRepository.firstRingOpening(it) }
+                        .forEach { analytics.ringOpened(it, playerLevel, l.values.sum()) }
+                }
+        }
+    }
+
+    fun buy(id: String): Boolean {
+        val bought = settingsRepository.buyRune(id)
+        if (bought) RuneTree.get(id)?.let { rune ->
+            analytics.runeBought(
+                runeId = id,
+                level = RuneTree.levelOf(settingsRepository.runeLevels.value, id),
+                ring = rune.ring,
+                playerLevel = settingsRepository.playerLevelNow(),
+                goldLeft = settingsRepository.goldBalance.value
+            )
+        }
+        return bought
+    }
+
+    fun statusOpened() = analytics.runeStatusOpened()
+
+    /** Today's state of the once-a-day / once-a-month abilities, for the status window. */
+    fun abilityState() = RuneAbilityState(
+        instantReady = settingsRepository.instantChestAvailable(),
+        bestFriendReady = settingsRepository.bestFriendBonusAvailable(),
+        insuranceReady = settingsRepository.streakInsuranceAvailable(),
+        reserveWaiting = settingsRepository.chestReserve.value != null
+    )
 }
 
 private val Spacing = 116.dp
-private const val SoonKey = "soon:"
 private val Ink = Color(0xFF3A2416)
 
 /** "Karalak Rünleri": a big pannable and zoomable map of nodes, bought with gold, each a small permanent bonus. */
 @Composable
-fun RunesScreen(onBack: () -> Unit, @Suppress("UNUSED_PARAMETER") onStore: () -> Unit = {}, viewModel: RunesViewModel = hiltViewModel()) {
+fun RunesScreen(onBack: () -> Unit, viewModel: RunesViewModel = hiltViewModel()) {
     val gold by viewModel.gold.collectAsState()
     val levels by viewModel.levels.collectAsState()
     val xp by viewModel.xp.collectAsState()
     val playerLevel = remember(xp) { com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.levelForXp(xp) }
     var selected by remember { mutableStateOf<String?>(null) }
     var celebration by remember { mutableIntStateOf(0) }
+    // The centre of the map (the dog) opens the status sheet instead of being selected.
+    var status by remember { mutableStateOf<RuneAbilityState?>(null) }
 
     Box(Modifier.fillMaxSize()) {
         Image(
@@ -146,7 +189,13 @@ fun RunesScreen(onBack: () -> Unit, @Suppress("UNUSED_PARAMETER") onStore: () ->
                 playerLevel = playerLevel,
                 gold = gold,
                 selected = selected,
-                onSelect = { selected = if (selected == it) null else it },
+                onSelect = { id ->
+                    if (id == RuneTree.ROOT_ID) {
+                        status = viewModel.abilityState()
+                        viewModel.statusOpened()
+                    }
+                    else selected = if (selected == id) null else id
+                },
                 onClear = { selected = null },
                 modifier = Modifier.weight(1f).padding(horizontal = 10.dp, vertical = 6.dp)
             )
@@ -161,6 +210,9 @@ fun RunesScreen(onBack: () -> Unit, @Suppress("UNUSED_PARAMETER") onStore: () ->
         }
         if (celebration > 0) {
             ConfettiExplosion(seed = celebration * 7, count = 60, durationMs = 1400, originY = 0.4f)
+        }
+        status?.let { abilities ->
+            RuneStatusDialog(levels = levels, playerLevel = playerLevel, abilities = abilities, onDismiss = { status = null })
         }
     }
 }
@@ -414,7 +466,11 @@ private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, sealed: Boolean,
         )
         if (sealed) return@Box
         // The medallion of the plate sits a little low on the ornate ones, which carry a crown on top.
-        val (dx, dy) = medallionShift(rune, owned, unlocked, maxed)
+        val (sx, sy) = medallionShift(rune, owned, unlocked, maxed)
+        // Measured per rune and plate, so every picture sits exactly in the middle of its medallion (see RuneIconFix).
+        val (fx, fy) = if (unlocked || owned) RuneIconFix.shift(rune.id, if (owned) (if (maxed) 1 else 0) else 2) else RuneIconFix.lockShift(rune)
+        val dx = sx + fx
+        val dy = sy + fy
         Box(Modifier.offset(x = size * dx, y = size * dy), contentAlignment = Alignment.Center) {
             if (unlocked || owned) {
                 RuneIcon(rune.effect.iconKey, rune.effect.emoji, size * medallionIcon(rune, owned), Modifier.alpha(if (owned || rune.id == RuneTree.ROOT_ID) 1f else 0.7f), runeId = rune.id)
@@ -442,7 +498,7 @@ private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, sealed: Boolean,
             )
         } else if (rune.maxLevel > 1 && rune.id != RuneTree.ROOT_ID) {
             Row(
-                modifier = Modifier.align(Alignment.BottomCenter).offset(y = 9.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).offset(y = 9.dp).wrapContentSize(unbounded = true),
                 horizontalArrangement = Arrangement.spacedBy(1.dp)
             ) {
                 repeat(rune.maxLevel) { i ->
@@ -454,20 +510,6 @@ private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, sealed: Boolean,
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun LockedTile(selected: Boolean, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(62.dp)
-            .pressable(pressedScale = 0.94f, onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        if (selected) Image(painterResource(R.drawable.rune_halo), null, contentScale = ContentScale.Fit, modifier = Modifier.requiredSize(90.dp))
-        Image(painterResource(R.drawable.rune_soon), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().alpha(0.8f))
-        RuneIcon("q", "🔒", 30.dp, Modifier.alpha(0.9f))
     }
 }
 
@@ -513,6 +555,15 @@ private fun InfoCard(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(Modifier.size(6.dp))
+                Text(
+                    text = stringResource(R.string.rune_status_hint),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontStyle = FontStyle.Italic,
+                    color = Color(0xFF8A5A2B),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }
@@ -531,7 +582,19 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, playerLevel: Int, g
     val level = RuneTree.levelOf(levels, rune.id)
     val unlocked = RuneTree.isUnlocked(levels, rune)
     val cost = RuneTree.nextCost(levels, rune)
-    if (unlocked && !RuneTree.ringOpen(levels, rune.ring, playerLevel)) {
+    val context = LocalContext.current
+    if (!unlocked && level < 1) {
+        // A rune whose neighbours are not bought yet is still a secret: nothing of it is shown.
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Image(painterResource(R.drawable.rune_soon), null, contentScale = ContentScale.Fit, modifier = Modifier.size(66.dp).alpha(0.85f))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.rune_fog_title), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp, color = Ink)
+                Text(stringResource(R.string.rune_fog_body), style = MaterialTheme.typography.bodyMedium, color = Ink.copy(alpha = 0.85f))
+            }
+        }
+        return
+    }
+    if (unlocked && level < 1 && !RuneTree.ringOpen(levels, rune.ring, playerLevel)) {
         // A sealed ring: say what opens it and where the player stands, and show nothing of what is behind it.
         val percent = (RuneTree.ringProgress(levels, rune.ring - 1) * 100).toInt()
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -551,20 +614,38 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, playerLevel: Int, g
         return
     }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        val owned = level >= 1
+        val maxed = owned && level >= rune.maxLevel && !rune.isKeystone && rune.id != RuneTree.ROOT_ID
         Box(Modifier.size(66.dp), contentAlignment = Alignment.Center) {
-            Image(painterResource(tileArt(rune, level >= 1, true, level >= rune.maxLevel && !rune.isKeystone)), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
-            RuneIcon(rune.effect.iconKey, rune.effect.emoji, 42.dp, runeId = rune.id)
+            Image(painterResource(tileArt(rune, owned, true, maxed)), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+            // The same measured centring as on the map, so the picture sits in the middle of the medallion here too.
+            val (sx, sy) = medallionShift(rune, owned, true, maxed)
+            val (fx, fy) = RuneIconFix.shift(rune.id, if (owned) (if (maxed) 1 else 0) else 2)
+            RuneIcon(rune.effect.iconKey, rune.effect.emoji, 66.dp * medallionIcon(rune, owned), Modifier.offset(x = 66.dp * (sx + fx), y = 66.dp * (sy + fy)), runeId = rune.id)
         }
         Column(Modifier.weight(1f)) {
-            Text(
-                text = stringResource(rune.nameRes),
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 21.sp,
-                color = Ink
-            )
+            // The level sits beside the name, so the description below gets the card's whole width.
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = stringResource(rune.nameRes),
+                    fontFamily = DisplayFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 21.sp,
+                    color = Ink,
+                    modifier = Modifier.weight(1f)
+                )
+                if (rune.id != RuneTree.ROOT_ID) {
+                    Text(
+                        text = stringResource(R.string.rune_level_of, level, rune.maxLevel),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 1,
+                        modifier = Modifier.clip(RoundedCornerShape(50)).background(Color(0xFF7A4A22)).padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                }
+            }
             // A one-line bit of flavour under the name (rune_<id>_flavor), when the rune has one.
-            val context = LocalContext.current
             val flavorId = remember(rune.id) { context.resources.getIdentifier("rune_${rune.id}_flavor", "string", context.packageName) }
             if (flavorId != 0) {
                 Text(
@@ -579,15 +660,21 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, playerLevel: Int, g
                 style = MaterialTheme.typography.bodyMedium,
                 color = Ink.copy(alpha = 0.85f)
             )
-        }
-        if (rune.id != RuneTree.ROOT_ID) {
-            Text(
-                text = stringResource(R.string.rune_level_of, level, rune.maxLevel),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier.clip(RoundedCornerShape(50)).background(Color(0xFF7A4A22)).padding(horizontal = 10.dp, vertical = 5.dp)
-            )
+            val giftName = RuneRewards.storeItem[rune.id]?.let { item ->
+                when {
+                    item.startsWith("pen:") -> runCatching { PenSkin.valueOf(item.removePrefix("pen:")).labelRes }.getOrNull()
+                    item.startsWith("frame:") -> runCatching { AvatarFrame.valueOf(item.removePrefix("frame:")).nameRes() }.getOrNull()
+                    else -> null
+                }
+            }
+            if (giftName != null) {
+                Text(
+                    text = stringResource(R.string.rune_gift_line, stringResource(giftName)),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF7A4A22)
+                )
+            }
         }
     }
     if (rune.id == RuneTree.ROOT_ID) return
@@ -595,7 +682,7 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, playerLevel: Int, g
     // rune with many levels (the Legend ring) one box for where it stands now and what the next level brings.
     Spacer(Modifier.size(8.dp))
     val showBoxes = !(rune.effect.unit == RuneUnit.FLAG && rune.maxLevel == 1)
-    val longRune = rune.maxLevel > 4
+    val longRune = rune.maxLevel > 5
     if (showBoxes) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
         val numbers = if (longRune) listOf(level.coerceAtLeast(1), (level + 1).coerceAtMost(rune.maxLevel)).distinct() else (1..rune.maxLevel).toList()
         numbers.forEach { n ->
@@ -608,19 +695,22 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, playerLevel: Int, g
                         if (reached) R.drawable.rune_ui_box_gold else if (isNext) R.drawable.rune_ui_box_empty else R.drawable.rune_ui_box_gray,
                         srcCorner = 40, dstCorner = 14.dp
                     )
-                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                    .padding(vertical = 8.dp, horizontal = 6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Image(painterResource(if (reached) R.drawable.rune_pip_full else R.drawable.rune_pip_empty), null, modifier = Modifier.size(14.dp))
-                Text(stringResource(R.string.rune_level_n, n), style = MaterialTheme.typography.labelSmall, color = Ink.copy(alpha = 0.8f))
+                Text(stringResource(R.string.rune_level_n, n), style = MaterialTheme.typography.labelSmall, fontSize = if (numbers.size >= 5) 9.sp else 11.sp, maxLines = 1, softWrap = false, color = Ink.copy(alpha = 0.8f))
+                // One line always: a longer value ("+3 joker") is set a little smaller instead of wrapping.
+                val value = tileText(rune.effect.unit, rune.perLevel * n)
                 Text(
-                    tileText(rune.effect.unit, rune.perLevel * n),
+                    value,
                     fontFamily = DisplayFont,
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 18.sp,
+                    fontSize = (if (numbers.size >= 5) 15f else 18f).let { if (value.length > 5) it - 3f else it }.sp,
+                    maxLines = 1,
+                    softWrap = false,
                     color = if (reached) Ink else if (isNext) Ink.copy(alpha = 0.85f) else Color.White
                 )
-                Text(stringResource(rune.effect.labelRes), style = MaterialTheme.typography.labelSmall, color = Ink.copy(alpha = 0.7f), textAlign = TextAlign.Center)
             }
         }
     }
@@ -628,6 +718,8 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, playerLevel: Int, g
     when {
         cost == null -> Text(stringResource(R.string.rune_maxed), fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E7A45), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         !unlocked -> Text(stringResource(R.string.rune_locked), style = MaterialTheme.typography.bodyMedium, color = Color(0xFFB3401A), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+        // Already owned in a ring that is closed again (the level dropped after an XP penalty): what it gives stays, the next level waits.
+        !RuneTree.ringOpen(levels, rune.ring, playerLevel) -> Text(stringResource(R.string.rune_status_ring_locked, RuneGates.levelFor(rune.ring)), style = MaterialTheme.typography.bodyMedium, color = Color(0xFFB3401A), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         else -> {
             val canBuy = gold >= cost
             Box(
@@ -658,7 +750,7 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, playerLevel: Int, g
  * the edges and the middle stretch. A frame can then be any size without its studs or round ends getting squashed.
  */
 @Composable
-private fun Modifier.sliced(@DrawableRes res: Int, srcCorner: Int, dstCorner: Dp): Modifier {
+internal fun Modifier.sliced(@DrawableRes res: Int, srcCorner: Int, dstCorner: Dp): Modifier {
     val bmp = ImageBitmap.imageResource(res)
     return drawBehind {
         val c = srcCorner

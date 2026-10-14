@@ -62,7 +62,7 @@ class ReferralRewardClaimer @Inject constructor(
                         _lastClaimedXp.value = amount
                     }
                 }
-                .onFailure { Log.w(TAG, "Pending reward claim failed", it) }
+                .onFailure { NonFatal.report(TAG, "Pending reward claim failed", it) }
         }
     }
 

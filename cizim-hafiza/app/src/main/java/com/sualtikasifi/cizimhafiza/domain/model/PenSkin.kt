@@ -46,7 +46,9 @@ enum class PenSkin(
      */
     val isLeagueReward: Boolean = false,
     /** Gold price in the store; 0 means not sold there. Store pens have unlockLevel 0 like league prizes so [resolve] can render them on whoever wears one. */
-    val storePrice: Int = 0
+    val storePrice: Int = 0,
+    /** Found only on the rune map (RuneRewards): owned like a store item, but never sold in the store or dropped by a chest. */
+    val isRuneReward: Boolean = false
 ) {
     CLASSIC(R.string.pen_classic, listOf(0xFF2E2A26), 1),
     // The enum constant keeps its name — it is persisted, and renaming it
@@ -87,14 +89,17 @@ enum class PenSkin(
     CANDY(R.string.pen_candy, listOf(0xFFFF5FA2, 0xFFFFFFFF, 0xFFFF5FA2), 0, storePrice = 5000),
     ICE(R.string.pen_ice, listOf(0xFFCFF3FF, 0xFF6FD3FF), 0, storePrice = 6500),
     SAKURA(R.string.pen_sakura, listOf(0xFFFFC1D6, 0xFFFF8FB8, 0xFFE0609A), 0, storePrice = 8000),
-    SUNRISE(R.string.pen_sunrise, listOf(0xFFFFD36E, 0xFFFF7A59, 0xFFC13584), 0, storePrice = 10000),
-    NIGHT(R.string.pen_night, listOf(0xFF0F0C29, 0xFF302B63, 0xFF5B4FBF), 0, storePrice = 12500),
-    DIAMOND(R.string.pen_diamond, listOf(0xFFE0F7FF, 0xFFB388FF, 0xFF7CE7FF), 0, storePrice = 15000);
+    SUNRISE(R.string.pen_sunrise, listOf(0xFFFFD36E, 0xFFFF7A59, 0xFFC13584), 0, storePrice = 10000, isRuneReward = true),
+    NIGHT(R.string.pen_night, listOf(0xFF0F0C29, 0xFF302B63, 0xFF5B4FBF), 0, storePrice = 12500, isRuneReward = true),
+    DIAMOND(R.string.pen_diamond, listOf(0xFFE0F7FF, 0xFFB388FF, 0xFF7CE7FF), 0, storePrice = 15000, isRuneReward = true);
 
     /** True when the stroke should be painted as a gradient rather than a flat colour. */
     val isGradient: Boolean get() = colors.size > 1
 
     val isStoreItem: Boolean get() = storePrice > 0
+
+    /** On sale in the store (a rune reward has a price only for the rune's pay-back, see SettingsRepository.buyRune). */
+    val isSoldInStore: Boolean get() = isStoreItem && !isRuneReward
 
     companion object {
         val DEFAULT = CLASSIC
