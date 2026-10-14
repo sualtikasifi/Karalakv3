@@ -387,7 +387,7 @@ private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, affordable: Bool
         }
         if (affordable) {
             Image(
-                painter = painterResource(R.drawable.rune_badge_up),
+                painter = painterResource(R.drawable.badge_upgrade),
                 contentDescription = null,
                 modifier = Modifier.align(Alignment.TopEnd).offset(x = 5.dp, y = (-5).dp).size(20.dp)
             )
