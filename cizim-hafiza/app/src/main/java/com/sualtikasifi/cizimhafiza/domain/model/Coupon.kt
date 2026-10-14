@@ -34,7 +34,7 @@ sealed interface RedeemResult {
 object CouponCodes {
     const val MIN_LENGTH = 4
     const val MAX_LENGTH = 24
-    const val MAX_GOLD = 100_000
+    const val MAX_GOLD = 10_000_000
     const val MAX_XP = 100_000
     const val MAX_CHESTS = 10
 
