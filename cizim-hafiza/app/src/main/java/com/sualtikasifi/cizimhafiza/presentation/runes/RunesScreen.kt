@@ -17,6 +17,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -124,6 +125,7 @@ fun RunesScreen(onBack: () -> Unit, onStore: () -> Unit = {}, viewModel: RunesVi
                 gold = gold,
                 selected = selected,
                 onSelect = { selected = if (selected == it) null else it },
+                onClear = { selected = null },
                 modifier = Modifier.weight(1f).padding(horizontal = 10.dp, vertical = 6.dp)
             )
             InfoCard(
@@ -178,6 +180,7 @@ private fun RuneMap(
     gold: Int,
     selected: String?,
     onSelect: (String) -> Unit,
+    onClear: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(26.dp)
@@ -212,6 +215,7 @@ private fun RuneMap(
         Box(
             Modifier
                 .fillMaxSize()
+                .pointerInput(Unit) { detectTapGestures(onTap = { onClear() }) }
                 .pointerInput(Unit) {
                     detectTransformGestures { _, panChange, zoom, _ ->
                         scale = (scale * zoom).coerceIn(minScale, 1.5f)
