@@ -78,7 +78,7 @@ ok = 0
 for (x, y) in ((540, 1678), (300, 1680), (780, 1680)):
     p = off + (y * w + x) * 4
     r, g, b = d[p], d[p + 1], d[p + 2]
-    if r < 60 and 80 < g < 150 and b > 190: ok += 1
+    if b > 90 and b > r * 2.5 and b > g * 1.4: ok += 1
 print(1 if ok >= 2 else 0)
 PY
 }
@@ -90,7 +90,7 @@ handle_consent() {
 }
 dismiss() { tap_text "Wait" || true; sleep 1; }
 
-adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 14; dismiss; handle_consent; sleep 3
+adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 14; dismiss; handle_consent; dismiss; handle_consent; sleep 3
 shot r00_home
 # The mascot (top right of the home scene) opens the rune map.
 adb shell input tap 640 193; sleep 4
