@@ -281,7 +281,7 @@ fun DrawingReportsScreen(
                                     // intercepts this tab before this ever
                                     // runs, kept only for exhaustiveness.
                                     ReportsTab.League -> R.string.reports_tab_league
-                                    ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks -> R.string.reports_tab_xp_event
+                                    ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes -> R.string.reports_tab_xp_event
                                     ReportsTab.DailyChallenge -> R.string.reports_daily_challenge_empty
                                 }
                             ),
