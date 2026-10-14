@@ -1705,7 +1705,7 @@
     <string name="rune_fx_style_label">hediye ürün</string>
     <string name="rune_tile_on">Açık</string>
     <string name="rune_gate_title">Mühürlü halka</string>
-    <string name="rune_gate_body">Bu halka Seviye %1$d'e ulaşınca ve önceki halkanın %%%2$d'i tamamlanınca açılır.</string>
+    <string name="rune_gate_body">Bu halka Seviye %1$d\'e ulaşınca ve önceki halkanın %%%2$d\'i tamamlanınca açılır.</string>
     <string name="rune_gate_now">Şu an: Seviye %1$d · önceki halka %%%2$d</string>
     <string name="rune_ring_legend">Efsane halkası</string>
     <string name="chest_instant_button">Anahtarcı: şimdi aç</string>
