@@ -76,6 +76,7 @@ import androidx.lifecycle.ViewModel
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.Rune
 import com.sualtikasifi.cizimhafiza.domain.model.RuneBranch
+import com.sualtikasifi.cizimhafiza.domain.model.RuneGates
 import com.sualtikasifi.cizimhafiza.domain.model.RuneTree
 import com.sualtikasifi.cizimhafiza.domain.model.RuneUnit
 import com.sualtikasifi.cizimhafiza.presentation.common.ConfettiExplosion
@@ -96,6 +97,7 @@ class RunesViewModel @Inject constructor(
 ) : ViewModel() {
     val gold = settingsRepository.goldBalance
     val levels = settingsRepository.runeLevels
+    val xp = settingsRepository.lifetimeXp
     fun buy(id: String): Boolean = settingsRepository.buyRune(id)
 }
 
@@ -108,6 +110,8 @@ private val Ink = Color(0xFF3A2416)
 fun RunesScreen(onBack: () -> Unit, @Suppress("UNUSED_PARAMETER") onStore: () -> Unit = {}, viewModel: RunesViewModel = hiltViewModel()) {
     val gold by viewModel.gold.collectAsState()
     val levels by viewModel.levels.collectAsState()
+    val xp by viewModel.xp.collectAsState()
+    val playerLevel = remember(xp) { com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.levelForXp(xp) }
     var selected by remember { mutableStateOf<String?>(null) }
     var celebration by remember { mutableIntStateOf(0) }
 
@@ -139,6 +143,7 @@ fun RunesScreen(onBack: () -> Unit, @Suppress("UNUSED_PARAMETER") onStore: () ->
             }
             RuneMap(
                 levels = levels,
+                playerLevel = playerLevel,
                 gold = gold,
                 selected = selected,
                 onSelect = { selected = if (selected == it) null else it },
@@ -148,6 +153,7 @@ fun RunesScreen(onBack: () -> Unit, @Suppress("UNUSED_PARAMETER") onStore: () ->
             InfoCard(
                 selected = selected,
                 levels = levels,
+                playerLevel = playerLevel,
                 gold = gold,
                 onBuy = { id -> if (viewModel.buy(id)) celebration++ },
                 modifier = Modifier.navigationBarsPadding().padding(start = 10.dp, end = 10.dp, bottom = 10.dp, top = 2.dp)
@@ -185,6 +191,7 @@ private fun GoldPill(gold: Int) {
 @Composable
 private fun RuneMap(
     levels: Map<String, Int>,
+    playerLevel: Int,
     gold: Int,
     selected: String?,
     onSelect: (String) -> Unit,
@@ -213,7 +220,9 @@ private fun RuneMap(
         val spacingPx = with(density) { Spacing.toPx() }
         // How far the map reaches from the middle, so panning can bring every node to the centre.
         // Fog of war: owned and buyable runes, plus a foggy hint after the latest rune; the rest is not drawn at all.
-        val visible = remember(levels) { visibleRunes(levels) }
+        val shown = remember(levels, playerLevel) { visibleRunes(levels, playerLevel) }
+        val visible = remember(shown) { shown.map { it.rune } }
+        val sealedIds = remember(shown) { shown.filter { it.sealed }.map { it.rune.id }.toSet() }
         val visibleIds = remember(visible) { visible.map { it.id }.toSet() }
         val reachX = remember(visible) { visible.maxOf { abs(it.x) } }
         val reachY = remember(visible) { visible.maxOf { abs(it.y) } }
@@ -274,7 +283,7 @@ private fun RuneMap(
                         rune.requires.forEach { parentId ->
                             val parent = RuneTree.get(parentId)?.takeIf { it.id in visibleIds } ?: return@forEach
                             val owned = RuneTree.levelOf(levels, rune.id) >= 1
-                            val open = RuneTree.isUnlocked(levels, rune)
+                            val open = RuneTree.canBuy(levels, rune, playerLevel)
                             path(
                                 point(parent.x, parent.y), point(rune.x, rune.y),
                                 if (owned) pathOwned else if (open) pathOpen else pathLocked,
@@ -284,15 +293,17 @@ private fun RuneMap(
                     }
                 }
                 visible.forEach { rune ->
-                    val size = tileSize(rune)
+                    val sealed = rune.id in sealedIds
+                    val size = tileSize(rune, sealed)
                     Box(Modifier.offset(cx + Spacing * rune.x - size / 2, cy + Spacing * rune.y - size / 2)) {
                         val level = RuneTree.levelOf(levels, rune.id)
-                        val unlocked = RuneTree.isUnlocked(levels, rune)
+                        val unlocked = RuneTree.canBuy(levels, rune, playerLevel)
                         val cost = RuneTree.nextCost(levels, rune)
                         RuneTile(
                             rune = rune,
                             level = level,
                             unlocked = unlocked,
+                            sealed = sealed,
                             affordable = unlocked && cost != null && gold >= cost,
                             selected = selected == rune.id,
                             onClick = { onSelect(rune.id) }
@@ -304,7 +315,8 @@ private fun RuneMap(
     }
 }
 
-private fun tileSize(rune: Rune): Dp = when {
+private fun tileSize(rune: Rune, sealed: Boolean = false): Dp = when {
+    sealed -> 62.dp
     rune.id == RuneTree.ROOT_ID -> 84.dp
     rune.isKeystone -> 74.dp
     else -> 62.dp
@@ -340,6 +352,11 @@ private fun tileArt(rune: Rune, owned: Boolean, unlocked: Boolean, maxed: Boolea
         owned -> when (rune.branch) {
             RuneBranch.CHEST -> R.drawable.rune_key_red
             RuneBranch.LUCK -> R.drawable.rune_key_pink
+            RuneBranch.GREEN -> R.drawable.rune_key_green
+            RuneBranch.BLUE -> R.drawable.rune_key_blue
+            RuneBranch.PURPLE -> R.drawable.rune_key_purple
+            RuneBranch.CYAN -> R.drawable.rune_key_cyan
+            RuneBranch.LEGEND -> R.drawable.rune_key_legend
             else -> R.drawable.rune_key_gold
         }
         unlocked -> R.drawable.rune_key_open
@@ -351,15 +368,20 @@ private fun tileArt(rune: Rune, owned: Boolean, unlocked: Boolean, maxed: Boolea
     else -> when (rune.branch) {
         RuneBranch.CHEST -> R.drawable.rune_frame_red
         RuneBranch.LUCK -> R.drawable.rune_frame_pink
+        RuneBranch.GREEN -> R.drawable.rune_frame_green
+        RuneBranch.BLUE -> R.drawable.rune_frame_blue
+        RuneBranch.PURPLE -> R.drawable.rune_frame_purple
+        RuneBranch.CYAN -> R.drawable.rune_frame_cyan
+        RuneBranch.LEGEND -> R.drawable.rune_frame_legend
         else -> R.drawable.rune_frame_gold
     }
 }
 
 @Composable
-private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, affordable: Boolean, selected: Boolean, onClick: () -> Unit) {
+private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, sealed: Boolean, affordable: Boolean, selected: Boolean, onClick: () -> Unit) {
     val owned = level >= 1
     val maxed = owned && level >= rune.maxLevel && !rune.isKeystone && rune.id != RuneTree.ROOT_ID
-    val size = tileSize(rune)
+    val size = tileSize(rune, sealed)
     val pulse = rememberInfiniteTransition(label = "runePulse")
     val glow by pulse.animateFloat(0.35f, 1f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "runeGlow")
     Box(modifier = Modifier.size(size).pressable(pressedScale = 0.92f, onClick = onClick), contentAlignment = Alignment.Center) {
@@ -372,16 +394,17 @@ private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, affordable: Bool
             )
         }
         Image(
-            painter = painterResource(tileArt(rune, owned, unlocked, maxed)),
+            painter = painterResource(if (sealed) R.drawable.rune_gate_seal else tileArt(rune, owned, unlocked, maxed)),
             contentDescription = null,
             contentScale = ContentScale.Fit,
             modifier = Modifier.requiredSize(size * (if (maxed) 1.16f else 1f))
         )
+        if (sealed) return@Box
         // The medallion of the plate sits a little low on the ornate ones, which carry a crown on top.
         val (dx, dy) = medallionShift(rune, owned, unlocked, maxed)
         Box(Modifier.offset(x = size * dx, y = size * dy), contentAlignment = Alignment.Center) {
             if (unlocked || owned) {
-                RuneIcon(rune.effect.iconKey, rune.effect.emoji, size * medallionIcon(rune), Modifier.alpha(if (owned || rune.id == RuneTree.ROOT_ID) 1f else 0.7f), runeId = rune.id)
+                RuneIcon(rune.effect.iconKey, rune.effect.emoji, size * medallionIcon(rune, owned), Modifier.alpha(if (owned || rune.id == RuneTree.ROOT_ID) 1f else 0.7f), runeId = rune.id)
             } else {
                 RuneIcon("lock", "🔒", size * 0.42f, Modifier.alpha(0.85f))
             }
@@ -393,7 +416,18 @@ private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, affordable: Bool
                 modifier = Modifier.align(Alignment.TopEnd).offset(x = 5.dp, y = (-5).dp).size(20.dp)
             )
         }
-        if (rune.maxLevel > 1 && rune.id != RuneTree.ROOT_ID) {
+        if (rune.maxLevel > 5) {
+            // A rune with many levels (the Legend ring) shows its level as a number instead of one dot per level.
+            Text(
+                text = "$level/${rune.maxLevel}",
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 11.sp,
+                color = Color.White,
+                modifier = Modifier.align(Alignment.BottomCenter).offset(y = 9.dp)
+                    .clip(RoundedCornerShape(50)).background(Color(0xCC3A2416)).padding(horizontal = 6.dp, vertical = 1.dp)
+            )
+        } else if (rune.maxLevel > 1 && rune.id != RuneTree.ROOT_ID) {
             Row(
                 modifier = Modifier.align(Alignment.BottomCenter).offset(y = 9.dp),
                 horizontalArrangement = Arrangement.spacedBy(1.dp)
@@ -428,6 +462,7 @@ private fun LockedTile(selected: Boolean, onClick: () -> Unit) {
 private fun InfoCard(
     selected: String?,
     levels: Map<String, Int>,
+    playerLevel: Int,
     gold: Int,
     onBuy: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -447,10 +482,10 @@ private fun InfoCard(
                 Spacer(Modifier.size(4.dp))
                 Text(stringResource(R.string.rune_soon_desc), style = MaterialTheme.typography.bodyMedium, color = Ink.copy(alpha = 0.85f))
             }
-            rune != null -> RuneDetail(rune, levels, gold, onBuy)
+            rune != null -> RuneDetail(rune, levels, playerLevel, gold, onBuy)
             else -> {
                 val next = RuneTree.all
-                    .filter { RuneTree.isUnlocked(levels, it) && RuneTree.nextCost(levels, it) != null }
+                    .filter { RuneTree.canBuy(levels, it, playerLevel) && RuneTree.nextCost(levels, it) != null }
                     .minByOrNull { RuneTree.nextCost(levels, it) ?: Int.MAX_VALUE }
                 Text(
                     text = if (next == null) stringResource(R.string.rune_hint_all) else stringResource(
@@ -475,13 +510,33 @@ private fun tileText(unit: RuneUnit, value: Int): String = when (unit) {
     RuneUnit.PERCENT -> stringResource(R.string.rune_tile_pct, value)
     RuneUnit.POINTS -> stringResource(R.string.rune_tile_pts, value)
     RuneUnit.COUNT -> stringResource(R.string.rune_tile_cnt, value)
+    RuneUnit.FLAG -> stringResource(R.string.rune_tile_on)
 }
 
 @Composable
-private fun RuneDetail(rune: Rune, levels: Map<String, Int>, gold: Int, onBuy: (String) -> Unit) {
+private fun RuneDetail(rune: Rune, levels: Map<String, Int>, playerLevel: Int, gold: Int, onBuy: (String) -> Unit) {
     val level = RuneTree.levelOf(levels, rune.id)
     val unlocked = RuneTree.isUnlocked(levels, rune)
     val cost = RuneTree.nextCost(levels, rune)
+    if (unlocked && !RuneTree.ringOpen(levels, rune.ring, playerLevel)) {
+        // A sealed ring: say what opens it and where the player stands, and show nothing of what is behind it.
+        val percent = (RuneTree.ringProgress(levels, rune.ring - 1) * 100).toInt()
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Image(painterResource(R.drawable.rune_gate_seal), null, contentScale = ContentScale.Fit, modifier = Modifier.size(66.dp))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.rune_gate_title), fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp, color = Ink)
+                Text(
+                    stringResource(R.string.rune_gate_body, RuneGates.levelFor(rune.ring), RuneGates.percentNeeded),
+                    style = MaterialTheme.typography.bodyMedium, color = Ink.copy(alpha = 0.85f)
+                )
+                Text(
+                    stringResource(R.string.rune_gate_now, playerLevel, percent),
+                    style = MaterialTheme.typography.labelMedium, fontStyle = FontStyle.Italic, color = Color(0xFF8A5A2B)
+                )
+            }
+        }
+        return
+    }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(Modifier.size(66.dp), contentAlignment = Alignment.Center) {
             Image(painterResource(tileArt(rune, level >= 1, true, level >= rune.maxLevel && !rune.isKeystone)), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
@@ -523,11 +578,14 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, gold: Int, onBuy: (
         }
     }
     if (rune.id == RuneTree.ROOT_ID) return
-    // One box per level: what that level brings in total, the reached ones lit.
+    // One box per level: what that level brings in total, the reached ones lit. A one-off ability has no boxes, a
+    // rune with many levels (the Legend ring) one box for where it stands now and what the next level brings.
     Spacer(Modifier.size(8.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        repeat(rune.maxLevel) { i ->
-            val n = i + 1
+    val showBoxes = !(rune.effect.unit == RuneUnit.FLAG && rune.maxLevel == 1)
+    val longRune = rune.maxLevel > 4
+    if (showBoxes) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        val numbers = if (longRune) listOf(level.coerceAtLeast(1), (level + 1).coerceAtMost(rune.maxLevel)).distinct() else (1..rune.maxLevel).toList()
+        numbers.forEach { n ->
             val reached = level >= n
             val isNext = level + 1 == n
             Column(
@@ -610,35 +668,54 @@ private fun Modifier.sliced(@DrawableRes res: Int, srcCorner: Int, dstCorner: Dp
     }
 }
 
+/** A rune on the map; [sealed] means its ring is still closed, so only the seal is drawn on it. */
+private data class Shown(val rune: Rune, val sealed: Boolean)
+
 /**
  * The runes the player gets to see: everything owned or buyable, plus a foggy hint of what comes after the latest rune
  * (the deepest one owned): its next branches and the step after those. Other locked runes stay hidden, so no branch is
- * revealed ahead of time and the map opens step by step.
+ * revealed ahead of time and the map opens step by step. The first runes of a ring that is not open yet show as a seal.
  */
-private fun visibleRunes(levels: Map<String, Int>): List<Rune> {
-    val open = RuneTree.all.filter { RuneTree.levelOf(levels, it.id) >= 1 || RuneTree.isUnlocked(levels, it) }.map { it.id }.toSet()
+private fun visibleRunes(levels: Map<String, Int>, playerLevel: Int): List<Shown> {
+    val open = RuneTree.all.filter { RuneTree.levelOf(levels, it.id) >= 1 || RuneTree.canBuy(levels, it, playerLevel) }.map { it.id }.toSet()
+    val sealed = RuneTree.all.filter { it.id !in open && RuneTree.isUnlocked(levels, it) && !RuneTree.ringOpen(levels, it.ring, playerLevel) }.map { it.id }.toSet()
     val latest = RuneTree.all.filter { it.id != RuneTree.ROOT_ID && RuneTree.levelOf(levels, it.id) >= 1 }.maxByOrNull { it.costs.first() }
     val front = HashSet<String>()
     if (latest != null) {
         front += latest.id
         RuneTree.all.filter { r -> r.requires.contains(latest.id) }.forEach { front += it.id }
     }
-    val fog = RuneTree.all.filter { it.id !in open && it.requires.any { parent -> parent in front } }.map { it.id }.toSet()
-    return RuneTree.all.filter { it.id in open || it.id in fog }
+    // Fog only in rings that are open: a closed ring shows nothing beyond its seal.
+    val fog = RuneTree.all.filter {
+        it.id !in open && it.id !in sealed && RuneTree.ringOpen(levels, it.ring, playerLevel) && it.requires.any { parent -> parent in front }
+    }.map { it.id }.toSet()
+    return RuneTree.all.filter { it.id in open || it.id in sealed || it.id in fog }.map { Shown(it, it.id in sealed) }
 }
 
 /** Where the medallion of a plate sits, relative to the middle of the tile (in tile sizes), measured from the art itself. */
 private fun medallionShift(rune: Rune, owned: Boolean, unlocked: Boolean, maxed: Boolean): Pair<Float, Float> = when {
     rune.id == RuneTree.ROOT_ID -> 0f to -0.01f
-    rune.isKeystone -> 0f to (if (owned) 0.06f else if (unlocked) 0.042f else 0.046f)
+    rune.isKeystone -> 0f to when {
+        owned -> when (rune.branch) {
+            RuneBranch.GREEN -> 0.075f
+            RuneBranch.BLUE -> 0.052f
+            RuneBranch.PURPLE, RuneBranch.CYAN -> 0.053f
+            RuneBranch.LEGEND -> 0.041f
+            else -> 0.06f
+        }
+        unlocked -> 0.042f
+        else -> 0.046f
+    }
     maxed -> -0.046f to 0.023f
     owned && rune.branch == RuneBranch.LUCK -> 0f to -0.022f
     else -> 0f to 0f
 }
 
 /** How big the icon is drawn inside a plate's medallion, in tile sizes (the art has a little margin in its square). */
-private fun medallionIcon(rune: Rune): Float = when {
+private fun medallionIcon(rune: Rune, owned: Boolean): Float = when {
     rune.id == RuneTree.ROOT_ID -> 0.56f
+    // The newer keystone plates have a smaller medallion than the first three.
+    rune.isKeystone && owned && rune.branch !in listOf(RuneBranch.GOLD, RuneBranch.CHEST, RuneBranch.LUCK) -> 0.5f
     rune.isKeystone -> 0.56f
-    else -> 0.62f
+    else -> 0.6f
 }

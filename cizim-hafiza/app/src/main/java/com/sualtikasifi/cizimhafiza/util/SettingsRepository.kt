@@ -21,6 +21,8 @@ import com.sualtikasifi.cizimhafiza.domain.model.ChestSlots
 import com.sualtikasifi.cizimhafiza.domain.model.JokerType
 import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
 import com.sualtikasifi.cizimhafiza.domain.model.RuneEffects
+import com.sualtikasifi.cizimhafiza.domain.model.RuneEffect
+import com.sualtikasifi.cizimhafiza.domain.model.RuneRewards
 import com.sualtikasifi.cizimhafiza.domain.model.RuneTree
 import com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel
 import com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod
@@ -616,7 +618,13 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         chestCycleIndex = index + 1
         val slots = _chestSlots.value
         val freeIndex = slots.indexOfFirst { it == null }
-        if (freeIndex < 0) return null
+        if (freeIndex < 0) {
+            // Every slot is taken: with the Yedek Yuva rune the chest waits in one reserve slot instead of being lost.
+            if (RuneEffects.has(_runeLevels.value, RuneEffect.RESERVE) && loadChestReserve() == null) {
+                saveChestReserve(Chest(id = UUID.randomUUID().toString(), tier = ChestSlots.tierAt(seed, index)))
+            }
+            return null
+        }
         val chest = Chest(id = UUID.randomUUID().toString(), tier = ChestSlots.tierAt(seed, index))
         saveChestSlots(slots.toMutableList().apply { this[freeIndex] = chest })
         return chest
@@ -668,7 +676,8 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val chest = slots.getOrNull(index) ?: return false
         if (chest.unlockStartedAtMillis != null) return false
         saveChestSlots(
-            slots.toMutableList().apply { this[index] = chest.copy(unlockStartedAtMillis = System.currentTimeMillis()) }
+            // The time runes move the start back, so the chest is ready that much sooner.
+            slots.toMutableList().apply { this[index] = chest.copy(unlockStartedAtMillis = System.currentTimeMillis() - chest.tier.unlockDurationMillis * RuneEffects.chestTimeReductionPercent(_runeLevels.value) / 100) }
         )
         return true
     }
@@ -687,7 +696,9 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             reward.jokers.forEach { (type, n) -> this[type] = (this[type] ?: 0) + n }
         }
         val updatedOwned = reward.penDrop?.let { _ownedStoreIds.value + "pen:${it.name}" } ?: _ownedStoreIds.value
-        val updatedSlots = slots.toMutableList().apply { this[index] = null }
+        val updatedSlots = slots.toMutableList().apply { this[index] = loadChestReserve() }
+        // The chest waiting in reserve takes the slot that just freed up.
+        val reserveMoved = updatedSlots[index] != null
 
         // One commit for the whole payout, not the four-plus separate
         // apply() calls (addGold/addJoker per type/grantStoreItem/saveChestSlots)
@@ -702,6 +713,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             putString(KEY_JOKERS, Json.encodeToString(updatedJokers.mapKeys { it.key.name }))
             putStringSet(KEY_OWNED_STORE_IDS, updatedOwned)
             putString(KEY_CHEST_SLOTS, Json.encodeToString(updatedSlots))
+            if (reserveMoved) remove(KEY_CHEST_RESERVE)
             sealEconomy(gold = updatedGold, jokers = updatedJokers, owned = updatedOwned)
         }
         _goldBalance.value = updatedGold
@@ -712,6 +724,80 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         return reward
     }
 
+
+    // --- Runes that touch the chests and the rooms ---
+
+    private fun loadChestReserve(): Chest? = runCatching {
+        prefs.getString(KEY_CHEST_RESERVE, null)?.let { Json.decodeFromString<Chest>(it) }
+    }.getOrNull()
+
+    private fun saveChestReserve(chest: Chest) {
+        prefs.edit(commit = true) { putString(KEY_CHEST_RESERVE, Json.encodeToString(chest)) }
+    }
+
+    /** True while a chest waits in the reserve slot (the Yedek Yuva rune). */
+    fun hasReservedChest(): Boolean = loadChestReserve() != null
+
+    private fun todayEpoch(): Long = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
+
+    /** The Anahtarcı rune is bought and today's instant open is still unused. */
+    fun instantChestAvailable(): Boolean =
+        RuneEffects.has(_runeLevels.value, RuneEffect.INSTANT) && prefs.getLong(KEY_INSTANT_CHEST_DAY, -1L) != todayEpoch()
+
+    /** Opens a counting-down chest at once (once a day, Anahtarcı rune): the countdown is moved to the past. False if not possible. */
+    @Synchronized
+    fun instantOpenChest(chestId: String): Boolean {
+        if (!instantChestAvailable()) return false
+        val slots = _chestSlots.value
+        val index = slots.indexOfFirst { it?.id == chestId }
+        val chest = slots.getOrNull(index) ?: return false
+        val now = System.currentTimeMillis()
+        if (chest.unlockStartedAtMillis == null || chest.isReady(now)) return false
+        prefs.edit(commit = true) { putLong(KEY_INSTANT_CHEST_DAY, todayEpoch()) }
+        saveChestSlots(slots.toMutableList().apply { this[index] = chest.copy(unlockStartedAtMillis = now - chest.tier.unlockDurationMillis) })
+        return true
+    }
+
+    /**
+     * Gold for an online room with the room runes applied: the friend-room runes always, the founder runes when [asHost],
+     * and the Dostluk Bağı rune's +50% once a day. [base] is what the round paid before the runes.
+     */
+    @Synchronized
+    fun roomGold(base: Int, asHost: Boolean): Int {
+        if (base <= 0) return base
+        var percent = RuneEffects.roomGoldPercent(_runeLevels.value, asHost)
+        if (RuneEffects.has(_runeLevels.value, RuneEffect.BEST) && prefs.getLong(KEY_BEST_FRIEND_DAY, -1L) != todayEpoch()) {
+            percent += 50
+            prefs.edit { putLong(KEY_BEST_FRIEND_DAY, todayEpoch()) }
+        }
+        return base + base * percent / 100
+    }
+
+    /** Extra gold for runs of three right words in a row (the Zincir Ustası rune): 10 per full three, within each run. */
+    fun chainBonusGold(correctInOrder: List<Boolean>): Int {
+        if (!RuneEffects.has(_runeLevels.value, RuneEffect.STREAK)) return 0
+        var run = 0
+        var bonus = 0
+        for (ok in correctInOrder) {
+            if (ok) { run++; if (run % 3 == 0) bonus += CHAIN_BONUS_GOLD } else run = 0
+        }
+        return bonus
+    }
+
+    /** The Şanslı Zar rune: a joker to add to a claimed login reward, or null (25% chance when the rune is bought). */
+    fun luckyDiceJoker(): JokerType? =
+        if (RuneEffects.has(_runeLevels.value, RuneEffect.DICE) && Random.nextInt(100) < 25) JokerType.entries.random() else null
+
+    /** The Seri Sigortası rune: once a month a missed day does not break the login streak. True when it was just used. */
+    @Synchronized
+    fun useStreakInsurance(): Boolean {
+        if (!RuneEffects.has(_runeLevels.value, RuneEffect.INSURE)) return false
+        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()
+        val month = today.year * 100 + today.monthValue
+        if (prefs.getInt(KEY_INSURANCE_MONTH, 0) == month) return false
+        prefs.edit(commit = true) { putInt(KEY_INSURANCE_MONTH, month) }
+        return true
+    }
 
     // --- Home-screen ad rewards: 500 gold every 4 hours, and one free
     // mid-tier chest per calendar day (resets at local midnight). ---
@@ -733,7 +819,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     fun buyRune(id: String): Boolean {
         val rune = RuneTree.get(id) ?: return false
         val levels = _runeLevels.value
-        if (!RuneTree.isUnlocked(levels, rune)) return false
+        if (!RuneTree.canBuy(levels, rune, playerLevelNow())) return false
         val cost = RuneTree.nextCost(levels, rune) ?: return false
         if (cost <= 0 || _goldBalance.value < cost) return false
         val updatedGold = _goldBalance.value - cost
@@ -745,8 +831,13 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         }
         _goldBalance.value = updatedGold
         _runeLevels.value = updatedLevels
+        // A style rune hands over a store pen or frame the first time it is bought.
+        if (RuneTree.levelOf(levels, id) == 0) RuneRewards.storeItem[id]?.let { grantStoreItem(it) }
         return true
     }
+
+    /** The player's level, from the lifetime XP. */
+    fun playerLevelNow(): Int = PlayerLevel.levelForXp(_lifetimeXp.value)
 
     /** Puts an account's runes back after a restore: per rune, the higher level wins. */
     fun restoreRuneLevels(saved: Map<String, Int>) {
@@ -827,7 +918,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     fun claimAdGold(): Boolean {
         val now = System.currentTimeMillis()
         if (now < _adGoldNextAtMillis.value) return false
-        val next = now + AD_GOLD_COOLDOWN_MILLIS
+        val next = now + AD_GOLD_COOLDOWN_MILLIS * (100 - RuneEffects.adCooldownReductionPercent(_runeLevels.value)) / 100
         prefs.edit(commit = true) { putLong(KEY_AD_GOLD_NEXT_AT, next) }
         _adGoldNextAtMillis.value = next
         addGold(AD_GOLD_AMOUNT)
@@ -842,7 +933,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     fun claimAdChest(): ChestReward? {
         val now = System.currentTimeMillis()
         if (now < _adChestNextAt.value) return null
-        val next = now + AD_CHEST_COOLDOWN_MILLIS
+        val next = now + AD_CHEST_COOLDOWN_MILLIS * (100 - RuneEffects.adCooldownReductionPercent(_runeLevels.value)) / 100
         val reward = payChestOutright(ChestTier.GOLD) { putLong(KEY_AD_CHEST_NEXT_AT, next) }
         _adChestNextAt.value = next
         return reward
@@ -914,11 +1005,14 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     @Synchronized
     fun addXp(amount: Int) {
         if (amount <= 0) return
-        val updated = _lifetimeXp.value + amount
+        // The XP runes speed up the player's LEVEL only; the league (period) XP stays exactly what was earned, so a rune
+        // never buys a better league place.
+        val gained = amount + amount * RuneEffects.xpPercent(_runeLevels.value) / 100
+        val updated = _lifetimeXp.value + gained
         prefs.edit { putInt(KEY_LIFETIME_XP, updated) }
         _lifetimeXp.value = updated
         addPeriodXp(amount)
-        HomeShownStats.pendingXp += amount
+        HomeShownStats.pendingXp += gained
     }
 
     /**
@@ -1185,6 +1279,10 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         remove(KEY_JOKERS)
         sealEconomy(0, emptyMap(), emptySet())
         remove(KEY_CHEST_SLOTS)
+        remove(KEY_CHEST_RESERVE)
+        remove(KEY_INSTANT_CHEST_DAY)
+        remove(KEY_BEST_FRIEND_DAY)
+        remove(KEY_INSURANCE_MONTH)
         remove(KEY_CHEST_CYCLE_SEED)
         putInt(KEY_CHEST_CYCLE_INDEX, 0)
         // LeagueScorePublisher skips the write when the signature it
@@ -1508,6 +1606,11 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_CHEST_CYCLE_SEED = "chest_cycle_seed"
         const val KEY_CHEST_CYCLE_INDEX = "chest_cycle_index"
         const val KEY_RUNE_LEVELS = "rune_levels"
+        const val KEY_CHEST_RESERVE = "chest_reserve"
+        const val KEY_INSTANT_CHEST_DAY = "instant_chest_day"
+        const val KEY_BEST_FRIEND_DAY = "best_friend_day"
+        const val KEY_INSURANCE_MONTH = "streak_insurance_month"
+        const val CHAIN_BONUS_GOLD = 10
         const val KEY_LOGIN_STREAK = "login_streak"
         const val KEY_LOGIN_LAST_CLAIM_DAY = "login_last_claim_day"
         const val KEY_AD_GOLD_NEXT_AT = "ad_gold_next_at"

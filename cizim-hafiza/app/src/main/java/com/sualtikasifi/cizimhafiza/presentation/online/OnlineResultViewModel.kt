@@ -262,9 +262,13 @@ class OnlineResultViewModel @Inject constructor(
                     // A tie for first is nobody's win: no win gold, XP or chest for any of the tied players.
                     val tiedForFirst = placement == 1 && ranked.count { it.totalScore == me.totalScore } > 1
                     val won = placement == 1 && !tiedForFirst && roundPlayers.size >= 2
-                    val gold = me.correctCount * settingsRepository.goldPerCorrectWord() +
-                        (if (won) settingsRepository.onlineWinGold() else 0) +
-                        newlyUnlocked.size * settingsRepository.achievementGold()
+                    // The room runes (friends, founder, Dostluk Bağı) grow what a room round pays.
+                    val gold = settingsRepository.roomGold(
+                        me.correctCount * settingsRepository.goldPerCorrectWord() +
+                            (if (won) settingsRepository.onlineWinGold() else 0) +
+                            newlyUnlocked.size * settingsRepository.achievementGold(),
+                        asHost = room.hostUid == myUidLocal
+                    )
                     if (gold > 0) settingsRepository.earnGold(gold)
                     val roundXp = settingsRepository.lastOnlineRoundXp
                     val matchXp = XpAwards.ONLINE_MATCH + if (won) XpAwards.ONLINE_WIN else 0
