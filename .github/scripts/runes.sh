@@ -93,7 +93,8 @@ dismiss() { tap_text "Wait" || true; sleep 1; }
 adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 14; dismiss; handle_consent; dismiss; handle_consent; sleep 3
 shot r00_home
 # The mascot (top right of the home scene) opens the rune map.
-adb shell input tap 640 193; sleep 4
+dismiss; adb shell input tap 980 752; sleep 2; shot r00b_after_streak_close
+adb shell input tap 820 215; sleep 4
 shot r01_runes
 # Select a node: first the middle-ish one, then an empty spot (the card must close).
 adb shell input tap 540 1300; sleep 2; shot r02_after_tap
