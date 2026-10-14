@@ -365,7 +365,7 @@ private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, affordable: Bool
         // The medallion of the plate sits a little low on the ornate ones, which carry a crown on top.
         Box(Modifier.offset(y = if (rune.isKeystone && rune.id != RuneTree.ROOT_ID) size * 0.07f else 0.dp), contentAlignment = Alignment.Center) {
             if (unlocked || owned) {
-                RuneIcon(rune.effect.iconKey, rune.effect.emoji, size * 0.58f, Modifier.alpha(if (owned || rune.id == RuneTree.ROOT_ID) 1f else 0.7f), runeId = rune.id)
+                RuneIcon(rune.effect.iconKey, rune.effect.emoji, size * 0.64f, Modifier.alpha(if (owned || rune.id == RuneTree.ROOT_ID) 1f else 0.7f), runeId = rune.id)
             } else {
                 RuneIcon("lock", "🔒", size * 0.45f, Modifier.alpha(0.85f))
             }
@@ -469,7 +469,7 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, gold: Int, onBuy: (
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(Modifier.size(66.dp), contentAlignment = Alignment.Center) {
             Image(painterResource(tileArt(rune, level >= 1, true, level >= rune.maxLevel && !rune.isKeystone)), null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
-            RuneIcon(rune.effect.iconKey, rune.effect.emoji, 38.dp, runeId = rune.id)
+            RuneIcon(rune.effect.iconKey, rune.effect.emoji, 42.dp, runeId = rune.id)
         }
         Column(Modifier.weight(1f)) {
             Text(
