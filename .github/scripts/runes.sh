@@ -25,7 +25,7 @@ adb logcat -c
 # Skip the first-run tutorial: it is a plain boolean in the app's settings file, and the
 # debug build is debuggable so run-as can write it.
 adb shell "run-as $PKG mkdir -p shared_prefs"
-printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boolean name=\"tutorial_completed\" value=\"true\" /><boolean name=\"feature_tour_seen\" value=\"true\" /><string name=\"rune_levels\">{&quot;word_gold&quot;:3,&quot;login_gold&quot;:3,&quot;daily_1&quot;:2,&quot;word_2&quot;:1,&quot;login_2&quot;:2,&quot;chest_gold&quot;:3,&quot;star_1&quot;:5,&quot;chest_joker&quot;:2,&quot;chest_2&quot;:1,&quot;ach_1&quot;:5,&quot;disc_1&quot;:4,&quot;ach_2&quot;:2}</string></map>" \
+printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><int name=\"lifetime_xp\" value=\"31000\" /><boolean name=\"tutorial_completed\" value=\"true\" /><boolean name=\"feature_tour_seen\" value=\"true\" /><string name=\"rune_levels\">{&quot;word_gold&quot;:3,&quot;login_gold&quot;:3,&quot;daily_1&quot;:3,&quot;word_2&quot;:3,&quot;win_gold&quot;:3,&quot;login_2&quot;:3,&quot;daily_2&quot;:3,&quot;word_3&quot;:3,&quot;win_2&quot;:3,&quot;login_3&quot;:3,&quot;daily_3&quot;:3,&quot;win_3&quot;:3,&quot;word_key&quot;:1,&quot;word_box&quot;:3,&quot;chest_gold&quot;:3,&quot;star_1&quot;:3,&quot;chest_joker&quot;:3,&quot;chest_2&quot;:3,&quot;star_2&quot;:3,&quot;cjoker_2&quot;:3,&quot;chest_3&quot;:3,&quot;star_3&quot;:3,&quot;cjoker_3&quot;:3,&quot;chest_4&quot;:3,&quot;star_4&quot;:3,&quot;cjoker_key&quot;:1,&quot;chest_5&quot;:3,&quot;ach_1&quot;:3,&quot;disc_1&quot;:3,&quot;ach_2&quot;:3,&quot;disc_2&quot;:3,&quot;dj_1&quot;:3,&quot;ach_3&quot;:3,&quot;disc_3&quot;:3,&quot;ach_4&quot;:3,&quot;dj_key&quot;:1,&quot;disc_4&quot;:3,&quot;word_4&quot;:3,&quot;login_4&quot;:3,&quot;daily_4&quot;:3,&quot;chest_6&quot;:3,&quot;star_5&quot;:3,&quot;cjoker_4&quot;:3,&quot;ach_5&quot;:3,&quot;disc_5&quot;:3,&quot;time_1&quot;:3,&quot;time_2&quot;:3,&quot;ad_1&quot;:3,&quot;time_3&quot;:3,&quot;ad_2&quot;:3,&quot;fr_1&quot;:3,&quot;fr_2&quot;:3,&quot;fr_3&quot;:3,&quot;fr_4&quot;:3}</string></map>" \
   | adb shell "run-as $PKG sh -c 'cat > shared_prefs/cizim_hafiza_settings.xml'"
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
@@ -102,4 +102,10 @@ shot r01_runes
 # Select a node: first the middle-ish one, then an empty spot (the card must close).
 adb shell input tap 540 1300; sleep 2; shot r02_after_tap
 adb shell input tap 300 500; sleep 2; shot r03_after_empty_tap
+# Pan around the map: north (gold), south, west (chests), east (friends/luck), taking a screenshot each time.
+adb shell input swipe 540 600 540 1700 500; sleep 2; shot r04_north
+adb shell input swipe 540 600 540 1700 500; sleep 2; shot r05_far_north
+adb shell input swipe 540 1700 540 400 500; sleep 1; adb shell input swipe 540 1700 540 400 500; sleep 1; adb shell input swipe 540 1700 540 400 500; sleep 1; adb shell input swipe 540 1700 540 400 500; sleep 2; shot r06_south
+adb shell input swipe 200 1000 1000 1000 500; sleep 1; adb shell input swipe 200 1000 1000 1000 500; sleep 2; shot r07_west
+adb shell input swipe 1000 1000 100 1000 500; sleep 1; adb shell input swipe 1000 1000 100 1000 500; sleep 1; adb shell input swipe 1000 1000 100 1000 500; sleep 1; adb shell input swipe 1000 1000 100 1000 500; sleep 2; shot r08_east
 adb logcat -d | grep -E "FATAL|ANR in" | head -5 > "$OUT/crash.txt" || true
