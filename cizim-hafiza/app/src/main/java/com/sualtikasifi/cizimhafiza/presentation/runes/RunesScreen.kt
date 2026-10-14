@@ -7,6 +7,9 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import com.sualtikasifi.cizimhafiza.presentation.common.WoodBackArrow
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import androidx.compose.foundation.layout.statusBarsPadding
 import kotlin.math.atan2
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.withTransform
@@ -76,7 +79,6 @@ import com.sualtikasifi.cizimhafiza.domain.model.RuneTree
 import com.sualtikasifi.cizimhafiza.domain.model.RuneUnit
 import com.sualtikasifi.cizimhafiza.presentation.common.ConfettiExplosion
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
-import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont
@@ -102,7 +104,7 @@ private val Ink = Color(0xFF3A2416)
 
 /** "Karalak Rünleri": a big pannable and zoomable map of nodes, bought with gold, each a small permanent bonus. */
 @Composable
-fun RunesScreen(onBack: () -> Unit, onStore: () -> Unit = {}, viewModel: RunesViewModel = hiltViewModel()) {
+fun RunesScreen(onBack: () -> Unit, @Suppress("UNUSED_PARAMETER") onStore: () -> Unit = {}, viewModel: RunesViewModel = hiltViewModel()) {
     val gold by viewModel.gold.collectAsState()
     val levels by viewModel.levels.collectAsState()
     var selected by remember { mutableStateOf<String?>(null) }
@@ -116,11 +118,24 @@ fun RunesScreen(onBack: () -> Unit, onStore: () -> Unit = {}, viewModel: RunesVi
             modifier = Modifier.fillMaxSize()
         )
         Column(Modifier.fillMaxSize()) {
-            ScreenTopActions(
-                onBack = onBack,
-                title = stringResource(R.string.rune_screen_title),
-                trailing = { GoldPill(gold, onStore) }
-            )
+            // Back arrow, the title in whatever room is left, and a small gold counter to the right of it, so they never overlap.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                WoodBackArrow(onClick = onBack)
+                LetteredText(
+                    text = stringResource(R.string.rune_screen_title),
+                    size = 26.sp,
+                    title = true,
+                    modifier = Modifier.weight(1f)
+                )
+                GoldPill(gold)
+            }
             RuneMap(
                 levels = levels,
                 gold = gold,
@@ -143,35 +158,26 @@ fun RunesScreen(onBack: () -> Unit, onStore: () -> Unit = {}, viewModel: RunesVi
     }
 }
 
-/** The coin counter and its "+" — the gold is spent in the store too, so one tap leads there. */
+/** The coin counter: a small dark pill with the coin and the gold. */
 @Composable
-private fun GoldPill(gold: Int, onStore: () -> Unit) {
+private fun GoldPill(gold: Int) {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(Color(0xFF2B1A12))
-            .padding(start = 6.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+            .background(Color(0xCC2B1A12))
+            .padding(start = 4.dp, end = 10.dp, top = 3.dp, bottom = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(28.dp))
+        Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(22.dp))
         Text(
             text = NumberFormat.getIntegerInstance().format(gold),
             fontFamily = DisplayFont,
             fontWeight = FontWeight.ExtraBold,
-            fontSize = 17.sp,
-            color = Color.White
+            fontSize = 14.sp,
+            color = Color.White,
+            maxLines = 1
         )
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .pressable(pressedScale = 0.9f, onClick = onStore)
-                .clip(RoundedCornerShape(10.dp))
-                .background(Brush.verticalGradient(listOf(Color(0xFFFFC93C), Color(0xFFF08A1B)))),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("+", fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = Color.White)
-        }
     }
 }
 
@@ -371,11 +377,12 @@ private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, affordable: Bool
             modifier = Modifier.requiredSize(size * (if (maxed) 1.16f else 1f))
         )
         // The medallion of the plate sits a little low on the ornate ones, which carry a crown on top.
-        Box(Modifier.offset(y = if (rune.isKeystone && rune.id != RuneTree.ROOT_ID) size * 0.07f else 0.dp), contentAlignment = Alignment.Center) {
+        val (dx, dy) = medallionShift(rune, owned, unlocked, maxed)
+        Box(Modifier.offset(x = size * dx, y = size * dy), contentAlignment = Alignment.Center) {
             if (unlocked || owned) {
-                RuneIcon(rune.effect.iconKey, rune.effect.emoji, size * 0.64f, Modifier.alpha(if (owned || rune.id == RuneTree.ROOT_ID) 1f else 0.7f), runeId = rune.id)
+                RuneIcon(rune.effect.iconKey, rune.effect.emoji, size * medallionIcon(rune), Modifier.alpha(if (owned || rune.id == RuneTree.ROOT_ID) 1f else 0.7f), runeId = rune.id)
             } else {
-                RuneIcon("lock", "🔒", size * 0.45f, Modifier.alpha(0.85f))
+                RuneIcon("lock", "🔒", size * 0.42f, Modifier.alpha(0.85f))
             }
         }
         if (affordable) {
@@ -606,4 +613,20 @@ private fun visibleRunes(levels: Map<String, Int>): List<Rune> {
     }
     val fog = RuneTree.all.filter { it.id !in open && it.requires.any { parent -> parent in front } }.map { it.id }.toSet()
     return RuneTree.all.filter { it.id in open || it.id in fog }
+}
+
+/** Where the medallion of a plate sits, relative to the middle of the tile (in tile sizes), measured from the art itself. */
+private fun medallionShift(rune: Rune, owned: Boolean, unlocked: Boolean, maxed: Boolean): Pair<Float, Float> = when {
+    rune.id == RuneTree.ROOT_ID -> 0f to -0.01f
+    rune.isKeystone -> 0f to (if (owned) 0.06f else if (unlocked) 0.042f else 0.046f)
+    maxed -> -0.046f to 0.023f
+    owned && rune.branch == RuneBranch.LUCK -> 0f to -0.022f
+    else -> 0f to 0f
+}
+
+/** How big the icon is drawn inside a plate's medallion, in tile sizes (the art has a little margin in its square). */
+private fun medallionIcon(rune: Rune): Float = when {
+    rune.id == RuneTree.ROOT_ID -> 0.56f
+    rune.isKeystone -> 0.56f
+    else -> 0.62f
 }
