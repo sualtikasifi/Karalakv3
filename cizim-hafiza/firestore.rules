@@ -400,6 +400,12 @@ service cloud.firestore {
       allow write: if reviewer();
     }
 
+    // The rune map's pace (when each ring opens, the price factor): readable by everyone signed in, written by reviewers.
+    match /config/runes {
+      allow read: if signedIn();
+      allow write: if reviewer();
+    }
+
     // A sanity ceiling on the two fields that decide the league standings
     // and every prize built on them — periodXp and level. NOT a real
     // anti-cheat: a determined player can still inflate their score up to
