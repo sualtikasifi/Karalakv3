@@ -25,14 +25,48 @@ class RuneTreeTest {
     }
 
     @Test
-    fun theMapIsBigAndTakesAboutAYear() {
-        assertTrue(RuneTree.all.size >= 38)
-        assertTrue("total ${RuneTree.totalCost}", RuneTree.totalCost in 400_000..550_000)
+    fun theMapIsBigAndEachRingHasItsOwnPrice() {
+        assertTrue(RuneTree.all.size >= 85)
+        fun ringCost(ring: Int) = RuneTree.all.filter { it.ring == ring }.sumOf { it.costs.sum() }
+        assertTrue("ring 1 ${ringCost(1)}", ringCost(1) in 400_000..550_000)
+        assertTrue("ring 2 ${ringCost(2)}", ringCost(2) in 550_000..750_000)
+        assertTrue("ring 3 ${ringCost(3)}", ringCost(3) in 850_000..1_150_000)
+    }
+
+    @Test
+    fun laterRingsOpenWithTheLevelAndTheShareOfTheRingBefore() {
+        assertTrue(RuneTree.ringOpen(emptyMap(), 1, 1))
+        // Level alone is not enough: the first ring is not far enough along.
+        assertFalse(RuneTree.ringOpen(emptyMap(), 2, 50))
+        val ring1 = RuneTree.all.filter { it.ring == 1 && it.id != RuneTree.ROOT_ID }
+        val most = ring1.associate { it.id to it.maxLevel }
+        assertTrue(RuneTree.ringProgress(most, 1) >= 0.99f)
+        assertTrue(RuneTree.ringOpen(most, 2, RuneGates.ring2Level))
+        // The share alone is not enough either: the level counts.
+        assertFalse(RuneTree.ringOpen(most, 2, RuneGates.ring2Level - 1))
+        assertFalse(RuneTree.ringOpen(most, 3, 100))
+    }
+
+    @Test
+    fun theStackedEffectsStayUnderTheirCeilings() {
+        val everything = RuneTree.all.associate { it.id to it.maxLevel }
+        assertTrue(RuneEffects.goldPerWord(everything, 100) <= 100 + 60 + 20 + 1)
+        assertTrue(RuneEffects.chestGoldPercent(everything) <= 80)
+        assertTrue(RuneEffects.xpPercent(everything) <= 45)
+        assertTrue(RuneEffects.chestTimeReductionPercent(everything) <= 30)
+        assertTrue(RuneEffects.adCooldownReductionPercent(everything) <= 30)
+        assertTrue(RuneEffects.chestJokerBonusPercent(everything) <= 30)
+    }
+
+    @Test
+    fun everyRuneHasItsIconAndTextAndTheOneOffRunesAreSingleLevel() {
+        RuneTree.all.filter { it.effect.unit == RuneUnit.FLAG }.forEach { assertEquals(it.id, 1, it.maxLevel) }
+        assertTrue(RuneRewards.storeItem.keys.all { RuneTree.get(it)?.effect == RuneEffect.STYLE })
     }
 
     @Test
     fun noTwoNodesSitOnTopOfEachOther() {
-        val points = RuneTree.all.map { it.x to it.y } + RuneTree.placeholders.map { it.x to it.y }
+        val points = RuneTree.all.map { it.x to it.y }
         for (i in points.indices) for (j in i + 1 until points.size) {
             assertTrue("nodes $i and $j are too close", hypot(points[i].first - points[j].first, points[i].second - points[j].second) >= 0.8f)
         }
@@ -88,7 +122,7 @@ class RuneTreeTest {
     @Test
     fun somethingIsAffordableOnlyWithEnoughGold() {
         val cheapest = RuneTree.all.filter { it.id != RuneTree.ROOT_ID && it.requires == listOf(RuneTree.ROOT_ID) }.minOf { it.costs[0] }
-        assertFalse(RuneTree.anyAffordable(emptyMap(), cheapest - 1))
-        assertTrue(RuneTree.anyAffordable(emptyMap(), cheapest))
+        assertFalse(RuneTree.anyAffordable(emptyMap(), cheapest - 1, 1))
+        assertTrue(RuneTree.anyAffordable(emptyMap(), cheapest, 1))
     }
 }

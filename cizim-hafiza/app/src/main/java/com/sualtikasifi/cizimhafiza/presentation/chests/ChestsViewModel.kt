@@ -62,6 +62,16 @@ class ChestsViewModel @Inject constructor(
         _lastReward.value = null
     }
 
+    /** True while the Anahtarcı rune is bought and today's instant open is unused. */
+    val instantAvailable: StateFlow<Boolean> = kotlinx.coroutines.flow.combine(
+        settingsRepository.runeLevels, settingsRepository.chestSlots, _nowMillis
+    ) { _, _, _ -> settingsRepository.instantChestAvailable() }
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, settingsRepository.instantChestAvailable())
+
+    fun instantOpen(chestId: String) {
+        settingsRepository.instantOpenChest(chestId)
+    }
+
     /** True while today's rewarded-ad speed-up has not been used yet. */
     val speedupAvailable: StateFlow<Boolean> = kotlinx.coroutines.flow.combine(
         settingsRepository.chestSpeedupDay,

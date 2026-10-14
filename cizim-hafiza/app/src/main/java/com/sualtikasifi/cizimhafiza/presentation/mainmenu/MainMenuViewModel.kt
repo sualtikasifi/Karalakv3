@@ -115,7 +115,9 @@ class MainMenuViewModel @Inject constructor(
             )) {
                 com.sualtikasifi.cizimhafiza.domain.model.LoginStreakState.ClaimedToday -> null
                 is com.sualtikasifi.cizimhafiza.domain.model.LoginStreakState.Claimable -> LoginPopup.Claim(state.streakBefore)
-                is com.sualtikasifi.cizimhafiza.domain.model.LoginStreakState.Missed -> LoginPopup.Missed(state.lostStreak)
+                // The Seri Sigortası rune: once a month a missed day is forgiven and the streak carries on.
+                is com.sualtikasifi.cizimhafiza.domain.model.LoginStreakState.Missed ->
+                    if (settingsRepository.useStreakInsurance()) LoginPopup.Claim(state.lostStreak, rescued = true) else LoginPopup.Missed(state.lostStreak)
             }
         }
     }
@@ -133,11 +135,14 @@ class MainMenuViewModel @Inject constructor(
         val newStreak = settingsRepository.recordLoginClaim(loginDay, popup.streakBefore, continuing = true)
         if (reward.gold > 0) settingsRepository.earnGold(com.sualtikasifi.cizimhafiza.domain.model.RuneEffects.loginGold(settingsRepository.runeLevels.value, reward.gold))
         if (reward.xp > 0) settingsRepository.addXp(reward.xp)
-        reward.jokers.forEach { settingsRepository.addJoker(it, 1) }
+        // The Şanslı Zar rune sometimes adds a joker to the day's reward; it is shown in the window with the rest.
+        val dice = settingsRepository.luckyDiceJoker()
+        val jokers = reward.jokers + listOfNotNull(dice)
+        jokers.forEach { settingsRepository.addJoker(it, 1) }
         val milestone = rewards.milestoneFor(newStreak)
         // Chests are opened on the spot, after the window closes (see consumeLoginPopup).
         pendingLoginChests = listOfNotNull(reward.chest, milestone).map { settingsRepository.openChestNow(it) }
-        _loginPopup.value = LoginPopup.Claimed(day, reward, newStreak, milestone)
+        _loginPopup.value = LoginPopup.Claimed(day, reward.copy(jokers = jokers), newStreak, milestone)
     }
 
     /** The streak was broken: a watched ad carries it on, as if no day had been missed. */
@@ -339,8 +344,8 @@ class MainMenuViewModel @Inject constructor(
     val goldBalance: StateFlow<Int> = settingsRepository.goldBalance
 
     /** A rune can be bought right now — the home screen's mascot shows a badge for it. */
-    val runeReady: StateFlow<Boolean> = combine(settingsRepository.goldBalance, settingsRepository.runeLevels) { gold, levels ->
-        com.sualtikasifi.cizimhafiza.domain.model.RuneTree.anyAffordable(levels, gold)
+    val runeReady: StateFlow<Boolean> = combine(settingsRepository.goldBalance, settingsRepository.runeLevels, settingsRepository.lifetimeXp) { gold, levels, xp ->
+        com.sualtikasifi.cizimhafiza.domain.model.RuneTree.anyAffordable(levels, gold, com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.levelForXp(xp))
     }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
     val featureTourSeen: Boolean get() = settingsRepository.featureTourSeen
     fun markFeatureTourSeen() { settingsRepository.featureTourSeen = true }

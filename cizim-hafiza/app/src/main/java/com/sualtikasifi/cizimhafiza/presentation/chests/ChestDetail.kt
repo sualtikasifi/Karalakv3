@@ -76,6 +76,7 @@ fun ChestDetailHost(selectedId: String?, onDismiss: () -> Unit, viewModel: Chest
     val slots by viewModel.chestSlots.collectAsState()
     val now by viewModel.nowMillis.collectAsState()
     val speedupAvailable by viewModel.speedupAvailable.collectAsState()
+    val instantAvailable by viewModel.instantAvailable.collectAsState()
     val lastReward by viewModel.lastReward.collectAsState()
     val activity = LocalContext.current as? Activity
     var bubble by remember { mutableStateOf<Bubble?>(null) }
@@ -95,6 +96,7 @@ fun ChestDetailHost(selectedId: String?, onDismiss: () -> Unit, viewModel: Chest
             nowMillis = now,
             anotherUnlocking = anyUnlocking && chest.unlockStartedAtMillis == null,
             speedupAvailable = speedupAvailable,
+            instantAvailable = instantAvailable,
             bubble = bubble,
             onBubbleDone = { bubble = null },
             onTapChest = {
@@ -108,6 +110,7 @@ fun ChestDetailHost(selectedId: String?, onDismiss: () -> Unit, viewModel: Chest
             onStart = { viewModel.startUnlocking(chest.id) },
             onOpen = { viewModel.open(chest.id) },
             onSpeedup = { activity?.let { viewModel.speedUp(it) { res -> say(res) } } },
+            onInstant = { viewModel.instantOpen(chest.id) },
             onDismiss = onDismiss
         )
     }
@@ -123,12 +126,14 @@ private fun ChestDetailDialog(
     nowMillis: Long,
     anotherUnlocking: Boolean,
     speedupAvailable: Boolean,
+    instantAvailable: Boolean,
     bubble: Bubble?,
     onBubbleDone: () -> Unit,
     onTapChest: () -> Unit,
     onStart: () -> Unit,
     onOpen: () -> Unit,
     onSpeedup: () -> Unit,
+    onInstant: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val isOnline = com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current
@@ -169,6 +174,10 @@ private fun ChestDetailDialog(
                 }
     
                 unlocking -> {
+                    if (instantAvailable) {
+                        PrimaryButton(text = stringResource(R.string.chest_instant_button), onClick = onInstant, modifier = Modifier.fillMaxWidth())
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
                     if (speedupAvailable) {
                         Row(
                             modifier = Modifier
