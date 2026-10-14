@@ -18,6 +18,7 @@ on:
         default: smoke.sh
         options:
           - smoke.sh
+          - runes.sh
           - tutorial.sh
           - worlds.sh
           - store.sh
