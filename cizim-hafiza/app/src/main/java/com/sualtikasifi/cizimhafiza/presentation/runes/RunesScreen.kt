@@ -239,12 +239,20 @@ private fun RuneMap(
             Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) { detectTapGestures(onTap = { onClear() }) }
-                .pointerInput(Unit) {
-                    detectTransformGestures { _, panChange, zoom, _ ->
-                        scale = (scale * zoom).coerceIn(minScale, 1.5f)
-                        val limX = reachX * spacingPx * scale
-                        val limY = reachY * spacingPx * scale
-                        pan = Offset((pan.x + panChange.x).coerceIn(-limX, limX), (pan.y + panChange.y).coerceIn(-limY, limY))
+                // Keyed on the limits: they change as the map opens up, and a stale copy would keep the old ones.
+                .pointerInput(minScale, reachX, reachY, spacingPx) {
+                    detectTransformGestures { centroid, panChange, zoom, _ ->
+                        val oldScale = scale
+                        val newScale = (oldScale * zoom).coerceIn(minScale, 1.5f)
+                        scale = newScale
+                        // The layer scales around the middle of the map, so the point under the fingers has to be
+                        // kept in place by moving the pan: it is the pinch's own centre that must not slide.
+                        val focus = Offset(centroid.x - size.width / 2f, centroid.y - size.height / 2f)
+                        val ratio = newScale / oldScale
+                        val moved = focus - (focus - pan) * ratio + panChange
+                        val limX = reachX * spacingPx * newScale
+                        val limY = reachY * spacingPx * newScale
+                        pan = Offset(moved.x.coerceIn(-limX, limX), moved.y.coerceIn(-limY, limY))
                     }
                 }
         ) {

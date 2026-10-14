@@ -1709,6 +1709,13 @@
     <string name="rune_gate_now">Şu an: Seviye %1$d · önceki halka %%%2$d</string>
     <string name="rune_ring_legend">Efsane halkası</string>
     <string name="chest_instant_button">Anahtarcı: şimdi aç</string>
+    <string name="reports_tab_runes">Rünler</string>
+    <string name="runes_dev_title">Rün haritası (geliştirme)</string>
+    <string name="runes_dev_state">Alınan rün seviyesi: %1$d · harcanan altın: %2$s</string>
+    <string name="runes_dev_reset">Tüm rünleri geri al</string>
+    <string name="runes_dev_confirm_title">Tüm rünler geri alınsın mı?</string>
+    <string name="runes_dev_confirm_body">Bütün rün seviyeleri silinir ve harcanan altın iade edilir. Mağaza hediyeleri (kalem, çerçeve) kalır.</string>
+    <string name="runes_dev_done">%1$s altın iade edildi, harita baştan başlıyor.</string>
     <string name="rune_soon">Yakında</string>
     <string name="rune_soon_desc">Haritaya yeni yollar eklenecek.</string>
     <string name="rune_level_of">Seviye %1$d / %2$d</string>

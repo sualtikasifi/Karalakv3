@@ -1696,6 +1696,13 @@
     <string name="rune_gate_now">Now: level %1$d · previous ring %2$d%%</string>
     <string name="rune_ring_legend">Legend ring</string>
     <string name="chest_instant_button">Keymaster: open now</string>
+    <string name="reports_tab_runes">Runes</string>
+    <string name="runes_dev_title">Rune map (development)</string>
+    <string name="runes_dev_state">Rune levels bought: %1$d · gold spent: %2$s</string>
+    <string name="runes_dev_reset">Undo all runes</string>
+    <string name="runes_dev_confirm_title">Undo every rune?</string>
+    <string name="runes_dev_confirm_body">Every rune level is removed and the gold spent is paid back. Store gifts (pens, frames) stay.</string>
+    <string name="runes_dev_done">%1$s gold paid back, the map starts over.</string>
     <string name="rune_soon">Coming soon</string>
     <string name="rune_soon_desc">New paths will be added to the map.</string>
     <string name="rune_level_of">Level %1$d / %2$d</string>

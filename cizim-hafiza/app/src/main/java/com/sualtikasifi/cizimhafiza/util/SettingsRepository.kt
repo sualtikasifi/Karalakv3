@@ -839,6 +839,28 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     /** The player's level, from the lifetime XP. */
     fun playerLevelNow(): Int = PlayerLevel.levelForXp(_lifetimeXp.value)
 
+    /**
+     * Developer tool: takes every rune level back, pays back the gold they cost (at the designed price) and clears the
+     * rune-bound daily flags so the map can be tried again from the start. Returns the gold paid back.
+     */
+    @Synchronized
+    fun resetRunes(): Int {
+        val levels = _runeLevels.value
+        val refund = RuneTree.all.filter { it.id != RuneTree.ROOT_ID }.sumOf { r -> r.costs.take(RuneTree.levelOf(levels, r.id)).sum() }
+        val updatedGold = _goldBalance.value + refund
+        prefs.edit(commit = true) {
+            putInt(KEY_GOLD_BALANCE, updatedGold)
+            putString(KEY_RUNE_LEVELS, Json.encodeToString(emptyMap<String, Int>()))
+            remove(KEY_INSTANT_CHEST_DAY)
+            remove(KEY_BEST_FRIEND_DAY)
+            remove(KEY_INSURANCE_MONTH)
+            sealEconomy(gold = updatedGold)
+        }
+        _goldBalance.value = updatedGold
+        _runeLevels.value = emptyMap()
+        return refund
+    }
+
     /** Puts an account's runes back after a restore: per rune, the higher level wins. */
     fun restoreRuneLevels(saved: Map<String, Int>) {
         if (saved.isEmpty()) return
