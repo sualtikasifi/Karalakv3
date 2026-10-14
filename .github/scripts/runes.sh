@@ -94,6 +94,9 @@ adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sl
 shot r00_home
 # The mascot (top right of the home scene) opens the rune map.
 dismiss; adb shell input tap 980 752; sleep 2; shot r00b_after_streak_close
+# Closing the streak window can show a test interstitial: wait for its close button and press it.
+for i in 1 2 3 4 5; do sleep 6; tap_text "Close" || tap_text "close ad" || tap_text "Skip" || true; done
+shot r00c_after_ad
 adb shell input tap 820 215; sleep 4
 shot r01_runes
 # Select a node: first the middle-ish one, then an empty spot (the card must close).
