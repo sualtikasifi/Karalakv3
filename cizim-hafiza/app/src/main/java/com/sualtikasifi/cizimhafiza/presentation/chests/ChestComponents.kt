@@ -95,7 +95,21 @@ fun ChestTier.accent(): Color = when (this) {
 /** A much lighter partner of [accent] — the glow behind the chest and the fill of a slot card. */
 fun ChestTier.glow(): Color = lerp(accent(), Color.White, 0.72f)
 
-fun ChestTier.durationHours(): Int = (unlockDurationMillis / (60 * 60 * 1000L)).toInt()
+/** How long this chest takes once started, with the chest-time rune taken off. */
+val ChestTier.effectiveUnlockMillis: Long get() = com.sualtikasifi.cizimhafiza.domain.model.RuneLive.chestMillis(unlockDurationMillis)
+
+/** "3 saat", "1 sa 48 dk" or "45 dk": the wait as it really is, runes included. */
+@Composable
+fun ChestTier.durationText(): String {
+    val minutes = effectiveUnlockMillis / 60_000L
+    val hours = (minutes / 60).toInt()
+    val rest = (minutes % 60).toInt()
+    return when {
+        rest == 0 -> stringResource(R.string.chest_duration_hours, hours)
+        hours == 0 -> stringResource(R.string.chest_duration_minutes, rest)
+        else -> stringResource(R.string.chest_duration_hm, hours, rest)
+    }
+}
 
 /** 3:05:09, or 5:09 under an hour. */
 fun formatCountdown(millis: Long): String {
@@ -108,12 +122,12 @@ fun formatCountdown(millis: Long): String {
 }
 
 fun Chest.remainingMillis(nowMillis: Long): Long =
-    if (unlockStartedAtMillis == null) tier.unlockDurationMillis
+    if (unlockStartedAtMillis == null) tier.effectiveUnlockMillis
     else (unlockStartedAtMillis + tier.unlockDurationMillis - nowMillis).coerceAtLeast(0)
 
 fun Chest.unlockProgress(nowMillis: Long): Float =
     if (unlockStartedAtMillis == null) 0f
-    else (1f - remainingMillis(nowMillis).toFloat() / tier.unlockDurationMillis).coerceIn(0f, 1f)
+    else (1f - remainingMillis(nowMillis).toFloat() / tier.effectiveUnlockMillis).coerceIn(0f, 1f)
 
 /** The chest illustration (transparent PNG), scaled to [width] keeping its own aspect. */
 @Composable

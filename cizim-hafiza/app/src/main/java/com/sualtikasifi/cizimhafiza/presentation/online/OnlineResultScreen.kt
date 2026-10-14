@@ -240,7 +240,7 @@ fun OnlineResultScreen(
                         ),
                         right = buildList {
                             if (uiState.goldEarned > 0) add(MiniStat(StatIcon.Art(R.drawable.icon_gold_coin), "+" + uiState.goldEarned, Color(0xFFE8650F)))
-                            if (uiState.xpEarned > 0) add(MiniStat(StatIcon.Art(R.drawable.ls_star), uiState.xpEarned.toString() + " XP", XpOrange))
+                            if (uiState.xpEarned > 0) add(MiniStat(StatIcon.Art(R.drawable.ls_star), com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(uiState.xpEarned).toString() + " XP", XpOrange))
                         },
                         u = u,
                         modifier = Modifier.springIn(index = 2, stepMs = 90)

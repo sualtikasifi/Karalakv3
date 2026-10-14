@@ -176,7 +176,7 @@ fun ResultScreen(
     val context = LocalContext.current
     val wordLanguage = currentWordLanguage()
 
-    val shownXp = state.xpEarned * (if (xpDoubled) 2 else 1)
+    val shownXp = com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(state.xpEarned) * (if (xpDoubled) 2 else 1)
     // A round that was already doubled when this screen (re)opened stays put;
     // only a double taken here sends the player home.
     val startedDoubled = remember { xpDoubled }
@@ -372,7 +372,7 @@ fun ResultScreen(
                                 verticalArrangement = Arrangement.Center,
                                 modifier = Modifier.fillMaxSize()
                             ) {
-                                LetteredText(stringResource(R.string.result_x2_amount, state.xpEarned * 2), fs(40f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth())
+                                LetteredText(stringResource(R.string.result_x2_amount, com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(state.xpEarned) * 2), fs(40f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth())
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center,

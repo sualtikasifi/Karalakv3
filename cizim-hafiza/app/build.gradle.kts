@@ -278,8 +278,9 @@ dependencies {
 }
 
 // Guard for the mistake that costs the most: a release that ships without the
-// real AdMob IDs shows no ad offers and earns nothing. Warns on every release
-// build; with -PrequireRealAds (what the Release workflow passes) it refuses.
+// real AdMob IDs shows no ad offers, earns nothing, and leaves the ad-based
+// runes (Sabah Jokeri, Çabuk Reklam) and the daily joker dead. Every release
+// build refuses to run without them.
 run {
     val realAdKeys = listOf("ADMOB_APP_ID", "ADMOB_INTERSTITIAL_UNIT_ID", "ADMOB_REWARDED_UNIT_ID")
     tasks.matching { it.name == "bundleRelease" || it.name == "assembleRelease" }.configureEach {
@@ -287,7 +288,7 @@ run {
             val missing = realAdKeys.filter { localProperties.getProperty(it).isNullOrBlank() }
             if (missing.isNotEmpty()) {
                 val msg = "Release build has NO real AdMob IDs (missing: ${missing.joinToString()}): ads will be off and earn nothing."
-                if (project.hasProperty("requireRealAds")) throw GradleException(msg) else logger.warn("WARNING: $msg")
+                throw GradleException(msg)
             }
         }
     }

@@ -66,7 +66,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.Chest
 import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
 import com.sualtikasifi.cizimhafiza.presentation.chests.ChestImage
 import com.sualtikasifi.cizimhafiza.presentation.chests.accent
-import com.sualtikasifi.cizimhafiza.presentation.chests.durationHours
+import com.sualtikasifi.cizimhafiza.presentation.chests.durationText
 import com.sualtikasifi.cizimhafiza.presentation.chests.glow
 import com.sualtikasifi.cizimhafiza.presentation.chests.rarityLabelRes
 import com.sualtikasifi.cizimhafiza.presentation.chests.rarityStars
@@ -369,9 +369,7 @@ private fun ChestWonScene(chest: Chest, onDismiss: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(Icons.Filled.Schedule, contentDescription = null, tint = Color(0xFFFFE066), modifier = Modifier.size(20.dp))
                     Text(
-                        text = tier.durationHours().let { hours ->
-                            stringResource(if (hours.toLong() == 1L) R.string.chest_win_unlock_time_one else R.string.chest_win_unlock_time, hours)
-                        },
+                        text = stringResource(R.string.chest_win_unlock_time_text, tier.durationText()),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White

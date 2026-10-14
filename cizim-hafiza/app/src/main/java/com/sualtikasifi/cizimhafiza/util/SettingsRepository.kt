@@ -22,6 +22,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.JokerType
 import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
 import com.sualtikasifi.cizimhafiza.domain.model.RuneEffects
 import com.sualtikasifi.cizimhafiza.domain.model.RuneEffect
+import com.sualtikasifi.cizimhafiza.domain.model.RuneLive
 import com.sualtikasifi.cizimhafiza.domain.model.RuneRewards
 import com.sualtikasifi.cizimhafiza.domain.model.RuneTree
 import com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel
@@ -720,6 +721,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         _jokerCounts.value = updatedJokers
         _ownedStoreIds.value = updatedOwned
         _chestSlots.value = updatedSlots
+        if (reserveMoved) _chestReserve.value = null
         com.sualtikasifi.cizimhafiza.notifications.ChestReadyNotifier.sync(context, updatedSlots)
         return reward
     }
@@ -733,16 +735,23 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
 
     private fun saveChestReserve(chest: Chest) {
         prefs.edit(commit = true) { putString(KEY_CHEST_RESERVE, Json.encodeToString(chest)) }
+        _chestReserve.value = chest
     }
 
-    /** True while a chest waits in the reserve slot (the Yedek Yuva rune). */
-    fun hasReservedChest(): Boolean = loadChestReserve() != null
+    private val _chestReserve = MutableStateFlow(loadChestReserve())
+
+    /** The chest waiting in the reserve slot (the Yedek Yuva rune), or null. */
+    val chestReserve: StateFlow<Chest?> = _chestReserve.asStateFlow()
 
     private fun todayEpoch(): Long = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay()
 
     /** The Anahtarcı rune is bought and today's instant open is still unused. */
     fun instantChestAvailable(): Boolean =
         RuneEffects.has(_runeLevels.value, RuneEffect.INSTANT) && prefs.getLong(KEY_INSTANT_CHEST_DAY, -1L) != todayEpoch()
+
+    /** The Dostluk Bağı rune is bought and today's +50% is still unused. */
+    fun bestFriendBonusAvailable(): Boolean =
+        RuneEffects.has(_runeLevels.value, RuneEffect.BEST) && prefs.getLong(KEY_BEST_FRIEND_DAY, -1L) != todayEpoch()
 
     /** Opens a counting-down chest at once (once a day, Anahtarcı rune): the countdown is moved to the past. False if not possible. */
     @Synchronized
@@ -760,17 +769,18 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
 
     /**
      * Gold for an online room with the room runes applied: the friend-room runes always, the founder runes when [asHost],
-     * and the Dostluk Bağı rune's +50% once a day. [base] is what the round paid before the runes.
+     * and the Dostluk Bağı rune's +50% once a day. [base] is what the round paid with the earning runes, [rawBase] the same before any rune.
      */
     @Synchronized
-    fun roomGold(base: Int, asHost: Boolean): Int {
+    fun roomGold(base: Int, rawBase: Int, asHost: Boolean): Int {
         if (base <= 0) return base
         var percent = RuneEffects.roomGoldPercent(_runeLevels.value, asHost)
-        if (RuneEffects.has(_runeLevels.value, RuneEffect.BEST) && prefs.getLong(KEY_BEST_FRIEND_DAY, -1L) != todayEpoch()) {
+        if (bestFriendBonusAvailable()) {
             percent += 50
             prefs.edit { putLong(KEY_BEST_FRIEND_DAY, todayEpoch()) }
         }
-        return base + base * percent / 100
+        // The room percentages grow the plain amount, not the amount the word, win and achievement runes already grew.
+        return base + rawBase * percent / 100
     }
 
     /** Extra gold for runs of three right words in a row (the Zincir Ustası rune): 10 per full three, within each run. */
@@ -788,14 +798,20 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     fun luckyDiceJoker(): JokerType? =
         if (RuneEffects.has(_runeLevels.value, RuneEffect.DICE) && Random.nextInt(100) < 25) JokerType.entries.random() else null
 
-    /** The Seri Sigortası rune: once a month a missed day does not break the login streak. True when it was just used. */
+    private fun insuranceMonth(): Int {
+        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()
+        return today.year * 100 + today.monthValue
+    }
+
+    /** The Seri Sigortası rune is bought and this month's cover is still unused. */
+    fun streakInsuranceAvailable(): Boolean =
+        RuneEffects.has(_runeLevels.value, RuneEffect.INSURE) && prefs.getInt(KEY_INSURANCE_MONTH, 0) != insuranceMonth()
+
+    /** The Seri Sigortası rune: once a month a single missed day does not break the login streak. True when the cover was just used. */
     @Synchronized
     fun useStreakInsurance(): Boolean {
-        if (!RuneEffects.has(_runeLevels.value, RuneEffect.INSURE)) return false
-        val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today()
-        val month = today.year * 100 + today.monthValue
-        if (prefs.getInt(KEY_INSURANCE_MONTH, 0) == month) return false
-        prefs.edit(commit = true) { putInt(KEY_INSURANCE_MONTH, month) }
+        if (!streakInsuranceAvailable()) return false
+        prefs.edit(commit = true) { putInt(KEY_INSURANCE_MONTH, insuranceMonth()) }
         return true
     }
 
@@ -804,12 +820,44 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
 
     // --- Karalak Rünleri (rune map): levels bought with gold, see domain/model/Rune.kt ---
 
-    private fun readRuneLevels(): Map<String, Int> = runCatching {
-        prefs.getString(KEY_RUNE_LEVELS, null)?.let { Json.decodeFromString<Map<String, Int>>(it) }
-    }.getOrNull().orEmpty()
+    private fun runeSealPayload(levels: Map<String, Int>): String =
+        "runes|" + levels.entries.sortedBy { it.key }.joinToString(",") { "${it.key}=${it.value}" }
 
-    private val _runeLevels = MutableStateFlow(readRuneLevels())
+    private fun android.content.SharedPreferences.Editor.sealRunes(levels: Map<String, Int>) {
+        putString(KEY_RUNE_SEAL, EconomyGuard.sign(runeSealPayload(levels)))
+    }
+
+    /** Reads the rune levels; levels edited from outside (seal mismatch) are dropped, like the gold and jokers. */
+    private fun readRuneLevels(): Map<String, Int> {
+        // The seal covers what is stored, so it is checked before runes that left the map are dropped: removing a rune in
+        // an update must not look like tampering. (A seal made over the already-cleaned levels is accepted too.)
+        val stored = runCatching {
+            prefs.getString(KEY_RUNE_LEVELS, null)?.let { Json.decodeFromString<Map<String, Int>>(it) }
+        }.getOrNull().orEmpty()
+        val saved = stored.filter { (id, level) -> RuneTree.get(id) != null && level > 0 }
+        val seal = prefs.getString(KEY_RUNE_SEAL, null)
+        val trusted = !EconomyGuard.hasKey() || seal == null ||
+            EconomyGuard.verify(runeSealPayload(stored), seal) || EconomyGuard.verify(runeSealPayload(saved), seal)
+        return when {
+            trusted -> {
+                if (saved != stored || seal == null) prefs.edit { putString(KEY_RUNE_LEVELS, Json.encodeToString(saved)); sealRunes(saved) }
+                saved
+            }
+            else -> {
+                android.util.Log.w("SettingsRepository", "Rune seal mismatch — resetting rune levels")
+                prefs.edit { remove(KEY_RUNE_LEVELS); sealRunes(emptyMap()) }
+                emptyMap()
+            }
+        }
+    }
+
+    private val _runeLevels = MutableStateFlow(readRuneLevels().also { RuneLive.levels = it })
     val runeLevels: StateFlow<Map<String, Int>> = _runeLevels.asStateFlow()
+
+    private fun publishRuneLevels(levels: Map<String, Int>) {
+        RuneLive.levels = levels
+        _runeLevels.value = levels
+    }
 
     /**
      * Buys the next level of [id]: false when it is not open yet, already at its max, or the gold is not there. The gold
@@ -827,10 +875,11 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         prefs.edit(commit = true) {
             putInt(KEY_GOLD_BALANCE, updatedGold)
             putString(KEY_RUNE_LEVELS, Json.encodeToString(updatedLevels))
+            sealRunes(updatedLevels)
             sealEconomy(gold = updatedGold)
         }
         _goldBalance.value = updatedGold
-        _runeLevels.value = updatedLevels
+        publishRuneLevels(updatedLevels)
         // A style rune hands over a store pen or frame the first time it is bought.
         if (RuneTree.levelOf(levels, id) == 0) RuneRewards.storeItem[id]?.let { grantStoreItem(it) }
         return true
@@ -851,33 +900,44 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         prefs.edit(commit = true) {
             putInt(KEY_GOLD_BALANCE, updatedGold)
             putString(KEY_RUNE_LEVELS, Json.encodeToString(emptyMap<String, Int>()))
+            sealRunes(emptyMap())
             remove(KEY_INSTANT_CHEST_DAY)
             remove(KEY_BEST_FRIEND_DAY)
             remove(KEY_INSURANCE_MONTH)
             sealEconomy(gold = updatedGold)
         }
         _goldBalance.value = updatedGold
-        _runeLevels.value = emptyMap()
+        publishRuneLevels(emptyMap())
         return refund
+    }
+
+    /** Developer tool: every rune at its top level for free, so the whole map can be looked at. Gold is not touched. */
+    @Synchronized
+    fun unlockAllRunes() {
+        val all = RuneTree.all.filter { it.id != RuneTree.ROOT_ID }.associate { it.id to it.maxLevel }
+        prefs.edit(commit = true) { putString(KEY_RUNE_LEVELS, Json.encodeToString(all)); sealRunes(all) }
+        publishRuneLevels(all)
     }
 
     /** Puts an account's runes back after a restore: per rune, the higher level wins. */
     fun restoreRuneLevels(saved: Map<String, Int>) {
         if (saved.isEmpty()) return
-        val merged = (_runeLevels.value.keys + saved.keys).associateWith { maxOf(_runeLevels.value[it] ?: 0, saved[it] ?: 0) }
+        val merged = (_runeLevels.value.keys + saved.keys)
+            .mapNotNull { id -> RuneTree.get(id)?.let { r -> id to maxOf(_runeLevels.value[id] ?: 0, saved[id] ?: 0).coerceIn(0, r.maxLevel) } }
+            .filter { it.second > 0 }.toMap()
         if (merged == _runeLevels.value) return
-        prefs.edit(commit = true) { putString(KEY_RUNE_LEVELS, Json.encodeToString(merged)) }
-        _runeLevels.value = merged
+        prefs.edit(commit = true) { putString(KEY_RUNE_LEVELS, Json.encodeToString(merged)); sealRunes(merged) }
+        publishRuneLevels(merged)
     }
 
-    /** Gold for one correct word with the runes applied. */
-    fun goldPerCorrectWord(): Int = RuneEffects.goldPerWord(_runeLevels.value, GameConstants.GOLD_PER_CORRECT_WORD)
+    /** Gold for [correctCount] right words of one round, with the word rune applied to the whole. */
+    fun wordGold(correctCount: Int): Int = RuneEffects.wordGold(_runeLevels.value, correctCount * GameConstants.GOLD_PER_CORRECT_WORD)
 
-    /** Gold of one achievement with the runes applied. */
-    fun achievementGold(): Int = RuneEffects.achievementGold(_runeLevels.value, GameConstants.ACHIEVEMENT_GOLD)
+    /** Gold of one achievement. */
+    fun achievementGold(): Int = GameConstants.ACHIEVEMENT_GOLD
 
-    /** Gold of one new level star with the runes applied. */
-    fun starGold(): Int = RuneEffects.starGold(_runeLevels.value, GameConstants.LEVEL_GOLD_PER_NEW_STAR)
+    /** Gold of one new level star. */
+    fun starGold(): Int = GameConstants.LEVEL_GOLD_PER_NEW_STAR
 
     /** Gold of the daily challenge at [streakDays] with the runes applied. */
     fun dailyChallengeGold(streakDays: Int): Int = RuneEffects.dailyGold(_runeLevels.value, GameConstants.dailyChallengeGold(streakDays))
@@ -1239,6 +1299,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         _ownedStoreIds.value = emptySet()
         _jokerCounts.value = emptyMap()
         _chestSlots.value = List(ChestSlots.SLOT_COUNT) { null }
+        _chestReserve.value = null
     }
 
     /**
@@ -1418,6 +1479,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         _ownedStoreIds.value = ownedStoreIds
         _jokerCounts.value = jokerCounts
         _chestSlots.value = chestSlots
+        _chestReserve.value = loadChestReserve()
         com.sualtikasifi.cizimhafiza.notifications.ChestReadyNotifier.sync(context, chestSlots)
     }
 
@@ -1620,6 +1682,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         const val KEY_JOKERS = "joker_counts"
         const val KEY_FEATURE_TOUR_SEEN = "feature_tour_seen"
         const val KEY_ECONOMY_SEAL = "economy_seal"
+        const val KEY_RUNE_SEAL = "rune_seal"
         const val KEY_QM_RECENT_WORDS = "qm_recent_words"
         const val QM_RECENT_WORDS_CAP = 300
         const val KEY_CHEST_SPEEDUP_DAY = "chest_speedup_day"

@@ -157,7 +157,7 @@ internal fun LoginStreakDialog(
                                 val done = if (claimed) day <= today else today > 0 && day < today
                                 DayCell(
                                     day = day,
-                                    reward = LoginStreakRewards.forDay(day),
+                                    reward = LoginStreakRewards.forDay(day).let { it.copy(gold = com.sualtikasifi.cizimhafiza.domain.model.RuneLive.loginGold(it.gold)) },
                                     done = done,
                                     isToday = day == today && !claimed,
                                     justClaimed = claimed && day == today,

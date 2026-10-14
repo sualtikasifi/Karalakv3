@@ -1032,7 +1032,7 @@ class GameViewModel @Inject constructor(
         val goldFromAchievements = newlyUnlocked.size * settingsRepository.achievementGold()
         var goldFromLevel = 0
         var goldFromDaily = 0
-        val goldFromPlay = if (isDaily) 0 else results.count { it.isCorrect } * settingsRepository.goldPerCorrectWord() +
+        val goldFromPlay = if (isDaily) 0 else settingsRepository.wordGold(results.count { it.isCorrect }) +
             settingsRepository.chainBonusGold(results.map { it.isCorrect })
         var goldEarned = goldFromAchievements + goldFromPlay
 
@@ -1196,8 +1196,10 @@ class GameViewModel @Inject constructor(
             )
         }
 
-        if (goldEarned > 0) settingsRepository.earnGold(goldEarned)
         val quickMatchWon = ghost != null && totalScore > ghost.totalScore
+        // A Quick Match win pays the same win gold as an online room win (the Zafer Altını rune included).
+        if (quickMatchWon) goldEarned += settingsRepository.onlineWinGold()
+        if (goldEarned > 0) settingsRepository.earnGold(goldEarned)
         if (ghost != null) {
             settingsRepository.recordQuickMatchFinished()
             settingsRepository.markRatingDueIfEligible()

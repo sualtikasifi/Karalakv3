@@ -264,9 +264,12 @@ class OnlineResultViewModel @Inject constructor(
                     val won = placement == 1 && !tiedForFirst && roundPlayers.size >= 2
                     // The room runes (friends, founder, Dostluk Bağı) grow what a room round pays.
                     val gold = settingsRepository.roomGold(
-                        me.correctCount * settingsRepository.goldPerCorrectWord() +
+                        settingsRepository.wordGold(me.correctCount) +
                             (if (won) settingsRepository.onlineWinGold() else 0) +
                             newlyUnlocked.size * settingsRepository.achievementGold(),
+                        rawBase = me.correctCount * com.sualtikasifi.cizimhafiza.util.GameConstants.GOLD_PER_CORRECT_WORD +
+                            (if (won) com.sualtikasifi.cizimhafiza.util.GameConstants.ONLINE_WIN_GOLD else 0) +
+                            newlyUnlocked.size * com.sualtikasifi.cizimhafiza.util.GameConstants.ACHIEVEMENT_GOLD,
                         asHost = room.hostUid == myUidLocal
                     )
                     if (gold > 0) settingsRepository.earnGold(gold)

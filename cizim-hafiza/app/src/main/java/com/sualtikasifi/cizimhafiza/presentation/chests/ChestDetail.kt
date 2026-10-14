@@ -230,7 +230,7 @@ private fun ChestDetailDialog(
                 )
     
                 else -> PrimaryButton(
-                    text = stringResource(R.string.chests_start_button) + " · " + stringResource(R.string.chest_duration_hours, tier.durationHours()),
+                    text = stringResource(R.string.chests_start_button) + " · " + tier.durationText(),
                     onClick = onStart,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -349,7 +349,7 @@ private fun ChestTimerPlate(chest: Chest, nowMillis: Long, unlocking: Boolean) {
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = formatCountdown(if (unlocking) chest.remainingMillis(nowMillis) else chest.tier.unlockDurationMillis),
+            text = formatCountdown(chest.remainingMillis(nowMillis)),
             textAlign = TextAlign.Center,
             fontFamily = DisplayFont,
             fontWeight = FontWeight.ExtraBold,

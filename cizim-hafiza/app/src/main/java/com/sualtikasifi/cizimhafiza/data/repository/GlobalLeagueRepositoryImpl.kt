@@ -140,7 +140,7 @@ class GlobalLeagueRepositoryImpl @Inject constructor(
      */
     private fun botFrameFor(level: Int, seed: String): AvatarFrame {
         val choices = AvatarFrame.unlockedFor(level).filter { it != AvatarFrame.DEFAULT } +
-            AvatarFrame.entries.filter { it.isStoreItem }
+            AvatarFrame.entries.filter { it.isSoldInStore }
         if (choices.isEmpty()) return AvatarFrame.highestUnlockedFor(level)
         val hash = seed.fold(7) { acc, c -> acc * 31 + c.code }
         return choices[(hash and Int.MAX_VALUE) % choices.size]

@@ -47,7 +47,9 @@ enum class AvatarFrame(
      */
     val isLeagueReward: Boolean = false,
     /** Gold price in the store; 0 means not sold there. Give a store frame unlockLevel 0 (see PenSkin.storePrice). */
-    val storePrice: Int = 0
+    val storePrice: Int = 0,
+    /** Found only on the rune map (see PenSkin.isRuneReward). */
+    val isRuneReward: Boolean = false
 ) {
     // faceDiameterFraction/faceOffsetXFraction/faceOffsetYFraction below were
     // re-measured directly off each PNG's own transparent hole (a flood-fill
@@ -78,14 +80,14 @@ enum class AvatarFrame(
     ICE_CRYSTAL(R.drawable.level_frame_ice_crystal, 0.549f, 0.001f, -0.013f, 0, storePrice = 3200),
     RAINBOW_DREAM(R.drawable.level_frame_rainbow_dream, 0.607f, 0.008f, -0.005f, 0, storePrice = 4000),
     AMETHYST_CRYSTAL(R.drawable.level_frame_amethyst_crystal, 0.543f, -0.001f, -0.0215f, 0, storePrice = 4500),
-    OCEAN_TREASURE(R.drawable.level_frame_ocean_treasure, 0.58f, -0.009f, -0.013f, 0, storePrice = 6000),
-    TIME_EXPLORER(R.drawable.level_frame_time_explorer, 0.584f, -0.001f, -0.0225f, 0, storePrice = 6500),
+    OCEAN_TREASURE(R.drawable.level_frame_ocean_treasure, 0.58f, -0.009f, -0.013f, 0, storePrice = 6000, isRuneReward = true),
+    TIME_EXPLORER(R.drawable.level_frame_time_explorer, 0.584f, -0.001f, -0.0225f, 0, storePrice = 6500, isRuneReward = true),
     GALAXY_RING(R.drawable.level_frame_galaxy_ring, 0.582f, 0f, -0.013f, 0, storePrice = 7500),
     CELESTIAL_MOON(R.drawable.level_frame_celestial_moon, 0.506f, 0.008f, -0.06f, 0, storePrice = 8000),
     PEARL_BUTTERFLY(R.drawable.level_frame_pearl_butterfly, 0.588f, 0.004f, -0.005f, 0, storePrice = 10000),
     DRAGON_FLAME(R.drawable.level_frame_dragon_flame, 0.545f, 0.001f, -0.001f, 0, storePrice = 12000),
     SHADOW_CROWN(R.drawable.level_frame_shadow_crown, 0.545f, -0.001f, -0.017f, 0, storePrice = 13000),
-    ROYAL_CROWN(R.drawable.level_frame_royal_crown, 0.537f, 0.001f, -0.0205f, 0, storePrice = 15000);
+    ROYAL_CROWN(R.drawable.level_frame_royal_crown, 0.537f, 0.001f, -0.0205f, 0, storePrice = 15000, isRuneReward = true);
 
     // Monthly league prize frames (LEAGUE_CHAMPION_<year>_<month>) were
     // removed — the first batch of artwork did not clean up against the
@@ -97,6 +99,9 @@ enum class AvatarFrame(
     // clean set of frames is added back the same way.
 
     val isStoreItem: Boolean get() = storePrice > 0
+
+    /** On sale in the store (see PenSkin.isSoldInStore). */
+    val isSoldInStore: Boolean get() = isStoreItem && !isRuneReward
 
     companion object {
         /** What every new install starts with, and what [resolve] falls back to. */

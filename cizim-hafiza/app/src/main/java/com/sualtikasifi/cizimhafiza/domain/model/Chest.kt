@@ -105,7 +105,7 @@ object ChestLoot {
         }
         val pen = if (tier == ChestTier.RARE && rnd.nextFloat() < PEN_DROP_CHANCE) {
             PenSkin.entries
-                .filter { it.isStoreItem && it.storePrice <= PEN_DROP_MAX_PRICE && "pen:${it.name}" !in ownedStoreIds }
+                .filter { it.isSoldInStore && it.storePrice <= PEN_DROP_MAX_PRICE && "pen:${it.name}" !in ownedStoreIds }
                 .randomOrNull(rnd)
         } else null
         return ChestReward(tier, gold, jokers, pen)

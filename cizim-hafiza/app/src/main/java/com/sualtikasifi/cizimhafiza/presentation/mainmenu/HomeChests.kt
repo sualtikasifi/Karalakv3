@@ -109,7 +109,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.drawOrbitSparks
 import com.sualtikasifi.cizimhafiza.presentation.chests.onBackdrop
 import com.sualtikasifi.cizimhafiza.presentation.chests.ChestsViewModel
 import com.sualtikasifi.cizimhafiza.presentation.chests.accent
-import com.sualtikasifi.cizimhafiza.presentation.chests.durationHours
+import com.sualtikasifi.cizimhafiza.presentation.chests.effectiveUnlockMillis
 import com.sualtikasifi.cizimhafiza.presentation.chests.glow
 import com.sualtikasifi.cizimhafiza.presentation.chests.remainingMillis
 import com.sualtikasifi.cizimhafiza.presentation.common.LevelAvatar
@@ -126,10 +126,18 @@ import java.text.NumberFormat
  * and opened. Reads its own [ChestsViewModel] — same repository state, so it
  * never disagrees with the chests screen.
  */
+/** The small line beside "Kasalarım": a chest waiting in the Yedek Yuva first, then full slots, otherwise the tagline. */
+private fun chestTagline(slots: List<com.sualtikasifi.cizimhafiza.domain.model.Chest?>, reserveWaiting: Boolean): Int = when {
+    reserveWaiting -> R.string.home_chests_reserve
+    (0 until ChestSlots.SLOT_COUNT).all { slots.getOrNull(it) != null } -> R.string.home_chests_full
+    else -> R.string.home_chests_tagline
+}
+
 @Composable
 internal fun HomeChestsSection(compact: Boolean = false, viewModel: ChestsViewModel = hiltViewModel()) {
     var selectedChestId by remember { mutableStateOf<String?>(null) }
     val slots by viewModel.chestSlots.collectAsState()
+    val reserveWaiting by viewModel.reserveWaiting.collectAsState()
     val now by viewModel.nowMillis.collectAsState()
     var infoOpen by remember { mutableStateOf(false) }
 
@@ -156,7 +164,7 @@ internal fun HomeChestsSection(compact: Boolean = false, viewModel: ChestsViewMo
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = stringResource(if ((0 until ChestSlots.SLOT_COUNT).all { slots.getOrNull(it) != null }) R.string.home_chests_full else R.string.home_chests_tagline),
+                text = stringResource(chestTagline(slots, reserveWaiting)),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = InkSoft,
@@ -357,7 +365,7 @@ internal fun HomeChestSlot(chest: Chest?, nowMillis: Long, onClick: () -> Unit, 
                             // Down to the second: this is what the player watches tick.
                             unlocking -> formatCountdown(chest.remainingMillis(nowMillis))
                             // Not started yet: just how long the chest takes (SS:DD), the same plate the countdown later uses.
-                            else -> (tier.unlockDurationMillis / 60_000L).let { minutes -> "%02d:%02d".format(minutes / 60, minutes % 60) }
+                            else -> (tier.effectiveUnlockMillis / 60_000L).let { minutes -> "%02d:%02d".format(minutes / 60, minutes % 60) }
                         },
                         fontSize = if (compact) 12.sp * k else 12.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -418,7 +426,8 @@ internal fun HomeChestsPainted(
 
     // Title and tagline share one baseline (the tagline is the small line that closes the same row), centred in the
     // panel's header band.
-    val tagline = stringResource(if ((0 until ChestSlots.SLOT_COUNT).all { slots.getOrNull(it) != null }) R.string.home_chests_full else R.string.home_chests_tagline)
+    val reserveWaiting by viewModel.reserveWaiting.collectAsState()
+    val tagline = stringResource(chestTagline(slots, reserveWaiting))
     // Level with the painted chest beside it (its middle sits at about 1450).
     Box(box(166f, 1416f, 728f, 1486f), contentAlignment = Alignment.Center) {
         androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
