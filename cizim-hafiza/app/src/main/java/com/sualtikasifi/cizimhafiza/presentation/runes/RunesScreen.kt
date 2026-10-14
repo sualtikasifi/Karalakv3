@@ -328,6 +328,11 @@ private fun branchColors(branch: RuneBranch): Pair<Color, Color> = when (branch)
     RuneBranch.GOLD -> Color(0xFFFFD35E) to Color(0xFFE59A12)
     RuneBranch.CHEST -> Color(0xFFFF8F80) to Color(0xFFD42A1E)
     RuneBranch.LUCK -> Color(0xFFFF9BD0) to Color(0xFFD43A8E)
+    RuneBranch.GREEN -> Color(0xFF8BE08B) to Color(0xFF2E9B3E)
+    RuneBranch.BLUE -> Color(0xFF8CC0FF) to Color(0xFF2A62C8)
+    RuneBranch.PURPLE -> Color(0xFFC79BFF) to Color(0xFF7A3FC8)
+    RuneBranch.CYAN -> Color(0xFF8FE6EA) to Color(0xFF1FA6B0)
+    RuneBranch.LEGEND -> Color(0xFFB69AE0) to Color(0xFF3C2A5E)
 }
 
 /** The icon of [key]: rune_n_<id> (one of a kind) first, then rune_icon_<key>, otherwise the [emoji]. */
