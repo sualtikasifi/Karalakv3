@@ -205,10 +205,13 @@ private fun RuneMap(
         val density = LocalDensity.current
         val spacingPx = with(density) { Spacing.toPx() }
         // How far the map reaches from the middle, so panning can bring every node to the centre.
-        val reachX = remember { (RuneTree.all.map { abs(it.x) } + RuneTree.placeholders.map { abs(it.x) }).max() }
-        val reachY = remember { (RuneTree.all.map { abs(it.y) } + RuneTree.placeholders.map { abs(it.y) }).max() }
-        // Zooming out goes as far as it takes to see the whole map at once (all nodes and a little margin).
-        val minScale = remember(mapWidth, mapHeight) {
+        // Fog of war: only what is owned or buyable now, and the next two steps beyond it, is drawn.
+        val visible = remember(levels) { visibleRunes(levels) }
+        val visibleIds = remember(visible) { visible.map { it.id }.toSet() }
+        val reachX = remember(visible) { visible.maxOf { abs(it.x) } }
+        val reachY = remember(visible) { visible.maxOf { abs(it.y) } }
+        // Zooming out goes as far as it takes to see every visible node at once (and a little margin).
+        val minScale = remember(mapWidth, mapHeight, visible) {
             val w = with(density) { mapWidth.toPx() }
             val h = with(density) { mapHeight.toPx() }
             minOf(w / ((2 * reachX + 1.4f) * spacingPx), h / ((2 * reachY + 1.4f) * spacingPx)).coerceIn(0.12f, 0.6f)
@@ -260,9 +263,9 @@ private fun RuneMap(
                             }
                         }
                     }
-                    RuneTree.all.forEach { rune ->
+                    visible.forEach { rune ->
                         rune.requires.forEach { parentId ->
-                            val parent = RuneTree.get(parentId) ?: return@forEach
+                            val parent = RuneTree.get(parentId)?.takeIf { it.id in visibleIds } ?: return@forEach
                             val owned = RuneTree.levelOf(levels, rune.id) >= 1
                             val open = RuneTree.isUnlocked(levels, rune)
                             path(
@@ -272,17 +275,8 @@ private fun RuneMap(
                             )
                         }
                     }
-                    RuneTree.placeholders.forEach { p ->
-                        val from = p.parent?.let { RuneTree.placeholders[it] }
-                        path(point(from?.x ?: 0f, from?.y ?: 0f), point(p.x, p.y), pathLocked, 12.dp.toPx(), alpha = 0.55f)
-                    }
                 }
-                RuneTree.placeholders.forEachIndexed { i, p ->
-                    Box(Modifier.offset(cx + Spacing * p.x - 31.dp, cy + Spacing * p.y - 31.dp)) {
-                        LockedTile(selected == SoonKey + i) { onSelect(SoonKey + i) }
-                    }
-                }
-                RuneTree.all.forEach { rune ->
+                visible.forEach { rune ->
                     val size = tileSize(rune)
                     Box(Modifier.offset(cx + Spacing * rune.x - size / 2, cy + Spacing * rune.y - size / 2)) {
                         val level = RuneTree.levelOf(levels, rune.id)
@@ -545,16 +539,6 @@ private fun RuneDetail(rune: Rune, levels: Map<String, Int>, gold: Int, onBuy: (
         cost == null -> Text(stringResource(R.string.rune_maxed), fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E7A45), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         !unlocked -> Text(stringResource(R.string.rune_locked), style = MaterialTheme.typography.bodyMedium, color = Color(0xFFB3401A), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         else -> {
-            if (gold < cost) {
-                Text(
-                    stringResource(R.string.rune_missing, NumberFormat.getIntegerInstance().format(cost - gold)),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color(0xFFB3401A),
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
-                Spacer(Modifier.size(4.dp))
-            }
             val canBuy = gold >= cost
             Box(
                 modifier = Modifier
@@ -605,4 +589,16 @@ private fun Modifier.sliced(@DrawableRes res: Int, srcCorner: Int, dstCorner: Dp
             )
         }
     }
+}
+
+/** The runes the player gets to see: owned or buyable ones, plus the two steps that follow them. Everything further stays hidden. */
+private fun visibleRunes(levels: Map<String, Int>): List<Rune> {
+    val dist = HashMap<String, Int>()
+    RuneTree.all.forEach { if (RuneTree.levelOf(levels, it.id) >= 1 || RuneTree.isUnlocked(levels, it)) dist[it.id] = 0 }
+    repeat(2) { step ->
+        RuneTree.all.forEach { r ->
+            if (r.id !in dist && r.requires.any { dist[it] == step }) dist[r.id] = step + 1
+        }
+    }
+    return RuneTree.all.filter { it.id in dist }
 }
