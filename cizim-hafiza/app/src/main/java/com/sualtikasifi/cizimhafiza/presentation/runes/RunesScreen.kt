@@ -110,7 +110,7 @@ fun RunesScreen(onBack: () -> Unit, onStore: () -> Unit = {}, viewModel: RunesVi
 
     Box(Modifier.fillMaxSize()) {
         Image(
-            painter = cachedPainterResource(R.drawable.bg_result_wood),
+            painter = cachedPainterResource(R.drawable.rune_screen_bg),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
