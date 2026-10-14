@@ -205,7 +205,7 @@ private fun RuneMap(
         val density = LocalDensity.current
         val spacingPx = with(density) { Spacing.toPx() }
         // How far the map reaches from the middle, so panning can bring every node to the centre.
-        // Fog of war: only what is owned or buyable now, and the next two steps beyond it, is drawn.
+        // Fog of war: owned and buyable runes, plus a foggy hint after the latest rune; the rest is not drawn at all.
         val visible = remember(levels) { visibleRunes(levels) }
         val visibleIds = remember(visible) { visible.map { it.id }.toSet() }
         val reachX = remember(visible) { visible.maxOf { abs(it.x) } }
@@ -591,14 +591,19 @@ private fun Modifier.sliced(@DrawableRes res: Int, srcCorner: Int, dstCorner: Dp
     }
 }
 
-/** The runes the player gets to see: owned or buyable ones, plus the two steps that follow them. Everything further stays hidden. */
+/**
+ * The runes the player gets to see: everything owned or buyable, plus a foggy hint of what comes after the latest rune
+ * (the deepest one owned): its next branches and the step after those. Other locked runes stay hidden, so no branch is
+ * revealed ahead of time and the map opens step by step.
+ */
 private fun visibleRunes(levels: Map<String, Int>): List<Rune> {
-    val dist = HashMap<String, Int>()
-    RuneTree.all.forEach { if (RuneTree.levelOf(levels, it.id) >= 1 || RuneTree.isUnlocked(levels, it)) dist[it.id] = 0 }
-    repeat(2) { step ->
-        RuneTree.all.forEach { r ->
-            if (r.id !in dist && r.requires.any { dist[it] == step }) dist[r.id] = step + 1
-        }
+    val open = RuneTree.all.filter { RuneTree.levelOf(levels, it.id) >= 1 || RuneTree.isUnlocked(levels, it) }.map { it.id }.toSet()
+    val latest = RuneTree.all.filter { it.id != RuneTree.ROOT_ID && RuneTree.levelOf(levels, it.id) >= 1 }.maxByOrNull { it.costs.first() }
+    val front = HashSet<String>()
+    if (latest != null) {
+        front += latest.id
+        RuneTree.all.filter { r -> r.requires.contains(latest.id) }.forEach { front += it.id }
     }
-    return RuneTree.all.filter { it.id in dist }
+    val fog = RuneTree.all.filter { it.id !in open && it.requires.any { parent -> parent in front } }.map { it.id }.toSet()
+    return RuneTree.all.filter { it.id in open || it.id in fog }
 }
