@@ -1,5 +1,6 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
+import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
 import { loadStoreData, layoutStore, renderStore, frameRing, frameById, penById } from "./store.js";
@@ -28,7 +29,9 @@ const t = () => T[lang];
 
 // ---------- layout (art units: the paintings are 841 wide) ----------
 const stage = $("stage");
+let leagueLoaded = false;
 const ctx = {
+  current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
   refreshHome: () => refreshHome(),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
@@ -82,6 +85,8 @@ function layout() {
     for (const [id, x, y, w, h, lx0, ly0, lx1, ly1] of T) { place($("tl-" + id), x, y, w, h); place($("tx-" + id), lx0, ly0, lx1 - lx0, ly1 - ly0); }
   } else if (current === "store") {
     layoutStore(ctx); renderStore(ctx);
+  } else if (current === "league") {
+    layoutLeague(ctx); renderLeague(ctx, !leagueLoaded); leagueLoaded = true;
   } else if (current === "ach") {
     layoutAchievements(ctx); renderAchievements(ctx);
   } else if (current === "settings") {
@@ -309,7 +314,9 @@ async function finish() {
   const x = t();
   show("search");
   const n = round.filter((w) => w.correct).length;
-  P.xp += score; P.gold += n * 10; achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
+  if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
+  P.xp += score; P.periodXp = (P.periodXp || 0) + score; P.gold += n * 10; achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
+  net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
   const me = {
     language: lang, nickname: "Web", wordIds: round.map((w) => w.id),
     perWord: round.map((w) => ({ wordId: w.id, isCorrect: w.correct, responseTimeMs: w.ms, pointsAwarded: w.points })),
@@ -376,7 +383,10 @@ $("tl-store").onclick = async () => { await loadStoreData(); show("store"); };
 $("st-back").onclick = () => show("home");
 $("tl-ach").onclick = async () => { await loadAchievements(); show("ach"); };
 $("ac-back").onclick = () => show("home");
-for (const [id, k] of [["online", "online"], ["levels", "levels"], ["friends", "friends"], ["league", "league"]]) $("tl-" + id).onclick = () => soon(t().tiles[k])();
+$("tl-league").onclick = async () => { await loadStoreData(); await loadLeague(); leagueLoaded = false; show("league"); };
+$("lg-back").onclick = () => show("home");
+$("lg-refresh").onclick = () => { leagueLoaded = false; layout(); };
+for (const [id, k] of [["online", "online"], ["levels", "levels"], ["friends", "friends"]]) $("tl-" + id).onclick = () => soon(t().tiles[k])();
 const soonMsg = () => msg(t().soon);
 $("tl-settings").onclick = () => show("settings");
 $("se-back").onclick = () => show("home");

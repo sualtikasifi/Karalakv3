@@ -91,3 +91,16 @@ export async function redeemCoupon(rawCode) {
     });
   } catch (e) { return { status: "network" }; }
 }
+
+export async function getGlobalLeague() {
+  const { fs, db } = await init();
+  const snap = await fs.getDoc(fs.doc(db, "leaderboards", "global"));
+  return snap.exists() ? snap.data() : null;
+}
+
+// Same fields as FriendRepositoryImpl.publishLeagueScore. A guest's web account is its own uid, so it never
+// collides with an Android profile.
+export async function publishScore({ nickname, periodXp, periodId, level, frameId, totalXp }) {
+  const { fs, db, auth } = await init();
+  await fs.setDoc(fs.doc(db, "users", auth.currentUser.uid), { nickname, periodXp, totalXp, periodXpAt: fs.serverTimestamp(), periodId, level, frameId, avatarUrl: "" }, { merge: true });
+}
