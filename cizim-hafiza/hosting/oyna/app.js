@@ -12,11 +12,12 @@ import { drawFxStroke } from "./penfx.js";
 import { openPenPicker, openFramePicker, openNickEdit } from "./picker.js";
 import { setPrefs, sfx, vibrate, initAudio, syncMusic } from "./audio.js";
 import { layoutOnline, renderEntry, renderCreate, renderJoin, leaveLobby, submitAndWait, joinWithCode, quickInvite } from "./online.js";
+import { openDuels, stopDuels, renderDuels, openCreateDuel, recordReceived as duelReceived } from "./duel.js";
 import { layoutFriends, openFriends, renderFriends, stop as stopFriends } from "./friends.js";
 import { loadWorlds, layoutWorlds, renderWorlds, layoutMap, renderMap, mixFor, starsFor, recordLevel, currentWorld } from "./levels.js";
 import { layoutAccount, renderAccount } from "./account.js";
 import { layoutOffline, renderOffline } from "./offline.js";
-import { setLang, loadStrings } from "./i18n.js";
+import { setLang, loadStrings, S } from "./i18n.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
@@ -77,6 +78,7 @@ const ctx = {
   sfx, paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
   pickRoomWords: (r) => pickRoomWords(r), startOffline: (o) => startOffline(o),
+  openDuel: (opp) => openCreateDuel(ctx, opp), startDuelChallenge: (opp, n) => startDuel({ mode: "new", opp }, n), playDuel: (d) => startDuel({ mode: "play", duel: d }),
   syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
@@ -94,7 +96,7 @@ const ctx = {
 const RANKS = [[1, "✏️", "Karalamacı", "Scribbler"], [20, "🖊️", "Çırak", "Apprentice"], [40, "🖌️", "Ressam", "Painter"], [60, "🎨", "Usta Ressam", "Master Painter"], [80, "🖼️", "Sanatçı", "Artist"], [100, "👑", "Büyük Usta", "Grand Master"]];
 const xpFor = (lv) => { const n = Math.max(0, lv - 1); return 25 * n * n + 75 * n; };
 const levelFor = (xp) => { let l = 1; while (l < 100 && xp >= xpFor(l + 1)) l++; return l; };
-let P = { nick: "", xp: 0, gold: 0, owned: [], pen: "CLASSIC", frame: "SCRIBBLER", jokers: {}, claimed: [], daily: { last: -1, streak: 0, best: 0, result: null }, levels: {}, stats: { games: 0, score: 0, words: 0, perfect: 0, wins: 0, streak: 0, best: 0, last: "" } };
+let P = { nick: "", xp: 0, gold: 0, runes: {}, owned: [], pen: "CLASSIC", frame: "SCRIBBLER", jokers: {}, claimed: [], daily: { last: -1, streak: 0, best: 0, result: null }, levels: {}, stats: { games: 0, score: 0, words: 0, perfect: 0, wins: 0, streak: 0, best: 0, last: "" } };
 try { P = { ...P, ...JSON.parse(localStorage.getItem("player") || "{}") }; } catch {}
 P.prefs = P.prefs || { s0: true, s1: true, s2: true, s3: false }; setPrefs(() => P.prefs); initAudio();
 const saveP = () => { try { localStorage.setItem("player", JSON.stringify(P)); } catch {} };
@@ -153,6 +155,8 @@ function layout() {
     layoutRunes(ctx); renderRunes(ctx);
   } else if (current === "report") {
     layoutReport(ctx); renderReport(ctx, !reportLoaded); reportLoaded = true;
+  } else if (current === "duels") {
+    place($("du-back"), 20, 40, 110, 106); renderDuels(ctx);
   } else if (current === "league") {
     layoutLeague(ctx); renderLeague(ctx, !leagueLoaded); leagueLoaded = true;
   } else if (current === "ach") {
@@ -443,6 +447,18 @@ async function startOffline({ count, relaxed: rx, cats, diffs }) {
   const pool = words.filter((w) => (!cats.length || cats.includes(w.category)) && (!diffs.length || diffs.includes(w.difficulty)));
   begin([...(pool.length ? pool : words)].sort(() => Math.random() - 0.5).slice(0, count));
 }
+// Duels (GameViewModel's duel args): "new" plays a random mix that becomes a challenge for a friend; "play" asks the same words a friend drew.
+let duelRun = null;
+async function startDuel(run, count = 10) {
+  levelRun = null; kind = "duel"; relaxed = false; duelRun = run; quickOpp = null;
+  await ensureWords();
+  if (run.mode === "play") {
+    const picked = run.duel.wordIds.map((id) => words.find((w) => w.id === id)).filter(Boolean);
+    if (!picked.length) { ctx.confirm(S("duel_not_found"), S("close"), () => {}); $("dlg-no").style.display = "none"; return; }
+    return begin(picked);
+  }
+  begin([...words].sort(() => Math.random() - 0.5).slice(0, count));
+}
 // The XP rate of the round, fixed when it starts so every word pays the same: a running XP event times the first Quick Match
 // of the day (2x), as in GameViewModel.effectiveXpMultiplier.
 let xpMult = 1, qmBonus = false, xpEventOnly = 1;
@@ -580,6 +596,12 @@ async function finish() {
     eco.addXp(P, eco.levelCompletionBonus(stars) * xpMult, fxp);
   }
   if (kind === "quick" && quickOpp) { opp = quickOpp; items = quickItems; net.recordRound({ ...me, level: levelFor(P.xp), frameId: P.frame, nickname: P.nick }).catch(() => {}); }
+  let duelNote = null, duelRematch = null;
+  if (kind === "duel" && duelRun) {
+    const run = duelRun;
+    if (run.mode === "new") { net.createDuel({ opponentUid: run.opp.uid, opponentName: run.opp.name, items: me.items, challengerScore: score, challengerCorrectCount: n, wordIds: me.wordIds, myName: P.nick }).catch(() => {}); duelNote = S("duel_challenge_sent", run.opp.name); }
+    else { opp = { nickname: run.duel.challengerName, totalScore: run.duel.challengerScore, level: 1 }; items = run.duel.items; duelReceived(run.duel, score, n); net.submitDuelResult(run.duel.id, score, n).catch(() => {}); duelRematch = () => ctx.openDuel({ uid: run.duel.challengerUid, name: run.duel.challengerName }); }
+  }
   await minWait;
   const quickWon = kind === "quick" && !!opp && score > opp.totalScore;
   // What the round pays in gold — one place, ported from RoundRewards.kt (see economy.js).
@@ -597,6 +619,7 @@ async function finish() {
     level: { level: lvl, before: l0, into, need, toNext: xpFor(lvl + 1) - P.xp, max: lvl >= 100, frac: lvl >= 100 ? 1 : into / need, beforeFrac: l0 === lvl ? (xp0 - xpFor(lvl)) / need : 0 },
     opp, myRing: ring(P.frame), oppRing: ring(opp ? highestFrameFor(opp.level || 1) : "SCRIBBLER"), oppItems: items,
     items: round.map((w) => ({ word: w.text, isCorrect: w.correct, strokes: w.strokes, penSkin: P.pen })),
+    note: duelNote, rematch: duelRematch, rematchLabel: S("duel_rematch_action"),
     onHome: () => show("home"),
     next: kind === "level" && levelRun && levelRun.l < 10 ? { label: t().nextLevel, fn: () => startLevel(levelRun.w, levelRun.l + 1) } : null,
   });
@@ -669,6 +692,8 @@ $("tl-league").onclick = async () => { await loadStoreData(); await loadLeague()
 $("lg-back").onclick = () => show("home");
 $("lg-refresh").onclick = () => { leagueLoaded = false; layout(); };
 $("tl-friends").onclick = () => { show("friends"); openFriends(ctx); };
+$("fr-duel").onclick = () => { stopFriends(); show("duels"); openDuels(ctx); };
+$("du-back").onclick = () => { stopDuels(); show("friends"); openFriends(ctx); };
 $("fr-back").onclick = () => { stopFriends(); show("home"); };
 for (const [id, k] of []) $("tl-" + id).onclick = () => soon(t().tiles[k])();
 const soonMsg = () => msg(t().soon);

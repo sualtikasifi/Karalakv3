@@ -34,6 +34,7 @@ export function renderResult(c, d) {
   const head = el("div", "rs-head", `<img src="img/rs_head.webp" alt=""><button class="rs-back" aria-label="back"></button><div class="rs-title lt">${T("game_over")}</div>`);
   head.querySelector(".rs-back").onclick = d.onHome; root.append(head);
   const inner = el("div", "rs-inner"); root.append(inner);
+  if (d.note) inner.append(el("div", "rs-note", d.note));
   // stats
   const grid = el("div", "rs-grid"); const sl = statList(d, lang);
   for (let i = 0; i < sl.length; i += 2) {
@@ -59,6 +60,7 @@ export function renderResult(c, d) {
     const v = el("div", "rs-vs", `${side(d.nick || T("quick_match_you"), me, null, false, won ? "#1f9a3a" : drew ? "#3b2314" : "#8e1f1f")}${side(d.opp.nickname || "?", op, null, true, !won && !drew ? "#1f9a3a" : drew ? "#3b2314" : "#8e1f1f")}<div class="out" style="background:${drew ? "#8a6a50" : won ? "#2ea043" : "#d23b2e"}">${T(drew ? "quick_match_drew" : won ? "quick_match_won" : "quick_match_lost")}</div><div class="vs">${T("quick_match_versus")}</div>${won ? '<img class="cr" src="img/lobby_crown.webp" alt="">' : ""}`);
     const a1 = d.myRing(), a2 = d.oppRing(); v.querySelector(".av.l").append(a1); v.querySelector(".av.r").append(a2);
     inner.append(v);
+    if (d.rematch) { const b = el("button", "rs-next", `<span>${d.rematchLabel}</span>`); b.onclick = d.rematch; inner.append(b); }
   }
   // daily
   if (d.daily) {

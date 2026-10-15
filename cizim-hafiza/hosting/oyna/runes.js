@@ -24,7 +24,7 @@ export const loaded = () => !!D;
 // ---------- the rules (RuneTree, RuneGates, RuneEffects) ----------
 const byId = (id) => D.runes.find((r) => r.id === id);
 const keystone = (r) => (r.keystone === null || r.keystone === undefined ? r.costs.length === 1 : r.keystone);
-export const lv = (P, id) => (id === "root" ? 1 : Math.min(Math.max(P.runes[id] || 0, 0), (byId(id) || { costs: [] }).costs.length));
+export const lv = (P, id) => (id === "root" ? 1 : Math.min(Math.max((P.runes || {})[id] || 0, 0), (byId(id) || { costs: [] }).costs.length));
 const unlocked = (P, r) => r.req.every((q) => lv(P, q) >= 1);
 function ringProgress(P, ring) {
   const m = D.runes.filter((r) => r.ring === ring && r.id !== "root"); if (!m.length) return 1;

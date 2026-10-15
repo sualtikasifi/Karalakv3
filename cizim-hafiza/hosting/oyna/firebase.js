@@ -346,3 +346,22 @@ export async function myReports() {
   return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.submittedAt - a.submittedAt).slice(0, 30);
 }
 export async function deleteReport(id) { const { fs, db } = await init(); await fs.deleteDoc(fs.doc(db, "bugReports", id)); }
+
+// ================= Duels: duels/{duelId} (same documents as DuelRepositoryImpl) =================
+const toDuel = (d) => { const x = d.data(); if (!x.challengerUid || !x.opponentUid || typeof x.itemsJson !== "string") return null; let items = []; try { items = JSON.parse(x.itemsJson); } catch {} return { id: d.id, ...x, items, wordIds: x.wordIds || [], challengerScore: x.challengerScore || 0, challengerCorrectCount: x.challengerCorrectCount || 0, status: x.status || "AWAITING_OPPONENT", createdAt: x.createdAt || 0, seenByChallenger: x.seenByChallenger !== false }; };
+export async function createDuel({ opponentUid, opponentName, items, challengerScore, challengerCorrectCount, wordIds, myName }) {
+  const { fs, db, auth } = await init();
+  await fs.addDoc(fs.collection(db, "duels"), { challengerUid: auth.currentUser.uid, challengerName: myName, opponentUid, opponentName, itemsJson: JSON.stringify(items), wordIds, challengerScore, challengerCorrectCount, opponentScore: null, opponentCorrectCount: null, status: "AWAITING_OPPONENT", createdAt: Date.now(), completedAt: null, seenByChallenger: true });
+}
+export async function getDuel(id) { const { fs, db } = await init(), s = await fs.getDoc(fs.doc(db, "duels", id)); return s.exists() ? toDuel(s) : null; }
+/** Live lists: incoming (waiting for me), sent (all mine) and received-and-complete. cb gets {incoming, sent, received}. */
+export async function listenDuels(cb) {
+  const { fs, db, auth } = await init(), uid = auth.currentUser.uid, st = { incoming: [], sent: [], received: [] };
+  const c = fs.collection(db, "duels"), newest = (l) => l.filter(Boolean).sort((a, b) => b.createdAt - a.createdAt).slice(0, 30), emit = () => cb({ ...st });
+  const sub = (q, key) => fs.onSnapshot(q, (s) => { st[key] = newest(s.docs.map(toDuel)); emit(); }, () => { st[key] = []; emit(); });
+  const un = [sub(fs.query(c, fs.where("opponentUid", "==", uid), fs.where("status", "==", "AWAITING_OPPONENT")), "incoming"), sub(fs.query(c, fs.where("challengerUid", "==", uid)), "sent"), sub(fs.query(c, fs.where("opponentUid", "==", uid), fs.where("status", "==", "COMPLETE")), "received")];
+  return () => un.forEach((u) => u());
+}
+export async function submitDuelResult(id, opponentScore, opponentCorrectCount) { const { fs, db } = await init(); await fs.updateDoc(fs.doc(db, "duels", id), { status: "COMPLETE", opponentScore, opponentCorrectCount, completedAt: Date.now(), seenByChallenger: false }); }
+export async function markDuelSeen(id) { const { fs, db } = await init(); await fs.updateDoc(fs.doc(db, "duels", id), { seenByChallenger: true }); }
+export async function deleteDuel(id) { const { fs, db } = await init(); await fs.deleteDoc(fs.doc(db, "duels", id)); }
