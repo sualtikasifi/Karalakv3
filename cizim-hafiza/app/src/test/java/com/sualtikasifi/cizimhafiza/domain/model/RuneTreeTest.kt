@@ -31,7 +31,7 @@ class RuneTreeTest {
         fun ringCost(ring: Int) = RuneTree.all.filter { it.ring == ring }.sumOf { it.costs.sum() }
         assertTrue("ring 1 ${ringCost(1)}", ringCost(1) in 150_000..200_000)
         assertTrue("ring 2 ${ringCost(2)}", ringCost(2) in 380_000..460_000)
-        assertTrue("ring 3 ${ringCost(3)}", ringCost(3) in 300_000..400_000)
+        assertTrue("ring 3 ${ringCost(3)}", ringCost(3) in 100_000..150_000)
     }
 
     @Test
