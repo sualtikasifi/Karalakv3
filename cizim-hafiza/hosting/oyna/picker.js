@@ -1,5 +1,5 @@
 import { penList, frameList, frameRing } from "./store.js";
-const T = { tr: { pen: "Kalemini seç", frame: "Çerçeveni seç", close: "Kapat", nick: "Kullanıcı adı", save: "Kaydet", locked: (n) => `Seviye ${n}` }, en: { pen: "Choose your pen", frame: "Choose your frame", close: "Close", nick: "Username", save: "Save", locked: (n) => `Level ${n}` } };
+const T = { tr: { pen: "Kalemini seç", frame: "Çerçeveni seç", close: "Kapat", nick: "Kullanıcı adı", save: "Kaydet", nickHint: "2-16 karakter. Adını yalnızca bir kez değiştirebilirsin.", nickLocked: "Kullanıcı adını zaten bir kez değiştirdin.", nick_taken: "Bu ad alınmış, başka bir tane dene.", nick_invalid: "Harf, rakam, boşluk, _ . - kullanabilirsin (2-16).", nick_net: "Sunucuya ulaşılamadı.", locked: (n) => `Seviye ${n}` }, en: { pen: "Choose your pen", frame: "Choose your frame", close: "Close", nick: "Username", save: "Save", nickHint: "2-16 characters. You can change your name only once.", nickLocked: "You have already changed your username once.", nick_taken: "That name is taken, try another.", nick_invalid: "Letters, numbers, spaces and _ . - only (2-16).", nick_net: "Couldn't reach the server.", locked: (n) => `Level ${n}` } };
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 function sheet(c, title, build) {
   const d = c.$("pick"), x = T[c.lang()]; d.classList.remove("hidden"); d.replaceChildren();
@@ -34,9 +34,16 @@ export function openFramePicker(c) {
 }
 export function openNickEdit(c) {
   const { P, lang } = c, x = T[lang()], d = c.$("pick"); d.classList.remove("hidden"); d.replaceChildren();
-  const box = el("div", "pk-box", `<b>${x.nick}</b>`), inp = el("input", "pk-in"); inp.maxLength = 16; inp.value = P.nick;
-  const save = el("button", "pill orange small", `<span>${x.save}</span>`);
-  save.onclick = () => { const v = inp.value.trim().slice(0, 16); if (v.length >= 2) { P.nick = v; c.saveP(); c.refreshHome(); } d.classList.add("hidden"); };
+  const locked = (P.nameChanges || 0) >= 1;
+  const box = el("div", "pk-box", `<b>${x.nick}</b>`), inp = el("input", "pk-in"); inp.maxLength = 16; inp.value = P.nick; inp.disabled = locked;
+  const note = el("p", "pk-note", locked ? x.nickLocked : x.nickHint);
+  const save = el("button", "pill orange small", `<span>${x.save}</span>`); save.style.display = locked ? "none" : "";
+  save.onclick = async () => {
+    const v = inp.value.trim().replace(/\s+/g, " "); if (v === P.nick) { d.classList.add("hidden"); return; }
+    note.textContent = "…"; const r = await c.net.claimUsername(v, P.nickClaimed ? P.nick : null);
+    if (r === "ok") { P.nick = v; P.nickClaimed = true; P.nameChanges = (P.nameChanges || 0) + 1; c.saveP(); c.refreshHome(); d.classList.add("hidden"); }
+    else note.textContent = x["nick_" + r] || x.nick_net;
+  };
   const close = el("button", "pill cream small", `<span>${x.close}</span>`); close.onclick = () => d.classList.add("hidden");
-  box.append(inp, save, close); d.append(box); d.onclick = (e) => { if (e.target === d) d.classList.add("hidden"); }; setTimeout(() => inp.focus(), 50);
+  box.append(inp, note, save, close); d.append(box); d.onclick = (e) => { if (e.target === d) d.classList.add("hidden"); }; if (!locked) setTimeout(() => inp.focus(), 50);
 }
