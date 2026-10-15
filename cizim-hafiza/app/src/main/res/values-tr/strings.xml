@@ -234,6 +234,8 @@
     <string name="exit_game_confirm">Çık</string>
     <string name="exit_game_cancel">Devam Et</string>
     <string name="daily_exit_title">Meydan okumayı bırakıyor musun?</string>
+    <string name="daily_exit_message_short">Şimdi çıkarsan bugünkü hakkın biter, kalan kelimeler yanlış sayılır.</string>
+    <string name="exit_online_message">Odadan ayrılırsın ve bu turdaki ilerlemen kaybolur.</string>
     <string name="daily_exit_message">Şimdi çıkarsan meydan okuma bugünlük bitmiş sayılır: o ana kadar bildiklerin puanlanır, kalan kelimeler yanlış sayılır ve bugün yeniden oynayamazsın. Yine de çıkmak istiyor musun?</string>
 
     <!-- Drawing screen -->

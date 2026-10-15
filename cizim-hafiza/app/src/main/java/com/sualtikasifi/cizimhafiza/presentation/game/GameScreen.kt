@@ -112,10 +112,11 @@ fun GameScreen(
     BackHandler(enabled = isActivelyPlaying) { showExitConfirm = true }
 
     if (showExitConfirm) {
-        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedExitDialog(
+            style = com.sualtikasifi.cizimhafiza.presentation.common.ExitDialogStyle.InGame,
             title = stringResource(if (viewModel.isDailyChallenge) R.string.daily_exit_title else R.string.exit_game_title),
             message = if (viewModel.isDailyChallenge) {
-                stringResource(R.string.daily_exit_message)
+                stringResource(R.string.daily_exit_message_short)
             } else if (viewModel.isQuickMatch) {
                 stringResource(R.string.quick_match_exit_message, GameConstants.QUICK_MATCH_ABANDON_PENALTY_XP)
             } else {
@@ -123,7 +124,6 @@ fun GameScreen(
             },
             confirmText = stringResource(R.string.exit_game_confirm),
             dismissText = stringResource(R.string.exit_game_cancel),
-            destructive = true,
             onConfirm = {
                 showExitConfirm = false
                 if (viewModel.isDailyChallenge) {

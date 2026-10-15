@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -38,9 +39,35 @@ import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenArt
 import com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont
 
-/** The painted "leave the game?" window (exit_dialog, 1100 x 823 px): the sad crowned dog on a wooden sign with two empty buttons. */
-private const val ExitArtW = 1100f
-private const val ExitArtH = 823f
+/**
+ * The two painted "leave?" windows, each a picture with empty buttons (rectangles are x0, y0, x1, y1 in the picture's
+ * own pixels): the sad crowned dog for leaving the app, the stern one (a red Quit button) for leaving a game.
+ */
+enum class ExitDialogStyle(
+    val art: Int,
+    val artW: Float,
+    val artH: Float,
+    val title: FloatArray,
+    val message: FloatArray,
+    val left: FloatArray,
+    val right: FloatArray,
+    val confirmOutline: Color
+) {
+    /** exit_dialog, 1100 x 823 — the main menu's "Karalak'tan çık". */
+    Menu(
+        R.drawable.exit_dialog, 1100f, 823f,
+        title = floatArrayOf(230f, 357f, 882f, 447f), message = floatArrayOf(300f, 455f, 812f, 531f),
+        left = floatArrayOf(163f, 566f, 543f, 731f), right = floatArrayOf(560f, 566f, 940f, 731f),
+        confirmOutline = Color(0xFF7A2A08)
+    ),
+    /** exit_game_dialog, 1100 x 795 — leaving a game (offline, daily challenge, quick match, room). */
+    InGame(
+        R.drawable.exit_game_dialog, 1100f, 795f,
+        title = floatArrayOf(264f, 353f, 850f, 440f), message = floatArrayOf(285f, 468f, 821f, 566f),
+        left = floatArrayOf(149f, 572f, 545f, 716f), right = floatArrayOf(557f, 572f, 949f, 716f),
+        confirmOutline = Color(0xFF7A0E0E)
+    )
+}
 
 private val ExitInk = Color(0xFF3A2416)
 private val ExitSoftInk = Color(0xFF7A4A24)
@@ -57,7 +84,8 @@ fun PaintedExitDialog(
     confirmText: String,
     dismissText: String,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    style: ExitDialogStyle = ExitDialogStyle.Menu
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -69,22 +97,23 @@ fun PaintedExitDialog(
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
             contentAlignment = Alignment.Center
         ) {
-            val frameW = minOf(maxWidth - 16.dp, (maxHeight - 24.dp) * (ExitArtW / ExitArtH))
-            val u = frameW / ExitArtW
+            val frameW = minOf(maxWidth - 16.dp, (maxHeight - 24.dp) * (style.artW / style.artH))
+            val u = frameW / style.artW
             val fontScale0 = LocalDensity.current.fontScale
             val fs: (Float) -> TextUnit = { px -> (px * u.value / fontScale0).sp }
             val context = LocalContext.current
-            val sheet = remember { runCatching { BackdropCache.get(context.resources, R.drawable.exit_dialog) }.getOrNull() }
-            val pxK = (sheet?.width ?: ExitArtW.toInt()) / ExitArtW
+            val sheet = remember { runCatching { BackdropCache.get(context.resources, style.art) }.getOrNull() }
+            val pxK = (sheet?.width ?: style.artW.toInt()) / style.artW
 
             @Composable
-            fun PaintedButton(x0: Float, y0: Float, x1: Float, y1: Float, onClick: () -> Unit, label: @Composable BoxScope.() -> Unit) {
+            fun PaintedButton(r: FloatArray, onClick: () -> Unit, label: @Composable BoxScope.() -> Unit) {
+                val (x0, y0, x1, y1) = r
                 val sink = rememberSink(0.92f)
                 Box(
                     modifier = Modifier
                         .offset(u * x0, u * y0)
                         .size(u * (x1 - x0), u * (y1 - y0))
-                        .sunkenArt(sink, sheet, x0 * pxK, y0 * pxK, (x1 - x0) * pxK, (y1 - y0) * pxK, u * 82f)
+                        .sunkenArt(sink, sheet, x0 * pxK, y0 * pxK, (x1 - x0) * pxK, (y1 - y0) * pxK, u * ((y1 - y0) / 2f))
                         .clickable(interactionSource = sink.source, indication = null, onClick = onClick)
                 ) {
                     // The word dips together with the painted button.
@@ -101,7 +130,7 @@ fun PaintedExitDialog(
             LaunchedEffect(Unit) { enter.animateTo(1f, spring(dampingRatio = 0.6f, stiffness = 380f)) }
             Box(
                 Modifier
-                    .size(frameW, frameW * (ExitArtH / ExitArtW))
+                    .size(frameW, frameW * (style.artH / style.artW))
                     .graphicsLayer {
                         val e = enter.value
                         scaleX = 0.82f + 0.18f * e
@@ -112,7 +141,7 @@ fun PaintedExitDialog(
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
             ) {
                 Image(
-                    painter = painterResource(R.drawable.exit_dialog),
+                    painter = painterResource(style.art),
                     contentDescription = null,
                     contentScale = ContentScale.FillBounds,
                     modifier = Modifier.fillMaxSize()
@@ -121,26 +150,24 @@ fun PaintedExitDialog(
                     text = title,
                     style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(80f), color = ExitInk, textAlign = TextAlign.Center),
                     maxLines = 1, minScale = 0.5f,
-                    modifier = Modifier.offset(u * 230f, u * 357f).size(u * 652f, u * 90f)
+                    modifier = Modifier.offset(u * style.title[0], u * style.title[1]).size(u * (style.title[2] - style.title[0]), u * (style.title[3] - style.title[1]))
                 )
                 FitText(
                     text = message,
                     style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.SemiBold, fontSize = fs(46f), color = ExitSoftInk, textAlign = TextAlign.Center),
-                    maxLines = 2, minScale = 0.6f,
-                    modifier = Modifier.offset(u * 300f, u * 455f).size(u * 512f, u * 76f)
+                    maxLines = 3, minScale = 0.5f,
+                    modifier = Modifier.offset(u * style.message[0], u * style.message[1]).size(u * (style.message[2] - style.message[0]), u * (style.message[3] - style.message[1]))
                 )
-                PaintedButton(163f, 566f, 543f, 731f, onDismiss) {
-                    Text(
+                PaintedButton(style.left, onDismiss) {
+                    FitText(
                         text = dismissText,
-                        fontFamily = DisplayFont,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = fs(68f),
-                        color = ExitInk,
-                        maxLines = 1
+                        style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(68f), color = ExitInk, textAlign = TextAlign.Center),
+                        maxLines = 1, minScale = 0.55f,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
-                PaintedButton(560f, 566f, 940f, 731f, onConfirm) {
-                    LetteredText(text = confirmText, size = fs(68f), outline = Color(0xFF7A2A08), maxLines = 1)
+                PaintedButton(style.right, onConfirm) {
+                    LetteredText(text = confirmText, size = fs(68f), outline = style.confirmOutline, maxLines = 1)
                 }
             }
         }
