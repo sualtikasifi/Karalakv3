@@ -23,10 +23,29 @@ import com.sualtikasifi.cizimhafiza.R
  * silently resets every player wearing it. AvatarFrameTest's equivalent
  * guard applies here too, see PenSkinTest.
  */
-/** What a pen adds around its stroke; purely cosmetic and a pure function of the drawn distance, so a replay looks identical. */
-enum class PenEffect { NONE, GLOW, SPARKLE, GLOW_SPARKLE;
-    val glow: Boolean get() = this == GLOW || this == GLOW_SPARKLE
-    val sparkle: Boolean get() = this == SPARKLE || this == GLOW_SPARKLE
+/**
+ * The living paint of a premium pen, drawn by PenBrush (drawPenStroke). Every effect is a pure function of the drawn
+ * distance and a clock, so it looks the same on the drawing screen, in an opponent's replay and in the store preview.
+ * A pen with any effect but [NONE] is drawn with layered, slightly thicker strokes (see [isPremium]).
+ */
+enum class PenEffect {
+    NONE,
+    /** Gold: a bright glint travelling along the stroke and twinkling stars beside it. */
+    GLINT,
+    /** Rainbow: the colours flow along the stroke. */
+    FLOW,
+    /** Flame: tiny, dense sparks thrown off the stroke that rise and die out. */
+    EMBERS,
+    /** Storm: short lightning cracks that flash along the stroke. */
+    BOLTS,
+    /** Cosmos: twinkling stars and a slowly drifting colour. */
+    STARS,
+    /** Specter: purple smoke curling up from the stroke. */
+    SMOKE,
+    /** Lion King: a golden glint, rising gold embers and a few stars. */
+    ROYAL;
+
+    val isPremium: Boolean get() = this != NONE
 }
 
 enum class PenSkin(
@@ -102,13 +121,13 @@ enum class PenSkin(
     DIAMOND(R.string.pen_diamond, listOf(0xFFE0F7FF, 0xFFB388FF, 0xFF7CE7FF), 0, storePrice = 15000, isRuneReward = true),
 
     // --- Premium store pens: the dearest things on the shelf, each with a stroke effect (see PenEffect). ---
-    AURUM(R.string.pen_aurum, listOf(0xFFB8860B, 0xFFFFD700, 0xFFFFF1A8, 0xFFFFD700, 0xFFB8860B), 0, storePrice = 20000),
-    PRISM(R.string.pen_prism, listOf(0xFFFF4B4B, 0xFFFFA63C, 0xFFFFE23C, 0xFF3CD16A, 0xFF3CA8FF, 0xFF8E4BFF, 0xFFFF4BB0), 0, storePrice = 30000),
-    EMBER(R.string.pen_ember, listOf(0xFFC62828, 0xFFFF5722, 0xFFFFB300, 0xFFFFE082), 0, storePrice = 45000, effect = PenEffect.GLOW),
-    STORM(R.string.pen_storm, listOf(0xFF1E5BD8, 0xFF4FC3F7, 0xFFFFFFFF, 0xFF4FC3F7), 0, storePrice = 60000, effect = PenEffect.GLOW),
-    COSMOS(R.string.pen_cosmos, listOf(0xFF1A1055, 0xFF5B3FA8, 0xFFB388FF, 0xFF4FC3F7), 0, storePrice = 85000, effect = PenEffect.SPARKLE),
-    SPECTER(R.string.pen_specter, listOf(0xFF1B0B3A, 0xFF5E2CA5, 0xFFB44CFF, 0xFF5E2CA5), 0, storePrice = 120000, effect = PenEffect.GLOW),
-    LION(R.string.pen_lion, listOf(0xFFFFC857, 0xFFFF9A2E, 0xFFE0492B, 0xFFFFC857), 0, storePrice = 180000, effect = PenEffect.GLOW_SPARKLE);
+    AURUM(R.string.pen_aurum, listOf(0xFFB8860B, 0xFFFFD700, 0xFFFFF1A8, 0xFFFFD700, 0xFFB8860B), 0, storePrice = 20000, effect = PenEffect.GLINT),
+    PRISM(R.string.pen_prism, listOf(0xFFFF4B4B, 0xFFFFA63C, 0xFFFFE23C, 0xFF3CD16A, 0xFF3CA8FF, 0xFF8E4BFF, 0xFFFF4BB0), 0, storePrice = 30000, effect = PenEffect.FLOW),
+    EMBER(R.string.pen_ember, listOf(0xFFC62828, 0xFFFF5722, 0xFFFFB300, 0xFFFFE082), 0, storePrice = 45000, effect = PenEffect.EMBERS),
+    STORM(R.string.pen_storm, listOf(0xFF1E5BD8, 0xFF4FC3F7, 0xFFFFFFFF, 0xFF4FC3F7), 0, storePrice = 60000, effect = PenEffect.BOLTS),
+    COSMOS(R.string.pen_cosmos, listOf(0xFF1A1055, 0xFF5B3FA8, 0xFFB388FF, 0xFF4FC3F7), 0, storePrice = 85000, effect = PenEffect.STARS),
+    SPECTER(R.string.pen_specter, listOf(0xFF1B0B3A, 0xFF5E2CA5, 0xFFB44CFF, 0xFF5E2CA5), 0, storePrice = 120000, effect = PenEffect.SMOKE),
+    LION(R.string.pen_lion, listOf(0xFFFFC857, 0xFFFF9A2E, 0xFFE0492B, 0xFFFFC857), 0, storePrice = 180000, effect = PenEffect.ROYAL);
 
     /** True when the stroke should be painted as a gradient rather than a flat colour. */
     val isGradient: Boolean get() = colors.size > 1

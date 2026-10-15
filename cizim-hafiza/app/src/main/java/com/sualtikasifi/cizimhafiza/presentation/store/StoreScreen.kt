@@ -373,17 +373,26 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             gold = gold,
             preview = { u ->
                 when (item) {
-                    is Pending.PenItem -> Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(u * 44f))
-                            // The drawing screen's own paper: cream with a fine dot grid.
-                            .background(AppTheme.tokens.canvasPaper)
-                            .dotGridBackground(dotColor = AppTheme.tokens.canvasGrid, spacing = 22.dp, radius = 1.2.dp)
-                            .border(u * 8f, Color(0xFFD9892B), RoundedCornerShape(u * 44f))
-                            .padding(u * 40f)
-                    ) { PenPreview(item.skin, Modifier.fillMaxWidth().height(u * 220f)) }
+                    is Pending.PenItem -> Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(u * 10f),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        // The painted card the player was tempted by, and below it the pen's real stroke, live.
+                        Image(painterResource(item.skin.cardRes()), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().height(u * 270f))
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(u * 120f)
+                                .clip(RoundedCornerShape(u * 30f))
+                                // The drawing screen's own paper: cream with a fine dot grid.
+                                .background(AppTheme.tokens.canvasPaper)
+                                .dotGridBackground(dotColor = AppTheme.tokens.canvasGrid, spacing = 22.dp, radius = 1.2.dp)
+                                .border(u * 6f, Color(0xFFD9892B), RoundedCornerShape(u * 30f))
+                                .padding(horizontal = u * 40f, vertical = u * 14f)
+                        ) { PenPreview(item.skin, Modifier.fillMaxSize()) }
+                    }
                     is Pending.FrameItem -> Image(painterResource(item.frame.drawableRes), contentDescription = null, modifier = Modifier.size(u * 380f))
                     is Pending.JokerItem -> Unit
                 }
@@ -639,10 +648,12 @@ private fun GoldPill(gold: Int) {
     }
 }
 
-/** A wavy stroke in the pen's colours — what the pen actually draws. */
+/** A wavy stroke in the pen's colours — what the pen actually draws (a premium pen's effects play live). */
 @Composable
 private fun PenPreview(skin: PenSkin, modifier: Modifier = Modifier.fillMaxWidth().height(64.dp)) {
     val colors = skin.colors.map { Color(it) }
+    val premium = skin.effect.isPremium
+    val time = com.sualtikasifi.cizimhafiza.presentation.common.rememberPenTime(premium)
     Canvas(modifier = modifier) {
         val path = Path().apply {
             moveTo(size.width * 0.08f, size.height * 0.62f)
@@ -658,6 +669,13 @@ private fun PenPreview(skin: PenSkin, modifier: Modifier = Modifier.fillMaxWidth
             )
         }
         val w = 13.dp.toPx()
+        if (premium) {
+            // The real pen renderer, fed the same wave as points.
+            val measure = androidx.compose.ui.graphics.PathMeasure().apply { setPath(path, false) }
+            val points = (0..80).map { measure.getPosition(measure.length * it / 80f) }
+            com.sualtikasifi.cizimhafiza.presentation.common.drawPenStroke(points, skin, Color.Black, w / 1.15f, 0f, time.value)
+            return@Canvas
+        }
         drawPath(path, Color.Black.copy(alpha = 0.18f), style = Stroke(width = w + 4.dp.toPx(), cap = StrokeCap.Round))
         drawPath(
             path,

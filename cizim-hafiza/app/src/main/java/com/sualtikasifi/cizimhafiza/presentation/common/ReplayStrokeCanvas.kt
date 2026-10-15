@@ -83,8 +83,12 @@ fun ReplayStrokeCanvas(
         currentOnFinished()
     }
 
+    // A premium pen's effects keep moving, so the opponent's replay (and the finished drawing after it) stays alive.
+    val penTime = rememberPenTime(penSkin?.effect?.isPremium == true)
+
     Canvas(modifier = modifier) {
         val fit = strokeFitFor(strokes) ?: return@Canvas
+        val time = penTime.value
 
         // progress.value is read HERE, inside the draw scope, and nowhere in
         // the composable body above. Read during composition it would
@@ -100,7 +104,8 @@ fun ReplayStrokeCanvas(
                     penSkin = penSkin,
                     strokeColor = strokeColor,
                     strokeWidthPx = strokeWidthPx,
-                    startDistance = distance
+                    startDistance = distance,
+                    timeSec = time
                 )
             }
         }
