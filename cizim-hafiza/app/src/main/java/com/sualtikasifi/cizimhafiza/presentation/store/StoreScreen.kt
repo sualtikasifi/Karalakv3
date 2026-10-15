@@ -16,6 +16,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import com.sualtikasifi.cizimhafiza.presentation.common.drawPenStroke
 import com.sualtikasifi.cizimhafiza.presentation.common.dotGridBackground
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenArt
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
@@ -673,7 +674,7 @@ private fun PenPreview(skin: PenSkin, modifier: Modifier = Modifier.fillMaxWidth
             // The real pen renderer, fed the same wave as points.
             val measure = androidx.compose.ui.graphics.PathMeasure().apply { setPath(path, false) }
             val points = (0..80).map { measure.getPosition(measure.length * it / 80f) }
-            com.sualtikasifi.cizimhafiza.presentation.common.drawPenStroke(points, skin, Color.Black, w / 1.15f, 0f, time.value)
+            drawPenStroke(points, skin, Color.Black, w / 1.15f, 0f, time.value)
             return@Canvas
         }
         drawPath(path, Color.Black.copy(alpha = 0.18f), style = Stroke(width = w + 4.dp.toPx(), cap = StrokeCap.Round))
