@@ -111,11 +111,20 @@ tap_text "Wait" || true
 # The daily-streak window opens over the home screen on a fresh start: close it, then answer a test ad if one shows.
 adb shell input tap 980 752; sleep 2
 for i in 1 2 3; do sleep 4; tap_text "Close" || tap_text "Skip" || true; done
+# The ads consent form can appear late on this slow emulator: keep answering it for a while before touching the game.
+for i in $(seq 1 12); do
+  if [ "$(consent_visible)" = "1" ]; then echo "consent form seen"; adb shell input tap 540 1678; sleep 3; fi
+  sleep 3
+done
 shot 00_home
 adb shell input tap 880 1140
 sleep 5
 adb shell input tap 540 2200
 sleep 12
+for i in 1 2 3; do
+  if [ "$(consent_visible)" = "1" ]; then echo "consent form seen"; adb shell input tap 540 1678; sleep 3; fi
+  sleep 2
+done
 shot 01_game
 adb shell input keyevent 4
 sleep 3
