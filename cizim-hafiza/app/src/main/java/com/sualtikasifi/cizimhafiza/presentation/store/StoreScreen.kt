@@ -374,26 +374,13 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             gold = gold,
             preview = { u ->
                 when (item) {
-                    is Pending.PenItem -> Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(u * 10f),
+                    // The painted card fills the whole preview slot.
+                    is Pending.PenItem -> Image(
+                        painterResource(item.skin.cardRes()),
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
                         modifier = Modifier.fillMaxSize()
-                    ) {
-                        // The painted card the player was tempted by, and below it the pen's real stroke, live.
-                        Image(painterResource(item.skin.cardRes()), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().height(u * 270f))
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(u * 120f)
-                                .clip(RoundedCornerShape(u * 30f))
-                                // The drawing screen's own paper: cream with a fine dot grid.
-                                .background(AppTheme.tokens.canvasPaper)
-                                .dotGridBackground(dotColor = AppTheme.tokens.canvasGrid, spacing = 22.dp, radius = 1.2.dp)
-                                .border(u * 6f, Color(0xFFD9892B), RoundedCornerShape(u * 30f))
-                                .padding(horizontal = u * 40f, vertical = u * 14f)
-                        ) { PenPreview(item.skin, Modifier.fillMaxSize()) }
-                    }
+                    )
                     is Pending.FrameItem -> Image(painterResource(item.frame.drawableRes), contentDescription = null, modifier = Modifier.size(u * 380f))
                     is Pending.JokerItem -> Unit
                 }
