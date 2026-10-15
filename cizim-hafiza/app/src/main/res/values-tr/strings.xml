@@ -1292,6 +1292,7 @@
     <string name="pen_sakura">Sakura</string>
     <string name="pen_sunrise">Gün Doğumu</string>
     <string name="pen_night">Gece</string>
+    <string name="pen_aurora">Kutup Işığı</string>
     <string name="pen_diamond">Elmas</string>
     <string name="pen_copper_tagline">Klasik ve şık!</string>
     <string name="pen_emerald_tagline">Doğanın enerjisi!</string>
@@ -1551,8 +1552,8 @@
     <string name="rune_st_1_flavor">Çizdiğin her çizgi gün doğumu gibi.</string>
     <string name="rune_st_3_name">Elmas Kalem</string>
     <string name="rune_st_3_flavor">Elmas gibi parlayan bir kalem.</string>
-    <string name="rune_st_5_name">Gece Kalemi</string>
-    <string name="rune_st_5_flavor">Gece mavisinden süzülen bir kalem.</string>
+    <string name="rune_st_5_name">Kutup Işığı Kalemi</string>
+    <string name="rune_st_5_flavor">Gökyüzünün dans eden ışıkları kalemine konuk oldu.</string>
     <string name="rune_st_6_name">Zaman Gezgini</string>
     <string name="rune_st_6_flavor">Pusulası olan, yolunu hiç şaşırmaz.</string>
     <string name="rune_st_7_name">Deniz Definesi</string>

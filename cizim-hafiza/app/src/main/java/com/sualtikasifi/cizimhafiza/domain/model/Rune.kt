@@ -276,7 +276,7 @@ object RuneLive {
 object RuneRewards {
     val storeItem: Map<String, String> = mapOf(
         "st_1" to "pen:SUNRISE",
-        "st_5" to "pen:NIGHT",
+        "st_5" to "pen:AURORA",
         "st_3" to "pen:DIAMOND",
         "st_6" to "frame:TIME_EXPLORER",
         "st_7" to "frame:OCEAN_TREASURE",
