@@ -26,7 +26,7 @@
   </section>
 
   <section id="guess" class="screen hidden">
-    <div class="top"><span id="g-count"></span></div>
+    <div class="top"><span id="g-count"></span><span id="g-timer"></span><span id="g-score"></span></div>
     <canvas id="view"></canvas>
     <form id="g-form"><input id="g-input" autocomplete="off" autocapitalize="off"><button class="big" id="g-ok"></button></form>
     <button id="g-skip" class="chip"></button>
@@ -34,6 +34,7 @@
 
   <section id="result" class="screen hidden">
     <h2 id="r-title"></h2>
+    <p id="r-vs"></p>
     <ul id="r-list"></ul>
     <button id="again" class="big"></button>
   </section>
