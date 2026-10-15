@@ -148,7 +148,9 @@ fun GuessScreen(
     onAdUnavailableShown: () -> Unit = {},
     /** The tutorial only: dim everything but one joker button and ask the player to use it. */
     jokerSpotlight: JokerSpotlight? = null,
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    /** The pen the drawing was made with, so it looks the same here as it did on the drawing screen. */
+    penSkin: com.sualtikasifi.cizimhafiza.domain.model.PenSkin? = null
 ) {
     val wordLanguage = currentWordLanguage()
     val backDescription = stringResource(R.string.cd_back)
@@ -459,7 +461,7 @@ fun GuessScreen(
                     .size(a(724f), (canvasBottom - canvasTop).coerceAtLeast(60.dp))
                     .clip(RoundedCornerShape(a(16f)))
             ) {
-                StrokeCanvas(strokes = state.strokes, modifier = Modifier.fillMaxSize())
+                StrokeCanvas(strokes = state.strokes, modifier = Modifier.fillMaxSize(), penSkin = penSkin, animated = true)
 
                 // Correct/wrong feedback is drawn ON TOP of the canvas rather than appended below it, so the layout
                 // never moves when an answer lands.

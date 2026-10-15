@@ -184,7 +184,8 @@ fun GameScreen(
                 onToggleMusic = viewModel::toggleMusic,
                 adUnavailable = adUnavailable,
                 onAdUnavailableShown = viewModel::consumeAdUnavailable,
-                onBackClick = { showExitConfirm = true }
+                onBackClick = { showExitConfirm = true },
+                penSkin = selectedPen
             )
 
             is GamePhase.Result -> ResultScreen(
