@@ -50,7 +50,7 @@ export async function loadItems(runId) {
 }
 
 // Files a finished round in the review queue, same document shape as Android's write().
-export async function recordRound({ language, nickname, wordIds, perWord, items }) {
+export async function recordRound({ language, nickname, wordIds, perWord, items, level = 1, frameId = "SCRIBBLER" }) {
   const correctCount = perWord.filter((p) => p.isCorrect).length;
   if (wordIds.length < RUN_WORD_COUNT || correctCount < MIN_CORRECT) return false;
   const { fs, db, auth } = await init();
@@ -59,7 +59,7 @@ export async function recordRound({ language, nickname, wordIds, perWord, items 
   const correctTimes = perWord.filter((p) => p.isCorrect).map((p) => p.responseTimeMs);
   const batch = fs.writeBatch(db);
   batch.set(ref, {
-    uid, nickname, level: 1, frameId: "SCRIBBLER", levelBand: 0, shard: Math.floor(Math.random() * SHARD_COUNT),
+    uid, nickname, level, frameId, levelBand: levelBandFor(level), shard: Math.floor(Math.random() * SHARD_COUNT),
     language, mode: "NORMAL", wordCount: wordIds.length, wordIds,
     totalScore: perWord.reduce((s, p) => s + p.pointsAwarded, 0), correctCount,
     fastestCorrectMs: correctTimes.length ? Math.min(...correctTimes) : null,
@@ -256,3 +256,45 @@ export async function returnToWaiting(code) {
   });
 }
 export async function consumeInvite(id) { const { fs, db, auth } = await init(); await fs.deleteDoc(fs.doc(db, "users", auth.currentUser.uid, "invites", id)); }
+
+// ================= Usernames: usernames/{foldedName} -> { uid, name, createdAt } (same rules as UsernameRepository) =================
+export const usernameValid = (n) => n.length >= 2 && n.length <= 16 && /^[\p{L}\p{N}_.\- ]+$/u.test(n) && /[\p{L}\p{N}]/u.test(n);
+export const usernameKey = (n) => n.trim().normalize("NFD").replace(/\p{M}+/gu, "").replace(/ı/g, "i").replace(/İ/g, "i").toLowerCase().replace(/ /g, "_");
+// Claims `name` for this account, releasing `oldName` if it was ours. Returns "ok" | "taken" | "invalid" | "net".
+export async function claimUsername(name, oldName) {
+  name = name.trim().replace(/\s+/g, " "); if (!usernameValid(name)) return "invalid";
+  try {
+    const { fs, db, auth } = await init(), uid = auth.currentUser.uid;
+    const nref = fs.doc(db, "usernames", usernameKey(name)), oref = oldName ? fs.doc(db, "usernames", usernameKey(oldName)) : null;
+    const taken = await fs.runTransaction(db, async (tx) => {
+      const ns = await tx.get(nref), os = oref && oref.path.join("/") !== nref.path.join("/") ? await tx.get(oref) : null;
+      if (ns.exists() && ns.data().uid !== uid) return true;
+      if (!ns.exists()) tx.set(nref, { uid, name, createdAt: Date.now() });
+      if (os && os.exists() && os.data().uid === uid) tx.delete(oref);
+      return false;
+    });
+    if (taken) return "taken";
+    await fs.setDoc(fs.doc(db, "users", uid), { nickname: name, username: name }, { merge: true });
+    return "ok";
+  } catch (e) { return "net"; }
+}
+export async function ensureUsername(current) {
+  for (let i = 0; i < 12; i++) {
+    const name = i === 0 ? current : "Karalak" + (100 + Math.floor(Math.random() * 1000 * (i + 1) * 10));
+    const r = await claimUsername(name, i === 0 ? null : current);
+    if (r === "ok") return name; if (r === "net") return null;
+  }
+  return null;
+}
+
+// ================= Bug reports (same document as BugReportRepositoryImpl) =================
+export async function sendReport(category, description) {
+  const { fs, db, auth } = await init();
+  await fs.addDoc(fs.collection(db, "bugReports"), { uid: auth.currentUser.uid, category, description: description.trim().slice(0, 2000), appVersionName: "web", appVersionCode: 0, deviceModel: navigator.userAgent.slice(0, 80), androidSdk: 0, submittedAt: Date.now() });
+}
+export async function myReports() {
+  const { fs, db, auth } = await init();
+  const s = await fs.getDocs(fs.query(fs.collection(db, "bugReports"), fs.where("uid", "==", auth.currentUser.uid)));
+  return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.submittedAt - a.submittedAt).slice(0, 30);
+}
+export async function deleteReport(id) { const { fs, db } = await init(); await fs.deleteDoc(fs.doc(db, "bugReports", id)); }

@@ -63,7 +63,7 @@ export function renderStore(ctx) {
       c.firstChild.src = `img/${img}.webp`;
       const jb = el("div", "jb");
       [1, 5].forEach((q) => {
-        const cost = q >= 5 ? Math.floor(price * q * 85 / 100) : price * q;
+        const base = q >= 5 ? Math.floor(price * q * 85 / 100) : price * q, cost = Math.floor(base * (100 - ctx.runeFx("DISC")) / 100);
         const b = el("button", "btn" + (P.gold < cost ? " dis" : ""), `${coin}<span>${q === 1 ? tt(ctx, "joker_buy_one") : "5×"} ${fmt(cost)}</span>`);
         b.onclick = () => buy(ctx, tt(ctx, nameK) + (q > 1 ? " ×" + q : ""), cost, () => { P.jokers[type] = n + q; });
         jb.append(b);

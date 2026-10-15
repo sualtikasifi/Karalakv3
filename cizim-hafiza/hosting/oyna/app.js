@@ -1,5 +1,8 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
+import { loadRunes, layoutRunes, renderRunes, effect as runeFx } from "./runes.js";
+import { layoutReport, renderReport } from "./report.js";
+import { layoutChests, renderChests, award as awardChest, wonDialog } from "./chests.js";
 import { todayEpoch, msToMidnight, dailyWords, state as dailyState, record as dailyRecord } from "./daily.js";
 import { drawFxStroke } from "./penfx.js";
 import { openPenPicker, openFramePicker, openNickEdit } from "./picker.js";
@@ -11,7 +14,7 @@ import { layoutAccount, renderAccount } from "./account.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
-import { loadStoreData, layoutStore, renderStore, frameRing, frameById, penById } from "./store.js";
+import { loadStoreData, layoutStore, renderStore, frameRing, frameById, penById, frameList as frameListSafe } from "./store.js";
 
 const WORD_COUNT = 10, POINTS = 5, SPEED_BONUS = 2, SPEED_MS = 3000;
 const DRAW_SECONDS = { EASY: 5, MEDIUM: 7, HARD: 10 };
@@ -21,11 +24,11 @@ const ART_W = 841, ART_H = 1870, GUESS_BOTTOM = 1595;
 
 const T = {
   tr: { tag: "Çiz, ezberle,\ntahmin et!", start: "OYNA", note: "Android ve tarayıcı oyuncularıyla eşleş", next: "Bitir", ok: "Gönder",
-        guess: "Tahmin et", result: "Sonuç", timeJ: "+Süre", hintT: "İpucu", firstT: "İlk harf", countT: "Harf sayısı", skipT: "Geç", searching: "Rakip aranıyor…", searchSub: "Birisi senin gibi çizerken bulunuyor", again: "TEKRAR OYNA", noOpp: "Şu an rakip bulunamadı",
+        guess: "Tahmin et", result: "Sonuç", timeJ: "+Süre", hintT: "İpucu", firstT: "İlk harf", countT: "Harf sayısı", skipT: "Geç", found: "Harika!\nEşleşme bulundu.", startIn: (n) => `Maç ${n} saniye sonra başlıyor`, tip1: (n) => `İkiniz de aynı ${n} kelimeyi çizeceksiniz`, tip2: "Puanlar maç sonunda karşılaştırılır", tip3: "Rahat ol, keyfini çıkar!", wTitle: "Karalak'a hoş geldin!", wBody: "Kısa bir deneme yapalım. Sana 3 kelime vereceğim, sen çizeceksin. Sonra çizimlerini sana geri göstereceğim, sen de ne olduğunu hatırlayacaksın. Hepsi bu!", wGo: "Hadi başlayalım", wSkip: "Eğitimi atla", finT: "İşte bu kadar! 🎉", finB: "Artık çizmeyi de hatırlamayı da biliyorsun. Hediye olarak her jokerden 3'er hakkın hesabına eklendi. Kalemin hazır, bol şans!", finBtn: "Oynamaya başla", searching: "Rakip aranıyor…", searchSub: "Birisi senin gibi çizerken bulunuyor", again: "TEKRAR OYNA", lobbyHome: "ANA SAYFA", noOpp: "Şu an rakip bulunamadı",
         you: "Sen", win: "Kazandın!", lose: "Kaybettin", draw: "Berabere", leaveQ: "Odadan ayrılmak istiyor musun?", leave: "Oyundan çıkılsın mı?", yes: "Çık", no: "Kal",
         mine: "Çizimlerin", tiles: { online: "Arkadaşınla Yarış", quick: "Hızlı Eşleş", offline: "Çevrimdışı Oyna", levels: "Bölümler", friends: "Arkadaşlar", ach: "Başarımlar", league: "Aylık Lig", store: "Mağaza", settings: "Ayarlar" }, goldLbl: "Klasik", adGold: "+500 Altın", daily: "Günün Meydan Okuması", adChest: "Ücretsiz Kasa", dailyPlay: "ŞİMDİ OYNA", dailyDone: "Bugünkü meydan okumayı bitirdin!", lvl: "Seviye", toNext: (n, l) => `Sv. ${l} için ${n} XP`, soon: "Çok yakında", appOnly: "Uygulamada", ok: "Tamam", langTitle: "Dil",  theirs: "Rakibin çizimleri", pts: "puan", file: "words_tr.json", ph: "Cevabın…" },
   en: { tag: "Draw, memorize,\nguess!", start: "PLAY", note: "Match with Android and browser players", next: "Done", ok: "Send",
-        guess: "Guess", result: "Result", timeJ: "+Time", hintT: "Hint", firstT: "First letter", countT: "Letters", skipT: "Skip", searching: "Finding an opponent…", searchSub: "Looking for someone who draws like you", again: "PLAY AGAIN", noOpp: "No opponent found right now",
+        guess: "Guess", result: "Result", timeJ: "+Time", hintT: "Hint", firstT: "First letter", countT: "Letters", skipT: "Skip", found: "Great!\nMatch found.", startIn: (n) => `Match starts in ${n} seconds`, tip1: (n) => `You'll both draw the same ${n} words`, tip2: "Scores are compared when the match ends", tip3: "Relax and enjoy the game!", wTitle: "Welcome to Karalak!", wBody: "Let's try a quick practice. I'll give you 3 words to draw. Then I'll show your drawings back and you'll remember what they were. That's it!", wGo: "Let's start", wSkip: "Skip tutorial", finT: "That's it! 🎉", finB: "You now know how to draw and remember. As a gift, 3 of each joker were added to your account. Your pen is ready, good luck!", finBtn: "Start playing", searching: "Finding an opponent…", searchSub: "Looking for someone who draws like you", again: "PLAY AGAIN", lobbyHome: "HOME", noOpp: "No opponent found right now",
         you: "You", win: "You win!", lose: "You lose", draw: "Draw", leaveQ: "Leave the room?", leave: "Leave the game?", yes: "Leave", no: "Stay",
         mine: "Your drawings", tiles: { online: "Race a Friend", quick: "Quick Match", offline: "Play Offline", levels: "Levels", friends: "Friends", ach: "Achievements", league: "Monthly League", store: "Store", settings: "Settings" }, goldLbl: "Classic", adGold: "+500 Gold", daily: "Daily Challenge", adChest: "Free Chest", dailyPlay: "PLAY NOW", dailyDone: "You finished today's challenge!", lvl: "Level", toNext: (n, l) => `${n} XP to Lv. ${l}`, soon: "Coming soon", appOnly: "In the app", ok: "OK", langTitle: "Language",  theirs: "Opponent's drawings", pts: "pts", file: "words_en.json", ph: "Your answer…" },
 };
@@ -37,8 +40,9 @@ const t = () => T[lang];
 
 // ---------- layout (art units: the paintings are 841 wide) ----------
 const stage = $("stage");
-let leagueLoaded = false;
+let leagueLoaded = false, reportLoaded = false;
 const ctx = {
+  runeFx: (fx) => runeFx(P, fx),
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
   inviteFriend: (f) => quickInvite(ctx, f).then(() => { stopFriends(); show("onw"); }),
@@ -47,7 +51,7 @@ const ctx = {
   syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
-  open: (id) => show(id),
+  open: (id) => { if (id === "report") reportLoaded = false; show(id); },
   levelOf: (xp) => { const lv = levelFor(xp), fl = xpFor(lv), ce = lv >= 100 ? fl : xpFor(lv + 1); return { level: lv, into: xp - fl, span: ce - fl, frac: ce > fl ? (xp - fl) / (ce - fl) : 1, max: lv >= 100 }; },
   info: (text) => msg(text),
   confirm(text, yes, onYes) {
@@ -83,7 +87,7 @@ function layout() {
   s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + "px"; s.top = (vh - H) / 2 + "px";
   stage.style.setProperty("--u", u + "px");
   if (current === "home") {
-    place($("h-gold"), 112, 270, 126, 44);
+    place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214);
     place($("h-pen"), 350, 266, 134, 54);
     place($("h-avatar"), 66, 361, 138, 138);
     place($("h-name"), 224, 357, 556, 42);
@@ -91,6 +95,7 @@ function layout() {
     place($("h-xpnext"), 496, 406, 284, 40);
     place($("h-bar"), 222, 452, 550, 40);
     place($("h-veil-gold"), 34, 538, 196, 216); place($("h-veil-chest"), 616, 538, 192, 216);
+    layoutChests(ctx);
     place($("h-dcard"), 236, 538, 372, 218); place($("h-dmul"), 256, 630, 104, 46); place($("h-dpips"), 394, 628, 200, 48); place($("h-dplay"), 264, 688, 332, 56); place($("h-dcount"), 262, 692, 142, 48);
     place($("h-ttl-gold"), 40, 648, 186, 50); place($("h-ttl-daily"), 384, 546, 214, 80); place($("h-ttl-chest"), 634, 640, 162, 66);
     place($("h-soon-gold"), 56, 704, 154, 36); place($("h-soon-chest"), 640, 704, 150, 36);
@@ -111,6 +116,12 @@ function layout() {
     renderMap(ctx);
   } else if (current === "account") {
     layoutAccount(ctx); renderAccount(ctx);
+  } else if (current === "welcome") {
+    place($("w-title"), 126, 830, 590, 68); place($("w-body"), 104, 934, 634, 200); place($("w-go"), 125, 1170, 575, 136); place($("w-skip"), 200, 1334, 442, 90);
+  } else if (current === "runes") {
+    layoutRunes(ctx); renderRunes(ctx);
+  } else if (current === "report") {
+    layoutReport(ctx); renderReport(ctx, !reportLoaded); reportLoaded = true;
   } else if (current === "league") {
     layoutLeague(ctx); renderLeague(ctx, !leagueLoaded); leagueLoaded = true;
   } else if (current === "ach") {
@@ -154,6 +165,17 @@ function layout() {
     const ok = $("g-ok"); ok.style.left = 572 * u + "px"; ok.style.top = 0; ok.style.width = 225 * u + "px"; ok.style.height = 105 * u + "px";
     fitCanvas($("view"));
     paintGuess();
+  } else if (current === "found") {
+      const s = 1.2;
+      place($("f-title"), 150, 62, 450 * s, 272 * s); place($("f-tag"), (841 - 354 * s) / 2, 62 + 266 * s, 354 * s, 106 * s); place($("f-tagt"), (841 - 354 * s) / 2 + 354 * s * 0.18, 381 + 106 * s * 0.1, 354 * s * 0.64, 106 * s * 0.68);
+      const card = (id, x, y, w, h, cx) => { place($(id), x, y, w * 1.18, h * 1.18); const e = $(id), k = u * 1.18, S = (v) => v * u;
+        const av = e.querySelector(".mc-av"); av.style.cssText = `left:${S(cx * 1.18 - 95)}px;top:${S(190 * 1.18 - 95)}px;width:${S(190)}px;height:${S(190)}px`;
+        const rb = e.querySelector(".mc-rb"); rb.style.cssText = `left:${S(cx * 1.18 - 146)}px;top:${S(290 * 1.18 - 28)}px;width:${S(292)}px;height:${S(54)}px`;
+        const xp = e.querySelector(".mc-xp"); xp.style.cssText = `left:${S(cx * 1.18 - 120)}px;top:${S(337 * 1.18 - 30)}px;width:${S(240)}px;height:${S(40)}px`; };
+      card("f-cl", 20, 541, 290, 384, 148); card("f-cr", 507, 534, 266, 392, 133);
+      place($("f-vs"), 297, 664, 275 * 0.9, 252 * 0.9); place($("f-mas"), 157, 966, 479 * 1.1, 291 * 1.1);
+      place($("f-plank"), 25, 1235, 790, 148);
+      [["f-t1", 24, 225], ["f-t2", 296, 227], ["f-t3", 568, 229]].forEach(([id, x, w]) => place($(id), x, 1405, w * 1.1, 197 * 1.1));
   } else if (current === "search") {
     place($("s-sign"), 60, 190, 720, 365);
     place($("s-text"), 150, 318, 540, 150);
@@ -168,7 +190,10 @@ window.visualViewport?.addEventListener("resize", layout);
 const SPK = '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.47 4.47 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
 function paintMusic() { for (const id of ["d-music", "g-music"]) { const b = $(id); b.innerHTML = SPK; b.classList.toggle("off", !(P.prefs.s0 && P.prefs.s1)); } }
 for (const id of ["d-music", "g-music"]) $(id).onclick = () => { P.prefs.s1 = !P.prefs.s1; saveP(); paintMusic(); syncMusic(); };
+// Pictures of screens that are not showing are only fetched when the screen first opens (the first load used to pull 3.7 MB).
+function loadImgs(id) { const s = document.getElementById(id); if (!s) return; s.querySelectorAll("img[data-src]").forEach((i) => { i.src = i.dataset.src; i.removeAttribute("data-src"); }); }
 function show(id) {
+  loadImgs(id);
   current = id; if (typeof paintMusic === "function" && P.prefs) paintMusic();
   for (const s of document.querySelectorAll(".screen")) s.classList.toggle("on", s.id === id);
   layout();
@@ -193,6 +218,7 @@ function applyLang() {
   const x = t();
   document.documentElement.lang = lang;
   $("d-next-t").textContent = x.next; $("g-ok-t").textContent = x.ok;
+  $("w-title").textContent = x.wTitle; $("w-body").textContent = x.wBody; $("w-go-t").textContent = x.wGo; $("w-skip").textContent = x.wSkip;
   $("s-text").textContent = x.searching; $("s-sub").textContent = x.searchSub; $("again-t").textContent = x.again;
   $("dlg-text").textContent = x.leave; $("dlg-yes").textContent = x.yes; $("dlg-no").textContent = x.no;
   $("g-input").placeholder = x.ph;
@@ -315,14 +341,57 @@ async function startLevel(w, l) {
   for (const [d, n] of Object.entries(mix)) picks.push(...[...words].filter((x) => x.difficulty === d).sort(() => Math.random() - 0.5).slice(0, n));
   begin(picks.sort(() => Math.random() - 0.5));
 }
+const TUT_WORDS = { tr: ["kitap", "köpek", "elma"], en: ["book", "dog", "apple"] };
+async function startTutorial() {
+  await ensureWords(); kind = "tutorial"; levelRun = null; relaxed = true;
+  const byText = new Map(words.map((w) => [w.text.toLowerCase(), w]));
+  const picked = TUT_WORDS[lang].map((s, i) => byText.get(s) || { id: 900000 + i, text: s, difficulty: "EASY" });
+  begin(picked);
+}
+function endTutorial() { P.tutorialDone = true; for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); }
 async function startDaily() {
   if (dailyState(P).done) return;
   await ensureWords(); kind = "daily"; levelRun = null; relaxed = false;
   begin(dailyWords(words, todayEpoch(), lang));
 }
+let quickOpp = null, quickItems = [];
+async function startQuick() {
+  levelRun = null; kind = "quick"; relaxed = false; quickOpp = null; quickItems = [];
+  await ensureWords(); show("search");
+  const minWait = new Promise((r) => setTimeout(r, 2000 + Math.random() * 3000));
+  try { quickOpp = await Promise.race([net.findOpponent(lang, levelFor(P.xp)), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000))]); } catch {}
+  await minWait;
+  if (current !== "search") return;
+  const byId = new Map(words.map((w) => [w.id, w]));
+  const picked = quickOpp ? (quickOpp.wordIds || []).map((id) => byId.get(id)).filter(Boolean) : [];
+  if (!quickOpp || picked.length < 10) { quickOpp = null; msgNoOpp(); return; }
+  net.loadItems(quickOpp.id).then((it) => { quickItems = it; }).catch(() => {});
+  showFound(quickOpp, () => begin(picked));
+}
+function msgNoOpp() { show("home"); msg(t().noOpp + (lang === "tr" ? ". Bir süre sonra tekrar dene ya da çevrimdışı oyna." : ". Try again in a bit or play offline.")); }
+let foundTimer = null;
+function showFound(opp, go) {
+  const x = t(); show("found");
+  $("f-tagt").textContent = x.found; $("f-tagt").style.whiteSpace = "pre-line";
+  $("f-t1").querySelector("span").textContent = x.tip1(10); $("f-t2").querySelector("span").textContent = x.tip2; $("f-t3").querySelector("span").textContent = x.tip3;
+  const card = (id, nick, lvl, frame, xp) => {
+    const e = $(id); e.querySelector(".mc-rb span").textContent = nick; e.querySelector(".mc-xp b").textContent = xp.toLocaleString() + " XP";
+    const fr = frameRing(frameById(frame)); fr.style.cssText += ";width:100%;height:100%"; e.querySelector(".mc-av").replaceChildren(fr);
+    e.classList.add(id === "f-cl" ? "in-l" : "in-r"); setTimeout(() => e.classList.remove("in-l", "in-r"), 60);
+  };
+  const myLv = levelFor(P.xp);
+  card("f-cl", P.nick, myLv, P.frame, P.xp); card("f-cr", opp.nickname || "?", opp.level || 1, highestFrameFor(opp.level || 1), xpFor(opp.level || 1));
+  $("f-vs").classList.remove("pop"); setTimeout(() => $("f-vs").classList.add("pop"), 350);
+  const fill = $("f-fill"); fill.style.transition = "none"; fill.style.width = "3%"; void fill.offsetWidth; fill.style.transition = ""; fill.style.width = "100%";
+  let left = 5; const tick = () => { $("f-pt").textContent = x.startIn(left); };
+  tick(); clearInterval(foundTimer);
+  foundTimer = setInterval(() => { left--; if (left <= 0) { clearInterval(foundTimer); if (current === "found") go(); } else tick(); }, 1000);
+}
+function highestFrameFor(lv) { try { const L = frameListSafe().filter((f) => f.level > 0 && !f.league && f.level <= lv); return (L.pop() || { id: "SCRIBBLER" }).id; } catch { return "SCRIBBLER"; } }
 async function start(k = "quick") {
+  if (k === "quick") return startQuick();
   levelRun = null; kind = k; relaxed = false;
-  if (words.lang !== lang) { words = await (await fetch(t().file)).json(); words.lang = lang; }
+  await ensureWords();
   begin([...words].sort(() => Math.random() - 0.5).slice(0, WORD_COUNT));
 }
 function begin(picked) {
@@ -412,10 +481,10 @@ function addRow(parent, strokes, ok, label, sub, pen) {
 }
 async function finish() {
   const x = t();
-  if (kind === "quick") show("search");
+  if (kind === "tutorial") { show("home"); ctx.confirm(x.finT + "\n\n" + x.finB, x.finBtn, endTutorial); $("dlg-no").style.display = "none"; $("dlg-text").style.whiteSpace = "pre-line"; return; }
   const n = round.filter((w) => w.correct).length;
   if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
-  P.xp += score; P.periodXp = (P.periodXp || 0) + score; P.gold += n * 10; achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
+  P.xp += Math.round(score * (1 + runeFx(P, "XP") / 100)); P.periodXp = (P.periodXp || 0) + score; P.gold += Math.round(n * 10 * (kind === "daily" ? 1 : 1 + runeFx(P, "WORD") / 100)); achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
   if (kind === "online") { net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {}); return submitAndWait(ctx, round, score); }
   net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
   const me = {
@@ -428,14 +497,11 @@ async function finish() {
   let stars = 0, dailyRes = null;
   if (kind === "daily") { dailyRes = dailyRecord(P, round.map((w) => w.correct), score); if (dailyRes) { P.xp += dailyRes.xp - score; P.periodXp += dailyRes.xp - score; saveP(); refreshHome(); } }
   if (kind === "level") { stars = starsFor(n, round.length); recordLevel(P, levelRun.w, levelRun.l, stars); saveP(); }
-  try {
-    if (kind !== "quick") throw new Error("no-opponent");
-    opp = await Promise.race([net.findOpponent(lang), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 12000))]);
-    net.recordRound(me).catch(() => {});
-    if (opp) items = await net.loadItems(opp.id).catch(() => []);
-  } catch {}
+  if (kind === "quick" && quickOpp) { opp = quickOpp; items = quickItems; net.recordRound({ ...me, level: levelFor(P.xp), frameId: P.frame, nickname: P.nick }).catch(() => {}); }
   await minWait;
-  show("result"); sfx.over();
+  let wonChest; if (kind === "quick" && opp && score > opp.totalScore) wonChest = awardChest(P) || null;
+  if (wonChest !== undefined) { saveP(); refreshHome(); }
+  show("result"); sfx.over(); if (wonChest !== undefined) setTimeout(() => wonDialog(ctx, wonChest), 700); $("again-t").textContent = kind === "quick" ? x.again : x.lobbyHome;
   $("r-title").textContent = `${x.result}: ${n}/${round.length}`;
   const vs = $("r-vs");
   if (kind === "level") vs.textContent = `${"★".repeat(stars)}${"☆".repeat(3 - stars)}  ·  ${x.you}: ${score} ${x.pts}`;
@@ -463,7 +529,8 @@ function confirmLeave() {
   $("dlg-no").onclick = () => $("dialog").classList.add("hidden");
 }
 $("d-back").onclick = confirmLeave; $("g-back").onclick = confirmLeave;
-$("again").onclick = () => show(kind === "level" ? "lvmap" : "home");
+$("again").onclick = () => { if (kind === "quick") startQuick(); else show(kind === "level" ? "lvmap" : "home"); };
+$("found") && 0;
 $("r-back").onclick = () => show("home");
 let dailyTick = null;
 function refreshDaily() {
@@ -488,7 +555,7 @@ function refreshHome() {
   $("h-fill").style.width = (span ? into / span * 100 : 100) + "%"; $("h-barlabel").textContent = `${into} / ${span} XP`;
   for (const k of Object.keys(x.tiles)) $("tx-" + k).textContent = x.tiles[k];
   for (const k of ["gold", "chest"]) $("h-soon-" + k).textContent = x.appOnly;
-  refreshDaily();
+  refreshDaily(); renderChests(ctx);
   $("h-ttl-gold").textContent = x.adGold; $("h-ttl-daily").textContent = x.daily; $("h-ttl-chest").textContent = x.adChest;
 }
 function msg(text, extra) {
@@ -504,6 +571,7 @@ $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("o
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
 $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => rankInfo();
 $("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
+$("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; show("runes"); }; $("ru-back").onclick = () => show("home");
 $("tl-quick").onclick = () => start("quick"); $("tl-offline").onclick = () => start("offline");
 $("tl-levels").onclick = async () => { await loadWorlds(); show("worlds"); };
 $("wl-back").onclick = () => show("home"); $("lm-back").onclick = () => show("worlds");
@@ -525,15 +593,27 @@ function rankInfo() {
 $("tl-settings").onclick = () => show("settings");
 $("se-back").onclick = () => show("home");
 $("ak-back").onclick = () => show("settings");
+$("rp-back").onclick = () => show("settings");
 const _oldSettings = () => {
   const mk = (code, label) => { const b = document.createElement("button"); b.className = "chip" + (lang === code ? " on" : ""); b.textContent = label; b.onclick = () => { lang = code; applyLang(); $("dialog").classList.add("hidden"); $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren(); }; return b; };
   msg(t().langTitle, [mk("tr", "Türkçe"), mk("en", "English")]);
 };
 loadStoreData().then(refreshHome).catch(() => {});
-net.listen("invites", (list) => {
+// A name only this account owns (same collection the app uses), claimed once the network is reachable.
+setTimeout(async () => { if (P.nickClaimed) return; const n = await net.ensureUsername(P.nick).catch(() => null); if (n) { P.nick = n; P.nickClaimed = true; saveP(); refreshHome(); } }, 2500);
+setTimeout(() => net.listen("invites", (list) => {
   const inv = list[0]; if (!inv || current === "onw" || current === "draw" || current === "guess") return;
   const tx = lang === "tr" ? `${inv.fromNickname} seni davet etti!` : `${inv.fromNickname} invited you!`;
   ctx.confirm(tx, lang === "tr" ? "Katıl" : "Join", async () => { net.consumeInvite(inv.id).catch(() => {}); const r = await joinWithCode(ctx, inv.roomCode); if (r !== "ok") msg(lang === "tr" ? "Odaya katılınamadı." : "Couldn't join the room."); });
   $("dlg-no").onclick = () => { net.consumeInvite(inv.id).catch(() => {}); $("dialog").classList.add("hidden"); };
-}).catch(() => {});
-applyLang(); show("home");
+}).catch(() => {}), 4000);
+applyLang();
+if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); }; } else show("home");
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+// After the home screen is up, quietly fetch the pictures of the screens people open most (skipped on data saver).
+setTimeout(() => {
+  if (navigator.connection && navigator.connection.saveData) return;
+  const list = ["bg_draw", "bg_guess", "bg_result_wood", "bg_qm_search", "st_bg", "rs_head", "bg_league", "bg_offline", "bg_race2"];
+  let i = 0; const next = () => { if (i >= list.length) return; const im = new Image(); im.onload = im.onerror = () => setTimeout(next, 400); im.src = `img/${list[i++]}.webp`; };
+  (window.requestIdleCallback || ((f) => setTimeout(f, 1)))(next);
+}, 3500);

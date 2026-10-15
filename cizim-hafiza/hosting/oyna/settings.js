@@ -49,5 +49,5 @@ export function renderSettings(c) {
   $("se-lang").onclick = () => { c.setLang(lang() === "tr" ? "en" : "tr"); };
   $("se-tut").onclick = () => c.info(x.tutMsg);
   $("se-rate").onclick = () => window.open(RATE, "_blank", "noopener");
-  $("se-bug").onclick = () => c.info(x.soon); $("se-acc").onclick = () => c.open("account");
+  $("se-bug").onclick = () => c.open("report"); $("se-acc").onclick = () => c.open("account");
 }
