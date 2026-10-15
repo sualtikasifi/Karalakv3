@@ -15,6 +15,9 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .txt.note{color:#fff;font-size:calc(var(--u)*26);font-weight:600;text-shadow:0 2px 4px #0008}
 .txt.sign{color:#fff;font-size:calc(var(--u)*64);text-shadow:0 calc(var(--u)*3) 0 #7a2a08,0 0 calc(var(--u)*8) #7a2a08;-webkit-text-stroke:calc(var(--u)*5) #7a2a08;paint-order:stroke fill}
 .txt.xp{color:#e8650f;font-size:calc(var(--u)*38)}
+/* The live speed-bonus pill of the guess screen (LiveXpBonusBadge): a solid pill whose colour follows how fast the answer is. */
+#g-bonus{color:#fff;font-size:calc(var(--u)*30);border-radius:99px;border:calc(var(--u)*3) solid #ffffffd9;transition:background .4s;text-shadow:0 calc(var(--u)*3) calc(var(--u)*4) #0008;white-space:nowrap}
+#d-prog .sw{display:inline-block;width:calc(var(--u)*34);height:calc(var(--u)*34);margin-right:calc(var(--u)*12);vertical-align:-12%}
 .hit{background:none}
 .pill{display:flex;align-items:center;justify-content:center;color:#fff;border-radius:999px;transition:transform .08s}
 .pill span{font-size:calc(var(--u)*52);-webkit-text-stroke:calc(var(--u)*5) #8a3a05;paint-order:stroke fill;text-shadow:0 calc(var(--u)*4) 0 #8a3a05}
@@ -257,7 +260,16 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .fr-mbox{width:calc(var(--u)*560);background:linear-gradient(#fff6e2,#ffe3b0);border:calc(var(--u)*8) solid #b5510f;border-radius:calc(var(--u)*40);padding:calc(var(--u)*40);display:flex;flex-direction:column;gap:calc(var(--u)*20);font-size:calc(var(--u)*40);text-align:center}
 .fr-mbox .pill{height:calc(var(--u)*90);position:relative}
 
-#on-back,#oj-back,#oc-back,#ow-back{padding:0;position:absolute}#on-back img,#oj-back img,#oc-back img,#ow-back img{width:100%;height:100%}
+#on-back,#oj-back,#oc-back,#ow-back,#os-back{padding:0;position:absolute}#on-back img,#oj-back img,#oc-back img,#ow-back img,#os-back img{width:100%;height:100%}
+#os-paper{display:block}#os-title,#oc-title{font-size:calc(var(--u)*46)}
+/* Play Offline setup: centred captions over equal-width pill grids, a short last row centred (WordCountScreen / ChoiceGrid). */
+#os-body{overflow-y:auto;display:flex;flex-direction:column;gap:calc(var(--u)*28)}.os-g{display:flex;flex-direction:column;gap:calc(var(--u)*8)}#os-body::-webkit-scrollbar{display:none}
+.os-l{text-align:center;color:#3b2314;font-weight:700;font-size:calc(var(--u)*28);line-height:1.5;white-space:nowrap}
+.os-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:calc(var(--u)*10)}
+.os-pill{width:calc((100% - (var(--cols) - 1)*var(--u)*10)/var(--cols));height:var(--ph);position:relative;isolation:isolate;padding:0 calc(var(--u)*8);background:none;color:#3b2314;font-weight:800;white-space:nowrap;overflow:hidden;transition:transform .12s}
+.os-pill::before{content:"";position:absolute;inset:0;z-index:-1;background:url(img/offline_pill_off.webp) 0 0/100% 100%;filter:sepia(.75) saturate(.9) brightness(.9)}
+.os-pill.on::before{background-image:url(img/offline_pill_on.webp);filter:none}.os-pill.on{color:#fff;transform:scale(1.04);text-shadow:0 calc(var(--u)*2) calc(var(--u)*3) #8a3a05}
+.os-pill:active{transform:scale(.92)}.os-pill.dis{pointer-events:none;opacity:.75;color:#6b5a4a}
 #on-sign,#on-paper,#oj-panel,#oc-paper,#ow-codep{display:block}
 .txt.col{flex-direction:column;gap:calc(var(--u)*4);font-size:calc(var(--u)*32);font-weight:600}.txt.col b{font-weight:800;margin-top:calc(var(--u)*10)}
 .txt.capw{color:#fff;font-size:calc(var(--u)*28);font-weight:600;text-shadow:0 2px 4px #000a}

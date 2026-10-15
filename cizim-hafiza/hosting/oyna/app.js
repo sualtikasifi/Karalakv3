@@ -15,6 +15,7 @@ import { layoutOnline, renderEntry, renderCreate, renderJoin, leaveLobby, submit
 import { layoutFriends, openFriends, renderFriends, stop as stopFriends } from "./friends.js";
 import { loadWorlds, layoutWorlds, renderWorlds, layoutMap, renderMap, mixFor, starsFor, recordLevel, currentWorld } from "./levels.js";
 import { layoutAccount, renderAccount } from "./account.js";
+import { layoutOffline, renderOffline } from "./offline.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
@@ -39,7 +40,7 @@ const T = {
 const $ = (id) => document.getElementById(id);
 let lang = localStorage.getItem("lang") || ((navigator.language || "tr").startsWith("tr") ? "tr" : "en");
 let words = [], round = [], idx = 0, current = "home", u = 1;
-let dTimer = null, gTimer = null, tool = "pen", score = 0, shownAt = 0;
+let bonusTimer = null, dTimer = null, gTimer = null, tool = "pen", score = 0, shownAt = 0;
 const t = () => T[lang];
 
 // ---------- layout (art units: the paintings are 841 wide) ----------
@@ -74,7 +75,7 @@ const ctx = {
   inviteFriend: (f) => quickInvite(ctx, f).then(() => { stopFriends(); show("onw"); }),
   sfx, paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
-  pickRoomWords: (r) => pickRoomWords(r),
+  pickRoomWords: (r) => pickRoomWords(r), startOffline: (o) => startOffline(o),
   syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
@@ -135,6 +136,8 @@ function layout() {
   } else if (current === "onl" || current === "onj" || current === "onc" || current === "onw") {
     layoutOnline(ctx);
     if (current === "onl") renderEntry(ctx); else if (current === "onj") renderJoin(ctx); else if (current === "onc") renderCreate(ctx);
+  } else if (current === "offs") {
+    layoutOffline(ctx); renderOffline(ctx);
   } else if (current === "friends") {
     layoutFriends(ctx); renderFriends(ctx);
   } else if (current === "worlds") {
@@ -183,9 +186,9 @@ function layout() {
     const P = (el, x, y, w, h) => { const s2 = el.style; s2.left = x * u + "px"; s2.top = y + "px"; s2.width = w * u + "px"; s2.height = h + "px"; };
     P($("g-back"), 22, ty(155), 84, 78 * u);
     P($("g-prog"), 118, ty(158), 114, 74 * u);
-    P($("g-xp"), 334, ty(158), 188, 72 * u); P($("g-music"), 246, ty(158), 76, 74 * u);
+    P($("g-xp"), 334, ty(158), 188, 72 * u); P($("g-bonus"), 534, ty(164), 176, 60 * u); P($("g-music"), 246, ty(158), 76, 74 * u);
     [["jt-ad", 48, 172], ["jt-first", 237, 171], ["jt-count", 426, 178], ["jt-skip", 621, 176]].forEach(([id, x0, w]) => P($(id), x0, fb(1406), w, 164 * u));
-    P($("g-ring"), 700, ty(150), 100, 100 * u);
+    P($("g-ring"), 722, ty(150), 96, 96 * u);
     P($("g-canvas"), 66, ty(310), 724, Math.max(60, fb(1112) - ty(310)));
     P($("g-form"), 0, fb(1265), 841, 105 * u);
     const inp = $("g-input"); inp.style.left = 58 * u + "px"; inp.style.top = 6 * u + "px"; inp.style.width = 484 * u + "px"; inp.style.height = 92 * u + "px";
@@ -431,6 +434,14 @@ async function start(k = "quick") {
   await ensureWords();
   begin([...words].sort(() => Math.random() - 0.5).slice(0, WORD_COUNT));
 }
+// Play Offline with the options chosen on the setup screen (WordCountScreen -> GameViewModel): the pool is cut by category and
+// difficulty, shuffled, and the first N words are played; Untimed draws without the countdown.
+async function startOffline({ count, relaxed: rx, cats, diffs }) {
+  levelRun = null; kind = "offline"; relaxed = !!rx;
+  await ensureWords();
+  const pool = words.filter((w) => (!cats.length || cats.includes(w.category)) && (!diffs.length || diffs.includes(w.difficulty)));
+  begin([...(pool.length ? pool : words)].sort(() => Math.random() - 0.5).slice(0, count));
+}
 // The XP rate of the round, fixed when it starts so every word pays the same: a running XP event times the first Quick Match
 // of the day (2x), as in GameViewModel.effectiveXpMultiplier.
 let xpMult = 1, qmBonus = false, xpEventOnly = 1;
@@ -446,18 +457,22 @@ function nextDraw() {
   if (idx >= round.length) { idx = 0; return nextGuess(); }
   const w = round[idx];
   show("draw");
-  $("d-prog").textContent = `${idx + 1} / ${round.length}`;
+  // Normal mode shows the time left for the whole drawing phase beside the word number (the stopwatch pill of the app).
+  const SW = '<svg class="sw" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="8" fill="#e8650f"/><path d="M12 8.5v5l3 2" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="9" y="2" width="6" height="2.6" rx="1" fill="#e8650f"/></svg>';
+  const restAfter = () => round.slice(idx + 1).reduce((s, q) => s + (DRAW_SECONDS[q.difficulty] ?? 7), 0);
+  const paintProg = (left) => { $("d-prog").innerHTML = relaxed ? `${idx + 1} / ${round.length}` : `${SW}${Math.floor((left + restAfter()) / 60)}:${String((left + restAfter()) % 60).padStart(2, "0")} · ${idx + 1}/${round.length}`; };
   $("d-word").textContent = w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1);
   const wl = w.text.length; $("d-word").style.fontSize = Math.max(40, Math.min(70, 425 * 0.97 / (wl * 0.5))) * u + "px";
   $("d-line").style.animation = "none"; void $("d-line").offsetWidth; $("d-line").style.animation = "";
   let total = DRAW_SECONDS[w.difficulty] ?? 7; let left = total, usedTime = false;
   const arc = $("d-arc"); arc.style.transition = "none"; setRing($("d-ring"), arc, $("d-time"), left, total); void arc.getBoundingClientRect(); arc.style.transition = "";
+  paintProg(left);
   tool = "pen"; refreshTools(); paintLive();
   const tj = $("d-timej"), refreshTj = () => { const n = P.jokers.EXTRA_TIME || 0; $("d-timej-n").textContent = n; $("d-timej-t").textContent = t().timeJ; tj.classList.toggle("dis", usedTime || n <= 0); tj.style.display = relaxed ? "none" : ""; };
   refreshTj();
   tj.onclick = () => { if (usedTime || (P.jokers.EXTRA_TIME || 0) <= 0) return; usedTime = true; P.jokers.EXTRA_TIME--; saveP(); left += 10; total += 10; setRing($("d-ring"), arc, $("d-time"), left, total); sfx.buy(); refreshTj(); };
   if (!relaxed) dTimer = setInterval(() => {
-    left--; setRing($("d-ring"), arc, $("d-time"), left, total);
+    left--; setRing($("d-ring"), arc, $("d-time"), left, total); paintProg(Math.max(0, left));
     if (left > 0 && left <= 3) sfx.tick();
     if (left <= 0) finishDraw();
   }, 1000);
@@ -492,17 +507,24 @@ function nextGuess() {
   show("guess");
   jk = { first: false, count: false }; renderHint(w); refreshJokers(w);
   $("g-prog").textContent = `${idx + 1} / ${round.length}`;
-  $("g-xp").textContent = `★ ${score}`;
+  $("g-xp").textContent = `★ +${round.reduce((s, q) => s + (q.xp || 0), 0)} XP`;
   $("g-input").value = "";
   paintGuess();
   const total = guessSeconds(w); let left = total;
   const arc = $("g-arc"); arc.style.transition = "none"; setRing($("g-ring"), arc, $("g-time"), left, total); void arc.getBoundingClientRect(); arc.style.transition = "";
   shownAt = performance.now();
+  // Live preview of the speed bonus an answer right now would earn: <2s +3, <4s +2, <6s +1 (the same ladder as wordXp).
+  const bonusEl = $("g-bonus"), STAGE = ["#4fd97d", "#2ea043", "#e0c22e", "#e8650f", "#e23b32"];
+  const paintBonus = () => {
+    const el = (performance.now() - shownAt) / 1000, b = el < 2 ? 3 : el < 4 ? 2 : el < 6 ? 1 : 0;
+    bonusEl.textContent = lang === "tr" ? `+${b} XP bonus` : `+${b} XP bonus`; bonusEl.style.background = STAGE[Math.min(4, Math.floor(el / 2))];
+  };
+  clearInterval(bonusTimer); paintBonus(); bonusTimer = setInterval(paintBonus, 250);
   gTimer = setInterval(() => { left--; setRing($("g-ring"), arc, $("g-time"), left, total); if (left > 0 && left <= 3) sfx.tick(); if (left <= 0) answer(""); }, 1000);
   $("g-input").focus({ preventScroll: true });
 }
 function answer(text) {
-  clearInterval(gTimer);
+  clearInterval(gTimer); clearInterval(bonusTimer);
   const w = round[idx];
   w.guess = text; w.ms = Math.round(performance.now() - shownAt); w.correct = isCorrect(text, w.text);
   w.points = w.correct ? POINTS + (w.ms < SPEED_MS ? SPEED_BONUS : 0) : 0;
@@ -632,7 +654,8 @@ $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => lea
 $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => rankInfo();
 $("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
 $("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; show("runes"); }; $("ru-back").onclick = () => show("home");
-$("tl-quick").onclick = () => start("quick"); $("tl-offline").onclick = () => start("offline");
+$("tl-quick").onclick = () => start("quick"); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };
+$("os-back").onclick = () => show("home");
 $("tl-levels").onclick = async () => { await loadWorlds(); show("worlds"); };
 $("wl-back").onclick = () => show("home"); $("lm-back").onclick = () => show("worlds");
 $("tl-store").onclick = async () => { await loadStoreData(); show("store"); };

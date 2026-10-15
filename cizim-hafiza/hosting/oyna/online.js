@@ -2,6 +2,7 @@
 import * as net from "./firebase.js";
 import { frameRing, frameById } from "./store.js";
 import { loadChat, buildDock, watch as watchChat, stop as stopChat, onReactions, activeBubbles, messageOf, reactions as chatNow, chatRow, chatText } from "./chat.js";
+import { setupGroup, fitPaper, SETUP_T } from "./offline.js";
 import { renderOnlineResult as drawOnlineResult, loadResultStrings } from "./result.js";
 
 const T = {
@@ -41,9 +42,9 @@ export function layoutOnline(c) {
     place($("oj-nick"), 162, 683, 506, 80); place($("oj-code"), 162, 820, 506, 80); place($("oj-msg"), 60, 960, 720, 70);
     place($("oj-go"), 120, 1110, 600, 190);
   } else if (cur === "onc") {
-    place($("oc-back"), 20, 40, 110, 106); place($("oc-title"), 160, 130, 520, 110);
-    place($("oc-paper"), 50, 270, 740, 1080 * 0 + 960); place($("oc-body"), 110, 340, 620, 820);
-    place($("oc-make"), 110, 1330, 620, 150); place($("oc-msg"), 60, 1500, 720, 70);
+    place($("oc-back"), 20, 40, 110, 106); place($("oc-title"), 160, 258, 520, 110);
+    place($("oc-paper"), 42, 472, 757, 925); place($("oc-body"), 110, 520, 621, 840);
+    place($("oc-make"), 65, 1610, 710, 172); place($("oc-msg"), 60, 1790, 720, 60);
   } else if (cur === "onw") {
     place($("ow-back"), 20, 40, 110, 106); place($("ow-title"), 160, 60, 520, 90);
     place($("ow-codep"), 40, 190, 760, 370); place($("ow-code"), 40, 262, 760, 100); place($("ow-codeh"), 100, 200, 640, 56);
@@ -68,12 +69,15 @@ export async function renderCreate(c) {
   if (!catList.length || catList.lang !== lang()) { try { const w = await (await fetch(lang() === "tr" ? "words_tr.json" : "words_en.json")).json(); catList = [...new Set(w.map((q) => q.category))].sort(); catList.lang = lang(); opts.cats = new Set(); } catch { catList = []; } }
   $("oc-title").textContent = x.cTitle; $("oc-make-t").textContent = x.make; $("oc-msg").textContent = "";
   const body = $("oc-body"); body.replaceChildren();
-  const group = (label, items) => { body.append(el("div", "oc-l", label)); const r = el("div", "oc-row"); items.forEach((i) => r.append(i)); body.append(r); };
-  const pill = (txt, on, fn) => { const b = el("button", "oc-pill" + (on ? " on" : ""), txt); b.onclick = fn; return b; };
-  group(x.words, [10, 20, 30, 40, 50].map((n) => pill(n, opts.wordCount === n, () => { opts.wordCount = n; renderCreate(c); })));
-  group(C("online_room_mode_title"), [[false, C("online_room_mode_free_for_all")], [true, C("online_room_mode_team")]].map(([k, t]) => pill(t, opts.team === k, () => { opts.team = k; renderCreate(c); })));
-  group(C("select_category"), [...catList.map((k) => pill(`${CAT_EMOJI[k] || "✨"} ${k}`, opts.cats.has(k), () => { opts.cats.has(k) ? opts.cats.delete(k) : opts.cats.add(k); renderCreate(c); })), pill(`🎨 ${C("all_categories")}`, opts.cats.size === 0, () => { opts.cats = new Set(); renderCreate(c); })]);
-  group(x.diff, [["EASY", x.easy], ["MEDIUM", x.med], ["HARD", x.hard]].map(([k, t]) => pill(t, opts.diffs.has(k), () => { opts.diffs.has(k) ? (opts.diffs.size > 1 && opts.diffs.delete(k)) : opts.diffs.add(k); renderCreate(c); })).concat([pill(C("all_difficulties"), opts.diffs.size === 3, () => { opts.diffs = new Set(["EASY", "MEDIUM", "HARD"]); renderCreate(c); })]));
+  // The same wooden setup rows as Play Offline (CreateRoomScreen on the shared WoodScreen).
+  const u = c.u(), group = (label, items, cols, h, size) => setupGroup(body, u, label, items, cols, h, size), again = () => renderCreate(c);
+  const S = SETUP_T[lang()];
+  group(x.nick, [[c.P.nick, false, null]], 1, 78, 30);
+  group(S.count, [10, 20, 30, 40, 50].map((n) => [String(n), opts.wordCount === n, () => { opts.wordCount = n; again(); }]), 5, 78, 37);
+  group(C("online_room_mode_title"), [[false, C("online_room_mode_free_for_all")], [true, C("online_room_mode_team")]].map(([k, t]) => [t, opts.team === k, () => { opts.team = k; again(); }]), 2, 82, 29);
+  group(C("select_category"), [...catList.map((k) => [`${CAT_EMOJI[k] || "✨"} ${k}`, opts.cats.has(k), () => { opts.cats.has(k) ? opts.cats.delete(k) : opts.cats.add(k); again(); }]), [`🎨 ${C("all_categories")}`, opts.cats.size === 0, () => { opts.cats = new Set(); again(); }]], 4, 82, 25);
+  group(S.diff, [["EASY", x.easy], ["MEDIUM", x.med], ["HARD", x.hard]].map(([k, t]) => [t, opts.diffs.has(k) && opts.diffs.size < 3, () => { opts.diffs.size === 3 ? (opts.diffs = new Set([k])) : opts.diffs.has(k) ? (opts.diffs.size > 1 && opts.diffs.delete(k)) : opts.diffs.add(k); again(); }]).concat([[C("all_difficulties"), opts.diffs.size === 3, () => { opts.diffs = new Set(["EASY", "MEDIUM", "HARD"]); again(); }]]), 4, 78, 27);
+  fitPaper(c, "oc-paper", "oc-body");
   $("oc-make").onclick = async () => {
     $("oc-msg").textContent = "…";
     try {
