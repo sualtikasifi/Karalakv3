@@ -131,3 +131,17 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .jcard .btn img{height:calc(var(--u)*28)}.jcard .btn.dis{filter:grayscale(.7) brightness(.85)}
 #st-toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--u)*140);background:#3a1e08;color:#fff;padding:calc(var(--u)*16) calc(var(--u)*36);border-radius:99px;font-size:calc(var(--u)*30);z-index:5}
 #st-toast.err{background:#a82020}
+
+.txt.sign3{color:#fff;font-size:calc(var(--u)*36);-webkit-text-stroke:calc(var(--u)*6) #4e2406;paint-order:stroke fill;justify-content:flex-start}
+.se-row{display:flex;align-items:center;justify-content:space-between;padding:0 calc(var(--u)*30) 0 calc(var(--u)*127);font-size:calc(var(--u)*31);color:var(--ink);cursor:pointer}
+.sw{width:calc(var(--u)*106);height:calc(var(--u)*58);border-radius:99px;background:linear-gradient(#cfc6b8,#b4aa9b);position:relative;transition:background .18s;box-shadow:inset 0 2px 3px #0004}
+.sw::after{content:"";position:absolute;top:calc(var(--u)*5);left:calc(var(--u)*5);width:calc(var(--u)*48);height:calc(var(--u)*48);border-radius:50%;background:#fff;transition:transform .18s;box-shadow:0 2px 3px #0005}
+.sw.on{background:linear-gradient(#ff9a3c,#f26a1b)}.sw.on::after{transform:translateX(calc(var(--u)*48))}
+#se-code{border:calc(var(--u)*4) solid #d9a566;border-radius:calc(var(--u)*30);background:#fffaf0;font:inherit;font-size:calc(var(--u)*34);padding:0 calc(var(--u)*20);color:var(--ink);outline:0;text-transform:uppercase;user-select:text;-webkit-user-select:text}
+.txt.cap3{color:#5a3a20;font-size:calc(var(--u)*26);font-weight:600;line-height:1.15;justify-content:flex-start;text-align:left;align-items:flex-start}
+.se-link{color:#8a4e12;text-decoration:underline;font-size:calc(var(--u)*26);font-weight:600;text-align:left}
+.se-nav{display:flex;align-items:center;justify-content:space-between;padding:0 calc(var(--u)*70) 0 calc(var(--u)*126);font-size:calc(var(--u)*31);color:var(--ink);border-radius:calc(var(--u)*40);text-align:left}
+.se-nav:active{background:#0002;transform:scale(.98)}
+.se-priv{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--u)*10);padding:0 calc(var(--u)*24);background:linear-gradient(#fff3d6,#ffd98a);border:calc(var(--u)*3) solid #e08a1b;border-radius:99px;color:var(--ink);text-decoration:none;font-size:calc(var(--u)*25)}
+.se-priv small{font-size:calc(var(--u)*18);font-weight:600;opacity:.75}
+#se-use span{font-size:calc(var(--u)*32)}

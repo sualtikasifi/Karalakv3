@@ -69,3 +69,25 @@ export async function recordRound({ language, nickname, wordIds, perWord, items 
   await batch.commit();
   return true;
 }
+
+// Same transaction as Android's CouponRepositoryImpl.redeem.
+export async function redeemCoupon(rawCode) {
+  const code = rawCode.trim().toUpperCase().replace(/ /g, "");
+  if (code.length < 4 || code.length > 24 || !/^[A-Z0-9-]+$/.test(code)) return { status: "notfound" };
+  const { fs, db, auth } = await init();
+  const uid = auth.currentUser.uid;
+  const cref = fs.doc(db, "coupons", code), rref = fs.doc(db, "coupons", code, "redemptions", uid);
+  try {
+    return await fs.runTransaction(db, async (tx) => {
+      const snap = await tx.get(cref);
+      if (!snap.exists()) return { status: "notfound" };
+      const c = snap.data(), now = Date.now();
+      if ((c.expiresAt || 0) > 0 && now >= c.expiresAt) return { status: "expired" };
+      if ((c.usedCount || 0) >= (c.maxUses || 1)) return { status: "exhausted" };
+      if ((await tx.get(rref)).exists()) return { status: "used" };
+      tx.set(rref, { redeemedAt: now });
+      tx.update(cref, { usedCount: (c.usedCount || 0) + 1 });
+      return { status: "ok", gold: Math.min(c.gold || 0, 10000000), xp: Math.min(c.xp || 0, 100000), chests: (c.chestSilver || 0) + (c.chestGold || 0) + (c.chestRare || 0) };
+    });
+  } catch (e) { return { status: "network" }; }
+}

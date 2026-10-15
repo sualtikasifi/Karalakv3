@@ -1,5 +1,6 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
+import { layoutSettings, renderSettings } from "./settings.js";
 import { loadStoreData, layoutStore, renderStore, frameRing, frameById, penById } from "./store.js";
 
 const WORD_COUNT = 10, POINTS = 5, SPEED_BONUS = 2, SPEED_MS = 3000;
@@ -29,6 +30,9 @@ const stage = $("stage");
 const ctx = {
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
   refreshHome: () => refreshHome(),
+  setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
+  open: (id) => id === "account" ? soonMsg() : show(id),
+  info: (text) => msg(text),
   confirm(text, yes, onYes) {
     $("dlg-text").textContent = text; $("dlg-extra").replaceChildren(); $("dlg-no").style.display = ""; $("dlg-no").textContent = t().no === "Kal" ? "Vazgeç" : "Cancel"; $("dlg-yes").textContent = yes;
     $("dialog").classList.remove("hidden");
@@ -77,6 +81,8 @@ function layout() {
     for (const [id, x, y, w, h, lx0, ly0, lx1, ly1] of T) { place($("tl-" + id), x, y, w, h); place($("tx-" + id), lx0, ly0, lx1 - lx0, ly1 - ly0); }
   } else if (current === "store") {
     layoutStore(ctx); renderStore(ctx);
+  } else if (current === "settings") {
+    layoutSettings(ctx); renderSettings(ctx);
   } else if (current === "draw") {
     place($("d-back"), 28, 82, 99, 96);
     place($("d-prog"), 152, 88, 296, 82);
@@ -366,7 +372,10 @@ $("tl-quick").onclick = start; $("tl-offline").onclick = start;
 $("tl-store").onclick = async () => { await loadStoreData(); show("store"); };
 $("st-back").onclick = () => show("home");
 for (const [id, k] of [["online", "online"], ["levels", "levels"], ["friends", "friends"], ["ach", "ach"], ["league", "league"]]) $("tl-" + id).onclick = () => soon(t().tiles[k])();
-$("tl-settings").onclick = () => {
+const soonMsg = () => msg(t().soon);
+$("tl-settings").onclick = () => show("settings");
+$("se-back").onclick = () => show("home");
+const _oldSettings = () => {
   const mk = (code, label) => { const b = document.createElement("button"); b.className = "chip" + (lang === code ? " on" : ""); b.textContent = label; b.onclick = () => { lang = code; applyLang(); $("dialog").classList.add("hidden"); $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren(); }; return b; };
   msg(t().langTitle, [mk("tr", "Türkçe"), mk("en", "English")]);
 };
