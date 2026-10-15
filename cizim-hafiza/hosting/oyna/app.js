@@ -1,5 +1,6 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
+import { layoutAccount, renderAccount } from "./account.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
@@ -35,7 +36,8 @@ const ctx = {
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
   refreshHome: () => refreshHome(),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
-  open: (id) => id === "account" ? soonMsg() : show(id),
+  open: (id) => show(id),
+  levelOf: (xp) => { const lv = levelFor(xp), fl = xpFor(lv), ce = lv >= 100 ? fl : xpFor(lv + 1); return { level: lv, into: xp - fl, span: ce - fl, frac: ce > fl ? (xp - fl) / (ce - fl) : 1, max: lv >= 100 }; },
   info: (text) => msg(text),
   confirm(text, yes, onYes) {
     $("dlg-text").textContent = text; $("dlg-extra").replaceChildren(); $("dlg-no").style.display = ""; $("dlg-no").textContent = t().no === "Kal" ? "Vazgeç" : "Cancel"; $("dlg-yes").textContent = yes;
@@ -85,6 +87,8 @@ function layout() {
     for (const [id, x, y, w, h, lx0, ly0, lx1, ly1] of T) { place($("tl-" + id), x, y, w, h); place($("tx-" + id), lx0, ly0, lx1 - lx0, ly1 - ly0); }
   } else if (current === "store") {
     layoutStore(ctx); renderStore(ctx);
+  } else if (current === "account") {
+    layoutAccount(ctx); renderAccount(ctx);
   } else if (current === "league") {
     layoutLeague(ctx); renderLeague(ctx, !leagueLoaded); leagueLoaded = true;
   } else if (current === "ach") {
@@ -390,6 +394,7 @@ for (const [id, k] of [["online", "online"], ["levels", "levels"], ["friends", "
 const soonMsg = () => msg(t().soon);
 $("tl-settings").onclick = () => show("settings");
 $("se-back").onclick = () => show("home");
+$("ak-back").onclick = () => show("settings");
 const _oldSettings = () => {
   const mk = (code, label) => { const b = document.createElement("button"); b.className = "chip" + (lang === code ? " on" : ""); b.textContent = label; b.onclick = () => { lang = code; applyLang(); $("dialog").classList.add("hidden"); $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren(); }; return b; };
   msg(t().langTitle, [mk("tr", "Türkçe"), mk("en", "English")]);

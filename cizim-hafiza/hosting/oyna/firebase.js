@@ -104,3 +104,29 @@ export async function publishScore({ nickname, periodXp, periodId, level, frameI
   const { fs, db, auth } = await init();
   await fs.setDoc(fs.doc(db, "users", auth.currentUser.uid), { nickname, periodXp, totalXp, periodXpAt: fs.serverTimestamp(), periodId, level, frameId, avatarUrl: "" }, { merge: true });
 }
+
+// ---- Google sign-in (links the browser to the player's Google account) ----
+export async function authState() {
+  const { auth } = await init();
+  const u = auth.currentUser;
+  return u ? { uid: u.uid, anon: u.isAnonymous, name: u.displayName || "", email: u.email || "", photo: u.photoURL || "" } : null;
+}
+export async function signInGoogle() {
+  const { auth } = await init();
+  const m = await import(`${CDN}/firebase-auth.js`);
+  const provider = new m.GoogleAuthProvider();
+  const cur = auth.currentUser;
+  try {
+    // Keeps the guest's league entry when the Google account is new; falls back to a plain sign-in otherwise.
+    if (cur && cur.isAnonymous) await m.linkWithPopup(cur, provider); else await m.signInWithPopup(auth, provider);
+  } catch (e) {
+    if (e.code === "auth/credential-already-in-use" || e.code === "auth/email-already-in-use") await m.signInWithPopup(auth, provider); else throw e;
+  }
+  return authState();
+}
+export async function signOutGoogle() {
+  const { auth } = await init();
+  const m = await import(`${CDN}/firebase-auth.js`);
+  await m.signOut(auth); await m.signInAnonymously(auth);
+  return authState();
+}
