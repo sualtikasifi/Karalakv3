@@ -826,7 +826,7 @@ private fun PenCard(
     onEquip: () -> Unit,
     onCannotAfford: () -> Unit
 ) {
-    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(1.3f)) {
+    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(860f / 540f)) {
         val w = maxWidth
         val h = maxHeight
         Image(painterResource(skin.cardRes()), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
@@ -834,7 +834,7 @@ private fun PenCard(
         // Name and tagline are right-aligned, ending where the button ends: the pen (and its charm, like Buz's snowflake)
         // fills the card's left side, so text growing from the left used to run into it. The text clips at its own
         // line box, so each line has room for its descenders and the tagline is pulled up to the name by an offset.
-        Column(Modifier.offset(w * 0.42f, h * 0.415f).size(w * 0.48f, h * 0.27f), horizontalAlignment = Alignment.End) {
+        Column(Modifier.offset(w * 0.42f, h * 0.55f).size(w * 0.48f, h * 0.19f), horizontalAlignment = Alignment.End) {
             com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                 text = stringResource(skin.labelRes),
                 style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Ink, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 18.sp, textAlign = TextAlign.End),
@@ -851,7 +851,7 @@ private fun PenCard(
             }
         }
         // One wide button: buy (price) or wear. There is no trying a pen before buying it.
-        val m = Modifier.offset(w * 0.34f, h * 0.7f).size(w * 0.56f, h * 0.18f)
+        val m = Modifier.offset(w * 0.34f, h * 0.745f).size(w * 0.56f, h * 0.14f)
         when {
             owned -> OwnedPill(equipped, onEquip, m)
             else -> PaintedPill(R.drawable.st_pill_orange, m, enabled = canAfford, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
