@@ -171,6 +171,9 @@ private const val SAMPLE_STEP_PX = 10f
 private const val CHUNK_SAMPLES = 3
 private const val TWO_PI = 6.2831855f
 
+/** Sparks, glints, smoke and bolts are sized from this multiple of the pen width: at the plain 9 px they would be specks. */
+private const val EFFECT_SCALE = 2f
+
 /**
  * A clock in seconds that ticks every frame while [enabled]. Read the returned state inside a draw scope (not in
  * composition) so only the draw phase re-runs each frame.
@@ -207,26 +210,45 @@ internal class PenGeometry(
 internal fun buildPenGeometry(points: List<Offset>, startDistance: Float): PenGeometry? {
     if (points.isEmpty()) return null
     val m = points.size
-    val xs = FloatArray(m)
-    val ys = FloatArray(m)
-    val ds = FloatArray(m)
+    var total = 0f
+    for (i in 1 until m) total += hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y)
+    // Samples are laid at an even spacing ALONG the stroke (interpolated between the recorded points), so a fast
+    // finger that left long gaps between points still gets a continuous run of effects.
+    val cap = (total / SAMPLE_STEP_PX).toInt() + 3
+    val xs = FloatArray(cap)
+    val ys = FloatArray(cap)
+    val ds = FloatArray(cap)
     var n = 1
     xs[0] = points[0].x
     ys[0] = points[0].y
     ds[0] = startDistance
     var dist = startDistance
-    var acc = 0f
+    var sinceLast = 0f
     for (i in 1 until m) {
-        val seg = hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y)
-        dist += seg
-        acc += seg
-        if (acc >= SAMPLE_STEP_PX || (i == m - 1 && acc > 0f)) {
-            xs[n] = points[i].x
-            ys[n] = points[i].y
-            ds[n] = dist
+        val ax = points[i - 1].x
+        val ay = points[i - 1].y
+        val bx = points[i].x
+        val by = points[i].y
+        val seg = hypot(bx - ax, by - ay)
+        if (seg <= 0f) continue
+        var consumed = 0f
+        while (sinceLast + (seg - consumed) >= SAMPLE_STEP_PX && n < cap) {
+            consumed += SAMPLE_STEP_PX - sinceLast
+            val t = consumed / seg
+            xs[n] = ax + (bx - ax) * t
+            ys[n] = ay + (by - ay) * t
+            ds[n] = dist + consumed
             n++
-            acc = 0f
+            sinceLast = 0f
         }
+        sinceLast += seg - consumed
+        dist += seg
+    }
+    if (sinceLast > 0.5f && n < cap) {
+        xs[n] = points[m - 1].x
+        ys[n] = points[m - 1].y
+        ds[n] = dist
+        n++
     }
     val dxs = FloatArray(n)
     val dys = FloatArray(n)
@@ -318,7 +340,7 @@ internal fun DrawScope.drawPenGeometry(g: PenGeometry, skin: PenSkin, w: Float, 
         drawCircle(lerp(c, Color.Black, 0.35f).copy(alpha = 0.6f), radius = w * 0.62f, center = centre)
         drawCircle(c, radius = w * 0.5f, center = centre)
         drawCircle(lerp(c, Color.White, 0.6f).copy(alpha = 0.8f), radius = w * 0.16f, center = centre)
-        drawPenOverlays(g, skin.effect, w, time)
+        drawPenOverlays(g, skin.effect, w * EFFECT_SCALE, time)
         return
     }
     val colors = Array(count) { premiumColorAt(skin, g.chunkMid[it], time) }
@@ -331,7 +353,7 @@ internal fun DrawScope.drawPenGeometry(g: PenGeometry, skin: PenSkin, w: Float, 
     for (i in 0 until count) drawPath(g.chunks[i], lerp(colors[i], Color.Black, 0.4f).copy(alpha = 0.7f), style = rim)
     for (i in 0 until count) drawPath(g.chunks[i], colors[i], style = core)
     for (i in 0 until count) drawPath(g.chunks[i], lerp(colors[i], Color.White, 0.6f).copy(alpha = 0.8f), style = shine)
-    drawPenOverlays(g, skin.effect, w, time)
+    drawPenOverlays(g, skin.effect, w * EFFECT_SCALE, time)
 }
 
 /** A small, repeatable pseudo-random number in 0..1 for (i, k) — the same on every frame and every device. */
