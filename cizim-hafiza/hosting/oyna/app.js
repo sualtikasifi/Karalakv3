@@ -1,5 +1,6 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
+import { loadRunes, layoutRunes, renderRunes, effect as runeFx } from "./runes.js";
 import { layoutReport, renderReport } from "./report.js";
 import { layoutChests, renderChests, award as awardChest, wonDialog } from "./chests.js";
 import { todayEpoch, msToMidnight, dailyWords, state as dailyState, record as dailyRecord } from "./daily.js";
@@ -41,6 +42,7 @@ const t = () => T[lang];
 const stage = $("stage");
 let leagueLoaded = false, reportLoaded = false;
 const ctx = {
+  runeFx: (fx) => runeFx(P, fx),
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
   inviteFriend: (f) => quickInvite(ctx, f).then(() => { stopFriends(); show("onw"); }),
@@ -85,7 +87,7 @@ function layout() {
   s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + "px"; s.top = (vh - H) / 2 + "px";
   stage.style.setProperty("--u", u + "px");
   if (current === "home") {
-    place($("h-gold"), 112, 270, 126, 44);
+    place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214);
     place($("h-pen"), 350, 266, 134, 54);
     place($("h-avatar"), 66, 361, 138, 138);
     place($("h-name"), 224, 357, 556, 42);
@@ -114,6 +116,8 @@ function layout() {
     renderMap(ctx);
   } else if (current === "account") {
     layoutAccount(ctx); renderAccount(ctx);
+  } else if (current === "runes") {
+    layoutRunes(ctx); renderRunes(ctx);
   } else if (current === "report") {
     layoutReport(ctx); renderReport(ctx, !reportLoaded); reportLoaded = true;
   } else if (current === "league") {
@@ -468,7 +472,7 @@ async function finish() {
   const x = t();
   const n = round.filter((w) => w.correct).length;
   if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
-  P.xp += score; P.periodXp = (P.periodXp || 0) + score; P.gold += n * 10; achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
+  P.xp += Math.round(score * (1 + runeFx(P, "XP") / 100)); P.periodXp = (P.periodXp || 0) + score; P.gold += Math.round(n * 10 * (kind === "daily" ? 1 : 1 + runeFx(P, "WORD") / 100)); achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
   if (kind === "online") { net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {}); return submitAndWait(ctx, round, score); }
   net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
   const me = {
@@ -555,6 +559,7 @@ $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("o
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
 $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => rankInfo();
 $("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
+$("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; show("runes"); }; $("ru-back").onclick = () => show("home");
 $("tl-quick").onclick = () => start("quick"); $("tl-offline").onclick = () => start("offline");
 $("tl-levels").onclick = async () => { await loadWorlds(); show("worlds"); };
 $("wl-back").onclick = () => show("home"); $("lm-back").onclick = () => show("worlds");

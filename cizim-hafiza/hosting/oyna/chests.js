@@ -33,8 +33,8 @@ export function award(P) {
 const isReady = (c, now = Date.now()) => c.start != null && now >= c.start + TIERS[c.tier].ms;
 const anyUnlocking = (C, now) => C.slots.some((c) => c && c.start != null && !isReady(c, now));
 function roll(P, tier) {
-  const g = rnd(...TIERS[tier].gold);
-  const n = tier === "SILVER" ? (Math.random() < 0.3 ? 1 : 0) : tier === "GOLD" ? 1 + (Math.random() < 0.3 ? 1 : 0) : 2 + (Math.random() < 0.4 ? 1 : 0);
+  const g0 = rnd(...TIERS[tier].gold), g = Math.round(g0 * (1 + P.__fx("CHEST") / 100)), jb = P.__fx("CJOKER") / 100;
+  const n = tier === "SILVER" ? (Math.random() < 0.3 + jb ? 1 : 0) : tier === "GOLD" ? 1 + (Math.random() < 0.3 + jb ? 1 : 0) : 2 + (Math.random() < 0.4 + jb ? 1 : 0);
   const jokers = {}; for (let i = 0; i < n; i++) { const t = JOKERS[Math.floor(Math.random() * 3)]; jokers[t] = (jokers[t] || 0) + 1; }
   let pen = null;
   if (tier === "RARE" && Math.random() < 0.12) { const pool = penList().filter((p) => p.price > 0 && p.price <= 6500 && !p.rune && !p.retired && !P.owned.includes("pen:" + p.id)); if (pool.length) pen = pool[Math.floor(Math.random() * pool.length)]; }
@@ -77,9 +77,9 @@ function detail(c, id) {
     if (going) return;
     if (!ready) {
       if (anyUnlocking(C, Date.now())) { box.querySelector("p").textContent = x.busy; return; }
-      ch.start = Date.now(); c.saveP(); d.classList.add("hidden"); renderChests(c); return;
+      ch.start = Date.now() - TIERS[ch.tier].ms * c.runeFx("CTIME") / 100; c.saveP(); d.classList.add("hidden"); renderChests(c); return;
     }
-    const rw = roll(P, ch.tier); P.gold += rw.gold; for (const [t, n] of Object.entries(rw.jokers)) P.jokers[t] = (P.jokers[t] || 0) + n; if (rw.pen) P.owned.push("pen:" + rw.pen.id);
+    P.__fx = c.runeFx; const rw = roll(P, ch.tier); P.gold += rw.gold; for (const [t, n] of Object.entries(rw.jokers)) P.jokers[t] = (P.jokers[t] || 0) + n; if (rw.pen) P.owned.push("pen:" + rw.pen.id);
     C.slots[C.slots.indexOf(ch)] = null; c.saveP(); c.refreshHome(); renderChests(c); reward(c, ch.tier, rw);
   };
   const close = el("button", "pill cream small", `<span>${x.close}</span>`); close.onclick = () => d.classList.add("hidden");
