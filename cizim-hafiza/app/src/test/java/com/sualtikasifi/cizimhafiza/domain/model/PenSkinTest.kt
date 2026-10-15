@@ -110,7 +110,9 @@ class PenSkinTest {
                 "LEAGUE_AURORA", "LEAGUE_EMBER", "LEAGUE_FROST",
                 "LEAGUE_MIDNIGHT", "LEAGUE_CITRUS", "LEAGUE_ROSE",
                 // Store pens (bought with gold).
-                "COPPER", "EMERALD", "RUBY", "SAPPHIRE", "CANDY", "ICE", "SAKURA", "SUNRISE", "NIGHT", "DIAMOND"
+                "COPPER", "EMERALD", "RUBY", "SAPPHIRE", "CANDY", "ICE", "SAKURA", "SUNRISE", "NIGHT", "DIAMOND",
+                // Premium store pens.
+                "AURUM", "PRISM", "EMBER", "STORM", "COSMOS", "SPECTER", "LION"
             ),
             PenSkin.entries.map { it.name }
         )

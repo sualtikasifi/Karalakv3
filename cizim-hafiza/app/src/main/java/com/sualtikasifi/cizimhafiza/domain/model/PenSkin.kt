@@ -23,6 +23,12 @@ import com.sualtikasifi.cizimhafiza.R
  * silently resets every player wearing it. AvatarFrameTest's equivalent
  * guard applies here too, see PenSkinTest.
  */
+/** What a pen adds around its stroke; purely cosmetic and a pure function of the drawn distance, so a replay looks identical. */
+enum class PenEffect { NONE, GLOW, SPARKLE, GLOW_SPARKLE;
+    val glow: Boolean get() = this == GLOW || this == GLOW_SPARKLE
+    val sparkle: Boolean get() = this == SPARKLE || this == GLOW_SPARKLE
+}
+
 enum class PenSkin(
     @StringRes val labelRes: Int,
     /** ARGB colours the stroke is drawn with. One entry paints flat; more blend along the stroke. */
@@ -48,7 +54,9 @@ enum class PenSkin(
     /** Gold price in the store; 0 means not sold there. Store pens have unlockLevel 0 like league prizes so [resolve] can render them on whoever wears one. */
     val storePrice: Int = 0,
     /** Found only on the rune map (RuneRewards): owned like a store item, but never sold in the store or dropped by a chest. */
-    val isRuneReward: Boolean = false
+    val isRuneReward: Boolean = false,
+    /** Extra paint on the stroke (glow, sparkles) — drawn by PenBrush's drawPenStroke, so opponents see it too. */
+    val effect: PenEffect = PenEffect.NONE
 ) {
     CLASSIC(R.string.pen_classic, listOf(0xFF2E2A26), 1),
     // The enum constant keeps its name — it is persisted, and renaming it
@@ -91,7 +99,16 @@ enum class PenSkin(
     SAKURA(R.string.pen_sakura, listOf(0xFFFFC1D6, 0xFFFF8FB8, 0xFFE0609A), 0, storePrice = 8000),
     SUNRISE(R.string.pen_sunrise, listOf(0xFFFFD36E, 0xFFFF7A59, 0xFFC13584), 0, storePrice = 10000, isRuneReward = true),
     NIGHT(R.string.pen_night, listOf(0xFF0F0C29, 0xFF302B63, 0xFF5B4FBF), 0, storePrice = 12500, isRuneReward = true),
-    DIAMOND(R.string.pen_diamond, listOf(0xFFE0F7FF, 0xFFB388FF, 0xFF7CE7FF), 0, storePrice = 15000, isRuneReward = true);
+    DIAMOND(R.string.pen_diamond, listOf(0xFFE0F7FF, 0xFFB388FF, 0xFF7CE7FF), 0, storePrice = 15000, isRuneReward = true),
+
+    // --- Premium store pens: the dearest things on the shelf, each with a stroke effect (see PenEffect). ---
+    AURUM(R.string.pen_aurum, listOf(0xFFB8860B, 0xFFFFD700, 0xFFFFF1A8, 0xFFFFD700, 0xFFB8860B), 0, storePrice = 20000),
+    PRISM(R.string.pen_prism, listOf(0xFFFF4B4B, 0xFFFFA63C, 0xFFFFE23C, 0xFF3CD16A, 0xFF3CA8FF, 0xFF8E4BFF, 0xFFFF4BB0), 0, storePrice = 30000),
+    EMBER(R.string.pen_ember, listOf(0xFFC62828, 0xFFFF5722, 0xFFFFB300, 0xFFFFE082), 0, storePrice = 45000, effect = PenEffect.GLOW),
+    STORM(R.string.pen_storm, listOf(0xFF1E5BD8, 0xFF4FC3F7, 0xFFFFFFFF, 0xFF4FC3F7), 0, storePrice = 60000, effect = PenEffect.GLOW),
+    COSMOS(R.string.pen_cosmos, listOf(0xFF1A1055, 0xFF5B3FA8, 0xFFB388FF, 0xFF4FC3F7), 0, storePrice = 85000, effect = PenEffect.SPARKLE),
+    SPECTER(R.string.pen_specter, listOf(0xFF1B0B3A, 0xFF5E2CA5, 0xFFB44CFF, 0xFF5E2CA5), 0, storePrice = 120000, effect = PenEffect.GLOW),
+    LION(R.string.pen_lion, listOf(0xFFFFC857, 0xFFFF9A2E, 0xFFE0492B, 0xFFFFC857), 0, storePrice = 180000, effect = PenEffect.GLOW_SPARKLE);
 
     /** True when the stroke should be painted as a gradient rather than a flat colour. */
     val isGradient: Boolean get() = colors.size > 1
