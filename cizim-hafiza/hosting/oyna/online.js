@@ -23,7 +23,9 @@ const T = {
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
 const PRESENCE = 150000;
-let opts = { wordCount: 10, diffs: new Set(["EASY", "MEDIUM", "HARD"]), mode: "NORMAL" };
+let opts = { wordCount: 10, diffs: new Set(["EASY", "MEDIUM", "HARD"]), mode: "NORMAL", cats: new Set(), team: false };
+const CAT_EMOJI = { Hayvanlar: "🐶", Animals: "🐶", Eşyalar: "🧺", Objects: "🧺", Meslekler: "👮", Professions: "👮", Spor: "⚽", Sports: "⚽", Doğa: "🌲", Nature: "🌲", Yiyecekler: "🍎", Food: "🍎", Taşıtlar: "🚗", Vehicles: "🚗", Duygular: "😊", Emotions: "😊", Giyim: "👕", Clothing: "👕" };
+let catList = [];
 let code = null, room = null, unsub = null, hb = null, cdTimer = null, started = false, myFriends = [], sent = new Set(), finishedLocal = false;
 
 // ---------- layout ----------
@@ -60,21 +62,25 @@ export function renderEntry(c) {
   $("on-title").textContent = x.title; $("on-create-t").textContent = x.create; $("on-join-t").textContent = x.join;
   $("on-text").innerHTML = `<span>${x.l1}</span><span>${x.l2}</span><b>${x.l3} ${x.l4}</b>`;
 }
-export function renderCreate(c) {
-  const { $, lang } = c, x = T[lang()];
+export async function renderCreate(c) {
+  const { $, lang } = c, x = T[lang()], C = (k) => chatText(k, lang());
+  await loadChat();
+  if (!catList.length || catList.lang !== lang()) { try { const w = await (await fetch(lang() === "tr" ? "words_tr.json" : "words_en.json")).json(); catList = [...new Set(w.map((q) => q.category))].sort(); catList.lang = lang(); opts.cats = new Set(); } catch { catList = []; } }
   $("oc-title").textContent = x.cTitle; $("oc-make-t").textContent = x.make; $("oc-msg").textContent = "";
   const body = $("oc-body"); body.replaceChildren();
   const group = (label, items) => { body.append(el("div", "oc-l", label)); const r = el("div", "oc-row"); items.forEach((i) => r.append(i)); body.append(r); };
   const pill = (txt, on, fn) => { const b = el("button", "oc-pill" + (on ? " on" : ""), txt); b.onclick = fn; return b; };
   group(x.words, [10, 20, 30, 40, 50].map((n) => pill(n, opts.wordCount === n, () => { opts.wordCount = n; renderCreate(c); })));
-  group(x.diff, [["EASY", x.easy], ["MEDIUM", x.med], ["HARD", x.hard]].map(([k, t]) => pill(t, opts.diffs.has(k), () => { opts.diffs.has(k) ? (opts.diffs.size > 1 && opts.diffs.delete(k)) : opts.diffs.add(k); renderCreate(c); })));
-  group(x.mode, [["NORMAL", x.normal], ["RELAXED", x.relaxed]].map(([k, t]) => pill(t, opts.mode === k, () => { opts.mode = k; renderCreate(c); })));
+  group(C("online_room_mode_title"), [[false, C("online_room_mode_free_for_all")], [true, C("online_room_mode_team")]].map(([k, t]) => pill(t, opts.team === k, () => { opts.team = k; renderCreate(c); })));
+  group(C("select_category"), [...catList.map((k) => pill(`${CAT_EMOJI[k] || "✨"} ${k}`, opts.cats.has(k), () => { opts.cats.has(k) ? opts.cats.delete(k) : opts.cats.add(k); renderCreate(c); })), pill(`🎨 ${C("all_categories")}`, opts.cats.size === 0, () => { opts.cats = new Set(); renderCreate(c); })]);
+  group(x.diff, [["EASY", x.easy], ["MEDIUM", x.med], ["HARD", x.hard]].map(([k, t]) => pill(t, opts.diffs.has(k), () => { opts.diffs.has(k) ? (opts.diffs.size > 1 && opts.diffs.delete(k)) : opts.diffs.add(k); renderCreate(c); })).concat([pill(C("all_difficulties"), opts.diffs.size === 3, () => { opts.diffs = new Set(["EASY", "MEDIUM", "HARD"]); renderCreate(c); })]));
   $("oc-make").onclick = async () => {
     $("oc-msg").textContent = "…";
     try {
       const lv = c.levelOf(c.P.xp).level;
       const all = opts.diffs.size === 3 ? null : [...opts.diffs].sort((a, b) => ["EASY", "MEDIUM", "HARD"].indexOf(a) - ["EASY", "MEDIUM", "HARD"].indexOf(b)).join(",");
-      const cd = await net.createRoom(c.P.nick, lv, c.P.frame, { wordCount: opts.wordCount, difficulty: all, mode: opts.mode, category: null });
+      const cat = opts.cats.size ? [...opts.cats].sort().join(",") : null;
+      const cd = await net.createRoom(c.P.nick, lv, c.P.frame, { wordCount: opts.wordCount, difficulty: all, mode: opts.mode, category: cat, teamMode: opts.team });
       enterLobby(c, cd);
     } catch { $("oc-msg").textContent = x.err; }
   };
@@ -117,6 +123,7 @@ const present = (p, now = Date.now()) => !p.left && now - (p.lastSeenAt || p.joi
 function onRoom(c, r) {
   room = r;
   if (!r) return;
+  if (myId && r.players && !r.players[myId] && c.current() === "onw") { c.info(T[c.lang()].kicked); leaveLobby(c); return; }
   if (c.current() === "onw") {
     if (r.status === "PLAYING" && !started && !(r.players[myId]?.pendingNextRound)) { started = true; clearInterval(cdTimer); c.startOnlineGame(r, code); return; }
     renderLobby(c);
@@ -135,7 +142,7 @@ function renderLobby(c) {
   $("ow-title").textContent = x.lobby; $("ow-code").textContent = code.split("").join(" "); $("ow-codeh").textContent = x.roomCode; $("ow-info").textContent = "";
   const now = Date.now(), players = Object.entries(room.players || {}).map(([uid, p]) => ({ uid, ...p })).filter((p) => !p.left).sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
   const presentPlayers = players.filter((p) => present(p, now));
-  $("ow-occ").textContent = x.occ(presentPlayers.length, 8);
+  const team = !!room.teamMode; $("ow-occ").textContent = x.occ(presentPlayers.length, team ? 4 : 8);
   const list = $("ow-list"); list.replaceChildren();
   const bubbles = activeBubbles(chatNow());
   if (!$("ow-dock").firstChild) $("ow-dock").append(buildDock(chatCtx(c), code, () => room));
@@ -144,18 +151,27 @@ function renderLobby(c) {
     const row = el("div", "ow-row" + (present(p, now) ? "" : " away") + (p.ready || isHost ? " ready" : ""));
     const av = frameRing(frameById(p.frameId), "ow-av"); av.style.position = "relative";
     const bub = bubbles[p.uid]; if (bub) row.append(el("div", "bubble", esc(messageOf(bub, lang()))));
-    row.append(av, el("div", "ow-nm", `${isHost ? "👑 " : ""}${esc(isMe ? x.you(p.displayName) : p.displayName)}<small>Lv ${p.level || 1}${p.pendingNextRound ? " · " + x.pending : ""}</small>`), el("div", "ow-st", present(p, now) ? (p.ready || isHost ? "✓" : "⏳") : "…"));
+    row.append(av, el("div", "ow-nm", `${isHost ? "👑 " : ""}${esc(isMe ? x.you(p.displayName) : p.displayName)}<small>Lv ${p.level || 1}${p.pendingNextRound ? " · " + x.pending : ""}</small>`));
+    if (team) { const tb = el("button", "tm-badge " + (p.teamId === "B" ? "b" : "a"), chatText(p.teamId === "B" ? "online_team_b" : "online_team_a", lang())); if (isMe) { tb.title = chatText("online_switch_team", lang()); tb.onclick = () => net.setTeam(code, p.teamId === "B" ? "A" : "B").catch(() => {}); } else tb.disabled = true; row.append(tb); }
+    row.append(el("div", "ow-st", present(p, now) ? (p.ready || isHost ? "✓" : "⏳") : "…"));
+    if (room.hostUid === myId && !isMe) { const kb = el("button", "kick", "⛔"); kb.title = chatText("online_kick_player", lang()); kb.onclick = () => c.confirm(chatText("online_kick_confirm_message", lang(), p.displayName), chatText("online_kick_confirm_confirm", lang()), () => net.kickPlayer(code, p.uid, p.displayName).catch(() => {})); row.append(kb); }
     list.append(row);
   });
+  const kicked = Object.entries(room.kickedUsers || {}).filter(([, k]) => k && k.until > now);
+  if (room.hostUid === myId && kicked.length) {
+    list.append(el("div", "ow-sec", chatText("online_kicked_users_section_title", lang())));
+    kicked.forEach(([uid, k]) => { const r = el("div", "ow-row away kicked", `<div class="ow-nm">${esc(chatText("online_kicked_user_remaining_format", lang(), k.displayName || "?", Math.max(1, Math.ceil((k.until - now) / 60000))))}</div>`); const ub = el("button", "fr-pill", chatText("online_unban_player", lang())); ub.onclick = () => net.unbanPlayer(code, uid).catch(() => {}); r.append(ub); list.append(r); });
+  }
   const me = room.players[myId], isHost = room.hostUid === myId;
-  const everyoneReady = presentPlayers.filter((p) => p.uid !== room.hostUid).every((p) => p.ready);
+  const active = presentPlayers.filter((p) => !p.pendingNextRound), everyoneReady = presentPlayers.filter((p) => p.uid !== room.hostUid).every((p) => p.ready);
+  const teamOk = !team || (active.length === 4 && active.filter((p) => p.teamId === "A").length === 2 && active.filter((p) => p.teamId === "B").length === 2);
   $("ow-ready").style.display = isHost ? "none" : ""; $("ow-ready-t").textContent = me && me.ready ? x.notReady : x.ready;
   $("ow-ready").onclick = () => net.setReady(code, !(me && me.ready)).catch(() => {});
   $("ow-start").style.display = isHost ? "" : "none"; $("ow-start-t").textContent = x.start;
-  const canStart = isHost && presentPlayers.length >= 2 && everyoneReady && !room.countdownStartedAt;
+  const canStart = isHost && presentPlayers.length >= 2 && everyoneReady && teamOk && !room.countdownStartedAt;
   $("ow-start").classList.toggle("dis", !canStart);
   $("ow-start").onclick = () => { if (canStart) hostStart(c); };
-  $("ow-info").textContent = isHost ? (presentPlayers.length < 2 ? x.needTwo : "") : (everyoneReady && presentPlayers.length >= 2 ? x.waitHost : "");
+  $("ow-info").textContent = team && !teamOk ? chatText(active.length < 4 ? "online_team_needs_players" : "online_team_unbalanced", lang()) : isHost ? (presentPlayers.length < 2 ? x.needTwo : "") : (everyoneReady && presentPlayers.length >= 2 ? x.waitHost : "");
   $("ow-invite-t").textContent = x.inviteF; $("ow-invite").onclick = () => inviteSheet(c);
   // 3-2-1 shown on every lobby while the host's countdown runs
   clearInterval(cdTimer);
@@ -220,7 +236,7 @@ async function renderOnlineResult(c, again) {
     players: roundPlayers, left, myUid: myId, xp: c.lastXp || 0, gold: c.lastGold || 0, pen: c.P.pen, wordCount: room.wordCount, sel: olSel,
     votes, requested: olRequested, blocked: false, ring: cc.ring, itemsFor: (u) => olItems[u] || [], select: (u) => { olSel = u; },
     dock: () => { const w = document.createElement("div"); w.className = "cd-wrap1"; w.append(buildDock(cc, code, () => room)); return w; },
-    onHome: () => leaveLobby(c),
+    teamMode: !!room.teamMode, onHome: () => leaveLobby(c),
     onRematch: async () => { olRequested = true; try { await net.voteRematch(code); } catch {} renderOnlineResult(c, true); },
   });
 }

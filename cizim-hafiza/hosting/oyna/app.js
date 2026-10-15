@@ -2,6 +2,7 @@ import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
 import { checkStreak } from "./streak.js";
 import { renderResult, loadResultStrings } from "./result.js";
+import { loadChat, chatText } from "./chat.js";
 import { loadRunes, layoutRunes, renderRunes, effect as runeFx } from "./runes.js";
 import { layoutReport, renderReport } from "./report.js";
 import { layoutChests, renderChests, award as awardChest, wonDialog } from "./chests.js";
@@ -199,7 +200,7 @@ function show(id) {
   loadImgs(id);
   current = id; if (typeof paintMusic === "function" && P.prefs) paintMusic();
   for (const s of document.querySelectorAll(".screen")) s.classList.toggle("on", s.id === id);
-  layout();
+  layout(); paintTeamPill();
 }
 
 const DOODLES = [
@@ -328,10 +329,20 @@ function setRing(ring, arc, timeEl, left, total) {
 let levelRun = null, kind = "quick", relaxed = false;
 async function ensureWords() { if (words.lang !== lang) { words = await (await fetch(t().file)).json(); words.lang = lang; } }
 function pickRoomWords(r) {
-  const diffs = r.difficulty ? r.difficulty.split(",") : ["EASY", "MEDIUM", "HARD"];
-  return [...words].filter((w) => diffs.includes(w.difficulty)).sort(() => Math.random() - 0.5).slice(0, r.wordCount || 10).map((w) => w.id);
+  const diffs = r.difficulty ? r.difficulty.split(",") : ["EASY", "MEDIUM", "HARD"], cats = r.category ? r.category.split(",") : null;
+  return [...words].filter((w) => diffs.includes(w.difficulty) && (!cats || cats.includes(w.category))).sort(() => Math.random() - 0.5).slice(0, r.wordCount || 10).map((w) => w.id);
+}
+let teamInfo = null;
+function paintTeamPill() {
+  let e = document.getElementById("team-pill");
+  if (!e) { e = document.createElement("div"); e.id = "team-pill"; document.getElementById("stage").append(e); }
+  const on = teamInfo && kind === "online" && (current === "draw" || current === "guess");
+  e.style.display = on ? "" : "none";
+  if (on) e.textContent = `${chatText("online_team_yours", lang, teamInfo.teamId)} · ${teamInfo.mate ? chatText("online_team_mate", lang, teamInfo.mate) : chatText("online_team_mate_missing", lang)}`;
 }
 async function startOnlineGame(r) {
+  teamInfo = null;
+  if (r.teamMode) { await loadChat(); const uid = await net.myUid(), mine = (r.players || {})[uid]; if (mine && mine.teamId) { const mate = Object.entries(r.players).find(([u, p]) => u !== uid && p.teamId === mine.teamId && !p.left); teamInfo = { teamId: mine.teamId, mate: mate ? mate[1].displayName : null }; } }
   await ensureWords(); kind = "online"; levelRun = null; relaxed = r.mode === "RELAXED";
   const byId = new Map(words.map((w) => [w.id, w]));
   begin((r.wordIds || []).map((id) => byId.get(id)).filter(Boolean));

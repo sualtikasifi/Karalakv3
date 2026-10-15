@@ -169,7 +169,12 @@ export function renderOnlineResult(c, d) {
   const inner = el("div", "rs-inner"); root.append(inner);
   const me = d.players.find((p) => p.uid === d.myUid), ranked = [...d.players].sort((a, b) => b.totalScore - a.totalScore), place = ranked.findIndex((p) => p.uid === d.myUid) + 1;
   const ringBox = (fid) => { const w = el("div", "rsv-ring"); w.append(d.ring(fid)); return w; };
-  if (d.players.length === 2) {
+  if (d.teamMode) {
+    const myT = me.teamId === "B" ? "B" : "A", tot = (t) => d.players.filter((p) => p.teamId === t).reduce((a, p) => a + p.totalScore, 0), mine = tot(myT), theirs = tot(myT === "A" ? "B" : "A"), won = mine > theirs, drew = mine === theirs;
+    const col = (m) => (m ? (won ? "#1f9a3a" : drew ? "#3b2314" : "#8e1f1f") : (!won && !drew ? "#1f9a3a" : drew ? "#3b2314" : "#8e1f1f"));
+    const nm = (t) => C(t === "A" ? "online_team_a" : "online_team_b");
+    inner.append(el("div", "rs-vs", `<div class="nm l tn">${nm(myT)}</div><div class="sc l tn" style="color:${col(true)}">${mine}</div><div class="nm r tn">${nm(myT === "A" ? "B" : "A")}</div><div class="sc r tn" style="color:${col(false)}">${theirs}</div><div class="out" style="background:${drew ? "#8a6a50" : won ? "#2ea043" : "#d23b2e"}">${T(drew ? "quick_match_drew" : won ? "quick_match_won" : "quick_match_lost")}</div><div class="vs">${T("quick_match_versus")}</div>${won ? '<img class="cr" src="img/lobby_crown.webp" alt="">' : ""}`));
+  } else if (d.players.length === 2) {
     const other = d.players.find((p) => p.uid !== d.myUid), won = me.totalScore > other.totalScore, drew = me.totalScore === other.totalScore;
     const col = (mine) => (mine ? (won ? "#1f9a3a" : drew ? "#3b2314" : "#8e1f1f") : (!won && !drew ? "#1f9a3a" : drew ? "#3b2314" : "#8e1f1f"));
     const v = el("div", "rs-vs", `<div class="av l"></div><div class="nm l">${esc(me.displayName)}</div><div class="sc l" style="color:${col(true)}">${me.totalScore}</div><div class="av r"></div><div class="nm r">${esc(other.displayName)}</div><div class="sc r" style="color:${col(false)}">${other.totalScore}</div><div class="out" style="background:${drew ? "#8a6a50" : won ? "#2ea043" : "#d23b2e"}">${T(drew ? "quick_match_drew" : won ? "quick_match_won" : "quick_match_lost")}</div><div class="vs">${T("quick_match_versus")}</div>${won ? '<img class="cr" src="img/lobby_crown.webp" alt="">' : ""}`);
