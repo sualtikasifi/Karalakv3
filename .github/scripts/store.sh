@@ -57,6 +57,15 @@ clear_overlays
 # The ads consent form (if it shows) is answered with the same tap home.sh uses; harmless on the bare home screen.
 adb shell input tap 540 1678; sleep 4
 clear_overlays
+# The daily-streak window opens over the home screen on a fresh install: close it, then answer the test
+# interstitial ad that closing can show.
+adb shell input tap 980 752; sleep 2
+for i in 1 2 3 4; do
+  sleep 5
+  for label in "Close" "Skip"; do
+    xy=$(find_xy "$label"); [ -n "$xy" ] && adb shell input tap $xy
+  done
+done
 for try in 1 2 3 4 5 6; do
   [ -n "$(find_xy Pens)" ] && break
   adb shell input tap 543 1674
