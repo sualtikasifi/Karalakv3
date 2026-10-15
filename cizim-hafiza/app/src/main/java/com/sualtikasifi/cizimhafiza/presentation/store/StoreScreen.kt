@@ -780,6 +780,13 @@ private fun PenSkin.cardRes(): Int = when (this) {
     PenSkin.SUNRISE -> R.drawable.st_pen_sunrise
     PenSkin.NIGHT -> R.drawable.st_pen_night
     PenSkin.DIAMOND -> R.drawable.st_pen_diamond
+    PenSkin.AURUM -> R.drawable.st_pen_aurum
+    PenSkin.PRISM -> R.drawable.st_pen_prism
+    PenSkin.EMBER -> R.drawable.st_pen_ember
+    PenSkin.STORM -> R.drawable.st_pen_storm
+    PenSkin.COSMOS -> R.drawable.st_pen_cosmos
+    PenSkin.SPECTER -> R.drawable.st_pen_specter
+    PenSkin.LION -> R.drawable.st_pen_lion
     else -> R.drawable.st_pen_copper
 }
 
@@ -795,6 +802,13 @@ private fun PenSkin.taglineRes(): Int? = when (this) {
     PenSkin.SUNRISE -> R.string.pen_sunrise_tagline
     PenSkin.NIGHT -> R.string.pen_night_tagline
     PenSkin.DIAMOND -> R.string.pen_diamond_tagline
+    PenSkin.AURUM -> R.string.pen_aurum_tagline
+    PenSkin.PRISM -> R.string.pen_prism_tagline
+    PenSkin.EMBER -> R.string.pen_ember_tagline
+    PenSkin.STORM -> R.string.pen_storm_tagline
+    PenSkin.COSMOS -> R.string.pen_cosmos_tagline
+    PenSkin.SPECTER -> R.string.pen_specter_tagline
+    PenSkin.LION -> R.string.pen_lion_tagline
     else -> null
 }
 

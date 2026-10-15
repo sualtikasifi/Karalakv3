@@ -117,7 +117,19 @@ fun DrawScope.drawPenStroke(
         drawPath(path = path, color = flatColor, style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round))
         return startDistance
     }
+    val effect = skin.effect
+    if (effect.glow) {
+        // Pass one: a wide, faint halo of the same colour under the whole stroke, so it never washes over the core.
+        var d = startDistance
+        for (i in 1 until points.size) {
+            val a = points[i - 1]
+            val b = points[i]
+            drawLine(color = penColorAt(skin, d).copy(alpha = 0.28f), start = a, end = b, strokeWidth = strokeWidthPx * 2.1f, cap = StrokeCap.Round)
+            d += (b - a).getDistance()
+        }
+    }
     var distance = startDistance
+    var nextSparkle = (startDistance / SPARKLE_GAP_PX).toInt() + 1
     for (i in 1 until points.size) {
         val a = points[i - 1]
         val b = points[i]
@@ -128,7 +140,32 @@ fun DrawScope.drawPenStroke(
             strokeWidth = strokeWidthPx,
             cap = StrokeCap.Round
         )
-        distance += (b - a).getDistance()
+        val len = (b - a).getDistance()
+        if (effect.sparkle && len > 0f) {
+            while (nextSparkle * SPARKLE_GAP_PX <= distance + len) {
+                val n = nextSparkle
+                val t = (n * SPARKLE_GAP_PX - distance) / len
+                // Hash of the sparkle's index alone: the same spot, side and size on every redraw and every replay.
+                val h = (n * 2654435761L) ushr 7
+                val side = if (h and 1L == 0L) 1f else -1f
+                val off = strokeWidthPx * (0.55f + ((h ushr 1) % 5) * 0.12f) * side
+                val dir = if (len > 0f) (b - a) / len else Offset.Zero
+                val c = Offset(a.x + (b.x - a.x) * t - dir.y * off, a.y + (b.y - a.y) * t + dir.x * off)
+                drawSparkle(c, strokeWidthPx * (0.32f + ((h ushr 4) % 4) * 0.1f))
+                nextSparkle++
+            }
+        }
+        distance += len
     }
     return distance
+}
+
+private const val SPARKLE_GAP_PX = 46f
+
+/** A four-point white glint: two thin crossed bars with a bright dot at the middle. */
+private fun DrawScope.drawSparkle(center: Offset, r: Float) {
+    val w = (r * 0.28f).coerceAtLeast(1f)
+    drawLine(Color.White, Offset(center.x - r, center.y), Offset(center.x + r, center.y), w, StrokeCap.Round)
+    drawLine(Color.White, Offset(center.x, center.y - r), Offset(center.x, center.y + r), w, StrokeCap.Round)
+    drawCircle(Color.White, radius = w * 1.1f, center = center)
 }
