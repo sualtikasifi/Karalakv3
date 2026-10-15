@@ -509,3 +509,9 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 @keyframes rsf{to{transform:translateY(110vh) rotate(900deg)}}
 .rs-share{margin:calc(var(--u)*10) auto 0;height:calc(var(--u)*76);width:80%;border-radius:99px;border:calc(var(--u)*5) solid #1b6e25;background:linear-gradient(#7edc5c,#34a83a,#248a2e);display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*14);box-shadow:0 calc(var(--u)*8) calc(var(--u)*10) #0004}
 .rs-share svg{width:calc(var(--u)*40);height:calc(var(--u)*40)}.rs-share .lt{font-size:calc(var(--u)*34);-webkit-text-stroke:calc(var(--u)*6) #1b5e20}.rs-share:active{transform:scale(.95)}
+
+/* Brand splash */
+#splash{position:fixed;inset:0;z-index:9999;background:#b07f34;overflow:hidden;transition:opacity .26s linear}
+#splash img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;transform-origin:center}
+#sp-bar{position:absolute;border-radius:99px;background:#3f2210;border:3px solid #ffe08a;box-shadow:0 0 0 2px #8a4e12 inset;box-sizing:border-box}
+#sp-bar i{display:block;height:100%;min-width:12%;border-radius:99px;background:linear-gradient(#ffc04a,#f58a1f);box-shadow:inset 0 .35em 0 #ffffff47}

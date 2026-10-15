@@ -7,10 +7,33 @@
 <title>Karalak - Oyna</title>
 <!-- cache: html/js/css/json are served with no-cache (see firebase.json) -->
 <link rel="stylesheet" href="style.css">
+<link rel="preload" as="image" href="img/splash_art.webp">
 <link rel="preload" as="image" href="img/bg_home_scene.webp">
 <link rel="preload" as="font" type="font/ttf" href="fonts/baloo2_extrabold.ttf" crossorigin>
 </head>
 <body>
+<div id="splash"><img src="img/splash_art.webp" alt=""><div id="sp-bar"><i></i></div></div>
+<script>
+// Brand splash (Android BrandSplash): the painted scene, a loading bar, 2.3 s the first time and 1.2 s after that.
+(function () {
+  var sp = document.getElementById("splash"), img = sp.firstChild, bar = document.getElementById("sp-bar"), fill = bar.firstChild;
+  var seen = false; try { seen = localStorage.getItem("splashSeen") === "1"; } catch (e) {}
+  var total = seen ? 1200 : 2300, t0 = Date.now(), done = false;
+  function lay() {
+    var w = innerWidth, h = innerHeight, k = Math.max(w / 841, h / 1870), ox = (w - 841 * k) / 2, oy = (h - 1870 * k) / 2;
+    bar.style.left = ox + 196 * k + "px"; bar.style.top = oy + 1354 * k + "px"; bar.style.width = 446 * k + "px"; bar.style.height = 76 * k + "px"; bar.style.padding = 0.17 * 76 * k + "px";
+  }
+  lay(); addEventListener("resize", lay);
+  function end() { if (done) return; done = true; try { localStorage.setItem("splashSeen", "1"); } catch (e) {} sp.style.opacity = "0"; setTimeout(function () { sp.remove(); }, 300); }
+  sp.addEventListener("click", function () { total = 170; t0 = Date.now() - (Date.now() - t0); });
+  (function tick() {
+    var p = Math.min(1, (Date.now() - t0) / total), e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+    fill.style.width = (e * 100) + "%"; img.style.transform = "scale(" + (1 + .05 * e) + ")";
+    if (p >= 1 && window.__appReady !== false) return end();
+    requestAnimationFrame(tick);
+  })();
+})();
+</script>
 <div id="stage">
   <section id="home" class="screen">
     <img class="bg" src="img/bg_home_scene.webp" alt="">
