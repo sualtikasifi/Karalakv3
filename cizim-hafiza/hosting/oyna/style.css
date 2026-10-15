@@ -369,3 +369,23 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #ru-detail .pill{height:calc(var(--u)*90);position:relative}
 
 .txt.body{font-size:calc(var(--u)*31);font-weight:600;line-height:1.22}.wskip{color:#5a4636;font-size:calc(var(--u)*34);text-decoration:underline}
+/* Giriş Serisi */
+.ls-wrap{width:min(94vw,calc(100dvh/1.5));aspect-ratio:1024/1536;container-type:inline-size;position:relative;max-height:96%}
+.ls-frame{position:absolute;inset:0}.ls-bg{position:absolute;inset:0;width:100%;height:100%}
+.ls-head{position:absolute;left:8%;right:8%;top:27%;text-align:center;font:800 5.2cqw "Baloo2",sans-serif;color:#4a2a10}
+.ls-hint{position:absolute;left:8.2%;width:83.5%;top:28.4%;height:4.6%;display:flex;align-items:center;justify-content:center;text-align:center;font:600 2.9cqw/1.2 "Baloo2",sans-serif;color:#4a2a10}
+.ls-hint.big{font-size:4.4cqw}.ls-hint.ok{color:#1f9a3a}.ls-hint.mile{color:#8e44d6}
+.ls-grid{position:absolute;left:8.2%;top:33%;width:83.5%;height:44.3%;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:1fr 1fr;gap:0 1.4cqw;align-items:center}
+.ls-card{grid-column:span 2;align-self:center;position:relative;aspect-ratio:998/1343;font-family:"Baloo2",sans-serif}
+.ls-card:nth-child(5){grid-column:2/4}.ls-card:nth-child(6){grid-column:4/6}.ls-card:nth-child(7){grid-column:6/8}
+.ls-card img{width:100%;height:100%;display:block}
+.ls-card span{position:absolute;text-align:center;color:#4a2a10;font-weight:800;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+.ls-card .l1{left:18.3%;top:14.85%;width:64%;height:13.6%;font-size:2.7cqw}.ls-card .l2{left:16.3%;top:73.45%;width:67.5%;height:13.3%;font-size:3.1cqw}
+.ls-card.done{opacity:.78}.ls-card.today{animation:lsp .65s ease-in-out infinite alternate;z-index:1}.ls-card.just{animation:pp .6s cubic-bezier(.3,1.6,.5,1);z-index:1}
+@keyframes lsp{to{transform:scale(1.07)}}
+.ls-card .tick{position:absolute;left:50%;bottom:-5%;width:12%;aspect-ratio:1;margin-left:-6%;border-radius:50%;background:#e6d0a2;border:1.5px solid #c9a46a;color:#fff;font:700 2.4cqw/1 sans-serif;display:flex;align-items:center;justify-content:center}
+.ls-card.done .tick{background:#2ea043;border-color:#1b7a30}
+.ls-act{position:absolute;left:8.2%;width:83.5%;top:77.6%;height:9.6%;display:flex;gap:2cqw;align-items:center;justify-content:center}
+.ls-act .pill{flex:1;max-width:70%;height:100%!important;font-size:3.4cqw}
+.ls-claim{height:100%;background:none;border:0;padding:0}.ls-claim img{height:100%;display:block}
+.ls-x{position:absolute;left:85.5%;top:15.6%;width:12.5%;height:8.4%;background:none;border:0}

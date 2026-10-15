@@ -85,6 +85,13 @@ function detail(c, id) {
   const close = el("button", "pill cream small", `<span>${x.close}</span>`); close.onclick = () => d.classList.add("hidden");
   box.append(act, close); d.append(box); d.onclick = (e) => { if (e.target === d) d.classList.add("hidden"); };
 }
+// Opens a chest at once (login-streak rewards): same loot as a timed chest, shown in the reward dialog.
+export function openNow(c, tier) {
+  const P = c.P; P.__fx = c.runeFx; const rw = roll(P, tier); P.gold += rw.gold;
+  for (const [t, n] of Object.entries(rw.jokers)) P.jokers[t] = (P.jokers[t] || 0) + n;
+  if (rw.pen) P.owned.push("pen:" + rw.pen.id);
+  c.saveP(); c.refreshHome(); reward(c, tier, rw);
+}
 export function reward(c, tierKey, rw) {
   const { $, lang } = c, x = T[lang()], d = $("pick"); d.classList.remove("hidden"); d.replaceChildren();
   const lines = [`<div class="rw-gold">🪙 +${rw.gold.toLocaleString()} ${x.gold}</div>`, ...Object.entries(rw.jokers).map(([t, n]) => `<div class="rw-j">🃏 ${n}× ${x.jokers[t]}</div>`)];
