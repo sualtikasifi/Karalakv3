@@ -183,3 +183,76 @@ export async function sendInvite(toUid, roomCode, myNick) {
   const { fs, db, auth } = await init();
   await fs.addDoc(fs.collection(db, "users", toUid, "invites"), { fromUid: auth.currentUser.uid, fromNickname: myNick, roomCode, sentAt: Date.now() });
 }
+
+// ================= Race a Friend: rooms/{code} (same documents as OnlineGameRepositoryImpl) =================
+const playerMap = (displayName, level, frameId, pendingNextRound = false) => ({
+  displayName, level, frameId, avatarUrl: "", joinedAt: Date.now(), lastSeenAt: Date.now(),
+  ready: false, finished: false, left: false, totalScore: 0, correctCount: 0, wrongCount: 0, fastestCorrectMs: null, pendingNextRound, teamId: null,
+});
+export async function createRoom(nick, level, frameId, { wordCount, difficulty, mode, category }) {
+  const { fs, db, auth } = await init(), uid = auth.currentUser.uid;
+  for (let i = 0; i < 5; i++) {
+    const code = String(100000 + Math.floor(Math.random() * 900000)), ref = fs.doc(db, "rooms", code);
+    const ok = await fs.runTransaction(db, async (tx) => {
+      if ((await tx.get(ref)).exists()) return false;
+      tx.set(ref, { hostUid: uid, createdAt: Date.now(), status: "WAITING", wordCount, category: category || null, difficulty: difficulty || null, mode, wordIds: [],
+        players: { [uid]: playerMap(nick, level, frameId) }, rematchVotes: [], teamMode: false });
+      return true;
+    });
+    if (ok) return code;
+  }
+  throw new Error("code");
+}
+export async function joinRoom(code, nick, level, frameId) {
+  const { fs, db, auth } = await init(), uid = auth.currentUser.uid, ref = fs.doc(db, "rooms", code);
+  return fs.runTransaction(db, async (tx) => {
+    const s = await tx.get(ref);
+    if (!s.exists()) return "notfound";
+    const d = s.data(), players = d.players || {}, now = Date.now();
+    const kicked = d.kickedUsers && d.kickedUsers[uid];
+    if (kicked && kicked.until > now) return "kicked";
+    const present = Object.values(players).filter((p) => !p.left && now - (p.lastSeenAt || p.joinedAt || 0) <= 150000);
+    if (!(uid in players) && present.length >= 8) return "full";
+    if (d.status === "WAITING") tx.update(ref, { ["players." + uid]: playerMap(nick, level, frameId) });
+    else tx.update(ref, { ["players." + uid]: playerMap(nick, level, frameId, true) });
+    return "ok";
+  });
+}
+export async function watchRoom(code, cb) {
+  const { fs, db } = await init();
+  return fs.onSnapshot(fs.doc(db, "rooms", code), (s) => cb(s.exists() ? { id: s.id, ...s.data() } : null), () => cb(null));
+}
+const upd = async (code, data) => { const { fs, db } = await init(); await fs.updateDoc(fs.doc(db, "rooms", code), data); };
+export const setReady = async (code, ready) => upd(code, { ["players." + (await myUid()) + ".ready"]: ready });
+export const touchPresence = async (code, level, frameId) => upd(code, { ["players." + (await myUid()) + ".lastSeenAt"]: Date.now(), ["players." + (await myUid()) + ".level"]: level, ["players." + (await myUid()) + ".frameId"]: frameId });
+export const leaveRoom = async (code) => upd(code, { ["players." + (await myUid()) + ".left"]: true });
+export async function startCountdown(code) { await upd(code, { countdownStartedAt: Date.now() }); }
+export async function cancelCountdown(code) { const { fs } = await init(); await upd(code, { countdownStartedAt: fs.deleteField() }); }
+export async function startGame(code, wordIds) { const { fs } = await init(); await upd(code, { status: "PLAYING", wordIds, startedAt: Date.now(), countdownStartedAt: fs.deleteField() }); }
+export async function submitRoomResult(code, totalScore, correctCount, wrongCount, fastestCorrectMs, items) {
+  const { fs, db, auth } = await init(), uid = auth.currentUser.uid, ref = fs.doc(db, "rooms", code);
+  await fs.setDoc(fs.doc(db, "rooms", code, "results", uid), { itemsJson: JSON.stringify(items) });
+  await upd(code, { [`players.${uid}.finished`]: true, [`players.${uid}.totalScore`]: totalScore, [`players.${uid}.correctCount`]: correctCount, [`players.${uid}.wrongCount`]: wrongCount, [`players.${uid}.fastestCorrectMs`]: fastestCorrectMs });
+  await fs.runTransaction(db, async (tx) => {
+    const s = await tx.get(ref); if (!s.exists()) return;
+    const d = s.data(); if (d.status === "FINISHED") return;
+    const active = Object.values(d.players || {}).filter((p) => !p.pendingNextRound && !p.left);
+    if (active.length && active.every((p) => p.finished)) tx.update(ref, { status: "FINISHED" });
+  });
+}
+export async function roomResultItems(code, uid) {
+  const { fs, db } = await init();
+  const s = await fs.getDoc(fs.doc(db, "rooms", code, "results", uid));
+  try { return s.exists() ? JSON.parse(s.data().itemsJson) : []; } catch { return []; }
+}
+export async function voteRematch(code) { const { fs } = await init(); await upd(code, { rematchVotes: fs.arrayUnion(await myUid()) }); }
+export async function returnToWaiting(code) {
+  const { fs, db } = await init(), ref = fs.doc(db, "rooms", code);
+  await fs.runTransaction(db, async (tx) => {
+    const s = await tx.get(ref); if (!s.exists() || s.data().status !== "FINISHED") return;
+    const players = {};
+    for (const [u, p] of Object.entries(s.data().players || {})) if (!p.left) players[u] = playerMap(p.displayName || "", p.level || 1, p.frameId || "SCRIBBLER");
+    tx.update(ref, { status: "WAITING", wordIds: [], players, rematchVotes: [] });
+  });
+}
+export async function consumeInvite(id) { const { fs, db, auth } = await init(); await fs.deleteDoc(fs.doc(db, "users", auth.currentUser.uid, "invites", id)); }

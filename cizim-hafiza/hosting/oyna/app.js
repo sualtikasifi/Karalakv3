@@ -1,5 +1,6 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
+import { layoutOnline, renderEntry, renderCreate, renderJoin, leaveLobby, submitAndWait, joinWithCode, quickInvite } from "./online.js";
 import { layoutFriends, openFriends, renderFriends, stop as stopFriends } from "./friends.js";
 import { loadWorlds, layoutWorlds, renderWorlds, layoutMap, renderMap, mixFor, starsFor, recordLevel, currentWorld } from "./levels.js";
 import { layoutAccount, renderAccount } from "./account.js";
@@ -17,11 +18,11 @@ const ART_W = 841, ART_H = 1870, GUESS_BOTTOM = 1398;
 const T = {
   tr: { tag: "Çiz, ezberle,\ntahmin et!", start: "OYNA", note: "Android ve tarayıcı oyuncularıyla eşleş", next: "Bitir", ok: "Gönder",
         guess: "Tahmin et", result: "Sonuç", searching: "Rakip aranıyor…", searchSub: "Birisi senin gibi çizerken bulunuyor", again: "TEKRAR OYNA", noOpp: "Şu an rakip bulunamadı",
-        you: "Sen", win: "Kazandın!", lose: "Kaybettin", draw: "Berabere", leave: "Oyundan çıkılsın mı?", yes: "Çık", no: "Kal",
+        you: "Sen", win: "Kazandın!", lose: "Kaybettin", draw: "Berabere", leaveQ: "Odadan ayrılmak istiyor musun?", leave: "Oyundan çıkılsın mı?", yes: "Çık", no: "Kal",
         mine: "Çizimlerin", tiles: { online: "Arkadaşınla Yarış", quick: "Hızlı Eşleş", offline: "Çevrimdışı Oyna", levels: "Bölümler", friends: "Arkadaşlar", ach: "Başarımlar", league: "Aylık Lig", store: "Mağaza", settings: "Ayarlar" }, goldLbl: "Klasik", adGold: "+500 Altın", daily: "Günün Meydan Okuması", adChest: "Ücretsiz Kasa", lvl: "Seviye", toNext: (n, l) => `Sv. ${l} için ${n} XP`, soon: "Çok yakında", appOnly: "Uygulamada", ok: "Tamam", langTitle: "Dil",  theirs: "Rakibin çizimleri", pts: "puan", file: "words_tr.json", ph: "Cevabın…" },
   en: { tag: "Draw, memorize,\nguess!", start: "PLAY", note: "Match with Android and browser players", next: "Done", ok: "Send",
         guess: "Guess", result: "Result", searching: "Finding an opponent…", searchSub: "Looking for someone who draws like you", again: "PLAY AGAIN", noOpp: "No opponent found right now",
-        you: "You", win: "You win!", lose: "You lose", draw: "Draw", leave: "Leave the game?", yes: "Leave", no: "Stay",
+        you: "You", win: "You win!", lose: "You lose", draw: "Draw", leaveQ: "Leave the room?", leave: "Leave the game?", yes: "Leave", no: "Stay",
         mine: "Your drawings", tiles: { online: "Race a Friend", quick: "Quick Match", offline: "Play Offline", levels: "Levels", friends: "Friends", ach: "Achievements", league: "Monthly League", store: "Store", settings: "Settings" }, goldLbl: "Classic", adGold: "+500 Gold", daily: "Daily Challenge", adChest: "Free Chest", lvl: "Level", toNext: (n, l) => `${n} XP to Lv. ${l}`, soon: "Coming soon", appOnly: "In the app", ok: "OK", langTitle: "Language",  theirs: "Opponent's drawings", pts: "pts", file: "words_en.json", ph: "Your answer…" },
 };
 const $ = (id) => document.getElementById(id);
@@ -36,7 +37,9 @@ let leagueLoaded = false;
 const ctx = {
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
-  inviteFriend: (f) => msg(`${f.nickname}`),
+  inviteFriend: (f) => quickInvite(ctx, f).then(() => { stopFriends(); show("onw"); }),
+  kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
+  pickRoomWords: (r) => pickRoomWords(r),
   refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
@@ -91,6 +94,9 @@ function layout() {
     for (const [id, x, y, w, h, lx0, ly0, lx1, ly1] of T) { place($("tl-" + id), x, y, w, h); place($("tx-" + id), lx0, ly0, lx1 - lx0, ly1 - ly0); }
   } else if (current === "store") {
     layoutStore(ctx); renderStore(ctx);
+  } else if (current === "onl" || current === "onj" || current === "onc" || current === "onw") {
+    layoutOnline(ctx);
+    if (current === "onl") renderEntry(ctx); else if (current === "onj") renderJoin(ctx); else if (current === "onc") renderCreate(ctx);
   } else if (current === "friends") {
     layoutFriends(ctx); renderFriends(ctx);
   } else if (current === "worlds") {
@@ -265,9 +271,19 @@ function setRing(ring, arc, timeEl, left, total) {
   arc.style.strokeDashoffset = 276.5 * (1 - Math.max(0, left) / total);
   ring.classList.toggle("warn", left <= 3);
 }
-let levelRun = null, kind = "quick";
+let levelRun = null, kind = "quick", relaxed = false;
+async function ensureWords() { if (words.lang !== lang) { words = await (await fetch(t().file)).json(); words.lang = lang; } }
+function pickRoomWords(r) {
+  const diffs = r.difficulty ? r.difficulty.split(",") : ["EASY", "MEDIUM", "HARD"];
+  return [...words].filter((w) => diffs.includes(w.difficulty)).sort(() => Math.random() - 0.5).slice(0, r.wordCount || 10).map((w) => w.id);
+}
+async function startOnlineGame(r) {
+  await ensureWords(); kind = "online"; levelRun = null; relaxed = r.mode === "RELAXED";
+  const byId = new Map(words.map((w) => [w.id, w]));
+  begin((r.wordIds || []).map((id) => byId.get(id)).filter(Boolean));
+}
 async function startLevel(w, l) {
-  levelRun = { w, l }; kind = "level";
+  levelRun = { w, l }; kind = "level"; relaxed = false;
   const mix = mixFor(w, l);
   if (words.lang !== lang) { words = await (await fetch(t().file)).json(); words.lang = lang; }
   const picks = [];
@@ -275,7 +291,7 @@ async function startLevel(w, l) {
   begin(picks.sort(() => Math.random() - 0.5));
 }
 async function start(k = "quick") {
-  levelRun = null; kind = k;
+  levelRun = null; kind = k; relaxed = false;
   if (words.lang !== lang) { words = await (await fetch(t().file)).json(); words.lang = lang; }
   begin([...words].sort(() => Math.random() - 0.5).slice(0, WORD_COUNT));
 }
@@ -295,7 +311,7 @@ function nextDraw() {
   const total = DRAW_SECONDS[w.difficulty] ?? 7; let left = total;
   const arc = $("d-arc"); arc.style.transition = "none"; setRing($("d-ring"), arc, $("d-time"), left, total); void arc.getBoundingClientRect(); arc.style.transition = "";
   tool = "pen"; refreshTools(); paintLive();
-  dTimer = setInterval(() => {
+  if (!relaxed) dTimer = setInterval(() => {
     left--; setRing($("d-ring"), arc, $("d-time"), left, total);
     if (left <= 0) finishDraw();
   }, 1000);
@@ -342,6 +358,7 @@ async function finish() {
   const n = round.filter((w) => w.correct).length;
   if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
   P.xp += score; P.periodXp = (P.periodXp || 0) + score; P.gold += n * 10; achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
+  if (kind === "online") { net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {}); return submitAndWait(ctx, round, score); }
   net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
   const me = {
     language: lang, nickname: "Web", wordIds: round.map((w) => w.id),
@@ -382,7 +399,7 @@ function confirmLeave() {
   $("dlg-text").textContent = t().leave; $("dlg-yes").textContent = t().yes; $("dlg-no").textContent = t().no;
   $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren();
   $("dialog").classList.remove("hidden");
-  $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); clearInterval(dTimer); clearInterval(gTimer); show("home"); };
+  $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); clearInterval(dTimer); clearInterval(gTimer); if (kind === "online") leaveLobby(ctx); else show("home"); };
   $("dlg-no").onclick = () => $("dialog").classList.add("hidden");
 }
 $("d-back").onclick = confirmLeave; $("g-back").onclick = confirmLeave;
@@ -409,6 +426,10 @@ function msg(text, extra) {
   $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren(); };
 }
 const soon = (name) => () => msg(`${name} · ${t().soon}`);
+$("tl-online").onclick = async () => { await ensureWords(); show("onl"); };
+$("on-back").onclick = () => show("home"); $("oj-back").onclick = () => show("onl"); $("oc-back").onclick = () => show("onl");
+$("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("onj");
+$("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
 $("tl-quick").onclick = () => start("quick"); $("tl-offline").onclick = () => start("offline");
 $("tl-levels").onclick = async () => { await loadWorlds(); show("worlds"); };
 $("wl-back").onclick = () => show("home"); $("lm-back").onclick = () => show("worlds");
@@ -421,7 +442,7 @@ $("lg-back").onclick = () => show("home");
 $("lg-refresh").onclick = () => { leagueLoaded = false; layout(); };
 $("tl-friends").onclick = () => { show("friends"); openFriends(ctx); };
 $("fr-back").onclick = () => { stopFriends(); show("home"); };
-for (const [id, k] of [["online", "online"]]) $("tl-" + id).onclick = () => soon(t().tiles[k])();
+for (const [id, k] of []) $("tl-" + id).onclick = () => soon(t().tiles[k])();
 const soonMsg = () => msg(t().soon);
 $("tl-settings").onclick = () => show("settings");
 $("se-back").onclick = () => show("home");
@@ -431,4 +452,10 @@ const _oldSettings = () => {
   msg(t().langTitle, [mk("tr", "Türkçe"), mk("en", "English")]);
 };
 loadStoreData().then(refreshHome).catch(() => {});
+net.listen("invites", (list) => {
+  const inv = list[0]; if (!inv || current === "onw" || current === "draw" || current === "guess") return;
+  const tx = lang === "tr" ? `${inv.fromNickname} seni davet etti!` : `${inv.fromNickname} invited you!`;
+  ctx.confirm(tx, lang === "tr" ? "Katıl" : "Join", async () => { net.consumeInvite(inv.id).catch(() => {}); const r = await joinWithCode(ctx, inv.roomCode); if (r !== "ok") msg(lang === "tr" ? "Odaya katılınamadı." : "Couldn't join the room."); });
+  $("dlg-no").onclick = () => { net.consumeInvite(inv.id).catch(() => {}); $("dialog").classList.add("hidden"); };
+}).catch(() => {});
 applyLang(); show("home");
