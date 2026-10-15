@@ -22,7 +22,7 @@ Amaç: iPhone kullanıcıları tarayıcıdan oynasın; web, Android uygulamasıy
 - Başarımlar: konum, yeşil "alındı" rengi, mavi/turuncu ödül hapları
 
 ## Sırada
-1. Lig (sekme sırası Arkadaşlar önce, "Arkadaşlar · Toplam XP" çipi, boş durum kartı, global tablo, ödül toplama, yenile)
+1. Lig: ödül toplama penceresi (geçen ayın birincileri) kaldı
 2. Mağaza: Kalemler / Çerçeveler sekmeleri, satın alma pencereleri, kalem/çerçeve seçici (Android'deki AppWindowDialog görünümü)
 3. Seviye haritası (kaydırma, numaralı kilitli düğümler, alt panel), Dünyalar
 4. Arkadaşlar: Düellolar, istekler, davetler

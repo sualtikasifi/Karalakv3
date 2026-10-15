@@ -117,6 +117,20 @@ export async function getGlobalLeague() {
   return snap.exists() ? snap.data() : null;
 }
 
+// FriendRepositoryImpl.observeLeagueTable: me + friends, each profile's totals; periodXp counts only for the current period.
+export async function friendsLeague(pid) {
+  const { fs, db, auth } = await init(), uid = auth.currentUser.uid;
+  const ids = (await fs.getDocs(fs.collection(db, "users", uid, "friends"))).docs.map((d) => d.id);
+  const out = [];
+  for (const id of [uid, ...ids]) {
+    try {
+      const s = await fs.getDoc(fs.doc(db, "users", id)); if (!s.exists()) continue; const d = s.data();
+      out.push({ uid: id, me: id === uid, nickname: d.nickname || "?", periodXp: d.periodId === pid ? d.periodXp || 0 : 0, totalXp: d.totalXp || 0, level: d.level || 1, frameId: d.frameId });
+    } catch {}
+  }
+  return out.sort((a, b) => b.totalXp - a.totalXp);
+}
+
 // Same fields as FriendRepositoryImpl.publishLeagueScore. A guest's web account is its own uid, so it never
 // collides with an Android profile.
 export async function publishScore({ nickname, periodXp, periodId, level, frameId, totalXp }) {
