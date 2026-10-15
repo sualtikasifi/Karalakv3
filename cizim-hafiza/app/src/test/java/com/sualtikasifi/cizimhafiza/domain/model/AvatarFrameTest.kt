@@ -145,7 +145,9 @@ class AvatarFrameTest {
                 "FLAME_RING", "ICE_CRYSTAL", "RAINBOW_DREAM", "AMETHYST_CRYSTAL",
                 "OCEAN_TREASURE", "TIME_EXPLORER", "GALAXY_RING", "CELESTIAL_MOON",
                 "PEARL_BUTTERFLY", "DRAGON_FLAME", "SHADOW_CROWN", "ROYAL_CROWN",
-                "CANDY_WORLD", "CRYSTAL_WINGS", "VOID_FLAME", "ANGEL_HALO", "LION_KING"
+                "CANDY_WORLD", "CRYSTAL_WINGS", "VOID_FLAME", "ANGEL_HALO", "LION_KING",
+                // Rune-map reward.
+                "KARALAK_STUDIO"
             ),
             AvatarFrame.entries.map { it.name }
         )

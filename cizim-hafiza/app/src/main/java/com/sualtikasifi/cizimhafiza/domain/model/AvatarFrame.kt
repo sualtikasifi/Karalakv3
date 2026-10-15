@@ -102,7 +102,7 @@ enum class AvatarFrame(
     RAINBOW_DREAM(R.drawable.level_frame_rainbow_dream, 0.607f, 0.008f, -0.005f, 0, storePrice = 4000),
     AMETHYST_CRYSTAL(R.drawable.level_frame_amethyst_crystal, 0.543f, -0.001f, -0.0215f, 0, storePrice = 4500),
     OCEAN_TREASURE(R.drawable.level_frame_ocean_treasure, 0.58f, -0.009f, -0.013f, 0, storePrice = 6000, isRuneReward = true),
-    TIME_EXPLORER(R.drawable.level_frame_time_explorer, 0.584f, -0.001f, -0.0225f, 0, storePrice = 6500, isRuneReward = true),
+    TIME_EXPLORER(R.drawable.level_frame_time_explorer, 0.584f, -0.001f, -0.0225f, 0, storePrice = 6500, isRuneReward = true, retired = true),
     GALAXY_RING(R.drawable.level_frame_galaxy_ring, 0.582f, 0f, -0.013f, 0, storePrice = 7500),
     CELESTIAL_MOON(R.drawable.level_frame_celestial_moon, 0.506f, 0.008f, -0.06f, 0, storePrice = 8000),
     PEARL_BUTTERFLY(R.drawable.level_frame_pearl_butterfly, 0.588f, 0.004f, -0.005f, 0, storePrice = 10000),
@@ -115,7 +115,10 @@ enum class AvatarFrame(
     CRYSTAL_WINGS(R.drawable.level_frame_crystal_wings, 0.465f, -0.001f, -0.0283f, 0, storePrice = 32000),
     VOID_FLAME(R.drawable.level_frame_void_flame, 0.437f, 0.0066f, -0.0157f, 0, storePrice = 50000, motion = FrameMotion.VOID),
     ANGEL_HALO(R.drawable.level_frame_angel_halo, 0.446f, -0.0018f, -0.0322f, 0, storePrice = 80000, motion = FrameMotion.ANGEL),
-    LION_KING(R.drawable.level_frame_lion_king, 0.428f, -0.0013f, 0.0208f, 0, storePrice = 140000, motion = FrameMotion.LION);
+    LION_KING(R.drawable.level_frame_lion_king, 0.428f, -0.0013f, 0.0208f, 0, storePrice = 140000, motion = FrameMotion.LION),
+
+    // --- Rune-map reward (st_6): found only on the rune map, never sold. Replaces Time Explorer as that rune's gift. ---
+    KARALAK_STUDIO(R.drawable.level_frame_karalak_studio, 0.474f, -0.001f, 0.0605f, 0, storePrice = 6500, isRuneReward = true);
 
     // Monthly league prize frames (LEAGUE_CHAMPION_<year>_<month>) were
     // removed — the first batch of artwork did not clean up against the

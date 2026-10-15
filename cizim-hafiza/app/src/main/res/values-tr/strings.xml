@@ -1237,6 +1237,7 @@
     <string name="frame_name_rainbow_dream">Gökkuşağı Rüyası</string>
     <string name="frame_name_amethyst_crystal">Ametist Kristal</string>
     <string name="frame_name_ocean_treasure">Deniz Definesi</string>
+    <string name="frame_name_karalak_studio">Karalak Atölyesi</string>
     <string name="frame_name_time_explorer">Zaman Gezgini</string>
     <string name="frame_name_galaxy_ring">Gökada Halkası</string>
     <string name="frame_name_celestial_moon">Gök Ayı</string>
@@ -1554,8 +1555,8 @@
     <string name="rune_st_3_flavor">Elmas gibi parlayan bir kalem.</string>
     <string name="rune_st_5_name">Kutup Işığı Kalemi</string>
     <string name="rune_st_5_flavor">Gökyüzünün dans eden ışıkları kalemine konuk oldu.</string>
-    <string name="rune_st_6_name">Zaman Gezgini</string>
-    <string name="rune_st_6_flavor">Pusulası olan, yolunu hiç şaşırmaz.</string>
+    <string name="rune_st_6_name">Karalak Atölyesi</string>
+    <string name="rune_st_6_flavor">Taçlı Karalak kapında, boyaların hazır.</string>
     <string name="rune_st_7_name">Deniz Definesi</string>
     <string name="rune_st_7_flavor">Derinlerden çıkan bir hazine, profilinde.</string>
     <string name="rune_st_key_name">Kraliyet Tacı</string>

@@ -93,7 +93,7 @@ dismiss() { tap_text "Wait" || true; sleep 1; }
 
 # One frame at a time: write it into the settings file, start the app, shoot the home screen several times (the glow and
 # the sweep move, so a few frames show the motion).
-for F in CANDY_WORLD CRYSTAL_WINGS VOID_FLAME ANGEL_HALO LION_KING; do
+for F in KARALAK_STUDIO LION_KING; do
   adb shell am force-stop $PKG; sleep 2
   printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boolean name=\"tutorial_completed\" value=\"true\" /><boolean name=\"feature_tour_seen\" value=\"true\" /><string name=\"selected_avatar_frame\">$F</string></map>" \
     | adb shell "run-as $PKG sh -c 'cat > shared_prefs/cizim_hafiza_settings.xml'"

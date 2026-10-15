@@ -278,7 +278,7 @@ object RuneRewards {
         "st_1" to "pen:SUNRISE",
         "st_5" to "pen:AURORA",
         "st_3" to "pen:DIAMOND",
-        "st_6" to "frame:TIME_EXPLORER",
+        "st_6" to "frame:KARALAK_STUDIO",
         "st_7" to "frame:OCEAN_TREASURE",
         "st_key" to "frame:ROYAL_CROWN"
     )

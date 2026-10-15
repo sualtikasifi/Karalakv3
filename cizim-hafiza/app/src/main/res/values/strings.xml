@@ -1224,6 +1224,7 @@
     <string name="frame_name_rainbow_dream">Rainbow Dream</string>
     <string name="frame_name_amethyst_crystal">Amethyst Crystal</string>
     <string name="frame_name_ocean_treasure">Ocean Treasure</string>
+    <string name="frame_name_karalak_studio">Karalak Studio</string>
     <string name="frame_name_time_explorer">Time Explorer</string>
     <string name="frame_name_galaxy_ring">Galaxy Ring</string>
     <string name="frame_name_celestial_moon">Celestial Moon</string>
@@ -1541,8 +1542,8 @@
     <string name="rune_st_3_flavor">A pencil that shines like a diamond.</string>
     <string name="rune_st_5_name">Aurora Pen</string>
     <string name="rune_st_5_flavor">The dancing lights of the sky came to stay in your pen.</string>
-    <string name="rune_st_6_name">Time Explorer</string>
-    <string name="rune_st_6_flavor">With a compass in hand you never lose your way.</string>
+    <string name="rune_st_6_name">Karalak Studio</string>
+    <string name="rune_st_6_flavor">The crowned pup waits at your door, crayons ready.</string>
     <string name="rune_st_7_name">Ocean Treasure</string>
     <string name="rune_st_7_flavor">A treasure from the deep, on your profile.</string>
     <string name="rune_st_key_name">Royal Crown</string>
