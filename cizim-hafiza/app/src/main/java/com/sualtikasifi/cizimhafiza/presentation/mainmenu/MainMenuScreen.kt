@@ -271,7 +271,7 @@ fun MainMenuScreen(
         }
 
         if (exitPromptOpen) {
-            com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            com.sualtikasifi.cizimhafiza.presentation.common.PaintedExitDialog(
                 title = stringResource(R.string.exit_confirm_title),
                 message = stringResource(R.string.exit_confirm_message),
                 confirmText = stringResource(R.string.exit_confirm_yes),

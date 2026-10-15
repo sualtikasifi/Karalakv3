@@ -21,6 +21,7 @@ on:
           - runes.sh
           - frames.sh
           - pens.sh
+          - exit.sh
           - tutorial.sh
           - worlds.sh
           - store.sh
