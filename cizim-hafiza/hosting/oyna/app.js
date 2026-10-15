@@ -24,11 +24,11 @@ const ART_W = 841, ART_H = 1870, GUESS_BOTTOM = 1595;
 
 const T = {
   tr: { tag: "Çiz, ezberle,\ntahmin et!", start: "OYNA", note: "Android ve tarayıcı oyuncularıyla eşleş", next: "Bitir", ok: "Gönder",
-        guess: "Tahmin et", result: "Sonuç", timeJ: "+Süre", hintT: "İpucu", firstT: "İlk harf", countT: "Harf sayısı", skipT: "Geç", found: "Harika!\nEşleşme bulundu.", startIn: (n) => `Maç ${n} saniye sonra başlıyor`, tip1: (n) => `İkiniz de aynı ${n} kelimeyi çizeceksiniz`, tip2: "Puanlar maç sonunda karşılaştırılır", tip3: "Rahat ol, keyfini çıkar!", searching: "Rakip aranıyor…", searchSub: "Birisi senin gibi çizerken bulunuyor", again: "TEKRAR OYNA", lobbyHome: "ANA SAYFA", noOpp: "Şu an rakip bulunamadı",
+        guess: "Tahmin et", result: "Sonuç", timeJ: "+Süre", hintT: "İpucu", firstT: "İlk harf", countT: "Harf sayısı", skipT: "Geç", found: "Harika!\nEşleşme bulundu.", startIn: (n) => `Maç ${n} saniye sonra başlıyor`, tip1: (n) => `İkiniz de aynı ${n} kelimeyi çizeceksiniz`, tip2: "Puanlar maç sonunda karşılaştırılır", tip3: "Rahat ol, keyfini çıkar!", wTitle: "Karalak'a hoş geldin!", wBody: "Kısa bir deneme yapalım. Sana 3 kelime vereceğim, sen çizeceksin. Sonra çizimlerini sana geri göstereceğim, sen de ne olduğunu hatırlayacaksın. Hepsi bu!", wGo: "Hadi başlayalım", wSkip: "Eğitimi atla", finT: "İşte bu kadar! 🎉", finB: "Artık çizmeyi de hatırlamayı da biliyorsun. Hediye olarak her jokerden 3'er hakkın hesabına eklendi. Kalemin hazır, bol şans!", finBtn: "Oynamaya başla", searching: "Rakip aranıyor…", searchSub: "Birisi senin gibi çizerken bulunuyor", again: "TEKRAR OYNA", lobbyHome: "ANA SAYFA", noOpp: "Şu an rakip bulunamadı",
         you: "Sen", win: "Kazandın!", lose: "Kaybettin", draw: "Berabere", leaveQ: "Odadan ayrılmak istiyor musun?", leave: "Oyundan çıkılsın mı?", yes: "Çık", no: "Kal",
         mine: "Çizimlerin", tiles: { online: "Arkadaşınla Yarış", quick: "Hızlı Eşleş", offline: "Çevrimdışı Oyna", levels: "Bölümler", friends: "Arkadaşlar", ach: "Başarımlar", league: "Aylık Lig", store: "Mağaza", settings: "Ayarlar" }, goldLbl: "Klasik", adGold: "+500 Altın", daily: "Günün Meydan Okuması", adChest: "Ücretsiz Kasa", dailyPlay: "ŞİMDİ OYNA", dailyDone: "Bugünkü meydan okumayı bitirdin!", lvl: "Seviye", toNext: (n, l) => `Sv. ${l} için ${n} XP`, soon: "Çok yakında", appOnly: "Uygulamada", ok: "Tamam", langTitle: "Dil",  theirs: "Rakibin çizimleri", pts: "puan", file: "words_tr.json", ph: "Cevabın…" },
   en: { tag: "Draw, memorize,\nguess!", start: "PLAY", note: "Match with Android and browser players", next: "Done", ok: "Send",
-        guess: "Guess", result: "Result", timeJ: "+Time", hintT: "Hint", firstT: "First letter", countT: "Letters", skipT: "Skip", found: "Great!\nMatch found.", startIn: (n) => `Match starts in ${n} seconds`, tip1: (n) => `You'll both draw the same ${n} words`, tip2: "Scores are compared when the match ends", tip3: "Relax and enjoy the game!", searching: "Finding an opponent…", searchSub: "Looking for someone who draws like you", again: "PLAY AGAIN", lobbyHome: "HOME", noOpp: "No opponent found right now",
+        guess: "Guess", result: "Result", timeJ: "+Time", hintT: "Hint", firstT: "First letter", countT: "Letters", skipT: "Skip", found: "Great!\nMatch found.", startIn: (n) => `Match starts in ${n} seconds`, tip1: (n) => `You'll both draw the same ${n} words`, tip2: "Scores are compared when the match ends", tip3: "Relax and enjoy the game!", wTitle: "Welcome to Karalak!", wBody: "Let's try a quick practice. I'll give you 3 words to draw. Then I'll show your drawings back and you'll remember what they were. That's it!", wGo: "Let's start", wSkip: "Skip tutorial", finT: "That's it! 🎉", finB: "You now know how to draw and remember. As a gift, 3 of each joker were added to your account. Your pen is ready, good luck!", finBtn: "Start playing", searching: "Finding an opponent…", searchSub: "Looking for someone who draws like you", again: "PLAY AGAIN", lobbyHome: "HOME", noOpp: "No opponent found right now",
         you: "You", win: "You win!", lose: "You lose", draw: "Draw", leaveQ: "Leave the room?", leave: "Leave the game?", yes: "Leave", no: "Stay",
         mine: "Your drawings", tiles: { online: "Race a Friend", quick: "Quick Match", offline: "Play Offline", levels: "Levels", friends: "Friends", ach: "Achievements", league: "Monthly League", store: "Store", settings: "Settings" }, goldLbl: "Classic", adGold: "+500 Gold", daily: "Daily Challenge", adChest: "Free Chest", dailyPlay: "PLAY NOW", dailyDone: "You finished today's challenge!", lvl: "Level", toNext: (n, l) => `${n} XP to Lv. ${l}`, soon: "Coming soon", appOnly: "In the app", ok: "OK", langTitle: "Language",  theirs: "Opponent's drawings", pts: "pts", file: "words_en.json", ph: "Your answer…" },
 };
@@ -116,6 +116,8 @@ function layout() {
     renderMap(ctx);
   } else if (current === "account") {
     layoutAccount(ctx); renderAccount(ctx);
+  } else if (current === "welcome") {
+    place($("w-title"), 126, 830, 590, 68); place($("w-body"), 104, 934, 634, 200); place($("w-go"), 125, 1170, 575, 136); place($("w-skip"), 200, 1334, 442, 90);
   } else if (current === "runes") {
     layoutRunes(ctx); renderRunes(ctx);
   } else if (current === "report") {
@@ -216,6 +218,7 @@ function applyLang() {
   const x = t();
   document.documentElement.lang = lang;
   $("d-next-t").textContent = x.next; $("g-ok-t").textContent = x.ok;
+  $("w-title").textContent = x.wTitle; $("w-body").textContent = x.wBody; $("w-go-t").textContent = x.wGo; $("w-skip").textContent = x.wSkip;
   $("s-text").textContent = x.searching; $("s-sub").textContent = x.searchSub; $("again-t").textContent = x.again;
   $("dlg-text").textContent = x.leave; $("dlg-yes").textContent = x.yes; $("dlg-no").textContent = x.no;
   $("g-input").placeholder = x.ph;
@@ -338,6 +341,14 @@ async function startLevel(w, l) {
   for (const [d, n] of Object.entries(mix)) picks.push(...[...words].filter((x) => x.difficulty === d).sort(() => Math.random() - 0.5).slice(0, n));
   begin(picks.sort(() => Math.random() - 0.5));
 }
+const TUT_WORDS = { tr: ["kitap", "köpek", "elma"], en: ["book", "dog", "apple"] };
+async function startTutorial() {
+  await ensureWords(); kind = "tutorial"; levelRun = null; relaxed = true;
+  const byText = new Map(words.map((w) => [w.text.toLowerCase(), w]));
+  const picked = TUT_WORDS[lang].map((s, i) => byText.get(s) || { id: 900000 + i, text: s, difficulty: "EASY" });
+  begin(picked);
+}
+function endTutorial() { P.tutorialDone = true; for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); }
 async function startDaily() {
   if (dailyState(P).done) return;
   await ensureWords(); kind = "daily"; levelRun = null; relaxed = false;
@@ -470,6 +481,7 @@ function addRow(parent, strokes, ok, label, sub, pen) {
 }
 async function finish() {
   const x = t();
+  if (kind === "tutorial") { show("home"); ctx.confirm(x.finT + "\n\n" + x.finB, x.finBtn, endTutorial); $("dlg-no").style.display = "none"; $("dlg-text").style.whiteSpace = "pre-line"; return; }
   const n = round.filter((w) => w.correct).length;
   if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
   P.xp += Math.round(score * (1 + runeFx(P, "XP") / 100)); P.periodXp = (P.periodXp || 0) + score; P.gold += Math.round(n * 10 * (kind === "daily" ? 1 : 1 + runeFx(P, "WORD") / 100)); achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
@@ -595,7 +607,8 @@ setTimeout(() => net.listen("invites", (list) => {
   ctx.confirm(tx, lang === "tr" ? "Katıl" : "Join", async () => { net.consumeInvite(inv.id).catch(() => {}); const r = await joinWithCode(ctx, inv.roomCode); if (r !== "ok") msg(lang === "tr" ? "Odaya katılınamadı." : "Couldn't join the room."); });
   $("dlg-no").onclick = () => { net.consumeInvite(inv.id).catch(() => {}); $("dialog").classList.add("hidden"); };
 }).catch(() => {}), 4000);
-applyLang(); show("home");
+applyLang();
+if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); }; } else show("home");
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 // After the home screen is up, quietly fetch the pictures of the screens people open most (skipped on data saver).
 setTimeout(() => {

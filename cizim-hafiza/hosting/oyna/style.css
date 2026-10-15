@@ -367,3 +367,5 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #ru-detail{position:absolute;display:flex;flex-direction:column;gap:calc(var(--u)*8);background:url(img/rune_ui_card.webp) 0 0/100% 100%;padding:calc(var(--u)*40) calc(var(--u)*50);color:#3b2314}
 #ru-detail:empty{display:none}#ru-detail b{font-size:calc(var(--u)*40)}#ru-detail small{font-size:calc(var(--u)*24);font-style:italic;color:#7a5a40}#ru-detail p{margin:0;font-size:calc(var(--u)*26);font-weight:600}.ru-lv{font-size:calc(var(--u)*26);color:#7a5a40}
 #ru-detail .pill{height:calc(var(--u)*90);position:relative}
+
+.txt.body{font-size:calc(var(--u)*31);font-weight:600;line-height:1.22}.wskip{color:#5a4636;font-size:calc(var(--u)*34);text-decoration:underline}
