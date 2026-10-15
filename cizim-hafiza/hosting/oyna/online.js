@@ -1,6 +1,8 @@
 // Race a Friend: entry, create/join, live lobby, synchronized game start and the ranking screen.
 import * as net from "./firebase.js";
 import { frameRing, frameById } from "./store.js";
+import { loadChat, buildDock, watch as watchChat, stop as stopChat, onReactions, activeBubbles, messageOf, reactions as chatNow, chatRow, chatText } from "./chat.js";
+import { renderOnlineResult as drawOnlineResult, loadResultStrings } from "./result.js";
 
 const T = {
   tr: { title: "Arkadaşlarınla Yarış", l1: "Ne çizdiğini hatırlamak, bazen", l2: "kuantum fiziğinden bile daha zor olabilir.", l3: "Karalama Savaşlarına", l4: "Hoşgeldin!", create: "Oda Kur", join: "Koda Katıl",
@@ -44,9 +46,10 @@ export function layoutOnline(c) {
     place($("ow-back"), 20, 40, 110, 106); place($("ow-title"), 160, 60, 520, 90);
     place($("ow-codep"), 40, 190, 760, 370); place($("ow-code"), 40, 262, 760, 100); place($("ow-codeh"), 100, 200, 640, 56);
     place($("ow-occ"), 60, 395, 720, 50);
-    const l = $("ow-list"); l.style.left = 60 * c.u() + "px"; l.style.top = 505 * c.u() + "px"; l.style.width = 720 * c.u() + "px"; l.style.height = 700 * c.u() + "px";
-    place($("ow-info"), 60, 1220, 720, 70);
-    place($("ow-ready"), 70, 1300, 330, 150); place($("ow-start"), 430, 1300, 340, 150); place($("ow-invite"), 70, 1480, 700, 120);
+    const l = $("ow-list"); l.style.left = 60 * c.u() + "px"; l.style.top = 505 * c.u() + "px"; l.style.width = 720 * c.u() + "px"; l.style.height = 670 * c.u() + "px";
+    place($("ow-info"), 60, 1195, 720, 50);
+    place($("ow-ready"), 70, 1240, 330, 125); place($("ow-start"), 430, 1240, 340, 125); place($("ow-invite"), 70, 1375, 700, 100);
+    place($("ow-dock"), 60, 1490, 720, 374);
     place($("ow-cd"), 220, 700, 400, 400);
   }
 }
@@ -100,11 +103,13 @@ async function enterLobby(c, cd) {
   c.show("onw");
   if (unsub) try { unsub(); } catch {}
   unsub = await net.watchRoom(cd, (r) => onRoom(c, r));
+  await loadChat(); c.$("ow-dock").replaceChildren(); watchChat(cd).catch(() => {});
+  chatUnsub && chatUnsub(); chatUnsub = onReactions(() => { if (c.current() === "onw") { renderLobby(c); clearTimeout(bubbleT); bubbleT = setTimeout(() => c.current() === "onw" && renderLobby(c), 3300); } });
   clearInterval(hb); const beat = () => net.touchPresence(cd, c.levelOf(c.P.xp).level, c.P.frame).catch(() => {}); beat(); hb = setInterval(beat, 60000);
   net.listen("friends", (l) => { myFriends = l; }).catch(() => {});
 }
 export function leaveLobby(c, goHome = true) {
-  clearInterval(hb); clearInterval(cdTimer); if (unsub) { try { unsub(); } catch {} unsub = null; }
+  clearInterval(hb); clearInterval(cdTimer); stopChat(); if (chatUnsub) { chatUnsub(); chatUnsub = null; } if (unsub) { try { unsub(); } catch {} unsub = null; }
   if (code) net.leaveRoom(code).catch(() => {});
   code = null; room = null; if (goHome) c.show("home");
 }
@@ -115,11 +120,12 @@ function onRoom(c, r) {
   if (c.current() === "onw") {
     if (r.status === "PLAYING" && !started && !(r.players[myId]?.pendingNextRound)) { started = true; clearInterval(cdTimer); c.startOnlineGame(r, code); return; }
     renderLobby(c);
-  } else if (c.current() === "result" && c.kind() === "online" && r.status === "FINISHED") renderOnlineResult(c);
+  } else if (c.current() === "res2" && c.kind() === "online" && r.status === "FINISHED") renderOnlineResult(c, true);
   else if (c.current() === "search" && c.kind() === "online" && r.status === "FINISHED") renderOnlineResult(c);
-  else if (r.status === "WAITING" && started && c.kind() === "online" && c.current() === "result") { /* host sent everyone back */ started = false; c.show("onw"); }
+  else if (r.status === "WAITING" && started && c.kind() === "online" && c.current() === "res2") { /* host sent everyone back */ started = false; c.show("onw"); }
 }
-let myId = null;
+let myId = null, chatUnsub = null, bubbleT = null;
+const chatCtx = (c) => Object.assign(Object.create(c), { myUid: () => myId, ring: (f) => { const r = frameRing(frameById(f), "ow-av"); r.style.cssText += ";position:relative;width:100%;height:100%"; return r; }, chatText });
 net.myUid().then((u) => { myId = u; }).catch(() => {});
 
 function renderLobby(c) {
@@ -131,10 +137,13 @@ function renderLobby(c) {
   const presentPlayers = players.filter((p) => present(p, now));
   $("ow-occ").textContent = x.occ(presentPlayers.length, 8);
   const list = $("ow-list"); list.replaceChildren();
+  const bubbles = activeBubbles(chatNow());
+  if (!$("ow-dock").firstChild) $("ow-dock").append(buildDock(chatCtx(c), code, () => room));
   players.forEach((p) => {
     const isMe = p.uid === myId, isHost = p.uid === room.hostUid;
     const row = el("div", "ow-row" + (present(p, now) ? "" : " away") + (p.ready || isHost ? " ready" : ""));
     const av = frameRing(frameById(p.frameId), "ow-av"); av.style.position = "relative";
+    const bub = bubbles[p.uid]; if (bub) row.append(el("div", "bubble", esc(messageOf(bub, lang()))));
     row.append(av, el("div", "ow-nm", `${isHost ? "👑 " : ""}${esc(isMe ? x.you(p.displayName) : p.displayName)}<small>Lv ${p.level || 1}${p.pendingNextRound ? " · " + x.pending : ""}</small>`), el("div", "ow-st", present(p, now) ? (p.ready || isHost ? "✓" : "⏳") : "…"));
     list.append(row);
   });
@@ -190,32 +199,30 @@ export async function submitAndWait(c, round, score) {
   if (room && room.status === "FINISHED") renderOnlineResult(c);
 }
 
-async function renderOnlineResult(c) {
-  const { $, lang } = c, x = T[lang()];
-  if (!room || !finishedLocal) return;
-  finishedLocal = false;
-  c.show("result");
-  const ps = Object.entries(room.players || {}).map(([uid, p]) => ({ uid, ...p })).filter((p) => !p.left && !p.pendingNextRound).sort((a, b) => b.totalScore - a.totalScore || (a.fastestCorrectMs ?? 1e9) - (b.fastestCorrectMs ?? 1e9));
-  const place = ps.findIndex((p) => p.uid === myId) + 1;
-  $("r-title").textContent = place ? x.place(place) : x.lobby;
-  $("r-vs").textContent = "";
-  const list = $("r-list"); list.replaceChildren();
-  const h = el("div", "who", x.drawings); list.append(h);
-  const detail = el("div", "", ""); 
-  ps.forEach((p, i) => {
-    const row = el("button", "row-card ro", ""); row.style.width = "100%";
-    const av = frameRing(frameById(p.frameId), "ow-av"); av.style.cssText += ";position:relative;width:calc(var(--u)*110);height:calc(var(--u)*110);flex:none";
-    row.append(el("span", "ro-rk", i + 1 + "."), av, el("div", "lbl", `${esc(p.uid === myId ? x.you(p.displayName) : p.displayName)}<small>${x.ofTotal(p.correctCount, p.correctCount + p.wrongCount)}</small>`), el("b", "ro-sc", `${p.totalScore}`));
-    row.onclick = async () => { detail.replaceChildren(); const items = await net.roomResultItems(code, p.uid); items.forEach((it) => c.addRow(detail, it.strokes, it.isCorrect, it.word, "", it.penSkin)); };
-    list.append(row);
+let olSel = null, olItems = {}, olRequested = false, olFirst = true;
+async function renderOnlineResult(c, again) {
+  const { $, lang } = c;
+  if (!room) return;
+  if (!again) { if (!finishedLocal) return; finishedLocal = false; olSel = null; olItems = {}; olRequested = false; olFirst = true; }
+  await Promise.all([loadResultStrings(), loadChat()]);
+  const cc = chatCtx(c);
+  const roundPlayers = Object.entries(room.players || {}).map(([uid, p]) => ({ uid, ...p })).filter((p) => !p.left && !p.pendingNextRound).sort((a, b) => (a.uid === myId ? -1 : 0) - (b.uid === myId ? -1 : 0));
+  const left = Object.entries(room.players || {}).map(([uid, p]) => ({ uid, ...p })).filter((p) => p.left && !p.pendingNextRound && p.uid !== myId);
+  if (!roundPlayers.find((p) => p.uid === myId)) return;
+  // everyone's drawings load in the background and fill the board as they arrive
+  for (const p of roundPlayers) if (!olItems[p.uid]) { olItems[p.uid] = []; net.roomResultItems(code, p.uid).then((it) => { olItems[p.uid] = it || []; if (c.current() === "res2" && c.kind() === "online") renderOnlineResult(c, true); }); }
+  const votes = room.rematchVotes || [];
+  if (olFirst) { olFirst = false; c.show("res2"); c.sfx && c.sfx.over(); }
+  const mine = roundPlayers.find((p) => p.uid === myId);
+  // everybody voted: the room goes back to its lobby
+  if (olRequested && roundPlayers.every((p) => votes.includes(p.uid))) { net.returnToWaiting(code).catch(() => {}); }
+  drawOnlineResult(cc, {
+    players: roundPlayers, left, myUid: myId, xp: c.lastXp || 0, gold: c.lastGold || 0, pen: c.P.pen, wordCount: room.wordCount, sel: olSel,
+    votes, requested: olRequested, blocked: false, ring: cc.ring, itemsFor: (u) => olItems[u] || [], select: (u) => { olSel = u; },
+    dock: () => { const w = document.createElement("div"); w.className = "cd-wrap1"; w.append(buildDock(cc, code, () => room)); return w; },
+    onHome: () => leaveLobby(c),
+    onRematch: async () => { olRequested = true; try { await net.voteRematch(code); } catch {} renderOnlineResult(c, true); },
   });
-  list.append(detail);
-  const mine = ps.find((p) => p.uid === myId);
-  if (mine) { const items = await net.roomResultItems(code, myId); items.forEach((it) => c.addRow(detail, it.strokes, it.isCorrect, it.word, "", it.penSkin)); }
-  c.$("again-t").textContent = x.lobbyBack;
-  c.$("again").onclick = async () => { try { await net.returnToWaiting(code); } catch {} started = false; c.show("onw"); renderLobby(c); };
-  c.$("r-back").onclick = () => leaveLobby(c);
-  if (c.winRewards) c.winRewards(place === 1);
 }
 export const roomCode = () => code;
 export const roomNow = () => room;

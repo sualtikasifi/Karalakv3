@@ -222,6 +222,15 @@ export async function watchRoom(code, cb) {
   const { fs, db } = await init();
   return fs.onSnapshot(fs.doc(db, "rooms", code), (s) => cb(s.exists() ? { id: s.id, ...s.data() } : null), () => cb(null));
 }
+export async function watchReactions(code, cb) {
+  const { fs, db } = await init(), cutoff = Date.now() - 5 * 60000;
+  const q = fs.query(fs.collection(db, "rooms", code, "reactions"), fs.where("sentAt", ">", cutoff), fs.orderBy("sentAt"), fs.limitToLast(50));
+  return fs.onSnapshot(q, (s) => cb(s.docs.map((d) => d.data()).filter((r) => r.uid && r.emoji != null)), () => cb([]));
+}
+export async function sendReaction(code, emoji, messageKey) {
+  const { fs, db } = await init(); const uid = await myUid();
+  await fs.addDoc(fs.collection(db, "rooms", code, "reactions"), { uid, emoji, messageKey, sentAt: Date.now() });
+}
 const upd = async (code, data) => { const { fs, db } = await init(); await fs.updateDoc(fs.doc(db, "rooms", code), data); };
 export const setReady = async (code, ready) => upd(code, { ["players." + (await myUid()) + ".ready"]: ready });
 export const touchPresence = async (code, level, frameId) => upd(code, { ["players." + (await myUid()) + ".lastSeenAt"]: Date.now(), ["players." + (await myUid()) + ".level"]: level, ["players." + (await myUid()) + ".frameId"]: frameId });

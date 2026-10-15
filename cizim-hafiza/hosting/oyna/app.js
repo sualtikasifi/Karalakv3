@@ -48,7 +48,7 @@ const ctx = {
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
   inviteFriend: (f) => quickInvite(ctx, f).then(() => { stopFriends(); show("onw"); }),
-  paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
+  sfx, paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
   pickRoomWords: (r) => pickRoomWords(r),
   syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
@@ -488,7 +488,7 @@ async function finish() {
   const n = round.filter((w) => w.correct).length, xp0 = P.xp, goldPlay = Math.round(n * 10 * (kind === "daily" ? 1 : 1 + runeFx(P, "WORD") / 100));
   if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
   P.xp += Math.round(score * (1 + runeFx(P, "XP") / 100)); P.periodXp = (P.periodXp || 0) + score; P.gold += goldPlay; achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
-  if (kind === "online") { net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {}); return submitAndWait(ctx, round, score); }
+  if (kind === "online") { ctx.lastXp = P.xp - xp0; ctx.lastGold = goldPlay; net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {}); return submitAndWait(ctx, round, score); }
   net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
   const me = {
     language: lang, nickname: "Web", wordIds: round.map((w) => w.id),

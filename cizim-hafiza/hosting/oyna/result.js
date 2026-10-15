@@ -4,7 +4,7 @@ let S = null;
 const tr = (k, lang, ...a) => ((S && S[k] && S[k][lang]) || k).replace(/\{(\d)\}/g, (_, i) => a[+i]);
 export async function loadResultStrings() { if (!S) S = await (await fetch("result_strings.json")).json(); }
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
-const cap = (w, lang) => w ? w.charAt(0).toLocaleUpperCase(lang) + w.slice(1) : "";
+export const cap = (w, lang) => w ? w.charAt(0).toLocaleUpperCase(lang) + w.slice(1) : "";
 const ICON = { check: "rs_ic_check", x: "rs_ic_x", star: "rs_ic_star", crown: "rs_ic_crown", coin: "icon_gold_coin", trophy: "icon_league_trophy", cal: "daily_calendar_icon" };
 
 function statList(d, lang) {
@@ -61,7 +61,9 @@ export function renderResult(c, d) {
     inner.lastChild.querySelector(".rs-share").onclick = async () => { const txt = `Karalak 🎨 ${T("daily_challenge_result_title")}\n${d.flags.map((f) => (f ? "🟩" : "🟥")).join("")}\n🔥 ${D.streak}\nhttps://karalak-b6e11.web.app/oyna/`; try { if (navigator.share) await navigator.share({ text: txt }); else { await navigator.clipboard.writeText(txt); } } catch {} };
   }
   // words board
-  inner.append(board(c, d, lang, T));
+  const cfg = { title: T("result_words_title", d.items.length), sel: "me", placeholders: d.items.length, pen: d.pen, items: (sel) => (sel === "opp" ? d.oppItems : d.items), theirs: (sel) => sel === "opp",
+    chips: d.opp ? [{ id: "me", label: d.nick || T("quick_match_gallery_yours"), enabled: true }, { id: "opp", label: d.opp.nickname || "?", enabled: d.oppItems.length > 0 }] : [] };
+  inner.append(board(c, cfg, lang, T));
   // footer buttons
   if (d.next) { const b = el("button", "rs-next", `<span>⟳ ${d.next.label}</span>`); b.onclick = d.next.fn; foot.append(b); }
   const row = el("div", "rs-btns");
@@ -71,34 +73,36 @@ export function renderResult(c, d) {
   if (d.xp > 0 && d.n > 0) confetti(c.$("res2"));
 }
 
-function board(c, d, lang, T) {
-  const wrap = el("div", "rs-board"); let showOpp = false;
-  const n = () => (showOpp ? d.oppItems : d.items);
+// cfg: { title, chips:[{id,label,enabled}] (empty = plain title), sel, items(sel) -> [], placeholders, onSelect(id), theirs(sel) -> bool, pen }
+function board(c, cfg, lang, T) {
+  const wrap = el("div", "rs-board");
   const draw = () => {
-    wrap.replaceChildren();
-    wrap.append(el("div", "bd-art"));
+    wrap.replaceChildren(); wrap.append(el("div", "bd-art"));
     const plank = el("div", "plank");
-    if (d.opp) {
-      const mk = (label, sel, en, fn) => { const b = el("button", "chip " + (sel ? "sel" : ""), `<span class="lt">${label}</span>`); if (!en && !sel) b.classList.add("dis"); b.onclick = en && !sel ? fn : null; return b; };
-      const yl = d.nick || T("quick_match_gallery_yours"), ol = d.opp.nickname || "?";
-      const t1 = mk(yl, !showOpp, true, () => { showOpp = false; draw(); }), t2 = mk(ol, showOpp, d.oppItems.length > 0, () => { showOpp = true; draw(); });
-      t1.style.flex = Math.max(5, yl.length); t2.style.flex = Math.max(5, ol.length); plank.append(t1, t2);
-    } else plank.append(el("span", "lt", T("result_words_title", d.items.length)));
+    if (cfg.chips && cfg.chips.length) {
+      cfg.chips.forEach((ch) => {
+        const sel = ch.id === cfg.sel, b = el("button", "chip" + (sel ? " sel" : "") + (!ch.enabled && !sel ? " dis" : ""), `<span class="lt">${esc(ch.label)}</span>`);
+        b.style.flex = Math.max(5, ch.label.length); if (cfg.chips.length > 2) { b.style.flex = "none"; b.style.width = "calc(var(--k)*110)"; }
+        b.onclick = ch.enabled && !sel ? () => { cfg.sel = ch.id; cfg.onSelect && cfg.onSelect(ch.id); draw(); } : null; plank.append(b);
+      });
+      if (cfg.chips.length > 2) plank.classList.add("scrl");
+    } else plank.append(el("span", "lt", cfg.title));
     wrap.append(plank);
-    const items = n(), total = items.length || d.items.length, rows = Math.ceil(total / 5), g = el("div", "rs-sheets" + (rows > 2 ? " scr" : ""));
+    const items = cfg.items(cfg.sel), total = items.length || cfg.placeholders, rows = Math.ceil(total / 5), g = el("div", "rs-sheets" + (rows > 2 ? " scr" : ""));
     for (let i = 0; i < total; i++) {
       const it = items[i], sh = el("div", "sheet" + (it ? "" : " empty"));
       if (it) {
-        sh.innerHTML = `<div class="pg"><i class="dots"></i><em>${i + 1}</em><canvas></canvas><b>${cap(it.word, lang)}</b></div><img class="mk" src="img/${it.isCorrect ? "rs_ic_check" : "rs_ic_x"}.webp" alt="">`;
-        sh.onclick = () => preview(c, d, items, i, lang, T, showOpp);
+        sh.innerHTML = `<div class="pg"><i class="dots"></i><em>${i + 1}</em><canvas></canvas><b>${esc(cap(it.word, lang))}</b></div><img class="mk" src="img/${it.isCorrect ? "rs_ic_check" : "rs_ic_x"}.webp" alt="">`;
+        sh.onclick = () => preview(c, cfg, items, i, lang, T, cfg.theirs ? cfg.theirs(cfg.sel) : false);
       }
       g.append(sh);
     }
     wrap.append(g);
-    requestAnimationFrame(() => g.querySelectorAll("canvas").forEach((cv, i) => { c.fitCanvas(cv); c.paint(cv, items[i].strokes, false, items[i].penSkin || d.pen || "CLASSIC"); }));
+    requestAnimationFrame(() => g.querySelectorAll("canvas").forEach((cv, i) => { c.fitCanvas(cv); c.paint(cv, items[i].strokes, false, items[i].penSkin || cfg.pen || "CLASSIC"); }));
   };
-  draw(); return wrap;
+  cfg.redraw = draw; draw(); return wrap;
 }
+const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 
 function preview(c, d, items, idx, lang, T, theirs) {
   const { $ } = c, pk = $("pick"); pk.classList.remove("hidden"); pk.replaceChildren(); pk.onclick = null;
@@ -152,4 +156,47 @@ function confetti(host) {
   const f = el("div", "rs-conf"); host.append(f);
   for (let i = 0; i < 46; i++) { const e = el("i", ""); e.style.cssText = `left:${Math.random() * 100}%;background:hsl(${Math.random() * 360},85%,60%);animation-delay:${Math.random() * .6}s;animation-duration:${2 + Math.random() * 1.4}s;transform:rotate(${Math.random() * 360}deg)`; f.append(e); }
   setTimeout(() => f.remove(), 4200);
+}
+
+// ---------------- online result (OnlineResultScreen.kt) ----------------
+// d: { players:[{uid,displayName,level,frameId,totalScore,correctCount,wrongCount}], left:[...], myUid, xp, gold, pen, code,
+//      votes:[uid], requested, blocked, itemsFor(uid)->[], select(uid), sel, getRoom, ring(frameId), dock(), chatRow(), onHome, onRematch }
+export function renderOnlineResult(c, d) {
+  const { $, lang: gl } = c, lang = gl(), T = (k, ...a) => tr(k, lang, ...a), C = (k, ...a) => c.chatText(k, lang, ...a);
+  const root = $("rs-body"), foot = $("rs-foot"), sc = $("rs-scroll"), keep = sc.scrollTop; root.replaceChildren(); foot.replaceChildren();
+  const head = el("div", "rs-head", `<img src="img/rs_head.webp" alt=""><button class="rs-back" aria-label="back"></button><div class="rs-title lt">${T("game_over")}</div>`);
+  head.querySelector(".rs-back").onclick = d.onHome; root.append(head);
+  const inner = el("div", "rs-inner"); root.append(inner);
+  const me = d.players.find((p) => p.uid === d.myUid), ranked = [...d.players].sort((a, b) => b.totalScore - a.totalScore), place = ranked.findIndex((p) => p.uid === d.myUid) + 1;
+  const ringBox = (fid) => { const w = el("div", "rsv-ring"); w.append(d.ring(fid)); return w; };
+  if (d.players.length === 2) {
+    const other = d.players.find((p) => p.uid !== d.myUid), won = me.totalScore > other.totalScore, drew = me.totalScore === other.totalScore;
+    const col = (mine) => (mine ? (won ? "#1f9a3a" : drew ? "#3b2314" : "#8e1f1f") : (!won && !drew ? "#1f9a3a" : drew ? "#3b2314" : "#8e1f1f"));
+    const v = el("div", "rs-vs", `<div class="av l"></div><div class="nm l">${esc(me.displayName)}</div><div class="sc l" style="color:${col(true)}">${me.totalScore}</div><div class="av r"></div><div class="nm r">${esc(other.displayName)}</div><div class="sc r" style="color:${col(false)}">${other.totalScore}</div><div class="out" style="background:${drew ? "#8a6a50" : won ? "#2ea043" : "#d23b2e"}">${T(drew ? "quick_match_drew" : won ? "quick_match_won" : "quick_match_lost")}</div><div class="vs">${T("quick_match_versus")}</div>${won ? '<img class="cr" src="img/lobby_crown.webp" alt="">' : ""}`);
+    v.querySelector(".av.l").append(d.ring(me.frameId)); v.querySelector(".av.r").append(d.ring(other.frameId)); inner.append(v);
+  } else {
+    const medal = (r) => ["🥇", "🥈", "🥉"][r - 1] || r + ".";
+    const rows = ranked.map((p, i) => `<div class="st-row"><span class="rk">${medal(i + 1)}</span><i class="av" data-f="${p.frameId}"></i><div class="who"><b>${esc(p.uid === d.myUid ? C("online_you_label", p.displayName) : p.displayName)}</b><small>${p.correctCount}/${p.correctCount + p.wrongCount}</small></div>${d.votes.includes(p.uid) ? '<u class="ok">✓</u>' : ""}<span class="pt">${p.totalScore}</span></div>`).join("")
+      + d.left.map((p) => `<div class="st-row gone"><span class="rk">•</span><i class="av" data-f="${p.frameId}"></i><div class="who"><b>${esc(p.displayName)}</b><small>…</small></div></div>`).join("");
+    const card = el("div", "rs-stand", `<h4 style="color:${place === 1 ? "#1f9a3a" : "#3b2314"}">${C("online_result_placement", place)}</h4>${rows}`);
+    card.querySelectorAll(".av").forEach((a) => a.append(d.ring(a.dataset.f))); inner.append(card);
+  }
+  // compact stats
+  const mini = (icon, val, col) => `<div class="mn"><img src="img/${icon}.webp" alt=""><b style="color:${col}">${val}</b></div>`;
+  const right = [d.gold > 0 ? mini("icon_gold_coin", "+" + d.gold, "#e8650f") : "", d.xp > 0 ? mini("rs_ic_star", d.xp + " XP", "#f2541b") : ""].join("");
+  inner.append(el("div", "rs-pair" + (right ? "" : " one"), `<div class="rs-card rb"><div class="mrow">${mini("rs_ic_check", me.correctCount, "#2ea043")}${mini("rs_ic_x", me.wrongCount, "#e23b32")}</div></div>${right ? `<div class="rs-card ra"><div class="mrow">${right}</div></div>` : ""}`));
+  // board
+  const sel = d.sel || d.myUid, cfg = { title: T("result_words_title", me.correctCount + me.wrongCount), sel, placeholders: Math.max(me.correctCount + me.wrongCount, d.wordCount || 10), pen: d.pen,
+    items: (u) => d.itemsFor(u), theirs: (u) => u !== d.myUid, onSelect: (u) => d.select(u),
+    chips: d.players.map((p) => ({ id: p.uid, label: p.displayName, enabled: p.uid === d.myUid || d.itemsFor(p.uid).length > 0 })) };
+  inner.append(board(c, cfg, lang, T));
+  // chat + rematch note
+  inner.append(d.dock());
+  if (d.blocked) inner.append(el("div", "rs-note", C("online_rematch_blocked_message")));
+  else if (d.votes.length) inner.append(el("div", "rs-note ok", C("online_rematch_ready_count", d.votes.filter((u) => d.players.some((p) => p.uid === u)).length, d.players.length)));
+  const row = el("div", "rs-btns");
+  const home = el("button", "rs-art", `<span class="l1 lt">${C("main_menu")}</span>`); home.onclick = d.onHome;
+  const again = el("button", "rs-art" + (d.requested || d.blocked ? " dis" : ""), `<span class="l1 lt">${C(d.requested ? "online_rematch_waiting" : "play_again")}</span>`); if (!d.requested && !d.blocked) again.onclick = d.onRematch;
+  row.append(home, again); foot.append(row);
+  sc.scrollTop = keep;
 }
