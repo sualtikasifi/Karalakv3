@@ -158,13 +158,11 @@ fun PaintedExitDialog(
                     modifier = Modifier.offset(u * style.message[0], u * style.message[1]).size(u * (style.message[2] - style.message[0]), u * (style.message[3] - style.message[1]))
                 )
                 PaintedButton(style.left, onDismiss) {
-                    Text(
+                    FitText(
                         text = dismissText,
-                        fontFamily = DisplayFont,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = fs(68f),
-                        color = ExitInk,
-                        maxLines = 1
+                        style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(68f), color = ExitInk, textAlign = TextAlign.Center),
+                        maxLines = 1, minScale = 0.55f,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
                 PaintedButton(style.right, onConfirm) {
