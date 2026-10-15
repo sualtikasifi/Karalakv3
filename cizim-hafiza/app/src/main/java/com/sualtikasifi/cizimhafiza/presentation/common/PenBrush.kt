@@ -8,14 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.graphics.StrokeJoin
 import com.sualtikasifi.cizimhafiza.domain.model.PenEffect
-import androidx.compose.ui.graphics.FilterQuality
-import androidx.compose.ui.graphics.asImageBitmap
-import kotlinx.coroutines.launch
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
-import com.sualtikasifi.cizimhafiza.R
 import kotlin.math.abs
-import kotlin.math.roundToInt
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.hypot
@@ -173,28 +166,6 @@ fun DrawScope.drawPenStroke(
 
 /** Premium pens draw a touch thicker than the plain width — enough to read as richer, not enough to hide the drawing. */
 internal const val PREMIUM_PEN_WIDTH = 1.15f
-
-/**
- * The small pictures the pens' effects draw. Held here, not in BackdropCache: that cache is a least-recently-used one
- * sized for 10 MB backdrops, and a sprite sheet decoded at app start is the first thing it drops once the screens'
- * backdrops arrive. Decoded once on a background thread; until it lands the effects fall back to plain shapes.
- */
-object PenSprites {
-    @Volatile var flames: androidx.compose.ui.graphics.ImageBitmap? = null
-        private set
-    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
-
-    fun preload(context: android.content.Context) {
-        if (flames != null) return
-        val resources = context.applicationContext.resources
-        scope.launch {
-            runCatching {
-                android.graphics.BitmapFactory.decodeResource(resources, R.drawable.fx_flames, android.graphics.BitmapFactory.Options().apply { inScaled = false })
-                    ?.let { flames = it.asImageBitmap() }
-            }
-        }
-    }
-}
 
 private const val SAMPLE_STEP_PX = 10f
 private const val CHUNK_SAMPLES = 3
@@ -461,13 +432,8 @@ private fun DrawScope.drawSparkle(center: Offset, r: Float, alpha: Float, colour
     drawPath(star, colour.copy(alpha = alpha.coerceIn(0f, 1f)))
 }
 
-/**
- * Tiny flames thrown off the stroke: they rise, shrink and burn out. The flame pictures (fx_flames, 12 painted flames
- * in one 4 x 3 sheet of 128 px cells) are used for the fire pen; the gold embers of the Lion pen, and any pen while the
- * sheet is still being decoded at app start, fall back to small spark ticks.
- */
+/** Tiny sparks thrown off the stroke: they rise, shrink, cool from yellow to red and vanish. */
 private fun DrawScope.embers(g: PenGeometry, w: Float, time: Float, density: Float, gold: Boolean) {
-    val flames = if (gold) null else PenSprites.flames
     val hot = if (gold) GoldLight else EmberYellow
     val mid = if (gold) GoldDeep else EmberOrange
     val cold = if (gold) EmberOrange else EmberRed
@@ -479,21 +445,6 @@ private fun DrawScope.embers(g: PenGeometry, w: Float, time: Float, density: Flo
         val y0 = g.ys[i] - u * w * (2.6f + 1.6f * hash01(i, 6))
         val r = maxOf(1f, w * 0.26f * (1f - 0.7f * u) * (0.7f + 0.6f * hash01(i, 7)))
         val fade = ((1f - u) * 1.1f).coerceIn(0f, 1f)
-        if (flames != null) {
-            // A square cell, the flame sitting on its bottom edge: sized so its height matches the old spark tick.
-            val size = (r * 4.2f).roundToInt().coerceAtLeast(2)
-            val cell = (hash01(i, 8) * 12).toInt().coerceIn(0, 11)
-            drawImage(
-                image = flames,
-                srcOffset = IntOffset((cell % 4) * 128, (cell / 4) * 128),
-                srcSize = IntSize(128, 128),
-                dstOffset = IntOffset((x0 - size / 2f).roundToInt(), (y0 + r * 1.2f - size / 2f).roundToInt()),
-                dstSize = IntSize(size, size),
-                alpha = fade,
-                filterQuality = FilterQuality.Medium
-            )
-            continue
-        }
         val color = if (u < 0.5f) lerp(hot, mid, u * 2f) else lerp(mid, cold, (u - 0.5f) * 2f)
         drawLine(
             color.copy(alpha = fade),
@@ -531,7 +482,7 @@ private fun DrawScope.bolts(g: PenGeometry, w: Float, time: Float) {
         val slot = floor(time * 3f + hash01(i, 31) * 10f).toInt()
         if (hash01(i * 7 + slot, 32) > 0.75f) {
             val ang = hash01(i * 13 + slot, 33) * TWO_PI
-            val len = w * (0.9f + 0.6f * hash01(i + slot, 34))
+            val len = w * (1.15f + 0.75f * hash01(i + slot, 34))
             val dx = cos(ang)
             val dy = sin(ang)
             val px = -dy
@@ -540,7 +491,7 @@ private fun DrawScope.bolts(g: PenGeometry, w: Float, time: Float) {
             val p1 = Offset(p0.x + dx * len * 0.35f + px * len * 0.22f, p0.y + dy * len * 0.35f + py * len * 0.22f)
             val p2 = Offset(p1.x + dx * len * 0.3f - px * len * 0.4f, p1.y + dy * len * 0.3f - py * len * 0.4f)
             val p3 = Offset(p2.x + dx * len * 0.35f + px * len * 0.25f, p2.y + dy * len * 0.35f + py * len * 0.25f)
-            val thick = maxOf(1.2f, w * 0.09f)
+            val thick = maxOf(1.5f, w * 0.11f)
             for ((a, b) in listOf(p0 to p1, p1 to p2, p2 to p3)) {
                 drawLine(BoltCyan.copy(alpha = 0.18f), a, b, thick * 2f, StrokeCap.Round)
                 drawLine(BoltWhite, a, b, thick, StrokeCap.Round)
