@@ -286,3 +286,15 @@ export async function ensureUsername(current) {
   }
   return null;
 }
+
+// ================= Bug reports (same document as BugReportRepositoryImpl) =================
+export async function sendReport(category, description) {
+  const { fs, db, auth } = await init();
+  await fs.addDoc(fs.collection(db, "bugReports"), { uid: auth.currentUser.uid, category, description: description.trim().slice(0, 2000), appVersionName: "web", appVersionCode: 0, deviceModel: navigator.userAgent.slice(0, 80), androidSdk: 0, submittedAt: Date.now() });
+}
+export async function myReports() {
+  const { fs, db, auth } = await init();
+  const s = await fs.getDocs(fs.query(fs.collection(db, "bugReports"), fs.where("uid", "==", auth.currentUser.uid)));
+  return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.submittedAt - a.submittedAt).slice(0, 30);
+}
+export async function deleteReport(id) { const { fs, db } = await init(); await fs.deleteDoc(fs.doc(db, "bugReports", id)); }

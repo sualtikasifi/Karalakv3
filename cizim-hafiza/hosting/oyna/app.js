@@ -1,5 +1,6 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
+import { layoutReport, renderReport } from "./report.js";
 import { layoutChests, renderChests, award as awardChest, wonDialog } from "./chests.js";
 import { todayEpoch, msToMidnight, dailyWords, state as dailyState, record as dailyRecord } from "./daily.js";
 import { drawFxStroke } from "./penfx.js";
@@ -38,7 +39,7 @@ const t = () => T[lang];
 
 // ---------- layout (art units: the paintings are 841 wide) ----------
 const stage = $("stage");
-let leagueLoaded = false;
+let leagueLoaded = false, reportLoaded = false;
 const ctx = {
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
@@ -48,7 +49,7 @@ const ctx = {
   syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
-  open: (id) => show(id),
+  open: (id) => { if (id === "report") reportLoaded = false; show(id); },
   levelOf: (xp) => { const lv = levelFor(xp), fl = xpFor(lv), ce = lv >= 100 ? fl : xpFor(lv + 1); return { level: lv, into: xp - fl, span: ce - fl, frac: ce > fl ? (xp - fl) / (ce - fl) : 1, max: lv >= 100 }; },
   info: (text) => msg(text),
   confirm(text, yes, onYes) {
@@ -113,6 +114,8 @@ function layout() {
     renderMap(ctx);
   } else if (current === "account") {
     layoutAccount(ctx); renderAccount(ctx);
+  } else if (current === "report") {
+    layoutReport(ctx); renderReport(ctx, !reportLoaded); reportLoaded = true;
   } else if (current === "league") {
     layoutLeague(ctx); renderLeague(ctx, !leagueLoaded); leagueLoaded = true;
   } else if (current === "ach") {
@@ -573,6 +576,7 @@ function rankInfo() {
 $("tl-settings").onclick = () => show("settings");
 $("se-back").onclick = () => show("home");
 $("ak-back").onclick = () => show("settings");
+$("rp-back").onclick = () => show("settings");
 const _oldSettings = () => {
   const mk = (code, label) => { const b = document.createElement("button"); b.className = "chip" + (lang === code ? " on" : ""); b.textContent = label; b.onclick = () => { lang = code; applyLang(); $("dialog").classList.add("hidden"); $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren(); }; return b; };
   msg(t().langTitle, [mk("tr", "Türkçe"), mk("en", "English")]);
