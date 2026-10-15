@@ -465,14 +465,14 @@ private fun DrawScope.smoke(g: PenGeometry, w: Float, time: Float) {
     }
 }
 
-/** Short lightning cracks that flash in and out along the stroke. */
+/** Tiny, rare lightning flickers along the stroke — kept small and sparse on purpose so they never pull the eye off the drawing. */
 private fun DrawScope.bolts(g: PenGeometry, w: Float, time: Float) {
     var i = 0
     while (i < g.n) {
-        val slot = floor(time * 5f + hash01(i, 31) * 10f).toInt()
-        if (hash01(i * 7 + slot, 32) <= 0.3f) {
+        val slot = floor(time * 3f + hash01(i, 31) * 10f).toInt()
+        if (hash01(i * 7 + slot, 32) > 0.75f) {
             val ang = hash01(i * 13 + slot, 33) * TWO_PI
-            val len = w * (2.2f + 1.8f * hash01(i + slot, 34))
+            val len = w * (0.9f + 0.6f * hash01(i + slot, 34))
             val dx = cos(ang)
             val dy = sin(ang)
             val px = -dy
@@ -481,12 +481,12 @@ private fun DrawScope.bolts(g: PenGeometry, w: Float, time: Float) {
             val p1 = Offset(p0.x + dx * len * 0.35f + px * len * 0.22f, p0.y + dy * len * 0.35f + py * len * 0.22f)
             val p2 = Offset(p1.x + dx * len * 0.3f - px * len * 0.4f, p1.y + dy * len * 0.3f - py * len * 0.4f)
             val p3 = Offset(p2.x + dx * len * 0.35f + px * len * 0.25f, p2.y + dy * len * 0.35f + py * len * 0.25f)
-            val thick = maxOf(1.5f, w * 0.16f)
+            val thick = maxOf(1.2f, w * 0.09f)
             for ((a, b) in listOf(p0 to p1, p1 to p2, p2 to p3)) {
-                drawLine(BoltCyan.copy(alpha = 0.35f), a, b, thick * 3f, StrokeCap.Round)
+                drawLine(BoltCyan.copy(alpha = 0.18f), a, b, thick * 2f, StrokeCap.Round)
                 drawLine(BoltWhite, a, b, thick, StrokeCap.Round)
             }
         }
-        i += 4
+        i += 12
     }
 }

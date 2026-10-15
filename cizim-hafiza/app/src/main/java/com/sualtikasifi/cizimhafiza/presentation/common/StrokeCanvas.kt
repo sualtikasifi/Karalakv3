@@ -75,13 +75,17 @@ fun StrokeCanvas(
     // A cosmetic pen (see domain.model.PenSkin). Null keeps the plain
     // strokeColor above, which is what thumbnails and the tutorial want —
     // a Rainbow gradient at 40dp is just mud.
-    penSkin: PenSkin? = null
+    penSkin: PenSkin? = null,
+    // A premium pen's effects keep moving when this is true (a drawing shown on its own); thumbnails stay still.
+    animated: Boolean = false
 ) {
+    val penTime = rememberPenTime(animated && penSkin?.effect?.isPremium == true)
     Canvas(modifier = modifier) {
         val fit = strokeFitFor(strokes) ?: return@Canvas
+        val time = penTime.value
         clipRect {
             var distance = 0f
-            strokes.forEach { stroke -> distance = drawFittedStroke(stroke, fit, penSkin, strokeColor, strokeWidthPx, distance) }
+            strokes.forEach { stroke -> distance = drawFittedStroke(stroke, fit, penSkin, strokeColor, strokeWidthPx, distance, time) }
         }
     }
 }
