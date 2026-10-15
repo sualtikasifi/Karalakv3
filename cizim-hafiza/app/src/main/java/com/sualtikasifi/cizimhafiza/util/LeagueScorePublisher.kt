@@ -118,7 +118,11 @@ class LeagueScorePublisher @Inject constructor(
     private companion object {
         const val TAG = "LeagueScorePublisher"
 
-        /** Long enough to sit out a match's per-word XP, short enough to land before the app is closed. */
-        const val PUBLISH_DEBOUNCE_MS = 8_000L
+        /**
+         * Long enough to sit out a whole match's per-word XP (one write per match instead of one per word). The write
+         * that would be lost if the app were closed inside this window is flushed when the screen goes away
+         * (see CizimHafizaApp's activity callback), so a long wait costs nothing in freshness.
+         */
+        const val PUBLISH_DEBOUNCE_MS = 45_000L
     }
 }

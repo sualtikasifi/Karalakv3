@@ -1585,6 +1585,7 @@
     <string name="runes_dev_title">Rün haritası (geliştirme)</string>
     <string name="runes_dev_state">Alınan rün seviyesi: %1$d · harcanan altın: %2$s</string>
     <string name="runes_dev_reset">Tüm rünleri geri al</string>
+    <string name="runes_dev_refresh_config">Rün ve ekonomi ayarlarını şimdi çek</string>
     <string name="runes_dev_unlock">Tüm rünleri aç (ücretsiz, test)</string>
     <string name="runes_dev_confirm_title">Tüm rünler geri alınsın mı?</string>
     <string name="runes_dev_confirm_body">Bütün rün seviyeleri silinir ve harcanan altın iade edilir. Mağaza hediyeleri (kalem, çerçeve) kalır.</string>

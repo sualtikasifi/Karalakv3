@@ -12,7 +12,7 @@ enum class RoomStatus { WAITING, PLAYING, FINISHED }
  * "everyone is ready" never becomes true and the match can never start.
  * Presence is what actually catches that.
  */
-const val PRESENCE_TIMEOUT_MS = 75_000L
+const val PRESENCE_TIMEOUT_MS = 150_000L
 
 data class OnlinePlayer(
     val uid: String,

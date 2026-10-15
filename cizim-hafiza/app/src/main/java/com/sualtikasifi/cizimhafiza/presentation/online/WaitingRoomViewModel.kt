@@ -131,11 +131,11 @@ class WaitingRoomViewModel @Inject constructor(
     }
 
     private companion object {
-        // Two full beats still fit inside PRESENCE_TIMEOUT_MS (75 s), so a
-        // brief network blip does not get anyone dropped. 30 s rather than
-        // 20 s: every beat is a write that each player's room listener then
+        // Two full beats still fit inside PRESENCE_TIMEOUT_MS (150 s), so a
+        // brief network blip does not get anyone dropped. 60 s rather than
+        // 30 s: every beat is a write that each player's room listener then
         // downloads, so the cost grows with the square of the lobby size.
-        const val PRESENCE_HEARTBEAT_MS = 30_000L
+        const val PRESENCE_HEARTBEAT_MS = 60_000L
 
         /** startGame()'s fallback: how long to wait for the room to flip to PLAYING before giving the "Başlat" button back. */
         const val START_GAME_TIMEOUT_MS = 12_000L

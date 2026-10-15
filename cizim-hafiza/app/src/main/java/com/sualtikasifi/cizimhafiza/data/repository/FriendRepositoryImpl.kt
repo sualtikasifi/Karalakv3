@@ -656,7 +656,7 @@ class FriendRepositoryImpl @Inject constructor(
         const val NICKNAME_RECHECK_MS = 30 * 60_000L
         const val TAG = "FriendRepository"
         /** See profileFetchedAtMillis — long enough to collapse a burst of table opens, short enough that a friend's finished game shows up the same session. */
-        const val PROFILE_CACHE_TTL_MILLIS = 10 * 60 * 1000L
+        const val PROFILE_CACHE_TTL_MILLIS = 30 * 60 * 1000L
         const val PRIVATE_COLLECTION = "private"
         const val DEVICE_DOC = "device"
         const val PENDING_REWARDS_DOC = "pendingRewards"

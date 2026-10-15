@@ -1,11 +1,12 @@
 package com.sualtikasifi.cizimhafiza.data.repository
 
+import android.content.Context
 import com.google.firebase.firestore.FirebaseFirestore
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.sualtikasifi.cizimhafiza.domain.model.RuneGates
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,7 +20,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class RuneConfigRepository @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    @ApplicationContext private val context: Context
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var listening = false
@@ -29,16 +31,18 @@ class RuneConfigRepository @Inject constructor(
         if (listening) return
         listening = true
         scope.launch {
-            firestoreFlow<Map<String, Any?>?>("runeConfig") { emit, onError ->
-                firestore.document("config/runes").addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        onError(error)
-                        return@addSnapshotListener
-                    }
-                    emit(snapshot?.data)
-                }
-            }.catch { com.sualtikasifi.cizimhafiza.util.NonFatal.report("RuneConfigRepository", "listener failed", it) }.collect { data -> apply(data) }
+            runCatching { ConfigDocFetcher.keepFresh(context, firestore, PATH) { apply(it) } }
+                .onFailure { com.sualtikasifi.cizimhafiza.util.NonFatal.report("RuneConfigRepository", "config read failed", it) }
         }
+    }
+
+    /** Reads the document from the server right now, whatever the last read was (the developer panel). */
+    fun refreshNow() {
+        scope.launch { ConfigDocFetcher.load(context, firestore, PATH, 0L) { apply(it) } }
+    }
+
+    private companion object {
+        const val PATH = "config/runes"
     }
 
     private fun apply(data: Map<String, Any?>?) {
