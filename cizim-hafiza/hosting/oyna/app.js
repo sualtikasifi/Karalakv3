@@ -1,5 +1,6 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
+import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
 import { loadStoreData, layoutStore, renderStore, frameRing, frameById, penById } from "./store.js";
 
@@ -44,7 +45,7 @@ const ctx = {
 const RANKS = [[1, "✏️", "Karalamacı", "Scribbler"], [20, "🖊️", "Çırak", "Apprentice"], [40, "🖌️", "Ressam", "Painter"], [60, "🎨", "Usta Ressam", "Master Painter"], [80, "🖼️", "Sanatçı", "Artist"], [100, "👑", "Büyük Usta", "Grand Master"]];
 const xpFor = (lv) => { const n = Math.max(0, lv - 1); return 25 * n * n + 75 * n; };
 const levelFor = (xp) => { let l = 1; while (l < 100 && xp >= xpFor(l + 1)) l++; return l; };
-let P = { nick: "", xp: 0, gold: 0, owned: [], pen: "CLASSIC", frame: "SCRIBBLER", jokers: {} };
+let P = { nick: "", xp: 0, gold: 0, owned: [], pen: "CLASSIC", frame: "SCRIBBLER", jokers: {}, claimed: [], stats: { games: 0, score: 0, words: 0, perfect: 0, wins: 0, streak: 0, best: 0, last: "" } };
 try { P = { ...P, ...JSON.parse(localStorage.getItem("player") || "{}") }; } catch {}
 const saveP = () => { try { localStorage.setItem("player", JSON.stringify(P)); } catch {} };
 if (!P.nick) { P.nick = "Karalak" + Math.floor(1000 + Math.random() * 9000); saveP(); }
@@ -81,6 +82,8 @@ function layout() {
     for (const [id, x, y, w, h, lx0, ly0, lx1, ly1] of T) { place($("tl-" + id), x, y, w, h); place($("tx-" + id), lx0, ly0, lx1 - lx0, ly1 - ly0); }
   } else if (current === "store") {
     layoutStore(ctx); renderStore(ctx);
+  } else if (current === "ach") {
+    layoutAchievements(ctx); renderAchievements(ctx);
   } else if (current === "settings") {
     layoutSettings(ctx); renderSettings(ctx);
   } else if (current === "draw") {
@@ -306,7 +309,7 @@ async function finish() {
   const x = t();
   show("search");
   const n = round.filter((w) => w.correct).length;
-  P.xp += score; P.gold += n * 10; saveP(); refreshHome();
+  P.xp += score; P.gold += n * 10; achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
   const me = {
     language: lang, nickname: "Web", wordIds: round.map((w) => w.id),
     perWord: round.map((w) => ({ wordId: w.id, isCorrect: w.correct, responseTimeMs: w.ms, pointsAwarded: w.points })),
@@ -371,7 +374,9 @@ const soon = (name) => () => msg(`${name} · ${t().soon}`);
 $("tl-quick").onclick = start; $("tl-offline").onclick = start;
 $("tl-store").onclick = async () => { await loadStoreData(); show("store"); };
 $("st-back").onclick = () => show("home");
-for (const [id, k] of [["online", "online"], ["levels", "levels"], ["friends", "friends"], ["ach", "ach"], ["league", "league"]]) $("tl-" + id).onclick = () => soon(t().tiles[k])();
+$("tl-ach").onclick = async () => { await loadAchievements(); show("ach"); };
+$("ac-back").onclick = () => show("home");
+for (const [id, k] of [["online", "online"], ["levels", "levels"], ["friends", "friends"], ["league", "league"]]) $("tl-" + id).onclick = () => soon(t().tiles[k])();
 const soonMsg = () => msg(t().soon);
 $("tl-settings").onclick = () => show("settings");
 $("se-back").onclick = () => show("home");
