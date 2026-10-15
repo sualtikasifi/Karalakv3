@@ -1229,6 +1229,11 @@
     <string name="frame_name_dragon_flame">Dragon Flame</string>
     <string name="frame_name_shadow_crown">Shadow Crown</string>
     <string name="frame_name_royal_crown">Royal Crown</string>
+    <string name="frame_name_candy_world">Candy Land</string>
+    <string name="frame_name_crystal_wings">Crystal Wings</string>
+    <string name="frame_name_void_flame">Void Flame</string>
+    <string name="frame_name_angel_halo">Angel Halo</string>
+    <string name="frame_name_lion_king">Lion King</string>
     <string name="nickname_edit_title">Change your username</string>
     <string name="nickname_edit_warning">You can change your username only ONCE. Choose carefully!</string>
     <string name="nickname_edit_hint">2–16 characters</string>

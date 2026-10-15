@@ -16,6 +16,19 @@ import com.sualtikasifi.cizimhafiza.R
  * SettingsRepository.selectedAvatarFrameId), so — same rule as [Achievement]
  * — never rename an existing constant; add new ones instead.
  */
+/**
+ * How a frame moves. The artwork itself is a still picture, so the motion is drawn over it by [presentation.common.LevelAvatar]:
+ * a breathing [glow] behind the ring, a [sweep] of light that glides across it (only over the artwork's own pixels) and
+ * [sparkles] drifting around it in [sparkleColor]. Only the most expensive frames move: a room shows up to eight of these
+ * at once, so motion is kept for the few players who paid for it.
+ */
+enum class FrameMotion(val glow: Long?, val sweep: Boolean, val sparkles: Int, val sparkleColor: Long) {
+    NONE(null, false, 0, 0xFFFFFFFF),
+    VOID(0xFFB44CFF, false, 10, 0xFFE3B8FF),
+    ANGEL(0xFFFFD966, true, 14, 0xFFFFF3B0),
+    LION(0xFFFFB300, true, 18, 0xFFFFF0A0)
+}
+
 enum class AvatarFrame(
     val drawableRes: Int,
     /**
@@ -49,7 +62,9 @@ enum class AvatarFrame(
     /** Gold price in the store; 0 means not sold there. Give a store frame unlockLevel 0 (see PenSkin.storePrice). */
     val storePrice: Int = 0,
     /** Found only on the rune map (see PenSkin.isRuneReward). */
-    val isRuneReward: Boolean = false
+    val isRuneReward: Boolean = false,
+    /** How the frame moves (see [FrameMotion]); still by default. */
+    val motion: FrameMotion = FrameMotion.NONE
 ) {
     // faceDiameterFraction/faceOffsetXFraction/faceOffsetYFraction below were
     // re-measured directly off each PNG's own transparent hole (a flood-fill
@@ -87,7 +102,14 @@ enum class AvatarFrame(
     PEARL_BUTTERFLY(R.drawable.level_frame_pearl_butterfly, 0.588f, 0.004f, -0.005f, 0, storePrice = 10000),
     DRAGON_FLAME(R.drawable.level_frame_dragon_flame, 0.545f, 0.001f, -0.001f, 0, storePrice = 12000),
     SHADOW_CROWN(R.drawable.level_frame_shadow_crown, 0.545f, -0.001f, -0.017f, 0, storePrice = 13000),
-    ROYAL_CROWN(R.drawable.level_frame_royal_crown, 0.537f, 0.001f, -0.0205f, 0, storePrice = 15000, isRuneReward = true);
+    ROYAL_CROWN(R.drawable.level_frame_royal_crown, 0.537f, 0.001f, -0.0205f, 0, storePrice = 15000, isRuneReward = true),
+
+    // --- The expensive store frames, in order of beauty and price. The last three move (see FrameMotion). ---
+    CANDY_WORLD(R.drawable.level_frame_candy_world, 0.473f, 0.0091f, 0.0174f, 0, storePrice = 20000),
+    CRYSTAL_WINGS(R.drawable.level_frame_crystal_wings, 0.465f, -0.001f, -0.0283f, 0, storePrice = 32000),
+    VOID_FLAME(R.drawable.level_frame_void_flame, 0.437f, 0.0066f, -0.0157f, 0, storePrice = 50000, motion = FrameMotion.VOID),
+    ANGEL_HALO(R.drawable.level_frame_angel_halo, 0.446f, -0.0018f, -0.0322f, 0, storePrice = 80000, motion = FrameMotion.ANGEL),
+    LION_KING(R.drawable.level_frame_lion_king, 0.428f, -0.0013f, 0.0208f, 0, storePrice = 140000, motion = FrameMotion.LION);
 
     // Monthly league prize frames (LEAGUE_CHAMPION_<year>_<month>) were
     // removed — the first batch of artwork did not clean up against the

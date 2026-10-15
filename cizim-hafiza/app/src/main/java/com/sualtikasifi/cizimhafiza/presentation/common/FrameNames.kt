@@ -34,4 +34,9 @@ fun AvatarFrame.nameRes(): Int = when (this) {
     AvatarFrame.DRAGON_FLAME -> R.string.frame_name_dragon_flame
     AvatarFrame.SHADOW_CROWN -> R.string.frame_name_shadow_crown
     AvatarFrame.ROYAL_CROWN -> R.string.frame_name_royal_crown
+    AvatarFrame.CANDY_WORLD -> R.string.frame_name_candy_world
+    AvatarFrame.CRYSTAL_WINGS -> R.string.frame_name_crystal_wings
+    AvatarFrame.VOID_FLAME -> R.string.frame_name_void_flame
+    AvatarFrame.ANGEL_HALO -> R.string.frame_name_angel_halo
+    AvatarFrame.LION_KING -> R.string.frame_name_lion_king
 }
