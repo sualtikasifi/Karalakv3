@@ -31,7 +31,7 @@ export function renderSettings(c) {
   x.rows.forEach((label, i) => {
     const r = $("se-r" + i), on = !!P.prefs["s" + i];
     r.innerHTML = `<span>${label}</span><i class="sw${on ? " on" : ""}"></i>`;
-    r.onclick = () => { P.prefs["s" + i] = !P.prefs["s" + i]; if (i === 0) for (const k of [1, 2]) P.prefs["s" + k] = P.prefs.s0; c.saveP(); renderSettings(c); };
+    r.onclick = () => { P.prefs["s" + i] = !P.prefs["s" + i]; if (i === 0) for (const k of [1, 2]) P.prefs["s" + k] = P.prefs.s0; c.saveP(); c.syncMusic(); renderSettings(c); };
   });
   $("se-code").placeholder = x.code; $("se-use-t").textContent = x.use; $("se-how").textContent = x.how;
   const flag = lang() === "tr" ? "🇹🇷 Türkçe" : "🇬🇧 English";
