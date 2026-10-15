@@ -1,5 +1,6 @@
 // Race a Friend: entry, create/join, live lobby, synchronized game start and the ranking screen.
 import * as net from "./firebase.js";
+import { S } from "./i18n.js";
 import { frameRing, frameById } from "./store.js";
 import { loadChat, buildDock, watch as watchChat, stop as stopChat, onReactions, activeBubbles, messageOf, reactions as chatNow, chatRow, chatText } from "./chat.js";
 import { setupGroup, fitPaper, SETUP_T } from "./offline.js";
@@ -33,14 +34,14 @@ let code = null, room = null, unsub = null, hb = null, cdTimer = null, started =
 export function layoutOnline(c) {
   const { place, $ } = c, cur = c.current();
   if (cur === "onl") {
-    place($("on-back"), 20, 40, 110, 106); place($("on-sign"), 100, 110, 640, 536); place($("on-title"), 190, 480, 460, 120);
-    place($("on-paper"), 70, 700, 700, 334); place($("on-text"), 110, 735, 620, 270);
-    place($("on-create"), 70, 1160, 700, 164); place($("on-join"), 70, 1380, 700, 164);
+    place($("on-back"), 20, 40, 110, 106); place($("on-sign"), 70.5, 300, 700, 586); place($("on-title"), 130.5, 616, 580, 222);
+    place($("on-paper"), 80.5, 884, 680, 324); place($("on-text"), 140.5, 965, 560, 195);
+    place($("on-create"), 100.5, 1236, 640, 150); place($("on-join"), 100.5, 1424, 640, 158);
   } else if (cur === "onj") {
-    place($("oj-back"), 20, 40, 110, 106); place($("oj-title"), 160, 310, 520, 100);
-    place($("oj-panel"), 60, 560, 720, 497);
-    place($("oj-nick"), 162, 683, 506, 80); place($("oj-code"), 162, 820, 506, 80); place($("oj-msg"), 60, 960, 720, 70);
-    place($("oj-go"), 120, 1110, 600, 190);
+    place($("oj-back"), 20, 40, 110, 106); place($("oj-title"), 423 - 230, 368 - 38, 460, 76);
+    place($("oj-panel"), 42.05, 542.3, 756.9, 522.3);
+    place($("oj-nick"), 138.1, 688.8, 554.6, 89.8); place($("oj-code"), 138.1, 838.5, 554.6, 89.8); place($("oj-l1"), 183, 628.8, 480, 50); place($("oj-l2"), 183, 782, 480, 50); place($("oj-msg"), 42, 1190, 757, 80);
+    place($("oj-go"), 185.9, 982.4, 469.3, 149.4);
   } else if (cur === "onc") {
     place($("oc-back"), 20, 40, 110, 106); place($("oc-title"), 160, 258, 520, 110);
     place($("oc-paper"), 42, 472, 757, 925); place($("oc-body"), 110, 520, 621, 840);
@@ -61,7 +62,9 @@ export function layoutOnline(c) {
 export function renderEntry(c) {
   const { $, lang } = c, x = T[lang()];
   $("on-title").textContent = x.title; $("on-create-t").textContent = x.create; $("on-join-t").textContent = x.join;
-  $("on-text").innerHTML = `<span>${x.l1}</span><span>${x.l2}</span><b>${x.l3} ${x.l4}</b>`;
+  const tx = $("on-text"); tx.innerHTML = `<span>${x.l1}</span><span>${x.l2}</span><b>${x.l3} ${x.l4}</b>`;
+  // one size for the three lines: the longest decides how far they shrink (minScale 0.6, like the app)
+  requestAnimationFrame(() => { const base = 43 * c.u(); let k = 1; tx.style.fontSize = base + "px"; while (k > 0.6 && [...tx.children].some((e) => e.scrollWidth > tx.clientWidth + 1)) { k -= 0.02; tx.style.fontSize = base * k + "px"; } });
 }
 export async function renderCreate(c) {
   const { $, lang } = c, x = T[lang()], C = (k) => chatText(k, lang());
@@ -91,8 +94,8 @@ export async function renderCreate(c) {
 }
 export function renderJoin(c) {
   const { $, P, lang } = c, x = T[lang()];
-  $("oj-title").textContent = x.jTitle; $("oj-go-t").textContent = x.go; $("oj-msg").textContent = "";
-  $("oj-nick").placeholder = x.nick; $("oj-nick").value = P.nick; $("oj-code").placeholder = x.code;
+  $("oj-title").textContent = S("online_join_room"); $("oj-go-t").textContent = S("online_join_room_action"); $("oj-l1").textContent = S("online_nickname_label"); $("oj-l2").textContent = S("online_room_code_label"); $("oj-msg").textContent = "";
+  $("oj-nick").value = P.nick; $("oj-code").placeholder = S("friends_add_friend_hint");
   $("oj-code").oninput = () => { $("oj-code").value = $("oj-code").value.replace(/\D/g, "").slice(0, 6); };
   $("oj-go").onclick = async () => {
     const cd = $("oj-code").value; if (cd.length !== 6) return;

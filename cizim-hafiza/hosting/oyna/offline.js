@@ -29,12 +29,12 @@ function fit(b, base) {
  * One captioned row-group of choices on the wooden paper (PanelRow + ChoiceGrid): items are [text, selected, onClick];
  * `h` is the pill height and `size` the text size in art units. An item without onClick is a plain, disabled pill.
  */
-/** The paper board wraps its rows like the Compose CompactPanel: 60 above the first caption, 110 below the last pill (art units). */
-export function fitPaper(c, paperId, bodyId, top = 472) {
-  const u = c.u(), body = c.$(bodyId), paper = c.$(paperId);
-  body.style.height = "auto"; body.style.maxHeight = (1560 - top - 60) * u + "px";
-  const h = Math.min(body.scrollHeight / u, 1560 - top - 170);
-  c.place(paper, 42, top, 757, 60 + h + 110); c.place(body, 110, top + 58, 621, h);
+/** The paper board wraps its rows like the Compose CompactPanel: 52dp above the first caption, 64dp below the last pill, rows 8dp apart (art units: 1dp = 2.05). */
+export function fitPaper(c, paperId, bodyId, top = 425) {
+  const u = c.u(), body = c.$(bodyId), paper = c.$(paperId), TOP = 107, BOTTOM = 131, LIMIT = 1607;
+  body.style.height = "auto"; body.style.maxHeight = (LIMIT - top - TOP - BOTTOM) * u + "px";
+  const h = Math.min(body.scrollHeight / u, LIMIT - top - TOP - BOTTOM);
+  c.place(paper, 41, top, 759, TOP + h + BOTTOM); c.place(body, 41 + 70, top + TOP, 759 - 140, h);
 }
 
 export function setupGroup(body, u, label, items, cols, h, size) {
