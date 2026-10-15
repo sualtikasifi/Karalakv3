@@ -1,6 +1,7 @@
 // Karalak Runes (port of RunesScreen.kt, RuneStatusDialog.kt and the rune rules of Rune.kt). The data — the map, the texts, the
 // ring gates, the ceilings and the icon centring — is generated from the Android sources by scripts/gen_web_runes.js, so the web
 // map cannot drift from the app. One art unit is 1/841 of the stage width; one Android dp is DP art units.
+import { todayEpoch, turkeyMonth } from "./daily.js";
 let D = null, sel = null, statusOpen = false, view = { s: 0.78, x: 0, y: 0, key: "" };
 const DP = 2.05, SP = 116 * DP;
 const GATES = { 2: 15, 3: 30, 4: 40, need: 70, price: 1 };
@@ -240,9 +241,9 @@ function celebrate(c) {
 // ---------- the status window (RuneStatusDialog) ----------
 const STAT_ROWS = [["WORD", "rune_stat_word"], ["WIN", "rune_stat_win"], ["LOGIN", "rune_stat_login"], ["DAILY", "rune_stat_daily"], ["CHEST", "rune_stat_chest"], ["CJOKER", "rune_stat_cjoker"], ["DISC", "rune_stat_disc"], ["DJ", "rune_stat_dj"], ["XP", "rune_stat_xp"], ["CTIME", "rune_stat_ctime"], ["ADCD", "rune_stat_adcd"], ["ROOM", "rune_stat_room"], ["HOST", "rune_stat_host"]];
 const REDUCTIONS = new Set(["DISC", "CTIME", "ADCD"]);
-const todayKey = () => Math.floor(Date.now() / 864e5);
+const todayKey = () => todayEpoch();
 export const abilityState = (P) => ({ instantReady: has(P, "INSTANT") && P.instantDay !== todayKey(), bestReady: has(P, "BEST") && P.bestDay !== todayKey(), insuranceReady: has(P, "INSURE") && P.insMonth !== monthKey(), reserveWaiting: !!(P.chests && P.chests.reserve) });
-export const monthKey = () => { const d = new Date(); return d.getFullYear() * 100 + d.getMonth() + 1; };
+export const monthKey = () => turkeyMonth();
 function openStatus(c) { statusOpen = true; c.analytics && c.analytics("rune_status_opened", {}); }
 function drawStatus(c) {
   const { $, P, lang } = c, host = $("ru-status"); host.replaceChildren();

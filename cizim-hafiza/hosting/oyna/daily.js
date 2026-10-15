@@ -21,6 +21,11 @@ export function dailyWords(words, epoch, lang) {
   }
   return picked;
 }
+/** The Turkish calendar month as 202610 (the Seri Sigortası cover is once a month). */
+export function turkeyMonth() {
+  const p = new Intl.DateTimeFormat("en-CA", { timeZone: ISTANBUL, year: "numeric", month: "2-digit" }).format(new Date()).split("-").map(Number);
+  return p[0] * 100 + p[1];
+}
 export const multiplier = (streak) => Math.min(10, Math.max(1, streak));
 export function state(P) {
   const today = todayEpoch(), d = P.daily, last = d.last, live = last >= 0 && today - last <= 1;

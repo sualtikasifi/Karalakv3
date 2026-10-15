@@ -55,7 +55,7 @@ export function revokeXp(P, amount) {
 }
 
 // ---------- gold ----------
-const scaled = (base, percent) => (percent <= 0 ? base : Math.floor((base * (100 + percent)) / 100));
+export const scaled = (base, percent) => (percent <= 0 ? base : Math.floor((base * (100 + percent)) / 100));
 export const dailyChallengeGold = (streak) => CFG.dailyGoldBase + Math.min(Math.max(streak, 0), 10) * CFG.dailyGoldPerStreakDay;
 
 /** Gold for runs of three right words in a row (the Zincir Ustası rune), within each run (RoundRewards.chainBonus). */

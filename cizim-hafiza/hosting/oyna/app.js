@@ -16,6 +16,7 @@ import { layoutFriends, openFriends, renderFriends, stop as stopFriends } from "
 import { loadWorlds, layoutWorlds, renderWorlds, layoutMap, renderMap, mixFor, starsFor, recordLevel, currentWorld } from "./levels.js";
 import { layoutAccount, renderAccount } from "./account.js";
 import { layoutOffline, renderOffline } from "./offline.js";
+import { setLang, loadStrings } from "./i18n.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
@@ -47,7 +48,7 @@ const t = () => T[lang];
 const stage = $("stage");
 let leagueLoaded = false, reportLoaded = false;
 const ctx = {
-  runeFx: (fx) => runeFx(P, fx),
+  runeFx: (fx) => runeFx(P, fx), runeHas: (fx) => runeHas(P, fx),
   /**
    * Pays an online room round once its ranking is known (OnlineResultViewModel): the room gold with the room runes, the
    * match XP (8, +25 for a win), and a chest for the winner. The per-word XP was paid when the round ended.
@@ -65,7 +66,7 @@ const ctx = {
     const matchXp = (eco.ONLINE_MATCH_XP + (won ? eco.ONLINE_WIN_XP : 0)) * xpEventOnly;
     ctx.lastXp = (ctx.lastXp || 0) + eco.addXp(P, matchXp, runeFx(P, "XP"));
     ctx.lastGold = g.total; ctx.lastRune = g.runeBonus;
-    let chest; if (place === 1 && !tied) chest = awardChest(P) || null;
+    let chest; if (place === 1 && !tied) chest = awardChest(P, (k) => runeHas(P, k)) || null;
     saveP(); refreshHome();
     if (chest !== undefined) setTimeout(() => wonDialog(ctx, chest), 900);
     return { won, place, gold: g };
@@ -115,7 +116,7 @@ function layout() {
   s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + "px"; s.top = (vh - H) / 2 + "px";
   stage.style.setProperty("--u", u + "px");
   if (current === "home") {
-    place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214);
+    place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214); place($("h-rbadge"), 682, 84, 70, 70);
     place($("h-pen"), 350, 266, 134, 54);
     place($("h-avatar"), 66, 361, 138, 138);
     place($("h-name"), 224, 357, 556, 42);
@@ -246,7 +247,7 @@ function startDoodles() {
 // ---------- text ----------
 function applyLang() {
   const x = t();
-  document.documentElement.lang = lang;
+  document.documentElement.lang = lang; setLang(lang);
   $("d-next-t").textContent = x.next; $("g-ok-t").textContent = x.ok;
   $("w-title").textContent = x.wTitle; $("w-body").textContent = x.wBody; $("w-go-t").textContent = x.wGo; $("w-skip").textContent = x.wSkip;
   $("s-text").textContent = x.searching; $("s-sub").textContent = x.searchSub; $("again-t").textContent = x.again;
@@ -584,7 +585,7 @@ async function finish() {
   // What the round pays in gold — one place, ported from RoundRewards.kt (see economy.js).
   const gold = eco.soloGold({ fx, has, correctInOrder: round.map((w) => w.correct), isDaily: kind === "daily", newAchievements: newAch, newStars, dailyStreak: dailyRes ? dailyRes.streak : null, quickWon });
   P.gold += gold.total;
-  let wonChest; if (quickWon) wonChest = awardChest(P) || null;
+  let wonChest; if (quickWon) wonChest = awardChest(P, (k) => runeHas(P, k)) || null;
   saveP(); refreshHome();
   await loadResultStrings();
   show("res2"); sfx.over(); if (wonChest !== undefined) setTimeout(() => wonDialog(ctx, wonChest), 700);
@@ -638,6 +639,8 @@ function refreshHome() {
   for (const k of Object.keys(x.tiles)) $("tx-" + k).textContent = x.tiles[k];
   for (const k of ["gold", "chest"]) $("h-soon-" + k).textContent = x.appOnly;
   refreshDaily(); renderChests(ctx);
+  // A rune can be bought now: the mascot shows a pulsing badge (MainMenuViewModel.runeReady).
+  $("h-rbadge").style.display = anyAffordable(P, P.gold, lv) ? "block" : "none";
   $("h-ttl-gold").textContent = x.adGold; $("h-ttl-daily").textContent = x.daily; $("h-ttl-chest").textContent = x.adChest;
 }
 function msg(text, extra) {
@@ -692,6 +695,9 @@ setTimeout(() => net.listen("invites", (list) => {
 }).catch(() => {}), 4000);
 applyLang();
 net.economyConfig().then((d) => eco.applyConfig(d)).catch(() => {});
+window.__karalak = ctx; // handle for the visual checks in docs/web-parity.md (opens dialogs and scenes without playing a round)
+loadStrings().then(() => { setLang(lang); refreshHome(); }).catch(() => {});
+loadRunes().then(() => refreshHome()).catch(() => {});
 if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); setTimeout(() => checkStreak(ctx), 900); }; } else { show("home"); setTimeout(() => checkStreak(ctx), 1800); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 // After the home screen is up, quietly fetch the pictures of the screens people open most (skipped on data saver).
