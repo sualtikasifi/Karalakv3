@@ -1,5 +1,6 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
+import { loadWorlds, layoutWorlds, renderWorlds, layoutMap, renderMap, mixFor, starsFor, recordLevel, currentWorld } from "./levels.js";
 import { layoutAccount, renderAccount } from "./account.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound } from "./achievements.js";
@@ -34,7 +35,8 @@ let leagueLoaded = false;
 const ctx = {
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
-  refreshHome: () => refreshHome(),
+  refreshHome: () => refreshHome(), show: (id) => show(id),
+  playLevel: (w, l) => startLevel(w, l),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
   open: (id) => show(id),
   levelOf: (xp) => { const lv = levelFor(xp), fl = xpFor(lv), ce = lv >= 100 ? fl : xpFor(lv + 1); return { level: lv, into: xp - fl, span: ce - fl, frac: ce > fl ? (xp - fl) / (ce - fl) : 1, max: lv >= 100 }; },
@@ -50,7 +52,7 @@ const ctx = {
 const RANKS = [[1, "✏️", "Karalamacı", "Scribbler"], [20, "🖊️", "Çırak", "Apprentice"], [40, "🖌️", "Ressam", "Painter"], [60, "🎨", "Usta Ressam", "Master Painter"], [80, "🖼️", "Sanatçı", "Artist"], [100, "👑", "Büyük Usta", "Grand Master"]];
 const xpFor = (lv) => { const n = Math.max(0, lv - 1); return 25 * n * n + 75 * n; };
 const levelFor = (xp) => { let l = 1; while (l < 100 && xp >= xpFor(l + 1)) l++; return l; };
-let P = { nick: "", xp: 0, gold: 0, owned: [], pen: "CLASSIC", frame: "SCRIBBLER", jokers: {}, claimed: [], stats: { games: 0, score: 0, words: 0, perfect: 0, wins: 0, streak: 0, best: 0, last: "" } };
+let P = { nick: "", xp: 0, gold: 0, owned: [], pen: "CLASSIC", frame: "SCRIBBLER", jokers: {}, claimed: [], levels: {}, stats: { games: 0, score: 0, words: 0, perfect: 0, wins: 0, streak: 0, best: 0, last: "" } };
 try { P = { ...P, ...JSON.parse(localStorage.getItem("player") || "{}") }; } catch {}
 const saveP = () => { try { localStorage.setItem("player", JSON.stringify(P)); } catch {} };
 if (!P.nick) { P.nick = "Karalak" + Math.floor(1000 + Math.random() * 9000); saveP(); }
@@ -87,6 +89,10 @@ function layout() {
     for (const [id, x, y, w, h, lx0, ly0, lx1, ly1] of T) { place($("tl-" + id), x, y, w, h); place($("tx-" + id), lx0, ly0, lx1 - lx0, ly1 - ly0); }
   } else if (current === "store") {
     layoutStore(ctx); renderStore(ctx);
+  } else if (current === "worlds") {
+    layoutWorlds(ctx); renderWorlds(ctx);
+  } else if (current === "lvmap") {
+    renderMap(ctx);
   } else if (current === "account") {
     layoutAccount(ctx); renderAccount(ctx);
   } else if (current === "league") {
@@ -255,10 +261,22 @@ function setRing(ring, arc, timeEl, left, total) {
   arc.style.strokeDashoffset = 276.5 * (1 - Math.max(0, left) / total);
   ring.classList.toggle("warn", left <= 3);
 }
-async function start() {
+let levelRun = null, kind = "quick";
+async function startLevel(w, l) {
+  levelRun = { w, l }; kind = "level";
+  const mix = mixFor(w, l);
   if (words.lang !== lang) { words = await (await fetch(t().file)).json(); words.lang = lang; }
-  const pool = [...words].sort(() => Math.random() - 0.5);
-  round = pool.slice(0, WORD_COUNT).map((w) => ({ ...w, strokes: [], guess: "", correct: false, points: 0, ms: 0 }));
+  const picks = [];
+  for (const [d, n] of Object.entries(mix)) picks.push(...[...words].filter((x) => x.difficulty === d).sort(() => Math.random() - 0.5).slice(0, n));
+  begin(picks.sort(() => Math.random() - 0.5));
+}
+async function start(k = "quick") {
+  levelRun = null; kind = k;
+  if (words.lang !== lang) { words = await (await fetch(t().file)).json(); words.lang = lang; }
+  begin([...words].sort(() => Math.random() - 0.5).slice(0, WORD_COUNT));
+}
+function begin(picked) {
+  round = picked.map((w) => ({ ...w, strokes: [], guess: "", correct: false, points: 0, ms: 0 }));
   idx = 0; tool = "pen"; score = 0; nextDraw();
 }
 function nextDraw() {
@@ -316,7 +334,7 @@ function addRow(parent, strokes, ok, label, sub, pen) {
 }
 async function finish() {
   const x = t();
-  show("search");
+  if (kind === "quick") show("search");
   const n = round.filter((w) => w.correct).length;
   if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
   P.xp += score; P.periodXp = (P.periodXp || 0) + score; P.gold += n * 10; achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
@@ -326,9 +344,12 @@ async function finish() {
     perWord: round.map((w) => ({ wordId: w.id, isCorrect: w.correct, responseTimeMs: w.ms, pointsAwarded: w.points })),
     items: round.map((w) => ({ word: w.text, isCorrect: w.correct, strokes: w.strokes, penSkin: P.pen })),
   };
-  const minWait = new Promise((r) => setTimeout(r, 2000 + Math.random() * 2000));
+  const minWait = new Promise((r) => setTimeout(r, kind === "quick" ? 2000 + Math.random() * 2000 : 0));
   let opp = null, items = [];
+  let stars = 0;
+  if (kind === "level") { stars = starsFor(n, round.length); recordLevel(P, levelRun.w, levelRun.l, stars); saveP(); }
   try {
+    if (kind !== "quick") throw new Error("no-opponent");
     opp = await Promise.race([net.findOpponent(lang), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 12000))]);
     net.recordRound(me).catch(() => {});
     if (opp) items = await net.loadItems(opp.id).catch(() => []);
@@ -337,7 +358,9 @@ async function finish() {
   show("result");
   $("r-title").textContent = `${x.result}: ${n}/${round.length}`;
   const vs = $("r-vs");
-  vs.textContent = opp
+  if (kind === "level") vs.textContent = `${"★".repeat(stars)}${"☆".repeat(3 - stars)}  ·  ${x.you}: ${score} ${x.pts}`;
+  else if (kind === "offline") vs.textContent = `${x.you}: ${score} ${x.pts}`;
+  else vs.textContent = opp
     ? `${x.you} ${score} – ${opp.totalScore} ${opp.nickname || ""} · ${score > opp.totalScore ? x.win : score < opp.totalScore ? x.lose : x.draw}`
     : `${x.you}: ${score} ${x.pts} · ${x.noOpp}`;
   const list = $("r-list"); list.innerHTML = "";
@@ -359,7 +382,7 @@ function confirmLeave() {
   $("dlg-no").onclick = () => $("dialog").classList.add("hidden");
 }
 $("d-back").onclick = confirmLeave; $("g-back").onclick = confirmLeave;
-$("again").onclick = () => show("home");
+$("again").onclick = () => show(kind === "level" ? "lvmap" : "home");
 $("r-back").onclick = () => show("home");
 function refreshHome() {
   const x = t(), lv = levelFor(P.xp), floor = xpFor(lv), ceil = lv >= 100 ? floor : xpFor(lv + 1), into = P.xp - floor, span = ceil - floor;
@@ -382,7 +405,9 @@ function msg(text, extra) {
   $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren(); };
 }
 const soon = (name) => () => msg(`${name} · ${t().soon}`);
-$("tl-quick").onclick = start; $("tl-offline").onclick = start;
+$("tl-quick").onclick = () => start("quick"); $("tl-offline").onclick = () => start("offline");
+$("tl-levels").onclick = async () => { await loadWorlds(); show("worlds"); };
+$("wl-back").onclick = () => show("home"); $("lm-back").onclick = () => show("worlds");
 $("tl-store").onclick = async () => { await loadStoreData(); show("store"); };
 $("st-back").onclick = () => show("home");
 $("tl-ach").onclick = async () => { await loadAchievements(); show("ach"); };
@@ -390,7 +415,7 @@ $("ac-back").onclick = () => show("home");
 $("tl-league").onclick = async () => { await loadStoreData(); await loadLeague(); leagueLoaded = false; show("league"); };
 $("lg-back").onclick = () => show("home");
 $("lg-refresh").onclick = () => { leagueLoaded = false; layout(); };
-for (const [id, k] of [["online", "online"], ["levels", "levels"], ["friends", "friends"]]) $("tl-" + id).onclick = () => soon(t().tiles[k])();
+for (const [id, k] of [["online", "online"], ["friends", "friends"]]) $("tl-" + id).onclick = () => soon(t().tiles[k])();
 const soonMsg = () => msg(t().soon);
 $("tl-settings").onclick = () => show("settings");
 $("se-back").onclick = () => show("home");
