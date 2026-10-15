@@ -410,11 +410,17 @@ private fun DrawScope.sparkles(g: PenGeometry, w: Float, time: Float, every: Int
 }
 
 private fun DrawScope.drawSparkle(center: Offset, r: Float, alpha: Float) {
-    val bar = (r * 0.28f).coerceAtLeast(1f)
-    val c = Color.White.copy(alpha = alpha.coerceIn(0f, 1f))
-    drawLine(c, Offset(center.x - r, center.y), Offset(center.x + r, center.y), bar, StrokeCap.Round)
-    drawLine(c, Offset(center.x, center.y - r), Offset(center.x, center.y + r), bar, StrokeCap.Round)
-    drawCircle(c, radius = bar * 1.1f, center = center)
+    // A four-pointed star with concave sides: four quadratic curves that pinch in towards the middle.
+    val k = r * 0.14f
+    val star = Path().apply {
+        moveTo(center.x, center.y - r)
+        quadraticBezierTo(center.x + k, center.y - k, center.x + r, center.y)
+        quadraticBezierTo(center.x + k, center.y + k, center.x, center.y + r)
+        quadraticBezierTo(center.x - k, center.y + k, center.x - r, center.y)
+        quadraticBezierTo(center.x - k, center.y - k, center.x, center.y - r)
+        close()
+    }
+    drawPath(star, Color.White.copy(alpha = alpha.coerceIn(0f, 1f)))
 }
 
 /** Tiny sparks thrown off the stroke: they rise, shrink, cool from yellow to red and vanish. */
@@ -447,7 +453,13 @@ private fun DrawScope.smoke(g: PenGeometry, w: Float, time: Float) {
             val x0 = g.xs[i] + sin(u * 3.5f + hash01(i, 44) * 6f) * w * 0.9f * u
             val y0 = g.ys[i] - u * w * 4f
             val alpha = 0.26f * (1f - u) * minOf(1f, u * 8f)
-            drawCircle(lerp(SmokeLight, SmokeDark, u).copy(alpha = alpha), radius = w * (0.55f + u), center = Offset(x0, y0))
+            // Three stacked discs of shrinking size fake a soft edge without a shader per puff.
+            val colour = lerp(SmokeLight, SmokeDark, u)
+            val radius = w * (0.55f + u)
+            val centre = Offset(x0, y0)
+            drawCircle(colour.copy(alpha = alpha * 0.45f), radius = radius, center = centre)
+            drawCircle(colour.copy(alpha = alpha * 0.45f), radius = radius * 0.68f, center = centre)
+            drawCircle(colour.copy(alpha = alpha * 0.45f), radius = radius * 0.38f, center = centre)
         }
         i += 2
     }
