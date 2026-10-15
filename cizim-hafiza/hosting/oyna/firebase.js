@@ -185,18 +185,18 @@ export async function sendInvite(toUid, roomCode, myNick) {
 }
 
 // ================= Race a Friend: rooms/{code} (same documents as OnlineGameRepositoryImpl) =================
-const playerMap = (displayName, level, frameId, pendingNextRound = false) => ({
+const playerMap = (displayName, level, frameId, pendingNextRound = false, teamId = null) => ({
   displayName, level, frameId, avatarUrl: "", joinedAt: Date.now(), lastSeenAt: Date.now(),
-  ready: false, finished: false, left: false, totalScore: 0, correctCount: 0, wrongCount: 0, fastestCorrectMs: null, pendingNextRound, teamId: null,
+  ready: false, finished: false, left: false, totalScore: 0, correctCount: 0, wrongCount: 0, fastestCorrectMs: null, pendingNextRound, teamId,
 });
-export async function createRoom(nick, level, frameId, { wordCount, difficulty, mode, category }) {
+export async function createRoom(nick, level, frameId, { wordCount, difficulty, mode, category, teamMode = false }) {
   const { fs, db, auth } = await init(), uid = auth.currentUser.uid;
   for (let i = 0; i < 5; i++) {
     const code = String(100000 + Math.floor(Math.random() * 900000)), ref = fs.doc(db, "rooms", code);
     const ok = await fs.runTransaction(db, async (tx) => {
       if ((await tx.get(ref)).exists()) return false;
       tx.set(ref, { hostUid: uid, createdAt: Date.now(), status: "WAITING", wordCount, category: category || null, difficulty: difficulty || null, mode, wordIds: [],
-        players: { [uid]: playerMap(nick, level, frameId) }, rematchVotes: [], teamMode: false });
+        players: { [uid]: playerMap(nick, level, frameId, false, teamMode ? "A" : null) }, rematchVotes: [], teamMode: !!teamMode });
       return true;
     });
     if (ok) return code;
@@ -212,9 +212,12 @@ export async function joinRoom(code, nick, level, frameId) {
     const kicked = d.kickedUsers && d.kickedUsers[uid];
     if (kicked && kicked.until > now) return "kicked";
     const present = Object.values(players).filter((p) => !p.left && now - (p.lastSeenAt || p.joinedAt || 0) <= 150000);
-    if (!(uid in players) && present.length >= 8) return "full";
-    if (d.status === "WAITING") tx.update(ref, { ["players." + uid]: playerMap(nick, level, frameId) });
-    else tx.update(ref, { ["players." + uid]: playerMap(nick, level, frameId, true) });
+    const team = !!d.teamMode;
+    if (!(uid in players) && present.length >= (team ? 4 : 8)) return "full";
+    // a returning player keeps their team; a new one goes to the team with fewer present players (ties: A)
+    const teamId = !team ? null : (players[uid] && players[uid].teamId) || (present.filter((p) => p.teamId === "A").length <= present.filter((p) => p.teamId === "B").length ? "A" : "B");
+    if (d.status === "WAITING") tx.update(ref, { ["players." + uid]: playerMap(nick, level, frameId, false, teamId) });
+    else tx.update(ref, { ["players." + uid]: playerMap(nick, level, frameId, true, teamId) });
     return "ok";
   });
 }
@@ -222,7 +225,19 @@ export async function watchRoom(code, cb) {
   const { fs, db } = await init();
   return fs.onSnapshot(fs.doc(db, "rooms", code), (s) => cb(s.exists() ? { id: s.id, ...s.data() } : null), () => cb(null));
 }
+export async function watchReactions(code, cb) {
+  const { fs, db } = await init(), cutoff = Date.now() - 5 * 60000;
+  const q = fs.query(fs.collection(db, "rooms", code, "reactions"), fs.where("sentAt", ">", cutoff), fs.orderBy("sentAt"), fs.limitToLast(50));
+  return fs.onSnapshot(q, (s) => cb(s.docs.map((d) => d.data()).filter((r) => r.uid && r.emoji != null)), () => cb([]));
+}
+export async function sendReaction(code, emoji, messageKey) {
+  const { fs, db } = await init(); const uid = await myUid();
+  await fs.addDoc(fs.collection(db, "rooms", code, "reactions"), { uid, emoji, messageKey, sentAt: Date.now() });
+}
 const upd = async (code, data) => { const { fs, db } = await init(); await fs.updateDoc(fs.doc(db, "rooms", code), data); };
+export const setTeam = async (code, teamId) => upd(code, { ["players." + (await myUid()) + ".teamId"]: teamId });
+export async function kickPlayer(code, uid, name) { await upd(code, { ["players." + uid]: (await init()).fs.deleteField(), ["kickedUsers." + uid]: { displayName: name, until: Date.now() + 30 * 60000 } }); }
+export async function unbanPlayer(code, uid) { await upd(code, { ["kickedUsers." + uid]: (await init()).fs.deleteField() }); }
 export const setReady = async (code, ready) => upd(code, { ["players." + (await myUid()) + ".ready"]: ready });
 export const touchPresence = async (code, level, frameId) => upd(code, { ["players." + (await myUid()) + ".lastSeenAt"]: Date.now(), ["players." + (await myUid()) + ".level"]: level, ["players." + (await myUid()) + ".frameId"]: frameId });
 export const leaveRoom = async (code) => upd(code, { ["players." + (await myUid()) + ".left"]: true });
