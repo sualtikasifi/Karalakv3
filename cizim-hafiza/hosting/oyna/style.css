@@ -122,13 +122,6 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .fcard .btn{width:80%;height:calc(var(--u)*62);background:url(img/st_pill_orange.webp) 0 0/100% 100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:calc(var(--u)*28);gap:calc(var(--u)*6);-webkit-text-stroke:calc(var(--u)*5) #8a3a05;paint-order:stroke fill}
 .fcard .btn.green{background-image:url(img/st_pill_green.webp)}.fcard .btn.dis{filter:grayscale(.7) brightness(.85)}
 .fcard .btn img{height:calc(var(--u)*30)}
-.jcard{grid-column:1/3;display:flex;align-items:center;gap:calc(var(--u)*20);background:url(img/st_card_frame.webp) 0 0/100% 100%;padding:calc(var(--u)*36) calc(var(--u)*44);color:#3a2a22}
-.jcard>img{width:calc(var(--u)*130);height:calc(var(--u)*130);object-fit:contain}
-.jcard .jt{flex:1;display:flex;flex-direction:column;gap:calc(var(--u)*6)}
-.jcard .jt b{font-size:calc(var(--u)*32);line-height:1}.jcard .jt small{font-size:calc(var(--u)*22);font-weight:600;line-height:1.1}
-.jcard .jb{display:flex;gap:calc(var(--u)*10);flex-wrap:wrap}
-.jcard .btn{height:calc(var(--u)*62);padding:0 calc(var(--u)*20);background:url(img/st_pill_orange.webp) 0 0/100% 100%;display:flex;align-items:center;gap:calc(var(--u)*6);color:#fff;font-size:calc(var(--u)*24);-webkit-text-stroke:calc(var(--u)*4) #8a3a05;paint-order:stroke fill}
-.jcard .btn img{height:calc(var(--u)*28)}.jcard .btn.dis{filter:grayscale(.7) brightness(.85)}
 #st-toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--u)*140);background:#3a1e08;color:#fff;padding:calc(var(--u)*16) calc(var(--u)*36);border-radius:99px;font-size:calc(var(--u)*30);z-index:5}
 #st-toast.err{background:#a82020}
 
@@ -372,11 +365,11 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 /* Giriş Serisi */
 .ls-wrap{width:min(94vw,calc(100dvh/1.5));aspect-ratio:1024/1536;container-type:inline-size;position:relative;max-height:96%}
 .ls-frame{position:absolute;inset:0}.ls-bg{position:absolute;inset:0;width:100%;height:100%}
-.ls-head{position:absolute;left:8%;right:8%;top:27%;text-align:center;font:800 5.2cqw "Baloo2",sans-serif;color:#4a2a10}
-.ls-hint{position:absolute;left:8.2%;width:83.5%;top:28.4%;height:4.6%;display:flex;align-items:center;justify-content:center;text-align:center;font:600 2.9cqw/1.2 "Baloo2",sans-serif;color:#4a2a10}
+.ls-head{position:absolute;left:8%;right:8%;top:27%;text-align:center;font:800 5.2cqw Baloo,sans-serif;color:#4a2a10}
+.ls-hint{position:absolute;left:8.2%;width:83.5%;top:28.4%;height:4.6%;display:flex;align-items:center;justify-content:center;text-align:center;font:600 2.9cqw/1.2 Baloo,sans-serif;color:#4a2a10}
 .ls-hint.big{font-size:4.4cqw}.ls-hint.ok{color:#1f9a3a}.ls-hint.mile{color:#8e44d6}
 .ls-grid{position:absolute;left:8.2%;top:33%;width:83.5%;height:44.3%;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:1fr 1fr;gap:0 1.4cqw;align-items:center}
-.ls-card{grid-column:span 2;align-self:center;position:relative;aspect-ratio:998/1343;font-family:"Baloo2",sans-serif}
+.ls-card{grid-column:span 2;align-self:center;position:relative;aspect-ratio:998/1343;font-family:Baloo,sans-serif}
 .ls-card:nth-child(5){grid-column:2/4}.ls-card:nth-child(6){grid-column:4/6}.ls-card:nth-child(7){grid-column:6/8}
 .ls-card img{width:100%;height:100%;display:block}
 .ls-card span{position:absolute;text-align:center;color:#4a2a10;font-weight:800;display:flex;align-items:center;justify-content:center;white-space:nowrap}
@@ -389,3 +382,47 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .ls-act .pill{flex:1;max-width:70%;height:100%!important;font-size:3.4cqw}
 .ls-claim{height:100%;background:none;border:0;padding:0}.ls-claim img{height:100%;display:block}
 .ls-x{position:absolute;left:85.5%;top:15.6%;width:12.5%;height:8.4%;background:none;border:0}
+
+/* Store: joker cards (Android JokerCard / DailyJokerCard) */
+.jcard{grid-column:1/3;position:relative;aspect-ratio:1300/538;container-type:inline-size;color:#3a2a22;font-family:Baloo,sans-serif}
+.jcard>.bg,.djoker>.bg{position:absolute;inset:0;width:100%;height:100%}
+.jcard .ja{position:absolute;left:10cqw;top:12.4cqw;width:17.4cqw;height:17.4cqw;border-radius:24%;overflow:hidden}.jcard .ja img{width:100%;height:100%;transform:scale(1.22);object-fit:cover}
+.jcard .jn{position:absolute;left:34cqw;top:5cqw;width:33cqw;height:8.3cqw;display:flex;align-items:center;font-size:3.9cqw;font-weight:800;white-space:nowrap}
+.jcard .jo{position:absolute;left:10cqw;top:30.6cqw;width:17.4cqw;text-align:center;font-size:2.8cqw;font-weight:800;color:#9a3412;white-space:nowrap}
+.jcard .jd{position:absolute;left:34cqw;top:13.2cqw;width:33cqw;font-size:2.6cqw;line-height:1.15;font-weight:500;opacity:.8}
+.jcard .jb{position:absolute;left:34cqw;top:24cqw;width:56cqw;height:11.2cqw;display:flex;gap:2cqw}
+.jcard .jb button{flex:1;border:0;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;background:0 0 center/100% 100% no-repeat;font-family:inherit;font-weight:800;-webkit-text-stroke:.45cqw #8a3a05;paint-order:stroke fill}
+.jcard .jb button{border:5.3cqw solid transparent;box-sizing:border-box;background:none;border-image-slice:72 fill;border-image-width:5.3cqw;border-image-repeat:stretch}.jcard .jb .pillo{border-image-source:url(img/st_pill_orange.webp);border-image-slice:44 fill}.jcard .jb .pillb{border-image-source:url(img/st_pill_blue.webp);-webkit-text-stroke-color:#1b4f8a}
+.jcard .jb .pr{display:flex;align-items:center;gap:1cqw;font-size:3.6cqw}.jcard .jb .pr img{height:3.8cqw}.jcard .jb .pr.s{font-size:3.4cqw;margin-top:-.4cqw}.jcard .jb .pr.s img{height:3.4cqw}
+.jcard .jb .bk{font-size:2.1cqw;margin-top:.8cqw;white-space:nowrap}.jcard .jb .dis{opacity:.55}
+.djoker{grid-column:1/3;position:relative;aspect-ratio:1300/665;container-type:inline-size;font-family:Baloo,sans-serif}
+.djoker .dj-tag{position:absolute;left:33.8cqw;top:6cqw;width:43cqw;height:6cqw;display:flex;align-items:center;justify-content:center;color:#fff4d6;font-weight:800;font-size:4.1cqw;text-shadow:0 .25cqw .3cqw #5a2410;white-space:nowrap}
+.djoker .dj-art{position:absolute;left:10.4cqw;top:18.6cqw;width:16.9cqw;height:16.9cqw;border-radius:24%;overflow:hidden}.djoker .dj-art img{width:100%;height:100%;transform:scale(1.22);object-fit:cover}
+.djoker .dj-txt{position:absolute;left:30.8cqw;top:19.2cqw;width:36cqw;height:17.7cqw;display:flex;flex-direction:column;justify-content:center;color:#3a2a22}
+.djoker .dj-txt b{font-size:3.5cqw;font-weight:800;line-height:1.3;white-space:nowrap}.djoker .dj-txt small{font-size:2.75cqw;line-height:1.2;font-weight:600;opacity:.85}
+.djoker .dj-btn{position:absolute;left:23.8cqw;top:39.2cqw;width:52.7cqw;height:8.2cqw;background:0 0;border:0;display:flex;align-items:center;justify-content:center;gap:1.2cqw;color:#fff;font:800 4cqw Baloo,sans-serif;text-shadow:0 .25cqw .25cqw #0e3a06;padding:0}
+.djoker .dj-btn svg{width:4.8cqw;height:4.8cqw}.djoker .dj-btn:active{transform:scale(.95)}
+
+/* Store: painted purchase window + joker bought celebration */
+.bd-wrap{width:min(94vw,calc((100dvh - 24px)*1086/1448));aspect-ratio:1086/1448;container-type:inline-size;position:relative;animation:bdin .26s ease-out}
+@keyframes bdin{from{transform:translateY(60%);opacity:0}}
+.bd-frame{position:absolute;inset:0}.bd-art{position:absolute;inset:0;width:100%;height:100%}
+.bd-hit{position:absolute;background:none;border:0;padding:0;border-radius:8cqw}.bd-hit:active{background:rgba(0,0,0,.12)}.bd-hit.dis{background:rgba(255,255,255,.45)}
+.bd-price{position:absolute;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:7cqw;-webkit-text-stroke:.9cqw #1a0e08;paint-order:stroke fill;white-space:nowrap}
+.bd-coin{position:absolute;aspect-ratio:1}
+.bd-warn{position:absolute;display:flex;align-items:center;justify-content:center;background:#ffe3d6;border-radius:2.3cqw;color:#b3401a;font-weight:800;font-size:3.1cqw;white-space:nowrap}
+.bd-qty{position:absolute;left:11%;top:22.8%;width:13.8%;aspect-ratio:1;border-radius:50%;background:linear-gradient(#ffb14e,#f47a16);border:.65cqw solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:5.7cqw;-webkit-text-stroke:.7cqw #8a3a06;paint-order:stroke fill}
+.bd-prev{position:absolute;display:flex;align-items:center;justify-content:center}.bd-prev>img{width:100%;height:100%;object-fit:contain}.bd-prev .bd-frm{width:48%;aspect-ratio:1}
+.bd-name{position:absolute;display:flex;align-items:center;justify-content:center;color:#3a2a22;font-weight:800;font-size:5.9cqw;white-space:nowrap}
+.bc{position:fixed;inset:0;background:rgba(27,14,4,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;overflow:hidden;animation:bcf .25s}
+@keyframes bcf{from{opacity:0}}
+.bc-art{position:relative;width:min(70vw,280px);aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+.bc-rays{position:absolute;inset:0;border-radius:50%;background:radial-gradient(#ffe08acc,transparent 70%);animation:bcb .7s ease-in-out infinite alternate}
+.bc-rays::after{content:"";position:absolute;inset:0;background:repeating-conic-gradient(#ffe9a88c 0 7deg,transparent 7deg 30deg);-webkit-mask:radial-gradient(transparent 18%,#000 19%,#000 50%,transparent 51%);mask:radial-gradient(transparent 18%,#000 19%,#000 50%,transparent 51%);animation:bcs 9s linear infinite}
+@keyframes bcb{to{transform:scale(1.1)}}@keyframes bcs{to{transform:rotate(360deg)}}
+.bc-j{position:relative;width:46%;aspect-ratio:1;border-radius:24%;overflow:hidden;animation:bcp .9s cubic-bezier(.3,1.7,.5,1)}.bc-j img{width:100%;height:100%;object-fit:cover;transform:scale(1.22)}
+@keyframes bcp{from{transform:scale(.15) rotate(-25deg)}}
+.bc h2{margin:10px 0 0;font-size:28px;animation:bct .5s .3s backwards}.bc h3{margin:6px 0 0;font-size:30px;color:#ffd75e;animation:bct .5s .35s backwards}
+@keyframes bct{from{opacity:0;transform:translateY(30px)}}
+.cf{position:absolute;top:42%;width:9px;height:14px;border-radius:2px;animation:cff 1.7s ease-out forwards}
+@keyframes cff{to{transform:translate(var(--dx),var(--dy)) rotate(720deg);opacity:0}}
