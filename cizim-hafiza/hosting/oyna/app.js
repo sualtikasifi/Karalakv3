@@ -1,6 +1,7 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
 import { checkStreak } from "./streak.js";
+import { renderResult, loadResultStrings } from "./result.js";
 import { loadRunes, layoutRunes, renderRunes, effect as runeFx } from "./runes.js";
 import { layoutReport, renderReport } from "./report.js";
 import { layoutChests, renderChests, award as awardChest, wonDialog } from "./chests.js";
@@ -25,11 +26,11 @@ const ART_W = 841, ART_H = 1870, GUESS_BOTTOM = 1595;
 
 const T = {
   tr: { tag: "Çiz, ezberle,\ntahmin et!", start: "OYNA", note: "Android ve tarayıcı oyuncularıyla eşleş", next: "Bitir", ok: "Gönder",
-        guess: "Tahmin et", result: "Sonuç", timeJ: "+Süre", hintT: "İpucu", firstT: "İlk harf", countT: "Harf sayısı", skipT: "Geç", found: "Harika!\nEşleşme bulundu.", startIn: (n) => `Maç ${n} saniye sonra başlıyor`, tip1: (n) => `İkiniz de aynı ${n} kelimeyi çizeceksiniz`, tip2: "Puanlar maç sonunda karşılaştırılır", tip3: "Rahat ol, keyfini çıkar!", wTitle: "Karalak'a hoş geldin!", wBody: "Kısa bir deneme yapalım. Sana 3 kelime vereceğim, sen çizeceksin. Sonra çizimlerini sana geri göstereceğim, sen de ne olduğunu hatırlayacaksın. Hepsi bu!", wGo: "Hadi başlayalım", wSkip: "Eğitimi atla", finT: "İşte bu kadar! 🎉", finB: "Artık çizmeyi de hatırlamayı da biliyorsun. Hediye olarak her jokerden 3'er hakkın hesabına eklendi. Kalemin hazır, bol şans!", finBtn: "Oynamaya başla", searching: "Rakip aranıyor…", searchSub: "Birisi senin gibi çizerken bulunuyor", again: "TEKRAR OYNA", lobbyHome: "ANA SAYFA", noOpp: "Şu an rakip bulunamadı",
+        guess: "Tahmin et", result: "Sonuç", timeJ: "+Süre", hintT: "İpucu", firstT: "İlk harf", countT: "Harf sayısı", skipT: "Geç", found: "Harika!\nEşleşme bulundu.", startIn: (n) => `Maç ${n} saniye sonra başlıyor`, tip1: (n) => `İkiniz de aynı ${n} kelimeyi çizeceksiniz`, tip2: "Puanlar maç sonunda karşılaştırılır", tip3: "Rahat ol, keyfini çıkar!", wTitle: "Karalak'a hoş geldin!", wBody: "Kısa bir deneme yapalım. Sana 3 kelime vereceğim, sen çizeceksin. Sonra çizimlerini sana geri göstereceğim, sen de ne olduğunu hatırlayacaksın. Hepsi bu!", wGo: "Hadi başlayalım", wSkip: "Eğitimi atla", finT: "İşte bu kadar! 🎉", finB: "Artık çizmeyi de hatırlamayı da biliyorsun. Hediye olarak her jokerden 3'er hakkın hesabına eklendi. Kalemin hazır, bol şans!", finBtn: "Oynamaya başla", searching: "Rakip aranıyor…", searchSub: "Birisi senin gibi çizerken bulunuyor", again: "TEKRAR OYNA", nextLevel: "Sonraki Bölüm", lobbyHome: "ANA SAYFA", noOpp: "Şu an rakip bulunamadı",
         you: "Sen", win: "Kazandın!", lose: "Kaybettin", draw: "Berabere", leaveQ: "Odadan ayrılmak istiyor musun?", leave: "Oyundan çıkılsın mı?", yes: "Çık", no: "Kal",
         mine: "Çizimlerin", tiles: { online: "Arkadaşınla Yarış", quick: "Hızlı Eşleş", offline: "Çevrimdışı Oyna", levels: "Bölümler", friends: "Arkadaşlar", ach: "Başarımlar", league: "Aylık Lig", store: "Mağaza", settings: "Ayarlar" }, goldLbl: "Klasik", adGold: "+500 Altın", daily: "Günün Meydan Okuması", adChest: "Ücretsiz Kasa", dailyPlay: "ŞİMDİ OYNA", dailyDone: "Bugünkü meydan okumayı bitirdin!", lvl: "Seviye", toNext: (n, l) => `Sv. ${l} için ${n} XP`, soon: "Çok yakında", appOnly: "Uygulamada", ok: "Tamam", langTitle: "Dil",  theirs: "Rakibin çizimleri", pts: "puan", file: "words_tr.json", ph: "Cevabın…" },
   en: { tag: "Draw, memorize,\nguess!", start: "PLAY", note: "Match with Android and browser players", next: "Done", ok: "Send",
-        guess: "Guess", result: "Result", timeJ: "+Time", hintT: "Hint", firstT: "First letter", countT: "Letters", skipT: "Skip", found: "Great!\nMatch found.", startIn: (n) => `Match starts in ${n} seconds`, tip1: (n) => `You'll both draw the same ${n} words`, tip2: "Scores are compared when the match ends", tip3: "Relax and enjoy the game!", wTitle: "Welcome to Karalak!", wBody: "Let's try a quick practice. I'll give you 3 words to draw. Then I'll show your drawings back and you'll remember what they were. That's it!", wGo: "Let's start", wSkip: "Skip tutorial", finT: "That's it! 🎉", finB: "You now know how to draw and remember. As a gift, 3 of each joker were added to your account. Your pen is ready, good luck!", finBtn: "Start playing", searching: "Finding an opponent…", searchSub: "Looking for someone who draws like you", again: "PLAY AGAIN", lobbyHome: "HOME", noOpp: "No opponent found right now",
+        guess: "Guess", result: "Result", timeJ: "+Time", hintT: "Hint", firstT: "First letter", countT: "Letters", skipT: "Skip", found: "Great!\nMatch found.", startIn: (n) => `Match starts in ${n} seconds`, tip1: (n) => `You'll both draw the same ${n} words`, tip2: "Scores are compared when the match ends", tip3: "Relax and enjoy the game!", wTitle: "Welcome to Karalak!", wBody: "Let's try a quick practice. I'll give you 3 words to draw. Then I'll show your drawings back and you'll remember what they were. That's it!", wGo: "Let's start", wSkip: "Skip tutorial", finT: "That's it! 🎉", finB: "You now know how to draw and remember. As a gift, 3 of each joker were added to your account. Your pen is ready, good luck!", finBtn: "Start playing", searching: "Finding an opponent…", searchSub: "Looking for someone who draws like you", again: "PLAY AGAIN", nextLevel: "Next Level", lobbyHome: "HOME", noOpp: "No opponent found right now",
         you: "You", win: "You win!", lose: "You lose", draw: "Draw", leaveQ: "Leave the room?", leave: "Leave the game?", yes: "Leave", no: "Stay",
         mine: "Your drawings", tiles: { online: "Race a Friend", quick: "Quick Match", offline: "Play Offline", levels: "Levels", friends: "Friends", ach: "Achievements", league: "Monthly League", store: "Store", settings: "Settings" }, goldLbl: "Classic", adGold: "+500 Gold", daily: "Daily Challenge", adChest: "Free Chest", dailyPlay: "PLAY NOW", dailyDone: "You finished today's challenge!", lvl: "Level", toNext: (n, l) => `${n} XP to Lv. ${l}`, soon: "Coming soon", appOnly: "In the app", ok: "OK", langTitle: "Language",  theirs: "Opponent's drawings", pts: "pts", file: "words_en.json", ph: "Your answer…" },
 };
@@ -47,6 +48,7 @@ const ctx = {
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
   inviteFriend: (f) => quickInvite(ctx, f).then(() => { stopFriends(); show("onw"); }),
+  paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
   pickRoomWords: (r) => pickRoomWords(r),
   syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
@@ -82,7 +84,7 @@ function layout() {
   const { w: vw, h: vh } = viewport();
   const s = stage.style;
   let W, H;
-  if (current === "guess" || current === "result") { W = Math.min(vw, 560); H = vh; }
+  if (current === "guess" || current === "result" || current === "res2") { W = Math.min(vw, 560); H = vh; }
   else { W = Math.min(vw, vh * ART_W / ART_H); H = W * ART_H / ART_W; }
   u = W / ART_W;
   s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + "px"; s.top = (vh - H) / 2 + "px";
@@ -233,10 +235,10 @@ function fitCanvas(c) {
   c.width = Math.max(1, Math.round(r.width * d)); c.height = Math.max(1, Math.round(r.height * d));
 }
 // Strokes are lists of {x,y} in canvas pixels (the shape Android stores); every viewer fits them to the box.
-function paint(canvas, strokes, live = false, pen = "CLASSIC") {
+function paint(canvas, strokes, live = false, pen = "CLASSIC", fitTo = null) {
   const ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height, d = window.devicePixelRatio || 1;
   ctx.clearRect(0, 0, w, h);
-  const pts = strokes.flat();
+  const pts = (fitTo || strokes).flat();
   if (!pts.length) return;
   let sc = d, ox = 0, oy = 0;
   if (!live) {
@@ -483,9 +485,9 @@ function addRow(parent, strokes, ok, label, sub, pen) {
 async function finish() {
   const x = t();
   if (kind === "tutorial") { show("home"); ctx.confirm(x.finT + "\n\n" + x.finB, x.finBtn, endTutorial); $("dlg-no").style.display = "none"; $("dlg-text").style.whiteSpace = "pre-line"; return; }
-  const n = round.filter((w) => w.correct).length;
+  const n = round.filter((w) => w.correct).length, xp0 = P.xp, goldPlay = Math.round(n * 10 * (kind === "daily" ? 1 : 1 + runeFx(P, "WORD") / 100));
   if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
-  P.xp += Math.round(score * (1 + runeFx(P, "XP") / 100)); P.periodXp = (P.periodXp || 0) + score; P.gold += Math.round(n * 10 * (kind === "daily" ? 1 : 1 + runeFx(P, "WORD") / 100)); achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
+  P.xp += Math.round(score * (1 + runeFx(P, "XP") / 100)); P.periodXp = (P.periodXp || 0) + score; P.gold += goldPlay; achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
   if (kind === "online") { net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {}); return submitAndWait(ctx, round, score); }
   net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
   const me = {
@@ -502,23 +504,19 @@ async function finish() {
   await minWait;
   let wonChest; if (kind === "quick" && opp && score > opp.totalScore) wonChest = awardChest(P) || null;
   if (wonChest !== undefined) { saveP(); refreshHome(); }
-  show("result"); sfx.over(); if (wonChest !== undefined) setTimeout(() => wonDialog(ctx, wonChest), 700); $("again-t").textContent = kind === "quick" ? x.again : x.lobbyHome;
-  $("r-title").textContent = `${x.result}: ${n}/${round.length}`;
-  const vs = $("r-vs");
-  if (kind === "level") vs.textContent = `${"★".repeat(stars)}${"☆".repeat(3 - stars)}  ·  ${x.you}: ${score} ${x.pts}`;
-  else if (kind === "daily") vs.textContent = dailyRes ? `🔥 ${dailyRes.streak}  ·  +${dailyRes.xp} XP` : x.dailyDone;
-  else if (kind === "offline") vs.textContent = `${x.you}: ${score} ${x.pts}`;
-  else vs.textContent = opp
-    ? `${x.you} ${score} – ${opp.totalScore} ${opp.nickname || ""} · ${score > opp.totalScore ? x.win : score < opp.totalScore ? x.lose : x.draw}`
-    : `${x.you}: ${score} ${x.pts} · ${x.noOpp}`;
-  const list = $("r-list"); list.innerHTML = "";
-  const h1 = document.createElement("div"); h1.className = "who"; h1.textContent = x.mine; list.append(h1);
-  for (const w of round) addRow(list, w.strokes, w.correct, w.text, w.guess && !w.correct ? `“${w.guess}”` : "", P.pen);
-  if (items.length) {
-    const h2 = document.createElement("div"); h2.className = "who"; h2.textContent = `${x.theirs} · ${opp.nickname || ""}`; list.append(h2);
-    for (const it of items) addRow(list, it.strokes, it.isCorrect, it.word, "", it.penSkin);
-  }
-  $("result").scrollTop = 0;
+  await loadResultStrings();
+  show("res2"); sfx.over(); if (wonChest !== undefined) setTimeout(() => wonDialog(ctx, wonChest), 700);
+  const lvl = levelFor(P.xp), into = P.xp - xpFor(lvl), need = xpFor(lvl + 1) - xpFor(lvl), l0 = levelFor(xp0);
+  const ring = (fid) => () => { const fr = frameRing(frameById(fid)); fr.style.cssText += ";width:100%;height:100%"; return fr; };
+  renderResult(ctx, {
+    n, total: round.length, score, xp: P.xp - xp0, goldPlay, stars: kind === "level" ? stars : null, pen: P.pen, nick: P.nick,
+    daily: dailyRes, flags: round.map((w) => w.correct),
+    level: { level: lvl, before: l0, into, need, toNext: xpFor(lvl + 1) - P.xp, max: lvl >= 100, frac: lvl >= 100 ? 1 : into / need, beforeFrac: l0 === lvl ? (xp0 - xpFor(lvl)) / need : 0 },
+    opp, myRing: ring(P.frame), oppRing: ring(opp ? highestFrameFor(opp.level || 1) : "SCRIBBLER"), oppItems: items,
+    items: round.map((w) => ({ word: w.text, isCorrect: w.correct, strokes: w.strokes, penSkin: P.pen })),
+    onHome: () => show("home"),
+    next: kind === "level" && levelRun && levelRun.l < 10 ? { label: t().nextLevel, fn: () => startLevel(levelRun.w, levelRun.l + 1) } : null,
+  });
 }
 
 // ---------- navigation ----------

@@ -1,0 +1,166 @@
+{
+"game_over": {
+"tr": "Oyun Bitti!",
+"en": "Game Over!"
+},
+"result_stat_correct": {
+"tr": "Doğru tahmin",
+"en": "Correct guesses"
+},
+"result_stat_wrong": {
+"tr": "Yanlış tahmin",
+"en": "Wrong guesses"
+},
+"result_stat_stars": {
+"tr": "Yıldızların",
+"en": "Your stars"
+},
+"result_stat_play_gold": {
+"tr": "Kelime altını",
+"en": "Word gold"
+},
+"result_stat_achievement": {
+"tr": "Başarım ödülü",
+"en": "Achievement reward"
+},
+"result_stat_level_gold": {
+"tr": "Bölüm yıldızı",
+"en": "Level stars"
+},
+"result_stat_daily_gold": {
+"tr": "Günlük ödül",
+"en": "Daily reward"
+},
+"result_stat_win_gold": {
+"tr": "Zafer altını",
+"en": "Win gold"
+},
+"result_stat_rune_bonus": {
+"tr": "Rün katkısı",
+"en": "From runes"
+},
+"result_stat_event": {
+"tr": "XP etkinliği",
+"en": "XP event"
+},
+"result_stat_multiplier": {
+"tr": "XP ×{0}",
+"en": "XP ×{0}"
+},
+"result_gold_amount": {
+"tr": "+{0} altın",
+"en": "+{0} gold"
+},
+"result_xp_won": {
+"tr": "{0} XP Kazandın!",
+"en": "You won {0} XP!"
+},
+"result_level_label": {
+"tr": "Seviye {0}",
+"en": "Level {0}"
+},
+"result_level_up": {
+"tr": "🎉 SEVİYE ATLADIN!",
+"en": "🎉 LEVEL UP!"
+},
+"home_xp_to_next": {
+"tr": "Sv. {1} için {0} XP",
+"en": "{0} XP to Lv. {1}"
+},
+"home_xp_format": {
+"tr": "{0} / {1} XP",
+"en": "{0} / {1} XP"
+},
+"result_x2_amount": {
+"tr": "x2 · {0} XP",
+"en": "x2 · {0} XP"
+},
+"result_watch_ad": {
+"tr": "Reklam izle",
+"en": "Watch an ad"
+},
+"result_claim_amount": {
+"tr": "Ödülü Al · {0} XP",
+"en": "Claim · {0} XP"
+},
+"result_words_title": {
+"tr": "Çizdiğin Kelimeler",
+"en": "Your words"
+},
+"quick_match_you": {
+"tr": "Sen",
+"en": "You"
+},
+"quick_match_won": {
+"tr": "Kazandın!",
+"en": "You won!"
+},
+"quick_match_lost": {
+"tr": "Kaybettin",
+"en": "You lost"
+},
+"quick_match_drew": {
+"tr": "Berabere",
+"en": "A draw"
+},
+"quick_match_versus": {
+"tr": "VS",
+"en": "VS"
+},
+"next_level": {
+"tr": "Sonraki Bölüm",
+"en": "Next Level"
+},
+"share_all_drawings": {
+"tr": "Tümünü paylaş",
+"en": "Share all"
+},
+"daily_challenge_result_title": {
+"tr": "Günün Meydan Okuması",
+"en": "Daily Challenge"
+},
+"daily_streak_label": {
+"tr": "Günlük seri",
+"en": "Daily streak"
+},
+"daily_challenge_xp_earned": {
+"tr": "+{0} XP",
+"en": "+{0} XP"
+},
+"daily_reward_won": {
+"tr": "Ödül kazanıldı!",
+"en": "Reward earned!"
+},
+"daily_challenge_share": {
+"tr": "Sonucu paylaş",
+"en": "Share result"
+},
+"replay_drawing": {
+"tr": "Tekrar oynat",
+"en": "Play again"
+},
+"share_drawing": {
+"tr": "Paylaş",
+"en": "Share"
+},
+"report_drawing_action": {
+"tr": "Bildir",
+"en": "Report"
+},
+"previous_drawing": {
+"tr": "Önceki çizim",
+"en": "Previous drawing"
+},
+"next_drawing": {
+"tr": "Sonraki çizim",
+"en": "Next drawing"
+},
+"close": {
+"tr": "Kapat",
+"en": "Close"
+},
+"share_as_photo": {
+"tr": "Fotoğraf olarak paylaş",
+"en": "Share as a photo"
+}
+}
