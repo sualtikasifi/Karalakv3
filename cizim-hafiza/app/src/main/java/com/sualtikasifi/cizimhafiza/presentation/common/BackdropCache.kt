@@ -49,6 +49,9 @@ object BackdropCache {
     private val locks = HashMap<Int, Any>()
     private fun lockFor(id: Int): Any = synchronized(locks) { locks.getOrPut(id) { Any() } }
 
+    /** The picture if it is already decoded, null otherwise — never decodes (for draw code that must not wait). */
+    fun peek(id: Int): ImageBitmap? = cache.get(id)
+
     /** Drops a picture that will not be needed again (the opening scene once the app is up), freeing its memory. */
     fun evict(id: Int) { cache.remove(id) }
 

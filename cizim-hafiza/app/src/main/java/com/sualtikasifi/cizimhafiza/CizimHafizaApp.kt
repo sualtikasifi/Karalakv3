@@ -154,6 +154,10 @@ class CizimHafizaApp : Application(), Configuration.Provider {
             // Your league row lives on your own profile document, so it
             // has to be written by this device — started here so it follows the
             // XP itself even when the player never opens the standings.
+            // The flame pictures of the fire pen's sparks, decoded ahead so the first stroke already uses them.
+            guarded("pen fx sprites") {
+                com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.preload(this@CizimHafizaApp, listOf(R.drawable.fx_flames))
+            }
             guarded("league score publisher") { leagueScorePublisher.get().start() }
             // The publisher waits a while to batch a match's XP into one write; this lands whatever is still waiting
             // the moment the player leaves the app (a no-op when the profile already says the same thing).

@@ -94,7 +94,7 @@ print(1 if ok >= 2 else 0)
 PY
 }
 
-for PEN in CLASSIC SPECTER COSMOS SPECTER; do
+for PEN in CLASSIC EMBER STORM COSMOS; do
   echo "=== $PEN ==="
   adb shell am force-stop $PKG
   sleep 2

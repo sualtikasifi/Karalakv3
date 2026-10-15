@@ -8,7 +8,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.graphics.StrokeJoin
 import com.sualtikasifi.cizimhafiza.domain.model.PenEffect
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import com.sualtikasifi.cizimhafiza.R
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.hypot
@@ -432,8 +437,13 @@ private fun DrawScope.drawSparkle(center: Offset, r: Float, alpha: Float, colour
     drawPath(star, colour.copy(alpha = alpha.coerceIn(0f, 1f)))
 }
 
-/** Tiny sparks thrown off the stroke: they rise, shrink, cool from yellow to red and vanish. */
+/**
+ * Tiny flames thrown off the stroke: they rise, shrink and burn out. The flame pictures (fx_flames, 12 painted flames
+ * in one 4 x 3 sheet of 128 px cells) are used for the fire pen; the gold embers of the Lion pen, and any pen while the
+ * sheet is still being decoded at app start, fall back to small spark ticks.
+ */
 private fun DrawScope.embers(g: PenGeometry, w: Float, time: Float, density: Float, gold: Boolean) {
+    val flames = if (gold) null else BackdropCache.peek(R.drawable.fx_flames)
     val hot = if (gold) GoldLight else EmberYellow
     val mid = if (gold) GoldDeep else EmberOrange
     val cold = if (gold) EmberOrange else EmberRed
@@ -444,9 +454,25 @@ private fun DrawScope.embers(g: PenGeometry, w: Float, time: Float, density: Flo
         val x0 = g.xs[i] + (hash01(i, 4) - 0.5f) * w * 0.9f + sin(u * 7f + hash01(i, 5) * 6f) * w * 0.35f * u
         val y0 = g.ys[i] - u * w * (2.6f + 1.6f * hash01(i, 6))
         val r = maxOf(1f, w * 0.26f * (1f - 0.7f * u) * (0.7f + 0.6f * hash01(i, 7)))
+        val fade = ((1f - u) * 1.1f).coerceIn(0f, 1f)
+        if (flames != null) {
+            // A square cell, the flame sitting on its bottom edge: sized so its height matches the old spark tick.
+            val size = (r * 4.2f).roundToInt().coerceAtLeast(2)
+            val cell = (hash01(i, 8) * 12).toInt().coerceIn(0, 11)
+            drawImage(
+                image = flames,
+                srcOffset = IntOffset((cell % 4) * 128, (cell / 4) * 128),
+                srcSize = IntSize(128, 128),
+                dstOffset = IntOffset((x0 - size / 2f).roundToInt(), (y0 + r * 1.2f - size / 2f).roundToInt()),
+                dstSize = IntSize(size, size),
+                alpha = fade,
+                filterQuality = FilterQuality.Medium
+            )
+            continue
+        }
         val color = if (u < 0.5f) lerp(hot, mid, u * 2f) else lerp(mid, cold, (u - 0.5f) * 2f)
         drawLine(
-            color.copy(alpha = ((1f - u) * 1.1f).coerceIn(0f, 1f)),
+            color.copy(alpha = fade),
             Offset(x0, y0), Offset(x0, y0 + r * 2.4f), r * 1.6f, StrokeCap.Round
         )
     }
