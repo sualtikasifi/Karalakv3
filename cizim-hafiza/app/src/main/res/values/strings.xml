@@ -1279,6 +1279,7 @@
     <string name="pen_sakura">Sakura</string>
     <string name="pen_sunrise">Sunrise</string>
     <string name="pen_night">Night</string>
+    <string name="pen_aurora">Aurora</string>
     <string name="pen_diamond">Diamond</string>
     <string name="pen_copper_tagline">Classic and sharp!</string>
     <string name="pen_emerald_tagline">Nature\'s energy!</string>
@@ -1538,8 +1539,8 @@
     <string name="rune_st_1_flavor">Every line you draw glows like a sunrise.</string>
     <string name="rune_st_3_name">Diamond Pen</string>
     <string name="rune_st_3_flavor">A pencil that shines like a diamond.</string>
-    <string name="rune_st_5_name">Night Pen</string>
-    <string name="rune_st_5_flavor">A pencil poured from the midnight sky.</string>
+    <string name="rune_st_5_name">Aurora Pen</string>
+    <string name="rune_st_5_flavor">The dancing lights of the sky came to stay in your pen.</string>
     <string name="rune_st_6_name">Time Explorer</string>
     <string name="rune_st_6_flavor">With a compass in hand you never lose your way.</string>
     <string name="rune_st_7_name">Ocean Treasure</string>

@@ -310,6 +310,8 @@ private fun premiumColorAt(skin: PenSkin, d: Float, t: Float): Color {
     val colors = skin.colorList()
     var c = when (skin.effect) {
         PenEffect.FLOW -> cyclicColor(colors, (d - t * FLOW_SPEED_PX) / FLOW_PERIOD_PX)
+        // Slower and wider than the rainbow: the colours drift like northern lights.
+        PenEffect.AURORA -> cyclicColor(colors, (d - t * 90f) / 1000f)
         PenEffect.STARS -> triangleColor(colors, d + t * 90f)
         else -> triangleColor(colors, d)
     }
@@ -320,6 +322,11 @@ private fun premiumColorAt(skin: PenSkin, d: Float, t: Float): Color {
             val x = (d - t * 380f).mod(period)
             val k = (1f - abs(x - period / 2f) / 70f).coerceAtLeast(0f)
             c = lerp(c, Color.White, k * k * 0.8f)
+        }
+        PenEffect.AURORA -> {
+            // A gentle wave of light moving along the stroke.
+            val wave = (0.13f * (1f + sin(t * 1.8f + d * 0.012f))).coerceIn(0f, 0.26f)
+            c = lerp(c, Color.White, wave)
         }
         PenEffect.EMBERS, PenEffect.BOLTS -> {
             val flicker = (0.08f * (1f + sin(t * 9f + d * 0.06f))).coerceIn(0f, 0.2f)

@@ -34,6 +34,8 @@ enum class PenEffect {
     GLINT,
     /** Rainbow: the colours flow along the stroke. */
     FLOW,
+    /** Aurora: slow flowing colours with a soft breathing glow — a light, particle-free effect. */
+    AURORA,
     /** Flame: tiny, dense sparks thrown off the stroke that rise and die out. */
     EMBERS,
     /** Storm: short lightning cracks that flash along the stroke. */
@@ -75,7 +77,12 @@ enum class PenSkin(
     /** Found only on the rune map (RuneRewards): owned like a store item, but never sold in the store or dropped by a chest. */
     val isRuneReward: Boolean = false,
     /** Extra paint on the stroke (glow, sparkles) — drawn by PenBrush's drawPenStroke, so opponents see it too. */
-    val effect: PenEffect = PenEffect.NONE
+    val effect: PenEffect = PenEffect.NONE,
+    /**
+     * Withdrawn: no longer sold, no longer handed out, and hidden from the picker unless the player already owns it
+     * (see [AvatarFrame.retired]). The constant stays — it is persisted by name and an opponent may still wear it.
+     */
+    val retired: Boolean = false
 ) {
     CLASSIC(R.string.pen_classic, listOf(0xFF2E2A26), 1),
     // The enum constant keeps its name — it is persisted, and renaming it
@@ -117,7 +124,7 @@ enum class PenSkin(
     ICE(R.string.pen_ice, listOf(0xFFCFF3FF, 0xFF6FD3FF), 0, storePrice = 6500),
     SAKURA(R.string.pen_sakura, listOf(0xFFFFC1D6, 0xFFFF8FB8, 0xFFE0609A), 0, storePrice = 8000),
     SUNRISE(R.string.pen_sunrise, listOf(0xFFFFD36E, 0xFFFF7A59, 0xFFC13584), 0, storePrice = 10000, isRuneReward = true),
-    NIGHT(R.string.pen_night, listOf(0xFF0F0C29, 0xFF302B63, 0xFF5B4FBF), 0, storePrice = 12500, isRuneReward = true),
+    NIGHT(R.string.pen_night, listOf(0xFF0F0C29, 0xFF302B63, 0xFF5B4FBF), 0, storePrice = 12500, isRuneReward = true, retired = true),
     DIAMOND(R.string.pen_diamond, listOf(0xFFE0F7FF, 0xFFB388FF, 0xFF7CE7FF), 0, storePrice = 15000, isRuneReward = true),
 
     // --- Premium store pens: the dearest things on the shelf, each with a stroke effect (see PenEffect). ---
@@ -127,7 +134,10 @@ enum class PenSkin(
     STORM(R.string.pen_storm, listOf(0xFF1E5BD8, 0xFF4FC3F7, 0xFFFFFFFF, 0xFF4FC3F7), 0, storePrice = 60000, effect = PenEffect.BOLTS),
     COSMOS(R.string.pen_cosmos, listOf(0xFF1A1055, 0xFF5B3FA8, 0xFFB388FF, 0xFF4FC3F7), 0, storePrice = 85000, effect = PenEffect.STARS),
     SPECTER(R.string.pen_specter, listOf(0xFF1B0B3A, 0xFF5E2CA5, 0xFFB44CFF, 0xFF5E2CA5), 0, storePrice = 120000, effect = PenEffect.SMOKE),
-    LION(R.string.pen_lion, listOf(0xFFFFC857, 0xFFFF9A2E, 0xFFE0492B, 0xFFFFC857), 0, storePrice = 180000, effect = PenEffect.ROYAL);
+    LION(R.string.pen_lion, listOf(0xFFFFC857, 0xFFFF9A2E, 0xFFE0492B, 0xFFFFC857), 0, storePrice = 180000, effect = PenEffect.ROYAL),
+
+    // --- Rune-map reward (st_5): found only on the rune map, never sold. Replaces the plain Night pen as that rune's gift. ---
+    AURORA(R.string.pen_aurora, listOf(0xFF1FD6A0, 0xFF22B8E0, 0xFF5B6CF0, 0xFFA66BFF), 0, storePrice = 12500, isRuneReward = true, effect = PenEffect.AURORA);
 
     /** True when the stroke should be painted as a gradient rather than a flat colour. */
     val isGradient: Boolean get() = colors.size > 1
@@ -135,7 +145,7 @@ enum class PenSkin(
     val isStoreItem: Boolean get() = storePrice > 0
 
     /** On sale in the store (a rune reward has a price only for the rune's pay-back, see SettingsRepository.buyRune). */
-    val isSoldInStore: Boolean get() = isStoreItem && !isRuneReward
+    val isSoldInStore: Boolean get() = isStoreItem && !isRuneReward && !retired
 
     companion object {
         val DEFAULT = CLASSIC

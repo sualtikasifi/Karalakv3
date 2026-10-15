@@ -112,7 +112,9 @@ class PenSkinTest {
                 // Store pens (bought with gold).
                 "COPPER", "EMERALD", "RUBY", "SAPPHIRE", "CANDY", "ICE", "SAKURA", "SUNRISE", "NIGHT", "DIAMOND",
                 // Premium store pens.
-                "AURUM", "PRISM", "EMBER", "STORM", "COSMOS", "SPECTER", "LION"
+                "AURUM", "PRISM", "EMBER", "STORM", "COSMOS", "SPECTER", "LION",
+                // Rune-map reward.
+                "AURORA"
             ),
             PenSkin.entries.map { it.name }
         )

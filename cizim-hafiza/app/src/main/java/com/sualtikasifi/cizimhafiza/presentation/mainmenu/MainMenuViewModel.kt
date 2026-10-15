@@ -424,7 +424,8 @@ class MainMenuViewModel @Inject constructor(
         settingsRepository.ownedStoreIds
     ) { selectedId, progress, earned, owned ->
         val resolved = PenSkin.resolve(selectedId, progress.level)
-        PenSkin.entries.map {
+        // A pen withdrawn from the game stays in the picker only for the players who already own it.
+        PenSkin.entries.filter { !it.retired || "pen:${it.name}" in owned }.map {
             PenSkinUiItem(
                 it,
                 unlocked = it.isUnlockedBy(progress.level, earned, owned),
