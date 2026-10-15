@@ -1,6 +1,8 @@
 package com.sualtikasifi.cizimhafiza.presentation.common
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -32,7 +34,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -89,7 +94,8 @@ fun LevelAvatar(
     /** With a [photo]: a small level pill on the corner, for places where the level is not written out nearby. */
     levelBadge: Boolean = false
 ) {
-    val sparkleCount = sparkleCountFor(frame.unlockLevel)
+    val sparkleCount = maxOf(sparkleCountFor(frame.unlockLevel), frame.motion.sparkles)
+    val sparkleTint = if (frame.motion.sparkles > 0) Color(frame.motion.sparkleColor) else Color.White
     // Read outside the Canvas below: DrawScope is not a composable scope.
     val readyColor = AppTheme.tokens.success
 
@@ -106,11 +112,77 @@ fun LevelAvatar(
                     .size(size * minOf(frame.faceDiameterFraction * PHOTO_OVERSCAN, PHOTO_MAX_FRACTION))
             )
         }
-        Image(
-            painter = painterResource(id = frame.drawableRes),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize()
-        )
+        val motion = frame.motion
+        if (motion.glow != null) {
+            // A soft glow that breathes behind the ring: it shows past the ring's own edge and through its
+            // see-through wisps. Read inside the Canvas, so it costs a redraw and no recomposition.
+            val breathe = rememberInfiniteTransition(label = "frame-glow").animateFloat(
+                initialValue = 0.35f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(GLOW_BREATHE_MILLIS, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+                label = "frame-glow-breathe"
+            )
+            val glowColor = Color(motion.glow)
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val half = this.size.minDimension / 2f
+                val radius = half * 1.14f
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        0.70f to Color.Transparent,
+                        0.87f to glowColor.copy(alpha = 0.55f * breathe.value),
+                        1.0f to Color.Transparent,
+                        center = this.center,
+                        radius = radius
+                    ),
+                    radius = radius
+                )
+            }
+        }
+        if (motion.sweep) {
+            // A band of light glides across the ring every few seconds. Drawn with SrcAtop on an offscreen layer, so it
+            // only lands on the artwork's own pixels and never on the see-through parts around it.
+            val sweep = rememberInfiniteTransition(label = "frame-sweep").animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    keyframes {
+                        durationMillis = SWEEP_CYCLE_MILLIS
+                        0f at 0
+                        1f at SWEEP_TRAVEL_MILLIS using FastOutSlowInEasing
+                        1f at SWEEP_CYCLE_MILLIS
+                    },
+                    RepeatMode.Restart
+                ),
+                label = "frame-sweep-position"
+            )
+            Image(
+                painter = painterResource(id = frame.drawableRes),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                    .drawWithContent {
+                        drawContent()
+                        val w = this.size.width
+                        val pos = -0.3f * w + sweep.value * 1.6f * w
+                        val band = 0.16f * w
+                        drawRect(
+                            brush = Brush.linearGradient(
+                                colors = listOf(Color.Transparent, Color.White.copy(alpha = 0.8f), Color.Transparent),
+                                start = Offset(pos - band, pos - band),
+                                end = Offset(pos + band, pos + band)
+                            ),
+                            blendMode = BlendMode.SrcAtop
+                        )
+                    }
+            )
+        } else {
+            Image(
+                painter = painterResource(id = frame.drawableRes),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         // "Ready" is worn on the frame itself rather than announced next to
         // the name: in a room of up to eight of these, the avatars are what
@@ -168,7 +240,8 @@ fun LevelAvatar(
                     count = sparkleCount,
                     halfSize = this.size.minDimension / 2f,
                     baseAngleDeg = orbitAngle.value,
-                    twinklePhaseDeg = twinklePhase.value
+                    twinklePhaseDeg = twinklePhase.value,
+                    tint = sparkleTint
                 )
             }
         }
@@ -342,6 +415,9 @@ private const val SPARKLE_MAX_RADIUS_FRACTION = 1.65f
 private const val SPARKLE_GLYPH_FRACTION = 0.05f
 
 private const val SPARKLE_DRIFT_MILLIS = 14_000
+private const val GLOW_BREATHE_MILLIS = 1_800
+private const val SWEEP_CYCLE_MILLIS = 4_200
+private const val SWEEP_TRAVEL_MILLIS = 1_300
 private const val SPARKLE_TWINKLE_MILLIS = 1_100
 
 /**
@@ -352,7 +428,7 @@ private const val SPARKLE_TWINKLE_MILLIS = 1_100
  * identical icons pulsing in lockstep. The classic "enchanted item" dust,
  * not a handful of spinning plus-signs.
  */
-private fun DrawScope.drawSparkles(count: Int, halfSize: Float, baseAngleDeg: Float, twinklePhaseDeg: Float) {
+private fun DrawScope.drawSparkles(count: Int, halfSize: Float, baseAngleDeg: Float, twinklePhaseDeg: Float, tint: Color = Color.White) {
     val origin = this.center
     repeat(count) { i ->
         // Deterministic per-particle jitter (no separate random source to
@@ -383,16 +459,16 @@ private fun DrawScope.drawSparkles(count: Int, halfSize: Float, baseAngleDeg: Fl
         val twinkleRad = Math.toRadians((twinklePhaseDeg * twinkleSpeed + i * 61).toDouble())
         val twinkle = (sin(twinkleRad).toFloat() + 1f) / 2f // 0f..1f, own phase per sparkle
         val dotRadius = halfSize * SPARKLE_GLYPH_FRACTION * (0.5f + sizeJitter * 0.8f) * (0.4f + twinkle * 0.8f)
-        drawSparkleDot(center = point, radius = dotRadius, alpha = twinkle * brightnessCap)
+        drawSparkleDot(center = point, radius = dotRadius, alpha = twinkle * brightnessCap, tint = tint)
     }
 }
 
 /** One glint: a small soft white glow with a brighter pinpoint core — reads as a twinkle at any size, unlike a hard-edged shape. */
-private fun DrawScope.drawSparkleDot(center: Offset, radius: Float, alpha: Float) {
+private fun DrawScope.drawSparkleDot(center: Offset, radius: Float, alpha: Float, tint: Color = Color.White) {
     if (radius <= 0f || alpha <= 0f) return
     drawCircle(
         brush = Brush.radialGradient(
-            colors = listOf(Color.White.copy(alpha = alpha * 0.9f), Color.White.copy(alpha = 0f)),
+            colors = listOf(tint.copy(alpha = alpha * 0.9f), tint.copy(alpha = 0f)),
             center = center,
             radius = radius * 2.2f
         ),

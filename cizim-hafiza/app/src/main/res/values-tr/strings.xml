@@ -1242,6 +1242,11 @@
     <string name="frame_name_dragon_flame">Ejderha Alevi</string>
     <string name="frame_name_shadow_crown">Gölge Tacı</string>
     <string name="frame_name_royal_crown">Kraliyet Tacı</string>
+    <string name="frame_name_candy_world">Şeker Diyarı</string>
+    <string name="frame_name_crystal_wings">Kristal Kanatlar</string>
+    <string name="frame_name_void_flame">Karanlık Alev</string>
+    <string name="frame_name_angel_halo">Melek Halesi</string>
+    <string name="frame_name_lion_king">Aslan Kral</string>
     <string name="nickname_edit_title">Kullanıcı adını değiştir</string>
     <string name="nickname_edit_warning">Kullanıcı adını yalnızca BİR KEZ değiştirebilirsin. Dikkatli seç!</string>
     <string name="nickname_edit_hint">2–16 karakter</string>
