@@ -130,3 +130,56 @@ export async function signOutGoogle() {
   await m.signOut(auth); await m.signInAnonymously(auth);
   return authState();
 }
+
+// ================= Friends (same documents and rules as FriendRepositoryImpl) =================
+export async function myUid() { return (await init()).auth.currentUser.uid; }
+export async function ensureFriendCode(nickname) {
+  const { fs, db, auth } = await init(), uid = auth.currentUser.uid;
+  const me = await fs.getDoc(fs.doc(db, "users", uid));
+  if (me.exists() && me.data().friendCode) return me.data().friendCode;
+  for (let i = 0; i < 5; i++) {
+    const code = String(100000 + Math.floor(Math.random() * 900000)), ref = fs.doc(db, "friendCodes", code);
+    const ok = await fs.runTransaction(db, async (tx) => {
+      if ((await tx.get(ref)).exists()) return false;
+      tx.set(ref, { uid }); tx.set(fs.doc(db, "users", uid), { nickname, friendCode: code, createdAt: Date.now() }, { merge: true }); return true;
+    });
+    if (ok) return code;
+  }
+  throw new Error("code");
+}
+// Live lists. Returns an unsubscribe function.
+export async function listen(sub, cb) {
+  const { fs, db, auth } = await init();
+  return fs.onSnapshot(fs.collection(db, "users", auth.currentUser.uid, sub), (s) => cb(s.docs.map((d) => ({ id: d.id, ...d.data() }))), () => cb([]));
+}
+export async function addFriendByCode(code, myNick) {
+  const { fs, db, auth } = await init(), uid = auth.currentUser.uid;
+  const c = await fs.getDoc(fs.doc(db, "friendCodes", code));
+  if (!c.exists()) return { status: "notfound" };
+  const fu = c.data().uid; if (fu === uid) return { status: "self" };
+  const fdoc = await fs.getDoc(fs.doc(db, "users", fu)), fn = (fdoc.exists() && fdoc.data().nickname) || "?";
+  if ((await fs.getDoc(fs.doc(db, "users", uid, "friends", fu))).exists()) return { status: "already", name: fn };
+  if ((await fs.getDoc(fs.doc(db, "users", uid, "friendRequests", fu))).exists()) { await writeFriendship(uid, myNick, fu, fn); return { status: "added", name: fn }; }
+  try { await fs.setDoc(fs.doc(db, "users", fu, "friendRequests", uid), { fromNickname: myNick, sentAt: Date.now() }); }
+  catch (e) { return { status: "blocked" }; }
+  return { status: "sent", name: fn };
+}
+async function writeFriendship(uid, myNick, fu, fn) {
+  const { fs, db } = await init(), b = fs.writeBatch(db), now = Date.now();
+  b.set(fs.doc(db, "users", uid, "friends", fu), { nickname: fn, addedAt: now });
+  b.set(fs.doc(db, "users", fu, "friends", uid), { nickname: myNick, addedAt: now });
+  b.delete(fs.doc(db, "users", uid, "friendRequests", fu));
+  await b.commit();
+}
+export async function acceptRequest(r, myNick) { await writeFriendship(await myUid(), myNick, r.id, r.fromNickname || "?"); }
+export async function declineRequest(fromUid) { const { fs, db, auth } = await init(); await fs.deleteDoc(fs.doc(db, "users", auth.currentUser.uid, "friendRequests", fromUid)); }
+export async function removeFriend(fu) {
+  const { fs, db, auth } = await init(), uid = auth.currentUser.uid, b = fs.writeBatch(db);
+  b.delete(fs.doc(db, "users", uid, "friends", fu)); b.delete(fs.doc(db, "users", fu, "friends", uid)); await b.commit();
+}
+export async function blockUser(uid2, nick) { const { fs, db, auth } = await init(); await fs.setDoc(fs.doc(db, "users", auth.currentUser.uid, "blockedUsers", uid2), { nickname: nick, blockedAt: Date.now() }); }
+export async function unblockUser(uid2) { const { fs, db, auth } = await init(); await fs.deleteDoc(fs.doc(db, "users", auth.currentUser.uid, "blockedUsers", uid2)); }
+export async function sendInvite(toUid, roomCode, myNick) {
+  const { fs, db, auth } = await init();
+  await fs.addDoc(fs.collection(db, "users", toUid, "invites"), { fromUid: auth.currentUser.uid, fromNickname: myNick, roomCode, sentAt: Date.now() });
+}

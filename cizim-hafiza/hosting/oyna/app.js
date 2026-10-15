@@ -1,5 +1,6 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
+import { layoutFriends, openFriends, renderFriends, stop as stopFriends } from "./friends.js";
 import { loadWorlds, layoutWorlds, renderWorlds, layoutMap, renderMap, mixFor, starsFor, recordLevel, currentWorld } from "./levels.js";
 import { layoutAccount, renderAccount } from "./account.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
@@ -35,6 +36,7 @@ let leagueLoaded = false;
 const ctx = {
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
+  inviteFriend: (f) => msg(`${f.nickname}`),
   refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
@@ -89,6 +91,8 @@ function layout() {
     for (const [id, x, y, w, h, lx0, ly0, lx1, ly1] of T) { place($("tl-" + id), x, y, w, h); place($("tx-" + id), lx0, ly0, lx1 - lx0, ly1 - ly0); }
   } else if (current === "store") {
     layoutStore(ctx); renderStore(ctx);
+  } else if (current === "friends") {
+    layoutFriends(ctx); renderFriends(ctx);
   } else if (current === "worlds") {
     layoutWorlds(ctx); renderWorlds(ctx);
   } else if (current === "lvmap") {
@@ -415,7 +419,9 @@ $("ac-back").onclick = () => show("home");
 $("tl-league").onclick = async () => { await loadStoreData(); await loadLeague(); leagueLoaded = false; show("league"); };
 $("lg-back").onclick = () => show("home");
 $("lg-refresh").onclick = () => { leagueLoaded = false; layout(); };
-for (const [id, k] of [["online", "online"], ["friends", "friends"]]) $("tl-" + id).onclick = () => soon(t().tiles[k])();
+$("tl-friends").onclick = () => { show("friends"); openFriends(ctx); };
+$("fr-back").onclick = () => { stopFriends(); show("home"); };
+for (const [id, k] of [["online", "online"]]) $("tl-" + id).onclick = () => soon(t().tiles[k])();
 const soonMsg = () => msg(t().soon);
 $("tl-settings").onclick = () => show("settings");
 $("se-back").onclick = () => show("home");
