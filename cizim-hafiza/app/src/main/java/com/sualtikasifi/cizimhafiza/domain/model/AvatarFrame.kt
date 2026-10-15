@@ -64,7 +64,13 @@ enum class AvatarFrame(
     /** Found only on the rune map (see PenSkin.isRuneReward). */
     val isRuneReward: Boolean = false,
     /** How the frame moves (see [FrameMotion]); still by default. */
-    val motion: FrameMotion = FrameMotion.NONE
+    val motion: FrameMotion = FrameMotion.NONE,
+    /**
+     * Withdrawn from the store: no longer sold, no longer picked for filler players, and hidden from the picker unless
+     * the player already owns it. The constant itself stays (it is persisted by name, and an owner — or an opponent who
+     * wears it — must still see it drawn).
+     */
+    val retired: Boolean = false
 ) {
     // faceDiameterFraction/faceOffsetXFraction/faceOffsetYFraction below were
     // re-measured directly off each PNG's own transparent hole (a flood-fill
@@ -90,7 +96,7 @@ enum class AvatarFrame(
     WATER_SPLASH(R.drawable.level_frame_water_splash, 0.516f, 0.001f, 0.014f, 0, storePrice = 1200),
     JASMINE_WREATH(R.drawable.level_frame_jasmine_wreath, 0.602f, 0f, -0.013f, 0, storePrice = 1500),
     CHERRY_BLOSSOM(R.drawable.level_frame_cherry_blossom, 0.6f, 0.003f, -0.004f, 0, storePrice = 1800),
-    CHERRY_BLOSSOM_GOLD(R.drawable.level_frame_cherry_blossom_gold, 0.613f, 0.004f, -0.0215f, 0, storePrice = 2200),
+    CHERRY_BLOSSOM_GOLD(R.drawable.level_frame_cherry_blossom_gold, 0.613f, 0.004f, -0.0215f, 0, storePrice = 2200, retired = true),
     FLAME_RING(R.drawable.level_frame_flame_ring, 0.572f, -0.001f, -0.009f, 0, storePrice = 3000),
     ICE_CRYSTAL(R.drawable.level_frame_ice_crystal, 0.549f, 0.001f, -0.013f, 0, storePrice = 3200),
     RAINBOW_DREAM(R.drawable.level_frame_rainbow_dream, 0.607f, 0.008f, -0.005f, 0, storePrice = 4000),
@@ -123,7 +129,7 @@ enum class AvatarFrame(
     val isStoreItem: Boolean get() = storePrice > 0
 
     /** On sale in the store (see PenSkin.isSoldInStore). */
-    val isSoldInStore: Boolean get() = isStoreItem && !isRuneReward
+    val isSoldInStore: Boolean get() = isStoreItem && !isRuneReward && !retired
 
     companion object {
         /** What every new install starts with, and what [resolve] falls back to. */
