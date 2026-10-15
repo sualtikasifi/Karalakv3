@@ -11,7 +11,7 @@ import { layoutAccount, renderAccount } from "./account.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
-import { loadStoreData, layoutStore, renderStore, frameRing, frameById, penById } from "./store.js";
+import { loadStoreData, layoutStore, renderStore, frameRing, frameById, penById, frameList as frameListSafe } from "./store.js";
 
 const WORD_COUNT = 10, POINTS = 5, SPEED_BONUS = 2, SPEED_MS = 3000;
 const DRAW_SECONDS = { EASY: 5, MEDIUM: 7, HARD: 10 };
@@ -21,11 +21,11 @@ const ART_W = 841, ART_H = 1870, GUESS_BOTTOM = 1595;
 
 const T = {
   tr: { tag: "Çiz, ezberle,\ntahmin et!", start: "OYNA", note: "Android ve tarayıcı oyuncularıyla eşleş", next: "Bitir", ok: "Gönder",
-        guess: "Tahmin et", result: "Sonuç", timeJ: "+Süre", hintT: "İpucu", firstT: "İlk harf", countT: "Harf sayısı", skipT: "Geç", searching: "Rakip aranıyor…", searchSub: "Birisi senin gibi çizerken bulunuyor", again: "TEKRAR OYNA", noOpp: "Şu an rakip bulunamadı",
+        guess: "Tahmin et", result: "Sonuç", timeJ: "+Süre", hintT: "İpucu", firstT: "İlk harf", countT: "Harf sayısı", skipT: "Geç", found: "Harika!\nEşleşme bulundu.", startIn: (n) => `Maç ${n} saniye sonra başlıyor`, tip1: (n) => `İkiniz de aynı ${n} kelimeyi çizeceksiniz`, tip2: "Puanlar maç sonunda karşılaştırılır", tip3: "Rahat ol, keyfini çıkar!", searching: "Rakip aranıyor…", searchSub: "Birisi senin gibi çizerken bulunuyor", again: "TEKRAR OYNA", lobbyHome: "ANA SAYFA", noOpp: "Şu an rakip bulunamadı",
         you: "Sen", win: "Kazandın!", lose: "Kaybettin", draw: "Berabere", leaveQ: "Odadan ayrılmak istiyor musun?", leave: "Oyundan çıkılsın mı?", yes: "Çık", no: "Kal",
         mine: "Çizimlerin", tiles: { online: "Arkadaşınla Yarış", quick: "Hızlı Eşleş", offline: "Çevrimdışı Oyna", levels: "Bölümler", friends: "Arkadaşlar", ach: "Başarımlar", league: "Aylık Lig", store: "Mağaza", settings: "Ayarlar" }, goldLbl: "Klasik", adGold: "+500 Altın", daily: "Günün Meydan Okuması", adChest: "Ücretsiz Kasa", dailyPlay: "ŞİMDİ OYNA", dailyDone: "Bugünkü meydan okumayı bitirdin!", lvl: "Seviye", toNext: (n, l) => `Sv. ${l} için ${n} XP`, soon: "Çok yakında", appOnly: "Uygulamada", ok: "Tamam", langTitle: "Dil",  theirs: "Rakibin çizimleri", pts: "puan", file: "words_tr.json", ph: "Cevabın…" },
   en: { tag: "Draw, memorize,\nguess!", start: "PLAY", note: "Match with Android and browser players", next: "Done", ok: "Send",
-        guess: "Guess", result: "Result", timeJ: "+Time", hintT: "Hint", firstT: "First letter", countT: "Letters", skipT: "Skip", searching: "Finding an opponent…", searchSub: "Looking for someone who draws like you", again: "PLAY AGAIN", noOpp: "No opponent found right now",
+        guess: "Guess", result: "Result", timeJ: "+Time", hintT: "Hint", firstT: "First letter", countT: "Letters", skipT: "Skip", found: "Great!\nMatch found.", startIn: (n) => `Match starts in ${n} seconds`, tip1: (n) => `You'll both draw the same ${n} words`, tip2: "Scores are compared when the match ends", tip3: "Relax and enjoy the game!", searching: "Finding an opponent…", searchSub: "Looking for someone who draws like you", again: "PLAY AGAIN", lobbyHome: "HOME", noOpp: "No opponent found right now",
         you: "You", win: "You win!", lose: "You lose", draw: "Draw", leaveQ: "Leave the room?", leave: "Leave the game?", yes: "Leave", no: "Stay",
         mine: "Your drawings", tiles: { online: "Race a Friend", quick: "Quick Match", offline: "Play Offline", levels: "Levels", friends: "Friends", ach: "Achievements", league: "Monthly League", store: "Store", settings: "Settings" }, goldLbl: "Classic", adGold: "+500 Gold", daily: "Daily Challenge", adChest: "Free Chest", dailyPlay: "PLAY NOW", dailyDone: "You finished today's challenge!", lvl: "Level", toNext: (n, l) => `${n} XP to Lv. ${l}`, soon: "Coming soon", appOnly: "In the app", ok: "OK", langTitle: "Language",  theirs: "Opponent's drawings", pts: "pts", file: "words_en.json", ph: "Your answer…" },
 };
@@ -154,6 +154,17 @@ function layout() {
     const ok = $("g-ok"); ok.style.left = 572 * u + "px"; ok.style.top = 0; ok.style.width = 225 * u + "px"; ok.style.height = 105 * u + "px";
     fitCanvas($("view"));
     paintGuess();
+  } else if (current === "found") {
+      const s = 1.2;
+      place($("f-title"), 150, 62, 450 * s, 272 * s); place($("f-tag"), (841 - 354 * s) / 2, 62 + 266 * s, 354 * s, 106 * s); place($("f-tagt"), (841 - 354 * s) / 2 + 354 * s * 0.18, 381 + 106 * s * 0.1, 354 * s * 0.64, 106 * s * 0.68);
+      const card = (id, x, y, w, h, cx) => { place($(id), x, y, w * 1.18, h * 1.18); const e = $(id), k = u * 1.18, S = (v) => v * u;
+        const av = e.querySelector(".mc-av"); av.style.cssText = `left:${S(cx * 1.18 - 95)}px;top:${S(190 * 1.18 - 95)}px;width:${S(190)}px;height:${S(190)}px`;
+        const rb = e.querySelector(".mc-rb"); rb.style.cssText = `left:${S(cx * 1.18 - 146)}px;top:${S(290 * 1.18 - 28)}px;width:${S(292)}px;height:${S(54)}px`;
+        const xp = e.querySelector(".mc-xp"); xp.style.cssText = `left:${S(cx * 1.18 - 120)}px;top:${S(337 * 1.18 - 30)}px;width:${S(240)}px;height:${S(40)}px`; };
+      card("f-cl", 20, 541, 290, 384, 148); card("f-cr", 507, 534, 266, 392, 133);
+      place($("f-vs"), 297, 664, 275 * 0.9, 252 * 0.9); place($("f-mas"), 157, 966, 479 * 1.1, 291 * 1.1);
+      place($("f-plank"), 25, 1235, 790, 148);
+      [["f-t1", 24, 225], ["f-t2", 296, 227], ["f-t3", 568, 229]].forEach(([id, x, w]) => place($(id), x, 1405, w * 1.1, 197 * 1.1));
   } else if (current === "search") {
     place($("s-sign"), 60, 190, 720, 365);
     place($("s-text"), 150, 318, 540, 150);
@@ -168,7 +179,10 @@ window.visualViewport?.addEventListener("resize", layout);
 const SPK = '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.47 4.47 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
 function paintMusic() { for (const id of ["d-music", "g-music"]) { const b = $(id); b.innerHTML = SPK; b.classList.toggle("off", !(P.prefs.s0 && P.prefs.s1)); } }
 for (const id of ["d-music", "g-music"]) $(id).onclick = () => { P.prefs.s1 = !P.prefs.s1; saveP(); paintMusic(); syncMusic(); };
+// Pictures of screens that are not showing are only fetched when the screen first opens (the first load used to pull 3.7 MB).
+function loadImgs(id) { const s = document.getElementById(id); if (!s) return; s.querySelectorAll("img[data-src]").forEach((i) => { i.src = i.dataset.src; i.removeAttribute("data-src"); }); }
 function show(id) {
+  loadImgs(id);
   current = id; if (typeof paintMusic === "function" && P.prefs) paintMusic();
   for (const s of document.querySelectorAll(".screen")) s.classList.toggle("on", s.id === id);
   layout();
@@ -320,9 +334,44 @@ async function startDaily() {
   await ensureWords(); kind = "daily"; levelRun = null; relaxed = false;
   begin(dailyWords(words, todayEpoch(), lang));
 }
+let quickOpp = null, quickItems = [];
+async function startQuick() {
+  levelRun = null; kind = "quick"; relaxed = false; quickOpp = null; quickItems = [];
+  await ensureWords(); show("search");
+  const minWait = new Promise((r) => setTimeout(r, 2000 + Math.random() * 3000));
+  try { quickOpp = await Promise.race([net.findOpponent(lang, levelFor(P.xp)), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000))]); } catch {}
+  await minWait;
+  if (current !== "search") return;
+  const byId = new Map(words.map((w) => [w.id, w]));
+  const picked = quickOpp ? (quickOpp.wordIds || []).map((id) => byId.get(id)).filter(Boolean) : [];
+  if (!quickOpp || picked.length < 10) { quickOpp = null; msgNoOpp(); return; }
+  net.loadItems(quickOpp.id).then((it) => { quickItems = it; }).catch(() => {});
+  showFound(quickOpp, () => begin(picked));
+}
+function msgNoOpp() { show("home"); msg(t().noOpp + (lang === "tr" ? ". Bir süre sonra tekrar dene ya da çevrimdışı oyna." : ". Try again in a bit or play offline.")); }
+let foundTimer = null;
+function showFound(opp, go) {
+  const x = t(); show("found");
+  $("f-tagt").textContent = x.found; $("f-tagt").style.whiteSpace = "pre-line";
+  $("f-t1").querySelector("span").textContent = x.tip1(10); $("f-t2").querySelector("span").textContent = x.tip2; $("f-t3").querySelector("span").textContent = x.tip3;
+  const card = (id, nick, lvl, frame, xp) => {
+    const e = $(id); e.querySelector(".mc-rb span").textContent = nick; e.querySelector(".mc-xp b").textContent = xp.toLocaleString() + " XP";
+    const fr = frameRing(frameById(frame)); fr.style.cssText += ";width:100%;height:100%"; e.querySelector(".mc-av").replaceChildren(fr);
+    e.classList.add(id === "f-cl" ? "in-l" : "in-r"); setTimeout(() => e.classList.remove("in-l", "in-r"), 60);
+  };
+  const myLv = levelFor(P.xp);
+  card("f-cl", P.nick, myLv, P.frame, P.xp); card("f-cr", opp.nickname || "?", opp.level || 1, highestFrameFor(opp.level || 1), xpFor(opp.level || 1));
+  $("f-vs").classList.remove("pop"); setTimeout(() => $("f-vs").classList.add("pop"), 350);
+  const fill = $("f-fill"); fill.style.transition = "none"; fill.style.width = "3%"; void fill.offsetWidth; fill.style.transition = ""; fill.style.width = "100%";
+  let left = 5; const tick = () => { $("f-pt").textContent = x.startIn(left); };
+  tick(); clearInterval(foundTimer);
+  foundTimer = setInterval(() => { left--; if (left <= 0) { clearInterval(foundTimer); if (current === "found") go(); } else tick(); }, 1000);
+}
+function highestFrameFor(lv) { try { const L = frameListSafe().filter((f) => f.level > 0 && !f.league && f.level <= lv); return (L.pop() || { id: "SCRIBBLER" }).id; } catch { return "SCRIBBLER"; } }
 async function start(k = "quick") {
+  if (k === "quick") return startQuick();
   levelRun = null; kind = k; relaxed = false;
-  if (words.lang !== lang) { words = await (await fetch(t().file)).json(); words.lang = lang; }
+  await ensureWords();
   begin([...words].sort(() => Math.random() - 0.5).slice(0, WORD_COUNT));
 }
 function begin(picked) {
@@ -412,7 +461,6 @@ function addRow(parent, strokes, ok, label, sub, pen) {
 }
 async function finish() {
   const x = t();
-  if (kind === "quick") show("search");
   const n = round.filter((w) => w.correct).length;
   if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
   P.xp += score; P.periodXp = (P.periodXp || 0) + score; P.gold += n * 10; achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
@@ -428,14 +476,9 @@ async function finish() {
   let stars = 0, dailyRes = null;
   if (kind === "daily") { dailyRes = dailyRecord(P, round.map((w) => w.correct), score); if (dailyRes) { P.xp += dailyRes.xp - score; P.periodXp += dailyRes.xp - score; saveP(); refreshHome(); } }
   if (kind === "level") { stars = starsFor(n, round.length); recordLevel(P, levelRun.w, levelRun.l, stars); saveP(); }
-  try {
-    if (kind !== "quick") throw new Error("no-opponent");
-    opp = await Promise.race([net.findOpponent(lang), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 12000))]);
-    net.recordRound(me).catch(() => {});
-    if (opp) items = await net.loadItems(opp.id).catch(() => []);
-  } catch {}
+  if (kind === "quick" && quickOpp) { opp = quickOpp; items = quickItems; net.recordRound({ ...me, level: levelFor(P.xp), frameId: P.frame, nickname: P.nick }).catch(() => {}); }
   await minWait;
-  show("result"); sfx.over();
+  show("result"); sfx.over(); $("again-t").textContent = kind === "quick" ? x.again : x.lobbyHome;
   $("r-title").textContent = `${x.result}: ${n}/${round.length}`;
   const vs = $("r-vs");
   if (kind === "level") vs.textContent = `${"★".repeat(stars)}${"☆".repeat(3 - stars)}  ·  ${x.you}: ${score} ${x.pts}`;
@@ -463,7 +506,8 @@ function confirmLeave() {
   $("dlg-no").onclick = () => $("dialog").classList.add("hidden");
 }
 $("d-back").onclick = confirmLeave; $("g-back").onclick = confirmLeave;
-$("again").onclick = () => show(kind === "level" ? "lvmap" : "home");
+$("again").onclick = () => { if (kind === "quick") startQuick(); else show(kind === "level" ? "lvmap" : "home"); };
+$("found") && 0;
 $("r-back").onclick = () => show("home");
 let dailyTick = null;
 function refreshDaily() {
@@ -530,10 +574,20 @@ const _oldSettings = () => {
   msg(t().langTitle, [mk("tr", "Türkçe"), mk("en", "English")]);
 };
 loadStoreData().then(refreshHome).catch(() => {});
-net.listen("invites", (list) => {
+// A name only this account owns (same collection the app uses), claimed once the network is reachable.
+setTimeout(async () => { if (P.nickClaimed) return; const n = await net.ensureUsername(P.nick).catch(() => null); if (n) { P.nick = n; P.nickClaimed = true; saveP(); refreshHome(); } }, 2500);
+setTimeout(() => net.listen("invites", (list) => {
   const inv = list[0]; if (!inv || current === "onw" || current === "draw" || current === "guess") return;
   const tx = lang === "tr" ? `${inv.fromNickname} seni davet etti!` : `${inv.fromNickname} invited you!`;
   ctx.confirm(tx, lang === "tr" ? "Katıl" : "Join", async () => { net.consumeInvite(inv.id).catch(() => {}); const r = await joinWithCode(ctx, inv.roomCode); if (r !== "ok") msg(lang === "tr" ? "Odaya katılınamadı." : "Couldn't join the room."); });
   $("dlg-no").onclick = () => { net.consumeInvite(inv.id).catch(() => {}); $("dialog").classList.add("hidden"); };
-}).catch(() => {});
+}).catch(() => {}), 4000);
 applyLang(); show("home");
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+// After the home screen is up, quietly fetch the pictures of the screens people open most (skipped on data saver).
+setTimeout(() => {
+  if (navigator.connection && navigator.connection.saveData) return;
+  const list = ["bg_draw", "bg_guess", "bg_result_wood", "bg_qm_search", "st_bg", "rs_head", "bg_league", "bg_offline", "bg_race2"];
+  let i = 0; const next = () => { if (i >= list.length) return; const im = new Image(); im.onload = im.onerror = () => setTimeout(next, 400); im.src = `img/${list[i++]}.webp`; };
+  (window.requestIdleCallback || ((f) => setTimeout(f, 1)))(next);
+}, 3500);

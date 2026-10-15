@@ -7,6 +7,8 @@
 <title>Karalak - Oyna</title>
 <!-- cache: html/js/css/json are served with no-cache (see firebase.json) -->
 <link rel="stylesheet" href="style.css">
+<link rel="preload" as="image" href="img/bg_home_scene.webp">
+<link rel="preload" as="font" type="font/ttf" href="fonts/baloo2_extrabold.ttf" crossorigin>
 </head>
 <body>
 <div id="stage">
@@ -31,17 +33,17 @@
   </section>
 
   <section id="store" class="screen">
-    <img class="bg" src="img/st_bg.webp" alt="">
+    <img class="bg" data-src="img/st_bg.webp" alt="">
     <div id="st-t1" class="txt sign2"></div><div id="st-t2" class="txt sign2"></div>
-    <button id="st-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
-    <div id="st-gold"><img src="img/icon_gold_coin.webp" alt=""><span id="st-goldn"></span></div>
+    <button id="st-back" class="hit" aria-label="back"><img data-src="img/join_back.webp" alt=""></button>
+    <div id="st-gold"><img data-src="img/icon_gold_coin.webp" alt=""><span id="st-goldn"></span></div>
     <div id="st-tabs"></div>
     <div id="st-shelf"></div>
     <div id="st-toast" class="hidden"></div>
   </section>
 
   <section id="settings" class="screen">
-    <img class="bg" src="img/bg_settings.webp" alt="">
+    <img class="bg" data-src="img/bg_settings.webp" alt="">
     <button id="se-back" class="hit" aria-label="back"></button>
     <div id="se-title" class="txt sign"></div>
     <div id="se-sound" class="txt sign3"></div>
@@ -55,29 +57,29 @@
   </section>
 
   <section id="ach" class="screen">
-    <img class="bg" src="img/bg_achievements.webp" alt="">
+    <img class="bg" data-src="img/bg_achievements.webp" alt="">
     <div id="ac-list"></div>
-    <img id="ac-sign" src="img/ach_sign.webp" alt="">
+    <img id="ac-sign" data-src="img/ach_sign.webp" alt="">
     <div id="ac-title" class="txt sign"></div>
-    <button id="ac-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <button id="ac-back" class="hit" aria-label="back"><img data-src="img/join_back.webp" alt=""></button>
     <div id="ac-dlg" class="hidden"></div>
   </section>
 
   <section id="league" class="screen">
-    <img class="bg" src="img/bg_league.webp" alt="">
+    <img class="bg" data-src="img/bg_league.webp" alt="">
     <div id="lg-list"></div>
-    <img id="lg-sign" src="img/league_sign.webp" alt="">
+    <img id="lg-sign" data-src="img/league_sign.webp" alt="">
     <div id="lg-title" class="txt sign"></div>
-    <button id="lg-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
-    <button id="lg-refresh" class="hit" aria-label="refresh"><img src="img/league_wood.webp" alt=""><span>⟳</span></button>
+    <button id="lg-back" class="hit" aria-label="back"><img data-src="img/join_back.webp" alt=""></button>
+    <button id="lg-refresh" class="hit" aria-label="refresh"><img data-src="img/league_wood.webp" alt=""><span>⟳</span></button>
     <div id="lg-tabs"></div>
     <div id="lg-timer" class="txt lg-timer"></div>
   </section>
 
   <section id="account" class="screen">
-    <img class="bg" src="img/bg_account.webp" alt="">
-    <button id="ak-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
-    <img id="ak-sign" src="img/ac_sign.webp" alt="">
+    <img class="bg" data-src="img/bg_account.webp" alt="">
+    <button id="ak-back" class="hit" aria-label="back"><img data-src="img/join_back.webp" alt=""></button>
+    <img id="ak-sign" data-src="img/ac_sign.webp" alt="">
     <div id="ak-title" class="txt sign"></div>
     <div id="ak-avatar"></div>
     <div id="ak-name" class="txt ink left"></div>
@@ -94,68 +96,68 @@
   </section>
 
   <section id="worlds" class="screen">
-    <img class="bg" src="img/bg_worlds.webp" alt="">
+    <img class="bg" data-src="img/bg_worlds.webp" alt="">
     <div id="wl-list"></div>
-    <button id="wl-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <button id="wl-back" class="hit" aria-label="back"><img data-src="img/join_back.webp" alt=""></button>
   </section>
   <section id="lvmap" class="screen">
-    <img id="lm-bg" class="bg" src="img/bg_world_1.webp" alt="">
+    <img id="lm-bg" class="bg" data-src="img/bg_world_1.webp" alt="">
     <div id="lm-ring" class="hidden"></div>
     <div id="lm-nodes"></div>
-    <button id="lm-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <button id="lm-back" class="hit" aria-label="back"><img data-src="img/join_back.webp" alt=""></button>
     <div id="lm-world"></div>
     <div id="lm-panel" class="hidden"></div>
   </section>
 
   <section id="friends" class="screen">
-    <img class="bg" src="img/bg_friends.webp" alt="">
-    <button id="fr-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
-    <button id="fr-duel" class="hit hidden-x" aria-label="duels"><img src="img/fr_clip.webp" alt=""></button>
-    <img id="fr-sign" src="img/fr_sign.webp" alt=""><div id="fr-title" class="txt sign"></div>
-    <img id="fr-panel" src="img/fr_panel_wide.webp" alt=""><div id="fr-codel" class="txt ink"></div><div id="fr-hint" class="txt cap4"></div>
-    <img id="fr-frame" src="img/fr_code_frame.webp" alt="">
+    <img class="bg" data-src="img/bg_friends.webp" alt="">
+    <button id="fr-back" class="hit" aria-label="back"><img data-src="img/join_back.webp" alt=""></button>
+    <button id="fr-duel" class="hit hidden-x" aria-label="duels"><img data-src="img/fr_clip.webp" alt=""></button>
+    <img id="fr-sign" data-src="img/fr_sign.webp" alt=""><div id="fr-title" class="txt sign"></div>
+    <img id="fr-panel" data-src="img/fr_panel_wide.webp" alt=""><div id="fr-codel" class="txt ink"></div><div id="fr-hint" class="txt cap4"></div>
+    <img id="fr-frame" data-src="img/fr_code_frame.webp" alt="">
     <div id="fr-d0" class="txt ink dg"></div><div id="fr-d1" class="txt ink dg"></div><div id="fr-d2" class="txt ink dg"></div><div id="fr-d3" class="txt ink dg"></div><div id="fr-d4" class="txt ink dg"></div><div id="fr-d5" class="txt ink dg"></div>
     <button id="fr-share" class="frbtn w"><span id="fr-sharet"></span></button>
-    <img id="fr-ribbon1" src="img/fr_ribbon.webp" alt=""><div id="fr-ribbon1t" class="txt sign4"></div>
+    <img id="fr-ribbon1" data-src="img/fr_ribbon.webp" alt=""><div id="fr-ribbon1t" class="txt sign4"></div>
     <input id="fr-input" inputmode="numeric" maxlength="6" autocomplete="off">
     <button id="fr-add" class="frbtn s"><span id="fr-addt"></span></button>
     <div id="fr-msg" class="txt sign4 m"></div>
-    <img id="fr-ribbon2" src="img/fr_ribbon.webp" alt=""><div id="fr-ribbon2t" class="txt sign4"></div>
-    <img id="fr-bigpanel" src="img/fr_panel_big.webp" alt="">
+    <img id="fr-ribbon2" data-src="img/fr_ribbon.webp" alt=""><div id="fr-ribbon2t" class="txt sign4"></div>
+    <img id="fr-bigpanel" data-src="img/fr_panel_big.webp" alt="">
     <div id="fr-list"></div>
     <div id="fr-menu" class="hidden"></div>
   </section>
 
   <section id="onl" class="screen">
-    <img class="bg" src="img/bg_race2.webp" alt="">
-    <button id="on-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
-    <img id="on-sign" src="img/race2_sign.webp" alt=""><div id="on-title" class="txt sign"></div>
-    <img id="on-paper" src="img/race2_paper.webp" alt=""><div id="on-text" class="txt ink col"></div>
+    <img class="bg" data-src="img/bg_race2.webp" alt="">
+    <button id="on-back" class="hit" aria-label="back"><img data-src="img/join_back.webp" alt=""></button>
+    <img id="on-sign" data-src="img/race2_sign.webp" alt=""><div id="on-title" class="txt sign"></div>
+    <img id="on-paper" data-src="img/race2_paper.webp" alt=""><div id="on-text" class="txt ink col"></div>
     <button id="on-create" class="imgbtn o"><span id="on-create-t"></span></button>
     <button id="on-join" class="imgbtn b"><span id="on-join-t"></span></button>
   </section>
   <section id="onj" class="screen">
-    <img class="bg" src="img/bg_join.webp" alt="">
-    <button id="oj-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <img class="bg" data-src="img/bg_join.webp" alt="">
+    <button id="oj-back" class="hit" aria-label="back"><img data-src="img/join_back.webp" alt=""></button>
     <div id="oj-title" class="txt sign"></div>
-    <img id="oj-panel" src="img/join_panel.webp" alt="">
+    <img id="oj-panel" data-src="img/join_panel.webp" alt="">
     <input id="oj-nick" class="inp" maxlength="20" autocomplete="off"><input id="oj-code" class="inp" inputmode="numeric" maxlength="6" autocomplete="off">
     <div id="oj-msg" class="txt capw"></div>
     <button id="oj-go" class="imgbtn j"><span id="oj-go-t"></span></button>
   </section>
   <section id="onc" class="screen">
-    <img class="bg" src="img/bg_offline.webp" alt="">
-    <button id="oc-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <img class="bg" data-src="img/bg_offline.webp" alt="">
+    <button id="oc-back" class="hit" aria-label="back"><img data-src="img/join_back.webp" alt=""></button>
     <div id="oc-title" class="txt sign"></div>
-    <img id="oc-paper" src="img/offline_paper.webp" alt=""><div id="oc-body"></div>
+    <img id="oc-paper" data-src="img/offline_paper.webp" alt=""><div id="oc-body"></div>
     <button id="oc-make" class="imgbtn s"><span id="oc-make-t"></span></button>
     <div id="oc-msg" class="txt capw"></div>
   </section>
   <section id="onw" class="screen">
-    <img class="bg" src="img/bg_lobby.webp" alt="">
-    <button id="ow-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <img class="bg" data-src="img/bg_lobby.webp" alt="">
+    <button id="ow-back" class="hit" aria-label="back"><img data-src="img/join_back.webp" alt=""></button>
     <div id="ow-title" class="txt sign"></div>
-    <img id="ow-codep" src="img/lobby_codepanel.webp" alt=""><div id="ow-codeh" class="txt ink sm"></div><div id="ow-code" class="txt ink codebig"></div>
+    <img id="ow-codep" data-src="img/lobby_codepanel.webp" alt=""><div id="ow-codeh" class="txt ink sm"></div><div id="ow-code" class="txt ink codebig"></div>
     <div id="ow-occ" class="txt capw"></div>
     <div id="ow-list"></div>
     <div id="ow-info" class="txt capw"></div>
@@ -166,14 +168,24 @@
     <div id="ow-sheet" class="hidden"></div>
   </section>
 
+  <section id="found" class="screen scrollx">
+    <img class="bg" data-src="img/mf_bg.webp" alt="">
+    <img id="f-title" data-src="img/mf_title.webp" alt=""><img id="f-tag" data-src="img/mf_tag.webp" alt=""><div id="f-tagt" class="txt ink"></div>
+    <div id="f-cl" class="mcard"><img data-src="img/mf_card_r.webp" alt=""><div class="mc-av"></div><div class="mc-rb"><img data-src="img/mf_ribbon_r.webp" alt=""><span></span></div><div class="mc-xp"><img data-src="img/mf_star.webp" alt=""><b></b></div></div>
+    <div id="f-cr" class="mcard"><img data-src="img/mf_card_b.webp" alt=""><div class="mc-av"></div><div class="mc-rb"><img data-src="img/mf_ribbon_b.webp" alt=""><span></span></div><div class="mc-xp"><img data-src="img/mf_star.webp" alt=""><b></b></div></div>
+    <img id="f-vs" data-src="img/mf_vs.webp" alt=""><img id="f-mas" data-src="img/mf_mascots.webp" alt="">
+    <div id="f-plank"><img data-src="img/mf_plank.webp" alt=""><div id="f-pt" class="txt lt"></div><div id="f-bar"><i id="f-fill"></i></div></div>
+    <div id="f-t1" class="tip"><img data-src="img/mf_tip1.webp" alt=""><span></span></div><div id="f-t2" class="tip"><img data-src="img/mf_tip2.webp" alt=""><span></span></div><div id="f-t3" class="tip"><img data-src="img/mf_tip3.webp" alt=""><span></span></div>
+  </section>
+
   <section id="draw" class="screen">
-    <img class="bg" src="img/bg_draw.webp" alt="">
+    <img class="bg" data-src="img/bg_draw.webp" alt="">
     <button id="d-back" class="hit" aria-label="back"></button>
     <div id="d-prog" class="txt ink"></div>
     <div id="d-ring" class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" class="trk"/><circle id="d-arc" cx="50" cy="50" r="44" class="arc"/></svg><span id="d-time"></span></div>
     <div id="d-word" class="txt ink"></div>
     <div id="d-line"></div>
-    <div id="d-canvas" class="paper"><canvas id="pad"></canvas><button id="d-timej" class="timej"><img src="img/joker_extra_time.webp" alt=""><span id="d-timej-t"></span><i id="d-timej-n"></i></button></div>
+    <div id="d-canvas" class="paper"><canvas id="pad"></canvas><button id="d-timej" class="timej"><img data-src="img/joker_extra_time.webp" alt=""><span id="d-timej-t"></span><i id="d-timej-n"></i></button></div>
     <button id="d-music" class="hit mus" aria-label="music"></button>
     <button id="t-pen" class="tool on" aria-label="pen"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
     <button id="t-erase" class="tool" aria-label="eraser"><svg viewBox="0 0 24 24"><path d="M16.24 3.56l4.95 4.94a1.5 1.5 0 0 1 0 2.12L12.8 19H20v2H8.5l-4.7-4.7a1.5 1.5 0 0 1 0-2.12l10.3-10.3a1.5 1.5 0 0 1 2.14-.32zM6 17.4l2.1 2.1 2.9-2.9-4.2-4.2L4.9 14.3 6 17.4z"/></svg></button>
@@ -191,15 +203,15 @@
     <div id="g-canvas" class="paper"><canvas id="view"></canvas><div id="g-blanks"></div><div id="g-flash"></div></div>
     <button id="g-music" class="hit mus" aria-label="music"></button>
     <button class="jt" id="jt-ad"><svg viewBox="0 0 24 24" style="fill:#f26a1b"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-2 14.5v-9l7 4.5-7 4.5z"/></svg><span></span></button>
-    <button class="jt" id="jt-first"><img src="img/joker_first_letter.webp" alt=""><span></span><i></i></button>
-    <button class="jt" id="jt-count"><img src="img/joker_letter_count.webp" alt=""><span></span><i></i></button>
+    <button class="jt" id="jt-first"><img data-src="img/joker_first_letter.webp" alt=""><span></span><i></i></button>
+    <button class="jt" id="jt-count"><img data-src="img/joker_letter_count.webp" alt=""><span></span><i></i></button>
     <button class="jt" id="jt-skip"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg><span></span></button>
     <form id="g-form"><input id="g-input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send"><button id="g-ok" class="pill orange small"><span id="g-ok-t"></span></button></form>
   </section>
 
   <section id="search" class="screen">
-    <img class="bg" src="img/bg_qm_search.webp" alt="">
-    <img id="s-sign" src="img/qm_sign.webp" alt="">
+    <img class="bg" data-src="img/bg_qm_search.webp" alt="">
+    <img id="s-sign" data-src="img/qm_sign.webp" alt="">
     <div id="s-text" class="txt sign"></div>
     <div id="s-paper"><svg viewBox="0 0 100 100"><path id="s-doodle" pathLength="100" d=""/></svg></div>
     <div id="s-sub" class="txt cap"></div>
@@ -208,7 +220,7 @@
   <section id="result" class="screen scroll">
     <div class="wood"></div>
     <div id="r-col">
-      <div id="r-head"><img src="img/rs_head.webp" alt=""><button id="r-back" aria-label="back"></button><div id="r-title" class="txt sign"></div></div>
+      <div id="r-head"><img data-src="img/rs_head.webp" alt=""><button id="r-back" aria-label="back"></button><div id="r-title" class="txt sign"></div></div>
       <div id="r-vs"></div>
       <div id="r-list"></div>
       <button id="again" class="pill orange"><span id="again-t"></span></button>
