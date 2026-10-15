@@ -1,5 +1,6 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
+import { loadStoreData, layoutStore, renderStore, frameRing, frameById, penById } from "./store.js";
 
 const WORD_COUNT = 10, POINTS = 5, SPEED_BONUS = 2, SPEED_MS = 3000;
 const DRAW_SECONDS = { EASY: 5, MEDIUM: 7, HARD: 10 };
@@ -25,11 +26,21 @@ const t = () => T[lang];
 
 // ---------- layout (art units: the paintings are 841 wide) ----------
 const stage = $("stage");
+const ctx = {
+  $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
+  refreshHome: () => refreshHome(),
+  confirm(text, yes, onYes) {
+    $("dlg-text").textContent = text; $("dlg-extra").replaceChildren(); $("dlg-no").style.display = ""; $("dlg-no").textContent = t().no === "Kal" ? "Vazgeç" : "Cancel"; $("dlg-yes").textContent = yes;
+    $("dialog").classList.remove("hidden");
+    $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); onYes(); };
+    $("dlg-no").onclick = () => $("dialog").classList.add("hidden");
+  },
+};
 // ---------- player (web-local progress; the account's level comes from Google sign-in later) ----------
 const RANKS = [[1, "✏️", "Karalamacı", "Scribbler"], [20, "🖊️", "Çırak", "Apprentice"], [40, "🖌️", "Ressam", "Painter"], [60, "🎨", "Usta Ressam", "Master Painter"], [80, "🖼️", "Sanatçı", "Artist"], [100, "👑", "Büyük Usta", "Grand Master"]];
 const xpFor = (lv) => { const n = Math.max(0, lv - 1); return 25 * n * n + 75 * n; };
 const levelFor = (xp) => { let l = 1; while (l < 100 && xp >= xpFor(l + 1)) l++; return l; };
-let P = { nick: "", xp: 0, gold: 0 };
+let P = { nick: "", xp: 0, gold: 0, owned: [], pen: "CLASSIC", frame: "SCRIBBLER", jokers: {} };
 try { P = { ...P, ...JSON.parse(localStorage.getItem("player") || "{}") }; } catch {}
 const saveP = () => { try { localStorage.setItem("player", JSON.stringify(P)); } catch {} };
 if (!P.nick) { P.nick = "Karalak" + Math.floor(1000 + Math.random() * 9000); saveP(); }
@@ -52,10 +63,7 @@ function layout() {
   if (current === "home") {
     place($("h-gold"), 112, 270, 126, 44);
     place($("h-pen"), 350, 266, 134, 54);
-    place($("h-avatar"), 66, 358, 138, 142);
-    const f = $("h-frame").style, av = $("h-av").style, fw = 138 * u, d = 0.764;
-    f.left = "0"; f.top = (142 - 138) / 2 * u + "px"; f.width = fw + "px"; f.height = fw + "px";
-    const ps = fw * d; av.width = ps + "px"; av.height = ps + "px"; av.left = (fw - ps) / 2 + "px"; av.top = (142 * u - ps) / 2 + "px"; av.borderRadius = "50%";
+    place($("h-avatar"), 66, 361, 138, 138);
     place($("h-name"), 224, 357, 556, 42);
     place($("h-rank"), 222, 400, 266, 47);
     place($("h-xpnext"), 496, 406, 284, 40);
@@ -67,6 +75,8 @@ function layout() {
       ["levels", 30, 1018, 258, 186, 50, 1142, 268, 1188], ["friends", 294, 1018, 258, 186, 320, 1142, 526, 1188], ["ach", 558, 1018, 258, 186, 584, 1142, 792, 1188],
       ["league", 30, 1210, 258, 188, 50, 1332, 268, 1380], ["store", 294, 1210, 258, 188, 340, 1332, 510, 1380], ["settings", 558, 1210, 258, 188, 590, 1332, 786, 1380]];
     for (const [id, x, y, w, h, lx0, ly0, lx1, ly1] of T) { place($("tl-" + id), x, y, w, h); place($("tx-" + id), lx0, ly0, lx1 - lx0, ly1 - ly0); }
+  } else if (current === "store") {
+    layoutStore(ctx); renderStore(ctx);
   } else if (current === "draw") {
     place($("d-back"), 28, 82, 99, 96);
     place($("d-prog"), 152, 88, 296, 82);
@@ -152,7 +162,7 @@ function fitCanvas(c) {
   c.width = Math.max(1, Math.round(r.width * d)); c.height = Math.max(1, Math.round(r.height * d));
 }
 // Strokes are lists of {x,y} in canvas pixels (the shape Android stores); every viewer fits them to the box.
-function paint(canvas, strokes, live = false) {
+function paint(canvas, strokes, live = false, pen = "CLASSIC") {
   const ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height, d = window.devicePixelRatio || 1;
   ctx.clearRect(0, 0, w, h);
   const pts = strokes.flat();
@@ -166,17 +176,30 @@ function paint(canvas, strokes, live = false) {
     sc = Math.min((w - 2 * pad) / cw, (h - 2 * pad) / ch);
     ox = (w - cw * sc) / 2 - minX * sc; oy = (h - ch * sc) / 2 - minY * sc;
   }
-  ctx.lineCap = ctx.lineJoin = "round"; ctx.strokeStyle = "#3a2a22";
+  ctx.lineCap = ctx.lineJoin = "round";
   ctx.lineWidth = live ? 6 * d : Math.min(13.5 * d, Math.max(1.6 * d, 7 * sc));
+  const cols = penColors(pen);
+  let dist = 0;
   for (const s of strokes) {
-    ctx.beginPath();
-    s.forEach((p, i) => (i ? ctx.lineTo(p.x * sc + ox, p.y * sc + oy) : ctx.moveTo(p.x * sc + ox, p.y * sc + oy)));
-    if (s.length === 1) ctx.lineTo(s[0].x * sc + ox + 0.1, s[0].y * sc + oy);
-    ctx.stroke();
+    if (s.length === 1) { ctx.strokeStyle = colorAt(cols, dist); ctx.beginPath(); ctx.moveTo(s[0].x * sc + ox, s[0].y * sc + oy); ctx.lineTo(s[0].x * sc + ox + 0.1, s[0].y * sc + oy); ctx.stroke(); continue; }
+    if (cols.length === 1) { ctx.strokeStyle = cols[0]; ctx.beginPath(); s.forEach((p, i) => (i ? ctx.lineTo(p.x * sc + ox, p.y * sc + oy) : ctx.moveTo(p.x * sc + ox, p.y * sc + oy))); ctx.stroke(); continue; }
+    for (let i = 1; i < s.length; i++) {
+      dist += Math.hypot(s[i].x - s[i - 1].x, s[i].y - s[i - 1].y);
+      ctx.strokeStyle = colorAt(cols, dist); ctx.beginPath();
+      ctx.moveTo(s[i - 1].x * sc + ox, s[i - 1].y * sc + oy); ctx.lineTo(s[i].x * sc + ox, s[i].y * sc + oy); ctx.stroke();
+    }
   }
 }
-const paintLive = () => current === "draw" && round[idx] && paint($("pad"), round[idx].strokes, true);
-const paintGuess = () => current === "guess" && round[idx] && paint($("view"), round[idx].strokes);
+function penColors(id) { try { const p = penById(id); return p.colors.length ? p.colors : ["#2E2A26"]; } catch { return ["#2E2A26"]; } }
+function colorAt(cols, dist) {
+  if (cols.length === 1) return cols[0];
+  const t = ((dist / 420) % 1 + 1) % 1 * cols.length, i = Math.floor(t) % cols.length, f = t - Math.floor(t), a = cols[i], b = cols[(i + 1) % cols.length];
+  const h = (x) => [1, 3, 5].map((k) => parseInt(x.slice(k, k + 2), 16));
+  const [r1, g1, b1] = h(a), [r2, g2, b2] = h(b);
+  return `rgb(${Math.round(r1 + (r2 - r1) * f)},${Math.round(g1 + (g2 - g1) * f)},${Math.round(b1 + (b2 - b1) * f)})`;
+}
+const paintLive = () => current === "draw" && round[idx] && paint($("pad"), round[idx].strokes, true, P.pen);
+const paintGuess = () => current === "guess" && round[idx] && paint($("view"), round[idx].strokes, false, P.pen);
 
 (() => {
   const c = $("pad"); let cur = null;
@@ -266,22 +289,22 @@ $("g-form").onsubmit = (e) => { e.preventDefault(); answer($("g-input").value); 
 $("g-input").addEventListener("input", (e) => { const w = round[idx]; if (w && e.target.value.trim() && e.target.value.trim().toLocaleLowerCase(lang) === w.text.toLocaleLowerCase(lang)) answer(e.target.value); });
 
 // ---------- result ----------
-function addRow(parent, strokes, ok, label, sub) {
+function addRow(parent, strokes, ok, label, sub, pen) {
   const row = document.createElement("div"); row.className = "row-card";
   const cv = document.createElement("canvas"), lb = document.createElement("div"), ic = document.createElement("img");
   lb.className = "lbl"; lb.textContent = label; if (sub) { const s = document.createElement("small"); s.textContent = sub; lb.append(s); }
   ic.src = ok ? "img/rs_ic_check.webp" : "img/rs_ic_x.webp"; ic.alt = "";
-  row.append(cv, lb, ic); parent.append(row); fitCanvas(cv); paint(cv, strokes);
+  row.append(cv, lb, ic); parent.append(row); fitCanvas(cv); paint(cv, strokes, false, pen || "CLASSIC");
 }
 async function finish() {
   const x = t();
   show("search");
   const n = round.filter((w) => w.correct).length;
-  P.xp += score; saveP(); refreshHome();
+  P.xp += score; P.gold += n * 10; saveP(); refreshHome();
   const me = {
     language: lang, nickname: "Web", wordIds: round.map((w) => w.id),
     perWord: round.map((w) => ({ wordId: w.id, isCorrect: w.correct, responseTimeMs: w.ms, pointsAwarded: w.points })),
-    items: round.map((w) => ({ word: w.text, isCorrect: w.correct, strokes: w.strokes })),
+    items: round.map((w) => ({ word: w.text, isCorrect: w.correct, strokes: w.strokes, penSkin: P.pen })),
   };
   const minWait = new Promise((r) => setTimeout(r, 2000 + Math.random() * 2000));
   let opp = null, items = [];
@@ -299,10 +322,10 @@ async function finish() {
     : `${x.you}: ${score} ${x.pts} · ${x.noOpp}`;
   const list = $("r-list"); list.innerHTML = "";
   const h1 = document.createElement("div"); h1.className = "who"; h1.textContent = x.mine; list.append(h1);
-  for (const w of round) addRow(list, w.strokes, w.correct, w.text, w.guess && !w.correct ? `“${w.guess}”` : "");
+  for (const w of round) addRow(list, w.strokes, w.correct, w.text, w.guess && !w.correct ? `“${w.guess}”` : "", P.pen);
   if (items.length) {
     const h2 = document.createElement("div"); h2.className = "who"; h2.textContent = `${x.theirs} · ${opp.nickname || ""}`; list.append(h2);
-    for (const it of items) addRow(list, it.strokes, it.isCorrect, it.word, "");
+    for (const it of items) addRow(list, it.strokes, it.isCorrect, it.word, "", it.penSkin);
   }
   $("result").scrollTop = 0;
 }
@@ -321,7 +344,9 @@ $("r-back").onclick = () => show("home");
 function refreshHome() {
   const x = t(), lv = levelFor(P.xp), floor = xpFor(lv), ceil = lv >= 100 ? floor : xpFor(lv + 1), into = P.xp - floor, span = ceil - floor;
   const rank = [...RANKS].reverse().find((r) => lv >= r[0]);
-  $("h-gold").textContent = P.gold.toLocaleString(lang); $("h-pen").textContent = x.goldLbl;
+  $("h-gold").textContent = P.gold.toLocaleString(lang);
+  try { $("h-pen").textContent = penById(P.pen)[lang]; } catch { $("h-pen").textContent = x.goldLbl; }
+  try { const fr = frameRing(frameById(P.frame)); fr.style.cssText += ";width:100%;height:100%"; $("h-avatar").replaceChildren(fr); } catch {}
   $("h-nick").textContent = P.nick; $("h-lvl").textContent = "• " + x.lvl + " " + lv;
   $("h-rank-t").textContent = rank[1] + " " + (lang === "tr" ? rank[2] : rank[3]);
   $("h-xpnext").textContent = lv >= 100 ? "MAX" : x.toNext(span - into, lv + 1);
@@ -338,9 +363,12 @@ function msg(text, extra) {
 }
 const soon = (name) => () => msg(`${name} · ${t().soon}`);
 $("tl-quick").onclick = start; $("tl-offline").onclick = start;
-for (const [id, k] of [["online", "online"], ["levels", "levels"], ["friends", "friends"], ["ach", "ach"], ["league", "league"], ["store", "store"]]) $("tl-" + id).onclick = () => soon(t().tiles[k])();
+$("tl-store").onclick = async () => { await loadStoreData(); show("store"); };
+$("st-back").onclick = () => show("home");
+for (const [id, k] of [["online", "online"], ["levels", "levels"], ["friends", "friends"], ["ach", "ach"], ["league", "league"]]) $("tl-" + id).onclick = () => soon(t().tiles[k])();
 $("tl-settings").onclick = () => {
   const mk = (code, label) => { const b = document.createElement("button"); b.className = "chip" + (lang === code ? " on" : ""); b.textContent = label; b.onclick = () => { lang = code; applyLang(); $("dialog").classList.add("hidden"); $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren(); }; return b; };
   msg(t().langTitle, [mk("tr", "Türkçe"), mk("en", "English")]);
 };
+loadStoreData().then(refreshHome).catch(() => {});
 applyLang(); show("home");
