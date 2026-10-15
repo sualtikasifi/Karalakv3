@@ -104,15 +104,9 @@ object RuneTree {
         Rune("fr_1", RuneBranch.BLUE, RuneEffect.ROOM, R.string.rune_fr_1_name, 10, listOf(3_000, 7_000, 12_000, 20_000), listOf("luck_key"), 3.150f, 2.740f, 2),
         Rune("fr_2", RuneBranch.BLUE, RuneEffect.HOST, R.string.rune_fr_2_name, 10, listOf(4_000, 10_000, 18_000), listOf("luck_key"), 3.950f, 1.360f, 2),
         Rune("fr_key", RuneBranch.BLUE, RuneEffect.BEST, R.string.rune_fr_key_name, 0, listOf(50_000), listOf("fr_1", "fr_2"), 4.330f, 2.500f, 2),
-        // Ring 3 — Ustalık yolu: experience, then the pens and frames found only here
-        Rune("xp_1", RuneBranch.PURPLE, RuneEffect.XP, R.string.rune_xp_1_name, 6, listOf(8_000, 14_000, 22_000, 32_000, 45_000), listOf("ins_key"), 0.000f, -6.000f, 3),
-        Rune("st_1", RuneBranch.PURPLE, RuneEffect.STYLE, R.string.rune_st_1_name, 0, listOf(30_000), listOf("xp_1"), -0.800f, -7.000f, 3, false),
-        Rune("st_5", RuneBranch.PURPLE, RuneEffect.STYLE, R.string.rune_st_5_name, 0, listOf(35_000), listOf("xp_1"), 0.800f, -7.000f, 3, false),
-        Rune("st_3", RuneBranch.PURPLE, RuneEffect.STYLE, R.string.rune_st_3_name, 0, listOf(45_000), listOf("st_1"), -0.800f, -8.100f, 3, false),
-        Rune("st_6", RuneBranch.PURPLE, RuneEffect.STYLE, R.string.rune_st_6_name, 0, listOf(45_000), listOf("st_5"), 0.800f, -8.100f, 3, false),
-        Rune("st_7", RuneBranch.PURPLE, RuneEffect.STYLE, R.string.rune_st_7_name, 0, listOf(70_000), listOf("st_3", "st_6"), 0.000f, -9.000f, 3, true),
-        // Ring 4 — Efsane: the crown
-        Rune("st_key", RuneBranch.LEGEND, RuneEffect.STYLE, R.string.rune_st_key_name, 0, listOf(150_000), listOf("st_7"), 0.000f, -10.100f, 4, true)
+        // Ring 3 — Ustalık yolu: experience. The path ends here for now; the pens and frames that used to hang off it
+        // (style runes) were taken off the map, and more runes will be added in later updates.
+        Rune("xp_1", RuneBranch.PURPLE, RuneEffect.XP, R.string.rune_xp_1_name, 6, listOf(8_000, 14_000, 22_000, 32_000, 45_000), listOf("ins_key"), 0.000f, -6.000f, 3)
     )
 
     private val byId = all.associateBy { it.id }
@@ -272,14 +266,10 @@ object RuneLive {
     fun chestMillis(millis: Long): Long = millis * (100 - RuneEffects.chestTimeReductionPercent(levels)) / 100
 }
 
-/** What a style rune puts in the player's collection when it is bought: a pen or frame found only on the rune map (isRuneReward). */
+/**
+ * What a style rune puts in the player's collection when it is bought (a pen or frame found only on the rune map).
+ * Empty for now: the runes no longer give rewards; the plumbing stays for when they come back.
+ */
 object RuneRewards {
-    val storeItem: Map<String, String> = mapOf(
-        "st_1" to "pen:SUNRISE",
-        "st_5" to "pen:AURORA",
-        "st_3" to "pen:DIAMOND",
-        "st_6" to "frame:TIME_EXPLORER",
-        "st_7" to "frame:OCEAN_TREASURE",
-        "st_key" to "frame:ROYAL_CROWN"
-    )
+    val storeItem: Map<String, String> = emptyMap()
 }

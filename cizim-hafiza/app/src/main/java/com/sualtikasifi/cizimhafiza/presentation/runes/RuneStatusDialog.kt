@@ -100,7 +100,7 @@ fun RuneStatusDialog(levels: Map<String, Int>, playerLevel: Int, abilities: Rune
                     stringResource(R.string.rune_status_spent),
                     numbers.format(runes.sumOf { r -> (0 until RuneTree.levelOf(levels, r.id)).sumOf { RuneGates.price(r, it) ?: 0 } })
                 )
-                (1..4).forEach { ring ->
+                (1..4).filter { ring -> RuneTree.all.any { it.ring == ring } }.forEach { ring ->
                     val label = if (ring == 4) stringResource(R.string.rune_status_ring_legend) else stringResource(R.string.rune_status_ring, ring)
                     if (RuneTree.ringOpen(levels, ring, playerLevel)) {
                         StatusRow(label, stringResource(R.string.rune_status_percent, (RuneTree.ringProgress(levels, ring) * 100).toInt()))
@@ -130,12 +130,15 @@ fun RuneStatusDialog(levels: Map<String, Int>, playerLevel: Int, abilities: Rune
                     StatusRow(stringResource(rune.nameRes), stringResource(state), dim = !owned)
                 }
 
-                SectionBar(stringResource(R.string.rune_status_collection))
+                // The collection of rune rewards: only shown while some rune gives one.
                 val style = runes.filter { it.effect == RuneEffect.STYLE }
-                StatusRow(stringResource(R.string.rune_status_rewards), "${style.count { RuneTree.levelOf(levels, it.id) >= 1 }} / ${style.size}")
-                style.forEach { rune ->
-                    val owned = RuneTree.levelOf(levels, rune.id) >= 1
-                    StatusRow(stringResource(rune.nameRes), stringResource(if (owned) R.string.rune_status_owned else R.string.rune_status_locked), dim = !owned)
+                if (style.isNotEmpty()) {
+                    SectionBar(stringResource(R.string.rune_status_collection))
+                    StatusRow(stringResource(R.string.rune_status_rewards), "${style.count { RuneTree.levelOf(levels, it.id) >= 1 }} / ${style.size}")
+                    style.forEach { rune ->
+                        val owned = RuneTree.levelOf(levels, rune.id) >= 1
+                        StatusRow(stringResource(rune.nameRes), stringResource(if (owned) R.string.rune_status_owned else R.string.rune_status_locked), dim = !owned)
+                    }
                 }
             }
             Spacer(Modifier.size(14.dp))
