@@ -95,8 +95,12 @@ PY
 }
 
 
+# The very first launch after the install does not come up on this emulator (pens.sh saw the same): start it once and
+# stop it again, then do the real run.
+adb shell am start -n $ACT
+sleep 20
 adb shell am force-stop $PKG
-sleep 2
+sleep 3
 adb shell am start -n $ACT
 sleep 14
 for i in $(seq 1 6); do
