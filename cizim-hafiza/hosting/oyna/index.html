@@ -6,16 +6,26 @@
 <meta name="theme-color" content="#7a3a10">
 <title>Karalak - Oyna</title>
 <link rel="stylesheet" href="style.css">
-<link rel="preload" as="image" href="img/bg_tutorial_welcome.webp">
 </head>
 <body>
 <div id="stage">
-  <section id="menu" class="screen">
-    <img class="bg" src="img/bg_tutorial_welcome.webp" alt="">
-    <div id="m-tag" class="txt ink"></div>
-    <div id="m-lang" class="chips"><button id="lang-tr" class="chip">Türkçe</button><button id="lang-en" class="chip">English</button></div>
-    <button id="start" class="pill orange"><span id="start-t"></span></button>
-    <div id="m-note" class="txt cap"></div>
+  <section id="home" class="screen">
+    <img class="bg" src="img/bg_home_scene.webp" alt="">
+    <div id="h-gold" class="txt lt"></div>
+    <div id="h-pen" class="txt lt"></div>
+    <div id="h-avatar"><img id="h-av" src="img/avatar_dino.webp" alt=""><img id="h-frame" src="img/level_frame_scribbler.webp" alt=""></div>
+    <div id="h-name" class="txt ink left"><span id="h-nick"></span><small id="h-lvl"></small></div>
+    <div id="h-rank" class="txt"><span id="h-rank-t"></span></div>
+    <div id="h-xpnext" class="txt ink right"></div>
+    <div id="h-bar"><i id="h-fill"></i><span id="h-barlabel"></span></div>
+    <div id="h-veil-gold" class="veil"></div><div id="h-veil-daily" class="veil"></div><div id="h-veil-chest" class="veil"></div>
+    <div id="h-ttl-gold" class="txt lt"></div><div id="h-ttl-daily" class="txt lt"></div><div id="h-ttl-chest" class="txt lt"></div><div id="h-soon-gold" class="txt cap2"></div><div id="h-soon-daily" class="txt cap2"></div><div id="h-soon-chest" class="txt cap2"></div>
+    <button class="tile" id="tl-online"></button><button class="tile" id="tl-quick"></button><button class="tile" id="tl-offline"></button>
+    <button class="tile" id="tl-levels"></button><button class="tile" id="tl-friends"></button><button class="tile" id="tl-ach"></button>
+    <button class="tile" id="tl-league"></button><button class="tile" id="tl-store"></button><button class="tile" id="tl-settings"></button>
+    <div class="txt lt tl" id="tx-online"></div><div class="txt lt tl" id="tx-quick"></div><div class="txt lt tl" id="tx-offline"></div>
+    <div class="txt lt tl" id="tx-levels"></div><div class="txt lt tl" id="tx-friends"></div><div class="txt lt tl" id="tx-ach"></div>
+    <div class="txt lt tl" id="tx-league"></div><div class="txt lt tl" id="tx-store"></div><div class="txt lt tl" id="tx-settings"></div>
   </section>
 
   <section id="draw" class="screen">
@@ -61,7 +71,7 @@
     </div>
   </section>
 
-  <div id="dialog" class="hidden"><div class="box"><div id="dlg-text"></div><div class="row"><button id="dlg-no" class="pill cream small"></button><button id="dlg-yes" class="pill orange small"></button></div></div></div>
+  <div id="dialog" class="hidden"><div class="box"><div id="dlg-text"></div><div id="dlg-extra"></div><div class="row"><button id="dlg-no" class="pill cream small"></button><button id="dlg-yes" class="pill orange small"></button></div></div></div>
 </div>
 <script type="module" src="app.js"></script>
 </body>
