@@ -32,7 +32,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RunesDevViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val runeConfigRepository: com.sualtikasifi.cizimhafiza.data.repository.RuneConfigRepository,
+    private val economyConfigRepository: com.sualtikasifi.cizimhafiza.data.repository.EconomyConfigRepository
 ) : ViewModel() {
     val levels = settingsRepository.runeLevels
 
@@ -41,6 +43,12 @@ class RunesDevViewModel @Inject constructor(
 
     /** Gives every rune its top level without paying, to look at the whole map. */
     fun unlockAll() = settingsRepository.unlockAllRunes()
+
+    /** Reads config/runes and config/economy from the server now (they are otherwise re-read only every few hours). */
+    fun refreshConfig() {
+        runeConfigRepository.refreshNow()
+        economyConfigRepository.refreshNow()
+    }
 }
 
 /** The developer panel's rune tab: one button that undoes every rune upgrade, for testing the map from the start. */
@@ -72,6 +80,11 @@ fun RunesDevPanel(viewModel: RunesDevViewModel = hiltViewModel()) {
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
+                PrimaryButton(
+                    text = stringResource(R.string.runes_dev_refresh_config),
+                    onClick = viewModel::refreshConfig,
+                    modifier = Modifier.fillMaxWidth()
+                )
                 PrimaryButton(
                     text = stringResource(R.string.runes_dev_unlock),
                     onClick = viewModel::unlockAll,

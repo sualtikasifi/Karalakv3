@@ -155,6 +155,19 @@ class CizimHafizaApp : Application(), Configuration.Provider {
             // has to be written by this device — started here so it follows the
             // XP itself even when the player never opens the standings.
             guarded("league score publisher") { leagueScorePublisher.get().start() }
+            // The publisher waits a while to batch a match's XP into one write; this lands whatever is still waiting
+            // the moment the player leaves the app (a no-op when the profile already says the same thing).
+            registerActivityLifecycleCallbacks(object : android.app.Application.ActivityLifecycleCallbacks {
+                override fun onActivityStopped(activity: android.app.Activity) {
+                    guarded("league score flush") { leagueScorePublisher.get().publishNow() }
+                }
+                override fun onActivityCreated(activity: android.app.Activity, savedInstanceState: android.os.Bundle?) = Unit
+                override fun onActivityStarted(activity: android.app.Activity) = Unit
+                override fun onActivityResumed(activity: android.app.Activity) = Unit
+                override fun onActivityPaused(activity: android.app.Activity) = Unit
+                override fun onActivitySaveInstanceState(activity: android.app.Activity, outState: android.os.Bundle) = Unit
+                override fun onActivityDestroyed(activity: android.app.Activity) = Unit
+            })
             // Applies any referral XP a friend invited by this device has
             // earned since the last launch (see ReferralRewardClaimer) — the
             // reward can only ever be granted server-side into a private

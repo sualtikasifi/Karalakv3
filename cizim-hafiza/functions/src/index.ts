@@ -353,12 +353,15 @@ function botNicknamesForPeriod(periodId: number, count: number): string[] {
  * the top 25 saw themselves parked on row 25.
  */
 const BOT_COUNT = 21;
-// How many rows the real-player query fetches, before bots are mixed in and
-// the combined list is cut down to PUBLISHED_TABLE_SIZE below. Generous on
-// purpose: a real player ranked, say, 40th by raw XP still needs to be IN
-// this fetch for the final sort-then-slice to have a chance of seating them
-// ahead of a bot.
-const MAX_ENTRIES = 100;
+// How many rows the real-player query fetches (each one is a Firestore read, every run), before bots are mixed in
+// and the combined list is cut down to PUBLISHED_TABLE_SIZE below. At most PUBLISHED_TABLE_SIZE (21) real players
+// can ever survive that cut, and the published `humans` list keeps 30, so 30 is all that is ever needed — the old
+// 100 paid for 70 rows nobody could see.
+const MAX_ENTRIES = 30;
+// Nobody plays in the small hours, so a scheduled run between 02:00 and 07:00 Istanbul would only re-publish a table
+// that has not changed. Skipped for the cron; a manual run always goes through.
+const QUIET_HOUR_START = 2;
+const QUIET_HOUR_END = 7;
 // The actual ceiling on what the app ever shows. Real players and bots are
 // sorted together by periodXp and only the top PUBLISHED_TABLE_SIZE survive
 // the cut — so on a quiet month this is BOT_COUNT bots plus however many
@@ -497,6 +500,11 @@ export async function runBuildGlobalLeaderboard(): Promise<void> {
   const db = admin.firestore();
   const t = istanbulNow(new Date());
   const periodId = periodIdFor(t);
+
+  if (process.env.GITHUB_EVENT_NAME === "schedule" && t.hour >= QUIET_HOUR_START && t.hour < QUIET_HOUR_END) {
+    logger.info(`League: quiet hours (${t.hour}:xx Istanbul), table left as it is`);
+    return;
+  }
 
     const realSnapshot = await db
       .collection("users")
