@@ -96,12 +96,12 @@ fun OnlineGameScreen(
     }
 
     if (showExitConfirm) {
-        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedExitDialog(
+            style = com.sualtikasifi.cizimhafiza.presentation.common.ExitDialogStyle.InGame,
             title = stringResource(R.string.exit_game_title),
-            message = stringResource(R.string.exit_game_message),
+            message = stringResource(R.string.exit_online_message),
             confirmText = stringResource(R.string.exit_game_confirm),
             dismissText = stringResource(R.string.exit_game_cancel),
-            destructive = true,
             onConfirm = {
                 showExitConfirm = false
                 viewModel.leaveRoom()

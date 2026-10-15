@@ -22,6 +22,7 @@ on:
           - frames.sh
           - pens.sh
           - exit.sh
+          - exitgame.sh
           - tutorial.sh
           - worlds.sh
           - store.sh

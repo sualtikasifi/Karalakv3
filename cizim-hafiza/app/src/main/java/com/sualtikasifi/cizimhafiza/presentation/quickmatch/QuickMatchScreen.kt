@@ -132,12 +132,12 @@ fun QuickMatchScreen(
     val matched = state is QuickMatchState.Found
     androidx.activity.compose.BackHandler(enabled = matched) { abandonConfirmOpen = true }
     if (abandonConfirmOpen) {
-        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedExitDialog(
+            style = com.sualtikasifi.cizimhafiza.presentation.common.ExitDialogStyle.InGame,
             title = stringResource(R.string.quick_match_abandon_title),
             message = stringResource(R.string.quick_match_abandon_message, GameConstants.QUICK_MATCH_ABANDON_PENALTY_XP),
             confirmText = stringResource(R.string.quick_match_abandon_confirm, GameConstants.QUICK_MATCH_ABANDON_PENALTY_XP),
             dismissText = stringResource(R.string.quick_match_abandon_keep),
-            destructive = true,
             onConfirm = {
                 abandonConfirmOpen = false
                 viewModel.abandonMatch()

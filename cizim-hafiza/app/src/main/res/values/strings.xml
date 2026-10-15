@@ -228,6 +228,8 @@
     <string name="exit_game_confirm">Quit</string>
     <string name="exit_game_cancel">Continue</string>
     <string name="daily_exit_title">Leave the challenge?</string>
+    <string name="daily_exit_message_short">If you leave now, today\'s try is over and the remaining words count as missed.</string>
+    <string name="exit_online_message">You leave the room and this round\'s progress is lost.</string>
     <string name="daily_exit_message">If you leave now, today\'s challenge is over: what you got right so far is scored, the remaining words count as missed and you can\'t play it again today. Leave anyway?</string>
 
     <!-- Drawing screen -->
