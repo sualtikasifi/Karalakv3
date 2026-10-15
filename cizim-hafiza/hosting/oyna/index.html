@@ -13,7 +13,7 @@
     <img class="bg" src="img/bg_home_scene.webp" alt="">
     <div id="h-gold" class="txt lt"></div>
     <div id="h-pen" class="txt lt"></div>
-    <div id="h-avatar"><img id="h-av" src="img/avatar_dino.webp" alt=""><img id="h-frame" src="img/level_frame_scribbler.webp" alt=""></div>
+    <div id="h-avatar"></div>
     <div id="h-name" class="txt ink left"><span id="h-nick"></span><small id="h-lvl"></small></div>
     <div id="h-rank" class="txt"><span id="h-rank-t"></span></div>
     <div id="h-xpnext" class="txt ink right"></div>
@@ -26,6 +26,142 @@
     <div class="txt lt tl" id="tx-online"></div><div class="txt lt tl" id="tx-quick"></div><div class="txt lt tl" id="tx-offline"></div>
     <div class="txt lt tl" id="tx-levels"></div><div class="txt lt tl" id="tx-friends"></div><div class="txt lt tl" id="tx-ach"></div>
     <div class="txt lt tl" id="tx-league"></div><div class="txt lt tl" id="tx-store"></div><div class="txt lt tl" id="tx-settings"></div>
+  </section>
+
+  <section id="store" class="screen">
+    <img class="bg" src="img/st_bg.webp" alt="">
+    <div id="st-t1" class="txt sign2"></div><div id="st-t2" class="txt sign2"></div>
+    <button id="st-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <div id="st-gold"><img src="img/icon_gold_coin.webp" alt=""><span id="st-goldn"></span></div>
+    <div id="st-tabs"></div>
+    <div id="st-shelf"></div>
+    <div id="st-toast" class="hidden"></div>
+  </section>
+
+  <section id="settings" class="screen">
+    <img class="bg" src="img/bg_settings.webp" alt="">
+    <button id="se-back" class="hit" aria-label="back"></button>
+    <div id="se-title" class="txt sign"></div>
+    <div id="se-sound" class="txt sign3"></div>
+    <div id="se-r0" class="se-row"></div><div id="se-r1" class="se-row"></div><div id="se-r2" class="se-row"></div><div id="se-r3" class="se-row"></div>
+    <input id="se-code" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <button id="se-use" class="pill orange small"><span id="se-use-t"></span></button>
+    <div id="se-msg" class="txt cap3"></div>
+    <button id="se-how" class="se-link"></button>
+    <button id="se-lang" class="se-nav"></button><button id="se-tut" class="se-nav"></button><button id="se-bug" class="se-nav"></button><button id="se-acc" class="se-nav"></button><button id="se-rate" class="se-nav"></button>
+    <a id="se-priv" class="se-priv" target="_blank" rel="noopener"><span id="se-priv-t"></span><small id="se-ver"></small></a>
+  </section>
+
+  <section id="ach" class="screen">
+    <img class="bg" src="img/bg_achievements.webp" alt="">
+    <div id="ac-list"></div>
+    <img id="ac-sign" src="img/ach_sign.webp" alt="">
+    <div id="ac-title" class="txt sign"></div>
+    <button id="ac-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <div id="ac-dlg" class="hidden"></div>
+  </section>
+
+  <section id="league" class="screen">
+    <img class="bg" src="img/bg_league.webp" alt="">
+    <div id="lg-list"></div>
+    <img id="lg-sign" src="img/league_sign.webp" alt="">
+    <div id="lg-title" class="txt sign"></div>
+    <button id="lg-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <button id="lg-refresh" class="hit" aria-label="refresh"><img src="img/league_wood.webp" alt=""><span>⟳</span></button>
+    <div id="lg-tabs"></div>
+    <div id="lg-timer" class="txt lg-timer"></div>
+  </section>
+
+  <section id="account" class="screen">
+    <img class="bg" src="img/bg_account.webp" alt="">
+    <button id="ak-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <img id="ak-sign" src="img/ac_sign.webp" alt="">
+    <div id="ak-title" class="txt sign"></div>
+    <div id="ak-avatar"></div>
+    <div id="ak-name" class="txt ink left"></div>
+    <div id="ak-lvl" class="txt ink left sm"></div>
+    <div id="ak-badge" class="txt left badge"></div>
+    <div id="ak-bar"><i id="ak-fill"></i><span id="ak-barl"></span></div>
+    <div class="ak-stat" id="ak-s0"><b></b><small></small></div><div class="ak-stat" id="ak-s1"><b></b><small></small></div><div class="ak-stat" id="ak-s2"><b></b><small></small></div>
+    <div id="ak-sec" class="txt ink left"></div>
+    <div id="ak-strip" class="txt ink left sm2"></div>
+    <button id="ak-google" class="gbtn"></button>
+    <button id="ak-out" class="pill orange"><span id="ak-out-t"></span></button>
+    <button id="ak-del" class="delbtn"></button>
+    <div id="ak-msg" class="txt capmsg"></div>
+  </section>
+
+  <section id="worlds" class="screen">
+    <img class="bg" src="img/bg_worlds.webp" alt="">
+    <div id="wl-list"></div>
+    <button id="wl-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+  </section>
+  <section id="lvmap" class="screen">
+    <img id="lm-bg" class="bg" src="img/bg_world_1.webp" alt="">
+    <div id="lm-ring" class="hidden"></div>
+    <div id="lm-nodes"></div>
+    <button id="lm-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <div id="lm-world"></div>
+    <div id="lm-panel" class="hidden"></div>
+  </section>
+
+  <section id="friends" class="screen">
+    <img class="bg" src="img/bg_friends.webp" alt="">
+    <button id="fr-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <button id="fr-duel" class="hit hidden-x" aria-label="duels"><img src="img/fr_clip.webp" alt=""></button>
+    <img id="fr-sign" src="img/fr_sign.webp" alt=""><div id="fr-title" class="txt sign"></div>
+    <img id="fr-panel" src="img/fr_panel_wide.webp" alt=""><div id="fr-codel" class="txt ink"></div><div id="fr-hint" class="txt cap4"></div>
+    <img id="fr-frame" src="img/fr_code_frame.webp" alt="">
+    <div id="fr-d0" class="txt ink dg"></div><div id="fr-d1" class="txt ink dg"></div><div id="fr-d2" class="txt ink dg"></div><div id="fr-d3" class="txt ink dg"></div><div id="fr-d4" class="txt ink dg"></div><div id="fr-d5" class="txt ink dg"></div>
+    <button id="fr-share" class="frbtn w"><span id="fr-sharet"></span></button>
+    <img id="fr-ribbon1" src="img/fr_ribbon.webp" alt=""><div id="fr-ribbon1t" class="txt sign4"></div>
+    <input id="fr-input" inputmode="numeric" maxlength="6" autocomplete="off">
+    <button id="fr-add" class="frbtn s"><span id="fr-addt"></span></button>
+    <div id="fr-msg" class="txt sign4 m"></div>
+    <img id="fr-ribbon2" src="img/fr_ribbon.webp" alt=""><div id="fr-ribbon2t" class="txt sign4"></div>
+    <img id="fr-bigpanel" src="img/fr_panel_big.webp" alt="">
+    <div id="fr-list"></div>
+    <div id="fr-menu" class="hidden"></div>
+  </section>
+
+  <section id="onl" class="screen">
+    <img class="bg" src="img/bg_race2.webp" alt="">
+    <button id="on-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <img id="on-sign" src="img/race2_sign.webp" alt=""><div id="on-title" class="txt sign"></div>
+    <img id="on-paper" src="img/race2_paper.webp" alt=""><div id="on-text" class="txt ink col"></div>
+    <button id="on-create" class="imgbtn o"><span id="on-create-t"></span></button>
+    <button id="on-join" class="imgbtn b"><span id="on-join-t"></span></button>
+  </section>
+  <section id="onj" class="screen">
+    <img class="bg" src="img/bg_join.webp" alt="">
+    <button id="oj-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <div id="oj-title" class="txt sign"></div>
+    <img id="oj-panel" src="img/join_panel.webp" alt="">
+    <input id="oj-nick" class="inp" maxlength="20" autocomplete="off"><input id="oj-code" class="inp" inputmode="numeric" maxlength="6" autocomplete="off">
+    <div id="oj-msg" class="txt capw"></div>
+    <button id="oj-go" class="imgbtn j"><span id="oj-go-t"></span></button>
+  </section>
+  <section id="onc" class="screen">
+    <img class="bg" src="img/bg_offline.webp" alt="">
+    <button id="oc-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <div id="oc-title" class="txt sign"></div>
+    <img id="oc-paper" src="img/offline_paper.webp" alt=""><div id="oc-body"></div>
+    <button id="oc-make" class="imgbtn s"><span id="oc-make-t"></span></button>
+    <div id="oc-msg" class="txt capw"></div>
+  </section>
+  <section id="onw" class="screen">
+    <img class="bg" src="img/bg_lobby.webp" alt="">
+    <button id="ow-back" class="hit" aria-label="back"><img src="img/join_back.webp" alt=""></button>
+    <div id="ow-title" class="txt sign"></div>
+    <img id="ow-codep" src="img/lobby_codepanel.webp" alt=""><div id="ow-codeh" class="txt ink sm"></div><div id="ow-code" class="txt ink codebig"></div>
+    <div id="ow-occ" class="txt capw"></div>
+    <div id="ow-list"></div>
+    <div id="ow-info" class="txt capw"></div>
+    <button id="ow-ready" class="imgbtn g"><span id="ow-ready-t"></span></button>
+    <button id="ow-start" class="imgbtn o"><span id="ow-start-t"></span></button>
+    <button id="ow-invite" class="imgbtn b"><span id="ow-invite-t"></span></button>
+    <div id="ow-cd" class="hidden"></div>
+    <div id="ow-sheet" class="hidden"></div>
   </section>
 
   <section id="draw" class="screen">

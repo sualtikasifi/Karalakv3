@@ -1,5 +1,13 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
+import { layoutOnline, renderEntry, renderCreate, renderJoin, leaveLobby, submitAndWait, joinWithCode, quickInvite } from "./online.js";
+import { layoutFriends, openFriends, renderFriends, stop as stopFriends } from "./friends.js";
+import { loadWorlds, layoutWorlds, renderWorlds, layoutMap, renderMap, mixFor, starsFor, recordLevel, currentWorld } from "./levels.js";
+import { layoutAccount, renderAccount } from "./account.js";
+import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
+import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound } from "./achievements.js";
+import { layoutSettings, renderSettings } from "./settings.js";
+import { loadStoreData, layoutStore, renderStore, frameRing, frameById, penById } from "./store.js";
 
 const WORD_COUNT = 10, POINTS = 5, SPEED_BONUS = 2, SPEED_MS = 3000;
 const DRAW_SECONDS = { EASY: 5, MEDIUM: 7, HARD: 10 };
@@ -10,11 +18,11 @@ const ART_W = 841, ART_H = 1870, GUESS_BOTTOM = 1398;
 const T = {
   tr: { tag: "Çiz, ezberle,\ntahmin et!", start: "OYNA", note: "Android ve tarayıcı oyuncularıyla eşleş", next: "Bitir", ok: "Gönder",
         guess: "Tahmin et", result: "Sonuç", searching: "Rakip aranıyor…", searchSub: "Birisi senin gibi çizerken bulunuyor", again: "TEKRAR OYNA", noOpp: "Şu an rakip bulunamadı",
-        you: "Sen", win: "Kazandın!", lose: "Kaybettin", draw: "Berabere", leave: "Oyundan çıkılsın mı?", yes: "Çık", no: "Kal",
+        you: "Sen", win: "Kazandın!", lose: "Kaybettin", draw: "Berabere", leaveQ: "Odadan ayrılmak istiyor musun?", leave: "Oyundan çıkılsın mı?", yes: "Çık", no: "Kal",
         mine: "Çizimlerin", tiles: { online: "Arkadaşınla Yarış", quick: "Hızlı Eşleş", offline: "Çevrimdışı Oyna", levels: "Bölümler", friends: "Arkadaşlar", ach: "Başarımlar", league: "Aylık Lig", store: "Mağaza", settings: "Ayarlar" }, goldLbl: "Klasik", adGold: "+500 Altın", daily: "Günün Meydan Okuması", adChest: "Ücretsiz Kasa", lvl: "Seviye", toNext: (n, l) => `Sv. ${l} için ${n} XP`, soon: "Çok yakında", appOnly: "Uygulamada", ok: "Tamam", langTitle: "Dil",  theirs: "Rakibin çizimleri", pts: "puan", file: "words_tr.json", ph: "Cevabın…" },
   en: { tag: "Draw, memorize,\nguess!", start: "PLAY", note: "Match with Android and browser players", next: "Done", ok: "Send",
         guess: "Guess", result: "Result", searching: "Finding an opponent…", searchSub: "Looking for someone who draws like you", again: "PLAY AGAIN", noOpp: "No opponent found right now",
-        you: "You", win: "You win!", lose: "You lose", draw: "Draw", leave: "Leave the game?", yes: "Leave", no: "Stay",
+        you: "You", win: "You win!", lose: "You lose", draw: "Draw", leaveQ: "Leave the room?", leave: "Leave the game?", yes: "Leave", no: "Stay",
         mine: "Your drawings", tiles: { online: "Race a Friend", quick: "Quick Match", offline: "Play Offline", levels: "Levels", friends: "Friends", ach: "Achievements", league: "Monthly League", store: "Store", settings: "Settings" }, goldLbl: "Classic", adGold: "+500 Gold", daily: "Daily Challenge", adChest: "Free Chest", lvl: "Level", toNext: (n, l) => `${n} XP to Lv. ${l}`, soon: "Coming soon", appOnly: "In the app", ok: "OK", langTitle: "Language",  theirs: "Opponent's drawings", pts: "pts", file: "words_en.json", ph: "Your answer…" },
 };
 const $ = (id) => document.getElementById(id);
@@ -25,11 +33,31 @@ const t = () => T[lang];
 
 // ---------- layout (art units: the paintings are 841 wide) ----------
 const stage = $("stage");
+let leagueLoaded = false;
+const ctx = {
+  current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
+  $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
+  inviteFriend: (f) => quickInvite(ctx, f).then(() => { stopFriends(); show("onw"); }),
+  kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
+  pickRoomWords: (r) => pickRoomWords(r),
+  refreshHome: () => refreshHome(), show: (id) => show(id),
+  playLevel: (w, l) => startLevel(w, l),
+  setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
+  open: (id) => show(id),
+  levelOf: (xp) => { const lv = levelFor(xp), fl = xpFor(lv), ce = lv >= 100 ? fl : xpFor(lv + 1); return { level: lv, into: xp - fl, span: ce - fl, frac: ce > fl ? (xp - fl) / (ce - fl) : 1, max: lv >= 100 }; },
+  info: (text) => msg(text),
+  confirm(text, yes, onYes) {
+    $("dlg-text").textContent = text; $("dlg-extra").replaceChildren(); $("dlg-no").style.display = ""; $("dlg-no").textContent = t().no === "Kal" ? "Vazgeç" : "Cancel"; $("dlg-yes").textContent = yes;
+    $("dialog").classList.remove("hidden");
+    $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); onYes(); };
+    $("dlg-no").onclick = () => $("dialog").classList.add("hidden");
+  },
+};
 // ---------- player (web-local progress; the account's level comes from Google sign-in later) ----------
 const RANKS = [[1, "✏️", "Karalamacı", "Scribbler"], [20, "🖊️", "Çırak", "Apprentice"], [40, "🖌️", "Ressam", "Painter"], [60, "🎨", "Usta Ressam", "Master Painter"], [80, "🖼️", "Sanatçı", "Artist"], [100, "👑", "Büyük Usta", "Grand Master"]];
 const xpFor = (lv) => { const n = Math.max(0, lv - 1); return 25 * n * n + 75 * n; };
 const levelFor = (xp) => { let l = 1; while (l < 100 && xp >= xpFor(l + 1)) l++; return l; };
-let P = { nick: "", xp: 0, gold: 0 };
+let P = { nick: "", xp: 0, gold: 0, owned: [], pen: "CLASSIC", frame: "SCRIBBLER", jokers: {}, claimed: [], levels: {}, stats: { games: 0, score: 0, words: 0, perfect: 0, wins: 0, streak: 0, best: 0, last: "" } };
 try { P = { ...P, ...JSON.parse(localStorage.getItem("player") || "{}") }; } catch {}
 const saveP = () => { try { localStorage.setItem("player", JSON.stringify(P)); } catch {} };
 if (!P.nick) { P.nick = "Karalak" + Math.floor(1000 + Math.random() * 9000); saveP(); }
@@ -52,10 +80,7 @@ function layout() {
   if (current === "home") {
     place($("h-gold"), 112, 270, 126, 44);
     place($("h-pen"), 350, 266, 134, 54);
-    place($("h-avatar"), 66, 358, 138, 142);
-    const f = $("h-frame").style, av = $("h-av").style, fw = 138 * u, d = 0.764;
-    f.left = "0"; f.top = (142 - 138) / 2 * u + "px"; f.width = fw + "px"; f.height = fw + "px";
-    const ps = fw * d; av.width = ps + "px"; av.height = ps + "px"; av.left = (fw - ps) / 2 + "px"; av.top = (142 * u - ps) / 2 + "px"; av.borderRadius = "50%";
+    place($("h-avatar"), 66, 361, 138, 138);
     place($("h-name"), 224, 357, 556, 42);
     place($("h-rank"), 222, 400, 266, 47);
     place($("h-xpnext"), 496, 406, 284, 40);
@@ -67,6 +92,25 @@ function layout() {
       ["levels", 30, 1018, 258, 186, 50, 1142, 268, 1188], ["friends", 294, 1018, 258, 186, 320, 1142, 526, 1188], ["ach", 558, 1018, 258, 186, 584, 1142, 792, 1188],
       ["league", 30, 1210, 258, 188, 50, 1332, 268, 1380], ["store", 294, 1210, 258, 188, 340, 1332, 510, 1380], ["settings", 558, 1210, 258, 188, 590, 1332, 786, 1380]];
     for (const [id, x, y, w, h, lx0, ly0, lx1, ly1] of T) { place($("tl-" + id), x, y, w, h); place($("tx-" + id), lx0, ly0, lx1 - lx0, ly1 - ly0); }
+  } else if (current === "store") {
+    layoutStore(ctx); renderStore(ctx);
+  } else if (current === "onl" || current === "onj" || current === "onc" || current === "onw") {
+    layoutOnline(ctx);
+    if (current === "onl") renderEntry(ctx); else if (current === "onj") renderJoin(ctx); else if (current === "onc") renderCreate(ctx);
+  } else if (current === "friends") {
+    layoutFriends(ctx); renderFriends(ctx);
+  } else if (current === "worlds") {
+    layoutWorlds(ctx); renderWorlds(ctx);
+  } else if (current === "lvmap") {
+    renderMap(ctx);
+  } else if (current === "account") {
+    layoutAccount(ctx); renderAccount(ctx);
+  } else if (current === "league") {
+    layoutLeague(ctx); renderLeague(ctx, !leagueLoaded); leagueLoaded = true;
+  } else if (current === "ach") {
+    layoutAchievements(ctx); renderAchievements(ctx);
+  } else if (current === "settings") {
+    layoutSettings(ctx); renderSettings(ctx);
   } else if (current === "draw") {
     place($("d-back"), 28, 82, 99, 96);
     place($("d-prog"), 152, 88, 296, 82);
@@ -152,7 +196,7 @@ function fitCanvas(c) {
   c.width = Math.max(1, Math.round(r.width * d)); c.height = Math.max(1, Math.round(r.height * d));
 }
 // Strokes are lists of {x,y} in canvas pixels (the shape Android stores); every viewer fits them to the box.
-function paint(canvas, strokes, live = false) {
+function paint(canvas, strokes, live = false, pen = "CLASSIC") {
   const ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height, d = window.devicePixelRatio || 1;
   ctx.clearRect(0, 0, w, h);
   const pts = strokes.flat();
@@ -166,17 +210,30 @@ function paint(canvas, strokes, live = false) {
     sc = Math.min((w - 2 * pad) / cw, (h - 2 * pad) / ch);
     ox = (w - cw * sc) / 2 - minX * sc; oy = (h - ch * sc) / 2 - minY * sc;
   }
-  ctx.lineCap = ctx.lineJoin = "round"; ctx.strokeStyle = "#3a2a22";
+  ctx.lineCap = ctx.lineJoin = "round";
   ctx.lineWidth = live ? 6 * d : Math.min(13.5 * d, Math.max(1.6 * d, 7 * sc));
+  const cols = penColors(pen);
+  let dist = 0;
   for (const s of strokes) {
-    ctx.beginPath();
-    s.forEach((p, i) => (i ? ctx.lineTo(p.x * sc + ox, p.y * sc + oy) : ctx.moveTo(p.x * sc + ox, p.y * sc + oy)));
-    if (s.length === 1) ctx.lineTo(s[0].x * sc + ox + 0.1, s[0].y * sc + oy);
-    ctx.stroke();
+    if (s.length === 1) { ctx.strokeStyle = colorAt(cols, dist); ctx.beginPath(); ctx.moveTo(s[0].x * sc + ox, s[0].y * sc + oy); ctx.lineTo(s[0].x * sc + ox + 0.1, s[0].y * sc + oy); ctx.stroke(); continue; }
+    if (cols.length === 1) { ctx.strokeStyle = cols[0]; ctx.beginPath(); s.forEach((p, i) => (i ? ctx.lineTo(p.x * sc + ox, p.y * sc + oy) : ctx.moveTo(p.x * sc + ox, p.y * sc + oy))); ctx.stroke(); continue; }
+    for (let i = 1; i < s.length; i++) {
+      dist += Math.hypot(s[i].x - s[i - 1].x, s[i].y - s[i - 1].y);
+      ctx.strokeStyle = colorAt(cols, dist); ctx.beginPath();
+      ctx.moveTo(s[i - 1].x * sc + ox, s[i - 1].y * sc + oy); ctx.lineTo(s[i].x * sc + ox, s[i].y * sc + oy); ctx.stroke();
+    }
   }
 }
-const paintLive = () => current === "draw" && round[idx] && paint($("pad"), round[idx].strokes, true);
-const paintGuess = () => current === "guess" && round[idx] && paint($("view"), round[idx].strokes);
+function penColors(id) { try { const p = penById(id); return p.colors.length ? p.colors : ["#2E2A26"]; } catch { return ["#2E2A26"]; } }
+function colorAt(cols, dist) {
+  if (cols.length === 1) return cols[0];
+  const t = ((dist / 420) % 1 + 1) % 1 * cols.length, i = Math.floor(t) % cols.length, f = t - Math.floor(t), a = cols[i], b = cols[(i + 1) % cols.length];
+  const h = (x) => [1, 3, 5].map((k) => parseInt(x.slice(k, k + 2), 16));
+  const [r1, g1, b1] = h(a), [r2, g2, b2] = h(b);
+  return `rgb(${Math.round(r1 + (r2 - r1) * f)},${Math.round(g1 + (g2 - g1) * f)},${Math.round(b1 + (b2 - b1) * f)})`;
+}
+const paintLive = () => current === "draw" && round[idx] && paint($("pad"), round[idx].strokes, true, P.pen);
+const paintGuess = () => current === "guess" && round[idx] && paint($("view"), round[idx].strokes, false, P.pen);
 
 (() => {
   const c = $("pad"); let cur = null;
@@ -214,10 +271,32 @@ function setRing(ring, arc, timeEl, left, total) {
   arc.style.strokeDashoffset = 276.5 * (1 - Math.max(0, left) / total);
   ring.classList.toggle("warn", left <= 3);
 }
-async function start() {
+let levelRun = null, kind = "quick", relaxed = false;
+async function ensureWords() { if (words.lang !== lang) { words = await (await fetch(t().file)).json(); words.lang = lang; } }
+function pickRoomWords(r) {
+  const diffs = r.difficulty ? r.difficulty.split(",") : ["EASY", "MEDIUM", "HARD"];
+  return [...words].filter((w) => diffs.includes(w.difficulty)).sort(() => Math.random() - 0.5).slice(0, r.wordCount || 10).map((w) => w.id);
+}
+async function startOnlineGame(r) {
+  await ensureWords(); kind = "online"; levelRun = null; relaxed = r.mode === "RELAXED";
+  const byId = new Map(words.map((w) => [w.id, w]));
+  begin((r.wordIds || []).map((id) => byId.get(id)).filter(Boolean));
+}
+async function startLevel(w, l) {
+  levelRun = { w, l }; kind = "level"; relaxed = false;
+  const mix = mixFor(w, l);
   if (words.lang !== lang) { words = await (await fetch(t().file)).json(); words.lang = lang; }
-  const pool = [...words].sort(() => Math.random() - 0.5);
-  round = pool.slice(0, WORD_COUNT).map((w) => ({ ...w, strokes: [], guess: "", correct: false, points: 0, ms: 0 }));
+  const picks = [];
+  for (const [d, n] of Object.entries(mix)) picks.push(...[...words].filter((x) => x.difficulty === d).sort(() => Math.random() - 0.5).slice(0, n));
+  begin(picks.sort(() => Math.random() - 0.5));
+}
+async function start(k = "quick") {
+  levelRun = null; kind = k; relaxed = false;
+  if (words.lang !== lang) { words = await (await fetch(t().file)).json(); words.lang = lang; }
+  begin([...words].sort(() => Math.random() - 0.5).slice(0, WORD_COUNT));
+}
+function begin(picked) {
+  round = picked.map((w) => ({ ...w, strokes: [], guess: "", correct: false, points: 0, ms: 0 }));
   idx = 0; tool = "pen"; score = 0; nextDraw();
 }
 function nextDraw() {
@@ -232,7 +311,7 @@ function nextDraw() {
   const total = DRAW_SECONDS[w.difficulty] ?? 7; let left = total;
   const arc = $("d-arc"); arc.style.transition = "none"; setRing($("d-ring"), arc, $("d-time"), left, total); void arc.getBoundingClientRect(); arc.style.transition = "";
   tool = "pen"; refreshTools(); paintLive();
-  dTimer = setInterval(() => {
+  if (!relaxed) dTimer = setInterval(() => {
     left--; setRing($("d-ring"), arc, $("d-time"), left, total);
     if (left <= 0) finishDraw();
   }, 1000);
@@ -266,26 +345,32 @@ $("g-form").onsubmit = (e) => { e.preventDefault(); answer($("g-input").value); 
 $("g-input").addEventListener("input", (e) => { const w = round[idx]; if (w && e.target.value.trim() && e.target.value.trim().toLocaleLowerCase(lang) === w.text.toLocaleLowerCase(lang)) answer(e.target.value); });
 
 // ---------- result ----------
-function addRow(parent, strokes, ok, label, sub) {
+function addRow(parent, strokes, ok, label, sub, pen) {
   const row = document.createElement("div"); row.className = "row-card";
   const cv = document.createElement("canvas"), lb = document.createElement("div"), ic = document.createElement("img");
   lb.className = "lbl"; lb.textContent = label; if (sub) { const s = document.createElement("small"); s.textContent = sub; lb.append(s); }
   ic.src = ok ? "img/rs_ic_check.webp" : "img/rs_ic_x.webp"; ic.alt = "";
-  row.append(cv, lb, ic); parent.append(row); fitCanvas(cv); paint(cv, strokes);
+  row.append(cv, lb, ic); parent.append(row); fitCanvas(cv); paint(cv, strokes, false, pen || "CLASSIC");
 }
 async function finish() {
   const x = t();
-  show("search");
+  if (kind === "quick") show("search");
   const n = round.filter((w) => w.correct).length;
-  P.xp += score; saveP(); refreshHome();
+  if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
+  P.xp += score; P.periodXp = (P.periodXp || 0) + score; P.gold += n * 10; achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
+  if (kind === "online") { net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {}); return submitAndWait(ctx, round, score); }
+  net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
   const me = {
     language: lang, nickname: "Web", wordIds: round.map((w) => w.id),
     perWord: round.map((w) => ({ wordId: w.id, isCorrect: w.correct, responseTimeMs: w.ms, pointsAwarded: w.points })),
-    items: round.map((w) => ({ word: w.text, isCorrect: w.correct, strokes: w.strokes })),
+    items: round.map((w) => ({ word: w.text, isCorrect: w.correct, strokes: w.strokes, penSkin: P.pen })),
   };
-  const minWait = new Promise((r) => setTimeout(r, 2000 + Math.random() * 2000));
+  const minWait = new Promise((r) => setTimeout(r, kind === "quick" ? 2000 + Math.random() * 2000 : 0));
   let opp = null, items = [];
+  let stars = 0;
+  if (kind === "level") { stars = starsFor(n, round.length); recordLevel(P, levelRun.w, levelRun.l, stars); saveP(); }
   try {
+    if (kind !== "quick") throw new Error("no-opponent");
     opp = await Promise.race([net.findOpponent(lang), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 12000))]);
     net.recordRound(me).catch(() => {});
     if (opp) items = await net.loadItems(opp.id).catch(() => []);
@@ -294,15 +379,17 @@ async function finish() {
   show("result");
   $("r-title").textContent = `${x.result}: ${n}/${round.length}`;
   const vs = $("r-vs");
-  vs.textContent = opp
+  if (kind === "level") vs.textContent = `${"★".repeat(stars)}${"☆".repeat(3 - stars)}  ·  ${x.you}: ${score} ${x.pts}`;
+  else if (kind === "offline") vs.textContent = `${x.you}: ${score} ${x.pts}`;
+  else vs.textContent = opp
     ? `${x.you} ${score} – ${opp.totalScore} ${opp.nickname || ""} · ${score > opp.totalScore ? x.win : score < opp.totalScore ? x.lose : x.draw}`
     : `${x.you}: ${score} ${x.pts} · ${x.noOpp}`;
   const list = $("r-list"); list.innerHTML = "";
   const h1 = document.createElement("div"); h1.className = "who"; h1.textContent = x.mine; list.append(h1);
-  for (const w of round) addRow(list, w.strokes, w.correct, w.text, w.guess && !w.correct ? `“${w.guess}”` : "");
+  for (const w of round) addRow(list, w.strokes, w.correct, w.text, w.guess && !w.correct ? `“${w.guess}”` : "", P.pen);
   if (items.length) {
     const h2 = document.createElement("div"); h2.className = "who"; h2.textContent = `${x.theirs} · ${opp.nickname || ""}`; list.append(h2);
-    for (const it of items) addRow(list, it.strokes, it.isCorrect, it.word, "");
+    for (const it of items) addRow(list, it.strokes, it.isCorrect, it.word, "", it.penSkin);
   }
   $("result").scrollTop = 0;
 }
@@ -312,16 +399,18 @@ function confirmLeave() {
   $("dlg-text").textContent = t().leave; $("dlg-yes").textContent = t().yes; $("dlg-no").textContent = t().no;
   $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren();
   $("dialog").classList.remove("hidden");
-  $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); clearInterval(dTimer); clearInterval(gTimer); show("home"); };
+  $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); clearInterval(dTimer); clearInterval(gTimer); if (kind === "online") leaveLobby(ctx); else show("home"); };
   $("dlg-no").onclick = () => $("dialog").classList.add("hidden");
 }
 $("d-back").onclick = confirmLeave; $("g-back").onclick = confirmLeave;
-$("again").onclick = () => show("home");
+$("again").onclick = () => show(kind === "level" ? "lvmap" : "home");
 $("r-back").onclick = () => show("home");
 function refreshHome() {
   const x = t(), lv = levelFor(P.xp), floor = xpFor(lv), ceil = lv >= 100 ? floor : xpFor(lv + 1), into = P.xp - floor, span = ceil - floor;
   const rank = [...RANKS].reverse().find((r) => lv >= r[0]);
-  $("h-gold").textContent = P.gold.toLocaleString(lang); $("h-pen").textContent = x.goldLbl;
+  $("h-gold").textContent = P.gold.toLocaleString(lang);
+  try { $("h-pen").textContent = penById(P.pen)[lang]; } catch { $("h-pen").textContent = x.goldLbl; }
+  try { const fr = frameRing(frameById(P.frame)); fr.style.cssText += ";width:100%;height:100%"; $("h-avatar").replaceChildren(fr); } catch {}
   $("h-nick").textContent = P.nick; $("h-lvl").textContent = "• " + x.lvl + " " + lv;
   $("h-rank-t").textContent = rank[1] + " " + (lang === "tr" ? rank[2] : rank[3]);
   $("h-xpnext").textContent = lv >= 100 ? "MAX" : x.toNext(span - into, lv + 1);
@@ -337,10 +426,36 @@ function msg(text, extra) {
   $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren(); };
 }
 const soon = (name) => () => msg(`${name} · ${t().soon}`);
-$("tl-quick").onclick = start; $("tl-offline").onclick = start;
-for (const [id, k] of [["online", "online"], ["levels", "levels"], ["friends", "friends"], ["ach", "ach"], ["league", "league"], ["store", "store"]]) $("tl-" + id).onclick = () => soon(t().tiles[k])();
-$("tl-settings").onclick = () => {
+$("tl-online").onclick = async () => { await ensureWords(); show("onl"); };
+$("on-back").onclick = () => show("home"); $("oj-back").onclick = () => show("onl"); $("oc-back").onclick = () => show("onl");
+$("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("onj");
+$("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
+$("tl-quick").onclick = () => start("quick"); $("tl-offline").onclick = () => start("offline");
+$("tl-levels").onclick = async () => { await loadWorlds(); show("worlds"); };
+$("wl-back").onclick = () => show("home"); $("lm-back").onclick = () => show("worlds");
+$("tl-store").onclick = async () => { await loadStoreData(); show("store"); };
+$("st-back").onclick = () => show("home");
+$("tl-ach").onclick = async () => { await loadAchievements(); show("ach"); };
+$("ac-back").onclick = () => show("home");
+$("tl-league").onclick = async () => { await loadStoreData(); await loadLeague(); leagueLoaded = false; show("league"); };
+$("lg-back").onclick = () => show("home");
+$("lg-refresh").onclick = () => { leagueLoaded = false; layout(); };
+$("tl-friends").onclick = () => { show("friends"); openFriends(ctx); };
+$("fr-back").onclick = () => { stopFriends(); show("home"); };
+for (const [id, k] of []) $("tl-" + id).onclick = () => soon(t().tiles[k])();
+const soonMsg = () => msg(t().soon);
+$("tl-settings").onclick = () => show("settings");
+$("se-back").onclick = () => show("home");
+$("ak-back").onclick = () => show("settings");
+const _oldSettings = () => {
   const mk = (code, label) => { const b = document.createElement("button"); b.className = "chip" + (lang === code ? " on" : ""); b.textContent = label; b.onclick = () => { lang = code; applyLang(); $("dialog").classList.add("hidden"); $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren(); }; return b; };
   msg(t().langTitle, [mk("tr", "Türkçe"), mk("en", "English")]);
 };
+loadStoreData().then(refreshHome).catch(() => {});
+net.listen("invites", (list) => {
+  const inv = list[0]; if (!inv || current === "onw" || current === "draw" || current === "guess") return;
+  const tx = lang === "tr" ? `${inv.fromNickname} seni davet etti!` : `${inv.fromNickname} invited you!`;
+  ctx.confirm(tx, lang === "tr" ? "Katıl" : "Join", async () => { net.consumeInvite(inv.id).catch(() => {}); const r = await joinWithCode(ctx, inv.roomCode); if (r !== "ok") msg(lang === "tr" ? "Odaya katılınamadı." : "Couldn't join the room."); });
+  $("dlg-no").onclick = () => { net.consumeInvite(inv.id).catch(() => {}); $("dialog").classList.add("hidden"); };
+}).catch(() => {});
 applyLang(); show("home");
