@@ -2,43 +2,67 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no,interactive-widget=resizes-content">
+<meta name="theme-color" content="#7a3a10">
 <title>Karalak - Oyna</title>
 <link rel="stylesheet" href="style.css">
+<link rel="preload" as="image" href="img/bg_tutorial_welcome.webp">
 </head>
 <body>
-<main id="app">
+<div id="stage">
   <section id="menu" class="screen">
-    <h1>Karalak</h1>
-    <p id="tagline"></p>
-    <div class="row">
-      <button id="lang-tr" class="chip">Türkçe</button>
-      <button id="lang-en" class="chip">English</button>
+    <img class="bg" src="img/bg_tutorial_welcome.webp" alt="">
+    <div id="m-tag" class="txt ink"></div>
+    <div id="m-lang" class="chips"><button id="lang-tr" class="chip">Türkçe</button><button id="lang-en" class="chip">English</button></div>
+    <button id="start" class="pill orange"><span id="start-t"></span></button>
+    <div id="m-note" class="txt cap"></div>
+  </section>
+
+  <section id="draw" class="screen">
+    <img class="bg" src="img/bg_draw.webp" alt="">
+    <button id="d-back" class="hit" aria-label="back"></button>
+    <div id="d-prog" class="txt ink"></div>
+    <div id="d-ring" class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" class="trk"/><circle id="d-arc" cx="50" cy="50" r="44" class="arc"/></svg><span id="d-time"></span></div>
+    <div id="d-word" class="txt ink"></div>
+    <div id="d-line"></div>
+    <div id="d-canvas" class="paper"><canvas id="pad"></canvas></div>
+    <button id="t-pen" class="tool on" aria-label="pen"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
+    <button id="t-erase" class="tool" aria-label="eraser"><svg viewBox="0 0 24 24"><path d="M16.24 3.56l4.95 4.94a1.5 1.5 0 0 1 0 2.12L12.8 19H20v2H8.5l-4.7-4.7a1.5 1.5 0 0 1 0-2.12l10.3-10.3a1.5 1.5 0 0 1 2.14-.32zM6 17.4l2.1 2.1 2.9-2.9-4.2-4.2L4.9 14.3 6 17.4z"/></svg></button>
+    <button id="t-undo" class="tool" aria-label="undo"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62A7.96 7.96 0 0 1 12.5 10c3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 10.79 17.15 8 12.5 8z"/></svg></button>
+    <button id="t-clear" class="tool" aria-label="clear"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+    <button id="d-next" class="pill orange small"><span id="d-next-t"></span></button>
+  </section>
+
+  <section id="guess" class="screen">
+    <div id="g-bgtop" class="slice"></div><div id="g-bgmid" class="slice"></div><div id="g-bgbot" class="slice"></div>
+    <button id="g-back" class="hit" aria-label="back"></button>
+    <div id="g-prog" class="txt ink"></div>
+    <div id="g-xp" class="txt xp"></div>
+    <div id="g-ring" class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" class="trk"/><circle id="g-arc" cx="50" cy="50" r="44" class="arc"/></svg><span id="g-time"></span></div>
+    <div id="g-canvas" class="paper"><canvas id="view"></canvas></div>
+    <form id="g-form"><input id="g-input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send"><button id="g-ok" class="pill orange small"><span id="g-ok-t"></span></button></form>
+  </section>
+
+  <section id="search" class="screen">
+    <img class="bg" src="img/bg_qm_search.webp" alt="">
+    <img id="s-sign" src="img/qm_sign.webp" alt="">
+    <div id="s-text" class="txt sign"></div>
+    <div id="s-paper"><svg viewBox="0 0 100 100"><path id="s-doodle" pathLength="100" d=""/></svg></div>
+    <div id="s-sub" class="txt cap"></div>
+  </section>
+
+  <section id="result" class="screen scroll">
+    <div class="wood"></div>
+    <div id="r-col">
+      <div id="r-head"><img src="img/rs_head.webp" alt=""><button id="r-back" aria-label="back"></button><div id="r-title" class="txt sign"></div></div>
+      <div id="r-vs"></div>
+      <div id="r-list"></div>
+      <button id="again" class="pill orange"><span id="again-t"></span></button>
     </div>
-    <button id="start" class="big"></button>
   </section>
 
-  <section id="draw" class="screen hidden">
-    <div class="top"><span id="d-count"></span><span id="d-timer"></span></div>
-    <div id="d-word"></div>
-    <canvas id="pad"></canvas>
-    <button id="d-clear" class="chip"></button>
-  </section>
-
-  <section id="guess" class="screen hidden">
-    <div class="top"><span id="g-count"></span><span id="g-timer"></span><span id="g-score"></span></div>
-    <canvas id="view"></canvas>
-    <form id="g-form"><input id="g-input" autocomplete="off" autocapitalize="off"><button class="big" id="g-ok"></button></form>
-    <button id="g-skip" class="chip"></button>
-  </section>
-
-  <section id="result" class="screen hidden">
-    <h2 id="r-title"></h2>
-    <p id="r-vs"></p>
-    <ul id="r-list"></ul>
-    <button id="again" class="big"></button>
-  </section>
-</main>
+  <div id="dialog" class="hidden"><div class="box"><div id="dlg-text"></div><div class="row"><button id="dlg-no" class="pill cream small"></button><button id="dlg-yes" class="pill orange small"></button></div></div></div>
+</div>
 <script type="module" src="app.js"></script>
 </body>
 </html>
