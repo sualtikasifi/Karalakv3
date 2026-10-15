@@ -94,7 +94,7 @@ print(1 if ok >= 2 else 0)
 PY
 }
 
-for PEN in CLASSIC EMBER PRISM STORM SPECTER LION AURUM COSMOS; do
+for PEN in CLASSIC SPECTER COSMOS SPECTER; do
   echo "=== $PEN ==="
   adb shell am force-stop $PKG
   sleep 2
@@ -117,6 +117,7 @@ for PEN in CLASSIC EMBER PRISM STORM SPECTER LION AURUM COSMOS; do
   sleep 9
   sleep 3
   shot ${PEN}_01_game
+  sleep 2
   adb shell input swipe 200 800 800 1000 700
   adb shell input swipe 800 1000 300 1250 700
   adb shell input swipe 300 1250 850 1500 700

@@ -401,7 +401,9 @@ private fun DrawScope.sparkles(g: PenGeometry, w: Float, time: Float, every: Int
             val side = if (hash01(i, salt + 1) < 0.5f) 1f else -1f
             val off = w * (0.7f + 0.9f * hash01(i, salt + 2)) * side
             val c = Offset(g.xs[i] - g.dys[i] * off, g.ys[i] + g.dxs[i] * off)
-            drawSparkle(c, w * (0.45f + 0.5f * hash01(i, salt + 3)) * tw, tw)
+            val r = w * (0.7f + 0.7f * hash01(i, salt + 3)) * tw
+            drawCircle(Color.White.copy(alpha = 0.3f * tw), radius = r * 0.9f, center = c)
+            drawSparkle(c, r, tw)
         }
         i += every
     }
