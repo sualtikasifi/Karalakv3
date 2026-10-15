@@ -11,20 +11,28 @@ const T = {
   tr: { tag: "Çiz, ezberle,\ntahmin et!", start: "OYNA", note: "Android ve tarayıcı oyuncularıyla eşleş", next: "Bitir", ok: "Gönder",
         guess: "Tahmin et", result: "Sonuç", searching: "Rakip aranıyor…", searchSub: "Birisi senin gibi çizerken bulunuyor", again: "TEKRAR OYNA", noOpp: "Şu an rakip bulunamadı",
         you: "Sen", win: "Kazandın!", lose: "Kaybettin", draw: "Berabere", leave: "Oyundan çıkılsın mı?", yes: "Çık", no: "Kal",
-        mine: "Çizimlerin", theirs: "Rakibin çizimleri", pts: "puan", file: "words_tr.json", ph: "Cevabın…" },
+        mine: "Çizimlerin", tiles: { online: "Arkadaşınla Yarış", quick: "Hızlı Eşleş", offline: "Çevrimdışı Oyna", levels: "Bölümler", friends: "Arkadaşlar", ach: "Başarımlar", league: "Aylık Lig", store: "Mağaza", settings: "Ayarlar" }, goldLbl: "Klasik", adGold: "+500 Altın", daily: "Günün Meydan Okuması", adChest: "Ücretsiz Kasa", lvl: "Seviye", toNext: (n, l) => `Sv. ${l} için ${n} XP`, soon: "Çok yakında", appOnly: "Uygulamada", ok: "Tamam", langTitle: "Dil",  theirs: "Rakibin çizimleri", pts: "puan", file: "words_tr.json", ph: "Cevabın…" },
   en: { tag: "Draw, memorize,\nguess!", start: "PLAY", note: "Match with Android and browser players", next: "Done", ok: "Send",
         guess: "Guess", result: "Result", searching: "Finding an opponent…", searchSub: "Looking for someone who draws like you", again: "PLAY AGAIN", noOpp: "No opponent found right now",
         you: "You", win: "You win!", lose: "You lose", draw: "Draw", leave: "Leave the game?", yes: "Leave", no: "Stay",
-        mine: "Your drawings", theirs: "Opponent's drawings", pts: "pts", file: "words_en.json", ph: "Your answer…" },
+        mine: "Your drawings", tiles: { online: "Race a Friend", quick: "Quick Match", offline: "Play Offline", levels: "Levels", friends: "Friends", ach: "Achievements", league: "Monthly League", store: "Store", settings: "Settings" }, goldLbl: "Classic", adGold: "+500 Gold", daily: "Daily Challenge", adChest: "Free Chest", lvl: "Level", toNext: (n, l) => `${n} XP to Lv. ${l}`, soon: "Coming soon", appOnly: "In the app", ok: "OK", langTitle: "Language",  theirs: "Opponent's drawings", pts: "pts", file: "words_en.json", ph: "Your answer…" },
 };
 const $ = (id) => document.getElementById(id);
 let lang = localStorage.getItem("lang") || ((navigator.language || "tr").startsWith("tr") ? "tr" : "en");
-let words = [], round = [], idx = 0, current = "menu", u = 1;
+let words = [], round = [], idx = 0, current = "home", u = 1;
 let dTimer = null, gTimer = null, tool = "pen", score = 0, shownAt = 0;
 const t = () => T[lang];
 
 // ---------- layout (art units: the paintings are 841 wide) ----------
 const stage = $("stage");
+// ---------- player (web-local progress; the account's level comes from Google sign-in later) ----------
+const RANKS = [[1, "✏️", "Karalamacı", "Scribbler"], [20, "🖊️", "Çırak", "Apprentice"], [40, "🖌️", "Ressam", "Painter"], [60, "🎨", "Usta Ressam", "Master Painter"], [80, "🖼️", "Sanatçı", "Artist"], [100, "👑", "Büyük Usta", "Grand Master"]];
+const xpFor = (lv) => { const n = Math.max(0, lv - 1); return 25 * n * n + 75 * n; };
+const levelFor = (xp) => { let l = 1; while (l < 100 && xp >= xpFor(l + 1)) l++; return l; };
+let P = { nick: "", xp: 0, gold: 0 };
+try { P = { ...P, ...JSON.parse(localStorage.getItem("player") || "{}") }; } catch {}
+const saveP = () => { try { localStorage.setItem("player", JSON.stringify(P)); } catch {} };
+if (!P.nick) { P.nick = "Karalak" + Math.floor(1000 + Math.random() * 9000); saveP(); }
 function place(el, x, y, w, h) {
   const s = el.style;
   s.left = x * u + "px"; s.top = y * u + "px";
@@ -41,11 +49,24 @@ function layout() {
   u = W / ART_W;
   s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + "px"; s.top = (vh - H) / 2 + "px";
   stage.style.setProperty("--u", u + "px");
-  if (current === "menu") {
-    place($("m-tag"), 130, 800, 580, 170);
-    place($("m-lang"), 130, 1010, 580, 76);
-    place($("start"), 125, 1176, 591, 134);
-    place($("m-note"), 200, 1337, 441, 78);
+  if (current === "home") {
+    place($("h-gold"), 112, 270, 126, 44);
+    place($("h-pen"), 350, 266, 134, 54);
+    place($("h-avatar"), 66, 358, 138, 142);
+    const f = $("h-frame").style, av = $("h-av").style, fw = 138 * u, d = 0.764;
+    f.left = "0"; f.top = (142 - 138) / 2 * u + "px"; f.width = fw + "px"; f.height = fw + "px";
+    const ps = fw * d; av.width = ps + "px"; av.height = ps + "px"; av.left = (fw - ps) / 2 + "px"; av.top = (142 * u - ps) / 2 + "px"; av.borderRadius = "50%";
+    place($("h-name"), 224, 357, 556, 42);
+    place($("h-rank"), 222, 400, 266, 47);
+    place($("h-xpnext"), 496, 406, 284, 40);
+    place($("h-bar"), 222, 452, 550, 40);
+    place($("h-veil-gold"), 34, 538, 196, 216); place($("h-veil-daily"), 236, 538, 372, 218); place($("h-veil-chest"), 616, 538, 192, 216);
+    place($("h-ttl-gold"), 40, 648, 186, 50); place($("h-ttl-daily"), 384, 546, 214, 80); place($("h-ttl-chest"), 634, 640, 162, 66);
+    place($("h-soon-gold"), 56, 704, 154, 36); place($("h-soon-daily"), 300, 690, 244, 40); place($("h-soon-chest"), 640, 704, 150, 36);
+    const T = [["online", 30, 776, 258, 236, 50, 918, 274, 1002], ["quick", 294, 776, 258, 236, 330, 940, 520, 986], ["offline", 558, 776, 258, 236, 578, 918, 798, 1002],
+      ["levels", 30, 1018, 258, 186, 50, 1142, 268, 1188], ["friends", 294, 1018, 258, 186, 320, 1142, 526, 1188], ["ach", 558, 1018, 258, 186, 584, 1142, 792, 1188],
+      ["league", 30, 1210, 258, 188, 50, 1332, 268, 1380], ["store", 294, 1210, 258, 188, 340, 1332, 510, 1380], ["settings", 558, 1210, 258, 188, 590, 1332, 786, 1380]];
+    for (const [id, x, y, w, h, lx0, ly0, lx1, ly1] of T) { place($("tl-" + id), x, y, w, h); place($("tx-" + id), lx0, ly0, lx1 - lx0, ly1 - ly0); }
   } else if (current === "draw") {
     place($("d-back"), 28, 82, 99, 96);
     place($("d-prog"), 152, 88, 296, 82);
@@ -117,17 +138,13 @@ function startDoodles() {
 function applyLang() {
   const x = t();
   document.documentElement.lang = lang;
-  $("m-tag").textContent = x.tag; $("m-tag").style.whiteSpace = "pre-line";
-  $("start-t").textContent = x.start; $("m-note").textContent = x.note;
   $("d-next-t").textContent = x.next; $("g-ok-t").textContent = x.ok;
   $("s-text").textContent = x.searching; $("s-sub").textContent = x.searchSub; $("again-t").textContent = x.again;
   $("dlg-text").textContent = x.leave; $("dlg-yes").textContent = x.yes; $("dlg-no").textContent = x.no;
   $("g-input").placeholder = x.ph;
-  $("lang-tr").classList.toggle("on", lang === "tr"); $("lang-en").classList.toggle("on", lang === "en");
   try { localStorage.setItem("lang", lang); } catch {}
+  refreshHome();
 }
-$("lang-tr").onclick = () => { lang = "tr"; applyLang(); };
-$("lang-en").onclick = () => { lang = "en"; applyLang(); };
 
 // ---------- drawing ----------
 function fitCanvas(c) {
@@ -260,6 +277,7 @@ async function finish() {
   const x = t();
   show("search");
   const n = round.filter((w) => w.correct).length;
+  P.xp += score; saveP(); refreshHome();
   const me = {
     language: lang, nickname: "Web", wordIds: round.map((w) => w.id),
     perWord: round.map((w) => ({ wordId: w.id, isCorrect: w.correct, responseTimeMs: w.ms, pointsAwarded: w.points })),
@@ -291,12 +309,38 @@ async function finish() {
 
 // ---------- navigation ----------
 function confirmLeave() {
+  $("dlg-text").textContent = t().leave; $("dlg-yes").textContent = t().yes; $("dlg-no").textContent = t().no;
+  $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren();
   $("dialog").classList.remove("hidden");
-  $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); clearInterval(dTimer); clearInterval(gTimer); show("menu"); };
+  $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); clearInterval(dTimer); clearInterval(gTimer); show("home"); };
   $("dlg-no").onclick = () => $("dialog").classList.add("hidden");
 }
 $("d-back").onclick = confirmLeave; $("g-back").onclick = confirmLeave;
-$("start").onclick = start;
-$("again").onclick = () => show("menu");
-$("r-back").onclick = () => show("menu");
-applyLang(); show("menu");
+$("again").onclick = () => show("home");
+$("r-back").onclick = () => show("home");
+function refreshHome() {
+  const x = t(), lv = levelFor(P.xp), floor = xpFor(lv), ceil = lv >= 100 ? floor : xpFor(lv + 1), into = P.xp - floor, span = ceil - floor;
+  const rank = [...RANKS].reverse().find((r) => lv >= r[0]);
+  $("h-gold").textContent = P.gold.toLocaleString(lang); $("h-pen").textContent = x.goldLbl;
+  $("h-nick").textContent = P.nick; $("h-lvl").textContent = "• " + x.lvl + " " + lv;
+  $("h-rank-t").textContent = rank[1] + " " + (lang === "tr" ? rank[2] : rank[3]);
+  $("h-xpnext").textContent = lv >= 100 ? "MAX" : x.toNext(span - into, lv + 1);
+  $("h-fill").style.width = (span ? into / span * 100 : 100) + "%"; $("h-barlabel").textContent = `${into} / ${span} XP`;
+  for (const k of Object.keys(x.tiles)) $("tx-" + k).textContent = x.tiles[k];
+  for (const k of ["gold", "daily", "chest"]) $("h-soon-" + k).textContent = x.appOnly;
+  $("h-ttl-gold").textContent = x.adGold; $("h-ttl-daily").textContent = x.daily; $("h-ttl-chest").textContent = x.adChest;
+}
+function msg(text, extra) {
+  $("dlg-text").textContent = text; $("dlg-extra").replaceChildren(...(extra || []));
+  $("dlg-no").style.display = "none"; $("dlg-yes").textContent = t().ok;
+  $("dialog").classList.remove("hidden");
+  $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren(); };
+}
+const soon = (name) => () => msg(`${name} · ${t().soon}`);
+$("tl-quick").onclick = start; $("tl-offline").onclick = start;
+for (const [id, k] of [["online", "online"], ["levels", "levels"], ["friends", "friends"], ["ach", "ach"], ["league", "league"], ["store", "store"]]) $("tl-" + id).onclick = () => soon(t().tiles[k])();
+$("tl-settings").onclick = () => {
+  const mk = (code, label) => { const b = document.createElement("button"); b.className = "chip" + (lang === code ? " on" : ""); b.textContent = label; b.onclick = () => { lang = code; applyLang(); $("dialog").classList.add("hidden"); $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren(); }; return b; };
+  msg(t().langTitle, [mk("tr", "Türkçe"), mk("en", "English")]);
+};
+applyLang(); show("home");

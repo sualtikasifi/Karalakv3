@@ -76,3 +76,23 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #s-doodle{fill:none;stroke:#2a6fd6;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:100;stroke-dashoffset:100;animation:dd 2.2s ease-in-out infinite}
 @keyframes dd{0%{stroke-dashoffset:100;opacity:1}65%{stroke-dashoffset:0;opacity:1}90%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
 #r-back{position:absolute;left:calc(var(--u)*20);top:calc(var(--u)*20);width:calc(var(--u)*150);height:calc(var(--u)*150)}
+
+.txt.lt{color:#fff;-webkit-text-stroke:calc(var(--u)*6) #3a1e08;paint-order:stroke fill;text-shadow:0 calc(var(--u)*3) 0 #3a1e08;font-size:calc(var(--u)*31)}
+.txt.left{justify-content:flex-start;gap:calc(var(--u)*14);align-items:baseline;white-space:nowrap}
+.txt.right{justify-content:flex-end;font-size:calc(var(--u)*29);font-weight:600;color:#7a5a40}
+#h-name{font-size:calc(var(--u)*36)}
+#h-name small{font-size:calc(var(--u)*26);font-weight:600;color:#7a5a40}
+#h-rank{justify-content:flex-start}
+#h-rank span{background:linear-gradient(90deg,#8a62f0,#5b3fc4);color:#fff;border-radius:99px;padding:calc(var(--u)*4) calc(var(--u)*22);font-size:calc(var(--u)*31);white-space:nowrap}
+#h-avatar{position:absolute}
+#h-avatar img{position:absolute;display:block}
+#h-bar{border-radius:99px;background:#3a2a22;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 2px 0 #0006}
+#h-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#ffd25a,#f2a100);border-radius:99px;transition:width .8s}
+#h-barlabel{position:relative;color:#fff;font-size:calc(var(--u)*26);-webkit-text-stroke:calc(var(--u)*4) #3a1e08;paint-order:stroke fill}
+.tile{border-radius:calc(var(--u)*30);transition:background .1s,transform .1s}
+.tile:active{background:#0003;transform:scale(.97)}
+.veil{background:#eadbc470;border-radius:calc(var(--u)*30)}
+.txt.cap2{color:#3a2a22;font-size:calc(var(--u)*21);font-weight:600;background:#fff6e2e0;border-radius:99px;padding:0 calc(var(--u)*10)}
+#dlg-extra{margin-top:calc(var(--u)*26);display:flex;gap:calc(var(--u)*16);justify-content:center}
+#dlg-extra .chip{height:calc(var(--u)*80)}
+#h-ttl-gold,#h-ttl-daily,#h-ttl-chest{font-size:calc(var(--u)*30);line-height:1}
