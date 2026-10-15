@@ -1,5 +1,6 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
+import { todayEpoch, msToMidnight, dailyWords, state as dailyState, record as dailyRecord } from "./daily.js";
 import { drawFxStroke } from "./penfx.js";
 import { openPenPicker, openFramePicker, openNickEdit } from "./picker.js";
 import { setPrefs, sfx, vibrate, initAudio, syncMusic } from "./audio.js";
@@ -22,11 +23,11 @@ const T = {
   tr: { tag: "Çiz, ezberle,\ntahmin et!", start: "OYNA", note: "Android ve tarayıcı oyuncularıyla eşleş", next: "Bitir", ok: "Gönder",
         guess: "Tahmin et", result: "Sonuç", timeJ: "+Süre", hintT: "İpucu", firstT: "İlk harf", countT: "Harf sayısı", skipT: "Geç", searching: "Rakip aranıyor…", searchSub: "Birisi senin gibi çizerken bulunuyor", again: "TEKRAR OYNA", noOpp: "Şu an rakip bulunamadı",
         you: "Sen", win: "Kazandın!", lose: "Kaybettin", draw: "Berabere", leaveQ: "Odadan ayrılmak istiyor musun?", leave: "Oyundan çıkılsın mı?", yes: "Çık", no: "Kal",
-        mine: "Çizimlerin", tiles: { online: "Arkadaşınla Yarış", quick: "Hızlı Eşleş", offline: "Çevrimdışı Oyna", levels: "Bölümler", friends: "Arkadaşlar", ach: "Başarımlar", league: "Aylık Lig", store: "Mağaza", settings: "Ayarlar" }, goldLbl: "Klasik", adGold: "+500 Altın", daily: "Günün Meydan Okuması", adChest: "Ücretsiz Kasa", lvl: "Seviye", toNext: (n, l) => `Sv. ${l} için ${n} XP`, soon: "Çok yakında", appOnly: "Uygulamada", ok: "Tamam", langTitle: "Dil",  theirs: "Rakibin çizimleri", pts: "puan", file: "words_tr.json", ph: "Cevabın…" },
+        mine: "Çizimlerin", tiles: { online: "Arkadaşınla Yarış", quick: "Hızlı Eşleş", offline: "Çevrimdışı Oyna", levels: "Bölümler", friends: "Arkadaşlar", ach: "Başarımlar", league: "Aylık Lig", store: "Mağaza", settings: "Ayarlar" }, goldLbl: "Klasik", adGold: "+500 Altın", daily: "Günün Meydan Okuması", adChest: "Ücretsiz Kasa", dailyPlay: "ŞİMDİ OYNA", dailyDone: "Bugünkü meydan okumayı bitirdin!", lvl: "Seviye", toNext: (n, l) => `Sv. ${l} için ${n} XP`, soon: "Çok yakında", appOnly: "Uygulamada", ok: "Tamam", langTitle: "Dil",  theirs: "Rakibin çizimleri", pts: "puan", file: "words_tr.json", ph: "Cevabın…" },
   en: { tag: "Draw, memorize,\nguess!", start: "PLAY", note: "Match with Android and browser players", next: "Done", ok: "Send",
         guess: "Guess", result: "Result", timeJ: "+Time", hintT: "Hint", firstT: "First letter", countT: "Letters", skipT: "Skip", searching: "Finding an opponent…", searchSub: "Looking for someone who draws like you", again: "PLAY AGAIN", noOpp: "No opponent found right now",
         you: "You", win: "You win!", lose: "You lose", draw: "Draw", leaveQ: "Leave the room?", leave: "Leave the game?", yes: "Leave", no: "Stay",
-        mine: "Your drawings", tiles: { online: "Race a Friend", quick: "Quick Match", offline: "Play Offline", levels: "Levels", friends: "Friends", ach: "Achievements", league: "Monthly League", store: "Store", settings: "Settings" }, goldLbl: "Classic", adGold: "+500 Gold", daily: "Daily Challenge", adChest: "Free Chest", lvl: "Level", toNext: (n, l) => `${n} XP to Lv. ${l}`, soon: "Coming soon", appOnly: "In the app", ok: "OK", langTitle: "Language",  theirs: "Opponent's drawings", pts: "pts", file: "words_en.json", ph: "Your answer…" },
+        mine: "Your drawings", tiles: { online: "Race a Friend", quick: "Quick Match", offline: "Play Offline", levels: "Levels", friends: "Friends", ach: "Achievements", league: "Monthly League", store: "Store", settings: "Settings" }, goldLbl: "Classic", adGold: "+500 Gold", daily: "Daily Challenge", adChest: "Free Chest", dailyPlay: "PLAY NOW", dailyDone: "You finished today's challenge!", lvl: "Level", toNext: (n, l) => `${n} XP to Lv. ${l}`, soon: "Coming soon", appOnly: "In the app", ok: "OK", langTitle: "Language",  theirs: "Opponent's drawings", pts: "pts", file: "words_en.json", ph: "Your answer…" },
 };
 const $ = (id) => document.getElementById(id);
 let lang = localStorage.getItem("lang") || ((navigator.language || "tr").startsWith("tr") ? "tr" : "en");
@@ -60,7 +61,7 @@ const ctx = {
 const RANKS = [[1, "✏️", "Karalamacı", "Scribbler"], [20, "🖊️", "Çırak", "Apprentice"], [40, "🖌️", "Ressam", "Painter"], [60, "🎨", "Usta Ressam", "Master Painter"], [80, "🖼️", "Sanatçı", "Artist"], [100, "👑", "Büyük Usta", "Grand Master"]];
 const xpFor = (lv) => { const n = Math.max(0, lv - 1); return 25 * n * n + 75 * n; };
 const levelFor = (xp) => { let l = 1; while (l < 100 && xp >= xpFor(l + 1)) l++; return l; };
-let P = { nick: "", xp: 0, gold: 0, owned: [], pen: "CLASSIC", frame: "SCRIBBLER", jokers: {}, claimed: [], levels: {}, stats: { games: 0, score: 0, words: 0, perfect: 0, wins: 0, streak: 0, best: 0, last: "" } };
+let P = { nick: "", xp: 0, gold: 0, owned: [], pen: "CLASSIC", frame: "SCRIBBLER", jokers: {}, claimed: [], daily: { last: -1, streak: 0, best: 0, result: null }, levels: {}, stats: { games: 0, score: 0, words: 0, perfect: 0, wins: 0, streak: 0, best: 0, last: "" } };
 try { P = { ...P, ...JSON.parse(localStorage.getItem("player") || "{}") }; } catch {}
 P.prefs = P.prefs || { s0: true, s1: true, s2: true, s3: false }; setPrefs(() => P.prefs); initAudio();
 const saveP = () => { try { localStorage.setItem("player", JSON.stringify(P)); } catch {} };
@@ -89,9 +90,10 @@ function layout() {
     place($("h-rank"), 222, 400, 266, 47);
     place($("h-xpnext"), 496, 406, 284, 40);
     place($("h-bar"), 222, 452, 550, 40);
-    place($("h-veil-gold"), 34, 538, 196, 216); place($("h-veil-daily"), 236, 538, 372, 218); place($("h-veil-chest"), 616, 538, 192, 216);
+    place($("h-veil-gold"), 34, 538, 196, 216); place($("h-veil-chest"), 616, 538, 192, 216);
+    place($("h-dcard"), 236, 538, 372, 218); place($("h-dmul"), 256, 630, 104, 46); place($("h-dpips"), 394, 628, 200, 48); place($("h-dplay"), 264, 688, 332, 56); place($("h-dcount"), 262, 692, 142, 48);
     place($("h-ttl-gold"), 40, 648, 186, 50); place($("h-ttl-daily"), 384, 546, 214, 80); place($("h-ttl-chest"), 634, 640, 162, 66);
-    place($("h-soon-gold"), 56, 704, 154, 36); place($("h-soon-daily"), 300, 690, 244, 40); place($("h-soon-chest"), 640, 704, 150, 36);
+    place($("h-soon-gold"), 56, 704, 154, 36); place($("h-soon-chest"), 640, 704, 150, 36);
     const T = [["online", 30, 776, 258, 236, 50, 918, 274, 1002], ["quick", 294, 776, 258, 236, 330, 940, 520, 986], ["offline", 558, 776, 258, 236, 578, 918, 798, 1002],
       ["levels", 30, 1018, 258, 186, 50, 1142, 268, 1188], ["friends", 294, 1018, 258, 186, 320, 1142, 526, 1188], ["ach", 558, 1018, 258, 186, 584, 1142, 792, 1188],
       ["league", 30, 1210, 258, 188, 50, 1332, 268, 1380], ["store", 294, 1210, 258, 188, 340, 1332, 510, 1380], ["settings", 558, 1210, 258, 188, 590, 1332, 786, 1380]];
@@ -313,6 +315,11 @@ async function startLevel(w, l) {
   for (const [d, n] of Object.entries(mix)) picks.push(...[...words].filter((x) => x.difficulty === d).sort(() => Math.random() - 0.5).slice(0, n));
   begin(picks.sort(() => Math.random() - 0.5));
 }
+async function startDaily() {
+  if (dailyState(P).done) return;
+  await ensureWords(); kind = "daily"; levelRun = null; relaxed = false;
+  begin(dailyWords(words, todayEpoch(), lang));
+}
 async function start(k = "quick") {
   levelRun = null; kind = k; relaxed = false;
   if (words.lang !== lang) { words = await (await fetch(t().file)).json(); words.lang = lang; }
@@ -418,7 +425,8 @@ async function finish() {
   };
   const minWait = new Promise((r) => setTimeout(r, kind === "quick" ? 2000 + Math.random() * 2000 : 0));
   let opp = null, items = [];
-  let stars = 0;
+  let stars = 0, dailyRes = null;
+  if (kind === "daily") { dailyRes = dailyRecord(P, round.map((w) => w.correct), score); if (dailyRes) { P.xp += dailyRes.xp - score; P.periodXp += dailyRes.xp - score; saveP(); refreshHome(); } }
   if (kind === "level") { stars = starsFor(n, round.length); recordLevel(P, levelRun.w, levelRun.l, stars); saveP(); }
   try {
     if (kind !== "quick") throw new Error("no-opponent");
@@ -431,6 +439,7 @@ async function finish() {
   $("r-title").textContent = `${x.result}: ${n}/${round.length}`;
   const vs = $("r-vs");
   if (kind === "level") vs.textContent = `${"★".repeat(stars)}${"☆".repeat(3 - stars)}  ·  ${x.you}: ${score} ${x.pts}`;
+  else if (kind === "daily") vs.textContent = dailyRes ? `🔥 ${dailyRes.streak}  ·  +${dailyRes.xp} XP` : x.dailyDone;
   else if (kind === "offline") vs.textContent = `${x.you}: ${score} ${x.pts}`;
   else vs.textContent = opp
     ? `${x.you} ${score} – ${opp.totalScore} ${opp.nickname || ""} · ${score > opp.totalScore ? x.win : score < opp.totalScore ? x.lose : x.draw}`
@@ -456,6 +465,17 @@ function confirmLeave() {
 $("d-back").onclick = confirmLeave; $("g-back").onclick = confirmLeave;
 $("again").onclick = () => show(kind === "level" ? "lvmap" : "home");
 $("r-back").onclick = () => show("home");
+let dailyTick = null;
+function refreshDaily() {
+  const s = dailyState(P), x = t();
+  $("h-dmul").textContent = `🔥 ${s.next}x`;
+  $("h-dpips").innerHTML = Array.from({ length: 5 }, (_, i) => { const f = s.result ? s.result.flags[i] : undefined; return `<i class="${f === true ? "ok" : f === false ? "no" : ""}">${f === true ? "✓" : f === false ? "✗" : ""}</i>`; }).join("");
+  $("h-dcard").style.filter = s.done ? "none" : "hue-rotate(135deg)";
+  $("h-dplay").style.display = s.done ? "none" : ""; $("h-dplay").textContent = x.dailyPlay + " ▸";
+  $("h-dcount").style.display = s.done ? "" : "none";
+  const tick = () => { const ms = msToMidnight(), z = (n) => String(Math.floor(n)).padStart(2, "0"); $("h-dcount").textContent = `${z(ms / 3600000)}:${z(ms % 3600000 / 60000)}:${z(ms % 60000 / 1000)}`; };
+  clearInterval(dailyTick); if (s.done) { tick(); dailyTick = setInterval(tick, 1000); }
+}
 function refreshHome() {
   const x = t(), lv = levelFor(P.xp), floor = xpFor(lv), ceil = lv >= 100 ? floor : xpFor(lv + 1), into = P.xp - floor, span = ceil - floor;
   const rank = [...RANKS].reverse().find((r) => lv >= r[0]);
@@ -467,7 +487,8 @@ function refreshHome() {
   $("h-xpnext").textContent = lv >= 100 ? "MAX" : x.toNext(span - into, lv + 1);
   $("h-fill").style.width = (span ? into / span * 100 : 100) + "%"; $("h-barlabel").textContent = `${into} / ${span} XP`;
   for (const k of Object.keys(x.tiles)) $("tx-" + k).textContent = x.tiles[k];
-  for (const k of ["gold", "daily", "chest"]) $("h-soon-" + k).textContent = x.appOnly;
+  for (const k of ["gold", "chest"]) $("h-soon-" + k).textContent = x.appOnly;
+  refreshDaily();
   $("h-ttl-gold").textContent = x.adGold; $("h-ttl-daily").textContent = x.daily; $("h-ttl-chest").textContent = x.adChest;
 }
 function msg(text, extra) {
@@ -482,6 +503,7 @@ $("on-back").onclick = () => show("home"); $("oj-back").onclick = () => show("on
 $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("onj");
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
 $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => rankInfo();
+$("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
 $("tl-quick").onclick = () => start("quick"); $("tl-offline").onclick = () => start("offline");
 $("tl-levels").onclick = async () => { await loadWorlds(); show("worlds"); };
 $("wl-back").onclick = () => show("home"); $("lm-back").onclick = () => show("worlds");
