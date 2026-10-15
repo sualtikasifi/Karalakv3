@@ -158,8 +158,9 @@ internal fun DrawScope.drawFittedStroke(
     penSkin: PenSkin?,
     strokeColor: Color,
     strokeWidthPx: Float,
-    startDistance: Float
-): Float = drawPenStroke(stroke.map(fit::map), penSkin, strokeColor, fittedStrokeWidth(strokeWidthPx, fit.scale), startDistance)
+    startDistance: Float,
+    timeSec: Float = 0f
+): Float = drawPenStroke(stroke.map(fit::map), penSkin, strokeColor, fittedStrokeWidth(strokeWidthPx, fit.scale), startDistance, timeSec)
 
 /**
  * The pen width scaled along with the drawing. A fixed width turned a drawing shrunk into a small thumbnail into a
@@ -228,6 +229,18 @@ fun DrawableCanvas(
         liveStrokes.mapNotNull { stroke -> stroke.toRenderable() }
     }
     val isGradientPen = penSkin?.isGradient == true
+    // A premium pen (see PenEffect) is built once per finished stroke and only re-coloured each frame — the clock
+    // is read in the draw scope below, so nothing recomposes.
+    val isPremiumPen = penSkin?.effect?.isPremium == true
+    val penTime = rememberPenTime(isPremiumPen)
+    val committedGeometry = remember(liveStrokes, isPremiumPen) {
+        if (!isPremiumPen) emptyList() else {
+            var distance = 0f
+            liveStrokes.mapNotNull { stroke ->
+                buildPenGeometry(stroke.map { Offset(it.x, it.y) }, distance)?.also { distance = it.endDistance }
+            }
+        }
+    }
 
     Canvas(
         modifier = modifier
@@ -299,7 +312,15 @@ fun DrawableCanvas(
         // (or replayed from an opponent's older client) can still carry an
         // out-of-bounds point, and this keeps it from drawing past the frame.
         clipRect {
-            if (isGradientPen) {
+            if (isPremiumPen && penSkin != null) {
+                val time = penTime.value
+                val width = strokeWidthPx * PREMIUM_PEN_WIDTH
+                committedGeometry.forEach { drawPenGeometry(it, penSkin, width, time) }
+                if (inProgress.isNotEmpty()) {
+                    buildPenGeometry(inProgress.toList(), committedGeometry.lastOrNull()?.endDistance ?: 0f)
+                        ?.let { drawPenGeometry(it, penSkin, width, time) }
+                }
+            } else if (isGradientPen) {
                 // Walked point-by-point in drawing order so the colour keeps
                 // tracking total ink used across every committed stroke, then
                 // continues into the one still being drawn.
