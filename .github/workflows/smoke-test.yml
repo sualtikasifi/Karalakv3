@@ -19,6 +19,7 @@ on:
         options:
           - smoke.sh
           - runes.sh
+          - frames.sh
           - tutorial.sh
           - worlds.sh
           - store.sh
