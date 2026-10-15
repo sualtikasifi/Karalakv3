@@ -365,3 +365,29 @@ export async function listenDuels(cb) {
 export async function submitDuelResult(id, opponentScore, opponentCorrectCount) { const { fs, db } = await init(); await fs.updateDoc(fs.doc(db, "duels", id), { status: "COMPLETE", opponentScore, opponentCorrectCount, completedAt: Date.now(), seenByChallenger: false }); }
 export async function markDuelSeen(id) { const { fs, db } = await init(); await fs.updateDoc(fs.doc(db, "duels", id), { seenByChallenger: true }); }
 export async function deleteDuel(id) { const { fs, db } = await init(); await fs.deleteDoc(fs.doc(db, "duels", id)); }
+
+// ================= Cloud save: users/{uid}/backup/state (BackupRepositoryImpl) =================
+export async function readBackup() {
+  const { fs, db, auth } = await init(), s = await fs.getDoc(fs.doc(db, "users", auth.currentUser.uid, "backup", "state"));
+  return s.exists() ? s.data() : null;
+}
+export async function writeBackup(snap) {
+  const { fs, db, auth } = await init();
+  await fs.setDoc(fs.doc(db, "users", auth.currentUser.uid, "backup", "state"), { ...snap, sealedAt: fs.serverTimestamp() }, { merge: true });
+}
+
+// AccountDeletionRepositoryImpl: the user's documents, then the sign-in itself. Throws {code:"auth/requires-recent-login"} when a fresh sign-in is needed.
+export async function deleteAccount() {
+  const { fs, db, auth } = await init(), user = auth.currentUser, uid = user.uid, userDoc = fs.doc(db, "users", uid);
+  const safe = async (f) => { try { await f(); } catch {} };
+  for (const name of ["backup", "friends", "invites", "blockedUsers", "inviteCooldowns", "private"]) {
+    await safe(async () => { for (const d of (await fs.getDocs(fs.collection(db, "users", uid, name))).docs) await safe(() => fs.deleteDoc(d.ref)); });
+  }
+  await safe(async () => { const code = (await fs.getDoc(userDoc)).data()?.friendCode; if (code) await fs.deleteDoc(fs.doc(db, "friendCodes", code)); });
+  await safe(async () => { for (const d of (await fs.getDocs(fs.query(fs.collection(db, "usernames"), fs.where("uid", "==", uid)))).docs) await fs.deleteDoc(d.ref); });
+  await safe(async () => { for (const d of (await fs.getDocs(fs.query(fs.collection(db, "ghostRuns"), fs.where("uid", "==", uid)))).docs) { await safe(() => fs.deleteDoc(d.ref)); await safe(() => fs.deleteDoc(fs.doc(db, "ghostRunItems", d.id))); } });
+  await safe(() => fs.deleteDoc(userDoc));
+  const m = await import(`${CDN}/firebase-auth.js`);
+  await m.deleteUser(user);
+  await m.signInAnonymously(auth);
+}

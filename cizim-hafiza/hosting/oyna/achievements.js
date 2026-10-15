@@ -23,6 +23,7 @@ export function recordRound(P, { score, words, perfect }) {
 }
 /** How many achievements are unlocked right now: the difference across a round is the new ones (gold per new one). */
 export const unlockedCount = (P) => list.filter((a) => value(P, a.m) >= a.t).length;
+export const unlockedIds = (P) => list.filter((a) => value(P, a.m) >= a.t).map((a) => a.id);
 export function claimableCount(P) { return list.filter((a) => value(P, a.m) >= a.t && !P.claimed.includes(a.id)).length; }
 
 export function layoutAchievements(c) {

@@ -26,7 +26,7 @@ Amaç: iPhone kullanıcıları tarayıcıdan oynasın; web, Android uygulamasıy
 2. Mağaza: Kalemler / Çerçeveler sekmeleri, satın alma pencereleri, kalem/çerçeve seçici (Android'deki AppWindowDialog görünümü)
 3. Seviye haritası (kaydırma, numaralı kilitli düğümler, alt panel), Dünyalar
 4. Arkadaşlar: davetler (Düellolar yapıldı: duel.js)
-5. Hesap (Google girişi, bulut yedeği: users/{uid}/backup/state — plausibleBackup kuralına uygun, sealedAt ile)
+5. Hesap: bulut yedeği, çıkış, hesap silme yapıldı (sync.js) — gerçek Google girişiyle denenmedi
 6. Sonuç ekranları (Hızlı Eşleş, günlük, bölüm), çevrimiçi bekleme odası/sıralama karşılaştırması
 7. Ayarlar (sesler, bildirimler, kupon, dil, eğitim, sorun bildir) ve Eğitim ekranları
 8. Ana ekran: Günün Meydan Okuması kartı, ücretsiz altın/kasa (web'de reklam yok → "Uygulamada")

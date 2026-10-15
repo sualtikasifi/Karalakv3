@@ -721,3 +721,4 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .lp-t i{font-style:normal;display:flex;gap:calc(var(--u)*4);margin-top:calc(var(--u)*8)}.lp-t s{text-decoration:none;font-size:calc(var(--u)*45);color:#8a6a4a;line-height:1}.lp-t s.on{color:#ffc107}
 .lp-play{flex:none;width:calc(var(--u)*230);height:calc(var(--u)*111);border-radius:calc(var(--u)*37);background:linear-gradient(#7be042,#2fa524);border:calc(var(--u)*6) solid #1f7a1a;box-shadow:0 calc(var(--u)*6) calc(var(--u)*6) #0004;color:#fff;font-size:calc(var(--u)*45);font-weight:800;-webkit-text-stroke:calc(var(--u)*7) #14540f;paint-order:stroke fill}
 .lp-play.cd{font-size:calc(var(--u)*62)}
+#ak-strip b{display:block;font-size:calc(var(--u)*34)}#ak-strip small{display:block;font-size:calc(var(--u)*28);font-weight:600;opacity:.75}
