@@ -1521,12 +1521,12 @@
     <string name="rune_dj_1_flavor">Günün ilk ışığıyla gelen joker.</string>
     <string name="rune_fx_word_desc">Doğru bildiğin her kelime, her seviyede %%%1$d daha fazla altın getirir (Günün Meydan Okuması hariç).</string>
     <string name="rune_fx_win_desc">Hızlı Eşleş\'te ve Arkadaşınla Yarış\'ta kazandığın her zafer, her seviyede %%%1$d daha fazla altın getirir.</string>
-    <string name="rune_fx_login_desc">Giriş serisinin altın ödülleri her seviyede %%%1$d büyür.</string>
-    <string name="rune_fx_daily_desc">Günlük meydan okumanın altını her seviyede %%%1$d büyür.</string>
-    <string name="rune_fx_chest_desc">Kasalardan çıkan altın her seviyede %%%1$d büyür.</string>
-    <string name="rune_fx_cjoker_desc">Kasalardan fazladan joker çıkma şansı her seviyede %1$d puan artar.</string>
-    <string name="rune_fx_disc_desc">Mağazadaki jokerler her seviyede %%%1$d ucuzlar.</string>
-    <string name="rune_fx_dj_desc">Günlük reklamlı joker hediyesi her seviyede %1$d adet artar.</string>
+    <string name="rune_fx_login_desc">Giriş serisinin altın ödülleri her seviyede %%%1$d artar.</string>
+    <string name="rune_fx_daily_desc">Günlük meydan okumadan kazandığın altın her seviyede %%%1$d artar.</string>
+    <string name="rune_fx_chest_desc">Kasalardan çıkan altın her seviyede %%%1$d artar.</string>
+    <string name="rune_fx_cjoker_desc">Kasalardan fazladan joker çıkma şansı her seviyede yüzde %1$d puan artar.</string>
+    <string name="rune_fx_disc_desc">Mağazadaki jokerlerin fiyatı her seviyede %%%1$d düşer.</string>
+    <string name="rune_fx_dj_desc">Günlük reklamlı joker hediyesinde her seviyede %1$d joker fazladan gelir.</string>
     <string name="rune_streak_key_name">Zincir Ustası</string>
     <string name="rune_streak_key_flavor">Üç doğru üst üste, cebine bonus altın.</string>
     <string name="rune_chest_key2_name">Anahtarcı</string>
@@ -1544,7 +1544,7 @@
     <string name="rune_fr_2_name">Oda Kurucusu</string>
     <string name="rune_fr_2_flavor">Odayı kuran, ilk altını toplar.</string>
     <string name="rune_fr_key_name">Dostluk Bağı</string>
-    <string name="rune_fr_key_flavor">Günün ilk oda maçı yarısı kadar fazla altın getirir.</string>
+    <string name="rune_fr_key_flavor">Günün ilk oda maçı bir buçuk kat altın getirir.</string>
     <string name="rune_st_1_name">Gün Doğumu Kalemi</string>
     <string name="rune_st_1_flavor">Çizdiğin her çizgi gün doğumu gibi.</string>
     <string name="rune_st_3_name">Elmas Kalem</string>
@@ -1561,7 +1561,7 @@
     <string name="rune_xp_1_flavor">Her büyük ressam bir çırakla başlar.</string>
     <string name="rune_ins_key_name">Seri Sigortası</string>
     <string name="rune_ins_key_flavor">Ayda bir kez serin kalkanın altında.</string>
-    <string name="rune_fx_xp_desc">Seviyene giden deneyim puanı her seviyede %%%1$d artar. Lig puanını etkilemez.</string>
+    <string name="rune_fx_xp_desc">Seviye ilerlemen için kazandığın deneyim puanı her seviyede %%%1$d artar. Lig puanını etkilemez.</string>
     <string name="rune_fx_ctime_desc">Kasaların açılma süresi her seviyede %%%1$d kısalır.</string>
     <string name="rune_fx_adcd_desc">Ücretsiz reklam hediyelerinin bekleme süresi her seviyede %%%1$d kısalır.</string>
     <string name="rune_fx_room_desc">Arkadaşınla Yarış odalarından kazandığın altın her seviyede %%%1$d artar.</string>
@@ -1572,7 +1572,7 @@
     <string name="rune_fx_reserve_desc">Yuvalar doluyken kazandığın kasa kaybolmaz, bir yedek yuvada bekler.</string>
     <string name="rune_fx_best_desc">Günde bir kez, günün ilk Arkadaşınla Yarış turunda kazandığın altın %%50 artar.</string>
     <string name="rune_fx_insure_desc">Ayda bir kez, bir günü kaçırsan da giriş serin bozulmaz.</string>
-    <string name="rune_fx_style_desc">Bu rünü alınca, sadece rün haritasında bulunan bir kalem ya da çerçeve koleksiyonuna eklenir.</string>
+    <string name="rune_fx_style_desc">Bu rünü alınca, yalnızca rün haritasında bulunan özel bir kalem ya da çerçeve koleksiyonuna eklenir.</string>
     <string name="rune_tile_on">Açık</string>
     <string name="rune_fog_title">Gizemli rün</string>
     <string name="rune_fog_body">Bağlı olduğu rünü aç, sırrı ortaya çıksın.</string>
