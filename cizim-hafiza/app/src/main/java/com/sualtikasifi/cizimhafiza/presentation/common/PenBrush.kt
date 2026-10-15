@@ -9,6 +9,8 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.graphics.StrokeJoin
 import com.sualtikasifi.cizimhafiza.domain.model.PenEffect
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.asImageBitmap
+import kotlinx.coroutines.launch
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.sualtikasifi.cizimhafiza.R
@@ -171,6 +173,28 @@ fun DrawScope.drawPenStroke(
 
 /** Premium pens draw a touch thicker than the plain width — enough to read as richer, not enough to hide the drawing. */
 internal const val PREMIUM_PEN_WIDTH = 1.15f
+
+/**
+ * The small pictures the pens' effects draw. Held here, not in BackdropCache: that cache is a least-recently-used one
+ * sized for 10 MB backdrops, and a sprite sheet decoded at app start is the first thing it drops once the screens'
+ * backdrops arrive. Decoded once on a background thread; until it lands the effects fall back to plain shapes.
+ */
+object PenSprites {
+    @Volatile var flames: androidx.compose.ui.graphics.ImageBitmap? = null
+        private set
+    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
+
+    fun preload(context: android.content.Context) {
+        if (flames != null) return
+        val resources = context.applicationContext.resources
+        scope.launch {
+            runCatching {
+                android.graphics.BitmapFactory.decodeResource(resources, R.drawable.fx_flames, android.graphics.BitmapFactory.Options().apply { inScaled = false })
+                    ?.let { flames = it.asImageBitmap() }
+            }
+        }
+    }
+}
 
 private const val SAMPLE_STEP_PX = 10f
 private const val CHUNK_SAMPLES = 3
@@ -443,7 +467,7 @@ private fun DrawScope.drawSparkle(center: Offset, r: Float, alpha: Float, colour
  * sheet is still being decoded at app start, fall back to small spark ticks.
  */
 private fun DrawScope.embers(g: PenGeometry, w: Float, time: Float, density: Float, gold: Boolean) {
-    val flames = if (gold) null else BackdropCache.peek(R.drawable.fx_flames)
+    val flames = if (gold) null else PenSprites.flames
     val hot = if (gold) GoldLight else EmberYellow
     val mid = if (gold) GoldDeep else EmberOrange
     val cold = if (gold) EmberOrange else EmberRed
