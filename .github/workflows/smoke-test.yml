@@ -20,6 +20,7 @@ on:
           - smoke.sh
           - runes.sh
           - frames.sh
+          - pens.sh
           - tutorial.sh
           - worlds.sh
           - store.sh
