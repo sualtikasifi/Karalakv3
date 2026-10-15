@@ -340,7 +340,7 @@ internal fun DrawScope.drawPenGeometry(g: PenGeometry, skin: PenSkin, w: Float, 
         drawCircle(lerp(c, Color.Black, 0.35f).copy(alpha = 0.6f), radius = w * 0.62f, center = centre)
         drawCircle(c, radius = w * 0.5f, center = centre)
         drawCircle(lerp(c, Color.White, 0.6f).copy(alpha = 0.8f), radius = w * 0.16f, center = centre)
-        drawPenOverlays(g, skin.effect, w * EFFECT_SCALE, time)
+        drawPenOverlays(g, skin, w * EFFECT_SCALE, time)
         return
     }
     val colors = Array(count) { premiumColorAt(skin, g.chunkMid[it], time) }
@@ -353,7 +353,7 @@ internal fun DrawScope.drawPenGeometry(g: PenGeometry, skin: PenSkin, w: Float, 
     for (i in 0 until count) drawPath(g.chunks[i], lerp(colors[i], Color.Black, 0.4f).copy(alpha = 0.7f), style = rim)
     for (i in 0 until count) drawPath(g.chunks[i], colors[i], style = core)
     for (i in 0 until count) drawPath(g.chunks[i], lerp(colors[i], Color.White, 0.6f).copy(alpha = 0.8f), style = shine)
-    drawPenOverlays(g, skin.effect, w * EFFECT_SCALE, time)
+    drawPenOverlays(g, skin, w * EFFECT_SCALE, time)
 }
 
 /** A small, repeatable pseudo-random number in 0..1 for (i, k) — the same on every frame and every device. */
@@ -376,10 +376,11 @@ private val SmokeDark = Color(0xFF2A0F55)
 private val BoltWhite = Color(0xFFEAFBFF)
 private val BoltCyan = Color(0xFF4FC3F7)
 
-private fun DrawScope.drawPenOverlays(g: PenGeometry, fx: PenEffect, w: Float, time: Float) {
-    when (fx) {
+private fun DrawScope.drawPenOverlays(g: PenGeometry, skin: PenSkin, w: Float, time: Float) {
+    when (skin.effect) {
         PenEffect.GLINT -> sparkles(g, w, time, every = 4, salt = 11)
-        PenEffect.STARS -> sparkles(g, w, time, every = 3, salt = 23)
+        // Cosmos: smaller stars, some white and some in the pen's own colours.
+        PenEffect.STARS -> sparkles(g, w, time, every = 3, salt = 23, tints = skin.colorList().drop(1), size = 0.55f)
         PenEffect.EMBERS -> embers(g, w, time, density = 0.6f, gold = false)
         PenEffect.ROYAL -> {
             embers(g, w, time, density = 0.35f, gold = true)
@@ -392,7 +393,12 @@ private fun DrawScope.drawPenOverlays(g: PenGeometry, fx: PenEffect, w: Float, t
 }
 
 /** Four-point glints that twinkle beside the stroke. */
-private fun DrawScope.sparkles(g: PenGeometry, w: Float, time: Float, every: Int, salt: Int) {
+private fun DrawScope.sparkles(
+    g: PenGeometry, w: Float, time: Float, every: Int, salt: Int,
+    /** Colours a star may take besides white; empty keeps every star white. */
+    tints: List<Color> = emptyList(),
+    size: Float = 1f
+) {
     var i = 0
     while (i < g.n) {
         val h = hash01(i, salt)
@@ -401,15 +407,18 @@ private fun DrawScope.sparkles(g: PenGeometry, w: Float, time: Float, every: Int
             val side = if (hash01(i, salt + 1) < 0.5f) 1f else -1f
             val off = w * (0.7f + 0.9f * hash01(i, salt + 2)) * side
             val c = Offset(g.xs[i] - g.dys[i] * off, g.ys[i] + g.dxs[i] * off)
-            val r = w * (0.7f + 0.7f * hash01(i, salt + 3)) * tw
-            drawCircle(Color.White.copy(alpha = 0.3f * tw), radius = r * 0.9f, center = c)
-            drawSparkle(c, r, tw)
+            val r = w * (0.7f + 0.7f * hash01(i, salt + 3)) * size * tw
+            // About one star in three stays white; the rest take one of the pen's colours, lightened so they read as light.
+            val pick = hash01(i, salt + 4)
+            val colour = if (tints.isEmpty() || pick < 0.34f) Color.White else lerp(tints[(pick * 97).toInt() % tints.size], Color.White, 0.2f)
+            drawCircle(colour.copy(alpha = 0.3f * tw), radius = r * 0.9f, center = c)
+            drawSparkle(c, r, tw, colour)
         }
         i += every
     }
 }
 
-private fun DrawScope.drawSparkle(center: Offset, r: Float, alpha: Float) {
+private fun DrawScope.drawSparkle(center: Offset, r: Float, alpha: Float, colour: Color = Color.White) {
     // A four-pointed star with concave sides: four quadratic curves that pinch in towards the middle.
     val k = r * 0.14f
     val star = Path().apply {
@@ -420,7 +429,7 @@ private fun DrawScope.drawSparkle(center: Offset, r: Float, alpha: Float) {
         quadraticBezierTo(center.x - k, center.y - k, center.x, center.y - r)
         close()
     }
-    drawPath(star, Color.White.copy(alpha = alpha.coerceIn(0f, 1f)))
+    drawPath(star, colour.copy(alpha = alpha.coerceIn(0f, 1f)))
 }
 
 /** Tiny sparks thrown off the stroke: they rise, shrink, cool from yellow to red and vanish. */
