@@ -3,7 +3,7 @@ import * as net from "./firebase.js";
 import { checkStreak } from "./streak.js";
 import { renderResult, loadResultStrings } from "./result.js";
 import { loadChat, chatText } from "./chat.js";
-import { loadRunes, layoutRunes, renderRunes, effect as runeFx, has as runeHas } from "./runes.js";
+import { loadRunes, layoutRunes, renderRunes, effect as runeFx, has as runeHas, applyRuneConfig, anyAffordable } from "./runes.js";
 import * as eco from "./economy.js";
 import { layoutReport, renderReport } from "./report.js";
 import { layoutChests, renderChests, award as awardChest, wonDialog } from "./chests.js";
@@ -653,7 +653,7 @@ $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("o
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
 $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => rankInfo();
 $("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
-$("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; show("runes"); }; $("ru-back").onclick = () => show("home");
+$("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; net.runeConfig().then((d) => { applyRuneConfig(d); if (current === "runes") renderRunes(ctx, true); }).catch(() => {}); show("runes"); }; $("ru-back").onclick = () => show("home");
 $("tl-quick").onclick = () => start("quick"); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };
 $("os-back").onclick = () => show("home");
 $("tl-levels").onclick = async () => { await loadWorlds(); show("worlds"); };

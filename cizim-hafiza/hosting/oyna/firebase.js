@@ -104,6 +104,10 @@ export async function xpEventMultiplier() {
   xpEv = { at: Date.now(), mult }; return mult;
 }
 // config/economy: the amounts gold pays, tunable without an update (EconomyConfigRepository).
+// config/runes: when each rune ring opens and what the later rings cost (RuneConfigRepository).
+export async function runeConfig() {
+  try { const { fs, db } = await init(), s = await fs.getDoc(fs.doc(db, "config", "runes")); return s.exists() ? s.data() : null; } catch { return null; }
+}
 export async function economyConfig() {
   try { const { fs, db } = await init(), s = await fs.getDoc(fs.doc(db, "config", "economy")); return s.exists() ? s.data() : null; } catch { return null; }
 }
