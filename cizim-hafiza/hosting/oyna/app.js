@@ -1,5 +1,6 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
+import { drawFxStroke } from "./penfx.js";
 import { openPenPicker, openFramePicker, openNickEdit } from "./picker.js";
 import { setPrefs, sfx, vibrate, initAudio, syncMusic } from "./audio.js";
 import { layoutOnline, renderEntry, renderCreate, renderJoin, leaveLobby, submitAndWait, joinWithCode, quickInvite } from "./online.js";
@@ -219,6 +220,13 @@ function paint(canvas, strokes, live = false, pen = "CLASSIC") {
   }
   ctx.lineCap = ctx.lineJoin = "round";
   ctx.lineWidth = live ? 6 * d : Math.min(13.5 * d, Math.max(1.6 * d, 7 * sc));
+  const pObj = (() => { try { return penById(pen); } catch { return null; } })();
+  if (pObj && pObj.effect && pObj.effect !== "NONE") {
+    // premium pen: every stroke goes through the effect painter, in device pixels
+    let dist = 0; const w = live ? 6 * d : Math.min(13.5 * d, Math.max(1.6 * d, 7 * sc));
+    for (const s of strokes) dist = drawFxStroke(ctx, s.map((p) => ({ x: p.x * sc + ox, y: p.y * sc + oy })), pObj, w, performance.now() / 1000, d, dist);
+    return;
+  }
   const cols = penColors(pen);
   let dist = 0;
   for (const s of strokes) {
@@ -239,6 +247,14 @@ function colorAt(cols, dist) {
   const [r1, g1, b1] = h(a), [r2, g2, b2] = h(b);
   return `rgb(${Math.round(r1 + (r2 - r1) * f)},${Math.round(g1 + (g2 - g1) * f)},${Math.round(b1 + (b2 - b1) * f)})`;
 }
+// A premium pen keeps moving, so the canvas it is drawn on is redrawn every frame while visible.
+function fxLoop() {
+  const pObj = (() => { try { return penById(P.pen); } catch { return null; } })();
+  const animated = pObj && pObj.effect && pObj.effect !== "NONE";
+  if (animated && (current === "guess" || current === "draw")) { current === "guess" ? paintGuess() : paintLive(); }
+  requestAnimationFrame(fxLoop);
+}
+requestAnimationFrame(fxLoop);
 const paintLive = () => current === "draw" && round[idx] && paint($("pad"), round[idx].strokes, true, P.pen);
 const paintGuess = () => current === "guess" && round[idx] && paint($("view"), round[idx].strokes, false, P.pen);
 
