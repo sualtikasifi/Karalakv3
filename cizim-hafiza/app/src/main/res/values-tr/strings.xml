@@ -1526,7 +1526,7 @@
     <string name="rune_fx_login_desc">Giriş serisinin altın ödülleri her seviyede %%%1$d artar.</string>
     <string name="rune_fx_daily_desc">Günlük meydan okumadan kazandığın altın her seviyede %%%1$d artar.</string>
     <string name="rune_fx_chest_desc">Kasalardan çıkan altın her seviyede %%%1$d artar.</string>
-    <string name="rune_fx_cjoker_desc">Kasalardan fazladan joker çıkma şansı her seviyede yüzde %1$d puan artar.</string>
+    <string name="rune_fx_cjoker_desc">Kasalardan fazladan joker çıkma şansı her seviyede %%%1$d artar.</string>
     <string name="rune_fx_disc_desc">Mağazadaki jokerlerin fiyatı her seviyede %%%1$d düşer.</string>
     <string name="rune_fx_dj_desc">Günlük reklamlı joker hediyesinde her seviyede %1$d joker fazladan gelir.</string>
     <string name="rune_streak_key_name">Zincir Ustası</string>

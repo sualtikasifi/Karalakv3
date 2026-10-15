@@ -1513,7 +1513,7 @@
     <string name="rune_fx_login_desc">Login streak gold increases by %1$d%% per level.</string>
     <string name="rune_fx_daily_desc">Gold from the daily challenge increases by %1$d%% per level.</string>
     <string name="rune_fx_chest_desc">Gold from chests increases by %1$d%% per level.</string>
-    <string name="rune_fx_cjoker_desc">The chance of a bonus joker from chests rises by %1$d percentage points per level.</string>
+    <string name="rune_fx_cjoker_desc">The chance of a bonus joker from chests rises by %1$d%% per level.</string>
     <string name="rune_fx_disc_desc">Jokers in the store get %1$d%% cheaper per level.</string>
     <string name="rune_fx_dj_desc">The daily ad joker gift gives %1$d extra joker per level.</string>
     <string name="rune_streak_key_name">Chain Master</string>
