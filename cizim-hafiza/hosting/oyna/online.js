@@ -228,7 +228,7 @@ async function renderOnlineResult(c, again) {
   // everyone's drawings load in the background and fill the board as they arrive
   for (const p of roundPlayers) if (!olItems[p.uid]) { olItems[p.uid] = []; net.roomResultItems(code, p.uid).then((it) => { olItems[p.uid] = it || []; if (c.current() === "res2" && c.kind() === "online") renderOnlineResult(c, true); }); }
   const votes = room.rematchVotes || [];
-  if (olFirst) { olFirst = false; c.show("res2"); c.sfx && c.sfx.over(); }
+  if (olFirst) { olFirst = false; c.show("res2"); c.sfx && c.sfx.over(); c.grantOnline && c.grantOnline(roundPlayers, room.hostUid, myId); }
   const mine = roundPlayers.find((p) => p.uid === myId);
   // everybody voted: the room goes back to its lobby
   if (olRequested && roundPlayers.every((p) => votes.includes(p.uid))) { net.returnToWaiting(code).catch(() => {}); }

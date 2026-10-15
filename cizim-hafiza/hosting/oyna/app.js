@@ -3,7 +3,8 @@ import * as net from "./firebase.js";
 import { checkStreak } from "./streak.js";
 import { renderResult, loadResultStrings } from "./result.js";
 import { loadChat, chatText } from "./chat.js";
-import { loadRunes, layoutRunes, renderRunes, effect as runeFx } from "./runes.js";
+import { loadRunes, layoutRunes, renderRunes, effect as runeFx, has as runeHas } from "./runes.js";
+import * as eco from "./economy.js";
 import { layoutReport, renderReport } from "./report.js";
 import { layoutChests, renderChests, award as awardChest, wonDialog } from "./chests.js";
 import { todayEpoch, msToMidnight, dailyWords, state as dailyState, record as dailyRecord } from "./daily.js";
@@ -15,7 +16,7 @@ import { layoutFriends, openFriends, renderFriends, stop as stopFriends } from "
 import { loadWorlds, layoutWorlds, renderWorlds, layoutMap, renderMap, mixFor, starsFor, recordLevel, currentWorld } from "./levels.js";
 import { layoutAccount, renderAccount } from "./account.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
-import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound } from "./achievements.js";
+import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
 import { loadStoreData, layoutStore, renderStore, frameRing, frameById, penById, frameList as frameListSafe } from "./store.js";
 
@@ -46,6 +47,28 @@ const stage = $("stage");
 let leagueLoaded = false, reportLoaded = false;
 const ctx = {
   runeFx: (fx) => runeFx(P, fx),
+  /**
+   * Pays an online room round once its ranking is known (OnlineResultViewModel): the room gold with the room runes, the
+   * match XP (8, +25 for a win), and a chest for the winner. The per-word XP was paid when the round ended.
+   */
+  grantOnline: (players, hostUid, myUid) => {
+    const me = players.find((p) => p.uid === myUid); if (!me) return null;
+    const place = [...players].sort((a, b) => b.totalScore - a.totalScore).findIndex((p) => p.uid === myUid) + 1;
+    const tied = place === 1 && players.filter((p) => p.totalScore === me.totalScore).length > 1;
+    const won = place === 1 && !tied && players.length >= 2, newAch = ctx.lastAch || 0;
+    const raw = eco.roomRaw(me.correctCount || 0, won, newAch);
+    // Dostluk Bağı: +50% once a day, spent only on a round that pays something.
+    const best = raw > 0 && runeHas(P, "BEST") && P.bestDay !== todayEpoch(); if (best) P.bestDay = todayEpoch();
+    const g = eco.roomGold({ fx: (k) => runeFx(P, k), correctCount: me.correctCount || 0, won, newAchievements: newAch, asHost: hostUid === myUid, bestFriendBonus: best });
+    P.gold += g.total;
+    const matchXp = (eco.ONLINE_MATCH_XP + (won ? eco.ONLINE_WIN_XP : 0)) * xpEventOnly;
+    ctx.lastXp = (ctx.lastXp || 0) + eco.addXp(P, matchXp, runeFx(P, "XP"));
+    ctx.lastGold = g.total; ctx.lastRune = g.runeBonus;
+    let chest; if (place === 1 && !tied) chest = awardChest(P) || null;
+    saveP(); refreshHome();
+    if (chest !== undefined) setTimeout(() => wonDialog(ctx, chest), 900);
+    return { won, place, gold: g };
+  },
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
   inviteFriend: (f) => quickInvite(ctx, f).then(() => { stopFriends(); show("onw"); }),
@@ -408,8 +431,14 @@ async function start(k = "quick") {
   await ensureWords();
   begin([...words].sort(() => Math.random() - 0.5).slice(0, WORD_COUNT));
 }
-function begin(picked) {
-  round = picked.map((w) => ({ ...w, strokes: [], guess: "", correct: false, points: 0, ms: 0 }));
+// The XP rate of the round, fixed when it starts so every word pays the same: a running XP event times the first Quick Match
+// of the day (2x), as in GameViewModel.effectiveXpMultiplier.
+let xpMult = 1, qmBonus = false, xpEventOnly = 1;
+async function begin(picked) {
+  xpEventOnly = await net.xpEventMultiplier().catch(() => 1);
+  qmBonus = kind === "quick" && !!quickOpp && P.qmDay !== todayEpoch();
+  xpMult = xpEventOnly * (qmBonus ? eco.QUICK_MATCH_DAILY_BONUS_MULTIPLIER : 1);
+  round = picked.map((w) => ({ ...w, strokes: [], guess: "", correct: false, points: 0, ms: 0, xp: 0 }));
   idx = 0; tool = "pen"; score = 0; nextDraw();
 }
 function nextDraw() {
@@ -477,6 +506,8 @@ function answer(text) {
   const w = round[idx];
   w.guess = text; w.ms = Math.round(performance.now() - shownAt); w.correct = isCorrect(text, w.text);
   w.points = w.correct ? POINTS + (w.ms < SPEED_MS ? SPEED_BONUS : 0) : 0;
+  // XP is not the score: a right word pays by difficulty and speed (XpAwards.wordXp); the daily challenge pays its own total.
+  w.xp = w.correct && kind !== "daily" ? eco.wordXp(w.difficulty, w.ms) * xpMult : 0;
   score += w.points; idx++;
   if (w.correct) sfx.correct(); else { sfx.wrong(); vibrate(60); }
   flash(w.correct); nextGuess();
@@ -496,10 +527,15 @@ function addRow(parent, strokes, ok, label, sub, pen) {
 async function finish() {
   const x = t();
   if (kind === "tutorial") { show("home"); ctx.confirm(x.finT + "\n\n" + x.finB, x.finBtn, endTutorial); $("dlg-no").style.display = "none"; $("dlg-text").style.whiteSpace = "pre-line"; return; }
-  const n = round.filter((w) => w.correct).length, xp0 = P.xp, goldPlay = Math.round(n * 10 * (kind === "daily" ? 1 : 1 + runeFx(P, "WORD") / 100));
+  const n = round.filter((w) => w.correct).length, xp0 = P.xp, fxp = runeFx(P, "XP");
   if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
-  P.xp += Math.round(score * (1 + runeFx(P, "XP") / 100)); P.periodXp = (P.periodXp || 0) + score; P.gold += goldPlay; achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
-  if (kind === "online") { ctx.lastXp = P.xp - xp0; ctx.lastGold = goldPlay; net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {}); return submitAndWait(ctx, round, score); }
+  // XP is paid per right word by difficulty and speed (see answer()); the XP runes speed up the level, never the league XP.
+  eco.addXp(P, round.reduce((s, w) => s + (w.xp || 0), 0), fxp);
+  const ach0 = achCount(P); achRound(P, { score, words: round.length, perfect: n === round.length });
+  const newAch = Math.max(0, achCount(P) - ach0);
+  if (qmBonus) P.qmDay = todayEpoch();
+  const fx = (k) => runeFx(P, k), has = (k) => runeHas(P, k);
+  if (kind === "online") { ctx.lastXp = P.xp - xp0; ctx.lastAch = newAch; saveP(); refreshHome(); net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {}); return submitAndWait(ctx, round, score); }
   net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
   const me = {
     language: lang, nickname: "Web", wordIds: round.map((w) => w.id),
@@ -509,18 +545,31 @@ async function finish() {
   const minWait = new Promise((r) => setTimeout(r, kind === "quick" ? 2000 + Math.random() * 2000 : 0));
   let opp = null, items = [];
   let stars = 0, dailyRes = null;
-  if (kind === "daily") { dailyRes = dailyRecord(P, round.map((w) => w.correct), score); if (dailyRes) { P.xp += dailyRes.xp - score; P.periodXp += dailyRes.xp - score; saveP(); refreshHome(); } }
-  if (kind === "level") { stars = starsFor(n, round.length); recordLevel(P, levelRun.w, levelRun.l, stars); saveP(); }
+  let newStars = 0;
+  if (kind === "daily") {
+    dailyRes = dailyRecord(P, round.map((w) => w.correct), score);
+    // The daily challenge pays its own XP total (times the streak), at the round's XP rate, instead of per-word XP.
+    if (dailyRes) { dailyRes.xp *= xpMult; eco.addXp(P, dailyRes.xp, fxp); if (P.daily.result) P.daily.result.xp = dailyRes.xp; }
+  }
+  if (kind === "level") {
+    stars = starsFor(n, round.length); const k = levelRun.w + ":" + levelRun.l, best = P.levels[k] ?? 0;
+    newStars = Math.max(0, stars - best); recordLevel(P, levelRun.w, levelRun.l, stars);
+    eco.addXp(P, eco.levelCompletionBonus(stars) * xpMult, fxp);
+  }
   if (kind === "quick" && quickOpp) { opp = quickOpp; items = quickItems; net.recordRound({ ...me, level: levelFor(P.xp), frameId: P.frame, nickname: P.nick }).catch(() => {}); }
   await minWait;
-  let wonChest; if (kind === "quick" && opp && score > opp.totalScore) wonChest = awardChest(P) || null;
-  if (wonChest !== undefined) { saveP(); refreshHome(); }
+  const quickWon = kind === "quick" && !!opp && score > opp.totalScore;
+  // What the round pays in gold — one place, ported from RoundRewards.kt (see economy.js).
+  const gold = eco.soloGold({ fx, has, correctInOrder: round.map((w) => w.correct), isDaily: kind === "daily", newAchievements: newAch, newStars, dailyStreak: dailyRes ? dailyRes.streak : null, quickWon });
+  P.gold += gold.total;
+  let wonChest; if (quickWon) wonChest = awardChest(P) || null;
+  saveP(); refreshHome();
   await loadResultStrings();
   show("res2"); sfx.over(); if (wonChest !== undefined) setTimeout(() => wonDialog(ctx, wonChest), 700);
   const lvl = levelFor(P.xp), into = P.xp - xpFor(lvl), need = xpFor(lvl + 1) - xpFor(lvl), l0 = levelFor(xp0);
   const ring = (fid) => () => { const fr = frameRing(frameById(fid)); fr.style.cssText += ";width:100%;height:100%"; return fr; };
   renderResult(ctx, {
-    n, total: round.length, score, xp: P.xp - xp0, goldPlay, stars: kind === "level" ? stars : null, pen: P.pen, nick: P.nick,
+    n, total: round.length, score, xp: P.xp - xp0, gold, eventMult: xpEventOnly, stars: kind === "level" ? stars : null, pen: P.pen, nick: P.nick,
     daily: dailyRes, flags: round.map((w) => w.correct),
     level: { level: lvl, before: l0, into, need, toNext: xpFor(lvl + 1) - P.xp, max: lvl >= 100, frac: lvl >= 100 ? 1 : into / need, beforeFrac: l0 === lvl ? (xp0 - xpFor(lvl)) / need : 0 },
     opp, myRing: ring(P.frame), oppRing: ring(opp ? highestFrameFor(opp.level || 1) : "SCRIBBLER"), oppItems: items,
@@ -532,10 +581,11 @@ async function finish() {
 
 // ---------- navigation ----------
 function confirmLeave() {
-  $("dlg-text").textContent = t().leave; $("dlg-yes").textContent = t().yes; $("dlg-no").textContent = t().no;
+  const quickMatch = kind === "quick" && !!quickOpp, pen = eco.QUICK_MATCH_ABANDON_PENALTY_XP;
+  $("dlg-text").textContent = quickMatch ? (lang === "tr" ? `Bu maçtan şimdi çıkarsan ${pen} XP kaybedersin.` : `If you leave this match now you will lose ${pen} XP.`) : t().leave; $("dlg-yes").textContent = t().yes; $("dlg-no").textContent = t().no;
   $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren();
   $("dialog").classList.remove("hidden");
-  $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); clearInterval(dTimer); clearInterval(gTimer); if (kind === "online") leaveLobby(ctx); else show("home"); };
+  $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); clearInterval(dTimer); clearInterval(gTimer); if (quickMatch) { eco.revokeXp(P, pen); saveP(); refreshHome(); } if (kind === "online") leaveLobby(ctx); else show("home"); };
   $("dlg-no").onclick = () => $("dialog").classList.add("hidden");
 }
 $("d-back").onclick = confirmLeave; $("g-back").onclick = confirmLeave;
@@ -618,6 +668,7 @@ setTimeout(() => net.listen("invites", (list) => {
   $("dlg-no").onclick = () => { net.consumeInvite(inv.id).catch(() => {}); $("dialog").classList.add("hidden"); };
 }).catch(() => {}), 4000);
 applyLang();
+net.economyConfig().then((d) => eco.applyConfig(d)).catch(() => {});
 if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); setTimeout(() => checkStreak(ctx), 900); }; } else { show("home"); setTimeout(() => checkStreak(ctx), 1800); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 // After the home screen is up, quietly fetch the pictures of the screens people open most (skipped on data saver).

@@ -92,6 +92,21 @@ export async function redeemCoupon(rawCode) {
   } catch (e) { return { status: "network" }; }
 }
 
+// config/xpEvent: a 2x-XP event started from the developer panel (XpEventRepositoryImpl). Cached for five minutes.
+let xpEv = { at: 0, mult: 1 };
+export async function xpEventMultiplier() {
+  if (Date.now() - xpEv.at < 300000) return xpEv.mult;
+  let mult = 1;
+  try {
+    const { fs, db } = await init(), s = await fs.getDoc(fs.doc(db, "config", "xpEvent")), d = s.exists() ? s.data() : null;
+    if (d && d.active === true && Date.now() < (d.endsAtMillis || 0)) mult = Math.max(1, Math.min(10, Math.trunc(d.multiplier || 1)));
+  } catch {}
+  xpEv = { at: Date.now(), mult }; return mult;
+}
+// config/economy: the amounts gold pays, tunable without an update (EconomyConfigRepository).
+export async function economyConfig() {
+  try { const { fs, db } = await init(), s = await fs.getDoc(fs.doc(db, "config", "economy")); return s.exists() ? s.data() : null; } catch { return null; }
+}
 export async function getGlobalLeague() {
   const { fs, db } = await init();
   const snap = await fs.getDoc(fs.doc(db, "leaderboards", "global"));

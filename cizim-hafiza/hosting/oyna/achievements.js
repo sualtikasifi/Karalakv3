@@ -21,6 +21,8 @@ export function recordRound(P, { score, words, perfect }) {
     s.streak = s.last === y ? s.streak + 1 : 1; s.last = today; s.best = Math.max(s.best, s.streak);
   }
 }
+/** How many achievements are unlocked right now: the difference across a round is the new ones (gold per new one). */
+export const unlockedCount = (P) => list.filter((a) => value(P, a.m) >= a.t).length;
 export function claimableCount(P) { return list.filter((a) => value(P, a.m) >= a.t && !P.claimed.includes(a.id)).length; }
 
 export function layoutAchievements(c) {

@@ -13,6 +13,8 @@ const canBuy = (P, r, pl) => unlocked(P, r) && ringOpen(P, r.ring, pl);
 const cost = (P, r) => r.costs[lv(P, r.id)] ?? null;
 // ---- effects other screens read ----
 export function effect(P, fx) { const t = D ? D.runes.filter((r) => r.effect === fx).reduce((s, r) => s + lv(P, r.id) * r.per, 0) : 0; return Math.min(t, CAP[fx] ?? 1e9); }
+/** A one-off ability is bought: any rune of that effect has a level (RuneEffects.has). */
+export const has = (P, fx) => !!D && D.runes.some((r) => r.effect === fx && lv(P, r.id) >= 1);
 export const loaded = () => !!D;
 
 export function layoutRunes(c) {
