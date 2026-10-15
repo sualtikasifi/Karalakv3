@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Karalak - Oyna</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="app">
+  <section id="menu" class="screen">
+    <h1>Karalak</h1>
+    <p id="tagline"></p>
+    <div class="row">
+      <button id="lang-tr" class="chip">Türkçe</button>
+      <button id="lang-en" class="chip">English</button>
+    </div>
+    <button id="start" class="big"></button>
+  </section>
+
+  <section id="draw" class="screen hidden">
+    <div class="top"><span id="d-count"></span><span id="d-timer"></span></div>
+    <div id="d-word"></div>
+    <canvas id="pad"></canvas>
+    <button id="d-clear" class="chip"></button>
+  </section>
+
+  <section id="guess" class="screen hidden">
+    <div class="top"><span id="g-count"></span></div>
+    <canvas id="view"></canvas>
+    <form id="g-form"><input id="g-input" autocomplete="off" autocapitalize="off"><button class="big" id="g-ok"></button></form>
+    <button id="g-skip" class="chip"></button>
+  </section>
+
+  <section id="result" class="screen hidden">
+    <h2 id="r-title"></h2>
+    <ul id="r-list"></ul>
+    <button id="again" class="big"></button>
+  </section>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>
