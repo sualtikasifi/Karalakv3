@@ -124,7 +124,7 @@ function layoutOnce() {
   const s = stage.style;
   let W, H;
   const sf = safeRows[current];
-  if (current === "guess" || current === "result" || current === "res2") { W = Math.min(vw, 560); H = vh; }
+  if (current === "guess" || current === "result" || current === "res2" || current === "lvmap") { W = Math.min(vw, 560); H = vh; }
   else if (sf) {
     // Fill the width as far as the painted scene allows: only decor above and below the widgets may fall off the screen.
     const uFit = Math.min(vw / ART_W, vh / ART_H), uSafe = Math.min(vw / ART_W, vh / (sf.b - sf.t));
@@ -242,7 +242,7 @@ function layoutOnce() {
 function layout() {
   layoutOnce();
   if (current === "home") return;
-  if (["guess", "result", "res2", "found", "draw", "search"].includes(current)) return;
+  if (["guess", "result", "res2", "lvmap"].includes(current)) return;
   const st = stage.getBoundingClientRect(); if (!st.height || !u) return;
   const { w: vw, h: vh } = viewport();
   const have = safeRows[current], edge = (have ? have.b : ART_H) - 2;
@@ -286,10 +286,10 @@ function paintEdges(W, H, gap, top) {
     const on = !!src && gap > 0.5 && gap <= W * 0.3;
     e.style.display = on ? "block" : "none";
     if (!on) continue;
-    const mirror = gap <= W * 0.045; // thin gap: a mirror of the edge; wider: the outermost columns stretched and softened
+    const mirror = gap <= W * 0.16 && current !== "settings"; // a mirror of the scenery edge; the settings edge carries card fragments, so it gets a soft smear instead
     const bw = mirror ? W + 6 : W * (gap + 1) / 3;
     e.style.transform = mirror ? "scaleX(-1)" : "none";
-    e.style.filter = mirror ? "none" : "blur(5px) brightness(.92)";
+    e.style.filter = mirror ? "none" : "blur(22px) brightness(.9)";
     const px = mirror ? (side === "l" ? "-3px" : "calc(100% + 3px)") : (side === "l" ? "0" : "100%");
     e.style.cssText += `;width:${gap + 1}px;top:${top}px;height:${H}px;background-image:url("${src}");background-size:${bw}px ${H}px;background-position:${px} top;${side === "l" ? "left:0" : "right:0"}`;
   }
