@@ -2,7 +2,7 @@
 // A port of ChestStore.kt (the rules), ChestDetail.kt (the window), ChestWonDialog.kt (the win scene), ChestComponents.kt (the opening
 // scene) and ChestInfoDialog.kt. The texts are the app's own (i18n.js / strings.json).
 import { penList } from "./store.js";
-import { S, fmtNum } from "./i18n.js";
+import { S, fmtNum, ready as strReady } from "./i18n.js";
 import { el, primary, appWindow } from "./ui.js";
 import { TIER, backdrop, wonScene, rewardScene, rgba, glowOf } from "./chestfx.js";
 import { todayEpoch } from "./daily.js";
@@ -60,21 +60,25 @@ export function layoutChests(c) {
 let timer = null; const slotFx = [];
 const hm = (ms) => { const m = Math.floor(ms / 60000); return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); };
 export function renderChests(c) {
-  const { $, P } = c, C = ensure(P), now = Date.now();
+  const { $, P } = c, C = ensure(P), now = Date.now(), lang0 = c.lang() + (strReady() ? "" : "!");
   $("ch-title").textContent = S("menu_chests");
   const full = C.slots.every(Boolean);
   $("ch-tag").textContent = C.reserve ? S("home_chests_reserve") : full ? S("home_chests_full") : S("home_chests_tagline");
   C.slots.forEach((ch, i) => {
-    const s = $("ch-s" + i); s.replaceChildren(); s.className = "ch-slot";
-    if (!ch) { s.append(el("span", "ch-e", S("chest_slot_empty_title"))); s.onclick = null; return; }
-    const ready = isReady(ch, now), going = ch.start != null && !ready, T = TIER[ch.tier];
+    const s = $("ch-s" + i);
+    // a slot is only rebuilt (picture, animated backdrop) when what it shows changes; the ticking clock just rewrites the plate text
+    const ready0 = ch && isReady(ch, now), going0 = ch && ch.start != null && !ready0, sig = ch ? `${ch.id}|${ch.tier}|${ready0 ? "r" : going0 ? "g" : "i"}|${lang0}` : "empty|" + lang0;
+    if (s.dataset.sig === sig) { const sp = s.querySelector(".sl-plate span"); if (sp) sp.textContent = ready0 ? S("chests_open_button") + "!" : going0 ? fmtLeft(remaining(c, ch, now)) : hm(effMs(c, ch.tier)); return; }
+    s.dataset.sig = sig; s.replaceChildren(); s.className = "ch-slot";
+    if (!ch) { s.append(el("span", "ch-e", S("chest_slot_empty_title"))); s.onclick = null; if (slotFx[i] && slotFx[i].stop) { slotFx[i].stop(); slotFx[i].stop = null; } return; }
+    const ready = ready0, going = going0, T = TIER[ch.tier];
     s.classList.add("filled"); s.classList.toggle("ready", ready); s.style.setProperty("--bc", T.border);
     const cv = el("canvas", "sl-cv"), img = el("img", "sl-img"); img.src = `img/${T.art}.webp`; img.alt = "";
     const plate = el("div", "sl-plate " + (ready ? "ready" : going ? "going" : "idle"), `<span>${ready ? S("chests_open_button") + "!" : going ? fmtLeft(remaining(c, ch, now)) : hm(effMs(c, ch.tier))}</span>`);
     plate.style.setProperty("--ac", T.accent);
     s.append(cv, img, el("span", "sl-n", S(T.label)), plate);
     // the tier's backdrop moves behind every filled slot, like the app's slot cards
-    (slotFx[i] = slotFx[i] || {}).stop && slotFx[i].stop(); requestAnimationFrame(() => { slotFx[i].stop = backdrop(cv, ch.tier); });
+    (slotFx[i] = slotFx[i] || {}).stop && slotFx[i].stop(); requestAnimationFrame(() => { slotFx[i].stop = backdrop(cv, ch.tier, 24); });
     s.onclick = () => detail(c, ch.id);
   });
   $("ch-info").onclick = () => infoDialog(c);
