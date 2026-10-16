@@ -235,7 +235,15 @@ function show(id) {
   loadImgs(id);
   current = id; if (typeof paintMusic === "function" && P.prefs) paintMusic();
   for (const s of document.querySelectorAll(".screen")) s.classList.toggle("on", s.id === id);
+  paintBackdrop(id);
   layout(); paintTeamPill();
+}
+/** The art is a fixed tall shape; the strips beside it carry a soft, enlarged copy of the same scene instead of bare wood. */
+function paintBackdrop(id) {
+  const e = $("backdrop"); if (!e) return;
+  const bg = document.querySelector("#" + id + " > img.bg");
+  const src = bg && (bg.getAttribute("src") || bg.dataset.src);
+  e.style.backgroundImage = src ? `url("${src}")` : "none";
 }
 
 const DOODLES = [
