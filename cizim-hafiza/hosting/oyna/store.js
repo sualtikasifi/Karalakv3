@@ -19,13 +19,13 @@ const fmt = (n) => n.toLocaleString();
 export function layoutStore(ctx) {
   const { place, $ } = ctx;
   const sx = (e, x, y, w, h) => place(e, x, y, w, h);
-  sx($("st-t1"), 228, 281, 400, 80); sx($("st-t2"), 228, 337, 400, 80);
+  sx($("st-t1"), 228, 297, 400, 80); sx($("st-t2"), 228, 353, 400, 80);
   sx($("st-back"), 22, 40, 100, 96);
-  sx($("st-gold"), 540, 56, 270, 70);
-  sx($("st-tabs"), 36, 560, 770, 100);
+  sx($("st-gold"), 547, 131, 252, 98);
+  sx($("st-tabs"), 34, 547, 769, 93);
   const sh = $("st-shelf"), u = ctx.u();
-  sh.style.left = 36 * u + "px"; sh.style.top = 690 * u + "px"; sh.style.width = 770 * u + "px"; sh.style.height = ctx.stageH() - 690 * u + "px";
-  sh.style.setProperty("--g", 20 * u + "px");
+  sh.style.left = 34 * u + "px"; sh.style.top = 673 * u + "px"; sh.style.width = 771 * u + "px"; sh.style.height = ctx.stageH() - 673 * u + "px";
+  sh.style.setProperty("--g", 28 * u + "px");
 }
 
 export function renderStore(ctx) {
@@ -42,7 +42,7 @@ export function renderStore(ctx) {
     pens.filter((p) => p.price > 0 && !p.rune && !p.retired && p.card).sort((a, b) => a.price - b.price).forEach((p) => {
       const id = "pen:" + p.id, owned = P.owned.includes(id), eq = P.pen === p.id;
       const c = el("div", "pcard"); c.style.backgroundImage = `url(img/pen_${p.id.toLowerCase()}.webp)`;
-      const nm = el("div", "nm", `<span>${p[lang()]}</span>${p["tag_" + lang()] ? `<small>${p["tag_" + lang()]}</small>` : ""}`);
+      const nm = el("div", "nm", `<span>${p[lang()]}</span>`);
       const b = el("button", "btn" + (owned ? " green" : P.gold < p.price ? " dis" : ""), owned ? (eq ? "✓ " + tt(ctx, "store_equipped") : tt(ctx, "store_equip")) : `${coin}<span>${fmt(p.price)}</span>`);
       b.onclick = () => owned ? (P.pen = p.id, ctx.saveP(), renderStore(ctx)) : buy(ctx, { art: "buy_frame", name: p[lang()], price: p.price, preview: Object.assign(new Image(), { src: `img/pen_${p.id.toLowerCase()}.webp` }), grant: () => finish(ctx, p.price, () => { P.owned.push(id); P.pen = p.id; }) });
       c.append(nm, b); shelf.append(c);
