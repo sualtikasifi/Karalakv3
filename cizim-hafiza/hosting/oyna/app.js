@@ -131,6 +131,7 @@ function layout() {
   s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + "px";
   s.top = (H <= vh ? (vh - H) / 2 : Math.min(0, Math.max(vh - H, vh / 2 - (HOME_SAFE_TOP + HOME_SAFE_H / 2) * u))) + "px";
   stage.style.setProperty("--u", u + "px");
+  paintEdges(W, H, (vw - W) / 2, parseFloat(s.top));
   if (current === "home") {
     place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214); place($("h-rbadge"), 682, 84, 70, 70);
     place($("h-pen"), 266, 260, 243, 62);
@@ -247,6 +248,18 @@ function show(id) {
   for (const s of document.querySelectorAll(".screen")) s.classList.toggle("on", s.id === id);
   paintBackdrop(id);
   layout(); paintTeamPill();
+}
+/** A thin gap beside the art is closed with a mirror of the scene's own edge, so vines and wood carry on seamlessly; wider gaps keep the soft backdrop. */
+function paintEdges(W, H, gap, top) {
+  const bgEl = document.querySelector("#" + current + " > img.bg");
+  const src = bgEl && (bgEl.getAttribute("src") || bgEl.dataset.src);
+  for (const side of ["l", "r"]) {
+    const e = $("edge-" + side); if (!e) continue;
+    const on = !!src && gap > 0.5 && gap <= W * 0.15;
+    e.style.display = on ? "block" : "none";
+    if (!on) continue;
+    e.style.cssText += `;width:${gap + 1}px;top:${top}px;height:${H}px;background-image:url("${src}");background-size:${W}px ${H}px;background-position:${side === "l" ? "left" : "right"} top;${side === "l" ? "left:0" : "right:0"}`;
+  }
 }
 /** The art is a fixed tall shape; the strips beside it carry a soft, enlarged copy of the same scene instead of bare wood. */
 function paintBackdrop(id) {

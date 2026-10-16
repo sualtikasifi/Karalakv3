@@ -5,6 +5,7 @@
 html,body{-webkit-text-size-adjust:100%;text-size-adjust:100%;margin:0;height:100%;overflow:hidden;background:#5a2a0c url(img/bg_result_wood.webp) center/cover;font-family:Baloo,system-ui,sans-serif;font-weight:800;color:var(--ink);overscroll-behavior:none;user-select:none;-webkit-user-select:none}
 button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
 #backdrop{position:fixed;inset:-6%;background-size:cover;background-position:center;filter:blur(34px) brightness(.72) saturate(.6);pointer-events:none}
+.edge{position:fixed;display:none;transform:scaleX(-1);background-repeat:no-repeat;pointer-events:none}
 #stage{position:absolute;overflow:hidden;background:#7a3a10}
 .screen{position:absolute;inset:0;display:none}
 .screen.on{display:block}
