@@ -1636,4 +1636,6 @@
     <string name="result_stat_win_gold">Win gold</string>
     <string name="result_stat_rune_bonus">From runes</string>
     <string name="result_rune_bonus_line">From your runes: +%1$d gold</string>
+    <string name="league_score_refused">Your score can\'t be saved to the server right now, so other players may not see you in this table. Reopen the app or try again later.</string>
+    <string name="error_friend_request_limit">You have sent a lot of friend requests today. Try again tomorrow.</string>
 </resources>

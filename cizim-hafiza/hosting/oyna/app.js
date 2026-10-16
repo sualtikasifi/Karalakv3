@@ -677,14 +677,16 @@ function msg(text, extra) {
   $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren(); };
 }
 const soon = (name) => () => msg(`${name} · ${t().soon}`);
-$("tl-online").onclick = async () => { await ensureWords(); show("onl"); };
+// Online sections need the internet; offline ones (Play Offline, Levels) keep working. Same words as the app's offline screen.
+const needNet = (fn) => (...a) => { if (navigator.onLine === false) return msg(lang === "tr" ? "İnternet bağlantısı gerekiyor. Bu bölümü oynamak için internete bağlanman gerekiyor. Çevrimdışı Oyna ve Seviyeler internetsiz de açık." : "An internet connection is required. Play Offline and Levels work without it."); return fn(...a); };
+$("tl-online").onclick = needNet(async () => { await ensureWords(); show("onl"); });
 $("on-back").onclick = () => show("home"); $("oj-back").onclick = () => show("onl"); $("oc-back").onclick = () => show("onl");
 $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("onj");
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
 $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => rankInfo();
 $("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
 $("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; net.runeConfig().then((d) => { applyRuneConfig(d); if (current === "runes") renderRunes(ctx, true); }).catch(() => {}); show("runes"); }; $("ru-back").onclick = () => show("home");
-$("tl-quick").onclick = () => start("quick"); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };
+$("tl-quick").onclick = needNet(() => start("quick")); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };
 $("os-back").onclick = () => show("home");
 $("tl-levels").onclick = async () => { await loadWorlds(); show("worlds"); };
 $("wl-back").onclick = () => show("home"); $("lm-back").onclick = () => show("worlds");
@@ -692,10 +694,10 @@ $("tl-store").onclick = async () => { await loadStoreData(); show("store"); };
 $("st-back").onclick = () => show("home");
 $("tl-ach").onclick = async () => { await loadAchievements(); show("ach"); };
 $("ac-back").onclick = () => show("home");
-$("tl-league").onclick = async () => { await loadStoreData(); await loadLeague(); leagueLoaded = false; show("league"); };
+$("tl-league").onclick = needNet(async () => { await loadStoreData(); await loadLeague(); leagueLoaded = false; show("league"); });
 $("lg-back").onclick = () => show("home");
 $("lg-refresh").onclick = () => { leagueLoaded = false; layout(); };
-$("tl-friends").onclick = () => { show("friends"); openFriends(ctx); };
+$("tl-friends").onclick = needNet(() => { show("friends"); openFriends(ctx); });
 $("fr-duel").onclick = () => { stopFriends(); show("duels"); openDuels(ctx); };
 $("du-back").onclick = () => { stopDuels(); show("friends"); openFriends(ctx); };
 $("fr-back").onclick = () => { stopFriends(); show("home"); };

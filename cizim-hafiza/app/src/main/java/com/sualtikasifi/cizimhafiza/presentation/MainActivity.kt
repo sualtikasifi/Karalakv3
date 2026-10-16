@@ -32,6 +32,8 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavHostController
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.ads.AdManager
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import com.sualtikasifi.cizimhafiza.ads.ConsentManager
 import com.sualtikasifi.cizimhafiza.data.repository.GoogleSignInLauncher
 import com.sualtikasifi.cizimhafiza.util.AutoBackupPublisher
@@ -212,8 +214,19 @@ class MainActivity : AppCompatActivity() {
             // requests went out in the EEA before anyone had been asked, in
             // breach of both GDPR and AdMob's own policy. ensureConsent resolves
             // silently for players in regions with no form requirement.
-            consentManager.ensureConsent(this) {
-                adManager.get().initializeIfConsented(consentManager)
+            // A brand-new install is asked only once the first-run tutorial is behind it: a consent form is the
+            // last thing a first-time player should meet before their first drawing. No ad is requested in the
+            // tutorial, and ads still only start after this resolves.
+            val askConsent = {
+                consentManager.ensureConsent(this) {
+                    adManager.get().initializeIfConsented(consentManager)
+                }
+            }
+            if (settingsRepository.tutorialCompleted) askConsent()
+            else lifecycleScope.launch {
+                while (!settingsRepository.tutorialCompleted) kotlinx.coroutines.delay(1_000)
+                kotlinx.coroutines.delay(1_500)
+                askConsent()
             }
             composeApp()
         }
@@ -291,11 +304,11 @@ class MainActivity : AppCompatActivity() {
 }
 
 /**
- * Asks for the POST_NOTIFICATIONS runtime permission (API 33+) exactly once,
- * as soon as an install first opens — never nags again afterward.
- * The Settings screen's "Bildirimler" toggle offers a way to (re-)request it
- * later for anyone who dismissed this or wants to turn notifications on
- * after having turned them off.
+ * Asks for the POST_NOTIFICATIONS runtime permission (API 33+) exactly once, and only after the player has got through
+ * the first-run tutorial (their first finished game) — never over the very first screens, where a system dialog is the
+ * first thing a new player sees. A device that already finished the tutorial is asked a moment after launch.
+ * Never nags again afterward. The Settings screen's "Bildirimler" toggle offers a way to (re-)request it later for
+ * anyone who dismissed this or wants to turn notifications on after having turned them off.
  */
 @Composable
 private fun RequestNotificationPermissionOnce(settingsRepository: SettingsRepository) {
@@ -306,9 +319,11 @@ private fun RequestNotificationPermissionOnce(settingsRepository: SettingsReposi
 
     LaunchedEffect(Unit) {
         if (settingsRepository.notificationPermissionRequested) return@LaunchedEffect
-        // Asked the moment a fresh install first opens, before the player has started anything, so it never
-        // interrupts a game. Not tied to anything the player does afterwards: it used to wait for a finished
-        // game, which made it fire right after a Google sign-in restored an old account's game count on a reinstall.
+        // Waits for the tutorial's end (polled: the flag is a plain preference), then a beat so the dialog does not
+        // land on top of the tutorial's own closing animation.
+        while (!settingsRepository.tutorialCompleted) kotlinx.coroutines.delay(1_000)
+        kotlinx.coroutines.delay(2_500)
+        if (settingsRepository.notificationPermissionRequested) return@LaunchedEffect
         settingsRepository.notificationPermissionRequested = true
         val alreadyGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED

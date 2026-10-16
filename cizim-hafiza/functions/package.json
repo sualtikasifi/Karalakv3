@@ -1,13 +1,14 @@
 {
   "name": "karalak-functions",
-  "description": "Cloud Functions for Karalak — sends a push notification when a friend match invite is created.",
+  "description": "Cloud Functions for Karalak \u2014 sends a push notification when a friend match invite is created.",
   "engines": {
     "node": "20"
   },
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
-    "deploy": "npm run build && firebase deploy --only functions"
+    "deploy": "npm run build && firebase deploy --only functions",
+    "test": "npm run build && node --test test/leagueRules.test.mjs"
   },
   "dependencies": {
     "firebase-admin": "^12.6.0",

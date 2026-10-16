@@ -1,3 +1,4 @@
+import { isPlausibleScore, monthStartMsFor } from "./leagueRules";
 import { onDocumentCreated, onDocumentWritten } from "firebase-functions/v2/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { logger } from "firebase-functions";
@@ -513,7 +514,20 @@ export async function runBuildGlobalLeaderboard(): Promise<void> {
       .limit(MAX_ENTRIES)
       .get();
 
-    const real: LeagueRow[] = realSnapshot.docs.map((doc) => ({
+    // Rows that no honest account can have (more XP this month than the growth rule allows, or more than the account's
+    // lifetime XP) are left out of the table — see leagueRules.ts.
+    const monthStartForChecks = monthStartMsFor(periodId, ISTANBUL_OFFSET_MS);
+    const plausibleDocs = realSnapshot.docs.filter((doc) => {
+      const ok = isPlausibleScore(
+        { periodXp: (doc.get("periodXp") as number | undefined) ?? 0, totalXp: doc.get("totalXp") as number | undefined },
+        monthStartForChecks,
+        Date.now()
+      );
+      if (!ok) logger.warn(`League: ${doc.id} skipped, implausible score (periodXp ${doc.get("periodXp")}, totalXp ${doc.get("totalXp")})`);
+      return ok;
+    });
+
+    const real: LeagueRow[] = plausibleDocs.map((doc) => ({
       uid: doc.id,
       nickname: (doc.get("nickname") as string | undefined)?.trim() || "?",
       periodXp: (doc.get("periodXp") as number | undefined) ?? 0,
@@ -666,7 +680,18 @@ export async function runFinalizeLeaguePeriod(): Promise<void> {
       const seen = candidates.get(uid);
       if (!seen || periodXp > seen.periodXp) candidates.set(uid, { uid, nickname, periodXp });
     };
+    const finishedStart = monthStartMsFor(finishedPeriodId, ISTANBUL_OFFSET_MS);
+    const finishedEnd = monthStartMsFor(finishedPeriodId + 1, ISTANBUL_OFFSET_MS);
     for (const doc of snapshot.docs) {
+      // An implausible score cannot win the prize (same check as the table build).
+      if (!isPlausibleScore(
+        { periodXp: (doc.get("periodXp") as number | undefined) ?? 0, totalXp: doc.get("totalXp") as number | undefined },
+        finishedStart,
+        finishedEnd
+      )) {
+        logger.warn(`League: ${doc.id} excluded from the prize, implausible score`);
+        continue;
+      }
       consider(
         doc.id,
         (doc.get("nickname") as string | undefined)?.trim() || "?",

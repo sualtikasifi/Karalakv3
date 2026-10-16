@@ -138,9 +138,23 @@ export async function friendsLeague(pid) {
 
 // Same fields as FriendRepositoryImpl.publishLeagueScore. A guest's web account is its own uid, so it never
 // collides with an Android profile.
+// True while the server refuses this account's score (permission denied: a jump bigger than the rules' growth allowance).
+// Being offline is not this. The league page tells the player instead of leaving them out of the table without a word.
+let scoreRefused = false;
+export const isScoreRefused = () => scoreRefused;
 export async function publishScore({ nickname, periodXp, periodId, level, frameId, totalXp }) {
-  const { fs, db, auth } = await init();
-  await fs.setDoc(fs.doc(db, "users", auth.currentUser.uid), { nickname, periodXp, totalXp, periodXpAt: fs.serverTimestamp(), periodId, level, frameId, avatarUrl: "" }, { merge: true });
+  const { fs, db, auth } = await init(), ref = fs.doc(db, "users", auth.currentUser.uid);
+  try {
+    await fs.setDoc(ref, { nickname, periodXp, totalXp, periodXpAt: fs.serverTimestamp(), periodId, level, frameId, avatarUrl: "" }, { merge: true });
+    scoreRefused = false;
+  } catch (e) {
+    if (e && e.code === "permission-denied") {
+      scoreRefused = true;
+      // Keep the profile (name, level, frame) current even though the score itself is refused.
+      try { await fs.setDoc(ref, { nickname, totalXp, level, frameId, avatarUrl: "" }, { merge: true }); } catch {}
+    }
+    throw e;
+  }
 }
 
 // ---- Google sign-in (links the browser to the player's Google account) ----
@@ -190,6 +204,9 @@ export async function listen(sub, cb) {
   const { fs, db, auth } = await init();
   return fs.onSnapshot(fs.collection(db, "users", auth.currentUser.uid, sub), (s) => cb(s.docs.map((d) => ({ id: d.id, ...d.data() }))), () => cb([]));
 }
+// A day's quota of new friend requests (same as the app's FriendRequestLimit): the rules cannot count, so the client does.
+const REQ_MAX = 20, REQ_WINDOW = 24 * 3600e3;
+const reqLog = () => { try { return JSON.parse(localStorage.getItem("friendReqLog") || "[]").filter((t) => Date.now() - t < REQ_WINDOW); } catch { return []; } };
 export async function addFriendByCode(code, myNick) {
   const { fs, db, auth } = await init(), uid = auth.currentUser.uid;
   const c = await fs.getDoc(fs.doc(db, "friendCodes", code));
@@ -198,8 +215,11 @@ export async function addFriendByCode(code, myNick) {
   const fdoc = await fs.getDoc(fs.doc(db, "users", fu)), fn = (fdoc.exists() && fdoc.data().nickname) || "?";
   if ((await fs.getDoc(fs.doc(db, "users", uid, "friends", fu))).exists()) return { status: "already", name: fn };
   if ((await fs.getDoc(fs.doc(db, "users", uid, "friendRequests", fu))).exists()) { await writeFriendship(uid, myNick, fu, fn); return { status: "added", name: fn }; }
+  const log = reqLog();
+  if (log.length >= REQ_MAX) return { status: "limit" };
   try { await fs.setDoc(fs.doc(db, "users", fu, "friendRequests", uid), { fromNickname: myNick, sentAt: Date.now() }); }
   catch (e) { return { status: "blocked" }; }
+  try { localStorage.setItem("friendReqLog", JSON.stringify([...log, Date.now()])); } catch {}
   return { status: "sent", name: fn };
 }
 async function writeFriendship(uid, myNick, fu, fn) {

@@ -137,6 +137,9 @@ interface FriendRepository {
 class FriendCodeNotFoundException : Exception("Bu kodla bir kullanıcı bulunamadı")
 class CannotAddSelfException : Exception("Kendini arkadaş olarak ekleyemezsin")
 
+/** More new friend requests than [com.sualtikasifi.cizimhafiza.domain.model.FriendRequestLimit] allows in a day. */
+class FriendRequestLimitException : Exception("Bugün çok fazla arkadaşlık isteği gönderdin")
+
 /**
  * Thrown by [FriendRepository.addFriendByCode] for the bot's fixed code
  * (see BotRoomEngine.ROOM_CODE) — never actually adds a friendship, always
