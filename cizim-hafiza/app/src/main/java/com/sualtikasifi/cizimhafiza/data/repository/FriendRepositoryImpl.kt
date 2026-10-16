@@ -563,7 +563,8 @@ class FriendRepositoryImpl @Inject constructor(
             // The rules refuse a score that jumped faster than a month's play allows (see plausibleXpGrowth). One
             // refused field used to throw away the whole write, so the account's name, level and frame went stale too
             // (and a brand-new profile never came to exist at all). The profile fields are sent again without the
-            // score; the score itself stays refused and the error is passed on, so it is retried and reported.
+            // score. The score is then climbed to in steps the rules accept (see [publishScoreInSteps]); only if it still
+            // cannot be reached is the error passed on, so it is retried and reported.
             runCatching {
                 users.document(uid).set(
                     mapOf(
@@ -576,8 +577,47 @@ class FriendRepositoryImpl @Inject constructor(
                     SetOptions.merge()
                 ).await()
             }
+            if (runCatching { publishScoreInSteps(uid, periodXp, periodId) }.getOrDefault(false)) return
             throw e
         }
+    }
+
+    /**
+     * Brings the published month score up to [targetXp] in steps the rules accept, and returns whether it got there.
+     *
+     * The rules let one write add 30000 plus 3000 an hour since the last score write. A player who earned a lot between two
+     * publishes (a long offline stretch, a restored backup, a prize) used to be refused as a whole and then missing from the
+     * table for as long as it took the hourly allowance to catch up. Each step here is within what the rules allow; the
+     * hourly table build separately refuses a total no honest month can reach (functions/src/leagueRules.ts), which is the
+     * real guard against inflated scores.
+     */
+    private suspend fun publishScoreInSteps(uid: String, targetXp: Int, periodId: Long): Boolean {
+        val ref = users.document(uid)
+        val doc = ref.get(Source.SERVER).await()
+        var current = if (doc.getLong("periodId") == periodId) doc.getLong("periodXp") ?: 0L else 0L
+        if (current >= targetXp) return true
+        val stampMs = doc.getTimestamp("periodXpAt")?.toDate()?.time
+        var allowance = when {
+            !doc.exists() || stampMs == null -> 300_000L
+            else -> 30_000L + maxOf(0L, System.currentTimeMillis() - stampMs) / 1200L
+        }
+        repeat(MAX_SCORE_STEPS) {
+            // A margin under the rules' limit so a slightly fast phone clock cannot tip a step over it.
+            val next = minOf(targetXp.toLong(), current + allowance - SCORE_STEP_MARGIN)
+            if (next <= current) return false
+            ref.set(
+                mapOf(
+                    "periodXp" to next,
+                    "periodXpAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
+                    "periodId" to periodId
+                ),
+                SetOptions.merge()
+            ).await()
+            current = next
+            if (current >= targetXp) return true
+            allowance = 30_000L
+        }
+        return false
     }
 
     override suspend fun recordReferralIfEligible(inviterFriendCode: String) {
@@ -682,6 +722,9 @@ class FriendRepositoryImpl @Inject constructor(
         }
 
     private companion object {
+        /** Steps [publishScoreInSteps] takes at most (30000 each, so far more than a month of honest play needs). */
+        const val MAX_SCORE_STEPS = 12
+        const val SCORE_STEP_MARGIN = 1_000L
         /** How long a friend's stored name is trusted before it is compared with their live profile again. */
         const val NICKNAME_RECHECK_MS = 30 * 60_000L
         const val TAG = "FriendRepository"

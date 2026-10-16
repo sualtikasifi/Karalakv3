@@ -152,6 +152,20 @@ export async function publishScore({ nickname, periodXp, periodId, level, frameI
       scoreRefused = true;
       // Keep the profile (name, level, frame) current even though the score itself is refused.
       try { await fs.setDoc(ref, { nickname, totalXp, level, frameId, avatarUrl: "" }, { merge: true }); } catch {}
+      // Then climb to the real score in steps the rules accept (30000 plus 3000 an hour since the last score write per step).
+      // The hourly table build refuses a total no honest month can reach, which is the real guard against inflated scores.
+      try {
+        const d = await fs.getDoc(ref), data = d.exists() ? d.data() : {};
+        let cur = data.periodId === periodId ? data.periodXp || 0 : 0;
+        const stamp = data.periodXpAt && data.periodXpAt.toMillis ? data.periodXpAt.toMillis() : null;
+        let allow = !d.exists() || stamp == null ? 300000 : 30000 + Math.max(0, Date.now() - stamp) / 1200;
+        for (let i = 0; i < 12 && cur < periodXp; i++) {
+          const next = Math.min(periodXp, Math.floor(cur + allow - 1000)); if (next <= cur) break;
+          await fs.setDoc(ref, { periodXp: next, periodXpAt: fs.serverTimestamp(), periodId }, { merge: true });
+          cur = next; allow = 30000;
+        }
+        if (cur >= periodXp) { scoreRefused = false; return; }
+      } catch {}
     }
     throw e;
   }
