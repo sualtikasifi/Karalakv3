@@ -19,6 +19,7 @@ import { layoutAccount, renderAccount } from "./account.js";
 import { layoutOffline, renderOffline } from "./offline.js";
 import { setLang, loadStrings, S } from "./i18n.js";
 import { syncNow, scheduleBackup } from "./sync.js";
+import { openRankLadder } from "./ranks.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
@@ -79,7 +80,7 @@ const ctx = {
   sfx, paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
   pickRoomWords: (r) => pickRoomWords(r), startOffline: (o) => startOffline(o),
-  openDuel: (opp) => openCreateDuel(ctx, opp), startDuelChallenge: (opp, n) => startDuel({ mode: "new", opp }, n), playDuel: (d) => startDuel({ mode: "play", duel: d }),
+  startTutorial: () => startTutorial(), openDuel: (opp) => openCreateDuel(ctx, opp), startDuelChallenge: (opp, n) => startDuel({ mode: "new", opp }, n), playDuel: (d) => startDuel({ mode: "play", duel: d }),
   syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
@@ -397,7 +398,7 @@ async function startTutorial() {
   const picked = TUT_WORDS[lang].map((s, i) => byText.get(s) || { id: 900000 + i, text: s, difficulty: "EASY" });
   begin(picked);
 }
-function endTutorial() { P.tutorialDone = true; for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); setTimeout(() => checkStreak(ctx), 900); }
+function endTutorial() { const first = !P.tutorialDone; P.tutorialDone = true; if (first) for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); setTimeout(() => checkStreak(ctx), 900); }
 async function startDaily() {
   if (dailyState(P).done) return;
   await ensureWords(); kind = "daily"; levelRun = null; relaxed = false;
@@ -683,7 +684,7 @@ $("tl-online").onclick = needNet(async () => { await ensureWords(); show("onl");
 $("on-back").onclick = () => show("home"); $("oj-back").onclick = () => show("onl"); $("oc-back").onclick = () => show("onl");
 $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("onj");
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
-$("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => rankInfo();
+$("h-rank").onclick = () => openRankLadder(ctx); $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => openRankLadder(ctx);
 $("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
 $("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; net.runeConfig().then((d) => { applyRuneConfig(d); if (current === "runes") renderRunes(ctx, true); }).catch(() => {}); show("runes"); }; $("ru-back").onclick = () => show("home");
 $("tl-quick").onclick = needNet(() => start("quick")); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };
