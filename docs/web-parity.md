@@ -27,7 +27,7 @@ Amaç: iPhone kullanıcıları tarayıcıdan oynasın; web, Android uygulamasıy
 3. Seviye haritası (kaydırma, numaralı kilitli düğümler, alt panel), Dünyalar
 4. Arkadaşlar: davetler (Düellolar yapıldı: duel.js)
 5. Hesap: bulut yedeği, çıkış, hesap silme yapıldı (sync.js) — gerçek Google girişiyle denenmedi
-6. Sonuç ekranları (Hızlı Eşleş, günlük, bölüm), çevrimiçi bekleme odası/sıralama karşılaştırması
+6. Sonuç ekranları (Hızlı Eşleş, günlük, bölüm); çevrimiçi sıralama karşılaştırması (bekleme odası yapıldı)
 7. Ayarlar (sesler, bildirimler, kupon, dil, eğitim, sorun bildir) ve Eğitim ekranları
 8. Ana ekran: Günün Meydan Okuması kartı, ücretsiz altın/kasa (web'de reklam yok → "Uygulamada")
 9. Boyut/hız: görseller 720px'e küçültülmüş durumda; ilk yüklemede lazy

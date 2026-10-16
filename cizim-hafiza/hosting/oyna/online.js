@@ -47,14 +47,11 @@ export function layoutOnline(c) {
     place($("oc-paper"), 42, 472, 757, 925); place($("oc-body"), 110, 520, 621, 840);
     place($("oc-make"), 65, 1610, 710, 172); place($("oc-msg"), 60, 1790, 720, 60);
   } else if (cur === "onw") {
-    place($("ow-back"), 20, 40, 110, 106); place($("ow-title"), 160, 60, 520, 90);
-    place($("ow-codep"), 40, 190, 760, 370); place($("ow-code"), 40, 262, 760, 100); place($("ow-codeh"), 100, 200, 640, 56);
-    place($("ow-occ"), 60, 395, 720, 50);
-    const l = $("ow-list"); l.style.left = 60 * c.u() + "px"; l.style.top = 505 * c.u() + "px"; l.style.width = 720 * c.u() + "px"; l.style.height = 670 * c.u() + "px";
-    place($("ow-info"), 60, 1195, 720, 50);
-    place($("ow-ready"), 70, 1240, 330, 125); place($("ow-start"), 430, 1240, 340, 125); place($("ow-invite"), 70, 1375, 700, 100);
-    place($("ow-dock"), 60, 1490, 720, 374);
-    place($("ow-cd"), 220, 700, 400, 400);
+    place($("ow-back"), 20, 40, 110, 106);
+    place($("ow-title"), 0, 216, 841, 123);
+    const u = c.u(), col = $("ow-col");
+    col.style.left = 41 * u + "px"; col.style.width = 759 * u + "px"; col.style.top = 362 * u + "px"; col.style.bottom = (1870 - 1775) * u + "px";
+
   }
 }
 
@@ -142,50 +139,103 @@ let myId = null, chatUnsub = null, bubbleT = null;
 const chatCtx = (c) => Object.assign(Object.create(c), { myUid: () => myId, ring: (f) => { const r = frameRing(frameById(f), "ow-av"); r.style.cssText += ";position:relative;width:100%;height:100%"; return r; }, chatText });
 net.myUid().then((u) => { myId = u; }).catch(() => {});
 
+// The waiting room (WaitingRoomScreen.kt): the code card, "Oyuncular" band with the occupancy pill, the 2-column grid of eight seats
+// (or two team columns), the waiting pill, the chat dock and ONE ready button that turns into "Oyunu Başlat" for the host.
+const RANK_KEYS = ["rank_karalamaci", "rank_cirak", "rank_ressam", "rank_usta_ressam", "rank_sanatci", "rank_buyuk_usta"], RANK_AT = [1, 20, 40, 60, 80, 100];
+const rankKey = (l) => RANK_KEYS[RANK_AT.filter((t) => l >= t).length - 1];
+let readyOverride = null, starting = false, notice = "", noticeT = 0;
+const say = (c, text) => { notice = text; clearTimeout(noticeT); noticeT = setTimeout(() => { notice = ""; if (c.current() === "onw") renderLobby(c); }, 2500); };
+const PERSON = '<svg viewBox="0 0 24 24" width="1em" height="1em"><circle cx="12" cy="8" r="4.2" fill="#e9801d"/><path d="M3.8 21c0-4.4 3.7-7 8.2-7s8.2 2.6 8.2 7z" fill="#e9801d"/></svg>';
+const KICK = '<svg viewBox="0 0 24 24" width="1em" height="1em"><path fill="#c0392b" d="M14 8c0-2.2-1.8-4-4-4S6 5.8 6 8s1.8 4 4 4 4-1.8 4-4zm-4 5c-2.7 0-8 1.3-8 4v3h9.3a6.5 6.5 0 01-.3-2c0-1.2.3-2.300.9-3.200C11 14.300 10.500 13 10 13zm8.500-2L17 12.500 15.500 11 14 12.500l1.500 1.500L14 15.500 15.500 17 17 15.500 18.500 17 20 15.500 18.500 14 20 12.500z"/></svg>';
+const SWAP = '<svg viewBox="0 0 24 24" width="1em" height="1em"><path fill="#e9801d" d="M6.990 11L3 15l3.990 4v-3H14v-2H6.990v-3zM21 9l-3.990-4v3H10v2h7.010v3L21 9z"/></svg>';
+
 function renderLobby(c) {
-  const { $, lang } = c, x = T[lang()];
+  const { $, lang } = c, lg = lang();
   if (!room) return;
   net.myUid().then((u) => { myId = u; });
-  $("ow-title").textContent = x.lobby; $("ow-code").textContent = code.split("").join(" "); $("ow-codeh").textContent = x.roomCode; $("ow-info").textContent = "";
-  const now = Date.now(), players = Object.entries(room.players || {}).map(([uid, p]) => ({ uid, ...p })).filter((p) => !p.left).sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
-  const presentPlayers = players.filter((p) => present(p, now));
-  const team = !!room.teamMode; $("ow-occ").textContent = x.occ(presentPlayers.length, team ? 4 : 8);
-  const list = $("ow-list"); list.replaceChildren();
+  $("ow-title").textContent = S("online_waiting_room_title");
+  const now = Date.now(), team = !!room.teamMode, isHost = room.hostUid === myId;
+  const all = Object.entries(room.players || {}).map(([uid, p]) => ({ uid, ...p })).filter((p) => !p.left);
+  const meP = all.find((p) => p.uid === myId), others = all.filter((p) => p.uid !== myId && present(p, now)).sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+  const presentCount = (meP ? 1 : 0) + others.length, amPending = !!(meP && meP.pendingNextRound);
+  const active = [...(meP ? [meP] : []), ...others].filter((p) => !p.pendingNextRound);
+  const amReady = readyOverride ?? !!(meP && meP.ready);
+  const rdy = (p) => (p.uid === myId ? amReady : !!p.ready);
+  const allReady = team ? active.length === 4 && active.filter((p) => p.teamId === "A").length === 2 && active.filter((p) => p.teamId === "B").length === 2 && active.every(rdy) : active.length >= 2 && active.every(rdy);
+  const teamHint = !team ? null : active.length < 4 ? "online_team_needs_players" : active.filter((p) => p.teamId === "A").length !== 2 || active.filter((p) => p.teamId === "B").length !== 2 ? "online_team_unbalanced" : null;
   const bubbles = activeBubbles(chatNow());
   if (!$("ow-dock").firstChild) $("ow-dock").append(buildDock(chatCtx(c), code, () => room));
-  players.forEach((p) => {
-    const isMe = p.uid === myId, isHost = p.uid === room.hostUid;
-    const row = el("div", "ow-row" + (present(p, now) ? "" : " away") + (p.ready || isHost ? " ready" : ""));
+
+  // ---- seats ----
+  const seat = (p) => {
+    const isMe = p.uid === myId, host = p.uid === room.hostUid, bub = bubbles[p.uid], ready = rdy(p);
+    const card = el("div", "ow-card" + (ready ? " rdy" : ""));
     const av = frameRing(frameById(p.frameId), "ow-av"); av.style.position = "relative";
-    const bub = bubbles[p.uid]; if (bub) row.append(el("div", "bubble", esc(messageOf(bub, lang()))));
-    row.append(av, el("div", "ow-nm", `${isHost ? "👑 " : ""}${esc(isMe ? x.you(p.displayName) : p.displayName)}<small>Lv ${p.level || 1}${p.pendingNextRound ? " · " + x.pending : ""}</small>`));
-    if (team) { const tb = el("button", "tm-badge " + (p.teamId === "B" ? "b" : "a"), chatText(p.teamId === "B" ? "online_team_b" : "online_team_a", lang())); if (isMe) { tb.title = chatText("online_switch_team", lang()); tb.onclick = () => net.setTeam(code, p.teamId === "B" ? "A" : "B").catch(() => {}); } else tb.disabled = true; row.append(tb); }
-    row.append(el("div", "ow-st", present(p, now) ? (p.ready || isHost ? "✓" : "⏳") : "…"));
-    if (room.hostUid === myId && !isMe) { const kb = el("button", "kick", "⛔"); kb.title = chatText("online_kick_player", lang()); kb.onclick = () => c.confirm(chatText("online_kick_confirm_message", lang(), p.displayName), chatText("online_kick_confirm_confirm", lang()), () => net.kickPlayer(code, p.uid, p.displayName).catch(() => {})); row.append(kb); }
-    list.append(row);
-  });
-  const kicked = Object.entries(room.kickedUsers || {}).filter(([, k]) => k && k.until > now);
-  if (room.hostUid === myId && kicked.length) {
-    list.append(el("div", "ow-sec", chatText("online_kicked_users_section_title", lang())));
-    kicked.forEach(([uid, k]) => { const r = el("div", "ow-row away kicked", `<div class="ow-nm">${esc(chatText("online_kicked_user_remaining_format", lang(), k.displayName || "?", Math.max(1, Math.ceil((k.until - now) / 60000))))}</div>`); const ub = el("button", "fr-pill", chatText("online_unban_player", lang())); ub.onclick = () => net.unbanPlayer(code, uid).catch(() => {}); r.append(ub); list.append(r); });
+    const nm = isMe ? S("online_you_label", p.displayName) : p.displayName, lv = p.level || 1;
+    const status = bub ? esc(messageOf(bub, lg)) : p.pendingNextRound ? S("online_pending_badge") : "";
+    const txt = el("div", "ow-tx", `<div class="ow-n"><span>${esc(nm)}</span>${host ? '<img src="img/lobby_crown.webp" alt="">' : ""}</div><div class="ow-rk"><i>${S(rankKey(lv))}</i><i>${S("home_level_inline", lv)}</i></div><div class="ow-s">${status}</div>`);
+    card.append(av, txt);
+    if (team && isMe) { const sw = el("button", "ow-ico", SWAP); sw.title = S("online_switch_team"); sw.onclick = (e) => { e.stopPropagation(); net.setTeam(code, p.teamId === "B" ? "A" : "B").catch(() => {}); }; card.append(sw); }
+    if (isHost && !isMe && p.uid !== "karalak-bot") {
+      const kb = el("button", "ow-ico", KICK); kb.title = S("online_kick_player");
+      kb.onclick = (e) => { e.stopPropagation(); c.confirm(S("online_kick_confirm_message", p.displayName), S("online_kick_confirm_confirm"), () => net.kickPlayer(code, p.uid, p.displayName).catch(() => {})); };
+      card.append(kb);
+    }
+    if (!isMe && !myFriends.some((f) => f.id === p.uid)) card.onclick = () => c.confirm(S("online_friend_add_message", p.displayName), S("online_friend_add_confirm"), () => net.sendFriendRequestTo(p.uid, p.displayName, c.P.nick).catch(() => {}));
+    return card;
+  };
+  const empty = () => { const e = el("div", "ow-slot", `<img src="img/lobby_adduser.webp" alt=""><span>${S("online_invite_friend_slot")}</span>`); e.onclick = () => inviteSheet(c); return e; };
+  const main = $("ow-main"); main.replaceChildren();
+  // code card
+  const cp = el("div", "ow-cp");
+  cp.innerHTML = `<div class="h">${S("online_room_code_hint")}</div><div class="n">${code}</div><div class="b"><span>${S("online_invite_friend")}</span></div>`;
+  cp.querySelector(".b").onclick = async () => {
+    const t = `${S("share_room_invite")} ${S("share_room_code", code)} — https://karalak-b6e11.web.app/oyna/`;
+    try { if (navigator.share) await navigator.share({ text: t }); else { await navigator.clipboard.writeText(code); say(c, lg === "tr" ? "Kod kopyalandı" : "Code copied"); } } catch {}
+  };
+  main.append(cp);
+  if (amPending) main.append(el("div", "ow-note", S("online_pending_next_round_message")));
+  main.append(el("div", "ow-head", `<div class="band"><span>${S("online_players_section_title")}</span></div><div class="pill">${PERSON}<span>${S("online_room_occupancy", presentCount, team ? 4 : 8)}</span></div>`));
+  const mine = meP ? [seat(meP)] : [], theirs = others.map(seat);
+  if (team) {
+    const cols = el("div", "ow-teams");
+    for (const id of ["A", "B"]) {
+      const col = el("div", "ow-col", `<div class="pill t"><span>${S(id === "A" ? "online_team_a" : "online_team_b")}</span></div>`), mem = [...(meP ? [meP] : []), ...others].filter((p) => p.teamId === id);
+      mem.forEach((p) => col.append(p.uid === myId ? mine[0] : theirs[others.indexOf(p)]));
+      for (let i = mem.length; i < 2; i++) col.append(empty());
+      cols.append(col);
+    }
+    main.append(cols);
+  } else {
+    const cells = [...mine, ...theirs]; while (cells.length < 8) cells.push(empty());
+    const grid = el("div", "ow-grid"); cells.forEach((x) => grid.append(x)); main.append(grid);
   }
-  const me = room.players[myId], isHost = room.hostUid === myId;
-  const active = presentPlayers.filter((p) => !p.pendingNextRound), everyoneReady = presentPlayers.filter((p) => p.uid !== room.hostUid).every((p) => p.ready);
-  const teamOk = !team || (active.length === 4 && active.filter((p) => p.teamId === "A").length === 2 && active.filter((p) => p.teamId === "B").length === 2);
-  $("ow-ready").style.display = isHost ? "none" : ""; $("ow-ready-t").textContent = me && me.ready ? x.notReady : x.ready;
-  $("ow-ready").onclick = () => net.setReady(code, !(me && me.ready)).catch(() => {});
-  $("ow-start").style.display = isHost ? "" : "none"; $("ow-start-t").textContent = x.start;
-  const canStart = isHost && presentPlayers.length >= 2 && everyoneReady && teamOk && !room.countdownStartedAt;
-  $("ow-start").classList.toggle("dis", !canStart);
-  $("ow-start").onclick = () => { if (canStart) hostStart(c); };
-  $("ow-info").textContent = team && !teamOk ? chatText(active.length < 4 ? "online_team_needs_players" : "online_team_unbalanced", lang()) : isHost ? (presentPlayers.length < 2 ? x.needTwo : "") : (everyoneReady && presentPlayers.length >= 2 ? x.waitHost : "");
-  $("ow-invite-t").textContent = x.inviteF; $("ow-invite").onclick = () => inviteSheet(c);
-  // 3-2-1 shown on every lobby while the host's countdown runs
+  const kicked = Object.entries(room.kickedUsers || {}).filter(([, k]) => k && k.until > now);
+  if (isHost && kicked.length) {
+    main.append(el("div", "ow-sec", S("online_kicked_users_section_title")));
+    kicked.forEach(([uid, k]) => { const r = el("div", "ow-kk", `<span>${esc(S("online_kicked_user_remaining_format", k.displayName || "?", Math.max(1, Math.ceil((k.until - now) / 60000))))}</span>`), u = el("button", "fr-pill", S("online_unban_player")); u.onclick = () => net.unbanPlayer(code, uid).catch(() => {}); r.append(u); main.append(r); });
+  }
+  // ---- waiting pill, hints and the one button ----
+  $("ow-wait").style.display = others.length ? "none" : "";
+  $("ow-wait").innerHTML = `<img src="img/lobby_hourglass.webp" alt=""><span>${S("online_waiting_for_friend")}</span>`;
+  const counting = !!room.countdownStartedAt, left = counting ? 3 - Math.floor((now - room.countdownStartedAt) / 1000) : 0;
+  const hostCanStart = allReady && isHost && !counting && !starting;
+  const hints = $("ow-hints"); hints.replaceChildren();
+  if (notice) hints.append(el("div", "ow-hint", esc(notice)));
+  if (!amPending && others.length) {
+    if (!allReady && teamHint) hints.append(el("div", "ow-hint", S(teamHint)));
+    if (allReady && !isHost && !counting && !starting) hints.append(el("div", "ow-hint", S("online_waiting_for_host")));
+  }
+  const btn = $("ow-ready"); btn.style.display = !amPending && others.length ? "" : "none";
+  btn.className = "ow-rb" + (amReady || counting ? " g" : "") + (counting ? " cd" : "") + (!(amReady || counting) ? " blink" : "");
+  $("ow-ready-t").textContent = counting ? (left > 0 ? left : S("online_game_starting").replace(/!$/, "")) : hostCanStart ? S("online_start_game") : S("online_ready");
+  btn.onclick = () => {
+    if (counting || starting) return;
+    if (hostCanStart) { starting = true; renderLobby(c); hostStart(c).finally(() => { starting = false; }); return; }
+    readyOverride = !amReady; renderLobby(c); net.setReady(code, readyOverride).catch(() => {}).finally(() => { setTimeout(() => { readyOverride = null; }, 1500); });
+  };
   clearInterval(cdTimer);
-  if (room.countdownStartedAt) {
-    const tick = () => { const left = 3 - Math.floor((Date.now() - room.countdownStartedAt) / 1000); $("ow-cd").textContent = left > 0 ? left : x.starting; $("ow-cd").classList.remove("hidden"); };
-    tick(); cdTimer = setInterval(tick, 250);
-  } else $("ow-cd").classList.add("hidden");
+  if (counting) cdTimer = setInterval(() => { if (c.current() !== "onw") return clearInterval(cdTimer); renderLobby(c); }, 400);
 }
 
 async function hostStart(c) {
@@ -197,17 +247,17 @@ async function hostStart(c) {
 
 function inviteSheet(c) {
   const { $, lang, P } = c, x = T[lang()], d = $("ow-sheet"); d.classList.remove("hidden"); d.replaceChildren();
-  const box = el("div", "ow-sbox", `<b>${x.inviteT}</b>`);
-  if (!myFriends.length) box.append(el("p", "", x.inviteE));
+  const box = el("div", "ow-sbox", `<b>${S("online_invite_sheet_title")}</b>`);
+  if (!myFriends.length) box.append(el("p", "", S("online_invite_sheet_empty")));
   myFriends.forEach((f) => {
     const row = el("div", "fr-row", `<span class="nm">${esc(f.nickname || "?")}</span>`);
-    const b = el("button", "fr-pill", sent.has(f.id) ? x.invSent : x.invSend);
-    b.onclick = async () => { try { await net.sendInvite(f.id, code, P.nick); sent.add(f.id); b.textContent = x.invSent; } catch { b.textContent = "✗"; } };
+    const b = el("button", "fr-pill", sent.has(f.id) ? S("online_invite_sent_short") : S("online_invite_send"));
+    b.onclick = async () => { try { await net.sendInvite(f.id, code, P.nick); sent.add(f.id); b.textContent = S("online_invite_sent_short"); } catch { b.textContent = "✗"; } };
     row.append(b); box.append(row);
   });
   const share = el("button", "pill cream small", `<span>${x.share}</span>`);
   share.onclick = async () => { const t = `${lang() === "tr" ? "Karalak odama gel! Kod" : "Join my Karalak room! Code"}: ${code} — https://karalak-b6e11.web.app/oyna/`; try { if (navigator.share) await navigator.share({ text: t }); else await navigator.clipboard.writeText(code); } catch {} };
-  const close = el("button", "pill cream small", `<span>${x.leave === "" ? "" : (lang() === "tr" ? "Kapat" : "Close")}</span>`); close.onclick = () => d.classList.add("hidden");
+  const close = el("button", "pill cream small", `<span>${S("close")}</span>`); close.onclick = () => d.classList.add("hidden");
   box.append(share, close); d.append(box); d.onclick = (e) => { if (e.target === d) d.classList.add("hidden"); };
 }
 

@@ -6,18 +6,23 @@ const CDN = `https://www.gstatic.com/firebasejs/${V}`;
 const RUN_WORD_COUNT = 10, SHARD_COUNT = 1000, BAND_SIZE = 10, MIN_CORRECT = 2, MAX_BAND = 9, CANDIDATES = 5;
 let api = null;
 
-async function init() {
-  if (api) return api;
-  if (!firebaseReady()) throw new Error("no-config");
-  const [app, auth, fs] = await Promise.all([
-    import(`${CDN}/firebase-app.js`), import(`${CDN}/firebase-auth.js`), import(`${CDN}/firebase-firestore.js`),
-  ]);
-  const a = app.initializeApp(firebaseConfig);
-  const au = auth.getAuth(a);
-  if (!au.currentUser) await auth.signInAnonymously(au);
-  await au.authStateReady?.();
-  api = { fs, db: fs.getFirestore(a), auth: au };
-  return api;
+let initP = null;
+// One shared start-up: concurrent callers (the room listener, the cloud save, the friends screen…) must not each sign in anonymously.
+function init() {
+  if (api) return Promise.resolve(api);
+  if (!initP) initP = (async () => {
+    if (!firebaseReady()) throw new Error('no-config');
+    const [app, auth, fs] = await Promise.all([
+      import(`${CDN}/firebase-app.js`), import(`${CDN}/firebase-auth.js`), import(`${CDN}/firebase-firestore.js`),
+    ]);
+    const a = app.initializeApp(firebaseConfig);
+    const au = auth.getAuth(a);
+    await au.authStateReady?.();
+    if (!au.currentUser) await auth.signInAnonymously(au);
+    api = { fs, db: fs.getFirestore(a), auth: au };
+    return api;
+  })().catch((e) => { initP = null; throw e; });
+  return initP;
 }
 
 export const levelBandFor = (level) => Math.floor((Math.max(1, level) - 1) / BAND_SIZE);
@@ -390,4 +395,10 @@ export async function deleteAccount() {
   const m = await import(`${CDN}/firebase-auth.js`);
   await m.deleteUser(user);
   await m.signInAnonymously(auth);
+}
+
+// A friend request to someone met in a room (FriendRepositoryImpl.sendFriendRequest): one document in their friendRequests.
+export async function sendFriendRequestTo(uid, name, myNick) {
+  const { fs, db, auth } = await init();
+  await fs.setDoc(fs.doc(db, "users", uid, "friendRequests", auth.currentUser.uid), { fromNickname: myNick, sentAt: Date.now() });
 }

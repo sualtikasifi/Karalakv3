@@ -34,7 +34,7 @@
   })();
 })();
 </script>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="ach-green" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values=".663 0 0 0 0  0 .871 0 0 0  0 0 .604 0 0  0 0 0 1 0"/></filter></svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="lobby-ready" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values=".78 0 0 0 0  0 .98 0 0 0  0 0 .72 0 0  0 0 0 1 0"/></filter><filter id="ach-green" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values=".663 0 0 0 0  0 .871 0 0 0  0 0 .604 0 0  0 0 0 1 0"/></filter></svg>
 <div id="stage">
   <section id="home" class="screen">
     <img class="bg" src="img/bg_home_scene.webp" alt="">
@@ -192,16 +192,9 @@
   </section>
   <section id="onw" class="screen">
     <img class="bg" data-src="img/bg_lobby.webp" alt="">
-    <button id="ow-back" class="hit" aria-label="back"><img data-src="img/join_back.webp" alt=""></button>
     <div id="ow-title" class="txt sign"></div>
-    <img id="ow-codep" data-src="img/lobby_codepanel.webp" alt=""><div id="ow-codeh" class="txt ink sm"></div><div id="ow-code" class="txt ink codebig"></div>
-    <div id="ow-occ" class="txt capw"></div>
-    <div id="ow-list"></div>
-    <div id="ow-info" class="txt capw"></div>
-    <button id="ow-ready" class="imgbtn g"><span id="ow-ready-t"></span></button>
-    <button id="ow-start" class="imgbtn o"><span id="ow-start-t"></span></button>
-    <button id="ow-invite" class="imgbtn b"><span id="ow-invite-t"></span></button>
-    <div id="ow-dock"></div><div id="ow-cd" class="hidden"></div>
+    <button id="ow-back" class="hit" aria-label="back"><img data-src="img/join_back.webp" alt=""></button>
+    <div id="ow-col"><div id="ow-main"></div><div id="ow-bottom"><div id="ow-wait"></div><div id="ow-dock"></div><div id="ow-hints"></div><button id="ow-ready" class="ow-rb"><span id="ow-ready-t"></span></button></div></div>
     <div id="ow-sheet" class="hidden"></div>
   </section>
 
