@@ -857,3 +857,5 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .ak-in{height:calc(var(--u)*96);border-radius:99px;border:calc(var(--u)*5) solid #d9a566;background:#fffaf0;font:inherit;font-size:calc(var(--u)*38);font-weight:700;color:#3b2314;padding:0 calc(var(--u)*40);outline:0;user-select:text;-webkit-user-select:text}
 .ak-in::placeholder{color:#a8977f;font-weight:600}.ak-in:focus{border-color:#f26a1b}
 .ak-btns{display:flex;gap:calc(var(--u)*18)}.ak-btns .pill{flex:1;height:calc(var(--u)*104);position:relative}.ak-btns .pill span{font-size:calc(var(--u)*38);white-space:nowrap}
+/* the word plate drops in with a little spring on every new word (springIn fromY=-26) */
+#d-word{animation:wdrop .45s cubic-bezier(.3,1.5,.5,1)}@keyframes wdrop{from{transform:translateY(calc(var(--u)*-52));opacity:0}to{transform:none;opacity:1}}

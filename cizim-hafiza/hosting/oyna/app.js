@@ -540,6 +540,7 @@ function nextDraw() {
   const SW = '<svg class="sw" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="8" fill="#e8650f"/><path d="M12 8.5v5l3 2" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="9" y="2" width="6" height="2.6" rx="1" fill="#e8650f"/></svg>';
   const restAfter = () => round.slice(idx + 1).reduce((s, q) => s + (DRAW_SECONDS[q.difficulty] ?? 7), 0);
   const paintProg = (left) => { $("d-prog").innerHTML = relaxed ? `${idx + 1} / ${round.length}` : `${SW}${Math.floor((left + restAfter()) / 60)}:${String((left + restAfter()) % 60).padStart(2, "0")} · ${idx + 1}/${round.length}`; };
+  $("d-word").style.animation = "none"; void $("d-word").offsetWidth; $("d-word").style.animation = "";
   $("d-word").textContent = w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1);
   const wl = w.text.length; $("d-word").style.fontSize = Math.max(40, Math.min(70, 425 * 0.97 / (wl * 0.5))) * u + "px";
   $("d-line").style.animation = "none"; void $("d-line").offsetWidth; $("d-line").style.animation = "";
