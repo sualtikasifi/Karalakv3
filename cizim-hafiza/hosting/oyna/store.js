@@ -24,7 +24,7 @@ export function layoutStore(ctx) {
   sx($("st-gold"), 547, 131, 252, 98);
   sx($("st-tabs"), 34, 547, 769, 93);
   const sh = $("st-shelf"), u = ctx.u();
-  sh.style.left = 34 * u + "px"; sh.style.top = 673 * u + "px"; sh.style.width = 771 * u + "px"; sh.style.height = ctx.stageH() - 673 * u + "px";
+  sh.style.left = 34 * u + "px"; sh.style.top = 673 * u + "px"; sh.style.width = 771 * u + "px"; sh.style.height = ctx.fillH() - 673 * u + "px";
   sh.style.setProperty("--g", 28 * u + "px");
 }
 

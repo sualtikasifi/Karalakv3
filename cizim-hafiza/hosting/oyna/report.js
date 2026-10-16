@@ -4,7 +4,7 @@ const T = { tr: { title: "Sorun Bildir", introT: "Bir sorun mu yaşıyorsun?", i
 let cat = "SUGGESTION", list = [], note = "", busy = false;
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
-export function layoutReport(c) { const { place, $ } = c; place($("rp-back"), 20, 40, 110, 106); place($("rp-sign"), 150, 80, 541, 240); place($("rp-title"), 200, 200, 440, 100); const l = $("rp-body"); l.style.left = 30 * c.u() + "px"; l.style.top = 340 * c.u() + "px"; l.style.width = 781 * c.u() + "px"; l.style.height = c.stageH() - 340 * c.u() + "px"; }
+export function layoutReport(c) { const { place, $ } = c; place($("rp-back"), 20, 40, 110, 106); place($("rp-sign"), 150, 80, 541, 240); place($("rp-title"), 200, 200, 440, 100); const l = $("rp-body"); l.style.left = 30 * c.u() + "px"; l.style.top = 340 * c.u() + "px"; l.style.width = 781 * c.u() + "px"; l.style.height = c.fillH() - 340 * c.u() + "px"; }
 export async function renderReport(c, reload = true) {
   const { $, lang } = c, x = T[lang()]; $("rp-title").textContent = x.title;
   const body = $("rp-body"); body.replaceChildren();

@@ -27,7 +27,7 @@ export function recordLevel(P, w, l, stars) { const k = `${w}:${l}`; P.levels[k]
 export function layoutWorlds(c) {
   const { place, $ } = c, u = c.u();
   place($("wl-back"), 20, 40, 110, 106);
-  const l = $("wl-list"); l.style.left = 0; l.style.top = 440 * u + "px"; l.style.width = 841 * u + "px"; l.style.height = c.stageH() - 440 * u + "px";
+  const l = $("wl-list"); l.style.left = 0; l.style.top = 440 * u + "px"; l.style.width = 841 * u + "px"; l.style.height = c.fillH() - 440 * u + "px";
 }
 export function renderWorlds(c) {
   const { $, P, lang } = c, x = T[lang()], list = $("wl-list");

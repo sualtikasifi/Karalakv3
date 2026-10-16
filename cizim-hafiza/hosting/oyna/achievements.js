@@ -31,7 +31,7 @@ export function layoutAchievements(c) {
   place($("ac-back"), 20, 40, 110, 106);
   place($("ac-sign"), 140, 120, 555, 234);
   place($("ac-title"), 170, 120 + 234 * 0.415, 530, 234 * 0.36);
-  const l = $("ac-list"); l.style.left = 12 * u / 1 + "px"; l.style.top = 343 * u + "px"; l.style.width = 817 * u + "px"; l.style.height = c.stageH() - 343 * u + "px";
+  const l = $("ac-list"); l.style.left = 12 * u / 1 + "px"; l.style.top = 343 * u + "px"; l.style.width = 817 * u + "px"; l.style.height = c.fillH() - 343 * u + "px";
   place($("ac-dlg"), 0, 0, 841, 1870);
 }
 
