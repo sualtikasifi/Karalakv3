@@ -859,3 +859,5 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .ak-btns{display:flex;gap:calc(var(--u)*18)}.ak-btns .pill{flex:1;height:calc(var(--u)*104);position:relative}.ak-btns .pill span{font-size:calc(var(--u)*38);white-space:nowrap}
 /* the word plate drops in with a little spring on every new word (springIn fromY=-26) */
 #d-word{animation:wdrop .45s cubic-bezier(.3,1.5,.5,1)}@keyframes wdrop{from{transform:translateY(calc(var(--u)*-52));opacity:0}to{transform:none;opacity:1}}
+.lg-hint{flex-direction:row!important;align-items:center;text-align:left!important;gap:calc(var(--u)*30)}.lg-hint img{width:calc(var(--u)*120);height:calc(var(--u)*120);flex:none}.lh-t{display:flex;flex-direction:column;gap:calc(var(--u)*10);font-size:calc(var(--u)*34);font-weight:600;color:#3b2314}.lh-t b{color:#f26a1b;font-size:calc(var(--u)*34)}
+.lh-t{font-size:calc(var(--u)*30)!important}.lg-hint img{width:calc(var(--u)*100);height:calc(var(--u)*100)}

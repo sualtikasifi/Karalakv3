@@ -99,11 +99,14 @@ export async function renderLeague(c, refetch = true) {
   if (net.isScoreRefused()) list.append(note("⚠️ " + (c.lang() === "tr" ? "Puanın şu an sunucuya yazılamıyor, bu yüzden diğer oyuncular seni bu tabloda göremeyebilir. Sayfayı yenile ya da biraz sonra tekrar dene." : "Your score can't be saved to the server right now, so other players may not see you in this table. Reload or try again later.")));
   if (tab === "friends") {
     if (refetch || !fr) { list.append(note("…")); try { fr = await net.friendsLeague(periodId()); } catch { fr = []; } if (c.current() !== "league" || tab !== "friends") return; list.replaceChildren(); }
-    fr.forEach((e, i) => list.append(row(c, { ...e, nickname: e.me ? c.P.nick : e.nickname, level: e.me ? levelForXp(c.P.xp) : e.level, periodXp: e.totalXp }, i + 1)));
+    // my own row is always there, even before this browser has published a profile
+    if (!fr.some((e) => e.me)) fr = [...fr, { me: true, nickname: c.P.nick, periodXp: 0, totalXp: c.P.xp, level: levelForXp(c.P.xp) }].sort((a, b) => b.totalXp - a.totalXp);
+    const hintAt = list.children.length;
     if (fr.length <= 1) {
-      const h = document.createElement("div"); h.className = "lg-card lg-hint"; h.innerHTML = `<div>🤝</div><div>${S("league_friends_hint")}</div><b>${S("league_friends_hint_action")}</b>`;
+      const h = document.createElement("div"); h.className = "lg-card lg-hint"; h.innerHTML = `<img src="img/friends_handshake.webp" alt=""><div class="lh-t"><span>${S("league_friends_hint")}</span><b>${S("league_friends_hint_action")}</b></div>`;
       h.onclick = () => c.show("friends"); list.append(h);
     }
+    fr.forEach((e, i) => list.append(row(c, { ...e, nickname: e.me ? c.P.nick : e.nickname, level: e.me ? levelForXp(c.P.xp) : e.level, periodXp: e.totalXp }, i + 1)));
     return;
   }
   if (refetch || (!table && !loading)) { list.append(note("…")); await fetchTable(); if (c.current() !== "league" || tab !== "global") return; list.replaceChildren(); }
@@ -184,7 +187,7 @@ function row(c, e, rank) {
   r.className = "lg-row" + (sprite ? " s" + rank : "") + (e.me ? " me" : "");
   const frame = e.bot ? botFrame(e.level, e.nickname) : (e.frameId && frameById(e.frameId)) || highestFrame(e.level);
   const av = frameRing(frame, "lg-av", e.bot ? personaFace(e.nickname) : null); av.style.position = "absolute";
-  const nm = document.createElement("div"); nm.className = "lg-nm"; nm.textContent = e.nickname;
+  const nm = document.createElement("div"); nm.className = "lg-nm"; nm.textContent = e.me ? S("quick_match_you_named", e.nickname) : e.nickname;
   const lv = document.createElement("small"); lv.textContent = "· " + S(rankKey(e.level)); nm.append(lv);
   const xp = document.createElement("div"); xp.className = "lg-xp"; xp.textContent = S("league_xp_format", e.periodXp);
   if (!sprite) { const n = document.createElement("div"); n.className = "lg-rk"; n.textContent = rank + "."; r.append(n); }
