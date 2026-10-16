@@ -21,6 +21,7 @@ import { setLang, loadStrings, S } from "./i18n.js";
 import { syncNow, scheduleBackup } from "./sync.js";
 import { openRankLadder } from "./ranks.js";
 import { startSearch, stopSearch } from "./search.js";
+import { exitDialog } from "./ui.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
@@ -482,7 +483,7 @@ function nextDraw() {
   const arc = $("d-arc"); arc.style.transition = "none"; setRing($("d-ring"), arc, $("d-time"), left, total); void arc.getBoundingClientRect(); arc.style.transition = "";
   paintProg(left);
   tool = "pen"; refreshTools(); paintLive();
-  const tj = $("d-timej"), refreshTj = () => { const n = P.jokers.EXTRA_TIME || 0; $("d-timej-n").textContent = n; $("d-timej-t").textContent = t().timeJ; tj.classList.toggle("dis", usedTime || n <= 0); tj.style.display = relaxed ? "none" : ""; };
+  const tj = $("d-timej"), refreshTj = () => { const n = P.jokers.EXTRA_TIME || 0; $("d-timej-n").textContent = n; $("d-timej-t").textContent = S("drawing_time_joker"); tj.classList.toggle("dis", usedTime || n <= 0); tj.style.display = relaxed ? "none" : ""; };
   refreshTj();
   tj.onclick = () => { if (usedTime || (P.jokers.EXTRA_TIME || 0) <= 0) return; usedTime = true; P.jokers.EXTRA_TIME--; saveP(); left += 10; total += 10; setRing($("d-ring"), arc, $("d-time"), left, total); sfx.buy(); refreshTj(); };
   if (!relaxed) dTimer = setInterval(() => {
@@ -623,13 +624,20 @@ async function finish() {
 }
 
 // ---------- navigation ----------
+// GameViewModel.forfeitDaily: leaving a daily challenge ends today's chance — what was guessed so far counts, the rest is wrong.
+function forfeitDaily() {
+  const flags = round.map((w) => !!w.correct), res = dailyRecord(P, flags, score);
+  if (res) { res.xp *= xpMult; eco.addXp(P, res.xp, runeFx(P, "XP")); if (P.daily.result) P.daily.result.xp = res.xp; }
+  saveP(); refreshHome();
+}
 function confirmLeave() {
-  const quickMatch = kind === "quick" && !!quickOpp, pen = eco.QUICK_MATCH_ABANDON_PENALTY_XP;
-  $("dlg-text").textContent = quickMatch ? (lang === "tr" ? `Bu maçtan şimdi çıkarsan ${pen} XP kaybedersin.` : `If you leave this match now you will lose ${pen} XP.`) : t().leave; $("dlg-yes").textContent = t().yes; $("dlg-no").textContent = t().no;
-  $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren();
-  $("dialog").classList.remove("hidden");
-  $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); clearInterval(dTimer); clearInterval(gTimer); if (quickMatch) { eco.revokeXp(P, pen); saveP(); refreshHome(); } if (kind === "online") leaveLobby(ctx); else show("home"); };
-  $("dlg-no").onclick = () => $("dialog").classList.add("hidden");
+  const quickMatch = kind === "quick" && !!quickOpp, pen = eco.QUICK_MATCH_ABANDON_PENALTY_XP, daily = kind === "daily", online = kind === "online";
+  const go = () => { clearInterval(dTimer); clearInterval(gTimer); if (daily) forfeitDaily(); if (quickMatch) { eco.revokeXp(P, pen); saveP(); refreshHome(); } if (online) leaveLobby(ctx); else show("home"); };
+  exitDialog($("stage"), {
+    title: quickMatch ? S("quick_match_abandon_title") : daily ? S("daily_exit_title") : S("exit_game_title"),
+    message: quickMatch ? S("quick_match_abandon_message", pen) : daily ? S("daily_exit_message_short") : online ? S("exit_online_message") : S("exit_game_message"),
+    confirm: quickMatch ? S("quick_match_abandon_confirm", pen) : S("exit_game_confirm"), dismiss: quickMatch ? S("quick_match_abandon_keep") : S("exit_game_cancel"), onConfirm: go,
+  });
 }
 $("d-back").onclick = confirmLeave; $("g-back").onclick = confirmLeave;
 $("again").onclick = () => { if (kind === "quick") startQuick(); else show(kind === "level" ? "lvmap" : "home"); };

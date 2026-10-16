@@ -23,3 +23,29 @@ export function appWindow(host, { title, body, footer, centerTitle = false, onCl
   host.append(ov); ov.close = close;
   return ov;
 }
+
+/**
+ * The painted "leave?" window (PaintedExitDialog.kt): the stern crowned dog on exit_game_dialog (1100x795) or the sad one on
+ * exit_dialog (1100x823, the menu's "Karalak'tan çık"). The picture carries the sign and both buttons; the words are laid over it.
+ */
+const EXIT = {
+  game: { art: "exit_game_dialog", w: 1100, h: 795, title: [264, 353, 850, 440], msg: [285, 468, 821, 566], left: [149, 572, 545, 716], right: [557, 572, 949, 716], out: "#7a0e0e" },
+  menu: { art: "exit_dialog", w: 1100, h: 823, title: [230, 357, 882, 447], msg: [300, 455, 812, 531], left: [163, 566, 543, 731], right: [560, 566, 940, 731], out: "#7a2a08" },
+};
+export function exitDialog(host, { style = "game", title, message, confirm, dismiss, onConfirm, onDismiss }) {
+  const s = EXIT[style], pc = (v, t) => (v / t * 100).toFixed(3) + "%";
+  const box = (r) => `left:${pc(r[0], s.w)};top:${pc(r[1], s.h)};width:${pc(r[2] - r[0], s.w)};height:${pc(r[3] - r[1], s.h)}`;
+  const ov = el("div", "ex-ov"), card = el("div", "ex-card"); card.style.aspectRatio = `${s.w}/${s.h}`;
+  card.innerHTML = `<img src="img/${s.art}.webp" alt="">`;
+  const put = (cls, r, html) => { const e = el("div", cls, html); e.style.cssText = box(r); card.append(e); return e; };
+  put("ex-t", s.title, `<span>${title}</span>`); put("ex-m", s.msg, `<span>${message}</span>`);
+  const close = () => ov.remove();
+  const left = put("ex-b l", s.left, `<span>${dismiss}</span>`), right = put("ex-b r", s.right, `<span style="-webkit-text-stroke-color:${s.out}">${confirm}</span>`);
+  left.onclick = () => { close(); onDismiss && onDismiss(); }; right.onclick = () => { close(); onConfirm && onConfirm(); };
+  ov.onclick = (e) => { if (e.target === ov) { close(); onDismiss && onDismiss(); } };
+  ov.append(card); host.append(ov);
+  // FitText: the title stays on one line (shrinking to half), the message may take three
+  const fit = (e, base, lines, min) => { const sp = e.firstChild; let k = 1; sp.style.fontSize = base + "px"; while (k > min && (e.scrollHeight > e.clientHeight + 1 || sp.scrollWidth > e.clientWidth + 1 || (lines === 1 && sp.offsetHeight > base * 1.4))) { k -= 0.04; sp.style.fontSize = base * k + "px"; } };
+  requestAnimationFrame(() => { const w = card.getBoundingClientRect().width, k = w / s.w; const t = card.querySelector(".ex-t"), m = card.querySelector(".ex-m"); t.style.whiteSpace = "nowrap"; fit(t, 80 * k, 1, 0.5); fit(m, 46 * k, 3, 0.5); card.querySelectorAll(".ex-b span").forEach((b) => { b.style.fontSize = 68 * k + "px"; }); });
+  return ov;
+}
