@@ -21,7 +21,8 @@ import { setLang, loadStrings, S } from "./i18n.js";
 import { syncNow, scheduleBackup } from "./sync.js";
 import { openRankLadder } from "./ranks.js";
 import { startSearch, stopSearch } from "./search.js";
-import { exitDialog } from "./ui.js";
+import { exitDialog, appOnlyDialog } from "./ui.js";
+import { layoutBreak, startBreak, stopBreak } from "./brk.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
@@ -174,6 +175,8 @@ function layoutOnce() {
     layoutRunes(ctx); renderRunes(ctx);
   } else if (current === "report") {
     layoutReport(ctx); renderReport(ctx, !reportLoaded); reportLoaded = true;
+  } else if (current === "brk") {
+    layoutBreak(ctx);
   } else if (current === "duels") {
     place($("du-back"), 20, 40, 110, 106); renderDuels(ctx);
   } else if (current === "league") {
@@ -530,13 +533,14 @@ async function begin(picked) {
 }
 function nextDraw() {
   clearInterval(dTimer);
-  if (idx >= round.length) { idx = 0; return nextGuess(); }
+  if (idx >= round.length) { idx = 0; return startBreak(ctx, nextGuess); }
   const w = round[idx];
   show("draw");
   // Normal mode shows the time left for the whole drawing phase beside the word number (the stopwatch pill of the app).
   const SW = '<svg class="sw" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="8" fill="#e8650f"/><path d="M12 8.5v5l3 2" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="9" y="2" width="6" height="2.6" rx="1" fill="#e8650f"/></svg>';
   const restAfter = () => round.slice(idx + 1).reduce((s, q) => s + (DRAW_SECONDS[q.difficulty] ?? 7), 0);
   const paintProg = (left) => { $("d-prog").innerHTML = relaxed ? `${idx + 1} / ${round.length}` : `${SW}${Math.floor((left + restAfter()) / 60)}:${String((left + restAfter()) % 60).padStart(2, "0")} · ${idx + 1}/${round.length}`; };
+  $("d-word").style.animation = "none"; void $("d-word").offsetWidth; $("d-word").style.animation = "";
   $("d-word").textContent = w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1);
   const wl = w.text.length; $("d-word").style.fontSize = Math.max(40, Math.min(70, 425 * 0.97 / (wl * 0.5))) * u + "px";
   $("d-line").style.animation = "none"; void $("d-line").offsetWidth; $("d-line").style.animation = "";
@@ -608,8 +612,17 @@ function answer(text) {
   w.xp = w.correct && kind !== "daily" ? eco.wordXp(w.difficulty, w.ms) * xpMult : 0;
   score += w.points; idx++;
   if (w.correct) sfx.correct(); else { sfx.wrong(); vibrate(60); }
-  flash(w.correct); nextGuess();
+  showFeedback(w); setTimeout(() => { hideFeedback(); if (current === "guess") nextGuess(); }, 1200);
 }
+// GuessFeedbackOverlay: the badge over the drawing — a tick or a cross, the XP it paid, and the right word after a miss — for 1.2 s
+const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#1e8a3a" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CROSS = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="#c0392b" stroke-width="3.2" stroke-linecap="round"/></svg>';
+function showFeedback(w) {
+  let f = $("g-fb"); if (!f) { f = document.createElement("div"); f.id = "g-fb"; $("g-canvas").append(f); }
+  f.innerHTML = `<div class="${w.correct ? "ok" : "no"}"><div class="card"><div class="ic">${w.correct ? CHECK : CROSS}</div>${w.xp > 0 ? `<div class="xp">${S("xp_gained_format", w.xp)}</div>` : ""}${w.correct ? "" : `<div class="ans">${S("correct_answer_was", w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1))}</div>`}</div></div>`;
+  $("g-input").blur(); $("g-input").disabled = true; $("guess").classList.add("fb");
+}
+function hideFeedback() { $("guess").classList.remove("fb"); const f = $("g-fb"); if (f) f.replaceChildren(); $("g-input").disabled = false; }
 function flash(ok) { const f = $("g-flash"); f.textContent = ok ? "✅" : "❌"; f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); }
 $("g-form").onsubmit = (e) => { e.preventDefault(); answer($("g-input").value); };
 $("g-input").addEventListener("input", (e) => { const w = round[idx]; if (w && e.target.value.trim() && e.target.value.trim().toLocaleLowerCase(lang) === w.text.toLocaleLowerCase(lang)) answer(e.target.value); });
@@ -745,7 +758,7 @@ $("tl-online").onclick = needNet(async () => { await ensureWords(); show("onl");
 $("on-back").onclick = () => show("home"); $("oj-back").onclick = () => show("onl"); $("oc-back").onclick = () => show("onl");
 $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("onj");
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
-$("h-rank").onclick = () => openRankLadder(ctx); $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => openRankLadder(ctx);
+$("h-veil-gold").onclick = $("h-veil-chest").onclick = () => appOnlyDialog($("stage")); $("h-rank").onclick = () => openRankLadder(ctx); $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => openRankLadder(ctx);
 $("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
 $("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; net.runeConfig().then((d) => { applyRuneConfig(d); if (current === "runes") renderRunes(ctx, true); }).catch(() => {}); show("runes"); }; $("ru-back").onclick = () => show("home");
 $("tl-quick").onclick = needNet(() => start("quick")); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };

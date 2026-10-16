@@ -3,7 +3,7 @@ import { S } from "./i18n.js";
 import { frameRing, frameList, frameById, penList } from "./store.js";
 
 // ---- Port of LeagueBots.kt: the fillers every phone adds to the published table ----
-let NAMES = [];
+let NAMES = [], BOTPHOTO = {};
 const ISTANBUL = "Europe/Istanbul";
 function seeded(seed) {
   let a = Number(BigInt.asIntN(32, BigInt(seed)));
@@ -57,7 +57,7 @@ function botFrame(lvl, seed) {
 
 let tab = "friends", table = null, loading = false, fr = null;
 
-export async function loadLeague() { if (!NAMES.length) NAMES = await (await fetch("league_names.json")).json(); }
+export async function loadLeague() { if (!NAMES.length) NAMES = await (await fetch("league_names.json")).json(); if (!Object.keys(BOTPHOTO).length) BOTPHOTO = await (await fetch("bot_photos.json")).json().catch(() => ({})); }
 
 async function fetchTable() {
   loading = true; table = null;
@@ -79,7 +79,7 @@ export function layoutLeague(c) {
   place($("lg-sign"), 150, 96, 541, 235);
   place($("lg-title"), 160, 96 + 235 * 0.415, 530, 235 * 0.36);
   place($("lg-tabs"), 52, 430, 737, 86);
-  place($("lg-timer"), 150, 556, 540, 76);
+  place($("lg-timer"), 0, 556, 841, 78);
   const l = $("lg-list"); l.style.left = 12 * u + "px"; l.style.top = 655 * u + "px"; l.style.width = 817 * u + "px"; l.style.height = c.fillH() - 655 * u + "px";
 }
 
@@ -92,18 +92,21 @@ export async function renderLeague(c, refetch = true) {
     b.onclick = () => { tab = k; renderLeague(c, false); }; tabs.append(b);
   }
   $("lg-refresh").style.display = tab === "global" ? "" : "none";
-  const t = timerText(); $("lg-timer").textContent = tab === "friends" ? S("league_friends_total_caption") : t;
+  const t = timerText(); $("lg-timer").innerHTML = `<span class="chip">${tab === "friends" ? S("league_friends_total_caption") : t}</span>`;
   $("lg-timer").className = "txt lg-timer " + (tab === "friends" ? "star" : "");
-  clearInterval(tick); if (tab === "global" && daysRemaining() <= 0) tick = setInterval(() => { if (c.current() !== "league") return clearInterval(tick); $("lg-timer").textContent = timerText(); }, 1000);
+  clearInterval(tick); if (tab === "global" && daysRemaining() <= 0) tick = setInterval(() => { if (c.current() !== "league") return clearInterval(tick); $("lg-timer").firstChild.textContent = timerText(); }, 1000);
   const list = $("lg-list"); list.replaceChildren();
   if (net.isScoreRefused()) list.append(note("⚠️ " + (c.lang() === "tr" ? "Puanın şu an sunucuya yazılamıyor, bu yüzden diğer oyuncular seni bu tabloda göremeyebilir. Sayfayı yenile ya da biraz sonra tekrar dene." : "Your score can't be saved to the server right now, so other players may not see you in this table. Reload or try again later.")));
   if (tab === "friends") {
     if (refetch || !fr) { list.append(note("…")); try { fr = await net.friendsLeague(periodId()); } catch { fr = []; } if (c.current() !== "league" || tab !== "friends") return; list.replaceChildren(); }
-    fr.forEach((e, i) => list.append(row(c, { ...e, nickname: e.me ? c.P.nick : e.nickname, level: e.me ? levelForXp(c.P.xp) : e.level, periodXp: e.totalXp }, i + 1)));
+    // my own row is always there, even before this browser has published a profile
+    if (!fr.some((e) => e.me)) fr = [...fr, { me: true, nickname: c.P.nick, periodXp: 0, totalXp: c.P.xp, level: levelForXp(c.P.xp) }].sort((a, b) => b.totalXp - a.totalXp);
+    const hintAt = list.children.length;
     if (fr.length <= 1) {
-      const h = document.createElement("div"); h.className = "lg-card lg-hint"; h.innerHTML = `<div>🤝</div><div>${S("league_friends_hint")}</div><b>${S("league_friends_hint_action")}</b>`;
+      const h = document.createElement("div"); h.className = "lg-card lg-hint"; h.innerHTML = `<img src="img/friends_handshake.webp" alt=""><div class="lh-t"><span>${S("league_friends_hint")}</span><b>${S("league_friends_hint_action")}</b></div>`;
       h.onclick = () => c.show("friends"); list.append(h);
     }
+    fr.forEach((e, i) => list.append(row(c, { ...e, nickname: e.me ? c.P.nick : e.nickname, level: e.me ? levelForXp(c.P.xp) : e.level, periodXp: e.totalXp }, i + 1)));
     return;
   }
   if (refetch || (!table && !loading)) { list.append(note("…")); await fetchTable(); if (c.current() !== "league" || tab !== "global") return; list.replaceChildren(); }
@@ -115,6 +118,24 @@ export async function renderLeague(c, refetch = true) {
   list.append(note(S("league_global_refresh_note")));
 }
 let tick = 0, rewardId = null;
+// PenStrokePreview: a wide curve drawn on in the pen's own gradient (65% drawing, then a hold, then a fade), looping every 4.2 s
+let penRaf = 0;
+function penPreview(cv, colors) {
+  cancelAnimationFrame(penRaf);
+  const t0 = performance.now(), ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const loop = (now) => {
+    if (!cv.isConnected) return;
+    if (!cv.width) { const r = cv.getBoundingClientRect(), k = Math.min(2, devicePixelRatio || 1); cv.width = Math.max(1, r.width * k); cv.height = Math.max(1, r.height * k); }
+    const W = cv.width, H = cv.height, g = cv.getContext("2d"), cycle = ((now - t0) % 4200) / 4200, draw = Math.min(1, cycle / 0.65), fade = Math.max(0, (cycle - 0.8) / 0.2);
+    g.clearRect(0, 0, W, H); g.globalAlpha = 1 - fade;
+    const pts = []; for (let i = 0; i <= 60; i++) { const t = i / 60, m = 1 - t; pts.push([m * m * m * W * 0.04 + 3 * m * m * t * W * 0.28 + 3 * m * t * t * W * 0.6 + t * t * t * W * 0.96, m * m * m * H * 0.75 + 3 * m * m * t * H * 0.05 + 3 * m * t * t * H * 1.05 + t * t * t * H * 0.25]); }
+    const gr = g.createLinearGradient(0, 0, W, 0); colors.forEach((k, i) => gr.addColorStop(colors.length > 1 ? i / (colors.length - 1) : 0, k));
+    g.strokeStyle = gr; g.lineWidth = H * 0.3; g.lineCap = "round"; g.lineJoin = "round"; g.beginPath();
+    const n = Math.max(1, Math.floor(pts.length * ease(draw))); pts.slice(0, n + 1).forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.stroke();
+    penRaf = requestAnimationFrame(loop);
+  };
+  penRaf = requestAnimationFrame(loop);
+}
 function banner(lang) {
   const id = rewardId || "", isPen = id.startsWith("PEN:"), key = id.replace(/^(PEN|FRAME):/, "");
   const pen = isPen ? penList().find((p) => p.id === key) : null, frame = !isPen && id ? frameList().find((f) => f.id === key) : null;
@@ -124,7 +145,7 @@ function banner(lang) {
   if (frame) icon.append(frameRing(frame, "lb-fr")); else icon.textContent = "🏆";
   const label = pen ? pen[lang] || pen.tr : S("league_reward_kind_frame") + (key.startsWith("LEAGUE_CHAMPION_") ? " " + key.replace("LEAGUE_CHAMPION_", "").replace(/_/g, "-") : "");
   const mid = document.createElement("div"); mid.className = "lb-m"; mid.innerHTML = `<small>${S("league_reward_title")}</small><b>${label}</b>`;
-  if (pen) { const st = document.createElement("i"); st.style.background = `linear-gradient(90deg,${pen.colors.join(",")})`; mid.append(st); }
+  if (pen) { const cv = document.createElement("canvas"); cv.className = "lb-pen"; mid.append(cv); penPreview(cv, pen.colors); }
   const r = document.createElement("div"); r.className = "lb-r"; r.innerHTML = `<span>${S("league_reward_bonus_gold", (10000).toLocaleString("tr-TR"))}</span><span>${S("league_reward_bonus_xp", (10000).toLocaleString("tr-TR"))}</span><small>${S("league_reward_top3")}</small>`;
   b.append(icon, mid, r); return b;
 }
@@ -147,13 +168,27 @@ function monthlyCard(c) {
   return card;
 }
 
+// LevelAvatar's PersonaFace: a filler wears the photo its name picks (BotPhotos); any other name gets a generated face
+const LETTER = ["#1A73E8", "#D93025", "#188038", "#E37400", "#9334E6", "#12B5CB", "#E52592", "#5F6368"];
+const GRAD = [["#FFE0B2", "#FFB74D"], ["#C8E6C9", "#81C784"], ["#BBDEFB", "#64B5F6"], ["#F8BBD0", "#F06292"], ["#D1C4E9", "#9575CD"], ["#B2EBF2", "#4DD0E1"], ["#FFF59D", "#FFD54F"]];
+const EMOJI = ["🦊", "🐼", "🎨", "⚽", "🎸", "🌸", "🚀", "🐱", "🎮", "🌵", "🍕", "🐶", "🦁", "📚", "🏀", "🐧"];
+function personaFace(seed) {
+  const d = document.createElement("div");
+  if (BOTPHOTO[seed]) { const i = document.createElement("img"); i.src = `img/bots/${BOTPHOTO[seed]}.jpg`; i.alt = ""; i.style.cssText = "width:100%;height:100%;object-fit:cover"; d.append(i); return d; }
+  let h = 11; for (const ch of seed) h = (Math.imul(h, 31) + ch.codePointAt(0)) | 0; h &= 0x7fffffff;
+  const b = h % 20; d.style.cssText = "display:flex;align-items:center;justify-content:center;color:#fff;font-weight:500;line-height:1";
+  if (b <= 2) { const i = document.createElement("img"); i.src = "img/avatar_dino.webp"; i.alt = ""; i.style.cssText = "width:100%;height:100%"; d.append(i); }
+  else if (b <= 9) { d.style.background = LETTER[Math.floor(h / 20) % LETTER.length]; d.style.fontSize = "calc(var(--u)*40)"; d.textContent = ([...seed].find((x) => /[A-Za-zÇĞİÖŞÜçğıöşü]/.test(x)) || "K").toUpperCase(); }
+  else { const g = GRAD[Math.floor(h / 20) % GRAD.length]; d.style.background = `linear-gradient(${g[0]},${g[1]})`; d.style.fontSize = "calc(var(--u)*44)"; d.textContent = EMOJI[Math.floor(h / 140) % EMOJI.length]; }
+  return d;
+}
 function row(c, e, rank) {
   const r = document.createElement("div"), sprite = rank <= 3;
   r.className = "lg-row" + (sprite ? " s" + rank : "") + (e.me ? " me" : "");
   const frame = e.bot ? botFrame(e.level, e.nickname) : (e.frameId && frameById(e.frameId)) || highestFrame(e.level);
-  const av = frameRing(frame, "lg-av"); av.style.position = "absolute";
-  const nm = document.createElement("div"); nm.className = "lg-nm"; nm.textContent = e.nickname;
-  const lv = document.createElement("small"); lv.textContent = "· " + S(rankKey(e.level)); nm.append(lv);
+  const av = frameRing(frame, "lg-av", e.bot ? personaFace(e.nickname) : null); av.style.position = "absolute";
+  const nm = document.createElement("div"); nm.className = "lg-nm"; nm.textContent = e.me ? S("quick_match_you_named", e.nickname) : e.nickname;
+  const lv = document.createElement("small"); lv.className = "rl"; lv.innerHTML = `<i>· ${S("home_level_inline", e.level)}</i><i>· ${S(rankKey(e.level))}</i>`; nm.append(lv);
   const xp = document.createElement("div"); xp.className = "lg-xp"; xp.textContent = S("league_xp_format", e.periodXp);
   if (!sprite) { const n = document.createElement("div"); n.className = "lg-rk"; n.textContent = rank + "."; r.append(n); }
   r.append(av, nm, xp); return r;

@@ -31,10 +31,16 @@ function disc(g, cx, cy, r, stops) {
   const grad = g.createRadialGradient(cx, cy, 0, cx, cy, r); stops.forEach(([o, c]) => grad.addColorStop(o, c)); g.fillStyle = grad; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
 }
 const sizeCanvas = (cv) => { const r = cv.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1); cv.width = Math.max(2, Math.round(r.width * d)); cv.height = Math.max(2, Math.round(r.height * d)); return { w: cv.width, h: cv.height, d }; };
-function loop(draw) { let on = true, t0 = performance.now(); const f = (now) => { if (!on) return; draw(now - t0); requestAnimationFrame(f); }; requestAnimationFrame(f); return () => { on = false; }; }
+// One frame loop per scene. `fps` caps the rate (the small slot backdrops run at 24 — plenty for a soft glow and much lighter on a phone);
+// a loop also ends by itself when its canvas leaves the page and sleeps while the tab is hidden.
+function loop(draw, fps = 60, cv = null) {
+  let on = true, t0 = performance.now(), last = 0; const gap = 1000 / fps - 3;
+  const f = (now) => { if (!on) return; if (cv && !cv.isConnected) { on = false; return; } if (!document.hidden && now - last >= gap) { last = now; draw(now - t0); } requestAnimationFrame(f); };
+  requestAnimationFrame(f); return () => { on = false; };
+}
 
 /** The window stage's backdrop for a tier (ChestBackdrop). */
-export function backdrop(cv, tier) {
+export function backdrop(cv, tier, fps = 60) {
   const g = cv.getContext("2d"), { w, h } = sizeCanvas(cv), n = TIER[tier].n, r = rng(n * 97 + 3), stars = Array.from({ length: tier === "RARE" ? 16 : 7 }, () => ({ x: r(), y: r(), s: 0.5 + r() * 0.9, o: r() }));
   const gc = [w / 2, h * 0.38];
   const vg = (stops) => { const gr = g.createLinearGradient(0, 0, 0, h); stops.forEach(([o, c]) => gr.addColorStop(o, c)); g.fillStyle = gr; g.fillRect(0, 0, w, h); };
@@ -65,7 +71,7 @@ export function backdrop(cv, tier) {
       disc(g, gc[0], gc[1], w * (0.6 + 0.1 * pulse), [[0, `rgba(255,232,255,${0.55 + 0.3 * pulse})`], [1, "rgba(192,107,255,0)"]]);
       stars.forEach((s) => sparkle(g, s.x * w, s.y * h, w * 0.05 * s.s, `rgba(255,255,255,${Math.min(1, 0.25 + 0.75 * Math.abs(Math.sin((s.o + sweep * 2) * Math.PI)))})`));
     }
-  });
+  }, fps, cv);
 }
 
 /** The full-screen "you won a chest" scene (ChestWonScene): the chest drops, squashes, floats; rays, confetti and twinkles. `host` is the overlay. */

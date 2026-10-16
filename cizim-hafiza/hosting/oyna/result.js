@@ -75,9 +75,8 @@ export function renderResult(c, d) {
   // footer buttons
   if (d.next) { const b = el("button", "rs-next", `<span>⟳ ${d.next.label}</span>`); b.onclick = d.next.fn; foot.append(b); }
   const row = el("div", "rs-btns");
-  const x2 = el("button", "rs-art dis", `<span class="l1 lt">${T("result_x2_amount", d.xp * 2)}</span><span class="l2">🎬 ${T("result_watch_ad")}</span>`);
   const cl = el("button", "rs-art", `<span class="l1 lt">${T("result_claim_amount", d.xp)}</span>`); cl.onclick = d.onHome;
-  row.append(x2, cl); foot.append(row);
+  row.append(cl); row.classList.add("one"); foot.append(row);
   if (d.xp > 0 && d.n > 0) confetti(c.$("res2"));
 }
 

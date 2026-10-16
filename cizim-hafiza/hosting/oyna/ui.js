@@ -1,5 +1,5 @@
 // Shared pieces of the app's look: the popup window (AppWindowDialog.kt) and the orange action button (PrimaryButton).
-import { S } from "./i18n.js";
+import { S, getLang } from "./i18n.js";
 export const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 
 /** The orange pill button of the app (PrimaryButton). */
@@ -47,5 +47,23 @@ export function exitDialog(host, { style = "game", title, message, confirm, dism
   // FitText: the title stays on one line (shrinking to half), the message may take three
   const fit = (e, base, lines, min) => { const sp = e.firstChild; let k = 1; sp.style.fontSize = base + "px"; while (k > min && (e.scrollHeight > e.clientHeight + 1 || sp.scrollWidth > e.clientWidth + 1 || (lines === 1 && sp.offsetHeight > base * 1.4))) { k -= 0.04; sp.style.fontSize = base * k + "px"; } };
   requestAnimationFrame(() => { const w = card.getBoundingClientRect().width, k = w / s.w; const t = card.querySelector(".ex-t"), m = card.querySelector(".ex-m"); t.style.whiteSpace = "nowrap"; fit(t, 80 * k, 1, 0.5); fit(m, 46 * k, 3, 0.5); card.querySelectorAll(".ex-b span").forEach((b) => { b.style.fontSize = 68 * k + "px"; }); });
+  return ov;
+}
+
+/**
+ * Ads only exist in the phone app, so every "watch an ad" spot on the web says so and sends the player to the store instead
+ * of pretending to show one.
+ */
+export const PLAY_URL = "https://play.google.com/store/apps/details?id=com.sualtikasifi.cizimhafiza";
+const APP_ONLY = {
+  tr: { title: "Uygulamada", body: "Reklam ödülleri yalnızca Karalak uygulamasında. Google Play'den indirip bu ödülü orada alabilirsin!", go: "Uygulamayı Aç", close: "Kapat" },
+  en: { title: "In the app", body: "Ad rewards are only in the Karalak app. Get it on Google Play to claim this reward there!", go: "Get the app", close: "Close" },
+};
+export function appOnlyDialog(host) {
+  const x = APP_ONLY[getLang()] || APP_ONLY.tr;
+  const body = el("div", "ao-body", `<div class="ao-ic">📱</div><p>${x.body}</p>`);
+  const foot = el("div", "ao-foot"), go = primary(x.go, () => { window.open(PLAY_URL, "_blank", "noopener"); ov.close(); });
+  foot.append(go);
+  const ov = appWindow(host, { title: x.title, body, footer: foot, centerTitle: false });
   return ov;
 }

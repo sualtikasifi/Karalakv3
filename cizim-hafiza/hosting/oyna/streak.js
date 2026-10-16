@@ -1,3 +1,5 @@
+import { appOnlyDialog } from "./ui.js";
+import { getLang } from "./i18n.js";
 // Giriş Serisi: the 7-day login calendar (port of LoginStreak.kt / LoginStreakDialog.kt). "Today" is the server's day
 // (Date header of our own hosting), never the phone's clock.
 import { openNow } from "./chests.js";
@@ -60,7 +62,7 @@ function dialog(c, popup) {
   if (popup.k === "claim") {
     const b = el("button", "ls-claim", ""); b.append(Object.assign(new Image(), { src: "img/ls_btn_claim.webp", alt: x.claim })); b.onclick = () => claim(c, popup);
     act.append(b);
-  } else if (popup.k === "missed") act.append(pill(x.save, "orange", () => dialog(c, { k: "claim", before: popup.lost, rescued: true })), pill(x.restart, "cream", () => dialog(c, { k: "claim", before: 0 })));
+  } else if (popup.k === "missed") act.append(pill(getLang() === "tr" ? "Uygulamada kurtar" : "Save in the app", "orange", () => appOnlyDialog(c.$("stage"))), pill(x.restart, "cream", () => dialog(c, { k: "claim", before: 0 })));
   else act.append(pill(x.great, "orange", close));
   if (popup.k !== "missed") { const cx = el("button", "ls-x", ""); cx.onclick = close; fr.append(cx); d.onclick = (e) => { if (e.target === d) close(); }; }
   d.append(wrap);

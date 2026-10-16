@@ -1,3 +1,4 @@
+import { appOnlyDialog } from "./ui.js";
 // Store page: jokers, pens, frames. Prices and catalogue come straight from the Android enums.
 const J = [["FIRST_LETTER", 200, "joker_first_letter", "joker_first_letter_desc", "joker_first_letter"], ["LETTER_COUNT", 150, "joker_letter_count", "joker_letter_count_desc", "joker_letter_count"], ["EXTRA_TIME", 250, "joker_extra_time", "joker_extra_time_desc", "joker_extra_time"]];
 let pens = [], frames = [], S = {}, tab = 0, toastTimer = null;
@@ -61,8 +62,8 @@ export function renderStore(ctx) {
     if (P.dailyJokerDay !== today) {
       const [type, , nameK, descK, img] = J[today % 3];
       const c = el("div", "djoker", `<img class="bg" src="img/st_daily_full.webp" alt=""><span class="dj-tag">${tt(ctx, "store_daily_joker_tag")}</span><div class="dj-art"><img src="img/${img}.webp" alt=""></div><div class="dj-txt"><b>${tt(ctx, nameK)}</b><small>${tt(ctx, descK)}</small></div>`);
-      const b = el("button", "dj-btn", `<svg viewBox="0 0 24 24"><path fill="#fff" d="M12 2a10 10 0 100 20 10 10 0 000-20zm-2 14.5v-9l7 4.5z"/></svg><span>${tt(ctx, "store_daily_joker_action")}</span>`);
-      b.onclick = () => { P.dailyJokerDay = today; P.jokers[type] = (P.jokers[type] || 0) + 1 + ctx.runeFx("DJ"); ctx.saveP(); renderStore(ctx); toast(ctx, tt(ctx, "store_daily_joker_claimed")); };
+      const b = el("button", "dj-btn", `<svg viewBox="0 0 24 24"><path fill="#fff" d="M12 2a10 10 0 100 20 10 10 0 000-20zm-2 14.5v-9l7 4.5z"/></svg><span>${ctx.lang() === "tr" ? "Uygulamada ücretsiz al" : "Get it free in the app"}</span>`);
+      b.onclick = () => appOnlyDialog(ctx.$("stage"));
       c.append(b); shelf.append(c);
     }
     J.forEach(([type, price, nameK, descK, img]) => {
@@ -81,10 +82,11 @@ export function renderStore(ctx) {
 }
 
 // The ring picture with the player's face inside it, the way Android's LevelAvatar centres it.
-export function frameRing(f, cls = "") {
+export function frameRing(f, cls = "", photo = null) {
   const box = el("div", cls); box.style.position = "relative";
-  const face = el("img"); face.src = "img/avatar_dino.webp"; face.alt = "";
-  face.style.cssText = `position:absolute;border-radius:50%;width:${f.face * 100}%;height:${f.face * 100}%;left:${50 + f.ox * 100 - f.face * 50}%;top:${50 + f.oy * 100 - f.face * 50}%`;
+  // `photo`: another picture for the hole (a league filler's face); by default the Karalak mascot
+  const face = photo || el("img"); if (!photo) { face.src = "img/avatar_dino.webp"; face.alt = ""; }
+  face.style.cssText += `;position:absolute;border-radius:50%;overflow:hidden;width:${f.face * 100}%;height:${f.face * 100}%;left:${50 + f.ox * 100 - f.face * 50}%;top:${50 + f.oy * 100 - f.face * 50}%`;
   const ring = el("img"); ring.src = `img/fr_${f.img}.webp`; ring.alt = ""; ring.style.cssText = "position:absolute;inset:0;width:100%;height:100%";
   box.append(face, ring); return box;
 }

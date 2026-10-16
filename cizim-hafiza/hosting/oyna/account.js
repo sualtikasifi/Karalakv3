@@ -1,18 +1,21 @@
+// Account screen. Play Store players use Google in the app; a browser account is a user name + password (see firebase.js), and its
+// progress is saved to users/{uid}/backup/state (sync.js) so it follows the player to any browser.
 import * as net from "./firebase.js";
 import { S } from "./i18n.js";
 import { syncNow, lastBackupAt, forgetRemote } from "./sync.js";
 import { frameRing, frameById } from "./store.js";
 
 const T = {
-  tr: { title: "Hesap", guest: "Misafir hesap", linked: "Google ile bağlı", xp: "Toplam XP", games: "Oynanan oyun", streak: "En iyi seri (gün)", sec: "Hesap ve yedek", lvl: (n) => `Seviye ${n}`, max: "En üst seviyedesin",
-        hint: "Google hesabını bağla: kullanıcı adın ve ilerlemen bu tarayıcıda hesabınla görünsün.", linkedNote: "Giriş yapıldı. Altın ve XP bu tarayıcıda tutulur.", signIn: "Google ile Giriş Yap", signOut: "Çıkış Yap", del: "Hesabı Sil", delMsg: "Hesap silme işlemini uygulamadan yapabilirsin.",
-        failed: "Giriş yapılamadı. Tekrar dene.", noNet: "Sunucuya ulaşılamadı.", out: "Çıkış yapıldı.", progress: (a, b) => `${a} / ${b} XP` },
-  en: { title: "Account", guest: "Guest account", linked: "Linked with Google", xp: "Total XP", games: "Games played", streak: "Best streak (days)", sec: "Account & backup", lvl: (n) => `Level ${n}`, max: "You're at the top level",
-        hint: "Link your Google account so your name and progress show under your account in this browser.", linkedNote: "Signed in. Gold and XP stay in this browser.", signIn: "Sign in with Google", signOut: "Sign out", del: "Delete account", delMsg: "You can delete your account from the app.",
-        failed: "Couldn't sign in. Try again.", noNet: "Couldn't reach the server.", out: "Signed out.", progress: (a, b) => `${a} / ${b} XP` },
+  tr: { title: "Hesap", guest: "Misafir hesap", linked: "Hesapla giriş yapıldı", xp: "Toplam XP", games: "Oynanan oyun", streak: "En iyi seri (gün)", sec: "Hesap ve yedek", lvl: (n) => `Seviye ${n}`, max: "En üst seviyedesin",
+        hint: "Kullanıcı adı ve şifreyle hesap aç: ilerlemen kaydedilsin, istediğin tarayıcıdan kaldığın yerden devam et.", user: "Kullanıcı adı", pass: "Şifre", login: "Giriş Yap", create: "Hesap Oluştur",
+        badName: "Kullanıcı adı 3-16 karakter olmalı: küçük harf, rakam, _ veya .", badPass: "Şifre en az 6 karakter olmalı.", taken: "Bu kullanıcı adı alınmış.", wrong: "Kullanıcı adı veya şifre yanlış.", off: "Hesap girişi şu an kapalı.", net: "Sunucuya ulaşılamadı.",
+        created: "Hesabın oluşturuldu, ilerlemen kaydediliyor 🎉", welcome: "Hoş geldin — ilerlemen geri yüklendi", loggedIn: "Giriş yapıldı", progress: (a, b) => `${a} / ${b} XP` },
+  en: { title: "Account", guest: "Guest account", linked: "Signed in", xp: "Total XP", games: "Games played", streak: "Best streak (days)", sec: "Account & backup", lvl: (n) => `Level ${n}`, max: "You're at the top level",
+        hint: "Create an account with a user name and password: your progress is saved and follows you to any browser.", user: "User name", pass: "Password", login: "Sign in", create: "Create account",
+        badName: "User name must be 3-16 characters: lowercase letters, digits, _ or .", badPass: "Password must be at least 6 characters.", taken: "That user name is taken.", wrong: "Wrong user name or password.", off: "Signing in is switched off right now.", net: "Couldn't reach the server.",
+        created: "Account created, saving your progress 🎉", welcome: "Welcome back — your progress was restored", loggedIn: "Signed in", progress: (a, b) => `${a} / ${b} XP` },
 };
-let who = null, msg = "";
-const G = '<svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>';
+let who = null, msg = "", busy = false;
 
 export function layoutAccount(c) {
   const { place, $ } = c;
@@ -22,8 +25,9 @@ export function layoutAccount(c) {
   place($("ak-bar"), 92, 726, 644, 36);
   [24, 294, 566].forEach((x, i) => place($("ak-s" + i), x + 8, 905, 220, 120));
   place($("ak-sec"), 166, 1066, 574, 68); place($("ak-strip"), 166, 1158, 576, 64);
-  place($("ak-google"), 130, 1318, 580, 122); place($("ak-out"), 120, 1292, 600, 172);
-  place($("ak-del"), 120, 1490, 600, 80); place($("ak-msg"), 60, 1590, 720, 80);
+  place($("ak-form"), 110, 1262, 620, 330);
+  place($("ak-out"), 120, 1292, 600, 172);
+  place($("ak-del"), 120, 1490, 600, 80); place($("ak-msg"), 60, 1626, 720, 80);
 }
 
 function backupLine() {
@@ -31,35 +35,56 @@ function backupLine() {
   const d = new Date(t), hm = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), day = (x) => Math.floor((x.getTime() - x.getTimezoneOffset() * 60000) / 864e5), diff = day(new Date()) - day(d);
   return S("account_last_backup_format", diff === 0 ? S("account_backup_today", hm) : diff === 1 ? S("account_backup_yesterday", hm) : d.toLocaleDateString() + " " + hm);
 }
+const errText = (x, e) => {
+  const code = (e && e.code) || "";
+  if (code === "auth/email-already-in-use" || code === "auth/credential-already-in-use") return x.taken;
+  if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found" || code === "auth/invalid-login-credentials") return x.wrong;
+  if (code === "auth/operation-not-allowed") return x.off;
+  if (code === "auth/weak-password") return x.badPass;
+  if (code === "auth/network-request-failed") return x.net;
+  return S("account_sign_in_failed");
+};
 export async function renderAccount(c) {
   const { $, P, lang } = c, x = T[lang()];
   try { who = await net.authState(); } catch { who = null; }
   const linked = who && !who.anon;
   $("ak-title").textContent = x.title;
   const av = frameRing(frameById(P.frame)); av.style.cssText += ";width:100%;height:100%"; $("ak-avatar").replaceChildren(av);
-  $("ak-name").textContent = linked && who.name ? who.name : P.nick;
+  $("ak-name").textContent = P.nick;
   const lv = c.levelOf(P.xp);
   $("ak-lvl").textContent = x.lvl(lv.level);
-  $("ak-badge").className = "txt left badge" + (linked ? "" : " guest"); $("ak-badge").innerHTML = `<span>${linked ? [x.linked, who.email].filter(Boolean).join(" · ") : x.guest}</span>`;
+  $("ak-badge").className = "txt left badge" + (linked ? "" : " guest"); $("ak-badge").innerHTML = `<span>${linked ? [x.linked, who.userName].filter(Boolean).join(" · ") : x.guest}</span>`;
   $("ak-fill").style.width = lv.frac * 100 + "%"; $("ak-barl").textContent = lv.max ? x.max : x.progress(lv.into, lv.span);
   const stats = [[P.xp.toLocaleString(), x.xp], [P.stats.games.toLocaleString(), x.games], [P.stats.best.toLocaleString(), x.streak]];
   stats.forEach(([v, l], i) => { const s = $("ak-s" + i); s.children[0].textContent = v; s.children[1].textContent = l; });
-  $("ak-sec").textContent = x.sec; $("ak-strip").innerHTML = linked ? `<b>${S("account_sync_on")}</b><small>${backupLine()}</small>` : S("account_guest_hint");
-  $("ak-google").innerHTML = G + `<span>${x.signIn}</span>`; $("ak-google").style.display = linked ? "none" : "";
+  $("ak-sec").textContent = x.sec; $("ak-strip").innerHTML = linked ? `<b>${S("account_sync_on")}</b><small>${backupLine()}</small>` : x.hint;
+  const form = $("ak-form"); form.style.display = linked ? "none" : "";
+  $("ak-user").placeholder = x.user; $("ak-pass").placeholder = x.pass; $("ak-login-t").textContent = x.login; $("ak-reg-t").textContent = x.create;
   $("ak-out").style.display = linked ? "" : "none"; $("ak-out-t").textContent = S("account_sign_out");
-  $("ak-del").textContent = "🗑 " + S("account_delete_action");
+  $("ak-del").textContent = "🗑 " + S("account_delete_action"); $("ak-del").style.display = linked ? "" : "none";
   const m = $("ak-msg"); m.textContent = msg; m.style.display = msg ? "" : "none";
-  const done = (text) => { msg = text; c.refreshHome(); renderAccount(c); };
-  $("ak-google").onclick = async () => {
-    try {
-      who = await net.signInGoogle(); forgetRemote();
-      const r = await syncNow(c); c.saveP();
-      done(r === "restored" ? S("account_signed_in_restored") : r === "saved" ? S("account_signed_in_progress_kept") : S("account_signed_in_title"));
-    } catch (e) { done(e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request" ? "" : S("account_sign_in_failed")); }
+  const done = (text) => { msg = text; busy = false; c.refreshHome(); renderAccount(c); };
+  const read = () => {
+    const name = $("ak-user").value.trim().toLowerCase(), pass = $("ak-pass").value;
+    if (!net.validUserName(name)) { msg = x.badName; renderMsg(); return null; }
+    if (pass.length < 6) { msg = x.badPass; renderMsg(); return null; }
+    return { name, pass };
   };
+  const renderMsg = () => { const e = $("ak-msg"); e.textContent = msg; e.style.display = msg ? "" : "none"; };
+  const go = async (fn, okText) => {
+    if (busy) return; const v = read(); if (!v) return; busy = true; msg = "…"; renderMsg();
+    try {
+      who = await fn(v.name, v.pass); forgetRemote();
+      const r = await syncNow(c); c.saveP();
+      done(r === "restored" ? x.welcome : okText);
+    } catch (e) { done(errText(x, e)); }
+  };
+  $("ak-reg").onclick = () => go(net.signUpUserName, x.created);
+  $("ak-login").onclick = () => go(net.signInUserName, x.loggedIn);
+  $("ak-pass").onkeydown = (e) => { if (e.key === "Enter") $("ak-login").click(); };
   $("ak-out").onclick = () => c.confirm(S("account_sign_out_message"), S("account_sign_out_confirm"), async () => {
     if ((await syncNow(c)) === "error") return done(S("account_sign_out_backup_failed"));
-    try { await net.signOutGoogle(); c.resetProgress(); forgetRemote(); done(S("account_signed_out_done")); } catch { done(S("account_sign_out_failed")); }
+    try { await net.signOutAccount(); c.resetProgress(); forgetRemote(); done(S("account_signed_out_done")); } catch { done(S("account_sign_out_failed")); }
   });
   $("ak-del").onclick = () => c.confirm(S("account_delete_message"), S("account_delete_continue"), () => c.confirm(S("account_delete_final_message"), S("account_delete_final_confirm"), async () => {
     try { await net.deleteAccount(); c.resetProgress(); forgetRemote(); done(S("account_delete_done")); }

@@ -21,10 +21,10 @@
 <link rel="modulepreload" href="firebase.js">
 <link rel="modulepreload" href="config.js">
 <link rel="modulepreload" href="streak.js">
+<link rel="modulepreload" href="ui.js">
+<link rel="modulepreload" href="i18n.js">
 <link rel="modulepreload" href="chests.js">
 <link rel="modulepreload" href="store.js">
-<link rel="modulepreload" href="i18n.js">
-<link rel="modulepreload" href="ui.js">
 <link rel="modulepreload" href="chestfx.js">
 <link rel="modulepreload" href="daily.js">
 <link rel="modulepreload" href="economy.js">
@@ -46,6 +46,7 @@
 <link rel="modulepreload" href="league.js">
 <link rel="modulepreload" href="ranks.js">
 <link rel="modulepreload" href="search.js">
+<link rel="modulepreload" href="brk.js">
 <link rel="modulepreload" href="settings.js">
 <!-- preload:end -->
 </head>
@@ -137,6 +138,12 @@
     <button id="du-back" class="hit" aria-label="back"><img data-src="img/du_back.webp" alt=""></button>
   </section>
 
+  <section id="brk" class="screen">
+    <img class="bg" data-src="img/bg_break.webp" alt="">
+    <div id="bk-l1" class="bk-t"></div><div id="bk-l2" class="bk-t"></div><div id="bk-sub"></div>
+    <div id="bk-dial"><i class="rip"></i><i class="glow"></i><svg viewBox="-300 -300 600 600"><circle r="186" class="trk"/><circle id="bk-arc" r="186" class="arc" transform="rotate(-90)"/></svg><b id="bk-num"></b></div>
+  </section>
+
   <section id="league" class="screen">
     <img class="bg" data-src="img/bg_league.webp" alt="">
     <div id="lg-list"></div>
@@ -161,7 +168,7 @@
     <div class="ak-stat" id="ak-s0"><b></b><small></small></div><div class="ak-stat" id="ak-s1"><b></b><small></small></div><div class="ak-stat" id="ak-s2"><b></b><small></small></div>
     <div id="ak-sec" class="txt ink left"></div>
     <div id="ak-strip" class="txt ink left sm2"></div>
-    <button id="ak-google" class="gbtn"></button>
+    <div id="ak-form"><input id="ak-user" class="ak-in" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="16"><input id="ak-pass" class="ak-in" type="password" autocomplete="current-password" maxlength="64"><div class="ak-btns"><button id="ak-login" class="pill orange"><span id="ak-login-t"></span></button><button id="ak-reg" class="pill cream"><span id="ak-reg-t"></span></button></div></div>
     <button id="ak-out" class="pill orange"><span id="ak-out-t"></span></button>
     <button id="ak-del" class="delbtn"></button>
     <div id="ak-msg" class="txt capmsg"></div>
