@@ -201,7 +201,7 @@ function layout() {
     P($("g-xp"), 334, ty(158), 188, 72 * u); P($("g-bonus"), 534, ty(164), 176, 60 * u); P($("g-music"), 246, ty(158), 76, 74 * u);
     [["jt-ad", 48, 172], ["jt-first", 237, 171], ["jt-count", 426, 178], ["jt-skip", 621, 176]].forEach(([id, x0, w]) => P($(id), x0, fb(1406), w, 164 * u));
     P($("g-ring"), 722, ty(150), 96, 96 * u);
-    P($("g-canvas"), 66, ty(310), 724, Math.max(60, fb(1112) - ty(310)));
+    P($("g-canvas"), 56, ty(306), 738, Math.max(60, fb(1112) - ty(310)));
     P($("g-form"), 0, fb(1265), 841, 105 * u);
     const inp = $("g-input"); inp.style.left = 58 * u + "px"; inp.style.top = 6 * u + "px"; inp.style.width = 484 * u + "px"; inp.style.height = 92 * u + "px";
     const ok = $("g-ok"); ok.style.left = 572 * u + "px"; ok.style.top = 0; ok.style.width = 225 * u + "px"; ok.style.height = 105 * u + "px";
@@ -245,11 +245,11 @@ function show(id) {
 function applyLang() {
   const x = t();
   document.documentElement.lang = lang; setLang(lang);
-  $("d-next-t").textContent = x.next; $("g-ok-t").textContent = x.ok;
+  $("d-next-t").textContent = x.next; $("g-ok-t").textContent = S("submit_guess");
   $("w-title").textContent = x.wTitle; $("w-body").textContent = x.wBody; $("w-go-t").textContent = x.wGo; $("w-skip").textContent = x.wSkip;
   $("s-text").textContent = x.searching; $("s-sub").textContent = x.searchSub; $("again-t").textContent = x.again;
   $("dlg-text").textContent = x.leave; $("dlg-yes").textContent = x.yes; $("dlg-no").textContent = x.no;
-  $("g-input").placeholder = x.ph;
+  $("g-input").placeholder = S("what_did_you_draw");
   try { localStorage.setItem("lang", lang); } catch {}
   refreshHome();
 }
@@ -508,9 +508,9 @@ function renderHint(w) {
 function refreshJokers(w) {
   const f = P.jokers.FIRST_LETTER || 0, c = P.jokers.LETTER_COUNT || 0, x = t();
   $("jt-ad").querySelector("span").textContent = x.hintT; $("jt-ad").classList.add("dis");
-  $("jt-first").querySelector("span").textContent = x.firstT; $("jt-first").querySelector("i").textContent = f; $("jt-first").classList.toggle("dis", jk.first || f <= 0);
-  $("jt-count").querySelector("span").textContent = x.countT; $("jt-count").querySelector("i").textContent = c; $("jt-count").classList.toggle("dis", jk.count || c <= 0);
-  $("jt-skip").querySelector("span").textContent = x.skipT; $("jt-skip").classList.toggle("dis", !!w.skipped || idx >= round.length - 1);
+  $("jt-first").querySelector("span").textContent = S("joker_first_letter_short"); $("jt-first").querySelector("i").textContent = f; $("jt-first").classList.toggle("dis", jk.first || f <= 0);
+  $("jt-count").querySelector("span").textContent = S("joker_letter_count_short"); $("jt-count").querySelector("i").textContent = c; $("jt-count").classList.toggle("dis", jk.count || c <= 0);
+  $("jt-skip").querySelector("span").textContent = S("skip_guess"); $("jt-skip").classList.toggle("dis", !!w.skipped || idx >= round.length - 1);
 }
 $("jt-first").onclick = () => { const w = round[idx]; if (jk.first || (P.jokers.FIRST_LETTER || 0) <= 0) return; jk.first = true; P.jokers.FIRST_LETTER--; saveP(); sfx.buy(); renderHint(w); refreshJokers(w); };
 $("jt-count").onclick = () => { const w = round[idx]; if (jk.count || (P.jokers.LETTER_COUNT || 0) <= 0) return; jk.count = true; P.jokers.LETTER_COUNT--; saveP(); sfx.buy(); renderHint(w); refreshJokers(w); };
@@ -728,7 +728,7 @@ setTimeout(() => net.listen("invites", (list) => {
 applyLang();
 net.economyConfig().then((d) => eco.applyConfig(d)).catch(() => {});
 window.__karalak = ctx; // handle for the visual checks in docs/web-parity.md (opens dialogs and scenes without playing a round)
-loadStrings().then(() => { setLang(lang); refreshHome(); }).catch(() => {});
+loadStrings().then(() => { applyLang(); }).catch(() => {});
 // A signed-in browser picks up the cloud save (when it holds more) and keeps it current; hiding the page uploads at once.
 setTimeout(() => syncNow(ctx).then((r) => { if (r === "restored") { refreshHome(); if (current === "home") show("home"); } }), 2500);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") scheduleBackup(ctx, true); });
