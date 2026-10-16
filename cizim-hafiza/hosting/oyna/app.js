@@ -78,7 +78,7 @@ const ctx = {
     return { won, place, gold: g };
   },
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
-  $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
+  $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height, fillH: () => (safeRows[current] ? safeRows[current].b * u : stage.getBoundingClientRect().height),
   inviteFriend: (f) => quickInvite(ctx, f).then(() => { stopFriends(); show("onw"); }),
   sfx, paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
@@ -241,18 +241,22 @@ function layoutOnce() {
 /** Lays the scene out, then measures where its widgets end so the next pass can crop the decor below them. */
 function layout() {
   layoutOnce();
-  if (current in safeRows && current === "home") return;
+  if (current === "home") return;
   if (["guess", "result", "res2", "found", "draw", "search"].includes(current)) return;
   const st = stage.getBoundingClientRect(); if (!st.height || !u) return;
-  let bottom = 0;
+  const { w: vw, h: vh } = viewport();
+  const have = safeRows[current], edge = (have ? have.b : ART_H) - 2;
+  let fixed = 0, fill = false;
   for (const el of document.querySelectorAll("#" + current + " > :not(.bg):not(.wood)")) {
     const r = el.getBoundingClientRect(); if (!r.height || !r.width) continue;
-    if (r.height > st.height * 0.9) return; // a full-height pane: nothing to crop
-    bottom = Math.max(bottom, (r.bottom - st.top) / u);
+    const b = (r.bottom - st.top) / u;
+    if (b >= edge) { fill = true; continue; } // a list that runs to the bottom simply gets shorter
+    fixed = Math.max(fixed, b);
   }
-  if (!bottom) return;
-  const want = Math.min(ART_H, Math.round(bottom + SAFE_BELOW));
-  const have = safeRows[current];
+  // Fully across the width needs this many art rows on screen; lists can shrink to it, fixed widgets cannot.
+  const fullB = SAFE_TOP + vh / (vw / ART_W);
+  const want = Math.round(fill ? Math.max(fixed + SAFE_BELOW / 2, fullB) : fixed + SAFE_BELOW);
+  if (!fixed && !fill) return;
   if (want >= ART_H - 40) { if (have) { delete safeRows[current]; layoutOnce(); } return; }
   if (have && Math.abs(have.b - want) < 6) return;
   safeRows[current] = { t: SAFE_TOP, b: want };
@@ -279,10 +283,15 @@ function paintEdges(W, H, gap, top) {
   const src = bgEl && (bgEl.getAttribute("src") || bgEl.dataset.src);
   for (const side of ["l", "r"]) {
     const e = $("edge-" + side); if (!e) continue;
-    const on = !!src && gap > 0.5 && gap <= W * 0.15;
+    const on = !!src && gap > 0.5 && gap <= W * 0.3;
     e.style.display = on ? "block" : "none";
     if (!on) continue;
-    e.style.cssText += `;width:${gap + 1}px;top:${top}px;height:${H}px;background-image:url("${src}");background-size:${W + 6}px ${H}px;background-position:${side === "l" ? "-3px" : "calc(100% + 3px)"} top;${side === "l" ? "left:0" : "right:0"}`;
+    const mirror = gap <= W * 0.045; // thin gap: a mirror of the edge; wider: the outermost columns stretched and softened
+    const bw = mirror ? W + 6 : W * (gap + 1) / 3;
+    e.style.transform = mirror ? "scaleX(-1)" : "none";
+    e.style.filter = mirror ? "none" : "blur(5px) brightness(.92)";
+    const px = mirror ? (side === "l" ? "-3px" : "calc(100% + 3px)") : (side === "l" ? "0" : "100%");
+    e.style.cssText += `;width:${gap + 1}px;top:${top}px;height:${H}px;background-image:url("${src}");background-size:${bw}px ${H}px;background-position:${px} top;${side === "l" ? "left:0" : "right:0"}`;
   }
 }
 /** The art is a fixed tall shape; the strips beside it carry a soft, enlarged copy of the same scene instead of bare wood. */

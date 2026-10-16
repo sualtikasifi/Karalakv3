@@ -80,7 +80,7 @@ export function layoutLeague(c) {
   place($("lg-title"), 160, 96 + 235 * 0.415, 530, 235 * 0.36);
   place($("lg-tabs"), 52, 430, 737, 86);
   place($("lg-timer"), 150, 556, 540, 76);
-  const l = $("lg-list"); l.style.left = 12 * u + "px"; l.style.top = 655 * u + "px"; l.style.width = 817 * u + "px"; l.style.height = c.stageH() - 655 * u + "px";
+  const l = $("lg-list"); l.style.left = 12 * u + "px"; l.style.top = 655 * u + "px"; l.style.width = 817 * u + "px"; l.style.height = c.fillH() - 655 * u + "px";
 }
 
 export async function renderLeague(c, refetch = true) {
