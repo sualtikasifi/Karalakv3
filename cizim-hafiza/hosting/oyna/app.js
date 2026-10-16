@@ -125,7 +125,7 @@ function layout() {
   stage.style.setProperty("--u", u + "px");
   if (current === "home") {
     place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214); place($("h-rbadge"), 682, 84, 70, 70);
-    place($("h-pen"), 350, 266, 134, 54);
+    place($("h-pen"), 266, 260, 243, 62);
     place($("h-avatar"), 66, 361, 138, 138);
     place($("h-name"), 224, 357, 556, 42);
     place($("h-rank"), 222, 400, 266, 47);
