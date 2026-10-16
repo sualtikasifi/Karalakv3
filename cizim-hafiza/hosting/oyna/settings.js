@@ -19,7 +19,7 @@ export function layoutSettings(c) {
   const { place, $ } = c;
   place($("se-back"), 28, 95, 114, 100); place($("se-title"), 196, 186, 304, 90); place($("se-sound"), 112, 358, 262, 48);
   [467, 562, 656, 751].forEach((cy, i) => place($("se-r" + i), 88, cy - 42, 664, 84));
-  place($("se-code"), 340, 905, 300, 76); place($("se-use"), 652, 905, 130, 76); place($("se-msg"), 340, 995, 440, 90); place($("se-how"), 340, 1100, 440, 44);
+  place($("se-code"), 353, 888, 399, 62); place($("se-use"), 353, 964, 190, 64); place($("se-how"), 556, 964, 196, 64); place($("se-msg"), 353, 1040, 399, 90);
   [["se-lang", 1237], ["se-tut", 1347], ["se-bug", 1457], ["se-acc", 1567], ["se-rate", 1677]].forEach(([id, cy]) => place($(id), 52, cy - 47, 738, 94));
   place($("se-priv"), 190, 1752, 460, 56);
 }
@@ -33,7 +33,7 @@ export function renderSettings(c) {
     r.innerHTML = `<span>${label}</span><i class="sw${on ? " on" : ""}"></i>`;
     r.onclick = () => { P.prefs["s" + i] = !P.prefs["s" + i]; if (i === 0) for (const k of [1, 2]) P.prefs["s" + k] = P.prefs.s0; c.saveP(); c.syncMusic(); renderSettings(c); };
   });
-  $("se-code").placeholder = x.code; $("se-use-t").textContent = x.use; $("se-how").textContent = x.how;
+  $("se-code").placeholder = x.code; $("se-use-t").textContent = x.use; $("se-how").innerHTML = `<i>i</i><span>${x.how}</span>`; { const inp = $("se-code"), use = $("se-use"), sync = () => use.classList.toggle("dis", !inp.value.trim()); inp.addEventListener("input", sync); sync(); }
   const flag = lang() === "tr" ? "🇹🇷 Türkçe" : "🇬🇧 English";
   const nav = (id, label, right) => { $(id).innerHTML = `<span>${label}</span><span>${right || ""}</span>`; };
   nav("se-lang", x.lang, flag); nav("se-tut", x.tut); nav("se-bug", x.bug); nav("se-acc", x.acc); nav("se-rate", x.rate);

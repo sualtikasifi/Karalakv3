@@ -3,7 +3,8 @@ import * as net from "./firebase.js";
 import { checkStreak } from "./streak.js";
 import { renderResult, loadResultStrings } from "./result.js";
 import { loadChat, chatText } from "./chat.js";
-import { loadRunes, layoutRunes, renderRunes, effect as runeFx } from "./runes.js";
+import { loadRunes, layoutRunes, renderRunes, effect as runeFx, has as runeHas, applyRuneConfig, anyAffordable } from "./runes.js";
+import * as eco from "./economy.js";
 import { layoutReport, renderReport } from "./report.js";
 import { layoutChests, renderChests, award as awardChest, wonDialog } from "./chests.js";
 import { todayEpoch, msToMidnight, dailyWords, state as dailyState, record as dailyRecord } from "./daily.js";
@@ -11,11 +12,15 @@ import { drawFxStroke } from "./penfx.js";
 import { openPenPicker, openFramePicker, openNickEdit } from "./picker.js";
 import { setPrefs, sfx, vibrate, initAudio, syncMusic } from "./audio.js";
 import { layoutOnline, renderEntry, renderCreate, renderJoin, leaveLobby, submitAndWait, joinWithCode, quickInvite } from "./online.js";
+import { openDuels, stopDuels, renderDuels, openCreateDuel, recordReceived as duelReceived } from "./duel.js";
 import { layoutFriends, openFriends, renderFriends, stop as stopFriends } from "./friends.js";
 import { loadWorlds, layoutWorlds, renderWorlds, layoutMap, renderMap, mixFor, starsFor, recordLevel, currentWorld } from "./levels.js";
 import { layoutAccount, renderAccount } from "./account.js";
+import { layoutOffline, renderOffline } from "./offline.js";
+import { setLang, loadStrings, S } from "./i18n.js";
+import { syncNow, scheduleBackup } from "./sync.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
-import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound } from "./achievements.js";
+import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
 import { loadStoreData, layoutStore, renderStore, frameRing, frameById, penById, frameList as frameListSafe } from "./store.js";
 
@@ -38,26 +43,51 @@ const T = {
 const $ = (id) => document.getElementById(id);
 let lang = localStorage.getItem("lang") || ((navigator.language || "tr").startsWith("tr") ? "tr" : "en");
 let words = [], round = [], idx = 0, current = "home", u = 1;
-let dTimer = null, gTimer = null, tool = "pen", score = 0, shownAt = 0;
+let bonusTimer = null, dTimer = null, gTimer = null, tool = "pen", score = 0, shownAt = 0;
 const t = () => T[lang];
 
 // ---------- layout (art units: the paintings are 841 wide) ----------
 const stage = $("stage");
 let leagueLoaded = false, reportLoaded = false;
 const ctx = {
-  runeFx: (fx) => runeFx(P, fx),
+  runeFx: (fx) => runeFx(P, fx), runeHas: (fx) => runeHas(P, fx),
+  /**
+   * Pays an online room round once its ranking is known (OnlineResultViewModel): the room gold with the room runes, the
+   * match XP (8, +25 for a win), and a chest for the winner. The per-word XP was paid when the round ended.
+   */
+  grantOnline: (players, hostUid, myUid) => {
+    const me = players.find((p) => p.uid === myUid); if (!me) return null;
+    const place = [...players].sort((a, b) => b.totalScore - a.totalScore).findIndex((p) => p.uid === myUid) + 1;
+    const tied = place === 1 && players.filter((p) => p.totalScore === me.totalScore).length > 1;
+    const won = place === 1 && !tied && players.length >= 2, newAch = ctx.lastAch || 0;
+    const raw = eco.roomRaw(me.correctCount || 0, won, newAch);
+    // Dostluk Bağı: +50% once a day, spent only on a round that pays something.
+    const best = raw > 0 && runeHas(P, "BEST") && P.bestDay !== todayEpoch(); if (best) P.bestDay = todayEpoch();
+    const g = eco.roomGold({ fx: (k) => runeFx(P, k), correctCount: me.correctCount || 0, won, newAchievements: newAch, asHost: hostUid === myUid, bestFriendBonus: best });
+    P.gold += g.total;
+    const matchXp = (eco.ONLINE_MATCH_XP + (won ? eco.ONLINE_WIN_XP : 0)) * xpEventOnly;
+    ctx.lastXp = (ctx.lastXp || 0) + eco.addXp(P, matchXp, runeFx(P, "XP"));
+    ctx.lastGold = g.total; ctx.lastRune = g.runeBonus;
+    let chest; if (place === 1 && !tied) chest = awardChest(P, (k) => runeHas(P, k)) || null;
+    saveP(); refreshHome();
+    if (chest !== undefined) setTimeout(() => wonDialog(ctx, chest), 900);
+    return { won, place, gold: g };
+  },
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height,
   inviteFriend: (f) => quickInvite(ctx, f).then(() => { stopFriends(); show("onw"); }),
   sfx, paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
-  pickRoomWords: (r) => pickRoomWords(r),
+  pickRoomWords: (r) => pickRoomWords(r), startOffline: (o) => startOffline(o),
+  openDuel: (opp) => openCreateDuel(ctx, opp), startDuelChallenge: (opp, n) => startDuel({ mode: "new", opp }, n), playDuel: (d) => startDuel({ mode: "play", duel: d }),
   syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
   open: (id) => { if (id === "report") reportLoaded = false; show(id); },
   levelOf: (xp) => { const lv = levelFor(xp), fl = xpFor(lv), ce = lv >= 100 ? fl : xpFor(lv + 1); return { level: lv, into: xp - fl, span: ce - fl, frac: ce > fl ? (xp - fl) / (ce - fl) : 1, max: lv >= 100 }; },
   info: (text) => msg(text),
+  // Sign-out wipes what belongs to the account (SettingsRepository.clearAccountScopedState); sounds, language and the tutorial stay.
+  resetProgress() { const keep = { prefs: P.prefs, tutorialDone: P.tutorialDone }; const fresh = JSON.parse(JSON.stringify(DEFAULT_P)); for (const k of Object.keys(P)) delete P[k]; Object.assign(P, fresh, keep); P.nick = lang === "tr" ? "Oyuncu" : "Player"; saveP(); refreshHome(); },
   confirm(text, yes, onYes) {
     $("dlg-text").textContent = text; $("dlg-extra").replaceChildren(); $("dlg-no").style.display = ""; $("dlg-no").textContent = t().no === "Kal" ? "Vazgeç" : "Cancel"; $("dlg-yes").textContent = yes;
     $("dialog").classList.remove("hidden");
@@ -69,10 +99,11 @@ const ctx = {
 const RANKS = [[1, "✏️", "Karalamacı", "Scribbler"], [20, "🖊️", "Çırak", "Apprentice"], [40, "🖌️", "Ressam", "Painter"], [60, "🎨", "Usta Ressam", "Master Painter"], [80, "🖼️", "Sanatçı", "Artist"], [100, "👑", "Büyük Usta", "Grand Master"]];
 const xpFor = (lv) => { const n = Math.max(0, lv - 1); return 25 * n * n + 75 * n; };
 const levelFor = (xp) => { let l = 1; while (l < 100 && xp >= xpFor(l + 1)) l++; return l; };
-let P = { nick: "", xp: 0, gold: 0, owned: [], pen: "CLASSIC", frame: "SCRIBBLER", jokers: {}, claimed: [], daily: { last: -1, streak: 0, best: 0, result: null }, levels: {}, stats: { games: 0, score: 0, words: 0, perfect: 0, wins: 0, streak: 0, best: 0, last: "" } };
+const DEFAULT_P = { nick: "", xp: 0, gold: 0, runes: {}, owned: [], pen: "CLASSIC", frame: "SCRIBBLER", jokers: {}, claimed: [], daily: { last: -1, streak: 0, best: 0, result: null }, levels: {}, stats: { games: 0, score: 0, words: 0, perfect: 0, wins: 0, streak: 0, best: 0, last: "" } };
+let P = JSON.parse(JSON.stringify(DEFAULT_P));
 try { P = { ...P, ...JSON.parse(localStorage.getItem("player") || "{}") }; } catch {}
 P.prefs = P.prefs || { s0: true, s1: true, s2: true, s3: false }; setPrefs(() => P.prefs); initAudio();
-const saveP = () => { try { localStorage.setItem("player", JSON.stringify(P)); } catch {} };
+const saveP = () => { try { localStorage.setItem("player", JSON.stringify(P)); } catch {} try { scheduleBackup(ctx); } catch {} };
 if (!P.nick) { P.nick = "Karalak" + Math.floor(1000 + Math.random() * 9000); saveP(); }
 function place(el, x, y, w, h) {
   const s = el.style;
@@ -91,7 +122,7 @@ function layout() {
   s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + "px"; s.top = (vh - H) / 2 + "px";
   stage.style.setProperty("--u", u + "px");
   if (current === "home") {
-    place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214);
+    place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214); place($("h-rbadge"), 682, 84, 70, 70);
     place($("h-pen"), 350, 266, 134, 54);
     place($("h-avatar"), 66, 361, 138, 138);
     place($("h-name"), 224, 357, 556, 42);
@@ -112,6 +143,8 @@ function layout() {
   } else if (current === "onl" || current === "onj" || current === "onc" || current === "onw") {
     layoutOnline(ctx);
     if (current === "onl") renderEntry(ctx); else if (current === "onj") renderJoin(ctx); else if (current === "onc") renderCreate(ctx);
+  } else if (current === "offs") {
+    layoutOffline(ctx); renderOffline(ctx);
   } else if (current === "friends") {
     layoutFriends(ctx); renderFriends(ctx);
   } else if (current === "worlds") {
@@ -126,6 +159,8 @@ function layout() {
     layoutRunes(ctx); renderRunes(ctx);
   } else if (current === "report") {
     layoutReport(ctx); renderReport(ctx, !reportLoaded); reportLoaded = true;
+  } else if (current === "duels") {
+    place($("du-back"), 20, 40, 110, 106); renderDuels(ctx);
   } else if (current === "league") {
     layoutLeague(ctx); renderLeague(ctx, !leagueLoaded); leagueLoaded = true;
   } else if (current === "ach") {
@@ -160,9 +195,9 @@ function layout() {
     const P = (el, x, y, w, h) => { const s2 = el.style; s2.left = x * u + "px"; s2.top = y + "px"; s2.width = w * u + "px"; s2.height = h + "px"; };
     P($("g-back"), 22, ty(155), 84, 78 * u);
     P($("g-prog"), 118, ty(158), 114, 74 * u);
-    P($("g-xp"), 334, ty(158), 188, 72 * u); P($("g-music"), 246, ty(158), 76, 74 * u);
+    P($("g-xp"), 334, ty(158), 188, 72 * u); P($("g-bonus"), 534, ty(164), 176, 60 * u); P($("g-music"), 246, ty(158), 76, 74 * u);
     [["jt-ad", 48, 172], ["jt-first", 237, 171], ["jt-count", 426, 178], ["jt-skip", 621, 176]].forEach(([id, x0, w]) => P($(id), x0, fb(1406), w, 164 * u));
-    P($("g-ring"), 700, ty(150), 100, 100 * u);
+    P($("g-ring"), 722, ty(150), 96, 96 * u);
     P($("g-canvas"), 66, ty(310), 724, Math.max(60, fb(1112) - ty(310)));
     P($("g-form"), 0, fb(1265), 841, 105 * u);
     const inp = $("g-input"); inp.style.left = 58 * u + "px"; inp.style.top = 6 * u + "px"; inp.style.width = 484 * u + "px"; inp.style.height = 92 * u + "px";
@@ -220,7 +255,7 @@ function startDoodles() {
 // ---------- text ----------
 function applyLang() {
   const x = t();
-  document.documentElement.lang = lang;
+  document.documentElement.lang = lang; setLang(lang);
   $("d-next-t").textContent = x.next; $("g-ok-t").textContent = x.ok;
   $("w-title").textContent = x.wTitle; $("w-body").textContent = x.wBody; $("w-go-t").textContent = x.wGo; $("w-skip").textContent = x.wSkip;
   $("s-text").textContent = x.searching; $("s-sub").textContent = x.searchSub; $("again-t").textContent = x.again;
@@ -408,8 +443,34 @@ async function start(k = "quick") {
   await ensureWords();
   begin([...words].sort(() => Math.random() - 0.5).slice(0, WORD_COUNT));
 }
-function begin(picked) {
-  round = picked.map((w) => ({ ...w, strokes: [], guess: "", correct: false, points: 0, ms: 0 }));
+// Play Offline with the options chosen on the setup screen (WordCountScreen -> GameViewModel): the pool is cut by category and
+// difficulty, shuffled, and the first N words are played; Untimed draws without the countdown.
+async function startOffline({ count, relaxed: rx, cats, diffs }) {
+  levelRun = null; kind = "offline"; relaxed = !!rx;
+  await ensureWords();
+  const pool = words.filter((w) => (!cats.length || cats.includes(w.category)) && (!diffs.length || diffs.includes(w.difficulty)));
+  begin([...(pool.length ? pool : words)].sort(() => Math.random() - 0.5).slice(0, count));
+}
+// Duels (GameViewModel's duel args): "new" plays a random mix that becomes a challenge for a friend; "play" asks the same words a friend drew.
+let duelRun = null;
+async function startDuel(run, count = 10) {
+  levelRun = null; kind = "duel"; relaxed = false; duelRun = run; quickOpp = null;
+  await ensureWords();
+  if (run.mode === "play") {
+    const picked = run.duel.wordIds.map((id) => words.find((w) => w.id === id)).filter(Boolean);
+    if (!picked.length) { ctx.confirm(S("duel_not_found"), S("close"), () => {}); $("dlg-no").style.display = "none"; return; }
+    return begin(picked);
+  }
+  begin([...words].sort(() => Math.random() - 0.5).slice(0, count));
+}
+// The XP rate of the round, fixed when it starts so every word pays the same: a running XP event times the first Quick Match
+// of the day (2x), as in GameViewModel.effectiveXpMultiplier.
+let xpMult = 1, qmBonus = false, xpEventOnly = 1;
+async function begin(picked) {
+  xpEventOnly = await net.xpEventMultiplier().catch(() => 1);
+  qmBonus = kind === "quick" && !!quickOpp && P.qmDay !== todayEpoch();
+  xpMult = xpEventOnly * (qmBonus ? eco.QUICK_MATCH_DAILY_BONUS_MULTIPLIER : 1);
+  round = picked.map((w) => ({ ...w, strokes: [], guess: "", correct: false, points: 0, ms: 0, xp: 0 }));
   idx = 0; tool = "pen"; score = 0; nextDraw();
 }
 function nextDraw() {
@@ -417,18 +478,22 @@ function nextDraw() {
   if (idx >= round.length) { idx = 0; return nextGuess(); }
   const w = round[idx];
   show("draw");
-  $("d-prog").textContent = `${idx + 1} / ${round.length}`;
+  // Normal mode shows the time left for the whole drawing phase beside the word number (the stopwatch pill of the app).
+  const SW = '<svg class="sw" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="8" fill="#e8650f"/><path d="M12 8.5v5l3 2" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="9" y="2" width="6" height="2.6" rx="1" fill="#e8650f"/></svg>';
+  const restAfter = () => round.slice(idx + 1).reduce((s, q) => s + (DRAW_SECONDS[q.difficulty] ?? 7), 0);
+  const paintProg = (left) => { $("d-prog").innerHTML = relaxed ? `${idx + 1} / ${round.length}` : `${SW}${Math.floor((left + restAfter()) / 60)}:${String((left + restAfter()) % 60).padStart(2, "0")} · ${idx + 1}/${round.length}`; };
   $("d-word").textContent = w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1);
   const wl = w.text.length; $("d-word").style.fontSize = Math.max(40, Math.min(70, 425 * 0.97 / (wl * 0.5))) * u + "px";
   $("d-line").style.animation = "none"; void $("d-line").offsetWidth; $("d-line").style.animation = "";
   let total = DRAW_SECONDS[w.difficulty] ?? 7; let left = total, usedTime = false;
   const arc = $("d-arc"); arc.style.transition = "none"; setRing($("d-ring"), arc, $("d-time"), left, total); void arc.getBoundingClientRect(); arc.style.transition = "";
+  paintProg(left);
   tool = "pen"; refreshTools(); paintLive();
   const tj = $("d-timej"), refreshTj = () => { const n = P.jokers.EXTRA_TIME || 0; $("d-timej-n").textContent = n; $("d-timej-t").textContent = t().timeJ; tj.classList.toggle("dis", usedTime || n <= 0); tj.style.display = relaxed ? "none" : ""; };
   refreshTj();
   tj.onclick = () => { if (usedTime || (P.jokers.EXTRA_TIME || 0) <= 0) return; usedTime = true; P.jokers.EXTRA_TIME--; saveP(); left += 10; total += 10; setRing($("d-ring"), arc, $("d-time"), left, total); sfx.buy(); refreshTj(); };
   if (!relaxed) dTimer = setInterval(() => {
-    left--; setRing($("d-ring"), arc, $("d-time"), left, total);
+    left--; setRing($("d-ring"), arc, $("d-time"), left, total); paintProg(Math.max(0, left));
     if (left > 0 && left <= 3) sfx.tick();
     if (left <= 0) finishDraw();
   }, 1000);
@@ -463,20 +528,29 @@ function nextGuess() {
   show("guess");
   jk = { first: false, count: false }; renderHint(w); refreshJokers(w);
   $("g-prog").textContent = `${idx + 1} / ${round.length}`;
-  $("g-xp").textContent = `★ ${score}`;
+  $("g-xp").textContent = `★ +${round.reduce((s, q) => s + (q.xp || 0), 0)} XP`;
   $("g-input").value = "";
   paintGuess();
   const total = guessSeconds(w); let left = total;
   const arc = $("g-arc"); arc.style.transition = "none"; setRing($("g-ring"), arc, $("g-time"), left, total); void arc.getBoundingClientRect(); arc.style.transition = "";
   shownAt = performance.now();
+  // Live preview of the speed bonus an answer right now would earn: <2s +3, <4s +2, <6s +1 (the same ladder as wordXp).
+  const bonusEl = $("g-bonus"), STAGE = ["#4fd97d", "#2ea043", "#e0c22e", "#e8650f", "#e23b32"];
+  const paintBonus = () => {
+    const el = (performance.now() - shownAt) / 1000, b = el < 2 ? 3 : el < 4 ? 2 : el < 6 ? 1 : 0;
+    bonusEl.textContent = lang === "tr" ? `+${b} XP bonus` : `+${b} XP bonus`; bonusEl.style.background = STAGE[Math.min(4, Math.floor(el / 2))];
+  };
+  clearInterval(bonusTimer); paintBonus(); bonusTimer = setInterval(paintBonus, 250);
   gTimer = setInterval(() => { left--; setRing($("g-ring"), arc, $("g-time"), left, total); if (left > 0 && left <= 3) sfx.tick(); if (left <= 0) answer(""); }, 1000);
   $("g-input").focus({ preventScroll: true });
 }
 function answer(text) {
-  clearInterval(gTimer);
+  clearInterval(gTimer); clearInterval(bonusTimer);
   const w = round[idx];
   w.guess = text; w.ms = Math.round(performance.now() - shownAt); w.correct = isCorrect(text, w.text);
   w.points = w.correct ? POINTS + (w.ms < SPEED_MS ? SPEED_BONUS : 0) : 0;
+  // XP is not the score: a right word pays by difficulty and speed (XpAwards.wordXp); the daily challenge pays its own total.
+  w.xp = w.correct && kind !== "daily" ? eco.wordXp(w.difficulty, w.ms) * xpMult : 0;
   score += w.points; idx++;
   if (w.correct) sfx.correct(); else { sfx.wrong(); vibrate(60); }
   flash(w.correct); nextGuess();
@@ -496,10 +570,15 @@ function addRow(parent, strokes, ok, label, sub, pen) {
 async function finish() {
   const x = t();
   if (kind === "tutorial") { show("home"); ctx.confirm(x.finT + "\n\n" + x.finB, x.finBtn, endTutorial); $("dlg-no").style.display = "none"; $("dlg-text").style.whiteSpace = "pre-line"; return; }
-  const n = round.filter((w) => w.correct).length, xp0 = P.xp, goldPlay = Math.round(n * 10 * (kind === "daily" ? 1 : 1 + runeFx(P, "WORD") / 100));
+  const n = round.filter((w) => w.correct).length, xp0 = P.xp, fxp = runeFx(P, "XP");
   if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
-  P.xp += Math.round(score * (1 + runeFx(P, "XP") / 100)); P.periodXp = (P.periodXp || 0) + score; P.gold += goldPlay; achRound(P, { score, words: round.length, perfect: n === round.length }); saveP(); refreshHome();
-  if (kind === "online") { ctx.lastXp = P.xp - xp0; ctx.lastGold = goldPlay; net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {}); return submitAndWait(ctx, round, score); }
+  // XP is paid per right word by difficulty and speed (see answer()); the XP runes speed up the level, never the league XP.
+  eco.addXp(P, round.reduce((s, w) => s + (w.xp || 0), 0), fxp);
+  const ach0 = achCount(P); achRound(P, { score, words: round.length, perfect: n === round.length });
+  const newAch = Math.max(0, achCount(P) - ach0);
+  if (qmBonus) P.qmDay = todayEpoch();
+  const fx = (k) => runeFx(P, k), has = (k) => runeHas(P, k);
+  if (kind === "online") { ctx.lastXp = P.xp - xp0; ctx.lastAch = newAch; saveP(); refreshHome(); net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {}); return submitAndWait(ctx, round, score); }
   net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
   const me = {
     language: lang, nickname: "Web", wordIds: round.map((w) => w.id),
@@ -509,22 +588,42 @@ async function finish() {
   const minWait = new Promise((r) => setTimeout(r, kind === "quick" ? 2000 + Math.random() * 2000 : 0));
   let opp = null, items = [];
   let stars = 0, dailyRes = null;
-  if (kind === "daily") { dailyRes = dailyRecord(P, round.map((w) => w.correct), score); if (dailyRes) { P.xp += dailyRes.xp - score; P.periodXp += dailyRes.xp - score; saveP(); refreshHome(); } }
-  if (kind === "level") { stars = starsFor(n, round.length); recordLevel(P, levelRun.w, levelRun.l, stars); saveP(); }
+  let newStars = 0;
+  if (kind === "daily") {
+    dailyRes = dailyRecord(P, round.map((w) => w.correct), score);
+    // The daily challenge pays its own XP total (times the streak), at the round's XP rate, instead of per-word XP.
+    if (dailyRes) { dailyRes.xp *= xpMult; eco.addXp(P, dailyRes.xp, fxp); if (P.daily.result) P.daily.result.xp = dailyRes.xp; }
+  }
+  if (kind === "level") {
+    stars = starsFor(n, round.length); const k = levelRun.w + ":" + levelRun.l, best = P.levels[k] ?? 0;
+    newStars = Math.max(0, stars - best); recordLevel(P, levelRun.w, levelRun.l, stars);
+    eco.addXp(P, eco.levelCompletionBonus(stars) * xpMult, fxp);
+  }
   if (kind === "quick" && quickOpp) { opp = quickOpp; items = quickItems; net.recordRound({ ...me, level: levelFor(P.xp), frameId: P.frame, nickname: P.nick }).catch(() => {}); }
+  let duelNote = null, duelRematch = null;
+  if (kind === "duel" && duelRun) {
+    const run = duelRun;
+    if (run.mode === "new") { net.createDuel({ opponentUid: run.opp.uid, opponentName: run.opp.name, items: me.items, challengerScore: score, challengerCorrectCount: n, wordIds: me.wordIds, myName: P.nick }).catch(() => {}); duelNote = S("duel_challenge_sent", run.opp.name); }
+    else { opp = { nickname: run.duel.challengerName, totalScore: run.duel.challengerScore, level: 1 }; items = run.duel.items; duelReceived(run.duel, score, n); net.submitDuelResult(run.duel.id, score, n).catch(() => {}); duelRematch = () => ctx.openDuel({ uid: run.duel.challengerUid, name: run.duel.challengerName }); }
+  }
   await minWait;
-  let wonChest; if (kind === "quick" && opp && score > opp.totalScore) wonChest = awardChest(P) || null;
-  if (wonChest !== undefined) { saveP(); refreshHome(); }
+  const quickWon = kind === "quick" && !!opp && score > opp.totalScore;
+  // What the round pays in gold — one place, ported from RoundRewards.kt (see economy.js).
+  const gold = eco.soloGold({ fx, has, correctInOrder: round.map((w) => w.correct), isDaily: kind === "daily", newAchievements: newAch, newStars, dailyStreak: dailyRes ? dailyRes.streak : null, quickWon });
+  P.gold += gold.total;
+  let wonChest; if (quickWon) wonChest = awardChest(P, (k) => runeHas(P, k)) || null;
+  saveP(); refreshHome();
   await loadResultStrings();
   show("res2"); sfx.over(); if (wonChest !== undefined) setTimeout(() => wonDialog(ctx, wonChest), 700);
   const lvl = levelFor(P.xp), into = P.xp - xpFor(lvl), need = xpFor(lvl + 1) - xpFor(lvl), l0 = levelFor(xp0);
   const ring = (fid) => () => { const fr = frameRing(frameById(fid)); fr.style.cssText += ";width:100%;height:100%"; return fr; };
   renderResult(ctx, {
-    n, total: round.length, score, xp: P.xp - xp0, goldPlay, stars: kind === "level" ? stars : null, pen: P.pen, nick: P.nick,
+    n, total: round.length, score, xp: P.xp - xp0, gold, eventMult: xpEventOnly, stars: kind === "level" ? stars : null, pen: P.pen, nick: P.nick,
     daily: dailyRes, flags: round.map((w) => w.correct),
     level: { level: lvl, before: l0, into, need, toNext: xpFor(lvl + 1) - P.xp, max: lvl >= 100, frac: lvl >= 100 ? 1 : into / need, beforeFrac: l0 === lvl ? (xp0 - xpFor(lvl)) / need : 0 },
     opp, myRing: ring(P.frame), oppRing: ring(opp ? highestFrameFor(opp.level || 1) : "SCRIBBLER"), oppItems: items,
     items: round.map((w) => ({ word: w.text, isCorrect: w.correct, strokes: w.strokes, penSkin: P.pen })),
+    note: duelNote, rematch: duelRematch, rematchLabel: S("duel_rematch_action"),
     onHome: () => show("home"),
     next: kind === "level" && levelRun && levelRun.l < 10 ? { label: t().nextLevel, fn: () => startLevel(levelRun.w, levelRun.l + 1) } : null,
   });
@@ -532,10 +631,11 @@ async function finish() {
 
 // ---------- navigation ----------
 function confirmLeave() {
-  $("dlg-text").textContent = t().leave; $("dlg-yes").textContent = t().yes; $("dlg-no").textContent = t().no;
+  const quickMatch = kind === "quick" && !!quickOpp, pen = eco.QUICK_MATCH_ABANDON_PENALTY_XP;
+  $("dlg-text").textContent = quickMatch ? (lang === "tr" ? `Bu maçtan şimdi çıkarsan ${pen} XP kaybedersin.` : `If you leave this match now you will lose ${pen} XP.`) : t().leave; $("dlg-yes").textContent = t().yes; $("dlg-no").textContent = t().no;
   $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren();
   $("dialog").classList.remove("hidden");
-  $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); clearInterval(dTimer); clearInterval(gTimer); if (kind === "online") leaveLobby(ctx); else show("home"); };
+  $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); clearInterval(dTimer); clearInterval(gTimer); if (quickMatch) { eco.revokeXp(P, pen); saveP(); refreshHome(); } if (kind === "online") leaveLobby(ctx); else show("home"); };
   $("dlg-no").onclick = () => $("dialog").classList.add("hidden");
 }
 $("d-back").onclick = confirmLeave; $("g-back").onclick = confirmLeave;
@@ -566,6 +666,8 @@ function refreshHome() {
   for (const k of Object.keys(x.tiles)) $("tx-" + k).textContent = x.tiles[k];
   for (const k of ["gold", "chest"]) $("h-soon-" + k).textContent = x.appOnly;
   refreshDaily(); renderChests(ctx);
+  // A rune can be bought now: the mascot shows a pulsing badge (MainMenuViewModel.runeReady).
+  $("h-rbadge").style.display = anyAffordable(P, P.gold, lv) ? "block" : "none";
   $("h-ttl-gold").textContent = x.adGold; $("h-ttl-daily").textContent = x.daily; $("h-ttl-chest").textContent = x.adChest;
 }
 function msg(text, extra) {
@@ -581,8 +683,9 @@ $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("o
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
 $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => rankInfo();
 $("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
-$("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; show("runes"); }; $("ru-back").onclick = () => show("home");
-$("tl-quick").onclick = () => start("quick"); $("tl-offline").onclick = () => start("offline");
+$("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; net.runeConfig().then((d) => { applyRuneConfig(d); if (current === "runes") renderRunes(ctx, true); }).catch(() => {}); show("runes"); }; $("ru-back").onclick = () => show("home");
+$("tl-quick").onclick = () => start("quick"); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };
+$("os-back").onclick = () => show("home");
 $("tl-levels").onclick = async () => { await loadWorlds(); show("worlds"); };
 $("wl-back").onclick = () => show("home"); $("lm-back").onclick = () => show("worlds");
 $("tl-store").onclick = async () => { await loadStoreData(); show("store"); };
@@ -593,6 +696,8 @@ $("tl-league").onclick = async () => { await loadStoreData(); await loadLeague()
 $("lg-back").onclick = () => show("home");
 $("lg-refresh").onclick = () => { leagueLoaded = false; layout(); };
 $("tl-friends").onclick = () => { show("friends"); openFriends(ctx); };
+$("fr-duel").onclick = () => { stopFriends(); show("duels"); openDuels(ctx); };
+$("du-back").onclick = () => { stopDuels(); show("friends"); openFriends(ctx); };
 $("fr-back").onclick = () => { stopFriends(); show("home"); };
 for (const [id, k] of []) $("tl-" + id).onclick = () => soon(t().tiles[k])();
 const soonMsg = () => msg(t().soon);
@@ -618,6 +723,13 @@ setTimeout(() => net.listen("invites", (list) => {
   $("dlg-no").onclick = () => { net.consumeInvite(inv.id).catch(() => {}); $("dialog").classList.add("hidden"); };
 }).catch(() => {}), 4000);
 applyLang();
+net.economyConfig().then((d) => eco.applyConfig(d)).catch(() => {});
+window.__karalak = ctx; // handle for the visual checks in docs/web-parity.md (opens dialogs and scenes without playing a round)
+loadStrings().then(() => { setLang(lang); refreshHome(); }).catch(() => {});
+// A signed-in browser picks up the cloud save (when it holds more) and keeps it current; hiding the page uploads at once.
+setTimeout(() => syncNow(ctx).then((r) => { if (r === "restored") { refreshHome(); if (current === "home") show("home"); } }), 2500);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") scheduleBackup(ctx, true); });
+loadRunes().then(() => refreshHome()).catch(() => {});
 if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); setTimeout(() => checkStreak(ctx), 900); }; } else { show("home"); setTimeout(() => checkStreak(ctx), 1800); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 // After the home screen is up, quietly fetch the pictures of the screens people open most (skipped on data saver).

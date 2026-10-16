@@ -5,7 +5,7 @@ const tr = (k, lang, ...a) => ((S && S[k] && S[k][lang]) || k).replace(/\{(\d)\}
 export async function loadResultStrings() { if (!S) S = await (await fetch("result_strings.json")).json(); }
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 export const cap = (w, lang) => w ? w.charAt(0).toLocaleUpperCase(lang) + w.slice(1) : "";
-const ICON = { check: "rs_ic_check", x: "rs_ic_x", star: "rs_ic_star", crown: "rs_ic_crown", coin: "icon_gold_coin", trophy: "icon_league_trophy", cal: "daily_calendar_icon" };
+const ICON = { check: "rs_ic_check", x: "rs_ic_x", star: "rs_ic_star", crown: "rs_ic_crown", coin: "icon_gold_coin", trophy: "icon_league_trophy", cal: "daily_calendar_icon", rune: "rune_root", event: "rs_ic_star" };
 
 function statList(d, lang) {
   const T = (k, ...a) => tr(k, lang, ...a), list = [
@@ -13,9 +13,15 @@ function statList(d, lang) {
     { ic: "x", label: T("result_stat_wrong"), value: String(d.total - d.n), color: "#e23b32" }];
   const or = "#e8650f", gold = (g) => T("result_gold_amount", g);
   if (d.stars != null) list.push({ ic: "star", label: T("result_stat_stars"), value: "★".repeat(d.stars) + "☆".repeat(Math.max(0, 3 - d.stars)), color: or });
-  if (d.goldPlay > 0) list.push({ ic: "coin", label: T("result_stat_play_gold"), value: gold(d.goldPlay), color: or });
-  if (d.goldWin > 0) list.push({ ic: "trophy", label: T("result_stat_win_gold"), value: gold(d.goldWin), color: or });
-  if (d.goldDaily > 0) list.push({ ic: "cal", label: T("result_stat_daily_gold"), value: gold(d.goldDaily), color: or });
+  // The same rows, in the same order, as the Android result screen (ResultParts.kt).
+  const g = d.gold || {};
+  if (g.play > 0) list.push({ ic: "coin", label: T("result_stat_play_gold"), value: gold(g.play), color: or });
+  if (g.achievements > 0) list.push({ ic: "trophy", label: T("result_stat_achievement"), value: gold(g.achievements), color: or });
+  if (g.level > 0) list.push({ ic: "crown", label: T("result_stat_level_gold"), value: gold(g.level), color: or });
+  if (g.daily > 0) list.push({ ic: "cal", label: T("result_stat_daily_gold"), value: gold(g.daily), color: or });
+  if (g.win > 0) list.push({ ic: "trophy", label: T("result_stat_win_gold"), value: gold(g.win), color: or });
+  if (g.runeBonus > 0) list.push({ ic: "rune", label: T("result_stat_rune_bonus"), value: gold(g.runeBonus), color: or });
+  if (d.eventMult > 1) list.push({ ic: "event", label: T("result_stat_event"), value: T("result_stat_multiplier", d.eventMult), color: or });
   if (d.daily == null) list.push({ ic: "star", label: "", value: T("result_xp_won", d.xp), color: "#f2541b", headline: true });
   return list;
 }
@@ -28,6 +34,7 @@ export function renderResult(c, d) {
   const head = el("div", "rs-head", `<img src="img/rs_head.webp" alt=""><button class="rs-back" aria-label="back"></button><div class="rs-title lt">${T("game_over")}</div>`);
   head.querySelector(".rs-back").onclick = d.onHome; root.append(head);
   const inner = el("div", "rs-inner"); root.append(inner);
+  if (d.note) inner.append(el("div", "rs-note", d.note));
   // stats
   const grid = el("div", "rs-grid"); const sl = statList(d, lang);
   for (let i = 0; i < sl.length; i += 2) {
@@ -53,6 +60,7 @@ export function renderResult(c, d) {
     const v = el("div", "rs-vs", `${side(d.nick || T("quick_match_you"), me, null, false, won ? "#1f9a3a" : drew ? "#3b2314" : "#8e1f1f")}${side(d.opp.nickname || "?", op, null, true, !won && !drew ? "#1f9a3a" : drew ? "#3b2314" : "#8e1f1f")}<div class="out" style="background:${drew ? "#8a6a50" : won ? "#2ea043" : "#d23b2e"}">${T(drew ? "quick_match_drew" : won ? "quick_match_won" : "quick_match_lost")}</div><div class="vs">${T("quick_match_versus")}</div>${won ? '<img class="cr" src="img/lobby_crown.webp" alt="">' : ""}`);
     const a1 = d.myRing(), a2 = d.oppRing(); v.querySelector(".av.l").append(a1); v.querySelector(".av.r").append(a2);
     inner.append(v);
+    if (d.rematch) { const b = el("button", "rs-next", `<span>${d.rematchLabel}</span>`); b.onclick = d.rematch; inner.append(b); }
   }
   // daily
   if (d.daily) {

@@ -1,4 +1,5 @@
 import * as net from "./firebase.js";
+import { S } from "./i18n.js";
 
 const T = {
   tr: { title: "Arkadaşlarım", code: "Kodun", hint: "Arkadaşını davet et, seviye 5'e ulaşınca ikiniz de 500 XP kazanın!", share: "Kodumu Paylaş", addL: "Arkadaş ekle", addH: "6 haneli kod", add: "Ekle",
@@ -44,9 +45,9 @@ export function stop() { unsubs.forEach((u) => { try { u(); } catch {} }); unsub
 export function renderFriends(c) {
   if (c.current() !== "friends") return;
   const { $, P, lang } = c, x = T[lang()];
-  $("fr-title").textContent = x.title; $("fr-codel").textContent = x.code; $("fr-hint").textContent = x.hint;
+  $("fr-title").textContent = x.title; $("fr-duelt").textContent = S("duel_list_title"); $("fr-codel").textContent = x.code; $("fr-hint").textContent = x.hint;
   for (let i = 0; i < 6; i++) $("fr-d" + i).textContent = myCode ? myCode[i] : "";
-  $("fr-sharet").textContent = x.share; $("fr-ribbon1t").textContent = x.addL; $("fr-ribbon2t").textContent = x.listT;
+  $("fr-sharet").innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em"><path fill="#fff" d="M18 16.1c-.8 0-1.5.3-2 .8l-7.1-4.2c.1-.2.1-.5.1-.7s0-.5-.1-.7L16 7.2c.5.5 1.2.8 2 .8 1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3c0 .2 0 .5.1.7L8 9.8C7.500 9.300 6.800 9 6 9c-1.700 0-3 1.300-3 3s1.300 3 3 3c.8 0 1.500-.3 2-.8l7.200 4.200c-.1.200-.1.400-.1.600 0 1.600 1.300 2.900 2.900 2.900s2.900-1.300 2.900-2.900-1.200-2.900-2.900-2.900z"/></svg> ` + x.share; $("fr-ribbon1t").textContent = x.addL; $("fr-ribbon2t").textContent = x.listT;
   $("fr-input").placeholder = x.addH; $("fr-addt").textContent = x.add; $("fr-msg").textContent = msg;
   $("fr-share").onclick = async () => {
     if (!myCode) return;
@@ -66,7 +67,7 @@ export function renderFriends(c) {
   };
   const list = $("fr-list"); list.replaceChildren();
   if (!friends.length && !requests.length && !blocked.length) {
-    const e = el("div", "fr-empty", `<img src="img/friends_handshake.webp" alt=""><span>${x.empty}</span>`); list.append(e); return;
+    const e = el("div", "fr-empty", `<img src="img/friends_handshake.webp" alt="">${(() => { const i = x.empty.indexOf(". "), a = i > 0 ? x.empty.slice(0, i + 1) : x.empty, b = i > 0 ? x.empty.slice(i + 1).trim() : ""; return `<b>${a}</b>${b ? `<span>${b}</span>` : ""}`; })()}`); list.append(e); return;
   }
   if (requests.length) {
     list.append(el("div", "fr-sec", x.reqT));
@@ -94,6 +95,7 @@ function menu(c, f, x) {
   const { $ } = c, d = $("fr-menu"); d.classList.remove("hidden"); d.replaceChildren();
   const box = el("div", "fr-mbox", `<b>${esc(f.nickname || "?")}</b>`);
   const a = (label, q, fn) => { const b = el("button", "pill cream small", `<span>${label}</span>`); b.onclick = () => { d.classList.add("hidden"); c.confirm(q, x.yes, fn); }; box.append(b); };
+  const dl = el("button", "pill orange small", `<span>${S("duel_challenge_action")}</span>`); dl.onclick = () => { d.classList.add("hidden"); c.openDuel({ uid: f.id, name: f.nickname || "?" }); }; box.append(dl);
   a(x.remove, x.removeQ(f.nickname || "?"), () => net.removeFriend(f.id));
   a(x.block, x.blockQ(f.nickname || "?"), () => net.blockUser(f.id, f.nickname || "?"));
   const cancel = el("button", "pill cream small", `<span>${x.no}</span>`); cancel.onclick = () => d.classList.add("hidden"); box.append(cancel);

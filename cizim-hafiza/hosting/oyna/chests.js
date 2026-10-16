@@ -1,20 +1,14 @@
-// Chests: won by beating a Quick Match opponent, unlocked on a timer, opened for gold, jokers and sometimes a pen.
+// Chests (kasalar): won by beating a Quick Match opponent or a room, unlocked on a timer, opened for gold, jokers and sometimes a pen.
+// A port of ChestStore.kt (the rules), ChestDetail.kt (the window), ChestWonDialog.kt (the win scene), ChestComponents.kt (the opening
+// scene) and ChestInfoDialog.kt. The texts are the app's own (i18n.js / strings.json).
 import { penList } from "./store.js";
-const TIERS = { SILVER: { ms: 2 * 3600e3, gold: [150, 250], img: "chest_apprentice", k: "silver" }, GOLD: { ms: 3 * 3600e3, gold: [450, 700], img: "chest_artist", k: "gold" }, RARE: { ms: 6 * 3600e3, gold: [1500, 2500], img: "chest_surprise", k: "rare" } };
-const SLOTS = 4, JOKERS = ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"];
-const T = {
-  tr: { title: "Kasalarım", tagline: "Her galibiyet bir hazine!", full: "Yuvalar dolu — bir kasa aç!", empty: "Kasa Yuvası", tier: { silver: "Çırak Kasası", gold: "Sanatçı Kasası", rare: "Sürpriz Kasası" }, tapStart: "Başlatmak için dokun", ready: "Açmak için dokun!", unlocking: "Açılıyor…", waiting: "Sırada",
-        busy: "Başka bir kasa açılıyor — önce onun süresi dolmalı.", total: (h) => `Açılma süresi: ${h} saat`, detailStart: "Süresini başlatmak için aşağıdaki butona dokun.", start: "Süreyi Başlat", open: "Kasayı Aç", close: "Kapat", still: "Bu kasanın süresi dolmadı.", ready2: "Kasan hazır!",
-        contents: "Kasadan neler çıkar?", loot: { silver: "150–250 altın · %30 ihtimalle 1 joker", gold: "450–700 altın · 1 joker (%30 ihtimalle 2)", rare: "1500–2500 altın · 2 joker (%40 ihtimalle 3) · %12 ihtimalle mağaza kalemi" },
-        won: "KASA KAZANDIN!", wonHint: "Süreyi Kasalarım'dan başlat", lost: "Kasa yuvaları dolu! Bu galibiyetin kasası kayboldu. Yer açmak için kasalarını aç.", got: "Kazandın", gold: "altın", jokers: { FIRST_LETTER: "İlk Harf Jokeri", LETTER_COUNT: "Harf Sayısı Jokeri", EXTRA_TIME: "Ekstra Süre Jokeri" }, pen: "Yeni kalem!", ok: "Harika!",
-        info: "Hızlı Eşleş'te rakibini yenersen bir kasa kazanırsın! 🎁 Kasalar altın, joker ve bazen nadir kalemler saklar. Kaliteye göre 2, 3 veya 6 saatte açılır; aynı anda tek kasanın sayacı işler. 4 yuvan var — hepsi doluyken yeni kasa uçup gider, o yüzden zamanında aç! 🚀", hm: (h, m) => h ? `${h} sa ${m} dk` : `${m} dk` },
-  en: { title: "My Chests", tagline: "Every win is a treasure!", full: "Slots full — open a chest!", empty: "Chest Slot", tier: { silver: "Apprentice Chest", gold: "Artist Chest", rare: "Surprise Chest" }, tapStart: "Tap to start", ready: "Tap to open!", unlocking: "Opening…", waiting: "Waiting",
-        busy: "Another chest is opening — wait for it first.", total: (h) => `Opens in: ${h} h`, detailStart: "Tap the button below to start the timer.", start: "Start Timer", open: "Open Chest", close: "Close", still: "This chest isn't ready yet.", ready2: "Your chest is ready!",
-        contents: "What's inside?", loot: { silver: "150–250 gold · 30% chance of 1 joker", gold: "450–700 gold · 1 joker (30% chance of 2)", rare: "1500–2500 gold · 2 jokers (40% chance of 3) · 12% chance of a store pen" },
-        won: "YOU WON A CHEST!", wonHint: "Start the timer from My Chests", lost: "Chest slots are full! This win's chest was lost. Open some to make room.", got: "You won", gold: "gold", jokers: { FIRST_LETTER: "First Letter Joker", LETTER_COUNT: "Letter Count Joker", EXTRA_TIME: "Extra Time Joker" }, pen: "New pen!", ok: "Awesome!",
-        info: "Beat your opponent in Quick Match to win a chest! 🎁 Chests hold gold, jokers and sometimes rare pens. They open in 2, 3 or 6 hours depending on quality; only one timer runs at a time. You have 4 slots — when all are full new chests fly away, so open them in time! 🚀", hm: (h, m) => h ? `${h} h ${m} min` : `${m} min` },
-};
-const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+import { S, fmtNum } from "./i18n.js";
+import { el, primary, appWindow } from "./ui.js";
+import { TIER, backdrop, wonScene, rewardScene, rgba, glowOf } from "./chestfx.js";
+import { todayEpoch } from "./daily.js";
+
+const SLOTS = 4, JOKERS = ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"], GOLD = { SILVER: [150, 250], GOLD: [450, 700], RARE: [1500, 2500] };
+const JOKER_TINT = { FIRST_LETTER: "#8E4FE0", LETTER_COUNT: "#1E8FD6", EXTRA_TIME: "#E8672A" }, JOKER_ART = { FIRST_LETTER: "joker_first_letter", LETTER_COUNT: "joker_letter_count", EXTRA_TIME: "joker_extra_time" }, JOKER_SHORT = { FIRST_LETTER: "joker_first_letter_short", LETTER_COUNT: "joker_letter_count_short", EXTRA_TIME: "joker_extra_time_short" };
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 
 export function ensure(P) { P.chests = P.chests || { slots: [null, null, null, null], idx: 0, seed: Math.floor(Math.random() * 2 ** 31) + 1 }; return P.chests; }
@@ -24,85 +18,181 @@ function bagTier(seed, idx) {
   for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]]; }
   return bag[((idx % 240) + 240) % 240];
 }
-// Returns the new chest, or null when every slot is taken.
-export function award(P) {
+/**
+ * A won match's chest. The tier cycle advances every time; with every slot taken the chest is lost — unless the Yedek Yuva rune
+ * is bought and its reserve slot is free, then it waits there (ChestStore.awardChestForWin). Returns the chest or null.
+ */
+export function award(P, hasRune) {
   const C = ensure(P), free = C.slots.findIndex((s) => !s), tier = bagTier(C.seed, C.idx++);
-  if (free < 0) return null;
-  const chest = { id: Math.random().toString(36).slice(2), tier, start: null }; C.slots[free] = chest; return chest;
+  const chest = { id: Math.random().toString(36).slice(2), tier, start: null };
+  if (free < 0) { if (hasRune && hasRune("RESERVE") && !C.reserve) C.reserve = chest; return null; }
+  C.slots[free] = chest; return chest;
 }
-const isReady = (c, now = Date.now()) => c.start != null && now >= c.start + TIERS[c.tier].ms;
-const anyUnlocking = (C, now) => C.slots.some((c) => c && c.start != null && !isReady(c, now));
+const rawMs = (tier) => TIER[tier].ms;
+/** How long a chest takes once started, with the chest-time rune taken off (RuneLive.chestMillis). */
+const effMs = (c, tier) => Math.floor(rawMs(tier) * (100 - c.runeFx("CTIME")) / 100);
+const isReady = (ch, now = Date.now()) => ch.start != null && now >= ch.start + rawMs(ch.tier);
+const remaining = (c, ch, now) => (ch.start == null ? effMs(c, ch.tier) : Math.max(0, ch.start + rawMs(ch.tier) - now));
+const anyUnlocking = (C, now) => C.slots.some((ch) => ch && ch.start != null && !isReady(ch, now));
+const fmtLeft = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60; return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`; };
+/** "2 saat", "1 sa 48 dk" or "45 dk": the wait as it really is, runes included (ChestTier.durationText). */
+const durText = (c, tier) => { const min = Math.floor(effMs(c, tier) / 60000), h = Math.floor(min / 60), m = min % 60; return m === 0 ? S("chest_duration_hours", h) : h === 0 ? S("chest_duration_minutes", m) : S("chest_duration_hm", h, m); };
+
+/** The loot of a chest, with the chest runes applied (ChestLoot.roll). The percent is taken with integer division, like the app. */
 function roll(P, tier) {
-  const g0 = rnd(...TIERS[tier].gold), g = Math.round(g0 * (1 + P.__fx("CHEST") / 100)), jb = P.__fx("CJOKER") / 100;
+  const g0 = rnd(...GOLD[tier]), g = g0 + Math.floor(g0 * P.__fx("CHEST") / 100), jb = P.__fx("CJOKER") / 100;
   const n = tier === "SILVER" ? (Math.random() < 0.3 + jb ? 1 : 0) : tier === "GOLD" ? 1 + (Math.random() < 0.3 + jb ? 1 : 0) : 2 + (Math.random() < 0.4 + jb ? 1 : 0);
   const jokers = {}; for (let i = 0; i < n; i++) { const t = JOKERS[Math.floor(Math.random() * 3)]; jokers[t] = (jokers[t] || 0) + 1; }
   let pen = null;
   if (tier === "RARE" && Math.random() < 0.12) { const pool = penList().filter((p) => p.price > 0 && p.price <= 6500 && !p.rune && !p.retired && !P.owned.includes("pen:" + p.id)); if (pool.length) pen = pool[Math.floor(Math.random() * pool.length)]; }
-  return { gold: g, jokers, pen };
+  return { tier, gold: g, jokers, pen };
 }
-const fmtLeft = (ms, x) => { const s = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), sec = s % 60; return h ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`; };
+function pay(P, rw) {
+  P.gold += rw.gold; for (const [t, n] of Object.entries(rw.jokers)) P.jokers[t] = (P.jokers[t] || 0) + n; if (rw.pen) P.owned.push("pen:" + rw.pen.id);
+}
 
+// ---------- the home section: the four slots ----------
 export function layoutChests(c) {
-  const { place, $ } = c, k = 1;
+  const { place, $ } = c;
   place($("ch-title"), 166, 1416, 400, 70); place($("ch-tag"), 380, 1426, 344, 64); place($("ch-info"), 731, 1426, 63, 64);
   [[64, 232], [247, 412], [429, 596], [610, 780]].forEach(([a, b], i) => place($("ch-s" + i), a, 1494, b - a, 180));
 }
-let timer = null;
+let timer = null; const slotFx = [];
+const hm = (ms) => { const m = Math.floor(ms / 60000); return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); };
 export function renderChests(c) {
-  const { $, P, lang } = c, x = T[lang()], C = ensure(P), now = Date.now();
-  $("ch-title").textContent = x.title;
+  const { $, P } = c, C = ensure(P), now = Date.now();
+  $("ch-title").textContent = S("menu_chests");
   const full = C.slots.every(Boolean);
-  $("ch-tag").textContent = full ? x.full : x.tagline;
+  $("ch-tag").textContent = C.reserve ? S("home_chests_reserve") : full ? S("home_chests_full") : S("home_chests_tagline");
   C.slots.forEach((ch, i) => {
     const s = $("ch-s" + i); s.replaceChildren(); s.className = "ch-slot";
-    if (!ch) { s.append(el("span", "ch-e", x.empty)); s.onclick = null; return; }
-    const tier = TIERS[ch.tier], ready = isReady(ch, now), going = ch.start != null && !ready;
-    s.classList.toggle("ready", ready);
-    s.append(el("img", "", ""), el("b", "", ready ? x.ready : going ? fmtLeft(ch.start + tier.ms - now, x) : x.tapStart));
-    s.firstChild.src = `img/${tier.img}.webp`; s.firstChild.alt = "";
+    if (!ch) { s.append(el("span", "ch-e", S("chest_slot_empty_title"))); s.onclick = null; return; }
+    const ready = isReady(ch, now), going = ch.start != null && !ready, T = TIER[ch.tier];
+    s.classList.add("filled"); s.classList.toggle("ready", ready); s.style.setProperty("--bc", T.border);
+    const cv = el("canvas", "sl-cv"), img = el("img", "sl-img"); img.src = `img/${T.art}.webp`; img.alt = "";
+    const plate = el("div", "sl-plate " + (ready ? "ready" : going ? "going" : "idle"), `<span>${ready ? S("chests_open_button") + "!" : going ? fmtLeft(remaining(c, ch, now)) : hm(effMs(c, ch.tier))}</span>`);
+    plate.style.setProperty("--ac", T.accent);
+    s.append(cv, img, el("span", "sl-n", S(T.label)), plate);
+    // the tier's backdrop moves behind every filled slot, like the app's slot cards
+    (slotFx[i] = slotFx[i] || {}).stop && slotFx[i].stop(); requestAnimationFrame(() => { slotFx[i].stop = backdrop(cv, ch.tier); });
     s.onclick = () => detail(c, ch.id);
   });
-  $("ch-info").onclick = () => c.info(x.info);
+  $("ch-info").onclick = () => infoDialog(c);
   clearInterval(timer);
   if (C.slots.some((ch) => ch && ch.start != null && !isReady(ch))) timer = setInterval(() => { if (c.current() === "home") renderChests(c); else clearInterval(timer); }, 1000);
 }
+
+// ---------- the chest window (ChestDetailHost) ----------
 function detail(c, id) {
-  const { $, P, lang } = c, x = T[lang()], C = ensure(P), ch = C.slots.find((s) => s && s.id === id), d = $("pick"); if (!ch) return;
-  const tier = TIERS[ch.tier], now = Date.now(), ready = isReady(ch, now), going = ch.start != null && !ready;
-  d.classList.remove("hidden"); d.replaceChildren();
-  const box = el("div", "pk-box", `<img class="ch-big" src="img/${tier.img}.webp" alt=""><b>${x.tier[tier.k]}</b><p>${ready ? x.ready2 : going ? x.unlocking : x.detailStart}</p><p>${x.total(tier.ms / 3600e3)}</p><p class="ch-loot"><u>${x.contents}</u><br>${x.loot[tier.k]}</p>`);
-  const act = el("button", "pill orange small", `<span>${ready ? x.open : going ? x.unlocking : x.start}</span>`);
-  if (going) act.classList.add("dis");
-  act.onclick = () => {
-    if (going) return;
-    if (!ready) {
-      if (anyUnlocking(C, Date.now())) { box.querySelector("p").textContent = x.busy; return; }
-      ch.start = Date.now() - TIERS[ch.tier].ms * c.runeFx("CTIME") / 100; c.saveP(); d.classList.add("hidden"); renderChests(c); return;
-    }
-    P.__fx = c.runeFx; const rw = roll(P, ch.tier); P.gold += rw.gold; for (const [t, n] of Object.entries(rw.jokers)) P.jokers[t] = (P.jokers[t] || 0) + n; if (rw.pen) P.owned.push("pen:" + rw.pen.id);
-    C.slots[C.slots.indexOf(ch)] = null; c.saveP(); c.refreshHome(); renderChests(c); reward(c, ch.tier, rw);
+  const { $, P } = c, C = ensure(P), ch = C.slots.find((s) => s && s.id === id); if (!ch) return;
+  const tier = ch.tier, T = TIER[tier], host = $("stage");
+  const body = el("div", "cd-body"), footer = el("div", "cd-foot");
+  // the stage: the tier's own backdrop, the chest (tappable, it answers in a speech bubble) and the answer above it
+  const u = c.u(), screenDp = c.stageH() / u / 2.05, stageH = Math.min(282, Math.max(170, screenDp * 0.30)) * 2.05 * u;
+  const stage = el("div", "cd-stage"); stage.style.height = stageH + "px"; stage.style.borderColor = T.border;
+  const cv = el("canvas", "cd-cv"), img = el("img", "cd-chest"); img.src = `img/${T.art}.webp`; img.alt = ""; img.style.width = stageH * 0.84 + "px"; img.style.marginTop = 40 * 2.05 * u + "px";
+  const bubble = el("div", "cd-bubble hidden"); stage.append(cv, img, bubble); body.append(stage);
+  let bubbleT = null;
+  const say = (key) => { bubble.innerHTML = `<span>${S(key)}</span><i></i>`; bubble.classList.remove("hidden"); img.classList.remove("wig"); void img.offsetWidth; img.classList.add("wig"); clearTimeout(bubbleT); bubbleT = setTimeout(() => bubble.classList.add("hidden"), 1900 + 500); };
+  // what a chest of this tier can hold
+  const stars = "★".repeat(T.stars) + "☆".repeat(3 - T.stars);
+  const panel = el("div", "cd-contents"); panel.style.cssText = `background:${rgba(T.accent, 0.1)};border-color:${rgba(T.accent, 0.45)}`;
+  const jokersKey = { SILVER: ["chest_detail_jokers_silver", 30], GOLD: ["chest_detail_jokers_gold", 30], RARE: ["chest_detail_jokers_rare", 40] }[tier];
+  panel.innerHTML = `<div class="cd-ch"><b>${S("chest_detail_contents_title")}</b><span style="color:${T.accent};background:${rgba(T.accent, 0.16)}">${stars} ${S(T.rarity)}</span></div>
+    <div class="cd-cr"><i>🪙</i><span>${S("chest_detail_gold", GOLD[tier][0], GOLD[tier][1])}</span></div><div class="cd-cr"><i>🎲</i><span>${S(jokersKey[0], jokersKey[1])}</span></div>${tier === "RARE" ? `<div class="cd-cr"><i>✏️</i><span>${S("chest_detail_pen", 12)}</span></div>` : ""}`;
+  body.append(panel);
+  const plate = el("div", "cd-plate"); body.append(plate);
+  let readyNow = false;
+  const paint = () => {
+    const now = Date.now(), cur = C.slots.find((s) => s && s.id === id); if (!cur) { ov.close(); return; }
+    const ready = isReady(cur, now), unlocking = cur.start != null && !ready, another = anyUnlocking(C, now) && cur.start == null;
+    plate.style.display = ready ? "none" : "";
+    if (!ready) plate.innerHTML = `<div class="cd-pl"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#FFC94D" stroke-width="2"/><path d="M12 7v5l3 2" stroke="#FFC94D" stroke-width="2" fill="none" stroke-linecap="round"/></svg><span>${S(unlocking ? "chest_timer_remaining" : "chest_timer_total").toLocaleUpperCase(c.lang())}</span></div>
+      <div class="cd-pt">${fmtLeft(remaining(c, cur, now))}</div>${unlocking ? `<div class="cd-bar"><i style="width:${Math.max(0, Math.min(1, 1 - remaining(c, cur, now) / effMs(c, cur.tier))) * 100}%"></i></div>` : `<div class="cd-ph">${S("chest_timer_hint")}</div>`}`;
+    // the footer only changes when the state does
+    const state = ready ? "ready" : unlocking ? "go" + instantOk() : another ? "busy" : "start";
+    if (footer.dataset.s === state) return; footer.dataset.s = state; footer.replaceChildren(); readyNow = ready;
+    if (ready) footer.append(el("div", "cd-ok", S("chest_detail_ready")), primary(S("chests_open_button"), () => openChest(c, cur, ov)));
+    else if (unlocking) { if (instantOk()) footer.append(primary(S("chest_instant_button"), () => { cur.start = Date.now() - rawMs(cur.tier); P.instantDay = todayEpoch(); c.saveP(); footer.dataset.s = ""; paint(); renderChests(c); })); }
+    else if (another) footer.append(el("div", "cd-busy", S("chest_slot_busy")));
+    else footer.append(primary(S("chests_start_button") + " · " + durText(c, cur.tier), () => { cur.start = Date.now() - Math.floor(rawMs(cur.tier) * c.runeFx("CTIME") / 100); c.saveP(); footer.dataset.s = ""; paint(); renderChests(c); }));
   };
-  const close = el("button", "pill cream small", `<span>${x.close}</span>`); close.onclick = () => d.classList.add("hidden");
-  box.append(act, close); d.append(box); d.onclick = (e) => { if (e.target === d) d.classList.add("hidden"); };
+  const instantOk = () => c.runeHas("INSTANT") && P.instantDay !== todayEpoch();
+  const ov = appWindow(host, { title: S(T.label), body, footer, onClose: () => { stopFx(); clearInterval(tick); clearTimeout(bubbleT); } });
+  const stopFx = backdrop(cv, tier);
+  stage.onclick = () => { const cur = C.slots.find((s) => s && s.id === id); if (!cur || isReady(cur)) return; say(cur.start != null ? "chest_slot_still_unlocking" : anyUnlocking(C, Date.now()) ? "chest_slot_busy" : "chest_detail_tap_to_start"); };
+  paint(); const tick = setInterval(paint, 1000);
 }
-// Opens a chest at once (login-streak rewards): same loot as a timed chest, shown in the reward dialog.
+
+/** Opens a ready chest: the reward is paid at once (and the reserve chest slides into the freed slot), then the opening scene plays. */
+function openChest(c, ch, win) {
+  const { P } = c, C = ensure(P); P.__fx = c.runeFx;
+  const rw = roll(P, ch.tier); pay(P, rw);
+  const i = C.slots.indexOf(ch); C.slots[i] = C.reserve || null; C.reserve = null;
+  c.saveP(); c.refreshHome(); win && win.close(); renderChests(c);
+  openingScene(c, rw);
+}
+/** A chest opened on the spot (login-streak days, coupons): the same loot and the same opening scene. */
 export function openNow(c, tier) {
-  const P = c.P; P.__fx = c.runeFx; const rw = roll(P, tier); P.gold += rw.gold;
-  for (const [t, n] of Object.entries(rw.jokers)) P.jokers[t] = (P.jokers[t] || 0) + n;
-  if (rw.pen) P.owned.push("pen:" + rw.pen.id);
-  c.saveP(); c.refreshHome(); reward(c, tier, rw);
+  const P = c.P; P.__fx = c.runeFx; const rw = roll(P, tier); pay(P, rw); c.saveP(); c.refreshHome(); openingScene(c, rw);
 }
-export function reward(c, tierKey, rw) {
-  const { $, lang } = c, x = T[lang()], d = $("pick"); d.classList.remove("hidden"); d.replaceChildren();
-  const lines = [`<div class="rw-gold">🪙 +${rw.gold.toLocaleString()} ${x.gold}</div>`, ...Object.entries(rw.jokers).map(([t, n]) => `<div class="rw-j">🃏 ${n}× ${x.jokers[t]}</div>`)];
-  if (rw.pen) lines.push(`<div class="rw-pen">🖊️ ${x.pen} <b>${rw.pen[lang()]}</b></div>`);
-  const box = el("div", "pk-box rwbox", `<img class="ch-big pop" src="img/${TIERS[tierKey].img}.webp" alt=""><b>${x.got}</b>${lines.join("")}`);
-  const ok = el("button", "pill orange small", `<span>${x.ok}</span>`); ok.onclick = () => d.classList.add("hidden"); box.append(ok); d.append(box);
+export const reward = (c, tier, rw) => openingScene(c, { tier, ...rw });
+
+// ---------- the opening scene: the tier's video, then the reward (ChestOpeningScene) ----------
+const TAIL_TRIM = 1.5;
+function openingScene(c, rw) {
+  const { $ } = c, T = TIER[rw.tier], host = $("stage"), ov = el("div", "os2"); host.append(ov);
+  let stage = 0, stopFx = null, done = false; const timers = [];
+  const vid = el("video", "os2-v"); vid.src = `video/${T.video}.mp4`; vid.playsInline = true; vid.setAttribute("playsinline", ""); vid.autoplay = true; vid.muted = !(c.P.prefs && c.P.prefs.s0);
+  ov.append(vid);
+  const toReward = () => { if (stage !== 0) return; stage = 1; vid.pause(); vid.remove(); ov.classList.add("white"); rewardUi(); };
+  vid.addEventListener("ended", toReward); vid.addEventListener("error", toReward);
+  vid.addEventListener("timeupdate", () => { if (vid.duration && vid.duration > TAIL_TRIM * 2 && vid.currentTime >= vid.duration - TAIL_TRIM) toReward(); });
+  ov.onclick = () => toReward();
+  vid.play().catch(() => { vid.muted = true; vid.play().catch(toReward); });
+  const hasExtras = Object.keys(rw.jokers).length > 0 || !!rw.pen;
+  function rewardUi() {
+    const cv = el("canvas", "os2-cv"); ov.append(cv); stopFx = rewardScene(cv, rw.tier, rw.gold);
+    const col = el("div", "os2-col");
+    col.innerHTML = `<div class="os2-title">${S("chests_reward_title")}</div><div class="os2-tier" style="color:${T.accent};background:${rgba(T.accent, 0.14)}">${S(T.label)}</div>
+      <div class="os2-card" style="border-color:${rgba(T.accent, 0.55)}"><img class="os2-coin${hasExtras ? " sm" : ""}" src="img/icon_gold_coin.webp" alt=""><div class="os2-gold${hasExtras ? " sm" : ""}">${S("chests_reward_gold", 0)}</div><div class="os2-extras"></div></div>`;
+    ov.append(col); const goldEl = col.querySelector(".os2-gold"), extras = col.querySelector(".os2-extras");
+    c.sfx && c.sfx.over && c.sfx.over();
+    const t0 = performance.now(), count = (now) => { const p = Math.min(1, Math.max(0, (now - t0 - 250) / 900)), e = 1 - Math.pow(1 - p, 3); goldEl.textContent = S("chests_reward_gold", Math.round(rw.gold * e)); if (p < 1) timers.push(requestAnimationFrame(count)); else settled(); };
+    timers.push(requestAnimationFrame(count));
+    function settled() {
+      if (hasExtras) {
+        for (const [t, n] of Object.entries(rw.jokers)) { const d = el("div", "os2-j"); d.style.background = JOKER_TINT[t]; d.innerHTML = `<span class="ja"><img src="img/${JOKER_ART[t]}.webp" alt=""></span><b>×${n}</b><small>${S(JOKER_SHORT[t])}</small>`; extras.append(d); }
+        if (rw.pen) { const colors = rw.pen.colors.length > 1 ? rw.pen.colors : [rw.pen.colors[0], rw.pen.colors[0]]; extras.append(el("div", "os2-pen", `<i style="background:linear-gradient(90deg,${colors.join(",")})"></i><span>${S("joker_pen_won")} ${rw.pen[c.lang()]}</span>`)); }
+      }
+      const b = primary(S("chests_reward_button"), () => { timers.forEach(cancelAnimationFrame); stopFx && stopFx(); ov.remove(); }); b.classList.add("os2-btn"); col.append(b);
+    }
+  }
 }
+
+// ---------- the win scene (ChestWonScene) ----------
 export function wonDialog(c, chest) {
-  const { $, lang } = c, x = T[lang()], d = $("pick"); d.classList.remove("hidden"); d.replaceChildren();
-  const box = el("div", "pk-box rwbox");
-  if (chest) box.innerHTML = `<b>${x.won}</b><img class="ch-big pop" src="img/${TIERS[chest.tier].img}.webp" alt=""><p>${x.tier[TIERS[chest.tier].k]}</p><p>${x.total(TIERS[chest.tier].ms / 3600e3)}</p><p>${x.wonHint}</p>`;
-  else box.innerHTML = `<p>${x.lost}</p>`;
-  const ok = el("button", "pill orange small", `<span>${x.ok}</span>`); ok.onclick = () => d.classList.add("hidden"); box.append(ok); d.append(box);
+  const { $ } = c, host = $("stage");
+  if (!chest) { // every slot was taken: the chest is lost — the app simply drops it, with a note
+    const body = el("div", "cd-lost", S("chest_lost_body")); const ov = appWindow(host, { title: S("chest_lost_title"), body, footer: primary(S("chest_won_button"), () => ov.close()) }); return;
+  }
+  const T = TIER[chest.tier], ov = el("div", "won"); host.append(ov);
+  const cv = el("canvas", "won-cv"); ov.append(cv);
+  const img = new Image(); img.src = `img/${T.art}.webp`;
+  const col = el("div", "won-col"), stars = "★".repeat(T.stars) + "☆".repeat(3 - T.stars);
+  col.innerHTML = `<div class="won-title">${S("chest_win_title")}</div><div class="won-tier" style="background:linear-gradient(90deg,${rgba(T.accent, 1)},${T.accent})"><span class="st">${stars}</span><b>${S(T.label)}</b><small>· ${S(T.rarity)}</small></div>
+    <div class="won-info"><div class="won-t"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#FFE066" stroke-width="2"/><path d="M12 7v5l3 2" stroke="#FFE066" stroke-width="2" fill="none" stroke-linecap="round"/></svg>${S("chest_win_unlock_time_text", durText(c, chest.tier))}</div><small>${S("chest_win_hint")}</small></div>`;
+  const btn = primary(S("chest_won_button"), () => { stopFx(); ov.remove(); }); btn.classList.add("won-btn"); col.append(btn); ov.append(col);
+  const stopFx = wonScene(cv, img, chest.tier, () => { col.classList.add("in"); c.sfx && c.sfx.over && c.sfx.over(); });
+}
+
+// ---------- the info window (ChestInfoDialog) ----------
+function infoDialog(c) {
+  const body = el("div", "ci-body");
+  const step = (n, emoji, title, text, first, last) => `<div class="ci-step ${first ? "first" : ""} ${last ? "last" : ""}"><div class="ci-rail"><i>${n}</i></div><div class="ci-tx"><b>${emoji}  ${title}</b><span>${text}</span></div></div>`;
+  body.innerHTML = step(1, "🏆", S("chest_info_step_win_title"), S("chest_info_step_win_body"), true, false) + step(2, "⏳", S("chest_info_step_open_title"), S("chest_info_step_open_body"), false, false) + step(3, "🔓", S("chest_info_step_slots_title"), S("chest_info_step_slots_body", SLOTS), false, true)
+    + `<div class="ci-h">${S("chest_info_contents_title")}</div>`
+    + ["SILVER", "GOLD", "RARE"].map((t) => { const T = TIER[t], j = { SILVER: ["chest_detail_jokers_silver", 30], GOLD: ["chest_detail_jokers_gold", 30], RARE: ["chest_detail_jokers_rare", 40] }[t];
+      return `<div class="ci-card" style="background:${rgba(T.accent, 0.1)};border-color:${rgba(T.accent, 0.5)}"><img src="img/${T.art}.webp" alt=""><div><div class="ci-n"><b>${S(T.label)}</b><span style="background:${T.accent}">⏱ ${durText(c, t)}</span></div><div class="ci-l">🪙 ${S("chest_detail_gold", GOLD[t][0], GOLD[t][1])}<br>🎲 ${S(j[0], j[1])}${t === "RARE" ? `<br>✏️ ${S("chest_detail_pen", 12)}` : ""}</div></div></div>`; }).join("");
+  const ov = appWindow(c.$("stage"), { title: S("home_chests_info_title"), body, footer: primary(S("home_chests_info_ok"), () => ov.close()) });
 }

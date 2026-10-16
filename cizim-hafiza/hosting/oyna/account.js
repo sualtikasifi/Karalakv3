@@ -1,4 +1,6 @@
 import * as net from "./firebase.js";
+import { S } from "./i18n.js";
+import { syncNow, lastBackupAt, forgetRemote } from "./sync.js";
 import { frameRing, frameById } from "./store.js";
 
 const T = {
@@ -24,6 +26,11 @@ export function layoutAccount(c) {
   place($("ak-del"), 120, 1490, 600, 80); place($("ak-msg"), 60, 1590, 720, 80);
 }
 
+function backupLine() {
+  const t = lastBackupAt(); if (!t) return S("account_never_backed_up");
+  const d = new Date(t), hm = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), day = (x) => Math.floor((x.getTime() - x.getTimezoneOffset() * 60000) / 864e5), diff = day(new Date()) - day(d);
+  return S("account_last_backup_format", diff === 0 ? S("account_backup_today", hm) : diff === 1 ? S("account_backup_yesterday", hm) : d.toLocaleDateString() + " " + hm);
+}
 export async function renderAccount(c) {
   const { $, P, lang } = c, x = T[lang()];
   try { who = await net.authState(); } catch { who = null; }
@@ -37,16 +44,25 @@ export async function renderAccount(c) {
   $("ak-fill").style.width = lv.frac * 100 + "%"; $("ak-barl").textContent = lv.max ? x.max : x.progress(lv.into, lv.span);
   const stats = [[P.xp.toLocaleString(), x.xp], [P.stats.games.toLocaleString(), x.games], [P.stats.best.toLocaleString(), x.streak]];
   stats.forEach(([v, l], i) => { const s = $("ak-s" + i); s.children[0].textContent = v; s.children[1].textContent = l; });
-  $("ak-sec").textContent = x.sec; $("ak-strip").textContent = linked ? x.linkedNote : x.hint;
+  $("ak-sec").textContent = x.sec; $("ak-strip").innerHTML = linked ? `<b>${S("account_sync_on")}</b><small>${backupLine()}</small>` : S("account_guest_hint");
   $("ak-google").innerHTML = G + `<span>${x.signIn}</span>`; $("ak-google").style.display = linked ? "none" : "";
-  $("ak-out").style.display = linked ? "" : "none"; $("ak-out-t").textContent = x.signOut;
-  $("ak-del").textContent = "🗑 " + x.del;
+  $("ak-out").style.display = linked ? "" : "none"; $("ak-out-t").textContent = S("account_sign_out");
+  $("ak-del").textContent = "🗑 " + S("account_delete_action");
   const m = $("ak-msg"); m.textContent = msg; m.style.display = msg ? "" : "none";
+  const done = (text) => { msg = text; c.refreshHome(); renderAccount(c); };
   $("ak-google").onclick = async () => {
-    try { who = await net.signInGoogle(); if (who && who.name && !P.nickLocked) { P.nick = who.name.split(" ")[0] || P.nick; } c.saveP(); msg = ""; }
-    catch (e) { msg = e.code === "auth/popup-closed-by-user" ? "" : x.failed; }
-    c.refreshHome(); renderAccount(c);
+    try {
+      who = await net.signInGoogle(); forgetRemote();
+      const r = await syncNow(c); c.saveP();
+      done(r === "restored" ? S("account_signed_in_restored") : r === "saved" ? S("account_signed_in_progress_kept") : S("account_signed_in_title"));
+    } catch (e) { done(e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request" ? "" : S("account_sign_in_failed")); }
   };
-  $("ak-out").onclick = async () => { try { await net.signOutGoogle(); msg = x.out; } catch { msg = x.noNet; } renderAccount(c); };
-  $("ak-del").onclick = () => c.info(x.delMsg);
+  $("ak-out").onclick = () => c.confirm(S("account_sign_out_message"), S("account_sign_out_confirm"), async () => {
+    if ((await syncNow(c)) === "error") return done(S("account_sign_out_backup_failed"));
+    try { await net.signOutGoogle(); c.resetProgress(); forgetRemote(); done(S("account_signed_out_done")); } catch { done(S("account_sign_out_failed")); }
+  });
+  $("ak-del").onclick = () => c.confirm(S("account_delete_message"), S("account_delete_continue"), () => c.confirm(S("account_delete_final_message"), S("account_delete_final_confirm"), async () => {
+    try { await net.deleteAccount(); c.resetProgress(); forgetRemote(); done(S("account_delete_done")); }
+    catch (e) { done(e.code === "auth/requires-recent-login" ? S("account_delete_reauth_needed") : S("account_delete_failed")); }
+  }));
 }

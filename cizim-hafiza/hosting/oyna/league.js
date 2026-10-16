@@ -1,5 +1,6 @@
 import * as net from "./firebase.js";
-import { frameRing, frameList, frameById } from "./store.js";
+import { S } from "./i18n.js";
+import { frameRing, frameList, frameById, penList } from "./store.js";
 
 // ---- Port of LeagueBots.kt: the fillers every phone adds to the published table ----
 let NAMES = [];
@@ -13,6 +14,7 @@ function seeded(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+const rankKey = (l) => ["rank_buyuk_usta", "rank_sanatci", "rank_usta_ressam", "rank_ressam", "rank_cirak", "rank_karalamaci"][[100, 80, 60, 40, 20, 1].findIndex((t) => l >= t)];
 const totalXpForLevel = (l) => { const n = Math.max(l - 1, 0); return 25 * n * n + 75 * n; };
 const levelForXp = (xp) => xp <= 0 ? 1 : Math.min(100, Math.max(1, Math.floor((-75 + Math.sqrt(75 * 75 + 100 * xp)) / 50) + 1));
 const nicknames = (periodId, count = 21) => {
@@ -53,15 +55,7 @@ function botFrame(lvl, seed) {
   return choices[(h & 0x7fffffff) % choices.length];
 }
 
-const T = {
-  tr: { title: "Aylık Lig", global: "Global", friends: "Arkadaşlar", resets: (n) => `${n} gün sonra sıfırlanır`, today: "Bugün sıfırlanıyor", note: "Global sıralama saatte bir yenilenir.", failed: "Global tablo yüklenemedi.", you: (n) => `${n} (Sen)`, xp: (n) => `${n} XP`,
-        monthly: "Bu ayki XP'in", rank: (n) => `Sıran #${n}`, unranked: "Henüz sırada değilsin", toTop: (a, b) => `İlk ${a}'ye girmek için ${b} XP daha`, inTop: (a) => `İlk ${a}'desin 🎉`, toPodium: (b) => `Ödül (ilk 3) için ${b} XP daha`, podium: "Ödül sırasındasın! 🏆",
-        friendsSoon: "Arkadaş tablosu yakında.", total: "Arkadaşlar · Toplam XP", rewardTop3: "İlk 3'e aylık ödül verilir." },
-  en: { title: "Monthly League", global: "Global", friends: "Friends", resets: (n) => `Resets in ${n} days`, today: "Resets today", note: "The global table refreshes hourly.", failed: "Couldn't load the global table.", you: (n) => `${n} (You)`, xp: (n) => `${n} XP`,
-        monthly: "Your XP this month", rank: (n) => `Rank #${n}`, unranked: "You're not ranked yet", toTop: (a, b) => `${b} XP more to reach the top ${a}`, inTop: (a) => `You're in the top ${a} 🎉`, toPodium: (b) => `${b} XP more for a prize (top 3)`, podium: "You're in prize position! 🏆",
-        friendsSoon: "The friends table is coming soon.", total: "Friends · Total XP", rewardTop3: "Top 3 win the monthly prize." },
-};
-let tab = "global", table = null, loading = false;
+let tab = "friends", table = null, loading = false, fr = null;
 
 export async function loadLeague() { if (!NAMES.length) NAMES = await (await fetch("league_names.json")).json(); }
 
@@ -69,10 +63,10 @@ async function fetchTable() {
   loading = true; table = null;
   const pid = periodId();
   try {
-    const doc = await net.getGlobalLeague();
+    const doc = await net.getGlobalLeague(); rewardId = doc?.rewardId || null; const mine = await net.myUid().catch(() => "");
     const published = ((doc?.humans || doc?.entries || []).filter((r) => typeof r.uid === "string"));
     const rows = doc && doc.periodId === pid ? published : [];
-    const humans = rows.map((r) => ({ uid: r.uid, nickname: r.nickname || "?", periodXp: r.periodXp || 0, level: r.level || 1, avatarUrl: "", bot: false }));
+    const humans = rows.map((r) => ({ uid: r.uid, nickname: r.nickname || "?", periodXp: r.periodXp || 0, level: r.level || 1, avatarUrl: "", bot: false, me: r.uid === mine, frameId: r.frameId }));
     const list = [...humans, ...bots(pid, Date.now(), monthStartMillis())].sort((a, b) => b.periodXp - a.periodXp || (a.nickname < b.nickname ? -1 : 1)).slice(0, 21);
     table = { list, ok: true };
   } catch (e) { table = { list: bots(pid, Date.now(), monthStartMillis()).sort((a, b) => b.periodXp - a.periodXp).slice(0, 21), ok: false }; }
@@ -90,45 +84,76 @@ export function layoutLeague(c) {
 }
 
 export async function renderLeague(c, refetch = true) {
-  const { $, lang } = c, x = T[lang()];
-  $("lg-title").textContent = x.title;
+  const { $, lang } = c;
+  $("lg-title").textContent = S("league_title");
   const tabs = $("lg-tabs"); tabs.replaceChildren();
-  for (const k of ["global", "friends"]) {
-    const b = document.createElement("button"); b.className = "lg-pill " + (tab === k ? "on" : "off"); b.textContent = x[k];
+  for (const k of ["friends", "global"]) {
+    const b = document.createElement("button"); b.className = "lg-pill " + (tab === k ? "on" : "off"); b.textContent = S("league_tab_" + k);
     b.onclick = () => { tab = k; renderLeague(c, false); }; tabs.append(b);
   }
-  const d = daysRemaining(); $("lg-timer").textContent = tab === "friends" ? x.total : d <= 0 ? x.today : x.resets(d);
+  $("lg-refresh").style.display = tab === "global" ? "" : "none";
+  const t = timerText(); $("lg-timer").textContent = tab === "friends" ? S("league_friends_total_caption") : t;
   $("lg-timer").className = "txt lg-timer " + (tab === "friends" ? "star" : "");
+  clearInterval(tick); if (tab === "global" && daysRemaining() <= 0) tick = setInterval(() => { if (c.current() !== "league") return clearInterval(tick); $("lg-timer").textContent = timerText(); }, 1000);
   const list = $("lg-list"); list.replaceChildren();
-  if (tab === "friends") { list.append(note(x.friendsSoon)); return; }
-  if (refetch || (!table && !loading)) { list.append(note("…")); await fetchTable(); if (c.current() !== "league") return; list.replaceChildren(); }
+  if (tab === "friends") {
+    if (refetch || !fr) { list.append(note("…")); try { fr = await net.friendsLeague(periodId()); } catch { fr = []; } if (c.current() !== "league" || tab !== "friends") return; list.replaceChildren(); }
+    fr.forEach((e, i) => list.append(row(c, { ...e, nickname: e.me ? c.P.nick : e.nickname, level: e.me ? levelForXp(c.P.xp) : e.level, periodXp: e.totalXp }, i + 1)));
+    if (fr.length <= 1) {
+      const h = document.createElement("div"); h.className = "lg-card lg-hint"; h.innerHTML = `<div>🤝</div><div>${S("league_friends_hint")}</div><b>${S("league_friends_hint_action")}</b>`;
+      h.onclick = () => c.show("friends"); list.append(h);
+    }
+    return;
+  }
+  if (refetch || (!table && !loading)) { list.append(note("…")); await fetchTable(); if (c.current() !== "league" || tab !== "global") return; list.replaceChildren(); }
   if (!table) return;
-  if (!table.ok) { list.append(note(x.failed)); }
-  list.append(monthlyCard(c, x));
-  table.list.forEach((e, i) => list.append(row(c, e, i + 1, x)));
-  list.append(note(x.note));
+  if (!table.ok) list.append(note(S("league_global_failed")));
+  const bn = banner(c.lang()); if (bn) list.append(bn);
+  list.append(monthlyCard(c));
+  table.list.forEach((e, i) => list.append(row(c, e, i + 1)));
+  list.append(note(S("league_global_refresh_note")));
+}
+let tick = 0, rewardId = null;
+function banner(lang) {
+  const id = rewardId || "", isPen = id.startsWith("PEN:"), key = id.replace(/^(PEN|FRAME):/, "");
+  const pen = isPen ? penList().find((p) => p.id === key) : null, frame = !isPen && id ? frameList().find((f) => f.id === key) : null;
+  if (!pen && !frame) return null;
+  const b = document.createElement("div"); b.className = "lg-banner";
+  const icon = document.createElement("div"); icon.className = "lb-i";
+  if (frame) icon.append(frameRing(frame, "lb-fr")); else icon.textContent = "🏆";
+  const label = pen ? pen[lang] || pen.tr : S("league_reward_kind_frame") + (key.startsWith("LEAGUE_CHAMPION_") ? " " + key.replace("LEAGUE_CHAMPION_", "").replace(/_/g, "-") : "");
+  const mid = document.createElement("div"); mid.className = "lb-m"; mid.innerHTML = `<small>${S("league_reward_title")}</small><b>${label}</b>`;
+  if (pen) { const st = document.createElement("i"); st.style.background = `linear-gradient(90deg,${pen.colors.join(",")})`; mid.append(st); }
+  const r = document.createElement("div"); r.className = "lb-r"; r.innerHTML = `<span>${S("league_reward_bonus_gold", (10000).toLocaleString("tr-TR"))}</span><span>${S("league_reward_bonus_xp", (10000).toLocaleString("tr-TR"))}</span><small>${S("league_reward_top3")}</small>`;
+  b.append(icon, mid, r); return b;
+}
+function timerText() {
+  const d = daysRemaining();
+  if (d > 0) return S(d === 1 ? "league_resets_in_one" : "league_resets_in", d);
+  const t = turkeyToday(), end = Date.parse(`${t.m === 12 ? t.y + 1 : t.y}-${String(t.m === 12 ? 1 : t.m + 1).padStart(2, "0")}-01T00:00:00+03:00`);
+  const left = Math.max(0, end - Date.now()), p = (n) => String(Math.floor(n)).padStart(2, "0");
+  return S("league_resets_countdown", `${p(left / 3600000)}:${p(left / 60000 % 60)}:${p(left / 1000 % 60)}`);
 }
 const note = (t) => { const n = document.createElement("div"); n.className = "lg-note"; n.textContent = t; return n; };
 
-function monthlyCard(c, x) {
-  const { P } = c, my = c.myPeriodXp();
-  const others = table.list, top20 = others[19]?.periodXp, podium = others[2]?.periodXp;
-  const ahead = others.filter((e) => e.periodXp > my).length, rank = ahead + 1;
-  const inTop = rank <= 20, inPodium = rank <= 3;
+function monthlyCard(c) {
+  const my = c.myPeriodXp(), others = table.list, top20 = others[19]?.periodXp, podium = others[2]?.periodXp;
+  const rank = others.filter((e) => e.periodXp > my).length + 1, inTop = rank <= 20, inPodium = rank <= 3;
   const card = document.createElement("div"); card.className = "lg-card";
-  const toTop = Math.max(0, (top20 ?? 0) - my + 1), toPod = Math.max(0, (podium ?? 0) - my + 1);
-  card.innerHTML = `<div class="lc-h"><b>${x.monthly}</b><span>${x.xp(my.toLocaleString())}</span></div><div class="lc-r">${inTop ? x.rank(rank) : x.unranked}</div><div class="lc-s">${inPodium ? x.podium : inTop ? x.inTop(20) + " · " + x.toPodium(toPod.toLocaleString()) : x.toTop(20, toTop.toLocaleString())}</div>`;
+  const toTop = Math.max(0, (top20 ?? 0) - my + 1), toPod = Math.max(0, (podium ?? 0) - my + 1), n = (v) => v.toLocaleString();
+  const pct = Math.min(100, Math.round(100 * my / Math.max(1, top20 ?? 1)));
+  card.innerHTML = `<div class="lc-h"><div><small>${S("league_monthly_title")}</small><b>${S("league_xp_format", my)}</b></div><span>${inTop ? S("league_monthly_rank", rank) : S("league_monthly_unranked")}</span></div>${top20 != null && !inTop ? `<div class="lc-bar"><i style="width:${pct}%"></i></div>` : ""}<div class="lc-s">${inPodium ? S("league_monthly_in_podium") : inTop ? S("league_monthly_in_top", 20) + " · " + S("league_monthly_to_podium", n(toPod)) : S("league_monthly_to_top", 20, n(toTop))}</div>${!inTop && podium != null ? `<div class="lc-s">${S("league_monthly_to_podium", n(toPod))}</div>` : ""}`;
   return card;
 }
 
-function row(c, e, rank, x) {
+function row(c, e, rank) {
   const r = document.createElement("div"), sprite = rank <= 3;
   r.className = "lg-row" + (sprite ? " s" + rank : "") + (e.me ? " me" : "");
-  const frame = e.bot ? botFrame(e.level, e.nickname) : highestFrame(e.level);
+  const frame = e.bot ? botFrame(e.level, e.nickname) : (e.frameId && frameById(e.frameId)) || highestFrame(e.level);
   const av = frameRing(frame, "lg-av"); av.style.position = "absolute";
-  const nm = document.createElement("div"); nm.className = "lg-nm"; nm.textContent = e.me ? x.you(e.nickname) : e.nickname;
-  const lv = document.createElement("small"); lv.textContent = "Lv " + e.level; nm.append(lv);
-  const xp = document.createElement("div"); xp.className = "lg-xp"; xp.textContent = x.xp(e.periodXp.toLocaleString());
+  const nm = document.createElement("div"); nm.className = "lg-nm"; nm.textContent = e.nickname;
+  const lv = document.createElement("small"); lv.textContent = "· " + S(rankKey(e.level)); nm.append(lv);
+  const xp = document.createElement("div"); xp.className = "lg-xp"; xp.textContent = S("league_xp_format", e.periodXp);
   if (!sprite) { const n = document.createElement("div"); n.className = "lg-rk"; n.textContent = rank + "."; r.append(n); }
   r.append(av, nm, xp); return r;
 }

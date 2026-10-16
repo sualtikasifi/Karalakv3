@@ -6,18 +6,23 @@ const CDN = `https://www.gstatic.com/firebasejs/${V}`;
 const RUN_WORD_COUNT = 10, SHARD_COUNT = 1000, BAND_SIZE = 10, MIN_CORRECT = 2, MAX_BAND = 9, CANDIDATES = 5;
 let api = null;
 
-async function init() {
-  if (api) return api;
-  if (!firebaseReady()) throw new Error("no-config");
-  const [app, auth, fs] = await Promise.all([
-    import(`${CDN}/firebase-app.js`), import(`${CDN}/firebase-auth.js`), import(`${CDN}/firebase-firestore.js`),
-  ]);
-  const a = app.initializeApp(firebaseConfig);
-  const au = auth.getAuth(a);
-  if (!au.currentUser) await auth.signInAnonymously(au);
-  await au.authStateReady?.();
-  api = { fs, db: fs.getFirestore(a), auth: au };
-  return api;
+let initP = null;
+// One shared start-up: concurrent callers (the room listener, the cloud save, the friends screen…) must not each sign in anonymously.
+function init() {
+  if (api) return Promise.resolve(api);
+  if (!initP) initP = (async () => {
+    if (!firebaseReady()) throw new Error('no-config');
+    const [app, auth, fs] = await Promise.all([
+      import(`${CDN}/firebase-app.js`), import(`${CDN}/firebase-auth.js`), import(`${CDN}/firebase-firestore.js`),
+    ]);
+    const a = app.initializeApp(firebaseConfig);
+    const au = auth.getAuth(a);
+    await au.authStateReady?.();
+    if (!au.currentUser) await auth.signInAnonymously(au);
+    api = { fs, db: fs.getFirestore(a), auth: au };
+    return api;
+  })().catch((e) => { initP = null; throw e; });
+  return initP;
 }
 
 export const levelBandFor = (level) => Math.floor((Math.max(1, level) - 1) / BAND_SIZE);
@@ -92,10 +97,43 @@ export async function redeemCoupon(rawCode) {
   } catch (e) { return { status: "network" }; }
 }
 
+// config/xpEvent: a 2x-XP event started from the developer panel (XpEventRepositoryImpl). Cached for five minutes.
+let xpEv = { at: 0, mult: 1 };
+export async function xpEventMultiplier() {
+  if (Date.now() - xpEv.at < 300000) return xpEv.mult;
+  let mult = 1;
+  try {
+    const { fs, db } = await init(), s = await fs.getDoc(fs.doc(db, "config", "xpEvent")), d = s.exists() ? s.data() : null;
+    if (d && d.active === true && Date.now() < (d.endsAtMillis || 0)) mult = Math.max(1, Math.min(10, Math.trunc(d.multiplier || 1)));
+  } catch {}
+  xpEv = { at: Date.now(), mult }; return mult;
+}
+// config/economy: the amounts gold pays, tunable without an update (EconomyConfigRepository).
+// config/runes: when each rune ring opens and what the later rings cost (RuneConfigRepository).
+export async function runeConfig() {
+  try { const { fs, db } = await init(), s = await fs.getDoc(fs.doc(db, "config", "runes")); return s.exists() ? s.data() : null; } catch { return null; }
+}
+export async function economyConfig() {
+  try { const { fs, db } = await init(), s = await fs.getDoc(fs.doc(db, "config", "economy")); return s.exists() ? s.data() : null; } catch { return null; }
+}
 export async function getGlobalLeague() {
   const { fs, db } = await init();
   const snap = await fs.getDoc(fs.doc(db, "leaderboards", "global"));
   return snap.exists() ? snap.data() : null;
+}
+
+// FriendRepositoryImpl.observeLeagueTable: me + friends, each profile's totals; periodXp counts only for the current period.
+export async function friendsLeague(pid) {
+  const { fs, db, auth } = await init(), uid = auth.currentUser.uid;
+  const ids = (await fs.getDocs(fs.collection(db, "users", uid, "friends"))).docs.map((d) => d.id);
+  const out = [];
+  for (const id of [uid, ...ids]) {
+    try {
+      const s = await fs.getDoc(fs.doc(db, "users", id)); if (!s.exists()) continue; const d = s.data();
+      out.push({ uid: id, me: id === uid, nickname: d.nickname || "?", periodXp: d.periodId === pid ? d.periodXp || 0 : 0, totalXp: d.totalXp || 0, level: d.level || 1, frameId: d.frameId });
+    } catch {}
+  }
+  return out.sort((a, b) => b.totalXp - a.totalXp);
 }
 
 // Same fields as FriendRepositoryImpl.publishLeagueScore. A guest's web account is its own uid, so it never
@@ -313,3 +351,54 @@ export async function myReports() {
   return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.submittedAt - a.submittedAt).slice(0, 30);
 }
 export async function deleteReport(id) { const { fs, db } = await init(); await fs.deleteDoc(fs.doc(db, "bugReports", id)); }
+
+// ================= Duels: duels/{duelId} (same documents as DuelRepositoryImpl) =================
+const toDuel = (d) => { const x = d.data(); if (!x.challengerUid || !x.opponentUid || typeof x.itemsJson !== "string") return null; let items = []; try { items = JSON.parse(x.itemsJson); } catch {} return { id: d.id, ...x, items, wordIds: x.wordIds || [], challengerScore: x.challengerScore || 0, challengerCorrectCount: x.challengerCorrectCount || 0, status: x.status || "AWAITING_OPPONENT", createdAt: x.createdAt || 0, seenByChallenger: x.seenByChallenger !== false }; };
+export async function createDuel({ opponentUid, opponentName, items, challengerScore, challengerCorrectCount, wordIds, myName }) {
+  const { fs, db, auth } = await init();
+  await fs.addDoc(fs.collection(db, "duels"), { challengerUid: auth.currentUser.uid, challengerName: myName, opponentUid, opponentName, itemsJson: JSON.stringify(items), wordIds, challengerScore, challengerCorrectCount, opponentScore: null, opponentCorrectCount: null, status: "AWAITING_OPPONENT", createdAt: Date.now(), completedAt: null, seenByChallenger: true });
+}
+export async function getDuel(id) { const { fs, db } = await init(), s = await fs.getDoc(fs.doc(db, "duels", id)); return s.exists() ? toDuel(s) : null; }
+/** Live lists: incoming (waiting for me), sent (all mine) and received-and-complete. cb gets {incoming, sent, received}. */
+export async function listenDuels(cb) {
+  const { fs, db, auth } = await init(), uid = auth.currentUser.uid, st = { incoming: [], sent: [], received: [] };
+  const c = fs.collection(db, "duels"), newest = (l) => l.filter(Boolean).sort((a, b) => b.createdAt - a.createdAt).slice(0, 30), emit = () => cb({ ...st });
+  const sub = (q, key) => fs.onSnapshot(q, (s) => { st[key] = newest(s.docs.map(toDuel)); emit(); }, () => { st[key] = []; emit(); });
+  const un = [sub(fs.query(c, fs.where("opponentUid", "==", uid), fs.where("status", "==", "AWAITING_OPPONENT")), "incoming"), sub(fs.query(c, fs.where("challengerUid", "==", uid)), "sent"), sub(fs.query(c, fs.where("opponentUid", "==", uid), fs.where("status", "==", "COMPLETE")), "received")];
+  return () => un.forEach((u) => u());
+}
+export async function submitDuelResult(id, opponentScore, opponentCorrectCount) { const { fs, db } = await init(); await fs.updateDoc(fs.doc(db, "duels", id), { status: "COMPLETE", opponentScore, opponentCorrectCount, completedAt: Date.now(), seenByChallenger: false }); }
+export async function markDuelSeen(id) { const { fs, db } = await init(); await fs.updateDoc(fs.doc(db, "duels", id), { seenByChallenger: true }); }
+export async function deleteDuel(id) { const { fs, db } = await init(); await fs.deleteDoc(fs.doc(db, "duels", id)); }
+
+// ================= Cloud save: users/{uid}/backup/state (BackupRepositoryImpl) =================
+export async function readBackup() {
+  const { fs, db, auth } = await init(), s = await fs.getDoc(fs.doc(db, "users", auth.currentUser.uid, "backup", "state"));
+  return s.exists() ? s.data() : null;
+}
+export async function writeBackup(snap) {
+  const { fs, db, auth } = await init();
+  await fs.setDoc(fs.doc(db, "users", auth.currentUser.uid, "backup", "state"), { ...snap, sealedAt: fs.serverTimestamp() }, { merge: true });
+}
+
+// AccountDeletionRepositoryImpl: the user's documents, then the sign-in itself. Throws {code:"auth/requires-recent-login"} when a fresh sign-in is needed.
+export async function deleteAccount() {
+  const { fs, db, auth } = await init(), user = auth.currentUser, uid = user.uid, userDoc = fs.doc(db, "users", uid);
+  const safe = async (f) => { try { await f(); } catch {} };
+  for (const name of ["backup", "friends", "invites", "blockedUsers", "inviteCooldowns", "private"]) {
+    await safe(async () => { for (const d of (await fs.getDocs(fs.collection(db, "users", uid, name))).docs) await safe(() => fs.deleteDoc(d.ref)); });
+  }
+  await safe(async () => { const code = (await fs.getDoc(userDoc)).data()?.friendCode; if (code) await fs.deleteDoc(fs.doc(db, "friendCodes", code)); });
+  await safe(async () => { for (const d of (await fs.getDocs(fs.query(fs.collection(db, "usernames"), fs.where("uid", "==", uid)))).docs) await fs.deleteDoc(d.ref); });
+  await safe(async () => { for (const d of (await fs.getDocs(fs.query(fs.collection(db, "ghostRuns"), fs.where("uid", "==", uid)))).docs) { await safe(() => fs.deleteDoc(d.ref)); await safe(() => fs.deleteDoc(fs.doc(db, "ghostRunItems", d.id))); } });
+  await safe(() => fs.deleteDoc(userDoc));
+  const m = await import(`${CDN}/firebase-auth.js`);
+  await m.deleteUser(user);
+  await m.signInAnonymously(auth);
+}
+
+// A friend request to someone met in a room (FriendRepositoryImpl.sendFriendRequest): one document in their friendRequests.
+export async function sendFriendRequestTo(uid, name, myNick) {
+  const { fs, db, auth } = await init();
+  await fs.setDoc(fs.doc(db, "users", uid, "friendRequests", auth.currentUser.uid), { fromNickname: myNick, sentAt: Date.now() });
+}

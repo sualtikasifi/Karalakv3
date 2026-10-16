@@ -1,6 +1,8 @@
 // Giriş Serisi: the 7-day login calendar (port of LoginStreak.kt / LoginStreakDialog.kt). "Today" is the server's day
 // (Date header of our own hosting), never the phone's clock.
 import { openNow } from "./chests.js";
+import { scaled } from "./economy.js";
+import { turkeyMonth } from "./daily.js";
 const REW = [null, { gold: 300 }, { gold: 400 }, { jokers: true }, { gold: 500 }, { chest: "GOLD" }, { gold: 800 }, { chest: "RARE" }];
 const JK = ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"];
 const T = {
@@ -31,7 +33,8 @@ export async function checkStreak(c) {
   const d = await serverDay(); checking = false; if (d == null) return; today = d; handled = true;
   const st = state(P.login, d);
   if (st.k === "claim") dialog(c, { k: "claim", before: st.before });
-  else if (st.k === "missed") dialog(c, st);
+  // The Seri Sigortası rune: once a month a single missed day is forgiven and the streak carries on; the cover is spent when the reward is taken.
+  else if (st.k === "missed") { if (P.login.last === d - 2 && c.runeHas("INSURE") && P.insMonth !== turkeyMonth()) dialog(c, { k: "claim", before: st.lost, rescued: true, insured: true }); else dialog(c, st); }
 }
 function dialog(c, popup) {
   const { $, P, lang } = c, x = T[lang()], d = $("pick"); d.classList.remove("hidden"); d.replaceChildren(); d.onclick = null;
@@ -47,7 +50,7 @@ function dialog(c, popup) {
   for (let n = 1; n <= 7; n++) {
     const r = REW[n], done = claimed ? n <= todayCell : todayCell > 0 && n < todayCell, isToday = n === todayCell && !claimed, just = claimed && n === todayCell;
     const art = r.chest ? (r.chest === "RARE" ? "pink" : "blue") : r.jokers ? "joker" : "gold";
-    const gold = r.gold ? Math.round(r.gold * (1 + c.runeFx("LOGIN") / 100)) : 0;
+    const gold = r.gold ? scaled(r.gold, c.runeFx("LOGIN")) : 0;
     const card = el("div", "ls-card" + (isToday ? " today" : "") + (done ? " done" : "") + (just ? " just" : ""), `<img src="img/ls_card_${art}.webp" alt=""><span class="l1">${x.day(n)}</span><span class="l2">${r.chest ? x.chest : r.jokers ? x.joker : gold}</span><i class="tick">${done ? "✓" : ""}</i>`);
     grid.append(card);
   }
@@ -65,8 +68,12 @@ function dialog(c, popup) {
 function claim(c, popup) {
   const P = c.P; if (P.login.last >= today) { $("pick").classList.add("hidden"); return; }
   const day = popup.before % 7 + 1, r = REW[day], streak = popup.before + 1;
-  const gold = r.gold ? Math.round(r.gold * (1 + c.runeFx("LOGIN") / 100)) : 0; if (gold) P.gold += gold;
-  if (r.jokers) for (const j of JK) P.jokers[j] = (P.jokers[j] || 0) + 1;
+  if (popup.insured) P.insMonth = turkeyMonth();
+  const gold = r.gold ? scaled(r.gold, c.runeFx("LOGIN")) : 0; if (gold) P.gold += gold;
+  const jokers = r.jokers ? [...JK] : [];
+  // The Şanslı Zar rune: a 25% chance of one more joker with the day's reward.
+  if (c.runeHas("DICE") && Math.random() < 0.25) jokers.push(JK[Math.floor(Math.random() * JK.length)]);
+  for (const j of jokers) P.jokers[j] = (P.jokers[j] || 0) + 1;
   P.login = { streak, last: today }; P.stats.loginBest = Math.max(P.stats.loginBest || 0, streak);
   const milestone = streak % 30 === 0, chests = [r.chest, milestone ? "RARE" : null].filter(Boolean);
   c.saveP(); c.refreshHome(); dialog(c, { k: "claimed", day, streak, milestone, chests });
