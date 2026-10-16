@@ -116,20 +116,24 @@ function place(el, x, y, w, h) {
   if (h != null) s.height = h * u + "px";
 }
 function viewport() { const v = window.visualViewport; return { w: v ? v.width : innerWidth, h: v ? v.height : innerHeight }; }
-function layout() {
+/** Art rows that must stay on screen for each scene: home is fixed by hand, the others come from where their widgets end (see layout). */
+const safeRows = { home: { t: HOME_SAFE_TOP, b: HOME_SAFE_TOP + HOME_SAFE_H } };
+const SAFE_TOP = 24, SAFE_BELOW = 60;
+function layoutOnce() {
   const { w: vw, h: vh } = viewport();
   const s = stage.style;
   let W, H;
+  const sf = safeRows[current];
   if (current === "guess" || current === "result" || current === "res2") { W = Math.min(vw, 560); H = vh; }
-  else if (current === "home") {
-    // Fill the width as far as the painted scene allows: only the lamp and the crayons below the chest slots may fall off the screen.
-    const uFit = Math.min(vw / ART_W, vh / ART_H), uSafe = Math.min(vw / ART_W, vh / HOME_SAFE_H);
+  else if (sf) {
+    // Fill the width as far as the painted scene allows: only decor above and below the widgets may fall off the screen.
+    const uFit = Math.min(vw / ART_W, vh / ART_H), uSafe = Math.min(vw / ART_W, vh / (sf.b - sf.t));
     u = Math.max(uFit, uSafe); W = u * ART_W; H = u * ART_H;
   }
   else { W = Math.min(vw, vh * ART_W / ART_H); H = W * ART_H / ART_W; }
   u = W / ART_W;
   s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + "px";
-  s.top = (H <= vh ? (vh - H) / 2 : Math.min(0, Math.max(vh - H, vh / 2 - (HOME_SAFE_TOP + HOME_SAFE_H / 2) * u))) + "px";
+  s.top = (H <= vh ? (vh - H) / 2 : sf ? Math.min(0, Math.max(vh - H, vh / 2 - (sf.t + sf.b) / 2 * u)) : (vh - H) / 2) + "px";
   stage.style.setProperty("--u", u + "px");
   paintEdges(W, H, (vw - W) / 2, parseFloat(s.top));
   if (current === "home") {
@@ -234,6 +238,26 @@ function layout() {
     if (kind === "quick") startSearch(ctx);
   }
 }
+/** Lays the scene out, then measures where its widgets end so the next pass can crop the decor below them. */
+function layout() {
+  layoutOnce();
+  if (current in safeRows && current === "home") return;
+  if (["guess", "result", "res2", "found", "draw", "search"].includes(current)) return;
+  const st = stage.getBoundingClientRect(); if (!st.height || !u) return;
+  let bottom = 0;
+  for (const el of document.querySelectorAll("#" + current + " > :not(.bg):not(.wood)")) {
+    const r = el.getBoundingClientRect(); if (!r.height || !r.width) continue;
+    if (r.height > st.height * 0.9) return; // a full-height pane: nothing to crop
+    bottom = Math.max(bottom, (r.bottom - st.top) / u);
+  }
+  if (!bottom) return;
+  const want = Math.min(ART_H, Math.round(bottom + SAFE_BELOW));
+  const have = safeRows[current];
+  if (want >= ART_H - 40) { if (have) { delete safeRows[current]; layoutOnce(); } return; }
+  if (have && Math.abs(have.b - want) < 6) return;
+  safeRows[current] = { t: SAFE_TOP, b: want };
+  layoutOnce();
+}
 addEventListener("resize", layout);
 window.visualViewport?.addEventListener("resize", layout);
 
@@ -258,7 +282,7 @@ function paintEdges(W, H, gap, top) {
     const on = !!src && gap > 0.5 && gap <= W * 0.15;
     e.style.display = on ? "block" : "none";
     if (!on) continue;
-    e.style.cssText += `;width:${gap + 1}px;top:${top}px;height:${H}px;background-image:url("${src}");background-size:${W}px ${H}px;background-position:${side === "l" ? "left" : "right"} top;${side === "l" ? "left:0" : "right:0"}`;
+    e.style.cssText += `;width:${gap + 1}px;top:${top}px;height:${H}px;background-image:url("${src}");background-size:${W + 6}px ${H}px;background-position:${side === "l" ? "-3px" : "calc(100% + 3px)"} top;${side === "l" ? "left:0" : "right:0"}`;
   }
 }
 /** The art is a fixed tall shape; the strips beside it carry a soft, enlarged copy of the same scene instead of bare wood. */
