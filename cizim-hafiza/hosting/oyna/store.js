@@ -82,10 +82,11 @@ export function renderStore(ctx) {
 }
 
 // The ring picture with the player's face inside it, the way Android's LevelAvatar centres it.
-export function frameRing(f, cls = "") {
+export function frameRing(f, cls = "", photo = null) {
   const box = el("div", cls); box.style.position = "relative";
-  const face = el("img"); face.src = "img/avatar_dino.webp"; face.alt = "";
-  face.style.cssText = `position:absolute;border-radius:50%;width:${f.face * 100}%;height:${f.face * 100}%;left:${50 + f.ox * 100 - f.face * 50}%;top:${50 + f.oy * 100 - f.face * 50}%`;
+  // `photo`: another picture for the hole (a league filler's face); by default the Karalak mascot
+  const face = photo || el("img"); if (!photo) { face.src = "img/avatar_dino.webp"; face.alt = ""; }
+  face.style.cssText += `;position:absolute;border-radius:50%;overflow:hidden;width:${f.face * 100}%;height:${f.face * 100}%;left:${50 + f.ox * 100 - f.face * 50}%;top:${50 + f.oy * 100 - f.face * 50}%`;
   const ring = el("img"); ring.src = `img/fr_${f.img}.webp`; ring.alt = ""; ring.style.cssText = "position:absolute;inset:0;width:100%;height:100%";
   box.append(face, ring); return box;
 }
