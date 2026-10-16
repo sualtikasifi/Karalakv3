@@ -133,6 +133,7 @@ fun LeagueScreen(
     viewModel: LeagueViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val scoreRefused by viewModel.scoreRefused.collectAsState()
     val table = uiState.table
     val shownTable = if (uiState.tab == LeagueTab.Friends) table else uiState.global?.table
     var tableIntro by androidx.compose.runtime.remember(uiState.tab, shownTable == null) { androidx.compose.runtime.mutableStateOf(true) }
@@ -175,6 +176,20 @@ fun LeagueScreen(
             contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            if (scoreRefused) {
+                item(key = "refused") {
+                    PaperPanel {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(text = "⚠️", style = PaintedStyle(fontSize = 26.sp))
+                            Text(
+                                text = stringResource(R.string.league_score_refused),
+                                style = DescriptionStyle(13.sp, 17.sp).copy(textAlign = TextAlign.Start),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+            }
             // Global only — a friend-list standing has no monthly prize of its own to show.
             if (uiState.tab == LeagueTab.Global) {
                 item(key = "reward") {

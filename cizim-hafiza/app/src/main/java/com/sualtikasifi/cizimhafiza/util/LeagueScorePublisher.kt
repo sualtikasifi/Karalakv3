@@ -48,6 +48,15 @@ class LeagueScorePublisher @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var started = false
 
+    private val _scoreRefused = kotlinx.coroutines.flow.MutableStateFlow(false)
+
+    /**
+     * True while the server is refusing this account's score (permission denied — typically a jump bigger than the
+     * rules' growth allowance). Being offline is NOT this: it just retries. The league screen tells the player, who
+     * would otherwise see a table without themselves and no reason why.
+     */
+    val scoreRefused: kotlinx.coroutines.flow.StateFlow<Boolean> = _scoreRefused
+
     /** Safe to call repeatedly; only the first call subscribes. */
     @OptIn(kotlinx.coroutines.FlowPreview::class)
     fun start() {
@@ -100,7 +109,13 @@ class LeagueScorePublisher @Inject constructor(
             // stored on a failed publish would suppress the retry that is
             // the whole point of re-publishing at app start.
             settingsRepository.publishedLeagueScoreSignature = snapshot.signature
-        }.onFailure { NonFatal.report(TAG, "League score not published", it) }
+            _scoreRefused.value = false
+        }.onFailure {
+            if ((it as? com.google.firebase.firestore.FirebaseFirestoreException)?.code ==
+                com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED
+            ) _scoreRefused.value = true
+            NonFatal.report(TAG, "League score not published", it)
+        }
     }
 
     private data class Snapshot(

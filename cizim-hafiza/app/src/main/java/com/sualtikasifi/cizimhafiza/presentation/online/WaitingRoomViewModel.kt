@@ -91,7 +91,7 @@ class WaitingRoomViewModel @Inject constructor(
                         is com.sualtikasifi.cizimhafiza.domain.model.AddFriendOutcome.AlreadyFriends -> UiText.of(R.string.info_friend_already, outcome.friend.nickname)
                     }
                 },
-                onFailure = { UiText.of(R.string.error_friend_add_failed) }
+                onFailure = { UiText.of(if (it is com.sualtikasifi.cizimhafiza.domain.repository.FriendRequestLimitException) R.string.error_friend_request_limit else R.string.error_friend_add_failed) }
             )
             _inviteState.update { it.copy(message = message) }
         }

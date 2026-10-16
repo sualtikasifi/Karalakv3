@@ -1649,4 +1649,6 @@
     <string name="result_stat_win_gold">Zafer altını</string>
     <string name="result_stat_rune_bonus">Rün katkısı</string>
     <string name="result_rune_bonus_line">Rünlerin katkısı: +%1$d altın</string>
+    <string name="league_score_refused">Puanın şu an sunucuya yazılamıyor, bu yüzden diğer oyuncular seni bu tabloda göremeyebilir. Uygulamayı kapatıp aç ya da biraz sonra tekrar dene.</string>
+    <string name="error_friend_request_limit">Bugün çok fazla arkadaşlık isteği gönderdin. Yarın tekrar dene.</string>
 </resources>

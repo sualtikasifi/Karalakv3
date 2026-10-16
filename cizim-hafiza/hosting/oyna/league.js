@@ -96,6 +96,7 @@ export async function renderLeague(c, refetch = true) {
   $("lg-timer").className = "txt lg-timer " + (tab === "friends" ? "star" : "");
   clearInterval(tick); if (tab === "global" && daysRemaining() <= 0) tick = setInterval(() => { if (c.current() !== "league") return clearInterval(tick); $("lg-timer").textContent = timerText(); }, 1000);
   const list = $("lg-list"); list.replaceChildren();
+  if (net.isScoreRefused()) list.append(note("⚠️ " + (c.lang() === "tr" ? "Puanın şu an sunucuya yazılamıyor, bu yüzden diğer oyuncular seni bu tabloda göremeyebilir. Sayfayı yenile ya da biraz sonra tekrar dene." : "Your score can't be saved to the server right now, so other players may not see you in this table. Reload or try again later.")));
   if (tab === "friends") {
     if (refetch || !fr) { list.append(note("…")); try { fr = await net.friendsLeague(periodId()); } catch { fr = []; } if (c.current() !== "league" || tab !== "friends") return; list.replaceChildren(); }
     fr.forEach((e, i) => list.append(row(c, { ...e, nickname: e.me ? c.P.nick : e.nickname, level: e.me ? levelForXp(c.P.xp) : e.level, periodXp: e.totalXp }, i + 1)));

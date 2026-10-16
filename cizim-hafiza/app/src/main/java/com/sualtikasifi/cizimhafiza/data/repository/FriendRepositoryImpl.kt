@@ -21,6 +21,7 @@ import com.sualtikasifi.cizimhafiza.domain.repository.BotFriendRequestPendingExc
 import com.sualtikasifi.cizimhafiza.domain.repository.CannotAddSelfException
 import com.sualtikasifi.cizimhafiza.domain.repository.FriendCodeNotFoundException
 import com.sualtikasifi.cizimhafiza.domain.repository.FriendRepository
+import com.sualtikasifi.cizimhafiza.domain.repository.FriendRequestLimitException
 import com.sualtikasifi.cizimhafiza.util.GameConstants
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -275,11 +276,19 @@ class FriendRepositoryImpl @Inject constructor(
             return AddFriendOutcome.Added(friend)
         }
 
+        // A day's quota of new requests (see FriendRequestLimit): refused here, before the write, because the rules cannot count.
+        val limitPrefs = context.getSharedPreferences("friend_request_limit", Context.MODE_PRIVATE)
+        val sentAt = limitPrefs.getString("sent_at", "").orEmpty().split(",").mapNotNull { it.toLongOrNull() }
+        val nowMillis = System.currentTimeMillis()
+        if (!com.sualtikasifi.cizimhafiza.domain.model.FriendRequestLimit.allows(sentAt, nowMillis)) throw FriendRequestLimitException()
+
         // The normal path. One write, into THEIR inbox, carrying nothing but
         // who is asking — the friendship itself is theirs to create.
         users.document(friendUid).collection("friendRequests").document(uid).set(
             mapOf("fromNickname" to myNickname, "sentAt" to System.currentTimeMillis())
         ).await()
+        val kept = com.sualtikasifi.cizimhafiza.domain.model.FriendRequestLimit.recent(sentAt, nowMillis) + nowMillis
+        limitPrefs.edit().putString("sent_at", kept.joinToString(",")).apply()
         return AddFriendOutcome.RequestSent(friendNickname)
     }
 
@@ -533,21 +542,42 @@ class FriendRepositoryImpl @Inject constructor(
         // whole table with one read per friend instead of a read plus a
         // profile lookup each. Nothing private goes in here — the FCM token
         // lives in private/device for exactly that reason.
-        users.document(uid).set(
-            mapOf(
-                "nickname" to nickname,
-                "periodXp" to periodXp,
-                // Lifetime XP, for the Friends table (the global one ranks by periodXp).
-                "totalXp" to totalXp,
-                // The server's own clock: the security rules measure how fast periodXp may grow from it.
-                "periodXpAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
-                "periodId" to periodId,
-                "level" to level,
-                "frameId" to frameId,
-                "avatarUrl" to avatarUrl
-            ),
-            SetOptions.merge()
-        ).await()
+        try {
+            users.document(uid).set(
+                mapOf(
+                    "nickname" to nickname,
+                    "periodXp" to periodXp,
+                    // Lifetime XP, for the Friends table (the global one ranks by periodXp).
+                    "totalXp" to totalXp,
+                    // The server's own clock: the security rules measure how fast periodXp may grow from it.
+                    "periodXpAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
+                    "periodId" to periodId,
+                    "level" to level,
+                    "frameId" to frameId,
+                    "avatarUrl" to avatarUrl
+                ),
+                SetOptions.merge()
+            ).await()
+        } catch (e: com.google.firebase.firestore.FirebaseFirestoreException) {
+            if (e.code != com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) throw e
+            // The rules refuse a score that jumped faster than a month's play allows (see plausibleXpGrowth). One
+            // refused field used to throw away the whole write, so the account's name, level and frame went stale too
+            // (and a brand-new profile never came to exist at all). The profile fields are sent again without the
+            // score; the score itself stays refused and the error is passed on, so it is retried and reported.
+            runCatching {
+                users.document(uid).set(
+                    mapOf(
+                        "nickname" to nickname,
+                        "totalXp" to totalXp,
+                        "level" to level,
+                        "frameId" to frameId,
+                        "avatarUrl" to avatarUrl
+                    ),
+                    SetOptions.merge()
+                ).await()
+            }
+            throw e
+        }
     }
 
     override suspend fun recordReferralIfEligible(inviterFriendCode: String) {

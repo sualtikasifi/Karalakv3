@@ -5,11 +5,11 @@ const T = {
   tr: { title: "Arkadaşlarım", code: "Kodun", hint: "Arkadaşını davet et, seviye 5'e ulaşınca ikiniz de 500 XP kazanın!", share: "Kodumu Paylaş", addL: "Arkadaş ekle", addH: "6 haneli kod", add: "Ekle",
         listT: "Arkadaşların", reqT: "Arkadaşlık İstekleri", accept: "Kabul et", decline: "Reddet", invite: "Davet Et", empty: "Henüz arkadaşın yok. Kodunu paylaş ya da bir kod gir!", remove: "Kaldır", block: "Engelle", unblock: "Engeli Kaldır", blockedT: "Engellenenler",
         removeQ: (n) => `${n} adlı kişiyi arkadaşlıktan çıkarmak istediğine emin misin?`, blockQ: (n) => `${n} adlı kişiyi engellersen sana bir daha davet gönderemez.`, yes: "Evet", no: "Vazgeç",
-        notfound: "Bu kodda biri yok.", self: "Bu senin kodun.", already: (n) => `${n} zaten arkadaşın.`, added: (n) => `${n} arkadaş oldunuz!`, sent: (n) => `${n} kişisine istek gönderildi.`, blocked: "İstek gönderilemedi.", copied: "Kod kopyalandı", err: "Bir sorun oldu, tekrar dene.", loading: "…" },
+        notfound: "Bu kodda biri yok.", self: "Bu senin kodun.", already: (n) => `${n} zaten arkadaşın.`, added: (n) => `${n} arkadaş oldunuz!`, sent: (n) => `${n} kişisine istek gönderildi.`, blocked: "İstek gönderilemedi.", limit: "Bugün çok fazla arkadaşlık isteği gönderdin. Yarın tekrar dene.", copied: "Kod kopyalandı", err: "Bir sorun oldu, tekrar dene.", loading: "…" },
   en: { title: "My Friends", code: "Your code", hint: "Invite a friend — when they reach level 5 you both get 500 XP!", share: "Share my code", addL: "Add a friend", addH: "6-digit code", add: "Add",
         listT: "Your friends", reqT: "Friend requests", accept: "Accept", decline: "Decline", invite: "Invite", empty: "No friends yet. Share your code or enter one!", remove: "Remove", block: "Block", unblock: "Unblock", blockedT: "Blocked",
         removeQ: (n) => `Remove ${n} from your friends?`, blockQ: (n) => `If you block ${n}, they can't send you invites any more.`, yes: "Yes", no: "Cancel",
-        notfound: "Nobody has this code.", self: "That's your own code.", already: (n) => `${n} is already your friend.`, added: (n) => `You and ${n} are friends now!`, sent: (n) => `Request sent to ${n}.`, blocked: "Couldn't send the request.", copied: "Code copied", err: "Something went wrong, try again.", loading: "…" },
+        notfound: "Nobody has this code.", self: "That's your own code.", already: (n) => `${n} is already your friend.`, added: (n) => `You and ${n} are friends now!`, sent: (n) => `Request sent to ${n}.`, blocked: "Couldn't send the request.", limit: "You have sent a lot of friend requests today. Try again tomorrow.", copied: "Code copied", err: "Something went wrong, try again.", loading: "…" },
 };
 let myCode = null, friends = [], requests = [], blocked = [], unsubs = [], msg = "";
 const k = 841 / 1080;
@@ -60,7 +60,7 @@ export function renderFriends(c) {
     const code = inp.value; if (code.length !== 6) return; msg = x.loading; renderFriends(c);
     try {
       const r = await net.addFriendByCode(code, P.nick);
-      msg = r.status === "notfound" ? x.notfound : r.status === "self" ? x.self : r.status === "already" ? x.already(r.name) : r.status === "added" ? x.added(r.name) : r.status === "sent" ? x.sent(r.name) : x.blocked;
+      msg = r.status === "notfound" ? x.notfound : r.status === "self" ? x.self : r.status === "already" ? x.already(r.name) : r.status === "added" ? x.added(r.name) : r.status === "sent" ? x.sent(r.name) : r.status === "limit" ? x.limit : x.blocked;
       if (r.status === "sent" || r.status === "added") inp.value = "";
     } catch { msg = x.err; }
     renderFriends(c); setTimeout(() => { if (msg !== x.err) { msg = ""; renderFriends(c); } }, 4000);

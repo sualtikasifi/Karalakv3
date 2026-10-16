@@ -178,7 +178,8 @@ class FriendsViewModel @Inject constructor(
                         }
                         clearInfoMessageAfterDelay()
                     } else {
-                        _uiState.update { it.copy(isAddingFriend = false, errorMessage = UiText.of(R.string.error_friend_add_failed)) }
+                        val text = if (error is com.sualtikasifi.cizimhafiza.domain.repository.FriendRequestLimitException) R.string.error_friend_request_limit else R.string.error_friend_add_failed
+                        _uiState.update { it.copy(isAddingFriend = false, errorMessage = UiText.of(text)) }
                     }
                 }
         }

@@ -25,12 +25,32 @@ object PostMatchPrompts {
     /** Paid once, via SettingsRepository.grantRatingBonusXpOnce, when the rating prompt's "Puanla" is tapped. */
     const val RATING_BONUS_XP = 500
 
+    /**
+     * Later, softer reminders for a player who is still a guest: by the 10th and the 30th finished game there is real
+     * progress to lose, which is exactly when "do not lose it" is persuasive. Each is shown once.
+     */
+    val SIGN_IN_REMINDER_AT = listOf(10, 30)
+
     fun shouldShowSignIn(settingsRepository: SettingsRepository, authState: AuthState): Boolean {
-        if (settingsRepository.signInPromptShown) return false
-        if (settingsRepository.lifetimeGamesPlayed != SIGN_IN_PROMPT_AT_GAME) return false
         if (authState is AuthState.Linked) return false
-        settingsRepository.signInPromptShown = true
+        val games = settingsRepository.lifetimeGamesPlayed
+        if (!settingsRepository.signInPromptShown && games == SIGN_IN_PROMPT_AT_GAME) {
+            settingsRepository.signInPromptShown = true
+            return true
+        }
+        val next = nextReminderStage(games, settingsRepository.signInReminderStage) ?: return false
+        settingsRepository.signInReminderStage = next
         return true
+    }
+
+    /**
+     * The reminder stage to move to when a later sign-in reminder is due, or null when none is. Moves past every
+     * threshold already reached, so a restored high game count asks once, not once per threshold.
+     */
+    fun nextReminderStage(games: Int, stage: Int): Int? {
+        val due = SIGN_IN_REMINDER_AT.getOrNull(stage) ?: return null
+        if (games < due) return null
+        return SIGN_IN_REMINDER_AT.count { games >= it }
     }
 
     fun shouldShowRating(settingsRepository: SettingsRepository): Boolean {

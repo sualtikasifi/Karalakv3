@@ -1033,6 +1033,11 @@ class SettingsRepository @Inject constructor(
         get() = prefs.getBoolean(KEY_SIGN_IN_PROMPT_SHOWN, false)
         set(value) = prefs.edit { putBoolean(KEY_SIGN_IN_PROMPT_SHOWN, value) }
 
+    /** How many of the later "don't lose your progress" reminders (see PostMatchPrompts.SIGN_IN_REMINDER_AT) were already shown. */
+    var signInReminderStage: Int
+        get() = prefs.getInt(KEY_SIGN_IN_REMINDER_STAGE, 0)
+        set(value) = prefs.edit { putInt(KEY_SIGN_IN_REMINDER_STAGE, value) }
+
     // Read from both files so a device that already answered before the flag moved to flagPrefs is not asked again.
     var ratingPromptShown: Boolean
         get() = flagPrefs.getBoolean(KEY_RATING_PROMPT_SHOWN, false) || prefs.getBoolean(KEY_RATING_PROMPT_SHOWN, false)
@@ -1196,6 +1201,7 @@ class SettingsRepository @Inject constructor(
         const val KEY_CURRENT_STREAK = "current_streak"
         const val KEY_NOTIFICATION_PERMISSION_REQUESTED = "notification_permission_requested"
         const val KEY_LAST_REMINDER_EPOCH_DAY = "last_reminder_epoch_day"
+        const val KEY_SIGN_IN_REMINDER_STAGE = "sign_in_reminder_stage"
         const val KEY_SIGN_IN_PROMPT_SHOWN = "sign_in_prompt_shown"
         const val KEY_RATING_PROMPT_SHOWN = "rating_prompt_shown"
         const val KEY_QUICK_MATCH_GAMES_FINISHED = "quick_match_games_finished"

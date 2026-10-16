@@ -139,6 +139,9 @@ class LeagueViewModel @Inject constructor(
      * rendered list so a bot — or whichever real player actually earned it —
      * occupies that slot instead).
      */
+    /** The server is refusing this account's score (see LeagueScorePublisher.scoreRefused). */
+    val scoreRefused: kotlinx.coroutines.flow.StateFlow<Boolean> get() = leagueScorePublisher.scoreRefused
+
     /** This month's XP on this device — what the monthly card compares against the table's cut-offs. */
     val myPeriodXp: kotlinx.coroutines.flow.StateFlow<Int> get() = settingsRepository.periodXp
 
