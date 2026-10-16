@@ -195,12 +195,12 @@ function renderLobby(c) {
   };
   main.append(cp);
   if (amPending) main.append(el("div", "ow-note", S("online_pending_next_round_message")));
-  main.append(el("div", "ow-head", `<div class="band"><span>${S("online_players_section_title")}</span></div><div class="pill">${PERSON}<span>${S("online_room_occupancy", presentCount, team ? 4 : 8)}</span></div>`));
+  main.append(el("div", "ow-head", `<div class="band"><span>${S("online_players_section_title")}</span></div><div class="owp">${PERSON}<span>${S("online_room_occupancy", presentCount, team ? 4 : 8)}</span></div>`));
   const mine = meP ? [seat(meP)] : [], theirs = others.map(seat);
   if (team) {
     const cols = el("div", "ow-teams");
     for (const id of ["A", "B"]) {
-      const col = el("div", "ow-col", `<div class="pill t"><span>${S(id === "A" ? "online_team_a" : "online_team_b")}</span></div>`), mem = [...(meP ? [meP] : []), ...others].filter((p) => p.teamId === id);
+      const col = el("div", "ow-col", `<div class="owp t"><span>${S(id === "A" ? "online_team_a" : "online_team_b")}</span></div>`), mem = [...(meP ? [meP] : []), ...others].filter((p) => p.teamId === id);
       mem.forEach((p) => col.append(p.uid === myId ? mine[0] : theirs[others.indexOf(p)]));
       for (let i = mem.length; i < 2; i++) col.append(empty());
       cols.append(col);
