@@ -160,18 +160,24 @@ fun LeagueScreen(
         )
 
         // ── Scrolling part ──
+        val listState = androidx.compose.foundation.lazy.rememberLazyListState()
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = yOf(655f))
                 .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                 .drawWithContent {
                     drawContent()
-                    val fade = 22.dp.toPx().coerceAtMost(size.height)
-                    drawRect(
-                        brush = Brush.verticalGradient(colorStops = arrayOf(0f to Color.Transparent, (fade / size.height) to Color.Black, 1f to Color.Black)),
-                        blendMode = BlendMode.DstIn
-                    )
+                    // The melt at the top edge belongs to rows scrolling UNDER it: at rest the first row sits right
+                    // there and used to come out faded.
+                    if (listState.canScrollBackward) {
+                        val fade = 22.dp.toPx().coerceAtMost(size.height)
+                        drawRect(
+                            brush = Brush.verticalGradient(colorStops = arrayOf(0f to Color.Transparent, (fade / size.height) to Color.Black, 1f to Color.Black)),
+                            blendMode = BlendMode.DstIn
+                        )
+                    }
                 },
             contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
