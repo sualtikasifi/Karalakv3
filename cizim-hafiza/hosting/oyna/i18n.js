@@ -2,6 +2,7 @@
 // S("chest_detail_gold", 150, 250) fills %1$d / %2$s / %%. The language is the game's (set by app.js through setLang).
 let STR = null, L = "tr";
 export const setLang = (l) => { L = l; };
+export const getLang = () => L;
 export async function loadStrings() { if (!STR) STR = await (await fetch("strings.json")).json(); }
 export const ready = () => !!STR;
 export function S(key, ...a) {

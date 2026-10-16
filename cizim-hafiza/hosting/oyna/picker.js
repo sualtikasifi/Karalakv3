@@ -9,16 +9,18 @@ function sheet(c, title, build) {
   const close = el("button", "pill cream small", `<span>${x.close}</span>`); close.onclick = () => d.classList.add("hidden"); box.append(close);
   d.append(box); d.onclick = (e) => { if (e.target === d) d.classList.add("hidden"); };
 }
+// PenPickerSheet: every pen, locked ones dimmed with what opens them (level / store / rune map / league prize).
 export function openPenPicker(c) {
-  const { P, lang } = c, x = T[lang()], lv = c.levelOf(P.xp).level;
-  sheet(c, x.pen, (grid, done) => {
-    penList().filter((p) => (p.level > 0 && !p.league) || P.owned.includes("pen:" + p.id)).forEach((p) => {
-      const open = p.level === 0 || p.level <= lv || P.owned.includes("pen:" + p.id);
-      const grad = p.colors.length > 1 ? `linear-gradient(90deg,${p.colors.join(",")})` : p.colors[0];
-      const b = el("button", "pk-pen" + (P.pen === p.id ? " on" : "") + (open ? "" : " lock"), `<i style="background:${grad}"></i><span>${p[lang()]}</span>${open ? "" : `<small>🔒 ${x.locked(p.level)}</small>`}`);
-      b.onclick = () => { if (!open) return; P.pen = p.id; c.saveP(); c.refreshHome(); done(); };
-      grid.append(b);
-    });
+  const { P } = c, lv = c.levelOf(P.xp).level, body = el("div", "pp-grid");
+  const ov = appWindow(c.$("stage"), { title: S("pen_picker_title"), body });
+  const owns = (p) => (P.owned || []).includes("pen:" + p.id);
+  penList().filter((p) => !p.retired || owns(p)).forEach((p) => {
+    const open = p.league ? owns(p) : p.price > 0 || p.rune ? owns(p) : lv >= p.level;
+    const grad = p.colors.length > 1 ? `linear-gradient(90deg,${p.colors.join(",")})` : p.colors[0];
+    const why = p.rune ? S("cosmetic_locked_rune") : p.price > 0 ? S("store_in_store") : p.league ? S("cosmetic_locked_league") : S("avatar_frame_locked_level", p.level);
+    const b = el("button", "pp-card" + (P.pen === p.id ? " on" : "") + (open ? "" : " lock"), `<svg viewBox="0 0 100 34"><defs><linearGradient id="pg-${p.id}" x1="12" x2="88" y1="0" y2="0" gradientUnits="userSpaceOnUse">${p.colors.map((k, i) => `<stop offset="${p.colors.length > 1 ? i / (p.colors.length - 1) : 0}" stop-color="${k}"/>`).join("")}</linearGradient></defs><line x1="12" y1="23" x2="88" y2="11" stroke="url(#pg-${p.id})" stroke-width="12" stroke-linecap="round"/></svg><b>${p[c.lang()]}</b>${open ? "" : `<small>${why}</small>`}`);
+    b.onclick = () => { if (!open) return; P.pen = p.id; c.saveP(); c.refreshHome(); ov.close(); };
+    body.append(b);
   });
 }
 // AvatarFramePickerSheet: "Profil görseli" (Karalak / Google photo) and the ring grid; locked rings are faded with a padlock and
@@ -31,9 +33,7 @@ export function openFramePicker(c) {
   body.append(el("div", "fp-h", S("avatar_source_title")));
   const src = el("div", "fp-src");
   const kar = el("button", "", `<span class="av"><img src="img/avatar_dino.webp" alt=""></span><b>${S("avatar_source_karalak")}</b>`);
-  const goo = el("button", "dim", `<span class="av g">${(P.nick || "?")[0].toUpperCase()}</span><b>${S("avatar_source_google")}</b>`);
-  goo.onclick = () => c.info(S("avatar_source_google_locked"));
-  src.append(kar, goo); body.append(src);
+  src.append(kar); body.append(src);
   body.append(el("div", "fp-h", S("avatar_frame_section")));
   const grid = el("div", "fp-grid");
   frameList().filter((f) => !f.league && !f.retired && (f.level > 0 || f.price > 0 || P.owned.includes("frame:" + f.id) || f.id === "SCRIBBLER")).forEach((f) => {
