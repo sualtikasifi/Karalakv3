@@ -21,7 +21,7 @@ Amaç: iPhone kullanıcıları tarayıcıdan oynasın; web, Android uygulamasıy
 - Ortak: `ui.js` (AppWindowDialog, PrimaryButton), `i18n.js`
 - Başarımlar: konum, yeşil "alındı" rengi, mavi/turuncu ödül hapları
 
-## Sırada
+## Sırada (web-parity-2 dalında: mağaza, Dünyalar kilidi, rütbe penceresi, Hızlı Eşleş arama/hazır ekranları, performans yapıldı)
 1. Lig: ödül toplama penceresi (geçen ayın birincileri) kaldı
 2. Mağaza: Kalemler / Çerçeveler sekmeleri, satın alma pencereleri, kalem/çerçeve seçici (Android'deki AppWindowDialog görünümü)
 3. Seviye haritası (kaydırma, numaralı kilitli düğümler, alt panel), Dünyalar

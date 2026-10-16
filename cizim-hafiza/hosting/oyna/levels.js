@@ -35,7 +35,7 @@ export function renderWorlds(c) {
   W.worlds.forEach((w) => {
     const open = worldOpen(P, w.id), b = document.createElement("button");
     b.className = "wl-banner" + (open ? "" : " lock");
-    b.innerHTML = `<img src="img/world_banner_${w.id}.webp" alt=""><span class="wl-tag">${open ? `${x.progress(done(P, w.id))} · ⭐${stars(P, w.id)}` : "🔒"}</span>`;
+    b.innerHTML = `<img src="img/world_banner_${w.id}.webp" alt=""><span class="wl-tag">${open ? `${x.progress(done(P, w.id))} · ⭐${stars(P, w.id)}` : '<svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0110 0v3" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><rect x="4.5" y="10.5" width="15" height="11" rx="2.6" fill="#fff"/><circle cx="12" cy="15.3" r="1.6" fill="#2b323d"/><rect x="11.2" y="15.5" width="1.6" height="3.4" rx=".6" fill="#2b323d"/></svg>'}</span>`;
     b.onclick = () => { if (open) { openWorld = w.id; selected = null; tapped = null; scrollFor = null; stopCountdown(); c.show("lvmap"); } };
     list.append(b);
   });

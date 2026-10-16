@@ -19,6 +19,8 @@ import { layoutAccount, renderAccount } from "./account.js";
 import { layoutOffline, renderOffline } from "./offline.js";
 import { setLang, loadStrings, S } from "./i18n.js";
 import { syncNow, scheduleBackup } from "./sync.js";
+import { openRankLadder } from "./ranks.js";
+import { startSearch, stopSearch } from "./search.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
@@ -79,7 +81,7 @@ const ctx = {
   sfx, paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
   pickRoomWords: (r) => pickRoomWords(r), startOffline: (o) => startOffline(o),
-  openDuel: (opp) => openCreateDuel(ctx, opp), startDuelChallenge: (opp, n) => startDuel({ mode: "new", opp }, n), playDuel: (d) => startDuel({ mode: "play", duel: d }),
+  startTutorial: () => startTutorial(), openDuel: (opp) => openCreateDuel(ctx, opp), startDuelChallenge: (opp, n) => startDuel({ mode: "new", opp }, n), playDuel: (d) => startDuel({ mode: "play", duel: d }),
   syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
@@ -217,10 +219,10 @@ function layout() {
       [["f-t1", 24, 225], ["f-t2", 296, 227], ["f-t3", 568, 229]].forEach(([id, x, w]) => place($(id), x, 1405, w * 1.1, 197 * 1.1));
   } else if (current === "search") {
     place($("s-sign"), 60, 190, 720, 365);
-    place($("s-text"), 150, 318, 540, 150);
+    place($("s-text"), 160, 308, 521, 184);
     place($("s-paper"), 215, 1110, 410, 305);
     place($("s-sub"), 70, 1480, 700, 130);
-    startDoodles();
+    if (kind === "quick") startSearch(ctx);
   }
 }
 addEventListener("resize", layout);
@@ -236,20 +238,6 @@ function show(id) {
   current = id; if (typeof paintMusic === "function" && P.prefs) paintMusic();
   for (const s of document.querySelectorAll(".screen")) s.classList.toggle("on", s.id === id);
   layout(); paintTeamPill();
-}
-
-const DOODLES = [
-  "M50 8 L61 38 L93 38 L67 57 L77 90 L50 70 L23 90 L33 57 L7 38 L39 38 Z",
-  "M50 88 C10 58 12 22 32 18 C42 16 50 26 50 30 C50 26 58 16 68 18 C88 22 90 58 50 88 Z",
-  "M12 50 L50 14 L88 50 M22 44 L22 86 L78 86 L78 44 M42 86 L42 62 L60 62 L60 86",
-  "M50 28 A22 22 0 1 1 49.9 28 M50 4 V16 M50 84 V96 M4 50 H16 M84 50 H96 M17 17 L26 26 M74 74 L83 83 M83 17 L74 26 M26 74 L17 83",
-];
-let doodleTimer = null;
-function startDoodles() {
-  if (doodleTimer) return;
-  let i = 0; const path = $("s-doodle");
-  const set = () => { path.setAttribute("d", DOODLES[i++ % DOODLES.length]); path.style.animation = "none"; void path.getBoundingClientRect(); path.style.animation = ""; };
-  set(); doodleTimer = setInterval(() => { if (current !== "search") { clearInterval(doodleTimer); doodleTimer = null; return; } set(); }, 2200);
 }
 
 // ---------- text ----------
@@ -318,10 +306,10 @@ function colorAt(cols, dist) {
 function fxLoop() {
   const pObj = (() => { try { return penById(P.pen); } catch { return null; } })();
   const animated = pObj && pObj.effect && pObj.effect !== "NONE";
-  if (animated && (current === "guess" || current === "draw")) { current === "guess" ? paintGuess() : paintLive(); }
-  requestAnimationFrame(fxLoop);
+  // Only a premium pen on the drawing / guessing screens needs a frame loop; everywhere else just look again in half a second.
+  if (animated && (current === "guess" || current === "draw")) { current === "guess" ? paintGuess() : paintLive(); requestAnimationFrame(fxLoop); } else setTimeout(fxLoop, 500);
 }
-requestAnimationFrame(fxLoop);
+fxLoop();
 const paintLive = () => current === "draw" && round[idx] && paint($("pad"), round[idx].strokes, true, P.pen);
 const paintGuess = () => current === "guess" && round[idx] && paint($("view"), round[idx].strokes, false, P.pen);
 
@@ -397,16 +385,21 @@ async function startTutorial() {
   const picked = TUT_WORDS[lang].map((s, i) => byText.get(s) || { id: 900000 + i, text: s, difficulty: "EASY" });
   begin(picked);
 }
-function endTutorial() { P.tutorialDone = true; for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); setTimeout(() => checkStreak(ctx), 900); }
+function endTutorial() { const first = !P.tutorialDone; P.tutorialDone = true; if (first) for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); setTimeout(() => checkStreak(ctx), 900); }
 async function startDaily() {
   if (dailyState(P).done) return;
   await ensureWords(); kind = "daily"; levelRun = null; relaxed = false;
   begin(dailyWords(words, todayEpoch(), lang));
 }
 let quickOpp = null, quickItems = [];
+// SearchingScene.kt texts: the sign reads "Rakip / aranıyor…" with its dots ticking, the plate says what is going on.
+function paintSearching() {
+  $("s-text").innerHTML = `<span>${S("quick_match_searching_title")}</span><span>${S("quick_match_searching_title2").replace(/[….s]+$/, "")}<span id="s-dots"><i>.</i><i>.</i><i>.</i></span></span>`;
+  $("s-sub").innerHTML = `<b>${S("quick_match_searching_sub")}</b><small>${S("quick_match_dont_worry_body")}</small>`;
+}
 async function startQuick() {
   levelRun = null; kind = "quick"; relaxed = false; quickOpp = null; quickItems = [];
-  await ensureWords(); show("search");
+  await ensureWords(); paintSearching(); show("search");
   const minWait = new Promise((r) => setTimeout(r, 2000 + Math.random() * 3000));
   try { quickOpp = await Promise.race([net.findOpponent(lang, levelFor(P.xp)), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000))]); } catch {}
   await minWait;
@@ -425,7 +418,7 @@ function showFound(opp, go) {
   $("f-t1").querySelector("span").textContent = x.tip1(10); $("f-t2").querySelector("span").textContent = x.tip2; $("f-t3").querySelector("span").textContent = x.tip3;
   const card = (id, nick, lvl, frame, xp) => {
     const e = $(id); e.querySelector(".mc-rb span").textContent = nick; e.querySelector(".mc-xp b").textContent = xp.toLocaleString() + " XP";
-    const fr = frameRing(frameById(frame)); fr.style.cssText += ";width:100%;height:100%"; e.querySelector(".mc-av").replaceChildren(fr);
+    const fr = frameRing(frameById(frame)); fr.style.cssText += ";width:100%;height:100%"; const av = e.querySelector(".mc-av"); av.replaceChildren(fr); av.append(Object.assign(document.createElement("b"), { className: "mc-lv", textContent: lvl }));
     e.classList.add(id === "f-cl" ? "in-l" : "in-r"); setTimeout(() => e.classList.remove("in-l", "in-r"), 60);
   };
   const myLv = levelFor(P.xp);
@@ -683,7 +676,7 @@ $("tl-online").onclick = needNet(async () => { await ensureWords(); show("onl");
 $("on-back").onclick = () => show("home"); $("oj-back").onclick = () => show("onl"); $("oc-back").onclick = () => show("onl");
 $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("onj");
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
-$("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => rankInfo();
+$("h-rank").onclick = () => openRankLadder(ctx); $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => openRankLadder(ctx);
 $("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
 $("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; net.runeConfig().then((d) => { applyRuneConfig(d); if (current === "runes") renderRunes(ctx, true); }).catch(() => {}); show("runes"); }; $("ru-back").onclick = () => show("home");
 $("tl-quick").onclick = needNet(() => start("quick")); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };

@@ -47,7 +47,7 @@ export function renderSettings(c) {
   };
   $("se-how").onclick = () => c.info(x.howBody);
   $("se-lang").onclick = () => { c.setLang(lang() === "tr" ? "en" : "tr"); };
-  $("se-tut").onclick = () => c.info(x.tutMsg);
+  $("se-tut").onclick = () => c.startTutorial();
   $("se-rate").onclick = () => window.open(RATE, "_blank", "noopener");
   $("se-bug").onclick = () => c.open("report"); $("se-acc").onclick = () => c.open("account");
 }
