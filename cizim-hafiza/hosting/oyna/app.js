@@ -31,6 +31,7 @@ const WORD_COUNT = 10, POINTS = 5, SPEED_BONUS = 2, SPEED_MS = 3000;
 const DRAW_SECONDS = { EASY: 5, MEDIUM: 7, HARD: 10 };
 const GUESS_BASE = { EASY: 8, MEDIUM: 10, HARD: 12 };
 const guessSeconds = (w) => Math.min(13, (GUESS_BASE[w.difficulty] ?? 10) + Math.max(0, [...w.text].filter((c) => /\p{L}/u.test(c)).length - 10));
+const HOME_SAFE_TOP = 36, HOME_SAFE_H = 1664; // art rows of the home scene that must stay on screen
 const ART_W = 841, ART_H = 1870, GUESS_BOTTOM = 1595;
 
 const T = {
@@ -120,9 +121,15 @@ function layout() {
   const s = stage.style;
   let W, H;
   if (current === "guess" || current === "result" || current === "res2") { W = Math.min(vw, 560); H = vh; }
+  else if (current === "home") {
+    // Fill the width as far as the painted scene allows: only the lamp and the crayons below the chest slots may fall off the screen.
+    const uFit = Math.min(vw / ART_W, vh / ART_H), uSafe = Math.min(vw / ART_W, vh / HOME_SAFE_H);
+    u = Math.max(uFit, uSafe); W = u * ART_W; H = u * ART_H;
+  }
   else { W = Math.min(vw, vh * ART_W / ART_H); H = W * ART_H / ART_W; }
   u = W / ART_W;
-  s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + "px"; s.top = (vh - H) / 2 + "px";
+  s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + "px";
+  s.top = (H <= vh ? (vh - H) / 2 : Math.min(0, Math.max(vh - H, vh / 2 - (HOME_SAFE_TOP + HOME_SAFE_H / 2) * u))) + "px";
   stage.style.setProperty("--u", u + "px");
   if (current === "home") {
     place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214); place($("h-rbadge"), 682, 84, 70, 70);
