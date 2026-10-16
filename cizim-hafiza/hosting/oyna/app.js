@@ -22,6 +22,7 @@ import { syncNow, scheduleBackup } from "./sync.js";
 import { openRankLadder } from "./ranks.js";
 import { startSearch, stopSearch } from "./search.js";
 import { exitDialog, appOnlyDialog } from "./ui.js";
+import { layoutBreak, startBreak, stopBreak } from "./brk.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
@@ -174,6 +175,8 @@ function layoutOnce() {
     layoutRunes(ctx); renderRunes(ctx);
   } else if (current === "report") {
     layoutReport(ctx); renderReport(ctx, !reportLoaded); reportLoaded = true;
+  } else if (current === "brk") {
+    layoutBreak(ctx);
   } else if (current === "duels") {
     place($("du-back"), 20, 40, 110, 106); renderDuels(ctx);
   } else if (current === "league") {
@@ -530,7 +533,7 @@ async function begin(picked) {
 }
 function nextDraw() {
   clearInterval(dTimer);
-  if (idx >= round.length) { idx = 0; return nextGuess(); }
+  if (idx >= round.length) { idx = 0; return startBreak(ctx, nextGuess); }
   const w = round[idx];
   show("draw");
   // Normal mode shows the time left for the whole drawing phase beside the word number (the stopwatch pill of the app).
@@ -608,8 +611,17 @@ function answer(text) {
   w.xp = w.correct && kind !== "daily" ? eco.wordXp(w.difficulty, w.ms) * xpMult : 0;
   score += w.points; idx++;
   if (w.correct) sfx.correct(); else { sfx.wrong(); vibrate(60); }
-  flash(w.correct); nextGuess();
+  showFeedback(w); setTimeout(() => { hideFeedback(); if (current === "guess") nextGuess(); }, 1200);
 }
+// GuessFeedbackOverlay: the badge over the drawing — a tick or a cross, the XP it paid, and the right word after a miss — for 1.2 s
+const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#1e8a3a" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CROSS = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="#c0392b" stroke-width="3.2" stroke-linecap="round"/></svg>';
+function showFeedback(w) {
+  let f = $("g-fb"); if (!f) { f = document.createElement("div"); f.id = "g-fb"; $("g-canvas").append(f); }
+  f.innerHTML = `<div class="${w.correct ? "ok" : "no"}"><div class="card"><div class="ic">${w.correct ? CHECK : CROSS}</div>${w.xp > 0 ? `<div class="xp">${S("xp_gained_format", w.xp)}</div>` : ""}${w.correct ? "" : `<div class="ans">${S("correct_answer_was", w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1))}</div>`}</div></div>`;
+  $("g-input").blur(); $("g-input").disabled = true; $("guess").classList.add("fb");
+}
+function hideFeedback() { $("guess").classList.remove("fb"); const f = $("g-fb"); if (f) f.replaceChildren(); $("g-input").disabled = false; }
 function flash(ok) { const f = $("g-flash"); f.textContent = ok ? "✅" : "❌"; f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); }
 $("g-form").onsubmit = (e) => { e.preventDefault(); answer($("g-input").value); };
 $("g-input").addEventListener("input", (e) => { const w = round[idx]; if (w && e.target.value.trim() && e.target.value.trim().toLocaleLowerCase(lang) === w.text.toLocaleLowerCase(lang)) answer(e.target.value); });

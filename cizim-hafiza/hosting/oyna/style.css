@@ -830,3 +830,24 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .pp-card.on{border:calc(var(--u)*6) solid #ff7a21}.pp-card svg{width:100%;height:calc(var(--u)*70)}.pp-card.lock svg{opacity:.35}
 .pp-card b{font-size:calc(var(--u)*30);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}.pp-card small{font-size:calc(var(--u)*23);color:#7a5a40}
 .lb-m canvas{display:block;width:100%;height:calc(var(--u)*62);margin-top:calc(var(--u)*6)}
+
+/* break between drawing and guessing (BreakScreen.kt) */
+.bk-t{color:#fff;font-size:calc(var(--u)*52);font-weight:800;display:flex;align-items:center;justify-content:center;white-space:nowrap;-webkit-text-stroke:calc(var(--u)*7) #5a2815;paint-order:stroke fill;text-shadow:0 calc(var(--u)*4) 0 #5a2815}
+#bk-sub{display:flex;align-items:center;justify-content:center;text-align:center;color:#3b2314;font-size:calc(var(--u)*29);font-weight:700;line-height:1.1}
+#bk-dial{position:absolute}#bk-dial svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+#bk-dial .trk{fill:none;stroke:#f6d9a6;stroke-width:26}#bk-dial .arc{fill:none;stroke:#f58a24;stroke-width:26;stroke-linecap:round;stroke-dasharray:1169;stroke-dashoffset:0}
+#bk-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:calc(var(--u)*210);color:#ffb21e;-webkit-text-stroke:calc(var(--u)*14) #4a2410;paint-order:stroke fill}
+#bk-num.pop{animation:bkpop .45s cubic-bezier(.3,1.6,.5,1)}@keyframes bkpop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+#bk-dial .rip{position:absolute;left:50%;top:50%;width:calc(var(--u)*464);height:calc(var(--u)*464);margin:calc(var(--u)*-232) 0 0 calc(var(--u)*-232);border-radius:50%;border:calc(var(--u)*7) solid #ffe08a;animation:bkrip 1.4s ease-out infinite}@keyframes bkrip{from{transform:scale(1);opacity:.6}to{transform:scale(1.27);opacity:0}}
+#bk-dial .glow{position:absolute;left:50%;top:50%;width:calc(var(--u)*320);height:calc(var(--u)*320);margin:calc(var(--u)*-160) 0 0 calc(var(--u)*-160);border-radius:50%;background:radial-gradient(circle,#fff4c2bf,transparent 70%);animation:bkglow 1.8s ease-in-out infinite alternate}@keyframes bkglow{from{opacity:.55}to{opacity:1}}
+/* screens fade in (GameScreen's phase change) */
+.screen.on{animation:scrin .28s ease-out}@keyframes scrin{from{opacity:0}to{opacity:1}}
+/* answer feedback over the drawing (GuessFeedbackOverlay) */
+#g-fb{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3}
+#g-fb .card{background:#fffaf0eb;border-radius:calc(var(--u)*40);padding:calc(var(--u)*28) calc(var(--u)*40);display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*10);animation:fbin .35s cubic-bezier(.3,1.5,.5,1),var(--shake,none);box-shadow:0 calc(var(--u)*8) calc(var(--u)*24) #0004}
+#g-fb .ic{width:calc(var(--u)*130);height:calc(var(--u)*130);border-radius:50%;display:flex;align-items:center;justify-content:center}#g-fb .ic svg{width:60%;height:60%}
+#g-fb .ok .ic{background:#d6f5df}#g-fb .no .ic{background:#fbdcd8}
+#g-fb .xp{font-size:calc(var(--u)*42);font-weight:800;color:#c77a00}#g-fb .ans{font-size:calc(var(--u)*42);font-weight:700;color:#5a3a20;text-align:center}
+#g-fb .no .card{animation:fbin .35s cubic-bezier(.3,1.5,.5,1),shk .4s}
+@keyframes fbin{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}@keyframes shk{0%{translate:0}12%{translate:-16px}25%{translate:16px}37%{translate:-12px}50%{translate:12px}62%{translate:-6px}75%{translate:6px}100%{translate:0}}
+#guess.fb button,#guess.fb input{pointer-events:none}

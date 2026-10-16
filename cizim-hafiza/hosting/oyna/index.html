@@ -21,10 +21,10 @@
 <link rel="modulepreload" href="firebase.js">
 <link rel="modulepreload" href="config.js">
 <link rel="modulepreload" href="streak.js">
+<link rel="modulepreload" href="ui.js">
+<link rel="modulepreload" href="i18n.js">
 <link rel="modulepreload" href="chests.js">
 <link rel="modulepreload" href="store.js">
-<link rel="modulepreload" href="i18n.js">
-<link rel="modulepreload" href="ui.js">
 <link rel="modulepreload" href="chestfx.js">
 <link rel="modulepreload" href="daily.js">
 <link rel="modulepreload" href="economy.js">
@@ -46,6 +46,7 @@
 <link rel="modulepreload" href="league.js">
 <link rel="modulepreload" href="ranks.js">
 <link rel="modulepreload" href="search.js">
+<link rel="modulepreload" href="brk.js">
 <link rel="modulepreload" href="settings.js">
 <!-- preload:end -->
 </head>
@@ -135,6 +136,12 @@
     <img id="du-title" data-src="img/du_title.webp" alt="">
     <div id="du-scroll"></div>
     <button id="du-back" class="hit" aria-label="back"><img data-src="img/du_back.webp" alt=""></button>
+  </section>
+
+  <section id="brk" class="screen">
+    <img class="bg" data-src="img/bg_break.webp" alt="">
+    <div id="bk-l1" class="bk-t"></div><div id="bk-l2" class="bk-t"></div><div id="bk-sub"></div>
+    <div id="bk-dial"><i class="rip"></i><i class="glow"></i><svg viewBox="-300 -300 600 600"><circle r="186" class="trk"/><circle id="bk-arc" r="186" class="arc" transform="rotate(-90)"/></svg><b id="bk-num"></b></div>
   </section>
 
   <section id="league" class="screen">
