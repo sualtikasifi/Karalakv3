@@ -1,3 +1,5 @@
+import { S } from "./i18n.js";
+import { appWindow } from "./ui.js";
 import { penList, frameList, frameRing } from "./store.js";
 const T = { tr: { pen: "Kalemini seç", frame: "Çerçeveni seç", close: "Kapat", nick: "Kullanıcı adı", save: "Kaydet", nickHint: "2-16 karakter. Adını yalnızca bir kez değiştirebilirsin.", nickLocked: "Kullanıcı adını zaten bir kez değiştirdin.", nick_taken: "Bu ad alınmış, başka bir tane dene.", nick_invalid: "Harf, rakam, boşluk, _ . - kullanabilirsin (2-16).", nick_net: "Sunucuya ulaşılamadı.", locked: (n) => `Seviye ${n}` }, en: { pen: "Choose your pen", frame: "Choose your frame", close: "Close", nick: "Username", save: "Save", nickHint: "2-16 characters. You can change your name only once.", nickLocked: "You have already changed your username once.", nick_taken: "That name is taken, try another.", nick_invalid: "Letters, numbers, spaces and _ . - only (2-16).", nick_net: "Couldn't reach the server.", locked: (n) => `Level ${n}` } };
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -19,18 +21,30 @@ export function openPenPicker(c) {
     });
   });
 }
+// AvatarFramePickerSheet: "Profil görseli" (Karalak / Google photo) and the ring grid; locked rings are faded with a padlock and
+// the level (or "Mağazada") they open at.
 export function openFramePicker(c) {
-  const { P, lang } = c, x = T[lang()], lv = c.levelOf(P.xp).level;
-  sheet(c, x.frame, (grid, done) => {
-    frameList().filter((f) => (f.level > 0 && !f.league) || P.owned.includes("frame:" + f.id)).forEach((f) => {
-      const open = f.level === 0 || f.level <= lv || P.owned.includes("frame:" + f.id);
-      const b = el("button", "pk-fr" + (P.frame === f.id ? " on" : "") + (open ? "" : " lock"), "");
-      const r = frameRing(f, "pk-ring"); b.append(r, el("span", "", f[lang()]));
-      if (!open) b.append(el("small", "", "🔒 " + x.locked(f.level)));
-      b.onclick = () => { if (!open) return; P.frame = f.id; c.saveP(); c.refreshHome(); done(); };
-      grid.append(b);
-    });
+  const { P } = c, lv = c.levelOf(P.xp).level, host = c.$("stage");
+  const body = el("div", "fp-body");
+  const lock = '<svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0110 0v3" fill="none" stroke="#2b2b2b" stroke-width="2.6" stroke-linecap="round"/><rect x="4.5" y="10.5" width="15" height="11" rx="2.6" fill="#2b2b2b"/></svg>';
+  const ov = appWindow(host, { title: S("avatar_frame_picker_title"), body });
+  body.append(el("div", "fp-h", S("avatar_source_title")));
+  const src = el("div", "fp-src");
+  const kar = el("button", "", `<span class="av"><img src="img/avatar_dino.webp" alt=""></span><b>${S("avatar_source_karalak")}</b>`);
+  const goo = el("button", "dim", `<span class="av g">${(P.nick || "?")[0].toUpperCase()}</span><b>${S("avatar_source_google")}</b>`);
+  goo.onclick = () => c.info(S("avatar_source_google_locked"));
+  src.append(kar, goo); body.append(src);
+  body.append(el("div", "fp-h", S("avatar_frame_section")));
+  const grid = el("div", "fp-grid");
+  frameList().filter((f) => !f.league && !f.retired && (f.level > 0 || f.price > 0 || P.owned.includes("frame:" + f.id) || f.id === "SCRIBBLER")).forEach((f) => {
+    const own = f.price > 0 ? P.owned.includes("frame:" + f.id) : f.level <= lv;
+    const b = el("button", "fp-card" + (P.frame === f.id ? " on" : "") + (own ? "" : " lock"), "");
+    const r = frameRing(f, "fp-ring"); r.querySelector("img:first-child").style.display = f.level === 0 ? "none" : "none"; b.append(r);
+    if (!own) b.append(el("div", "fp-lk", `${lock}<span>${f.price > 0 ? S("store_in_store") : S("avatar_frame_locked_level", f.level)}</span>`));
+    b.onclick = () => { if (!own) return; P.frame = f.id; c.saveP(); c.refreshHome(); ov.close(); };
+    grid.append(b);
   });
+  body.append(grid);
 }
 export function openNickEdit(c) {
   const { P, lang } = c, x = T[lang()], d = c.$("pick"); d.classList.remove("hidden"); d.replaceChildren();

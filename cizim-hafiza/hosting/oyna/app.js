@@ -21,6 +21,7 @@ import { setLang, loadStrings, S } from "./i18n.js";
 import { syncNow, scheduleBackup } from "./sync.js";
 import { openRankLadder } from "./ranks.js";
 import { startSearch, stopSearch } from "./search.js";
+import { exitDialog } from "./ui.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
@@ -125,7 +126,7 @@ function layout() {
   stage.style.setProperty("--u", u + "px");
   if (current === "home") {
     place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214); place($("h-rbadge"), 682, 84, 70, 70);
-    place($("h-pen"), 350, 266, 134, 54);
+    place($("h-pen"), 266, 260, 243, 62);
     place($("h-avatar"), 66, 361, 138, 138);
     place($("h-name"), 224, 357, 556, 42);
     place($("h-rank"), 222, 400, 266, 47);
@@ -200,7 +201,7 @@ function layout() {
     P($("g-xp"), 334, ty(158), 188, 72 * u); P($("g-bonus"), 534, ty(164), 176, 60 * u); P($("g-music"), 246, ty(158), 76, 74 * u);
     [["jt-ad", 48, 172], ["jt-first", 237, 171], ["jt-count", 426, 178], ["jt-skip", 621, 176]].forEach(([id, x0, w]) => P($(id), x0, fb(1406), w, 164 * u));
     P($("g-ring"), 722, ty(150), 96, 96 * u);
-    P($("g-canvas"), 66, ty(310), 724, Math.max(60, fb(1112) - ty(310)));
+    P($("g-canvas"), 56, ty(306), 738, Math.max(60, fb(1112) - ty(310)));
     P($("g-form"), 0, fb(1265), 841, 105 * u);
     const inp = $("g-input"); inp.style.left = 58 * u + "px"; inp.style.top = 6 * u + "px"; inp.style.width = 484 * u + "px"; inp.style.height = 92 * u + "px";
     const ok = $("g-ok"); ok.style.left = 572 * u + "px"; ok.style.top = 0; ok.style.width = 225 * u + "px"; ok.style.height = 105 * u + "px";
@@ -244,11 +245,11 @@ function show(id) {
 function applyLang() {
   const x = t();
   document.documentElement.lang = lang; setLang(lang);
-  $("d-next-t").textContent = x.next; $("g-ok-t").textContent = x.ok;
+  $("d-next-t").textContent = x.next; $("g-ok-t").textContent = S("submit_guess");
   $("w-title").textContent = x.wTitle; $("w-body").textContent = x.wBody; $("w-go-t").textContent = x.wGo; $("w-skip").textContent = x.wSkip;
   $("s-text").textContent = x.searching; $("s-sub").textContent = x.searchSub; $("again-t").textContent = x.again;
   $("dlg-text").textContent = x.leave; $("dlg-yes").textContent = x.yes; $("dlg-no").textContent = x.no;
-  $("g-input").placeholder = x.ph;
+  $("g-input").placeholder = S("what_did_you_draw");
   try { localStorage.setItem("lang", lang); } catch {}
   refreshHome();
 }
@@ -482,7 +483,7 @@ function nextDraw() {
   const arc = $("d-arc"); arc.style.transition = "none"; setRing($("d-ring"), arc, $("d-time"), left, total); void arc.getBoundingClientRect(); arc.style.transition = "";
   paintProg(left);
   tool = "pen"; refreshTools(); paintLive();
-  const tj = $("d-timej"), refreshTj = () => { const n = P.jokers.EXTRA_TIME || 0; $("d-timej-n").textContent = n; $("d-timej-t").textContent = t().timeJ; tj.classList.toggle("dis", usedTime || n <= 0); tj.style.display = relaxed ? "none" : ""; };
+  const tj = $("d-timej"), refreshTj = () => { const n = P.jokers.EXTRA_TIME || 0; $("d-timej-n").textContent = n; $("d-timej-t").textContent = S("drawing_time_joker"); tj.classList.toggle("dis", usedTime || n <= 0); tj.style.display = relaxed ? "none" : ""; };
   refreshTj();
   tj.onclick = () => { if (usedTime || (P.jokers.EXTRA_TIME || 0) <= 0) return; usedTime = true; P.jokers.EXTRA_TIME--; saveP(); left += 10; total += 10; setRing($("d-ring"), arc, $("d-time"), left, total); sfx.buy(); refreshTj(); };
   if (!relaxed) dTimer = setInterval(() => {
@@ -507,9 +508,9 @@ function renderHint(w) {
 function refreshJokers(w) {
   const f = P.jokers.FIRST_LETTER || 0, c = P.jokers.LETTER_COUNT || 0, x = t();
   $("jt-ad").querySelector("span").textContent = x.hintT; $("jt-ad").classList.add("dis");
-  $("jt-first").querySelector("span").textContent = x.firstT; $("jt-first").querySelector("i").textContent = f; $("jt-first").classList.toggle("dis", jk.first || f <= 0);
-  $("jt-count").querySelector("span").textContent = x.countT; $("jt-count").querySelector("i").textContent = c; $("jt-count").classList.toggle("dis", jk.count || c <= 0);
-  $("jt-skip").querySelector("span").textContent = x.skipT; $("jt-skip").classList.toggle("dis", !!w.skipped || idx >= round.length - 1);
+  $("jt-first").querySelector("span").textContent = S("joker_first_letter_short"); $("jt-first").querySelector("i").textContent = f; $("jt-first").classList.toggle("dis", jk.first || f <= 0);
+  $("jt-count").querySelector("span").textContent = S("joker_letter_count_short"); $("jt-count").querySelector("i").textContent = c; $("jt-count").classList.toggle("dis", jk.count || c <= 0);
+  $("jt-skip").querySelector("span").textContent = S("skip_guess"); $("jt-skip").classList.toggle("dis", !!w.skipped || idx >= round.length - 1);
 }
 $("jt-first").onclick = () => { const w = round[idx]; if (jk.first || (P.jokers.FIRST_LETTER || 0) <= 0) return; jk.first = true; P.jokers.FIRST_LETTER--; saveP(); sfx.buy(); renderHint(w); refreshJokers(w); };
 $("jt-count").onclick = () => { const w = round[idx]; if (jk.count || (P.jokers.LETTER_COUNT || 0) <= 0) return; jk.count = true; P.jokers.LETTER_COUNT--; saveP(); sfx.buy(); renderHint(w); refreshJokers(w); };
@@ -623,13 +624,20 @@ async function finish() {
 }
 
 // ---------- navigation ----------
+// GameViewModel.forfeitDaily: leaving a daily challenge ends today's chance — what was guessed so far counts, the rest is wrong.
+function forfeitDaily() {
+  const flags = round.map((w) => !!w.correct), res = dailyRecord(P, flags, score);
+  if (res) { res.xp *= xpMult; eco.addXp(P, res.xp, runeFx(P, "XP")); if (P.daily.result) P.daily.result.xp = res.xp; }
+  saveP(); refreshHome();
+}
 function confirmLeave() {
-  const quickMatch = kind === "quick" && !!quickOpp, pen = eco.QUICK_MATCH_ABANDON_PENALTY_XP;
-  $("dlg-text").textContent = quickMatch ? (lang === "tr" ? `Bu maçtan şimdi çıkarsan ${pen} XP kaybedersin.` : `If you leave this match now you will lose ${pen} XP.`) : t().leave; $("dlg-yes").textContent = t().yes; $("dlg-no").textContent = t().no;
-  $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren();
-  $("dialog").classList.remove("hidden");
-  $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); clearInterval(dTimer); clearInterval(gTimer); if (quickMatch) { eco.revokeXp(P, pen); saveP(); refreshHome(); } if (kind === "online") leaveLobby(ctx); else show("home"); };
-  $("dlg-no").onclick = () => $("dialog").classList.add("hidden");
+  const quickMatch = kind === "quick" && !!quickOpp, pen = eco.QUICK_MATCH_ABANDON_PENALTY_XP, daily = kind === "daily", online = kind === "online";
+  const go = () => { clearInterval(dTimer); clearInterval(gTimer); if (daily) forfeitDaily(); if (quickMatch) { eco.revokeXp(P, pen); saveP(); refreshHome(); } if (online) leaveLobby(ctx); else show("home"); };
+  exitDialog($("stage"), {
+    title: quickMatch ? S("quick_match_abandon_title") : daily ? S("daily_exit_title") : S("exit_game_title"),
+    message: quickMatch ? S("quick_match_abandon_message", pen) : daily ? S("daily_exit_message_short") : online ? S("exit_online_message") : S("exit_game_message"),
+    confirm: quickMatch ? S("quick_match_abandon_confirm", pen) : S("exit_game_confirm"), dismiss: quickMatch ? S("quick_match_abandon_keep") : S("exit_game_cancel"), onConfirm: go,
+  });
 }
 $("d-back").onclick = confirmLeave; $("g-back").onclick = confirmLeave;
 $("again").onclick = () => { if (kind === "quick") startQuick(); else show(kind === "level" ? "lvmap" : "home"); };
@@ -720,7 +728,7 @@ setTimeout(() => net.listen("invites", (list) => {
 applyLang();
 net.economyConfig().then((d) => eco.applyConfig(d)).catch(() => {});
 window.__karalak = ctx; // handle for the visual checks in docs/web-parity.md (opens dialogs and scenes without playing a round)
-loadStrings().then(() => { setLang(lang); refreshHome(); }).catch(() => {});
+loadStrings().then(() => { applyLang(); }).catch(() => {});
 // A signed-in browser picks up the cloud save (when it holds more) and keeps it current; hiding the page uploads at once.
 setTimeout(() => syncNow(ctx).then((r) => { if (r === "restored") { refreshHome(); if (current === "home") show("home"); } }), 2500);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") scheduleBackup(ctx, true); });
