@@ -188,7 +188,7 @@ function row(c, e, rank) {
   const frame = e.bot ? botFrame(e.level, e.nickname) : (e.frameId && frameById(e.frameId)) || highestFrame(e.level);
   const av = frameRing(frame, "lg-av", e.bot ? personaFace(e.nickname) : null); av.style.position = "absolute";
   const nm = document.createElement("div"); nm.className = "lg-nm"; nm.textContent = e.me ? S("quick_match_you_named", e.nickname) : e.nickname;
-  const lv = document.createElement("small"); lv.textContent = "· " + S(rankKey(e.level)); nm.append(lv);
+  const lv = document.createElement("small"); lv.className = "rl"; lv.innerHTML = `<i>· ${S("home_level_inline", e.level)}</i><i>· ${S(rankKey(e.level))}</i>`; nm.append(lv);
   const xp = document.createElement("div"); xp.className = "lg-xp"; xp.textContent = S("league_xp_format", e.periodXp);
   if (!sprite) { const n = document.createElement("div"); n.className = "lg-rk"; n.textContent = rank + "."; r.append(n); }
   r.append(av, nm, xp); return r;
