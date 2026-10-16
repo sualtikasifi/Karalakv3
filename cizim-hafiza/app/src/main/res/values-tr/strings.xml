@@ -1601,6 +1601,9 @@
     <string name="rune_tile_pts">+%%%1$d</string>
     <string name="rune_tile_cnt">+%1$d joker</string>
     <string name="rune_status_title">Rün Durumu</string>
+    <string name="rune_intro_title">Rünlere hoş geldin</string>
+    <string name="rune_intro_body">Rünler, altınla satın aldığın kalıcı bonuslardır.\n\n• Bir rüne dokun, ne işe yaradığını oku, sonra satın al ya da yükselt. Her seviye onu güçlendirir.\n• Bonuslar altın, XP, sandık ve joker kazancını artırır; her oyunda geçerlidir.\n• Rünler köpeğin etrafında halkalar halinde durur. Mühürlü halka, seviyen yettiğinde ve önceki halka büyük ölçüde tamamlandığında açılır.\n• Haritayı sürükleyerek kaydır, iki parmakla yakınlaştır; durumunu görmek için ortadaki köpeğe dokun.</string>
+    <string name="rune_intro_ok">Anladım</string>
     <string name="rune_status_hint">Durumunu görmek için ortadaki köpeğe dokun.</string>
     <string name="rune_status_general">Genel</string>
     <string name="rune_status_bonuses">Bonuslar</string>

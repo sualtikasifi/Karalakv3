@@ -1034,6 +1034,11 @@ class SettingsRepository @Inject constructor(
         set(value) = prefs.edit { putBoolean(KEY_SIGN_IN_PROMPT_SHOWN, value) }
 
     /** How many of the later "don't lose your progress" reminders (see PostMatchPrompts.SIGN_IN_REMINDER_AT) were already shown. */
+    /** The Runes screen's one-time explanation has been read. */
+    var runesIntroSeen: Boolean
+        get() = prefs.getBoolean(KEY_RUNES_INTRO_SEEN, false)
+        set(value) = prefs.edit { putBoolean(KEY_RUNES_INTRO_SEEN, value) }
+
     var signInReminderStage: Int
         get() = prefs.getInt(KEY_SIGN_IN_REMINDER_STAGE, 0)
         set(value) = prefs.edit { putInt(KEY_SIGN_IN_REMINDER_STAGE, value) }
@@ -1201,6 +1206,7 @@ class SettingsRepository @Inject constructor(
         const val KEY_CURRENT_STREAK = "current_streak"
         const val KEY_NOTIFICATION_PERMISSION_REQUESTED = "notification_permission_requested"
         const val KEY_LAST_REMINDER_EPOCH_DAY = "last_reminder_epoch_day"
+        const val KEY_RUNES_INTRO_SEEN = "runes_intro_seen"
         const val KEY_SIGN_IN_REMINDER_STAGE = "sign_in_reminder_stage"
         const val KEY_SIGN_IN_PROMPT_SHOWN = "sign_in_prompt_shown"
         const val KEY_RATING_PROMPT_SHOWN = "rating_prompt_shown"

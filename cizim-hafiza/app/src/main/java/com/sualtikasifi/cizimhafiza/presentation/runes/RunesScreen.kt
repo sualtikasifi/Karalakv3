@@ -134,6 +134,9 @@ class RunesViewModel @Inject constructor(
 
     fun statusOpened() = analytics.runeStatusOpened()
 
+    fun introSeen() = settingsRepository.runesIntroSeen
+    fun markIntroSeen() { settingsRepository.runesIntroSeen = true }
+
     /** Today's state of the once-a-day / once-a-month abilities, for the status window. */
     fun abilityState() = RuneAbilityState(
         instantReady = settingsRepository.instantChestAvailable(),
@@ -157,6 +160,23 @@ fun RunesScreen(onBack: () -> Unit, viewModel: RunesViewModel = hiltViewModel())
     var celebration by remember { mutableIntStateOf(0) }
     // The centre of the map (the dog) opens the status sheet instead of being selected.
     var status by remember { mutableStateOf<RuneAbilityState?>(null) }
+    var showIntro by remember { mutableStateOf(!viewModel.introSeen()) }
+    if (showIntro) {
+        val close = { viewModel.markIntroSeen(); showIntro = false }
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog(
+            title = stringResource(R.string.rune_intro_title),
+            onDismiss = close,
+            buttons = {
+                com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
+                    text = stringResource(R.string.rune_intro_ok),
+                    onClick = close,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        ) {
+            com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialogText(stringResource(R.string.rune_intro_body))
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
         Image(

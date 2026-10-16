@@ -1588,6 +1588,9 @@
     <string name="rune_tile_pts">+%1$d%%</string>
     <string name="rune_tile_cnt">+%1$d joker</string>
     <string name="rune_status_title">Rune Status</string>
+    <string name="rune_intro_title">Welcome to the Runes</string>
+    <string name="rune_intro_body">Runes are permanent bonuses you buy with gold.\n\n• Tap a rune to read what it does, then buy or upgrade it. Every level makes it stronger.\n• Bonuses cover gold, XP, chests and jokers, and they apply to every game.\n• Runes sit in rings around the dog. A sealed ring opens when your level is high enough and the ring before it is mostly done.\n• Drag to move the map, pinch to zoom, and tap the dog in the middle to see your status.</string>
+    <string name="rune_intro_ok">Got it</string>
     <string name="rune_status_hint">Tap the dog in the middle to see your status.</string>
     <string name="rune_status_general">Overview</string>
     <string name="rune_status_bonuses">Bonuses</string>
