@@ -455,7 +455,11 @@ service cloud.firestore {
       let before = (sameMonth && 'periodXp' in resource.data) ? resource.data.periodXp : 0;
       let growth = ('periodXp' in after ? after.periodXp : before) - before;
       let hasStamp = existing && 'periodXpAt' in resource.data && resource.data.periodXpAt is timestamp;
-      let allowed = !existing ? 30000
+      // A profile document that does not exist yet may open with up to the ceiling (not 30000): a player
+      // who reinstalls, signs in on a new phone or restores a cloud backup gets a fresh anonymous uid whose
+      // first publish carries their whole month's XP. With the old 30000 cap that first write was refused for
+      // ever, so the account never appeared in the global league at all.
+      let allowed = !existing ? 300000
                     : (!hasStamp ? 300000
                        : 30000 + (request.time.toMillis() - resource.data.periodXpAt.toMillis()) / 1200);
       // The stamp must be the server's own time, or a client could backdate it to earn allowance.
