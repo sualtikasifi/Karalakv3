@@ -318,10 +318,10 @@ function colorAt(cols, dist) {
 function fxLoop() {
   const pObj = (() => { try { return penById(P.pen); } catch { return null; } })();
   const animated = pObj && pObj.effect && pObj.effect !== "NONE";
-  if (animated && (current === "guess" || current === "draw")) { current === "guess" ? paintGuess() : paintLive(); }
-  requestAnimationFrame(fxLoop);
+  // Only a premium pen on the drawing / guessing screens needs a frame loop; everywhere else just look again in half a second.
+  if (animated && (current === "guess" || current === "draw")) { current === "guess" ? paintGuess() : paintLive(); requestAnimationFrame(fxLoop); } else setTimeout(fxLoop, 500);
 }
-requestAnimationFrame(fxLoop);
+fxLoop();
 const paintLive = () => current === "draw" && round[idx] && paint($("pad"), round[idx].strokes, true, P.pen);
 const paintGuess = () => current === "guess" && round[idx] && paint($("view"), round[idx].strokes, false, P.pen);
 
