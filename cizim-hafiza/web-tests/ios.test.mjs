@@ -31,17 +31,25 @@ const seed = { nick: "Test", xp: 300, gold: 500, tutorialDone: true, login: { st
 for (const name of DEVICES) {
   const browser = await webkit.launch();
   const ctx = await browser.newContext({ ...devices[name], locale: "tr-TR" });
-  const page = await ctx.newPage(); let current = "";
-  page.on("pageerror", (e) => problems.push(`[${name}] ${current}: script error: ${e.message}`));
-  await page.route(/gstatic\.com\/firebasejs/, (r) => r.fulfill({ contentType: "text/javascript", body: fake }));
-  await page.addInitScript((s) => { localStorage.setItem("player", JSON.stringify(s)); }, seed);
-  await page.goto(base); await page.waitForFunction(() => !document.getElementById("splash"), null, { timeout: 20000 }).catch(() => problems.push(`[${name}] splash never closed`));
+  let page = null, current = "";
+  const open = async () => {
+    page = await ctx.newPage();
+    page.on("pageerror", (e) => problems.push(`[${name}] ${current}: script error: ${e.message}`));
+    page.on("crash", () => problems.push(`[${name}] ${current}: THE PAGE CRASHED in WebKit`));
+    page.on("console", (m) => { if (m.type() === "error") console.log(`  console error [${name}] ${current}: ${m.text().slice(0, 160)}`); });
+    await page.route(/gstatic\.com\/firebasejs/, (r) => r.fulfill({ contentType: "text/javascript", body: fake }));
+    await page.addInitScript((s) => { localStorage.setItem("player", JSON.stringify(s)); }, seed);
+    await page.goto(base);
+  };
+  await open(); await page.waitForFunction(() => !document.getElementById("splash"), null, { timeout: 20000 }).catch(() => problems.push(`[${name}] splash never closed`));
   await page.waitForTimeout(800);
   for (const id of SCREENS) {
     current = id;
-    await page.evaluate((i) => window.__karalak.show(i), id).catch((e) => problems.push(`[${name}] ${id}: cannot open: ${e.message.split("\n")[0]}`));
+    if (page.isClosed()) { await open(); await page.waitForFunction(() => !document.getElementById("splash"), null, { timeout: 20000 }).catch(() => {}); }
+    try { await page.evaluate((i) => window.__karalak.show(i), id); } catch (e) { problems.push(`[${name}] ${id}: cannot open: ${e.message.split("\n")[0]}`); continue; }
     await page.waitForTimeout(500);
-    const m = await page.evaluate(() => { const st = document.getElementById("stage").getBoundingClientRect(), vv = window.visualViewport; return { sw: document.documentElement.scrollWidth, iw: innerWidth, l: st.left, r: st.right, w: vv ? vv.width : innerWidth }; });
+    let m; try { m = await page.evaluate(() => { const st = document.getElementById("stage").getBoundingClientRect(), vv = window.visualViewport; return { sw: document.documentElement.scrollWidth, iw: innerWidth, l: st.left, r: st.right, w: vv ? vv.width : innerWidth }; }); } catch (e) { problems.push(`[${name}] ${id}: lost the page: ${e.message.split("\n")[0]}`); continue; }
+    console.log(`  ${name} ${id}: stage ${Math.round(m.l)}..${Math.round(m.r)} of ${Math.round(m.w)}`);
     if (m.sw > m.iw + 1) problems.push(`[${name}] ${id}: the page scrolls sideways (${m.sw} > ${m.iw})`);
     if (m.l < -1 || m.r > m.w + 1) problems.push(`[${name}] ${id}: the game area sticks out of the window (${Math.round(m.l)}..${Math.round(m.r)} of ${Math.round(m.w)})`);
     await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_${id}.png`) });
