@@ -127,11 +127,11 @@ function buildMap(c) {
   // one-finger drag, two-finger pinch and the wheel; a tap on the bare map clears the selection
   const ptr = new Map(); let dragged = false, startDist = 0, startScale = 1;
   const lim = { x: reach.x * u, y: reach.y * u };
-  map.onpointerdown = (e) => { ptr.set(e.pointerId, [e.clientX, e.clientY]); dragged = false; if (ptr.size === 2) { const [a, b] = [...ptr.values()]; startDist = Math.hypot(a[0] - b[0], a[1] - b[1]); startScale = view.s; } map.setPointerCapture && map.setPointerCapture(e.pointerId); };
+  map.onpointerdown = (e) => { ptr.set(e.pointerId, [e.clientX, e.clientY]); dragged = false; if (ptr.size === 2) { const [a, b] = [...ptr.values()]; startDist = Math.hypot(a[0] - b[0], a[1] - b[1]); startScale = view.s; } };
   map.onpointermove = (e) => {
     if (!ptr.has(e.pointerId)) return;
     const prev = ptr.get(e.pointerId), cur = [e.clientX, e.clientY]; ptr.set(e.pointerId, cur);
-    if (ptr.size === 1) { const dx = cur[0] - prev[0], dy = cur[1] - prev[1]; if (Math.abs(dx) + Math.abs(dy) > 0) { if (!dragged && Math.hypot(cur[0] - e.clientX, 0) >= 0) dragged = dragged || Math.abs(dx) + Math.abs(dy) > 1.5; view.x += dx; view.y += dy; clampView(map, lim); applyView(layer); } }
+    if (ptr.size === 1) { const dx = cur[0] - prev[0], dy = cur[1] - prev[1]; if (Math.abs(dx) + Math.abs(dy) > 0) { if (!dragged && Math.hypot(cur[0] - e.clientX, 0) >= 0) if (!dragged && Math.abs(dx) + Math.abs(dy) > 1.5) { dragged = true; try { map.setPointerCapture(e.pointerId); } catch {} } view.x += dx; view.y += dy; clampView(map, lim); applyView(layer); } }
     else if (ptr.size === 2) { dragged = true; const [a, b] = [...ptr.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); zoomAt(map, layer, minScale, lim, startScale * d / (startDist || d), (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); }
   };
   const up = (e) => { ptr.delete(e.pointerId); };
