@@ -129,41 +129,6 @@ fun SettingsScreen(
         ActivityResultContracts.RequestPermission()
     ) { granted -> viewModel.setNotificationsEnabled(granted) }
 
-    // "Bildirimler geç mi geliyor?" — the OEM battery manager holding back reminders (see the note in git history of
-    // this file): the card offers the fix only while notifications are on and the OS still restricts this app. It is
-    // rechecked when the system dialog returns, so the offer disappears the moment the exemption is granted.
-    fun batteryOk(): Boolean =
-        (context.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager)
-            ?.isIgnoringBatteryOptimizations(context.packageName) != false
-    var ignoringOptimizations by remember { mutableStateOf(batteryOk()) }
-    val batteryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        ignoringOptimizations = batteryOk()
-    }
-    // The result callback above is not enough on its own: some phones report it the moment the settings screen
-    // opens, before the player has changed anything, and the card then stayed on "fix it" until the screen was left
-    // and re-entered. Coming back to this screen at all (RESUMED) re-reads the real state, and once more shortly
-    // after, because a few phones apply the change a beat late.
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    var resumeTick by remember { mutableIntStateOf(0) }
-    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                ignoringOptimizations = batteryOk()
-                resumeTick++
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-    androidx.compose.runtime.LaunchedEffect(resumeTick) {
-        if (resumeTick > 0) {
-            kotlinx.coroutines.delay(600)
-            ignoringOptimizations = batteryOk()
-            kotlinx.coroutines.delay(1_400)
-            ignoringOptimizations = batteryOk()
-        }
-    }
-    val needsBatteryFix = notificationsEnabled && !ignoringOptimizations
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().sceneIn()) {
         // ONE scale in both directions, so the picture is never stretched; spare strips show a blurred copy of it.
@@ -509,48 +474,6 @@ fun SettingsScreen(
             }
             }
         }
-        if (needsBatteryFix) {
-            val fixLabel = stringResource(R.string.settings_battery_optimization_action)
-            Row(
-                box(355f, 1108f, 754f, 1190f)
-                    .shadow((3 * us).dp, RoundedCornerShape(50))
-                    .background(Brush.verticalGradient(listOf(Color(0xFFFFD75E), Color(0xFFF7A81B))), RoundedCornerShape(50))
-                    .border((2.5f * us).dp, Color(0xFFE08A1B), RoundedCornerShape(50))
-                    .pressable(pressedScale = 0.95f) {
-                        // The battery-optimization list, where the player switches Karalak off themselves. The direct
-                        // "ignore for this app" request needs REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, which Play does not
-                        // allow for a game, so it is not used; the app's own settings page is the fallback.
-                        runCatching {
-                            batteryLauncher.launch(android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-                        }.onFailure {
-                            runCatching {
-                                batteryLauncher.launch(
-                                    android.content.Intent(
-                                        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                        android.net.Uri.parse("package:${context.packageName}")
-                                    )
-                                )
-                            }
-                        }
-                    }
-                    .a11yButton(fixLabel)
-                    .padding(horizontal = (26f * us).dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy((14f * us).dp)
-            ) {
-                Icon(Icons.Filled.Settings, contentDescription = null, tint = Ink, modifier = Modifier.size((40f * us).dp))
-                FitText(
-                    text = fixLabel,
-                    style = PaintedStyle(color = Ink, fontSize = fs(29f), textAlign = TextAlign.Start),
-                    maxLines = 1,
-                    minScale = 0.6f,
-                    contentAlignment = Alignment.CenterStart,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Ink, modifier = Modifier.size((38f * us).dp))
-            }
-        }
-
         // ---- Rows ----------------------------------------------------------------------------------------------
         @Composable
         fun SceneRow(cy: Float, label: String, onClick: () -> Unit, extra: Modifier = Modifier, content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {}) {
