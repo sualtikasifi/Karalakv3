@@ -634,7 +634,11 @@ function renderHint(w) {
 }
 function refreshJokers(w) {
   const f = jokerN("FIRST_LETTER"), c = jokerN("LETTER_COUNT"), x = t(), tut = kind === "tutorial";
-  $("jt-ad").style.display = "none"; // the "hint" (rewarded ad) tile does nothing on the web
+  // The first tile (the app's rewarded-ad "hint") has no job on the web, and a hint would be unfair to the app's players: it only shows
+  // how many words were guessed right so far.
+  const ad = $("jt-ad"), right = round.filter((q) => q.correct).length;
+  ad.classList.remove("dis"); ad.disabled = true; ad.classList.add("info");
+  ad.innerHTML = `<b>${right}/${round.length}</b><span>${S("result_stat_correct")}</span>`;
   $("jt-first").querySelector("span").textContent = S("joker_first_letter_short"); $("jt-first").querySelector("i").textContent = f; $("jt-first").classList.toggle("dis", jk.first || f <= 0);
   $("jt-count").querySelector("span").textContent = S("joker_letter_count_short"); $("jt-count").querySelector("i").textContent = c; $("jt-count").classList.toggle("dis", jk.count || c <= 0);
   $("jt-skip").querySelector("span").textContent = S("skip_guess"); $("jt-skip").classList.toggle("dis", tut || !!w.skipped || idx >= gOrder.length - 1);
