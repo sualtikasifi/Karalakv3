@@ -122,9 +122,12 @@ function viewport() { const v = window.visualViewport; return { w: v ? v.width :
 const safeRows = { home: { t: HOME_SAFE_TOP, b: HOME_SAFE_TOP + HOME_SAFE_H } };
 const SAFE_TOP = 24, SAFE_BELOW = 60, SAFE_BELOW_OF = { settings: 16 };
 /** Scenes whose side gap is closed by stretching only the outer slice of the painted scene (the sides carry card fragments, so a mirror would repeat them); widgets and the middle keep their true proportions. */
-const SIDE_SLICE = { settings: 0.1 };
+const SIDE_SLICE = {};
 /** Scenes with a painted wider version: the old scene sits inside it at (x0..x1) of w x h source pixels, so the gap beside the art shows more painting at true scale, nothing stretched. */
-const WIDE = { home: { src: "img/bg_home_wide.webp", x0: 92, x1: 844, w: 940, h: 1672 } };
+const WIDE = {
+  home: { src: "img/bg_home_wide.webp", x0: 92, x1: 844, y0: 0, w: 940, h: 1672 },
+  settings: { src: "img/bg_settings_wide.webp", x0: 109, x1: 831, y0: 4, w: 941, h: 1672 },
+};
 function layoutOnce() {
   const { w: vw, h: vh, ox, oy } = viewport();
   const s = stage.style;
@@ -307,10 +310,10 @@ function paintEdges(W, H, gap, top) {
     e.style.display = on ? "block" : "none";
     if (!on) continue;
     if (wide) {
-      const k = H / wide.h, ew = gap + 1;
+      const k = W / (wide.x1 - wide.x0), ew = gap + 1;
       e.style.transform = "none"; e.style.filter = "none";
       const bx = side === "l" ? gap - wide.x0 * k : 1 - wide.x1 * k;
-      e.style.cssText += `;width:${ew}px;top:${top}px;height:${H}px;background-image:url("${wide.src}");background-size:${wide.w * k}px ${H}px;background-position:${bx}px top;${side === "l" ? "left:0" : "right:0"}`;
+      e.style.cssText += `;width:${ew}px;top:${top}px;height:${H}px;background-image:url("${wide.src}");background-size:${wide.w * k}px ${wide.h * k}px;background-position:${bx}px ${-wide.y0 * k}px;${side === "l" ? "left:0" : "right:0"}`;
       continue;
     }
     if (slice) {
