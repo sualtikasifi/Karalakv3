@@ -939,3 +939,16 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .pb-prev .bd-frm{position:relative;width:calc(var(--u)*220);height:calc(var(--u)*220)}
 .pb-prev .bd-frm img{max-width:none;max-height:none}.pb-prev .bd-frm>img:last-child{width:100%;height:100%}
 .ls-act .pill.cream span{color:#3b2314;-webkit-text-stroke:0;text-shadow:none}
+
+/* modal windows are centred in the window the player actually sees: the painted scene can be taller than the screen (its decor falls off the top and bottom), so a window centred in the scene sat lower than the middle and its bottom edge was cut off */
+.aw-ov,.ex-ov,#ru-status,.os2,.won{position:fixed}
+.aw-ov{padding:max(calc(var(--u)*49),env(safe-area-inset-top)) max(calc(var(--u)*33),env(safe-area-inset-right)) max(calc(var(--u)*49),env(safe-area-inset-bottom)) max(calc(var(--u)*33),env(safe-area-inset-left))}
+.aw-card{max-width:calc(var(--u)*775)}
+.ex-ov{padding:0 max(calc(var(--u)*16),env(safe-area-inset-right)) 0 max(calc(var(--u)*16),env(safe-area-inset-left))}.ex-card{max-width:calc(var(--u)*809)}
+.os2-col{max-width:calc(var(--u)*841)}
+#du-scroll{bottom:auto}
+.ex-ov.wait .ex-card{visibility:hidden}
+/* daily-streak rescue window: two stacked buttons, the second one outlined (SecondaryButton) */
+.aw-btns{display:flex;flex-direction:column;gap:calc(var(--u)*20)}
+.prim.alt{background:#fff;color:#f97316;box-shadow:inset 0 0 0 calc(var(--u)*5) #f97316}.prim.alt:active{transform:scale(.97);box-shadow:inset 0 0 0 calc(var(--u)*5) #f97316}
+.ao-ic{line-height:1.05;margin-bottom:calc(var(--u)*6)}

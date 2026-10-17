@@ -1,10 +1,10 @@
-import { appOnlyDialog } from "./ui.js";
-import { getLang } from "./i18n.js";
+import { appOnlyDialog, appWindow, primary, PLAY_URL } from "./ui.js";
+import { getLang, S } from "./i18n.js";
 // Giriş Serisi: the 7-day login calendar (port of LoginStreak.kt / LoginStreakDialog.kt). "Today" is the server's day
 // (Date header of our own hosting), never the phone's clock.
 import { openNow } from "./chests.js";
 import { scaled } from "./economy.js";
-import { turkeyMonth } from "./daily.js";
+import { turkeyMonth, todayEpoch } from "./daily.js";
 const REW = [null, { gold: 300 }, { gold: 400 }, { jokers: true }, { gold: 500 }, { chest: "GOLD" }, { gold: 800 }, { chest: "RARE" }];
 const JK = ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"];
 const T = {
@@ -28,7 +28,22 @@ export function state(L, today) {
   if (L.last > today) return { k: "done" };
   return { k: "missed", lost: L.streak };
 }
-let today = null, checking = false, handled = false;
+let today = null, checking = false, handled = false, rescueSeen = false;
+const RESCUE = { tr: "Uygulamada kurtar", en: "Save in the app" };
+/**
+ * MainMenuScreen's StreakRescueDialog: a daily-challenge streak that lapsed for one to three days is offered back the moment the menu opens.
+ * In the app that costs an ad; the browser has none, so the button sends the player to the app. Returns true while the offer is on screen
+ * (the login-streak window waits behind it, as in the app); `then` runs when it is closed.
+ */
+export function dailyRescue(c, then) {
+  const d = c.P.daily, gap = d.last < 0 ? 1e9 : todayEpoch() - d.last;
+  if (rescueSeen || d.streak <= 0 || gap <= 1 || gap > 3) return false;
+  rescueSeen = true;
+  const body = el("div", "ao-body", `<div class="ao-ic">🔥</div><p>${S("streak_rescue_message")}</p>`), foot = el("div", "aw-btns");
+  const ov = appWindow(c.$("stage"), { title: S("streak_rescue_title", d.streak), body, footer: foot, centerTitle: true, onClose: then });
+  foot.append(primary(RESCUE[getLang()] || RESCUE.tr, () => { window.open(PLAY_URL, "_blank", "noopener"); ov.close(); }), primary(S("streak_rescue_dismiss"), () => ov.close(), "alt"));
+  return true;
+}
 export async function checkStreak(c) {
   const P = c.P; P.login = P.login || { streak: 0, last: -1 };
   if (handled || checking) return; checking = true;

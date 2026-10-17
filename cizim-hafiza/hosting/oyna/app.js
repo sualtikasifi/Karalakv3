@@ -1,6 +1,6 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
-import { checkStreak } from "./streak.js";
+import { checkStreak, dailyRescue } from "./streak.js";
 import { renderResult, loadResultStrings } from "./result.js";
 import { loadChat, chatText } from "./chat.js";
 import { loadRunes, layoutRunes, renderRunes, effect as runeFx, has as runeHas, applyRuneConfig, anyAffordable } from "./runes.js";
@@ -215,7 +215,7 @@ function layoutOnce() {
   } else if (current === "brk") {
     layoutBreak(ctx);
   } else if (current === "duels") {
-    place($("du-back"), 20, 40, 110, 106); renderDuels(ctx);
+    place($("du-back"), 20, 40, 110, 106); $("du-scroll").style.height = ctx.fillH() - 370 * u + "px"; renderDuels(ctx);
   } else if (current === "league") {
     layoutLeague(ctx); renderLeague(ctx, !leagueLoaded); leagueLoaded = true;
   } else if (current === "ach") {
@@ -708,8 +708,8 @@ function refreshJokers(w) {
   $("jt-count").querySelector("span").textContent = S("joker_letter_count_short"); $("jt-count").querySelector("i").textContent = c; $("jt-count").classList.toggle("dis", jk.count || c <= 0);
   $("jt-skip").querySelector("span").textContent = S("skip_guess"); $("jt-skip").classList.toggle("dis", tut || !!w.skipped || idx >= gOrder.length - 1);
 }
-$("jt-first").onclick = () => { const w = gw(); if (locked) return; if (jk.first || jokerN("FIRST_LETTER") <= 0 || (tutSpot && tutSpot.joker !== "FIRST_LETTER")) return; jk.first = true; jokerSpend("FIRST_LETTER"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
-$("jt-count").onclick = () => { const w = gw(); if (locked) return; if (jk.count || jokerN("LETTER_COUNT") <= 0 || (tutSpot && tutSpot.joker !== "LETTER_COUNT")) return; jk.count = true; jokerSpend("LETTER_COUNT"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
+$("jt-first").onclick = () => { const w = gw(); if (locked || !w) return; if (jk.first || jokerN("FIRST_LETTER") <= 0 || (tutSpot && tutSpot.joker !== "FIRST_LETTER")) return; jk.first = true; jokerSpend("FIRST_LETTER"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
+$("jt-count").onclick = () => { const w = gw(); if (locked || !w) return; if (jk.count || jokerN("LETTER_COUNT") <= 0 || (tutSpot && tutSpot.joker !== "LETTER_COUNT")) return; jk.count = true; jokerSpend("LETTER_COUNT"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
 $("jt-skip").onclick = () => {
   const w = gw(); if (!w || locked || tutSpot || kind === "tutorial" || w.skipped || idx >= gOrder.length - 1) return;
   w.skipped = true; w.resume = gLeft; gOrder.push(gOrder[idx]); idx++;
@@ -759,7 +759,7 @@ function nextGuess() {
   } else runClock();
 }
 function answer(text) {
-  if (locked) return; locked = true; lockedVal = $("g-input").value;
+  if (locked || !gw()) return; locked = true; lockedVal = $("g-input").value;
   clearInterval(gTimer); clearInterval(bonusTimer);
   const w = gw();
   w.guess = text; w.ms = Math.round(performance.now() - shownAt); w.correct = isCorrect(text, w.text);
@@ -1017,7 +1017,7 @@ loadStrings().then(() => { applyLang(); }).catch(() => {});
 setTimeout(() => syncNow(ctx).then((r) => { if (r === "restored") { refreshHome(); if (current === "home") show("home"); } }), 2500);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") scheduleBackup(ctx, true); });
 loadRunes().then(() => refreshHome()).catch(() => {});
-if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); setTimeout(() => checkStreak(ctx), 900); }; } else { show("home"); setTimeout(() => checkStreak(ctx), 1800); }
+if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); setTimeout(() => checkStreak(ctx), 900); }; } else { show("home"); setTimeout(() => { if (!dailyRescue(ctx, () => checkStreak(ctx))) checkStreak(ctx); }, 1800); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 // After the home screen is up, quietly fetch the pictures of the screens people open most (skipped on data saver).
 setTimeout(() => {
@@ -1035,6 +1035,8 @@ function warmImages() {
   for (const id of ["draw", "guess", "search", "found", "store", "settings", "league", "friends", "onl", "onc", "onj", "offs", "onw", "ach", "worlds", "lvmap", "runes", "account", "report", "duels", "res2", "result"]) {
     document.querySelectorAll("#" + id + " img[data-src]").forEach((i) => add(i.dataset.src));
   }
+  // painted windows are built by script, so no stylesheet or tag mentions them: fetch them too, or the first open shows the words before the picture
+  for (const n of ["exit_game_dialog", "exit_dialog", "buy_frame", "joker_buy_first", "joker_buy_count", "joker_buy_time", "ls_frame", "ls_btn_claim", "st_daily_full", "st_card_joker", "rs_dialog_bg", "rs_level_blank", "friends_handshake", "lobby_crown", "lobby_adduser", "lobby_hourglass"]) add(`img/${n}.webp`);
   try { for (const sh of document.styleSheets) for (const r of sh.cssRules) for (const m of (r.cssText || "").matchAll(/url\(["']?(img\/[^"')]+)/g)) add(m[1]); } catch {}
   let next = 0;
   const pump = () => {

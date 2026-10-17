@@ -44,9 +44,9 @@ const errText = (x, e) => {
   if (code === "auth/network-request-failed") return x.net;
   return S("account_sign_in_failed");
 };
-export async function renderAccount(c) {
+/** Paints from what is known right now (the last sign-in state), so the screen is never blank while the Firebase SDK is still loading. */
+function paint(c) {
   const { $, P, lang } = c, x = T[lang()];
-  try { who = await net.authState(); } catch { who = null; }
   const linked = who && !who.anon;
   $("ak-title").textContent = x.title;
   const av = frameRing(frameById(P.frame)); av.style.cssText += ";width:100%;height:100%"; $("ak-avatar").replaceChildren(av);
@@ -90,4 +90,10 @@ export async function renderAccount(c) {
     try { await net.deleteAccount(); markAccount(false); c.resetProgress(); forgetRemote(); done(S("account_delete_done")); }
     catch (e) { done(e.code === "auth/requires-recent-login" ? S("account_delete_reauth_needed") : S("account_delete_failed")); }
   }));
+}
+
+export async function renderAccount(c) {
+  paint(c);
+  let w = null; try { w = await net.authState(); } catch {}
+  if ((w && w.uid) !== (who && who.uid) || (w && w.anon) !== (who && who.anon) || (w && w.userName) !== (who && who.userName)) { who = w; paint(c); }
 }
