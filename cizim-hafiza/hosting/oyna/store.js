@@ -1,4 +1,5 @@
-import { appOnlyDialog } from "./ui.js";
+import { appOnlyDialog, appWindow } from "./ui.js";
+import { S as S0 } from "./i18n.js";
 // Store page: jokers, pens, frames. Prices and catalogue come straight from the Android enums.
 const J = [["FIRST_LETTER", 200, "joker_first_letter", "joker_first_letter_desc", "joker_first_letter"], ["LETTER_COUNT", 150, "joker_letter_count", "joker_letter_count_desc", "joker_letter_count"], ["EXTRA_TIME", 250, "joker_extra_time", "joker_extra_time_desc", "joker_extra_time"]];
 let pens = [], frames = [], S = {}, tab = 0, toastTimer = null;
@@ -73,7 +74,7 @@ export function renderStore(ctx) {
       [1, 5].forEach((q) => {
         const base = q >= 5 ? Math.floor(price * q * 85 / 100) : price * q, cost = Math.floor(base * (100 - ctx.runeFx("DISC")) / 100);
         const b = el("button", "pill" + (q === 1 ? "o" : "b") + (P.gold < cost ? " dis" : ""), q === 1 ? `<span class="pr">${coin}${fmt(cost)}</span>` : `<span class="bk">${tt(ctx, "joker_buy_bulk", q, 15)}</span><span class="pr s">${coin}${fmt(cost)}</span>`);
-        b.onclick = () => P.gold < cost ? toast(ctx, tt(ctx, "store_not_enough"), true) : buy(ctx, { joker: true, art: "joker_buy_" + ({ FIRST_LETTER: "first", LETTER_COUNT: "count", EXTRA_TIME: "time" })[type], qty: q, price: cost, grant: () => { finish(ctx, cost, () => { P.jokers[type] = (P.jokers[type] || 0) + q; }, true); bought(ctx, type, nameK, q); } });
+        b.onclick = () => P.gold < cost ? toast(ctx, tt(ctx, "store_not_enough"), true) : buy(ctx, { joker: true, name: tt(ctx, nameK), img, art: "joker_buy_" + ({ FIRST_LETTER: "first", LETTER_COUNT: "count", EXTRA_TIME: "time" })[type], qty: q, price: cost, grant: () => { finish(ctx, cost, () => { P.jokers[type] = (P.jokers[type] || 0) + q; }, true); bought(ctx, type, nameK, q); } });
         jb.append(b);
       });
       c.append(jb); shelf.append(c);
@@ -102,6 +103,8 @@ const FRAME_SPEC = { close: [895, 150, 1060, 320], cancel: [95, 1060, 535, 1225]
 const pc = (v, t) => (v / t * 100).toFixed(3) + "%";
 const box = (r, abs) => { const [x, y, a, b] = r; const w = abs ? a - x : a, h = abs ? b - y : b; return `left:${pc(x, 1086)};top:${pc(y, 1448)};width:${pc(w, 1086)};height:${pc(h, 1448)}`; };
 function buy(ctx, o) {
+  // the painted windows carry their words in the picture (Turkish only): other languages get the plain window
+  if (ctx.lang() !== "tr") return plainBuy(ctx, o);
   const { P, $ } = ctx, d = $("pick"), spec = o.joker ? JOKER_SPEC : FRAME_SPEC, afford = P.gold >= o.price;
   d.classList.remove("hidden"); d.replaceChildren(); d.onclick = null;
   const wrap = el("div", "bd-wrap"), fr = el("div", "bd-frame"); wrap.append(fr);
@@ -120,6 +123,16 @@ function buy(ctx, o) {
   });
   d.onclick = (e) => { if (e.target === d) close(); };
   d.append(wrap);
+}
+function plainBuy(ctx, o) {
+  const { P } = ctx, afford = P.gold >= o.price, body = el("div", "pb-body");
+  const pv = el("div", "pb-prev"); if (o.preview) pv.append(o.preview); else if (o.joker) { const i = el("img"); i.src = `img/${o.img}.webp`; i.alt = ""; i.onerror = () => i.remove(); pv.append(i); }
+  body.append(pv, el("div", "pb-name", (o.name || "") + (o.qty > 1 ? " ×" + o.qty : "")), el("div", "pb-price", `${coin}<span>${fmt(o.price)}</span>`));
+  if (!afford) body.append(el("div", "pb-warn", "⚠ " + tt(ctx, "store_missing_gold", o.price - P.gold)));
+  const foot = el("div", "pb-foot"), no = el("button", "pill cream small", `<span>${S0("online_kick_confirm_cancel")}</span>`), yes = el("button", "pill orange small" + (afford ? "" : " dis"), `<span>${S0("store_buy")}</span>`);
+  foot.append(no, yes);
+  const ov = appWindow(ctx.$("stage"), { title: S0("store_buy_confirm_title"), body, footer: foot });
+  no.onclick = () => ov.close(); yes.onclick = () => { if (!afford) return; ov.close(); o.grant(); };
 }
 function bought(ctx, type, nameK, qty) {
   const d = ctx.$("pick"); d.classList.remove("hidden"); d.replaceChildren(); d.onclick = null;

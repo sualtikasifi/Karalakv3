@@ -109,16 +109,18 @@ internal fun LoginStreakDialog(
             // The painted frame is 1024 x 1536; everything inside is placed in its own units, so it scales with it.
             val frameW = minOf(maxWidth - 8.dp, maxHeight / 1.5f)
             val u = frameW / 1024f
+            // the sign is painted in Turkish; other languages get a copy with the lettering redone
+            val frameRes = if (androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language == "tr") R.drawable.ls_frame else R.drawable.ls_frame_en
             Box(
                 Modifier
                     .size(frameW, frameW * 1.5f)
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
             ) {
-                Image(painterResource(R.drawable.ls_frame), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                Image(painterResource(frameRes), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
                 if (canDismiss) {
                     // The X is painted into the frame, so it cannot scale itself: while pressed its own pixels cave in (see sunkenArt).
                     val context = androidx.compose.ui.platform.LocalContext.current
-                    val frameBitmap = remember { runCatching { com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(context.resources, R.drawable.ls_frame) }.getOrNull() }
+                    val frameBitmap = remember { runCatching { com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(context.resources, frameRes) }.getOrNull() }
                     val sink = rememberSink(0.86f)
                     val px = (frameBitmap?.width ?: 1024) / 1024f
                     Box(
@@ -171,7 +173,7 @@ internal fun LoginStreakDialog(
                         when (popup) {
                             is LoginPopup.Claim -> if (artButton) {
                                 Image(
-                                    painterResource(R.drawable.ls_btn_claim),
+                                    painterResource(if (frameRes == R.drawable.ls_frame) R.drawable.ls_btn_claim else R.drawable.ls_btn_claim_en),
                                     contentDescription = stringResource(R.string.login_streak_claim),
                                     contentScale = ContentScale.Fit,
                                     modifier = Modifier.fillMaxHeight().pressable(pressedScale = 0.96f, onClick = onClaim)
