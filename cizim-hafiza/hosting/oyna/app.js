@@ -679,7 +679,11 @@ $("jt-first").onclick = () => { const w = gw(); if (locked) return; if (jk.first
 $("jt-count").onclick = () => { const w = gw(); if (locked) return; if (jk.count || jokerN("LETTER_COUNT") <= 0 || (tutSpot && tutSpot.joker !== "LETTER_COUNT")) return; jk.count = true; jokerSpend("LETTER_COUNT"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
 $("jt-skip").onclick = () => {
   const w = gw(); if (!w || locked || tutSpot || kind === "tutorial" || w.skipped || idx >= gOrder.length - 1) return;
-  w.skipped = true; w.resume = gLeft; gOrder.push(gOrder[idx]); idx++; nextGuess();
+  w.skipped = true; w.resume = gLeft; gOrder.push(gOrder[idx]); idx++;
+  // like the app: "⏱ N s saved" pops over the drawing for a moment, the clock stops, then the next word comes
+  clearInterval(gTimer); clearInterval(bonusTimer); locked = true; sfx.tick && sfx.tick();
+  const chip = $("g-skipchip"); chip.textContent = `⏱ ${lang === "tr" ? w.resume + " sn kaydedildi" : w.resume + " s saved"}`; chip.classList.remove("go"); void chip.offsetWidth; chip.classList.add("go");
+  setTimeout(() => { chip.classList.remove("go"); if (locked && current === "guess") nextGuess(); }, 1100);
 };
 function endSpot() {
   if (!tutSpot) return;
