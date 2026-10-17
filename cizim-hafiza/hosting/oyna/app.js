@@ -863,7 +863,7 @@ setTimeout(() => net.listen("invites", (list) => {
   $("dlg-no").onclick = () => { net.consumeInvite(inv.id).catch(() => {}); $("dialog").classList.add("hidden"); };
 }).catch(() => {}), 4000);
 applyLang();
-net.economyConfig().then((d) => eco.applyConfig(d)).catch(() => {});
+setTimeout(() => net.economyConfig().then((d) => eco.applyConfig(d)).catch(() => {}), 1800);
 window.__karalak = ctx; // handle for the visual checks in docs/web-parity.md (opens dialogs and scenes without playing a round)
 loadStrings().then(() => { applyLang(); }).catch(() => {});
 // A signed-in browser picks up the cloud save (when it holds more) and keeps it current; hiding the page uploads at once.
@@ -891,10 +891,18 @@ function warmImages() {
   try { for (const sh of document.styleSheets) for (const r of sh.cssRules) for (const m of (r.cssText || "").matchAll(/url\(["']?(img\/[^"')]+)/g)) add(m[1]); } catch {}
   let next = 0;
   const pump = () => {
-    if (next >= urls.length) return;
+    if (next >= urls.length) { if (next++ === urls.length) warmMedia(); return; }
     const img = new Image(); img.onload = img.onerror = () => (window.requestIdleCallback ? requestIdleCallback(pump, { timeout: 800 }) : setTimeout(pump, 60));
     img.src = urls[next++];
   };
   for (let k = 0; k < 3; k++) pump();
 }
 addEventListener("load", () => setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(warmImages, { timeout: 4000 }) : warmImages()), 1500));
+// The Firebase SDK (sign-in, database: ~300 KB) is fetched only after the first screen is up.
+addEventListener("load", () => { try { net.reportBoot(Math.round(performance.now())); } catch {} });
+addEventListener("load", () => setTimeout(() => { for (const f of ["firebase-app", "firebase-auth", "firebase-firestore"]) { const l = document.createElement("link"); l.rel = "modulepreload"; l.href = `https://www.gstatic.com/firebasejs/10.14.1/${f}.js`; document.head.append(l); } }, 600));
+// After the pictures: the first music track and the most common chest film, so neither stalls the first time it is needed (skipped on slow lines).
+function warmMedia() {
+  const c = navigator.connection; if (c && (c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || ""))) return;
+  for (const u of ["audio/music_1.m4a", "video/chest_open_apprentice.mp4"]) fetch(u).then((r) => r.arrayBuffer()).catch(() => {});
+}

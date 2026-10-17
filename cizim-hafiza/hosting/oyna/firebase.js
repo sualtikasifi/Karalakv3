@@ -6,7 +6,12 @@ const CDN = `https://www.gstatic.com/firebasejs/${V}`;
 const RUN_WORD_COUNT = 10, SHARD_COUNT = 1000, BAND_SIZE = 10, MIN_CORRECT = 2, MAX_BAND = 9, CANDIDATES = 5;
 let api = null;
 
-let initP = null;
+let initP = null, perf = null, bootMs = 0;
+/** How long the game took from navigation start to the first usable home screen, as a Performance trace (sent once the SDK is up). */
+export function reportBoot(ms) {
+  bootMs = ms; if (!perf || !ms) return;
+  try { const t = perf.p.trace(perf.inst, "home_ready"); t.record(Date.now() - ms, ms); bootMs = 0; } catch {}
+}
 // One shared start-up: concurrent callers (the room listener, the cloud save, the friends screen…) must not each sign in anonymously.
 function init() {
   if (api) return Promise.resolve(api);
@@ -20,6 +25,8 @@ function init() {
     await au.authStateReady?.();
     if (!au.currentUser) await auth.signInAnonymously(au);
     api = { fs, db: fs.getFirestore(a), auth: au };
+    // Firebase Performance: page-load and network timings of real visitors (no personal data); a failure here never matters.
+    import(`${CDN}/firebase-performance.js`).then((p) => { perf = { p, inst: p.getPerformance(a) }; if (bootMs) reportBoot(bootMs); }).catch(() => {});
     return api;
   })().catch((e) => { initP = null; throw e; });
   return initP;
