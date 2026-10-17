@@ -22,8 +22,8 @@ jobs:
         with:
           node-version: "20"
       - run: npm install
-      - run: npx playwright install --with-deps webkit
-      - name: Test on iPhone sizes (WebKit)
+      - run: npx playwright install --with-deps webkit chromium
+      - name: "Test on iPhone sizes (WebKit) - screens, Safari vs Chrome, whole game flows"
         run: npm test
       # One page with every screen on every iPhone size, on a temporary preview address of the site (kept 7 days, replaced by the next run).
       # The address is written at the end of the run's summary.

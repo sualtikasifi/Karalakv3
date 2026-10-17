@@ -1,1 +1,1 @@
-{ "name": "karalak-web-tests", "private": true, "scripts": { "test": "node ios.test.mjs" }, "devDependencies": { "playwright": "1.49.1" } }
+{ "name": "karalak-web-tests", "private": true, "scripts": { "test": "node ios.test.mjs && node flows.test.mjs" }, "devDependencies": { "playwright": "1.49.1", "pixelmatch": "6.0.0", "pngjs": "7.0.0" } }
