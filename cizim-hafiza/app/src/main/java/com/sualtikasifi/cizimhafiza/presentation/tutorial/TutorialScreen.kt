@@ -158,9 +158,10 @@ private fun CoachOverlay(
     ) {
         // The game's parchment-in-wood panel, the same as every other window.
         com.sualtikasifi.cizimhafiza.presentation.common.NinePatch(
-            res = R.drawable.league_card,
-            slicePx = 100,
-            edge = 24.dp,
+            // tut_card: league_card rebuilt tall (clean sides, vines only in the top corners), so the card no longer shows stretched vines on its sides
+            res = R.drawable.tut_card,
+            slicePx = 175,
+            edge = 40.dp,
             modifier = Modifier.widthIn(max = 460.dp).fillMaxWidth().padding(horizontal = 24.dp).springIn(key = coach.titleRes, fromY = 50, stepMs = 0)
         ) {
             Column(
