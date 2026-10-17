@@ -52,7 +52,8 @@ export async function renderOffline(c) {
   }
   $("os-title").textContent = x.title; $("os-go-t").textContent = x.start;
   const body = $("os-body"); body.replaceChildren();
-  const group = (label, items, cols, h, size) => setupGroup(body, u, label, items, cols, h, size);
+  const F = 1.16; // a little larger than the app draws it: on a phone browser the setup card looked small
+  const group = (label, items, cols, h, size) => setupGroup(body, u, label, items, cols, h * F, size * F);
   const again = () => renderOffline(c);
   group(x.count, COUNTS.map((n) => [String(n), sel.count === n, () => { sel.count = n; again(); }]), 5, 78, 37);
   group(x.mode, [["⏱️  " + x.normal, sel.mode === "NORMAL", () => { sel.mode = "NORMAL"; again(); }], ["🧘  " + x.relaxed, sel.mode === "RELAXED", () => { sel.mode = "RELAXED"; again(); }]], 2, 82, 29);
