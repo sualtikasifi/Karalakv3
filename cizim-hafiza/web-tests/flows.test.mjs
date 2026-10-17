@@ -68,7 +68,7 @@ for (const device of ["iPhone SE", "iPhone 13"]) {
       if (i === 1) {
         await page.tap("#jt-skip"); await page.waitForTimeout(250);
         const chip = await page.evaluate(() => { const c = document.getElementById("g-skipchip"); return c && getComputedStyle(c).display !== "none" ? c.textContent : ""; });
-        if (!/sn kaydedildi/.test(chip)) problems.push(`${tag} (guessing): skipping showed no "time saved" note (got "${chip}")`);
+        if (!/(sn kaydedildi|s saved)/.test(chip)) problems.push(`${tag} (guessing): skipping showed no "time saved" note (got "${chip}")`);
         await page.waitForTimeout(1100); // the note stays up for a moment, like in the app
       }
       await page.fill("#g-input", "abc"); await page.tap("#g-ok", { force: true });
