@@ -120,18 +120,27 @@ function place(el, x, y, w, h) {
 let fullH = 0, kbdH = 0;
 const typingEl = () => { const a = document.activeElement; return a && /^(INPUT|TEXTAREA)$/.test(a.tagName) ? a : null; };
 /** While a text field has the keyboard up, the painted scene keeps the size it had without it (kbdH = what is left of the window); layoutOnce then slides the scene so the field stays in view. */
+/** The notch and the home indicator (0 in a normal browser tab): the scene stays between them while the backdrop paints under them. */
+let insets = null, insetsAt = 0;
+function safeInsets() {
+  const n = performance.now(); if (insets && n - insetsAt < 400) return insets;
+  const e = document.getElementById("safe"), cs = e && getComputedStyle(e);
+  insets = cs ? { t: parseFloat(cs.paddingTop) || 0, b: parseFloat(cs.paddingBottom) || 0, l: parseFloat(cs.paddingLeft) || 0, r: parseFloat(cs.paddingRight) || 0 } : { t: 0, b: 0, l: 0, r: 0 };
+  insetsAt = n; return insets;
+}
 function viewport() {
-  const v = window.visualViewport, h = v ? v.height : innerHeight;
+  const v0 = window.visualViewport, si = safeInsets(), h = (v0 ? v0.height : innerHeight) - si.t - si.b;
+  const v = v0 && { width: v0.width - si.l - si.r, height: h, offsetLeft: v0.offsetLeft + si.l, offsetTop: v0.offsetTop + si.t };
   kbdH = 0;
   if (!typingEl()) fullH = Math.max(h, 0);
-  else if (fullH && h < fullH * 0.85 && !["guess", "result", "res2", "lvmap"].includes(current)) { kbdH = h; return { w: v ? v.width : innerWidth, h: fullH, ox: v ? v.offsetLeft : 0, oy: v ? v.offsetTop : 0 }; }
-  return { w: v ? v.width : innerWidth, h, ox: v ? v.offsetLeft : 0, oy: v ? v.offsetTop : 0 };
+  else if (fullH && h < fullH * 0.85 && !["guess", "result", "res2", "lvmap"].includes(current)) { kbdH = h; return { w: v ? v.width : innerWidth - si.l - si.r, h: fullH, ox: v ? v.offsetLeft : si.l, oy: v ? v.offsetTop : si.t }; }
+  return { w: v ? v.width : innerWidth - si.l - si.r, h, ox: v ? v.offsetLeft : si.l, oy: v ? v.offsetTop : si.t };
 }
 /** Art rows that must stay on screen for each scene: home is fixed by hand, the others come from where their widgets end (see layout). */
 const safeRows = { home: { t: HOME_SAFE_TOP, b: HOME_SAFE_TOP + HOME_SAFE_H } };
 const SAFE_TOP = 24, SAFE_BELOW = 60, SAFE_BELOW_OF = { settings: 16 };
 /** Scenes whose side gap is closed by stretching only the outer slice of the painted scene (the sides carry card fragments, so a mirror would repeat them); widgets and the middle keep their true proportions. */
-const SIDE_SLICE = {};
+const SIDE_SLICE = { account: 0.045 };
 /** Scenes with a painted wider version: the old scene sits inside it at (x0..x1) of w x h source pixels, so the gap beside the art shows more painting at true scale, nothing stretched. */
 const wideReady = new Set();
 const WIDE = {
@@ -617,7 +626,8 @@ async function startDuel(run, count = 10) {
 // of the day (2x), as in GameViewModel.effectiveXpMultiplier.
 let xpMult = 1, qmBonus = false, xpEventOnly = 1;
 async function begin(picked) {
-  xpEventOnly = await net.xpEventMultiplier().catch(() => 1);
+  // the XP event is a nice-to-have: a slow or blocked network (or a browser that will not start Firebase) must never keep a game from starting
+  xpEventOnly = await Promise.race([net.xpEventMultiplier().catch(() => 1), new Promise((r) => setTimeout(() => r(1), 1500))]);
   qmBonus = kind === "quick" && !!quickOpp && P.qmDay !== todayEpoch();
   xpMult = xpEventOnly * (qmBonus ? eco.QUICK_MATCH_DAILY_BONUS_MULTIPLIER : 1);
   round = picked.map((w) => ({ ...w, strokes: [], guess: "", correct: false, points: 0, ms: 0, xp: 0 }));

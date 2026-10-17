@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no,interactive-widget=resizes-content">
 <meta name="theme-color" content="#7a3a10">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Karalak">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Karalak - Oyna</title>
 <!-- cache: html/js/css/json are served with no-cache (see firebase.json) -->
 <base href="/oyna/">
@@ -49,7 +55,7 @@
 <!-- preload:end -->
 </head>
 <body>
-<div id="splash"><img src="img/splash_art.webp" alt=""><div id="sp-bar"><i></i></div></div>
+<div id="safe" aria-hidden="true"></div><div id="splash"><img src="img/splash_art.webp" alt=""><div id="sp-bar"><i></i></div></div>
 <script>
 // Brand splash (Android BrandSplash): the painted scene and a loading bar, 1 s the first time and 0.6 s after that - longer only while the first scene is still loading.
 (function () {
