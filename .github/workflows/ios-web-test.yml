@@ -25,6 +25,22 @@ jobs:
       - run: npx playwright install --with-deps webkit
       - name: Test on iPhone sizes (WebKit)
         run: npm test
+      # One page with every screen on every iPhone size, on a temporary preview address of the site (kept 7 days, replaced by the next run).
+      # The address is written at the end of the run's summary.
+      - name: Build the screenshot page
+        if: always()
+        run: node gallery.mjs
+      - name: Publish the screenshot page (preview)
+        if: always()
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/sa.json"
+          cd shots
+          echo '{"hosting":{"public":".","ignore":["firebase.json"]}}' > firebase.json
+          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json" npx -y firebase-tools@13 hosting:channel:deploy ios-shots --expires 7d --project karalak-b6e11 --json > "$RUNNER_TEMP/deploy.json" || cat "$RUNNER_TEMP/deploy.json"
+          URL=$(python3 -c "import json;d=json.load(open('$RUNNER_TEMP/deploy.json'));print(list(d['result'].values())[0]['url'])" 2>/dev/null)
+          echo "iPhone screens: $URL"
+          echo "### iPhone screenshots: $URL" >> "$GITHUB_STEP_SUMMARY"
+          rm -f "$RUNNER_TEMP/sa.json" firebase.json
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v4

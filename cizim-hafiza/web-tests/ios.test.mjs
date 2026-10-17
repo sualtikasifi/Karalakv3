@@ -52,7 +52,7 @@ for (const name of DEVICES) {
     console.log(`  ${name} ${id}: stage ${Math.round(m.l)}..${Math.round(m.r)} of ${Math.round(m.w)}`);
     if (m.sw > m.iw + 1) problems.push(`[${name}] ${id}: the page scrolls sideways (${m.sw} > ${m.iw})`);
     if (m.l < -1 || m.r > m.w + 1) problems.push(`[${name}] ${id}: the game area sticks out of the window (${Math.round(m.l)}..${Math.round(m.r)} of ${Math.round(m.w)})`);
-    await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_${id}.png`) });
+    await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_${id}.jpg`), type: "jpeg", quality: 72 });
   }
   // taps: a home tile and a rune must answer
   current = "tap"; await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(400);
