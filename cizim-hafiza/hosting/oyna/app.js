@@ -698,7 +698,10 @@ function renderHint(w) {
   const box = $("g-blanks"); box.replaceChildren();
   const groups = w.text.split(" ").map((g) => [...g].filter((ch) => /\p{L}|\d/u.test(ch)));
   if (jk.count) {
-    groups.forEach((g, gi) => { const e = document.createElement("div"); e.className = "grp"; g.forEach((ch, ci) => { const s = document.createElement("div"); s.className = "ch"; s.textContent = jk.first && gi === 0 && ci === 0 ? ch.toLocaleUpperCase(lang) : ""; e.append(s); }); box.append(e); });
+    groups.forEach((g, gi) => { const e = document.createElement("div"); e.className = "grp"; g.forEach((ch, ci) => { const s = document.createElement("div"); s.className = "ch"; s.textContent = jk.first && gi === 0 && ci === 0 ? ch.toLocaleUpperCase(lang) : ""; e.append(s); }); box.append(e);
+      // a word longer than the row shrinks its blanks to fit instead of running out of the drawing area
+      const room = box.clientWidth - 40 * u, need = (g.length * 54 - 8) * u; if (room > 0 && need > room) e.style.setProperty("--k", Math.max(0.45, room / need).toFixed(3));
+    });
   } else if (jk.first) {
     const e = document.createElement("div"); e.className = "txt ink"; e.style.cssText = "font-size:calc(var(--u)*40);background:#ffe9b0;border-radius:99px;padding:0 calc(var(--u)*26);height:calc(var(--u)*64)"; e.textContent = (lang === "tr" ? "İlk harf: " : "First letter: ") + groups[0][0].toLocaleUpperCase(lang); box.append(e);
   }

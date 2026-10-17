@@ -952,3 +952,4 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .aw-btns{display:flex;flex-direction:column;gap:calc(var(--u)*20)}
 .prim.alt{background:#fff;color:#f97316;box-shadow:inset 0 0 0 calc(var(--u)*5) #f97316}.prim.alt:active{transform:scale(.97);box-shadow:inset 0 0 0 calc(var(--u)*5) #f97316}
 .ao-ic{line-height:1.05;margin-bottom:calc(var(--u)*6)}
+#g-blanks .grp{gap:calc(var(--u)*8*var(--k,1))}#g-blanks .grp .ch{width:calc(var(--u)*46*var(--k,1));font-size:calc(var(--u)*46*var(--k,1))}
