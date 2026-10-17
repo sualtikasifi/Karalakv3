@@ -122,7 +122,7 @@ function viewport() { const v = window.visualViewport; return { w: v ? v.width :
 const safeRows = { home: { t: HOME_SAFE_TOP, b: HOME_SAFE_TOP + HOME_SAFE_H } };
 const SAFE_TOP = 24, SAFE_BELOW = 60, SAFE_BELOW_OF = { settings: 16 };
 /** Scenes whose gap beside the art is closed partly by a slight horizontal stretch (the sides carry card fragments, so a mirror would repeat them). */
-const STRETCH_MAX = { settings: 1.1 };
+const STRETCH_MAX = { settings: 1.1, home: 1.12 };
 function layoutOnce() {
   const { w: vw, h: vh, ox, oy } = viewport();
   const s = stage.style;
@@ -303,7 +303,7 @@ function paintEdges(W, H, gap, top) {
     const on = !!src && gap > 0.5 && gap <= W * 0.3;
     e.style.display = on ? "block" : "none";
     if (!on) continue;
-    const mirror = gap <= W * 0.16 && current !== "settings"; // a mirror of the scenery edge; the settings edge carries card fragments, so it gets a soft smear instead
+    const mirror = gap <= W * 0.16 && current !== "settings" && current !== "home"; // a mirror of the scenery edge; the settings edge carries card fragments, so it gets a soft smear instead
     const bw = mirror ? W + 6 : W * (gap + 1) / 3;
     e.style.transform = mirror ? "scaleX(-1)" : "none";
     e.style.filter = mirror ? "none" : "blur(22px) brightness(.9)";
