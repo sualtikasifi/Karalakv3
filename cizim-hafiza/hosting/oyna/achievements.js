@@ -32,7 +32,7 @@ export function layoutAchievements(c) {
   place($("ac-sign"), 140, 120, 555, 234);
   place($("ac-title"), 170, 120 + 234 * 0.415, 530, 234 * 0.36);
   const l = $("ac-list"); l.style.left = 12 * u / 1 + "px"; l.style.top = 343 * u + "px"; l.style.width = 817 * u + "px"; l.style.height = c.fillH() - 343 * u + "px";
-  place($("ac-dlg"), 0, 0, 841, 1870);
+  
 }
 
 export function renderAchievements(c) {
@@ -62,13 +62,14 @@ function claim(c, a) {
 
 function detail(c, a, done, claimed, v) {
   const { $, lang } = c, x = T[lang()], d = $("ac-dlg");
-  const u = c.u(), W = Math.min(400 / 841, 1) * 841 * u, k = W / 1016;
+  // AchievementDetailDialog: the card is min(screen - 2 x 18 dp, 400 dp) wide, which is 767 of the 841 units of the scene on a phone
+  const u = c.u(), W = 767 * u, k = W / 1016;
   d.classList.remove("hidden"); d.replaceChildren();
   const box = el("div", "acd"); box.style.cssText = `width:${W}px;height:${1394 * k}px;`;
   const p = (x0, y0, w, h) => `left:${x0 * k}px;top:${y0 * k}px;width:${w * k}px;height:${h * k}px;`;
   box.append(el("div", "acd-em", a.emoji)); box.lastChild.style.cssText = p(398, 160, 210, 210) + `font-size:${120 * k}px;opacity:${done ? 1 : .45}`;
   box.append(el("div", "acd-t", a[lang()][0])); box.lastChild.style.cssText = p(250, 372, 520, 100) + `font-size:${64 * k}px`;
-  const body = el("div", "acd-b"); body.style.cssText = p(100, 570, 820, 740) + `font-size:${34 * k}px`;
+  const body = el("div", "acd-b"); body.style.cssText = p(100, 570, 820, 740) + `font-size:${38 * k}px`;
   body.innerHTML = `<div class="tag ${done ? "ok" : ""}">${claimed ? x.claimed : done ? x.unlocked : x.locked}</div>${done ? "" : `<div class="pr">${Math.min(v, a.t)}/${a.t}</div>`}<div class="ds"><small>${done ? x.cond : x.hint}</small>${a[lang()][1]}</div><div class="rwp">🏆 ${a.gold ? x.gold(reward(a)) : x.xp(reward(a))}</div>`;
   const btn = el("button", "pill orange small", `<span>${done && !claimed ? x.claim : x.close}</span>`); btn.style.width = "62%"; btn.style.height = 120 * k + "px";
   btn.onclick = () => { d.classList.add("hidden"); if (done && !claimed) claim(c, a); };
