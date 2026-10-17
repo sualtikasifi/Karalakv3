@@ -712,7 +712,12 @@ function showFeedback(w) {
 function hideFeedback() { $("guess").classList.remove("fb"); const f = $("g-fb"); if (f) f.replaceChildren(); }
 function flash(ok) { const f = $("g-flash"); f.textContent = ok ? "✅" : "❌"; f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); }
 // pressing a button must not take the focus from the answer field, or the keyboard drops (and comes back with the next word)
-for (const id of ["g-ok", "jt-first", "jt-count", "jt-skip"]) $(id).addEventListener("pointerdown", (e) => e.preventDefault());
+// iOS Safari still moves the focus on touch/mouse events after a prevented pointerdown, so those are stopped too, and a focus that lands anyway goes back to the field
+for (const id of ["g-ok", "jt-first", "jt-count", "jt-skip"]) {
+  const b = $(id);
+  for (const t of ["pointerdown", "mousedown", "touchstart"]) b.addEventListener(t, (e) => e.preventDefault(), { passive: false });
+  b.addEventListener("focus", () => { const i = $("g-input"); if (i && $("guess").classList.contains("on")) i.focus({ preventScroll: true }); });
+}
 $("g-form").onsubmit = (e) => { e.preventDefault(); answer($("g-input").value); };
 let lockedVal = "";
 $("g-input").addEventListener("beforeinput", (e) => { if (locked) e.preventDefault(); }); // typing during the tick is swallowed
