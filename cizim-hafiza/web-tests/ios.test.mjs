@@ -5,7 +5,9 @@
 //   - the home screen's tiles or the Runes not answering a tap
 // It also saves one screenshot per screen and device (web-tests/shots), which the workflow uploads.
 // Run locally:  cd cizim-hafiza/web-tests && npm i && npx playwright install webkit && npm test
-import { webkit, devices } from "playwright";
+import { webkit, chromium, devices } from "playwright";
+import pixelmatch from "pixelmatch";
+import { PNG } from "pngjs";
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -25,11 +27,17 @@ const port = server.address().port, base = `http://127.0.0.1:${port}/oyna/`;
 const fake = fs.readFileSync(path.join(here, "fakefb_mod.js"), "utf8");
 const DEVICES = ["iPhone SE", "iPhone 13", "iPhone 15 Pro Max"];
 const SCREENS = ["home", "store", "settings", "ach", "league", "runes", "friends", "account", "report", "onl", "offs", "duels", "welcome", "draw", "guess"];
-const problems = [];
+const problems = [], diffs = [];
 const seed = { nick: "Test", xp: 300, gold: 500, tutorialDone: true, login: { streak: 1, last: 99999 } };
 
 for (const name of DEVICES) {
   const browser = await webkit.launch();
+  const cbrowser = await chromium.launch();
+  const cctx = await cbrowser.newContext({ ...devices[name], locale: "tr-TR", userAgent: devices[name].userAgent }); // the same screen size, drawn by Chrome's engine
+  const cpage = await cctx.newPage();
+  await cpage.route(/gstatic\.com\/firebasejs/, (r) => r.fulfill({ contentType: "text/javascript", body: fake }));
+  await cpage.addInitScript((s) => { localStorage.setItem("player", JSON.stringify(s)); }, seed);
+  await cpage.goto(base); await cpage.waitForFunction(() => !document.getElementById("splash"), null, { timeout: 20000 }).catch(() => {}); await cpage.waitForTimeout(800);
   const ctx = await browser.newContext({ ...devices[name], locale: "tr-TR" });
   let page = null, current = "";
   const open = async () => {
@@ -53,6 +61,16 @@ for (const name of DEVICES) {
     if (m.sw > m.iw + 1) problems.push(`[${name}] ${id}: the page scrolls sideways (${m.sw} > ${m.iw})`);
     if (m.l < -1 || m.r > m.w + 1) problems.push(`[${name}] ${id}: the game area sticks out of the window (${Math.round(m.l)}..${Math.round(m.r)} of ${Math.round(m.w)})`);
     await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_${id}.jpg`), type: "jpeg", quality: 72 });
+    // the same screen in Chrome's engine; the share of pixels that differ shows what is Safari-only
+    try {
+      await cpage.evaluate((i) => window.__karalak.show(i), id); await cpage.waitForTimeout(500);
+      const a = PNG.sync.read(await page.screenshot()), b = PNG.sync.read(await cpage.screenshot());
+      if (a.width === b.width && a.height === b.height) {
+        const d = new PNG({ width: a.width, height: a.height }), n = pixelmatch(a.data, b.data, d.data, a.width, a.height, { threshold: 0.25 });
+        const pct = Math.round(n / (a.width * a.height) * 1000) / 10; diffs.push({ name, id, pct });
+        fs.writeFileSync(path.join(shots, `${name.replace(/\W+/g, "_")}_${id}_diff.jpg`.replace(".jpg", ".png")), PNG.sync.write(d));
+      }
+    } catch (e) { console.log(`  (no Chrome comparison for ${id}: ${e.message.split("\n")[0]})`); }
   }
   // taps: a home tile and a rune must answer
   current = "tap"; await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(400);
@@ -62,8 +80,11 @@ for (const name of DEVICES) {
   await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(300);
   await page.tap("#h-runes").catch(() => {}); await page.waitForTimeout(1200);
   const rune = await page.$(".ru-n.aff"); if (rune) { await rune.tap().catch(() => {}); await page.waitForTimeout(500); if (!(await page.$(".ru-n.sel"))) problems.push(`[${name}] tapping a rune did not select it`); }
-  await browser.close();
+  await browser.close(); await cbrowser.close();
 }
 server.close();
+fs.writeFileSync(path.join(shots, "diffs.json"), JSON.stringify(diffs));
+console.log("Safari vs Chrome (share of different pixels): " + diffs.filter((d) => d.pct >= 5).map((d) => `${d.name}/${d.id} ${d.pct}%`).join(", "));
+for (const d of diffs) if (d.pct > 45) problems.push(`[${d.name}] ${d.id}: looks very different in Safari than in Chrome (${d.pct}% of the pixels)`);
 if (problems.length) { console.error("\nPROBLEMS:\n" + problems.map((p) => " - " + p).join("\n")); process.exit(1); }
 console.log(`OK: ${DEVICES.length} devices x ${SCREENS.length} screens, taps answered, no errors.`);
