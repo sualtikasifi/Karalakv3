@@ -137,7 +137,7 @@ function layoutOnce() {
   s.top = oy + (H <= vh ? (vh - H) / 2 : sf ? Math.min(0, Math.max(vh - H, vh / 2 - (sf.t + sf.b) / 2 * u)) : (vh - H) / 2) + "px";
   stage.style.setProperty("--u", u + "px");
   paintEdges(W, H, (vw - W) / 2, parseFloat(s.top));
-  place($("tut-spot"), 0, 0, 841, 1870); place($("tut-card"), 70, 250, 700, 360);
+  if (!$("tut-spot").classList.contains("coach")) place($("tut-card"), 70, 250, 700, 360);
   if (current === "home") {
     place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214); place($("h-rbadge"), 682, 84, 70, 70);
     place($("h-pen"), 266, 260, 243, 62);
@@ -455,18 +455,21 @@ const TUT = { drawSeconds: [0, 12, 10], guessSeconds: 10, stockStart: 3 };
 let tutStock = { FIRST_LETTER: 3, LETTER_COUNT: 3 }, tutSeen = {}, tutSpot = null;
 const jokerN = (k) => (kind === "tutorial" ? tutStock[k] || 0 : P.jokers[k] || 0);
 const jokerSpend = (k) => { if (kind === "tutorial") tutStock[k]--; else { P.jokers[k]--; saveP(); } };
-/** One coaching card on the welcome scene; [cont] runs on its button. The intro card alone offers "skip". */
-function coachCard(title, body, button, cont, skip = false) {
-  $("w-title").textContent = S(title); $("w-body").textContent = S(body); $("w-go-t").textContent = S(button);
-  $("w-skip").style.display = skip ? "" : "none"; $("w-skip").textContent = S("tutorial_skip");
-  // the scene paints a second, empty pill for "skip"; the cards that do not offer it use a copy of the scene without it
-  const bg = document.querySelector("#welcome > img.bg"), src = skip ? "img/bg_tutorial_welcome.webp" : "img/bg_tutorial_coach.webp";
-  bg.dataset.src = src; bg.src = src;
-  $("w-body").style.fontSize = S(body).length > 170 ? "calc(var(--u)*25)" : "";
-  show("welcome");
-  $("w-go").onclick = cont;
+/** The opening card keeps the welcome scene; [cont] runs on its button. */
+function introCard(cont) {
+  $("w-title").textContent = S("tutorial_intro_title"); $("w-body").textContent = S("tutorial_intro_body"); $("w-go-t").textContent = S("tutorial_intro_button");
+  $("w-skip").style.display = ""; $("w-skip").textContent = S("tutorial_skip"); $("w-body").style.fontSize = "";
+  const bg = document.querySelector("#welcome > img.bg"); bg.dataset.src = "img/bg_tutorial_welcome.webp"; bg.src = "img/bg_tutorial_welcome.webp";
+  show("welcome"); $("w-go").onclick = cont;
 }
-function playTutorial() { coachCard("tutorial_intro_title", "tutorial_intro_body", "tutorial_intro_button", startTutorial, true); $("w-skip").onclick = () => show("home"); }
+/** Every later card is a window over the screen the player is on (dimmed behind it), not a different scene. [cont] runs on its button. */
+function coachCard(title, body, button, cont) {
+  const sp = $("tut-spot"); document.activeElement?.blur?.();
+  $("tut-t").textContent = S(title); $("tut-b").textContent = S(body); $("tut-go-t").textContent = S(button);
+  $("tut-card").style.cssText = ""; sp.classList.add("on", "coach"); $("tut-go").style.display = "";
+  $("tut-go").onclick = () => { sp.classList.remove("on", "coach"); $("tut-go").style.display = "none"; cont(); };
+}
+function playTutorial() { introCard(startTutorial); $("w-skip").onclick = () => show("home"); }
 async function startTutorial() {
   tutStock = { FIRST_LETTER: TUT.stockStart, LETTER_COUNT: TUT.stockStart }; tutSeen = {}; tutSpot = null;
   await ensureWords(); kind = "tutorial"; levelRun = null; relaxed = false;

@@ -864,8 +864,13 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 /* RankLevelLabel: level and rank take turns every 5 s */
 .lg-nm small.rl{display:inline-grid;vertical-align:baseline}.lg-nm small.rl i{grid-area:1/1;font-style:normal;opacity:0;animation:owr 10s infinite}.lg-nm small.rl i+i{animation-delay:5s}
 
-#tut-spot{position:absolute;display:none;background:#000a;z-index:8}#tut-spot.on{display:block}
+#tut-spot{position:absolute;inset:0;display:none;background:#000a;z-index:8}#tut-spot.on{display:block}
 #tut-card{position:absolute;background:linear-gradient(#fff6e2,#ffe3b0);border:calc(var(--u)*8) solid #b5510f;border-radius:calc(var(--u)*36);padding:calc(var(--u)*28) calc(var(--u)*34);text-align:center;color:var(--ink);display:flex;flex-direction:column;justify-content:center;gap:calc(var(--u)*14)}
 #tut-card b{font-size:calc(var(--u)*46)}#tut-card span{font-size:calc(var(--u)*31);font-weight:600;line-height:1.25}
 .jt.spot{position:absolute;z-index:9;animation:spotp 1s infinite alternate;box-shadow:0 0 0 calc(var(--u)*8) #ffd25a,0 0 calc(var(--u)*40) #ffd25a}
 @keyframes spotp{to{transform:scale(1.06)}}
+#tut-spot.coach{display:flex;align-items:center;justify-content:center}
+#tut-spot.coach #tut-card{position:relative;left:auto;top:auto;width:calc(var(--u)*690);height:auto;padding:calc(var(--u)*44) calc(var(--u)*38);gap:calc(var(--u)*24)}
+#tut-spot.coach #tut-card b{font-size:calc(var(--u)*52)}#tut-spot.coach #tut-card span{font-size:calc(var(--u)*33)}
+#tut-go{position:relative;width:100%;height:calc(var(--u)*118);margin-top:calc(var(--u)*10);font-size:calc(var(--u)*42)}
+#tut-go{flex:none}#tut-spot.coach #tut-card{flex:none}
