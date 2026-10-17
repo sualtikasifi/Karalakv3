@@ -128,6 +128,8 @@ const wideReady = new Set();
 const WIDE = {
   home: { src: "img/bg_home_wide.webp", x0: 92, x1: 844, y0: 0, w: 940, h: 1672 },
   settings: { src: "img/bg_settings_wide.webp", x0: 109, x1: 831, y0: 4, w: 941, h: 1672 },
+  offs: { src: "img/bg_offline_wide.webp", x0: 114, x1: 840, y0: -6, w: 941, h: 1672 },
+  onw: { src: "img/bg_lobby_wide.webp", x0: 90, x1: 792, y0: 0, w: 941, h: 1672 },
 };
 function layoutOnce() {
   const { w: vw, h: vh, ox, oy } = viewport();
