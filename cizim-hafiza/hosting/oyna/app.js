@@ -177,7 +177,7 @@ function layoutOnce() {
   } else if (current === "welcome") {
     place($("w-title"), 126, 830, 590, 68); place($("w-body"), 104, 934, 634, 200); place($("w-go"), 125, 1170, 575, 136); place($("w-skip"), 200, 1334, 442, 90);
   } else if (current === "runes") {
-    layoutRunes(ctx); renderRunes(ctx);
+    layoutRunes(ctx); renderRunes(ctx, !freshScreen);
   } else if (current === "report") {
     layoutReport(ctx); renderReport(ctx, !reportLoaded); reportLoaded = true;
   } else if (current === "brk") {
@@ -274,20 +274,24 @@ addEventListener("resize", layout);
 window.visualViewport?.addEventListener("resize", layout);
 // A soft keyboard may pan the visual viewport instead of shrinking the page: follow it, and keep the page itself from scrolling away.
 window.visualViewport?.addEventListener("scroll", () => { window.scrollTo(0, 0); layout(); });
-document.addEventListener("focusin", () => { for (const ms of [120, 350, 700]) setTimeout(() => { window.scrollTo(0, 0); layout(); }, ms); });
-document.addEventListener("focusout", () => { for (const ms of [120, 350]) setTimeout(layout, ms); });
+// only a text field raises the keyboard: tapping a plain button must not re-lay-out (and so reset) the scene
+const isTyping = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || "") || e.target?.isContentEditable;
+document.addEventListener("focusin", (e) => { if (!isTyping(e)) return; for (const ms of [120, 350, 700]) setTimeout(() => { window.scrollTo(0, 0); layout(); }, ms); });
+document.addEventListener("focusout", (e) => { if (!isTyping(e)) return; for (const ms of [120, 350]) setTimeout(layout, ms); });
 
 const SPK = '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.47 4.47 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
 function paintMusic() { for (const id of ["d-music", "g-music"]) { const b = $(id); b.innerHTML = SPK; b.classList.toggle("off", !(P.prefs.s0 && P.prefs.s1)); } }
 for (const id of ["d-music", "g-music"]) $(id).onclick = () => { P.prefs.s1 = !P.prefs.s1; saveP(); paintMusic(); syncMusic(); };
 // Pictures of screens that are not showing are only fetched when the screen first opens (the first load used to pull 3.7 MB).
 function loadImgs(id) { const s = document.getElementById(id); if (!s) return; s.querySelectorAll("img[data-src]").forEach((i) => { i.src = i.dataset.src; i.removeAttribute("data-src"); }); }
+let freshScreen = true;
 function show(id) {
+  freshScreen = true;
   loadImgs(id);
   current = id; if (typeof paintMusic === "function" && P.prefs) paintMusic();
   for (const s of document.querySelectorAll(".screen")) s.classList.toggle("on", s.id === id);
   paintBackdrop(id);
-  layout(); paintTeamPill();
+  layout(); freshScreen = false; paintTeamPill();
 }
 /** A thin gap beside the art is closed with a mirror of the scene's own edge, so vines and wood carry on seamlessly; wider gaps keep the soft backdrop. */
 function paintEdges(W, H, gap, top) {
