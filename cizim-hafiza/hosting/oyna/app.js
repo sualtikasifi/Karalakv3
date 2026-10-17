@@ -122,7 +122,9 @@ function viewport() { const v = window.visualViewport; return { w: v ? v.width :
 const safeRows = { home: { t: HOME_SAFE_TOP, b: HOME_SAFE_TOP + HOME_SAFE_H } };
 const SAFE_TOP = 24, SAFE_BELOW = 60, SAFE_BELOW_OF = { settings: 16 };
 /** Scenes whose side gap is closed by stretching only the outer slice of the painted scene (the sides carry card fragments, so a mirror would repeat them); widgets and the middle keep their true proportions. */
-const SIDE_SLICE = { settings: 0.1, home: 0.1 };
+const SIDE_SLICE = { settings: 0.1 };
+/** Scenes with a painted wider version: the old scene sits inside it at (x0..x1) of w x h source pixels, so the gap beside the art shows more painting at true scale, nothing stretched. */
+const WIDE = { home: { src: "img/bg_home_wide.webp", x0: 92, x1: 844, w: 940, h: 1672 } };
 function layoutOnce() {
   const { w: vw, h: vh, ox, oy } = viewport();
   const s = stage.style;
@@ -297,13 +299,20 @@ function show(id) {
 function paintEdges(W, H, gap, top) {
   const bgEl = document.querySelector("#" + current + " > img.bg");
   const src = bgEl && (bgEl.getAttribute("src") || bgEl.dataset.src);
-  const slice = SIDE_SLICE[current] || 0, sw = slice * W;
+  const slice = SIDE_SLICE[current] || 0, sw = slice * W, wide = WIDE[current];
   let sliced = false;
   for (const side of ["l", "r"]) {
     const e = $("edge-" + side); if (!e) continue;
     const on = !!src && gap > 0.5 && gap <= W * 0.3;
     e.style.display = on ? "block" : "none";
     if (!on) continue;
+    if (wide) {
+      const k = H / wide.h, ew = gap + 1;
+      e.style.transform = "none"; e.style.filter = "none";
+      const bx = side === "l" ? gap - wide.x0 * k : 1 - wide.x1 * k;
+      e.style.cssText += `;width:${ew}px;top:${top}px;height:${H}px;background-image:url("${wide.src}");background-size:${wide.w * k}px ${H}px;background-position:${bx}px top;${side === "l" ? "left:0" : "right:0"}`;
+      continue;
+    }
     if (slice) {
       // the outer slice of the scene is drawn here, stretched to also cover the gap; the stage's own copy of that slice is clipped away
       sliced = true;
