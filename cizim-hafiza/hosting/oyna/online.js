@@ -293,7 +293,7 @@ async function renderOnlineResult(c, again) {
     players: roundPlayers, left, myUid: myId, xp: c.lastXp || 0, gold: c.lastGold || 0, pen: c.P.pen, wordCount: room.wordCount, sel: olSel,
     votes, requested: olRequested, blocked: false, ring: cc.ring, itemsFor: (u) => olItems[u] || [], select: (u) => { olSel = u; },
     dock: () => { const w = document.createElement("div"); w.className = "cd-wrap1"; w.append(buildDock(cc, code, () => room)); return w; },
-    teamMode: !!room.teamMode, onHome: () => { leaveLobby(c); setTimeout(() => c.homeGain && c.homeGain(c.lastGold, c.lastXp), 60); },
+    teamMode: !!room.teamMode, onHome: () => { leaveLobby(c); const g = c.lastGold || 0, x = c.lastXp || 0; c.lastGold = 0; c.lastXp = 0; setTimeout(() => c.homeGain && c.homeGain(g, x), 60); },
     onRematch: async () => { olRequested = true; try { await net.voteRematch(code); } catch {} renderOnlineResult(c, true); },
   });
 }
