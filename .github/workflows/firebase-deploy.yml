@@ -67,6 +67,14 @@ jobs:
       # rather than a GitHub Pages project site: a project site's app-ads.txt
       # would live under a /repo-name/ path, and ad-fraud crawlers check the
       # bare domain root, never a subpath.
+      # The scripts and the stylesheet of the web game are minified on the runner only (the repository keeps the readable sources):
+      # about 30% less to download for every visitor.
+      - name: Minify web game scripts
+        run: |
+          cd hosting/oyna
+          for f in *.js; do npx -y esbuild@0.21.5 "$f" --minify --target=es2020 --allow-overwrite --outfile="$f" --log-level=error; done
+          npx -y esbuild@0.21.5 style.css --minify --allow-overwrite --outfile=style.css --log-level=error
+
       - name: Deploy rules, indexes and hosting
         run: npx firebase-tools@latest deploy --only firestore:rules,firestore:indexes,hosting --project karalak-b6e11 --non-interactive
         env:
