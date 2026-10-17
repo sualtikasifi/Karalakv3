@@ -84,7 +84,7 @@ const ctx = {
   sfx, paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
   pickRoomWords: (r) => pickRoomWords(r), startOffline: (o) => startOffline(o),
-  startTutorial: () => startTutorial(), openDuel: (opp) => openCreateDuel(ctx, opp), startDuelChallenge: (opp, n) => startDuel({ mode: "new", opp }, n), playDuel: (d) => startDuel({ mode: "play", duel: d }),
+  startTutorial: () => playTutorial(), openDuel: (opp) => openCreateDuel(ctx, opp), startDuelChallenge: (opp, n) => startDuel({ mode: "new", opp }, n), playDuel: (d) => startDuel({ mode: "play", duel: d }),
   syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
@@ -116,12 +116,12 @@ function place(el, x, y, w, h) {
   if (w != null) s.width = w * u + "px";
   if (h != null) s.height = h * u + "px";
 }
-function viewport() { const v = window.visualViewport; return { w: v ? v.width : innerWidth, h: v ? v.height : innerHeight }; }
+function viewport() { const v = window.visualViewport; return { w: v ? v.width : innerWidth, h: v ? v.height : innerHeight, ox: v ? v.offsetLeft : 0, oy: v ? v.offsetTop : 0 }; }
 /** Art rows that must stay on screen for each scene: home is fixed by hand, the others come from where their widgets end (see layout). */
 const safeRows = { home: { t: HOME_SAFE_TOP, b: HOME_SAFE_TOP + HOME_SAFE_H } };
 const SAFE_TOP = 24, SAFE_BELOW = 60;
 function layoutOnce() {
-  const { w: vw, h: vh } = viewport();
+  const { w: vw, h: vh, ox, oy } = viewport();
   const s = stage.style;
   let W, H;
   const sf = safeRows[current];
@@ -133,10 +133,11 @@ function layoutOnce() {
   }
   else { W = Math.min(vw, vh * ART_W / ART_H); H = W * ART_H / ART_W; }
   u = W / ART_W;
-  s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + "px";
-  s.top = (H <= vh ? (vh - H) / 2 : sf ? Math.min(0, Math.max(vh - H, vh / 2 - (sf.t + sf.b) / 2 * u)) : (vh - H) / 2) + "px";
+  s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + ox + "px";
+  s.top = oy + (H <= vh ? (vh - H) / 2 : sf ? Math.min(0, Math.max(vh - H, vh / 2 - (sf.t + sf.b) / 2 * u)) : (vh - H) / 2) + "px";
   stage.style.setProperty("--u", u + "px");
   paintEdges(W, H, (vw - W) / 2, parseFloat(s.top));
+  place($("tut-spot"), 0, 0, 841, 1870); place($("tut-card"), 70, 250, 700, 360);
   if (current === "home") {
     place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214); place($("h-rbadge"), 682, 84, 70, 70);
     place($("h-pen"), 266, 260, 243, 62);
@@ -267,6 +268,10 @@ function layout() {
 }
 addEventListener("resize", layout);
 window.visualViewport?.addEventListener("resize", layout);
+// A soft keyboard may pan the visual viewport instead of shrinking the page: follow it, and keep the page itself from scrolling away.
+window.visualViewport?.addEventListener("scroll", () => { window.scrollTo(0, 0); layout(); });
+document.addEventListener("focusin", () => { for (const ms of [120, 350, 700]) setTimeout(() => { window.scrollTo(0, 0); layout(); }, ms); });
+document.addEventListener("focusout", () => { for (const ms of [120, 350]) setTimeout(layout, ms); });
 
 const SPK = '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.47 4.47 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
 function paintMusic() { for (const id of ["d-music", "g-music"]) { const b = $(id); b.innerHTML = SPK; b.classList.toggle("off", !(P.prefs.s0 && P.prefs.s1)); } }
@@ -444,8 +449,27 @@ async function startLevel(w, l) {
   begin(picks.sort(() => Math.random() - 0.5));
 }
 const TUT_WORDS = { tr: ["kitap", "köpek", "elma"], en: ["book", "dog", "apple"] };
+// TutorialViewModel.kt, ported: word 1 untimed, word 2 on a 12 s clock, word 3 on 10 s; guesses on 10 s with the two jokers taught one by one
+// (the clock stands still until the joker is used); coaching cards between the turns; practice jokers that never touch the real stock.
+const TUT = { drawSeconds: [0, 12, 10], guessSeconds: 10, stockStart: 3 };
+let tutStock = { FIRST_LETTER: 3, LETTER_COUNT: 3 }, tutSeen = {}, tutSpot = null;
+const jokerN = (k) => (kind === "tutorial" ? tutStock[k] || 0 : P.jokers[k] || 0);
+const jokerSpend = (k) => { if (kind === "tutorial") tutStock[k]--; else { P.jokers[k]--; saveP(); } };
+/** One coaching card on the welcome scene; [cont] runs on its button. The intro card alone offers "skip". */
+function coachCard(title, body, button, cont, skip = false) {
+  $("w-title").textContent = S(title); $("w-body").textContent = S(body); $("w-go-t").textContent = S(button);
+  $("w-skip").style.display = skip ? "" : "none"; $("w-skip").textContent = S("tutorial_skip");
+  // the scene paints a second, empty pill for "skip"; the cards that do not offer it use a copy of the scene without it
+  const bg = document.querySelector("#welcome > img.bg"), src = skip ? "img/bg_tutorial_welcome.webp" : "img/bg_tutorial_coach.webp";
+  bg.dataset.src = src; bg.src = src;
+  $("w-body").style.fontSize = S(body).length > 170 ? "calc(var(--u)*25)" : "";
+  show("welcome");
+  $("w-go").onclick = cont;
+}
+function playTutorial() { coachCard("tutorial_intro_title", "tutorial_intro_body", "tutorial_intro_button", startTutorial, true); $("w-skip").onclick = () => show("home"); }
 async function startTutorial() {
-  await ensureWords(); kind = "tutorial"; levelRun = null; relaxed = true;
+  tutStock = { FIRST_LETTER: TUT.stockStart, LETTER_COUNT: TUT.stockStart }; tutSeen = {}; tutSpot = null;
+  await ensureWords(); kind = "tutorial"; levelRun = null; relaxed = false;
   const byText = new Map(words.map((w) => [w.text.toLowerCase(), w]));
   const picked = TUT_WORDS[lang].map((s, i) => byText.get(s) || { id: 900000 + i, text: s, difficulty: "EASY" });
   begin(picked);
@@ -533,25 +557,36 @@ async function begin(picked) {
 }
 function nextDraw() {
   clearInterval(dTimer);
-  if (idx >= round.length) { idx = 0; return startBreak(ctx, nextGuess); }
+  if (idx >= round.length) {
+    idx = 0;
+    if (kind === "tutorial") return coachCard("tutorial_guess_title", "tutorial_guess_body", "tutorial_generic_button", nextGuess);
+    return startBreak(ctx, nextGuess);
+  }
+  if (kind === "tutorial" && idx > 0 && !tutSeen["d" + idx]) {
+    tutSeen["d" + idx] = true;
+    return idx === 1 ? coachCard("tutorial_timed_title", "tutorial_timed_body", "tutorial_generic_button", nextDraw)
+      : coachCard("tutorial_last_word_title", "tutorial_last_word_body", "tutorial_generic_button", nextDraw);
+  }
   const w = round[idx];
+  const tut = kind === "tutorial", untimed = tut && idx === 0;
   show("draw");
+  $("d-ring").style.visibility = untimed ? "hidden" : "";
   // Normal mode shows the time left for the whole drawing phase beside the word number (the stopwatch pill of the app).
   const SW = '<svg class="sw" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="8" fill="#e8650f"/><path d="M12 8.5v5l3 2" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="9" y="2" width="6" height="2.6" rx="1" fill="#e8650f"/></svg>';
   const restAfter = () => round.slice(idx + 1).reduce((s, q) => s + (DRAW_SECONDS[q.difficulty] ?? 7), 0);
-  const paintProg = (left) => { $("d-prog").innerHTML = relaxed ? `${idx + 1} / ${round.length}` : `${SW}${Math.floor((left + restAfter()) / 60)}:${String((left + restAfter()) % 60).padStart(2, "0")} · ${idx + 1}/${round.length}`; };
+  const paintProg = (left) => { $("d-prog").innerHTML = relaxed || tut ? `${idx + 1} / ${round.length}` : `${SW}${Math.floor((left + restAfter()) / 60)}:${String((left + restAfter()) % 60).padStart(2, "0")} · ${idx + 1}/${round.length}`; };
   $("d-word").style.animation = "none"; void $("d-word").offsetWidth; $("d-word").style.animation = "";
   $("d-word").textContent = w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1);
   const wl = w.text.length; $("d-word").style.fontSize = Math.max(40, Math.min(70, 425 * 0.97 / (wl * 0.5))) * u + "px";
   $("d-line").style.animation = "none"; void $("d-line").offsetWidth; $("d-line").style.animation = "";
-  let total = DRAW_SECONDS[w.difficulty] ?? 7; let left = total, usedTime = false;
+  let total = tut ? TUT.drawSeconds[idx] : (DRAW_SECONDS[w.difficulty] ?? 7); let left = total, usedTime = false;
   const arc = $("d-arc"); arc.style.transition = "none"; setRing($("d-ring"), arc, $("d-time"), left, total); void arc.getBoundingClientRect(); arc.style.transition = "";
   paintProg(left);
   tool = "pen"; refreshTools(); paintLive();
-  const tj = $("d-timej"), refreshTj = () => { const n = P.jokers.EXTRA_TIME || 0; $("d-timej-n").textContent = n; $("d-timej-t").textContent = S("drawing_time_joker"); tj.classList.toggle("dis", usedTime || n <= 0); tj.style.display = relaxed ? "none" : ""; };
+  const tj = $("d-timej"), refreshTj = () => { const n = P.jokers.EXTRA_TIME || 0; $("d-timej-n").textContent = n; $("d-timej-t").textContent = S("drawing_time_joker"); tj.classList.toggle("dis", usedTime || n <= 0); tj.style.display = relaxed || tut ? "none" : ""; };
   refreshTj();
   tj.onclick = () => { if (usedTime || (P.jokers.EXTRA_TIME || 0) <= 0) return; usedTime = true; P.jokers.EXTRA_TIME--; saveP(); left += 10; total += 10; setRing($("d-ring"), arc, $("d-time"), left, total); sfx.buy(); refreshTj(); };
-  if (!relaxed) dTimer = setInterval(() => {
+  if (!relaxed && !untimed) dTimer = setInterval(() => {
     left--; setRing($("d-ring"), arc, $("d-time"), left, total); paintProg(Math.max(0, left));
     if (left > 0 && left <= 3) sfx.tick();
     if (left <= 0) finishDraw();
@@ -571,18 +606,25 @@ function renderHint(w) {
   }
 }
 function refreshJokers(w) {
-  const f = P.jokers.FIRST_LETTER || 0, c = P.jokers.LETTER_COUNT || 0, x = t();
+  const f = jokerN("FIRST_LETTER"), c = jokerN("LETTER_COUNT"), x = t(), tut = kind === "tutorial";
   $("jt-ad").querySelector("span").textContent = x.hintT; $("jt-ad").classList.add("dis");
   $("jt-first").querySelector("span").textContent = S("joker_first_letter_short"); $("jt-first").querySelector("i").textContent = f; $("jt-first").classList.toggle("dis", jk.first || f <= 0);
   $("jt-count").querySelector("span").textContent = S("joker_letter_count_short"); $("jt-count").querySelector("i").textContent = c; $("jt-count").classList.toggle("dis", jk.count || c <= 0);
-  $("jt-skip").querySelector("span").textContent = S("skip_guess"); $("jt-skip").classList.toggle("dis", !!w.skipped || idx >= round.length - 1);
+  $("jt-skip").querySelector("span").textContent = S("skip_guess"); $("jt-skip").classList.toggle("dis", tut || !!w.skipped || idx >= round.length - 1);
 }
-$("jt-first").onclick = () => { const w = round[idx]; if (jk.first || (P.jokers.FIRST_LETTER || 0) <= 0) return; jk.first = true; P.jokers.FIRST_LETTER--; saveP(); sfx.buy(); renderHint(w); refreshJokers(w); };
-$("jt-count").onclick = () => { const w = round[idx]; if (jk.count || (P.jokers.LETTER_COUNT || 0) <= 0) return; jk.count = true; P.jokers.LETTER_COUNT--; saveP(); sfx.buy(); renderHint(w); refreshJokers(w); };
+$("jt-first").onclick = () => { const w = round[idx]; if (jk.first || jokerN("FIRST_LETTER") <= 0 || (tutSpot && tutSpot.joker !== "FIRST_LETTER")) return; jk.first = true; jokerSpend("FIRST_LETTER"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
+$("jt-count").onclick = () => { const w = round[idx]; if (jk.count || jokerN("LETTER_COUNT") <= 0 || (tutSpot && tutSpot.joker !== "LETTER_COUNT")) return; jk.count = true; jokerSpend("LETTER_COUNT"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
 $("jt-skip").onclick = () => { const w = round[idx]; if (w.skipped || idx >= round.length - 1) return; w.skipped = true; round.push(round.splice(idx, 1)[0]); nextGuess(); };
+function endSpot() {
+  if (!tutSpot) return;
+  const go = tutSpot.go; tutSpot = null;
+  $("tut-spot").classList.remove("on"); for (const id of ["jt-first", "jt-count"]) $(id).classList.remove("spot");
+  go();
+}
 function nextGuess() {
   clearInterval(gTimer);
   if (idx >= round.length) return finish();
+  if (kind === "tutorial" && idx === 2 && !tutSeen.free) { tutSeen.free = true; return coachCard("tutorial_joker_free_title", "tutorial_joker_free_body", "tutorial_generic_button", nextGuess); }
   const w = round[idx];
   show("guess");
   jk = { first: false, count: false }; renderHint(w); refreshJokers(w);
@@ -590,7 +632,7 @@ function nextGuess() {
   $("g-xp").textContent = `★ +${round.reduce((s, q) => s + (q.xp || 0), 0)} XP`;
   $("g-input").value = "";
   paintGuess();
-  const total = guessSeconds(w); let left = total;
+  const tut = kind === "tutorial", total = tut ? TUT.guessSeconds : guessSeconds(w); let left = total;
   const arc = $("g-arc"); arc.style.transition = "none"; setRing($("g-ring"), arc, $("g-time"), left, total); void arc.getBoundingClientRect(); arc.style.transition = "";
   shownAt = performance.now();
   // Live preview of the speed bonus an answer right now would earn: <2s +3, <4s +2, <6s +1 (the same ladder as wordXp).
@@ -599,9 +641,19 @@ function nextGuess() {
     const el = (performance.now() - shownAt) / 1000, b = el < 2 ? 3 : el < 4 ? 2 : el < 6 ? 1 : 0;
     bonusEl.textContent = lang === "tr" ? `+${b} XP bonus` : `+${b} XP bonus`; bonusEl.style.background = STAGE[Math.min(4, Math.floor(el / 2))];
   };
-  clearInterval(bonusTimer); paintBonus(); bonusTimer = setInterval(paintBonus, 250);
-  gTimer = setInterval(() => { left--; setRing($("g-ring"), arc, $("g-time"), left, total); if (left > 0 && left <= 3) sfx.tick(); if (left <= 0) answer(""); }, 1000);
-  $("g-input").focus({ preventScroll: true });
+  const runClock = () => {
+    shownAt = performance.now();
+    clearInterval(bonusTimer); paintBonus(); bonusTimer = setInterval(paintBonus, 250);
+    gTimer = setInterval(() => { left--; setRing($("g-ring"), arc, $("g-time"), left, total); if (left > 0 && left <= 3) sfx.tick(); if (left <= 0) answer(""); }, 1000);
+    $("g-input").focus({ preventScroll: true });
+  };
+  const lesson = tut && idx < 2 ? (idx === 0 ? ["FIRST_LETTER", "jt-first", "tutorial_joker_first_title", "tutorial_joker_first_body"] : ["LETTER_COUNT", "jt-count", "tutorial_joker_count_title", "tutorial_joker_count_body"]) : null;
+  if (lesson) {
+    // The clock stands still, the keyboard stays down, and only the joker being taught answers a tap, until it has been used.
+    paintBonus(); $("g-input").blur();
+    $("tut-t").textContent = S(lesson[2]); $("tut-b").textContent = S(lesson[3]); $("tut-spot").classList.add("on"); $(lesson[1]).classList.add("spot");
+    tutSpot = { joker: lesson[0], go: runClock }; layout();
+  } else runClock();
 }
 function answer(text) {
   clearInterval(gTimer); clearInterval(bonusTimer);
@@ -637,7 +689,7 @@ function addRow(parent, strokes, ok, label, sub, pen) {
 }
 async function finish() {
   const x = t();
-  if (kind === "tutorial") { show("home"); ctx.confirm(x.finT + "\n\n" + x.finB, x.finBtn, endTutorial); $("dlg-no").style.display = "none"; $("dlg-text").style.whiteSpace = "pre-line"; return; }
+  if (kind === "tutorial") return coachCard("tutorial_finale_title", "tutorial_finale_body", "tutorial_finale_button", endTutorial);
   const n = round.filter((w) => w.correct).length, xp0 = P.xp, fxp = runeFx(P, "XP");
   if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
   // XP is paid per right word by difficulty and speed (see answer()); the XP runes speed up the level, never the league XP.

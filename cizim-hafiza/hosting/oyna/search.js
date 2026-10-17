@@ -52,7 +52,7 @@ export function startSearch(c) {
   const fit = () => { const r = cv.getBoundingClientRect(), k = Math.min(2, devicePixelRatio || 1); cv.width = Math.max(1, r.width * k); cv.height = Math.max(1, r.height * k); }; fit();
   const loop = (now) => {
     if (c.current() !== "search") return;
-    const t = now - t0; frame(cv, t);
+    const t = Math.max(0, now - t0); frame(cv, t);
     (sc ? sc.querySelectorAll("i") : []).forEach((e, k) => { e.style.opacity = ((t % 1600) / 400) >= k + 1 ? 1 : 0.18; });
     raf = requestAnimationFrame(loop);
   };
