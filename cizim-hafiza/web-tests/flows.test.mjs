@@ -65,7 +65,12 @@ for (const device of ["iPhone SE", "iPhone 13"]) {
     S("drawing 10 words"); for (let i = 0; i < 10; i++) { await page.tap("#d-next"); await page.waitForTimeout(150); }
     S("guessing"); await until("guess", 12000);
     for (let i = 0; i < 10; i++) {
-      if (i === 1) { await page.tap("#jt-skip"); await page.waitForTimeout(300); }
+      if (i === 1) {
+        await page.tap("#jt-skip"); await page.waitForTimeout(250);
+        const chip = await page.evaluate(() => { const c = document.getElementById("g-skipchip"); return c && getComputedStyle(c).display !== "none" ? c.textContent : ""; });
+        if (!/sn kaydedildi/.test(chip)) problems.push(`${tag} (guessing): skipping showed no "time saved" note (got "${chip}")`);
+        await page.waitForTimeout(1100); // the note stays up for a moment, like in the app
+      }
       await page.fill("#g-input", "abc"); await page.tap("#g-ok", { force: true });
       const focus = await page.evaluate(() => document.activeElement && document.activeElement.id);
       if (focus !== "g-input") problems.push(`${tag} (guessing): the answer box lost the focus after word ${i + 1} (${focus}): the keyboard would close`);
