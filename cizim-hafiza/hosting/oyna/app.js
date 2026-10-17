@@ -281,10 +281,11 @@ function layoutOnce() {
 /** Lays the scene out, then measures where its widgets end so the next pass can crop the decor below them. */
 /** Text that must stay on one line inside its box (class "fitw"): shrinks until it fits, never below 55%, so a longer language never spills out. */
 function fitAll() {
-  for (const e of document.querySelectorAll(".screen.on .fitw, .aw-ov .fitw")) {
+  for (const e of document.querySelectorAll(".screen.on .fitw, .screen.on .fith, .aw-ov .fitw, .aw-ov .fith")) {
     e.style.fontSize = ""; if (e.clientWidth < 4) continue;
     const base = parseFloat(getComputedStyle(e).fontSize); let k = 1;
-    while (k > 0.55 && e.scrollWidth > e.clientWidth + 1) { k -= 0.04; e.style.fontSize = base * k + "px"; }
+    const over = () => (e.classList.contains("fitw") && e.scrollWidth > e.clientWidth + 1) || (e.classList.contains("fith") && e.scrollHeight > e.clientHeight + 1);
+    while (k > 0.55 && over()) { k -= 0.04; e.style.fontSize = base * k + "px"; }
   }
 }
 function layout() {
