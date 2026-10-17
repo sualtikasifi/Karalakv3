@@ -124,6 +124,7 @@ const SAFE_TOP = 24, SAFE_BELOW = 60, SAFE_BELOW_OF = { settings: 16 };
 /** Scenes whose side gap is closed by stretching only the outer slice of the painted scene (the sides carry card fragments, so a mirror would repeat them); widgets and the middle keep their true proportions. */
 const SIDE_SLICE = {};
 /** Scenes with a painted wider version: the old scene sits inside it at (x0..x1) of w x h source pixels, so the gap beside the art shows more painting at true scale, nothing stretched. */
+const wideReady = new Set();
 const WIDE = {
   home: { src: "img/bg_home_wide.webp", x0: 92, x1: 844, y0: 0, w: 940, h: 1672 },
   settings: { src: "img/bg_settings_wide.webp", x0: 109, x1: 831, y0: 4, w: 941, h: 1672 },
@@ -303,17 +304,21 @@ function paintEdges(W, H, gap, top) {
   const bgEl = document.querySelector("#" + current + " > img.bg");
   const src = bgEl && (bgEl.getAttribute("src") || bgEl.dataset.src);
   const slice = SIDE_SLICE[current] || 0, sw = slice * W, wide = WIDE[current];
-  let sliced = false;
+  let sliced = false, wideOn = false;
   for (const side of ["l", "r"]) {
     const e = $("edge-" + side); if (!e) continue;
     const on = !!src && gap > 0.5 && gap <= W * 0.3;
     e.style.display = on ? "block" : "none";
     if (!on) continue;
     if (wide) {
-      const k = W / (wide.x1 - wide.x0), ew = gap + 1;
+      // one painting for the whole screen (the stage's own copy is hidden below), so there is no colour seam between middle and sides
+      if (!wideReady.has(wide.src)) { wideReady.add(wide.src); const im = new Image(); im.onload = () => { wideReady.add(wide.src + "!"); layout(); }; im.src = wide.src; }
+      if (!wideReady.has(wide.src + "!")) { e.style.display = "none"; continue; }
+      const k = W / (wide.x1 - wide.x0), ew = Math.ceil((W + 2 * gap) / 2) + 1;
       e.style.transform = "none"; e.style.filter = "none";
-      const bx = side === "l" ? gap - wide.x0 * k : 1 - wide.x1 * k;
+      const bx = side === "l" ? gap - wide.x0 * k : ew - gap - wide.x1 * k;
       e.style.cssText += `;width:${ew}px;top:${top}px;height:${H}px;background-image:url("${wide.src}");background-size:${wide.w * k}px ${wide.h * k}px;background-position:${bx}px ${-wide.y0 * k}px;${side === "l" ? "left:0" : "right:0"}`;
+      wideOn = true;
       continue;
     }
     if (slice) {
@@ -331,8 +336,9 @@ function paintEdges(W, H, gap, top) {
     const px = mirror ? (side === "l" ? "-3px" : "calc(100% + 3px)") : (side === "l" ? "0" : "100%");
     e.style.cssText += `;width:${gap + 1}px;top:${top}px;height:${H}px;background-image:url("${src}");background-size:${bw}px ${H}px;background-position:${px} top;${side === "l" ? "left:0" : "right:0"}`;
   }
+  if (bgEl) bgEl.style.visibility = wideOn ? "hidden" : "";
   if (bgEl) bgEl.style.clipPath = sliced ? `inset(0 ${sw}px 0 ${sw}px)` : "";
-  stage.style.background = sliced ? "transparent" : "";
+  stage.style.background = sliced || wideOn ? "transparent" : "";
 }
 /** The art is a fixed tall shape; the strips beside it carry a soft, enlarged copy of the same scene instead of bare wood. */
 function paintBackdrop(id) {
