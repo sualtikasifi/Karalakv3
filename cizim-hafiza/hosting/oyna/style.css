@@ -126,7 +126,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .fcard .btn{width:80%;height:calc(var(--u)*62);background:url(img/st_pill_orange.webp) 0 0/100% 100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:calc(var(--u)*28);gap:calc(var(--u)*6);-webkit-text-stroke:calc(var(--u)*5) #8a3a05;paint-order:stroke fill}
 .fcard .btn.green{background-image:url(img/st_pill_green.webp)}.fcard .btn.dis{filter:grayscale(.7) brightness(.85)}
 .fcard .btn img{height:calc(var(--u)*30)}
-#st-toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--u)*140);background:#3a1e08;color:#fff;padding:calc(var(--u)*16) calc(var(--u)*36);border-radius:99px;font-size:calc(var(--u)*30);z-index:5}
+#st-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:max(24px,env(safe-area-inset-bottom,0px));z-index:50;background:#3a1e08;color:#fff;padding:calc(var(--u)*16) calc(var(--u)*36);border-radius:99px;font-size:calc(var(--u)*30);z-index:5}
 #st-toast.err{background:#a82020}#st-toast.hidden{display:none}
 
 .txt.sign3{color:#fff;font-size:calc(var(--u)*36);-webkit-text-stroke:calc(var(--u)*6) #4e2406;paint-order:stroke fill;justify-content:flex-start}
@@ -930,3 +930,5 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #g-input,#fr-input,#oj-nick,#oj-code,#se-code,#ak-user,#ak-pass,.pk-in,.inp{font-size:max(16px,calc(var(--u)*40))!important}
 /* notch / home-indicator insets (read by viewport() in app.js) */
 #safe{position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+.fitw{white-space:nowrap}#h-ttl-chest,#h-ttl-gold{overflow:visible}
+.ls-act .pill span{font-size:3.2cqw!important;white-space:nowrap;-webkit-text-stroke-width:.45cqw}.ls-act .pill{padding:0 1.2cqw;min-width:0}
