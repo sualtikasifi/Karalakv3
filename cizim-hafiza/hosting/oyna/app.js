@@ -22,6 +22,7 @@ import { syncNow, scheduleBackup } from "./sync.js";
 import { openRankLadder } from "./ranks.js";
 import { startSearch, stopSearch } from "./search.js";
 import { exitDialog, appOnlyDialog, PLAY_URL } from "./ui.js";
+import { makeGhostRun, loadGhostNames, isGhostId } from "./ghost.js";
 import { layoutBreak, startBreak, stopBreak } from "./brk.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
@@ -84,7 +85,7 @@ const ctx = {
   sfx, paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
   pickRoomWords: (r) => pickRoomWords(r), startOffline: (o) => startOffline(o),
-  startTutorial: () => playTutorial(), openDuel: (opp) => openCreateDuel(ctx, opp), startDuelChallenge: (opp, n) => startDuel({ mode: "new", opp }, n), playDuel: (d) => startDuel({ mode: "play", duel: d }),
+  startTutorial: () => playTutorial(), homeGain: (g, x) => homeGain(g, x), openDuel: (opp) => openCreateDuel(ctx, opp), startDuelChallenge: (opp, n) => startDuel({ mode: "new", opp }, n), playDuel: (d) => startDuel({ mode: "play", duel: d }),
   syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
@@ -152,7 +153,7 @@ function layoutOnce() {
     place($("h-bar"), 222, 452, 550, 40);
     place($("h-veil-gold"), 34, 538, 196, 216); place($("h-veil-chest"), 616, 538, 192, 216);
     layoutChests(ctx);
-    place($("h-dcard"), 236, 538, 372, 218); place($("h-dmul"), 256, 630, 104, 46); place($("h-dpips"), 394, 628, 200, 48); place($("h-dplay"), 264, 688, 332, 56); place($("h-dcount"), 262, 692, 142, 48); place($("h-ddone"), 410, 690, 188, 50);
+    place($("h-dcard"), 236, 538, 372, 218); place($("h-dmul"), 256, 630, 104, 46); place($("h-dpips"), 394, 628, 200, 48); place($("h-dplay"), 264, 688, 332, 56); place($("h-gain-gold"), 110, 226, 140, 46); place($("h-gain-xp"), 540, 396, 240, 54); place($("h-dcount"), 262, 692, 142, 48); place($("h-ddone"), 410, 690, 188, 50);
     place($("h-ttl-gold"), 40, 648, 186, 50); place($("h-ttl-daily"), 384, 546, 214, 80); place($("h-ttl-chest"), 634, 640, 162, 66);
     place($("h-soon-gold"), 56, 704, 154, 36); place($("h-soon-chest"), 640, 704, 150, 36);
     const T = [["online", 30, 776, 258, 236, 50, 918, 274, 1002], ["quick", 294, 776, 258, 236, 330, 940, 520, 986], ["offline", 558, 776, 258, 236, 578, 918, 798, 1002],
@@ -389,7 +390,7 @@ function fxLoop() {
 }
 fxLoop();
 const paintLive = () => current === "draw" && round[idx] && paint($("pad"), round[idx].strokes, true, P.pen);
-const paintGuess = () => current === "guess" && round[idx] && paint($("view"), round[idx].strokes, false, P.pen);
+const paintGuess = () => current === "guess" && gOrder.length && gw() && paint($("view"), gw().strokes, false, P.pen);
 
 (() => {
   const c = $("pad"); let cur = null;
@@ -491,23 +492,33 @@ async function startDaily() {
   await ensureWords(); kind = "daily"; levelRun = null; relaxed = false;
   begin(dailyWords(words, todayEpoch(), lang));
 }
-let quickOpp = null, quickItems = [];
+let quickOpp = null, quickItems = [], quickItemsP = null;
+/** Hızlı Eşleş's opponent, as in the app (GhostRunRepositoryImpl.findOpponent with BOT_OPPONENT_SHARE = 1): a round built from the
+ *  hand-trained drawing set, so the words the web player draws are the ones the review queue wants; the live pool is only the fallback. */
+async function pickOpponent() {
+  try {
+    const ids = await net.trainedWordIds(), have = new Set(words.map((w) => w.id));
+    const g = makeGhostRun({ trainedIds: ids, hasWord: (id) => have.has(id), language: lang, level: levelFor(P.xp), points: POINTS, speedBonus: SPEED_BONUS, frameFor: highestFrameFor });
+    if (g) return g;
+  } catch {}
+  return net.findOpponent(lang, levelFor(P.xp));
+}
 // SearchingScene.kt texts: the sign reads "Rakip / aranıyor…" with its dots ticking, the plate says what is going on.
 function paintSearching() {
   $("s-text").innerHTML = `<span>${S("quick_match_searching_title")}</span><span>${S("quick_match_searching_title2").replace(/[….s]+$/, "")}<span id="s-dots"><i>.</i><i>.</i><i>.</i></span></span>`;
   $("s-sub").innerHTML = `<b>${S("quick_match_searching_sub")}</b><small>${S("quick_match_dont_worry_body")}</small>`;
 }
 async function startQuick() {
-  levelRun = null; kind = "quick"; relaxed = false; quickOpp = null; quickItems = [];
-  await ensureWords(); paintSearching(); show("search");
+  levelRun = null; kind = "quick"; relaxed = false; quickOpp = null; quickItems = []; quickItemsP = null;
+  await ensureWords(); await loadGhostNames().catch(() => {}); paintSearching(); show("search");
   const minWait = new Promise((r) => setTimeout(r, 2000 + Math.random() * 3000));
-  try { quickOpp = await Promise.race([net.findOpponent(lang, levelFor(P.xp)), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000))]); } catch {}
+  try { quickOpp = await Promise.race([pickOpponent(), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000))]); } catch {}
   await minWait;
   if (current !== "search") return;
   const byId = new Map(words.map((w) => [w.id, w]));
   const picked = quickOpp ? (quickOpp.wordIds || []).map((id) => byId.get(id)).filter(Boolean) : [];
   if (!quickOpp || picked.length < 10) { quickOpp = null; msgNoOpp(); return; }
-  net.loadItems(quickOpp.id).then((it) => { quickItems = it; }).catch(() => {});
+  quickItemsP = net.loadItems(quickOpp.id, new Map(words.map((w) => [w.id, w.text])), POINTS, SPEED_BONUS).then((it) => (quickItems = it)).catch(() => quickItems);
   showFound(quickOpp, () => begin(picked));
 }
 function msgNoOpp() { show("home"); msg(t().noOpp + (lang === "tr" ? ". Bir süre sonra tekrar dene ya da çevrimdışı oyna." : ". Try again in a bit or play offline.")); }
@@ -569,7 +580,7 @@ async function begin(picked) {
 function nextDraw() {
   clearInterval(dTimer);
   if (idx >= round.length) {
-    idx = 0;
+    idx = 0; answered = 0; locked = false; gOrder = kind === "tutorial" ? round.map((_, i) => i) : shuffledIdx(round.length);
     if (kind === "tutorial") return coachCard("tutorial_guess_title", "tutorial_guess_body", "tutorial_generic_button", nextGuess);
     return startBreak(ctx, nextGuess);
   }
@@ -606,6 +617,11 @@ function nextDraw() {
 function finishDraw() { clearInterval(dTimer); idx++; nextDraw(); }
 $("d-next").onclick = finishDraw;
 
+// The guess order is shuffled after the drawing (GameViewModel.startGuessPhase): `idx` is a position in gOrder, the drawings stay in
+// the order they were made. A skipped word goes to the end of the queue with the seconds it still had.
+let gOrder = [], answered = 0, locked = false, gLeft = 0;
+const gw = () => round[gOrder[idx]];
+const shuffledIdx = (n) => { const a = Array.from({ length: n }, (_, i) => i); for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 let jk = { first: false, count: false };
 function renderHint(w) {
   const box = $("g-blanks"); box.replaceChildren();
@@ -618,14 +634,17 @@ function renderHint(w) {
 }
 function refreshJokers(w) {
   const f = jokerN("FIRST_LETTER"), c = jokerN("LETTER_COUNT"), x = t(), tut = kind === "tutorial";
-  $("jt-ad").querySelector("span").textContent = x.hintT; $("jt-ad").classList.add("dis");
+  $("jt-ad").style.display = "none"; // the "hint" (rewarded ad) tile does nothing on the web
   $("jt-first").querySelector("span").textContent = S("joker_first_letter_short"); $("jt-first").querySelector("i").textContent = f; $("jt-first").classList.toggle("dis", jk.first || f <= 0);
   $("jt-count").querySelector("span").textContent = S("joker_letter_count_short"); $("jt-count").querySelector("i").textContent = c; $("jt-count").classList.toggle("dis", jk.count || c <= 0);
-  $("jt-skip").querySelector("span").textContent = S("skip_guess"); $("jt-skip").classList.toggle("dis", tut || !!w.skipped || idx >= round.length - 1);
+  $("jt-skip").querySelector("span").textContent = S("skip_guess"); $("jt-skip").classList.toggle("dis", tut || !!w.skipped || idx >= gOrder.length - 1);
 }
-$("jt-first").onclick = () => { const w = round[idx]; if (jk.first || jokerN("FIRST_LETTER") <= 0 || (tutSpot && tutSpot.joker !== "FIRST_LETTER")) return; jk.first = true; jokerSpend("FIRST_LETTER"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
-$("jt-count").onclick = () => { const w = round[idx]; if (jk.count || jokerN("LETTER_COUNT") <= 0 || (tutSpot && tutSpot.joker !== "LETTER_COUNT")) return; jk.count = true; jokerSpend("LETTER_COUNT"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
-$("jt-skip").onclick = () => { const w = round[idx]; if (w.skipped || idx >= round.length - 1) return; w.skipped = true; round.push(round.splice(idx, 1)[0]); nextGuess(); };
+$("jt-first").onclick = () => { const w = gw(); if (locked) return; if (jk.first || jokerN("FIRST_LETTER") <= 0 || (tutSpot && tutSpot.joker !== "FIRST_LETTER")) return; jk.first = true; jokerSpend("FIRST_LETTER"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
+$("jt-count").onclick = () => { const w = gw(); if (locked) return; if (jk.count || jokerN("LETTER_COUNT") <= 0 || (tutSpot && tutSpot.joker !== "LETTER_COUNT")) return; jk.count = true; jokerSpend("LETTER_COUNT"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
+$("jt-skip").onclick = () => {
+  const w = gw(); if (!w || locked || tutSpot || kind === "tutorial" || w.skipped || idx >= gOrder.length - 1) return;
+  w.skipped = true; w.resume = gLeft; gOrder.push(gOrder[idx]); idx++; nextGuess();
+};
 function endSpot() {
   if (!tutSpot) return;
   const go = tutSpot.go; tutSpot = null;
@@ -633,17 +652,17 @@ function endSpot() {
   go();
 }
 function nextGuess() {
-  clearInterval(gTimer);
-  if (idx >= round.length) return finish();
+  clearInterval(gTimer); clearInterval(bonusTimer); locked = false;
+  if (idx >= gOrder.length) return finish();
   if (kind === "tutorial" && idx === 2 && !tutSeen.free) { tutSeen.free = true; return coachCard("tutorial_joker_free_title", "tutorial_joker_free_body", "tutorial_generic_button", nextGuess); }
-  const w = round[idx];
+  const w = gw();
   show("guess");
   jk = { first: false, count: false }; renderHint(w); refreshJokers(w);
-  $("g-prog").textContent = `${idx + 1} / ${round.length}`;
+  $("g-prog").textContent = `${Math.min(answered + 1, round.length)} / ${round.length}`;
   $("g-xp").textContent = `★ +${round.reduce((s, q) => s + (q.xp || 0), 0)} XP`;
   $("g-input").value = "";
   paintGuess();
-  const tut = kind === "tutorial", total = tut ? TUT.guessSeconds : guessSeconds(w); let left = total;
+  const tut = kind === "tutorial", total = tut ? TUT.guessSeconds : guessSeconds(w); let left = w.resume ?? total; delete w.resume; gLeft = left;
   const arc = $("g-arc"); arc.style.transition = "none"; setRing($("g-ring"), arc, $("g-time"), left, total); void arc.getBoundingClientRect(); arc.style.transition = "";
   shownAt = performance.now();
   // Live preview of the speed bonus an answer right now would earn: <2s +3, <4s +2, <6s +1 (the same ladder as wordXp).
@@ -653,9 +672,9 @@ function nextGuess() {
     bonusEl.textContent = lang === "tr" ? `+${b} XP bonus` : `+${b} XP bonus`; bonusEl.style.background = STAGE[Math.min(4, Math.floor(el / 2))];
   };
   const runClock = () => {
-    shownAt = performance.now();
+    shownAt = performance.now() - (total - left) * 1000; // a skipped word comes back with the time it had left; its speed bonus still counts from the first look
     clearInterval(bonusTimer); paintBonus(); bonusTimer = setInterval(paintBonus, 250);
-    gTimer = setInterval(() => { left--; setRing($("g-ring"), arc, $("g-time"), left, total); if (left > 0 && left <= 3) sfx.tick(); if (left <= 0) answer(""); }, 1000);
+    gTimer = setInterval(() => { left--; gLeft = left; setRing($("g-ring"), arc, $("g-time"), left, total); if (left > 0 && left <= 3) sfx.tick(); if (left <= 0) answer(""); }, 1000);
     $("g-input").focus({ preventScroll: true });
   };
   const lesson = tut && idx < 2 ? (idx === 0 ? ["FIRST_LETTER", "jt-first", "tutorial_joker_first_title", "tutorial_joker_first_body"] : ["LETTER_COUNT", "jt-count", "tutorial_joker_count_title", "tutorial_joker_count_body"]) : null;
@@ -667,15 +686,16 @@ function nextGuess() {
   } else runClock();
 }
 function answer(text) {
+  if (locked) return; locked = true;
   clearInterval(gTimer); clearInterval(bonusTimer);
-  const w = round[idx];
+  const w = gw();
   w.guess = text; w.ms = Math.round(performance.now() - shownAt); w.correct = isCorrect(text, w.text);
   w.points = w.correct ? POINTS + (w.ms < SPEED_MS ? SPEED_BONUS : 0) : 0;
   // XP is not the score: a right word pays by difficulty and speed (XpAwards.wordXp); the daily challenge pays its own total.
   w.xp = w.correct && kind !== "daily" ? eco.wordXp(w.difficulty, w.ms) * xpMult : 0;
-  score += w.points; idx++;
+  score += w.points; answered++; // idx moves on only after the tick has been shown, so the drawing under it stays the one just answered
   if (w.correct) sfx.correct(); else { sfx.wrong(); vibrate(60); }
-  showFeedback(w); setTimeout(() => { hideFeedback(); if (current === "guess") nextGuess(); }, 1200);
+  showFeedback(w); setTimeout(() => { hideFeedback(); idx++; if (current === "guess") nextGuess(); }, 1200);
 }
 // GuessFeedbackOverlay: the badge over the drawing — a tick or a cross, the XP it paid, and the right word after a miss — for 1.2 s
 const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#1e8a3a" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -683,12 +703,19 @@ const CROSS = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="non
 function showFeedback(w) {
   let f = $("g-fb"); if (!f) { f = document.createElement("div"); f.id = "g-fb"; $("g-canvas").append(f); }
   f.innerHTML = `<div class="${w.correct ? "ok" : "no"}"><div class="card"><div class="ic">${w.correct ? CHECK : CROSS}</div>${w.xp > 0 ? `<div class="xp">${S("xp_gained_format", w.xp)}</div>` : ""}${w.correct ? "" : `<div class="ans">${S("correct_answer_was", w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1))}</div>`}</div></div>`;
-  $("g-input").blur(); $("g-input").disabled = true; $("guess").classList.add("fb");
+  $("g-input").readOnly = true; $("guess").classList.add("fb"); // read-only, not blurred: the keyboard stays up between words
 }
-function hideFeedback() { $("guess").classList.remove("fb"); const f = $("g-fb"); if (f) f.replaceChildren(); $("g-input").disabled = false; }
+function hideFeedback() { $("guess").classList.remove("fb"); const f = $("g-fb"); if (f) f.replaceChildren(); $("g-input").readOnly = false; }
 function flash(ok) { const f = $("g-flash"); f.textContent = ok ? "✅" : "❌"; f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); }
+// pressing a button must not take the focus from the answer field, or the keyboard drops (and comes back with the next word)
+for (const id of ["g-ok", "jt-first", "jt-count", "jt-skip"]) $(id).addEventListener("pointerdown", (e) => e.preventDefault());
 $("g-form").onsubmit = (e) => { e.preventDefault(); answer($("g-input").value); };
-$("g-input").addEventListener("input", (e) => { const w = round[idx]; if (w && e.target.value.trim() && e.target.value.trim().toLocaleLowerCase(lang) === w.text.toLocaleLowerCase(lang)) answer(e.target.value); });
+$("g-input").addEventListener("input", (e) => {
+  const el = e.target; let v = el.value;
+  // the first letter is always a capital
+  if (v && v[0] !== v[0].toLocaleUpperCase(lang)) { const p = el.selectionStart; v = v[0].toLocaleUpperCase(lang) + v.slice(1); el.value = v; try { el.setSelectionRange(p, p); } catch {} }
+  const w = gw(); if (!locked && w && v.trim() && v.trim().toLocaleLowerCase(lang) === w.text.toLocaleLowerCase(lang)) answer(v);
+});
 
 // ---------- result ----------
 function addRow(parent, strokes, ok, label, sub, pen) {
@@ -698,9 +725,18 @@ function addRow(parent, strokes, ok, label, sub, pen) {
   ic.src = ok ? "img/rs_ic_check.webp" : "img/rs_ic_x.webp"; ic.alt = "";
   row.append(cv, lb, ic); parent.append(row); fitCanvas(cv); paint(cv, strokes, false, pen || "CLASSIC");
 }
+function showWaiting() {
+  const tr = lang === "tr";
+  $("s-text").innerHTML = `<span>${tr ? "Sonuçlar" : "Getting your"}</span><span>${tr ? "hazırlanıyor" : "results"}<span id="s-dots"><i>.</i><i>.</i><i>.</i></span></span>`;
+  $("s-sub").innerHTML = `<b>${tr ? "Puanlar hesaplanıyor…" : "Counting the points…"}</b>`;
+  show("search");
+}
 async function finish() {
   const x = t();
   if (kind === "tutorial") return coachCard("tutorial_finale_title", "tutorial_finale_body", "tutorial_finale_button", endTutorial);
+  // the last answer's tick is over and the result is being put together: show a waiting scene at once (instead of the last guess screen
+  // hanging for a moment as if another word were coming) if it takes more than a blink
+  const waitScene = setTimeout(() => { if (current === "guess") showWaiting(); }, 220);
   const n = round.filter((w) => w.correct).length, xp0 = P.xp, fxp = runeFx(P, "XP");
   if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
   // XP is paid per right word by difficulty and speed (see answer()); the XP runes speed up the level, never the league XP.
@@ -716,7 +752,7 @@ async function finish() {
     perWord: round.map((w) => ({ wordId: w.id, isCorrect: w.correct, responseTimeMs: w.ms, pointsAwarded: w.points })),
     items: round.map((w) => ({ word: w.text, isCorrect: w.correct, strokes: w.strokes, penSkin: P.pen })),
   };
-  const minWait = new Promise((r) => setTimeout(r, kind === "quick" ? 2000 + Math.random() * 2000 : 0));
+  const minWait = Promise.resolve();
   let opp = null, items = [];
   let stars = 0, dailyRes = null;
   let newStars = 0;
@@ -738,6 +774,8 @@ async function finish() {
     else { opp = { nickname: run.duel.challengerName, totalScore: run.duel.challengerScore, level: 1 }; items = run.duel.items; duelReceived(run.duel, score, n); net.submitDuelResult(run.duel.id, score, n).catch(() => {}); duelRematch = () => ctx.openDuel({ uid: run.duel.challengerUid, name: run.duel.challengerName }); }
   }
   await minWait;
+  clearTimeout(waitScene);
+  if (kind === "quick" && quickOpp && quickItemsP && !items.length) items = await Promise.race([quickItemsP, new Promise((r) => setTimeout(() => r(quickItems), 2500))]);
   const quickWon = kind === "quick" && !!opp && score > opp.totalScore;
   // What the round pays in gold — one place, ported from RoundRewards.kt (see economy.js).
   const gold = eco.soloGold({ fx, has, correctInOrder: round.map((w) => w.correct), isDaily: kind === "daily", newAchievements: newAch, newStars, dailyStreak: dailyRes ? dailyRes.streak : null, quickWon });
@@ -755,7 +793,7 @@ async function finish() {
     opp, myRing: ring(P.frame), oppRing: ring(opp ? highestFrameFor(opp.level || 1) : "SCRIBBLER"), oppItems: items,
     items: round.map((w) => ({ word: w.text, isCorrect: w.correct, strokes: w.strokes, penSkin: P.pen })),
     note: duelNote, rematch: duelRematch, rematchLabel: S("duel_rematch_action"),
-    onHome: () => show("home"),
+    onHome: () => { show("home"); homeGain(gold.total, P.xp - xp0); },
     next: kind === "level" && levelRun && levelRun.l < 10 ? { label: t().nextLevel, fn: () => startLevel(levelRun.w, levelRun.l + 1) } : null,
   });
 }
@@ -794,16 +832,37 @@ function refreshDaily() {
   const tick = () => { const ms = msToMidnight(), z = (n) => String(Math.floor(n)).padStart(2, "0"); $("h-dcount").textContent = `${z(ms / 3600000)}:${z(ms % 3600000 / 60000)}:${z(ms % 60000 / 1000)}`; };
   clearInterval(dailyTick); if (s.done) { tick(); dailyTick = setInterval(tick, 1000); }
 }
-function refreshHome() {
-  const x = t(), lv = levelFor(P.xp), floor = xpFor(lv), ceil = lv >= 100 ? floor : xpFor(lv + 1), into = P.xp - floor, span = ceil - floor;
+/** The level line, rank and XP bar for a given XP total: the home screen's numbers, also what the claim animation climbs through. */
+function paintLevel(xpVal) {
+  const x = t(), lv = levelFor(xpVal), floor = xpFor(lv), ceil = lv >= 100 ? floor : xpFor(lv + 1), into = xpVal - floor, span = ceil - floor;
   const rank = [...RANKS].reverse().find((r) => lv >= r[0]);
-  $("h-gold").textContent = P.gold.toLocaleString(lang);
-  try { $("h-pen").textContent = penById(P.pen)[lang]; } catch { $("h-pen").textContent = x.goldLbl; }
-  try { const fr = frameRing(frameById(P.frame)); fr.style.cssText += ";width:100%;height:100%"; $("h-avatar").replaceChildren(fr); } catch {}
-  $("h-nick").textContent = P.nick; $("h-lvl").textContent = "• " + x.lvl + " " + lv;
+  $("h-lvl").textContent = "• " + x.lvl + " " + lv;
   $("h-rank-t").textContent = rank[1] + " " + (lang === "tr" ? rank[2] : rank[3]);
   $("h-xpnext").textContent = lv >= 100 ? "MAX" : x.toNext(span - into, lv + 1);
   $("h-fill").style.width = (span ? into / span * 100 : 100) + "%"; $("h-barlabel").textContent = `${into} / ${span} XP`;
+  return lv;
+}
+/** After "Ödülü Al": gold and XP climb from what the home screen showed to the real values, with a "+N" floating up beside each (HomePainted.kt). */
+function homeGain(goldEarned, xpEarned) {
+  goldEarned = Math.max(0, Math.round(goldEarned || 0)); xpEarned = Math.max(0, Math.round(xpEarned || 0));
+  if (!goldEarned && !xpEarned) return;
+  const g1 = P.gold, x1 = P.xp, g0 = Math.max(0, g1 - goldEarned), x0 = Math.max(0, x1 - xpEarned), t0 = performance.now(), D = 1500;
+  const fl = (id, v, txt) => { const e = $(id); e.style.display = v ? "flex" : "none"; if (!v) return; e.textContent = txt; e.classList.remove("go"); void e.offsetWidth; e.classList.add("go"); };
+  fl("h-gain-gold", goldEarned, "+" + goldEarned.toLocaleString(lang)); fl("h-gain-xp", xpEarned, "+" + xpEarned.toLocaleString(lang) + " XP");
+  const step = (now) => {
+    if (current !== "home") { $("h-gold").textContent = P.gold.toLocaleString(lang); paintLevel(P.xp); return; }
+    const p = Math.min(1, (now - t0 - 350) / D), e = p <= 0 ? 0 : 1 - Math.pow(1 - p, 3);
+    $("h-gold").textContent = Math.round(g0 + (g1 - g0) * e).toLocaleString(lang); paintLevel(Math.round(x0 + (x1 - x0) * e));
+    if (p < 1) requestAnimationFrame(step); else { $("h-gold").textContent = g1.toLocaleString(lang); paintLevel(x1); }
+  };
+  $("h-gold").textContent = g0.toLocaleString(lang); paintLevel(x0); requestAnimationFrame(step);
+}
+function refreshHome() {
+  const x = t(), lv = levelFor(P.xp);
+  $("h-gold").textContent = P.gold.toLocaleString(lang);
+  try { $("h-pen").textContent = penById(P.pen)[lang]; } catch { $("h-pen").textContent = x.goldLbl; }
+  try { const fr = frameRing(frameById(P.frame)); fr.style.cssText += ";width:100%;height:100%"; $("h-avatar").replaceChildren(fr); } catch {}
+  $("h-nick").textContent = P.nick; paintLevel(P.xp);
   for (const k of Object.keys(x.tiles)) $("tx-" + k).textContent = x.tiles[k];
   for (const k of ["gold", "chest"]) $("h-soon-" + k).textContent = x.appOnly;
   refreshDaily(); renderChests(ctx);

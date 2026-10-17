@@ -83,29 +83,41 @@ export function renderResult(c, d) {
 // cfg: { title, chips:[{id,label,enabled}] (empty = plain title), sel, items(sel) -> [], placeholders, onSelect(id), theirs(sel) -> bool, pen }
 function board(c, cfg, lang, T) {
   const wrap = el("div", "rs-board");
-  const draw = () => {
-    wrap.replaceChildren(); wrap.append(el("div", "bd-art"));
-    const plank = el("div", "plank");
-    if (cfg.chips && cfg.chips.length) {
-      cfg.chips.forEach((ch) => {
-        const sel = ch.id === cfg.sel, b = el("button", "chip" + (sel ? " sel" : "") + (!ch.enabled && !sel ? " dis" : ""), `<span class="lt">${esc(ch.label)}</span>`);
-        b.style.flex = Math.max(5, ch.label.length); if (cfg.chips.length > 2) { b.style.flex = "none"; b.style.width = "calc(var(--k)*110)"; }
-        b.onclick = ch.enabled && !sel ? () => { cfg.sel = ch.id; cfg.onSelect && cfg.onSelect(ch.id); draw(); } : null; plank.append(b);
-      });
-      if (cfg.chips.length > 2) plank.classList.add("scrl");
-    } else plank.append(el("span", "lt", cfg.title));
-    wrap.append(plank);
-    const items = cfg.items(cfg.sel), total = items.length || cfg.placeholders, rows = Math.ceil(total / 5), g = el("div", "rs-sheets" + (rows > 2 ? " scr" : ""));
+  // Every side's sheet grid (yours AND the opponent's) is built and painted up front and stacked in the same place: choosing a name
+  // only shows the other grid, so the opponent's drawings are there the instant a name is tapped.
+  const grids = {};
+  const sheetsFor = (id) => {
+    const items = cfg.items(id), total = items.length || cfg.placeholders, rows = Math.ceil(total / 5), g = el("div", "rs-sheets" + (rows > 2 ? " scr" : ""));
     for (let i = 0; i < total; i++) {
       const it = items[i], sh = el("div", "sheet" + (it ? "" : " empty"));
       if (it) {
         sh.innerHTML = `<div class="pg"><i class="dots"></i><em>${i + 1}</em><canvas></canvas><b>${esc(cap(it.word, lang))}</b></div><img class="mk" src="img/${it.isCorrect ? "rs_ic_check" : "rs_ic_x"}.webp" alt="">`;
-        sh.onclick = () => preview(c, cfg, items, i, lang, T, cfg.theirs ? cfg.theirs(cfg.sel) : false);
+        sh.onclick = () => preview(c, cfg, items, i, lang, T, cfg.theirs ? cfg.theirs(id) : false);
       }
       g.append(sh);
     }
-    wrap.append(g);
-    requestAnimationFrame(() => g.querySelectorAll("canvas").forEach((cv, i) => { c.fitCanvas(cv); c.paint(cv, items[i].strokes, false, items[i].penSkin || cfg.pen || "CLASSIC"); }));
+    return g;
+  };
+  const show = () => { for (const id of Object.keys(grids)) grids[id].classList.toggle("hid", id !== cfg.sel); };
+  const draw = () => {
+    wrap.replaceChildren(); wrap.append(el("div", "bd-art"));
+    const plank = el("div", "plank"), chipEls = {};
+    if (cfg.chips && cfg.chips.length) {
+      cfg.chips.forEach((ch) => {
+        const b = el("button", "chip", `<span class="lt">${esc(ch.label)}</span>`); chipEls[ch.id] = b;
+        b.style.flex = Math.max(5, ch.label.length); if (cfg.chips.length > 2) { b.style.flex = "none"; b.style.width = "calc(var(--k)*110)"; }
+        b.onclick = () => { if (!ch.enabled || cfg.sel === ch.id) return; cfg.sel = ch.id; cfg.onSelect && cfg.onSelect(ch.id); paintChips(); show(); };
+        plank.append(b);
+      });
+      if (cfg.chips.length > 2) plank.classList.add("scrl");
+    } else plank.append(el("span", "lt", cfg.title));
+    const paintChips = () => cfg.chips.forEach((ch) => { const b = chipEls[ch.id]; b.classList.toggle("sel", ch.id === cfg.sel); b.classList.toggle("dis", !ch.enabled && ch.id !== cfg.sel); });
+    wrap.append(plank);
+    const ids = cfg.chips && cfg.chips.length ? cfg.chips.filter((ch) => ch.enabled || ch.id === cfg.sel).map((ch) => ch.id) : [cfg.sel];
+    for (const id of ids) { grids[id] = sheetsFor(id); wrap.append(grids[id]); }
+    if (cfg.chips && cfg.chips.length) paintChips();
+    show();
+    requestAnimationFrame(() => { for (const id of Object.keys(grids)) { const items = cfg.items(id); grids[id].querySelectorAll("canvas").forEach((cv, i) => { c.fitCanvas(cv); c.paint(cv, items[i].strokes, false, items[i].penSkin || cfg.pen || "CLASSIC"); }); } });
   };
   cfg.redraw = draw; draw(); return wrap;
 }
