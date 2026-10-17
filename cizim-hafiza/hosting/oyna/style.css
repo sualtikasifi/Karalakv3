@@ -885,3 +885,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #appbar a{flex:none;padding:9px 14px;border-radius:99px;background:linear-gradient(#ffa13a,#f26a1b);border:2px solid #b5510f;color:#fff;text-decoration:none;font-weight:800;text-shadow:0 1px 0 #8a3a05;white-space:nowrap}
 #appbar a:empty{display:none}
 #appbar button{flex:none;width:30px;height:30px;border-radius:50%;font-size:22px;line-height:1;color:#5a4636;background:#0001}
+.txt.gain{display:none;opacity:0;pointer-events:none;color:#ffe066;-webkit-text-stroke:calc(var(--u)*7) #3a1e08;paint-order:stroke fill;font-size:calc(var(--u)*30);z-index:6}
+.txt.gain.go{animation:gainup 1.8s .35s linear forwards}
+@keyframes gainup{0%{opacity:0;transform:translateY(0)}15%{opacity:1}70%{opacity:1}100%{opacity:0;transform:translateY(calc(var(--u)*-60))}}
+.rs-sheets.hid{visibility:hidden;position:absolute;left:0;right:0;top:0;pointer-events:none}

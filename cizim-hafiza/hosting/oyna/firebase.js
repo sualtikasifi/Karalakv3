@@ -1,5 +1,6 @@
 // Firebase layer. Loaded lazily so the game still works offline / before config is filled in.
 import { firebaseConfig, firebaseReady } from "./config.js";
+import { parseGhostId, ghostOutcome } from "./ghost.js";
 
 const V = "10.14.1";
 const CDN = `https://www.gstatic.com/firebasejs/${V}`;
@@ -55,7 +56,30 @@ export async function findOpponent(language, level = 1) {
   return null;
 }
 
-export async function loadItems(runId) {
+let trainedCache = null;
+/** The ids of every hand-trained word (botTrainingIndex/trained), read once per visit — the pool Hızlı Eşleş opponents are built from. */
+export async function trainedWordIds() {
+  if (trainedCache) return trainedCache;
+  const { fs, db } = await init();
+  const snap = await fs.getDoc(fs.doc(db, "botTrainingIndex", "trained"));
+  const ids = snap.exists() && Array.isArray(snap.data().wordIds) ? snap.data().wordIds.map(Number).filter(Number.isFinite) : [];
+  return ids.length >= RUN_WORD_COUNT ? (trainedCache = ids) : [];
+}
+/** The opponent's side of a synthesized round: her trained drawing for each word, marked by the same seeded roll as her score. */
+async function loadBotItems(runId, texts, points, speedBonus) {
+  const p = parseGhostId(runId); if (!p) return [];
+  const { fs, db } = await init(), correctness = ghostOutcome(p.seed, p.wordIds, points, speedBonus).correctness;
+  const items = await Promise.all(p.wordIds.map(async (id, i) => {
+    try {
+      const d = await fs.getDoc(fs.doc(db, "botTrainedWords", String(id)));
+      if (!d.exists()) return null;
+      return { word: (texts && texts.get(id)) || d.data().word || "", isCorrect: !!correctness[i], strokes: JSON.parse(d.data().strokesJson || "[]") };
+    } catch { return null; }
+  }));
+  return items.filter(Boolean);
+}
+export async function loadItems(runId, texts, points = 5, speedBonus = 2) {
+  if (parseGhostId(runId)) return loadBotItems(runId, texts, points, speedBonus);
   const { fs, db } = await init();
   const snap = await fs.getDoc(fs.doc(db, "ghostRunItems", runId));
   return snap.exists() ? JSON.parse(snap.data().itemsJson) : [];
