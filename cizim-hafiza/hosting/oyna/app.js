@@ -475,7 +475,7 @@ function introCard(cont) {
 function coachCard(title, body, button, cont) {
   const sp = $("tut-spot"); document.activeElement?.blur?.();
   $("tut-t").textContent = S(title); $("tut-b").textContent = S(body); $("tut-go-t").textContent = S(button);
-  $("tut-card").style.cssText = ""; sp.classList.add("on", "coach"); $("tut-go").style.display = "";
+  $("tut-card").style.cssText = ""; const bl = S(body).length; $("tut-card").className = bl <= 90 ? "f-short" : bl <= 190 ? "f-mid" : "f-long"; sp.classList.add("on", "coach"); $("tut-go").style.display = "";
   $("tut-go").onclick = () => { sp.classList.remove("on", "coach"); $("tut-go").style.display = "none"; cont(); };
 }
 function playTutorial() { introCard(startTutorial); $("w-skip").onclick = () => show("home"); }
