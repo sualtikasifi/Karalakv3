@@ -86,7 +86,7 @@ const ctx = {
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
   pickRoomWords: (r) => pickRoomWords(r), startOffline: (o) => startOffline(o),
   startTutorial: () => playTutorial(), homeGain: (g, x) => homeGain(g, x), openDuel: (opp) => openCreateDuel(ctx, opp), startDuelChallenge: (opp, n) => startDuel({ mode: "new", opp }, n), playDuel: (d) => startDuel({ mode: "play", duel: d }),
-  syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
+  fit: () => fitAll(), syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
   open: (id) => { if (id === "report") reportLoaded = false; show(id); },
@@ -185,7 +185,7 @@ function layoutOnce() {
     place($("h-veil-gold"), 34, 538, 196, 216); place($("h-veil-chest"), 616, 538, 192, 216);
     layoutChests(ctx);
     place($("h-dcard"), 236, 538, 372, 218); place($("h-dmul"), 256, 630, 104, 46); place($("h-dpips"), 394, 628, 200, 48); place($("h-dplay"), 264, 688, 332, 56); place($("h-gain-gold"), 110, 226, 140, 46); place($("h-gain-xp"), 540, 396, 240, 54); place($("h-dcount"), 262, 692, 142, 48); place($("h-ddone"), 410, 690, 188, 50);
-    place($("h-ttl-gold"), 40, 648, 186, 50); place($("h-ttl-daily"), 384, 546, 214, 80); place($("h-ttl-chest"), 634, 640, 162, 66);
+    place($("h-ttl-gold"), 40, 648, 186, 50); place($("h-ttl-daily"), 384, 546, 214, 80); place($("h-ttl-chest"), 620, 640, 190, 66);
     place($("h-soon-gold"), 56, 704, 154, 36); place($("h-soon-chest"), 640, 704, 150, 36);
     const T = [["online", 30, 776, 258, 236, 50, 918, 274, 1002], ["quick", 294, 776, 258, 236, 330, 940, 520, 986], ["offline", 558, 776, 258, 236, 578, 918, 798, 1002],
       ["levels", 30, 1018, 258, 186, 50, 1142, 268, 1188], ["friends", 294, 1018, 258, 186, 320, 1142, 526, 1188], ["ach", 558, 1018, 258, 186, 584, 1142, 792, 1188],
@@ -279,8 +279,17 @@ function layoutOnce() {
   }
 }
 /** Lays the scene out, then measures where its widgets end so the next pass can crop the decor below them. */
+/** Text that must stay on one line inside its box (class "fitw"): shrinks until it fits, never below 55%, so a longer language never spills out. */
+function fitAll() {
+  for (const e of document.querySelectorAll(".screen.on .fitw, .screen.on .fith, .aw-ov .fitw, .aw-ov .fith")) {
+    e.style.fontSize = ""; if (e.clientWidth < 4) continue;
+    const base = parseFloat(getComputedStyle(e).fontSize); let k = 1;
+    const over = () => (e.classList.contains("fitw") && e.scrollWidth > e.clientWidth + 1) || (e.classList.contains("fith") && e.scrollHeight > e.clientHeight + 1);
+    while (k > 0.55 && over()) { k -= 0.04; e.style.fontSize = base * k + "px"; }
+  }
+}
 function layout() {
-  layoutOnce();
+  layoutOnce(); fitAll();
   if (current === "home") return;
   if (["guess", "result", "res2", "lvmap"].includes(current)) return;
   const st = stage.getBoundingClientRect(); if (!st.height || !u) return;
@@ -1056,12 +1065,14 @@ function warmMedia() {
     tr: { app: "Karalak uygulamasını indir, ödülleri orada kazan!", get: "İndir", ios: "Karalak'ı ana ekranına ekle: Paylaş simgesine, sonra “Ana Ekrana Ekle”ye dokun." },
     en: { app: "Get the Karalak app and claim rewards there!", get: "Get it", ios: "Add Karalak to your home screen: tap Share, then “Add to Home Screen”." },
   };
+  const dialogOpen = () => !!document.querySelector("#pick:not(.hidden), #dialog:not(.hidden), .aw-ov, .ex-ov");
   const hiddenUntil = () => { try { return +localStorage.getItem(KEY) || 0; } catch { return 0; } };
   let shown = false, timer = 0;
   const bar = $("appbar"), hide = (forWeek) => { bar.classList.remove("on"); clearTimeout(timer); if (forWeek) { try { localStorage.setItem(KEY, String(Date.now() + 7 * 864e5)); } catch {} } };
   $("ab-x").onclick = () => hide(true);
   function maybeShow() {
     if (shown || standalone || current !== "home" || Date.now() < hiddenUntil() || P.tutorialDone !== true) return;
+    if (dialogOpen()) { setTimeout(maybeShow, 3000); return; }
     shown = true;
     const x = T[lang] || T.tr;
     $("ab-t").textContent = ios ? x.ios : x.app;
@@ -1070,5 +1081,5 @@ function warmMedia() {
   }
   setTimeout(maybeShow, 5000);
   // leaving the home screen takes the bar away
-  new MutationObserver(() => { if (current !== "home") hide(false); }).observe($("stage"), { subtree: true, attributes: true, attributeFilter: ["class"] });
+  new MutationObserver(() => { if (current !== "home" || dialogOpen()) hide(false); }).observe($("stage"), { subtree: true, attributes: true, attributeFilter: ["class"] });
 })();

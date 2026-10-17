@@ -184,7 +184,7 @@ function renderLobby(c) {
     const av = frameRing(frameById(p.frameId), "ow-av"); av.style.position = "relative";
     const nm = isMe ? S("online_you_label", p.displayName) : p.displayName, lv = p.level || 1;
     const status = bub ? esc(messageOf(bub, lg)) : p.pendingNextRound ? S("online_pending_badge") : "";
-    const txt = el("div", "ow-tx", `<div class="ow-n"><span>${esc(nm)}</span>${host ? '<img src="img/lobby_crown.webp" alt="">' : ""}</div><div class="ow-rk"><i>${S(rankKey(lv))}</i><i>${S("home_level_inline", lv)}</i></div><div class="ow-s">${status}</div>`);
+    const txt = el("div", "ow-tx", `<div class="ow-n"><span class="fitw">${esc(nm)}</span>${host ? '<img src="img/lobby_crown.webp" alt="">' : ""}</div><div class="ow-rk"><i>${S(rankKey(lv))}</i><i>${S("home_level_inline", lv)}</i></div><div class="ow-s">${status}</div>`);
     card.append(av, txt);
     if (team && isMe) { const sw = el("button", "ow-ico", SWAP); sw.title = S("online_switch_team"); sw.onclick = (e) => { e.stopPropagation(); net.setTeam(code, p.teamId === "B" ? "A" : "B").catch(() => {}); }; card.append(sw); }
     if (isHost && !isMe && p.uid !== "karalak-bot") {
@@ -245,7 +245,7 @@ function renderLobby(c) {
     if (hostCanStart) { starting = true; renderLobby(c); hostStart(c).finally(() => { starting = false; }); return; }
     readyOverride = !amReady; renderLobby(c); net.setReady(code, readyOverride).catch(() => {}).finally(() => { setTimeout(() => { readyOverride = null; }, 1500); });
   };
-  clearInterval(cdTimer);
+  requestAnimationFrame(() => c.fit && c.fit()); clearInterval(cdTimer);
   if (counting) cdTimer = setInterval(() => { if (c.current() !== "onw") return clearInterval(cdTimer); renderLobby(c); }, 400);
 }
 

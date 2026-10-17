@@ -76,11 +76,12 @@ export function renderChests(c) {
     const cv = el("canvas", "sl-cv"), img = el("img", "sl-img"); img.src = `img/${T.art}.webp`; img.alt = "";
     const plate = el("div", "sl-plate " + (ready ? "ready" : going ? "going" : "idle"), `<span>${ready ? S("chests_open_button") + "!" : going ? fmtLeft(remaining(c, ch, now)) : hm(effMs(c, ch.tier))}</span>`);
     plate.style.setProperty("--ac", T.accent);
-    s.append(cv, img, el("span", "sl-n", S(T.label)), plate);
+    s.append(cv, img, el("span", "sl-n fitw", S(T.label)), plate);
     // the tier's backdrop moves behind every filled slot, like the app's slot cards
     (slotFx[i] = slotFx[i] || {}).stop && slotFx[i].stop(); requestAnimationFrame(() => { slotFx[i].stop = backdrop(cv, ch.tier, 24); });
     s.onclick = () => detail(c, ch.id);
   });
+  requestAnimationFrame(() => c.fit && c.fit());
   $("ch-info").onclick = () => infoDialog(c);
   clearInterval(timer);
   if (C.slots.some((ch) => ch && ch.start != null && !isReady(ch))) timer = setInterval(() => { if (c.current() === "home") renderChests(c); else clearInterval(timer); }, 1000);

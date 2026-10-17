@@ -46,7 +46,7 @@ export function exitDialog(host, { style = "game", title, message, confirm, dism
   ov.append(card); host.append(ov);
   // FitText: the title stays on one line (shrinking to half), the message may take three
   const fit = (e, base, lines, min) => { const sp = e.firstChild; let k = 1; sp.style.fontSize = base + "px"; while (k > min && (e.scrollHeight > e.clientHeight + 1 || sp.scrollWidth > e.clientWidth + 1 || (lines === 1 && sp.offsetHeight > base * 1.4))) { k -= 0.04; sp.style.fontSize = base * k + "px"; } };
-  requestAnimationFrame(() => { const w = card.getBoundingClientRect().width, k = w / s.w; const t = card.querySelector(".ex-t"), m = card.querySelector(".ex-m"); t.style.whiteSpace = "nowrap"; fit(t, 80 * k, 1, 0.5); fit(m, 46 * k, 3, 0.5); card.querySelectorAll(".ex-b span").forEach((b) => { b.style.fontSize = 68 * k + "px"; }); });
+  requestAnimationFrame(() => { const w = card.getBoundingClientRect().width, k = w / s.w; const t = card.querySelector(".ex-t"), m = card.querySelector(".ex-m"); t.style.whiteSpace = "nowrap"; fit(t, 80 * k, 1, 0.62); if (t.firstChild.scrollWidth > t.clientWidth + 1) { t.style.whiteSpace = "normal"; fit(t, 66 * k, 2, 0.4); } fit(m, 46 * k, 3, 0.5); card.querySelectorAll(".ex-b").forEach((b) => { const sp = b.firstChild, room = b.clientWidth - 2 * 40 * k; let q = 1; sp.style.fontSize = 68 * k + "px"; while (q > 0.4 && sp.scrollWidth > room) { q -= 0.03; sp.style.fontSize = 68 * k * q + "px"; } }); });
   return ov;
 }
 
