@@ -449,9 +449,6 @@
     <string name="settings_sound">Tüm Sesler</string>
     <string name="settings_vibration">Titreşim</string>
     <string name="settings_notifications">Bildirimler</string>
-    <string name="settings_battery_optimization_title">Bildirimler geç mi geliyor?</string>
-    <string name="settings_battery_optimization_body">Telefonunun pil yöneticisi, uygulamayı açana kadar hatırlatmaları geciktirebilir. Karalak\'ı istisna yaparak zamanında gelmesini sağla.</string>
-    <string name="settings_battery_optimization_action">Bildirim sorununu düzelt</string>
     <string name="settings_battery_ok_title">Bildirimler hazır</string>
     <string name="settings_battery_ok_body">Karalak hatırlatmaları zamanında gösterebilir. Bildirimleri istediğin zaman yukarıdan açıp kapatabilirsin.</string>
     <string name="settings_sound_section">Ses ve Titreşim</string>
