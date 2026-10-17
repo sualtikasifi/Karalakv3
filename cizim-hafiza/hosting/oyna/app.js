@@ -186,7 +186,7 @@ function layoutOnce() {
     layoutStore(ctx); renderStore(ctx);
   } else if (current === "onl" || current === "onj" || current === "onc" || current === "onw") {
     layoutOnline(ctx);
-    if (current === "onl") renderEntry(ctx); else if (current === "onj") renderJoin(ctx); else if (current === "onc") renderCreate(ctx);
+    if (current === "onl") renderEntry(ctx, freshScreen); else if (current === "onj") renderJoin(ctx); else if (current === "onc") renderCreate(ctx);
   } else if (current === "offs") {
     layoutOffline(ctx); renderOffline(ctx);
   } else if (current === "friends") {

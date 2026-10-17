@@ -56,12 +56,23 @@ export function layoutOnline(c) {
 }
 
 // ---------- entry / create / join ----------
-export function renderEntry(c) {
+let quotesP;
+const loadQuotes = () => (quotesP ||= fetch("entry_quotes.json").then((r) => r.json()).catch(() => ({ tr: [["Karalama Savaşlarına", "Hoşgeldin!"]], en: [["Welcome to the", "Doodle Wars!"]] })));
+let entryQuote = null;
+export function renderEntry(c, fresh) {
   const { $, lang } = c, x = T[lang()];
   $("on-title").textContent = x.title; $("on-create-t").textContent = x.create; $("on-join-t").textContent = x.join;
-  const tx = $("on-text"); tx.innerHTML = `<span>${x.l1}</span><span>${x.l2}</span><b>${x.l3} ${x.l4}</b>`;
-  // one size for the three lines: the longest decides how far they shrink (minScale 0.6, like the app)
-  requestAnimationFrame(() => { const base = 43 * c.u(); let k = 1; tx.style.fontSize = base + "px"; while (k > 0.6 && [...tx.children].some((e) => e.scrollWidth > tx.clientWidth + 1)) { k -= 0.02; tx.style.fontSize = base * k + "px"; } });
+  const tx = $("on-text");
+  // a different note every time the screen opens (never the same one twice in a row); entry_quotes.json mirrors the app's online_lobby_quotes
+  loadQuotes().then((q) => {
+    const list = q[lang()] || q.tr; let i = 0;
+    if (!fresh && entryQuote && entryQuote.list === list) i = entryQuote.i; // a re-layout (keyboard, rotation) keeps the note
+    else if (list.length > 1) { let last = -1; try { last = +localStorage.getItem("entryQuote"); } catch {} do { i = Math.floor(Math.random() * list.length); } while (i === last); try { localStorage.setItem("entryQuote", i); } catch {} }
+    entryQuote = { list, i };
+    tx.replaceChildren(...list[i].map((t) => el("span", "", t)));
+    // one size for the lines: the longest decides how far they shrink (minScale 0.6, like the app)
+    requestAnimationFrame(() => { const base = 43 * c.u(); let k = 1; tx.style.fontSize = base + "px"; while (k > 0.6 && [...tx.children].some((e) => e.scrollWidth > tx.clientWidth + 1)) { k -= 0.02; tx.style.fontSize = base * k + "px"; } });
+  });
 }
 export async function renderCreate(c) {
   const { $, lang } = c, x = T[lang()], C = (k) => chatText(k, lang());
