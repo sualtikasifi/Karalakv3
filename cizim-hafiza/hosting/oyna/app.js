@@ -122,7 +122,7 @@ function viewport() { const v = window.visualViewport; return { w: v ? v.width :
 const safeRows = { home: { t: HOME_SAFE_TOP, b: HOME_SAFE_TOP + HOME_SAFE_H } };
 const SAFE_TOP = 24, SAFE_BELOW = 60, SAFE_BELOW_OF = { settings: 16 };
 /** Scenes whose gap beside the art is closed partly by a slight horizontal stretch (the sides carry card fragments, so a mirror would repeat them). */
-const STRETCH_MAX = { settings: 1.06 };
+const STRETCH_MAX = { settings: 1.1 };
 function layoutOnce() {
   const { w: vw, h: vh, ox, oy } = viewport();
   const s = stage.style;
@@ -686,7 +686,7 @@ function nextGuess() {
   } else runClock();
 }
 function answer(text) {
-  if (locked) return; locked = true;
+  if (locked) return; locked = true; lockedVal = $("g-input").value;
   clearInterval(gTimer); clearInterval(bonusTimer);
   const w = gw();
   w.guess = text; w.ms = Math.round(performance.now() - shownAt); w.correct = isCorrect(text, w.text);
@@ -703,15 +703,17 @@ const CROSS = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="non
 function showFeedback(w) {
   let f = $("g-fb"); if (!f) { f = document.createElement("div"); f.id = "g-fb"; $("g-canvas").append(f); }
   f.innerHTML = `<div class="${w.correct ? "ok" : "no"}"><div class="card"><div class="ic">${w.correct ? CHECK : CROSS}</div>${w.xp > 0 ? `<div class="xp">${S("xp_gained_format", w.xp)}</div>` : ""}${w.correct ? "" : `<div class="ans">${S("correct_answer_was", w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1))}</div>`}</div></div>`;
-  $("g-input").readOnly = true; $("guess").classList.add("fb"); // read-only, not blurred: the keyboard stays up between words
+  $("guess").classList.add("fb"); // the field is left alone (no blur, no read-only, no disabled): any of those closes the keyboard, and it does not come back by itself
 }
-function hideFeedback() { $("guess").classList.remove("fb"); const f = $("g-fb"); if (f) f.replaceChildren(); $("g-input").readOnly = false; }
+function hideFeedback() { $("guess").classList.remove("fb"); const f = $("g-fb"); if (f) f.replaceChildren(); }
 function flash(ok) { const f = $("g-flash"); f.textContent = ok ? "✅" : "❌"; f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); }
 // pressing a button must not take the focus from the answer field, or the keyboard drops (and comes back with the next word)
 for (const id of ["g-ok", "jt-first", "jt-count", "jt-skip"]) $(id).addEventListener("pointerdown", (e) => e.preventDefault());
 $("g-form").onsubmit = (e) => { e.preventDefault(); answer($("g-input").value); };
+let lockedVal = "";
+$("g-input").addEventListener("beforeinput", (e) => { if (locked) e.preventDefault(); }); // typing during the tick is swallowed
 $("g-input").addEventListener("input", (e) => {
-  const el = e.target; let v = el.value;
+  const el = e.target; if (locked) { el.value = lockedVal; return; } let v = el.value;
   // the first letter is always a capital
   if (v && v[0] !== v[0].toLocaleUpperCase(lang)) { const p = el.selectionStart; v = v[0].toLocaleUpperCase(lang) + v.slice(1); el.value = v; try { el.setSelectionRange(p, p); } catch {} }
   const w = gw(); if (!locked && w && v.trim() && v.trim().toLocaleLowerCase(lang) === w.text.toLocaleLowerCase(lang)) answer(v);
@@ -777,11 +779,12 @@ async function finish() {
   clearTimeout(waitScene);
   if (kind === "quick" && quickOpp && quickItemsP && !items.length) items = await Promise.race([quickItemsP, new Promise((r) => setTimeout(() => r(quickItems), 2500))]);
   const quickWon = kind === "quick" && !!opp && score > opp.totalScore;
+  gainOnce = null;
   // What the round pays in gold — one place, ported from RoundRewards.kt (see economy.js).
   const gold = eco.soloGold({ fx, has, correctInOrder: round.map((w) => w.correct), isDaily: kind === "daily", newAchievements: newAch, newStars, dailyStreak: dailyRes ? dailyRes.streak : null, quickWon });
   P.gold += gold.total;
   let wonChest; if (quickWon) wonChest = awardChest(P, (k) => runeHas(P, k)) || null;
-  saveP(); refreshHome();
+  saveP(); refreshHome(); gainOnce = { gold: gold.total, xp: P.xp - xp0 };
   await loadResultStrings();
   show("res2"); sfx.over(); if (wonChest !== undefined) setTimeout(() => wonDialog(ctx, wonChest), 700);
   const lvl = levelFor(P.xp), into = P.xp - xpFor(lvl), need = xpFor(lvl + 1) - xpFor(lvl), l0 = levelFor(xp0);
@@ -793,7 +796,7 @@ async function finish() {
     opp, myRing: ring(P.frame), oppRing: ring(opp ? highestFrameFor(opp.level || 1) : "SCRIBBLER"), oppItems: items,
     items: round.map((w) => ({ word: w.text, isCorrect: w.correct, strokes: w.strokes, penSkin: P.pen })),
     note: duelNote, rematch: duelRematch, rematchLabel: S("duel_rematch_action"),
-    onHome: () => { show("home"); homeGain(gold.total, P.xp - xp0); },
+    onHome: () => { show("home"); if (gainOnce) { const g = gainOnce; gainOnce = null; homeGain(g.gold, g.xp); } },
     next: kind === "level" && levelRun && levelRun.l < 10 ? { label: t().nextLevel, fn: () => startLevel(levelRun.w, levelRun.l + 1) } : null,
   });
 }
@@ -843,6 +846,8 @@ function paintLevel(xpVal) {
   return lv;
 }
 /** After "Ödülü Al": gold and XP climb from what the home screen showed to the real values, with a "+N" floating up beside each (HomePainted.kt). */
+/** What the finished round paid, shown ONCE when the player claims it and goes home. */
+let gainOnce = null;
 function homeGain(goldEarned, xpEarned) {
   goldEarned = Math.max(0, Math.round(goldEarned || 0)); xpEarned = Math.max(0, Math.round(xpEarned || 0));
   if (!goldEarned && !xpEarned) return;
@@ -863,6 +868,7 @@ function refreshHome() {
   try { $("h-pen").textContent = penById(P.pen)[lang]; } catch { $("h-pen").textContent = x.goldLbl; }
   try { const fr = frameRing(frameById(P.frame)); fr.style.cssText += ";width:100%;height:100%"; $("h-avatar").replaceChildren(fr); } catch {}
   $("h-nick").textContent = P.nick; paintLevel(P.xp);
+  $("h-name").classList.toggle("can", (P.nameChanges || 0) < 1);
   for (const k of Object.keys(x.tiles)) $("tx-" + k).textContent = x.tiles[k];
   for (const k of ["gold", "chest"]) $("h-soon-" + k).textContent = x.appOnly;
   refreshDaily(); renderChests(ctx);

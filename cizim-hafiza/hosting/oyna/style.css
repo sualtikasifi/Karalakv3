@@ -127,7 +127,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .fcard .btn.green{background-image:url(img/st_pill_green.webp)}.fcard .btn.dis{filter:grayscale(.7) brightness(.85)}
 .fcard .btn img{height:calc(var(--u)*30)}
 #st-toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--u)*140);background:#3a1e08;color:#fff;padding:calc(var(--u)*16) calc(var(--u)*36);border-radius:99px;font-size:calc(var(--u)*30);z-index:5}
-#st-toast.err{background:#a82020}
+#st-toast.err{background:#a82020}#st-toast.hidden{display:none}
 
 .txt.sign3{color:#fff;font-size:calc(var(--u)*36);-webkit-text-stroke:calc(var(--u)*6) #4e2406;paint-order:stroke fill;justify-content:flex-start}
 .se-row{display:flex;align-items:center;justify-content:space-between;padding:0 calc(var(--u)*30) 0 calc(var(--u)*127);font-size:calc(var(--u)*31);color:var(--ink);cursor:pointer}
@@ -333,7 +333,8 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 
 #rp-back{padding:0;position:absolute}#rp-back img{width:100%;height:100%}#rp-sign{display:block}
 #rp-body{overflow-y:auto;padding:0 0 calc(var(--u)*80);display:flex;flex-direction:column;gap:calc(var(--u)*16);-webkit-mask-image:linear-gradient(transparent,#000 calc(var(--u)*30))}#rp-body::-webkit-scrollbar{display:none}
-.rp-card{background:url(img/rp_card_big.webp) 0 0/100% 100%;padding:calc(var(--u)*120) calc(var(--u)*100) calc(var(--u)*110);display:flex;flex-direction:column;gap:calc(var(--u)*12);color:#3b2314;flex:none}
+/* a nine-patch like the app's NinePatch(rp_card_big, slice 110): the painted corners and edges keep their shape instead of being stretched */
+.rp-card{border:solid transparent;border-width:calc(var(--u)*70);border-image:url(img/rp_card_big.webp) 110 fill/calc(var(--u)*70) stretch;padding:calc(var(--u)*22) calc(var(--u)*57) calc(var(--u)*16);display:flex;flex-direction:column;gap:calc(var(--u)*12);color:#3b2314;flex:none}
 .rp-card b{font-size:calc(var(--u)*40);margin-top:calc(var(--u)*14)}.rp-card p{margin:0;font-size:calc(var(--u)*27);font-weight:600;color:#6b4a30}.rp-l{font-size:calc(var(--u)*30);margin-top:calc(var(--u)*8)}
 .rp-row{display:flex;gap:calc(var(--u)*14)}.rp-pill{flex:1;height:calc(var(--u)*86);background-size:100% 100%;background-repeat:no-repeat;color:#fff;font-size:calc(var(--u)*32);opacity:.6;-webkit-text-stroke:calc(var(--u)*5) #5a2a08;paint-order:stroke fill}.rp-pill.on{opacity:1}
 .rp-ta{height:calc(var(--u)*300);border:calc(var(--u)*4) solid #d9a566;border-radius:calc(var(--u)*24);background:#fffaf0;font:inherit;font-weight:600;font-size:calc(var(--u)*30);padding:calc(var(--u)*18);color:#3b2314;resize:none;outline:0;user-select:text;-webkit-user-select:text}
@@ -889,3 +890,6 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .txt.gain.go{animation:gainup 1.8s .35s linear forwards}
 @keyframes gainup{0%{opacity:0;transform:translateY(0)}15%{opacity:1}70%{opacity:1}100%{opacity:0;transform:translateY(calc(var(--u)*-60))}}
 .rs-sheets.hid{visibility:hidden;position:absolute;left:0;right:0;top:0;pointer-events:none}
+/* the name can be changed once: a small pencil to its left says so (gone after the one change) */
+#h-name.can{padding-left:calc(var(--u)*52);overflow:visible}
+#h-name.can::before{content:"";position:absolute;left:0;top:50%;width:calc(var(--u)*40);height:calc(var(--u)*40);transform:translateY(-50%);border-radius:50%;background:#f4811f url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E") center/58% no-repeat;border:calc(var(--u)*3) solid #fff;box-shadow:0 calc(var(--u)*2) calc(var(--u)*4) #0005}
