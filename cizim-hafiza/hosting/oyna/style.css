@@ -878,3 +878,10 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #h-ddone svg{width:calc(var(--u)*28);height:calc(var(--u)*28);flex:none}
 #h-ddone span{color:#fff;font-size:calc(var(--u)*28);-webkit-text-stroke:calc(var(--u)*6) #14602a;paint-order:stroke fill;white-space:nowrap;line-height:1}
 #h-dcount{color:#fff;text-shadow:0 calc(var(--u)*2) calc(var(--u)*3) #0008;font-size:calc(var(--u)*29)}
+
+#appbar{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);width:min(94vw,520px);transform:translate(-50%,160%);transition:transform .45s cubic-bezier(.2,.9,.3,1.1);z-index:30;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:18px;background:linear-gradient(#fff6e2,#ffe3b0);border:3px solid #b5510f;box-shadow:0 6px 0 #8a3a05,0 10px 24px #0006;color:#3a2a22;font-size:15px;line-height:1.2}
+#appbar.on{transform:translate(-50%,0)}
+#appbar b{flex:1;font-weight:800}
+#appbar a{flex:none;padding:9px 14px;border-radius:99px;background:linear-gradient(#ffa13a,#f26a1b);border:2px solid #b5510f;color:#fff;text-decoration:none;font-weight:800;text-shadow:0 1px 0 #8a3a05;white-space:nowrap}
+#appbar a:empty{display:none}
+#appbar button{flex:none;width:30px;height:30px;border-radius:50%;font-size:22px;line-height:1;color:#5a4636;background:#0001}
