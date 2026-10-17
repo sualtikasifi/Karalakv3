@@ -910,3 +910,31 @@ function warmMedia() {
   const c = navigator.connection; if (c && (c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || ""))) return;
   for (const u of ["audio/music_1.m4a", "video/chest_open_apprentice.mp4"]) fetch(u).then((r) => r.arrayBuffer()).catch(() => {});
 }
+
+// A slim "get the app" bar on the home screen: Android gets the Play Store button, an iPhone gets the add-to-home-screen hint
+// (there is no iOS app yet), a computer gets the Play link. It slides in a few seconds after the home screen is up, goes away by
+// itself, and a tap on x silences it for a week.
+(function appBar() {
+  const KEY = "appbarHiddenUntil", ua = navigator.userAgent || "";
+  const ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1), android = /Android/i.test(ua);
+  const standalone = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+  const T = {
+    tr: { app: "Karalak uygulamasını indir, ödülleri orada kazan!", get: "İndir", ios: "Karalak'ı ana ekranına ekle: Paylaş simgesine, sonra “Ana Ekrana Ekle”ye dokun." },
+    en: { app: "Get the Karalak app and claim rewards there!", get: "Get it", ios: "Add Karalak to your home screen: tap Share, then “Add to Home Screen”." },
+  };
+  const hiddenUntil = () => { try { return +localStorage.getItem(KEY) || 0; } catch { return 0; } };
+  let shown = false, timer = 0;
+  const bar = $("appbar"), hide = (forWeek) => { bar.classList.remove("on"); clearTimeout(timer); if (forWeek) { try { localStorage.setItem(KEY, String(Date.now() + 7 * 864e5)); } catch {} } };
+  $("ab-x").onclick = () => hide(true);
+  function maybeShow() {
+    if (shown || standalone || current !== "home" || Date.now() < hiddenUntil() || P.tutorialDone !== true) return;
+    shown = true;
+    const x = T[lang] || T.tr;
+    $("ab-t").textContent = ios ? x.ios : x.app;
+    const go = $("ab-go"); go.textContent = ios ? "" : x.get; go.href = PLAY_URL;
+    bar.classList.add("on"); timer = setTimeout(() => hide(false), 12000);
+  }
+  setTimeout(maybeShow, 5000);
+  // leaving the home screen takes the bar away
+  new MutationObserver(() => { if (current !== "home") hide(false); }).observe($("stage"), { subtree: true, attributes: true, attributeFilter: ["class"] });
+})();
