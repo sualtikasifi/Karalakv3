@@ -148,7 +148,7 @@ function layoutOnce() {
     place($("h-bar"), 222, 452, 550, 40);
     place($("h-veil-gold"), 34, 538, 196, 216); place($("h-veil-chest"), 616, 538, 192, 216);
     layoutChests(ctx);
-    place($("h-dcard"), 236, 538, 372, 218); place($("h-dmul"), 256, 630, 104, 46); place($("h-dpips"), 394, 628, 200, 48); place($("h-dplay"), 264, 688, 332, 56); place($("h-dcount"), 262, 692, 142, 48);
+    place($("h-dcard"), 236, 538, 372, 218); place($("h-dmul"), 256, 630, 104, 46); place($("h-dpips"), 394, 628, 200, 48); place($("h-dplay"), 264, 688, 332, 56); place($("h-dcount"), 262, 692, 142, 48); place($("h-ddone"), 410, 690, 188, 50);
     place($("h-ttl-gold"), 40, 648, 186, 50); place($("h-ttl-daily"), 384, 546, 214, 80); place($("h-ttl-chest"), 634, 640, 162, 66);
     place($("h-soon-gold"), 56, 704, 154, 36); place($("h-soon-chest"), 640, 704, 150, 36);
     const T = [["online", 30, 776, 258, 236, 50, 918, 274, 1002], ["quick", 294, 776, 258, 236, 330, 940, 520, 986], ["offline", 558, 776, 258, 236, 578, 918, 798, 1002],
@@ -780,6 +780,9 @@ function refreshDaily() {
   $("h-dcard").style.filter = s.done ? "none" : "hue-rotate(135deg)";
   $("h-dplay").style.display = s.done ? "none" : ""; $("h-dplay").textContent = x.dailyPlay + " ▸";
   $("h-dcount").style.display = s.done ? "" : "none";
+  // the finished card (daily_done_badge): green pill with a tick on the right, and the title lettering outlined in dark green instead of purple
+  $("h-ddone").style.display = s.done ? "flex" : "none"; $("h-ddone-t").textContent = S("daily_done_badge");
+  $("h-ttl-daily").style.webkitTextStrokeColor = s.done ? "#0b4f2a" : "#2e1a66";
   const tick = () => { const ms = msToMidnight(), z = (n) => String(Math.floor(n)).padStart(2, "0"); $("h-dcount").textContent = `${z(ms / 3600000)}:${z(ms % 3600000 / 60000)}:${z(ms % 60000 / 1000)}`; };
   clearInterval(dailyTick); if (s.done) { tick(); dailyTick = setInterval(tick, 1000); }
 }
