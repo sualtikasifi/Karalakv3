@@ -45,7 +45,7 @@ function dialog(c, popup) {
   const claimed = popup.k === "claimed", close = () => { d.classList.add("hidden"); if (claimed && popup.chests.length) popup.chests.forEach((t) => openNow(c, t)); };
   const wrap = el("div", "ls-wrap"), fr = el("div", "ls-frame"); wrap.append(fr);
   fr.append(el("img", "ls-bg", ""));
-  fr.firstChild.src = "img/ls_frame.webp";
+  fr.firstChild.src = c.lang() === "tr" ? "img/ls_frame.webp" : "img/ls_frame_en.webp";
   const hint = el("div", "ls-hint"); fr.append(hint);
   if (popup.k === "missed") hint.textContent = x.missed(popup.lost); else if (popup.rescued) { hint.textContent = x.rescued; hint.className += " ok"; } else if (claimed && popup.milestone) { hint.textContent = x.mile(popup.streak); hint.className += " mile"; } else if (claimed) { hint.textContent = x.claimed; hint.className += " big"; } else hint.textContent = x.streak(before);
   const grid = el("div", "ls-grid");
@@ -60,7 +60,7 @@ function dialog(c, popup) {
   const act = el("div", "ls-act"); fr.append(act);
   const pill = (t, cls, fn) => { const b = el("button", "pill " + cls + " small", `<span>${t}</span>`); b.onclick = fn; return b; };
   if (popup.k === "claim") {
-    const b = el("button", "ls-claim", ""); b.append(Object.assign(new Image(), { src: "img/ls_btn_claim.webp", alt: x.claim })); b.onclick = () => claim(c, popup);
+    const b = el("button", "ls-claim", ""); b.append(Object.assign(new Image(), { src: c.lang() === "tr" ? "img/ls_btn_claim.webp" : "img/ls_btn_claim_en.webp", alt: x.claim })); b.onclick = () => claim(c, popup);
     act.append(b);
   } else if (popup.k === "missed") act.append(pill(getLang() === "tr" ? "Uygulamada kurtar" : "Save in the app", "orange", () => appOnlyDialog(c.$("stage"))), pill(x.restart, "cream", () => dialog(c, { k: "claim", before: 0 })));
   else act.append(pill(x.great, "orange", close));

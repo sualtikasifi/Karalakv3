@@ -588,7 +588,7 @@ async function startQuick() {
 function msgNoOpp() { show("home"); msg(t().noOpp + (lang === "tr" ? ". Bir süre sonra tekrar dene ya da çevrimdışı oyna." : ". Try again in a bit or play offline.")); }
 let foundTimer = null;
 function showFound(opp, go) {
-  const x = t(); show("found");
+  const x = t(); show("found"); $("f-title").src = lang === "tr" ? "img/mf_title.webp" : "img/mf_title_en.webp";
   $("f-tagt").textContent = x.found; $("f-tagt").style.whiteSpace = "pre-line";
   $("f-t1").querySelector("span").textContent = x.tip1(10); $("f-t2").querySelector("span").textContent = x.tip2; $("f-t3").querySelector("span").textContent = x.tip3;
   const card = (id, nick, lvl, frame, xp) => {
