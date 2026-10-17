@@ -879,3 +879,22 @@ setTimeout(() => {
   let i = 0; const next = () => { if (i >= list.length) return; const im = new Image(); im.onload = im.onerror = () => setTimeout(next, 400); im.src = `img/${list[i++]}.webp`; };
   (window.requestIdleCallback || ((f) => setTimeout(f, 1)))(next);
 }, 3500);
+
+// Quietly pulls in the pictures of the other scenes while the player is on the home screen (three at a time, only when the line is idle
+// and "data saver" is off), so a scene opens with its background already there instead of building up piece by piece.
+function warmImages() {
+  if (navigator.connection && navigator.connection.saveData) return;
+  const urls = [], seen = new Set(), add = (u) => { if (u && !seen.has(u)) { seen.add(u); urls.push(u); } };
+  for (const id of ["draw", "guess", "search", "found", "store", "settings", "league", "friends", "onl", "onc", "onj", "offs", "onw", "ach", "worlds", "lvmap", "runes", "account", "report", "duels", "res2", "result"]) {
+    document.querySelectorAll("#" + id + " img[data-src]").forEach((i) => add(i.dataset.src));
+  }
+  try { for (const sh of document.styleSheets) for (const r of sh.cssRules) for (const m of (r.cssText || "").matchAll(/url\(["']?(img\/[^"')]+)/g)) add(m[1]); } catch {}
+  let next = 0;
+  const pump = () => {
+    if (next >= urls.length) return;
+    const img = new Image(); img.onload = img.onerror = () => (window.requestIdleCallback ? requestIdleCallback(pump, { timeout: 800 }) : setTimeout(pump, 60));
+    img.src = urls[next++];
+  };
+  for (let k = 0; k < 3; k++) pump();
+}
+addEventListener("load", () => setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(warmImages, { timeout: 4000 }) : warmImages()), 1500));

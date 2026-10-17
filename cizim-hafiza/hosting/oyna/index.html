@@ -63,6 +63,13 @@
     bar.style.left = ox + 196 * k + "px"; bar.style.top = oy + 1354 * k + "px"; bar.style.width = 446 * k + "px"; bar.style.height = 76 * k + "px"; bar.style.padding = 0.17 * 76 * k + "px";
   }
   lay(); addEventListener("resize", lay);
+  // The bar only finishes once the first scene's picture and the lettering font are really in, so the game never opens half drawn
+  // (the longest wait is 6 s, for a very slow line).
+  window.__appReady = false;
+  var need = 2, rel = function () { if (--need === 0) window.__appReady = true; };
+  var first = new Image(); first.onload = first.onerror = rel; first.src = "img/bg_home_scene.webp";
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(rel, rel);
+  setTimeout(function () { window.__appReady = true; }, 6000);
   function end() { if (done) return; done = true; try { localStorage.setItem("splashSeen", "1"); } catch (e) {} sp.style.opacity = "0"; setTimeout(function () { sp.remove(); }, 300); }
   sp.addEventListener("click", function () { total = 170; t0 = Date.now() - (Date.now() - t0); });
   (function tick() {
