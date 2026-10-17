@@ -21,7 +21,7 @@ import { setLang, loadStrings, S } from "./i18n.js";
 import { syncNow, scheduleBackup } from "./sync.js";
 import { openRankLadder } from "./ranks.js";
 import { startSearch, stopSearch } from "./search.js";
-import { exitDialog, appOnlyDialog } from "./ui.js";
+import { exitDialog, appOnlyDialog, PLAY_URL } from "./ui.js";
 import { layoutBreak, startBreak, stopBreak } from "./brk.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
@@ -119,7 +119,9 @@ function place(el, x, y, w, h) {
 function viewport() { const v = window.visualViewport; return { w: v ? v.width : innerWidth, h: v ? v.height : innerHeight, ox: v ? v.offsetLeft : 0, oy: v ? v.offsetTop : 0 }; }
 /** Art rows that must stay on screen for each scene: home is fixed by hand, the others come from where their widgets end (see layout). */
 const safeRows = { home: { t: HOME_SAFE_TOP, b: HOME_SAFE_TOP + HOME_SAFE_H } };
-const SAFE_TOP = 24, SAFE_BELOW = 60;
+const SAFE_TOP = 24, SAFE_BELOW = 60, SAFE_BELOW_OF = { settings: 16 };
+/** Scenes whose gap beside the art is closed partly by a slight horizontal stretch (the sides carry card fragments, so a mirror would repeat them). */
+const STRETCH_MAX = { settings: 1.06 };
 function layoutOnce() {
   const { w: vw, h: vh, ox, oy } = viewport();
   const s = stage.style;
@@ -133,10 +135,12 @@ function layoutOnce() {
   }
   else { W = Math.min(vw, vh * ART_W / ART_H); H = W * ART_H / ART_W; }
   u = W / ART_W;
+  const kx = Math.max(1, Math.min(STRETCH_MAX[current] || 1, vw / W));
+  stage.style.transform = kx > 1 ? `scaleX(${kx})` : ""; W *= 1; const Wv = W * kx;
   s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + ox + "px";
   s.top = oy + (H <= vh ? (vh - H) / 2 : sf ? Math.min(0, Math.max(vh - H, vh / 2 - (sf.t + sf.b) / 2 * u)) : (vh - H) / 2) + "px";
   stage.style.setProperty("--u", u + "px");
-  paintEdges(W, H, (vw - W) / 2, parseFloat(s.top));
+  paintEdges(Wv, H, (vw - Wv) / 2, parseFloat(s.top));
   if (!$("tut-spot").classList.contains("coach")) place($("tut-card"), 70, 250, 700, 360);
   if (current === "home") {
     place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214); place($("h-rbadge"), 682, 84, 70, 70);
@@ -259,7 +263,7 @@ function layout() {
   }
   // Fully across the width needs this many art rows on screen; lists can shrink to it, fixed widgets cannot.
   const fullB = SAFE_TOP + vh / (vw / ART_W);
-  const want = Math.round(fill ? Math.max(fixed + SAFE_BELOW / 2, fullB) : fixed + SAFE_BELOW);
+  const want = Math.round(fill ? Math.max(fixed + SAFE_BELOW / 2, fullB) : fixed + (SAFE_BELOW_OF[current] ?? SAFE_BELOW));
   if (!fixed && !fill) return;
   if (want >= ART_H - 40) { if (have) { delete safeRows[current]; layoutOnce(); } return; }
   if (have && Math.abs(have.b - want) < 6) return;
@@ -816,7 +820,8 @@ $("tl-online").onclick = needNet(async () => { await ensureWords(); show("onl");
 $("on-back").onclick = () => show("home"); $("oj-back").onclick = () => show("onl"); $("oc-back").onclick = () => show("onl");
 $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("onj");
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
-$("h-veil-gold").onclick = $("h-veil-chest").onclick = () => appOnlyDialog($("stage")); $("h-rank").onclick = () => openRankLadder(ctx); $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => openRankLadder(ctx);
+// the ad-reward tiles live only in the phone app: a tap goes straight to the store page
+$("h-veil-gold").onclick = $("h-veil-chest").onclick = () => window.open(PLAY_URL, "_blank", "noopener"); $("h-rank").onclick = () => openRankLadder(ctx); $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => openRankLadder(ctx);
 $("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
 $("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; net.runeConfig().then((d) => { applyRuneConfig(d); if (current === "runes") renderRunes(ctx, true); }).catch(() => {}); show("runes"); }; $("ru-back").onclick = () => show("home");
 $("tl-quick").onclick = needNet(() => start("quick")); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };
