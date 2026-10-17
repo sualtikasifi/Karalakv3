@@ -55,11 +55,11 @@
         ]
       },
       {
-        "source": "/oyna/**/*.@(webp|ttf|png|jpg)",
+        "source": "/oyna/**/*.@(webp|ttf|png|jpg|svg|m4a|mp3|mp4)",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "public, max-age=86400"
+            "value": "public, max-age=31536000"
           }
         ]
       }
