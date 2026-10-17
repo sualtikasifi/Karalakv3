@@ -131,7 +131,7 @@ function viewport() {
 const safeRows = { home: { t: HOME_SAFE_TOP, b: HOME_SAFE_TOP + HOME_SAFE_H } };
 const SAFE_TOP = 24, SAFE_BELOW = 60, SAFE_BELOW_OF = { settings: 16 };
 /** Scenes whose side gap is closed by stretching only the outer slice of the painted scene (the sides carry card fragments, so a mirror would repeat them); widgets and the middle keep their true proportions. */
-const SIDE_SLICE = {};
+const SIDE_SLICE = { account: 0.045 };
 /** Scenes with a painted wider version: the old scene sits inside it at (x0..x1) of w x h source pixels, so the gap beside the art shows more painting at true scale, nothing stretched. */
 const wideReady = new Set();
 const WIDE = {
@@ -617,7 +617,8 @@ async function startDuel(run, count = 10) {
 // of the day (2x), as in GameViewModel.effectiveXpMultiplier.
 let xpMult = 1, qmBonus = false, xpEventOnly = 1;
 async function begin(picked) {
-  xpEventOnly = await net.xpEventMultiplier().catch(() => 1);
+  // the XP event is a nice-to-have: a slow or blocked network (or a browser that will not start Firebase) must never keep a game from starting
+  xpEventOnly = await Promise.race([net.xpEventMultiplier().catch(() => 1), new Promise((r) => setTimeout(() => r(1), 1500))]);
   qmBonus = kind === "quick" && !!quickOpp && P.qmDay !== todayEpoch();
   xpMult = xpEventOnly * (qmBonus ? eco.QUICK_MATCH_DAILY_BONUS_MULTIPLIER : 1);
   round = picked.map((w) => ({ ...w, strokes: [], guess: "", correct: false, points: 0, ms: 0, xp: 0 }));
