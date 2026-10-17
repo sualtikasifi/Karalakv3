@@ -926,3 +926,5 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 /* full-screen reveals (chest opening, win) cover the whole browser window, with the content kept to the stage's width */
 .os2,.won{position:fixed}
 .os2-col{max-width:calc(var(--u)*841)}
+/* iOS Safari zooms the whole page when a field with text under 16 px gets focus, and does not zoom back: every field stays at 16 px or more */
+#g-input,#fr-input,#oj-nick,#oj-code,#se-code,#ak-user,#ak-pass,.pk-in,.inp{font-size:max(16px,calc(var(--u)*40))!important}
