@@ -1427,10 +1427,6 @@
     <string name="quick_match_dont_worry_body">We will find you an opponent at your level in no time.</string>
     <string name="drawing_time_joker">+10 s</string>
     <string name="duel_list_incoming_play">Play</string>
-    <string name="online_lobby_line1">Remembering what you drew</string>
-    <string name="online_lobby_line2">can be harder than quantum physics.</string>
-    <string name="online_lobby_line3">Welcome to the funniest</string>
-    <string name="online_lobby_line4">scribble battles!</string>
     <string name="offline_needed">An internet connection is required</string>
     <string name="offline_screen_title">No internet</string>
     <string name="offline_screen_body">You need an internet connection to play this. Play Offline and Levels work without it.</string>
@@ -1638,4 +1634,19 @@
     <string name="result_rune_bonus_line">From your runes: +%1$d gold</string>
     <string name="league_score_refused">Your score can\'t be saved to the server right now, so other players may not see you in this table. Reopen the app or try again later.</string>
     <string name="error_friend_request_limit">You have sent a lot of friend requests today. Try again tomorrow.</string>
+    <string-array name="online_lobby_quotes">
+        <item>Your luck matches your drawing skill.\nIf you have neither,\nat least have confidence!</item>
+        <item>Everyone here is an artist.\nNobody knows what anyone drew,\nbut everyone is very sure.</item>
+        <item>Is this a cat\nor a potato?</item>
+        <item>Your drawing may be terrible,\nbut when you win,\nno one will remember.</item>
+        <item>Even the Mona Lisa’s smile\nwasn’t this mysterious.\nDraw, guess, win!</item>
+        <item>One line, one guess,\nlots of laughs.\nLet the Doodle Wars begin!</item>
+        <item>Your pencil tip may break,\nbut your confidence never will!</item>
+        <item>Your brain says ‘duck’,\nyour hand draws ‘cloud’.\nNo clear winner!</item>
+        <item>Time is running out,\nthe pen is trembling,\nfriends are giggling.</item>
+        <item>You don’t have to be\nLeonardo da Vinci. Just draw\nless badly than your rivals!</item>
+        <item>This is no art gallery,\nbut laughs are guaranteed!</item>
+        <item>If nobody gets your drawing,\ncall it ‘abstract art’\nand walk away.</item>
+        <item>Being misunderstood is\nthe fate of every artist.\nDraw anyway!</item>
+    </string-array>
 </resources>

@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -121,13 +122,10 @@ fun OnlineLobbyScreen(
                 .size(len(560f), len(paperH * 0.6f)),
             contentAlignment = Alignment.Center
         ) {
-            // Three short lines, broken where the sentence breathes (the greeting kept whole on the last one), all
-            // at one size: the longest line decides how far they all shrink.
-            val lines = listOf(
-                stringResource(R.string.online_lobby_line1),
-                stringResource(R.string.online_lobby_line2),
-                stringResource(R.string.online_lobby_line3) + " " + stringResource(R.string.online_lobby_line4)
-            )
+            // A different note each time the screen opens (never the same one twice in a row). Each note is already broken into
+            // short lines where the sentence breathes; all lines share one size, the longest decides how far they shrink.
+            val quotes = stringArrayResource(R.array.online_lobby_quotes)
+            val lines = remember { quotes[LobbyQuotes.next(quotes.size)].split("\n") }
             val style = androidx.compose.ui.text.TextStyle(
                 fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
@@ -198,5 +196,17 @@ private fun RaceButton(
     ) {
         Image(painter = painterResource(image), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
         LetteredText(text, textSize, outline = outline, maxLines = 1, modifier = Modifier.fillMaxSize())
+    }
+}
+
+/** Picks which note shows on the paper: random, but not the one shown last. */
+internal object LobbyQuotes {
+    private var last = -1
+    fun next(count: Int, random: kotlin.random.Random = kotlin.random.Random): Int {
+        if (count <= 1) return 0
+        var i: Int
+        do { i = random.nextInt(count) } while (i == last)
+        last = i
+        return i
     }
 }

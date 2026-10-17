@@ -1440,10 +1440,6 @@
     <string name="quick_match_dont_worry_body">Kısa süre içinde seninle aynı seviyede bir rakip bulacağız.</string>
     <string name="drawing_time_joker">+10 sn</string>
     <string name="duel_list_incoming_play">Oyna</string>
-    <string name="online_lobby_line1">Ne çizdiğini hatırlamak, bazen</string>
-    <string name="online_lobby_line2">kuantum fiziğinden bile daha zor olabilir.</string>
-    <string name="online_lobby_line3">Karalama Savaşlarına</string>
-    <string name="online_lobby_line4">Hoşgeldin!</string>
     <string name="offline_needed">İnternet bağlantısı gerekiyor</string>
     <string name="offline_screen_title">İnternet yok</string>
     <string name="offline_screen_body">Bu bölümü oynamak için internete bağlanman gerekiyor. Çevrimdışı Oyna ve Seviyeler internetsiz de açık.</string>
@@ -1651,4 +1647,19 @@
     <string name="result_rune_bonus_line">Rünlerin katkısı: +%1$d altın</string>
     <string name="league_score_refused">Puanın şu an sunucuya yazılamıyor, bu yüzden diğer oyuncular seni bu tabloda göremeyebilir. Uygulamayı kapatıp aç ya da biraz sonra tekrar dene.</string>
     <string name="error_friend_request_limit">Bugün çok fazla arkadaşlık isteği gönderdin. Yarın tekrar dene.</string>
+    <string-array name="online_lobby_quotes">
+        <item>Çizim yeteneğin kadar\nşansın da var. İkisi de yoksa\nen azından özgüvenin olsun!</item>
+        <item>Burada herkes sanatçı.\nKimse ne çizdiğini anlamıyor\nama herkes çok emin.</item>
+        <item>Bu bir kedi mi,\nyoksa patates mi?</item>
+        <item>Çizimin berbat olabilir\nama kazandığında kimse\nbunu hatırlamayacak.</item>
+        <item>Mona Lisa’nın gülümsemesi\nbile bu kadar gizemli değildi.\nÇiz, tahmin et, kazan!</item>
+        <item>Bir çizgi, bir tahmin,\nbir sürü kahkaha.\nKaralama Savaşları başlasın!</item>
+        <item>Kalemin ucu kırılabilir,\nama özgüvenin asla!</item>
+        <item>Beynin ‘ördek’ diyor,\nelin ‘bulut’ çiziyor.\nKazanan belli değil!</item>
+        <item>Zaman daralıyor,\nkalem titriyor,\narkadaşlar kıkırdıyor.</item>
+        <item>Leonardo da Vinci olmana\ngerek yok. Sadece rakiplerinden\ndaha az kötü çiz!</item>
+        <item>Sanat galerisi değil bu,\nama kahkaha garantili!</item>
+        <item>Çizimin anlaşılmazsa\n‘soyut sanat’ de, kurtul.</item>
+        <item>Yanlış anlaşılmak\nsanatçıların kaderidir.\nYine de çiz!</item>
+    </string-array>
 </resources>
