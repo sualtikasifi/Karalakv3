@@ -353,6 +353,28 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                 is Pending.JokerItem -> com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(item.type, 72.dp)
             }
         }
+        // The painted purchase windows carry their words ("Satın al?", "Vazgeç", "Satın Al") in the picture, so they only exist in
+        // Turkish: any other language gets the plain window built from the app's own texts.
+        if (androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language != "tr") {
+            PlainPurchaseDialog(
+                name = name,
+                price = price,
+                gold = gold,
+                preview = preview,
+                onConfirm = {
+                    val ok = when (item) {
+                        is Pending.PenItem -> viewModel.buyPen(item.skin)
+                        is Pending.FrameItem -> viewModel.buyFrame(item.frame)
+                        is Pending.JokerItem -> viewModel.buyJoker(item.type, item.quantity)
+                    }
+                    if (ok && item is Pending.JokerItem) boughtJoker = item
+                    else showToast(if (ok) R.string.store_bought else R.string.store_not_enough, isError = !ok)
+                    pending = null
+                },
+                onDismiss = { pending = null }
+            )
+            return@let
+        }
         if (item is Pending.JokerItem) {
             JokerPurchaseDialog(
                 type = item.type,
@@ -1233,6 +1255,64 @@ private fun PaintedPurchaseDialog(
                 PaintedButton(spec.close, 78f, true, onDismiss)
                 PaintedButton(spec.cancel, 76f, true, onDismiss)
                 PaintedButton(spec.confirm, 76f, canAfford, onConfirm)
+            }
+        }
+    }
+}
+
+/** The purchase window for languages the painted pictures are not written in: the item, its price, and the two buttons. */
+@Composable
+private fun PlainPurchaseDialog(
+    name: String,
+    price: Int,
+    gold: Int,
+    preview: @Composable () -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val canAfford = gold >= price
+    com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog(
+        title = stringResource(R.string.store_buy_confirm_title),
+        onDismiss = onDismiss,
+        footer = {
+            if (!canAfford) {
+                Text(
+                    text = "⚠ " + stringResource(R.string.store_missing_gold, price - gold),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color(0xFFB3401A),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton(
+                    text = stringResource(R.string.online_kick_confirm_cancel),
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    height = 50.dp
+                )
+                com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton(
+                    text = stringResource(R.string.store_buy),
+                    onClick = onConfirm,
+                    modifier = Modifier.weight(1f),
+                    enabled = canAfford,
+                    height = 50.dp
+                )
+            }
+        }
+    ) {
+        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.fillMaxWidth().height(110.dp), contentAlignment = Alignment.Center) { preview() }
+            Spacer(Modifier.height(8.dp))
+            Text(text = name, style = MaterialTheme.typography.titleMedium, color = Ink, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(28.dp))
+                Text(
+                    text = NumberFormat.getIntegerInstance().format(price),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Ink
+                )
             }
         }
     }
