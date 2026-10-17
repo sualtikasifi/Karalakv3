@@ -121,8 +121,8 @@ function viewport() { const v = window.visualViewport; return { w: v ? v.width :
 /** Art rows that must stay on screen for each scene: home is fixed by hand, the others come from where their widgets end (see layout). */
 const safeRows = { home: { t: HOME_SAFE_TOP, b: HOME_SAFE_TOP + HOME_SAFE_H } };
 const SAFE_TOP = 24, SAFE_BELOW = 60, SAFE_BELOW_OF = { settings: 16 };
-/** Scenes whose gap beside the art is closed partly by a slight horizontal stretch (the sides carry card fragments, so a mirror would repeat them). */
-const STRETCH_MAX = { settings: 1.1, home: 1.12 };
+/** Scenes whose side gap is closed by stretching only the outer slice of the painted scene (the sides carry card fragments, so a mirror would repeat them); widgets and the middle keep their true proportions. */
+const SIDE_SLICE = { settings: 0.1, home: 0.1 };
 function layoutOnce() {
   const { w: vw, h: vh, ox, oy } = viewport();
   const s = stage.style;
@@ -136,8 +136,7 @@ function layoutOnce() {
   }
   else { W = Math.min(vw, vh * ART_W / ART_H); H = W * ART_H / ART_W; }
   u = W / ART_W;
-  const kx = Math.max(1, Math.min(STRETCH_MAX[current] || 1, vw / W));
-  stage.style.transform = kx > 1 ? `scaleX(${kx})` : ""; W *= 1; const Wv = W * kx;
+  stage.style.transform = ""; const Wv = W;
   s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + ox + "px";
   s.top = oy + (H <= vh ? (vh - H) / 2 : sf ? Math.min(0, Math.max(vh - H, vh / 2 - (sf.t + sf.b) / 2 * u)) : (vh - H) / 2) + "px";
   stage.style.setProperty("--u", u + "px");
@@ -298,18 +297,30 @@ function show(id) {
 function paintEdges(W, H, gap, top) {
   const bgEl = document.querySelector("#" + current + " > img.bg");
   const src = bgEl && (bgEl.getAttribute("src") || bgEl.dataset.src);
+  const slice = SIDE_SLICE[current] || 0, sw = slice * W;
+  let sliced = false;
   for (const side of ["l", "r"]) {
     const e = $("edge-" + side); if (!e) continue;
     const on = !!src && gap > 0.5 && gap <= W * 0.3;
     e.style.display = on ? "block" : "none";
     if (!on) continue;
-    const mirror = gap <= W * 0.16 && current !== "settings" && current !== "home"; // a mirror of the scenery edge; the settings edge carries card fragments, so it gets a soft smear instead
+    if (slice) {
+      // the outer slice of the scene is drawn here, stretched to also cover the gap; the stage's own copy of that slice is clipped away
+      sliced = true;
+      const ew = gap + sw + 1, bw = W * ew / (sw + 1);
+      e.style.transform = "none"; e.style.filter = "none";
+      e.style.cssText += `;width:${ew}px;top:${top}px;height:${H}px;background-image:url("${src}");background-size:${bw}px ${H}px;background-position:${side === "l" ? "0" : "100%"} top;${side === "l" ? "left:0" : "right:0"}`;
+      continue;
+    }
+    const mirror = gap <= W * 0.16; // a mirror of the scenery edge, so vines and wood carry on seamlessly
     const bw = mirror ? W + 6 : W * (gap + 1) / 3;
     e.style.transform = mirror ? "scaleX(-1)" : "none";
     e.style.filter = mirror ? "none" : "blur(22px) brightness(.9)";
     const px = mirror ? (side === "l" ? "-3px" : "calc(100% + 3px)") : (side === "l" ? "0" : "100%");
     e.style.cssText += `;width:${gap + 1}px;top:${top}px;height:${H}px;background-image:url("${src}");background-size:${bw}px ${H}px;background-position:${px} top;${side === "l" ? "left:0" : "right:0"}`;
   }
+  if (bgEl) bgEl.style.clipPath = sliced ? `inset(0 ${sw}px 0 ${sw}px)` : "";
+  stage.style.background = sliced ? "transparent" : "";
 }
 /** The art is a fixed tall shape; the strips beside it carry a soft, enlarged copy of the same scene instead of bare wood. */
 function paintBackdrop(id) {
