@@ -1,0 +1,1 @@
+{ "name": "karalak-web-tests", "private": true, "scripts": { "test": "node ios.test.mjs" }, "devDependencies": { "playwright": "1.49.1" } }
