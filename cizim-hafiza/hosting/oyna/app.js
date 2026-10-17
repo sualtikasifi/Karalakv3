@@ -117,7 +117,16 @@ function place(el, x, y, w, h) {
   if (w != null) s.width = w * u + "px";
   if (h != null) s.height = h * u + "px";
 }
-function viewport() { const v = window.visualViewport; return { w: v ? v.width : innerWidth, h: v ? v.height : innerHeight, ox: v ? v.offsetLeft : 0, oy: v ? v.offsetTop : 0 }; }
+let fullH = 0, kbdH = 0;
+const typingEl = () => { const a = document.activeElement; return a && /^(INPUT|TEXTAREA)$/.test(a.tagName) ? a : null; };
+/** While a text field has the keyboard up, the painted scene keeps the size it had without it (kbdH = what is left of the window); layoutOnce then slides the scene so the field stays in view. */
+function viewport() {
+  const v = window.visualViewport, h = v ? v.height : innerHeight;
+  kbdH = 0;
+  if (!typingEl()) fullH = Math.max(h, 0);
+  else if (fullH && h < fullH * 0.85 && !["guess", "result", "res2", "lvmap"].includes(current)) { kbdH = h; return { w: v ? v.width : innerWidth, h: fullH, ox: v ? v.offsetLeft : 0, oy: v ? v.offsetTop : 0 }; }
+  return { w: v ? v.width : innerWidth, h, ox: v ? v.offsetLeft : 0, oy: v ? v.offsetTop : 0 };
+}
 /** Art rows that must stay on screen for each scene: home is fixed by hand, the others come from where their widgets end (see layout). */
 const safeRows = { home: { t: HOME_SAFE_TOP, b: HOME_SAFE_TOP + HOME_SAFE_H } };
 const SAFE_TOP = 24, SAFE_BELOW = 60, SAFE_BELOW_OF = { settings: 16 };
@@ -149,6 +158,11 @@ function layoutOnce() {
   s.width = W + "px"; s.height = H + "px"; s.left = (vw - W) / 2 + ox + "px";
   s.top = oy + (H <= vh ? (vh - H) / 2 : sf ? Math.min(0, Math.max(vh - H, vh / 2 - (sf.t + sf.b) / 2 * u)) : (vh - H) / 2) + "px";
   stage.style.setProperty("--u", u + "px");
+  if (kbdH) { // the keyboard covers the lower part of the window: slide the scene up just enough to keep the field being typed in visible
+    const r = typingEl()?.getBoundingClientRect();
+    // a field in the lower part goes up to about a quarter of the visible height, so the button under it stays in view too
+    if (r && r.bottom > oy + kbdH - 100) { const shift = Math.max(0, r.top - (oy + Math.max(8, kbdH * 0.28))); s.top = parseFloat(s.top) - shift + "px"; }
+  }
   paintEdges(Wv, H, (vw - Wv) / 2, parseFloat(s.top));
   if (!$("tut-spot").classList.contains("coach")) place($("tut-card"), 70, 250, 700, 360);
   if (current === "home") {
