@@ -1,0 +1,33 @@
+name: iPhone web test
+
+# Runs the web game in WebKit (the engine of Safari) on iPhone-sized screens, so iPhone-only problems show up here instead of on a
+# friend's phone. Screenshots of every screen and device are attached to the run (artifact "ios-screenshots").
+on:
+  push:
+    branches: [main]
+    paths: ["cizim-hafiza/hosting/oyna/**", "cizim-hafiza/web-tests/**", ".github/workflows/ios-web-test.yml"]
+  pull_request:
+    paths: ["cizim-hafiza/hosting/oyna/**", "cizim-hafiza/web-tests/**", ".github/workflows/ios-web-test.yml"]
+  workflow_dispatch:
+
+jobs:
+  ios:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cizim-hafiza/web-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: Test on iPhone sizes (WebKit)
+        run: npm test
+      - name: Keep the screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-screenshots
+          path: cizim-hafiza/web-tests/shots
