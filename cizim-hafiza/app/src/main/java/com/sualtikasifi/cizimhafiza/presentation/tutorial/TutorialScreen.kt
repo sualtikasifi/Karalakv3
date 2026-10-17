@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -156,45 +158,58 @@ private fun CoachOverlay(
             .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = {}),
         contentAlignment = Alignment.Center
     ) {
-        // The game's parchment-in-wood panel, the same as every other window.
-        com.sualtikasifi.cizimhafiza.presentation.common.NinePatch(
-            // tut_card: league_card rebuilt tall (clean sides, vines only in the top corners), so the card no longer shows stretched vines on its sides
-            res = R.drawable.tut_card,
-            slicePx = 175,
-            edge = 40.dp,
-            modifier = Modifier.widthIn(max = 460.dp).fillMaxWidth().padding(horizontal = 24.dp).springIn(key = coach.titleRes, fromY = 50, stepMs = 0)
+        // Three hand-drawn frames (tut_frame_*), picked by how much text the card carries. They are pictures with vines down
+        // their sides, so they are shown at their own proportions (never stretched) and the card grows with the frame.
+        val body = stringResource(coach.bodyRes)
+        val frame = when {
+            body.length <= 90 -> Triple(R.drawable.tut_frame_short, 1000f / 773f, listOf(0.12f, 0.20f, 0.12f, 0.15f))
+            body.length <= 190 -> Triple(R.drawable.tut_frame_mid, 1000f / 1137f, listOf(0.12f, 0.17f, 0.12f, 0.14f))
+            else -> Triple(R.drawable.tut_frame_long, 1000f / 1337f, listOf(0.12f, 0.165f, 0.12f, 0.14f))
+        }
+        val showImage = coach.imageRes != null && body.length > 90
+        androidx.compose.foundation.layout.BoxWithConstraints(
+            modifier = Modifier.widthIn(max = 460.dp).fillMaxWidth().padding(horizontal = 12.dp)
+                .springIn(key = coach.titleRes, fromY = 50, stepMs = 0)
         ) {
+            val w = maxWidth
+            val h = w / frame.second
+            Image(
+                painter = painterResource(frame.first),
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
+                modifier = Modifier.width(w).height(h)
+            )
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier = Modifier.width(w).height(h)
+                    .padding(start = w * frame.third[0], top = h * frame.third[1], end = w * frame.third[2], bottom = h * frame.third[3]),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                if (coach.imageRes != null) {
+                if (showImage) {
                     Image(
-                        painter = painterResource(coach.imageRes),
+                        painter = painterResource(coach.imageRes!!),
                         contentDescription = null,
-                        modifier = Modifier.size(140.dp).floating(amplitude = 4f, tilt = 3f)
+                        modifier = Modifier.size(if (body.length > 190) 120.dp else 96.dp).floating(amplitude = 4f, tilt = 3f)
                     )
-                } else {
-                    Text(text = coach.emoji, style = MaterialTheme.typography.displaySmall)
+                    Spacer(modifier = Modifier.height(6.dp))
                 }
-                Spacer(modifier = Modifier.height(10.dp))
                 com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                     text = stringResource(coach.titleRes),
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFF3A2416), fontSize = 25.sp, textAlign = TextAlign.Center),
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFF3A2416), fontSize = 24.sp, textAlign = TextAlign.Center),
                     maxLines = 2,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = stringResource(coach.bodyRes),
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(17.sp, 24.sp)
+                    text = body,
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(16.sp, 22.sp)
                 )
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(14.dp))
                 com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
                     text = stringResource(coach.buttonRes),
                     onClick = onContinue,
-                    height = 56.dp,
-                    textSize = 20.sp,
+                    height = 52.dp,
+                    textSize = 19.sp,
                     modifier = Modifier.fillMaxWidth()
                 )
                 if (showSkip) {
