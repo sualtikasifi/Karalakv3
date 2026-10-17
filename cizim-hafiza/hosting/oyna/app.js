@@ -117,7 +117,7 @@ function place(el, x, y, w, h) {
   if (w != null) s.width = w * u + "px";
   if (h != null) s.height = h * u + "px";
 }
-let fullH = 0, kbdH = 0;
+let fullH = 0, kbdH = 0, lastVp = "";
 const typingEl = () => { const a = document.activeElement; return a && /^(INPUT|TEXTAREA)$/.test(a.tagName) ? a : null; };
 /** While a text field has the keyboard up, the painted scene keeps the size it had without it (kbdH = what is left of the window); layoutOnce then slides the scene so the field stays in view. */
 /** The notch and the home indicator (0 in a normal browser tab): the scene stays between them while the backdrop paints under them. */
@@ -152,6 +152,7 @@ const WIDE = {
 };
 function layoutOnce() {
   const { w: vw, h: vh, ox, oy } = viewport();
+  lastVp = [vw, vh, ox, oy, kbdH].join();
   const s = stage.style;
   let W, H;
   const sf = safeRows[current];
@@ -284,7 +285,9 @@ function fitAll() {
   for (const e of document.querySelectorAll(".screen.on .fitw, .screen.on .fith, .aw-ov .fitw, .aw-ov .fith")) {
     e.style.fontSize = ""; if (e.clientWidth < 4) continue;
     const base = parseFloat(getComputedStyle(e).fontSize); let k = 1;
-    const over = () => (e.classList.contains("fitw") && e.scrollWidth > e.clientWidth + 1) || (e.classList.contains("fith") && e.scrollHeight > e.clientHeight + 1);
+    // the real width of the text against the real width of the box (scrollWidth is rounded, and Safari starts the "…" at a fraction of a pixel)
+    const tw = () => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect().width; };
+    const over = () => (e.classList.contains("fitw") && (e.scrollWidth > e.clientWidth + 1 || tw() > e.getBoundingClientRect().width + 0.01)) || (e.classList.contains("fith") && e.scrollHeight > e.clientHeight + 1);
     while (k > 0.55 && over()) { k -= 0.04; e.style.fontSize = base * k + "px"; }
   }
 }
@@ -317,8 +320,11 @@ window.visualViewport?.addEventListener("resize", layout);
 window.visualViewport?.addEventListener("scroll", () => { window.scrollTo(0, 0); layout(); });
 // only a text field raises the keyboard: tapping a plain button must not re-lay-out (and so reset) the scene
 const isTyping = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || "") || e.target?.isContentEditable;
-document.addEventListener("focusin", (e) => { if (!isTyping(e)) return; for (const ms of [120, 350, 700]) setTimeout(() => { window.scrollTo(0, 0); layout(); }, ms); });
-document.addEventListener("focusout", (e) => { if (!isTyping(e)) return; for (const ms of [120, 350]) setTimeout(layout, ms); });
+// the scene is laid out again only when the window really moved (keyboard up or down): a no-change layout still makes Safari repaint the whole picture, which showed as a flash behind the typing window
+const vpSig = () => { const v = viewport(); return [v.w, v.h, v.ox, v.oy, kbdH].join(); };
+const relayoutIfMoved = () => { window.scrollTo(0, 0); if (vpSig() !== lastVp) layout(); };
+document.addEventListener("focusin", (e) => { if (!isTyping(e)) return; for (const ms of [120, 350, 700]) setTimeout(relayoutIfMoved, ms); });
+document.addEventListener("focusout", (e) => { if (!isTyping(e)) return; for (const ms of [120, 350]) setTimeout(relayoutIfMoved, ms); });
 
 const SPK = '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.47 4.47 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
 function paintMusic() { for (const id of ["d-music", "g-music"]) { const b = $(id); b.innerHTML = SPK; b.classList.toggle("off", !(P.prefs.s0 && P.prefs.s1)); } }
