@@ -21,7 +21,7 @@ export function layoutSettings(c) {
   [467, 562, 656, 751].forEach((cy, i) => place($("se-r" + i), 88, cy - 42, 664, 84));
   place($("se-code"), 353, 888, 399, 62); place($("se-use"), 353, 964, 190, 64); place($("se-how"), 556, 964, 196, 64); place($("se-msg"), 353, 1040, 399, 90);
   [["se-lang", 1237], ["se-tut", 1347], ["se-bug", 1457], ["se-acc", 1567], ["se-rate", 1677]].forEach(([id, cy]) => place($(id), 52, cy - 47, 738, 94));
-  place($("se-priv"), 190, 1752, 460, 56);
+  place($("se-priv"), 190, 1735, 460, 50);
 }
 
 export function renderSettings(c) {
