@@ -66,7 +66,11 @@ export function applySnapshot(P, r) {
 }
 
 let remoteXp = -1, timer = 0, busy = false, lastRemote = null;
-const linked = async () => { try { const a = await net.authState(); return a && !a.anon ? a : null; } catch { return null; } };
+/** Only a browser that once signed in to an account has anything to sync; everyone else must not be signed in to Firebase just by opening the page (anonymous sign-ups are rate-limited per network). */
+const FLAG = "karalakAccount";
+export const markAccount = (on) => { try { if (on) localStorage.setItem(FLAG, "1"); else localStorage.removeItem(FLAG); } catch {} };
+const linked = async () => { let f = false; try { f = localStorage.getItem(FLAG) === "1"; } catch {} if (!f) return null; return linked0(); };
+const linked0 = async () => { try { const a = await net.authState(); return a && !a.anon ? a : null; } catch { return null; } };
 
 /** Reads the cloud save; adopts it when it holds more XP than the browser, otherwise the browser's progress goes up. Returns "restored" | "saved" | "none". */
 export async function syncNow(c, { adopt = true } = {}) {

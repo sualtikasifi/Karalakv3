@@ -2,7 +2,7 @@
 // progress is saved to users/{uid}/backup/state (sync.js) so it follows the player to any browser.
 import * as net from "./firebase.js";
 import { S } from "./i18n.js";
-import { syncNow, lastBackupAt, forgetRemote } from "./sync.js";
+import { syncNow, lastBackupAt, forgetRemote, markAccount } from "./sync.js";
 import { frameRing, frameById } from "./store.js";
 
 const T = {
@@ -74,7 +74,7 @@ export async function renderAccount(c) {
   const go = async (fn, okText) => {
     if (busy) return; const v = read(); if (!v) return; busy = true; msg = "…"; renderMsg();
     try {
-      who = await fn(v.name, v.pass); forgetRemote();
+      who = await fn(v.name, v.pass); markAccount(true); forgetRemote();
       const r = await syncNow(c); c.saveP();
       done(r === "restored" ? x.welcome : okText);
     } catch (e) { done(errText(x, e)); }
@@ -84,10 +84,10 @@ export async function renderAccount(c) {
   $("ak-pass").onkeydown = (e) => { if (e.key === "Enter") $("ak-login").click(); };
   $("ak-out").onclick = () => c.confirm(S("account_sign_out_message"), S("account_sign_out_confirm"), async () => {
     if ((await syncNow(c)) === "error") return done(S("account_sign_out_backup_failed"));
-    try { await net.signOutAccount(); c.resetProgress(); forgetRemote(); done(S("account_signed_out_done")); } catch { done(S("account_sign_out_failed")); }
+    try { await net.signOutAccount(); markAccount(false); c.resetProgress(); forgetRemote(); done(S("account_signed_out_done")); } catch { done(S("account_sign_out_failed")); }
   });
   $("ak-del").onclick = () => c.confirm(S("account_delete_message"), S("account_delete_continue"), () => c.confirm(S("account_delete_final_message"), S("account_delete_final_confirm"), async () => {
-    try { await net.deleteAccount(); c.resetProgress(); forgetRemote(); done(S("account_delete_done")); }
+    try { await net.deleteAccount(); markAccount(false); c.resetProgress(); forgetRemote(); done(S("account_delete_done")); }
     catch (e) { done(e.code === "auth/requires-recent-login" ? S("account_delete_reauth_needed") : S("account_delete_failed")); }
   }));
 }
