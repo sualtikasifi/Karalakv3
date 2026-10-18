@@ -122,8 +122,9 @@ class ElevenLabs(private val apiKey: String) {
     companion object {
         private const val BASE = "https://api.elevenlabs.io"
 
-        /** ElevenLabs' own voices, a starting point until Karalak has a voice of its own. */
+        /** Karalak's own voice first (the default), then a few of ElevenLabs' voices to compare with. */
         val PRESETS = listOf(
+            Voice("Z6T21S2OyYi1iLYXumk4", "Karalak", "Karalak'ın sesi"),
             Voice("cgSgspJ2msm6clMCkdW9", "Jessica", "neşeli, genç"),
             Voice("FGY2WhTYpPnrIDTdsKH5", "Laura", "heyecanlı"),
             Voice("pFZP5JQG7iQjIQuC4Bku", "Lily", "yumuşak"),
