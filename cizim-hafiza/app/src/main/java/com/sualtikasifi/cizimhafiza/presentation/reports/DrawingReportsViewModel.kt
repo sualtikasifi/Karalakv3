@@ -148,7 +148,9 @@ data class DrawingReportsUiState(
     val decidingDailyChallengeId: String? = null,
     /** Decisions made from the swipe deck this session, and how many of them were refused. */
     val swipeDone: Int = 0,
-    val swipeFailures: Int = 0
+    val swipeFailures: Int = 0,
+    /** Swipe-deck runs whose last write was refused and that have not been decided again since. */
+    val swipeFailedIds: Set<String> = emptySet()
 ) {
     fun listFor(tab: ReportsTab): RunList? = when (tab) {
         ReportsTab.Queue -> queue
@@ -446,6 +448,7 @@ class DrawingReportsViewModel @Inject constructor(
      * shows it again along with the banner.
      */
     fun swipeDecide(run: PendingRun, action: SwipeAction) {
+        _uiState.value = _uiState.value.let { it.copy(swipeFailedIds = it.swipeFailedIds - run.id) }
         viewModelScope.launch {
             swipeLock.withLock {
                 val result = when (action) {
@@ -455,7 +458,12 @@ class DrawingReportsViewModel @Inject constructor(
                 }
                 val state = _uiState.value
                 _uiState.value = if (result.isFailure) {
-                    state.copy(decisionFailed = true, decisionError = result.exceptionOrNull()?.describe(), swipeFailures = state.swipeFailures + 1)
+                    state.copy(
+                        decisionFailed = true,
+                        decisionError = result.exceptionOrNull()?.describe(),
+                        swipeFailures = state.swipeFailures + 1,
+                        swipeFailedIds = state.swipeFailedIds + run.id
+                    )
                 } else {
                     state.copy(
                         queue = state.queue.copy(runs = state.queue.runs.filterNot { it.id == run.id }),

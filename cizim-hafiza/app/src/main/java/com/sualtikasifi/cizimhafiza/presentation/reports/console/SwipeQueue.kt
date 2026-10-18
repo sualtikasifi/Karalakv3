@@ -80,6 +80,7 @@ fun SwipeQueue(
     loading: Boolean,
     endReached: Boolean,
     failures: Int,
+    failedIds: Set<String>,
     done: Int,
     onNeedMore: () -> Unit,
     onDecide: (PendingRun, SwipeAction) -> Unit,
@@ -108,8 +109,9 @@ fun SwipeQueue(
         if (staged == s) { commit(s); staged = null }
     }
     DisposableEffect(Unit) { onDispose { staged?.let { commit(it) } } }
-    // A refused write puts its card back on the deck (the banner above says what happened).
-    LaunchedEffect(failures) { if (failures > 0) hidden = hidden.filter { id -> runs.none { it.id == id } }.toSet() }
+    // A refused write puts its card back on the deck (the banner above says what happened). Only
+    // that card: the others still hidden are waiting to be sent or already on their way.
+    LaunchedEffect(failures) { if (failures > 0) hidden = hidden - (failedIds - setOfNotNull(staged?.run?.id)) }
 
     val visible = runs.filterNot { it.id in hidden }
     LaunchedEffect(visible.size, loading, endReached) {

@@ -271,6 +271,7 @@ fun DrawingReportsScreen(
                         loading = uiState.queue.loading,
                         endReached = uiState.queue.endReached,
                         failures = uiState.swipeFailures,
+                        failedIds = uiState.swipeFailedIds,
                         done = uiState.swipeDone,
                         onNeedMore = { viewModel.loadMore(ReportsTab.Queue) },
                         onDecide = { run, action -> viewModel.swipeDecide(run, action) },
