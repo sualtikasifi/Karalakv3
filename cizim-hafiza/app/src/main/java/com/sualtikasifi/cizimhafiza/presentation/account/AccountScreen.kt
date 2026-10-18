@@ -374,9 +374,6 @@ fun AccountScreen(
             }
         }
 
-        // Offered whether or not a Google account is signed in: an anonymous player still has a uid with a profile, a
-        // friends list and a league entry under it, and Play's requirement is about the data, not about how the
-        // account was created.
         // ---- Videolarda öne çık ---------------------------------------------------------------------------------
         // Off until the player turns it on (and agrees to the dialog below saying what will be shown).
         val featureConsent by viewModel.featureConsent.collectAsState()
@@ -410,6 +407,9 @@ fun AccountScreen(
         }
 
         // ---- Delete --------------------------------------------------------------------------------------------
+        // Offered whether or not a Google account is signed in: an anonymous player still has a uid with a profile, a
+        // friends list and a league entry under it, and Play's requirement is about the data, not about how the
+        // account was created.
         Box(box(120f, 1584f, 720f, 1660f), contentAlignment = Alignment.Center) {
             if (uiState.isDeleting) {
                 CircularProgressIndicator(modifier = Modifier.size(32.dp))
