@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -84,6 +85,7 @@ import com.sualtikasifi.cizimhafiza.presentation.game.DrawingPreviewScene
 import com.sualtikasifi.cizimhafiza.presentation.game.GalleryChip
 import com.sualtikasifi.cizimhafiza.presentation.game.PaperPanel
 import com.sualtikasifi.cizimhafiza.presentation.game.ResArtW
+import com.sualtikasifi.cizimhafiza.presentation.game.ResultBackButton
 import com.sualtikasifi.cizimhafiza.presentation.game.ResultHeader
 import com.sualtikasifi.cizimhafiza.presentation.game.ResultInk
 import com.sualtikasifi.cizimhafiza.presentation.game.MiniStat
@@ -185,7 +187,7 @@ fun OnlineResultScreen(
             ) {
                 Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
                 Box(Modifier.fillMaxWidth().springIn(index = 0, fromY = -40)) {
-                    ResultHeader(title = stringResource(R.string.game_over), onBack = onMainMenu)
+                    ResultHeader(title = stringResource(R.string.game_over))
                 }
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = u * 40f),
@@ -365,6 +367,11 @@ fun OnlineResultScreen(
                 }
             }
         }
+        // Over the page, not in it: stays in the corner however far the page scrolls.
+        ResultBackButton(
+            onBack = onMainMenu,
+            modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().springIn(index = 0, fromY = -40)
+        )
     }
 
     // ---- The drawing window: the same one the solo result opens, with share for yours and report for theirs ----
