@@ -55,6 +55,15 @@
         ]
       },
       {
+        "source": "/studio/**/manifest.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
         "source": "/oyna/**/*.@(webp|ttf|png|jpg|svg|m4a|mp3|mp4)",
         "headers": [
           {

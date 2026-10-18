@@ -48,13 +48,26 @@ data class KeyUsage(val daily: Double, val monthly: Double, val total: Double, v
  */
 class OpenRouterClient(private val apiKey: String) {
 
-    suspend fun generate(system: String, prompt: String, model: String, webSearch: Boolean): Result<AiAnswer> =
+    /**
+     * One answer. [images] (PNG bytes) go along with the prompt for a model that can see; [json] asks for a single
+     * JSON object back (the studio's scripts), and [temperature] lowers or raises how adventurous the wording is.
+     */
+    suspend fun generate(
+        system: String,
+        prompt: String,
+        model: String,
+        webSearch: Boolean,
+        images: List<ByteArray> = emptyList(),
+        json: Boolean = false,
+        temperature: Double = 0.9,
+        maxTokens: Int = 8192
+    ): Result<AiAnswer> =
         withContext(Dispatchers.IO) {
             val models = (listOf(model.trim()) + FALLBACK_MODELS).filter { it.isNotBlank() }.distinct()
             var lastError: Throwable = IllegalStateException("Model yok")
             for (m in models) {
                 for (search in if (webSearch) listOf(true, false) else listOf(false)) {
-                    val r = call(m, system, prompt, search)
+                    val r = call(m, system, prompt, search, images, json, temperature, maxTokens)
                     if (r.isSuccess) return@withContext r
                     val e = r.exceptionOrNull() as? ApiError ?: return@withContext r
                     lastError = e
@@ -100,15 +113,42 @@ class OpenRouterClient(private val apiKey: String) {
 
     class ApiError(val code: Int, message: String) : Exception(message)
 
-    private fun call(model: String, system: String, prompt: String, search: Boolean): Result<AiAnswer> = runCatching {
+    private fun call(
+        model: String,
+        system: String,
+        prompt: String,
+        search: Boolean,
+        images: List<ByteArray>,
+        json: Boolean,
+        temperature: Double,
+        maxTokens: Int
+    ): Result<AiAnswer> = runCatching {
         val body = buildJsonObject {
             put("model", model)
             putJsonArray("messages") {
                 addJsonObject { put("role", "system"); put("content", system) }
-                addJsonObject { put("role", "user"); put("content", prompt) }
+                addJsonObject {
+                    put("role", "user")
+                    if (images.isEmpty()) {
+                        put("content", prompt)
+                    } else {
+                        putJsonArray("content") {
+                            addJsonObject { put("type", "text"); put("text", prompt) }
+                            images.forEach { png ->
+                                addJsonObject {
+                                    put("type", "image_url")
+                                    putJsonObject("image_url") {
+                                        put("url", "data:image/png;base64," + java.util.Base64.getEncoder().encodeToString(png))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
-            put("temperature", 0.9)
-            put("max_tokens", 8192)
+            put("temperature", temperature)
+            put("max_tokens", maxTokens)
+            if (json) putJsonObject("response_format") { put("type", "json_object") }
             // a little thinking is enough for plans and posts, and every thought is billed as output
             putJsonObject("reasoning") { put("effort", "low"); put("exclude", true) }
             if (search) putJsonArray("plugins") { addJsonObject { put("id", "web"); put("max_results", 5) } }
