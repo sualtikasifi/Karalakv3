@@ -769,42 +769,36 @@ private fun nextMidnight(): java.time.LocalDateTime =
  */
 @Composable
 private fun StreakRescueDialog(lostStreak: Int, onRescue: () -> Unit, onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
-        RaisedCard(corner = 28.dp, raise = 8.dp, modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(text = "🔥", style = MaterialTheme.typography.displaySmall)
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = stringResource(R.string.streak_rescue_title, lostStreak),
-                    style = MaterialTheme.typography.titleLarge,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = stringResource(R.string.streak_rescue_message),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-                PrimaryButton(
-                    text = stringResource(R.string.streak_rescue_action),
-                    onClick = com.sualtikasifi.cizimhafiza.presentation.common.adOnly(onRescue),
-                    icon = Icons.Filled.PlayCircle,
-                    height = 54.dp,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                SecondaryButton(
-                    text = stringResource(R.string.streak_rescue_dismiss),
-                    onClick = onDismiss,
-                    height = 46.dp,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+    // The game's own parchment window like every other popup, not a stock white card.
+    com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog(
+        title = stringResource(R.string.streak_rescue_title, lostStreak),
+        onDismiss = onDismiss,
+        centerTitle = true
+    ) {
+        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = "🔥", style = MaterialTheme.typography.displaySmall)
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.streak_rescue_message),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+            PrimaryButton(
+                text = stringResource(R.string.streak_rescue_action),
+                onClick = com.sualtikasifi.cizimhafiza.presentation.common.adOnly(onRescue),
+                icon = Icons.Filled.PlayCircle,
+                height = 54.dp,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            SecondaryButton(
+                text = stringResource(R.string.streak_rescue_dismiss),
+                onClick = onDismiss,
+                height = 46.dp,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

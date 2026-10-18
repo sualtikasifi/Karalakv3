@@ -173,8 +173,8 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .acd-b{display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;color:#3b2314}
 .acd-b .tag{background:#efe3cf;color:#7a5a40;border-radius:99px;padding:.2em .9em}.acd-b .tag.ok{background:#dff3d9;color:#14602a}
 .acd-b .pr{color:#7a5a40;font-size:1.1em}
-.acd-b .ds{background:#fff6;border:2px solid #c9854355;border-radius:18px;padding:.5em .8em;text-align:center;font-weight:600;width:100%}.acd-b .ds small{display:block;color:#7a5a40;font-size:.7em}
-.acd-b .rwp{background:#f2a10038;border-radius:99px;padding:.15em .9em}
+.acd-b .ds{background:#fff6;border:2px solid #c9854355;border-radius:18px;padding:.5em .8em;text-align:center;font-weight:600;width:100%}.acd-b .ds small{display:block;color:#7a5a40;font-size:.85em}
+.acd-b .rwp{background:#f2a10038;border-radius:99px;padding:.2em 1em;font-size:1.14em;font-weight:700}
 .acd-b .pill{position:relative}
 
 #lg-back,#lg-refresh{padding:0;position:absolute}#lg-back img{width:100%;height:100%}
@@ -614,7 +614,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .cd-bar{width:100%;height:calc(var(--u)*18);border-radius:calc(var(--u)*10);background:#ffffff29;overflow:hidden;margin-top:calc(var(--u)*16)}.cd-bar i{display:block;height:100%;background:#ffc94d}
 .cd-ok{text-align:center;font-weight:800;font-size:calc(var(--u)*37);color:#2e8b45;margin-bottom:calc(var(--u)*20)}.cd-busy{text-align:center;font-size:calc(var(--u)*31);color:#7a6a5a}.cd-lost{font-size:calc(var(--u)*31);color:#3a2416;line-height:1.35}
 /* ---- the home slots ---- */
-.ch-slot.filled{overflow:hidden;border-radius:calc(var(--u)*25);border:calc(var(--u)*4) solid var(--bc,#d7b48a);background:none;padding:0;display:block}.ch-slot.ready{border-width:calc(var(--u)*7);animation:slotglow 1.2s ease-in-out infinite alternate}@keyframes slotglow{to{filter:drop-shadow(0 0 calc(var(--u)*14) #5be08a)}}
+.ch-slot.filled{overflow:hidden;border-radius:calc(var(--u)*25);border:calc(var(--u)*4) solid var(--bc,#d7b48a);background:none;padding:0;display:block}.ch-slot.ready{border-width:calc(var(--u)*7);}.ch-slot.ready::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 calc(var(--u)*34) #5be08a;opacity:.25;animation:slotglow 1.2s ease-in-out infinite alternate}@keyframes slotglow{to{opacity:1}}
 .sl-cv{position:absolute;inset:0;width:100%;height:100%}.sl-img{position:absolute;left:50%;top:calc(var(--u)*10);transform:translateX(-50%);width:62%;pointer-events:none}
 .sl-n{position:absolute;left:0;right:0;top:calc(var(--u)*96);text-align:center;font-weight:800;font-size:calc(var(--u)*21);color:#3a2416;white-space:nowrap;padding:0 calc(var(--u)*4)}
 .sl-plate{position:absolute;left:calc(var(--u)*14);right:calc(var(--u)*14);bottom:calc(var(--u)*10);height:calc(var(--u)*46);border-radius:calc(var(--u)*22);border:calc(var(--u)*3) solid var(--ac);display:flex;align-items:center;justify-content:center;background:linear-gradient(#352218f2,#1a1108f2);overflow:hidden}
@@ -939,3 +939,18 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .pb-prev .bd-frm{position:relative;width:calc(var(--u)*220);height:calc(var(--u)*220)}
 .pb-prev .bd-frm img{max-width:none;max-height:none}.pb-prev .bd-frm>img:last-child{width:100%;height:100%}
 .ls-act .pill.cream span{color:#3b2314;-webkit-text-stroke:0;text-shadow:none}
+
+/* modal windows are centred in the window the player actually sees: the painted scene can be taller than the screen (its decor falls off the top and bottom), so a window centred in the scene sat lower than the middle and its bottom edge was cut off */
+.aw-ov,.ex-ov,#ru-status,.os2,.won{position:fixed}
+.aw-ov{padding:max(calc(var(--u)*49),env(safe-area-inset-top)) max(calc(var(--u)*33),env(safe-area-inset-right)) max(calc(var(--u)*49),env(safe-area-inset-bottom)) max(calc(var(--u)*33),env(safe-area-inset-left))}
+.aw-card{max-width:calc(var(--u)*775)}
+.ex-ov{padding:0 max(calc(var(--u)*16),env(safe-area-inset-right)) 0 max(calc(var(--u)*16),env(safe-area-inset-left))}.ex-card{max-width:calc(var(--u)*809)}
+.os2-col{max-width:calc(var(--u)*841)}
+#du-scroll{bottom:auto}
+.ex-ov.wait .ex-card{visibility:hidden}
+/* daily-streak rescue window: two stacked buttons, the second one outlined (SecondaryButton) */
+.aw-btns{display:flex;flex-direction:column;gap:calc(var(--u)*20)}
+.prim.alt{background:#fff;color:#f97316;box-shadow:inset 0 0 0 calc(var(--u)*5) #f97316}.prim.alt:active{transform:scale(.97);box-shadow:inset 0 0 0 calc(var(--u)*5) #f97316}
+.ao-ic{line-height:1.05;margin-bottom:calc(var(--u)*6)}
+#g-blanks .grp{gap:calc(var(--u)*8*var(--k,1))}#g-blanks .grp .ch{width:calc(var(--u)*46*var(--k,1));font-size:calc(var(--u)*46*var(--k,1))}
+#ac-dlg{position:fixed;inset:0}

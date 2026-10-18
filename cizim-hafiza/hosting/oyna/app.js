@@ -1,6 +1,6 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
-import { checkStreak } from "./streak.js";
+import { checkStreak, dailyRescue } from "./streak.js";
 import { renderResult, loadResultStrings } from "./result.js";
 import { loadChat, chatText } from "./chat.js";
 import { loadRunes, layoutRunes, renderRunes, effect as runeFx, has as runeHas, applyRuneConfig, anyAffordable } from "./runes.js";
@@ -117,7 +117,7 @@ function place(el, x, y, w, h) {
   if (w != null) s.width = w * u + "px";
   if (h != null) s.height = h * u + "px";
 }
-let fullH = 0, kbdH = 0;
+let fullH = 0, kbdH = 0, lastVp = "";
 const typingEl = () => { const a = document.activeElement; return a && /^(INPUT|TEXTAREA)$/.test(a.tagName) ? a : null; };
 /** While a text field has the keyboard up, the painted scene keeps the size it had without it (kbdH = what is left of the window); layoutOnce then slides the scene so the field stays in view. */
 /** The notch and the home indicator (0 in a normal browser tab): the scene stays between them while the backdrop paints under them. */
@@ -152,6 +152,7 @@ const WIDE = {
 };
 function layoutOnce() {
   const { w: vw, h: vh, ox, oy } = viewport();
+  lastVp = [vw, vh, ox, oy, kbdH].join();
   const s = stage.style;
   let W, H;
   const sf = safeRows[current];
@@ -215,7 +216,7 @@ function layoutOnce() {
   } else if (current === "brk") {
     layoutBreak(ctx);
   } else if (current === "duels") {
-    place($("du-back"), 20, 40, 110, 106); renderDuels(ctx);
+    place($("du-back"), 20, 40, 110, 106); $("du-scroll").style.height = ctx.fillH() - 370 * u + "px"; renderDuels(ctx);
   } else if (current === "league") {
     layoutLeague(ctx); renderLeague(ctx, !leagueLoaded); leagueLoaded = true;
   } else if (current === "ach") {
@@ -284,7 +285,9 @@ function fitAll() {
   for (const e of document.querySelectorAll(".screen.on .fitw, .screen.on .fith, .aw-ov .fitw, .aw-ov .fith")) {
     e.style.fontSize = ""; if (e.clientWidth < 4) continue;
     const base = parseFloat(getComputedStyle(e).fontSize); let k = 1;
-    const over = () => (e.classList.contains("fitw") && e.scrollWidth > e.clientWidth + 1) || (e.classList.contains("fith") && e.scrollHeight > e.clientHeight + 1);
+    // the real width of the text against the real width of the box (scrollWidth is rounded, and Safari starts the "…" at a fraction of a pixel)
+    const tw = () => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect().width; };
+    const over = () => (e.classList.contains("fitw") && (e.scrollWidth > e.clientWidth + 1 || tw() > e.getBoundingClientRect().width + 0.01)) || (e.classList.contains("fith") && e.scrollHeight > e.clientHeight + 1);
     while (k > 0.55 && over()) { k -= 0.04; e.style.fontSize = base * k + "px"; }
   }
 }
@@ -317,8 +320,11 @@ window.visualViewport?.addEventListener("resize", layout);
 window.visualViewport?.addEventListener("scroll", () => { window.scrollTo(0, 0); layout(); });
 // only a text field raises the keyboard: tapping a plain button must not re-lay-out (and so reset) the scene
 const isTyping = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || "") || e.target?.isContentEditable;
-document.addEventListener("focusin", (e) => { if (!isTyping(e)) return; for (const ms of [120, 350, 700]) setTimeout(() => { window.scrollTo(0, 0); layout(); }, ms); });
-document.addEventListener("focusout", (e) => { if (!isTyping(e)) return; for (const ms of [120, 350]) setTimeout(layout, ms); });
+// the scene is laid out again only when the window really moved (keyboard up or down): a no-change layout still makes Safari repaint the whole picture, which showed as a flash behind the typing window
+const vpSig = () => { const v = viewport(); return [v.w, v.h, v.ox, v.oy, kbdH].join(); };
+const relayoutIfMoved = () => { window.scrollTo(0, 0); if (vpSig() !== lastVp) layout(); };
+document.addEventListener("focusin", (e) => { if (!isTyping(e)) return; for (const ms of [120, 350, 700]) setTimeout(relayoutIfMoved, ms); });
+document.addEventListener("focusout", (e) => { if (!isTyping(e)) return; for (const ms of [120, 350]) setTimeout(relayoutIfMoved, ms); });
 
 const SPK = '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.47 4.47 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
 function paintMusic() { for (const id of ["d-music", "g-music"]) { const b = $(id); b.innerHTML = SPK; b.classList.toggle("off", !(P.prefs.s0 && P.prefs.s1)); } }
@@ -692,7 +698,10 @@ function renderHint(w) {
   const box = $("g-blanks"); box.replaceChildren();
   const groups = w.text.split(" ").map((g) => [...g].filter((ch) => /\p{L}|\d/u.test(ch)));
   if (jk.count) {
-    groups.forEach((g, gi) => { const e = document.createElement("div"); e.className = "grp"; g.forEach((ch, ci) => { const s = document.createElement("div"); s.className = "ch"; s.textContent = jk.first && gi === 0 && ci === 0 ? ch.toLocaleUpperCase(lang) : ""; e.append(s); }); box.append(e); });
+    groups.forEach((g, gi) => { const e = document.createElement("div"); e.className = "grp"; g.forEach((ch, ci) => { const s = document.createElement("div"); s.className = "ch"; s.textContent = jk.first && gi === 0 && ci === 0 ? ch.toLocaleUpperCase(lang) : ""; e.append(s); }); box.append(e);
+      // a word longer than the row shrinks its blanks to fit instead of running out of the drawing area
+      const room = box.clientWidth - 40 * u, need = (g.length * 54 - 8) * u; if (room > 0 && need > room) e.style.setProperty("--k", Math.max(0.45, room / need).toFixed(3));
+    });
   } else if (jk.first) {
     const e = document.createElement("div"); e.className = "txt ink"; e.style.cssText = "font-size:calc(var(--u)*40);background:#ffe9b0;border-radius:99px;padding:0 calc(var(--u)*26);height:calc(var(--u)*64)"; e.textContent = (lang === "tr" ? "İlk harf: " : "First letter: ") + groups[0][0].toLocaleUpperCase(lang); box.append(e);
   }
@@ -708,8 +717,8 @@ function refreshJokers(w) {
   $("jt-count").querySelector("span").textContent = S("joker_letter_count_short"); $("jt-count").querySelector("i").textContent = c; $("jt-count").classList.toggle("dis", jk.count || c <= 0);
   $("jt-skip").querySelector("span").textContent = S("skip_guess"); $("jt-skip").classList.toggle("dis", tut || !!w.skipped || idx >= gOrder.length - 1);
 }
-$("jt-first").onclick = () => { const w = gw(); if (locked) return; if (jk.first || jokerN("FIRST_LETTER") <= 0 || (tutSpot && tutSpot.joker !== "FIRST_LETTER")) return; jk.first = true; jokerSpend("FIRST_LETTER"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
-$("jt-count").onclick = () => { const w = gw(); if (locked) return; if (jk.count || jokerN("LETTER_COUNT") <= 0 || (tutSpot && tutSpot.joker !== "LETTER_COUNT")) return; jk.count = true; jokerSpend("LETTER_COUNT"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
+$("jt-first").onclick = () => { const w = gw(); if (locked || !w) return; if (jk.first || jokerN("FIRST_LETTER") <= 0 || (tutSpot && tutSpot.joker !== "FIRST_LETTER")) return; jk.first = true; jokerSpend("FIRST_LETTER"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
+$("jt-count").onclick = () => { const w = gw(); if (locked || !w) return; if (jk.count || jokerN("LETTER_COUNT") <= 0 || (tutSpot && tutSpot.joker !== "LETTER_COUNT")) return; jk.count = true; jokerSpend("LETTER_COUNT"); sfx.buy(); renderHint(w); refreshJokers(w); endSpot(); };
 $("jt-skip").onclick = () => {
   const w = gw(); if (!w || locked || tutSpot || kind === "tutorial" || w.skipped || idx >= gOrder.length - 1) return;
   w.skipped = true; w.resume = gLeft; gOrder.push(gOrder[idx]); idx++;
@@ -759,7 +768,7 @@ function nextGuess() {
   } else runClock();
 }
 function answer(text) {
-  if (locked) return; locked = true; lockedVal = $("g-input").value;
+  if (locked || !gw()) return; locked = true; lockedVal = $("g-input").value;
   clearInterval(gTimer); clearInterval(bonusTimer);
   const w = gw();
   w.guess = text; w.ms = Math.round(performance.now() - shownAt); w.correct = isCorrect(text, w.text);
@@ -1017,7 +1026,7 @@ loadStrings().then(() => { applyLang(); }).catch(() => {});
 setTimeout(() => syncNow(ctx).then((r) => { if (r === "restored") { refreshHome(); if (current === "home") show("home"); } }), 2500);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") scheduleBackup(ctx, true); });
 loadRunes().then(() => refreshHome()).catch(() => {});
-if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); setTimeout(() => checkStreak(ctx), 900); }; } else { show("home"); setTimeout(() => checkStreak(ctx), 1800); }
+if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); setTimeout(() => checkStreak(ctx), 900); }; } else { show("home"); setTimeout(() => { if (!dailyRescue(ctx, () => checkStreak(ctx))) checkStreak(ctx); }, 1800); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 // After the home screen is up, quietly fetch the pictures of the screens people open most (skipped on data saver).
 setTimeout(() => {
@@ -1035,6 +1044,8 @@ function warmImages() {
   for (const id of ["draw", "guess", "search", "found", "store", "settings", "league", "friends", "onl", "onc", "onj", "offs", "onw", "ach", "worlds", "lvmap", "runes", "account", "report", "duels", "res2", "result"]) {
     document.querySelectorAll("#" + id + " img[data-src]").forEach((i) => add(i.dataset.src));
   }
+  // painted windows are built by script, so no stylesheet or tag mentions them: fetch them too, or the first open shows the words before the picture
+  for (const n of ["exit_game_dialog", "exit_dialog", "buy_frame", "joker_buy_first", "joker_buy_count", "joker_buy_time", "ls_frame", "ls_btn_claim", "st_daily_full", "st_card_joker", "rs_dialog_bg", "rs_level_blank", "friends_handshake", "lobby_crown", "lobby_adduser", "lobby_hourglass"]) add(`img/${n}.webp`);
   try { for (const sh of document.styleSheets) for (const r of sh.cssRules) for (const m of (r.cssText || "").matchAll(/url\(["']?(img\/[^"')]+)/g)) add(m[1]); } catch {}
   let next = 0;
   const pump = () => {

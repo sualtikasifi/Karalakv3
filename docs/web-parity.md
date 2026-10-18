@@ -35,3 +35,13 @@ Amaç: iPhone kullanıcıları tarayıcıdan oynasın; web, Android uygulamasıy
 ## Bilerek farklı
 - Reklam düğmeleri (web'de reklam yok): ücretsiz altın/kasa, kasa hızlandırma, seri kurtarma reklamı
 - Çizimde "Bitir" düğmesi web'de var, Android'de yok
+
+## Güncel durum (web-parity-8 sonrası)
+Yukarıdaki "Sırada" listesindeki her şey yapıldı (Lig, mağaza, harita, düellolar, hesap, sonuçlar, ayarlar, eğitim, günlük kart). Eklenenler: kullanıcı adı+şifre hesabı, günlük seri kurtarma teklifi (web'de "Uygulamada kurtar"), pencerelerin görünen ekranın ortasına konması, WebKit'e özel düzeltmeler.
+
+## Test yöntemi (web)
+- `web-tests` içinde Playwright WebKit (Safari motoru) + Chromium; iPhone SE / 13 / 15 Pro Max, TR + EN.
+- 54 durumluk tarama: her ekran + pencere için ekran görüntüsü; yazı kesilmesi, üst üste binme, ekran dışına taşma, görünen ekrandan uzanan kaydırma alanı ve pencere kutusu taşması otomatik denetlenir.
+- Firebase tarama sırasında sahte (bellekte) sürümle değiştirilir: gerçek anonim kayıt sınırı (IP başına) dolmasın diye.
+- Bilinen kasıtlı fark: web'de reklam yok, Google girişi yok, çizimde "Bitir" düğmesi var.
+- Açık: İngilizce'de boyalı Türkçe yazılar (Düellolar başlığı, Dünyalar tabelası ve dünya afişleri).

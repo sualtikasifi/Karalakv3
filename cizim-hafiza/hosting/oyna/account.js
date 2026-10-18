@@ -2,7 +2,7 @@
 // progress is saved to users/{uid}/backup/state (sync.js) so it follows the player to any browser.
 import * as net from "./firebase.js";
 import { S } from "./i18n.js";
-import { syncNow, lastBackupAt, forgetRemote } from "./sync.js";
+import { syncNow, lastBackupAt, forgetRemote, markAccount } from "./sync.js";
 import { frameRing, frameById } from "./store.js";
 
 const T = {
@@ -44,9 +44,9 @@ const errText = (x, e) => {
   if (code === "auth/network-request-failed") return x.net;
   return S("account_sign_in_failed");
 };
-export async function renderAccount(c) {
+/** Paints from what is known right now (the last sign-in state), so the screen is never blank while the Firebase SDK is still loading. */
+function paint(c) {
   const { $, P, lang } = c, x = T[lang()];
-  try { who = await net.authState(); } catch { who = null; }
   const linked = who && !who.anon;
   $("ak-title").textContent = x.title;
   const av = frameRing(frameById(P.frame)); av.style.cssText += ";width:100%;height:100%"; $("ak-avatar").replaceChildren(av);
@@ -74,7 +74,7 @@ export async function renderAccount(c) {
   const go = async (fn, okText) => {
     if (busy) return; const v = read(); if (!v) return; busy = true; msg = "…"; renderMsg();
     try {
-      who = await fn(v.name, v.pass); forgetRemote();
+      who = await fn(v.name, v.pass); markAccount(true); forgetRemote();
       const r = await syncNow(c); c.saveP();
       done(r === "restored" ? x.welcome : okText);
     } catch (e) { done(errText(x, e)); }
@@ -84,10 +84,16 @@ export async function renderAccount(c) {
   $("ak-pass").onkeydown = (e) => { if (e.key === "Enter") $("ak-login").click(); };
   $("ak-out").onclick = () => c.confirm(S("account_sign_out_message"), S("account_sign_out_confirm"), async () => {
     if ((await syncNow(c)) === "error") return done(S("account_sign_out_backup_failed"));
-    try { await net.signOutAccount(); c.resetProgress(); forgetRemote(); done(S("account_signed_out_done")); } catch { done(S("account_sign_out_failed")); }
+    try { await net.signOutAccount(); markAccount(false); c.resetProgress(); forgetRemote(); done(S("account_signed_out_done")); } catch { done(S("account_sign_out_failed")); }
   });
   $("ak-del").onclick = () => c.confirm(S("account_delete_message"), S("account_delete_continue"), () => c.confirm(S("account_delete_final_message"), S("account_delete_final_confirm"), async () => {
-    try { await net.deleteAccount(); c.resetProgress(); forgetRemote(); done(S("account_delete_done")); }
+    try { await net.deleteAccount(); markAccount(false); c.resetProgress(); forgetRemote(); done(S("account_delete_done")); }
     catch (e) { done(e.code === "auth/requires-recent-login" ? S("account_delete_reauth_needed") : S("account_delete_failed")); }
   }));
+}
+
+export async function renderAccount(c) {
+  paint(c);
+  let w = null; try { w = await net.authState(); } catch {}
+  if ((w && w.uid) !== (who && who.uid) || (w && w.anon) !== (who && who.anon) || (w && w.userName) !== (who && who.userName)) { who = w; paint(c); }
 }
