@@ -68,7 +68,7 @@ function detail(c, a, done, claimed, v) {
   const box = el("div", "acd"); box.style.cssText = `width:${W}px;height:${1394 * k}px;`;
   const p = (x0, y0, w, h) => `left:${x0 * k}px;top:${y0 * k}px;width:${w * k}px;height:${h * k}px;`;
   box.append(el("div", "acd-em", a.emoji)); box.lastChild.style.cssText = p(398, 160, 210, 210) + `font-size:${120 * k}px;opacity:${done ? 1 : .45}`;
-  box.append(el("div", "acd-t", a[lang()][0])); box.lastChild.style.cssText = p(250, 372, 520, 100) + `font-size:${64 * k}px`;
+  box.append(el("div", "acd-t", a[lang()][0])); box.lastChild.style.cssText = p(250, 427, 520, 100) + `font-size:${64 * k}px`;
   const body = el("div", "acd-b"); body.style.cssText = p(100, 570, 820, 740) + `font-size:${38 * k}px`;
   body.innerHTML = `<div class="tag ${done ? "ok" : ""}">${claimed ? x.claimed : done ? x.unlocked : x.locked}</div>${done ? "" : `<div class="pr">${Math.min(v, a.t)}/${a.t}</div>`}<div class="ds"><small>${done ? x.cond : x.hint}</small>${a[lang()][1]}</div><div class="rwp">🏆 ${a.gold ? x.gold(reward(a)) : x.xp(reward(a))}</div>`;
   const btn = el("button", "pill orange small", `<span>${done && !claimed ? x.claim : x.close}</span>`); btn.style.width = "62%"; btn.style.height = 120 * k + "px";

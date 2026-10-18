@@ -88,6 +88,7 @@ const ctx = {
   startTutorial: () => playTutorial(), homeGain: (g, x) => homeGain(g, x), openDuel: (opp) => openCreateDuel(ctx, opp), startDuelChallenge: (opp, n) => startDuel({ mode: "new", opp }, n), playDuel: (d) => startDuel({ mode: "play", duel: d }),
   fit: () => fitAll(), syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
+  fit: () => fitAll(),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
   open: (id) => { if (id === "report") reportLoaded = false; show(id); },
   levelOf: (xp) => { const lv = levelFor(xp), fl = xpFor(lv), ce = lv >= 100 ? fl : xpFor(lv + 1); return { level: lv, into: xp - fl, span: ce - fl, frac: ce > fl ? (xp - fl) / (ce - fl) : 1, max: lv >= 100 }; },
@@ -150,7 +151,15 @@ const WIDE = {
   onc: { src: "img/bg_offline_wide.webp", x0: 114, x1: 840, y0: -6, w: 941, h: 1672 },
   onw: { src: "img/bg_lobby_wide.webp", x0: 90, x1: 792, y0: 0, w: 941, h: 1672 },
 };
-function layoutOnce() {
+/** Every back button sits in the same spot of the window, with the same size, whatever the painted scene behind it does. */
+function pinBack() {
+  const b = document.querySelector("#" + current + " [id$='-back']"); if (!b || ["g-back", "d-back", "r-back"].includes(b.id)) return; // the in-game headers are painted around their own button
+  const { w: vw, oy, ox } = viewport(), k = Math.round(Math.max(46, Math.min(72, 0.13 * Math.min(vw, 560))));
+  const left = (vw - Math.min(vw, 560)) / 2 + Math.max(8, vw * 0.02);
+  b.style.cssText += `;position:fixed;left:${ox + left}px;top:calc(${oy}px + max(10px, env(safe-area-inset-top)));width:${k}px;height:${k}px`;
+}
+function layoutOnce() { layoutScene(); pinBack(); }
+function layoutScene() {
   const { w: vw, h: vh, ox, oy } = viewport();
   lastVp = [vw, vh, ox, oy, kbdH].join();
   const s = stage.style;
@@ -255,6 +264,7 @@ function layoutOnce() {
     [["jt-ad", 48, 172], ["jt-first", 237, 171], ["jt-count", 426, 178], ["jt-skip", 621, 176]].forEach(([id, x0, w]) => P($(id), x0, fb(1406), w, 164 * u));
     P($("g-ring"), 722, ty(150), 96, 96 * u);
     P($("g-canvas"), 56, ty(306), 738, Math.max(60, fb(1112) - ty(310)));
+    P($("g-dog"), 0, fb(1005), 330, 120.3 * u); // the pup's crowned head, drawn again above the paper so it is not cut off
     P($("g-form"), 0, fb(1265), 841, 105 * u);
     const inp = $("g-input"); inp.style.left = 58 * u + "px"; inp.style.top = 6 * u + "px"; inp.style.width = 484 * u + "px"; inp.style.height = 92 * u + "px";
     const ok = $("g-ok"); ok.style.left = 572 * u + "px"; ok.style.top = 0; ok.style.width = 225 * u + "px"; ok.style.height = 105 * u + "px";
@@ -315,6 +325,8 @@ function layout() {
   layoutOnce();
 }
 addEventListener("resize", layout);
+// a font that finishes loading after the text was fitted makes it wider: fit again then
+document.fonts?.addEventListener?.("loadingdone", () => fitAll());
 window.visualViewport?.addEventListener("resize", layout);
 // A soft keyboard may pan the visual viewport instead of shrinking the page: follow it, and keep the page itself from scrolling away.
 window.visualViewport?.addEventListener("scroll", () => { window.scrollTo(0, 0); layout(); });
@@ -663,6 +675,7 @@ function nextDraw() {
   const w = round[idx];
   const tut = kind === "tutorial", untimed = tut && idx === 0;
   show("draw");
+  $("d-next-t").textContent = S("result_continue"); // nothing is "finished" here: the button moves on to the next word
   $("d-ring").style.visibility = untimed ? "hidden" : "";
   // Normal mode shows the time left for the whole drawing phase beside the word number (the stopwatch pill of the app).
   const SW = '<svg class="sw" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="8" fill="#e8650f"/><path d="M12 8.5v5l3 2" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="9" y="2" width="6" height="2.6" rx="1" fill="#e8650f"/></svg>';
@@ -706,13 +719,14 @@ function renderHint(w) {
     const e = document.createElement("div"); e.className = "txt ink"; e.style.cssText = "font-size:calc(var(--u)*40);background:#ffe9b0;border-radius:99px;padding:0 calc(var(--u)*26);height:calc(var(--u)*64)"; e.textContent = (lang === "tr" ? "İlk harf: " : "First letter: ") + groups[0][0].toLocaleUpperCase(lang); box.append(e);
   }
 }
+/** "n/N Doğru tahmin": updated the moment an answer is judged, so the last right word shows 3/3 before the lesson or round ends. */
+function paintRight() { $("jt-ad").innerHTML = `<b>${round.filter((q) => q.correct).length}/${round.length}</b><span>${S("result_stat_correct")}</span>`; }
 function refreshJokers(w) {
   const f = jokerN("FIRST_LETTER"), c = jokerN("LETTER_COUNT"), x = t(), tut = kind === "tutorial";
   // The first tile (the app's rewarded-ad "hint") has no job on the web, and a hint would be unfair to the app's players: it only shows
   // how many words were guessed right so far.
-  const ad = $("jt-ad"), right = round.filter((q) => q.correct).length;
-  ad.classList.remove("dis"); ad.disabled = true; ad.classList.add("info");
-  ad.innerHTML = `<b>${right}/${round.length}</b><span>${S("result_stat_correct")}</span>`;
+  const ad = $("jt-ad");
+  ad.classList.remove("dis"); ad.disabled = true; ad.classList.add("info"); paintRight();
   $("jt-first").querySelector("span").textContent = S("joker_first_letter_short"); $("jt-first").querySelector("i").textContent = f; $("jt-first").classList.toggle("dis", jk.first || f <= 0);
   $("jt-count").querySelector("span").textContent = S("joker_letter_count_short"); $("jt-count").querySelector("i").textContent = c; $("jt-count").classList.toggle("dis", jk.count || c <= 0);
   $("jt-skip").querySelector("span").textContent = S("skip_guess"); $("jt-skip").classList.toggle("dis", tut || !!w.skipped || idx >= gOrder.length - 1);
@@ -775,7 +789,7 @@ function answer(text) {
   w.points = w.correct ? POINTS + (w.ms < SPEED_MS ? SPEED_BONUS : 0) : 0;
   // XP is not the score: a right word pays by difficulty and speed (XpAwards.wordXp); the daily challenge pays its own total.
   w.xp = w.correct && kind !== "daily" ? eco.wordXp(w.difficulty, w.ms) * xpMult : 0;
-  score += w.points; answered++; // idx moves on only after the tick has been shown, so the drawing under it stays the one just answered
+  paintRight(); score += w.points; answered++; // idx moves on only after the tick has been shown, so the drawing under it stays the one just answered
   if (w.correct) sfx.correct(); else { sfx.wrong(); vibrate(60); }
   showFeedback(w); setTimeout(() => { hideFeedback(); idx++; if (current === "guess") nextGuess(); }, 1200);
 }
@@ -830,7 +844,9 @@ async function finish() {
   if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
   // XP is paid per right word by difficulty and speed (see answer()); the XP runes speed up the level, never the league XP.
   eco.addXp(P, round.reduce((s, w) => s + (w.xp || 0), 0), fxp);
-  const ach0 = achCount(P); achRound(P, { score, words: round.length, perfect: n === round.length });
+  const ach0 = achCount(P);
+  // an offline round with nothing guessed right counts for nothing (no achievement progress, so no achievement reward either)
+  if (!(kind === "offline" && n === 0)) achRound(P, { score, words: round.length, perfect: n === round.length });
   const newAch = Math.max(0, achCount(P) - ach0);
   if (qmBonus) P.qmDay = todayEpoch();
   const fx = (k) => runeFx(P, k), has = (k) => runeHas(P, k);
@@ -955,7 +971,6 @@ function refreshHome() {
   try { $("h-pen").textContent = penById(P.pen)[lang]; } catch { $("h-pen").textContent = x.goldLbl; }
   try { const fr = frameRing(frameById(P.frame)); fr.style.cssText += ";width:100%;height:100%"; $("h-avatar").replaceChildren(fr); } catch {}
   $("h-nick").textContent = P.nick; paintLevel(P.xp);
-  $("h-name").classList.toggle("can", (P.nameChanges || 0) < 1);
   for (const k of Object.keys(x.tiles)) $("tx-" + k).textContent = x.tiles[k];
   for (const k of ["gold", "chest"]) $("h-soon-" + k).textContent = x.appOnly;
   refreshDaily(); renderChests(ctx);
@@ -977,7 +992,7 @@ $("on-back").onclick = () => show("home"); $("oj-back").onclick = () => show("on
 $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("onj");
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
 // the ad-reward tiles live only in the phone app: a tap goes straight to the store page
-$("h-veil-gold").onclick = $("h-veil-chest").onclick = () => window.open(PLAY_URL, "_blank", "noopener"); $("h-rank").onclick = () => openRankLadder(ctx); $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx); $("h-name").onclick = () => openNickEdit(ctx); $("h-rank").onclick = () => openRankLadder(ctx);
+$("h-veil-gold").onclick = $("h-veil-chest").onclick = () => window.open(PLAY_URL, "_blank", "noopener"); $("h-rank").onclick = () => openRankLadder(ctx); $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx);  $("h-rank").onclick = () => openRankLadder(ctx);
 $("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
 $("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; net.runeConfig().then((d) => { applyRuneConfig(d); if (current === "runes") renderRunes(ctx, true); }).catch(() => {}); show("runes"); }; $("ru-back").onclick = () => show("home");
 $("tl-quick").onclick = needNet(() => start("quick")); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };

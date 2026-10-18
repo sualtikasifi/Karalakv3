@@ -14,7 +14,7 @@ const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls)
 
 export function layoutOffline(c) {
   const { place, $ } = c;
-  place($("os-back"), 20, 40, 110, 106); place($("os-title"), 160, 270, 520, 110);
+  place($("os-back"), 20, 40, 110, 106); place($("os-title"), 160, 260, 520, 110);
   place($("os-paper"), 42, 472, 757, 925); place($("os-body"), 110, 520, 621, 840);
   place($("os-go"), 65, 1610, 710, 172);
 }

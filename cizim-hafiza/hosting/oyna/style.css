@@ -216,8 +216,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .gbtn{display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*18);background:#fff;border:calc(var(--u)*4) solid #d9a566;border-radius:99px;font-size:calc(var(--u)*40);color:#3c4043;box-shadow:0 calc(var(--u)*8) 0 #b5510f}
 .gbtn:active{transform:translateY(calc(var(--u)*6));box-shadow:0 calc(var(--u)*2) 0 #b5510f}
 .gbtn svg{width:calc(var(--u)*56);height:calc(var(--u)*56)}
-#ak-out{background:url(img/account_btn.webp) 0 0/100% 100%;border:0;box-shadow:none}
-#ak-out span{font-size:calc(var(--u)*56)}
+#ak-out span{font-size:calc(var(--u)*52)}
 .delbtn{background:#fff6ee;border:calc(var(--u)*4) solid #d63a2e;border-radius:99px;color:#d63a2e;font-size:calc(var(--u)*31)}
 .txt.capmsg{background:#fff6e4f2;border-radius:20px;font-size:calc(var(--u)*30);color:#14602a;padding:0 calc(var(--u)*14)}
 .txt.sm2{white-space:normal;font-size:calc(var(--u)*23)}
@@ -954,3 +953,24 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .ao-ic{line-height:1.05;margin-bottom:calc(var(--u)*6)}
 #g-blanks .grp{gap:calc(var(--u)*8*var(--k,1))}#g-blanks .grp .ch{width:calc(var(--u)*46*var(--k,1));font-size:calc(var(--u)*46*var(--k,1))}
 #ac-dlg{position:fixed;inset:0}
+#rp-title{font-size:calc(var(--u)*50)}
+/* account: the strip's bold line sits above the small one (and shows whole), the stat captions stay clear of the card's bottom edge */
+#ak-strip{flex-direction:column;line-height:1.15}#ak-strip b{white-space:nowrap;font-size:calc(var(--u)*30)}#ak-strip small{font-size:calc(var(--u)*24)}
+.ak-stat{padding-bottom:calc(var(--u)*18)}#ak-strip b,#ak-strip small{width:100%;display:block}
+/* tutorial cards: centred in the browser window (not in the painted stage), with a bigger button label */
+#tut-spot.coach{position:fixed}
+#tut-go{height:calc(var(--u)*132)}#tut-go span,#tut-spot.coach #tut-go span{font-size:calc(var(--u)*54)}
+#tut-go #tut-go-t{font-size:calc(var(--u)*54)!important}
+#g-dog{position:absolute;pointer-events:none;z-index:3;display:block}
+#st-t1,#st-t2{font-size:calc(var(--u)*64)}
+/* store, frames: the price buttons are a little smaller and sit higher, clear of the card's bottom edge */
+.fcard{padding:7% 6% 12%}.fcard .btn{width:72%;height:calc(var(--u)*56);font-size:calc(var(--u)*28)}.fcard .btn img{height:calc(var(--u)*26)}
+#fr-title{font-size:calc(var(--u)*54)}
+/* league: my row's glow follows the rounded card instead of a square ring that showed as yellow lines above and below it */
+.lg-row.me{box-shadow:none;filter:drop-shadow(0 0 calc(var(--u)*9) #ffd84d)}
+/* language menu */
+#lang-menu{position:fixed;inset:0;z-index:20;background:#0003}
+.lm-box{position:absolute;min-width:calc(var(--u)*330);background:#fff8ea;border-radius:calc(var(--u)*24);box-shadow:0 calc(var(--u)*10) calc(var(--u)*30) #0006;padding:calc(var(--u)*10) 0;display:flex;flex-direction:column}
+.lm-item{display:flex;gap:calc(var(--u)*18);align-items:center;padding:0 calc(var(--u)*36);height:calc(var(--u)*100);font-size:calc(var(--u)*38);font-weight:700;color:#3b2314;text-align:left}
+.lm-item.on{background:#ffe3b0;font-weight:800}.lm-item:active{background:#ffd08a}
+.ac-card .rw{line-height:1;padding-top:calc(var(--u)*5);justify-content:center}
