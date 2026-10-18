@@ -108,6 +108,12 @@ interface ModerationRepository {
     suspend fun pendingDailyChallenges(limit: Int): Result<List<PendingDailyChallenge>>
 
     /**
+     * Players who agreed to appear in Karalak's videos (see FeatureConsentPublisher), for the video studio. Read-only.
+     */
+    suspend fun featuredPlayers(limit: Int = 500): Result<List<com.sualtikasifi.cizimhafiza.domain.model.FeaturedPlayer>> =
+        Result.success(emptyList())
+
+    /**
      * The attempt was drawn honestly — deletes it from the queue. No
      * notification: an approval is not something the player needs to hear
      * about, it just means the XP they already have stays theirs.

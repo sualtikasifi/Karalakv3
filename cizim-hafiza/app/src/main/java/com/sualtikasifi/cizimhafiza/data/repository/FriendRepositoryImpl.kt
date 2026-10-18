@@ -526,6 +526,11 @@ class FriendRepositoryImpl @Inject constructor(
         users.document(uid).set(mapOf("nickname" to nickname), SetOptions.merge()).await()
     }
 
+    override suspend fun publishFeatureConsent(consent: Boolean) {
+        val uid = requireUid()
+        users.document(uid).set(mapOf("featureConsent" to consent), SetOptions.merge()).await()
+    }
+
     override suspend fun publishLeagueScore(
         nickname: String,
         periodXp: Int,

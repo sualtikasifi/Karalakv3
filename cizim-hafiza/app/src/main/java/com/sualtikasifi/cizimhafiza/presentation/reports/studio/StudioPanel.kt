@@ -151,12 +151,21 @@ fun StudioPanel(onBack: () -> Unit, viewModel: StudioViewModel = hiltViewModel()
 private fun LazyListScope.guessSections(st: StudioState, vm: StudioViewModel) {
     // 1. drawings
     item { Step("1", "Çizimler", "${st.selected.size} seçili · en iyisi 3") }
+    item {
+        Segmented(
+            options = listOf(GuessSource.Mine.name to "Benim çizimlerim", GuessSource.Players.name to "İzin veren oyuncular"),
+            selected = st.source.name,
+            onSelect = { vm.setSource(GuessSource.valueOf(it)) },
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+    if (st.source == GuessSource.Players) featuredPicker(st, vm)
     when {
-        st.loading -> item { Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Console.Accent) } }
-        st.drawings.isEmpty() -> item {
+        st.source == GuessSource.Mine && st.loading -> item { Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Console.Accent) } }
+        st.source == GuessSource.Mine && st.drawings.isEmpty() -> item {
             ConsoleCard(Modifier.fillMaxWidth()) { Text("Bu telefonda kayıtlı çizim yok. Birkaç tur oyna, sonra buraya dön.", style = Console.Small) }
         }
-        else -> st.drawings.take(90).chunked(3).forEach { row ->
+        else -> st.pool.take(90).chunked(3).forEach { row ->
             item(key = "row-" + row.first().id) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     row.forEach { d -> Thumb(d, st.selected.indexOf(d.id), Modifier.weight(1f)) { vm.toggle(d) } }
@@ -168,7 +177,12 @@ private fun LazyListScope.guessSections(st: StudioState, vm: StudioViewModel) {
 
     // 2. who is on the right-hand tile
     item { Step("2", "Oyuncu kartı") }
-    item {
+    if (st.source == GuessSource.Players) item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Text(st.player?.let { "${it.name} · Sv. ${it.level}" } ?: "Önce bir oyuncu seç", style = Console.Subtitle)
+            Text("Oyuncu videolarda yer almayı kabul etti: adı, seviyesi ve çerçevesi görünür; fotoğrafı yerine dinozor avatarı.", style = Console.Small)
+        }
+    } else item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -206,6 +220,30 @@ private fun LazyListScope.guessSections(st: StudioState, vm: StudioViewModel) {
         }
     }
     st.script?.let { sc -> scriptEditor(sc, st, vm) }
+}
+
+/** The players who turned on "Videolarda öne çık", to pick whose drawings Karalak looks at. */
+private fun LazyListScope.featuredPicker(st: StudioState, vm: StudioViewModel) {
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Text(
+                "Yalnızca Hesap ekranında “Karalak videolarında öne çık”ı açan oyuncular. Çizimler onaylanmış hızlı eşleş havuzundan gelir.",
+                style = Console.Small
+            )
+            Spacer(Modifier.height(8.dp))
+            DarkButton(
+                text = if (st.featuredLoading) (st.featuredStatus ?: "Aranıyor…") else if (st.featured.isEmpty()) "Oyuncuları bul" else "Yeniden ara",
+                busy = st.featuredLoading,
+                enabled = !st.featuredLoading
+            ) { vm.loadFeatured() }
+            if (!st.featuredLoading) st.featuredStatus?.let { Text(it, style = Console.Small, modifier = Modifier.padding(top = 4.dp)) }
+        }
+    }
+    st.featured.take(40).forEach { f ->
+        item(key = "fp-" + f.player.uid) {
+            WordRow(f.player.nickname, "Sv. ${f.player.level} · ${f.drawings.size} çizim", on = st.featuredUid == f.player.uid, upper = false) { vm.selectFeatured(f.player.uid) }
+        }
+    }
 }
 
 /** "Hafıza Tuzağı": the archive, a word, its drawings, and Karalak's lines. */
@@ -498,7 +536,7 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
 }
 
 @Composable
-private fun WordRow(word: String, detail: String, on: Boolean, onClick: () -> Unit) {
+private fun WordRow(word: String, detail: String, on: Boolean, upper: Boolean = true, onClick: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = if (on) Console.AccentSoft else Console.Surface,
@@ -506,7 +544,7 @@ private fun WordRow(word: String, detail: String, on: Boolean, onClick: () -> Un
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick)
     ) {
         Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-            Text(word.uppercase(Locale("tr")), style = Console.Subtitle)
+            Text(if (upper) word.uppercase(Locale("tr")) else word, style = Console.Subtitle)
             Text(detail, style = Console.Small)
         }
     }

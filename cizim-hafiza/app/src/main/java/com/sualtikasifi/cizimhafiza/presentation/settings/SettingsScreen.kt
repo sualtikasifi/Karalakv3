@@ -612,9 +612,9 @@ fun SettingsScreen(
     }
 }
 
-/** The painted switch of the scene: an orange track with a white knob when on, a grey one when off. */
+/** The painted switch of the scene: an orange track with a white knob when on, a grey one when off. Hesap uses it too. */
 @Composable
-private fun SceneSwitch(checked: Boolean, modifier: Modifier) {
+internal fun SceneSwitch(checked: Boolean, modifier: Modifier) {
     val t by animateFloatAsState(if (checked) 1f else 0f, tween(180), label = "switch")
     BoxWithConstraints(
         modifier = modifier

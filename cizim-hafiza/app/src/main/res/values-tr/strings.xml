@@ -938,6 +938,11 @@
     <string name="error_room_listener_failed">Oda bağlantısı koptu. Yeniden bağlanmaya çalışılıyor…</string>
     <!-- Hesap silme (Play politikası gereği uygulama içi yol) -->
     <string name="account_delete_action">Hesabımı ve verilerimi sil</string>
+    <string name="account_feature_consent">Karalak videolarında öne çık</string>
+    <string name="account_feature_consent_title">Videolarda öne çıkmak ister misin?</string>
+    <string name="account_feature_consent_message">Çizimlerin, kullanıcı adın (şu an: %1$s) ve seviyen Karalak\'ın TikTok, Instagram ve YouTube videolarında yer alabilir. E-postan ve fotoğrafın asla gösterilmez. İstediğin zaman buradan kapatabilirsin; kapattıktan sonra yeni videolarda yer almazsın.</string>
+    <string name="account_feature_consent_confirm">Evet</string>
+    <string name="account_feature_consent_cancel">Şimdi değil</string>
     <string name="account_delete_title">Hesabın silinsin mi?</string>
     <string name="account_delete_message">Seviyen, XP\'n, başarımların, bölüm ilerlemen, arkadaş listen ve buluttaki yedeğin kalıcı olarak silinir. Bu işlem geri alınamaz.</string>
     <string name="account_delete_confirm">Evet, sil</string>

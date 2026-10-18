@@ -45,6 +45,7 @@ class CizimHafizaApp : Application(), Configuration.Provider {
     @Inject lateinit var referralRewardClaimer: Lazy<ReferralRewardClaimer>
     @Inject lateinit var autoBackupPublisher: Lazy<AutoBackupPublisher>
     @Inject lateinit var profileNameSynchronizer: Lazy<ProfileNameSynchronizer>
+    @Inject lateinit var featureConsentPublisher: Lazy<com.sualtikasifi.cizimhafiza.util.FeatureConsentPublisher>
     @Inject lateinit var xpEventRepository: Lazy<com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository>
     @Inject lateinit var runeConfigRepository: Lazy<com.sualtikasifi.cizimhafiza.data.repository.RuneConfigRepository>
     @Inject lateinit var economyConfigRepository: Lazy<com.sualtikasifi.cizimhafiza.data.repository.EconomyConfigRepository>
@@ -189,6 +190,8 @@ class CizimHafizaApp : Application(), Configuration.Provider {
             // picked one — app-wide rather than on the Hesap screen, since the
             // name is what every other player sees in lobbies and the league.
             guarded("profile name sync") { profileNameSynchronizer.get().start() }
+            // "Videolarda öne çık": the player's choice, kept on whichever account is signed in.
+            guarded("feature consent") { featureConsentPublisher.get().start() }
             // Daily "come back and play" reminder — see notifications/. Boot and
             // package-replaced receivers re-arm it independently, so waiting a
             // moment here loses nothing.
