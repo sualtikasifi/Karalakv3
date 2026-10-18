@@ -347,6 +347,8 @@ class StudioViewModel @Inject constructor(
                 val players = moderation.featuredPlayers().getOrThrow().associateBy { it.uid }
                 if (players.isEmpty()) return@runCatching emptyList<FeaturedRuns>()
                 val byUid = LinkedHashMap<String, MutableList<StudioDrawing>>()
+                // negative, so they never meet this phone's own (positive Room ids); counted, so no two are alike
+                var nextId = -1L
                 var cursor: Long? = null
                 var read = 0
                 for (page in 0 until FEATURED_POOL_PAGES) {
@@ -354,10 +356,10 @@ class StudioViewModel @Inject constructor(
                     read += p.runs.size
                     p.runs.filter { it.uid in players }.forEach { run ->
                         val list = byUid.getOrPut(run.uid) { mutableListOf() }
-                        run.items.forEachIndexed { i, item ->
+                        run.items.forEach { item ->
                             val strokes = item.strokes.filter { it.isNotEmpty() }
                             if (strokes.isNotEmpty() && item.word.isNotBlank()) {
-                                list += StudioDrawing(featuredId(run.id, i), item.word, "", strokes, item.isCorrect)
+                                list += StudioDrawing(nextId--, item.word, "", strokes, item.isCorrect)
                             }
                         }
                     }
@@ -372,6 +374,9 @@ class StudioViewModel @Inject constructor(
                 it.copy(
                     featuredLoading = false,
                     featured = outcome.getOrDefault(it.featured),
+                    // a new search numbers the drawings afresh, so an old selection would point at others
+                    selected = if (outcome.isSuccess && it.source == GuessSource.Players) emptyList() else it.selected,
+                    script = if (outcome.isSuccess && it.source == GuessSource.Players) null else it.script,
                     featuredStatus = outcome.fold(
                         onSuccess = { list -> if (list.isEmpty()) "Henüz havuzda çizimi olan, izin vermiş oyuncu yok." else "${list.size} oyuncu · ${list.sumOf { f -> f.drawings.size }} çizim" },
                         onFailure = { e -> "Okunamadı: ${e.message}" }
@@ -397,9 +402,6 @@ class StudioViewModel @Inject constructor(
             refreshPreview()
         }
     }
-
-    /** Ids for pool drawings, kept apart from this phone's own (positive Room ids). */
-    private fun featuredId(runId: String, index: Int): Long = -1L - ("$runId#$index".hashCode().toLong() and 0x7fffffffL)
 
     fun setShowName(show: Boolean) {
         _state.update { it.copy(showName = show, player = if (show) ownCard else anonymousCard, script = null, video = null) }
