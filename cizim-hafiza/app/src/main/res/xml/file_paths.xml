@@ -4,4 +4,5 @@
     <cache-path name="word_review_export" path="word_review_export/" />
     <cache-path name="difficulty_review_export" path="difficulty_review_export/" />
     <cache-path name="studio_videos" path="studio/" />
+    <cache-path name="studio_share" path="studio_share/" />
 </paths>
