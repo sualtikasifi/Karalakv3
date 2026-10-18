@@ -186,19 +186,43 @@ class ElevenLabs(private val apiKey: String) {
     }
 }
 
-/** The spoken lines already paid for, on this phone. Old ones go once there are too many. */
+/** How a line is to be spoken: everything that changes the sound, and so the bill. */
+data class VoiceSpec(val voiceId: String, val model: VoiceModel, val stability: Double, val tags: Boolean) {
+    /** What ElevenLabs charges for the line, in credits: a character each, half on Flash. */
+    fun credits(line: SpokenLine): Int {
+        val chars = ElevenLabs.textFor(line, model, tags).length
+        return if (model == VoiceModel.Flash) (chars + 1) / 2 else chars
+    }
+}
+
+/**
+ * The spoken lines already paid for, on this phone. Old ones go once there are too many.
+ *
+ * Nothing here calls ElevenLabs on its own: [cached] only looks, and [file] is called only for a
+ * line the person asked to hear or asked to be voiced.
+ */
 class VoiceBank(context: Context) {
     private val dir = File(context.filesDir, "studio_voice").apply { mkdirs() }
 
-    /** The line's MP3, from disk if it was made before, from ElevenLabs otherwise. */
-    suspend fun file(client: ElevenLabs, line: SpokenLine, voiceId: String, model: VoiceModel, stability: Double, tags: Boolean): Result<File> {
-        val text = ElevenLabs.textFor(line, model, tags)
-        val s = ElevenLabs.stabilityFor(model, stability)
-        val f = File(dir, ElevenLabs.cacheName(text, voiceId, model, s))
+    private fun target(line: SpokenLine, spec: VoiceSpec): File {
+        val text = ElevenLabs.textFor(line, spec.model, spec.tags)
+        return File(dir, ElevenLabs.cacheName(text, spec.voiceId, spec.model, ElevenLabs.stabilityFor(spec.model, spec.stability)))
+    }
+
+    /** The line's MP3 if it was already made with these settings; never asks ElevenLabs. */
+    fun cached(line: SpokenLine, spec: VoiceSpec): File? = target(line, spec).takeIf { it.exists() && it.length() > 0 }
+
+    /** The line's MP3, from disk if it was made before, from ElevenLabs (paid) otherwise. */
+    suspend fun file(client: ElevenLabs, line: SpokenLine, spec: VoiceSpec): Result<File> {
+        val f = target(line, spec)
         if (f.exists() && f.length() > 0) {
             f.setLastModified(System.currentTimeMillis())
             return Result.success(f)
         }
+        val text = ElevenLabs.textFor(line, spec.model, spec.tags)
+        val s = ElevenLabs.stabilityFor(spec.model, spec.stability)
+        val voiceId = spec.voiceId
+        val model = spec.model
         val bytes = client.speak(text, voiceId, model, s).getOrElse { return Result.failure(it) }
         return runCatching {
             withContext(Dispatchers.IO) {

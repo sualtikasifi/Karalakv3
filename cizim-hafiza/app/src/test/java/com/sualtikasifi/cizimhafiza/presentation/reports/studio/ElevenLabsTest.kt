@@ -2,6 +2,7 @@ package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.ElevenLabs
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceModel
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceSpec
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import org.junit.Assert.assertEquals
@@ -63,5 +64,13 @@ class ElevenLabsTest {
         assertEquals(VoiceModel.V2, VoiceModel.of("eleven_multilingual_v2"))
         assertEquals(VoiceModel.V3, VoiceModel.of(null))
         assertEquals(VoiceModel.V3, VoiceModel.of("unknown"))
+    }
+
+    @Test
+    fun theCostShownIsWhatIsSent() {
+        val line = SpokenLine("Bu kedi mi?", MascotEmotion.Laughing)  // "[laughs] Bu kedi mi?" = 20 characters
+        assertEquals(20, VoiceSpec("v", VoiceModel.V3, 0.5, tags = true).credits(line))
+        assertEquals(11, VoiceSpec("v", VoiceModel.V2, 0.5, tags = true).credits(line))
+        assertEquals(6, VoiceSpec("v", VoiceModel.Flash, 0.5, tags = true).credits(line))
     }
 }

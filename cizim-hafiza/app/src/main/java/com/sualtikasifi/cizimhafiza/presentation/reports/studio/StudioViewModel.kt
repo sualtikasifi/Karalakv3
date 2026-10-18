@@ -30,6 +30,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.SpeechSynt
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.ElevenLabs
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceBank
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceModel
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceSpec
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessDirector
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessRenderer
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessScript
@@ -109,8 +110,18 @@ data class ElevenUi(
     /** The account's own voices, when the key may list them. */
     val voices: List<ElevenLabs.Voice> = emptyList(),
     val status: String? = null,
-    val busy: Boolean = false
-)
+    val busy: Boolean = false,
+    /** The current script's lines already voiced with these settings, the ones still to voice, and what those would cost. */
+    val ready: Int = 0,
+    val missing: Int = 0,
+    val missingCredits: Int = 0,
+    /** "Seslendiriliyor 3/14" while voicing. */
+    val progress: String? = null,
+    /** A line not yet voiced that the person wants to hear: asks before spending credits on it. */
+    val confirm: SpokenLine? = null
+) {
+    val spec: VoiceSpec get() = VoiceSpec(voiceId, model, stability.toDouble(), tags)
+}
 
 /** Whose drawings "Karalak Bilir mi?" uses: this phone's own, or a player's who agreed to appear in videos. */
 enum class GuessSource { Mine, Players }
@@ -1004,24 +1015,28 @@ class StudioViewModel @Inject constructor(
         prefs().edit().putString(EL_VOICE, v).apply()
         updateEleven { it.copy(voiceId = v) }
         _state.update { it.copy(video = null) }
+        refreshVoicePlan()
     }
 
     fun setElevenModel(model: VoiceModel) {
         prefs().edit().putString(EL_MODEL, model.id).apply()
         updateEleven { it.copy(model = model) }
         _state.update { it.copy(video = null) }
+        refreshVoicePlan()
     }
 
     fun setElevenStability(v: Float) {
         prefs().edit().putFloat(EL_STABILITY, v).apply()
         updateEleven { it.copy(stability = v) }
         _state.update { it.copy(video = null) }
+        refreshVoicePlan()
     }
 
     fun setElevenTags(on: Boolean) {
         prefs().edit().putBoolean(EL_TAGS, on).apply()
         updateEleven { it.copy(tags = on) }
         _state.update { it.copy(video = null) }
+        refreshVoicePlan()
     }
 
     /** The account's voices and this month's credits, where the key is allowed to read them. */
@@ -1059,18 +1074,76 @@ class StudioViewModel @Inject constructor(
         if (line.text.isBlank()) return
         val s = _state.value
         if (s.voiceEngine == VoiceEngine.ElevenLabs) {
-            val client = elevenClient() ?: run { _state.update { it.copy(voiceError = "Önce ElevenLabs anahtarını gir.") }; return }
-            if (s.eleven.busy) return
-            updateEleven { it.copy(busy = true) }
-            viewModelScope.launch {
-                val e = s.eleven
-                voiceBank.file(client, line, e.voiceId, e.model, e.stability.toDouble(), e.tags)
-                    .onSuccess { f -> play(f); _state.update { it.copy(voiceError = null) } }
-                    .onFailure { err -> _state.update { it.copy(voiceError = err.message) } }
-                updateEleven { it.copy(busy = false) }
-            }
+            // already paid for: play it; otherwise ask first — nothing is voiced without a yes
+            voiceBank.cached(line, s.eleven.spec)?.let { play(it); return }
+            updateEleven { it.copy(confirm = line) }
             return
         }
+        speakOnPhone(line)
+    }
+
+    /** The person agreed to pay for hearing this line in ElevenLabs. */
+    fun confirmListen() {
+        val line = _state.value.eleven.confirm ?: return
+        updateEleven { it.copy(confirm = null) }
+        val client = elevenClient() ?: run { _state.update { it.copy(voiceError = "Önce ElevenLabs anahtarını gir.") }; return }
+        if (_state.value.eleven.busy) return
+        updateEleven { it.copy(busy = true) }
+        viewModelScope.launch {
+            voiceBank.file(client, line, _state.value.eleven.spec)
+                .onSuccess { f -> play(f); _state.update { it.copy(voiceError = null) } }
+                .onFailure { err -> _state.update { it.copy(voiceError = err.message) } }
+            updateEleven { it.copy(busy = false) }
+            refreshVoicePlan()
+            refreshEleven()
+        }
+    }
+
+    /** Hear the line in the phone's free voice instead. */
+    fun listenFree() {
+        val line = _state.value.eleven.confirm ?: return
+        updateEleven { it.copy(confirm = null) }
+        speakOnPhone(line)
+    }
+
+    fun cancelListen() = updateEleven { it.copy(confirm = null) }
+
+    /**
+     * Voices every line of the current script that is not voiced yet with these settings — the only
+     * way a whole script is ever sent to ElevenLabs, and only when the person presses the button.
+     */
+    fun voiceAll() {
+        val s = _state.value
+        val lines = linesFor(s) ?: return
+        val client = elevenClient() ?: run { _state.update { it.copy(voiceError = "Önce ElevenLabs anahtarını gir.") }; return }
+        if (s.eleven.busy) return
+        val spec = s.eleven.spec
+        val todo = lines.filter { voiceBank.cached(it, spec) == null }.distinctBy { ElevenLabs.textFor(it, spec.model, spec.tags) }
+        if (todo.isEmpty()) return
+        updateEleven { it.copy(busy = true) }
+        viewModelScope.launch {
+            var failed: Throwable? = null
+            for ((i, l) in todo.withIndex()) {
+                updateEleven { it.copy(progress = "Seslendiriliyor ${i + 1}/${todo.size}") }
+                voiceBank.file(client, l, spec).onFailure { failed = it }
+                if (failed != null) break
+            }
+            updateEleven { it.copy(busy = false, progress = null) }
+            _state.update { it.copy(voiceError = failed?.message, video = null) }
+            refreshVoicePlan()
+            refreshEleven()
+        }
+    }
+
+    /** How much of the current script is voiced with the current settings; looks at the disk only. */
+    private fun refreshVoicePlan(s: StudioState = _state.value) {
+        val lines = linesFor(s).orEmpty().filter { it.text.isNotBlank() }
+        val spec = s.eleven.spec
+        val missing = lines.filter { voiceBank.cached(it, spec) == null }.distinctBy { ElevenLabs.textFor(it, spec.model, spec.tags) }
+        updateEleven { it.copy(ready = lines.count { l -> voiceBank.cached(l, spec) != null }, missing = missing.size, missingCredits = missing.sumOf { l -> spec.credits(l) }) }
+    }
+
+    private fun speakOnPhone(line: SpokenLine) {
         viewModelScope.launch {
             val synth = listener ?: SpeechSynth.open(context).getOrElse { e ->
                 _state.update { it.copy(voiceError = e.message) }
@@ -1090,6 +1163,7 @@ class StudioViewModel @Inject constructor(
     }
 
     private fun refreshPreview() {
+        refreshVoicePlan()
         previewJob?.cancel()
         previewJob = viewModelScope.launch {
             delay(60)
@@ -1189,15 +1263,16 @@ class StudioViewModel @Inject constructor(
                 // 1. Karalak's voice, one file per line
                 val voices = HashMap<Int, Pcm>()
                 if (s.voiceOn && s.voiceEngine == VoiceEngine.ElevenLabs) {
-                    val client = elevenClient() ?: error("ElevenLabs anahtarı yok: Ses bölümünden gir ya da telefon sesine geç.")
-                    val e = s.eleven
+                    // making the video never pays: it uses only lines already voiced with "Seslendir"
+                    val spec = s.eleven.spec
+                    val missing = lines.count { voiceBank.cached(it, spec) == null }
+                    if (missing > 0) error("$missing cümlenin ElevenLabs sesi yok. Önce Ses bölümünde “Seslendir”e bas.")
                     lines.forEachIndexed { i, l ->
-                        _state.update { it.copy(renderStage = "Karalak konuşuyor ${i + 1}/${lines.size} · ElevenLabs", progress = 0.15f * i / lines.size) }
-                        val f = voiceBank.file(client, l, e.voiceId, e.model, e.stability.toDouble(), e.tags).getOrThrow()
+                        _state.update { it.copy(renderStage = "Karalak'ın sesi hazırlanıyor ${i + 1}/${lines.size}", progress = 0.15f * i / lines.size) }
+                        val f = voiceBank.cached(l, spec) ?: error("“${l.text.take(30)}” sesi bulunamadı")
                         val pcm = withContext(Dispatchers.IO) { ClipAudio.decode(f, VOICE_MAX_MS) } ?: error("“${l.text.take(30)}” sesi çözülemedi")
                         voices[i] = PcmOps.resample(pcm, RATE)
                     }
-                    refreshEleven()
                 } else if (s.voiceOn) {
                     val synth = SpeechSynth.open(context).getOrThrow()
                     try {

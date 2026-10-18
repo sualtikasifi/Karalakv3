@@ -108,6 +108,20 @@ fun StudioPanel(onBack: () -> Unit, viewModel: StudioViewModel = hiltViewModel()
     LaunchedEffect(st.real.share) {
         st.real.share?.let { sh -> shareImage(context, sh.file, sh.prompt); viewModel.clearShare() }
     }
+    st.eleven.confirm?.let { line ->
+        AlertDialog(
+            onDismissRequest = viewModel::cancelListen,
+            title = { Text("ElevenLabs ile seslendirilsin mi?") },
+            text = { Text("“${line.text.take(90)}”\nYaklaşık ${st.eleven.spec.credits(line)} kredi harcanır. Bir kez seslendirilen cümle tekrar ücretlendirilmez.") },
+            confirmButton = { TextButton(onClick = viewModel::confirmListen) { Text("Seslendir") } },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = viewModel::listenFree) { Text("Telefon sesiyle") }
+                    TextButton(onClick = viewModel::cancelListen) { Text("Vazgeç") }
+                }
+            }
+        )
+    }
     st.real.confirmWord?.let { w ->
         AlertDialog(
             onDismissRequest = viewModel::cancelRealWord,
@@ -674,7 +688,11 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
                 SmallLink("Vazgeç", Console.Critical) { vm.cancelRender() }
             }
         } else {
-            BigButton("Videoyu oluştur", enabled = st.ready) { vm.render() }
+            val voiceMissing = st.voiceOn && st.voiceEngine == VoiceEngine.ElevenLabs && st.eleven.missing > 0
+            BigButton("Videoyu oluştur", enabled = st.ready && !voiceMissing) { vm.render() }
+            if (st.ready && voiceMissing) {
+                Text("Önce Ses bölümünde “Seslendir”e bas: ${st.eleven.missing} cümle, ~${st.eleven.missingCredits} kredi.", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
+            }
             if (st.format == StudioFormat.Guess && st.script == null && st.selected.isNotEmpty()) {
                 Text("Önce Karalak çizimlere baksın (3. adım).", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
             }
@@ -786,6 +804,23 @@ private fun ElevenSettings(st: StudioState, vm: StudioViewModel) {
     }
     Field("Ses ID (Voice Design ile yaptığın sesin ID'si)", e.voiceId, vm::setElevenVoice)
     e.status?.let { Text(it, style = Console.Small, modifier = Modifier.padding(top = 4.dp)) }
+
+    // the only place a whole script is sent to ElevenLabs, and only on a tap
+    if (e.ready + e.missing > 0) {
+        Text("Seslendirme: ${e.ready} cümle hazır · ${e.missing} eksik", style = Console.Subtitle, modifier = Modifier.padding(top = 10.dp))
+        if (e.missing > 0) {
+            Spacer(Modifier.height(6.dp))
+            DarkButton(
+                text = e.progress ?: "Seslendir (~${e.missingCredits} kredi)",
+                busy = e.busy,
+                enabled = e.keySet && !e.busy
+            ) { vm.voiceAll() }
+        }
+        Text(
+            "Kredi yalnızca bu düğmeye ya da bir cümlenin hoparlörüne (onay verince) basınca harcanır. Video oluşturmak kredi harcamaz; değişen cümle yalnızca kendisi yeniden seslendirilir.",
+            style = Console.Small, modifier = Modifier.padding(top = 4.dp)
+        )
+    }
 }
 
 /** Every line Karalak will say, editable, with its face and a button to hear it. */
