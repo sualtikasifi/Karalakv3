@@ -85,6 +85,8 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.console.Segmented
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.Tag
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessScript
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.ElevenLabs
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceModel
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
@@ -105,6 +107,20 @@ fun StudioPanel(onBack: () -> Unit, viewModel: StudioViewModel = hiltViewModel()
     }
     LaunchedEffect(st.real.share) {
         st.real.share?.let { sh -> shareImage(context, sh.file, sh.prompt); viewModel.clearShare() }
+    }
+    st.eleven.confirm?.let { line ->
+        AlertDialog(
+            onDismissRequest = viewModel::cancelListen,
+            title = { Text("ElevenLabs ile seslendirilsin mi?") },
+            text = { Text("“${line.text.take(90)}”\nYaklaşık ${st.eleven.spec.credits(line)} kredi harcanır. Bir kez seslendirilen cümle tekrar ücretlendirilmez.") },
+            confirmButton = { TextButton(onClick = viewModel::confirmListen) { Text("Seslendir") } },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = viewModel::listenFree) { Text("Telefon sesiyle") }
+                    TextButton(onClick = viewModel::cancelListen) { Text("Vazgeç") }
+                }
+            }
+        )
     }
     st.real.confirmWord?.let { w ->
         AlertDialog(
@@ -341,16 +357,16 @@ private fun LazyListScope.memorySections(st: StudioState, vm: StudioViewModel) {
         item {
             ConsoleCard(Modifier.fillMaxWidth()) {
                 Text("Açılış (sayılar arşivden)", style = Console.Label)
-                LineEditor(script.hook, { vm.editLine(LineRef.MemoryHook, it) }, { vm.editEmotion(LineRef.MemoryHook, it) }) { vm.listen(script.hook.text) }
+                LineEditor(script.hook, { vm.editLine(LineRef.MemoryHook, it) }, { vm.editEmotion(LineRef.MemoryHook, it) }) { vm.listen(script.hook) }
                 script.picks.forEachIndexed { i, p ->
                     Text("Çizim ${i + 1} yorumu (boş bırakılabilir)", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
                     val l = p.comment ?: SpokenLine("", MascotEmotion.Laughing)
-                    LineEditor(l, { vm.editLine(LineRef.MemoryPickLine(i), it) }, { vm.editEmotion(LineRef.MemoryPickLine(i), it) }) { vm.listen(l.text) }
+                    LineEditor(l, { vm.editLine(LineRef.MemoryPickLine(i), it) }, { vm.editEmotion(LineRef.MemoryPickLine(i), it) }) { vm.listen(l) }
                 }
                 Text("Ters köşe", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
-                LineEditor(script.paradox, { vm.editLine(LineRef.MemoryParadox, it) }, { vm.editEmotion(LineRef.MemoryParadox, it) }) { vm.listen(script.paradox.text) }
+                LineEditor(script.paradox, { vm.editLine(LineRef.MemoryParadox, it) }, { vm.editEmotion(LineRef.MemoryParadox, it) }) { vm.listen(script.paradox) }
                 Text("Kapanış", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
-                LineEditor(script.outro, { vm.editLine(LineRef.MemoryOutro, it) }, { vm.editEmotion(LineRef.MemoryOutro, it) }) { vm.listen(script.outro.text) }
+                LineEditor(script.outro, { vm.editLine(LineRef.MemoryOutro, it) }, { vm.editEmotion(LineRef.MemoryOutro, it) }) { vm.listen(script.outro) }
             }
         }
     }
@@ -418,7 +434,7 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Açılış", style = Console.Label)
-            LineEditor(sc.hook, { vm.editLine(LineRef.RealHook, it) }, { vm.editEmotion(LineRef.RealHook, it) }) { vm.listen(sc.hook.text) }
+            LineEditor(sc.hook, { vm.editLine(LineRef.RealHook, it) }, { vm.editEmotion(LineRef.RealHook, it) }) { vm.listen(sc.hook) }
             sc.roasts.forEachIndexed { i, roast ->
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
                     MiniDoodle(p.drawing(roast.sampleId)?.strokes.orEmpty())
@@ -432,10 +448,10 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
                         modifier = Modifier.clip(RoundedCornerShape(50)).clickable { vm.toggleReveal(roast.sampleId) }
                     )
                 }
-                LineEditor(roast.line, { vm.editLine(LineRef.RealRoastLine(i), it) }, { vm.editEmotion(LineRef.RealRoastLine(i), it) }) { vm.listen(roast.line.text) }
+                LineEditor(roast.line, { vm.editLine(LineRef.RealRoastLine(i), it) }, { vm.editEmotion(LineRef.RealRoastLine(i), it) }) { vm.listen(roast.line) }
             }
             Text("Geçiş (görseli olan dönüşüm varsa söylenir)", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
-            LineEditor(sc.bridge, { vm.editLine(LineRef.RealBridge, it) }, { vm.editEmotion(LineRef.RealBridge, it) }) { vm.listen(sc.bridge.text) }
+            LineEditor(sc.bridge, { vm.editLine(LineRef.RealBridge, it) }, { vm.editEmotion(LineRef.RealBridge, it) }) { vm.listen(sc.bridge) }
         }
     }
 
@@ -468,7 +484,7 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
     item { Step("5", "Kapanış") }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
-            LineEditor(sc.outro, { vm.editLine(LineRef.RealOutro, it) }, { vm.editEmotion(LineRef.RealOutro, it) }) { vm.listen(sc.outro.text) }
+            LineEditor(sc.outro, { vm.editLine(LineRef.RealOutro, it) }, { vm.editEmotion(LineRef.RealOutro, it) }) { vm.listen(sc.outro) }
         }
     }
 }
@@ -528,7 +544,7 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
         if (rv.clip != null) SmallLink("Videoyu kaldır", Console.Critical) { vm.removeClip(rv.sampleId) }
 
         Text("Karalak'ın tepkisi", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
-        LineEditor(rv.line, { vm.editLine(LineRef.RealRevealLine(index), it) }, { vm.editEmotion(LineRef.RealRevealLine(index), it) }) { vm.listen(rv.line.text) }
+        LineEditor(rv.line, { vm.editLine(LineRef.RealRevealLine(index), it) }, { vm.editEmotion(LineRef.RealRevealLine(index), it) }) { vm.listen(rv.line) }
         if (rv.image != null) {
             SmallLink(if (busy) "Karalak bakıyor…" else "Karalak gerçeğine baksın: tepkiyi görsele göre yazsın") { if (!anyBusy) vm.reactReal(rv.sampleId) }
         }
@@ -588,14 +604,26 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Karalak konuşsun", style = Console.Subtitle)
-                    Text("Telefonun Türkçe sesi, ücretsiz. Kapalıyken yalnızca altyazı.", style = Console.Small)
+                    Text("Kapalıyken yalnızca altyazı.", style = Console.Small)
                 }
                 Switch(checked = st.voiceOn, onCheckedChange = vm::setVoiceOn, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
             }
             if (st.voiceOn) {
-                LabeledSlider("Ses inceliği", st.voicePitch, 0.8f..1.7f) { vm.setVoice(it, st.voiceRate) }
-                LabeledSlider("Konuşma hızı", st.voiceRate, 0.8f..1.4f) { vm.setVoice(st.voicePitch, it) }
-                SmallLink("Sesi dinle") { vm.listen(st.script?.intro?.text ?: "Merhaba, ben Karalak! Çizimlerini tahmin etmeye geldim.") }
+                Spacer(Modifier.height(8.dp))
+                Segmented(
+                    options = listOf(VoiceEngine.ElevenLabs.name to "ElevenLabs", VoiceEngine.Phone.name to "Telefon sesi"),
+                    selected = st.voiceEngine.name,
+                    onSelect = { vm.setVoiceEngine(VoiceEngine.valueOf(it)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (st.voiceEngine == VoiceEngine.ElevenLabs) ElevenSettings(st, vm)
+                else {
+                    LabeledSlider("Ses inceliği", st.voicePitch, 0.8f..1.7f) { vm.setVoice(it, st.voiceRate) }
+                    LabeledSlider("Konuşma hızı", st.voiceRate, 0.8f..1.4f) { vm.setVoice(st.voicePitch, it) }
+                }
+                SmallLink(if (st.eleven.busy) "Seslendiriliyor…" else "Sesi dinle") {
+                    vm.listen(st.script?.intro ?: SpokenLine("Merhaba, ben Karalak! Çizimlerini tahmin etmeye geldim.", MascotEmotion.Excited))
+                }
             }
             st.voiceError?.let { Text(it, style = Console.Small.copy(color = Console.Critical)) }
         }
@@ -660,7 +688,11 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
                 SmallLink("Vazgeç", Console.Critical) { vm.cancelRender() }
             }
         } else {
-            BigButton("Videoyu oluştur", enabled = st.ready) { vm.render() }
+            val voiceMissing = st.voiceOn && st.voiceEngine == VoiceEngine.ElevenLabs && st.eleven.missing > 0
+            BigButton("Videoyu oluştur", enabled = st.ready && !voiceMissing) { vm.render() }
+            if (st.ready && voiceMissing) {
+                Text("Önce Ses bölümünde “Seslendir”e bas: ${st.eleven.missing} cümle, ~${st.eleven.missingCredits} kredi.", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
+            }
             if (st.format == StudioFormat.Guess && st.script == null && st.selected.isNotEmpty()) {
                 Text("Önce Karalak çizimlere baksın (3. adım).", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
             }
@@ -706,12 +738,97 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
     }
 }
 
+/** ElevenLabs: the key (kept on this phone only), the voice, the model and how lively it speaks. */
+@Composable
+private fun ElevenSettings(st: StudioState, vm: StudioViewModel) {
+    val e = st.eleven
+    var draft by remember { mutableStateOf("") }
+    Spacer(Modifier.height(6.dp))
+    if (e.keySet) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Anahtar kayıtlı · …${e.keyHint}", style = Console.Small, modifier = Modifier.weight(1f))
+            SmallLink("Değiştir", Console.Critical) { vm.setElevenKey("") }
+        }
+    } else {
+        Field("ElevenLabs API anahtarı", draft, { draft = it }, secret = true)
+        Text("Yalnızca bu telefonda saklanır; uygulamaya ya da sunucuya gitmez.", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
+        SmallLink("Kaydet") { vm.setElevenKey(draft); draft = "" }
+    }
+
+    Text("Model", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+    Segmented(
+        options = VoiceModel.entries.map { it.name to it.label },
+        selected = e.model.name,
+        onSelect = { vm.setElevenModel(VoiceModel.valueOf(it)) },
+        modifier = Modifier.fillMaxWidth()
+    )
+    if (e.model == VoiceModel.V3) {
+        Text("Canlılık", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+        Segmented(
+            options = listOf("0.0" to "Yaratıcı", "0.5" to "Doğal", "1.0" to "Sabit"),
+            selected = when { e.stability < 0.25f -> "0.0"; e.stability > 0.75f -> "1.0"; else -> "0.5" },
+            onSelect = { vm.setElevenStability(it.toFloat()) },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text("Duyguyla konuş", style = Console.Subtitle)
+                Text("Karalak'ın yüz ifadesi sese de geçer: gülerken güler, şaşkınken şaşırır.", style = Console.Small)
+            }
+            Switch(checked = e.tags, onCheckedChange = vm::setElevenTags, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
+        }
+    } else {
+        LabeledSlider("Kararlılık", e.stability, 0f..1f) { vm.setElevenStability(it) }
+    }
+
+    Text("Ses", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+    val choices = (e.voices + ElevenLabs.PRESETS).distinctBy { it.id }
+    choices.take(24).chunked(2).forEach { row ->
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 6.dp)) {
+            row.forEach { v ->
+                val on = v.id == e.voiceId
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (on) Console.AccentSoft else Console.Surface,
+                    border = BorderStroke(if (on) 1.5.dp else 1.dp, if (on) Console.Accent else Console.Border),
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).clickable { vm.setElevenVoice(v.id) }
+                ) {
+                    Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                        Text(v.name, style = Console.Subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(v.note, style = Console.Small, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+            if (row.size == 1) Spacer(Modifier.weight(1f))
+        }
+    }
+    Field("Ses ID (Voice Design ile yaptığın sesin ID'si)", e.voiceId, vm::setElevenVoice)
+    e.status?.let { Text(it, style = Console.Small, modifier = Modifier.padding(top = 4.dp)) }
+
+    // the only place a whole script is sent to ElevenLabs, and only on a tap
+    if (e.ready + e.missing > 0) {
+        Text("Seslendirme: ${e.ready} cümle hazır · ${e.missing} eksik", style = Console.Subtitle, modifier = Modifier.padding(top = 10.dp))
+        if (e.missing > 0) {
+            Spacer(Modifier.height(6.dp))
+            DarkButton(
+                text = e.progress ?: "Seslendir (~${e.missingCredits} kredi)",
+                busy = e.busy,
+                enabled = e.keySet && !e.busy
+            ) { vm.voiceAll() }
+        }
+        Text(
+            "Kredi yalnızca bu düğmeye ya da bir cümlenin hoparlörüne (onay verince) basınca harcanır. Video oluşturmak kredi harcamaz; değişen cümle yalnızca kendisi yeniden seslendirilir.",
+            style = Console.Small, modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
 /** Every line Karalak will say, editable, with its face and a button to hear it. */
 private fun LazyListScope.scriptEditor(sc: GuessScript, st: StudioState, vm: StudioViewModel) {
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Açılış", style = Console.Label)
-            LineEditor(sc.intro, { vm.editLine(LineRef.Intro, it) }, { vm.editEmotion(LineRef.Intro, it) }) { vm.listen(sc.intro.text) }
+            LineEditor(sc.intro, { vm.editLine(LineRef.Intro, it) }, { vm.editEmotion(LineRef.Intro, it) }) { vm.listen(sc.intro) }
         }
     }
     sc.rounds.forEachIndexed { r, round ->
@@ -732,18 +849,18 @@ private fun LazyListScope.scriptEditor(sc: GuessScript, st: StudioState, vm: Stu
                 listOf("Üçte biri", "Üçte ikisi", "Bitince").forEachIndexed { k, label ->
                     round.stages.getOrNull(k)?.let { l ->
                         Text(label, style = Console.Label, modifier = Modifier.padding(top = 8.dp))
-                        LineEditor(l, { vm.editLine(LineRef.Stage(r, k), it) }, { vm.editEmotion(LineRef.Stage(r, k), it) }) { vm.listen(l.text) }
+                        LineEditor(l, { vm.editLine(LineRef.Stage(r, k), it) }, { vm.editEmotion(LineRef.Stage(r, k), it) }) { vm.listen(l) }
                     }
                 }
                 Text("Sonuca tepkisi", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
-                LineEditor(round.reaction, { vm.editLine(LineRef.Reaction(r), it) }, { vm.editEmotion(LineRef.Reaction(r), it) }) { vm.listen(round.reaction.text) }
+                LineEditor(round.reaction, { vm.editLine(LineRef.Reaction(r), it) }, { vm.editEmotion(LineRef.Reaction(r), it) }) { vm.listen(round.reaction) }
             }
         }
     }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Kapanış", style = Console.Label)
-            LineEditor(sc.outro, { vm.editLine(LineRef.Outro, it) }, { vm.editEmotion(LineRef.Outro, it) }) { vm.listen(sc.outro.text) }
+            LineEditor(sc.outro, { vm.editLine(LineRef.Outro, it) }, { vm.editEmotion(LineRef.Outro, it) }) { vm.listen(sc.outro) }
             Spacer(Modifier.height(8.dp))
             SmallLink(if (st.writing) "Yazılıyor…" else "Kararı değiştirdiysen: tepkileri ve kapanışı yeniden yazdır") { if (!st.writing) vm.rewriteFrame() }
         }
@@ -879,11 +996,12 @@ private fun BigButton(text: String, enabled: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun Field(label: String?, value: String, onChange: (String) -> Unit, lines: Int = 1) {
+private fun Field(label: String?, value: String, onChange: (String) -> Unit, lines: Int = 1, secret: Boolean = false) {
     OutlinedTextField(
         value = value, onValueChange = onChange,
         label = label?.let { l -> @Composable { Text(l) } },
         singleLine = lines == 1, maxLines = lines.coerceAtLeast(1),
+        visualTransformation = if (secret) androidx.compose.ui.text.input.PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = Console.Accent, unfocusedBorderColor = Console.Border,
             focusedContainerColor = Console.Surface, unfocusedContainerColor = Console.Surface,
