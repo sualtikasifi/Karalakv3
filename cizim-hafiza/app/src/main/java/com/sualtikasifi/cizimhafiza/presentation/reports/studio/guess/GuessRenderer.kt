@@ -13,6 +13,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioAssets
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioColors as C
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioDrawing
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.TextPainter
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.VoicedVideo
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotSprites
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MouthState
@@ -46,11 +47,12 @@ class GuessRenderer(
     private val player: PlayerCard,
     /** Voice loudness per video frame for each line (by GuessScript.lines() index); null in the silent preview. */
     private val voice: Map<Int, FloatArray>?
-) {
+) : VoicedVideo {
     val events: List<GuessEvent> = GuessTimeline.build(script) { i, line ->
         voice?.get(i)?.let { env -> env.size * 1000L / FPS } ?: GuessTimeline.estimateMs(line.text)
     }
-    val totalMs: Long = GuessTimeline.totalMs(events)
+    override val totalMs: Long = GuessTimeline.totalMs(events)
+    override val voiceStarts: List<Pair<Int, Long>> = events.filter { it.line != null && it.lineIndex >= 0 }.map { it.lineIndex to it.startMs }
 
     private val replays = script.rounds.associate { r -> r.drawingId to StrokeReplay(drawings[r.drawingId]?.strokes.orEmpty()) }
     private val text = TextPainter()
@@ -62,7 +64,7 @@ class GuessRenderer(
     private val playerTile = RectF(555f, 150f, 1040f, 640f)
     private val paper = RectF(130f, 900f, 950f, 1500f)
 
-    fun draw(canvas: Canvas, t: Long) {
+    override fun draw(canvas: Canvas, t: Long) {
         canvas.drawColor(C.CREAM)
         val e = GuessTimeline.at(events, t)
         val speaking = e.line != null && t - e.startMs < spokenMs(e)

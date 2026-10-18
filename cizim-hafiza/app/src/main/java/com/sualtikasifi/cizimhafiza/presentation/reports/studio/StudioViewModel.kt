@@ -32,6 +32,19 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotSprites
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.PlayerCard
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.ArchiveRun
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemoryArchive
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemoryCopy
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemoryDirector
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemoryPick
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemoryRenderer
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemorySample
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemoryScript
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemorySource
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemoryWordStat
+import com.sualtikasifi.cizimhafiza.data.local.dao.WordDao
+import com.sualtikasifi.cizimhafiza.domain.repository.ModerationRepository
+import com.sualtikasifi.cizimhafiza.util.GameConstants
 import com.sualtikasifi.cizimhafiza.util.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -66,7 +79,24 @@ sealed interface LineRef {
     data object Outro : LineRef
     data class Stage(val round: Int, val stage: Int) : LineRef
     data class Reaction(val round: Int) : LineRef
+    data object MemoryHook : LineRef
+    data object MemoryParadox : LineRef
+    data object MemoryOutro : LineRef
+    data class MemoryPickLine(val pick: Int) : LineRef
 }
+
+/** "Hafıza Tuzağı": the archive's numbers, the chosen word, its kept drawings, the picks and the script. */
+data class MemoryUi(
+    val roundsSeen: Int = 0,
+    val words: List<MemoryWordStat> = emptyList(),
+    val scanning: Boolean = false,
+    val scanStatus: String? = null,
+    val selected: MemoryWordStat? = null,
+    val samples: List<MemorySample> = emptyList(),
+    val script: MemoryScript? = null,
+    val writing: Boolean = false,
+    val writeError: String? = null
+)
 
 data class StudioState(
     val format: StudioFormat = StudioFormat.Guess,
@@ -98,11 +128,16 @@ data class StudioState(
     val progress: Float = 0f,
     val video: File? = null,
     val renderError: String? = null,
-    val message: String? = null
+    val message: String? = null,
+    val memory: MemoryUi = MemoryUi()
 ) {
     val chosen: List<StudioDrawing> get() = selected.mapNotNull { id -> drawings.find { it.id == id } }
     val canWrite: Boolean get() = selected.isNotEmpty() && !writing
-    val ready: Boolean get() = script != null && !rendering
+    val ready: Boolean get() = !rendering && when (format) {
+        StudioFormat.Guess -> script != null
+        StudioFormat.Memory -> memory.script?.picks?.isNotEmpty() == true
+        StudioFormat.RealLife -> false
+    }
 }
 
 private const val DEFAULT_TAGS = "#çizimoyunu #karalak #yapayzeka #oyunönerisi #çizim"
@@ -121,7 +156,10 @@ class StudioViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val drawingResultDao: DrawingResultDao,
     private val settings: SettingsRepository,
-    private val auth: AuthRepository
+    private val auth: AuthRepository,
+    private val wordDao: WordDao,
+    private val moderation: ModerationRepository,
+    private val archive: MemoryArchive
 ) : ViewModel() {
     private val _state = MutableStateFlow(StudioState())
     val state: StateFlow<StudioState> = _state.asStateFlow()
@@ -139,6 +177,7 @@ class StudioViewModel @Inject constructor(
         loadDrawings()
         loadPlayer()
         loadMascot()
+        refreshMemory()
     }
 
     // ---- loading
@@ -196,7 +235,11 @@ class StudioViewModel @Inject constructor(
 
     // ---- choices
 
-    fun setFormat(f: StudioFormat) { _state.update { it.copy(format = f) } }
+    fun setFormat(f: StudioFormat) {
+        _state.update { it.copy(format = f, video = null, renderError = null, previewMs = 0L) }
+        if (f == StudioFormat.Memory) refreshMemory()
+        refreshPreview()
+    }
 
     fun toggle(d: StudioDrawing) {
         _state.update { s ->
@@ -278,6 +321,19 @@ class StudioViewModel @Inject constructor(
 
     private fun updateLine(ref: LineRef, change: (SpokenLine) -> SpokenLine) {
         _state.update { s ->
+            if (ref is LineRef.MemoryHook || ref is LineRef.MemoryParadox || ref is LineRef.MemoryOutro || ref is LineRef.MemoryPickLine) {
+                val ms = s.memory.script ?: return@update s
+                val nextMemory = when (ref) {
+                    LineRef.MemoryHook -> ms.copy(hook = change(ms.hook))
+                    LineRef.MemoryParadox -> ms.copy(paradox = change(ms.paradox))
+                    LineRef.MemoryOutro -> ms.copy(outro = change(ms.outro))
+                    is LineRef.MemoryPickLine -> ms.copy(picks = ms.picks.mapIndexed { i, p ->
+                        if (i == ref.pick) p.copy(comment = change(p.comment ?: SpokenLine("", MascotEmotion.Laughing)).takeIf { it.text.isNotBlank() }) else p
+                    })
+                    else -> ms
+                }
+                return@update s.copy(memory = s.memory.copy(script = nextMemory), video = null)
+            }
             val sc = s.script ?: return@update s
             val next = when (ref) {
                 LineRef.Intro -> sc.copy(intro = change(sc.intro))
@@ -286,6 +342,7 @@ class StudioViewModel @Inject constructor(
                 is LineRef.Stage -> sc.copy(rounds = sc.rounds.mapIndexed { i, r ->
                     if (i == ref.round) r.copy(stages = r.stages.mapIndexed { k, l -> if (k == ref.stage) change(l) else l }) else r
                 })
+                else -> sc
             }
             s.copy(script = next, video = null)
         }
@@ -299,6 +356,125 @@ class StudioViewModel @Inject constructor(
             s.copy(script = sc.copy(rounds = sc.rounds.mapIndexed { i, r -> if (i == round) r.copy(correct = !r.correct) else r }), video = null)
         }
         refreshPreview()
+    }
+
+    // ---- Hafıza Tuzağı
+
+    private fun updateMemory(change: (MemoryUi) -> MemoryUi) = _state.update { it.copy(memory = change(it.memory)) }
+
+    /** Re-reads the archive's numbers: every word drawn at least [MEMORY_MIN_DRAWN] times. */
+    fun refreshMemory() {
+        viewModelScope.launch {
+            val words = archive.words(MEMORY_MIN_DRAWN)
+            val seen = archive.roundsSeen()
+            updateMemory { m -> m.copy(words = words, roundsSeen = seen, selected = m.selected?.let { sel -> words.find { it.key == sel.key } ?: sel }) }
+        }
+    }
+
+    /**
+     * Reads the whole Quick Match pool, the queue and the daily challenges waiting for review into
+     * the archive. Each round is counted once however often it is read, so running it again only
+     * adds what is new.
+     */
+    fun scanAll() {
+        if (_state.value.memory.scanning) return
+        updateMemory { it.copy(scanning = true, scanStatus = "Havuz okunuyor…") }
+        viewModelScope.launch {
+            var added = 0
+            var read = 0
+            val outcome = runCatching {
+                var cursor: Long? = null
+                for (page in 0 until SCAN_POOL_PAGES) {
+                    val p = moderation.poolRuns(SCAN_PAGE, cursor).getOrThrow()
+                    read += p.runs.size
+                    added += archive.ingest(p.runs.map { ArchiveRun(it.id, MemorySource.Match, it.items) })
+                    updateMemory { it.copy(scanStatus = "Havuz: $read tur okundu, $added yeni") }
+                    if (p.endReached || p.nextCursor == null) break
+                    cursor = p.nextCursor
+                }
+                cursor = null
+                for (page in 0 until SCAN_QUEUE_PAGES) {
+                    val p = moderation.pendingRuns(SCAN_PAGE, cursor).getOrThrow()
+                    read += p.runs.size
+                    added += archive.ingest(p.runs.map { ArchiveRun(it.id, MemorySource.Match, it.items) })
+                    if (p.endReached || p.nextCursor == null) break
+                    cursor = p.nextCursor
+                }
+                val daily = moderation.pendingDailyChallenges(SCAN_DAILY).getOrThrow()
+                read += daily.size
+                added += archive.ingest(daily.map { ArchiveRun(it.id, MemorySource.Daily, it.items) })
+            }
+            updateMemory {
+                it.copy(
+                    scanning = false,
+                    scanStatus = outcome.fold(
+                        onSuccess = { "$read tur okundu, $added yeni tur eklendi" },
+                        onFailure = { e -> "Durdu ($read okundu, $added eklendi): ${e.message}" }
+                    )
+                )
+            }
+            refreshMemory()
+        }
+    }
+
+    /** Opens a word: its kept drawings, and a first script with the forgotten ones in the order they were kept. */
+    fun selectWord(stat: MemoryWordStat) {
+        viewModelScope.launch {
+            val samples = archive.samples(stat.key)
+            val drawSeconds = runCatching { wordDao.findByText(stat.word) }.getOrNull()
+                ?.let { GameConstants.drawingDurationSeconds(it.difficulty) } ?: 7
+            val picks = samples.filter { !it.correct }.take(DEFAULT_PICKS).map { MemoryPick(it.id, false, null) }
+            val script = MemoryScript(
+                word = stat.word, drawn = stat.drawn, forgot = stat.forgot, delaySec = stat.avgDelaySec, drawSeconds = drawSeconds,
+                hook = SpokenLine(MemoryCopy.hookText(stat.word, stat.drawn, stat.forgot, stat.avgDelaySec), MascotEmotion.Shocked),
+                picks = picks,
+                paradox = SpokenLine(MemoryCopy.paradoxText(stat.word, drawSeconds), MascotEmotion.Thinking),
+                outro = SpokenLine(MemoryCopy.OUTRO, MascotEmotion.Point)
+            )
+            updateMemory { it.copy(selected = stat, samples = samples, script = script, writeError = null) }
+            _state.update { it.copy(video = null, previewMs = 0L) }
+            refreshPreview()
+        }
+    }
+
+    /** Adds a kept drawing to the run, or takes it out; at most [MAX_PICKS]. */
+    fun togglePick(sample: MemorySample) {
+        _state.update { s ->
+            val ms = s.memory.script ?: return@update s
+            val has = ms.picks.any { it.sampleId == sample.id }
+            val picks = when {
+                has -> ms.picks.filterNot { it.sampleId == sample.id }
+                ms.picks.size >= MAX_PICKS -> return@update s.copy(message = "En fazla $MAX_PICKS çizim")
+                else -> ms.picks + MemoryPick(sample.id, sample.correct, null)
+            }
+            s.copy(memory = s.memory.copy(script = ms.copy(picks = picks)), video = null)
+        }
+        refreshPreview()
+    }
+
+    /** Lets the assistant choose the most interesting forgotten drawings and give Karalak a line for each. */
+    fun writeMemory() {
+        val s = _state.value
+        val stat = s.memory.selected ?: return
+        val script = s.memory.script ?: return
+        if (s.memory.writing) return
+        val key = prefs().getString(AssistantViewModel.KEY, "").orEmpty()
+        if (key.isBlank()) { updateMemory { it.copy(writeError = "Önce Asistan ayarlarından OpenRouter anahtarını gir.") }; return }
+        val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
+        updateMemory { it.copy(writing = true, writeError = null) }
+        viewModelScope.launch {
+            val candidates = s.memory.samples.filter { !it.correct }
+            MemoryDirector(OpenRouterClient(key), model).pick(stat, candidates, DEFAULT_PICKS).onSuccess { w ->
+                updateMemory { it.copy(writing = false, script = script.copy(picks = w.picks, outro = w.outro ?: script.outro)) }
+                _state.update {
+                    it.copy(
+                        caption = w.caption.ifBlank { it.caption }, hashtags = w.hashtags.ifBlank { it.hashtags },
+                        aiCost = w.costUsd, video = null
+                    )
+                }
+                refreshPreview()
+            }.onFailure { e -> updateMemory { it.copy(writing = false, writeError = e.message ?: "Seçilemedi") } }
+        }
     }
 
     // ---- voice
@@ -331,12 +507,10 @@ class StudioViewModel @Inject constructor(
         previewJob = viewModelScope.launch {
             delay(60)
             val s = _state.value
-            val script = s.script ?: previewScript(s)
-            val player = s.player
-            val sp = sprites
-            if (script == null || player == null || sp == null) { _state.update { it.copy(preview = null, totalMs = 0L) }; return@launch }
+            val video = withContext(Dispatchers.Default) { videoFor(s, voice = null, preview = true) }
+            if (video == null) { _state.update { it.copy(preview = null, totalMs = 0L) }; return@launch }
             val (image, total) = withContext(Dispatchers.Default) {
-                val renderer = GuessRenderer(assetsOrLoad(), sp, script, s.drawings.associateBy { it.id }, player, voice = null)
+                val renderer = video
                 val bmp = Bitmap.createBitmap(GuessRenderer.W / 2, GuessRenderer.H / 2, Bitmap.Config.ARGB_8888)
                 val canvas = Canvas(bmp)
                 canvas.scale(0.5f, 0.5f)
@@ -368,11 +542,36 @@ class StudioViewModel @Inject constructor(
 
     // ---- the video
 
+    /** The video of the current format, drawn from the current state; null while something it needs is missing. */
+    private fun videoFor(s: StudioState, voice: Map<Int, FloatArray>?, preview: Boolean): VoicedVideo? {
+        val sp = sprites ?: return null
+        return when (s.format) {
+            StudioFormat.Guess -> {
+                val script = s.script ?: (if (preview) previewScript(s) else null) ?: return null
+                val player = s.player ?: return null
+                GuessRenderer(assetsOrLoad(), sp, script, s.drawings.associateBy { it.id }, player, voice)
+            }
+            StudioFormat.Memory -> {
+                val script = s.memory.script ?: return null
+                val pickedIds = script.picks.map { it.sampleId }.toSet()
+                val mosaic = s.memory.samples.filter { !it.correct && it.id !in pickedIds } + s.memory.samples.filter { !it.correct && it.id in pickedIds }
+                MemoryRenderer(assetsOrLoad(), sp, script, s.memory.samples.associateBy { it.id }, mosaic.take(9), voice)
+            }
+            StudioFormat.RealLife -> null
+        }
+    }
+
+    /** The current format's spoken lines, in the order the video says them. */
+    private fun linesFor(s: StudioState): List<SpokenLine>? = when (s.format) {
+        StudioFormat.Guess -> s.script?.lines()
+        StudioFormat.Memory -> s.memory.script?.lines()
+        StudioFormat.RealLife -> null
+    }
+
     fun render() {
         val s = _state.value
-        val script = s.script ?: return
-        val player = s.player ?: return
-        val sp = sprites ?: return
+        val lines = linesFor(s) ?: return
+        if (videoFor(s, null, preview = false) == null) return
         if (s.rendering) return
         _state.update { it.copy(rendering = true, progress = 0f, renderError = null, video = null, renderStage = "Hazırlanıyor…") }
         renderJob = viewModelScope.launch {
@@ -382,7 +581,6 @@ class StudioViewModel @Inject constructor(
             val job = coroutineContext[Job]
             val result = runCatching {
                 // 1. Karalak's voice, one file per line
-                val lines = script.lines()
                 val voices = HashMap<Int, Pcm>()
                 if (s.voiceOn) {
                     val synth = SpeechSynth.open(context).getOrThrow()
@@ -400,12 +598,10 @@ class StudioViewModel @Inject constructor(
                 withContext(Dispatchers.Default) {
                     // 2. timing from the real voice, the voice laid on one track, and that track encoded
                     val envelopes = if (s.voiceOn) voices.mapValues { (_, pcm) -> PcmOps.envelope(pcm, GuessRenderer.FPS) } else null
-                    val renderer = GuessRenderer(assetsOrLoad(), sp, script, s.drawings.associateBy { it.id }, player, envelopes)
+                    val renderer = videoFor(s, envelopes, preview = false) ?: error("Video hazırlanamadı")
                     val audio = if (s.voiceOn) {
                         _state.update { it.copy(renderStage = "Ses birleştiriliyor", progress = 0.17f) }
-                        val placed = renderer.events.filter { it.line != null && it.lineIndex >= 0 }.mapNotNull { e ->
-                            voices[e.lineIndex]?.let { Placed(it, e.startMs) }
-                        }
+                        val placed = renderer.voiceStarts.mapNotNull { (index, start) -> voices[index]?.let { Placed(it, start) } }
                         AacEncoder.encode(PcmOps.mix(renderer.totalMs, RATE, placed))
                     } else null
                     // 3. the picture, full HD when the phone's encoder takes it, 720p otherwise
@@ -482,6 +678,14 @@ class StudioViewModel @Inject constructor(
     private companion object {
         /** The voice track's sample rate: what every AAC encoder takes. */
         const val RATE = 44_100
+        /** A word shows up in "Hafıza Tuzağı" once this many have drawn it. */
+        const val MEMORY_MIN_DRAWN = 5
+        const val DEFAULT_PICKS = 6
+        const val MAX_PICKS = 8
+        const val SCAN_PAGE = 25
+        const val SCAN_POOL_PAGES = 120
+        const val SCAN_QUEUE_PAGES = 20
+        const val SCAN_DAILY = 500
         val GOOGLE_PHOTO = Regex("^https://lh[0-9]+\\.googleusercontent\\.com/\\S*$")
     }
 }

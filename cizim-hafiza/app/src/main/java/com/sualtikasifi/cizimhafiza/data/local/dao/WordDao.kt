@@ -134,6 +134,10 @@ interface WordDao {
     @Query("SELECT * FROM words WHERE id IN (:ids)")
     suspend fun getWordsByIds(ids: List<Int>): List<WordEntity>
 
+    // The video studio's "Hafıza Tuzağı" needs a word's difficulty (its drawing time) from its text alone.
+    @Query("SELECT * FROM words WHERE text = :text LIMIT 1")
+    suspend fun findByText(text: String): WordEntity?
+
     // Flips a single word's playability — called when the reviewer decides
     // (see WordReviewRepository.keep/delete) so they can immediately see
     // their own "Kalsın" words show up in their own games, without waiting

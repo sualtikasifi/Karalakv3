@@ -118,7 +118,8 @@ fun StudioPanel(onBack: () -> Unit, viewModel: StudioViewModel = hiltViewModel()
             )
         }
         when (st.format) {
-            StudioFormat.Guess -> guessSections(st, viewModel, context)
+            StudioFormat.Guess -> { guessSections(st, viewModel); sharedSections(st, viewModel, context) }
+            StudioFormat.Memory -> { memorySections(st, viewModel); sharedSections(st, viewModel, context) }
             else -> item {
                 ConsoleCard(Modifier.fillMaxWidth()) {
                     Text(st.format.title, style = Console.Subtitle)
@@ -131,7 +132,7 @@ fun StudioPanel(onBack: () -> Unit, viewModel: StudioViewModel = hiltViewModel()
     }
 }
 
-private fun LazyListScope.guessSections(st: StudioState, vm: StudioViewModel, context: Context) {
+private fun LazyListScope.guessSections(st: StudioState, vm: StudioViewModel) {
     // 1. drawings
     item { Step("1", "Çizimler", "${st.selected.size} seçili · en iyisi 3") }
     when {
@@ -189,9 +190,122 @@ private fun LazyListScope.guessSections(st: StudioState, vm: StudioViewModel, co
         }
     }
     st.script?.let { sc -> scriptEditor(sc, st, vm) }
+}
 
+/** "Hafıza Tuzağı": the archive, a word, its drawings, and Karalak's lines. */
+private fun LazyListScope.memorySections(st: StudioState, vm: StudioViewModel) {
+    val m = st.memory
+    item { Step("1", "Veri", "${m.roundsSeen} tur arşivde") }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Text(
+                "Panel, incelediğin her hızlı eşleş turunu ve günlük meydan okumayı bu telefonda isimsiz olarak sayar. " +
+                    "Günlük denemeler onaylanınca sunucudan silinir; sayıları burada kalır.",
+                style = Console.Small
+            )
+            Spacer(Modifier.height(8.dp))
+            DarkButton(
+                text = if (m.scanning) (m.scanStatus ?: "Okunuyor…") else "Havuzu ve bekleyenleri tara",
+                busy = m.scanning,
+                enabled = !m.scanning
+            ) { vm.scanAll() }
+            if (!m.scanning) m.scanStatus?.let { Text(it, style = Console.Small, modifier = Modifier.padding(top = 4.dp)) }
+        }
+    }
+
+    item { Step("2", "Kelime", "en az 5 çizim") }
+    if (m.words.isEmpty()) {
+        item { ConsoleCard(Modifier.fillMaxWidth()) { Text("Henüz 5 kez çizilmiş kelime yok. Havuzu tara ya da kuyruğu incele.", style = Console.Small) } }
+    } else {
+        m.words.take(40).forEach { w ->
+            item(key = "word-" + w.key) {
+                val on = m.selected?.key == w.key
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (on) Console.AccentSoft else Console.Surface,
+                    border = BorderStroke(if (on) 1.5.dp else 1.dp, if (on) Console.Accent else Console.Border),
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { vm.selectWord(w) }
+                ) {
+                    Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(w.word.uppercase(Locale("tr")), style = Console.Subtitle)
+                            Text(
+                                "${w.drawn} çizim · ${w.forgot} tanıyamadı · ≈ ${w.avgDelaySec} sn · ${w.samples} örnek" +
+                                    if (w.daily > 0) " · ${w.daily} günlük" else "",
+                                style = Console.Small
+                            )
+                        }
+                        Tag(
+                            "%${w.forgotPercent}",
+                            fg = Color.White,
+                            bg = if (w.drawn >= 50) Console.Critical else Console.InkMuted
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    val script = m.script
+    val stat = m.selected
+    if (script != null && stat != null) {
+        item {
+            Step("3", "Çizimler", "${script.picks.size} seçili")
+        }
+        if (stat.drawn < 50) {
+            item {
+                Text(
+                    "Bu kelime ${stat.drawn} kez çizilmiş. Videoda yüzde değil sayı gösterilir; yayın için 50 ve üzeri önerilir.",
+                    style = Console.Small.copy(color = Console.Critical)
+                )
+            }
+        }
+        val forgotFirst = m.samples.sortedBy { it.correct }
+        forgotFirst.take(48).chunked(3).forEach { row ->
+            item(key = "ms-" + row.first().id) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    row.forEach { sample ->
+                        val order = script.picks.indexOfFirst { it.sampleId == sample.id }
+                        SampleThumb(sample, order, Modifier.weight(1f)) { vm.togglePick(sample) }
+                    }
+                    repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
+        item {
+            ConsoleCard(Modifier.fillMaxWidth()) {
+                DarkButton(
+                    text = if (m.writing) "Karalak seçiyor…" else "Karalak seçsin ve yorumlasın",
+                    busy = m.writing,
+                    enabled = !m.writing
+                ) { vm.writeMemory() }
+                Text("En ilginç ve birbirinden farklı çizimleri seçer, her birine kısa bir cümle yazar. Sayıları değiştiremez.", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
+                m.writeError?.let { Text(it, style = Console.Small.copy(color = Console.Critical)) }
+            }
+        }
+        item { Step("4", "Senaryo") }
+        item {
+            ConsoleCard(Modifier.fillMaxWidth()) {
+                Text("Açılış (sayılar arşivden)", style = Console.Label)
+                LineEditor(script.hook, { vm.editLine(LineRef.MemoryHook, it) }, { vm.editEmotion(LineRef.MemoryHook, it) }) { vm.listen(script.hook.text) }
+                script.picks.forEachIndexed { i, p ->
+                    Text("Çizim ${i + 1} yorumu (boş bırakılabilir)", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+                    val l = p.comment ?: SpokenLine("", MascotEmotion.Laughing)
+                    LineEditor(l, { vm.editLine(LineRef.MemoryPickLine(i), it) }, { vm.editEmotion(LineRef.MemoryPickLine(i), it) }) { vm.listen(l.text) }
+                }
+                Text("Ters köşe", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+                LineEditor(script.paradox, { vm.editLine(LineRef.MemoryParadox, it) }, { vm.editEmotion(LineRef.MemoryParadox, it) }) { vm.listen(script.paradox.text) }
+                Text("Kapanış", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+                LineEditor(script.outro, { vm.editLine(LineRef.MemoryOutro, it) }, { vm.editEmotion(LineRef.MemoryOutro, it) }) { vm.listen(script.outro.text) }
+            }
+        }
+    }
+}
+
+/** Voice, mascot artwork, preview, making the video and the result: the same for every format. */
+private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, context: Context) {
     // 4. voice
-    item { Step("4", "Ses") }
+    item { Step("♪", "Ses") }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -211,7 +325,7 @@ private fun LazyListScope.guessSections(st: StudioState, vm: StudioViewModel, co
     }
 
     // 5. mascot artwork
-    item { Step("5", "Karalak'ın pozları") }
+    item { Step("☺", "Karalak'ın pozları") }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -229,11 +343,11 @@ private fun LazyListScope.guessSections(st: StudioState, vm: StudioViewModel, co
     }
 
     // 6. preview
-    item { Step("6", "Önizleme", if (st.totalMs > 0) "≈ ${(st.totalMs + 999) / 1000} sn" else null) }
+    item { Step("▶", "Önizleme", if (st.totalMs > 0) "≈ ${(st.totalMs + 999) / 1000} sn" else null) }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
-            if (st.selected.isEmpty()) {
-                Text("Önizleme için en az bir çizim seç.", style = Console.Small)
+            if (st.preview == null && st.totalMs == 0L) {
+                Text(if (st.format == StudioFormat.Guess) "Önizleme için en az bir çizim seç." else "Önizleme için bir kelime seç.", style = Console.Small)
             } else {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     val img = st.preview
@@ -249,7 +363,7 @@ private fun LazyListScope.guessSections(st: StudioState, vm: StudioViewModel, co
                         modifier = Modifier.fillMaxWidth()
                     )
                     Text(
-                        if (st.script == null) "Örnek cümlelerle gösteriliyor; Karalak yazınca kendi cümleleri gelir."
+                        if (st.format == StudioFormat.Guess && st.script == null) "Örnek cümlelerle gösteriliyor; Karalak yazınca kendi cümleleri gelir."
                         else "Sesli videoda süreler sesin gerçek uzunluğuna göre ayarlanır.",
                         style = Console.Small, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
                     )
@@ -270,7 +384,7 @@ private fun LazyListScope.guessSections(st: StudioState, vm: StudioViewModel, co
             }
         } else {
             BigButton("Videoyu oluştur", enabled = st.ready) { vm.render() }
-            if (st.script == null && st.selected.isNotEmpty()) {
+            if (st.format == StudioFormat.Guess && st.script == null && st.selected.isNotEmpty()) {
                 Text("Önce Karalak çizimlere baksın (3. adım).", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
             }
         }
@@ -409,6 +523,31 @@ private fun Thumb(d: StudioDrawing, order: Int, modifier: Modifier, onClick: () 
                 }
             }
             Text(d.word, style = Console.Label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 6.dp))
+        }
+    }
+}
+
+@Composable
+private fun SampleThumb(sample: com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemorySample, order: Int, modifier: Modifier, onClick: () -> Unit) {
+    val on = order >= 0
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Console.Surface,
+        border = BorderStroke(if (on) 2.dp else 1.dp, if (on) Console.Accent else Console.Border),
+        modifier = modifier.clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick)
+    ) {
+        Box(Modifier.fillMaxWidth().aspectRatio(1f)) {
+            StrokeCanvas(strokes = sample.strokes, modifier = Modifier.fillMaxSize().padding(6.dp), strokeWidthPx = 4f)
+            Box(
+                Modifier.padding(5.dp).size(18.dp).clip(CircleShape).background(if (sample.correct) Console.Good else Console.Critical).align(Alignment.BottomStart),
+                contentAlignment = Alignment.Center
+            ) { Text(if (sample.correct) "✓" else "✗", style = Console.Label.copy(color = Color.White)) }
+            if (on) {
+                Box(
+                    Modifier.padding(5.dp).size(22.dp).clip(CircleShape).background(Console.Accent).align(Alignment.TopEnd),
+                    contentAlignment = Alignment.Center
+                ) { Text("${order + 1}", style = Console.Label.copy(color = Color.White)) }
+            }
         }
     }
 }
