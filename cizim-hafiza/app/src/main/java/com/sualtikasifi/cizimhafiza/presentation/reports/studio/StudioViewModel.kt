@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -26,6 +27,9 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Pcm
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.PcmOps
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Placed
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.SpeechSynth
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.ElevenLabs
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceBank
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceModel
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessDirector
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessRenderer
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessScript
@@ -87,6 +91,26 @@ enum class StudioFormat(val title: String, val blurb: String) {
     Memory("Hafıza Tuzağı", "Çizenlerin çoğu kendi çizimini tanıyamadı"),
     RealLife("Gerçek Olsaydı", "Çizimler gerçek hayata dönüşüyor")
 }
+
+/** Who gives Karalak its voice: the phone's own text-to-speech, or ElevenLabs. */
+enum class VoiceEngine { Phone, ElevenLabs }
+
+/** ElevenLabs settings as the panel shows them; the key itself never leaves SharedPreferences. */
+data class ElevenUi(
+    val keySet: Boolean = false,
+    /** The key's last characters, so the panel can show which one is in. */
+    val keyHint: String = "",
+    val voiceId: String = ElevenLabs.PRESETS.first().id,
+    val model: VoiceModel = VoiceModel.V3,
+    /** 0 creative · 0.5 natural · 1 robust. */
+    val stability: Float = 0.5f,
+    /** v3 only: say each line the way Karalak's face says it ("[laughs]", "[surprised]"…). */
+    val tags: Boolean = true,
+    /** The account's own voices, when the key may list them. */
+    val voices: List<ElevenLabs.Voice> = emptyList(),
+    val status: String? = null,
+    val busy: Boolean = false
+)
 
 /** Whose drawings "Karalak Bilir mi?" uses: this phone's own, or a player's who agreed to appear in videos. */
 enum class GuessSource { Mine, Players }
@@ -167,6 +191,8 @@ data class StudioState(
     val caption: String = "",
     val hashtags: String = DEFAULT_TAGS,
     val voiceOn: Boolean = true,
+    val voiceEngine: VoiceEngine = VoiceEngine.Phone,
+    val eleven: ElevenUi = ElevenUi(),
     val voicePitch: Float = 1.2f,
     val voiceRate: Float = 1.05f,
     val voiceError: String? = null,
@@ -230,6 +256,8 @@ class StudioViewModel @Inject constructor(
     private var previewJob: Job? = null
     private var renderJob: Job? = null
     private var listener: SpeechSynth? = null
+    private var player: MediaPlayer? = null
+    private val voiceBank = VoiceBank(context)
     private val json = Json { ignoreUnknownKeys = true }
     private val realStore = RealStore(context)
     private var realSaveJob: Job? = null
@@ -244,6 +272,7 @@ class StudioViewModel @Inject constructor(
         loadMascot()
         refreshMemory()
         loadReal()
+        loadVoiceSettings()
     }
 
     // ---- loading
@@ -930,15 +959,125 @@ class StudioViewModel @Inject constructor(
     fun setVoiceOn(on: Boolean) { _state.update { it.copy(voiceOn = on, video = null) } }
     fun setVoice(pitch: Float, rate: Float) { _state.update { it.copy(voicePitch = pitch, voiceRate = rate, video = null) } }
 
-    /** Plays one line on the speaker with the current voice settings. */
-    fun listen(text: String) {
+    private fun elevenKey(): String = prefs().getString(EL_KEY, "").orEmpty().trim()
+    private fun elevenClient(): ElevenLabs? = elevenKey().takeIf { it.isNotBlank() }?.let { ElevenLabs(it) }
+    private fun updateEleven(change: (ElevenUi) -> ElevenUi) = _state.update { it.copy(eleven = change(it.eleven)) }
+
+    /** The voice settings kept on this phone; ElevenLabs is the default once a key is in. */
+    private fun loadVoiceSettings() {
+        val p = prefs()
+        val key = elevenKey()
+        val engine = p.getString(VOICE_ENGINE, null)?.let { runCatching { VoiceEngine.valueOf(it) }.getOrNull() }
+            ?: if (key.isNotBlank()) VoiceEngine.ElevenLabs else VoiceEngine.Phone
+        _state.update {
+            it.copy(
+                voiceEngine = engine,
+                eleven = ElevenUi(
+                    keySet = key.isNotBlank(),
+                    keyHint = key.takeLast(4),
+                    voiceId = p.getString(EL_VOICE, null)?.takeIf { v -> v.isNotBlank() } ?: ElevenLabs.PRESETS.first().id,
+                    model = VoiceModel.of(p.getString(EL_MODEL, null)),
+                    stability = p.getFloat(EL_STABILITY, 0.5f),
+                    tags = p.getBoolean(EL_TAGS, true)
+                )
+            )
+        }
+        if (engine == VoiceEngine.ElevenLabs && key.isNotBlank()) refreshEleven()
+    }
+
+    fun setVoiceEngine(engine: VoiceEngine) {
+        prefs().edit().putString(VOICE_ENGINE, engine.name).apply()
+        _state.update { it.copy(voiceEngine = engine, video = null, voiceError = null) }
+        if (engine == VoiceEngine.ElevenLabs) refreshEleven()
+    }
+
+    /** Keeps the key on this phone only (never in the app, the backup or the database), then checks it. */
+    fun setElevenKey(raw: String) {
+        val key = raw.trim()
+        prefs().edit().putString(EL_KEY, key).apply()
+        updateEleven { it.copy(keySet = key.isNotBlank(), keyHint = key.takeLast(4), voices = emptyList(), status = null) }
+        if (key.isNotBlank()) refreshEleven()
+    }
+
+    fun setElevenVoice(id: String) {
+        val v = id.trim()
+        prefs().edit().putString(EL_VOICE, v).apply()
+        updateEleven { it.copy(voiceId = v) }
+        _state.update { it.copy(video = null) }
+    }
+
+    fun setElevenModel(model: VoiceModel) {
+        prefs().edit().putString(EL_MODEL, model.id).apply()
+        updateEleven { it.copy(model = model) }
+        _state.update { it.copy(video = null) }
+    }
+
+    fun setElevenStability(v: Float) {
+        prefs().edit().putFloat(EL_STABILITY, v).apply()
+        updateEleven { it.copy(stability = v) }
+        _state.update { it.copy(video = null) }
+    }
+
+    fun setElevenTags(on: Boolean) {
+        prefs().edit().putBoolean(EL_TAGS, on).apply()
+        updateEleven { it.copy(tags = on) }
+        _state.update { it.copy(video = null) }
+    }
+
+    /** The account's voices and this month's credits, where the key is allowed to read them. */
+    fun refreshEleven() {
+        val client = elevenClient() ?: return
+        viewModelScope.launch {
+            val voices = client.voices()
+            val credits = client.credits()
+            updateEleven {
+                it.copy(
+                    voices = voices.getOrDefault(it.voices),
+                    status = listOfNotNull(
+                        credits.getOrNull()?.let { c -> "Bu ay kalan: ${c.left} / ${c.limit} kredi" },
+                        if (voices.isFailure && credits.isFailure) "Anahtar çalışıyor mu, bir satırı dinleyerek dene. Ses listesi ve kredi için anahtara “Voices: read” ve “User: read” izinlerini ver." else null
+                    ).joinToString("\n").ifBlank { null }
+                )
+            }
+        }
+    }
+
+    private fun play(file: File) {
+        player?.release()
+        player = runCatching {
+            MediaPlayer().apply {
+                setDataSource(file.path)
+                setOnCompletionListener { mp -> mp.release(); if (player === mp) player = null }
+                prepare()
+                start()
+            }
+        }.getOrNull()
+    }
+
+    /** Plays one line on the speaker with the current voice: ElevenLabs (paid once, then kept) or the phone's. */
+    fun listen(line: SpokenLine) {
+        if (line.text.isBlank()) return
+        val s = _state.value
+        if (s.voiceEngine == VoiceEngine.ElevenLabs) {
+            val client = elevenClient() ?: run { _state.update { it.copy(voiceError = "Önce ElevenLabs anahtarını gir.") }; return }
+            if (s.eleven.busy) return
+            updateEleven { it.copy(busy = true) }
+            viewModelScope.launch {
+                val e = s.eleven
+                voiceBank.file(client, line, e.voiceId, e.model, e.stability.toDouble(), e.tags)
+                    .onSuccess { f -> play(f); _state.update { it.copy(voiceError = null) } }
+                    .onFailure { err -> _state.update { it.copy(voiceError = err.message) } }
+                updateEleven { it.copy(busy = false) }
+            }
+            return
+        }
         viewModelScope.launch {
             val synth = listener ?: SpeechSynth.open(context).getOrElse { e ->
                 _state.update { it.copy(voiceError = e.message) }
                 return@launch
             }.also { listener = it }
             synth.tune(_state.value.voicePitch, _state.value.voiceRate)
-            synth.speak(text)
+            synth.speak(line.text)
             _state.update { it.copy(voiceError = null) }
         }
     }
@@ -1049,7 +1188,17 @@ class StudioViewModel @Inject constructor(
             val result = runCatching {
                 // 1. Karalak's voice, one file per line
                 val voices = HashMap<Int, Pcm>()
-                if (s.voiceOn) {
+                if (s.voiceOn && s.voiceEngine == VoiceEngine.ElevenLabs) {
+                    val client = elevenClient() ?: error("ElevenLabs anahtarı yok: Ses bölümünden gir ya da telefon sesine geç.")
+                    val e = s.eleven
+                    lines.forEachIndexed { i, l ->
+                        _state.update { it.copy(renderStage = "Karalak konuşuyor ${i + 1}/${lines.size} · ElevenLabs", progress = 0.15f * i / lines.size) }
+                        val f = voiceBank.file(client, l, e.voiceId, e.model, e.stability.toDouble(), e.tags).getOrThrow()
+                        val pcm = withContext(Dispatchers.IO) { ClipAudio.decode(f, VOICE_MAX_MS) } ?: error("“${l.text.take(30)}” sesi çözülemedi")
+                        voices[i] = PcmOps.resample(pcm, RATE)
+                    }
+                    refreshEleven()
+                } else if (s.voiceOn) {
                     val synth = SpeechSynth.open(context).getOrThrow()
                     try {
                         synth.tune(s.voicePitch, s.voiceRate)
@@ -1149,6 +1298,8 @@ class StudioViewModel @Inject constructor(
     override fun onCleared() {
         renderJob?.cancel()
         listener?.close()
+        player?.release()
+        player = null
         // a line edited in the last moment would otherwise wait for a save that never comes
         _state.value.real.project?.let { p -> runCatching { realStore.save(p) } }
         previewClips.values.forEach { it.close() }
@@ -1157,6 +1308,14 @@ class StudioViewModel @Inject constructor(
     }
 
     private companion object {
+        const val EL_KEY = "elevenlabs_key"
+        const val EL_VOICE = "elevenlabs_voice"
+        const val EL_MODEL = "elevenlabs_model"
+        const val EL_STABILITY = "elevenlabs_stability"
+        const val EL_TAGS = "elevenlabs_tags"
+        const val VOICE_ENGINE = "studio_voice_engine"
+        /** No line of Karalak's runs this long; a longer decode means something went wrong. */
+        const val VOICE_MAX_MS = 60_000L
         /** The voice track's sample rate: what every AAC encoder takes. */
         const val RATE = 44_100
         /** A word shows up in "Hafıza Tuzağı" once this many have drawn it. */
