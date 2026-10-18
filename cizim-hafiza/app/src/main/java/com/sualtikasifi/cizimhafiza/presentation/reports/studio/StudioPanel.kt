@@ -25,16 +25,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -43,11 +48,16 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,12 +74,18 @@ import com.sualtikasifi.cizimhafiza.presentation.common.StrokeCanvas
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.Console
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleCard
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.OpenRouterClient
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Segmented
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.Tag
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessScript
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import java.io.File
+import java.util.Locale
 
 /**
- * The video studio screen: pick a template, pick drawings, let the assistant write the words, look
- * at any moment of the video, make it, then share it or keep it in the gallery.
+ * The video studio screen. "Karalak Bilir mi?" runs top to bottom: pick drawings, decide whose name
+ * shows, let Karalak look and write its lines, adjust any line or call, pick the voice, look at
+ * any moment of the video, make it, share it.
  */
 @Composable
 fun StudioPanel(onBack: () -> Unit, viewModel: StudioViewModel = hiltViewModel()) {
@@ -89,186 +105,276 @@ fun StudioPanel(onBack: () -> Unit, viewModel: StudioViewModel = hiltViewModel()
                 IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Araçlar", tint = Console.Ink) }
                 Column(Modifier.weight(1f)) {
                     Text("Video Stüdyosu", style = Console.Title)
-                    Text("Bu telefondaki kendi çizimlerinden dikey video · ücretsiz", style = Console.Small)
+                    Text("Karalak'lı dikey videolar · 1080×1920 · sesli", style = Console.Small)
                 }
             }
         }
-
-        // 1. template
-        item { Step("1", "Şablon") }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StudioTemplate.entries.forEach { t ->
-                    val on = st.template == t
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = if (on) Console.AccentSoft else Console.Surface,
-                        border = BorderStroke(if (on) 1.5.dp else 1.dp, if (on) Console.Accent else Console.Border),
-                        modifier = Modifier.weight(1f).height(96.dp).clip(RoundedCornerShape(14.dp)).clickable { viewModel.setTemplate(t) }
-                    ) {
-                        Column(Modifier.padding(10.dp)) {
-                            Text(t.title, style = Console.Subtitle.copy(color = if (on) Console.Accent else Console.Ink))
-                            Spacer(Modifier.height(2.dp))
-                            Text(t.blurb, style = Console.Small, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2. drawings
-        item {
-            Step(
-                "2", "Çizimler",
-                trailing = "${st.selected.size}/${st.template.maxCount} seçili" +
-                    if (st.template.minCount > 1) " · en az ${st.template.minCount}" else ""
+            Segmented(
+                options = StudioFormat.entries.map { it.name to it.title },
+                selected = st.format.name,
+                onSelect = { viewModel.setFormat(StudioFormat.valueOf(it)) },
+                modifier = Modifier.fillMaxWidth()
             )
         }
-        when {
-            st.loading -> item { Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Console.Accent) } }
-            st.offered.isEmpty() -> item {
+        when (st.format) {
+            StudioFormat.Guess -> guessSections(st, viewModel, context)
+            else -> item {
                 ConsoleCard(Modifier.fillMaxWidth()) {
+                    Text(st.format.title, style = Console.Subtitle)
+                    Text(st.format.blurb, style = Console.Small)
+                    Spacer(Modifier.height(6.dp))
+                    Text("Bu biçim sıradaki güncellemede geliyor.", style = Console.Small)
+                }
+            }
+        }
+    }
+}
+
+private fun LazyListScope.guessSections(st: StudioState, vm: StudioViewModel, context: Context) {
+    // 1. drawings
+    item { Step("1", "Çizimler", "${st.selected.size} seçili · en iyisi 3") }
+    when {
+        st.loading -> item { Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Console.Accent) } }
+        st.drawings.isEmpty() -> item {
+            ConsoleCard(Modifier.fillMaxWidth()) { Text("Bu telefonda kayıtlı çizim yok. Birkaç tur oyna, sonra buraya dön.", style = Console.Small) }
+        }
+        else -> st.drawings.take(90).chunked(3).forEach { row ->
+            item(key = "row-" + row.first().id) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    row.forEach { d -> Thumb(d, st.selected.indexOf(d.id), Modifier.weight(1f)) { vm.toggle(d) } }
+                    repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
+    }
+
+    // 2. who is on the right-hand tile
+    item { Step("2", "Oyuncu kartı") }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(st.player?.let { "${it.name} · Sv. ${it.level}" } ?: "Yükleniyor…", style = Console.Subtitle)
                     Text(
-                        if (st.template == StudioTemplate.Versus) "Aynı kelimeyi iki kez çizdiğin bir tur bulunamadı. Biraz daha oyna ya da başka şablon seç."
-                        else "Bu telefonda kayıtlı çizim yok. Birkaç tur oyna, sonra buraya dön.",
+                        if (st.showName) "Kendi adın, seviyen, çerçeven ve fotoğrafın görünür."
+                        else "Ad yerine \"Oyuncu\", fotoğraf yerine Karalak görünür.",
                         style = Console.Small
                     )
                 }
-            }
-            else -> st.offered.take(90).chunked(3).forEach { row ->
-                item(key = "row-" + row.first().id) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        row.forEach { d ->
-                            val order = st.selected.indexOf(d.id)
-                            Thumb(d, order, Modifier.weight(1f)) { viewModel.toggle(d) }
-                        }
-                        repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
-                    }
-                }
+                Switch(checked = st.showName, onCheckedChange = vm::setShowName, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
             }
         }
+    }
 
-        // 3. words
-        item { Step("3", "Yazılar") }
-        item {
-            ConsoleCard(Modifier.fillMaxWidth()) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (st.aiRunning) Console.InkMuted else Console.Dark,
-                    modifier = Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(12.dp)).clickable(enabled = !st.aiRunning) { viewModel.writeWithAi() }
-                ) {
-                    Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                        if (st.aiRunning) CircularProgressIndicator(Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-                        else Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (st.aiRunning) "Yazıyor…" else "Yapay zekâ yazsın", style = Console.Subtitle.copy(color = Color.White))
-                    }
-                }
-                st.aiCost?.let { Text("Son yazım: " + OpenRouterClient.usd(it), style = Console.Small, modifier = Modifier.padding(top = 4.dp)) }
-                st.aiError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
-                Spacer(Modifier.height(8.dp))
-                Field("İlk ekran (kanca)", st.hook, viewModel::setHook, lines = 2)
-                Field("Soru (çizim bitince)", st.ask, viewModel::setAsk)
-                Field("Son ekran", st.outro, viewModel::setOutro)
-                Text("Gönderi metni (videoya girmez, paylaşırken panoya kopyalanır)", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
-                Field("Açıklama", st.caption, viewModel::setCaption, lines = 3)
-                Field("Etiketler", st.hashtags, viewModel::setHashtags, lines = 2)
-            }
+    // 3. Karalak's lines
+    item { Step("3", "Karalak'ın senaryosu") }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            DarkButton(
+                text = when {
+                    st.writing -> st.writeProgress ?: "Yazılıyor…"
+                    st.script == null -> "Karalak çizimlere baksın"
+                    else -> "Baştan yazdır"
+                },
+                busy = st.writing,
+                enabled = st.canWrite
+            ) { vm.writeScript() }
+            Text(
+                "Karalak her çizimi üç anda görür (üçte biri, üçte ikisi, bitmiş) ve cevabı bilmeden tahmin eder. Tahminler gerçektir.",
+                style = Console.Small, modifier = Modifier.padding(top = 6.dp)
+            )
+            st.aiCost?.let { Text("Bu yazımın maliyeti: " + OpenRouterClient.usd(it), style = Console.Small) }
+            st.writeError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
         }
+    }
+    st.script?.let { sc -> scriptEditor(sc, st, vm) }
 
-        // 4. preview and make
-        item { Step("4", "Önizleme", trailing = if (st.totalMs > 0) "Süre: ${(st.totalMs + 999) / 1000} sn" else null) }
-        item {
-            ConsoleCard(Modifier.fillMaxWidth()) {
-                if (!st.ready) {
-                    Text("Önizleme için ${st.template.minCount}–${st.template.maxCount} çizim seç.", style = Console.Small)
-                } else {
-                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        val img = st.preview
-                        if (img != null) {
-                            Image(img, contentDescription = "Önizleme", contentScale = ContentScale.Fit, modifier = Modifier.width(210.dp).aspectRatio(9f / 16f).clip(RoundedCornerShape(12.dp)))
-                        } else {
-                            Box(Modifier.width(210.dp).aspectRatio(9f / 16f).background(Console.Grid, RoundedCornerShape(12.dp)))
-                        }
-                    }
-                    if (st.totalMs > 0) {
-                        Slider(
-                            value = st.previewMs.toFloat().coerceIn(0f, st.totalMs.toFloat()),
-                            onValueChange = { viewModel.setPreviewTime(it.toLong()) },
-                            valueRange = 0f..st.totalMs.toFloat(),
-                            colors = SliderDefaults.colors(thumbColor = Console.Accent, activeTrackColor = Console.Accent),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Text("Kaydırarak videonun her anına bak", style = Console.Small, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                    }
+    // 4. voice
+    item { Step("4", "Ses") }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Karalak konuşsun", style = Console.Subtitle)
+                    Text("Telefonun Türkçe sesi, ücretsiz. Kapalıyken yalnızca altyazı.", style = Console.Small)
                 }
+                Switch(checked = st.voiceOn, onCheckedChange = vm::setVoiceOn, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
             }
-        }
-        item {
-            if (st.rendering) {
-                ConsoleCard(Modifier.fillMaxWidth()) {
-                    Text("Video oluşturuluyor… %${(st.progress * 100).toInt()}", style = Console.Subtitle)
-                    Spacer(Modifier.height(8.dp))
-                    LinearProgressIndicator(progress = { st.progress }, color = Console.Accent, trackColor = Console.Grid, modifier = Modifier.fillMaxWidth())
-                    Spacer(Modifier.height(8.dp))
-                    Text("Vazgeç", style = Console.Label.copy(color = Console.Critical), modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable { viewModel.cancelRender() }.padding(4.dp))
-                }
-            } else {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = if (st.ready) Console.Accent else Console.InkMuted,
-                    modifier = Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(14.dp)).clickable(enabled = st.ready) { viewModel.render() }
-                ) {
-                    Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Videoyu oluştur", style = Console.Subtitle.copy(color = Color.White))
-                    }
-                }
+            if (st.voiceOn) {
+                LabeledSlider("Ses inceliği", st.voicePitch, 0.8f..1.7f) { vm.setVoice(it, st.voiceRate) }
+                LabeledSlider("Konuşma hızı", st.voiceRate, 0.8f..1.4f) { vm.setVoice(st.voicePitch, it) }
+                SmallLink("Sesi dinle") { vm.listen(st.script?.intro?.text ?: "Merhaba, ben Karalak! Çizimlerini tahmin etmeye geldim.") }
             }
+            st.voiceError?.let { Text(it, style = Console.Small.copy(color = Console.Critical)) }
         }
-        st.renderError?.let { err ->
-            item {
-                Surface(shape = RoundedCornerShape(12.dp), color = Console.CriticalSoft, modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text("Video oluşturulamadı", style = Console.Subtitle.copy(color = Console.Critical))
-                        Text(err, style = Console.Small)
-                    }
-                }
-            }
-        }
+    }
 
-        // 5. result
-        st.video?.let { file ->
-            item { Step("5", "Hazır") }
-            item {
-                ConsoleCard(Modifier.fillMaxWidth()) {
-                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        AndroidView(
-                            factory = { ctx -> VideoView(ctx).apply { setOnPreparedListener { mp -> mp.isLooping = true; start() } } },
-                            update = { v -> if (v.tag != file.path) { v.tag = file.path; v.setVideoURI(Uri.fromFile(file)) } },
-                            modifier = Modifier.width(220.dp).aspectRatio(9f / 16f).clip(RoundedCornerShape(12.dp))
-                        )
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ActionButton(Icons.Filled.Share, "Paylaş", Console.Accent, Color.White, Modifier.weight(1.3f)) {
-                            share(context, file, st.caption, st.hashtags)
-                        }
-                        ActionButton(Icons.Filled.Download, "Galeriye", Console.Surface, Console.Ink, Modifier.weight(1f)) { viewModel.saveToGallery() }
-                        ActionButton(Icons.Filled.ContentCopy, "Metin", Console.Surface, Console.Ink, Modifier.weight(1f)) {
-                            copy(context, postText(st.caption, st.hashtags))
-                        }
-                    }
-                    Spacer(Modifier.height(8.dp))
+    // 5. mascot artwork
+    item { Step("5", "Karalak'ın pozları") }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(if (st.mascotLoading) "Yükleniyor…" else "${st.mascotPoses} poz yüklü", style = Console.Subtitle)
                     Text(
-                        "Paylaşırken açıklama ve etiketler panoya kopyalanır; TikTok/Instagram'da yapıştır. Müziği orada ekle: platformun trend sesleri videoyu daha çok kişiye gösterir.",
+                        if (st.mascotPoses == 0) "Pozlar karalak.com'a eklenene kadar büyüteçli Karalak konuşurken sallanır."
+                        else "Duygu ve ağız hareketleri karalak.com'daki pozlardan gelir.",
                         style = Console.Small
+                    )
+                }
+                IconButton(onClick = vm::reloadMascot) { Icon(Icons.Filled.Refresh, contentDescription = "Yenile", tint = Console.InkSecondary) }
+            }
+        }
+    }
+
+    // 6. preview
+    item { Step("6", "Önizleme", if (st.totalMs > 0) "≈ ${(st.totalMs + 999) / 1000} sn" else null) }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            if (st.selected.isEmpty()) {
+                Text("Önizleme için en az bir çizim seç.", style = Console.Small)
+            } else {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    val img = st.preview
+                    if (img != null) Image(img, contentDescription = "Önizleme", contentScale = ContentScale.Fit, modifier = Modifier.width(220.dp).aspectRatio(9f / 16f).clip(RoundedCornerShape(12.dp)))
+                    else Box(Modifier.width(220.dp).aspectRatio(9f / 16f).background(Console.Grid, RoundedCornerShape(12.dp)))
+                }
+                if (st.totalMs > 0) {
+                    Slider(
+                        value = st.previewMs.toFloat().coerceIn(0f, st.totalMs.toFloat()),
+                        onValueChange = { vm.setPreviewTime(it.toLong()) },
+                        valueRange = 0f..st.totalMs.toFloat(),
+                        colors = SliderDefaults.colors(thumbColor = Console.Accent, activeTrackColor = Console.Accent),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        if (st.script == null) "Örnek cümlelerle gösteriliyor; Karalak yazınca kendi cümleleri gelir."
+                        else "Sesli videoda süreler sesin gerçek uzunluğuna göre ayarlanır.",
+                        style = Console.Small, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
         }
     }
+
+    // 7. make it
+    item {
+        if (st.rendering) {
+            ConsoleCard(Modifier.fillMaxWidth()) {
+                Text("${st.renderStage} · %${(st.progress * 100).toInt()}", style = Console.Subtitle)
+                Spacer(Modifier.height(8.dp))
+                LinearProgressIndicator(progress = { st.progress }, color = Console.Accent, trackColor = Console.Grid, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                SmallLink("Vazgeç", Console.Critical) { vm.cancelRender() }
+            }
+        } else {
+            BigButton("Videoyu oluştur", enabled = st.ready) { vm.render() }
+            if (st.script == null && st.selected.isNotEmpty()) {
+                Text("Önce Karalak çizimlere baksın (3. adım).", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
+            }
+        }
+    }
+    st.renderError?.let { err ->
+        item {
+            Surface(shape = RoundedCornerShape(12.dp), color = Console.CriticalSoft, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp)) {
+                    Text("Video oluşturulamadı", style = Console.Subtitle.copy(color = Console.Critical))
+                    Text(err, style = Console.Small)
+                }
+            }
+        }
+    }
+
+    // 8. result
+    st.video?.let { file ->
+        item { Step("✓", "Hazır") }
+        item {
+            ConsoleCard(Modifier.fillMaxWidth()) {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    AndroidView(
+                        factory = { ctx -> VideoView(ctx).apply { setOnPreparedListener { mp -> mp.isLooping = true; start() } } },
+                        update = { v -> if (v.tag != file.path) { v.tag = file.path; v.setVideoURI(Uri.fromFile(file)) } },
+                        modifier = Modifier.width(230.dp).aspectRatio(9f / 16f).clip(RoundedCornerShape(12.dp))
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ActionButton(Icons.Filled.Share, "Paylaş", Console.Accent, Color.White, Modifier.weight(1.3f)) { share(context, file, st.caption, st.hashtags) }
+                    ActionButton(Icons.Filled.Download, "Galeriye", Console.Surface, Console.Ink, Modifier.weight(1f)) { vm.saveToGallery() }
+                    ActionButton(Icons.Filled.ContentCopy, "Metin", Console.Surface, Console.Ink, Modifier.weight(1f)) { copy(context, postText(st.caption, st.hashtags)) }
+                }
+                Field("Açıklama", st.caption, vm::setCaption, lines = 3)
+                Field("Etiketler", st.hashtags, vm::setHashtags, lines = 2)
+                Text(
+                    "Paylaşırken açıklama panoya kopyalanır; TikTok/Instagram'da yapıştır. Arka plan müziğini orada, sesi kısık ekle.",
+                    style = Console.Small, modifier = Modifier.padding(top = 6.dp)
+                )
+            }
+        }
+    }
+}
+
+/** Every line Karalak will say, editable, with its face and a button to hear it. */
+private fun LazyListScope.scriptEditor(sc: GuessScript, st: StudioState, vm: StudioViewModel) {
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Text("Açılış", style = Console.Label)
+            LineEditor(sc.intro, { vm.editLine(LineRef.Intro, it) }, { vm.editEmotion(LineRef.Intro, it) }) { vm.listen(sc.intro.text) }
+        }
+    }
+    sc.rounds.forEachIndexed { r, round ->
+        item(key = "round-$r") {
+            ConsoleCard(Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Çizim ${r + 1} · ${round.word.uppercase(Locale("tr"))}", style = Console.Subtitle)
+                        Text("Karalak'ın son tahmini: “${round.finalGuess}”" + (round.playerAnswer?.let { " · çizenin cevabı: “$it”" } ?: ""), style = Console.Small)
+                    }
+                    Tag(
+                        if (round.correct) "Bildi ✓" else "Bilemedi ✗",
+                        fg = Color.White,
+                        bg = if (round.correct) Console.Good else Console.Critical,
+                        modifier = Modifier.clip(RoundedCornerShape(50)).clickable { vm.toggleVerdict(r) }
+                    )
+                }
+                listOf("Üçte biri", "Üçte ikisi", "Bitince").forEachIndexed { k, label ->
+                    round.stages.getOrNull(k)?.let { l ->
+                        Text(label, style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+                        LineEditor(l, { vm.editLine(LineRef.Stage(r, k), it) }, { vm.editEmotion(LineRef.Stage(r, k), it) }) { vm.listen(l.text) }
+                    }
+                }
+                Text("Sonuca tepkisi", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+                LineEditor(round.reaction, { vm.editLine(LineRef.Reaction(r), it) }, { vm.editEmotion(LineRef.Reaction(r), it) }) { vm.listen(round.reaction.text) }
+            }
+        }
+    }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Text("Kapanış", style = Console.Label)
+            LineEditor(sc.outro, { vm.editLine(LineRef.Outro, it) }, { vm.editEmotion(LineRef.Outro, it) }) { vm.listen(sc.outro.text) }
+            Spacer(Modifier.height(8.dp))
+            SmallLink(if (st.writing) "Yazılıyor…" else "Kararı değiştirdiysen: tepkileri ve kapanışı yeniden yazdır") { if (!st.writing) vm.rewriteFrame() }
+        }
+    }
+}
+
+@Composable
+private fun LineEditor(line: SpokenLine, onText: (String) -> Unit, onEmotion: (MascotEmotion) -> Unit, onListen: () -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box {
+            Tag(line.emotion.label, fg = Console.Accent, bg = Console.AccentSoft, modifier = Modifier.clip(RoundedCornerShape(50)).clickable { open = true })
+            DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                MascotEmotion.entries.forEach { e ->
+                    DropdownMenuItem(text = { Text(e.label) }, onClick = { onEmotion(e); open = false })
+                }
+            }
+        }
+        Spacer(Modifier.weight(1f))
+        IconButton(onClick = onListen) { Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Dinle", tint = Console.InkSecondary, modifier = Modifier.size(18.dp)) }
+    }
+    Field(null, line.text, onText, lines = 2)
 }
 
 @Composable
@@ -302,16 +408,65 @@ private fun Thumb(d: StudioDrawing, order: Int, modifier: Modifier, onClick: () 
                     ) { Text("${order + 1}", style = Console.Label.copy(color = Color.White)) }
                 }
             }
-            Tag(d.word, modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 6.dp))
+            Text(d.word, style = Console.Label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 6.dp))
         }
     }
 }
 
 @Composable
-private fun Field(label: String, value: String, onChange: (String) -> Unit, lines: Int = 1) {
+private fun LabeledSlider(label: String, value: Float, range: ClosedFloatingPointRange<Float>, onChange: (Float) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+        Text(label, style = Console.Small, modifier = Modifier.width(100.dp))
+        Slider(
+            value = value, onValueChange = onChange, valueRange = range,
+            colors = SliderDefaults.colors(thumbColor = Console.Accent, activeTrackColor = Console.Accent),
+            modifier = Modifier.weight(1f)
+        )
+        Text(String.format(Locale.US, "%.2f", value), style = Console.Small, modifier = Modifier.width(40.dp))
+    }
+}
+
+@Composable
+private fun SmallLink(text: String, color: Color = Console.Accent, onClick: () -> Unit) {
+    Text(text, style = Console.Label.copy(color = color), modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(onClick = onClick).padding(vertical = 6.dp, horizontal = 2.dp))
+}
+
+@Composable
+private fun DarkButton(text: String, busy: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = if (enabled && !busy) Console.Dark else Console.InkMuted,
+        modifier = Modifier.fillMaxWidth().height(46.dp).clip(RoundedCornerShape(12.dp)).clickable(enabled = enabled && !busy, onClick = onClick)
+    ) {
+        Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            if (busy) CircularProgressIndicator(Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+            else Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(text, style = Console.Subtitle.copy(color = Color.White), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+@Composable
+private fun BigButton(text: String, enabled: Boolean, onClick: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = if (enabled) Console.Accent else Console.InkMuted,
+        modifier = Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(14.dp)).clickable(enabled = enabled, onClick = onClick)
+    ) {
+        Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(text, style = Console.Subtitle.copy(color = Color.White))
+        }
+    }
+}
+
+@Composable
+private fun Field(label: String?, value: String, onChange: (String) -> Unit, lines: Int = 1) {
     OutlinedTextField(
         value = value, onValueChange = onChange,
-        label = { Text(label) },
+        label = label?.let { l -> @Composable { Text(l) } },
         singleLine = lines == 1, maxLines = lines.coerceAtLeast(1),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = Console.Accent, unfocusedBorderColor = Console.Border,

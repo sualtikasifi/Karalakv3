@@ -10,6 +10,8 @@ data class DrawingWithWord(
     val id: Long,
     val pathDataJson: String,
     val isCorrect: Boolean,
+    /** What the drawer typed when trying to remember it. */
+    val userAnswer: String,
     val word: String,
     val category: String
 )
@@ -47,7 +49,7 @@ interface DrawingResultDao {
     @Query(
         """
         SELECT dr.id AS id, dr.pathDataJson AS pathDataJson, dr.isCorrect AS isCorrect,
-               w.text AS word, w.category AS category
+               dr.userAnswer AS userAnswer, w.text AS word, w.category AS category
         FROM drawing_results dr
         INNER JOIN words w ON w.id = dr.wordId
         ORDER BY dr.id DESC

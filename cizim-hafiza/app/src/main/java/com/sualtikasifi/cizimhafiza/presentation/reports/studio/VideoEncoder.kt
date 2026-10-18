@@ -15,6 +15,7 @@ import android.opengl.EGLSurface
 import android.opengl.GLES20
 import android.opengl.GLUtils
 import android.view.Surface
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.EncodedAudio
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -34,7 +35,6 @@ import kotlin.coroutines.cancellation.CancellationException
  */
 object VideoEncoder {
     private const val MIME = MediaFormat.MIMETYPE_VIDEO_AVC
-    private const val BIT_RATE = 6_000_000
 
     fun encode(
         out: File,
@@ -44,11 +44,15 @@ object VideoEncoder {
         frames: Int,
         drawFrame: (Canvas, Long) -> Unit,
         onProgress: (Float) -> Unit,
-        isCancelled: () -> Boolean
+        isCancelled: () -> Boolean,
+        /** An already-encoded sound track to put beside the picture, or null for a silent video. */
+        audio: EncodedAudio? = null
     ) {
+        // ~0.16 bits per pixel per frame: 10 Mbps at 1080×1920, 4.4 Mbps at 720×1280 — clean lines without huge files
+        val bitRate = (width.toLong() * height * fps * 16 / 100).toInt().coerceIn(4_000_000, 12_000_000)
         val format = MediaFormat.createVideoFormat(MIME, width, height).apply {
             setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
-            setInteger(MediaFormat.KEY_BIT_RATE, BIT_RATE)
+            setInteger(MediaFormat.KEY_BIT_RATE, bitRate)
             setInteger(MediaFormat.KEY_FRAME_RATE, fps)
             setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1)
         }
@@ -58,6 +62,7 @@ object VideoEncoder {
         var muxer: MediaMuxer? = null
         var muxerStarted = false
         var track = -1
+        var audioTrack = -1
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         var finished = false
         try {
@@ -83,8 +88,17 @@ object VideoEncoder {
                         index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
                             check(!muxerStarted) { "Video biçimi iki kez değişti" }
                             track = mux.addTrack(codec.outputFormat)
+                            if (audio != null) audioTrack = mux.addTrack(audio.format)
                             mux.start()
                             muxerStarted = true
+                            // the whole voice track goes in at once: it is small, and the muxer orders samples by time
+                            if (audio != null) {
+                                val ai = MediaCodec.BufferInfo()
+                                audio.samples.forEach { a ->
+                                    ai.set(0, a.data.size, a.presentationTimeUs, a.flags)
+                                    mux.writeSampleData(audioTrack, java.nio.ByteBuffer.wrap(a.data), ai)
+                                }
+                            }
                         }
                         index >= 0 -> {
                             val buffer = codec.getOutputBuffer(index) ?: error("Kodlayıcı boş çıktı verdi")
