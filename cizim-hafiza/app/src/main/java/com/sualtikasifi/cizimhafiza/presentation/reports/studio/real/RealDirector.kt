@@ -37,7 +37,7 @@ class RealDirector(private val client: OpenRouterClient, private val model: Stri
             1) En komik, en tuhaf ve birbirinden en farklı $want çizimi seç (birbirine benzeyenlerden yalnızca birini al). Seçtiklerini en zayıftan en komiğe doğru sırala.
             2) Her biri için Karalak'ın ağzından çizimle tatlı tatlı dalga geçen en fazla 9 kelimelik bir espri yaz. Çizimin kendisine takıl (oranları, eksikleri, neye benzediği); çizen kişiye asla.
             3) Seçtiklerinden, gerçek bir fotoğrafa dönüşünce en eğlenceli görünecek $turn tanesini seç ("reveals"). Her biri için:
-               - "describe": çizimin tuhaflıklarını anlatan kısa bir İngilizce cümle (ör. "a cat with six legs, a tiny head and a very long neck") — gerçekçi görsel üretilirken bu tuhaflıklar korunacak;
+               - "describe": çizimin şeklini bir plan gibi, gördüğün çizgilerle birebir anlatan kısa İngilizce cümleler: gövdenin şekli, kaç bacak ve neye benzedikleri, baş, kuyruk, özel işaretler (ör. "a long flat rectangle body, four straight stick legs with three-toe feet, a small round head with two triangle ears, a tail drawn as a spiral of three loops"). Ne olması gerektiğini değil, ne çizildiğini yaz — gerçeğe dönüştürülürken bu şekil korunacak;
                - "line": Karalak'ın o çizimin gerçeğini görünce söyleyeceği en fazla 9 kelimelik şaşkın ya da komik bir cümle.
             4) "word_en": kelimenin İngilizcesi (tek ya da iki kelime).
             5) Kapanış cümlesi: izleyiciye "daha iyisini çizebilir misin" diye meydan oku, en fazla 14 kelime, "karalak.com" geçsin.

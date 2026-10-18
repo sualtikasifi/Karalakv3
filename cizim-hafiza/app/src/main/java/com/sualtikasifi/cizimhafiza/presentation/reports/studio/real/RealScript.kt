@@ -32,7 +32,7 @@ data class RealRoast(val sampleId: String, val line: SpokenLine)
 data class RealReveal(
     val sampleId: String,
     val line: SpokenLine,
-    /** The doodle's oddities in English, written into the picture prompt so they are kept. */
+    /** The doodle's literal shapes in English, written into the picture prompt so they are kept. */
     val describe: String = "",
     val image: String? = null,
     val clip: String? = null,
@@ -174,23 +174,39 @@ object RealCopy {
     const val BRIDGE = "Peki bunlar gerçek olsaydı?"
     const val OUTRO = "Sen daha iyisini çizebilir misin? karalak.com'da dene!"
 
-    /** What to paste into ChatGPT with the doodle: the drawing becomes a photo, oddities and all. */
+    /**
+     * What to paste into ChatGPT (or Gemini) with the doodle. The drawing is the blueprint, in the
+     * spirit of Tom Curtis's "children's drawings made real": every line keeps its shape and every
+     * mistake stays; only the surfaces become real. A model left to itself "fixes" the drawing into
+     * an ordinary animal, so the prompt says so plainly, more than once.
+     */
     fun imagePrompt(word: String, wordEn: String, seconds: Int, describe: String): String = buildString {
-        append("This is a quick doodle of \"").append(word).append("\"")
+        val thing = wordEn.ifBlank { word }
+        append("The attached image is a quick doodle of \"").append(word).append("\"")
         if (wordEn.isNotBlank()) append(" (").append(wordEn).append(")")
-        append(" that a player drew in ").append(seconds).append(" seconds in a drawing game. ")
-        append("Turn it into a real photograph, as if this exact drawing came to life: keep exactly the same shapes, proportions, pose, mistakes and number of parts — if something is too long, too small or in the wrong place, keep it that way. ")
-        if (describe.isNotBlank()) append("The doodle shows: ").append(describe.trim().trimEnd('.')).append(". ")
-        append("Photorealistic, natural light, real textures and materials, shot on a 35 mm camera, a simple real-world background that fits. ")
-        append("Vertical 9:16. No drawing lines, no paper, no text, no frame.")
+        append(" that a player drew in ").append(seconds).append(" seconds in a drawing game.\n")
+        append("Make a photo of THIS EXACT DOODLE as if it had come to life in the real world, like Tom Curtis's \"children's drawings made real\" photos.\n\n")
+        append("The doodle is the blueprint, not a hint:\n")
+        append("- Keep its exact silhouette, pose, proportions and layout. Trace it.\n")
+        append("- Every drawn line becomes a real body part of the same shape: a single-stroke leg becomes a thin straight tube-like leg, a circle stays a round blob, a triangle stays a sharp triangle, a scribble or spiral stays a scribble or spiral, a rectangle body stays boxy.\n")
+        append("- Keep every mistake: the same number of legs, missing or extra parts, a tiny or huge head, parts in odd places. Do NOT fix the anatomy, do NOT add anything that is not drawn, do NOT turn it into a normal ").append(thing).append(".\n")
+        append("- Only the surfaces become real: real fur, skin, feathers, scales or material that suit a ").append(thing).append(", with real light and shadows, so it looks like a real living thing that happens to have the drawing's body.\n")
+        if (describe.isNotBlank()) append("- The doodle shows: ").append(describe.trim().trimEnd('.')).append(".\n")
+        append("\nStrange, funny or slightly creepy is exactly right. Anyone should recognise the drawing in it at a glance.\n")
+        append("Place it in a fitting real-world spot (a field, a street, the sea, a room), shot like a casual phone photo. Vertical 9:16. No paper, no pencil lines, no text, no frame.")
     }
 
-    /** What to paste into Gemini with that photo: a short clip of it moving, with its own natural sound. */
+    /**
+     * What to paste into Gemini with the picture made from the doodle: a short clip of that odd
+     * creature moving with its own natural sound, never "corrected" back into a normal one.
+     */
     fun videoPrompt(wordEn: String): String {
         val thing = wordEn.ifBlank { "subject" }
-        return "Animate this photo into a realistic 8-second vertical video. The $thing stays exactly as it is — the same odd shape and proportions — " +
-            "and moves naturally the way such a thing would (breathing, blinking, a few steps or a small turn). " +
-            "Slow, gentle camera push-in. Natural ambient sound only: no music, no speech, no text on screen."
+        return "Animate this photo into a realistic, vertical 8-second video, like a casual phone video. " +
+            "The creature keeps EXACTLY the strange body it has in the photo: the same outline, the same number of legs, the same odd proportions and stick-like parts. " +
+            "Do not turn it into a normal $thing and do not fix its anatomy. " +
+            "It moves the way a real $thing would, but with its own weird body: a few awkward steps or wiggles, a blink, a look at the camera. " +
+            "The camera stays almost still. Natural ambient sound only: no music, no speech, no text on screen."
     }
 
     /**
