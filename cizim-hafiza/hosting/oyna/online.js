@@ -71,7 +71,7 @@ export function renderEntry(c, fresh) {
     entryQuote = { list, i };
     tx.replaceChildren(...list[i].map((t) => el("span", "", t)));
     // one size for the lines: the longest decides how far they shrink (minScale 0.6, like the app)
-    requestAnimationFrame(() => { const base = 43 * c.u(); let k = 1; tx.style.fontSize = base + "px"; while (k > 0.6 && [...tx.children].some((e) => e.scrollWidth > tx.clientWidth + 1)) { k -= 0.02; tx.style.fontSize = base * k + "px"; } });
+    requestAnimationFrame(() => { const base = 41 * c.u(); let k = 1; tx.style.fontSize = base + "px"; while (k > 0.6 && [...tx.children].some((e) => e.scrollWidth > tx.clientWidth + 1)) { k -= 0.02; tx.style.fontSize = base * k + "px"; } });
   });
 }
 export async function renderCreate(c) {

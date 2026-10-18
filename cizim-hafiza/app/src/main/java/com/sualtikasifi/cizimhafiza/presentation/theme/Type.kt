@@ -37,6 +37,13 @@ val DisplayFont = FontFamily(
  */
 val ScribbleFont = FontFamily(Font(R.font.caveat_brush, FontWeight.Normal))
 
+/**
+ * [NoteFont] — Nunito ExtraBold (SIL OFL). A clean rounded sans for short notes set in a block, like the one on the
+ * Arkadaşlarınla Yarış paper: friendlier than a plain sans, steadier and tighter than Baloo when several lines sit
+ * close together.
+ */
+val NoteFont = FontFamily(Font(R.font.nunito_extrabold, FontWeight.ExtraBold))
+
 // Body text is Baloo 2 as well now: the painted screens letter everything in it, and the Quicksand that windows,
 // lists and the remaining cream pages used read as a different app next to them. Baloo 2 ships no Regular, so
 // Normal maps to its Medium.

@@ -124,22 +124,26 @@ fun OnlineLobbyScreen(
         ) {
             // A different note each time the screen opens (never the same one twice in a row). Each note is already broken into
             // short lines where the sentence breathes; all lines share one size, the longest decides how far they shrink.
+            // Set as one tight block in the middle of the paper (not spread over it), in the clean rounded NoteFont.
             val quotes = stringArrayResource(R.array.online_lobby_quotes)
             val lines = remember { quotes[LobbyQuotes.next(quotes.size)].split("\n") }
             val style = androidx.compose.ui.text.TextStyle(
-                fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                fontSize = fs(43f),
-                lineHeight = fs(49f),
+                fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.NoteFont,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                fontSize = fs(41f),
+                lineHeight = fs(46f),
                 color = Color(0xFF4A2814),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                    alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+                    trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.None
+                )
             )
             val scale = lines.minOf { rememberFitScale(it, style, maxLines = 1, minScale = 0.6f) }
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                 lines.forEach { line ->
-                    Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                        Text(text = line, style = style.scaledBy(scale), maxLines = 1, softWrap = false)
-                    }
+                    Text(text = line, style = style.scaledBy(scale), maxLines = 1, softWrap = false)
                 }
             }
         }

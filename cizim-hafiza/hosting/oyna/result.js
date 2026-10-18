@@ -31,8 +31,9 @@ export function renderResult(c, d) {
   const root = $("rs-body"), foot = $("rs-foot"); root.replaceChildren(); foot.replaceChildren();
   const sc = $("rs-scroll"); sc.scrollTop = 0;
   // head
-  const head = el("div", "rs-head", `<img src="img/rs_head.webp" alt=""><button class="rs-back" aria-label="back"></button><div class="rs-title lt">${T("game_over")}</div>`);
-  head.querySelector(".rs-back").onclick = d.onHome; root.append(head);
+  // the back button is not in the head (which scrolls with the page) but laid over the screen, so it stays in its corner
+  const head = el("div", "rs-head", `<img src="img/rs_head_plain.webp" alt=""><div class="rs-title lt">${T("game_over")}</div>`);
+  $("rs-fback").onclick = d.onHome; root.append(head);
   const inner = el("div", "rs-inner"); root.append(inner);
   if (d.note) inner.append(el("div", "rs-note", d.note));
   // stats
@@ -183,8 +184,9 @@ function confetti(host) {
 export function renderOnlineResult(c, d) {
   const { $, lang: gl } = c, lang = gl(), T = (k, ...a) => tr(k, lang, ...a), C = (k, ...a) => c.chatText(k, lang, ...a);
   const root = $("rs-body"), foot = $("rs-foot"), sc = $("rs-scroll"), keep = sc.scrollTop; root.replaceChildren(); foot.replaceChildren();
-  const head = el("div", "rs-head", `<img src="img/rs_head.webp" alt=""><button class="rs-back" aria-label="back"></button><div class="rs-title lt">${T("game_over")}</div>`);
-  head.querySelector(".rs-back").onclick = d.onHome; root.append(head);
+  // the back button is not in the head (which scrolls with the page) but laid over the screen, so it stays in its corner
+  const head = el("div", "rs-head", `<img src="img/rs_head_plain.webp" alt=""><div class="rs-title lt">${T("game_over")}</div>`);
+  $("rs-fback").onclick = d.onHome; root.append(head);
   const inner = el("div", "rs-inner"); root.append(inner);
   const me = d.players.find((p) => p.uid === d.myUid), ranked = [...d.players].sort((a, b) => b.totalScore - a.totalScore), place = ranked.findIndex((p) => p.uid === d.myUid) + 1;
   const ringBox = (fid) => { const w = el("div", "rsv-ring"); w.append(d.ring(fid)); return w; };

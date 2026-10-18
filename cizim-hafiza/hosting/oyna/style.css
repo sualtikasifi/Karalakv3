@@ -1,4 +1,5 @@
 @font-face{font-family:Baloo;src:url(fonts/baloo2_extrabold.ttf);font-weight:800}
+@font-face{font-family:Nunito;src:url(fonts/nunito_extrabold.ttf);font-weight:800;font-display:swap}
 @font-face{font-family:Baloo;src:url(fonts/baloo2_bold.ttf);font-weight:600}
 :root{--u:1px;--ink:#3a2a22;--orange:#f26a1b;--wood:#7a3a10}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -467,6 +468,8 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .rs-head{position:relative;width:100%;aspect-ratio:841/434;animation:rsin .5s cubic-bezier(.3,1.4,.5,1)}
 .rs-head img{position:absolute;left:9.8%;top:0;width:82%;height:99.5%}
 .rs-back{position:absolute;left:calc(var(--u)*84.5);top:calc(var(--u)*19);width:calc(var(--u)*121);height:calc(var(--u)*123);background:none;border:0}
+/* the head picture's back button, cut out of it and laid over the screen: where the head had it, but it does not scroll */
+#rs-fback{position:absolute;left:calc(var(--u)*82.4);top:0;width:calc(var(--u)*131.1);height:calc(var(--u)*138.3);padding:0;background:none;border:0;z-index:3;animation:rsin .5s cubic-bezier(.3,1.4,.5,1)}#rs-fback img{width:100%;height:100%;display:block}#rs-fback:active{transform:scale(.92)}
 .rs-title{position:absolute;left:calc(var(--u)*181);top:calc(var(--u)*279);width:calc(var(--u)*479);height:calc(var(--u)*85);display:flex;align-items:center;justify-content:center;font-size:calc(var(--u)*80);line-height:1;white-space:nowrap}
 .lt{color:#fff;-webkit-text-stroke:calc(var(--u)*7) #4a2410;paint-order:stroke fill;font-weight:800}
 .rs-inner{padding:0 calc(var(--u)*40) calc(var(--u)*10);display:flex;flex-direction:column;gap:calc(var(--u)*10)}
@@ -721,7 +724,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #se-use.dis{filter:grayscale(1) brightness(1.25);opacity:.7}
 #se-how{display:flex;align-items:center;gap:calc(var(--u)*10);justify-content:center;text-decoration:none;text-align:left;background:#fff6dd;border:calc(var(--u)*4) solid #e9a21c;border-radius:99px;color:#3b2314;font-size:calc(var(--u)*20);font-weight:800;line-height:1.1;padding:0 calc(var(--u)*10)}
 #se-how i{flex:none;width:calc(var(--u)*34);height:calc(var(--u)*34);border-radius:50%;background:#3b2314;color:#fff;font-style:normal;display:flex;align-items:center;justify-content:center;font-size:calc(var(--u)*24)}
-#on-text{display:flex;flex-direction:column;justify-content:space-around;align-items:center;text-align:center;font-size:calc(var(--u)*43);font-weight:600;color:#4a2814;line-height:1.14}#on-text span,#on-text b{display:block;white-space:nowrap;font-weight:600;font-size:1em}#on-title{font-size:calc(var(--u)*70)}
+#on-text{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;font-family:Nunito,Baloo,system-ui,sans-serif;font-size:calc(var(--u)*41);font-weight:800;color:#4a2814;line-height:1.12}#on-text span,#on-text b{display:block;white-space:nowrap;font-weight:800;font-size:1em}#on-title{font-size:calc(var(--u)*70)}
 
 .oj-l{color:#5a321f;font-size:calc(var(--u)*35);font-weight:800;display:flex;align-items:center}
 #oj-nick,#oj-code{font-size:calc(var(--u)*41);font-weight:800;color:#5a321f;padding:0 calc(var(--u)*45)}#oj-code::placeholder{color:#5a321f61;font-weight:700;font-size:calc(var(--u)*39)}

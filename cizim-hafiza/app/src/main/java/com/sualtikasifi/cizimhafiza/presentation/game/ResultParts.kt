@@ -87,9 +87,17 @@ internal const val HeadBlockH = HeadTop + 415f * HeadScale + 2f
 internal val ResultInk = Color(0xFF3B2314)
 internal val XpOrange = Color(0xFFF2541B)
 
-/** The head of the result screen: the painted picture with the title lettered on its sign. */
+/** A point of the head picture (px) in design units. */
+private fun headX(px: Float) = (ResArtW - HeadShown) / 2f + HeadShift + px * HeadScale
+private fun headY(py: Float) = HeadTop + py * HeadScale
+
+/**
+ * The head of the result screen: the painted picture with the title lettered on its sign. Its back
+ * button is not part of it any more but [ResultBackButton], laid over the screen so it stays put
+ * while the rest scrolls.
+ */
 @Composable
-internal fun ResultHeader(title: String, onBack: () -> Unit) {
+internal fun ResultHeader(title: String) {
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
@@ -100,21 +108,14 @@ internal fun ResultHeader(title: String, onBack: () -> Unit) {
         fun fs(art: Float) = (art * u.value / fontScale0).sp
         fun box(x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
             Modifier.offset(u * x0, u * y0).size(u * (x1 - x0), u * (y1 - y0))
-        // A point of the head picture (px) in design units.
-        fun hx(px: Float) = (ResArtW - HeadShown) / 2f + HeadShift + px * HeadScale
-        fun hy(py: Float) = HeadTop + py * HeadScale
+        fun hx(px: Float) = headX(px)
+        fun hy(py: Float) = headY(py)
 
         Image(
             painter = cachedPainterResource(R.drawable.rs_head),
             contentDescription = null,
             contentScale = ContentScale.FillBounds,
             modifier = box(hx(0f), hy(0f), hx(663f), hy(415f))
-        )
-        // The painted back button: leaves the same way the claim button does (the XP is already banked).
-        Box(
-            box(hx(2f), hy(18f), hx(118f), hy(136f))
-                .pressable(pressedScale = 0.9f, onClick = onBack)
-                .a11yButton(stringResource(R.string.cd_back))
         )
         LetteredText(
             text = title,
@@ -127,6 +128,31 @@ internal fun ResultHeader(title: String, onBack: () -> Unit) {
         )
     }
 }
+
+/**
+ * The head picture's back button, on its own: placed exactly where the picture had it, but over the
+ * screen rather than in the scrolling page, so it stays in the corner however far the page scrolls.
+ * Leaves the same way the claim button does (the XP is already banked).
+ */
+@Composable
+internal fun ResultBackButton(onBack: () -> Unit, modifier: Modifier = Modifier) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val u = maxWidth / ResArtW
+        Image(
+            painter = painterResource(R.drawable.rs_back),
+            contentDescription = stringResource(R.string.cd_back),
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier
+                .offset(u * headX(0f), u * headY(0f))
+                .size(u * (headX(BackPx.first) - headX(0f)), u * (headY(BackPx.second) - headY(0f)))
+                .pressable(pressedScale = 0.9f, onClick = onBack)
+                .a11yButton(stringResource(R.string.cd_back))
+        )
+    }
+}
+
+/** rs_back's size in the head picture's pixels (it was cut from its top-left corner). */
+private val BackPx = 126f to 133f
 
 /** A gold star with a darker rim, the mark the design puts in front of every XP amount. */
 @Composable

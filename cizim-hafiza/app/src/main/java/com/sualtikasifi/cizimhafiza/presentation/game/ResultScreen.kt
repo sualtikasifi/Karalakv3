@@ -221,10 +221,7 @@ fun ResultScreen(
             ) {
                 Spacer(Modifier.windowInsetsTopHeight(androidx.compose.foundation.layout.WindowInsets.statusBars))
                 Box(Modifier.fillMaxWidth().springIn(index = 0, fromY = -40)) {
-                    ResultHeader(
-                        title = stringResource(R.string.game_over),
-                        onBack = { if (!(xpDoubled && !startedDoubled)) onMainMenu() }
-                    )
+                    ResultHeader(title = stringResource(R.string.game_over))
                 }
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = u * 40f),
@@ -365,24 +362,26 @@ fun ResultScreen(
                             onClick = com.sualtikasifi.cizimhafiza.presentation.common.adOnly { onDoubleXp?.invoke() },
                             modifier = Modifier.weight(1f)
                         ) {
-                            // Both lines centred in the button, the clapper beside the small line's left; nothing can run
-                            // past the button because each line shrinks to the room it has.
+                            // Both lines centred on the button's face, the clapper beside the small line's left. The face is
+                            // the orange part only: the picture's dark rim is thicker under it (about 16 units of 100) than
+                            // over it (about 12), so the two lines are kept inside that band and share it 60/40; each line
+                            // shrinks to its room, so neither can run onto the rim.
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center,
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.fillMaxSize().padding(top = u * 12f, bottom = u * 17f)
                             ) {
-                                LetteredText(stringResource(R.string.result_x2_amount, com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(state.xpEarned) * 2), fs(40f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth())
+                                LetteredText(stringResource(R.string.result_x2_amount, com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(state.xpEarned) * 2), fs(36f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth().weight(0.6f))
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center,
-                                    modifier = Modifier.fillMaxWidth().height(u * 30f)
+                                    modifier = Modifier.fillMaxWidth().weight(0.4f)
                                 ) {
-                                    Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 26f))
+                                    Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 22f))
                                     Spacer(Modifier.width(u * 6f))
                                     FitText(
                                         text = stringResource(R.string.result_watch_ad),
-                                        style = PaintedStyle(color = Color.White, fontSize = fs(24f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Start),
+                                        style = PaintedStyle(color = Color.White, fontSize = fs(21f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Start),
                                         maxLines = 1,
                                         minScale = 0.5f,
                                         contentAlignment = Alignment.CenterStart,
@@ -437,6 +436,11 @@ fun ResultScreen(
                 }
             }
         }
+        // Over the page, not in it: stays in the corner however far the page scrolls.
+        ResultBackButton(
+            onBack = { if (!(xpDoubled && !startedDoubled)) onMainMenu() },
+            modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().springIn(index = 0, fromY = -40)
+        )
         // A round that earned something is celebrated with a shower of paper, once.
         if (state.xpEarned > 0 && state.correctCount > 0) {
             com.sualtikasifi.cizimhafiza.presentation.common.ConfettiBurst(seed = state.totalScore * 31 + state.correctCount)
