@@ -504,7 +504,7 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
             }
             if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = Console.Accent, strokeWidth = 2.dp)
         }
-        Field("Çizimin tuhaflıkları (İngilizce, isteme eklenir)", rv.describe, { vm.setRevealDescribe(rv.sampleId, it) }, lines = 2)
+        Field("Çizimin şekli (İngilizce, isteme eklenir)", rv.describe, { vm.setRevealDescribe(rv.sampleId, it) }, lines = 2)
 
         Text("Görsel · ChatGPT", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {

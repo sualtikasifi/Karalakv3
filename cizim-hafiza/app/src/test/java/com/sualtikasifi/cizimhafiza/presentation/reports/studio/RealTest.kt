@@ -119,10 +119,14 @@ class RealTest {
         val prompt = RealCopy.imagePrompt("kedi", "cat", 5, "a cat with six legs.")
         assertTrue(prompt.contains("\"kedi\" (cat)"))
         assertTrue(prompt.contains("in 5 seconds"))
-        assertTrue(prompt.contains("The doodle shows: a cat with six legs. "))
+        assertTrue(prompt.contains("The doodle shows: a cat with six legs.\n"))
+        // the drawing's shape wins over what a cat should look like
+        assertTrue(prompt.contains("do NOT turn it into a normal cat"))
         assertTrue(prompt.contains("9:16"))
-        assertFalse(RealCopy.imagePrompt("kedi", "", 5, "").contains("The doodle shows"))
-        assertTrue(RealCopy.videoPrompt("cat").contains("The cat stays"))
+        val noEnglish = RealCopy.imagePrompt("kedi", "", 5, "")
+        assertFalse(noEnglish.contains("The doodle shows"))
+        assertTrue(noEnglish.contains("a normal kedi"))
+        assertTrue(RealCopy.videoPrompt("cat").contains("Do not turn it into a normal cat"))
     }
 
     @Test
