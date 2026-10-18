@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
@@ -54,7 +56,10 @@ data class RefusedRound(
 )
 
 /** Which section of the inbox is on screen. */
-enum class ReportsTab { Queue, Pool, Feedback, Reports, Detector, League, XpEvent, DailyChallenge, Stats, Coupons, Locks, Runes }
+/** What a swipe on the review card means (see SwipeQueue). */
+enum class SwipeAction { Approve, Dismiss, Reject }
+
+enum class ReportsTab { Dashboard, Assistant, Tools, Queue, Pool, Feedback, Reports, Detector, League, XpEvent, DailyChallenge, Stats, Coupons, Locks, Runes }
 
 /**
  * One scrolling list of runs — the queue or the pool — and where it is up to.
@@ -93,7 +98,7 @@ data class RunList(
 data class DrawingReportsUiState(
     // Opens on the queue: it is the section with work waiting in it, and a
     // round sitting unreviewed is a round nobody can be matched against.
-    val tab: ReportsTab = ReportsTab.Queue,
+    val tab: ReportsTab = ReportsTab.Dashboard,
     val queue: RunList = RunList(),
     val pool: RunList = RunList(),
     /** The row a decision is currently running for — its buttons go quiet. */
@@ -140,7 +145,10 @@ data class DrawingReportsUiState(
     val dailyChallengeLoaded: Boolean = false,
     val dailyChallengeFailed: Boolean = false,
     /** The row a daily-challenge decision is running for — separate from [decidingId], which is Queue/Pool's own. */
-    val decidingDailyChallengeId: String? = null
+    val decidingDailyChallengeId: String? = null,
+    /** Decisions made from the swipe deck this session, and how many of them were refused. */
+    val swipeDone: Int = 0,
+    val swipeFailures: Int = 0
 ) {
     fun listFor(tab: ReportsTab): RunList? = when (tab) {
         ReportsTab.Queue -> queue
@@ -185,7 +193,8 @@ class DrawingReportsViewModel @Inject constructor(
             ReportsTab.Feedback -> if (!_uiState.value.feedbackLoaded) loadFeedback()
             ReportsTab.League -> if (!_uiState.value.leagueLoaded) loadLeagueConfig()
             ReportsTab.XpEvent -> loadXpEvent()
-            ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes -> Unit // these panels load themselves
+            ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes,
+            ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools -> Unit // these panels load themselves
             ReportsTab.DailyChallenge -> if (!_uiState.value.dailyChallengeLoaded) loadDailyChallengeQueue()
             else -> if (!_uiState.value.evidenceLoaded) loadEvidence()
         }
@@ -426,6 +435,38 @@ class DrawingReportsViewModel @Inject constructor(
      */
     fun dismiss(run: PendingRun) = decide(run, movesToPool = false, keepsRun = false) {
         moderationRepository.dismiss(run.id)
+    }
+
+    private val swipeLock = Mutex()
+
+    /**
+     * A decision from the swipe deck. Unlike [decide], never dropped while another is running:
+     * the deck lets the reviewer move on at once, so decisions line up and run one after another.
+     * The run leaves the queue only once its write went through; a refused one stays, and the deck
+     * shows it again along with the banner.
+     */
+    fun swipeDecide(run: PendingRun, action: SwipeAction) {
+        viewModelScope.launch {
+            swipeLock.withLock {
+                val result = when (action) {
+                    SwipeAction.Approve -> moderationRepository.approve(run.id)
+                    SwipeAction.Dismiss -> moderationRepository.dismiss(run.id)
+                    SwipeAction.Reject -> moderationRepository.reject(run.id, run.xpEarned)
+                }
+                val state = _uiState.value
+                _uiState.value = if (result.isFailure) {
+                    state.copy(decisionFailed = true, decisionError = result.exceptionOrNull()?.describe(), swipeFailures = state.swipeFailures + 1)
+                } else {
+                    state.copy(
+                        queue = state.queue.copy(runs = state.queue.runs.filterNot { it.id == run.id }),
+                        pool = if (action == SwipeAction.Approve && state.pool.runs.none { it.id == run.id } && !state.pool.neverLoaded) {
+                            state.pool.copy(runs = listOf(run) + state.pool.runs)
+                        } else state.pool,
+                        swipeDone = state.swipeDone + 1
+                    )
+                }
+            }
+        }
     }
 
     fun startRename(run: PendingRun) {
