@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess
 
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -12,6 +13,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 /** One thing Karalak says, and the face it says it with. */
+@Serializable
 data class SpokenLine(val text: String, val emotion: MascotEmotion)
 
 /**
