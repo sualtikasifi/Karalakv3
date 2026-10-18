@@ -34,11 +34,11 @@ let code = null, room = null, unsub = null, hb = null, cdTimer = null, started =
 export function layoutOnline(c) {
   const { place, $ } = c, cur = c.current();
   if (cur === "onl") {
-    place($("on-back"), 20, 40, 110, 106); place($("on-sign"), 70.5, 300, 700, 586); place($("on-title"), 130.5, 616, 580, 222);
+    place($("on-back"), 20, 40, 110, 106); place($("on-sign"), 70.5, 300, 700, 586); place($("on-title"), 130.5, 626, 580, 222);
     place($("on-paper"), 80.5, 884, 680, 324); place($("on-text"), 140.5, 965, 560, 195);
     place($("on-create"), 100.5, 1236, 640, 150); place($("on-join"), 100.5, 1424, 640, 158);
   } else if (cur === "onj") {
-    place($("oj-back"), 20, 40, 110, 106); place($("oj-title"), 423 - 230, 368 - 38, 460, 76);
+    place($("oj-back"), 20, 40, 110, 106); place($("oj-title"), 423 - 230, 368 - 26, 460, 76);
     place($("oj-panel"), 42.05, 542.3, 756.9, 522.3);
     place($("oj-nick"), 138.1, 688.8, 554.6, 89.8); place($("oj-code"), 138.1, 838.5, 554.6, 89.8); place($("oj-l1"), 183, 628.8, 480, 50); place($("oj-l2"), 183, 782, 480, 50); place($("oj-msg"), 42, 1190, 757, 80);
     place($("oj-go"), 185.9, 982.4, 469.3, 149.4);

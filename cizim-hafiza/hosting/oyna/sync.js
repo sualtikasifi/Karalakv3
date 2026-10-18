@@ -73,7 +73,19 @@ const linked = async () => { let f = false; try { f = localStorage.getItem(FLAG)
 const linked0 = async () => { try { const a = await net.authState(); return a && !a.anon ? a : null; } catch { return null; } };
 
 /** Reads the cloud save; adopts it when it holds more XP than the browser, otherwise the browser's progress goes up. Returns "restored" | "saved" | "none". */
-export async function syncNow(c, { adopt = true } = {}) {
+/** A browser account's user name is its fixed player name: guest progress made before signing up moves to the account under that name. */
+export async function adoptUserName(c, name) {
+  const P = c.P; if (!name) return;
+  if (P.nick !== name) { const old = P.nick; P.nick = name; try { await net.claimUsername(name, P.nickClaimed ? old : null); } catch {} }
+  P.nickClaimed = true; c.saveP(); c.refreshHome();
+}
+export async function syncNow(c, o) {
+  const acct = await linked(); if (acct && acct.userName) await adoptUserName(c, acct.userName);
+  const r = await syncCore(c, o);
+  if (acct && acct.userName && c.P.nick !== acct.userName) await adoptUserName(c, acct.userName); // a restored cloud save carries the nickname it was saved with
+  return r;
+}
+async function syncCore(c, { adopt = true } = {}) {
   if (busy || !(await linked())) return "none";
   busy = true;
   try {

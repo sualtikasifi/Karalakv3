@@ -19,14 +19,14 @@ let who = null, msg = "", busy = false;
 
 export function layoutAccount(c) {
   const { place, $ } = c;
-  place($("ak-back"), 20, 40, 110, 106); place($("ak-sign"), 130, 132, 580, 387); place($("ak-title"), 219, 325, 420, 113);
+  place($("ak-back"), 20, 40, 110, 106); place($("ak-sign"), 130, 132, 580, 387); place($("ak-title"), 219, 343, 420, 113);
   place($("ak-avatar"), 92, 545, 150, 150);
   place($("ak-name"), 268, 540, 502, 60); place($("ak-lvl"), 268, 604, 502, 44); place($("ak-badge"), 268, 654, 506, 58);
   place($("ak-bar"), 92, 726, 644, 36);
   [24, 294, 566].forEach((x, i) => place($("ak-s" + i), x + 8, 905, 220, 120));
-  place($("ak-sec"), 166, 1066, 574, 68); place($("ak-strip"), 166, 1158, 576, 64);
+  place($("ak-sec"), 166, 1066, 574, 68); place($("ak-strip"), 166, 1150, 576, 82);
   place($("ak-form"), 110, 1262, 620, 330);
-  place($("ak-out"), 120, 1292, 600, 172);
+  place($("ak-out"), 120, 1304, 600, 132);
   place($("ak-del"), 120, 1490, 600, 80); place($("ak-msg"), 60, 1626, 720, 80);
 }
 
@@ -57,7 +57,7 @@ function paint(c) {
   $("ak-fill").style.width = lv.frac * 100 + "%"; $("ak-barl").textContent = lv.max ? x.max : x.progress(lv.into, lv.span);
   const stats = [[P.xp.toLocaleString(), x.xp], [P.stats.games.toLocaleString(), x.games], [P.stats.best.toLocaleString(), x.streak]];
   stats.forEach(([v, l], i) => { const s = $("ak-s" + i); s.children[0].textContent = v; s.children[1].textContent = l; });
-  $("ak-sec").textContent = x.sec; $("ak-strip").innerHTML = linked ? `<b>${S("account_sync_on")}</b><small>${backupLine()}</small>` : x.hint;
+  $("ak-sec").textContent = x.sec; $("ak-strip").innerHTML = linked ? `<b class="fitw">${S("account_sync_on")}</b><small class="fitw">${backupLine()}</small>` : x.hint;
   const form = $("ak-form"); form.style.display = linked ? "none" : "";
   $("ak-user").placeholder = x.user; $("ak-pass").placeholder = x.pass; $("ak-login-t").textContent = x.login; $("ak-reg-t").textContent = x.create;
   $("ak-out").style.display = linked ? "" : "none"; $("ak-out-t").textContent = S("account_sign_out");
@@ -95,5 +95,5 @@ function paint(c) {
 export async function renderAccount(c) {
   paint(c);
   let w = null; try { w = await net.authState(); } catch {}
-  if ((w && w.uid) !== (who && who.uid) || (w && w.anon) !== (who && who.anon) || (w && w.userName) !== (who && who.userName)) { who = w; paint(c); }
+  if ((w && w.uid) !== (who && who.uid) || (w && w.anon) !== (who && who.anon) || (w && w.userName) !== (who && who.userName)) { who = w; paint(c); requestAnimationFrame(() => c.fit()); } // text that just changed is fitted again
 }
