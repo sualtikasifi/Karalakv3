@@ -90,7 +90,11 @@ fun AssistantPanel(pendingPlan: SpecialDay?, onPlanConsumed: () -> Unit, viewMod
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Yapay zeka asistanı", style = Console.Title)
-                    Text(if (st.hasKey) "Gemini · ${st.model} · ücretsiz kota" else "Kurulum gerekiyor (2 dakika, ücretsiz)", style = Console.Small)
+                    Text(
+                        if (st.hasKey) "OpenRouter · ${st.model}" + st.usage?.let { " · bu ay ${OpenRouterClient.usd(it.monthly)}" }.orEmpty()
+                        else "Kurulum gerekiyor: OpenRouter anahtarı",
+                        style = Console.Small, maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
                 }
                 IconButton(onClick = viewModel::toggleSettings) { Icon(Icons.Filled.Settings, contentDescription = "Ayarlar", tint = Console.InkSecondary) }
             }
@@ -147,7 +151,7 @@ fun AssistantPanel(pendingPlan: SpecialDay?, onPlanConsumed: () -> Unit, viewMod
                     Column(Modifier.padding(12.dp)) {
                         Text("Olmadı", style = Console.Subtitle.copy(color = Console.Critical))
                         Text(err, style = Console.Small)
-                        Text("Anahtarı ve model adını ayarlardan kontrol et; ücretsiz kota dolduysa birkaç dakika sonra dene.", style = Console.Small)
+                        Text("Anahtarı, OpenRouter bakiyeni ve model adını ayarlardan kontrol et.", style = Console.Small)
                     }
                 }
             }
@@ -166,7 +170,7 @@ fun AssistantPanel(pendingPlan: SpecialDay?, onPlanConsumed: () -> Unit, viewMod
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(saved.title, style = Console.Subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(SimpleDateFormat("d MMM HH:mm", Locale("tr")).format(Date(saved.at)) + " · " + saved.text.lineSequence().firstOrNull { it.isNotBlank() && !it.startsWith("#") }.orEmpty().take(70), style = Console.Small, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(SimpleDateFormat("d MMM HH:mm", Locale("tr")).format(Date(saved.at)) + saved.costUsd?.let { " · " + OpenRouterClient.usd(it) }.orEmpty() + " · " + saved.text.lineSequence().firstOrNull { it.isNotBlank() && !it.startsWith("#") }.orEmpty().take(70), style = Console.Small, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         IconButton(onClick = { viewModel.deleteSaved(saved) }) { Icon(Icons.Filled.Delete, contentDescription = "Sil", tint = Console.InkMuted, modifier = Modifier.size(18.dp)) }
                     }
@@ -250,23 +254,34 @@ private fun SettingsCard(st: AssistantState, vm: AssistantViewModel) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Filled.Key, contentDescription = null, tint = Console.Accent, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
-            Text("Ücretsiz Gemini anahtarı", style = Console.Subtitle)
+            Text("OpenRouter anahtarı", style = Console.Subtitle)
         }
         Spacer(Modifier.height(6.dp))
         Text(
-            "1) Aşağıdaki bağlantıyı aç, Google hesabınla gir.\n2) \"Create API key\" de, anahtarı kopyala.\n3) Buraya yapıştır, kaydet.\nAnahtar sadece bu telefonda saklanır. Faturalandırma eklemediğin sürece ücret çıkmaz; ücretsiz kotada çalışır.",
+            "1) openrouter.ai'de hesap aç, Credits sayfasından bakiye yükle.\n2) Keys sayfasında \"Create Key\" de ve bir harcama limiti koy (ör. aylık 2 $).\n3) Anahtarı buraya yapıştır, kaydet.\nAnahtar sadece bu telefonda saklanır. Her cevabın maliyeti cevabın üstünde yazar.",
             style = Console.Small
         )
         Spacer(Modifier.height(8.dp))
         Row(
             Modifier.clip(RoundedCornerShape(8.dp)).clickable {
-                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://aistudio.google.com/apikey")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://openrouter.ai/settings/keys")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
             }.padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, tint = Console.Accent, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(4.dp))
-            Text("aistudio.google.com/apikey", style = Console.Label.copy(color = Console.Accent, fontWeight = FontWeight.SemiBold))
+            Text("openrouter.ai/settings/keys", style = Console.Label.copy(color = Console.Accent, fontWeight = FontWeight.SemiBold))
+        }
+        st.usage?.let { u ->
+            Spacer(Modifier.height(8.dp))
+            Surface(shape = RoundedCornerShape(10.dp), color = Console.Grid, modifier = Modifier.fillMaxWidth()) {
+                Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    UsageFigure("Bugün", OpenRouterClient.usd(u.daily), Modifier.weight(1f))
+                    UsageFigure("Bu ay", OpenRouterClient.usd(u.monthly), Modifier.weight(1f))
+                    UsageFigure("Kalan limit", u.limitRemaining?.let { OpenRouterClient.usd(it) } ?: "limitsiz", Modifier.weight(1f))
+                    IconButton(onClick = vm::refreshUsage) { Icon(Icons.Filled.Refresh, contentDescription = "Tazele", tint = Console.InkSecondary, modifier = Modifier.size(18.dp)) }
+                }
+            }
         }
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
@@ -281,12 +296,12 @@ private fun SettingsCard(st: AssistantState, vm: AssistantViewModel) {
             value = model, onValueChange = { model = it.trim() },
             label = { Text("Model") }, singleLine = true, colors = fieldColors(), modifier = Modifier.fillMaxWidth()
         )
-        Text("Önerilen: ${GeminiClient.DEFAULT_MODEL}. Çalışmazsa sırayla ${GeminiClient.FALLBACK_MODELS.joinToString()} denenir.", style = Console.Small)
+        Text("Önerilen: ${OpenRouterClient.DEFAULT_MODEL}. Çalışmazsa sırayla ${OpenRouterClient.FALLBACK_MODELS.joinToString()} denenir.", style = Console.Small)
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Web'de ara (Google Search)", style = Console.Subtitle)
-                Text("Güncel trendler ve tarihler için. Ücretsiz kotada reddedilirse aramasız dener.", style = Console.Small)
+                Text("Web'de ara", style = Console.Subtitle)
+                Text("Güncel trendler ve tarihler için. Cevap başına maliyeti birkaç kat artırır (Gemini'de arama başına yaklaşık 1,4 sent).", style = Console.Small)
             }
             Switch(checked = search, onCheckedChange = { search = it }, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
         }
@@ -307,6 +322,14 @@ private fun SettingsCard(st: AssistantState, vm: AssistantViewModel) {
 }
 
 @Composable
+private fun UsageFigure(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Text(label, style = Console.Small)
+        Text(value, style = Console.Subtitle)
+    }
+}
+
+@Composable
 private fun AnswerSheet(title: String, a: AiAnswer, onClose: () -> Unit, onRegenerate: () -> Unit) {
     val context = LocalContext.current
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -316,11 +339,18 @@ private fun AnswerSheet(title: String, a: AiAnswer, onClose: () -> Unit, onRegen
                     IconButton(onClick = onClose) { Icon(Icons.Filled.Close, contentDescription = "Kapat", tint = Console.Ink) }
                     Column(Modifier.weight(1f)) {
                         Text(title, style = Console.Subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(a.model + if (a.searched) " · web araması" else "", style = Console.Small)
+                        Text(
+                            listOfNotNull(
+                                a.model.takeIf { it != AssistantViewModel.SAVED },
+                                a.costUsd?.let { OpenRouterClient.usd(it) },
+                                "web araması".takeIf { a.searched }
+                            ).joinToString(" · ").ifBlank { "kayıtlı cevap" },
+                            style = Console.Small, maxLines = 1, overflow = TextOverflow.Ellipsis
+                        )
                     }
                     IconButton(onClick = { copy(context, a.text) }) { Icon(Icons.Filled.ContentCopy, contentDescription = "Kopyala", tint = Console.InkSecondary) }
                     IconButton(onClick = { share(context, title, a.text) }) { Icon(Icons.Filled.Share, contentDescription = "Paylaş", tint = Console.InkSecondary) }
-                    if (a.model != "kayıt") IconButton(onClick = onRegenerate) { Icon(Icons.Filled.Refresh, contentDescription = "Yeniden", tint = Console.InkSecondary) }
+                    if (a.model != AssistantViewModel.SAVED) IconButton(onClick = onRegenerate) { Icon(Icons.Filled.Refresh, contentDescription = "Yeniden", tint = Console.InkSecondary) }
                 }
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp)) {
                     MarkdownText(a.text)

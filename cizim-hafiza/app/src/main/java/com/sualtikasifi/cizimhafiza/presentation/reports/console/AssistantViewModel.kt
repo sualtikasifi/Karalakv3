@@ -16,6 +16,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -37,13 +38,15 @@ enum class AiTask(val title: String, val blurb: String) {
 
 enum class SocialPlatform(val label: String) { Reels("TikTok / Reels / Shorts"), Post("Instagram gönderi / carousel"), X("X (Twitter)"), Community("Ekşi / Reddit / forum") }
 
-data class SavedAnswer(val title: String, val text: String, val at: Long)
+data class SavedAnswer(val title: String, val text: String, val at: Long, val model: String = "", val costUsd: Double? = null)
 
 data class AssistantState(
     val hasKey: Boolean = false,
     val keyPreview: String = "",
-    val model: String = GeminiClient.DEFAULT_MODEL,
-    val webSearch: Boolean = true,
+    val model: String = OpenRouterClient.DEFAULT_MODEL,
+    val webSearch: Boolean = false,
+    /** The key's spend as OpenRouter last reported it; null until read (or when it could not be). */
+    val usage: KeyUsage? = null,
     val task: AiTask = AiTask.Event,
     val eventName: String = "",
     val eventDate: String = "",
@@ -76,15 +79,27 @@ class AssistantViewModel @Inject constructor(
     private var liveContext: String? = null
 
     init {
+        // the panel talked to Gemini directly before OpenRouter; that key and its settings mean nothing now
+        prefs.edit().remove("gemini_key").remove("model").remove("web_search").apply()
         val key = prefs.getString(KEY, "").orEmpty()
         _state.value = _state.value.copy(
             hasKey = key.isNotBlank(),
             keyPreview = preview(key),
-            model = prefs.getString(MODEL, GeminiClient.DEFAULT_MODEL).orEmpty().ifBlank { GeminiClient.DEFAULT_MODEL },
-            webSearch = prefs.getBoolean(SEARCH, true),
+            model = prefs.getString(MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL },
+            webSearch = prefs.getBoolean(SEARCH, false),
             history = readHistory(),
             showSettings = key.isBlank()
         )
+        refreshUsage()
+    }
+
+    /** Reads the key's spend for the day and the month (shown in the header and the settings card). */
+    fun refreshUsage() {
+        val key = prefs.getString(KEY, "").orEmpty()
+        if (key.isBlank()) { _state.value = _state.value.copy(usage = null); return }
+        viewModelScope.launch {
+            OpenRouterClient(key).usage().onSuccess { u -> _state.value = _state.value.copy(usage = u) }
+        }
     }
 
     private fun preview(key: String) = if (key.length > 8) key.take(4) + "…" + key.takeLast(4) else ""
@@ -93,19 +108,20 @@ class AssistantViewModel @Inject constructor(
         val k = key.trim()
         prefs.edit().apply {
             if (k.isNotEmpty()) putString(KEY, k)
-            putString(MODEL, model.trim().ifBlank { GeminiClient.DEFAULT_MODEL })
+            putString(MODEL, model.trim().ifBlank { OpenRouterClient.DEFAULT_MODEL })
             putBoolean(SEARCH, webSearch)
         }.apply()
         val stored = prefs.getString(KEY, "").orEmpty()
         _state.value = _state.value.copy(
             hasKey = stored.isNotBlank(), keyPreview = preview(stored),
-            model = model.trim().ifBlank { GeminiClient.DEFAULT_MODEL }, webSearch = webSearch, showSettings = stored.isBlank()
+            model = model.trim().ifBlank { OpenRouterClient.DEFAULT_MODEL }, webSearch = webSearch, showSettings = stored.isBlank()
         )
+        refreshUsage()
     }
 
     fun forgetKey() {
         prefs.edit().remove(KEY).apply()
-        _state.value = _state.value.copy(hasKey = false, keyPreview = "", showSettings = true)
+        _state.value = _state.value.copy(hasKey = false, keyPreview = "", usage = null, showSettings = true)
     }
 
     fun toggleSettings() { _state.value = _state.value.copy(showSettings = !_state.value.showSettings) }
@@ -124,24 +140,27 @@ class AssistantViewModel @Inject constructor(
     fun run() {
         val st = _state.value
         val key = prefs.getString(KEY, "").orEmpty()
-        if (key.isBlank()) { _state.value = st.copy(showSettings = true, error = "Önce ücretsiz Gemini anahtarını gir."); return }
+        if (key.isBlank()) { _state.value = st.copy(showSettings = true, error = "Önce OpenRouter anahtarını gir."); return }
         if (st.running) return
         _state.value = st.copy(running = true, error = null)
         viewModelScope.launch {
             val ctx = liveContext ?: buildLiveContext().also { liveContext = it }
             val (title, prompt) = promptFor(_state.value)
-            val result = GeminiClient(key).generate(SYSTEM, ctx + "\n\n" + prompt, _state.value.model, _state.value.webSearch)
+            val result = OpenRouterClient(key).generate(SYSTEM, ctx + "\n\n" + prompt, _state.value.model, _state.value.webSearch)
             result.onSuccess { a ->
-                val saved = (listOf(SavedAnswer(title, a.text, System.currentTimeMillis())) + _state.value.history).take(30)
+                val saved = (listOf(SavedAnswer(title, a.text, System.currentTimeMillis(), a.model, a.costUsd)) + _state.value.history).take(30)
                 writeHistory(saved)
                 _state.value = _state.value.copy(running = false, answer = a, answerTitle = title, history = saved)
             }.onFailure { e ->
                 _state.value = _state.value.copy(running = false, error = e.message ?: e::class.simpleName)
             }
+            refreshUsage()
         }
     }
 
-    fun openSaved(s: SavedAnswer) { _state.value = _state.value.copy(answer = AiAnswer(s.text, model = "kayıt"), answerTitle = s.title) }
+    fun openSaved(s: SavedAnswer) {
+        _state.value = _state.value.copy(answer = AiAnswer(s.text, model = SAVED, costUsd = s.costUsd), answerTitle = s.title)
+    }
     fun closeAnswer() { _state.value = _state.value.copy(answer = null) }
     fun deleteSaved(s: SavedAnswer) {
         val list = _state.value.history.filterNot { it.at == s.at }
@@ -230,23 +249,30 @@ class AssistantViewModel @Inject constructor(
             SavedAnswer(
                 o["title"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null,
                 o["text"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null,
-                o["at"]?.jsonPrimitive?.longOrNull ?: 0L
+                o["at"]?.jsonPrimitive?.longOrNull ?: 0L,
+                o["model"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                o["cost"]?.jsonPrimitive?.doubleOrNull
             )
         }
     }.getOrDefault(emptyList())
 
     private fun writeHistory(list: List<SavedAnswer>) {
-        val arr: JsonArray = buildJsonArray { list.forEach { s -> addJsonObject { put("title", s.title); put("text", s.text); put("at", s.at) } } }
+        val arr: JsonArray = buildJsonArray { list.forEach { s -> addJsonObject {
+            put("title", s.title); put("text", s.text); put("at", s.at); put("model", s.model)
+            s.costUsd?.let { put("cost", it) }
+        } } }
         prefs.edit().putString(HISTORY, arr.toString()).apply()
     }
 
-    private companion object {
-        const val KEY = "gemini_key"
-        const val MODEL = "model"
-        const val SEARCH = "web_search"
-        const val HISTORY = "history"
+    companion object {
+        /** The model name an answer opened from the saved list carries, so the sheet knows not to offer a rerun. */
+        const val SAVED = "kayıt"
+        private const val KEY = "openrouter_key"
+        private const val MODEL = "or_model"
+        private const val SEARCH = "or_web_search"
+        private const val HISTORY = "history"
 
-        val SYSTEM = """
+        private val SYSTEM = """
             Sen Karalak'ın kıdemli büyüme pazarlamacısı ve oyun yapımcısısın. Mobil oyunları sıfır bütçeyle viral büyütmüş, Türkiye pazarını ve gençlerin internet kültürünü (TikTok, Instagram, Ekşi Sözlük, Reddit, Discord, okul ortamı) çok iyi bilen birisin.
 
             ## Oyun
