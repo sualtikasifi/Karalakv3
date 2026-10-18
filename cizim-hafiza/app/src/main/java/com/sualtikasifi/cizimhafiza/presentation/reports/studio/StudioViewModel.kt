@@ -809,13 +809,13 @@ class StudioViewModel @Inject constructor(
         val wanted = p.media
         photoCache.keys.filter { it !in wanted }.forEach { photoCache.remove(it) }
         previewClips.keys.filter { it !in wanted }.forEach { k -> previewClips.remove(k)?.close() }
-        val missing = p.script.reveals.flatMap { r -> listOfNotNull(r.image?.takeIf { it !in photoCache }, r.clip?.takeIf { it !in previewClips }) }
+        val missing = p.script.reveals.flatMap { r -> listOfNotNull(r.image?.takeIf { !photoCache.containsKey(it) }, r.clip?.takeIf { !previewClips.containsKey(it) }) }
         if (missing.isEmpty()) return
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 p.script.reveals.forEach { r ->
-                    r.image?.takeIf { it !in photoCache }?.let { name -> RealImages.load(realStore.file(name))?.let { photoCache[name] = it } }
-                    r.clip?.takeIf { it !in previewClips }?.let { name ->
+                    r.image?.takeIf { !photoCache.containsKey(it) }?.let { name -> RealImages.load(realStore.file(name))?.let { photoCache[name] = it } }
+                    r.clip?.takeIf { !previewClips.containsKey(it) }?.let { name ->
                         runCatching { ClipFrames(realStore.file(name), exact = false) }.getOrNull()?.let { if (previewClips.putIfAbsent(name, it) != null) it.close() }
                     }
                 }
