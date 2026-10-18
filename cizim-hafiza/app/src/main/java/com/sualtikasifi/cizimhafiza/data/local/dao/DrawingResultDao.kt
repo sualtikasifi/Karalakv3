@@ -5,6 +5,15 @@ import androidx.room.Insert
 import androidx.room.Query
 import com.sualtikasifi.cizimhafiza.data.local.entity.DrawingResultEntity
 
+/** One row of [DrawingResultDao.getRecentWithWords]: a stored drawing and the word it was for. */
+data class DrawingWithWord(
+    val id: Long,
+    val pathDataJson: String,
+    val isCorrect: Boolean,
+    val word: String,
+    val category: String
+)
+
 @Dao
 interface DrawingResultDao {
     @Insert
@@ -29,6 +38,23 @@ interface DrawingResultDao {
         """
     )
     suspend fun getRecentWordIds(category: String, limit: Int): List<Int>
+
+    /**
+     * The newest drawings made on this phone with their words, for the developer panel's video
+     * studio. Only the phone owner's own drawings live in this table, which is what lets the
+     * studio turn them into promotional videos without asking anyone else.
+     */
+    @Query(
+        """
+        SELECT dr.id AS id, dr.pathDataJson AS pathDataJson, dr.isCorrect AS isCorrect,
+               w.text AS word, w.category AS category
+        FROM drawing_results dr
+        INNER JOIN words w ON w.id = dr.wordId
+        ORDER BY dr.id DESC
+        LIMIT :limit
+        """
+    )
+    suspend fun getRecentWithWords(limit: Int): List<DrawingWithWord>
 
     /**
      * Used only when switching accounts (see BackupRepositoryImpl.switchToAccount).

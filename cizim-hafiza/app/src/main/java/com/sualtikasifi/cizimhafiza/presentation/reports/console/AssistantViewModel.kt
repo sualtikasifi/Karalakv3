@@ -72,7 +72,7 @@ class AssistantViewModel @Inject constructor(
     private val firestore: FirebaseFirestore,
     private val bugReports: BugReportRepository
 ) : ViewModel() {
-    private val prefs = context.getSharedPreferences("console_ai", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val _state = MutableStateFlow(AssistantState())
     val state: StateFlow<AssistantState> = _state.asStateFlow()
 
@@ -267,8 +267,10 @@ class AssistantViewModel @Inject constructor(
     companion object {
         /** The model name an answer opened from the saved list carries, so the sheet knows not to offer a rerun. */
         const val SAVED = "kayıt"
-        private const val KEY = "openrouter_key"
-        private const val MODEL = "or_model"
+        /** Shared with the video studio, which writes its captions with the same key and model. */
+        internal const val PREFS = "console_ai"
+        internal const val KEY = "openrouter_key"
+        internal const val MODEL = "or_model"
         private const val SEARCH = "or_web_search"
         private const val HISTORY = "history"
 

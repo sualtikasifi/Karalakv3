@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Pool
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.filled.Today
@@ -206,7 +207,7 @@ fun DrawingReportsScreen(
                     ReportsTab.League -> 0
                     // Same story as League — see the XpEvent branch below.
                     ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes,
-                    ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools -> 0
+                    ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Studio -> 0
                     ReportsTab.DailyChallenge -> uiState.dailyChallengeQueue.size
                 }
                 val firstLoad = when (uiState.tab) {
@@ -289,6 +290,10 @@ fun DrawingReportsScreen(
                         onSelect = viewModel::setWeekReward
                     )
 
+                    uiState.tab == ReportsTab.Studio -> com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioPanel(
+                        onBack = { viewModel.selectTab(ReportsTab.Tools) }
+                    )
+
                     uiState.tab == ReportsTab.Stats -> StatsPanel()
 
                     uiState.tab == ReportsTab.Coupons -> CouponPanel()
@@ -337,7 +342,7 @@ fun DrawingReportsScreen(
                                     // runs, kept only for exhaustiveness.
                                     ReportsTab.League -> R.string.reports_tab_league
                                     ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes,
-                                    ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools -> R.string.reports_tab_xp_event
+                                    ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Studio -> R.string.reports_tab_xp_event
                                     ReportsTab.DailyChallenge -> R.string.reports_daily_challenge_empty
                                 }
                             ),
@@ -408,7 +413,7 @@ fun DrawingReportsScreen(
                             ReportsTab.League -> Unit
                             // Same — see the XpEvent branch above.
                             ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes,
-                            ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools -> Unit
+                            ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Studio -> Unit
                             ReportsTab.DailyChallenge -> items(
                                 uiState.dailyChallengeQueue,
                                 key = { it.id }
@@ -1230,11 +1235,11 @@ private fun ReportsTab.labelRes(): Int = when (this) {
     ReportsTab.Coupons -> R.string.reports_tab_coupons
     ReportsTab.Locks -> R.string.reports_tab_locks
     ReportsTab.Runes -> R.string.reports_tab_runes
-    ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools -> R.string.reports_title
+    ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Studio -> R.string.reports_title
 }
 
 /** The tabs that still render the original panel content (reached from the tools grid). */
-private fun ReportsTab.isLegacyTool(): Boolean = this !in setOf(ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Queue, ReportsTab.Stats)
+private fun ReportsTab.isLegacyTool(): Boolean = this !in setOf(ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Studio, ReportsTab.Queue, ReportsTab.Stats)
 
 /** The bottom bar: overview, deck, numbers, assistant, and the drawer of every other tool. */
 @Composable
@@ -1275,6 +1280,7 @@ private fun ConsoleNav(tab: ReportsTab, queueBadge: Int, onSelect: (ReportsTab) 
 private fun ToolsGrid(onOpen: (ReportsTab) -> Unit, onQueueList: () -> Unit, onBotNames: () -> Unit) {
     data class Tool(val icon: androidx.compose.ui.graphics.vector.ImageVector, val title: String, val sub: String, val open: () -> Unit)
     val tools = listOf(
+        Tool(Icons.Filled.Movie, "Video Stüdyosu", "Çizimlerinden Reels/TikTok videosu") { onOpen(ReportsTab.Studio) },
         Tool(Icons.Filled.Pool, "Havuz", "Hızlı Eşleş'teki onaylı turlar") { onOpen(ReportsTab.Pool) },
         Tool(Icons.AutoMirrored.Filled.List, "Kuyruk (liste)", "Onay kuyruğunun klasik görünümü") { onQueueList() },
         Tool(Icons.Filled.Today, "Günlük meydan okuma", "Günlük denemelerin incelemesi") { onOpen(ReportsTab.DailyChallenge) },
