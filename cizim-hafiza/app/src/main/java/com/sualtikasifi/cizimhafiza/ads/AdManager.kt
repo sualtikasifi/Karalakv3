@@ -255,6 +255,7 @@ class AdManager @Inject constructor(
                     preloadInterstitial()
                 }
             }
+            trackRevenue(preloaded, placement)
             preloaded.show(activity)
             return
         }
@@ -273,6 +274,7 @@ class AdManager @Inject constructor(
                         override fun onAdDismissedFullScreenContent() = onDismissed()
                         override fun onAdFailedToShowFullScreenContent(adError: AdError) = onDismissed()
                     }
+                    trackRevenue(ad, placement)
                     ad.show(activity)
                 }
 
@@ -282,6 +284,28 @@ class AdManager @Inject constructor(
                 }
             }
         )
+    }
+
+    /**
+     * Impression-level revenue for the developer panel: AdMob reports what each shown ad earned (in
+     * micros of the account's currency) through OnPaidEventListener. Summed per placement in
+     * AdminStats as `rev__<placement>__micros`, with the currency counted once per impression as
+     * `revcur__<CODE>`. Only reported when the AdMob account has impression-level revenue on.
+     */
+    private fun trackRevenue(ad: Any, placement: String) {
+        val listener = com.google.android.gms.ads.OnPaidEventListener { value ->
+            runCatching {
+                val stats = adminStats.get()
+                stats.record("rev__${placement}__micros", value.valueMicros)
+                stats.record("revcur__${value.currencyCode}")
+            }
+        }
+        runCatching {
+            when (ad) {
+                is InterstitialAd -> ad.onPaidEventListener = listener
+                is RewardedAd -> ad.onPaidEventListener = listener
+            }
+        }
     }
 
     /** Only an ad that actually reached the screen starts the gap — a failed one must not cost the player their next chance. */
@@ -395,6 +419,7 @@ class AdManager @Inject constructor(
                 override fun onAdFailedToShowFullScreenContent(adError: AdError) =
                     settle(RewardedOutcome.UNAVAILABLE)
             }
+            trackRevenue(ad, placement)
             ad.show(activity) { earned = true }
         }
 

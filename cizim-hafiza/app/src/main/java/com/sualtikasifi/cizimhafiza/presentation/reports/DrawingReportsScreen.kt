@@ -20,6 +20,24 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Diamond
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Feedback
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Pool
+import androidx.compose.material.icons.filled.Style
+import androidx.compose.material.icons.filled.Today
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -124,42 +142,21 @@ fun DrawingReportsScreen(
     var pendingDeleteFeedbackId by remember { mutableStateOf<String?>(null) }
     var pendingUpholdReport by remember { mutableStateOf<ReportedDrawing?>(null) }
     var deleteAllFeedbackRequested by remember { mutableStateOf(false) }
+    // The queue opens as a swipe deck; the old list stays one tap away.
+    var queueListMode by remember { mutableStateOf(false) }
+    // A special day tapped on the dashboard, waiting for the assistant to plan it.
+    var pendingPlan by remember { mutableStateOf<com.sualtikasifi.cizimhafiza.presentation.reports.console.SpecialDay?>(null) }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .screenBackground()
+                    .background(com.sualtikasifi.cizimhafiza.presentation.reports.console.Console.Bg)
                     .padding(padding)
-                    .padding(horizontal = 18.dp)
+                    .padding(horizontal = 16.dp)
             ) {
                 Spacer(modifier = Modifier.height(TopActionsClearance))
-
-                // One row of small chips that scrolls sideways: ten tabs used to take four full rows of the screen before
-                // any content started.
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 6.dp)
-                        .horizontalScroll(androidx.compose.foundation.rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    listOf(
-                        ReportsTab.Queue, ReportsTab.Pool, ReportsTab.Feedback, ReportsTab.Reports, ReportsTab.Detector,
-                        ReportsTab.League, ReportsTab.XpEvent, ReportsTab.DailyChallenge, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes
-                    ).forEach { tab ->
-                        SelectableChip(
-                            label = stringResource(tab.labelRes()),
-                            selected = uiState.tab == tab,
-                            onClick = { viewModel.selectTab(tab) },
-                            horizontalPadding = 12.dp,
-                            verticalPadding = 6.dp,
-                            style = MaterialTheme.typography.labelMedium,
-                            maxLines = 1
-                        )
-                    }
-                }
 
                 // A refused decision is a line above the list, never a
                 // replacement for it. Blanking the screen on a failed write
@@ -180,7 +177,7 @@ fun DrawingReportsScreen(
                 // on a uid, a uid is invisible, and a reinstall can sign this
                 // device in as a different one — so "am I the reviewer right
                 // now" has to be answerable before anything is tapped.
-                uiState.identity?.let { who ->
+                uiState.identity?.takeIf { uiState.tab.isLegacyTool() || (uiState.tab == ReportsTab.Queue && queueListMode) }?.let { who ->
                     Text(
                         text = if (who.isReviewer) {
                             stringResource(R.string.reports_identity_ok, who.email.orEmpty())
@@ -208,7 +205,8 @@ fun DrawingReportsScreen(
                     // the `when` below, which is taken before this is used.
                     ReportsTab.League -> 0
                     // Same story as League — see the XpEvent branch below.
-                    ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes -> 0
+                    ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes,
+                    ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools -> 0
                     ReportsTab.DailyChallenge -> uiState.dailyChallengeQueue.size
                 }
                 val firstLoad = when (uiState.tab) {
@@ -224,7 +222,64 @@ fun DrawingReportsScreen(
                     else -> uiState.evidenceFailed
                 }
 
+                if (uiState.tab.isLegacyTool() || (uiState.tab == ReportsTab.Queue && queueListMode)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).clip(MaterialTheme.shapes.small).clickable {
+                            if (uiState.tab == ReportsTab.Queue) queueListMode = false
+                            viewModel.selectTab(ReportsTab.Tools)
+                        },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = com.sualtikasifi.cizimhafiza.presentation.reports.console.Console.InkSecondary, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(uiState.tab.labelRes()),
+                            style = com.sualtikasifi.cizimhafiza.presentation.reports.console.Console.Title
+                        )
+                    }
+                }
+                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when {
+                    uiState.tab == ReportsTab.Dashboard -> com.sualtikasifi.cizimhafiza.presentation.reports.console.DashboardPanel(
+                        onOpenQueue = { queueListMode = false; viewModel.selectTab(ReportsTab.Queue) },
+                        onOpenTool = { key ->
+                            viewModel.selectTab(
+                                when (key) {
+                                    "daily" -> ReportsTab.DailyChallenge
+                                    "reports" -> ReportsTab.Reports
+                                    else -> ReportsTab.Feedback
+                                }
+                            )
+                        },
+                        onOpenStats = { viewModel.selectTab(ReportsTab.Stats) },
+                        onPlanEvent = { day -> pendingPlan = day; viewModel.selectTab(ReportsTab.Assistant) }
+                    )
+
+                    uiState.tab == ReportsTab.Assistant -> com.sualtikasifi.cizimhafiza.presentation.reports.console.AssistantPanel(
+                        pendingPlan = pendingPlan,
+                        onPlanConsumed = { pendingPlan = null }
+                    )
+
+                    uiState.tab == ReportsTab.Tools -> ToolsGrid(
+                        onOpen = { viewModel.selectTab(it) },
+                        onQueueList = { queueListMode = true; viewModel.selectTab(ReportsTab.Queue) },
+                        onBotNames = onBotNames
+                    )
+
+                    uiState.tab == ReportsTab.Queue && !queueListMode -> com.sualtikasifi.cizimhafiza.presentation.reports.console.SwipeQueue(
+                        runs = uiState.queue.runs,
+                        loading = uiState.queue.loading,
+                        endReached = uiState.queue.endReached,
+                        failures = uiState.swipeFailures,
+                        failedIds = uiState.swipeFailedIds,
+                        done = uiState.swipeDone,
+                        onNeedMore = { viewModel.loadMore(ReportsTab.Queue) },
+                        onDecide = { run, action -> viewModel.swipeDecide(run, action) },
+                        onPreview = { previewItem = it },
+                        onRename = { viewModel.startRename(it) },
+                        onListMode = { queueListMode = true }
+                    )
+
                     // A picker, not a list: it has no rows to count, no
                     // pages to load and no empty state.
                     uiState.tab == ReportsTab.League -> LeaguePrizePicker(
@@ -281,7 +336,8 @@ fun DrawingReportsScreen(
                                     // intercepts this tab before this ever
                                     // runs, kept only for exhaustiveness.
                                     ReportsTab.League -> R.string.reports_tab_league
-                                    ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes -> R.string.reports_tab_xp_event
+                                    ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes,
+                                    ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools -> R.string.reports_tab_xp_event
                                     ReportsTab.DailyChallenge -> R.string.reports_daily_challenge_empty
                                 }
                             ),
@@ -351,7 +407,8 @@ fun DrawingReportsScreen(
                             // own branch above and never gets this far.
                             ReportsTab.League -> Unit
                             // Same — see the XpEvent branch above.
-                            ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes -> Unit
+                            ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes,
+                            ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools -> Unit
                             ReportsTab.DailyChallenge -> items(
                                 uiState.dailyChallengeQueue,
                                 key = { it.id }
@@ -392,6 +449,13 @@ fun DrawingReportsScreen(
                         }
                     }
                 }
+                }
+                ConsoleNav(
+                    tab = uiState.tab,
+                    queueBadge = uiState.queue.runs.size,
+                    onSelect = { t -> if (t == ReportsTab.Queue) queueListMode = false; viewModel.selectTab(t) }
+                )
+                Spacer(modifier = Modifier.height(10.dp))
             }
 
             uiState.renaming?.let { run ->
@@ -467,11 +531,13 @@ fun DrawingReportsScreen(
                         onClick = { deleteAllFeedbackRequested = true }
                     )
                 }
-                RaisedIconButton(
-                    icon = Icons.Filled.Refresh,
-                    contentDescription = stringResource(R.string.reports_refresh),
-                    onClick = viewModel::refresh
-                )
+                if (uiState.tab.isLegacyTool() || (uiState.tab == ReportsTab.Queue && queueListMode)) {
+                    RaisedIconButton(
+                        icon = Icons.Filled.Refresh,
+                        contentDescription = stringResource(R.string.reports_refresh),
+                        onClick = viewModel::refresh
+                    )
+                }
             }
         }
     }
@@ -1164,6 +1230,83 @@ private fun ReportsTab.labelRes(): Int = when (this) {
     ReportsTab.Coupons -> R.string.reports_tab_coupons
     ReportsTab.Locks -> R.string.reports_tab_locks
     ReportsTab.Runes -> R.string.reports_tab_runes
+    ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools -> R.string.reports_title
+}
+
+/** The tabs that still render the original panel content (reached from the tools grid). */
+private fun ReportsTab.isLegacyTool(): Boolean = this !in setOf(ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Queue, ReportsTab.Stats)
+
+/** The bottom bar: overview, deck, numbers, assistant, and the drawer of every other tool. */
+@Composable
+private fun ConsoleNav(tab: ReportsTab, queueBadge: Int, onSelect: (ReportsTab) -> Unit) {
+    val key = when (tab) {
+        ReportsTab.Dashboard -> "dash"
+        ReportsTab.Queue -> "queue"
+        ReportsTab.Stats -> "stats"
+        ReportsTab.Assistant -> "ai"
+        else -> "tools"
+    }
+    com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleNavBar(
+        items = listOf(
+            com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleNavItem("dash", "Pano", Icons.Filled.Dashboard),
+            com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleNavItem("queue", "Kuyruk", Icons.Filled.Style, badge = queueBadge),
+            com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleNavItem("stats", "İstatistik", Icons.Filled.Insights),
+            com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleNavItem("ai", "Asistan", Icons.Filled.AutoAwesome),
+            com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleNavItem("tools", "Araçlar", Icons.Filled.Apps)
+        ),
+        selected = key,
+        onSelect = { k ->
+            onSelect(
+                when (k) {
+                    "dash" -> ReportsTab.Dashboard
+                    "queue" -> ReportsTab.Queue
+                    "stats" -> ReportsTab.Stats
+                    "ai" -> ReportsTab.Assistant
+                    else -> ReportsTab.Tools
+                }
+            )
+        },
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+    )
+}
+
+/** Every tool that is not one of the four main places, one tap each. */
+@Composable
+private fun ToolsGrid(onOpen: (ReportsTab) -> Unit, onQueueList: () -> Unit, onBotNames: () -> Unit) {
+    data class Tool(val icon: androidx.compose.ui.graphics.vector.ImageVector, val title: String, val sub: String, val open: () -> Unit)
+    val tools = listOf(
+        Tool(Icons.Filled.Pool, "Havuz", "Hızlı Eşleş'teki onaylı turlar") { onOpen(ReportsTab.Pool) },
+        Tool(Icons.AutoMirrored.Filled.List, "Kuyruk (liste)", "Onay kuyruğunun klasik görünümü") { onQueueList() },
+        Tool(Icons.Filled.Today, "Günlük meydan okuma", "Günlük denemelerin incelemesi") { onOpen(ReportsTab.DailyChallenge) },
+        Tool(Icons.Filled.Feedback, "Geri bildirim", "Oyuncu önerileri ve şikayetleri") { onOpen(ReportsTab.Feedback) },
+        Tool(Icons.Filled.Flag, "Çizim şikayetleri", "Bildirilen çizimler ve karar") { onOpen(ReportsTab.Reports) },
+        Tool(Icons.Filled.Visibility, "Dedektör", "Otomatik reddedilen turlar") { onOpen(ReportsTab.Detector) },
+        Tool(Icons.Filled.EmojiEvents, "Lig ödülü", "Bu ayın ilk 3 ödülü") { onOpen(ReportsTab.League) },
+        Tool(Icons.Filled.Bolt, "XP etkinliği", "x1.5 / x2 XP kampanyası") { onOpen(ReportsTab.XpEvent) },
+        Tool(Icons.Filled.ConfirmationNumber, "Kuponlar", "Altın / XP / kasa kodları") { onOpen(ReportsTab.Coupons) },
+        Tool(Icons.Filled.Lock, "Kilitler", "Oyuncu kilitleri ve cezalar") { onOpen(ReportsTab.Locks) },
+        Tool(Icons.Filled.Diamond, "Rünler", "Rün ayarları") { onOpen(ReportsTab.Runes) },
+        Tool(Icons.Filled.Badge, "Bot isimleri", "Rakip isim havuzu") { onBotNames() }
+    )
+    androidx.compose.foundation.lazy.LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 20.dp)
+    ) {
+        item {
+            Text("Araçlar", style = com.sualtikasifi.cizimhafiza.presentation.reports.console.Console.Title)
+            Text("Panelin bütün bölümleri", style = com.sualtikasifi.cizimhafiza.presentation.reports.console.Console.Small)
+        }
+        tools.chunked(2).forEach { pair ->
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    pair.forEach { t ->
+                        com.sualtikasifi.cizimhafiza.presentation.reports.console.ToolTile(t.icon, t.title, t.sub, Modifier.weight(1f), onClick = t.open)
+                    }
+                    if (pair.size == 1) Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+    }
 }
 
 /**

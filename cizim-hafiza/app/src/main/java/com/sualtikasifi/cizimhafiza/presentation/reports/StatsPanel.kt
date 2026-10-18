@@ -2,14 +2,20 @@ package com.sualtikasifi.cizimhafiza.presentation.reports
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,128 +23,164 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.sualtikasifi.cizimhafiza.R
-import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
-import com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton
-import com.sualtikasifi.cizimhafiza.presentation.common.SelectableChip
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ChartPoint
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ColumnChart
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Console
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleCard
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.FunnelBars
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.FunnelRow
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.LineChart
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Meter
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.SectionHeader
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Segmented
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.StatTile
+import java.util.Locale
 
-/** Developer panel "İstatistik" tab: players, opens, games and per-button ad results from AdminStats. */
+/**
+ * Developer panel "İstatistik": players, opens, games and ads day by day, as charts. Touch a chart
+ * to read a single day. Every number comes from AdminStats (see util/AdminStats.kt).
+ */
 @Composable
 fun StatsPanel(viewModel: StatsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     LaunchedEffect(Unit) { if (!state.loaded && !state.loading) viewModel.load() }
+    val s = state.series
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            text = stringResource(R.string.stats_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            listOf(1 to R.string.stats_range_1, 7 to R.string.stats_range_7, 30 to R.string.stats_range_30)
-                .forEach { (days, label) ->
-                    SelectableChip(
-                        label = stringResource(label),
-                        selected = state.days == days,
-                        onClick = { viewModel.selectDays(days) },
-                        modifier = Modifier.weight(1f),
-                        verticalPadding = 8.dp,
-                        style = MaterialTheme.typography.bodySmall,
-                        fillWidth = true
-                    )
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 24.dp)
+    ) {
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("İstatistik", style = Console.Title)
+                    Text("Gün sınırı UTC (Türkiye saatiyle 03:00)", style = Console.Small)
                 }
+                if (state.loading) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp, color = Console.Accent)
+                else IconButton(onClick = viewModel::load) { Icon(Icons.Filled.Refresh, contentDescription = "Yenile", tint = Console.InkSecondary) }
+            }
+            Spacer(Modifier.height(8.dp))
+            Segmented(
+                options = listOf("7" to "7 gün", "30" to "30 gün", "90" to "90 gün"),
+                selected = state.days.toString(),
+                onSelect = { viewModel.selectDays(it.toInt()) },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
-        when {
-            state.loading && !state.loaded -> Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) { CircularProgressIndicator(modifier = Modifier.padding(top = 32.dp)) }
-
-            state.failed -> Column(modifier = Modifier.fillMaxSize()) {
-                Text(
-                    text = stringResource(R.string.reports_load_failed),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(bottom = 8.dp)
+        if (state.failed) {
+            item {
+                ConsoleCard(Modifier.fillMaxWidth()) {
+                    Text("Okunamadı", style = Console.Subtitle)
+                    Text("Geliştirici hesabıyla giriş yapıldığından ve internet olduğundan emin ol.", style = Console.Small)
+                }
+            }
+        }
+        if (s == null) {
+            if (!state.failed) item { Row(Modifier.fillMaxWidth().padding(32.dp)) { CircularProgressIndicator(color = Console.Accent) } }
+            return@LazyColumn
+        }
+        val all = s.days.indices
+        val playerDays = s.players.sum()
+        val avg = playerDays.toDouble() / s.size
+        val games = s.sumOf(all) { s.games(it) }
+        val opens = s.sumOf(all) { s.opens(it) }
+        val req = s.sumOf(all) { s.adRequested(it) }
+        val earned = s.sumOf(all) { s.adEarned(it) }
+        val inters = s.sumOf(all) { s.interstitials(it) }
+        val rev = s.sumOf(all) { s.revenueMicros(it) }
+        val cur = s.currency()
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatTile("Günlük ort. oyuncu", Console.compact(avg), Modifier.weight(1f), changeCaption = "en yüksek ${s.players.maxOrNull() ?: 0}")
+                StatTile("Toplam oyun", Console.compact(games.toDouble()), Modifier.weight(1f), changeCaption = "oyuncu-gün başı " + String.format(Locale("tr"), "%.1f", if (playerDays > 0) games.toDouble() / playerDays else 0.0))
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatTile("Uygulama açılışı", Console.compact(opens.toDouble()), Modifier.weight(1f), changeCaption = "oyuncu-gün başı " + String.format(Locale("tr"), "%.1f", if (playerDays > 0) opens.toDouble() / playerDays else 0.0))
+                StatTile(
+                    "Reklam geliri",
+                    if (cur != null) String.format(Locale("tr"), "%.2f %s", rev / 1_000_000.0, cur) else "—",
+                    Modifier.weight(1f),
+                    changeCaption = if (cur != null) "oyuncu-gün başı " + String.format(Locale("tr"), "%.3f", if (playerDays > 0) rev / 1_000_000.0 / playerDays else 0.0) else "AdMob gösterim geliri açık olmalı"
                 )
-                SecondaryButton(text = stringResource(R.string.stats_refresh), onClick = viewModel::load)
             }
-
-            else -> LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item {
-                    val today = state.players.firstOrNull()?.players ?: 0L
-                    val avg = if (state.players.isEmpty()) 0L else state.players.sumOf { it.players } / state.players.size
-                    RaisedCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            StatLine(stringResource(R.string.stats_players_today), today.toString())
-                            StatLine(stringResource(R.string.stats_players_avg), avg.toString())
-                            StatLine(stringResource(R.string.stats_opens), state.appOpens.toString())
-                            StatLine(stringResource(R.string.stats_games), state.gamesFinished.toString())
-                        }
-                    }
+        }
+        item {
+            ConsoleCard(Modifier.fillMaxWidth()) {
+                SectionHeader("Aktif oyuncu", subtitle = "Gün içinde uygulamayı açan farklı oyuncu")
+                LineChart(all.map { ChartPoint(s.label(it), s.players[it].toDouble()) })
+            }
+        }
+        item {
+            ConsoleCard(Modifier.fillMaxWidth()) {
+                SectionHeader("Biten oyun", subtitle = "Sonuç ekranına ulaşan her oyun")
+                ColumnChart(all.map { ChartPoint(s.label(it), s.games(it).toDouble()) })
+            }
+        }
+        item {
+            ConsoleCard(Modifier.fillMaxWidth()) {
+                SectionHeader("Uygulama açılışı")
+                LineChart(all.map { ChartPoint(s.label(it), s.opens(it).toDouble()) }, color = Console.Blue)
+            }
+        }
+        if (cur != null) {
+            item {
+                ConsoleCard(Modifier.fillMaxWidth()) {
+                    SectionHeader("Reklam geliri", subtitle = "AdMob'un gösterim başına bildirdiği tutar, $cur")
+                    ColumnChart(all.map { ChartPoint(s.label(it), s.revenueMicros(it) / 1_000_000.0) }, color = Console.Accent, format = { String.format(Locale("tr"), "%.2f %s", it, cur) })
                 }
-                item {
-                    Text(
-                        text = stringResource(R.string.stats_ads_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+            }
+        }
+        item {
+            ConsoleCard(Modifier.fillMaxWidth()) {
+                SectionHeader("Ödüllü reklamlar", subtitle = "İstenen reklamın ne kadarı sonuna kadar izlendi")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (req > 0) Console.percent(earned.toDouble() / req) else "—", style = Console.Value)
+                    Spacer(Modifier.size(10.dp))
+                    Text("$earned izlendi · $req istek · $inters geçiş reklamı", style = Console.Small)
                 }
-                if (state.placements.isEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.stats_empty),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                Spacer(Modifier.height(8.dp))
+                Meter(if (req > 0) earned.toFloat() / req else 0f)
+                Spacer(Modifier.height(16.dp))
+                val rewarded = state.placements.filter { it.requested > 0 }
+                if (rewarded.isEmpty()) Text("Bu aralıkta ödüllü reklam isteği yok.", style = Console.Small)
+                else FunnelBars(
+                    rows = rewarded.map { p ->
+                        FunnelRow(
+                            label = placementLabel(p.placement),
+                            requested = p.requested,
+                            earned = p.earned,
+                            note = if (p.requested > 0) Console.percent(p.earned.toDouble() / p.requested) else null
                         )
-                    }
-                }
-                items(state.placements, key = { it.placement }) { row ->
-                    RaisedCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(placementLabel(row.placement), style = MaterialTheme.typography.titleSmall)
-                            val detail = if (row.requested > 0 || row.shown == 0L) {
-                                val rate = if (row.requested > 0) (row.earned * 100 / row.requested).toInt() else 0
-                                stringResource(
-                                    R.string.stats_ad_rewarded,
-                                    row.requested, row.earned, rate, row.skipped, row.unavailable
-                                )
-                            } else {
-                                stringResource(R.string.stats_ad_interstitial, row.shown)
-                            }
-                            Text(
-                                text = detail,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                    },
+                    firstLabel = "İstek",
+                    secondLabel = "İzlendi"
+                )
+            }
+        }
+        val shown = state.placements.filter { it.shown > 0 }
+        if (shown.isNotEmpty()) {
+            item {
+                ConsoleCard(Modifier.fillMaxWidth()) {
+                    SectionHeader("Geçiş reklamları", subtitle = "Ekrana gelen")
+                    shown.forEach { p ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                            Text(placementLabel(p.placement), style = Console.Body, modifier = Modifier.weight(1f))
+                            Text(Console.compact(p.shown.toDouble()), style = Console.Subtitle)
                         }
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun StatLine(label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
-        Text(value, style = MaterialTheme.typography.titleSmall)
     }
 }
 
 /** Developer-facing names for the placement ids AdManager's call sites pass. */
-private fun placementLabel(placement: String): String = when (placement) {
+internal fun placementLabel(placement: String): String = when (placement) {
     "chest_speedup" -> "Sandık hızlandırma"
     "drawing_time_bonus" -> "Çizim süre bonusu"
     "drawing_time_bonus_online" -> "Çizim süre bonusu (online)"
