@@ -174,7 +174,9 @@ class DrawingReportsViewModel @Inject constructor(
     private val moderationRepository: ModerationRepository,
     private val bugReportRepository: BugReportRepository,
     private val globalLeagueRepository: GlobalLeagueRepository,
-    private val xpEventRepository: XpEventRepository
+    private val xpEventRepository: XpEventRepository,
+    /** The video studio's memory statistics: every round this panel loads is counted there once. */
+    private val memoryArchive: com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemoryArchive
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DrawingReportsUiState())
@@ -323,6 +325,11 @@ class DrawingReportsViewModel @Inject constructor(
                 else ->
                     moderationRepository.pendingRuns(Moderation.REVIEW_PAGE_SIZE, current.cursor)
             }
+            result.getOrNull()?.let { page -> archive(page.runs.map { run ->
+                com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.ArchiveRun(
+                    run.id, com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemorySource.Match, run.items
+                )
+            }) }
             update(tab) { list ->
                 result.fold(
                     onSuccess = { list.appending(it) },
@@ -523,11 +530,22 @@ class DrawingReportsViewModel @Inject constructor(
         }
     }
 
+    private fun archive(runs: List<com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.ArchiveRun>) {
+        if (runs.isEmpty()) return
+        viewModelScope.launch { runCatching { memoryArchive.ingest(runs) } }
+    }
+
     private fun loadDailyChallengeQueue() {
         if (_uiState.value.dailyChallengeLoading) return
         _uiState.value = _uiState.value.copy(dailyChallengeLoading = true)
         viewModelScope.launch {
             val result = moderationRepository.pendingDailyChallenges(DAILY_CHALLENGE_SHOWN)
+            // daily attempts are deleted once reviewed: this is the moment their numbers can still be kept
+            result.getOrNull()?.let { list -> archive(list.map { d ->
+                com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.ArchiveRun(
+                    d.id, com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemorySource.Daily, d.items
+                )
+            }) }
             _uiState.value = _uiState.value.copy(
                 dailyChallengeQueue = result.getOrNull().orEmpty(),
                 dailyChallengeLoading = false,
