@@ -924,6 +924,11 @@
     <string name="error_room_listener_failed">Lost connection to the room. Reconnecting…</string>
     <!-- Account deletion (in-app route required by Play policy) -->
     <string name="account_delete_action">Delete my account and data</string>
+    <string name="account_feature_consent">Feature me in Karalak videos</string>
+    <string name="account_feature_consent_title">Appear in Karalak videos?</string>
+    <string name="account_feature_consent_message">Your drawings, your username (now: %1$s) and your level may appear in Karalak\'s TikTok, Instagram and YouTube videos. Your email and photo are never shown. You can turn this off here at any time; new videos will then leave you out.</string>
+    <string name="account_feature_consent_confirm">Yes</string>
+    <string name="account_feature_consent_cancel">Not now</string>
     <string name="account_delete_title">Delete your account?</string>
     <string name="account_delete_message">Your level, XP, achievements, level progress, friends list and cloud backup will be permanently deleted. This cannot be undone.</string>
     <string name="account_delete_confirm">Yes, delete</string>

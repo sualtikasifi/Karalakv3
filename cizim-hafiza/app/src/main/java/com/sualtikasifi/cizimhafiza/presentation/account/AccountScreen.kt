@@ -9,6 +9,9 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -371,11 +374,43 @@ fun AccountScreen(
             }
         }
 
+        // ---- Videolarda öne çık ---------------------------------------------------------------------------------
+        // Off until the player turns it on (and agrees to the dialog below saying what will be shown).
+        val featureConsent by viewModel.featureConsent.collectAsState()
+        Row(
+            box(120f, 1484f, 720f, 1562f)
+                .clip(RoundedCornerShape(50))
+                .background(Color(0xFFFFF8EA))
+                .border((3f * us).dp, if (featureConsent) Color(0xFFF26A1B) else Color(0xFFC9A46A), RoundedCornerShape(50))
+                .toggleable(
+                    value = featureConsent,
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    role = Role.Switch,
+                    onValueChange = viewModel::setFeatureConsent
+                )
+                .padding(start = (22f * us).dp, end = (16f * us).dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Filled.Videocam, contentDescription = null, tint = Color(0xFFF26A1B), modifier = Modifier.size((40f * us).dp))
+            Spacer(Modifier.size((12f * us).dp))
+            FitText(
+                text = stringResource(R.string.account_feature_consent),
+                style = PaintedStyle(color = Color(0xFF4A2A12), fontSize = fs(29f), textAlign = TextAlign.Start),
+                maxLines = 1,
+                minScale = 0.55f,
+                contentAlignment = Alignment.CenterStart,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(Modifier.size((10f * us).dp))
+            com.sualtikasifi.cizimhafiza.presentation.settings.SceneSwitch(featureConsent, Modifier.size((96f * us).dp, (52f * us).dp))
+        }
+
         // ---- Delete --------------------------------------------------------------------------------------------
         // Offered whether or not a Google account is signed in: an anonymous player still has a uid with a profile, a
         // friends list and a league entry under it, and Play's requirement is about the data, not about how the
         // account was created.
-        Box(box(120f, 1490f, 720f, 1570f), contentAlignment = Alignment.Center) {
+        Box(box(120f, 1584f, 720f, 1660f), contentAlignment = Alignment.Center) {
             if (uiState.isDeleting) {
                 CircularProgressIndicator(modifier = Modifier.size(32.dp))
             } else {
@@ -412,7 +447,7 @@ fun AccountScreen(
                 style = PaintedStyle(color = if (note.first != null) AppTheme.tokens.success else MaterialTheme.colorScheme.error, fontSize = fs(30f), textAlign = TextAlign.Center),
                 maxLines = 2,
                 minScale = 0.6f,
-                modifier = box(60f, 1590f, 780f, 1670f)
+                modifier = box(60f, 1680f, 780f, 1760f)
                     .clip(RoundedCornerShape(20.dp))
                     .background(Color(0xF2FFF6E4))
                     .padding(horizontal = 10.dp)
@@ -430,6 +465,17 @@ fun AccountScreen(
             dismissText = stringResource(R.string.account_sign_out_cancel),
             onConfirm = viewModel::signOut,
             onDismiss = viewModel::dismissSignOutPrompt
+        )
+    }
+
+    if (uiState.showFeatureConsentPrompt) {
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            title = stringResource(R.string.account_feature_consent_title),
+            message = stringResource(R.string.account_feature_consent_message, uiState.nickname.ifBlank { "Oyuncu" }),
+            confirmText = stringResource(R.string.account_feature_consent_confirm),
+            dismissText = stringResource(R.string.account_feature_consent_cancel),
+            onConfirm = viewModel::confirmFeatureConsent,
+            onDismiss = viewModel::dismissFeatureConsentPrompt
         )
     }
 

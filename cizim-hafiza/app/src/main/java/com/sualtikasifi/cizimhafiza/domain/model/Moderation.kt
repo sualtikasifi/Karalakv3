@@ -176,3 +176,14 @@ object Moderation {
         return xp * m to gold * m
     }
 }
+
+/**
+ * A player who turned on "Videolarda öne çık" (users/{uid}.featureConsent), as the video studio needs them: the name
+ * and level shown on their tile, and their frame. Their photo is never used.
+ */
+data class FeaturedPlayer(
+    val uid: String,
+    val nickname: String,
+    val level: Int,
+    val frameId: String
+)

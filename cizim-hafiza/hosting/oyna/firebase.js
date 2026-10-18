@@ -231,6 +231,11 @@ export async function signOutAccount() {
 
 // ================= Friends (same documents and rules as FriendRepositoryImpl) =================
 export async function myUid() { return (await init()).auth.currentUser.uid; }
+/** "Videolarda öne çık": the player's yes or no on their public profile, where the app's video studio looks (same field as the app). */
+export async function publishFeatureConsent(consent) {
+  const { fs, db, auth } = await init();
+  await fs.setDoc(fs.doc(db, "users", auth.currentUser.uid), { featureConsent: !!consent }, { merge: true });
+}
 export async function ensureFriendCode(nickname) {
   const { fs, db, auth } = await init(), uid = auth.currentUser.uid;
   const me = await fs.getDoc(fs.doc(db, "users", uid));

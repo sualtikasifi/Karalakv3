@@ -59,6 +59,8 @@ data class AccountUiState(
     val message: UiText? = null,
     val errorMessage: UiText? = null,
     val showSignOutPrompt: Boolean = false,
+    /** Asks before "Videolarda öne çık" is turned on, saying exactly what will be shown. */
+    val showFeatureConsentPrompt: Boolean = false,
     val showDeletePrompt: Boolean = false,
     /** The second, separate confirmation: deleting an account is irreversible, and one stray tap must not be enough. */
     val showDeleteFinalPrompt: Boolean = false,
@@ -333,6 +335,22 @@ class AccountViewModel @Inject constructor(
     }
 
     fun promptSignOut() { _actionState.value = _actionState.value.copy(showSignOutPrompt = true) }
+
+    /** Whether the player agreed to appear in Karalak's videos; see FeatureConsentPublisher. */
+    val featureConsent: StateFlow<Boolean> = settingsRepository.featureConsent
+
+    /** Turning it on asks first; turning it off takes effect at once. */
+    fun setFeatureConsent(on: Boolean) {
+        if (on) _actionState.value = _actionState.value.copy(showFeatureConsentPrompt = true)
+        else settingsRepository.setFeatureConsent(false)
+    }
+
+    fun confirmFeatureConsent() {
+        settingsRepository.setFeatureConsent(true)
+        _actionState.value = _actionState.value.copy(showFeatureConsentPrompt = false)
+    }
+
+    fun dismissFeatureConsentPrompt() { _actionState.value = _actionState.value.copy(showFeatureConsentPrompt = false) }
 
     fun dismissSignOutPrompt() { _actionState.value = _actionState.value.copy(showSignOutPrompt = false) }
 

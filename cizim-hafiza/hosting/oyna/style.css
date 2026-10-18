@@ -218,6 +218,11 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .gbtn svg{width:calc(var(--u)*56);height:calc(var(--u)*56)}
 #ak-out span{font-size:calc(var(--u)*52)}
 .delbtn{background:#fff6ee;border:calc(var(--u)*4) solid #d63a2e;border-radius:99px;color:#d63a2e;font-size:calc(var(--u)*31)}
+.fcbtn{display:flex;align-items:center;gap:calc(var(--u)*12);background:#fff8ea;border:calc(var(--u)*3) solid #c9a46a;border-radius:99px;color:#4a2a12;font-size:calc(var(--u)*29);font-weight:700;padding:0 calc(var(--u)*16) 0 calc(var(--u)*26);text-align:left}
+.fcbtn.on{border-color:#f26a1b}.fcbtn span{flex:1;min-width:0;white-space:nowrap;overflow:hidden}
+.fcbtn .sw{flex:none;position:relative;width:calc(var(--u)*96);height:calc(var(--u)*52);border-radius:99px;background:linear-gradient(#cfc6b8,#b4aa9b);border:2px solid #8f8576;box-sizing:border-box}
+.fcbtn .sw::after{content:"";position:absolute;top:calc(var(--u)*4);left:calc(var(--u)*4);width:calc(var(--u)*40);height:calc(var(--u)*40);border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:left .18s}
+.fcbtn.on .sw{background:linear-gradient(#ff9a3c,#f26a1b);border-color:#c4500f}.fcbtn.on .sw::after{left:calc(100% - var(--u)*44)}
 .txt.capmsg{background:#fff6e4f2;border-radius:20px;font-size:calc(var(--u)*30);color:#14602a;padding:0 calc(var(--u)*14)}
 .txt.sm2{white-space:normal;font-size:calc(var(--u)*23)}
 .ak-stat small{font-size:calc(var(--u)*21)}

@@ -193,6 +193,11 @@ class SettingsRepository @Inject constructor(
     private val _notificationsEnabled = MutableStateFlow(prefs.getBoolean(KEY_NOTIFICATIONS, true))
     val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
 
+    // "Videolarda öne çık": the player agrees that their drawings and name may appear in Karalak's social media videos.
+    // Off until they turn it on; belongs to the account (cleared with it), see FeatureConsentPublisher.
+    private val _featureConsent = MutableStateFlow(prefs.getBoolean(KEY_FEATURE_CONSENT, false))
+    val featureConsent: StateFlow<Boolean> = _featureConsent.asStateFlow()
+
     // Streak bookkeeping for the reminder worker. Not exposed as StateFlow —
     // only ever read by the background worker, never observed by the UI.
     val lastPlayedEpochDay: Long get() = prefs.getLong(KEY_LAST_PLAYED_EPOCH_DAY, -1L)
@@ -796,6 +801,7 @@ class SettingsRepository @Inject constructor(
         _nicknameRenameUsed.value = false
         _usernameOfferPending.value = false
         _avatarSource.value = ""
+        _featureConsent.value = false
         _selectedAvatarFrameId.value = AvatarFrame.DEFAULT.name
         _selectedPenSkinId.value = PenSkin.DEFAULT.name
         _periodXp.value = 0
@@ -841,6 +847,8 @@ class SettingsRepository @Inject constructor(
         remove(KEY_LAST_REWARD_CHECK)
         remove(KEY_LAST_PENALTY_CHECK)
         remove(KEY_AVATAR_SOURCE)
+        // Agreeing to appear in videos was this person's decision, not the next account's.
+        remove(KEY_FEATURE_CONSENT)
         putString(KEY_SELECTED_AVATAR_FRAME, AvatarFrame.DEFAULT.name)
         putString(KEY_SELECTED_PEN_SKIN, PenSkin.DEFAULT.name)
         // The league standing is this player's, not the phone's —
@@ -976,6 +984,16 @@ class SettingsRepository @Inject constructor(
         prefs.edit { putBoolean(KEY_NOTIFICATIONS, enabled) }
         _notificationsEnabled.value = enabled
     }
+
+    fun setFeatureConsent(on: Boolean) {
+        prefs.edit { putBoolean(KEY_FEATURE_CONSENT, on) }
+        _featureConsent.value = on
+    }
+
+    /** "uid|true" or "uid|false": what FeatureConsentPublisher last wrote to which profile. */
+    var publishedFeatureConsent: String?
+        get() = prefs.getString(KEY_PUBLISHED_FEATURE_CONSENT, null)
+        set(value) = prefs.edit { putString(KEY_PUBLISHED_FEATURE_CONSENT, value) }
 
     /**
      * The last day the daily reminder actually posted a notification.
@@ -1174,6 +1192,8 @@ class SettingsRepository @Inject constructor(
         const val KEY_BEST_STREAK = "best_streak"
         const val KEY_TUTORIAL_COMPLETED = "tutorial_completed"
         const val KEY_NOTIFICATIONS = "notifications_enabled"
+        const val KEY_FEATURE_CONSENT = "feature_consent"
+        const val KEY_PUBLISHED_FEATURE_CONSENT = "published_feature_consent"
         const val KEY_LAST_PLAYED_EPOCH_DAY = "last_played_epoch_day"
         const val KEY_LAST_QUICK_MATCH_EPOCH_DAY = "last_quick_match_epoch_day"
         const val KEY_GOLD_BALANCE = "gold_balance"

@@ -268,6 +268,17 @@ class ModerationRepositoryImpl @Inject constructor(
         Unit
     }
 
+    override suspend fun featuredPlayers(limit: Int): Result<List<com.sualtikasifi.cizimhafiza.domain.model.FeaturedPlayer>> = runCatching {
+        firestore.collection("users").whereEqualTo("featureConsent", true).limit(limit.toLong()).get().await().documents.map { d ->
+            com.sualtikasifi.cizimhafiza.domain.model.FeaturedPlayer(
+                uid = d.id,
+                nickname = d.getString("nickname").orEmpty().trim().ifBlank { "Oyuncu" },
+                level = (d.getLong("level") ?: 1L).toInt().coerceAtLeast(1),
+                frameId = d.getString("frameId").orEmpty()
+            )
+        }
+    }
+
     override suspend fun pendingDailyChallenges(limit: Int): Result<List<PendingDailyChallenge>> = runCatching {
         pendingDailyChallenges
             .orderBy("createdAt", Query.Direction.ASCENDING)

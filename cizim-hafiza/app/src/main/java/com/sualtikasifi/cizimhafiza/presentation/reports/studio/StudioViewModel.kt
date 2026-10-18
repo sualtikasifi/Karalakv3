@@ -88,6 +88,12 @@ enum class StudioFormat(val title: String, val blurb: String) {
     RealLife("Gerçek Olsaydı", "Çizimler gerçek hayata dönüşüyor")
 }
 
+/** Whose drawings "Karalak Bilir mi?" uses: this phone's own, or a player's who agreed to appear in videos. */
+enum class GuessSource { Mine, Players }
+
+/** A player who turned on "Videolarda öne çık", with their drawings from the reviewed Quick Match pool. */
+data class FeaturedRuns(val player: com.sualtikasifi.cizimhafiza.domain.model.FeaturedPlayer, val drawings: List<StudioDrawing>)
+
 /** Which spoken line of the script an edit is about. */
 sealed interface LineRef {
     data object Intro : LineRef
@@ -139,7 +145,13 @@ class RealShare(val file: File, val prompt: String)
 data class StudioState(
     val format: StudioFormat = StudioFormat.Guess,
     val loading: Boolean = true,
+    /** This phone's own drawings. */
     val drawings: List<StudioDrawing> = emptyList(),
+    val source: GuessSource = GuessSource.Mine,
+    val featured: List<FeaturedRuns> = emptyList(),
+    val featuredLoading: Boolean = false,
+    val featuredStatus: String? = null,
+    val featuredUid: String? = null,
     /** Chosen drawings, in the order they will play. */
     val selected: List<Long> = emptyList(),
     /** Off: the right-hand tile says "Oyuncu" with the mascot picture instead of this account's name and photo. */
@@ -170,7 +182,9 @@ data class StudioState(
     val memory: MemoryUi = MemoryUi(),
     val real: RealUi = RealUi()
 ) {
-    val chosen: List<StudioDrawing> get() = selected.mapNotNull { id -> drawings.find { it.id == id } }
+    /** The drawings on offer: this phone's, or the chosen featured player's. */
+    val pool: List<StudioDrawing> get() = if (source == GuessSource.Mine) drawings else featured.find { it.player.uid == featuredUid }?.drawings.orEmpty()
+    val chosen: List<StudioDrawing> get() = selected.mapNotNull { id -> pool.find { it.id == id } }
     val canWrite: Boolean get() = selected.isNotEmpty() && !writing
     val ready: Boolean get() = !rendering && when (format) {
         StudioFormat.Guess -> script != null
@@ -186,8 +200,8 @@ private const val MAX_DRAWINGS = 5
  * The video studio, in three formats:
  *
  * - "Karalak Bilir mi?": Karalak watches the player's drawings build up and guesses out loud, on
- *   what looks like a video call. Only this phone's own drawings are offered — they are the
- *   maintainer's to post.
+ *   what looks like a video call. The drawings are this phone's own, or those of a player who
+ *   turned on "Videolarda öne çık" (reviewed pool rounds only, name and level but never a photo).
  * - "Hafıza Tuzağı": how many could not recognise their own drawing of a word, from the anonymous
  *   archive the panel keeps.
  * - "Gerçek Olsaydı": quick drawings of one word from that archive with Karalak's jokes, then some
@@ -263,7 +277,7 @@ class StudioViewModel @Inject constructor(
             }
             ownCard = cards.first
             anonymousCard = cards.second
-            _state.update { it.copy(player = if (it.showName) cards.first else cards.second) }
+            _state.update { it.copy(player = if (it.source == GuessSource.Players) it.player else if (it.showName) cards.first else cards.second) }
             refreshPreview()
         }
     }
@@ -305,6 +319,88 @@ class StudioViewModel @Inject constructor(
             s.copy(selected = next, script = null, video = null, renderError = null)
         }
         refreshPreview()
+    }
+
+    /** Switches between this phone's drawings and featured players'; a new source starts a new script. */
+    fun setSource(source: GuessSource) {
+        if (_state.value.source == source) return
+        _state.update {
+            it.copy(
+                source = source, selected = emptyList(), script = null, video = null, renderError = null,
+                player = if (source == GuessSource.Mine) (if (it.showName) ownCard else anonymousCard) else null,
+                featuredUid = if (source == GuessSource.Mine) it.featuredUid else null
+            )
+        }
+        if (source == GuessSource.Players && _state.value.featured.isEmpty()) loadFeatured()
+        refreshPreview()
+    }
+
+    /**
+     * Finds the players who agreed to appear in videos, and their drawings in the reviewed Quick Match pool (only
+     * reviewed rounds: nothing a reviewer has not looked at goes into a video).
+     */
+    fun loadFeatured() {
+        if (_state.value.featuredLoading) return
+        _state.update { it.copy(featuredLoading = true, featuredStatus = "İzin veren oyuncular aranıyor…") }
+        viewModelScope.launch {
+            val outcome = runCatching {
+                val players = moderation.featuredPlayers().getOrThrow().associateBy { it.uid }
+                if (players.isEmpty()) return@runCatching emptyList<FeaturedRuns>()
+                val byUid = LinkedHashMap<String, MutableList<StudioDrawing>>()
+                // negative, so they never meet this phone's own (positive Room ids); counted, so no two are alike
+                var nextId = -1L
+                var cursor: Long? = null
+                var read = 0
+                for (page in 0 until FEATURED_POOL_PAGES) {
+                    val p = moderation.poolRuns(SCAN_PAGE, cursor).getOrThrow()
+                    read += p.runs.size
+                    p.runs.filter { it.uid in players }.forEach { run ->
+                        val list = byUid.getOrPut(run.uid) { mutableListOf() }
+                        run.items.forEach { item ->
+                            val strokes = item.strokes.filter { it.isNotEmpty() }
+                            if (strokes.isNotEmpty() && item.word.isNotBlank()) {
+                                list += StudioDrawing(nextId--, item.word, "", strokes, item.isCorrect)
+                            }
+                        }
+                    }
+                    _state.update { it.copy(featuredStatus = "${players.size} oyuncu izin vermiş · havuzda $read tur okundu") }
+                    if (p.endReached || p.nextCursor == null) break
+                    cursor = p.nextCursor
+                }
+                byUid.mapNotNull { (uid, list) -> players[uid]?.let { FeaturedRuns(it, list.take(MAX_FEATURED_DRAWINGS)) } }
+                    .sortedByDescending { it.drawings.size }
+            }
+            _state.update {
+                it.copy(
+                    featuredLoading = false,
+                    featured = outcome.getOrDefault(it.featured),
+                    // a new search numbers the drawings afresh, so an old selection would point at others
+                    selected = if (outcome.isSuccess && it.source == GuessSource.Players) emptyList() else it.selected,
+                    script = if (outcome.isSuccess && it.source == GuessSource.Players) null else it.script,
+                    featuredStatus = outcome.fold(
+                        onSuccess = { list -> if (list.isEmpty()) "Henüz havuzda çizimi olan, izin vermiş oyuncu yok." else "${list.size} oyuncu · ${list.sumOf { f -> f.drawings.size }} çizim" },
+                        onFailure = { e -> "Okunamadı: ${e.message}" }
+                    )
+                )
+            }
+        }
+    }
+
+    /** Opens one featured player: their drawings, and their tile with their name, level and frame — never a photo. */
+    fun selectFeatured(uid: String) {
+        val f = _state.value.featured.find { it.player.uid == uid } ?: return
+        _state.update { it.copy(featuredUid = uid, selected = emptyList(), script = null, video = null, player = null) }
+        viewModelScope.launch {
+            val card = withContext(Dispatchers.IO) {
+                val level = f.player.level
+                val frame = AvatarFrame.resolve(f.player.frameId, level)
+                val frameBitmap = runCatching { BitmapFactory.decodeResource(context.resources, frame.drawableRes) }.getOrNull()
+                val dino = runCatching { BitmapFactory.decodeResource(context.resources, R.drawable.avatar_dino) }.getOrNull()
+                PlayerCard(f.player.nickname, level, frameBitmap, frame.faceDiameterFraction, frame.faceOffsetXFraction, frame.faceOffsetYFraction, dino)
+            }
+            _state.update { if (it.featuredUid == uid) it.copy(player = card) else it }
+            refreshPreview()
+        }
     }
 
     fun setShowName(show: Boolean) {
@@ -908,7 +1004,7 @@ class StudioViewModel @Inject constructor(
             StudioFormat.Guess -> {
                 val script = s.script ?: (if (preview) previewScript(s) else null) ?: return null
                 val player = s.player ?: return null
-                GuessRenderer(assetsOrLoad(), sp, script, s.drawings.associateBy { it.id }, player, voice)
+                GuessRenderer(assetsOrLoad(), sp, script, s.pool.associateBy { it.id }, player, voice)
             }
             StudioFormat.Memory -> {
                 val script = s.memory.script ?: return null
@@ -1071,6 +1167,9 @@ class StudioViewModel @Inject constructor(
         const val SCAN_POOL_PAGES = 120
         const val SCAN_QUEUE_PAGES = 20
         const val SCAN_DAILY = 500
+        /** Featured players' drawings are looked for in this many pages of the pool (newest first). */
+        const val FEATURED_POOL_PAGES = 40
+        const val MAX_FEATURED_DRAWINGS = 60
         /** "Gerçek Olsaydı": a word needs this many kept drawings, the run this many, and this many turn real. */
         const val REAL_MIN_SAMPLES = 3
         const val MAX_ROASTS = 5

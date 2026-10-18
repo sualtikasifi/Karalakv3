@@ -99,6 +99,12 @@ interface FriendRepository {
     suspend fun updatePublicNickname(nickname: String)
 
     /**
+     * Marks this player's public profile as agreeing — or no longer agreeing — to have their drawings and name shown
+     * in Karalak's social media videos (the developer panel's video studio offers only those who agreed).
+     */
+    suspend fun publishFeatureConsent(consent: Boolean)
+
+    /**
      * Publishes this device's weekly-league standing onto its own public
      * profile document, so friends can read it without a per-player
      * subcollection. Safe to call often — it is a single merged write.
