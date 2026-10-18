@@ -101,7 +101,7 @@ class MemoryArchive @Inject constructor(@ApplicationContext context: Context) {
                         keptRemembered = before.keptRemembered + if (keep && item.isCorrect) 1 else 0,
                         daily = before.daily + if (run.source == MemorySource.Daily) 1 else 0
                     )
-                    if (keep) newSamples.getOrPut(key) { mutableListOf() } += MemorySample("$runKey#$i", item.isCorrect, run.source, delay, item.strokes)
+                    if (keep) newSamples.getOrPut(key) { mutableListOf() } += MemorySample("$runKey#$i", item.isCorrect, run.source, delay.toInt(), item.strokes)
                 }
             }
             if (newIds.isNotEmpty()) {
