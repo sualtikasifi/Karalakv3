@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Debug builds only: draws frames of the studio's videos into PNG files (see RealPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.RealPreviewActivity"
+            android:exported="true" />
+    </application>
+</manifest>

@@ -40,6 +40,18 @@ class StudioAssets(context: Context) {
 
     /** The round brand badge; its corners are transparent, so it sits on the cream without a box. */
     val logo: Bitmap? = runCatching { BitmapFactory.decodeResource(context.resources, R.drawable.brand_logo) }.getOrNull()
+
+    private val resources = context.resources
+    private val pictures = HashMap<Int, Bitmap?>()
+
+    /** One of the game's own painted pictures (a scene, a frame, a sign), at its own size and read once. */
+    fun picture(@androidx.annotation.DrawableRes id: Int): Bitmap? = synchronized(pictures) {
+        pictures.getOrPut(id) {
+            runCatching {
+                BitmapFactory.decodeResource(resources, id, BitmapFactory.Options().apply { inScaled = false })
+            }.getOrNull()
+        }
+    }
 }
 
 /** The studio's colours: the game's own cream, ink and orange. */

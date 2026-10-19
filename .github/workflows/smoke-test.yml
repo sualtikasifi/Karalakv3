@@ -18,6 +18,7 @@ on:
         default: smoke.sh
         options:
           - smoke.sh
+          - realpreview.sh
           - runes.sh
           - frames.sh
           - pens.sh
