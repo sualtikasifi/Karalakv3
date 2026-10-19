@@ -88,6 +88,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.ElevenLabs
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceModel
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
@@ -442,6 +443,17 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
     }
     p.reveals.forEachIndexed { i, rv ->
         item(key = "rv-" + rv.sampleId) { RevealCard(i, rv, p, r.busy == rv.sampleId, r.busy != null, vm, context) }
+    }
+
+    item { Step("3", "Kartın yeri ve boyu") }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Text("Karalak kartının videodaki yerini ve boyunu ayarla; aşağıdaki önizleme anında değişir.", style = Console.Small)
+            LabeledSlider("Boyut", r.card.scale, CardLayout.MIN_SCALE..CardLayout.MAX_SCALE) { vm.setCard(r.card.copy(scale = it)) }
+            LabeledSlider("Sağa–sola", r.card.x, 0f..1f) { vm.setCard(r.card.copy(x = it)) }
+            LabeledSlider("Yukarı–aşağı", r.card.y, 0f..1f) { vm.setCard(r.card.copy(y = it)) }
+            SmallLink("Varsayılana dön") { vm.resetCard() }
+        }
     }
 }
 

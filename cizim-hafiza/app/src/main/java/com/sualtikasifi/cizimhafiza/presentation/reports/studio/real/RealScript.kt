@@ -78,6 +78,24 @@ data class RealProject(
     val shown: List<RealReveal> get() = reveals.filter { it.clip != null && drawing(it.sampleId) != null }
 }
 
+/**
+ * Where the Karalak card sits on the video and how big it is, set by hand in the panel. [scale] multiplies the
+ * default width (1 = 450 px of the 1080 px frame); [x] and [y] are where its left and top edges are, from 0 (flush
+ * with the left / top) to 1 (flush with the right / bottom), so it can never leave the frame whatever the size.
+ */
+data class CardLayout(val scale: Float = DEFAULT_SCALE, val x: Float = DEFAULT_X, val y: Float = DEFAULT_Y) {
+    companion object {
+        const val MIN_SCALE = 0.5f
+        const val MAX_SCALE = 1.6f
+        const val DEFAULT_SCALE = 1f
+        const val DEFAULT_X = 0.05f
+        const val DEFAULT_Y = 0.17f
+    }
+
+    /** The same layout with every value kept inside what the sliders allow. */
+    fun clamped() = CardLayout(scale.coerceIn(MIN_SCALE, MAX_SCALE), x.coerceIn(0f, 1f), y.coerceIn(0f, 1f))
+}
+
 enum class RealPhase { Clip }
 
 /** One stretch of the video: a clip, playing from [clipAtMs] for [clipMs]. */

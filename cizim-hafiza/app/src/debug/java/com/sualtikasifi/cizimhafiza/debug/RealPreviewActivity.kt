@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.os.Bundle
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioAssets
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipFrames
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
@@ -58,6 +59,15 @@ class RealPreviewActivity : Activity() {
             renderer.draw(canvas, t)
             File(out, "%02d_%s.png".format(i, name)).outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
+        // the card moved to the bottom right and made smaller, as the panel's sliders can
+        val small = RealRenderer(assets, project, clips = drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f, layout = CardLayout(0.7f, 0.95f, 0.62f))
+        canvas.drawColor(0xFF000000.toInt())
+        small.draw(canvas, 1_800L)
+        File(out, "90_layout_small.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        val big = RealRenderer(assets, project, clips = drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f, layout = CardLayout(1.5f, 0.5f, 0.5f))
+        canvas.drawColor(0xFF000000.toInt())
+        big.draw(canvas, 1_800L)
+        File(out, "91_layout_big.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
         frames.close()
     }
 

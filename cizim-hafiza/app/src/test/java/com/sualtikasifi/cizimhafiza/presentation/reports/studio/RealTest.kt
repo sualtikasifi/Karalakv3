@@ -107,6 +107,17 @@ class RealTest {
     }
 
     @Test
+    fun cardLayoutNeverLeavesWhatTheSlidersAllow() {
+        val wild = com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout(9f, -3f, 4f).clamped()
+        assertEquals(com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout.MAX_SCALE, wild.scale, 0f)
+        assertEquals(0f, wild.x, 0f)
+        assertEquals(1f, wild.y, 0f)
+        assertEquals(com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout.MIN_SCALE, com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout(0f).clamped().scale, 0f)
+        val d = com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout()
+        assertEquals(d, d.clamped())
+    }
+
+    @Test
     fun postTextEndsWithTheGooglePlayLinkOnceAndNeverTheWebsite() {
         val text = RealCopy.withStoreLink("Hangisi?\n\n#karalak")
         assertTrue(text.endsWith(RealCopy.STORE_URL))

@@ -24,7 +24,7 @@ import kotlin.math.min
  * Draws "Gerçek Olsaydı" in 1080×1920: the clips one after the other, each full frame with its own sound, and
  * over each, in the top left, the Karalak card (the game's wooden frame with its logo): the player's drawing in
  * the middle of it, the player's frame with the default picture in the round slot at the bottom and their name
- * (or "anonymous") beside it. A small "made with AI" note under the card. Plain cuts between clips, no voice,
+ * (or "anonymous") beside it. Its size and place are the [layout] set in the panel. Plain cuts between clips, no voice,
  * no subtitles. The right edge and the bottom band stay clear for the buttons and caption TikTok, Reels and
  * Shorts put there.
  */
@@ -35,7 +35,8 @@ class RealRenderer(
     private val clips: Map<String, ClipFrames>,
     private val clipFiles: Map<String, File>,
     /** How loud the clips' own sound is. */
-    private val clipGain: Float
+    private val clipGain: Float,
+    layout: CardLayout = CardLayout()
 ) : VoicedVideo {
     private val shown = project.shown
     val events: List<RealEvent> = RealTimeline.build(shown)
@@ -48,8 +49,6 @@ class RealRenderer(
     private val text = TextPainter()
     /** For pictures only: its colour is never set, so a picture is always drawn at full strength. */
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-    /** For flat shapes. */
-    private val shape = Paint(Paint.ANTI_ALIAS_FLAG)
     private val ink = StrokeReplay.inkPaint(0xFF1B1B22.toInt())
     private val replays = HashMap<String, StrokeReplay>()
     private val src = Rect()
@@ -57,8 +56,14 @@ class RealRenderer(
     private val dino = assets.picture(R.drawable.avatar_dino)
 
     // the card is 941 x 1672 (real_card): everything below is placed in its own pixels, then scaled
-    private val cardBox = RectF(34f, 190f, 34f + CARD_W, 190f + CARD_W * 1672f / 941f)
-    private val k = CARD_W / 941f
+    private val lay = layout.clamped()
+    private val cardW = CARD_W * lay.scale
+    private val cardH = cardW * 1672f / 941f
+    private val cardBox = RectF(
+        lay.x * (W - cardW), lay.y * (H - cardH),
+        lay.x * (W - cardW) + cardW, lay.y * (H - cardH) + cardH
+    )
+    private val k = cardW / 941f
     /** The parchment in the middle of the card, where the drawing goes. */
     private val parchment = RectF(122f, 435f, 816f, 1322f).let { r -> RectF(x(r.left), y(r.top), x(r.right), y(r.bottom)) }
     /** The round slot at the bottom left (centre and diameter), for the frame and picture. */
@@ -67,7 +72,6 @@ class RealRenderer(
     private val slotD = 168f * k
     /** The dark plate beside it, for the name. */
     private val plate = RectF(305f, 1359f, 834f, 1488f).let { r -> RectF(x(r.left), y(r.top), x(r.right), y(r.bottom)) }
-    private val labelBox = RectF(34f, cardBox.bottom + 22f, 34f + 470f, cardBox.bottom + 22f + 52f)
 
     private fun x(tx: Float) = cardBox.left + tx * k
     private fun y(ty: Float) = cardBox.top + ty * k
@@ -83,7 +87,6 @@ class RealRenderer(
         val drawing = project.drawing(reveal.sampleId) ?: return
         val local = t - e.startMs
         drawCard(canvas, drawing, Ease.backOut(min(1f, local / 450f)))
-        drawLabel(canvas, Ease.out(min(1f, (local - 300L) / 400f)))
     }
 
     /** The Karalak card with the player's drawing, frame, picture and name on it; it pops in from its top left corner. */
@@ -92,10 +95,11 @@ class RealRenderer(
         canvas.save()
         canvas.scale(a, a, cardBox.left, cardBox.top)
         canvas.drawBitmap(bmp, null, cardBox, fill)
-        replay(d.id)?.draw(canvas, RectF(parchment.left + 8f, parchment.top + 8f, parchment.right - 8f, parchment.bottom - 8f), 1f, ink, 0.03f)
+        val m = 8f * lay.scale
+        replay(d.id)?.draw(canvas, RectF(parchment.left + m, parchment.top + m, parchment.right - m, parchment.bottom - m), 1f, ink, 0.03f)
         drawAvatar(canvas, d)
         val name = if (d.named) "@${d.nickname}" else "Anonim oyuncu"
-        text.draw(canvas, name, plate.centerX(), plate.centerY(), (plate.width() - 28f).toInt(), 38f, 1, assets.display, C.WHITE)
+        text.draw(canvas, name, plate.centerX(), plate.centerY(), (plate.width() - 28f * lay.scale).toInt(), 38f * lay.scale, 1, assets.display, C.WHITE)
         canvas.restore()
     }
 
@@ -119,14 +123,6 @@ class RealRenderer(
             canvas.drawCircle(fx, fy, faceD / 2f, paint)
         }
         frameBmp?.let { canvas.drawBitmap(it, null, RectF(slotCx - size / 2f, slotCy - size / 2f, slotCx + size / 2f, slotCy + size / 2f), fill) }
-    }
-
-    /** The "made with AI" note platforms ask for, small, under the card. */
-    private fun drawLabel(canvas: Canvas, a: Float) {
-        if (a <= 0f) return
-        shape.color = ((0x80 * a).toInt() shl 24) or 0x101014
-        canvas.drawRoundRect(labelBox, 26f, 26f, shape)
-        text.draw(canvas, "Yapay zekâ ile canlandırıldı", labelBox.centerX(), labelBox.centerY(), (labelBox.width() - 30).toInt(), 28f, 1, assets.body, C.WHITE, alpha = a)
     }
 
     /** Fills [dst] with [bmp], cropped to its shape. */
