@@ -279,11 +279,11 @@ class RealRenderer(
     /** The page dots, on the paper's wooden foot. */
     private fun dots(canvas: Canvas, n: Int, current: Int) {
         val y = paperBox.top + paperBox.height() * (1352f / 1431f)
-        val gap = 36f
+        val gap = 42f
         val startX = 540f - (n - 1) * gap / 2f
         for (i in 0 until n) {
             fill.color = if (i == current) C.ORANGE else 0xFFF6E3BC.toInt()
-            canvas.drawCircle(startX + i * gap, y, if (i == current) 12f else 8f, fill)
+            canvas.drawCircle(startX + i * gap, y, if (i == current) 15f else 11f, fill)
         }
     }
 
@@ -391,7 +391,8 @@ class RealRenderer(
         if (a < 0.6f) return
         canvas.save()
         canvas.translate(0f, (1f - a) * 60f)
-        mascot(canvas, RectF(190f, 470f, 890f, 1170f), e.line?.emotion ?: MascotEmotion.Point, speaking, level, t)
+        // the mascot picture ends at the chest, so the button is drawn over its foot
+        mascot(canvas, RectF(190f, 520f, 890f, 1235f), e.line?.emotion ?: MascotEmotion.Point, speaking, level, t)
         val cta = RectF(110f, 1160f, 970f, 1160f + 860f * 355f / 1115f)
         piece(canvas, button, cta, shadow = true)
         lettered(canvas, "karalak.com'da oyna", cta.centerX(), cta.centerY() - 4f, cta.width() * 0.66f, 62f, C.WHITE, 0xFF8A3A00.toInt(), 10f)
