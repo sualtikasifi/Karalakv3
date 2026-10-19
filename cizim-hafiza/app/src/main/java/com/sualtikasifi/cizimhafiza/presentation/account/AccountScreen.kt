@@ -288,8 +288,8 @@ fun AccountScreen(
         // ---- Account and backup --------------------------------------------------------------------------------
         // The painted sync disc at the strip's left is covered with the parchment, fading out at its edge.
         Box(
-            box(64f, 1048f, 176f, 1160f)
-                .background(Brush.radialGradient(0.62f to Color(0xFFFBF0D4), 1f to Color(0x00FBF0D4)), CircleShape)
+            box(52f, 1036f, 188f, 1172f)
+                .background(Brush.radialGradient(0.78f to Color(0xFFFBF0D4), 1f to Color(0x00FBF0D4)), CircleShape)
         )
         FitText(
             text = stringResource(R.string.account_section_account),

@@ -531,7 +531,10 @@ fun CizimHafizaNavGraph(
     }
 
         // A soft shade under the status bar so the white clock and battery read on any picture behind them.
-        com.sualtikasifi.cizimhafiza.presentation.common.StatusBarScrim(Modifier.align(Alignment.TopCenter))
+        com.sualtikasifi.cizimhafiza.presentation.common.StatusBarScrim(
+            Modifier.align(Alignment.TopCenter),
+            strong = backStackEntry?.destination?.route?.startsWith("game/") == true
+        )
 
         IncomingInviteBanner(
             invite = inviteState.invite,

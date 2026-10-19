@@ -200,9 +200,14 @@ private fun CoachOverlay(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
+                // The body takes whatever height the frame has left after the title and the button, and shrinks to fit it,
+                // so a long text never squeezes the button.
+                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                     text = body,
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(16.sp, 22.sp)
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(16.sp, 22.sp),
+                    maxLines = 10,
+                    minScale = 0.7f,
+                    modifier = Modifier.weight(1f, fill = false).fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(14.dp))
                 com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(

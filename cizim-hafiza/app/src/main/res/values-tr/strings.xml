@@ -562,8 +562,8 @@
     </string-array>
 
     <!-- Statistics screen -->
-    <string name="stats_rank_progress">%1$d XP · %2$s kademesine %3$d XP kaldı</string>
-    <string name="stats_rank_maxed">%1$d XP · En yüksek kademedesin!</string>
+    <string name="stats_rank_progress">%1$,d XP · %2$s kademesine %3$,d XP kaldı</string>
+    <string name="stats_rank_maxed">%1$,d XP · En yüksek kademedesin!</string>
 
     <!-- Level map ("Bölümler") -->
     <string name="menu_levels">Bölümler</string>
@@ -724,7 +724,7 @@
     <string name="account_stat_games">Oynanan oyun</string>
     <string name="account_stat_streak">En iyi seri (gün)</string>
     <string name="account_xp_progress">%1$d / %2$d XP</string>
-    <string name="account_xp_to_next">Sonraki seviyeye %1$d XP</string>
+    <string name="account_xp_to_next">Sonraki seviyeye %1$,d XP</string>
     <string name="account_xp_max">En üst seviyedesin</string>
     <string name="account_guest_hint">Google hesabını bağla: ilerlemen yedeklensin, başka bir telefonda da kaldığın yerden devam et.</string>
     <string name="account_danger_title">Tehlikeli bölge</string>
@@ -742,7 +742,7 @@
     <string name="league_reward_kind_frame">Özel çerçeve</string>
     <string name="league_prize_won_title">🏆 Geçen ay %1$d. oldun!</string>
     <string name="league_prize_won_body">Ödülün hesabına eklendi: %1$s. Ana menüden seçebilirsin.</string>
-    <string name="league_xp_format">%1$d XP</string>
+    <string name="league_xp_format">%1$,d XP</string>
     <string name="league_rank_format">%1$d.</string>
 
     <!-- Hesap: Google girişi + otomatik senkronizasyon -->
