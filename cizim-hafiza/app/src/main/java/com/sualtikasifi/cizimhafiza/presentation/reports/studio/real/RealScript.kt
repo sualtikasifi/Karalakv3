@@ -12,9 +12,10 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.min
 
 /**
- * One drawing of a player who allowed it, copied into the project so it survives the pool changing. Each carries
- * the [word] it was drawn for, the [seconds] the player had, and the player's [nickname] and [level], which the
- * video shows beside it.
+ * One drawing of the pool, copied into the project so it survives the pool changing. Each carries the [word] it was
+ * drawn for, the [seconds] the player had, and who drew it: [nickname] and [level] when the player allowed to be
+ * featured, otherwise [nickname] is empty and the video says "anonymous". The [frameId] and [level] pick the frame
+ * shown; the picture inside it is always the default one, never the player's own.
  */
 @Serializable
 data class RealDrawing(
@@ -23,10 +24,13 @@ data class RealDrawing(
     val word: String = "",
     val seconds: Int = 0,
     val nickname: String = "",
-    val level: Int = 0
-)
+    val level: Int = 0,
+    val frameId: String = ""
+) {
+    val named: Boolean get() = nickname.isNotBlank()
+}
 
-/** One of the latest drawings by players who allowed it, as the list shows it. */
+/** One of the pool's latest drawings, as the list shows it ([nickname] empty: the player did not allow their name). */
 @Serializable
 data class RecentDrawing(
     val id: String,
@@ -34,6 +38,7 @@ data class RecentDrawing(
     val seconds: Int,
     val nickname: String,
     val level: Int,
+    val frameId: String,
     val strokes: List<List<DrawingPoint>>
 )
 
@@ -58,8 +63,8 @@ data class RealReveal(
 
 /**
  * "Gerçek Olsaydı": a few drawings by different players, each turned into a realistic picture and a clip
- * with sound. The video is those clips one after the other, each with its drawing and its player over it,
- * and a short closing card that sends the viewer to the app.
+ * with sound. The video is those clips one after the other, each with its drawing, its player and the app's
+ * name and Google Play badge over it.
  */
 @Serializable
 data class RealProject(
@@ -73,9 +78,9 @@ data class RealProject(
     val shown: List<RealReveal> get() = reveals.filter { it.clip != null && drawing(it.sampleId) != null }
 }
 
-enum class RealPhase { Clip, End }
+enum class RealPhase { Clip }
 
-/** One stretch of the video: a clip (playing from [clipAtMs] for [clipMs]) or the closing card. */
+/** One stretch of the video: a clip, playing from [clipAtMs] for [clipMs]. */
 data class RealEvent(
     val phase: RealPhase,
     val index: Int,
@@ -92,7 +97,6 @@ object RealTimeline {
     /** Gemini clips are about eight seconds; anything longer is cut here. */
     const val CLIP_MAX = 10_000L
     private const val CLIP_MIN = 1_000L
-    const val END_MS = 3_000L
 
     fun build(shown: List<RealReveal>): List<RealEvent> {
         val out = mutableListOf<RealEvent>()
@@ -102,10 +106,10 @@ object RealTimeline {
             out += RealEvent(RealPhase.Clip, i, t, ms, clipAtMs = t, clipMs = ms)
             t += ms
         }
-        out += RealEvent(RealPhase.End, -1, t, END_MS)
         return out
     }
 
+    /** The stretch at [t]; the last one once the video is over. [events] is never empty (a video needs a clip). */
     fun at(events: List<RealEvent>, t: Long): RealEvent = events.firstOrNull { t < it.endMs } ?: events.last()
 
     fun totalMs(events: List<RealEvent>): Long = events.lastOrNull()?.endMs ?: 0L

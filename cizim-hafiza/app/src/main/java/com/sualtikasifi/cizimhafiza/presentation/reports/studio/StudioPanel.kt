@@ -385,8 +385,8 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text(
-                "“Videolarda öne çık” izni veren oyuncuların en son 100 çizimi; adı, seviyesi ve kelimesiyle videoda görünür. " +
-                    "Farklı kelimelerden 3 çizim seç.",
+                "Havuzdaki en son 100 çizim. “Videolarda öne çık” izni veren oyuncunun adı ve seviyesi videoda görünür; " +
+                    "izin vermeyen anonim kalır (yalnızca çerçevesi görünür, resmi hep varsayılan). Farklı kelimelerden 3 çizim seç.",
                 style = Console.Small
             )
             Spacer(Modifier.height(8.dp))
@@ -401,12 +401,12 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
     }
     // chosen ones the latest list no longer holds stay at the top, so they can still be taken out
     val gone = p?.drawings?.filter { d -> d.id in chosenIds && r.recent.none { it.id == d.id } }
-        ?.map { RecentDrawing(it.id, it.word, it.seconds, it.nickname, it.level, it.strokes) }.orEmpty()
+        ?.map { RecentDrawing(it.id, it.word, it.seconds, it.nickname, it.level, it.frameId, it.strokes) }.orEmpty()
     (gone + r.recent).chunked(3).forEach { row ->
         item(key = "rs-" + row.first().id) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { d ->
-                    RealThumb(d.strokes, "${d.word} · @${d.nickname}", chosenIds.indexOf(d.id), Modifier.weight(1f)) { vm.toggleReveal(d) }
+                    RealThumb(d.strokes, "${d.word} · " + if (d.nickname.isBlank()) "anonim" else "@${d.nickname}", chosenIds.indexOf(d.id), Modifier.weight(1f)) { vm.toggleReveal(d) }
                 }
                 repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
             }
@@ -467,7 +467,7 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
             Column(Modifier.weight(1f)) {
                 val d = project.drawing(rv.sampleId)
                 Text("Çizim ${index + 1} · ${d?.word.orEmpty()}", style = Console.Subtitle)
-                Text("@${d?.nickname.orEmpty()} · Sv. ${d?.level ?: 0}", style = Console.Small)
+                Text(if (d?.named == true) "@${d.nickname} · Sv. ${d.level}" else "Anonim oyuncu", style = Console.Small)
                 Text(
                     listOfNotNull(
                         if (rv.image != null) "görsel ✓" else "görsel bekleniyor",
@@ -640,7 +640,7 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
                     )
                     Text(
                         if (st.format == StudioFormat.Guess && st.script == null) "Örnek cümlelerle gösteriliyor; Karalak yazınca kendi cümleleri gelir."
-                        else if (st.format == StudioFormat.RealLife) "Videoların kendi sesi çalar; üstüne çizim, oyuncu bilgisi ve kapanış kartı gelir."
+                        else if (st.format == StudioFormat.RealLife) "Videoların kendi sesi çalar; üstüne çizim, oyuncu bilgisi, Karalak adı ve Google Play rozeti gelir."
                         else "Sesli videoda süreler sesin gerçek uzunluğuna göre ayarlanır.",
                         style = Console.Small, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
                     )

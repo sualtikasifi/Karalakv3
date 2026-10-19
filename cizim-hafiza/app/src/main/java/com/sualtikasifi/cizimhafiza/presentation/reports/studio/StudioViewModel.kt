@@ -699,28 +699,29 @@ class StudioViewModel @Inject constructor(
     }
 
     /**
-     * Reads the newest drawings of the reviewed pool again, only those of players who allowed to be featured:
-     * the latest [RECENT_MAX], newest round first and each round in play order, every one with its word, the
-     * seconds that word gives, and the player's name and level. What was read last stays when reading fails.
+     * Reads the newest drawings of the reviewed pool again: the latest [RECENT_MAX], newest round first and each
+     * round in play order, every one with its word, the seconds that word gives, and its player's level and
+     * frame. The name comes only for players who allowed to be featured; the others stay anonymous. What was
+     * read last stays when reading fails.
      */
     fun refreshRecent() {
         if (_state.value.real.loadingRecent) return
         updateReal { it.copy(loadingRecent = true, recentError = null) }
         viewModelScope.launch {
             val read = runCatching {
-                val players = moderation.featuredPlayers().getOrThrow().associateBy { it.uid }
-                if (players.isEmpty()) return@runCatching emptyList<RecentDrawing>()
+                // who allowed their name; failing to find out leaves everyone anonymous rather than naming anyone
+                val players = moderation.featuredPlayers().getOrDefault(emptyList()).associateBy { it.uid }
                 val out = mutableListOf<RecentDrawing>()
                 var cursor: Long? = null
-                for (page in 0 until FEATURED_POOL_PAGES) {
-                    val p = moderation.poolRuns(SCAN_PAGE, cursor).getOrThrow()
+                for (page in 0 until RECENT_PAGES) {
+                    val p = moderation.poolRuns(RECENT_PAGE, cursor).getOrThrow()
                     for (run in p.runs) {
-                        val player = players[run.uid] ?: continue
+                        val player = players[run.uid]
                         run.items.forEachIndexed { i, item ->
                             if (out.size < RECENT_MAX && item.strokes.isNotEmpty() && item.word.isNotBlank()) {
                                 val word = item.word.trim()
                                 val seconds = runCatching { wordDao.findByText(word) }.getOrNull()?.let { GameConstants.drawingDurationSeconds(it.difficulty) } ?: 0
-                                out += RecentDrawing("${run.id}#$i", word, seconds, player.nickname, player.level, item.strokes)
+                                out += RecentDrawing("${run.id}#$i", word, seconds, player?.nickname.orEmpty(), player?.level ?: run.level, player?.frameId.orEmpty(), item.strokes)
                             }
                         }
                     }
@@ -731,12 +732,7 @@ class StudioViewModel @Inject constructor(
             }
             read.onSuccess { list ->
                 withContext(Dispatchers.IO) { runCatching { realStore.saveRecent(list) } }
-                updateReal {
-                    it.copy(
-                        recent = list, loadingRecent = false,
-                        recentError = if (list.isEmpty()) "Havuzda, “Videolarda öne çık” izni veren oyuncuların çizimi yok." else null
-                    )
-                }
+                updateReal { it.copy(recent = list, loadingRecent = false, recentError = if (list.isEmpty()) "Havuzda çizim bulunamadı." else null) }
             }.onFailure { e ->
                 updateReal { it.copy(loadingRecent = false, recentError = "Okunamadı: ${e.message}") }
             }
@@ -767,7 +763,7 @@ class StudioViewModel @Inject constructor(
             if (has) proj.copy(reveals = proj.reveals.filterNot { it.sampleId == drawing.id }, drawings = proj.drawings.filterNot { it.id == drawing.id })
             else proj.copy(
                 reveals = proj.reveals + RealReveal(drawing.id),
-                drawings = proj.drawings + RealDrawing(drawing.id, drawing.strokes, drawing.word, drawing.seconds, drawing.nickname, drawing.level)
+                drawings = proj.drawings + RealDrawing(drawing.id, drawing.strokes, drawing.word, drawing.seconds, drawing.nickname, drawing.level, drawing.frameId)
             )
         }
         pruneRealMedia()
@@ -1401,8 +1397,10 @@ class StudioViewModel @Inject constructor(
         /** Featured players' drawings are looked for in this many pages of the pool (newest first). */
         const val FEATURED_POOL_PAGES = 40
         const val MAX_FEATURED_DRAWINGS = 60
-        /** "Gerçek Olsaydı": the latest drawings of players who allowed it shown, and how many go in one video. */
+        /** "Gerçek Olsaydı": the latest pool drawings shown (read 10 rounds at a time), and how many go in one video. */
         const val RECENT_MAX = 100
+        const val RECENT_PAGE = 10
+        const val RECENT_PAGES = 6
         const val MAX_REVEALS = 3
         /** The clips' own sound, a little under Karalak's voice. */
         const val CLIP_GAIN = 0.85f

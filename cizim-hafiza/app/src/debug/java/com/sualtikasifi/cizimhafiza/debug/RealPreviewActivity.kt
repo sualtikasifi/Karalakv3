@@ -8,7 +8,6 @@ import com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioAssets
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipFrames
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealPhase
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealRenderer
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
@@ -37,9 +36,9 @@ class RealPreviewActivity : Activity() {
         val frames = ClipFrames(clip, exact = false)
 
         val drawings = listOf(
-            RealDrawing("a", rocket(), "roket", 7, "SinanK_34", 41),
-            RealDrawing("b", spoon(), "bağlama", 7, "Zeynep", 12),
-            RealDrawing("c", cat(), "kedi", 5, "karalamaci_99", 128)
+            RealDrawing("a", rocket(), "roket", 7, "SinanK_34", 41, ""),
+            RealDrawing("b", spoon(), "bağlama", 7, "Zeynep", 12, ""),
+            RealDrawing("c", cat(), "kedi", 5, "", 28, "")
         )
         val project = RealProject(
             drawings = drawings,
@@ -48,8 +47,8 @@ class RealPreviewActivity : Activity() {
         val renderer = RealRenderer(assets, project, clips = drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f)
         val shots = buildList {
             renderer.events.forEach { e ->
-                if (e.phase == RealPhase.Clip) { add("clip${e.index}_start" to e.startMs + 120); add("clip${e.index}_mid" to e.startMs + 1_800) }
-                else add("end" to e.startMs + 1_500)
+                add("clip${e.index}_start" to e.startMs + 120)
+                add("clip${e.index}_mid" to e.startMs + 1_800)
             }
         }
         val bmp = Bitmap.createBitmap(RealRenderer.W, RealRenderer.H, Bitmap.Config.ARGB_8888)

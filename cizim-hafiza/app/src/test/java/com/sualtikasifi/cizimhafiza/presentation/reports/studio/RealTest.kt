@@ -35,25 +35,31 @@ class RealTest {
     }
 
     @Test
-    fun timelineIsTheClipsBackToBackThenTheClosingCard() {
+    fun timelineIsTheClipsBackToBackWithPlainCuts() {
         val shown = listOf(RealReveal("a", clip = "a.mp4", clipMs = 8_000), RealReveal("b", clip = "b.mp4", clipMs = 30_000), RealReveal("c", clip = "c.mp4", clipMs = 200))
         val events = RealTimeline.build(shown)
-        assertEquals(listOf(RealPhase.Clip, RealPhase.Clip, RealPhase.Clip, RealPhase.End), events.map { it.phase })
+        assertEquals(listOf(RealPhase.Clip, RealPhase.Clip, RealPhase.Clip), events.map { it.phase })
         events.zipWithNext().forEach { (x, y) -> assertEquals(x.endMs, y.startMs) }
         // each clip plays from its own start for its own length: a long one is cut, a tiny one gets a second
         assertEquals(8_000L, events[0].durationMs)
         assertEquals(RealTimeline.CLIP_MAX, events[1].durationMs)
         assertEquals(1_000L, events[2].durationMs)
-        events.take(3).forEach { assertEquals(it.startMs, it.clipAtMs); assertEquals(it.durationMs, it.clipMs) }
-        assertEquals(RealTimeline.END_MS, events.last().durationMs)
+        events.forEach { assertEquals(it.startMs, it.clipAtMs); assertEquals(it.durationMs, it.clipMs) }
+        assertEquals(0L, events.first().startMs)
         assertEquals(events.last().endMs, RealTimeline.totalMs(events))
         assertEquals(events.last(), RealTimeline.at(events, 10_000_000L))
     }
 
     @Test
-    fun noClipsStillLeavesTheClosingCard() {
-        val events = RealTimeline.build(emptyList())
-        assertEquals(listOf(RealPhase.End), events.map { it.phase })
+    fun noClipsMeansNoVideo() {
+        assertTrue(RealTimeline.build(emptyList()).isEmpty())
+        assertEquals(0L, RealTimeline.totalMs(emptyList()))
+    }
+
+    @Test
+    fun aPlayerWhoDidNotAllowTheirNameStaysAnonymous() {
+        assertTrue(drawing("a").named)
+        assertFalse(RealDrawing("b", emptyList(), "kedi", 5, "", 12, "").named)
     }
 
     @Test
