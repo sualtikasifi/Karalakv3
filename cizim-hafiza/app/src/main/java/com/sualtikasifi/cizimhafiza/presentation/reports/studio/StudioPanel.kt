@@ -57,6 +57,11 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.res.painterResource
+import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
 import androidx.compose.runtime.Composable
 import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
@@ -494,6 +499,7 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
             }
             if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = Console.Accent, strokeWidth = 2.dp)
         }
+        PlayerEditor(project.drawing(rv.sampleId), vm, anyBusy)
         Field("Kelime (İngilizce)", rv.wordEn, { vm.setRevealWordEn(rv.sampleId, it) }, lines = 1)
         Field("Çizimin şekli (İngilizce, görsel istemine eklenir)", rv.describe, { vm.setRevealDescribe(rv.sampleId, it) }, lines = 2)
         Field("Videodaki sahne (İngilizce, video istemine eklenir): kim gelip ne yapıyor?", rv.motion, { vm.setRevealMotion(rv.sampleId, it) }, lines = 4)
@@ -523,6 +529,45 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
         }
         if (rv.clip != null) SmallLink("Videoyu kaldır", Console.Critical) { vm.removeClip(rv.sampleId) }
     }
+}
+
+/**
+ * What the card says about the player, changeable by hand: the name (empty: "Anonim oyuncu"), the frame (any frame,
+ * whatever the player's level) and the picture in the round slot (from the gallery, or the default).
+ */
+@Composable
+private fun PlayerEditor(d: RealDrawing?, vm: StudioViewModel, anyBusy: Boolean) {
+    if (d == null) return
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let { vm.importPlayerPhoto(d.id, it) } }
+    Text("Kartta görünen oyuncu", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
+    Field("Kullanıcı adı (boş: Anonim oyuncu)", d.nickname, { vm.setPlayerName(d.id, it) })
+    Text("Çerçeve", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
+        item(key = "auto") {
+            FrameChoice(selected = d.frameId.isBlank(), onClick = { vm.setPlayerFrame(d.id, null) }) { Text("Oto", style = Console.Small) }
+        }
+        items(AvatarFrame.entries.filter { !it.retired }, key = { it.name }) { f ->
+            FrameChoice(selected = d.frameId == f.name, onClick = { vm.setPlayerFrame(d.id, f.name) }) {
+                Image(painterResource(f.drawableRes), contentDescription = f.name, modifier = Modifier.fillMaxSize().padding(2.dp))
+            }
+        }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+        ActionButton(Icons.Filled.Download, if (d.photo == null) "Profil fotoğrafı seç" else "Fotoğrafı değiştir", Console.Surface, Console.Ink, Modifier.weight(1.4f)) {
+            if (!anyBusy) photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        }
+        if (d.photo != null) ActionButton(Icons.Filled.Refresh, "Varsayılan", Console.Surface, Console.Critical, Modifier.weight(1f)) { vm.clearPlayerPhoto(d.id) }
+    }
+}
+
+@Composable
+private fun FrameChoice(selected: Boolean, onClick: () -> Unit, content: @Composable () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = if (selected) Console.AccentSoft else Console.Surface,
+        border = BorderStroke(if (selected) 2.dp else 1.dp, if (selected) Console.Accent else Console.Border),
+        modifier = Modifier.size(58.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick)
+    ) { Box(contentAlignment = Alignment.Center) { content() } }
 }
 
 @Composable

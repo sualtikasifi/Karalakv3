@@ -14,8 +14,9 @@ import kotlin.math.min
 /**
  * One drawing of the pool, copied into the project so it survives the pool changing. Each carries the [word] it was
  * drawn for, the [seconds] the player had, and who drew it: [nickname] and [level] when the player allowed to be
- * featured, otherwise [nickname] is empty and the video says "anonymous". The [frameId] and [level] pick the frame
- * shown; the picture inside it is always the default one, never the player's own.
+ * featured, otherwise [nickname] is empty and the video says "anonymous". The name, the [frameId] and the [photo]
+ * can all be changed by hand in the panel; the picture inside the frame is the default one unless a [photo] is set,
+ * and is never the player's own.
  */
 @Serializable
 data class RealDrawing(
@@ -25,7 +26,9 @@ data class RealDrawing(
     val seconds: Int = 0,
     val nickname: String = "",
     val level: Int = 0,
-    val frameId: String = ""
+    val frameId: String = "",
+    /** A picture picked by hand for the round slot (a file name in the project's media folder); null: the default picture. */
+    val photo: String? = null
 ) {
     val named: Boolean get() = nickname.isNotBlank()
 }
@@ -72,7 +75,7 @@ data class RealProject(
     val reveals: List<RealReveal> = emptyList()
 ) {
     fun drawing(id: String): RealDrawing? = drawings.find { it.id == id }
-    val media: Set<String> get() = reveals.flatMap { listOfNotNull(it.image, it.clip) }.toSet()
+    val media: Set<String> get() = (reveals.flatMap { listOfNotNull(it.image, it.clip) } + drawings.mapNotNull { it.photo }).toSet()
 
     /** Only reveals with their clip make it into the video; the pictures are shared on their own. */
     val shown: List<RealReveal> get() = reveals.filter { it.clip != null && drawing(it.sampleId) != null }

@@ -36,7 +36,9 @@ class RealRenderer(
     private val clipFiles: Map<String, File>,
     /** How loud the clips' own sound is. */
     private val clipGain: Float,
-    layout: CardLayout = CardLayout()
+    layout: CardLayout = CardLayout(),
+    /** Pictures picked by hand for the round slot, by drawing id; any drawing without one gets the default picture. */
+    private val photoFiles: Map<String, File> = emptyMap()
 ) : VoicedVideo {
     private val shown = project.shown
     val events: List<RealEvent> = RealTimeline.build(shown)
@@ -76,6 +78,15 @@ class RealRenderer(
     private fun x(tx: Float) = cardBox.left + tx * k
     private fun y(ty: Float) = cardBox.top + ty * k
 
+    /** The frame picked by hand (any frame, whatever the level); none picked: the one the player's level gives. */
+    private fun frameOf(d: RealDrawing): AvatarFrame =
+        AvatarFrame.entries.find { it.name == d.frameId } ?: AvatarFrame.resolve(d.frameId, d.level.coerceAtLeast(1))
+
+    private val handPhotos = HashMap<String, Bitmap?>()
+
+    /** The picture picked by hand, read once; otherwise the default one. */
+    private fun photoOf(d: RealDrawing): Bitmap? = (d.photo?.let { photoFiles[d.id] }?.let { f -> handPhotos.getOrPut(d.id) { RealImages.load(f, maxSide = 512) } }) ?: dino
+
     private fun replay(id: String): StrokeReplay? = project.drawing(id)?.let { d -> replays.getOrPut(id) { StrokeReplay(d.strokes) } }
 
     override fun draw(canvas: Canvas, t: Long) {
@@ -105,13 +116,13 @@ class RealRenderer(
 
     /** The player's frame with the default picture in it, in the card's round slot: never their own photo. */
     private fun drawAvatar(canvas: Canvas, d: RealDrawing) {
-        val frame = AvatarFrame.resolve(d.frameId, d.level.coerceAtLeast(1))
+        val frame = frameOf(d)
         val frameBmp = assets.picture(frame.drawableRes)
         val faceD = slotD * 0.94f
         val size = (faceD / (frame.faceDiameterFraction * 1.06f)).coerceAtMost(slotD * 1.5f)
         val fx = slotCx + size * frame.faceOffsetXFraction
         val fy = slotCy + size * frame.faceOffsetYFraction
-        val photo = dino
+        val photo = photoOf(d)
         if (photo != null) {
             val shader = BitmapShader(photo, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
             val s = faceD / min(photo.width, photo.height)

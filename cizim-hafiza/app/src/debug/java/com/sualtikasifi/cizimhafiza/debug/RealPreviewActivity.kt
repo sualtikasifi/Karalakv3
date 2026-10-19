@@ -38,7 +38,7 @@ class RealPreviewActivity : Activity() {
 
         val drawings = listOf(
             RealDrawing("a", rocket(), "roket", 7, "SinanK_34", 41, ""),
-            RealDrawing("b", spoon(), "bağlama", 7, "Zeynep", 12, ""),
+            RealDrawing("b", spoon(), "bağlama", 7, "Zeynep", 12, com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame.entries.filter { !it.retired }.last().name),
             RealDrawing("c", cat(), "kedi", 5, "", 28, "")
         )
         val project = RealProject(

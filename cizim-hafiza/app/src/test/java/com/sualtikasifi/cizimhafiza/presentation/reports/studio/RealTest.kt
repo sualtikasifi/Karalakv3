@@ -114,6 +114,16 @@ class RealTest {
     }
 
     @Test
+    fun aHandPickedProfilePictureIsKeptWithTheProjectsFiles() {
+        val p = RealProject(
+            drawings = listOf(drawing("a").copy(photo = "a_pfp.jpg"), drawing("b")),
+            reveals = listOf(RealReveal("a", image = "a.jpg", clip = "a.mp4"))
+        )
+        // so clearing the project, or taking a drawing out, lets go of it with the rest
+        assertEquals(setOf("a.jpg", "a.mp4", "a_pfp.jpg"), p.media)
+    }
+
+    @Test
     fun cardLayoutNeverLeavesWhatTheSlidersAllow() {
         val wild = com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout(9f, -3f, 4f).clamped()
         assertEquals(com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout.MAX_SCALE, wild.scale, 0f)
