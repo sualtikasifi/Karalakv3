@@ -54,7 +54,7 @@ data class RealReveal(
     val wordEn: String = "",
     /** The doodle's literal shapes in English, written into the picture prompt so they are kept. */
     val describe: String = "",
-    /** How the thing, exactly as drawn, would naturally move (English), written into the video prompt. */
+    /** The small funny scene the video shows (English, a person using or reacting to it), written into the video prompt. */
     val motion: String = "",
     val image: String? = null,
     val clip: String? = null,
@@ -87,9 +87,9 @@ data class CardLayout(val scale: Float = DEFAULT_SCALE, val x: Float = DEFAULT_X
     companion object {
         const val MIN_SCALE = 0.5f
         const val MAX_SCALE = 1.6f
-        const val DEFAULT_SCALE = 1f
-        const val DEFAULT_X = 0.05f
-        const val DEFAULT_Y = 0.17f
+        const val DEFAULT_SCALE = 0.74f
+        const val DEFAULT_X = 0.06f
+        const val DEFAULT_Y = 0.03f
     }
 
     /** The same layout with every value kept inside what the sliders allow. */
@@ -164,25 +164,28 @@ object RealCopy {
     }
 
     /**
-     * What goes to Gemini together with the picture made from the doodle. Gemini makes a video from the
-     * attached picture only if told to start from it, and invents a "better" creature if the prompt
-     * describes one, so this names no body parts and forbids every change: the picture is the first
-     * frame and only motion and sound are added. [motion] is the assistant's one-line idea of how this
-     * exact shape would move; without it a generic, parts-it-already-has motion is asked for.
+     * What goes to Gemini together with the picture made from the doodle. Two things have to hold at once: the
+     * object stays EXACTLY as the picture shows it (Gemini otherwise "improves" it into a normal one), and yet
+     * something must happen to it. An object that only sways in place is a dull video, so the prompt asks for a
+     * small funny story (a person comes in and uses it, reacts to it), with real sound. [scene] is the assistant's
+     * own idea for this object, edited by hand if wished; without one a generic "a person comes and uses it" is asked.
      */
-    fun videoPrompt(wordEn: String, motion: String): String {
-        val thing = wordEn.ifBlank { "subject" }
-        val move = motion.trim().trimEnd('.').ifBlank {
-            "only the parts that can naturally move do so, a little: flames flicker, hair or cloth sways, dust drifts, the whole thing wobbles or shifts its weight, as if this exact $thing were alive and clumsily trying to move"
+    fun videoPrompt(wordEn: String, scene: String): String {
+        val thing = wordEn.ifBlank { "object" }
+        val story = scene.trim().trimEnd('.').ifBlank {
+            "an ordinary person walks into the shot and notices the odd-looking $thing with curiosity. They use it the way anyone naturally would use a $thing, " +
+                "then stop and look at it with surprise and amusement at how strange it is, and carry on"
         }
-        return "Use the attached photo as the very first frame and animate it into a vertical 9:16, 8-second video that looks like a casual phone video.\n\n" +
-            "The photo is a real version of a child's quick doodle of a $thing, and its clumsy, odd shape is the whole point. Keep it EXACTLY as it is in the photo: the same silhouette, proportions, colours, materials, background and light. " +
+        return "Use the attached photo as the very first frame and animate it into a vertical 9:16, 8-second video that looks like a casual phone video, with sound.\n\n" +
+            "The photo is a real version of a child's quick doodle of a $thing, and its clumsy, odd shape is the whole point. The $thing itself must stay EXACTLY as it is in the photo: the same silhouette, proportions, colours, materials, place and light. " +
             "Do NOT redesign, smooth out, fix or \"improve\" it. Do NOT make it more professional or more realistic. " +
-            "Do NOT add eyes, faces, arms, legs, wings, windows, decorations or any part that is not already in the photo, and do not remove any. " +
+            "Do NOT add eyes, faces, arms, legs, wings, windows, decorations or any part to the $thing that is not already in the photo, and do not remove any. " +
             "It must still look like a child's drawing made real.\n\n" +
-            "Motion: " + move + ". Keep the motion simple, physical and slightly awkward, the way a real object of exactly this shape would move, using only the parts it has.\n\n" +
-            "Camera: fixed, or a very slow push-in; no cuts.\n\n" +
-            "Sound: generate the audio too. Realistic sound that goes with what happens (the object's own noises, its movement, the place around it), like a real recording. No music, no speech, no text on screen."
+            "What happens: " + story + ". " +
+            "It must not just sit there and sway: something happens to it, with a clear beginning, one funny moment and a small reaction at the end, all within the 8 seconds. " +
+            "Any person is an ordinary real person, natural and unhurried, seen from the side, from behind or in part; they never change the $thing's shape.\n\n" +
+            "Camera: handheld phone feel, fixed or a very slow push-in; no cuts.\n\n" +
+            "Sound: generate the audio too. Realistic sound that goes with what happens (the $thing's own noises, hands and footsteps, the place around it), like a real recording. No music, no text on screen."
     }
 
     /** One drawing the assistant described: `index` is 1-based. */
