@@ -640,7 +640,7 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
                     )
                     Text(
                         if (st.format == StudioFormat.Guess && st.script == null) "Örnek cümlelerle gösteriliyor; Karalak yazınca kendi cümleleri gelir."
-                        else if (st.format == StudioFormat.RealLife) "Videoların kendi sesi çalar; üstüne çizim, oyuncu bilgisi, Karalak adı ve Google Play rozeti gelir."
+                        else if (st.format == StudioFormat.RealLife) "Videoların kendi sesi çalar; üstüne Karalak kartı gelir: çizim, oyuncunun çerçevesi ve adı."
                         else "Sesli videoda süreler sesin gerçek uzunluğuna göre ayarlanır.",
                         style = Console.Small, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
                     )
