@@ -16,6 +16,7 @@ for i in $(seq 1 120); do
   sleep 2
 done
 for f in $(adb shell "run-as $PKG ls files/preview" | tr -d '\r'); do
-  adb exec-out "run-as $PKG cat files/preview/$f" > "$OUT/$f"
+  # through base64: a raw binary pipe of the last file was now and then cut short
+  adb shell "run-as $PKG base64 files/preview/$f" | base64 -d > "$OUT/$f"
 done
 ls -la "$OUT"
