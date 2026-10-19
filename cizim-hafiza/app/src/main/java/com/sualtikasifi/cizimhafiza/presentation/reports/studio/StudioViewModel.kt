@@ -784,6 +784,39 @@ class StudioViewModel @Inject constructor(
         pruneRealMedia()
     }
 
+    private fun updateDrawing(id: String, change: (RealDrawing) -> RealDrawing) =
+        updateProject { p -> p.copy(drawings = p.drawings.map { if (it.id == id) change(it) else it }) }
+
+    /** The name on the card; empty makes the player anonymous. A leading @ is dropped (the card adds its own). */
+    fun setPlayerName(id: String, text: String) = updateDrawing(id) { it.copy(nickname = text.trimStart('@', ' ').take(30)) }
+
+    fun setPlayerFrame(id: String, frameName: String?) = updateDrawing(id) { it.copy(frameId = frameName.orEmpty()) }
+
+    /** Brings a picture from the gallery for the card's round slot. */
+    fun importPlayerPhoto(id: String, uri: Uri) {
+        if (_state.value.real.busy != null) return
+        updateReal { it.copy(busy = id) }
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val name = realStore.import(uri, id + "_pfp", realStore.extensionOf(uri, video = false))
+                    RealImages.load(realStore.file(name), maxSide = 512) ?: run { realStore.file(name).delete(); error("Görsel açılamadı") }
+                    name
+                }
+            }
+            updateReal { it.copy(busy = null) }
+            result.onSuccess { name ->
+                updateDrawing(id) { it.copy(photo = name) }
+                pruneRealMedia()
+            }.onFailure { e -> _state.update { it.copy(message = "Fotoğraf eklenemedi: ${e.message}") } }
+        }
+    }
+
+    fun clearPlayerPhoto(id: String) {
+        updateDrawing(id) { it.copy(photo = null) }
+        pruneRealMedia()
+    }
+
     fun setRevealDescribe(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(describe = text.take(300)) }
     fun setRevealMotion(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(motion = text.take(300)) }
     fun setRevealWordEn(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(wordEn = text.take(60)) }
@@ -1229,7 +1262,8 @@ class StudioViewModel @Inject constructor(
                 clips = shown.mapNotNull { r -> r.clip?.let(clipSource)?.let { r.sampleId to it } }.toMap(),
                 clipFiles = shown.mapNotNull { r -> r.clip?.let { r.sampleId to realStore.file(it) } }.toMap(),
                 clipGain = CLIP_GAIN,
-                layout = s.real.card
+                layout = s.real.card,
+                photoFiles = p.drawings.mapNotNull { d -> d.photo?.let { d.id to realStore.file(it) } }.toMap()
             )
         }
         val sp = sprites ?: return null
