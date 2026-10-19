@@ -15,9 +15,17 @@ import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
 
-/** One anonymous drawing from the archive, copied into the project so it survives the archive changing. */
+/**
+ * One anonymous drawing of the pool, copied into the project so it survives the pool changing. Each carries its own
+ * [word] and the [seconds] the drawer had, because one video mixes different words; projects saved before that have
+ * neither, and fall back to the script's single word.
+ */
 @Serializable
-data class RealDrawing(val id: String, val strokes: List<List<DrawingPoint>>)
+data class RealDrawing(val id: String, val strokes: List<List<DrawingPoint>>, val word: String = "", val seconds: Int = 0)
+
+/** One of the pool's latest drawings as the word list shows it. */
+@Serializable
+data class RecentDrawing(val id: String, val word: String, val seconds: Int, val strokes: List<List<DrawingPoint>>)
 
 /** A drawing in the opening run and Karalak's joke about it. */
 @Serializable
@@ -35,6 +43,8 @@ data class RealReveal(
     val line: SpokenLine,
     /** The doodle's literal shapes in English, written into the picture prompt so they are kept. */
     val describe: String = "",
+    /** The drawing's word in English, for its prompts. */
+    val wordEn: String = "",
     /** How the thing, exactly as drawn, would naturally move (English), written into the video prompt. */
     val motion: String = "",
     val image: String? = null,
@@ -76,13 +86,15 @@ data class RealScript(
 /** Everything the studio keeps for one "Gerçek Olsaydı" video while pictures are being made elsewhere. */
 @Serializable
 data class RealProject(
-    val wordKey: String,
-    /** The word in English, for the prompts. */
+    /** Only projects from before a video could mix words carry these two; the words now live on each drawing and reveal. */
+    val wordKey: String = "",
     val wordEn: String = "",
     val script: RealScript,
     val drawings: List<RealDrawing>
 ) {
     fun drawing(id: String): RealDrawing? = drawings.find { it.id == id }
+    fun wordOf(id: String): String = drawing(id)?.word?.takeIf { it.isNotBlank() } ?: script.word
+    fun secondsOf(id: String): Int = drawing(id)?.seconds?.takeIf { it > 0 } ?: script.drawSeconds
     val media: Set<String> get() = script.reveals.flatMap { listOfNotNull(it.image, it.clip) }.toSet()
 }
 
@@ -174,6 +186,8 @@ object RealCopy {
     private val TR = Locale("tr")
 
     fun hookText(word: String, seconds: Int): String = "$seconds saniyede ${word.lowercase(TR)} çiz dedik. İşte Türkiye'nin çizimleri!"
+    /** The opening when the drawings are of different words. */
+    const val HOOK_MANY = "Oyunculara birkaç saniyede çizdirdik. İşte Türkiye'nin çizimleri!"
     const val BRIDGE = "Peki bunlar gerçek olsaydı?"
     const val OUTRO = "Sen daha iyisini çizebilir misin? karalak.com'da dene!"
 
@@ -222,13 +236,12 @@ object RealCopy {
 
     /**
      * The assistant's choice:
-     * `{"word_en":"…","roasts":[{"index":2,"emotion":"…","line":"…"}],"reveals":[{"index":2,"emotion":"…","line":"…","describe":"…","motion":"…"}],"outro":{…},"caption":"…","hashtags":"…"}`.
+     * `{"roasts":[{"index":2,"emotion":"…","line":"…"}],"reveals":[{"index":2,"emotion":"…","line":"…","describe":"…","motion":"…","word_en":"…"}],"outro":{…},"caption":"…","hashtags":"…"}`.
      * Indices are 1-based; reveals that are not also in the roasts are dropped.
      */
-    data class RevealPick(val index: Int, val line: SpokenLine, val describe: String, val motion: String)
+    data class RevealPick(val index: Int, val line: SpokenLine, val describe: String, val motion: String, val wordEn: String)
 
     data class Picks(
-        val wordEn: String,
         val roasts: List<Pair<Int, SpokenLine>>,
         val reveals: List<RevealPick>,
         val outro: SpokenLine?,
@@ -258,13 +271,13 @@ object RealCopy {
                 RevealPick(
                     i, lineOf(p) ?: SpokenLine("", MascotEmotion.Shocked),
                     p["describe"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty(),
-                    p["motion"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+                    p["motion"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty(),
+                    p["word_en"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
                 )
             }.distinctBy { it.index }
         }.getOrNull().orEmpty()
         val outro = (o["outro"] as? JsonObject)?.let { lineOf(it) }
         return Picks(
-            o["word_en"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty(),
             roasts, reveals, outro,
             o["caption"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty(),
             o["hashtags"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()

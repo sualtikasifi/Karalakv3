@@ -90,6 +90,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceModel
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RecentDrawing
 import java.io.File
 import java.util.Locale
 
@@ -125,15 +126,13 @@ fun StudioPanel(onBack: () -> Unit, viewModel: StudioViewModel = hiltViewModel()
             }
         )
     }
-    st.real.confirmWord?.let { w ->
+    if (st.real.confirmReset) {
         AlertDialog(
-            onDismissRequest = viewModel::cancelRealWord,
-            title = { Text("Yeni proje başlasın mı?") },
-            text = {
-                Text("Şu anki “${st.real.project?.script?.word.orEmpty()}” projesindeki görseller ve videolar silinir, “${w.word}” için yeni proje başlar.")
-            },
-            confirmButton = { TextButton(onClick = { viewModel.selectRealWord(w, confirmed = true) }) { Text("Başlat", color = Console.Critical) } },
-            dismissButton = { TextButton(onClick = viewModel::cancelRealWord) { Text("Vazgeç") } }
+            onDismissRequest = viewModel::cancelResetReal,
+            title = { Text("Baştan başlansın mı?") },
+            text = { Text("Seçilen çizimler ile eklediğin görseller ve videolar silinir.") },
+            confirmButton = { TextButton(onClick = { viewModel.resetReal(confirmed = true) }) { Text("Sil", color = Console.Critical) } },
+            dismissButton = { TextButton(onClick = viewModel::cancelResetReal) { Text("Vazgeç") } }
         )
     }
 
@@ -375,47 +374,49 @@ private fun LazyListScope.memorySections(st: StudioState, vm: StudioViewModel) {
     }
 }
 
-/** "Gerçek Olsaydı": a word, its drawings, Karalak's jokes, and the pictures and clips made elsewhere. */
+/** "Gerçek Olsaydı": the latest drawings of different words, Karalak's jokes, and the pictures and clips made elsewhere. */
 private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, context: Context) {
     val r = st.real
-    item { Step("1", "Kelime", "en az 3 örnek çizim") }
-    if (r.words.isEmpty()) {
-        item {
-            ConsoleCard(Modifier.fillMaxWidth()) {
-                Text("Arşivde yeterli çizim yok. Çizimler, panelde incelediğin turlardan isimsiz olarak toplanır.", style = Console.Small)
-                Spacer(Modifier.height(8.dp))
-                DarkButton(
-                    text = if (st.memory.scanning) (st.memory.scanStatus ?: "Okunuyor…") else "Havuzu ve bekleyenleri tara",
-                    busy = st.memory.scanning,
-                    enabled = !st.memory.scanning
-                ) { vm.scanAll() }
-            }
-        }
-    } else {
-        r.words.take(30).forEach { w ->
-            item(key = "rw-" + w.key) {
-                WordRow(w.word, "${w.samples} örnek çizim · ${w.drawn} kez çizildi", on = r.project?.wordKey == w.key) { vm.selectRealWord(w) }
-            }
+    val p = r.project
+    val roastIds = p?.script?.roasts?.map { it.sampleId }.orEmpty()
+    val revealIds = p?.script?.reveals?.map { it.sampleId }?.toSet().orEmpty()
+
+    item { Step("1", "Son çizimler", "${roastIds.size}/5 seçili") }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Text(
+                "Havuza en son giren 100 çizim, kelimesiyle. Videoya farklı kelimelerden en fazla 5 çizim seç; " +
+                    "sıra, dokunduğun sıradır.",
+                style = Console.Small
+            )
+            Spacer(Modifier.height(8.dp))
+            DarkButton(
+                text = if (r.loadingRecent) "Okunuyor…" else if (r.recent.isEmpty()) "Son çizimleri yükle" else "Yenile",
+                busy = r.loadingRecent,
+                enabled = !r.loadingRecent
+            ) { vm.refreshRecent() }
+            r.recentError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
+            if (p != null && p.script.roasts.isNotEmpty()) SmallLink("Seçimi ve görselleri temizle", Console.Critical) { vm.resetReal() }
         }
     }
-
-    val p = r.project ?: return
-    val sc = p.script
-    val roastIds = sc.roasts.map { it.sampleId }
-    val revealIds = sc.reveals.map { it.sampleId }.toSet()
-
-    item { Step("2", "Çizimler", "${sc.roasts.size}/5 seçili · ${sc.reveals.size}/3 gerçeğe") }
-    val pool = (p.drawings.map { it.id to it.strokes } + r.samples.map { it.id to it.strokes }).distinctBy { it.first }
-    pool.take(48).chunked(3).forEach { row ->
-        item(key = "rs-" + row.first().first) {
+    // chosen ones the latest list no longer holds stay at the top, so they can still be taken out
+    val gone = p?.drawings?.filter { d -> d.id in roastIds && r.recent.none { it.id == d.id } }
+        ?.map { RecentDrawing(it.id, it.word.ifBlank { p.script.word }, it.seconds, it.strokes) }.orEmpty()
+    (gone + r.recent).chunked(3).forEach { row ->
+        item(key = "rs-" + row.first().id) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                row.forEach { (id, strokes) ->
-                    RealThumb(strokes, roastIds.indexOf(id), id in revealIds, Modifier.weight(1f)) { vm.toggleRoast(id, strokes) }
+                row.forEach { d ->
+                    RealThumb(d.strokes, d.word, roastIds.indexOf(d.id), d.id in revealIds, Modifier.weight(1f)) { vm.toggleRoast(d) }
                 }
                 repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
+
+    if (p == null || p.script.roasts.isEmpty()) return
+    val sc = p.script
+
+    item { Step("2", "Karalak'ın espirileri", "${sc.roasts.size}/5 seçili · ${sc.reveals.size}/3 gerçeğe") }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             DarkButton(
@@ -442,7 +443,7 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
                     MiniDoodle(p.drawing(roast.sampleId)?.strokes.orEmpty())
                     Spacer(Modifier.width(8.dp))
-                    Text("Çizim ${i + 1} esprisi", style = Console.Label, modifier = Modifier.weight(1f))
+                    Text("${p.wordOf(roast.sampleId).ifBlank { "Çizim ${i + 1}" }} esprisi", style = Console.Label, modifier = Modifier.weight(1f))
                     val on = roast.sampleId in revealIds
                     Tag(
                         if (on) "★ Gerçeğe" else "☆ Gerçeğe",
@@ -581,7 +582,7 @@ private fun WordRow(word: String, detail: String, on: Boolean, upper: Boolean = 
 }
 
 @Composable
-private fun RealThumb(strokes: List<List<DrawingPoint>>, order: Int, star: Boolean, modifier: Modifier, onClick: () -> Unit) {
+private fun RealThumb(strokes: List<List<DrawingPoint>>, word: String, order: Int, star: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val on = order >= 0
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -589,15 +590,21 @@ private fun RealThumb(strokes: List<List<DrawingPoint>>, order: Int, star: Boole
         border = BorderStroke(if (on) 2.dp else 1.dp, if (on) Console.Accent else Console.Border),
         modifier = modifier.clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick)
     ) {
-        Box(Modifier.fillMaxWidth().aspectRatio(1f)) {
-            StrokeCanvas(strokes = strokes, modifier = Modifier.fillMaxSize().padding(6.dp), strokeWidthPx = 4f)
-            if (on) {
-                Box(
-                    Modifier.padding(5.dp).size(22.dp).clip(CircleShape).background(Console.Accent).align(Alignment.TopEnd),
-                    contentAlignment = Alignment.Center
-                ) { Text("${order + 1}", style = Console.Label.copy(color = Color.White)) }
+        Column {
+            Box(Modifier.fillMaxWidth().aspectRatio(1f)) {
+                StrokeCanvas(strokes = strokes, modifier = Modifier.fillMaxSize().padding(6.dp), strokeWidthPx = 4f)
+                if (on) {
+                    Box(
+                        Modifier.padding(5.dp).size(22.dp).clip(CircleShape).background(Console.Accent).align(Alignment.TopEnd),
+                        contentAlignment = Alignment.Center
+                    ) { Text("${order + 1}", style = Console.Label.copy(color = Color.White)) }
+                }
+                if (star) Text("★", style = Console.Subtitle.copy(color = Console.Accent), modifier = Modifier.padding(6.dp).align(Alignment.TopStart))
             }
-            if (star) Text("★", style = Console.Subtitle.copy(color = Console.Accent), modifier = Modifier.padding(6.dp).align(Alignment.TopStart))
+            Text(
+                word, style = Console.Small, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp), textAlign = TextAlign.Center
+            )
         }
     }
 }

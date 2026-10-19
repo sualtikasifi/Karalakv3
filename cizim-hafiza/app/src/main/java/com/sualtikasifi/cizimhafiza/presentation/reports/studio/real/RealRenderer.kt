@@ -71,6 +71,9 @@ class RealRenderer(
     private fun spokenMs(index: Int, l: com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine): Long =
         voice?.get(index)?.let { it.size * 1000L / FPS } ?: GuessTimeline.estimateMs(l.text)
 
+    private fun wordOf(id: String): String = drawings[id]?.word?.takeIf { it.isNotBlank() } ?: script.word
+    private fun secondsOf(id: String): Int = drawings[id]?.seconds?.takeIf { it > 0 } ?: script.drawSeconds
+
     private fun replay(id: String): StrokeReplay? = drawings[id]?.let { d -> replays.getOrPut(id) { StrokeReplay(d.strokes) } }
 
     override fun draw(canvas: Canvas, t: Long) {
@@ -195,8 +198,12 @@ class RealRenderer(
             text.draw(canvas, "OLSAYDI?", cx, titleBox.top + 200f, w, 96f, 1, assets.display, C.INK)
             chip = "Yapay zekâ ile üretildi"
         } else {
-            text.draw(canvas, script.word.uppercase(TR), cx, titleBox.top + 62f, w, 78f, 1, assets.display, C.ORANGE_DARK)
-            text.draw(canvas, "${script.drawSeconds} saniyede", cx, titleBox.top + 172f, w, 92f, 1, assets.display, C.INK)
+            // each drawing of a roast has its own word and seconds; the opening has none, unless the whole video is one word
+            val roast = if (e.phase == RealPhase.Roast) script.roasts.getOrNull(e.index) else null
+            val word = roast?.let { wordOf(it.sampleId) } ?: script.word.ifBlank { "ÇİZİM" }
+            val seconds = roast?.let { secondsOf(it.sampleId) } ?: script.drawSeconds
+            text.draw(canvas, word.uppercase(TR), cx, titleBox.top + 62f, w, 78f, 1, assets.display, C.ORANGE_DARK)
+            text.draw(canvas, "$seconds saniyede", cx, titleBox.top + 172f, w, 92f, 1, assets.display, C.INK)
             text.draw(canvas, "Türkiye böyle çizdi", cx, titleBox.top + 262f, w, 34f, 1, assets.body, C.MUTED)
             chip = if (e.phase == RealPhase.Roast) "${e.index + 1} / ${script.roasts.size}" else "${script.roasts.size} çizim"
         }
@@ -246,7 +253,7 @@ class RealRenderer(
         paper(canvas)
         replay(roast.sampleId)?.draw(canvas, RectF(card.left, card.top + 50f, card.right, card.bottom - 30f), min(1f, local / 900f), ink)
         // the clock the drawer had
-        val chip = "⏱ ${script.drawSeconds} sn"
+        val chip = "⏱ ${secondsOf(roast.sampleId)} sn"
         val p = text.paint(32f, assets.body, C.INK)
         val w = p.measureText(chip) + 44f
         val box = RectF(card.left + 28f, card.top + 28f, card.left + 28f + w, card.top + 86f)
