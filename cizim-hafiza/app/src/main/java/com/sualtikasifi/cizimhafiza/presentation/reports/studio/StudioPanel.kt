@@ -56,7 +56,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.launch
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -432,7 +435,7 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
             }
             Spacer(Modifier.height(8.dp))
             DarkButton(
-                text = if (r.writing) "Asistan yazıyor…" else "Asistan kelimeleri, şekilleri ve hareketi yazsın",
+                text = if (r.writing) "Asistan yazıyor…" else "Asistan kelimeleri, şekilleri ve video sahnesini yazsın",
                 busy = r.writing,
                 enabled = !r.writing
             ) { vm.describeReal() }
@@ -449,9 +452,10 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Karalak kartının videodaki yerini ve boyunu ayarla; aşağıdaki önizleme anında değişir.", style = Console.Small)
-            LabeledSlider("Boyut", r.card.scale, CardLayout.MIN_SCALE..CardLayout.MAX_SCALE) { vm.setCard(r.card.copy(scale = it)) }
-            LabeledSlider("Sağa–sola", r.card.x, 0f..1f) { vm.setCard(r.card.copy(x = it)) }
-            LabeledSlider("Yukarı–aşağı", r.card.y, 0f..1f) { vm.setCard(r.card.copy(y = it)) }
+            Text("Kaydırıcıyla kabaca, − ve + ile hassas ayarla (0,01'lik adım; basılı tutunca hızlanır).", style = Console.Small)
+            PreciseSlider("Boyut", r.card.scale, CardLayout.MIN_SCALE..CardLayout.MAX_SCALE) { vm.setCard(r.card.copy(scale = it)) }
+            PreciseSlider("Sağa–sola", r.card.x, 0f..1f) { vm.setCard(r.card.copy(x = it)) }
+            PreciseSlider("Yukarı–aşağı", r.card.y, 0f..1f) { vm.setCard(r.card.copy(y = it)) }
             SmallLink("Varsayılana dön") { vm.resetCard() }
         }
     }
@@ -492,7 +496,7 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
         }
         Field("Kelime (İngilizce)", rv.wordEn, { vm.setRevealWordEn(rv.sampleId, it) }, lines = 1)
         Field("Çizimin şekli (İngilizce, görsel istemine eklenir)", rv.describe, { vm.setRevealDescribe(rv.sampleId, it) }, lines = 2)
-        Field("Nasıl hareket etsin (İngilizce, video istemine eklenir)", rv.motion, { vm.setRevealMotion(rv.sampleId, it) }, lines = 2)
+        Field("Videodaki sahne (İngilizce, video istemine eklenir): kim gelip ne yapıyor?", rv.motion, { vm.setRevealMotion(rv.sampleId, it) }, lines = 4)
 
         Text("Görsel · ChatGPT", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
@@ -927,6 +931,59 @@ private fun SampleThumb(sample: com.sualtikasifi.cizimhafiza.presentation.report
                 ) { Text("${order + 1}", style = Console.Label.copy(color = Color.White)) }
             }
         }
+    }
+}
+
+/** A slider with a − and a + at its ends that move it by [STEP] a press (and keep going while held), for fine settings. */
+@Composable
+private fun PreciseSlider(label: String, value: Float, range: ClosedFloatingPointRange<Float>, onChange: (Float) -> Unit) {
+    val current by androidx.compose.runtime.rememberUpdatedState(value)
+    val change by androidx.compose.runtime.rememberUpdatedState(onChange)
+    fun nudge(direction: Int) {
+        val next = ((current * 100f).let { kotlin.math.round(it) } + direction) / 100f
+        change(next.coerceIn(range.start, range.endInclusive))
+    }
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+        Text(label, style = Console.Small, modifier = Modifier.width(78.dp))
+        StepButton("−") { nudge(-1) }
+        Slider(
+            value = value, onValueChange = { change((kotlin.math.round(it * 100f)) / 100f) }, valueRange = range,
+            colors = SliderDefaults.colors(thumbColor = Console.Accent, activeTrackColor = Console.Accent),
+            modifier = Modifier.weight(1f)
+        )
+        StepButton("+") { nudge(1) }
+        Text(String.format(Locale.US, "%.2f", value), style = Console.Small, modifier = Modifier.width(38.dp), textAlign = TextAlign.End)
+    }
+}
+
+private const val STEP = 0.01f
+
+/** A small square button that acts on a press and repeats while it is held: after a short wait, quicker and quicker. */
+@Composable
+private fun StepButton(symbol: String, onStep: () -> Unit) {
+    val step by androidx.compose.runtime.rememberUpdatedState(onStep)
+    Surface(
+        shape = RoundedCornerShape(10.dp), color = Console.Surface, border = BorderStroke(1.dp, Console.Border),
+        modifier = Modifier.size(40.dp).pointerInput(Unit) {
+            detectTapGestures(onPress = {
+                step()
+                kotlinx.coroutines.coroutineScope {
+                    val repeat = launch {
+                        kotlinx.coroutines.delay(400)
+                        var wait = 110L
+                        while (true) {
+                            step()
+                            kotlinx.coroutines.delay(wait)
+                            wait = (wait * 9 / 10).coerceAtLeast(25L)
+                        }
+                    }
+                    tryAwaitRelease()
+                    repeat.cancel()
+                }
+            })
+        }
+    ) {
+        Box(contentAlignment = Alignment.Center) { Text(symbol, style = Console.Title.copy(color = Console.Accent)) }
     }
 }
 

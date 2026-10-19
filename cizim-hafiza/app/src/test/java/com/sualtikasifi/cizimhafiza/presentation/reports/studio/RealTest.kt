@@ -66,7 +66,7 @@ class RealTest {
     fun parsesTheAssistantsDescriptionsKeepingOnlyKnownDrawings() {
         val text = """
             ```json
-            {"reveals":[{"index":2,"word_en":"cat","describe":"a cat with six legs","motion":"the six legs wobble"},{"index":9,"word_en":"x"},{"index":1,"word_en":"rocket","describe":"a tall box","motion":"flames flicker"}],
+            {"reveals":[{"index":2,"word_en":"cat","describe":"a cat with six legs","motion":"a man picks it up"},{"index":9,"word_en":"x"},{"index":1,"word_en":"rocket","describe":"a tall box","motion":"flames flicker"}],
              "caption":"Hangisi?","hashtags":"#karalak"}
             ```
         """.trimIndent()
@@ -76,7 +76,7 @@ class RealTest {
         assertEquals(listOf(1, 0), p.reveals.map { it.index })
         assertEquals("cat", p.reveals[0].wordEn)
         assertEquals("a cat with six legs", p.reveals[0].describe)
-        assertEquals("the six legs wobble", p.reveals[0].motion)
+        assertEquals("a man picks it up", p.reveals[0].motion)
         assertEquals("Hangisi?", p.caption)
         assertNull(RealCopy.parsePicks("{\"reveals\":[]}", 3))
         assertNull(RealCopy.parsePicks("bilmiyorum", 3))
@@ -97,13 +97,20 @@ class RealTest {
     }
 
     @Test
-    fun videoPromptStartsFromThePictureChangesNothingAndAsksForSound() {
-        val video = RealCopy.videoPrompt("cat", "the six legs wobble.")
+    fun videoPromptKeepsTheObjectAsPaintedYetMakesSomethingHappenToIt() {
+        val video = RealCopy.videoPrompt("microwave", "a person puts a plate inside and presses the buttons.")
         assertTrue(video.contains("very first frame"))
+        // the object is never changed ...
+        assertTrue(video.contains("stay EXACTLY as it is in the photo"))
         assertTrue(video.contains("Do NOT add eyes, faces, arms, legs"))
-        assertTrue(video.contains("Motion: the six legs wobble. "))
+        // ... but it is not left to sway: a small story with a person, and real sound
+        assertTrue(video.contains("What happens: a person puts a plate inside and presses the buttons. "))
+        assertTrue(video.contains("must not just sit there and sway"))
         assertTrue(video.contains("generate the audio too"))
-        assertTrue(RealCopy.videoPrompt("cat", "").contains("this exact cat were alive"))
+        // with no scene of its own, a person comes and uses the thing
+        val generic = RealCopy.videoPrompt("pomegranate", "")
+        assertTrue(generic.contains("walks into the shot"))
+        assertTrue(generic.contains("pomegranate"))
     }
 
     @Test
