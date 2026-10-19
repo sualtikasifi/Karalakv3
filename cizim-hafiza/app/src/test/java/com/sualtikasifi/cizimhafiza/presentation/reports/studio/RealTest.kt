@@ -100,14 +100,14 @@ class RealTest {
         val text = """
             ```json
             {"word_en":"cat","roasts":[{"index":2,"emotion":"laughing","line":"Bu kedi mi, patates mi?"},{"index":9,"emotion":"x","line":"yok"},{"index":4,"emotion":"shocked","line":"Altı bacak!"}],
-             "reveals":[{"index":4,"emotion":"shocked","line":"Koşarak kaçıyorum!","describe":"a cat with six legs","motion":"the six legs wobble"},{"index":1,"line":"olmaz","describe":"x"}],
+             "reveals":[{"index":4,"emotion":"shocked","line":"Koşarak kaçıyorum!","describe":"a cat with six legs","motion":"the six legs wobble","word_en":"cat"},{"index":1,"line":"olmaz","describe":"x"}],
              "outro":{"emotion":"point","line":"Sen daha iyisini çiz! karalak.com"},"caption":"Hangisi?","hashtags":"#karalak"}
             ```
         """.trimIndent()
         val p = RealCopy.parsePicks(text, 5)
         assertNotNull(p)
         p!!
-        assertEquals("cat", p.wordEn)
+        assertEquals("cat", p.reveals[0].wordEn)
         assertEquals(listOf(1, 3), p.roasts.map { it.first })
         assertEquals(MascotEmotion.Laughing, p.roasts[0].second.emotion)
         assertEquals(listOf(3), p.reveals.map { it.index })
@@ -142,6 +142,19 @@ class RealTest {
         assertTrue(video.contains("Do NOT add eyes, faces, arms, legs"))
         assertTrue(video.contains("Motion: the six legs wobble. "))
         assertTrue(RealCopy.videoPrompt("cat", "").contains("this exact cat were alive"))
+    }
+
+    @Test
+    fun drawingsKeepTheirOwnWordAndSecondsAndFallBackToTheScripts() {
+        val p = RealProject(
+            script = script(emptyList()),
+            drawings = listOf(RealDrawing("a", emptyList(), "roket", 9), RealDrawing("b", emptyList()))
+        )
+        assertEquals("roket", p.wordOf("a"))
+        assertEquals(9, p.secondsOf("a"))
+        // a drawing saved before words were per drawing uses the script's
+        assertEquals("Kedi", p.wordOf("b"))
+        assertEquals(5, p.secondsOf("b"))
     }
 
     @Test

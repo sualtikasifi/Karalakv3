@@ -12,6 +12,7 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Pcm
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.io.Closeable
 import java.io.File
@@ -192,6 +193,7 @@ class RealStore(context: Context) {
     private val root = File(context.filesDir, "studio_real").apply { mkdirs() }
     private val mediaDir = File(root, "media").apply { mkdirs() }
     private val projectFile = File(root, "project.json")
+    private val recentFile = File(root, "recent.json")
     private val json = Json { ignoreUnknownKeys = true }
     private val resolver = context.contentResolver
 
@@ -199,6 +201,13 @@ class RealStore(context: Context) {
 
     fun save(project: RealProject?) {
         if (project == null) projectFile.delete() else projectFile.writeText(json.encodeToString(RealProject.serializer(), project))
+    }
+
+    /** The pool's latest drawings as last read, so the list shows at once and without a network. */
+    fun loadRecent(): List<RecentDrawing> = runCatching { json.decodeFromString(ListSerializer(RecentDrawing.serializer()), recentFile.readText()) }.getOrDefault(emptyList())
+
+    fun saveRecent(list: List<RecentDrawing>) {
+        recentFile.writeText(json.encodeToString(ListSerializer(RecentDrawing.serializer()), list))
     }
 
     fun file(name: String): File = File(mediaDir, name)
