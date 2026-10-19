@@ -49,6 +49,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemoryScr
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemorySource
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemoryWordStat
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipAudio
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipFrames
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDirector
@@ -165,6 +166,8 @@ data class RealUi(
     val busy: String? = null,
     /** Starting over while the project has pictures in it: asks before throwing them away. */
     val confirmReset: Boolean = false,
+    /** Where the Karalak card sits on the video and how big it is, kept on this phone. */
+    val card: CardLayout = CardLayout(),
     /** A picture ready to hand to ChatGPT or Gemini, with the prompt to paste. */
     val share: RealShare? = null,
     /** The swipe-through post: each drawing followed by what it became, ready for the share sheet. */
@@ -691,9 +694,10 @@ class StudioViewModel @Inject constructor(
 
     /** The project left from last time, if any, and the latest drawings read last time. */
     private fun loadReal() {
+        val saved = prefs().let { CardLayout(it.getFloat(CARD_SCALE, CardLayout.DEFAULT_SCALE), it.getFloat(CARD_X, CardLayout.DEFAULT_X), it.getFloat(CARD_Y, CardLayout.DEFAULT_Y)).clamped() }
         viewModelScope.launch {
             val (p, recent) = withContext(Dispatchers.IO) { realStore.load() to realStore.loadRecent() }
-            updateReal { it.copy(project = p, recent = recent) }
+            updateReal { it.copy(project = p, recent = recent, card = saved) }
             p?.let { loadRealMedia(it) }
         }
     }
@@ -738,6 +742,17 @@ class StudioViewModel @Inject constructor(
             }
         }
     }
+
+    /** Moves or resizes the Karalak card on the video; the preview follows at once and the choice is kept on this phone. */
+    fun setCard(layout: CardLayout) {
+        val c = layout.clamped()
+        updateReal { it.copy(card = c) }
+        _state.update { it.copy(video = null) }
+        prefs().edit().putFloat(CARD_SCALE, c.scale).putFloat(CARD_X, c.x).putFloat(CARD_Y, c.y).apply()
+        refreshPreview()
+    }
+
+    fun resetCard() = setCard(CardLayout())
 
     /** Clears the choice and every picture and clip, after asking when there are any. */
     fun resetReal(confirmed: Boolean = false) {
@@ -1213,7 +1228,8 @@ class StudioViewModel @Inject constructor(
                 assetsOrLoad(), p,
                 clips = shown.mapNotNull { r -> r.clip?.let(clipSource)?.let { r.sampleId to it } }.toMap(),
                 clipFiles = shown.mapNotNull { r -> r.clip?.let { r.sampleId to realStore.file(it) } }.toMap(),
-                clipGain = CLIP_GAIN
+                clipGain = CLIP_GAIN,
+                layout = s.real.card
             )
         }
         val sp = sprites ?: return null
@@ -1382,6 +1398,9 @@ class StudioViewModel @Inject constructor(
         const val EL_STABILITY = "elevenlabs_stability"
         const val EL_TAGS = "elevenlabs_tags"
         const val VOICE_ENGINE = "studio_voice_engine"
+        const val CARD_SCALE = "studio_real_card_scale"
+        const val CARD_X = "studio_real_card_x"
+        const val CARD_Y = "studio_real_card_y"
         /** No line of Karalak's runs this long; a longer decode means something went wrong. */
         const val VOICE_MAX_MS = 60_000L
         /** The voice track's sample rate: what every AAC encoder takes. */
