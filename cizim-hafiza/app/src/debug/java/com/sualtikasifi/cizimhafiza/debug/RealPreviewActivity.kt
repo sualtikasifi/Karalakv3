@@ -6,19 +6,12 @@ import android.graphics.Canvas
 import android.os.Bundle
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioAssets
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotSprites
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipFrames
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealPhase
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealRenderer
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealRoast
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealScript
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealTimeline
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import java.io.File
 
 /**
@@ -40,48 +33,24 @@ class RealPreviewActivity : Activity() {
 
     private fun render(out: File) {
         val assets = StudioAssets(this)
-        val sprites = runBlocking(Dispatchers.IO) { MascotSprites.load(this@RealPreviewActivity) }
         val clip = File(cacheDir, "real_preview.mp4").also { f -> this.assets.open("real_preview.mp4").use { i -> f.outputStream().use { i.copyTo(it) } } }
         val frames = ClipFrames(clip, exact = false)
 
         val drawings = listOf(
-            RealDrawing("a", rocket(), "roket", 7),
-            RealDrawing("b", spoon(), "bağlama", 7),
-            RealDrawing("c", cat(), "kedi", 5),
-            RealDrawing("d", tree(), "ağaç", 9)
+            RealDrawing("a", rocket(), "roket", 7, "SinanK_34", 41),
+            RealDrawing("b", spoon(), "bağlama", 7, "Zeynep", 12),
+            RealDrawing("c", cat(), "kedi", 5, "karalamaci_99", 128)
         )
-        fun line(t: String, e: MascotEmotion) = SpokenLine(t, e)
-        val script = RealScript(
-            word = "", drawSeconds = 7,
-            hook = line("Oyunculara birkaç saniyede çizdirdik. İşte Türkiye'nin çizimleri!", MascotEmotion.Excited),
-            roasts = listOf(
-                RealRoast("a", line("Bu roket mi, kalem mi?", MascotEmotion.Laughing)),
-                RealRoast("b", line("Bağlama değil, kaşık!", MascotEmotion.Suspicious)),
-                RealRoast("c", line("Kedi çok kızgın görünüyor.", MascotEmotion.Shocked)),
-                RealRoast("d", line("Ağaç mı, brokoli mi?", MascotEmotion.Thinking))
-            ),
-            bridge = line("Peki bunlar gerçek olsaydı?", MascotEmotion.Thinking),
-            reveals = listOf(
-                RealReveal("a", line("Bu roket gerçekten uçar mı?", MascotEmotion.Shocked), clip = "a.mp4", clipMs = 3_000L),
-                RealReveal("c", line("Bu kedi beni yer!", MascotEmotion.Shocked), clip = "c.mp4", clipMs = 3_000L)
-            ),
-            outro = line("Sen daha iyisini çizebilir misin? karalak.com'da dene!", MascotEmotion.Point)
+        val project = RealProject(
+            drawings = drawings,
+            reveals = drawings.map { RealReveal(it.id, clip = it.id + ".mp4", clipMs = 3_000L) }
         )
-        val renderer = RealRenderer(
-            assets, sprites, script, drawings.associateBy { it.id },
-            clips = mapOf("a" to frames, "c" to frames), clipFiles = emptyMap(), clipGain = 0f, voice = null
-        )
+        val renderer = RealRenderer(assets, project, clips = drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f)
         val shots = buildList {
-            val e = renderer.events
-            e.first { it.phase == RealPhase.Hook }.let { add("hook_early" to it.startMs + 700); add("hook_full" to it.endMs - 150) }
-            e.filter { it.phase == RealPhase.Roast }.forEachIndexed { i, r -> add("roast_$i" to r.startMs + 1_400) }
-            e.first { it.phase == RealPhase.Bridge }.let { add("bridge" to it.startMs + 1_200) }
-            e.first { it.phase == RealPhase.Reveal }.let {
-                add("reveal_before" to it.startMs + 600)
-                add("reveal_wipe" to it.photoAtMs - RealTimeline.WIPE / 2)
-                add("reveal_full" to it.lineAtMs + 900)
+            renderer.events.forEach { e ->
+                if (e.phase == RealPhase.Clip) { add("clip${e.index}_start" to e.startMs + 120); add("clip${e.index}_mid" to e.startMs + 1_800) }
+                else add("end" to e.startMs + 1_500)
             }
-            e.first { it.phase == RealPhase.Outro }.let { add("outro" to it.startMs + 1_800) }
         }
         val bmp = Bitmap.createBitmap(RealRenderer.W, RealRenderer.H, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)

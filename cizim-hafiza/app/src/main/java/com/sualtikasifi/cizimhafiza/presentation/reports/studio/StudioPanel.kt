@@ -88,6 +88,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.ElevenLabs
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceModel
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RecentDrawing
@@ -374,19 +375,18 @@ private fun LazyListScope.memorySections(st: StudioState, vm: StudioViewModel) {
     }
 }
 
-/** "Gerçek Olsaydı": the latest drawings of different words, Karalak's jokes, and the pictures and clips made elsewhere. */
+/** "Gerçek Olsaydı": the latest drawings of players who allowed it, three of them, each turned real with ChatGPT and Gemini. */
 private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, context: Context) {
     val r = st.real
     val p = r.project
-    val roastIds = p?.script?.roasts?.map { it.sampleId }.orEmpty()
-    val revealIds = p?.script?.reveals?.map { it.sampleId }?.toSet().orEmpty()
+    val chosenIds = p?.reveals?.map { it.sampleId }.orEmpty()
 
-    item { Step("1", "Son çizimler", "${roastIds.size}/5 seçili") }
+    item { Step("1", "Çizimleri seç", "${chosenIds.size}/3 seçili") }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text(
-                "Havuza en son giren 100 çizim, kelimesiyle. Videoya farklı kelimelerden en fazla 5 çizim seç; " +
-                    "sıra, dokunduğun sıradır.",
+                "“Videolarda öne çık” izni veren oyuncuların en son 100 çizimi; adı, seviyesi ve kelimesiyle videoda görünür. " +
+                    "Farklı kelimelerden 3 çizim seç.",
                 style = Console.Small
             )
             Spacer(Modifier.height(8.dp))
@@ -396,106 +396,52 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
                 enabled = !r.loadingRecent
             ) { vm.refreshRecent() }
             r.recentError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
-            if (p != null && p.script.roasts.isNotEmpty()) SmallLink("Seçimi ve görselleri temizle", Console.Critical) { vm.resetReal() }
+            if (p != null && p.reveals.isNotEmpty()) SmallLink("Seçimi ve görselleri temizle", Console.Critical) { vm.resetReal() }
         }
     }
     // chosen ones the latest list no longer holds stay at the top, so they can still be taken out
-    val gone = p?.drawings?.filter { d -> d.id in roastIds && r.recent.none { it.id == d.id } }
-        ?.map { RecentDrawing(it.id, it.word.ifBlank { p.script.word }, it.seconds, it.strokes) }.orEmpty()
+    val gone = p?.drawings?.filter { d -> d.id in chosenIds && r.recent.none { it.id == d.id } }
+        ?.map { RecentDrawing(it.id, it.word, it.seconds, it.nickname, it.level, it.strokes) }.orEmpty()
     (gone + r.recent).chunked(3).forEach { row ->
         item(key = "rs-" + row.first().id) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { d ->
-                    RealThumb(d.strokes, d.word, roastIds.indexOf(d.id), d.id in revealIds, Modifier.weight(1f)) { vm.toggleRoast(d) }
+                    RealThumb(d.strokes, "${d.word} · @${d.nickname}", chosenIds.indexOf(d.id), Modifier.weight(1f)) { vm.toggleReveal(d) }
                 }
                 repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
 
-    if (p == null || p.script.roasts.isEmpty()) return
-    val sc = p.script
-
-    item { Step("2", "Karalak'ın espirileri", "${sc.roasts.size}/5 seçili · ${sc.reveals.size}/3 gerçeğe") }
-    item {
-        ConsoleCard(Modifier.fillMaxWidth()) {
-            DarkButton(
-                text = if (r.writing) "Karalak bakıyor…" else "Karalak seçsin ve espri yapsın",
-                busy = r.writing,
-                enabled = !r.writing
-            ) { vm.writeReal() }
-            Text(
-                "En komik ve birbirinden farklı 5 çizimi seçer, her birine espri yazar ve gerçeğe dönüşünce en eğlenceli olacak 3 tanesini işaretler. " +
-                    "İstersen çizimleri elle seçip cümleleri kendin de yazabilirsin.",
-                style = Console.Small, modifier = Modifier.padding(top = 6.dp)
-            )
-            st.aiCost?.let { Text("Son yazımın maliyeti: " + OpenRouterClient.usd(it), style = Console.Small) }
-            r.writeError?.let { Text(it, style = Console.Small.copy(color = Console.Critical)) }
-        }
-    }
-
-    item { Step("3", "Senaryo") }
-    item {
-        ConsoleCard(Modifier.fillMaxWidth()) {
-            Text("Açılış", style = Console.Label)
-            LineEditor(sc.hook, { vm.editLine(LineRef.RealHook, it) }, { vm.editEmotion(LineRef.RealHook, it) }) { vm.listen(sc.hook) }
-            sc.roasts.forEachIndexed { i, roast ->
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
-                    MiniDoodle(p.drawing(roast.sampleId)?.strokes.orEmpty())
-                    Spacer(Modifier.width(8.dp))
-                    Text("${p.wordOf(roast.sampleId).ifBlank { "Çizim ${i + 1}" }} esprisi", style = Console.Label, modifier = Modifier.weight(1f))
-                    val on = roast.sampleId in revealIds
-                    Tag(
-                        if (on) "★ Gerçeğe" else "☆ Gerçeğe",
-                        fg = if (on) Color.White else Console.Accent,
-                        bg = if (on) Console.Accent else Console.AccentSoft,
-                        modifier = Modifier.clip(RoundedCornerShape(50)).clickable { vm.toggleReveal(roast.sampleId) }
-                    )
-                }
-                LineEditor(roast.line, { vm.editLine(LineRef.RealRoastLine(i), it) }, { vm.editEmotion(LineRef.RealRoastLine(i), it) }) { vm.listen(roast.line) }
-            }
-            Text("Geçiş (görseli olan dönüşüm varsa söylenir)", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
-            LineEditor(sc.bridge, { vm.editLine(LineRef.RealBridge, it) }, { vm.editEmotion(LineRef.RealBridge, it) }) { vm.listen(sc.bridge) }
-        }
-    }
-
-    item { Step("4", "Gerçeğe dönüştür", "${sc.reveals.count { it.image != null }}/${sc.reveals.size} görsel · ${sc.reveals.count { it.clip != null }}/${sc.reveals.size} video") }
+    if (p == null || p.reveals.isEmpty()) return
+    item { Step("2", "Gerçeğe dönüştür", "${p.reveals.count { it.image != null }}/${p.reveals.size} görsel · ${p.reveals.count { it.clip != null }}/${p.reveals.size} video") }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text(
                 "1) “ChatGPT'ye gönder”: çizim paylaşılır, istem panoya kopyalanır; ChatGPT'de yapıştır. " +
                     "2) Çıkan görseli kaydet, “Görsel ekle” ile seç. " +
-                    "3) “Gemini'ye gönder”: görsel ve video istemi birlikte gider; Gemini'de Video'yu seçip gönder. " +
+                    "3) “Gemini'ye gönder”: görsel ve video istemi birlikte gider; Gemini'de Video'yu seçip gönder (sesli üretir). " +
                     "4) Çıkan videoyu “Video ekle” ile seç. " +
-                    "Videoya yalnızca çizimden videoya dönüşen kısımlar girer; videosu olmayan dönüşüm girmez. " +
+                    "Videoya yalnızca Gemini videoları girer; videosu olmayan çizim girmez. " +
                     "Görseller videoya girmez: kaydırmalı gönderi olarak ayrı paylaşılır.",
                 style = Console.Small
             )
-            val withImage = sc.reveals.count { it.image != null }
-            ActionButton(Icons.Filled.Share, "Görselleri paylaş (kaydırmalı) · $withImage", Console.Surface, Console.Ink, Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            ActionButton(Icons.Filled.Share, "Görselleri paylaş (kaydırmalı) · ${p.reveals.count { it.image != null }}", Console.Surface, Console.Ink, Modifier.fillMaxWidth().padding(top = 8.dp)) {
                 vm.shareCarousel()
             }
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
-                Column(Modifier.weight(1f)) {
-                    Text("Videoların kendi sesi", style = Console.Subtitle)
-                    Text("Gemini videosundaki doğal ses Karalak'ın sesinin altında çalar.", style = Console.Small)
-                }
-                Switch(checked = r.clipSound, onCheckedChange = vm::setClipSound, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
-            }
-            if (sc.reveals.isEmpty()) {
-                Text("Senaryodaki bir çizimin yanındaki “☆ Gerçeğe”ye dokun.", style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 6.dp))
-            }
+            Spacer(Modifier.height(8.dp))
+            DarkButton(
+                text = if (r.writing) "Asistan yazıyor…" else "Asistan kelimeleri, şekilleri ve hareketi yazsın",
+                busy = r.writing,
+                enabled = !r.writing
+            ) { vm.describeReal() }
+            Text("İsteğe bağlı: aynı alanları aşağıdan elle de doldurabilirsin. Açıklama ve etiketleri de yazar.", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
+            st.aiCost?.let { Text("Son yazımın maliyeti: " + OpenRouterClient.usd(it), style = Console.Small) }
+            r.writeError?.let { Text(it, style = Console.Small.copy(color = Console.Critical)) }
         }
     }
-    sc.reveals.forEachIndexed { i, rv ->
+    p.reveals.forEachIndexed { i, rv ->
         item(key = "rv-" + rv.sampleId) { RevealCard(i, rv, p, r.busy == rv.sampleId, r.busy != null, vm, context) }
-    }
-
-    item { Step("5", "Kapanış") }
-    item {
-        ConsoleCard(Modifier.fillMaxWidth()) {
-            LineEditor(sc.outro, { vm.editLine(LineRef.RealOutro, it) }, { vm.editEmotion(LineRef.RealOutro, it) }) { vm.listen(sc.outro) }
-        }
     }
 }
 
@@ -519,7 +465,9 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
             }
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text("Dönüşüm ${index + 1}", style = Console.Subtitle)
+                val d = project.drawing(rv.sampleId)
+                Text("Çizim ${index + 1} · ${d?.word.orEmpty()}", style = Console.Subtitle)
+                Text("@${d?.nickname.orEmpty()} · Sv. ${d?.level ?: 0}", style = Console.Small)
                 Text(
                     listOfNotNull(
                         if (rv.image != null) "görsel ✓" else "görsel bekleniyor",
@@ -530,6 +478,7 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
             }
             if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = Console.Accent, strokeWidth = 2.dp)
         }
+        Field("Kelime (İngilizce)", rv.wordEn, { vm.setRevealWordEn(rv.sampleId, it) }, lines = 1)
         Field("Çizimin şekli (İngilizce, görsel istemine eklenir)", rv.describe, { vm.setRevealDescribe(rv.sampleId, it) }, lines = 2)
         Field("Nasıl hareket etsin (İngilizce, video istemine eklenir)", rv.motion, { vm.setRevealMotion(rv.sampleId, it) }, lines = 2)
 
@@ -557,12 +506,6 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
             }
         }
         if (rv.clip != null) SmallLink("Videoyu kaldır", Console.Critical) { vm.removeClip(rv.sampleId) }
-
-        Text("Karalak'ın tepkisi", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
-        LineEditor(rv.line, { vm.editLine(LineRef.RealRevealLine(index), it) }, { vm.editEmotion(LineRef.RealRevealLine(index), it) }) { vm.listen(rv.line) }
-        if (rv.image != null) {
-            SmallLink(if (busy) "Karalak bakıyor…" else "Karalak gerçeğine baksın: tepkiyi görsele göre yazsın") { if (!anyBusy) vm.reactReal(rv.sampleId) }
-        }
     }
 }
 
@@ -582,7 +525,7 @@ private fun WordRow(word: String, detail: String, on: Boolean, upper: Boolean = 
 }
 
 @Composable
-private fun RealThumb(strokes: List<List<DrawingPoint>>, word: String, order: Int, star: Boolean, modifier: Modifier, onClick: () -> Unit) {
+private fun RealThumb(strokes: List<List<DrawingPoint>>, label: String, order: Int, modifier: Modifier, onClick: () -> Unit) {
     val on = order >= 0
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -599,10 +542,9 @@ private fun RealThumb(strokes: List<List<DrawingPoint>>, word: String, order: In
                         contentAlignment = Alignment.Center
                     ) { Text("${order + 1}", style = Console.Label.copy(color = Color.White)) }
                 }
-                if (star) Text("★", style = Console.Subtitle.copy(color = Console.Accent), modifier = Modifier.padding(6.dp).align(Alignment.TopStart))
             }
             Text(
-                word, style = Console.Small, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                label, style = Console.Small, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp), textAlign = TextAlign.Center
             )
         }
@@ -618,9 +560,10 @@ private fun MiniDoodle(strokes: List<List<DrawingPoint>>) {
 
 /** Voice, mascot artwork, preview, making the video and the result: the same for every format. */
 private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, context: Context) {
-    // 4. voice
-    item { Step("♪", "Ses") }
-    item {
+    val real = st.format == StudioFormat.RealLife
+    // 4. voice (the "Gerçek Olsaydı" video has none: its sound is the clips' own)
+    if (!real) item { Step("♪", "Ses") }
+    if (!real) item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -651,8 +594,8 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
     }
 
     // 5. mascot artwork
-    item { Step("☺", "Karalak'ın pozları") }
-    item {
+    if (!real) item { Step("☺", "Karalak'ın pozları") }
+    if (!real) item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -673,7 +616,14 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             if (st.preview == null && st.totalMs == 0L) {
-                Text(if (st.format == StudioFormat.Guess) "Önizleme için en az bir çizim seç." else "Önizleme için bir kelime seç.", style = Console.Small)
+                Text(
+                    when (st.format) {
+                        StudioFormat.Guess -> "Önizleme için en az bir çizim seç."
+                        StudioFormat.RealLife -> "Önizleme için çizim seç ve Gemini videosunu ekle."
+                        else -> "Önizleme için bir kelime seç."
+                    },
+                    style = Console.Small
+                )
             } else {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     val img = st.preview
@@ -690,6 +640,7 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
                     )
                     Text(
                         if (st.format == StudioFormat.Guess && st.script == null) "Örnek cümlelerle gösteriliyor; Karalak yazınca kendi cümleleri gelir."
+                        else if (st.format == StudioFormat.RealLife) "Videoların kendi sesi çalar; üstüne çizim, oyuncu bilgisi ve kapanış kartı gelir."
                         else "Sesli videoda süreler sesin gerçek uzunluğuna göre ayarlanır.",
                         style = Console.Small, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
                     )
@@ -744,9 +695,9 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
                 }
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ActionButton(Icons.Filled.Share, "Paylaş", Console.Accent, Color.White, Modifier.weight(1.3f)) { share(context, file, st.caption, st.hashtags) }
+                    ActionButton(Icons.Filled.Share, "Paylaş", Console.Accent, Color.White, Modifier.weight(1.3f)) { share(context, file, st.caption, st.hashtags, store = real) }
                     ActionButton(Icons.Filled.Download, "Galeriye", Console.Surface, Console.Ink, Modifier.weight(1f)) { vm.saveToGallery() }
-                    ActionButton(Icons.Filled.ContentCopy, "Metin", Console.Surface, Console.Ink, Modifier.weight(1f)) { copy(context, postText(st.caption, st.hashtags)) }
+                    ActionButton(Icons.Filled.ContentCopy, "Metin", Console.Surface, Console.Ink, Modifier.weight(1f)) { copy(context, postText(st.caption, st.hashtags, store = real)) }
                 }
                 Field("Açıklama", st.caption, vm::setCaption, lines = 3)
                 Field("Etiketler", st.hashtags, vm::setHashtags, lines = 2)
@@ -1048,7 +999,11 @@ private fun ActionButton(icon: androidx.compose.ui.graphics.vector.ImageVector, 
     }
 }
 
-private fun postText(caption: String, hashtags: String) = listOf(caption.trim(), hashtags.trim()).filter { it.isNotEmpty() }.joinToString("\n\n")
+private fun postText(caption: String, hashtags: String, store: Boolean = false): String {
+    val text = listOf(caption.trim(), hashtags.trim()).filter { it.isNotEmpty() }.joinToString("\n\n")
+    // the viewer is sent to the app's Google Play page, not the website
+    return if (store) RealCopy.withStoreLink(text) else text
+}
 
 private fun copy(context: Context, text: String) {
     runCatching {
@@ -1103,9 +1058,9 @@ private fun shareImages(context: Context, files: List<File>, text: String) {
 }
 
 /** Hands the video to the system share sheet (Instagram, TikTok, WhatsApp…), with the post text on the clipboard. */
-private fun share(context: Context, file: File, caption: String, hashtags: String) {
+private fun share(context: Context, file: File, caption: String, hashtags: String, store: Boolean = false) {
     runCatching {
-        val text = postText(caption, hashtags)
+        val text = postText(caption, hashtags, store)
         if (text.isNotEmpty()) {
             (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Karalak", text))
         }

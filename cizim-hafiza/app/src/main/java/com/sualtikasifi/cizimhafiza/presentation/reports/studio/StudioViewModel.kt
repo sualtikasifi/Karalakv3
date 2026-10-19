@@ -57,8 +57,6 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealImages
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealRenderer
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealRoast
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealScript
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealStore
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RecentDrawing
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealTimeline
@@ -140,11 +138,6 @@ sealed interface LineRef {
     data object MemoryParadox : LineRef
     data object MemoryOutro : LineRef
     data class MemoryPickLine(val pick: Int) : LineRef
-    data object RealHook : LineRef
-    data object RealBridge : LineRef
-    data object RealOutro : LineRef
-    data class RealRoastLine(val roast: Int) : LineRef
-    data class RealRevealLine(val reveal: Int) : LineRef
 }
 
 /** "Hafıza Tuzağı": the archive's numbers, the chosen word, its kept drawings, the picks and the script. */
@@ -170,7 +163,6 @@ data class RealUi(
     val writeError: String? = null,
     /** The drawing whose picture, clip or reaction is being worked on. */
     val busy: String? = null,
-    val clipSound: Boolean = true,
     /** Starting over while the project has pictures in it: asks before throwing them away. */
     val confirmReset: Boolean = false,
     /** A picture ready to hand to ChatGPT or Gemini, with the prompt to paste. */
@@ -232,7 +224,7 @@ data class StudioState(
     val ready: Boolean get() = !rendering && when (format) {
         StudioFormat.Guess -> script != null
         StudioFormat.Memory -> memory.script?.picks?.isNotEmpty() == true
-        StudioFormat.RealLife -> real.project?.script?.roasts?.isNotEmpty() == true
+        StudioFormat.RealLife -> real.project?.shown?.isNotEmpty() == true
     }
 }
 
@@ -279,7 +271,6 @@ class StudioViewModel @Inject constructor(
     private val realStore = RealStore(context)
     private var realSaveJob: Job? = null
     /** Imported pictures by file name, decoded once. */
-    private val photoCache = ConcurrentHashMap<String, Bitmap>()
     /** Imported clips by file name, opened for quick preview frames. */
     private val previewClips = ConcurrentHashMap<String, ClipFrames>()
 
@@ -515,19 +506,6 @@ class StudioViewModel @Inject constructor(
     fun editEmotion(ref: LineRef, emotion: MascotEmotion) = updateLine(ref) { it.copy(emotion = emotion) }
 
     private fun updateLine(ref: LineRef, change: (SpokenLine) -> SpokenLine) {
-        if (ref is LineRef.RealHook || ref is LineRef.RealBridge || ref is LineRef.RealOutro || ref is LineRef.RealRoastLine || ref is LineRef.RealRevealLine) {
-            updateRealScript { sc ->
-                when (ref) {
-                    LineRef.RealHook -> sc.copy(hook = change(sc.hook))
-                    LineRef.RealBridge -> sc.copy(bridge = change(sc.bridge))
-                    LineRef.RealOutro -> sc.copy(outro = change(sc.outro))
-                    is LineRef.RealRoastLine -> sc.copy(roasts = sc.roasts.mapIndexed { i, r -> if (i == ref.roast) r.copy(line = change(r.line)) else r })
-                    is LineRef.RealRevealLine -> sc.copy(reveals = sc.reveals.mapIndexed { i, r -> if (i == ref.reveal) r.copy(line = change(r.line)) else r })
-                    else -> sc
-                }
-            }
-            return
-        }
         _state.update { s ->
             if (ref is LineRef.MemoryHook || ref is LineRef.MemoryParadox || ref is LineRef.MemoryOutro || ref is LineRef.MemoryPickLine) {
                 val ms = s.memory.script ?: return@update s
@@ -708,7 +686,8 @@ class StudioViewModel @Inject constructor(
         refreshPreview()
     }
 
-    private fun updateRealScript(change: (RealScript) -> RealScript) = updateProject { it.copy(script = change(it.script)) }
+    private fun updateReveal(sampleId: String, change: (RealReveal) -> RealReveal) =
+        updateProject { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) change(it) else it }) }
 
     /** The project left from last time, if any, and the latest drawings read last time. */
     private fun loadReal() {
@@ -720,24 +699,29 @@ class StudioViewModel @Inject constructor(
     }
 
     /**
-     * Reads the newest drawings of the reviewed pool again: the latest [RECENT_MAX], newest round first and
-     * each round in play order, every one with its word and the seconds that word gives. What was read last
-     * stays when reading fails.
+     * Reads the newest drawings of the reviewed pool again, only those of players who allowed to be featured:
+     * the latest [RECENT_MAX], newest round first and each round in play order, every one with its word, the
+     * seconds that word gives, and the player's name and level. What was read last stays when reading fails.
      */
     fun refreshRecent() {
         if (_state.value.real.loadingRecent) return
         updateReal { it.copy(loadingRecent = true, recentError = null) }
         viewModelScope.launch {
             val read = runCatching {
+                val players = moderation.featuredPlayers().getOrThrow().associateBy { it.uid }
+                if (players.isEmpty()) return@runCatching emptyList<RecentDrawing>()
                 val out = mutableListOf<RecentDrawing>()
                 var cursor: Long? = null
-                for (page in 0 until RECENT_PAGES) {
-                    val p = moderation.poolRuns(RECENT_PAGE, cursor).getOrThrow()
-                    for (run in p.runs) run.items.forEachIndexed { i, item ->
-                        if (out.size < RECENT_MAX && item.strokes.isNotEmpty() && item.word.isNotBlank()) {
-                            val word = item.word.trim()
-                            val seconds = runCatching { wordDao.findByText(word) }.getOrNull()?.let { GameConstants.drawingDurationSeconds(it.difficulty) } ?: 0
-                            out += RecentDrawing("${run.id}#$i", word, seconds, item.strokes)
+                for (page in 0 until FEATURED_POOL_PAGES) {
+                    val p = moderation.poolRuns(SCAN_PAGE, cursor).getOrThrow()
+                    for (run in p.runs) {
+                        val player = players[run.uid] ?: continue
+                        run.items.forEachIndexed { i, item ->
+                            if (out.size < RECENT_MAX && item.strokes.isNotEmpty() && item.word.isNotBlank()) {
+                                val word = item.word.trim()
+                                val seconds = runCatching { wordDao.findByText(word) }.getOrNull()?.let { GameConstants.drawingDurationSeconds(it.difficulty) } ?: 0
+                                out += RecentDrawing("${run.id}#$i", word, seconds, player.nickname, player.level, item.strokes)
+                            }
                         }
                     }
                     if (out.size >= RECENT_MAX || p.endReached || p.nextCursor == null) break
@@ -747,24 +731,17 @@ class StudioViewModel @Inject constructor(
             }
             read.onSuccess { list ->
                 withContext(Dispatchers.IO) { runCatching { realStore.saveRecent(list) } }
-                updateReal { it.copy(recent = list, loadingRecent = false, recentError = if (list.isEmpty()) "Havuzda çizim bulunamadı" else null) }
+                updateReal {
+                    it.copy(
+                        recent = list, loadingRecent = false,
+                        recentError = if (list.isEmpty()) "Havuzda, “Videolarda öne çık” izni veren oyuncuların çizimi yok." else null
+                    )
+                }
             }.onFailure { e ->
                 updateReal { it.copy(loadingRecent = false, recentError = "Okunamadı: ${e.message}") }
             }
         }
     }
-
-    private fun newProject() = RealProject(
-        script = RealScript(
-            word = "", drawSeconds = 7,
-            hook = SpokenLine(RealCopy.HOOK_MANY, MascotEmotion.Excited),
-            roasts = emptyList(),
-            bridge = SpokenLine(RealCopy.BRIDGE, MascotEmotion.Thinking),
-            reveals = emptyList(),
-            outro = SpokenLine(RealCopy.OUTRO, MascotEmotion.Point)
-        ),
-        drawings = emptyList()
-    )
 
     /** Clears the choice and every picture and clip, after asking when there are any. */
     fun resetReal(confirmed: Boolean = false) {
@@ -780,76 +757,48 @@ class StudioViewModel @Inject constructor(
 
     fun cancelResetReal() = updateReal { it.copy(confirmReset = false) }
 
-    /** Puts a drawing in the run, or takes it out (and out of the reveals); at most [MAX_ROASTS]. */
-    fun toggleRoast(drawing: RecentDrawing) = toggleRoast(drawing.id, drawing.strokes, drawing.word, drawing.seconds)
-
-    fun toggleRoast(id: String, strokes: List<List<DrawingPoint>>, word: String, seconds: Int) {
-        if (_state.value.real.project == null) updateReal { it.copy(project = newProject()) }
+    /** Puts a drawing in the video, or takes it out (with its picture and clip); at most [MAX_REVEALS]. */
+    fun toggleReveal(drawing: RecentDrawing) {
+        if (_state.value.real.project == null) updateReal { it.copy(project = RealProject()) }
         val p = _state.value.real.project ?: return
-        val has = p.script.roasts.any { it.sampleId == id }
-        if (!has && p.script.roasts.size >= MAX_ROASTS) { _state.update { it.copy(message = "En fazla $MAX_ROASTS çizim") }; return }
+        val has = p.reveals.any { it.sampleId == drawing.id }
+        if (!has && p.reveals.size >= MAX_REVEALS) { _state.update { it.copy(message = "En fazla $MAX_REVEALS çizim") }; return }
         updateProject { proj ->
-            val sc = proj.script
-            if (has) proj.copy(script = sc.copy(roasts = sc.roasts.filterNot { it.sampleId == id }, reveals = sc.reveals.filterNot { it.sampleId == id }))
+            if (has) proj.copy(reveals = proj.reveals.filterNot { it.sampleId == drawing.id }, drawings = proj.drawings.filterNot { it.id == drawing.id })
             else proj.copy(
-                script = sc.copy(roasts = sc.roasts + RealRoast(id, SpokenLine("", MascotEmotion.Laughing))),
-                drawings = if (proj.drawing(id) != null) proj.drawings else proj.drawings + RealDrawing(id, strokes, word, seconds)
+                reveals = proj.reveals + RealReveal(drawing.id),
+                drawings = proj.drawings + RealDrawing(drawing.id, drawing.strokes, drawing.word, drawing.seconds, drawing.nickname, drawing.level)
             )
         }
         pruneRealMedia()
     }
 
-    /** Marks a drawing of the run to be turned real, or unmarks it; at most [MAX_REVEALS]. */
-    fun toggleReveal(sampleId: String) {
-        val p = _state.value.real.project ?: return
-        val has = p.script.reveals.any { it.sampleId == sampleId }
-        if (!has && p.script.reveals.size >= MAX_REVEALS) { _state.update { it.copy(message = "En fazla $MAX_REVEALS dönüşüm") }; return }
-        updateRealScript { sc ->
-            if (has) sc.copy(reveals = sc.reveals.filterNot { it.sampleId == sampleId })
-            else sc.copy(reveals = sc.reveals + RealReveal(sampleId, SpokenLine("", MascotEmotion.Shocked)))
-        }
-        pruneRealMedia()
-    }
+    fun setRevealDescribe(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(describe = text.take(300)) }
+    fun setRevealMotion(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(motion = text.take(300)) }
+    fun setRevealWordEn(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(wordEn = text.take(60)) }
 
-    fun setRevealDescribe(sampleId: String, text: String) =
-        updateRealScript { sc -> sc.copy(reveals = sc.reveals.map { if (it.sampleId == sampleId) it.copy(describe = text.take(300)) else it }) }
-
-    fun setRevealMotion(sampleId: String, text: String) {
-        updateRealScript { sc -> sc.copy(reveals = sc.reveals.map { if (it.sampleId == sampleId) it.copy(motion = text.take(300)) else it }) }
-    }
-
-    fun setClipSound(on: Boolean) { updateReal { it.copy(clipSound = on) }; _state.update { it.copy(video = null) } }
-
-    /** Lets the assistant pick the run, write a joke for each and choose which to turn real. */
-    fun writeReal() {
+    /**
+     * Lets the assistant describe the chosen drawings (the word in English, their shapes, how each would move)
+     * and write the post text. Optional: the same fields can be filled in by hand.
+     */
+    fun describeReal() {
         val s = _state.value
         val p = s.real.project ?: return
         if (s.real.writing) return
         val key = prefs().getString(AssistantViewModel.KEY, "").orEmpty()
         if (key.isBlank()) { updateReal { it.copy(writeError = "Önce Asistan ayarlarından OpenRouter anahtarını gir.") }; return }
         val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
-        // the drawings chosen for the video, in the order they were chosen
-        val candidates = p.script.roasts.mapNotNull { r -> p.drawing(r.sampleId) }
+        val candidates = p.reveals.mapNotNull { r -> p.drawing(r.sampleId) }
         if (candidates.isEmpty()) { updateReal { it.copy(writeError = "Önce en az bir çizim seç") }; return }
         updateReal { it.copy(writing = true, writeError = null) }
         viewModelScope.launch {
-            RealDirector(OpenRouterClient(key), model).pick(candidates, candidates.size, MAX_REVEALS).onSuccess { w ->
+            RealDirector(OpenRouterClient(key), model).describe(candidates).onSuccess { w ->
                 updateReal { it.copy(writing = false) }
+                val byId = w.reveals.associateBy { it.sampleId }
                 updateProject { proj ->
-                    val old = proj.script.reveals.associateBy { it.sampleId }
-                    val used = (w.roasts.map { it.sampleId } + w.reveals.map { it.sampleId }).toSet()
-                    proj.copy(
-                        script = proj.script.copy(
-                            roasts = w.roasts,
-                            // a drawing that already has its picture keeps it
-                            reveals = w.reveals.map { r -> old[r.sampleId]?.let { o -> r.copy(image = o.image, clip = o.clip, clipMs = o.clipMs) } ?: r },
-                            outro = w.outro ?: proj.script.outro
-                        ),
-                        drawings = (proj.drawings + candidates).distinctBy { it.id }.filter { it.id in used }
-                    )
+                    proj.copy(reveals = proj.reveals.map { r -> byId[r.sampleId]?.let { d -> r.copy(wordEn = d.wordEn, describe = d.describe, motion = d.motion) } ?: r })
                 }
                 _state.update { it.copy(caption = w.caption.ifBlank { it.caption }, hashtags = w.hashtags.ifBlank { it.hashtags }, aiCost = w.costUsd) }
-                pruneRealMedia()
             }.onFailure { e -> updateReal { it.copy(writing = false, writeError = e.message ?: "Yazılamadı") } }
         }
     }
@@ -858,7 +807,7 @@ class StudioViewModel @Inject constructor(
     fun shareDoodle(sampleId: String) {
         val p = _state.value.real.project ?: return
         val d = p.drawing(sampleId) ?: return
-        val reveal = p.script.reveals.find { it.sampleId == sampleId }
+        val reveal = p.reveals.find { it.sampleId == sampleId }
         viewModelScope.launch {
             val file = withContext(Dispatchers.IO) {
                 runCatching {
@@ -867,7 +816,7 @@ class StudioViewModel @Inject constructor(
                     File(dir, "karalak_cizim_${System.currentTimeMillis()}.png").apply { writeBytes(StrokeReplay.png(d.strokes, 1f, 1024)) }
                 }.getOrNull()
             } ?: run { _state.update { it.copy(message = "Çizim hazırlanamadı") }; return@launch }
-            val prompt = RealCopy.imagePrompt(p.wordOf(sampleId), reveal?.wordEn.orEmpty().ifBlank { p.wordEn }, p.secondsOf(sampleId), reveal?.describe.orEmpty())
+            val prompt = RealCopy.imagePrompt(d.word, reveal?.wordEn.orEmpty(), d.seconds.coerceAtLeast(1), reveal?.describe.orEmpty())
             updateReal { it.copy(share = RealShare(file, prompt)) }
         }
     }
@@ -880,20 +829,20 @@ class StudioViewModel @Inject constructor(
      */
     fun shareToGemini(sampleId: String) {
         val p = _state.value.real.project ?: return
-        val reveal = p.script.reveals.find { it.sampleId == sampleId } ?: return
+        val reveal = p.reveals.find { it.sampleId == sampleId } ?: return
         val image = reveal.image ?: run { _state.update { it.copy(message = "Önce ChatGPT görselini ekle") }; return }
         viewModelScope.launch {
             val file = withContext(Dispatchers.IO) {
                 runCatching { copyToShare(realStore.file(image), "karalak_gercek_${System.currentTimeMillis()}", clear = true) }.getOrNull()
             } ?: run { _state.update { it.copy(message = "Görsel hazırlanamadı") }; return@launch }
-            updateReal { it.copy(share = RealShare(file, RealCopy.videoPrompt(reveal.wordEn.ifBlank { p.wordEn }.ifBlank { p.wordOf(sampleId) }, reveal.motion), ShareTarget.Gemini)) }
+            updateReal { it.copy(share = RealShare(file, RealCopy.videoPrompt(reveal.wordEn.ifBlank { p.drawing(sampleId)?.word.orEmpty() }, reveal.motion), ShareTarget.Gemini)) }
         }
     }
 
     /** Every drawing that has its picture, each followed by that picture, for one swipe-through post. */
     fun shareCarousel() {
         val p = _state.value.real.project ?: return
-        val made = p.script.reveals.filter { it.image != null && p.drawing(it.sampleId) != null }
+        val made = p.reveals.filter { it.image != null && p.drawing(it.sampleId) != null }
         if (made.isEmpty()) { _state.update { it.copy(message = "Önce görselleri ekle") }; return }
         viewModelScope.launch {
             val files = withContext(Dispatchers.IO) {
@@ -923,14 +872,15 @@ class StudioViewModel @Inject constructor(
 
     fun imagePrompt(sampleId: String): String? {
         val p = _state.value.real.project ?: return null
-        val reveal = p.script.reveals.find { it.sampleId == sampleId }
-        return RealCopy.imagePrompt(p.wordOf(sampleId), reveal?.wordEn.orEmpty().ifBlank { p.wordEn }, p.secondsOf(sampleId), reveal?.describe.orEmpty())
+        val d = p.drawing(sampleId) ?: return null
+        val reveal = p.reveals.find { it.sampleId == sampleId }
+        return RealCopy.imagePrompt(d.word, reveal?.wordEn.orEmpty(), d.seconds.coerceAtLeast(1), reveal?.describe.orEmpty())
     }
 
     fun videoPrompt(sampleId: String): String? {
         val p = _state.value.real.project ?: return null
-        val reveal = p.script.reveals.find { it.sampleId == sampleId }
-        return RealCopy.videoPrompt(reveal?.wordEn.orEmpty().ifBlank { p.wordEn }.ifBlank { p.wordOf(sampleId) }, reveal?.motion.orEmpty())
+        val reveal = p.reveals.find { it.sampleId == sampleId } ?: return null
+        return RealCopy.videoPrompt(reveal.wordEn.ifBlank { p.drawing(sampleId)?.word.orEmpty() }, reveal.motion)
     }
 
     fun mediaFile(name: String): File = realStore.file(name)
@@ -943,14 +893,14 @@ class StudioViewModel @Inject constructor(
             val result = withContext(Dispatchers.IO) {
                 runCatching {
                     val name = realStore.import(uri, sampleId + "_img", realStore.extensionOf(uri, video = false))
-                    val bmp = RealImages.load(realStore.file(name)) ?: run { realStore.file(name).delete(); error("Görsel açılamadı") }
-                    photoCache[name] = bmp
+                    // opened once to be sure it is a picture, then let go
+                    RealImages.load(realStore.file(name)) ?: run { realStore.file(name).delete(); error("Görsel açılamadı") }
                     name
                 }
             }
             updateReal { it.copy(busy = null) }
             result.onSuccess { name ->
-                updateProject(saveNow = true) { p -> p.copy(script = p.script.copy(reveals = p.script.reveals.map { if (it.sampleId == sampleId) it.copy(image = name) else it })) }
+                updateProject(saveNow = true) { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) it.copy(image = name) else it }) }
                 pruneRealMedia()
             }.onFailure { e -> _state.update { it.copy(message = "Görsel eklenemedi: ${e.message}") } }
         }
@@ -972,9 +922,9 @@ class StudioViewModel @Inject constructor(
             updateReal { it.copy(busy = null) }
             result.onSuccess { (name, ms) ->
                 updateProject(saveNow = true) { p ->
-                    p.copy(script = p.script.copy(reveals = p.script.reveals.map {
+                    p.copy(reveals = p.reveals.map {
                         if (it.sampleId == sampleId) it.copy(clip = name, clipMs = ms.coerceAtMost(RealTimeline.CLIP_MAX)) else it
-                    }))
+                    })
                 }
                 pruneRealMedia()
             }.onFailure { e -> _state.update { it.copy(message = "Video eklenemedi: ${e.message}") } }
@@ -982,51 +932,25 @@ class StudioViewModel @Inject constructor(
     }
 
     fun removeImage(sampleId: String) {
-        updateProject(saveNow = true) { p -> p.copy(script = p.script.copy(reveals = p.script.reveals.map { if (it.sampleId == sampleId) it.copy(image = null) else it })) }
+        updateProject(saveNow = true) { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) it.copy(image = null) else it }) }
         pruneRealMedia()
     }
 
     fun removeClip(sampleId: String) {
-        updateProject(saveNow = true) { p -> p.copy(script = p.script.copy(reveals = p.script.reveals.map { if (it.sampleId == sampleId) it.copy(clip = null, clipMs = 0L) else it })) }
+        updateProject(saveNow = true) { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) it.copy(clip = null, clipMs = 0L) else it }) }
         pruneRealMedia()
     }
 
-    /** Shows Karalak the drawing and its realistic picture, and has it react in one line. */
-    fun reactReal(sampleId: String) {
-        val s = _state.value
-        val p = s.real.project ?: return
-        if (s.real.busy != null) return
-        val reveal = p.script.reveals.find { it.sampleId == sampleId } ?: return
-        val photo = reveal.image?.let { photoCache[it] } ?: return
-        val d = p.drawing(sampleId) ?: return
-        val key = prefs().getString(AssistantViewModel.KEY, "").orEmpty()
-        if (key.isBlank()) { _state.update { it.copy(message = "Önce Asistan ayarlarından OpenRouter anahtarını gir.") }; return }
-        val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
-        updateReal { it.copy(busy = sampleId) }
-        viewModelScope.launch {
-            val png = withContext(Dispatchers.Default) { RealImages.pngForAssistant(photo) }
-            RealDirector(OpenRouterClient(key), model).react(p.wordOf(sampleId), d, png).onSuccess { (line, cost) ->
-                updateRealScript { sc -> sc.copy(reveals = sc.reveals.map { if (it.sampleId == sampleId) it.copy(line = line) else it }) }
-                _state.update { it.copy(aiCost = cost) }
-            }.onFailure { e -> _state.update { it.copy(message = e.message ?: "Tepki yazılamadı") } }
-            updateReal { it.copy(busy = null) }
-        }
-    }
-
-    /** Decodes the project's pictures and opens its clips once; lets go of the ones it no longer uses. */
+    /** Opens the project's clips once for the preview; lets go of the ones it no longer uses. */
     private fun loadRealMedia(p: RealProject) {
         val wanted = p.media
-        photoCache.keys.filter { it !in wanted }.forEach { photoCache.remove(it) }
         previewClips.keys.filter { it !in wanted }.forEach { k -> previewClips.remove(k)?.close() }
-        val missing = p.script.reveals.flatMap { r -> listOfNotNull(r.image?.takeIf { !photoCache.containsKey(it) }, r.clip?.takeIf { !previewClips.containsKey(it) }) }
+        val missing = p.reveals.mapNotNull { r -> r.clip?.takeIf { !previewClips.containsKey(it) } }
         if (missing.isEmpty()) return
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                p.script.reveals.forEach { r ->
-                    r.image?.takeIf { !photoCache.containsKey(it) }?.let { name -> RealImages.load(realStore.file(name))?.let { photoCache[name] = it } }
-                    r.clip?.takeIf { !previewClips.containsKey(it) }?.let { name ->
-                        runCatching { ClipFrames(realStore.file(name), exact = false) }.getOrNull()?.let { if (previewClips.putIfAbsent(name, it) != null) it.close() }
-                    }
+                missing.forEach { name ->
+                    runCatching { ClipFrames(realStore.file(name), exact = false) }.getOrNull()?.let { if (previewClips.putIfAbsent(name, it) != null) it.close() }
                 }
             }
             refreshPreview()
@@ -1285,6 +1209,17 @@ class StudioViewModel @Inject constructor(
         s: StudioState, voice: Map<Int, FloatArray>?, preview: Boolean,
         clipSource: (String) -> ClipFrames? = { previewClips[it] }
     ): VoicedVideo? {
+        if (s.format == StudioFormat.RealLife) {
+            val p = s.real.project ?: return null
+            val shown = p.shown
+            if (shown.isEmpty()) return null
+            return RealRenderer(
+                assetsOrLoad(), p,
+                clips = shown.mapNotNull { r -> r.clip?.let(clipSource)?.let { r.sampleId to it } }.toMap(),
+                clipFiles = shown.mapNotNull { r -> r.clip?.let { r.sampleId to realStore.file(it) } }.toMap(),
+                clipGain = CLIP_GAIN
+            )
+        }
         val sp = sprites ?: return null
         return when (s.format) {
             StudioFormat.Guess -> {
@@ -1298,18 +1233,7 @@ class StudioViewModel @Inject constructor(
                 val mosaic = s.memory.samples.filter { !it.correct && it.id !in pickedIds } + s.memory.samples.filter { !it.correct && it.id in pickedIds }
                 MemoryRenderer(assetsOrLoad(), sp, script, s.memory.samples.associateBy { it.id }, mosaic.take(9), voice)
             }
-            StudioFormat.RealLife -> {
-                val p = s.real.project ?: return null
-                if (p.script.roasts.isEmpty()) return null
-                val reveals = p.script.reveals
-                RealRenderer(
-                    assetsOrLoad(), sp, p.script, p.drawings.associateBy { it.id },
-                    clips = reveals.mapNotNull { r -> r.clip?.let(clipSource)?.let { r.sampleId to it } }.toMap(),
-                    clipFiles = reveals.mapNotNull { r -> r.clip?.let { r.sampleId to realStore.file(it) } }.toMap(),
-                    clipGain = if (s.real.clipSound) CLIP_GAIN else 0f,
-                    voice = voice
-                )
-            }
+            StudioFormat.RealLife -> null
         }
     }
 
@@ -1317,7 +1241,8 @@ class StudioViewModel @Inject constructor(
     private fun linesFor(s: StudioState): List<SpokenLine>? = when (s.format) {
         StudioFormat.Guess -> s.script?.lines()
         StudioFormat.Memory -> s.memory.script?.lines()
-        StudioFormat.RealLife -> s.real.project?.script?.lines()
+        // the video has no voice, no subtitles: nothing to say
+        StudioFormat.RealLife -> emptyList()
     }
 
     fun render() {
@@ -1345,7 +1270,7 @@ class StudioViewModel @Inject constructor(
                         val pcm = withContext(Dispatchers.IO) { ClipAudio.decode(f, VOICE_MAX_MS) } ?: error("“${l.text.take(30)}” sesi çözülemedi")
                         voices[i] = PcmOps.resample(pcm, RATE)
                     }
-                } else if (s.voiceOn) {
+                } else if (s.voiceOn && lines.isNotEmpty()) {
                     val synth = SpeechSynth.open(context).getOrThrow()
                     try {
                         synth.tune(s.voicePitch, s.voiceRate)
@@ -1476,11 +1401,8 @@ class StudioViewModel @Inject constructor(
         /** Featured players' drawings are looked for in this many pages of the pool (newest first). */
         const val FEATURED_POOL_PAGES = 40
         const val MAX_FEATURED_DRAWINGS = 60
-        /** "Gerçek Olsaydı": the pool's latest drawings shown (read this many rounds at a time), the run this many, and this many turn real. */
+        /** "Gerçek Olsaydı": the latest drawings of players who allowed it shown, and how many go in one video. */
         const val RECENT_MAX = 100
-        const val RECENT_PAGE = 10
-        const val RECENT_PAGES = 6
-        const val MAX_ROASTS = 5
         const val MAX_REVEALS = 3
         /** The clips' own sound, a little under Karalak's voice. */
         const val CLIP_GAIN = 0.85f
