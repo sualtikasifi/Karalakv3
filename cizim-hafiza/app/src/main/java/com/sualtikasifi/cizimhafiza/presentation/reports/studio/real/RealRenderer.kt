@@ -206,8 +206,8 @@ class RealRenderer(
     /** The speech board under the paper, its words in the ink the game uses on parchment. */
     private fun speech(canvas: Canvas, said: String, progress: Float, karaoke: Boolean) {
         piece(canvas, board, boardBox, shadow = true)
-        val cx = (mascotBox.right - 20f + boardBox.right - 70f) / 2f
-        val width = (boardBox.right - 70f - (mascotBox.right - 20f)).toInt()
+        val cx = (mascotBox.right - 20f + boardBox.right - 95f) / 2f
+        val width = (boardBox.right - 95f - (mascotBox.right - 20f)).toInt()
         val cy = boardBox.centerY() + 4f
         if (said.isBlank()) return
         if (karaoke) text.karaoke(canvas, said, progress, cx, cy, width, 52f, 3, assets.display, BROWN_INK, 0xFFB89B7A.toInt())
