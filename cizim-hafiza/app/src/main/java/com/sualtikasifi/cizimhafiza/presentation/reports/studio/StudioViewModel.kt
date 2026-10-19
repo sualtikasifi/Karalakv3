@@ -171,11 +171,15 @@ data class RealUi(
     val clipSound: Boolean = true,
     /** A word picked while the current project has pictures in it: asks before throwing them away. */
     val confirmWord: MemoryWordStat? = null,
-    /** A drawing ready to hand to ChatGPT, with the prompt to paste. */
-    val share: RealShare? = null
+    /** A picture ready to hand to ChatGPT or Gemini, with the prompt to paste. */
+    val share: RealShare? = null,
+    /** The swipe-through post: each drawing followed by what it became, ready for the share sheet. */
+    val carousel: List<File>? = null
 )
 
-class RealShare(val file: File, val prompt: String)
+enum class ShareTarget { ChatGpt, Gemini }
+
+class RealShare(val file: File, val prompt: String, val target: ShareTarget = ShareTarget.ChatGpt)
 
 data class StudioState(
     val format: StudioFormat = StudioFormat.Guess,
@@ -795,6 +799,10 @@ class StudioViewModel @Inject constructor(
     fun setRevealDescribe(sampleId: String, text: String) =
         updateRealScript { sc -> sc.copy(reveals = sc.reveals.map { if (it.sampleId == sampleId) it.copy(describe = text.take(300)) else it }) }
 
+    fun setRevealMotion(sampleId: String, text: String) {
+        updateRealScript { sc -> sc.copy(reveals = sc.reveals.map { if (it.sampleId == sampleId) it.copy(motion = text.take(300)) else it }) }
+    }
+
     fun setClipSound(on: Boolean) { updateReal { it.copy(clipSound = on) }; _state.update { it.copy(video = null) } }
 
     /** Lets the assistant pick the run, write a joke for each and choose which to turn real. */
@@ -852,13 +860,64 @@ class StudioViewModel @Inject constructor(
 
     fun clearShare() = updateReal { it.copy(share = null) }
 
+    /**
+     * Hands the realistic picture to Gemini with the video prompt. The picture has to travel with the
+     * prompt: asked in words alone Gemini invents its own creature instead of moving this one.
+     */
+    fun shareToGemini(sampleId: String) {
+        val p = _state.value.real.project ?: return
+        val reveal = p.script.reveals.find { it.sampleId == sampleId } ?: return
+        val image = reveal.image ?: run { _state.update { it.copy(message = "Önce ChatGPT görselini ekle") }; return }
+        viewModelScope.launch {
+            val file = withContext(Dispatchers.IO) {
+                runCatching { copyToShare(realStore.file(image), "karalak_gercek_${System.currentTimeMillis()}", clear = true) }.getOrNull()
+            } ?: run { _state.update { it.copy(message = "Görsel hazırlanamadı") }; return@launch }
+            updateReal { it.copy(share = RealShare(file, RealCopy.videoPrompt(p.wordEn, reveal.motion), ShareTarget.Gemini)) }
+        }
+    }
+
+    /** Every drawing that has its picture, each followed by that picture, for one swipe-through post. */
+    fun shareCarousel() {
+        val p = _state.value.real.project ?: return
+        val made = p.script.reveals.filter { it.image != null && p.drawing(it.sampleId) != null }
+        if (made.isEmpty()) { _state.update { it.copy(message = "Önce görselleri ekle") }; return }
+        viewModelScope.launch {
+            val files = withContext(Dispatchers.IO) {
+                runCatching {
+                    val dir = File(context.cacheDir, "studio_share").apply { mkdirs() }
+                    dir.listFiles()?.forEach { it.delete() }
+                    buildList {
+                        made.forEachIndexed { i, r ->
+                            add(File(dir, "karalak_${i + 1}a_cizim.png").apply { writeBytes(StrokeReplay.png(p.drawing(r.sampleId)!!.strokes, 1f, 1080)) })
+                            add(copyToShare(realStore.file(r.image!!), "karalak_${i + 1}b_gercek", clear = false))
+                        }
+                    }
+                }.getOrNull()
+            } ?: run { _state.update { it.copy(message = "Görseller hazırlanamadı") }; return@launch }
+            updateReal { it.copy(carousel = files) }
+        }
+    }
+
+    fun clearCarousel() = updateReal { it.copy(carousel = null) }
+
+    /** A copy of [source] in the folder the share sheet may read from. */
+    private fun copyToShare(source: File, name: String, clear: Boolean): File {
+        val dir = File(context.cacheDir, "studio_share").apply { mkdirs() }
+        if (clear) dir.listFiles()?.forEach { it.delete() }
+        return File(dir, name + "." + source.extension.ifBlank { "jpg" }).also { source.copyTo(it, overwrite = true) }
+    }
+
     fun imagePrompt(sampleId: String): String? {
         val p = _state.value.real.project ?: return null
         val reveal = p.script.reveals.find { it.sampleId == sampleId }
         return RealCopy.imagePrompt(p.script.word, p.wordEn, p.script.drawSeconds, reveal?.describe.orEmpty())
     }
 
-    fun videoPrompt(): String = RealCopy.videoPrompt(_state.value.real.project?.wordEn.orEmpty())
+    fun videoPrompt(sampleId: String): String? {
+        val p = _state.value.real.project ?: return null
+        val reveal = p.script.reveals.find { it.sampleId == sampleId }
+        return RealCopy.videoPrompt(p.wordEn, reveal?.motion.orEmpty())
+    }
 
     fun mediaFile(name: String): File = realStore.file(name)
 
@@ -1231,7 +1290,6 @@ class StudioViewModel @Inject constructor(
                 val reveals = p.script.reveals
                 RealRenderer(
                     assetsOrLoad(), sp, p.script, p.drawings.associateBy { it.id },
-                    photos = reveals.mapNotNull { r -> r.image?.let { photoCache[it] }?.let { r.sampleId to it } }.toMap(),
                     clips = reveals.mapNotNull { r -> r.clip?.let(clipSource)?.let { r.sampleId to it } }.toMap(),
                     clipFiles = reveals.mapNotNull { r -> r.clip?.let { r.sampleId to realStore.file(it) } }.toMap(),
                     clipGain = if (s.real.clipSound) CLIP_GAIN else 0f,

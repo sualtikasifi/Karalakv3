@@ -106,7 +106,10 @@ fun StudioPanel(onBack: () -> Unit, viewModel: StudioViewModel = hiltViewModel()
         st.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show(); viewModel.clearMessage() }
     }
     LaunchedEffect(st.real.share) {
-        st.real.share?.let { sh -> shareImage(context, sh.file, sh.prompt); viewModel.clearShare() }
+        st.real.share?.let { sh -> shareImage(context, sh.file, sh.prompt, sh.target); viewModel.clearShare() }
+    }
+    LaunchedEffect(st.real.carousel) {
+        st.real.carousel?.let { files -> shareImages(context, files, postText(st.caption, st.hashtags)); viewModel.clearCarousel() }
     }
     st.eleven.confirm?.let { line ->
         AlertDialog(
@@ -455,16 +458,22 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
         }
     }
 
-    item { Step("4", "Gerçeğe dönüştür", "${sc.reveals.count { it.image != null }}/${sc.reveals.size} görsel") }
+    item { Step("4", "Gerçeğe dönüştür", "${sc.reveals.count { it.image != null }}/${sc.reveals.size} görsel · ${sc.reveals.count { it.clip != null }}/${sc.reveals.size} video") }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text(
                 "1) “ChatGPT'ye gönder”: çizim paylaşılır, istem panoya kopyalanır; ChatGPT'de yapıştır. " +
                     "2) Çıkan görseli kaydet, “Görsel ekle” ile seç. " +
-                    "3) İstersen görseli Gemini'ye ver, “Video istemi”ni yapıştır; videoyu “Video ekle” ile seç. " +
-                    "Görseli olmayan dönüşüm videoya girmez.",
+                    "3) “Gemini'ye gönder”: görsel ve video istemi birlikte gider; Gemini'de Video'yu seçip gönder. " +
+                    "4) Çıkan videoyu “Video ekle” ile seç. " +
+                    "Videoya yalnızca çizimden videoya dönüşen kısımlar girer; videosu olmayan dönüşüm girmez. " +
+                    "Görseller videoya girmez: kaydırmalı gönderi olarak ayrı paylaşılır.",
                 style = Console.Small
             )
+            val withImage = sc.reveals.count { it.image != null }
+            ActionButton(Icons.Filled.Share, "Görselleri paylaş (kaydırmalı) · $withImage", Console.Surface, Console.Ink, Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                vm.shareCarousel()
+            }
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
                 Column(Modifier.weight(1f)) {
                     Text("Videoların kendi sesi", style = Console.Subtitle)
@@ -520,7 +529,8 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
             }
             if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = Console.Accent, strokeWidth = 2.dp)
         }
-        Field("Çizimin şekli (İngilizce, isteme eklenir)", rv.describe, { vm.setRevealDescribe(rv.sampleId, it) }, lines = 2)
+        Field("Çizimin şekli (İngilizce, görsel istemine eklenir)", rv.describe, { vm.setRevealDescribe(rv.sampleId, it) }, lines = 2)
+        Field("Nasıl hareket etsin (İngilizce, video istemine eklenir)", rv.motion, { vm.setRevealMotion(rv.sampleId, it) }, lines = 2)
 
         Text("Görsel · ChatGPT", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
@@ -534,10 +544,14 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
             if (rv.image != null) ActionButton(Icons.Filled.Refresh, "Kaldır", Console.Surface, Console.Critical, Modifier.weight(1f)) { vm.removeImage(rv.sampleId) }
         }
 
-        Text("Video · Gemini (isteğe bağlı)", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
+        Text("Video · Gemini", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
-            ActionButton(Icons.Filled.ContentCopy, "Video istemi", Console.Surface, Console.Ink, Modifier.weight(1f)) { copy(context, vm.videoPrompt()) }
-            ActionButton(Icons.Filled.Movie, if (rv.clip == null) "Video ekle" else "Değiştir", Console.Surface, Console.Ink, Modifier.weight(1f)) {
+            ActionButton(Icons.Filled.Share, "Gemini'ye gönder", Console.Accent, Color.White, Modifier.weight(1.4f)) { vm.shareToGemini(rv.sampleId) }
+            ActionButton(Icons.Filled.ContentCopy, "İstem", Console.Surface, Console.Ink, Modifier.weight(1f)) { vm.videoPrompt(rv.sampleId)?.let { copy(context, it) } }
+        }
+        if (rv.image == null) Text("Gemini'ye göndermek için önce görseli ekle.", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+            ActionButton(Icons.Filled.Movie, if (rv.clip == null) "Video ekle" else "Videoyu değiştir", Console.Surface, Console.Ink, Modifier.weight(1f)) {
                 if (!anyBusy) clipPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
             }
         }
@@ -1036,19 +1050,48 @@ private fun copy(context: Context, text: String) {
     }
 }
 
-/** Hands a drawing to ChatGPT (or any app) as a picture, with the prompt on the clipboard to paste beside it. */
-private fun shareImage(context: Context, file: File, prompt: String) {
+/**
+ * Hands a picture to ChatGPT or Gemini, with the prompt in the message and on the clipboard to paste beside it.
+ * Gemini's app is tried directly first; the share sheet is the way out when it is not installed.
+ */
+private fun shareImage(context: Context, file: File, prompt: String, target: ShareTarget) {
     runCatching {
         (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Karalak", prompt))
         val uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
         val send = Intent(Intent.ACTION_SEND).apply {
-            type = "image/png"
+            type = "image/*"
             putExtra(Intent.EXTRA_STREAM, uri)
             putExtra(Intent.EXTRA_TEXT, prompt)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(Intent.createChooser(send, "ChatGPT'ye gönder").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        Toast.makeText(context, "İstem panoya kopyalandı; ChatGPT'de yapıştır", Toast.LENGTH_LONG).show()
+        val title = if (target == ShareTarget.Gemini) "Gemini'ye gönder" else "ChatGPT'ye gönder"
+        var started = false
+        if (target == ShareTarget.Gemini) {
+            started = runCatching {
+                context.startActivity(Intent(send).setPackage(GEMINI_PACKAGE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }.isSuccess
+        }
+        if (!started) context.startActivity(Intent.createChooser(send, title).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        val hint = if (target == ShareTarget.Gemini) "İstem panoya kopyalandı; Gemini'de Video'yu seçip gönder" else "İstem panoya kopyalandı; ChatGPT'de yapıştır"
+        Toast.makeText(context, hint, Toast.LENGTH_LONG).show()
+    }.onFailure { Toast.makeText(context, "Paylaşılamadı: ${it.message}", Toast.LENGTH_LONG).show() }
+}
+
+private const val GEMINI_PACKAGE = "com.google.android.apps.bard"
+
+/** Hands several pictures to the share sheet as one swipe-through post (Instagram, WhatsApp…), post text on the clipboard. */
+private fun shareImages(context: Context, files: List<File>, text: String) {
+    runCatching {
+        if (text.isNotEmpty()) (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Karalak", text))
+        val uris = ArrayList(files.map { FileProvider.getUriForFile(context, context.packageName + ".fileprovider", it) })
+        val send = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+            type = "image/*"
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+            if (text.isNotEmpty()) putExtra(Intent.EXTRA_TEXT, text)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(send, "Görselleri paylaş").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        if (text.isNotEmpty()) Toast.makeText(context, "Açıklama panoya kopyalandı", Toast.LENGTH_SHORT).show()
     }.onFailure { Toast.makeText(context, "Paylaşılamadı: ${it.message}", Toast.LENGTH_LONG).show() }
 }
 

@@ -40,24 +40,25 @@ class RealTest {
     }
 
     @Test
-    fun revealsWithoutAPictureStayOutOfTheVideo() {
-        val sc = script(listOf(RealReveal("a", line("vay")), RealReveal("c", line("eyvah"), image = "c.jpg")))
+    fun revealsWithoutAClipStayOutOfTheVideo() {
+        // a picture alone is for the swipe-through post, not the video
+        val sc = script(listOf(RealReveal("a", line("vay"), image = "a.jpg"), RealReveal("c", line("eyvah"), image = "c.jpg", clip = "c.mp4", clipMs = 8_000)))
         assertEquals(listOf("c"), sc.shownReveals.map { it.sampleId })
         // empty roast lines are silent; the bridge only comes when something turns real
         assertEquals(listOf(RealCopy.hookText("Kedi", 5), "bir", "üç", RealCopy.BRIDGE, "eyvah", RealCopy.OUTRO), sc.lines().map { it.text })
-        val none = script(listOf(RealReveal("a", line("vay"))))
+        val none = script(listOf(RealReveal("a", line("vay"), image = "a.jpg")))
         assertEquals(listOf(RealCopy.hookText("Kedi", 5), "bir", "üç", RealCopy.OUTRO), none.lines().map { it.text })
     }
 
     @Test
     fun aRevealOfADrawingNoLongerInTheRunIsDropped() {
-        val sc = script(listOf(RealReveal("z", line("x"), image = "z.jpg")))
+        val sc = script(listOf(RealReveal("z", line("x"), image = "z.jpg", clip = "z.mp4", clipMs = 8_000)))
         assertTrue(sc.shownReveals.isEmpty())
     }
 
     @Test
     fun timelineIndexesMatchTheSpokenLines() {
-        val sc = script(listOf(RealReveal("a", line("vay"), image = "a.jpg", clip = "a.mp4", clipMs = 8_000), RealReveal("c", line(""), image = "c.jpg")))
+        val sc = script(listOf(RealReveal("a", line("vay"), image = "a.jpg", clip = "a.mp4", clipMs = 8_000), RealReveal("c", line(""), image = "c.jpg", clip = "c.mp4", clipMs = 5_000)))
         val events = RealTimeline.build(sc) { _, l -> 300L + l.text.length * 50L }
         val spoken = events.filter { it.line != null }
         assertEquals(sc.lines().map { it.text }, spoken.map { it.line!!.text })
@@ -68,16 +69,24 @@ class RealTest {
     }
 
     @Test
-    fun aRevealHoldsTheDoodleWipesThenShowsPictureThenClip() {
+    fun aRevealHoldsTheDoodleThenTheClipWipesItAway() {
         val sc = script(listOf(RealReveal("a", line("vay"), image = "a.jpg", clip = "a.mp4", clipMs = 30_000)))
         val events = RealTimeline.build(sc) { _, _ -> 1_000L }
         val r = events.first { it.phase == RealPhase.Reveal }
-        assertEquals(r.startMs + RealTimeline.DOODLE_HOLD + RealTimeline.WIPE, r.photoAtMs)
+        // the clip starts playing as the wipe begins and is fully shown when the line starts
+        assertEquals(r.startMs + RealTimeline.DOODLE_HOLD, r.clipAtMs)
+        assertEquals(r.clipAtMs + RealTimeline.WIPE, r.photoAtMs)
         assertEquals(r.photoAtMs, r.lineAtMs)
-        // a long clip is cut
+        // a long clip is cut, and it sets the length of the reveal
         assertEquals(RealTimeline.CLIP_MAX, r.clipMs)
         assertEquals(r.endMs, r.clipAtMs + r.clipMs)
-        assertTrue(r.clipAtMs - r.photoAtMs >= 1_000L)
+    }
+
+    @Test
+    fun aLongLineOutlastsAShortClip() {
+        val sc = script(listOf(RealReveal("a", line("vay"), clip = "a.mp4", clipMs = 2_000)))
+        val r = RealTimeline.build(sc) { _, _ -> 5_000L }.first { it.phase == RealPhase.Reveal }
+        assertTrue(r.endMs >= r.lineAtMs + 5_000L)
     }
 
     @Test
@@ -91,7 +100,7 @@ class RealTest {
         val text = """
             ```json
             {"word_en":"cat","roasts":[{"index":2,"emotion":"laughing","line":"Bu kedi mi, patates mi?"},{"index":9,"emotion":"x","line":"yok"},{"index":4,"emotion":"shocked","line":"Altı bacak!"}],
-             "reveals":[{"index":4,"emotion":"shocked","line":"Koşarak kaçıyorum!","describe":"a cat with six legs"},{"index":1,"line":"olmaz","describe":"x"}],
+             "reveals":[{"index":4,"emotion":"shocked","line":"Koşarak kaçıyorum!","describe":"a cat with six legs","motion":"the six legs wobble"},{"index":1,"line":"olmaz","describe":"x"}],
              "outro":{"emotion":"point","line":"Sen daha iyisini çiz! karalak.com"},"caption":"Hangisi?","hashtags":"#karalak"}
             ```
         """.trimIndent()
@@ -101,8 +110,9 @@ class RealTest {
         assertEquals("cat", p.wordEn)
         assertEquals(listOf(1, 3), p.roasts.map { it.first })
         assertEquals(MascotEmotion.Laughing, p.roasts[0].second.emotion)
-        assertEquals(listOf(3), p.reveals.map { it.first })
-        assertEquals("a cat with six legs", p.reveals[0].third)
+        assertEquals(listOf(3), p.reveals.map { it.index })
+        assertEquals("a cat with six legs", p.reveals[0].describe)
+        assertEquals("the six legs wobble", p.reveals[0].motion)
         assertEquals("Sen daha iyisini çiz! karalak.com", p.outro?.text)
         assertNull(RealCopy.parsePicks("{\"roasts\":[]}", 5))
         assertNull(RealCopy.parsePicks("bilmiyorum", 5))
@@ -126,7 +136,12 @@ class RealTest {
         val noEnglish = RealCopy.imagePrompt("kedi", "", 5, "")
         assertFalse(noEnglish.contains("The doodle shows"))
         assertTrue(noEnglish.contains("a normal kedi"))
-        assertTrue(RealCopy.videoPrompt("cat").contains("Do not turn it into a normal cat"))
+        // the video prompt starts from the picture, changes nothing in it and adds only motion
+        val video = RealCopy.videoPrompt("cat", "the six legs wobble.")
+        assertTrue(video.contains("very first frame"))
+        assertTrue(video.contains("Do NOT add eyes, faces, arms, legs"))
+        assertTrue(video.contains("Motion: the six legs wobble. "))
+        assertTrue(RealCopy.videoPrompt("cat", "").contains("this exact cat were alive"))
     }
 
     @Test
