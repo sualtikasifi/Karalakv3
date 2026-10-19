@@ -69,9 +69,9 @@ fun WordCountScreen(
             PanelRow(stringResource(R.string.select_category)) {
                 ChoiceGrid(
                     items = uiState.categories.toList<String?>() + listOf<String?>(null),
-                    columns = 4,
+                    columns = 3,
                     pillHeight = 40.dp,
-                    textSize = 12.sp,
+                    textSize = 13.sp,
                     label = { "${categoryEmoji(it)} ${it ?: stringResource(R.string.all_categories)}" },
                     isSelected = { if (it == null) uiState.selectedCategories.isEmpty() else it in uiState.selectedCategories },
                     onSelect = viewModel::toggleCategory,

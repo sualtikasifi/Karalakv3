@@ -419,8 +419,8 @@ private fun ReportHistoryCard(report: BugReport, onDelete: () -> Unit) {
 }
 
 /**
- * The send button: the design's orange pill in its leaf wreath. It always looks the same; with nothing written yet a tap
- * simply does nothing (the view model refuses an empty message too).
+ * The send button: the design's orange pill in its leaf wreath. With nothing written yet it is faded and a tap simply
+ * does nothing (the view model refuses an empty message too).
  */
 @Composable
 private fun SendButton(text: String, enabled: Boolean, busy: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -432,6 +432,7 @@ private fun SendButton(text: String, enabled: Boolean, busy: Boolean, onClick: (
         edgeY = 32.dp,
         modifier = modifier
             .height(70.dp)
+            .graphicsLayer { alpha = if (enabled || busy) 1f else 0.55f }
             .pressable(enabled = enabled, pressedScale = 0.95f, onClick = onClick)
     ) {
         Row(

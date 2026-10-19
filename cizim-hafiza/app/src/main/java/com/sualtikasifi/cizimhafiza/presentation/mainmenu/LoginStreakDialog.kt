@@ -277,14 +277,14 @@ private fun DayCell(day: Int, reward: LoginDayReward, done: Boolean, isToday: Bo
             // The state of the day sits just under the card, clear of the wooden plate.
             Box(
                 modifier = Modifier
-                    .offset(w * 0.5f - w * 0.06f, h + 1.dp)
+                    .offset(w * 0.5f - w * 0.09f, h + 1.dp)
                     .graphicsLayer { if (done) { scaleX = pop.value; scaleY = pop.value } }
-                    .size(w * 0.12f)
+                    .size(w * 0.18f)
                     .background(if (done) Color(0xFF2EA043) else Color(0xFFE6D0A2), CircleShape)
                     .border(1.5.dp, if (done) Color(0xFF1B7A30) else Color(0xFFC9A46A), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                if (done) Icon(Icons.Filled.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(w * 0.085f))
+                if (done) Icon(Icons.Filled.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(w * 0.13f))
             }
             if (justClaimed && (reward.gold > 0 || reward.jokers.isNotEmpty())) {
                 RewardBurst(reward.gold, reward.jokers, Modifier.fillMaxSize())

@@ -554,8 +554,8 @@
     </string-array>
 
     <!-- Statistics screen -->
-    <string name="stats_rank_progress">%1$d XP · %3$d XP to %2$s</string>
-    <string name="stats_rank_maxed">%1$d XP · You\'re at the top tier!</string>
+    <string name="stats_rank_progress">%1$,d XP · %3$,d XP to %2$s</string>
+    <string name="stats_rank_maxed">%1$,d XP · You\'re at the top tier!</string>
 
     <!-- Level map ("Bölümler") -->
     <string name="menu_levels">Levels</string>
@@ -714,7 +714,7 @@
     <string name="account_stat_games">Games played</string>
     <string name="account_stat_streak">Best streak (days)</string>
     <string name="account_xp_progress">%1$d / %2$d XP</string>
-    <string name="account_xp_to_next">%1$d XP to the next level</string>
+    <string name="account_xp_to_next">%1$,d XP to the next level</string>
     <string name="account_xp_max">You are at the top level</string>
     <string name="account_guest_hint">Link your Google account to back up your progress and pick up where you left off on another phone.</string>
     <string name="account_danger_title">Danger zone</string>
@@ -732,7 +732,7 @@
     <string name="league_reward_kind_frame">Special frame</string>
     <string name="league_prize_won_title">🏆 You finished #%1$d last month!</string>
     <string name="league_prize_won_body">Your prize has been added: %1$s. Pick it from the main menu.</string>
-    <string name="league_xp_format">%1$d XP</string>
+    <string name="league_xp_format">%1$,d XP</string>
     <string name="league_rank_format">#%1$d</string>
 
     <!-- Cloud backup / account linking (C11) -->

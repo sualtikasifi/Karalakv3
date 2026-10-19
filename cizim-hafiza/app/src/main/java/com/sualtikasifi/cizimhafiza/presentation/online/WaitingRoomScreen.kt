@@ -1054,13 +1054,13 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
             if (slot.onKick != null) {
                 IconButton(
                     onClick = slot.onKick,
-                    modifier = Modifier.align(Alignment.TopEnd).size(26.dp)
+                    modifier = Modifier.align(Alignment.TopEnd).size(36.dp)
                 ) {
                     Icon(
                         Icons.Filled.PersonRemove,
                         contentDescription = stringResource(R.string.online_kick_player),
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(15.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
@@ -1069,7 +1069,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
             if (slot.onSwitchTeam != null) {
                 IconButton(
                     onClick = slot.onSwitchTeam,
-                    modifier = Modifier.align(Alignment.TopEnd).size(26.dp)
+                    modifier = Modifier.align(Alignment.TopEnd).size(36.dp)
                 ) {
                     Icon(
                         Icons.Filled.SwapHoriz,

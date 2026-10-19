@@ -458,7 +458,7 @@ private fun PaperPanel(modifier: Modifier = Modifier, content: @Composable () ->
  */
 @Composable
 private fun RewardBanner(reward: LeagueReward, modifier: Modifier = Modifier) {
-    val number = java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag("tr"))
+    val number = java.text.NumberFormat.getIntegerInstance()
     val goldInk = Color(0xFFC77A00)
     NinePatch(
         res = R.drawable.league_banner,
@@ -520,7 +520,7 @@ private fun RewardBanner(reward: LeagueReward, modifier: Modifier = Modifier) {
  */
 @Composable
 private fun MonthlyXpCard(myXp: Int, myRank: Int?, top20Xp: Int?, podiumXp: Int?, modifier: Modifier = Modifier) {
-    val number = java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag("tr"))
+    val number = java.text.NumberFormat.getIntegerInstance()
     val inPodium = myRank != null && myRank <= 3
     val inTop20 = myRank != null && myRank <= GLOBAL_VISIBLE_ROWS
     val toTop20 = ((top20Xp ?: 0) - myXp + 1).coerceAtLeast(1)
@@ -687,12 +687,12 @@ private fun RewardSwatch(reward: LeagueReward.Frame, size: androidx.compose.ui.u
 private fun MonthlyBonusRow(modifier: Modifier = Modifier) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = modifier) {
         TintedBadge(
-            text = stringResource(R.string.league_reward_bonus_gold, java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag("tr")).format(GameConstants.LEAGUE_MONTHLY_GOLD)),
+            text = stringResource(R.string.league_reward_bonus_gold, java.text.NumberFormat.getIntegerInstance().format(GameConstants.LEAGUE_MONTHLY_GOLD)),
             container = AppTheme.tokens.gold.copy(alpha = 0.18f),
             content = AppTheme.tokens.gold
         )
         TintedBadge(
-            text = stringResource(R.string.league_reward_bonus_xp, java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag("tr")).format(GameConstants.LEAGUE_MONTHLY_XP)),
+            text = stringResource(R.string.league_reward_bonus_xp, java.text.NumberFormat.getIntegerInstance().format(GameConstants.LEAGUE_MONTHLY_XP)),
             container = MaterialTheme.colorScheme.primaryContainer,
             content = MaterialTheme.colorScheme.onPrimaryContainer
         )

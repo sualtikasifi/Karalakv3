@@ -162,11 +162,11 @@ private fun CoachOverlay(
         // their sides, so they are shown at their own proportions (never stretched) and the card grows with the frame.
         val body = stringResource(coach.bodyRes)
         val frame = when {
-            body.length <= 90 -> Triple(R.drawable.tut_frame_short, 1000f / 773f, listOf(0.12f, 0.20f, 0.12f, 0.15f))
-            body.length <= 190 -> Triple(R.drawable.tut_frame_mid, 1000f / 1137f, listOf(0.12f, 0.17f, 0.12f, 0.14f))
+            body.length <= 70 -> Triple(R.drawable.tut_frame_short, 1000f / 773f, listOf(0.12f, 0.20f, 0.12f, 0.15f))
+            body.length <= 120 -> Triple(R.drawable.tut_frame_mid, 1000f / 1137f, listOf(0.12f, 0.17f, 0.12f, 0.14f))
             else -> Triple(R.drawable.tut_frame_long, 1000f / 1337f, listOf(0.12f, 0.165f, 0.12f, 0.14f))
         }
-        val showImage = coach.imageRes != null && body.length > 90
+        val showImage = coach.imageRes != null && body.length > 70
         androidx.compose.foundation.layout.BoxWithConstraints(
             modifier = Modifier.widthIn(max = 460.dp).fillMaxWidth().padding(horizontal = 12.dp)
                 .springIn(key = coach.titleRes, fromY = 50, stepMs = 0)
@@ -189,7 +189,7 @@ private fun CoachOverlay(
                     Image(
                         painter = painterResource(coach.imageRes!!),
                         contentDescription = null,
-                        modifier = Modifier.size(if (body.length > 190) 120.dp else 96.dp).floating(amplitude = 4f, tilt = 3f)
+                        modifier = Modifier.size(if (body.length > 120) 92.dp else 84.dp).floating(amplitude = 4f, tilt = 3f)
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                 }
@@ -200,9 +200,14 @@ private fun CoachOverlay(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
+                // The body takes whatever height the frame has left after the title and the button, and shrinks to fit it,
+                // so a long text never squeezes the button.
+                com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                     text = body,
-                    style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(16.sp, 22.sp)
+                    style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(16.sp, 22.sp),
+                    maxLines = 12,
+                    minScale = 0.75f,
+                    modifier = Modifier.weight(1f, fill = false).fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(14.dp))
                 com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(

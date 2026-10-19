@@ -389,15 +389,15 @@ fun SettingsScreen(
                 .border((2.5f * us).dp, Color(0xFFE08A1B), RoundedCornerShape(50))
                 .pressable(pressedScale = 0.95f) { couponInfoOpen = true }
                 .a11yButton(infoLabel)
-                .padding(horizontal = (16f * us).dp),
+                .padding(horizontal = (10f * us).dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy((8f * us).dp)
+            horizontalArrangement = Arrangement.spacedBy((5f * us).dp)
         ) {
-            Icon(Icons.Filled.Info, contentDescription = null, tint = Ink, modifier = Modifier.size((34f * us).dp))
+            Icon(Icons.Filled.Info, contentDescription = null, tint = Ink, modifier = Modifier.size((28f * us).dp))
             FitText(
                 text = infoLabel,
-                style = PaintedStyle(color = Ink, fontSize = fs(22f), textAlign = TextAlign.Start).copy(
-                    lineHeight = fs(25f),
+                style = PaintedStyle(color = Ink, fontSize = fs(24f), textAlign = TextAlign.Start).copy(
+                    lineHeight = fs(26f),
                     platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
                     lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
                         androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,

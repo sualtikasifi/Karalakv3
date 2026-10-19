@@ -49,14 +49,16 @@ import com.sualtikasifi.cizimhafiza.R
  * screen paints behind them. Drawn once over the whole navigation host.
  */
 @Composable
-fun StatusBarScrim(modifier: Modifier = Modifier) {
+fun StatusBarScrim(modifier: Modifier = Modifier, strong: Boolean = false) {
     val top = with(LocalDensity.current) { WindowInsets.statusBars.getTop(this).toDp() }
     if (top <= 0.dp) return
+    // [strong] is for the pale paper of the drawing screen, where the usual shade leaves the white clock hard to read.
+    val a = if (strong) 0.62f else 0.42f
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(top + 14.dp)
-            .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.42f), Color.Black.copy(alpha = 0.18f), Color.Transparent)))
+            .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = a), Color.Black.copy(alpha = a * 0.45f), Color.Transparent)))
     )
 }
 
