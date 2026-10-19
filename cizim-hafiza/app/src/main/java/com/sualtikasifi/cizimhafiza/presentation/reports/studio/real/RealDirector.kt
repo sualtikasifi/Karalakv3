@@ -38,22 +38,23 @@ class RealDirector(private val client: OpenRouterClient, private val model: Stri
             2) Her biri için Karalak'ın ağzından çizimle tatlı tatlı dalga geçen en fazla 9 kelimelik bir espri yaz. Çizimin kendisine takıl (oranları, eksikleri, neye benzediği); çizen kişiye asla.
             3) Seçtiklerinden, gerçek bir fotoğrafa dönüşünce en eğlenceli görünecek $turn tanesini seç ("reveals"). Her biri için:
                - "describe": çizimin şeklini bir plan gibi, gördüğün çizgilerle birebir anlatan kısa İngilizce cümleler: gövdenin şekli, kaç bacak ve neye benzedikleri, baş, kuyruk, özel işaretler (ör. "a long flat rectangle body, four straight stick legs with three-toe feet, a small round head with two triangle ears, a tail drawn as a spiral of three loops"). Ne olması gerektiğini değil, ne çizildiğini yaz — gerçeğe dönüştürülürken bu şekil korunacak;
+               - "motion": bu şeklin, çizildiği hâliyle, gerçek hayatta doğal olarak nasıl hareket edeceğini anlatan TEK kısa İngilizce cümle. Yalnızca çizimde ZATEN olan parçaları hareket ettir; göz, yüz, kol, bacak, kanat gibi çizimde olmayan hiçbir şey ekleme (ör. "the three flames flicker and the whole thing shudders and rises slowly", "the four stick legs wobble as it leans from side to side");
                - "line": Karalak'ın o çizimin gerçeğini görünce söyleyeceği en fazla 9 kelimelik şaşkın ya da komik bir cümle.
             4) "word_en": kelimenin İngilizcesi (tek ya da iki kelime).
             5) Kapanış cümlesi: izleyiciye "daha iyisini çizebilir misin" diye meydan oku, en fazla 14 kelime, "karalak.com" geçsin.
             6) TikTok/Reels açıklaması (1–2 cümle, soruyla bitsin) ve 5–6 Türkçe ağırlıklı etiket.
 
             Yalnızca şu JSON'u yaz:
-            {"word_en":"…","roasts":[{"index":3,"emotion":"…","line":"…"}],"reveals":[{"index":3,"emotion":"…","line":"…","describe":"…"}],"outro":{"emotion":"…","line":"…"},"caption":"…","hashtags":"…"}
+            {"word_en":"…","roasts":[{"index":3,"emotion":"…","line":"…"}],"reveals":[{"index":3,"emotion":"…","line":"…","describe":"…","motion":"…"}],"outro":{"emotion":"…","line":"…"},"caption":"…","hashtags":"…"}
             emotion yalnızca şunlardan biri: ${EMOTIONS}.
         """.trimIndent()
-        val answer = client.generate(SYSTEM, prompt, model, webSearch = false, images = images, json = true, temperature = 0.9, maxTokens = 1500).getOrThrow()
+        val answer = client.generate(SYSTEM, prompt, model, webSearch = false, images = images, json = true, temperature = 0.9, maxTokens = 2200).getOrThrow()
         val parsed = RealCopy.parsePicks(answer.text, shown.size) ?: error("Seçim okunamadı; tekrar dene.")
         Written(
             wordEn = parsed.wordEn,
             roasts = parsed.roasts.take(want).map { (i, l) -> RealRoast(shown[i].id, l) },
-            reveals = parsed.reveals.filter { (i, _, _) -> parsed.roasts.take(want).any { it.first == i } }.take(turn)
-                .map { (i, l, d) -> RealReveal(shown[i].id, l, d) },
+            reveals = parsed.reveals.filter { r -> parsed.roasts.take(want).any { it.first == r.index } }.take(turn)
+                .map { r -> RealReveal(shown[r.index].id, r.line, r.describe, r.motion) },
             outro = parsed.outro,
             caption = parsed.caption,
             hashtags = parsed.hashtags,

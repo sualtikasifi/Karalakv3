@@ -24,9 +24,10 @@ data class RealDrawing(val id: String, val strokes: List<List<DrawingPoint>>)
 data class RealRoast(val sampleId: String, val line: SpokenLine)
 
 /**
- * A drawing turned real: its realistic picture (made in ChatGPT), optionally a short clip of it
- * moving (made in Gemini), and what Karalak says on seeing it. [image] and [clip] are file names in
- * the project's media folder.
+ * A drawing turned real: its realistic picture (made in ChatGPT, kept for sharing as a swipe-through
+ * post and as the starting frame for Gemini), the short clip of that picture moving (made in Gemini,
+ * the only thing of it that goes into the video), and what Karalak says on seeing it. [image] and
+ * [clip] are file names in the project's media folder.
  */
 @Serializable
 data class RealReveal(
@@ -34,6 +35,8 @@ data class RealReveal(
     val line: SpokenLine,
     /** The doodle's literal shapes in English, written into the picture prompt so they are kept. */
     val describe: String = "",
+    /** How the thing, exactly as drawn, would naturally move (English), written into the video prompt. */
+    val motion: String = "",
     val image: String? = null,
     val clip: String? = null,
     val clipMs: Long = 0L
@@ -53,8 +56,8 @@ data class RealScript(
     val reveals: List<RealReveal>,
     val outro: SpokenLine
 ) {
-    /** Only reveals with their realistic picture make it into the video. */
-    val shownReveals: List<RealReveal> get() = reveals.filter { it.sampleId in roastIds && it.image != null }
+    /** Only reveals with their clip make it into the video; the pictures are shared on their own. */
+    val shownReveals: List<RealReveal> get() = reveals.filter { it.sampleId in roastIds && it.clip != null }
     private val roastIds: Set<String> get() = roasts.map { it.sampleId }.toSet()
 
     /** Every spoken line, in the order the video says them; empty lines are silent and left out. */
@@ -86,9 +89,9 @@ data class RealProject(
 enum class RealPhase { Hook, Roast, Bridge, Reveal, Outro }
 
 /**
- * One stretch of the video. A reveal runs in steps: the doodle held, wiped away to the picture
- * ([photoAtMs]), the picture with Karalak's line, then the clip if there is one ([clipAtMs] for
- * [clipMs]).
+ * One stretch of the video. A reveal runs in steps: the doodle held, then wiped away by the clip, which
+ * starts playing as the wipe begins ([clipAtMs] for [clipMs]) and is fully on screen at [photoAtMs],
+ * when Karalak's line starts.
  */
 data class RealEvent(
     val phase: RealPhase,
@@ -113,7 +116,6 @@ object RealTimeline {
     private const val BRIDGE_MIN = 2_400L
     const val DOODLE_HOLD = 900L
     const val WIPE = 700L
-    private const val PHOTO_MIN = 2_400L
     private const val OUTRO_HOLD = 1_600L
     /** Gemini clips are about eight seconds; anything longer is cut here. */
     const val CLIP_MAX = 10_000L
@@ -146,12 +148,13 @@ object RealTimeline {
             t = out.last().endMs
             shown.forEachIndexed { i, r ->
                 val (l, ms) = said(r.line)
-                val photoAt = t + DOODLE_HOLD + WIPE
-                val photoMs = max(PHOTO_MIN, ms + 400)
-                val clipMs = if (r.clip != null) min(r.clipMs, CLIP_MAX).coerceAtLeast(0L) else 0L
+                val clipMs = min(r.clipMs, CLIP_MAX).coerceAtLeast(0L)
+                val wipeEnd = t + DOODLE_HOLD + WIPE
+                // the clip sets the length; a line longer than the clip lets its last frame stay
+                val onScreen = max(clipMs, WIPE + ms + 400L)
                 out += RealEvent(
-                    RealPhase.Reveal, i, t, DOODLE_HOLD + WIPE + photoMs + clipMs, l, if (l != null) index++ else -1,
-                    lineAtMs = photoAt, photoAtMs = photoAt, clipAtMs = photoAt + photoMs, clipMs = clipMs
+                    RealPhase.Reveal, i, t, DOODLE_HOLD + onScreen, l, if (l != null) index++ else -1,
+                    lineAtMs = wipeEnd, photoAtMs = wipeEnd, clipAtMs = t + DOODLE_HOLD, clipMs = clipMs
                 )
                 t = out.last().endMs
             }
@@ -197,27 +200,37 @@ object RealCopy {
     }
 
     /**
-     * What to paste into Gemini with the picture made from the doodle: a short clip of that odd
-     * creature moving with its own natural sound, never "corrected" back into a normal one.
+     * What goes to Gemini together with the picture made from the doodle. Gemini makes a video from the
+     * attached picture only if told to start from it, and invents a "better" creature if the prompt
+     * describes one, so this names no body parts and forbids every change: the picture is the first
+     * frame and only motion is added. [motion] is the assistant's one-line idea of how this exact
+     * shape would move; without it a generic, parts-it-already-has motion is asked for.
      */
-    fun videoPrompt(wordEn: String): String {
+    fun videoPrompt(wordEn: String, motion: String): String {
         val thing = wordEn.ifBlank { "subject" }
-        return "Animate this photo into a realistic, vertical 8-second video, like a casual phone video. " +
-            "The creature keeps EXACTLY the strange body it has in the photo: the same outline, the same number of legs, the same odd proportions and stick-like parts. " +
-            "Do not turn it into a normal $thing and do not fix its anatomy. " +
-            "It moves the way a real $thing would, but with its own weird body: a few awkward steps or wiggles, a blink, a look at the camera. " +
-            "The camera stays almost still. Natural ambient sound only: no music, no speech, no text on screen."
+        val move = motion.trim().trimEnd('.').ifBlank {
+            "only the parts that can naturally move do so, a little: flames flicker, hair or cloth sways, dust drifts, the whole thing wobbles or shifts its weight, as if this exact $thing were alive and clumsily trying to move"
+        }
+        return "Use the attached photo as the very first frame and animate it into a vertical 9:16, 8-second video that looks like a casual phone video.\n\n" +
+            "The photo is a real version of a child's quick doodle of a $thing, and its clumsy, odd shape is the whole point. Keep it EXACTLY as it is in the photo: the same silhouette, proportions, colours, materials, background and light. " +
+            "Do NOT redesign, smooth out, fix or \"improve\" it. Do NOT make it more professional or more realistic. " +
+            "Do NOT add eyes, faces, arms, legs, wings, windows, decorations or any part that is not already in the photo, and do not remove any. " +
+            "It must still look like a child's drawing made real.\n\n" +
+            "Motion: " + move + ". Keep the motion simple, physical and slightly awkward, the way a real object of exactly this shape would move, using only the parts it has.\n\n" +
+            "Camera: fixed, or a very slow push-in; no cuts. Natural ambient sound that matches what happens; no music, no speech, no text on screen."
     }
 
     /**
      * The assistant's choice:
-     * `{"word_en":"…","roasts":[{"index":2,"emotion":"…","line":"…"}],"reveals":[{"index":2,"emotion":"…","line":"…","describe":"…"}],"outro":{…},"caption":"…","hashtags":"…"}`.
+     * `{"word_en":"…","roasts":[{"index":2,"emotion":"…","line":"…"}],"reveals":[{"index":2,"emotion":"…","line":"…","describe":"…","motion":"…"}],"outro":{…},"caption":"…","hashtags":"…"}`.
      * Indices are 1-based; reveals that are not also in the roasts are dropped.
      */
+    data class RevealPick(val index: Int, val line: SpokenLine, val describe: String, val motion: String)
+
     data class Picks(
         val wordEn: String,
         val roasts: List<Pair<Int, SpokenLine>>,
-        val reveals: List<Triple<Int, SpokenLine, String>>,
+        val reveals: List<RevealPick>,
         val outro: SpokenLine?,
         val caption: String,
         val hashtags: String
@@ -242,8 +255,12 @@ object RealCopy {
             o["reveals"]!!.jsonArray.mapNotNull { e ->
                 val p = e.jsonObject
                 val i = indexOf(p)?.takeIf { it in roastIdx } ?: return@mapNotNull null
-                Triple(i, lineOf(p) ?: SpokenLine("", MascotEmotion.Shocked), p["describe"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty())
-            }.distinctBy { it.first }
+                RevealPick(
+                    i, lineOf(p) ?: SpokenLine("", MascotEmotion.Shocked),
+                    p["describe"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty(),
+                    p["motion"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+                )
+            }.distinctBy { it.index }
         }.getOrNull().orEmpty()
         val outro = (o["outro"] as? JsonObject)?.let { lineOf(it) }
         return Picks(

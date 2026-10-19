@@ -27,17 +27,17 @@ import kotlin.math.sin
 /**
  * Draws "Gerçek Olsaydı" in 1080×1920. The first half looks like the other formats — Karalak and
  * the word at the top, subtitles, a paper card with each quick drawing and its joke. Then the
- * twist: each chosen drawing is wiped away, left to right, by its realistic picture filling the
- * whole frame, which then comes alive as a clip. Karalak watches from a small tile, the original
- * drawing pinned beside it, and the picture is labelled as made with AI.
+ * twist: each chosen drawing is wiped away, left to right, by its clip filling the whole frame (the
+ * clip starts from the realistic picture and brings it to life). Only clips are in the video; the
+ * pictures are shared separately. Karalak watches from a small tile, the original drawing pinned
+ * beside it, and the clip is labelled as made with AI.
  */
 class RealRenderer(
     private val assets: StudioAssets,
     private val sprites: MascotSprites,
     private val script: RealScript,
     private val drawings: Map<String, RealDrawing>,
-    /** Realistic pictures and clips by drawing id. */
-    private val photos: Map<String, Bitmap>,
+    /** Clips by drawing id. */
     private val clips: Map<String, ClipFrames>,
     private val clipFiles: Map<String, File>,
     /** How loud the clips' own sound is; 0 leaves it out. */
@@ -307,21 +307,14 @@ class RealRenderer(
     private fun drawFullBleed(canvas: Canvas, e: RealEvent, t: Long, speaking: Boolean, level: Float, spoken: Long, overlays: Boolean) {
         val r = shown.getOrNull(e.index) ?: return
         canvas.drawColor(C.INK)
-        val clipFrame = if (e.clipMs > 0 && t >= e.clipAtMs) clips[r.sampleId]?.frameAt(t - e.clipAtMs) else null
         val full = RectF(0f, 0f, W.toFloat(), H.toFloat())
+        // the clip plays from the start of the wipe; past its end the last frame stays
+        val clipFrame = clips[r.sampleId]?.frameAt((t - e.clipAtMs).coerceIn(0L, e.clipMs))
         if (clipFrame != null) {
             cover(canvas, clipFrame, full, 1f)
         } else {
-            val photo = photos[r.sampleId]
-            if (photo != null) {
-                // a slow push-in across the picture's time on screen
-                val span = (if (e.clipMs > 0) e.clipAtMs else e.endMs) - e.photoAtMs
-                val k = ((t - e.photoAtMs).toFloat() / span.coerceAtLeast(1)).coerceIn(0f, 1f)
-                cover(canvas, photo, full, 1f + 0.07f * k)
-            } else {
-                canvas.drawColor(C.CREAM)
-                replay(r.sampleId)?.draw(canvas, RectF(100f, 500f, 980f, 1380f), 1f, ink)
-            }
+            canvas.drawColor(C.CREAM)
+            replay(r.sampleId)?.draw(canvas, RectF(100f, 500f, 980f, 1380f), 1f, ink)
         }
         if (!overlays) return
         val a = Ease.out(min(1f, (t - e.photoAtMs) / 350f))
