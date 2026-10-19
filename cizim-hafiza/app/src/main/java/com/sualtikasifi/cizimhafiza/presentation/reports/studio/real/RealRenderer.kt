@@ -46,7 +46,10 @@ class RealRenderer(
     }
 
     private val text = TextPainter()
+    /** For pictures only: its colour is never set, so a picture is always drawn at full strength. */
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+    /** For flat shapes. */
+    private val shape = Paint(Paint.ANTI_ALIAS_FLAG)
     private val ink = StrokeReplay.inkPaint(0xFF1B1B22.toInt())
     private val replays = HashMap<String, StrokeReplay>()
     private val src = Rect()
@@ -88,9 +91,6 @@ class RealRenderer(
         val bmp = card ?: return
         canvas.save()
         canvas.scale(a, a, cardBox.left, cardBox.top)
-        // a soft shadow under the card
-        fill.color = 0x40000000
-        canvas.drawRoundRect(RectF(cardBox.left + 8f, cardBox.top + 22f, cardBox.right - 4f, cardBox.bottom + 12f), 36f, 36f, fill)
         canvas.drawBitmap(bmp, null, cardBox, fill)
         replay(d.id)?.draw(canvas, RectF(parchment.left + 8f, parchment.top + 8f, parchment.right - 8f, parchment.bottom - 8f), 1f, ink, 0.03f)
         drawAvatar(canvas, d)
@@ -124,8 +124,8 @@ class RealRenderer(
     /** The "made with AI" note platforms ask for, small, under the card. */
     private fun drawLabel(canvas: Canvas, a: Float) {
         if (a <= 0f) return
-        fill.color = ((0x80 * a).toInt() shl 24) or 0x101014
-        canvas.drawRoundRect(labelBox, 26f, 26f, fill)
+        shape.color = ((0x80 * a).toInt() shl 24) or 0x101014
+        canvas.drawRoundRect(labelBox, 26f, 26f, shape)
         text.draw(canvas, "Yapay zekâ ile canlandırıldı", labelBox.centerX(), labelBox.centerY(), (labelBox.width() - 30).toInt(), 28f, 1, assets.body, C.WHITE, alpha = a)
     }
 
