@@ -124,6 +124,19 @@ class RealTest {
     }
 
     @Test
+    fun aLibraryPieceKnowsItsFilesAndSurvivesARoundTrip() {
+        val item = com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.LibraryItem(
+            "a", 5L, drawing("a").copy(photo = "p.jpg"), RealReveal("a", image = "a.jpg", clip = "a.mp4", clipMs = 8_000)
+        )
+        assertEquals(setOf("a.jpg", "a.mp4", "p.jpg"), item.media)
+        assertTrue(item.hasClip)
+        assertFalse(item.copy(reveal = RealReveal("a", image = "a.jpg")).hasClip)
+        val json = Json { ignoreUnknownKeys = true }
+        val ser = kotlinx.serialization.builtins.ListSerializer(com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.LibraryItem.serializer())
+        assertEquals(listOf(item), json.decodeFromString(ser, json.encodeToString(ser, listOf(item))))
+    }
+
+    @Test
     fun cardLayoutNeverLeavesWhatTheSlidersAllow() {
         val wild = com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout(9f, -3f, 4f).clamped()
         assertEquals(com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout.MAX_SCALE, wild.scale, 0f)

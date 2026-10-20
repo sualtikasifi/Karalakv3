@@ -99,6 +99,17 @@ data class CardLayout(val scale: Float = DEFAULT_SCALE, val x: Float = DEFAULT_X
     fun clamped() = CardLayout(scale.coerceIn(MIN_SCALE, MAX_SCALE), x.coerceIn(0f, 1f), y.coerceIn(0f, 1f))
 }
 
+/**
+ * One finished piece kept in the library on this phone: a drawing with everything the card shows (name, frame, picture),
+ * its realistic picture and its clip. [id] is the drawing's id, so saving the same drawing again updates its entry.
+ * The [reveal]'s files live in the project's media folder, which nothing in the library is ever pruned from.
+ */
+@Serializable
+data class LibraryItem(val id: String, val savedAt: Long, val drawing: RealDrawing, val reveal: RealReveal) {
+    val media: Set<String> get() = listOfNotNull(reveal.image, reveal.clip, drawing.photo).toSet()
+    val hasClip: Boolean get() = reveal.clip != null
+}
+
 enum class RealPhase { Clip }
 
 /** One stretch of the video: a clip, playing from [clipAtMs] for [clipMs]. */

@@ -194,6 +194,7 @@ class RealStore(context: Context) {
     private val mediaDir = File(root, "media").apply { mkdirs() }
     private val projectFile = File(root, "project.json")
     private val recentFile = File(root, "recent.json")
+    private val libraryFile = File(root, "library.json")
     private val json = Json { ignoreUnknownKeys = true }
     private val resolver = context.contentResolver
 
@@ -202,6 +203,16 @@ class RealStore(context: Context) {
     fun save(project: RealProject?) {
         if (project == null) projectFile.delete() else projectFile.writeText(json.encodeToString(RealProject.serializer(), project))
     }
+
+    /** Everything kept for later: finished drawings with their pictures and clips, newest first. */
+    fun loadLibrary(): List<LibraryItem> = runCatching { json.decodeFromString(ListSerializer(LibraryItem.serializer()), libraryFile.readText()) }.getOrDefault(emptyList())
+
+    fun saveLibrary(list: List<LibraryItem>) {
+        libraryFile.writeText(json.encodeToString(ListSerializer(LibraryItem.serializer()), list))
+    }
+
+    /** What the files of [names] take on this phone, in bytes. */
+    fun sizeOf(names: Collection<String>): Long = names.sumOf { file(it).length() }
 
     /** The pool's latest drawings as last read, so the list shows at once and without a network. */
     fun loadRecent(): List<RecentDrawing> = runCatching { json.decodeFromString(ListSerializer(RecentDrawing.serializer()), recentFile.readText()) }.getOrDefault(emptyList())

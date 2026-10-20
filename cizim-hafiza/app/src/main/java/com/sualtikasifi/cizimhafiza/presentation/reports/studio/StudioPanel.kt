@@ -12,6 +12,8 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -97,6 +99,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.ElevenLabs
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceModel
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.LibraryItem
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
@@ -140,8 +143,8 @@ fun StudioPanel(onBack: () -> Unit, viewModel: StudioViewModel = hiltViewModel()
         AlertDialog(
             onDismissRequest = viewModel::cancelResetReal,
             title = { Text("Baştan başlansın mı?") },
-            text = { Text("Seçilen çizimler ile eklediğin görseller ve videolar silinir.") },
-            confirmButton = { TextButton(onClick = { viewModel.resetReal(confirmed = true) }) { Text("Sil", color = Console.Critical) } },
+            text = { Text("Seçilen çizimler videodan kalkar. Görselleri ve videoları kütüphanede durur; oradan silebilirsin.") },
+            confirmButton = { TextButton(onClick = { viewModel.resetReal(confirmed = true) }) { Text("Temizle", color = Console.Critical) } },
             dismissButton = { TextButton(onClick = viewModel::cancelResetReal) { Text("Vazgeç") } }
         )
     }
@@ -390,12 +393,55 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
     val p = r.project
     val chosenIds = p?.reveals?.map { it.sampleId }.orEmpty()
 
-    item { Step("1", "Çizimleri seç", "${chosenIds.size}/3 seçili") }
+    // the library comes first: finished pieces kept on this phone, to watch or to make into a new video
+    item { Step("★", "Kütüphane", "${r.library.size} kayıt · ${megabytes(r.libraryBytes)}") }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Text(
+                "Ürettiğin görseller ve videolar telefonda otomatik saklanır (uygulamanın boyutunu büyütmez). " +
+                    "Üretim hakkın olmayan günlerde 3–5 eski videoyu seçip yeni bir videoya birleştirebilirsin.",
+                style = Console.Small
+            )
+            Spacer(Modifier.height(8.dp))
+            DarkButton(
+                text = if (r.libraryShown) "Kütüphaneyi gizle" else "Kütüphaneyi aç (${r.library.size})",
+                busy = false,
+                enabled = true
+            ) { vm.toggleLibrary() }
+        }
+    }
+    if (r.libraryShown) {
+        if (r.library.isEmpty()) item { Text("Henüz kayıt yok. Görsel ya da video eklediğin her çizim buraya düşer.", style = Console.Small) }
+        r.library.chunked(3).forEach { row ->
+            item(key = "lib-" + row.first().id) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    row.forEach { it ->
+                        LibraryThumb(it, r.librarySelected.indexOf(it.id), vm, Modifier.weight(1f))
+                    }
+                    repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
+        if (r.library.isNotEmpty()) item {
+            ConsoleCard(Modifier.fillMaxWidth()) {
+                Text("Videoya birleştirmek için kartların köşesindeki yuvarlağa dokun (sıra dokunduğun sıradır). Karta dokunursan izlersin.", style = Console.Small)
+                Spacer(Modifier.height(8.dp))
+                DarkButton(
+                    text = if (r.librarySelected.isEmpty()) "Birleştirmek için video seç" else "${r.librarySelected.size} videoyu birleştir",
+                    busy = false,
+                    enabled = r.librarySelected.isNotEmpty()
+                ) { vm.libraryMakeVideo() }
+            }
+        }
+    }
+    r.libraryView?.let { id -> r.library.find { it.id == id }?.let { item { LibraryViewer(it, vm) } } }
+
+    item { Step("1", "Çizimleri seç", "${chosenIds.size}/5 seçili") }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text(
                 "Havuzdaki en son 100 çizim. “Videolarda öne çık” izni veren oyuncunun adı ve seviyesi videoda görünür; " +
-                    "izin vermeyen anonim kalır (yalnızca çerçevesi görünür, resmi hep varsayılan). Farklı kelimelerden 3 çizim seç.",
+                    "izin vermeyen anonim kalır (yalnızca çerçevesi görünür, resmi hep varsayılan). Farklı kelimelerden 3–5 çizim seç.",
                 style = Console.Small
             )
             Spacer(Modifier.height(8.dp))
@@ -405,7 +451,7 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
                 enabled = !r.loadingRecent
             ) { vm.refreshRecent() }
             r.recentError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
-            if (p != null && p.reveals.isNotEmpty()) SmallLink("Seçimi ve görselleri temizle", Console.Critical) { vm.resetReal() }
+            if (p != null && p.reveals.isNotEmpty()) SmallLink("Seçimi temizle (kütüphane durur)", Console.Critical) { vm.resetReal() }
         }
     }
     // chosen ones the latest list no longer holds stay at the top, so they can still be taken out
@@ -529,6 +575,74 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
         }
         if (rv.clip != null) SmallLink("Videoyu kaldır", Console.Critical) { vm.removeClip(rv.sampleId) }
     }
+}
+
+private fun megabytes(bytes: Long): String = String.format(Locale.US, "%.1f MB", bytes / 1_048_576.0)
+
+/** One kept piece: its picture (or the drawing), a play mark when it has a clip, and a round tick that adds it to the next video. */
+@Composable
+private fun LibraryThumb(item: LibraryItem, order: Int, vm: StudioViewModel, modifier: Modifier) {
+    val on = order >= 0
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Console.Surface,
+        border = BorderStroke(if (on) 2.dp else 1.dp, if (on) Console.Accent else Console.Border),
+        modifier = modifier.clip(RoundedCornerShape(12.dp)).clickable { vm.openLibraryItem(item.id) }
+    ) {
+        Column {
+            Box(Modifier.fillMaxWidth().aspectRatio(0.75f).background(Console.Grid)) {
+                val image = item.reveal.image
+                if (image != null) AsyncImage(model = vm.mediaFile(image), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                else StrokeCanvas(strokes = item.drawing.strokes, modifier = Modifier.fillMaxSize().padding(8.dp).background(Color.White), strokeWidthPx = 3f)
+                if (item.hasClip) Text("▶", style = Console.Subtitle.copy(color = Color.White), modifier = Modifier.align(Alignment.BottomStart).padding(8.dp))
+                Box(
+                    Modifier.padding(6.dp).size(30.dp).clip(CircleShape)
+                        .background(if (on) Console.Accent else Color.White.copy(alpha = 0.85f))
+                        .clickable { vm.toggleLibrarySelect(item.id) }
+                        .align(Alignment.TopEnd),
+                    contentAlignment = Alignment.Center
+                ) { Text(if (on) "${order + 1}" else "", style = Console.Label.copy(color = Color.White)) }
+            }
+            Text(
+                item.drawing.word.ifBlank { "—" }, style = Console.Small, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp), textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+/** A kept piece opened to watch: its clip playing, its picture below, and the way to delete it. */
+@Composable
+private fun LibraryViewer(item: LibraryItem, vm: StudioViewModel) {
+    AlertDialog(
+        onDismissRequest = { vm.openLibraryItem(null) },
+        title = { Text(item.drawing.word.ifBlank { "Kayıt" }) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+                item.reveal.clip?.let { clip ->
+                    val file = vm.libraryFile(clip)
+                    AndroidView(
+                        factory = { ctx -> VideoView(ctx).apply { setOnPreparedListener { mp -> mp.isLooping = true; start() } } },
+                        update = { v -> if (v.tag != file.path) { v.tag = file.path; v.setVideoURI(Uri.fromFile(file)) } },
+                        modifier = Modifier.width(220.dp).aspectRatio(9f / 16f).clip(RoundedCornerShape(12.dp))
+                    )
+                }
+                item.reveal.image?.let { image ->
+                    Spacer(Modifier.height(8.dp))
+                    AsyncImage(model = vm.mediaFile(image), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.width(220.dp).aspectRatio(9f / 16f).clip(RoundedCornerShape(12.dp)))
+                }
+                if (item.reveal.image == null && item.reveal.clip == null) {
+                    Box(Modifier.size(200.dp).background(Color.White)) { StrokeCanvas(strokes = item.drawing.strokes, modifier = Modifier.fillMaxSize().padding(8.dp), strokeWidthPx = 4f) }
+                }
+                Text(
+                    (if (item.drawing.named) "@${item.drawing.nickname}" else "Anonim oyuncu") + " · " + megabytes(vm.libraryBytesOf(item)),
+                    style = Console.Small, modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { vm.openLibraryItem(null) }) { Text("Kapat") } },
+        dismissButton = { TextButton(onClick = { vm.deleteLibraryItem(item.id) }) { Text("Sil", color = Console.Critical) } }
+    )
 }
 
 /**

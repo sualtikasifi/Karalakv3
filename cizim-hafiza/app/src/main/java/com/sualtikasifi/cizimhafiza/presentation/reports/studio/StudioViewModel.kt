@@ -51,6 +51,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemoryWor
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipAudio
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipFrames
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.LibraryItem
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDirector
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
@@ -156,6 +157,14 @@ data class MemoryUi(
 
 /** "Gerçek Olsaydı": the pool's latest drawings, and the project (the chosen drawings of different words) on this phone. */
 data class RealUi(
+    /** Finished pieces kept on this phone (picture, clip, card details), newest first. */
+    val library: List<LibraryItem> = emptyList(),
+    /** Library pieces ticked to be made into a video, in the order they were ticked. */
+    val librarySelected: List<String> = emptyList(),
+    /** The library piece open in the viewer. */
+    val libraryView: String? = null,
+    val libraryShown: Boolean = false,
+    val libraryBytes: Long = 0L,
     val recent: List<RecentDrawing> = emptyList(),
     val loadingRecent: Boolean = false,
     val recentError: String? = null,
@@ -680,13 +689,29 @@ class StudioViewModel @Inject constructor(
             s.copy(real = s.real.copy(project = next), video = null)
         }
         val p = next ?: return
+        // every piece that has a picture or a clip is kept in the library, and kept up to date as it is edited
+        val library = libraryWith(p, _state.value.real.library)
+        updateReal { it.copy(library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media })) }
         realSaveJob?.cancel()
         realSaveJob = viewModelScope.launch(Dispatchers.IO) {
             if (!saveNow) delay(400)
-            runCatching { realStore.save(p) }
+            runCatching { realStore.save(p); realStore.saveLibrary(library) }
         }
         loadRealMedia(p)
         refreshPreview()
+    }
+
+    private fun libraryWith(p: RealProject, old: List<LibraryItem>): List<LibraryItem> {
+        val now = System.currentTimeMillis()
+        var list = old
+        p.reveals.filter { it.image != null || it.clip != null }.forEach { r ->
+            val d = p.drawing(r.sampleId) ?: return@forEach
+            val existing = list.find { it.id == r.sampleId }
+            val item = LibraryItem(r.sampleId, existing?.savedAt ?: now, d, r)
+            if (existing == null) list = listOf(item) + list
+            else if (existing != item) list = list.map { if (it.id == r.sampleId) item else it }
+        }
+        return list
     }
 
     private fun updateReveal(sampleId: String, change: (RealReveal) -> RealReveal) =
@@ -697,7 +722,8 @@ class StudioViewModel @Inject constructor(
         val saved = prefs().let { CardLayout(it.getFloat(CARD_SCALE, CardLayout.DEFAULT_SCALE), it.getFloat(CARD_X, CardLayout.DEFAULT_X), it.getFloat(CARD_Y, CardLayout.DEFAULT_Y)).clamped() }
         viewModelScope.launch {
             val (p, recent) = withContext(Dispatchers.IO) { realStore.load() to realStore.loadRecent() }
-            updateReal { it.copy(project = p, recent = recent, card = saved) }
+            val library = withContext(Dispatchers.IO) { realStore.loadLibrary() }
+            updateReal { it.copy(project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media })) }
             p?.let { loadRealMedia(it) }
         }
     }
@@ -760,8 +786,9 @@ class StudioViewModel @Inject constructor(
         if (!confirmed && current.media.isNotEmpty()) { updateReal { it.copy(confirmReset = true) }; return }
         updateReal { it.copy(project = null, confirmReset = false, writeError = null) }
         _state.update { it.copy(video = null, previewMs = 0L) }
+        val kept = _state.value.real.library.flatMap { it.media }.toSet()
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { runCatching { realStore.save(null); realStore.prune(emptySet()) } }
+            withContext(Dispatchers.IO) { runCatching { realStore.save(null); realStore.prune(kept) } }
             refreshPreview()
         }
     }
@@ -1001,10 +1028,54 @@ class StudioViewModel @Inject constructor(
         }
     }
 
+    /** Lets go of imported files nothing uses any more: not the project's, and never the library's. */
     private fun pruneRealMedia() {
-        val keep = _state.value.real.project?.media ?: return
+        val r = _state.value.real
+        val keep = (r.project?.media ?: emptySet()) + r.library.flatMap { it.media }
         viewModelScope.launch(Dispatchers.IO) { runCatching { realStore.prune(keep) } }
     }
+
+    // ---- library
+
+    fun toggleLibrary() = updateReal { it.copy(libraryShown = !it.libraryShown) }
+
+    fun openLibraryItem(id: String?) = updateReal { it.copy(libraryView = id) }
+
+    /** Ticks a piece to be part of the next video, or unticks it; at most [MAX_REVEALS], and only pieces with a clip. */
+    fun toggleLibrarySelect(id: String) {
+        val r = _state.value.real
+        val item = r.library.find { it.id == id } ?: return
+        if (id in r.librarySelected) { updateReal { it.copy(librarySelected = it.librarySelected - id) }; return }
+        if (!item.hasClip) { _state.update { it.copy(message = "Bu kaydın videosu yok; yalnızca videolular birleşir") }; return }
+        if (r.librarySelected.size >= MAX_REVEALS) { _state.update { it.copy(message = "En fazla $MAX_REVEALS video seçilir") }; return }
+        updateReal { it.copy(librarySelected = it.librarySelected + id) }
+    }
+
+    /** Makes the ticked pieces the current video, in the order they were ticked; the card, name and frame come with each. */
+    fun libraryMakeVideo() {
+        val r = _state.value.real
+        val items = r.librarySelected.mapNotNull { id -> r.library.find { it.id == id } }.filter { it.hasClip }
+        if (items.isEmpty()) { _state.update { it.copy(message = "Önce videosu olan kayıtları seç") }; return }
+        val project = RealProject(drawings = items.map { it.drawing }, reveals = items.map { it.reveal })
+        updateReal { it.copy(project = project, librarySelected = emptyList(), libraryShown = false) }
+        _state.update { it.copy(video = null, previewMs = 0L, message = "${items.size} video hazırlandı; aşağıdan videoyu oluştur") }
+        viewModelScope.launch { withContext(Dispatchers.IO) { runCatching { realStore.save(project) } } }
+        loadRealMedia(project)
+        refreshPreview()
+    }
+
+    /** Takes a piece out of the library and deletes its files, unless the current video still uses them. */
+    fun deleteLibraryItem(id: String) {
+        val library = _state.value.real.library.filterNot { it.id == id }
+        updateReal { it.copy(library = library, librarySelected = it.librarySelected - id, libraryView = null, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media })) }
+        viewModelScope.launch(Dispatchers.IO) { runCatching { realStore.saveLibrary(library) } }
+        pruneRealMedia()
+    }
+
+    fun libraryFile(name: String): File = realStore.file(name)
+
+    /** What one piece's files take on this phone. */
+    fun libraryBytesOf(item: LibraryItem): Long = realStore.sizeOf(item.media)
 
     // ---- voice
 
@@ -1454,7 +1525,7 @@ class StudioViewModel @Inject constructor(
         const val RECENT_MAX = 100
         const val RECENT_PAGE = 10
         const val RECENT_PAGES = 6
-        const val MAX_REVEALS = 3
+        const val MAX_REVEALS = 5
         /** The clips' own sound, a little under Karalak's voice. */
         const val CLIP_GAIN = 0.85f
         val GOOGLE_PHOTO = Regex("^https://lh[0-9]+\\.googleusercontent\\.com/\\S*$")
