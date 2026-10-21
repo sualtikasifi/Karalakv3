@@ -116,9 +116,11 @@ fun OnlineLobbyScreen(
                 .size(len(PaperW), len(paperH))
                 .springIn(index = 1, stepMs = 100, fromY = 40)
         )
+        // The painted scroll is opaque from 30 to 199 of its 219 px, its cream inside from about 46 to 184: the middle of
+        // that is 115 / 219 of the way down, so the note box is centred on that line (not on 0.55, which sat low).
         BoxWithConstraints(
             modifier = Modifier
-                .offset(x(ArtW / 2 - 280f), y(PaperTop + paperH * 0.25f))
+                .offset(x(ArtW / 2 - 280f), y(PaperTop + paperH * (115f / 219f - 0.3f)))
                 .size(len(560f), len(paperH * 0.6f)),
             contentAlignment = Alignment.Center
         ) {
