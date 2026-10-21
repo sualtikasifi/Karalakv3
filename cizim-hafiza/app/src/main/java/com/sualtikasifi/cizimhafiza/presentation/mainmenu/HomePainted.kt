@@ -557,7 +557,11 @@ internal fun PaintedHome(
         Tile(30f, 776f, 288f, 1012f, 50f, 918f, 274f, 1002f, stringResource(R.string.menu_play_online), onPlayOnline, needsNet = true)
         Tile(294f, 776f, 552f, 1012f, 330f, 940f, 520f, 986f, stringResource(R.string.quick_match_title), onQuickMatch, needsNet = true) {
             val boosted = xpEvent != null && xpEvent.endsAtMillis > System.currentTimeMillis()
-            if (boosted && xpEvent != null) BoostBadge(xpEvent.multiplier, box(306f, 788f, 420f, 826f))
+            if (boosted && xpEvent != null) {
+                // centred on the card, half over its top edge, above the picture's own top
+                if (xpEvent.multiplier == 2) BoostSign(box(390f, 754f, 456f, 820f))
+                else Box(box(363f, 770f, 483f, 808f), contentAlignment = Alignment.Center) { BoostBadge(xpEvent.multiplier) }
+            }
         }
         Tile(558f, 776f, 816f, 1012f, 578f, 918f, 798f, 1002f, stringResource(R.string.menu_play), onPlay)
         Tile(30f, 1018f, 288f, 1204f, 50f, 1142f, 268f, 1188f, stringResource(R.string.menu_levels), onLevels)
