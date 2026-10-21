@@ -234,7 +234,7 @@ class GameRepositoryImpl @Inject constructor(
         // just a different single place to avoid double-paying.
         if (isOnline) {
             val multiplier = xpEventRepository.currentMultiplier()
-            settingsRepository.addXp((XpAwards.ONLINE_MATCH + if (wasOnlineWin) XpAwards.ONLINE_WIN else 0) * multiplier)
+            settingsRepository.addXp(XpAwards.scaled(XpAwards.ONLINE_MATCH + if (wasOnlineWin) XpAwards.ONLINE_WIN else 0, multiplier))
         }
 
         val stats = AchievementStats(

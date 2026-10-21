@@ -113,11 +113,13 @@ sealed interface GamePhase {
         /** The share of [goldEarned] the runes added (already counted in the fields above). */
         val runeBonusGold: Int = 0,
         /** The XP multiplier this round paid at (1 = none): the daily Hızlı Eşleş bonus and any running XP event, multiplied. */
-        val xpMultiplier: Int = 1,
+        val xpMultiplier: Double = 1.0,
         /** True when [xpEarned] includes the first-Quick-Match-of-the-day 2x bonus. */
         val quickMatchDailyBonusApplied: Boolean = false,
         /** True when [xpEarned] includes an admin-run XP event's multiplier. */
         val xpEventMultiplierApplied: Boolean = false,
+        /** The XP event's own multiplier alone (1.3 = 30 percent more), without the daily Hızlı Eşleş bonus. */
+        val xpEventMultiplier: Double = 1.0,
         /** One-shot onboarding nudges — see util/PostMatchPrompts.kt for when each fires. */
         val showSignInPrompt: Boolean = false,
         val showRatingPrompt: Boolean = false,

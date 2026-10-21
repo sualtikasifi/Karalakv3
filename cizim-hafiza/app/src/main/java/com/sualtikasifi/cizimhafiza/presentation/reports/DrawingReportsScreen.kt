@@ -697,7 +697,7 @@ private fun XpEventPanel(
     event: XpEvent?,
     busy: Boolean,
     failed: Boolean,
-    onStart: (durationMillis: Long, label: String?) -> Unit,
+    onStart: (multiplier: Double, durationMillis: Long, label: String?) -> Unit,
     onStop: () -> Unit
 ) {
     val isRunning = event != null && event.active && System.currentTimeMillis() < event.endsAtMillis
@@ -721,7 +721,7 @@ private fun XpEventPanel(
                 val until = remember(event.endsAtMillis) {
                     SimpleDateFormat("d MMMM, HH:mm", Locale.getDefault()).format(Date(event.endsAtMillis))
                 }
-                (event.label?.takeIf { it.isNotBlank() }?.let { "$it · " } ?: "") + stringResource(R.string.reports_xp_event_active, until)
+                (event.label?.takeIf { it.isNotBlank() }?.let { "$it · " } ?: "") + stringResource(R.string.reports_xp_event_active, com.sualtikasifi.cizimhafiza.domain.model.XpAwards.multiplierLabel(event.multiplier), until)
             } else {
                 stringResource(R.string.reports_xp_event_inactive)
             },
@@ -739,6 +739,9 @@ private fun XpEventPanel(
             24 * 60 * 60 * 1000L to R.string.reports_xp_event_d1440
         )
         var selectedDuration by remember { mutableStateOf(durations[2].first) }
+        // 1.3 and 1.5 are "30 percent more" and "50 percent more"; 2 and 3 are double and triple.
+        val multipliers = listOf(1.3, 1.5, 2.0, 3.0)
+        var selectedMultiplier by remember { mutableStateOf(2.0) }
         AppTextField(
             value = eventName,
             onValueChange = { if (it.length <= 32) eventName = it },
@@ -746,6 +749,25 @@ private fun XpEventPanel(
             placeholder = stringResource(R.string.reports_xp_event_name_hint),
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
         )
+        Text(
+            text = stringResource(R.string.reports_xp_event_multiplier_label),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(bottom = 6.dp)
+        )
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp)
+        ) {
+            multipliers.forEach { m ->
+                SelectableChip(
+                    label = com.sualtikasifi.cizimhafiza.domain.model.XpAwards.multiplierLabel(m),
+                    selected = selectedMultiplier == m,
+                    onClick = { selectedMultiplier = m },
+                    verticalPadding = 10.dp
+                )
+            }
+        }
         Text(
             text = stringResource(R.string.reports_xp_event_duration_label),
             style = MaterialTheme.typography.labelLarge,
@@ -767,7 +789,7 @@ private fun XpEventPanel(
         }
         PrimaryButton(
             text = stringResource(R.string.reports_xp_event_start),
-            onClick = { onStart(selectedDuration, eventName.trim().ifBlank { null }) },
+            onClick = { onStart(selectedMultiplier, selectedDuration, eventName.trim().ifBlank { null }) },
             enabled = !busy,
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
