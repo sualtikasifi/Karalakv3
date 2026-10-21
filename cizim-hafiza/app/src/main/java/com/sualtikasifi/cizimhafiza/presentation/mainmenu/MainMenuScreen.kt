@@ -769,38 +769,15 @@ private fun nextMidnight(): java.time.LocalDateTime =
  */
 @Composable
 private fun StreakRescueDialog(lostStreak: Int, onRescue: () -> Unit, onDismiss: () -> Unit) {
-    // The game's own parchment window like every other popup, not a stock white card.
-    com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog(
+    // The painted card: the dog, the board, the broken flame and both buttons are the picture; the words are ours.
+    com.sualtikasifi.cizimhafiza.presentation.common.PaintedStreakRescueDialog(
         title = stringResource(R.string.streak_rescue_title, lostStreak),
-        onDismiss = onDismiss,
-        centerTitle = true
-    ) {
-        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(text = "🔥", style = MaterialTheme.typography.displaySmall)
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = stringResource(R.string.streak_rescue_message),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(18.dp))
-            PrimaryButton(
-                text = stringResource(R.string.streak_rescue_action),
-                onClick = com.sualtikasifi.cizimhafiza.presentation.common.adOnly(onRescue),
-                icon = Icons.Filled.PlayCircle,
-                height = 54.dp,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            SecondaryButton(
-                text = stringResource(R.string.streak_rescue_dismiss),
-                onClick = onDismiss,
-                height = 46.dp,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-    }
+        message = stringResource(R.string.streak_rescue_message),
+        rescueText = stringResource(R.string.streak_rescue_action),
+        dismissText = stringResource(R.string.streak_rescue_dismiss),
+        onRescue = com.sualtikasifi.cizimhafiza.presentation.common.adOnly(onRescue),
+        onDismiss = onDismiss
+    )
 }
 
 /**
