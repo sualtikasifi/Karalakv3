@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -506,8 +507,9 @@ internal fun BoostBadge(multiplier: Int, modifier: Modifier = Modifier) {
 }
 
 /**
- * Full-width home banner for a running event: the event's own name, what it
- * does, and a live countdown. Hides itself the second the event ends.
+ * Home banner for a running event: the painted board (its "2x" sign, parchment and dark clock pill are the picture),
+ * with the event's own name and what it does written on the parchment and a live countdown in the pill.
+ * Hides itself the second the event ends.
  */
 @Composable
 internal fun XpEventBanner(event: com.sualtikasifi.cizimhafiza.domain.repository.XpEvent, modifier: Modifier = Modifier) {
@@ -522,64 +524,60 @@ internal fun XpEventBanner(event: com.sualtikasifi.cizimhafiza.domain.repository
     val remaining = event.endsAtMillis - now
     if (remaining <= 0) return
 
-    val shimmer = rememberInfiniteTransition(label = "xpBanner").animateFloat(
-        initialValue = -0.4f,
-        targetValue = 1.4f,
-        animationSpec = infiniteRepeatable(tween(2200, easing = androidx.compose.animation.core.LinearEasing)),
-        label = "xpBannerShimmer"
-    )
-    val shape = RoundedCornerShape(18.dp)
     val name = event.label?.takeIf { it.isNotBlank() } ?: stringResource(R.string.xp_event_default_name)
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(Brush.horizontalGradient(listOf(Color(0xFFFF8A00), Color(0xFFFFC21A), Color(0xFFFF8A00))))
-            .drawWithContent {
-                drawContent()
-                val x = size.width * shimmer.value
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        listOf(Color.Transparent, Color.White.copy(alpha = 0.35f), Color.Transparent),
-                        startX = x - 60.dp.toPx(),
-                        endX = x + 60.dp.toPx()
-                    )
-                )
-            }
-            .border(2.dp, Color(0xFFB36B00), shape)
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Text(text = "🎉", fontSize = 20.sp)
-        Column(modifier = Modifier.weight(1f)) {
+    // the picture is 2029 x 565; the parchment is x 0.29-0.74, y 0.30-0.76 of it, the pill's dark part x 0.83-0.975, y 0.42-0.69
+    BoxWithConstraints(modifier = modifier.aspectRatio(2029f / 565f)) {
+        Image(
+            painterResource(R.drawable.xp_event_banner),
+            contentDescription = null,
+            contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
+            modifier = Modifier.fillMaxSize()
+        )
+        val w = maxWidth
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .offset(x = w * 0.30f, y = maxHeight * 0.30f)
+                .size(width = w * 0.43f, height = maxHeight * 0.46f),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Text(
                 text = name,
                 fontFamily = DisplayFont,
                 fontWeight = FontWeight.ExtraBold,
-                fontSize = 13.sp,
-                lineHeight = 15.sp,
+                fontSize = (w.value * 0.05f).sp,
+                lineHeight = (w.value * 0.056f).sp,
                 color = Color(0xFF4A2600),
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
             Text(
                 text = stringResource(R.string.xp_event_banner_sub, event.multiplier),
-                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B3A00)
+                fontSize = (w.value * 0.032f).sp,
+                lineHeight = (w.value * 0.038f).sp,
+                color = Color(0xFF6B3A00),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
-        Text(
-            text = formatCountdown(remaining),
-            fontFamily = DisplayFont,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 13.sp,
-            color = Color(0xFFFFE08A),
+        Box(
             modifier = Modifier
-                .background(Color(0xFF2A1808), RoundedCornerShape(50))
-                .padding(horizontal = 10.dp, vertical = 3.dp)
-        )
+                .align(Alignment.TopStart)
+                .offset(x = w * 0.83f, y = maxHeight * 0.42f)
+                .size(width = w * 0.145f, height = maxHeight * 0.27f),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = formatCountdown(remaining),
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = (w.value * 0.045f).sp,
+                color = Color(0xFFFFE08A),
+                maxLines = 1
+            )
+        }
     }
 }
 

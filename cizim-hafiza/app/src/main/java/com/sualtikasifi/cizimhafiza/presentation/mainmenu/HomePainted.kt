@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.platform.LocalDensity
@@ -577,7 +578,7 @@ internal fun PaintedHome(
 
         // ── A running XP event, floated along the top ──
         xpEvent?.let { event ->
-            Box(Modifier.statusBarsPadding().padding(horizontal = 16.dp).padding(top = 2.dp)) { XpEventBanner(event = event) }
+            Box(Modifier.fillMaxWidth().statusBarsPadding().padding(top = 2.dp), contentAlignment = Alignment.TopCenter) { XpEventBanner(event = event, modifier = Modifier.fillMaxWidth(0.88f)) }
         }
     }
 }
