@@ -1,6 +1,17 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.sualtikasifi.cizimhafiza.R
 import androidx.compose.foundation.layout.Column
@@ -127,6 +138,7 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     LaunchedEffect(Unit) { viewModel.refresh() }
     val compact = MaterialTheme.typography.labelMedium
+    val context = LocalContext.current
     Column(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)
@@ -201,9 +213,13 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
         }
         PrimaryButton(text = "Kodu oluştur", onClick = viewModel::create, enabled = !state.busy, modifier = Modifier.fillMaxWidth())
         state.message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-        if (state.lastCreated.isNotEmpty()) {
-            androidx.compose.foundation.text.selection.SelectionContainer {
-                Text(state.lastCreated.joinToString("\n"), style = MaterialTheme.typography.titleSmall)
+        state.lastCreated.forEach { code ->
+            CopyRow(code = code, style = MaterialTheme.typography.titleSmall) { copyToClipboard(context, code) }
+        }
+        if (state.lastCreated.size > 1) {
+            // all of them at once, one per line, ready to paste into a message
+            CopyRow(code = "Hepsini kopyala", style = MaterialTheme.typography.labelLarge) {
+                copyToClipboard(context, state.lastCreated.joinToString("\n"), "${state.lastCreated.size} kod kopyalandı")
             }
         }
         if (state.recent.isNotEmpty()) {
@@ -218,10 +234,9 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                 c.chests[ChestTier.RARE]?.let { "$it Sürpriz" }
             ).joinToString(", ")
             val until = if (c.expiresAtMillis > 0) " · " + SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(c.expiresAtMillis)) else ""
-            Text(
-                text = "${c.code} · $reward · ${c.usedCount}/${c.maxUses}$until",
-                style = MaterialTheme.typography.bodySmall
-            )
+            CopyRow(code = "${c.code} · $reward · ${c.usedCount}/${c.maxUses}$until", style = MaterialTheme.typography.bodySmall) {
+                copyToClipboard(context, c.code)
+            }
         }
     }
 }
@@ -240,4 +255,26 @@ private fun ChestStepper(name: String, count: Int, onChange: (Int) -> Unit, modi
             SelectableChip(label = "+", selected = false, onClick = { onChange(count + 1) }, horizontalPadding = 10.dp, verticalPadding = 4.dp)
         }
     }
+}
+
+/** A line of text with a copy icon at its end; the whole line is the tap target. */
+@Composable
+private fun CopyRow(code: String, style: androidx.compose.ui.text.TextStyle, onCopy: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onCopy).padding(vertical = 4.dp)
+    ) {
+        Text(code, style = style, modifier = Modifier.weight(1f, fill = false))
+        Icon(
+            Icons.Filled.ContentCopy,
+            contentDescription = "Kopyala",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 10.dp).size(18.dp)
+        )
+    }
+}
+
+private fun copyToClipboard(context: Context, text: String, message: String = "Kopyalandı: $text") {
+    (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Karalak kuponu", text))
+    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 }
