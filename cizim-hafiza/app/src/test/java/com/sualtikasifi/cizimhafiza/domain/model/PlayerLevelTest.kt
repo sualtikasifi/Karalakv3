@@ -179,4 +179,24 @@ class XpAwardsTest {
             XpAwards.dailyChallengeTotal(-5, 1)
         )
     }
+
+    @Test
+    fun `an event multiplier pays whole XP, rounded`() {
+        assertEquals(13, XpAwards.scaled(10, 1.3))
+        assertEquals(15, XpAwards.scaled(10, 1.5))
+        assertEquals(20, XpAwards.scaled(10, 2.0))
+        assertEquals(30, XpAwards.scaled(10, 3.0))
+        assertEquals(10, XpAwards.scaled(10, 1.0))
+        // 7 x 1.3 = 9.1 and 7 x 1.5 = 10.5: both land on a whole number, never a fraction
+        assertEquals(9, XpAwards.scaled(7, 1.3))
+        assertEquals(11, XpAwards.scaled(7, 1.5))
+    }
+
+    @Test
+    fun `an event multiplier is named the way players read it`() {
+        assertEquals("%30", XpAwards.multiplierLabel(1.3))
+        assertEquals("%50", XpAwards.multiplierLabel(1.5))
+        assertEquals("2x", XpAwards.multiplierLabel(2.0))
+        assertEquals("3x", XpAwards.multiplierLabel(3.0))
+    }
 }

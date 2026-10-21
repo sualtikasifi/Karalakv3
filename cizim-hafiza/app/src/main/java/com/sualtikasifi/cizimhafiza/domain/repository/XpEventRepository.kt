@@ -20,18 +20,18 @@ interface XpEventRepository {
     fun startListening()
 
     /**
-     * The multiplier in effect right now (1 when no event is running or the
+     * The multiplier in effect right now (1.0 when no event is running or the
      * stored one has already expired). Cached briefly client-side (see
      * REFRESH_WINDOW_MILLIS) — this is read once per match, not once per
      * word, so a stale-by-a-few-minutes value costs nothing.
      */
-    suspend fun currentMultiplier(): Int
+    suspend fun currentMultiplier(): Double
 
     /** The raw event doc, for the Developer Panel's own status display. */
     suspend fun current(): Result<XpEvent?>
 
     /** Reviewer-only — Firestore rules on config/xpEvent enforce it. */
-    suspend fun startEvent(multiplier: Int, durationMillis: Long, label: String?): Result<Unit>
+    suspend fun startEvent(multiplier: Double, durationMillis: Long, label: String?): Result<Unit>
 
     /** Reviewer-only — ends the event immediately, before its own expiry. */
     suspend fun stopEvent(): Result<Unit>
@@ -44,7 +44,8 @@ interface XpEventRepository {
 /** @param endsAtMillis epoch millis; the event is treated as inactive once `now >= endsAtMillis`. */
 data class XpEvent(
     val active: Boolean,
-    val multiplier: Int,
+    /** 1.3 = 30 percent more XP, 2.0 = double. Older apps read it as a whole number, so a fraction costs them nothing but the bonus. */
+    val multiplier: Double,
     val endsAtMillis: Long,
     val label: String?
 )

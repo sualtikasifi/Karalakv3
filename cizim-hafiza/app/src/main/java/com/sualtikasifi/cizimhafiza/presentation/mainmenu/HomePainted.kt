@@ -559,7 +559,7 @@ internal fun PaintedHome(
             val boosted = xpEvent != null && xpEvent.endsAtMillis > System.currentTimeMillis()
             if (boosted && xpEvent != null) {
                 // centred on the card, half over its top edge, above the picture's own top
-                if (xpEvent.multiplier == 2) BoostSign(box(390f, 754f, 456f, 820f))
+                if (kotlin.math.abs(xpEvent.multiplier - 2.0) < 1e-6) BoostSign(box(390f, 754f, 456f, 820f))
                 else Box(box(363f, 770f, 483f, 808f), contentAlignment = Alignment.Center) { BoostBadge(xpEvent.multiplier) }
             }
         }

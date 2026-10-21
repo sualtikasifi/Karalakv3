@@ -134,6 +134,13 @@ data class LevelProgressState(
  */
 object XpAwards {
 
+    /** [base] XP at an event's [multiplier] (1.3 = 30 percent more), rounded to whole XP; XP is never fractional. */
+    fun scaled(base: Int, multiplier: Double): Int = Math.round(base * multiplier).toInt()
+
+    /** A multiplier as the players read it: "2x", "3x", or "%30" for a bonus of less than double. */
+    fun multiplierLabel(multiplier: Double): String =
+        if (multiplier >= 2.0 - 1e-6) "${Math.round(multiplier)}x" else "%${Math.round((multiplier - 1.0) * 100)}"
+
     /** Finishing an online match, win or lose — showing up is the point. */
     const val ONLINE_MATCH = 8
 

@@ -56,12 +56,12 @@ class XpEventRepositoryImpl @Inject constructor(
     private var cached: XpEvent? = null
     private var cachedAtMillis = 0L
 
-    override suspend fun currentMultiplier(): Int {
+    override suspend fun currentMultiplier(): Double {
         // The live listener knows the instant an event starts or stops; the
         // 5-minute cache below is only the fallback before it has reported.
-        val event = (if (liveReady) _live.value else current().getOrNull()) ?: return 1
+        val event = (if (liveReady) _live.value else current().getOrNull()) ?: return 1.0
         val stillRunning = event.active && System.currentTimeMillis() < event.endsAtMillis
-        return if (stillRunning) event.multiplier else 1
+        return if (stillRunning) event.multiplier else 1.0
     }
 
     override suspend fun current(): Result<XpEvent?> {
@@ -79,7 +79,7 @@ class XpEventRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun startEvent(multiplier: Int, durationMillis: Long, label: String?): Result<Unit> = runCatching {
+    override suspend fun startEvent(multiplier: Double, durationMillis: Long, label: String?): Result<Unit> = runCatching {
         eventDoc.set(
             mapOf(
                 "active" to true,
@@ -101,7 +101,7 @@ class XpEventRepositoryImpl @Inject constructor(
 
     private fun parse(data: Map<String, Any?>): XpEvent = XpEvent(
         active = data["active"] as? Boolean ?: false,
-        multiplier = (data["multiplier"] as? Number)?.toInt() ?: 1,
+        multiplier = ((data["multiplier"] as? Number)?.toDouble() ?: 1.0).coerceIn(1.0, 10.0),
         endsAtMillis = (data["endsAtMillis"] as? Number)?.toLong() ?: 0L,
         label = data["label"] as? String
     )

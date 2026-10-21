@@ -188,10 +188,10 @@ class GameViewModel @Inject constructor(
     // from others. Starts at 1 (no bonus) so a grant fired before the fetch
     // resolves — possible but unlikely, given the Loading phase ahead of it —
     // is never wrong, only occasionally short.
-    private var effectiveXpMultiplier: Int = 1
+    private var effectiveXpMultiplier: Double = 1.0
 
     /** Just the XP-event half of [effectiveXpMultiplier], for the Result screen's badge. */
-    private var xpEventMultiplierOnly: Int = 1
+    private var xpEventMultiplierOnly: Double = 1.0
 
     /** The soundtrack switch, mirrored here so the in-game speaker button can drive it. */
     /** True for a Hızlı Eşleş round — leaving one half-way costs XP. */
@@ -350,7 +350,7 @@ class GameViewModel @Inject constructor(
         viewModelScope.launch {
             xpEventMultiplierOnly = xpEventRepository.currentMultiplier()
             effectiveXpMultiplier = xpEventMultiplierOnly *
-                if (quickMatchDailyBonusPending) GameConstants.QUICK_MATCH_DAILY_BONUS_MULTIPLIER else 1
+                if (quickMatchDailyBonusPending) GameConstants.QUICK_MATCH_DAILY_BONUS_MULTIPLIER.toDouble() else 1.0
         }
 
         // A killed-and-restarted process hands the same SavedStateHandle
@@ -970,7 +970,7 @@ class GameViewModel @Inject constructor(
         // daily challenge is the one exception: it pays its own
         // completion+streak reward there instead (see finishGame), so
         // granting this too would pay the same round twice.
-        val liveXp = if (outcome.isCorrect && !isDaily) outcome.xpAwarded * effectiveXpMultiplier else 0
+        val liveXp = if (outcome.isCorrect && !isDaily) XpAwards.scaled(outcome.xpAwarded, effectiveXpMultiplier) else 0
         if (liveXp > 0) {
             settingsRepository.addXp(liveXp)
             // Totalled for the result screen's "double it" ad — that offer
@@ -1059,7 +1059,7 @@ class GameViewModel @Inject constructor(
         // finishing the level itself is worth something beyond the words in
         // it, scaled by how well (stars), same as the star count itself is.
         stars?.let {
-            val bonus = XpAwards.levelCompletionBonus(it) * effectiveXpMultiplier
+            val bonus = XpAwards.scaled(XpAwards.levelCompletionBonus(it), effectiveXpMultiplier)
             settingsRepository.addXp(bonus)
             roundXpEarned += bonus
             // Gold only for stars beyond the best already earned — replaying a cleared level pays none.
@@ -1085,7 +1085,7 @@ class GameViewModel @Inject constructor(
                 // on — after any freeze/reset — so the multiplier below
                 // can't be paid for a streak day never actually reached.
                 xpForStreak = { finalStreak ->
-                    (XpAwards.dailyChallengeTotal(correctCount = correctCount, streakDays = finalStreak) * effectiveXpMultiplier)
+                    XpAwards.scaled(XpAwards.dailyChallengeTotal(correctCount = correctCount, streakDays = finalStreak), effectiveXpMultiplier)
                         .also { xpAwarded = it }
                 }
             )
@@ -1249,7 +1249,8 @@ class GameViewModel @Inject constructor(
             runeBonusGold = gold.runeBonus,
             xpMultiplier = effectiveXpMultiplier,
             quickMatchDailyBonusApplied = quickMatchDailyBonusPending,
-            xpEventMultiplierApplied = xpEventMultiplierOnly > 1,
+            xpEventMultiplierApplied = xpEventMultiplierOnly > 1.0,
+            xpEventMultiplier = xpEventMultiplierOnly,
             showSignInPrompt = PostMatchPrompts.shouldShowSignIn(settingsRepository, authRepository.authState.value),
             // The rating ask waits for the main menu after the third game — see MainMenuViewModel.checkRatingPrompt.
             showRatingPrompt = false,

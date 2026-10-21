@@ -15,6 +15,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.GameMode
 import com.sualtikasifi.cizimhafiza.domain.model.GhostRunWord
 import com.sualtikasifi.cizimhafiza.domain.model.ResultItem
 import com.sualtikasifi.cizimhafiza.domain.model.Word
+import com.sualtikasifi.cizimhafiza.domain.model.XpAwards
 import com.sualtikasifi.cizimhafiza.domain.repository.GhostRunRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.OnlineGameRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository
@@ -129,7 +130,7 @@ class OnlineGameViewModel @Inject constructor(
     // reasoning as GameViewModel.effectiveXpMultiplier. No Quick Match daily
     // bonus here: that bonus is Hızlı Eşleş-only, this ViewModel plays real
     // online rooms.
-    private var xpEventMultiplier: Int = 1
+    private var xpEventMultiplier: Double = 1.0
 
     init {
         // Harmless/no-op for any other room — only ever drives room 130246
@@ -724,7 +725,7 @@ class OnlineGameViewModel @Inject constructor(
         // the room's match-completion/win bonus is added separately once
         // the round ends (see GameRepositoryImpl.finishSaving), so this is
         // on top of it, not instead of it.
-        val liveXp = if (outcome.isCorrect) outcome.xpAwarded * xpEventMultiplier else 0
+        val liveXp = if (outcome.isCorrect) XpAwards.scaled(outcome.xpAwarded, xpEventMultiplier) else 0
         if (liveXp > 0) {
             settingsRepository.addXp(liveXp)
             roundXpEarned += liveXp

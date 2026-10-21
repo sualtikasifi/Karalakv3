@@ -473,7 +473,7 @@ internal fun GradientModeCard(
 
 /** The small "2x XP" pill on the boosted mode card: it pulses, and a star twinkles beside it. */
 @Composable
-internal fun BoostBadge(multiplier: Int, modifier: Modifier = Modifier) {
+internal fun BoostBadge(multiplier: Double, modifier: Modifier = Modifier) {
     val t = rememberInfiniteTransition(label = "boostBadge")
     val pulse = t.animateFloat(
         initialValue = 0.92f,
@@ -493,7 +493,7 @@ internal fun BoostBadge(multiplier: Int, modifier: Modifier = Modifier) {
     ) {
         Text(text = "✦", fontSize = 11.sp, color = Color(0xFFFFF3B0), modifier = Modifier.graphicsLayer { alpha = twinkle.value })
         Text(
-            text = "${multiplier}x XP",
+            text = "${com.sualtikasifi.cizimhafiza.domain.model.XpAwards.multiplierLabel(multiplier)} XP",
             fontFamily = DisplayFont,
             fontWeight = FontWeight.ExtraBold,
             fontSize = 10.sp,
@@ -589,6 +589,16 @@ internal fun XpEventBanner(event: com.sualtikasifi.cizimhafiza.domain.repository
     if (remaining <= 0 || gone) return
 
     val name = event.label?.takeIf { it.isNotBlank() } ?: stringResource(R.string.xp_event_default_name)
+    val sub = if (event.multiplier >= 2.0 - 1e-6) {
+        stringResource(R.string.xp_event_banner_sub, com.sualtikasifi.cizimhafiza.domain.model.XpAwards.multiplierLabel(event.multiplier))
+    } else {
+        stringResource(R.string.xp_event_banner_sub_percent, com.sualtikasifi.cizimhafiza.domain.model.XpAwards.multiplierLabel(event.multiplier))
+    }
+    // The painted board carries a "2x" sign, so it is only for a double; any other multiplier gets the plain strip.
+    if (event.multiplier < 2.0 - 1e-6 || event.multiplier > 2.0 + 1e-6) {
+        XpEventStrip(name = name, sub = sub, countdown = formatCountdown(remaining), blink = blink, modifier = modifier)
+        return
+    }
     // the picture is 2029 x 565; the parchment is x 0.29-0.74, y 0.30-0.76 of it, the pill's dark part x 0.83-0.975, y 0.42-0.69
     BoxWithConstraints(modifier = modifier.aspectRatio(2029f / 565f).graphicsLayer { alpha = blink.value }) {
         Image(
@@ -617,7 +627,7 @@ internal fun XpEventBanner(event: com.sualtikasifi.cizimhafiza.domain.repository
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
             Text(
-                text = stringResource(R.string.xp_event_banner_sub, event.multiplier),
+                text = sub,
                 fontWeight = FontWeight.Bold,
                 fontSize = (w.value * 0.032f).sp,
                 lineHeight = (w.value * 0.038f).sp,
@@ -642,6 +652,70 @@ internal fun XpEventBanner(event: com.sualtikasifi.cizimhafiza.domain.repository
                 maxLines = 1
             )
         }
+    }
+}
+
+/** The banner for a multiplier the painted "2x" board does not fit: the plain orange strip, same blink. */
+@Composable
+private fun XpEventStrip(name: String, sub: String, countdown: String, blink: androidx.compose.runtime.State<Float>, modifier: Modifier = Modifier) {
+    val shimmer = rememberInfiniteTransition(label = "xpBanner").animateFloat(
+        initialValue = -0.4f,
+        targetValue = 1.4f,
+        animationSpec = infiniteRepeatable(tween(2200, easing = androidx.compose.animation.core.LinearEasing)),
+        label = "xpBannerShimmer"
+    )
+    val shape = RoundedCornerShape(18.dp)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .graphicsLayer { alpha = blink.value }
+            .clip(shape)
+            .background(Brush.horizontalGradient(listOf(Color(0xFFFF8A00), Color(0xFFFFC21A), Color(0xFFFF8A00))))
+            .drawWithContent {
+                drawContent()
+                val x = size.width * shimmer.value
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        listOf(Color.Transparent, Color.White.copy(alpha = 0.35f), Color.Transparent),
+                        startX = x - 60.dp.toPx(),
+                        endX = x + 60.dp.toPx()
+                    )
+                )
+            }
+            .border(2.dp, Color(0xFFB36B00), shape)
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(text = "🎉", fontSize = 20.sp)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name,
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 13.sp,
+                lineHeight = 15.sp,
+                color = Color(0xFF4A2600),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+            Text(
+                text = sub,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF6B3A00)
+            )
+        }
+        Text(
+            text = countdown,
+            fontFamily = DisplayFont,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 13.sp,
+            color = Color(0xFFFFE08A),
+            modifier = Modifier
+                .background(Color(0xFF2A1808), RoundedCornerShape(50))
+                .padding(horizontal = 10.dp, vertical = 3.dp)
+        )
     }
 }
 

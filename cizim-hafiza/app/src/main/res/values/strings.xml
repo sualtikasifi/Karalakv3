@@ -982,6 +982,7 @@
     <string name="result_stat_quick">First Quick Match today</string>
     <string name="result_stat_event">XP event</string>
     <string name="result_stat_multiplier">XP ×%1$d</string>
+    <string name="result_stat_bonus">XP +%%%1$d</string>
     <string name="result_gold_amount">+%1$d gold</string>
     <string name="result_words_title">Your words</string>
     <string name="result_x2_amount">x2 · %1$d XP</string>
@@ -1077,7 +1078,7 @@
     <string name="reports_tab_league">League</string>
     <string name="reports_league_hint">Pick what the month\'s top three win. Left unset, the month\'s own frame is given. The change reaches players at the global table\'s next rebuild (within 1 hour).</string>
     <string name="reports_league_no_rewards">This build defines no league prizes.</string>
-    <string name="reports_tab_xp_event">2x XP</string>
+    <string name="reports_tab_xp_event">XP event</string>
     <string name="reports_tab_stats">Stats</string>
     <string name="stats_hint">Counted on players\' devices: good for trends, not for accounting. </string>
     <string name="stats_range_1">Today</string>
@@ -1093,8 +1094,8 @@
     <string name="stats_empty">No data in this range yet.</string>
     <string name="stats_refresh">Refresh</string>
     <string name="reports_tab_daily_challenge">Daily Challenge</string>
-    <string name="reports_xp_event_hint">Doubles every XP payout for every signed-in player, live, until it ends. Announce it before starting — players see it only by earning more, not by a banner in the app.</string>
-    <string name="reports_xp_event_active">2x XP is live, until %1$s</string>
+    <string name="reports_xp_event_hint">Raises every XP payout for every signed-in player, live, until it ends, by the multiplier picked (30 or 50 percent more, or 2x, 3x). Players see a banner on the home screen for the first few seconds.</string>
+    <string name="reports_xp_event_active">XP %1$s is live, until %2$s</string>
     <string name="reports_xp_event_inactive">No event running</string>
     <string name="reports_xp_event_3h">Start — 3 hours</string>
     <string name="reports_xp_event_24h">Start — 24 hours</string>
@@ -1413,8 +1414,10 @@
     <string name="store_daily_joker_action">Watch an ad, get it free</string>
     <string name="store_daily_joker_claimed">Your free joker was added!</string>
     <string name="store_daily_joker_unavailable">No ad available right now, try again shortly.</string>
-    <string name="xp_event_default_name">2x XP Event</string>
-    <string name="xp_event_banner_sub">Every XP counts %1$dx right now</string>
+    <string name="xp_event_default_name">XP Event</string>
+    <string name="xp_event_banner_sub">Every XP counts %1$s right now</string>
+    <string name="xp_event_banner_sub_percent">Every XP pays %1$s more right now</string>
+    <string name="reports_xp_event_multiplier_label">Multiplier</string>
     <string name="reports_xp_event_name_label">Event name</string>
     <string name="reports_xp_event_name_hint">e.g. New Year Event</string>
     <string name="reports_xp_event_duration_label">Duration</string>

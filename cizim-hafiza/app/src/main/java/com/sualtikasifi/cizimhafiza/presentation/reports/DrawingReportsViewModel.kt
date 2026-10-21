@@ -265,11 +265,11 @@ class DrawingReportsViewModel @Inject constructor(
         }
     }
 
-    /** Starts (or replaces) the live 2x-XP event for [durationMillis] from now. */
-    fun startXpEvent(durationMillis: Long, label: String?) {
+    /** Starts (or replaces) the live XP event at [multiplier] (1.3 = 30 percent more, 2.0 = double) for [durationMillis] from now. */
+    fun startXpEvent(multiplier: Double, durationMillis: Long, label: String?) {
         _uiState.value = _uiState.value.copy(xpEventLoading = true, xpEventFailed = false)
         viewModelScope.launch {
-            xpEventRepository.startEvent(multiplier = 2, durationMillis = durationMillis, label = label)
+            xpEventRepository.startEvent(multiplier = multiplier, durationMillis = durationMillis, label = label)
                 .onSuccess { loadXpEvent() }
                 .onFailure { _uiState.value = _uiState.value.copy(xpEventLoading = false, xpEventFailed = true) }
         }

@@ -279,11 +279,11 @@ internal fun resultStats(state: GamePhase.Result, xp: Int, withXpCard: Boolean):
     if (state.runeBonusGold > 0) {
         list += ResultStat(StatIcon.Art(R.drawable.rune_root), stringResource(R.string.result_stat_rune_bonus), stringResource(R.string.result_gold_amount, state.runeBonusGold), orange)
     }
-    val quick = state.quickMatchDailyBonusApplied
-    val mult = state.xpMultiplier
-    val eventMult = if (state.xpEventMultiplierApplied) (mult / if (quick) 2 else 1).coerceAtLeast(2) else 0
-    if (eventMult > 0) {
-        list += ResultStat(StatIcon.Disc(Icons.Filled.Celebration, Color(0xFF8E44D6)), stringResource(R.string.result_stat_event), stringResource(R.string.result_stat_multiplier, eventMult), orange)
+    val eventMult = state.xpEventMultiplier
+    if (state.xpEventMultiplierApplied && eventMult > 1.0) {
+        val value = if (eventMult >= 2.0 - 1e-6) stringResource(R.string.result_stat_multiplier, Math.round(eventMult).toInt())
+        else stringResource(R.string.result_stat_bonus, Math.round((eventMult - 1.0) * 100).toInt())
+        list += ResultStat(StatIcon.Disc(Icons.Filled.Celebration, Color(0xFF8E44D6)), stringResource(R.string.result_stat_event), value, orange)
     }
     if (withXpCard) {
         list += ResultStat(StatIcon.Art(R.drawable.rs_ic_star), "", stringResource(R.string.result_xp_won, xp), XpOrange, headline = true)
