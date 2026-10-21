@@ -1148,10 +1148,13 @@
     <string name="reports_queue_approve">Onayla</string>
     <string name="reports_queue_reject">İhlal</string>
     <string name="penalty_title">Turun geçersiz sayıldı</string>
-    <string name="penalty_body">Hızlı Eşleş turlarından birinde, kelimeleri çizmek yerine çizim alanına yazdığın görüldü. O turdan kazandığın %1$d XP, Anladım\'a bastığında hesabından düşecek.</string>
-    <string name="penalty_strikes">Bu %1$d. ihlalin. Bir sonraki ihlalde ceza ağırlaşır.</string>
-    <string name="penalty_locked">Bu %1$d. ihlalin. Hızlı Eşleş ve Arkadaşınla Yarış %2$s boyunca kapalı.</string>
-    <string name="penalty_body_report">Bir çizimin başka oyuncular tarafından bildirildi ve incelemede kurallara aykırı bulundu. Anladım\'a bastığında hesabından %1$d XP ve %2$d altın düşecek.</string>
+    <string name="penalty_body">Hızlı Eşleş\'te oynadığın bir turda kelimeleri çizmek yerine çizim alanına yazdığın görüldü. Bu turdan kazandığın %1$d XP hesabından düşülecek.</string>
+    <string name="penalty_body_daily">Günün Meydan Okuması\'nda kelimeleri çizmek yerine çizim alanına yazdığın görüldü. Bu turdan kazandığın %1$d XP hesabından düşülecek ve günlük serin sıfırlanacak.</string>
+    <string name="penalty_body_many">%1$d turunda kelimeleri çizmek yerine çizim alanına yazdığın görüldü. Bu turlardan kazandığın toplam %2$d XP hesabından düşülecek.</string>
+    <string name="penalty_strikes">Bu senin %1$d. ihlalin. Tekrarlarsan ceza ağırlaşır.</string>
+    <string name="penalty_warn_next">Tekrarlarsan ceza ağırlaşır.</string>
+    <string name="penalty_locked">Bu senin %1$d. ihlalin. Hızlı Eşleş ve Arkadaşınla Yarış %2$s boyunca kapalı.</string>
+    <string name="penalty_body_report">Bir çizimin başka oyuncular tarafından bildirildi ve incelemede kurallara aykırı bulundu. Hesabından %1$d XP ve %2$d altın düşülecek.</string>
     <string name="reports_dismiss">Haksız</string>
     <string name="reports_uphold">Cezalandır</string>
     <string name="reports_uphold_title">Çizimin sahibi cezalandırılsın mı?</string>

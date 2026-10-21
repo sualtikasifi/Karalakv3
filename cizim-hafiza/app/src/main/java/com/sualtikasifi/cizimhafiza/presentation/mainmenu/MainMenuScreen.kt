@@ -433,10 +433,11 @@ private fun PenaltyDialog(penalty: Penalty, onDismiss: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = if (penalty.goldRevoked > 0) {
-                        stringResource(R.string.penalty_body_report, penalty.xpRevoked, penalty.goldRevoked)
-                    } else {
-                        stringResource(R.string.penalty_body, penalty.xpRevoked)
+                    text = when {
+                        penalty.goldRevoked > 0 -> stringResource(R.string.penalty_body_report, penalty.xpRevoked, penalty.goldRevoked)
+                        penalty.rounds > 1 -> stringResource(R.string.penalty_body_many, penalty.rounds, penalty.xpRevoked)
+                        penalty.breaksDailyStreak -> stringResource(R.string.penalty_body_daily, penalty.xpRevoked)
+                        else -> stringResource(R.string.penalty_body, penalty.xpRevoked)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -457,8 +458,11 @@ private fun PenaltyDialog(penalty: Penalty, onDismiss: () -> Unit) {
                             else -> stringResource(R.string.lock_duration_hours, (minutes + 59) / 60)
                         }
                         stringResource(R.string.penalty_locked, penalty.strike, duration)
-                    } else {
+                    } else if (penalty.strike > 0) {
                         stringResource(R.string.penalty_strikes, penalty.strike)
+                    } else {
+                        // a daily-challenge penalty is not counted as an offence, so there is no number to give
+                        stringResource(R.string.penalty_warn_next)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,

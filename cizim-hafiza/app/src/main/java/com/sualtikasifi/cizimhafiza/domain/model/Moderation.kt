@@ -59,7 +59,9 @@ data class Penalty(
      */
     val breaksDailyStreak: Boolean = false,
     /** Gold taken back on top of [xpRevoked] — only a penalty decided from a player report carries any. */
-    val goldRevoked: Int = 0
+    val goldRevoked: Int = 0,
+    /** How many penalties the home window adds up into this one (it shows them all at once); 1 for a single one. */
+    val rounds: Int = 1
 )
 
 /**

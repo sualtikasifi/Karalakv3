@@ -1135,10 +1135,13 @@
     <string name="reports_queue_approve">Approve</string>
     <string name="reports_queue_reject">Reject</string>
     <string name="penalty_title">A round of yours was rejected</string>
-    <string name="penalty_body">In one of your quick match rounds the words were written into the drawing area instead of drawn. The %1$d XP it paid will be taken from your account when you tap Understood.</string>
+    <string name="penalty_body">In one of your Quick Match rounds the words were written into the drawing area instead of drawn. The %1$d XP that round paid will be taken from your account.</string>
+    <string name="penalty_body_daily">In the Daily Challenge the words were written into the drawing area instead of drawn. The %1$d XP that round paid will be taken from your account and your daily streak will be reset.</string>
+    <string name="penalty_body_many">In %1$d of your rounds the words were written into the drawing area instead of drawn. The %2$d XP those rounds paid in total will be taken from your account.</string>
     <string name="penalty_strikes">That was offence %1$d. The next one costs more.</string>
+    <string name="penalty_warn_next">Doing it again costs more.</string>
     <string name="penalty_locked">That was offence %1$d. Quick Match and Play with Friends are closed for %2$s.</string>
-    <string name="penalty_body_report">A drawing of yours was reported by other players and found against the rules. %1$d XP and %2$d gold will be taken from your account when you tap Understood.</string>
+    <string name="penalty_body_report">A drawing of yours was reported by other players and found against the rules. %1$d XP and %2$d gold will be taken from your account.</string>
     <string name="reports_dismiss">Unfounded</string>
     <string name="reports_uphold">Penalize</string>
     <string name="reports_uphold_title">Penalize the drawer?</string>
