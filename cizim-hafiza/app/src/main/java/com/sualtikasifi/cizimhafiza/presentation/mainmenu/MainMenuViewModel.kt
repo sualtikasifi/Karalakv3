@@ -212,7 +212,10 @@ class MainMenuViewModel @Inject constructor(
                 xpRevoked = found.sumOf { it.xpRevoked },
                 goldRevoked = found.sumOf { it.goldRevoked },
                 strike = found.maxOf { it.strike },
-                lockedUntilMillis = found.maxOf { it.lockedUntilMillis }
+                lockedUntilMillis = found.maxOf { it.lockedUntilMillis },
+                // the window names the mode only when every one of them came from the daily challenge
+                breaksDailyStreak = found.all { it.breaksDailyStreak },
+                rounds = found.size
             )
         }
     }
