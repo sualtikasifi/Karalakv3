@@ -506,6 +506,50 @@ internal fun BoostBadge(multiplier: Int, modifier: Modifier = Modifier) {
     }
 }
 
+/** How long the home banner of one event stays up: remembered for the whole run of the app, so coming back to home does not restart it. */
+private object XpBannerLife {
+    const val SHOW_MS = 10_000L
+    const val BLINK_MS = 1_000.0
+    const val FADE_MS = 1_000L
+    private var eventKey = 0L
+    private var startedAt = 0L
+
+    fun deadline(key: Long): Long {
+        if (key != eventKey) {
+            eventKey = key
+            startedAt = System.currentTimeMillis()
+        }
+        return startedAt + SHOW_MS
+    }
+}
+
+/**
+ * The painted "2x" sign (crown, stars and leaves) on the boosted mode card. It fills [modifier] whole, so the caller
+ * centres it by placing the box; it breathes and tilts a little.
+ */
+@Composable
+internal fun BoostSign(modifier: Modifier = Modifier) {
+    val t = rememberInfiniteTransition(label = "boostSign")
+    val pulse = t.animateFloat(
+        initialValue = 0.94f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "boostSignPulse"
+    )
+    val tilt = t.animateFloat(
+        initialValue = -4f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(tween(1100, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "boostSignTilt"
+    )
+    Image(
+        painterResource(R.drawable.xp_badge_2x),
+        contentDescription = null,
+        contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+        modifier = modifier.graphicsLayer { scaleX = pulse.value; scaleY = pulse.value; rotationZ = tilt.value }
+    )
+}
+
 /**
  * Home banner for a running event: the painted board (its "2x" sign, parchment and dark clock pill are the picture),
  * with the event's own name and what it does written on the parchment and a live countdown in the pill.
@@ -522,11 +566,31 @@ internal fun XpEventBanner(event: com.sualtikasifi.cizimhafiza.domain.repository
         now = System.currentTimeMillis()
     }
     val remaining = event.endsAtMillis - now
-    if (remaining <= 0) return
+
+    // Over the top of the home picture, so it only stays 10 seconds: it blinks, then fades out for good on the last turn.
+    val deadline = remember(event.endsAtMillis) { XpBannerLife.deadline(event.endsAtMillis) }
+    val blink = remember(deadline) { mutableStateOf(1f) }
+    var gone by remember(deadline) { mutableStateOf(System.currentTimeMillis() >= deadline) }
+    LaunchedEffect(deadline) {
+        while (!gone) {
+            val t = (XpBannerLife.SHOW_MS - (deadline - System.currentTimeMillis())).coerceAtLeast(0L).toFloat()
+            if (t >= XpBannerLife.SHOW_MS) {
+                gone = true
+            } else {
+                blink.value = if (t < XpBannerLife.SHOW_MS - XpBannerLife.FADE_MS) {
+                    0.35f + 0.65f * (0.5f + 0.5f * kotlin.math.cos(2.0 * Math.PI * t / XpBannerLife.BLINK_MS).toFloat())
+                } else {
+                    ((XpBannerLife.SHOW_MS - t) / XpBannerLife.FADE_MS).coerceIn(0f, 1f)
+                }
+                androidx.compose.runtime.withFrameNanos { }
+            }
+        }
+    }
+    if (remaining <= 0 || gone) return
 
     val name = event.label?.takeIf { it.isNotBlank() } ?: stringResource(R.string.xp_event_default_name)
     // the picture is 2029 x 565; the parchment is x 0.29-0.74, y 0.30-0.76 of it, the pill's dark part x 0.83-0.975, y 0.42-0.69
-    BoxWithConstraints(modifier = modifier.aspectRatio(2029f / 565f)) {
+    BoxWithConstraints(modifier = modifier.aspectRatio(2029f / 565f).graphicsLayer { alpha = blink.value }) {
         Image(
             painterResource(R.drawable.xp_event_banner),
             contentDescription = null,
