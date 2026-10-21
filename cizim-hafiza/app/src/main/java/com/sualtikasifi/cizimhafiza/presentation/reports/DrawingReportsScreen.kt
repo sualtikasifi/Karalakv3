@@ -147,6 +147,19 @@ fun DrawingReportsScreen(
     var queueListMode by remember { mutableStateOf(false) }
     // A special day tapped on the dashboard, waiting for the assistant to plan it.
     var pendingPlan by remember { mutableStateOf<com.sualtikasifi.cizimhafiza.presentation.reports.console.SpecialDay?>(null) }
+    // The system back key and the arrow at the top are one and the same: inside a tool they go up to the tool list, and
+    // from anywhere else they ask before leaving, because leaving locks the panel again and the passcode has to be typed anew.
+    var exitAsk by remember { mutableStateOf(false) }
+    val inTool = uiState.tab.isLegacyTool() || uiState.tab == ReportsTab.Studio || (uiState.tab == ReportsTab.Queue && queueListMode)
+    val goBack: () -> Unit = {
+        if (inTool) {
+            if (uiState.tab == ReportsTab.Queue) queueListMode = false
+            viewModel.selectTab(ReportsTab.Tools)
+        } else {
+            exitAsk = true
+        }
+    }
+    BackHandler(onBack = goBack)
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
@@ -224,20 +237,11 @@ fun DrawingReportsScreen(
                 }
 
                 if (uiState.tab.isLegacyTool() || (uiState.tab == ReportsTab.Queue && queueListMode)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).clip(MaterialTheme.shapes.small).clickable {
-                            if (uiState.tab == ReportsTab.Queue) queueListMode = false
-                            viewModel.selectTab(ReportsTab.Tools)
-                        },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = com.sualtikasifi.cizimhafiza.presentation.reports.console.Console.InkSecondary, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = stringResource(uiState.tab.labelRes()),
-                            style = com.sualtikasifi.cizimhafiza.presentation.reports.console.Console.Title
-                        )
-                    }
+                    Text(
+                        text = stringResource(uiState.tab.labelRes()),
+                        style = com.sualtikasifi.cizimhafiza.presentation.reports.console.Console.Title,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    )
                 }
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when {
@@ -290,9 +294,7 @@ fun DrawingReportsScreen(
                         onSelect = viewModel::setWeekReward
                     )
 
-                    uiState.tab == ReportsTab.Studio -> com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioPanel(
-                        onBack = { viewModel.selectTab(ReportsTab.Tools) }
-                    )
+                    uiState.tab == ReportsTab.Studio -> com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioPanel()
 
                     uiState.tab == ReportsTab.Stats -> StatsPanel()
 
@@ -515,8 +517,18 @@ fun DrawingReportsScreen(
                 )
             }
 
+            if (exitAsk) {
+                AlertDialog(
+                    onDismissRequest = { exitAsk = false },
+                    title = { Text("Geliştirici panelinden çıkılsın mı?") },
+                    text = { Text("Çıkarsan panel yeniden kilitlenir, şifreyi tekrar girmen gerekir.") },
+                    confirmButton = { TextButton(onClick = { exitAsk = false; onBack() }) { Text("Çık", color = MaterialTheme.colorScheme.error) } },
+                    dismissButton = { TextButton(onClick = { exitAsk = false }) { Text("Kal") } }
+                )
+            }
+
             ScreenTopActions(
-                onBack = onBack,
+                onBack = goBack,
                 title = stringResource(R.string.reports_title),
                 modifier = Modifier.align(Alignment.TopStart)
             )
