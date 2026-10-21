@@ -417,66 +417,36 @@ fun MainMenuScreen(
  */
 @Composable
 private fun PenaltyDialog(penalty: Penalty, onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
-        RaisedCard(corner = 24.dp, modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                IconWell(icon = Icons.Filled.Gavel)
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = stringResource(R.string.penalty_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = when {
-                        penalty.goldRevoked > 0 -> stringResource(R.string.penalty_body_report, penalty.xpRevoked, penalty.goldRevoked)
-                        penalty.rounds > 1 -> stringResource(R.string.penalty_body_many, penalty.rounds, penalty.xpRevoked)
-                        penalty.breaksDailyStreak -> stringResource(R.string.penalty_body_daily, penalty.xpRevoked)
-                        else -> stringResource(R.string.penalty_body, penalty.xpRevoked)
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                // What happens NEXT is the part that changes behaviour. A
-                // penalty that only reports what was taken reads as a fine;
-                // saying how close the lockout is turns it into a warning,
-                // which is the point.
-                Text(
-                    text = if (penalty.lockedUntilMillis > 0L) {
-                        val lockMillis = (penalty.lockedUntilMillis - penalty.createdAtMillis).coerceAtLeast(0L)
-                        val minutes = ((lockMillis + 59_999L) / 60_000L).toInt().coerceAtLeast(1)
-                        val duration = when {
-                            minutes < 60 -> stringResource(R.string.lock_duration_minutes, minutes)
-                            minutes >= 24 * 60 && minutes % (24 * 60) == 0 -> stringResource(R.string.lock_duration_days, minutes / (24 * 60))
-                            else -> stringResource(R.string.lock_duration_hours, (minutes + 59) / 60)
-                        }
-                        stringResource(R.string.penalty_locked, penalty.strike, duration)
-                    } else if (penalty.strike > 0) {
-                        stringResource(R.string.penalty_strikes, penalty.strike)
-                    } else {
-                        // a daily-challenge penalty is not counted as an offence, so there is no number to give
-                        stringResource(R.string.penalty_warn_next)
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(18.dp))
-                PrimaryButton(
-                    text = stringResource(R.string.penalty_understood),
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
+    val message = when {
+        penalty.goldRevoked > 0 -> stringResource(R.string.penalty_body_report, penalty.xpRevoked, penalty.goldRevoked)
+        penalty.rounds > 1 -> stringResource(R.string.penalty_body_many, penalty.rounds, penalty.xpRevoked)
+        penalty.breaksDailyStreak -> stringResource(R.string.penalty_body_daily, penalty.xpRevoked)
+        else -> stringResource(R.string.penalty_body, penalty.xpRevoked)
     }
+    // What happens NEXT is the part that changes behaviour. A penalty that only reports what was taken reads as a
+    // fine; saying how close the lockout is turns it into a warning, which is the point.
+    val warning = if (penalty.lockedUntilMillis > 0L) {
+        val lockMillis = (penalty.lockedUntilMillis - penalty.createdAtMillis).coerceAtLeast(0L)
+        val minutes = ((lockMillis + 59_999L) / 60_000L).toInt().coerceAtLeast(1)
+        val duration = when {
+            minutes < 60 -> stringResource(R.string.lock_duration_minutes, minutes)
+            minutes >= 24 * 60 && minutes % (24 * 60) == 0 -> stringResource(R.string.lock_duration_days, minutes / (24 * 60))
+            else -> stringResource(R.string.lock_duration_hours, (minutes + 59) / 60)
+        }
+        stringResource(R.string.penalty_locked, penalty.strike, duration)
+    } else if (penalty.strike > 0) {
+        stringResource(R.string.penalty_strikes, penalty.strike)
+    } else {
+        // a daily-challenge penalty is not counted as an offence, so there is no number to give
+        stringResource(R.string.penalty_warn_next)
+    }
+    com.sualtikasifi.cizimhafiza.presentation.common.PaintedPenaltyDialog(
+        title = stringResource(R.string.penalty_title),
+        message = message,
+        warning = warning,
+        buttonText = stringResource(R.string.penalty_understood),
+        onDismiss = onDismiss
+    )
 }
 
 /**
