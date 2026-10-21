@@ -113,7 +113,7 @@ import java.util.Locale
  * the video, making it, sharing it.
  */
 @Composable
-fun StudioPanel(onBack: () -> Unit, viewModel: StudioViewModel = hiltViewModel()) {
+fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
     val st by viewModel.state.collectAsState()
     val context = LocalContext.current
     LaunchedEffect(st.message) {
@@ -156,7 +156,6 @@ fun StudioPanel(onBack: () -> Unit, viewModel: StudioViewModel = hiltViewModel()
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Araçlar", tint = Console.Ink) }
                 Column(Modifier.weight(1f)) {
                     Text("Video Stüdyosu", style = Console.Title)
                     Text("Karalak'lı dikey videolar · 1080×1920 · sesli", style = Console.Small)
