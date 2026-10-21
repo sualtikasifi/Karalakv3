@@ -545,9 +545,8 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
             if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = Console.Accent, strokeWidth = 2.dp)
         }
         PlayerEditor(project.drawing(rv.sampleId), vm, anyBusy)
-        Field("Kelime (İngilizce)", rv.wordEn, { vm.setRevealWordEn(rv.sampleId, it) }, lines = 1)
-        Field("Çizimin şekli (İngilizce, görsel istemine eklenir)", rv.describe, { vm.setRevealDescribe(rv.sampleId, it) }, lines = 2)
-        Field("Videodaki sahne (İngilizce, video istemine eklenir): kim gelip ne yapıyor?", rv.motion, { vm.setRevealMotion(rv.sampleId, it) }, lines = 4)
+        Field("Çizimin şekli (görsel istemine eklenir)", rv.describe, { vm.setRevealDescribe(rv.sampleId, it) }, lines = 3)
+        Field("Videodaki sahne (video istemine eklenir): kim, nerede, ne yapıyor, hangi sesler? Ne kadar ayrıntılı yazarsan o kadar iyi.", rv.motion, { vm.setRevealMotion(rv.sampleId, it) }, lines = 7)
 
         Text("Görsel · ChatGPT", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {

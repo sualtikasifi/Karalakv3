@@ -844,12 +844,11 @@ class StudioViewModel @Inject constructor(
         pruneRealMedia()
     }
 
-    fun setRevealDescribe(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(describe = text.take(300)) }
-    fun setRevealMotion(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(motion = text.take(300)) }
-    fun setRevealWordEn(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(wordEn = text.take(60)) }
+    fun setRevealDescribe(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(describe = text.take(800)) }
+    fun setRevealMotion(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(motion = text.take(1800)) }
 
     /**
-     * Lets the assistant describe the chosen drawings (the word in English, their shapes, how each would move)
+     * Lets the assistant describe the chosen drawings (their shapes, a detailed scene for each video)
      * and write the post text. Optional: the same fields can be filled in by hand.
      */
     fun describeReal() {
@@ -867,7 +866,7 @@ class StudioViewModel @Inject constructor(
                 updateReal { it.copy(writing = false) }
                 val byId = w.reveals.associateBy { it.sampleId }
                 updateProject { proj ->
-                    proj.copy(reveals = proj.reveals.map { r -> byId[r.sampleId]?.let { d -> r.copy(wordEn = d.wordEn, describe = d.describe, motion = d.motion) } ?: r })
+                    proj.copy(reveals = proj.reveals.map { r -> byId[r.sampleId]?.let { d -> r.copy(describe = d.describe, motion = d.motion) } ?: r })
                 }
                 _state.update { it.copy(caption = w.caption.ifBlank { it.caption }, hashtags = w.hashtags.ifBlank { it.hashtags }, aiCost = w.costUsd) }
             }.onFailure { e -> updateReal { it.copy(writing = false, writeError = e.message ?: "Yazılamadı") } }
@@ -887,7 +886,7 @@ class StudioViewModel @Inject constructor(
                     File(dir, "karalak_cizim_${System.currentTimeMillis()}.png").apply { writeBytes(StrokeReplay.png(d.strokes, 1f, 1024)) }
                 }.getOrNull()
             } ?: run { _state.update { it.copy(message = "Çizim hazırlanamadı") }; return@launch }
-            val prompt = RealCopy.imagePrompt(d.word, reveal?.wordEn.orEmpty(), d.seconds.coerceAtLeast(1), reveal?.describe.orEmpty())
+            val prompt = RealCopy.imagePrompt(d.word, d.seconds.coerceAtLeast(1), reveal?.describe.orEmpty())
             updateReal { it.copy(share = RealShare(file, prompt)) }
         }
     }
@@ -906,7 +905,7 @@ class StudioViewModel @Inject constructor(
             val file = withContext(Dispatchers.IO) {
                 runCatching { copyToShare(realStore.file(image), "karalak_gercek_${System.currentTimeMillis()}", clear = true) }.getOrNull()
             } ?: run { _state.update { it.copy(message = "Görsel hazırlanamadı") }; return@launch }
-            updateReal { it.copy(share = RealShare(file, RealCopy.videoPrompt(reveal.wordEn.ifBlank { p.drawing(sampleId)?.word.orEmpty() }, reveal.motion), ShareTarget.Gemini)) }
+            updateReal { it.copy(share = RealShare(file, RealCopy.videoPrompt(p.drawing(sampleId)?.word.orEmpty(), reveal.motion), ShareTarget.Gemini)) }
         }
     }
 
@@ -945,13 +944,13 @@ class StudioViewModel @Inject constructor(
         val p = _state.value.real.project ?: return null
         val d = p.drawing(sampleId) ?: return null
         val reveal = p.reveals.find { it.sampleId == sampleId }
-        return RealCopy.imagePrompt(d.word, reveal?.wordEn.orEmpty(), d.seconds.coerceAtLeast(1), reveal?.describe.orEmpty())
+        return RealCopy.imagePrompt(d.word, d.seconds.coerceAtLeast(1), reveal?.describe.orEmpty())
     }
 
     fun videoPrompt(sampleId: String): String? {
         val p = _state.value.real.project ?: return null
         val reveal = p.reveals.find { it.sampleId == sampleId } ?: return null
-        return RealCopy.videoPrompt(reveal.wordEn.ifBlank { p.drawing(sampleId)?.word.orEmpty() }, reveal.motion)
+        return RealCopy.videoPrompt(p.drawing(sampleId)?.word.orEmpty(), reveal.motion)
     }
 
     fun mediaFile(name: String): File = realStore.file(name)
