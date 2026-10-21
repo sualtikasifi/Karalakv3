@@ -83,34 +83,41 @@ class RealTest {
     }
 
     @Test
-    fun imagePromptCarriesTheWordAndTheOddities() {
-        val prompt = RealCopy.imagePrompt("kedi", "cat", 5, "a cat with six legs.")
-        assertTrue(prompt.contains("\"kedi\" (cat)"))
-        assertTrue(prompt.contains("in 5 seconds"))
-        assertTrue(prompt.contains("The doodle shows: a cat with six legs.\n"))
+    fun imagePromptIsTurkishAndCarriesTheWordAndTheOddities() {
+        val prompt = RealCopy.imagePrompt("kedi", 5, "altı bacaklı bir kedi.")
+        assertTrue(prompt.contains("\"kedi\" kelimesi için 5 saniyede"))
+        assertTrue(prompt.contains("Karalamanın şekli: altı bacaklı bir kedi.\n"))
         // the drawing's shape wins over what a cat should look like
-        assertTrue(prompt.contains("do NOT turn it into a normal cat"))
+        assertTrue(prompt.contains("normal bir \"kedi\" hâline GETİRME"))
         assertTrue(prompt.contains("9:16"))
-        val noEnglish = RealCopy.imagePrompt("kedi", "", 5, "")
-        assertFalse(noEnglish.contains("The doodle shows"))
-        assertTrue(noEnglish.contains("a normal kedi"))
+        // no English is left in it, so it can be corrected by hand
+        assertFalse(prompt.contains("The attached image"))
+        val noDescribe = RealCopy.imagePrompt("kedi", 5, "")
+        assertFalse(noDescribe.contains("Karalamanın şekli"))
     }
 
     @Test
     fun videoPromptKeepsTheObjectAsPaintedYetMakesSomethingHappenToIt() {
-        val video = RealCopy.videoPrompt("microwave", "a person puts a plate inside and presses the buttons.")
-        assertTrue(video.contains("very first frame"))
+        val video = RealCopy.videoPrompt("mikrodalga", "Mutfakta bir adam tabağı içeri koyar ve düğmelere basar.")
+        assertTrue(video.contains("ilk kare olarak kullan"))
         // the object is never changed ...
-        assertTrue(video.contains("stay EXACTLY as it is in the photo"))
-        assertTrue(video.contains("Do NOT add eyes, faces, arms, legs"))
+        assertTrue(video.contains("TAMAMEN AYNI kalmalı"))
+        assertTrue(video.contains("göz, yüz, kol, bacak"))
         // ... but it is not left to sway: a small story with a person, and real sound
-        assertTrue(video.contains("What happens: a person puts a plate inside and presses the buttons. "))
-        assertTrue(video.contains("must not just sit there and sway"))
-        assertTrue(video.contains("generate the audio too"))
+        assertTrue(video.contains("Neler oluyor: Mutfakta bir adam tabağı içeri koyar ve düğmelere basar. "))
+        assertTrue(video.contains("öylece durup sallanmasın"))
+        assertTrue(video.contains("sesi de üret"))
         // with no scene of its own, a person comes and uses the thing
-        val generic = RealCopy.videoPrompt("pomegranate", "")
-        assertTrue(generic.contains("walks into the shot"))
-        assertTrue(generic.contains("pomegranate"))
+        val generic = RealCopy.videoPrompt("nar", "")
+        assertTrue(generic.contains("çekime girer"))
+        assertTrue(generic.contains("nar"))
+        assertFalse(video.contains("Use the attached photo"))
+    }
+
+    @Test
+    fun aLongSceneIsKeptWholeInTheVideoPrompt() {
+        val scene = (1..12).joinToString(" ") { "Sahne cümlesi $it." }
+        assertTrue(RealCopy.videoPrompt("saz", scene).contains(scene.trimEnd('.')))
     }
 
     @Test

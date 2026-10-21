@@ -156,50 +156,49 @@ object RealCopy {
     fun withStoreLink(text: String): String = if (STORE_URL in text) text else listOf(text.trim(), STORE_LINE).filter { it.isNotEmpty() }.joinToString("\n\n")
 
     /**
-     * What to paste into ChatGPT (or Gemini) with the doodle. The drawing is the blueprint, in the
-     * spirit of Tom Curtis's "children's drawings made real": every line keeps its shape and every
-     * mistake stays; only the surfaces become real. A model left to itself "fixes" the drawing into
-     * an ordinary animal, so the prompt says so plainly, more than once.
+     * What to paste into ChatGPT (or Gemini) with the doodle, in Turkish so it can be read and corrected by hand. The
+     * drawing is the blueprint, in the spirit of Tom Curtis's "children's drawings made real": every line keeps its
+     * shape and every mistake stays; only the surfaces become real. A model left to itself "fixes" the drawing into
+     * an ordinary animal, so the prompt says so plainly, more than once. [describe] is the drawing's shapes as drawn.
      */
-    fun imagePrompt(word: String, wordEn: String, seconds: Int, describe: String): String = buildString {
-        val thing = wordEn.ifBlank { word }
-        append("The attached image is a quick doodle of \"").append(word).append("\"")
-        if (wordEn.isNotBlank()) append(" (").append(wordEn).append(")")
-        append(" that a player drew in ").append(seconds).append(" seconds in a drawing game.\n")
-        append("Make a photo of THIS EXACT DOODLE as if it had come to life in the real world, like Tom Curtis's \"children's drawings made real\" photos.\n\n")
-        append("The doodle is the blueprint, not a hint:\n")
-        append("- Keep its exact silhouette, pose, proportions and layout. Trace it.\n")
-        append("- Every drawn line becomes a real body part of the same shape: a single-stroke leg becomes a thin straight tube-like leg, a circle stays a round blob, a triangle stays a sharp triangle, a scribble or spiral stays a scribble or spiral, a rectangle body stays boxy.\n")
-        append("- Keep every mistake: the same number of legs, missing or extra parts, a tiny or huge head, parts in odd places. Do NOT fix the anatomy, do NOT add anything that is not drawn, do NOT turn it into a normal ").append(thing).append(".\n")
-        append("- Only the surfaces become real: real fur, skin, feathers, scales or material that suit a ").append(thing).append(", with real light and shadows, so it looks like a real living thing that happens to have the drawing's body.\n")
-        if (describe.isNotBlank()) append("- The doodle shows: ").append(describe.trim().trimEnd('.')).append(".\n")
-        append("\nStrange, funny or slightly creepy is exactly right. Anyone should recognise the drawing in it at a glance.\n")
-        append("Place it in a fitting real-world spot (a field, a street, the sea, a room), shot like a casual phone photo. Vertical 9:16. No paper, no pencil lines, no text, no frame.")
+    fun imagePrompt(word: String, seconds: Int, describe: String): String = buildString {
+        val thing = word.ifBlank { "nesne" }
+        append("Ekteki görsel, bir oyuncunun çizim oyununda \"").append(thing).append("\" kelimesi için ").append(seconds).append(" saniyede yaptığı hızlı bir karalama.\n")
+        append("Bu KARALAMANIN BİREBİR AYNISINI, sanki gerçek dünyada canlanmış gibi gösteren bir fotoğraf yap; Tom Curtis'in \"çocuk çizimlerinin gerçek hâli\" fotoğrafları gibi.\n\n")
+        append("Karalama bir ipucu değil, bir plan:\n")
+        append("- Siluetini, duruşunu, oranlarını ve düzenini aynen koru. Üstünden geçer gibi izle.\n")
+        append("- Çizilen her çizgi aynı şekilde gerçek bir vücut parçası olsun: tek çizgilik bir bacak ince ve düz, boru gibi bir bacak olur, daire yuvarlak bir top olarak kalır, üçgen sivri bir üçgen kalır, çizgi karmaşası ya da spiral öyle kalır, dikdörtgen gövde köşeli kalır.\n")
+        append("- Her hatayı koru: aynı bacak sayısı, eksik ya da fazla parçalar, küçücük ya da kocaman bir baş, tuhaf yerlerdeki parçalar. Anatomiyi DÜZELTME, çizilmeyen hiçbir şey EKLEME, onu normal bir \"").append(thing).append("\" hâline GETİRME.\n")
+        append("- Sadece yüzeyler gerçek olsun: \"").append(thing).append("\" için uygun gerçek tüy, deri, pul ya da malzeme; gerçek ışık ve gölgeler. Gerçek, yaşayan bir şey gibi görünsün ama bedeni çizimdeki beden olsun.\n")
+        if (describe.isNotBlank()) append("- Karalamanın şekli: ").append(describe.trim().trimEnd('.')).append(".\n")
+        append("\nTuhaf, komik ya da biraz ürkütücü olması tam istediğimiz şey. Çizimi herkes bir bakışta içinde tanımalı.\n")
+        append("Uygun, gerçek bir yere (tarla, sokak, deniz, oda) yerleştir; sıradan bir telefon fotoğrafı gibi çek. Dikey 9:16. Kâğıt yok, kalem çizgisi yok, yazı yok, çerçeve yok.")
     }
 
     /**
-     * What goes to Gemini together with the picture made from the doodle. Two things have to hold at once: the
-     * object stays EXACTLY as the picture shows it (Gemini otherwise "improves" it into a normal one), and yet
-     * something must happen to it. An object that only sways in place is a dull video, so the prompt asks for a
-     * small funny story (a person comes in and uses it, reacts to it), with real sound. [scene] is the assistant's
-     * own idea for this object, edited by hand if wished; without one a generic "a person comes and uses it" is asked.
+     * What goes to Gemini together with the picture made from the doodle, in Turkish so it can be corrected by hand.
+     * Two things have to hold at once: the object stays EXACTLY as the picture shows it (Gemini otherwise "improves"
+     * it into a normal one), and yet something must happen to it. An object that only sways in place is a dull video,
+     * so the prompt asks for a small funny story (a person comes in and uses it, reacts to it), with real sound.
+     * [scene] is the assistant's idea for this object, as long and as detailed as wished; without one a generic
+     * "a person comes and uses it" is asked.
      */
-    fun videoPrompt(wordEn: String, scene: String): String {
-        val thing = wordEn.ifBlank { "object" }
+    fun videoPrompt(word: String, scene: String): String {
+        val thing = word.ifBlank { "nesne" }
         val story = scene.trim().trimEnd('.').ifBlank {
-            "an ordinary person walks into the shot and notices the odd-looking $thing with curiosity. They use it the way anyone naturally would use a $thing, " +
-                "then stop and look at it with surprise and amusement at how strange it is, and carry on"
+            "Sıradan biri çekime girer, tuhaf görünen o nesneyi (\"$thing\") merakla fark eder. Onu herkesin doğal olarak kullanacağı gibi kullanır, " +
+                "sonra durup ne kadar tuhaf olduğuna şaşırarak gülümser ve işine devam eder"
         }
-        return "Use the attached photo as the very first frame and animate it into a vertical 9:16, 8-second video that looks like a casual phone video, with sound.\n\n" +
-            "The photo is a real version of a child's quick doodle of a $thing, and its clumsy, odd shape is the whole point. The $thing itself must stay EXACTLY as it is in the photo: the same silhouette, proportions, colours, materials, place and light. " +
-            "Do NOT redesign, smooth out, fix or \"improve\" it. Do NOT make it more professional or more realistic. " +
-            "Do NOT add eyes, faces, arms, legs, wings, windows, decorations or any part to the $thing that is not already in the photo, and do not remove any. " +
-            "It must still look like a child's drawing made real.\n\n" +
-            "What happens: " + story + ". " +
-            "It must not just sit there and sway: something happens to it, with a clear beginning, one funny moment and a small reaction at the end, all within the 8 seconds. " +
-            "Any person is an ordinary real person, natural and unhurried, seen from the side, from behind or in part; they never change the $thing's shape.\n\n" +
-            "Camera: handheld phone feel, fixed or a very slow push-in; no cuts.\n\n" +
-            "Sound: generate the audio too. Realistic sound that goes with what happens (the $thing's own noises, hands and footsteps, the place around it), like a real recording. No music, no text on screen."
+        return "Ekteki fotoğrafı ilk kare olarak kullan ve onu dikey 9:16, 8 saniyelik, sesli, sıradan bir telefon videosu gibi duran bir videoya dönüştür.\n\n" +
+            "Fotoğraf, bir çocuğun \"$thing\" karalamasının gerçek hâli ve kendine has, beceriksiz, tuhaf şekli işin asıl noktası. \"$thing\" fotoğraftaki hâliyle TAMAMEN AYNI kalmalı: aynı siluet, oranlar, renkler, malzemeler, yer ve ışık. " +
+            "Yeniden tasarlama, düzeltme, güzelleştirme ya da \"iyileştirme\". Daha profesyonel ya da daha gerçekçi yapma. " +
+            "Fotoğrafta olmayan göz, yüz, kol, bacak, kanat, pencere, süs ya da başka bir parça EKLEME, olanlardan da çıkarma. " +
+            "Hâlâ gerçek olmuş bir çocuk çizimi gibi görünmeli.\n\n" +
+            "Neler oluyor: " + story + ". " +
+            "Nesne öylece durup sallanmasın: ona bir şey olsun; net bir başlangıç, bir komik an ve sonda küçük bir tepki olsun, hepsi 8 saniyeye sığsın. " +
+            "Sahnede biri varsa sıradan, gerçek biri olsun; doğal ve telaşsız davransın, yandan, arkadan ya da kısmen görünsün; nesnenin şeklini asla değiştirmesin.\n\n" +
+            "Kamera: elde telefon hissi, sabit ya da çok yavaş yaklaşan; kesme yok.\n\n" +
+            "Ses: sesi de üret. Olanlara uyan gerçekçi sesler (nesnenin kendi sesleri, eller ve ayak sesleri, çevrenin sesi), gerçek bir kayıt gibi. Müzik yok, ekranda yazı yok. Sahnede açıkça yazılmadıkça kimse konuşmasın."
     }
 
     /** One drawing the assistant described: `index` is 1-based. */
