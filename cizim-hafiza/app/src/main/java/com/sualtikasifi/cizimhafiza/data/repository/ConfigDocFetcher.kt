@@ -22,11 +22,11 @@ internal object ConfigDocFetcher {
     const val TTL_MILLIS = 6L * 60 * 60 * 1000
     private const val PREFS = "config_doc_fetch"
 
-    /** Loads [path] now, then again every [TTL_MILLIS] for as long as the app process lives. */
-    suspend fun keepFresh(context: Context, firestore: FirebaseFirestore, path: String, apply: (Map<String, Any?>?) -> Unit) {
+    /** Loads [path] now, then again every [ttlMillis] for as long as the app process lives. */
+    suspend fun keepFresh(context: Context, firestore: FirebaseFirestore, path: String, ttlMillis: Long = TTL_MILLIS, apply: (Map<String, Any?>?) -> Unit) {
         while (true) {
-            load(context, firestore, path, TTL_MILLIS, apply)
-            delay(TTL_MILLIS)
+            load(context, firestore, path, ttlMillis, apply)
+            delay(ttlMillis)
         }
     }
 

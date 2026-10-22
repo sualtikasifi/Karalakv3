@@ -177,6 +177,9 @@ class MainActivity : AppCompatActivity() {
                     // opening costs no startup time. rememberSaveable, so a
                     // rotation or a language-change recreate does not replay
                     // it — only a genuinely cold start does.
+                    // Last, so it is above everything: an install older than the lowest allowed version gets the update
+                    // card and cannot reach the game (see UpdateGate; nothing is shown for anyone else).
+                    com.sualtikasifi.cizimhafiza.presentation.common.ForcedUpdateHost()
                     if (brandSplashVisible) {
                         BrandSplash(appReady = appDrawn, onFinished = {
                             brandSplashVisible = false

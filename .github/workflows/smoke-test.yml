@@ -19,6 +19,7 @@ on:
         options:
           - smoke.sh
           - realpreview.sh
+          - updatepreview.sh
           - runes.sh
           - frames.sh
           - pens.sh

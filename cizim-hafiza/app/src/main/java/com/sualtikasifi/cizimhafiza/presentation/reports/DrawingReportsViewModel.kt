@@ -59,7 +59,7 @@ data class RefusedRound(
 /** What a swipe on the review card means (see SwipeQueue). */
 enum class SwipeAction { Approve, Dismiss, Reject }
 
-enum class ReportsTab { Dashboard, Assistant, Tools, Studio, Queue, Pool, Feedback, Reports, Detector, League, XpEvent, DailyChallenge, Stats, Coupons, Locks, Runes }
+enum class ReportsTab { Dashboard, Assistant, Tools, Studio, Queue, Pool, Feedback, Reports, Detector, League, XpEvent, DailyChallenge, Stats, Coupons, Locks, Runes, Update }
 
 /**
  * One scrolling list of runs — the queue or the pool — and where it is up to.
@@ -197,7 +197,7 @@ class DrawingReportsViewModel @Inject constructor(
             ReportsTab.Feedback -> if (!_uiState.value.feedbackLoaded) loadFeedback()
             ReportsTab.League -> if (!_uiState.value.leagueLoaded) loadLeagueConfig()
             ReportsTab.XpEvent -> loadXpEvent()
-            ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes,
+            ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes, ReportsTab.Update,
             ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Studio -> Unit // these panels load themselves
             ReportsTab.DailyChallenge -> if (!_uiState.value.dailyChallengeLoaded) loadDailyChallengeQueue()
             else -> if (!_uiState.value.evidenceLoaded) loadEvidence()
