@@ -508,8 +508,9 @@ internal fun BoostBadge(multiplier: Double, modifier: Modifier = Modifier) {
 
 /** How long the home banner of one event stays up: remembered for the whole run of the app, so coming back to home does not restart it. */
 private object XpBannerLife {
-    const val SHOW_MS = 10_000L
-    const val BLINK_MS = 1_000.0
+    // 7 seconds: three slow blinks of 2 s (ending at full strength), then the last second fades out for good.
+    const val SHOW_MS = 7_000L
+    const val BLINK_MS = 2_000.0
     const val FADE_MS = 1_000L
     private var eventKey = 0L
     private var startedAt = 0L
@@ -567,7 +568,7 @@ internal fun XpEventBanner(event: com.sualtikasifi.cizimhafiza.domain.repository
     }
     val remaining = event.endsAtMillis - now
 
-    // Over the top of the home picture, so it only stays 10 seconds: it blinks, then fades out for good on the last turn.
+    // Over the top of the home picture, so it only stays 7 seconds: it blinks, then fades out for good on the last turn.
     val deadline = remember(event.endsAtMillis) { XpBannerLife.deadline(event.endsAtMillis) }
     val blink = remember(deadline) { mutableStateOf(1f) }
     var gone by remember(deadline) { mutableStateOf(System.currentTimeMillis() >= deadline) }
