@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Diamond
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Flag
@@ -219,7 +220,7 @@ fun DrawingReportsScreen(
                     // the `when` below, which is taken before this is used.
                     ReportsTab.League -> 0
                     // Same story as League — see the XpEvent branch below.
-                    ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes,
+                    ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes, ReportsTab.Update,
                     ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Studio -> 0
                     ReportsTab.DailyChallenge -> uiState.dailyChallengeQueue.size
                 }
@@ -304,6 +305,8 @@ fun DrawingReportsScreen(
 
                     uiState.tab == ReportsTab.Runes -> RunesDevPanel()
 
+                    uiState.tab == ReportsTab.Update -> UpdatePanel()
+
                     // Also not a list — a status line plus start/stop
                     // buttons, same shape as the League branch above.
                     uiState.tab == ReportsTab.XpEvent -> XpEventPanel(
@@ -343,7 +346,7 @@ fun DrawingReportsScreen(
                                     // intercepts this tab before this ever
                                     // runs, kept only for exhaustiveness.
                                     ReportsTab.League -> R.string.reports_tab_league
-                                    ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes,
+                                    ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes, ReportsTab.Update,
                                     ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Studio -> R.string.reports_tab_xp_event
                                     ReportsTab.DailyChallenge -> R.string.reports_daily_challenge_empty
                                 }
@@ -414,7 +417,7 @@ fun DrawingReportsScreen(
                             // own branch above and never gets this far.
                             ReportsTab.League -> Unit
                             // Same — see the XpEvent branch above.
-                            ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes,
+                            ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes, ReportsTab.Update,
                             ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Studio -> Unit
                             ReportsTab.DailyChallenge -> items(
                                 uiState.dailyChallengeQueue,
@@ -1269,6 +1272,7 @@ private fun ReportsTab.labelRes(): Int = when (this) {
     ReportsTab.Coupons -> R.string.reports_tab_coupons
     ReportsTab.Locks -> R.string.reports_tab_locks
     ReportsTab.Runes -> R.string.reports_tab_runes
+    ReportsTab.Update -> R.string.reports_tab_update
     ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Studio -> R.string.reports_title
 }
 
@@ -1326,6 +1330,7 @@ private fun ToolsGrid(onOpen: (ReportsTab) -> Unit, onQueueList: () -> Unit, onB
         Tool(Icons.Filled.ConfirmationNumber, "Kuponlar", "Altın / XP / kasa kodları") { onOpen(ReportsTab.Coupons) },
         Tool(Icons.Filled.Lock, "Kilitler", "Oyuncu kilitleri ve cezalar") { onOpen(ReportsTab.Locks) },
         Tool(Icons.Filled.Diamond, "Rünler", "Rün ayarları") { onOpen(ReportsTab.Runes) },
+        Tool(Icons.Filled.SystemUpdate, "Güncelleme", "Eski sürümlerde oyunu kilitle") { onOpen(ReportsTab.Update) },
         Tool(Icons.Filled.Badge, "Bot isimleri", "Rakip isim havuzu") { onBotNames() }
     )
     androidx.compose.foundation.lazy.LazyColumn(

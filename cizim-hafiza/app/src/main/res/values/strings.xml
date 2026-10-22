@@ -1079,6 +1079,10 @@
     <string name="reports_league_hint">Pick what the month\'s top three win. Left unset, the month\'s own frame is given. The change reaches players at the global table\'s next rebuild (within 1 hour).</string>
     <string name="reports_league_no_rewards">This build defines no league prizes.</string>
     <string name="reports_tab_xp_event">XP event</string>
+    <string name="reports_tab_update">Update</string>
+    <string name="forced_update_title">New version ready</string>
+    <string name="forced_update_message">Update Karalak to keep playing.</string>
+    <string name="forced_update_button">Update</string>
     <string name="reports_tab_stats">Stats</string>
     <string name="stats_hint">Counted on players\' devices: good for trends, not for accounting. </string>
     <string name="stats_range_1">Today</string>

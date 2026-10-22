@@ -30,17 +30,25 @@ class EconomyConfigRepository @Inject constructor(
         if (listening) return
         listening = true
         scope.launch {
-            runCatching { ConfigDocFetcher.keepFresh(context, firestore, PATH) { EconomyConfig.apply(it) } }
+            // Every half hour rather than every few hours: the same document carries the forced-update switch
+            // (minVersionCode, see UpdateGate), which has to reach phones soon after it is set.
+            runCatching { ConfigDocFetcher.keepFresh(context, firestore, PATH, REFRESH_MILLIS) { apply(it) } }
                 .onFailure { NonFatal.report("EconomyConfigRepository", "config read failed", it) }
         }
     }
 
     /** Reads the document from the server right now, whatever the last read was (the developer panel). */
     fun refreshNow() {
-        scope.launch { ConfigDocFetcher.load(context, firestore, PATH, 0L) { EconomyConfig.apply(it) } }
+        scope.launch { ConfigDocFetcher.load(context, firestore, PATH, 0L) { apply(it) } }
+    }
+
+    private fun apply(data: Map<String, Any?>?) {
+        EconomyConfig.apply(data)
+        com.sualtikasifi.cizimhafiza.util.UpdateGate.apply(data)
     }
 
     private companion object {
         const val PATH = "config/economy"
+        const val REFRESH_MILLIS = 30L * 60 * 1000
     }
 }
