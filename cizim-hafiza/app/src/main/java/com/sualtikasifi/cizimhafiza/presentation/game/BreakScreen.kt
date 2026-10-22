@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.game
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -188,8 +189,11 @@ fun BreakScreen(state: GamePhase.Break) {
             AnimatedContent(
                 targetState = state.secondsLeft,
                 transitionSpec = {
-                    (fadeIn(tween(180)) + scaleIn(spring(dampingRatio = 0.45f, stiffness = 400f), initialScale = 0.4f)) togetherWith
-                        (fadeOut(tween(120)) + scaleOut(tween(120), targetScale = 1.5f))
+                    // clip = false: by default the content is cut to its own box, which is only as wide as the digit, so the
+                    // numeral's soft shadow and the edges of its outline were sliced off in straight vertical lines.
+                    ((fadeIn(tween(180)) + scaleIn(spring(dampingRatio = 0.45f, stiffness = 400f), initialScale = 0.4f)) togetherWith
+                        (fadeOut(tween(120)) + scaleOut(tween(120), targetScale = 1.5f)))
+                        .using(SizeTransform(clip = false))
                 },
                 contentAlignment = Alignment.Center,
                 label = "break-digit"
