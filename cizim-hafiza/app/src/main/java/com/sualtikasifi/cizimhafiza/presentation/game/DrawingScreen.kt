@@ -70,6 +70,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -339,19 +340,17 @@ fun DrawingScreen(
                         onHintClick()
                     }
                 }
-                Box(
-                    contentAlignment = Alignment.Center,
+                // The painted "+10 sn" ad button (TV with a stopwatch): the picture is the whole button, 2.74 : 1, it dips under the
+                // finger like the game's other painted buttons, and dims while the ad loads or there is no internet.
+                Image(
+                    painter = painterResource(R.drawable.btn_ad_extra_time),
+                    contentDescription = label,
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier
-                        .graphicsLayer { alpha = if (hintOnline) 1f else 0.55f }
-                        .size(a(230f), a(82f))
-                        .shadow(2.dp, RoundedCornerShape(50))
-                        .background(Color.White, RoundedCornerShape(50))
-                        .border(2.dp, Color(0xFFF26A1B), RoundedCornerShape(50))
-                        .clip(RoundedCornerShape(50))
-                        .clickable(enabled = !hintRequested, onClick = hintTap)
-                ) {
-                    Text(label, style = PaintedStyle(color = Color(0xFFF26A1B), fontSize = 15.sp * f), maxLines = 1, modifier = Modifier.padding(horizontal = 8.dp))
-                }
+                        .graphicsLayer { alpha = if (hintOnline && !hintRequested) 1f else 0.55f }
+                        .size(a(270f), a(270f / 2.736f))
+                        .pressable(enabled = !hintRequested, pressedScale = 0.92f, onClick = hintTap)
+                )
             }
         }
         if (adErrorShown) {
