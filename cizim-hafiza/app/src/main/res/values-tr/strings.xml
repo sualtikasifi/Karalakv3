@@ -1094,7 +1094,7 @@
     <string name="reports_tab_xp_event">XP etkinliği</string>
     <string name="reports_tab_update">Güncelleme</string>
     <string name="forced_update_title">Yeni sürüm hazır</string>
-    <string name="forced_update_message">Oynamaya devam etmek için Karalak'ı güncelle.</string>
+    <string name="forced_update_message">Oynamaya devam etmek için Karalak\'ı güncelle.</string>
     <string name="forced_update_button">Güncelle</string>
     <string name="reports_tab_stats">İstatistik</string>
     <string name="stats_hint">Oyuncuların cihazlarında sayılır: eğilim görmek içindir, kesin muhasebe değildir.</string>
