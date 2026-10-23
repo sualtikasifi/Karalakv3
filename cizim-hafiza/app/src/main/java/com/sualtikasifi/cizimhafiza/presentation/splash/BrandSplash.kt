@@ -168,7 +168,16 @@ fun BrandSplash(onFinished: () -> Unit, appReady: Boolean = true) {
                 }
         )
 
-        Canvas(Modifier.fillMaxSize().graphicsLayer { alpha = sceneAlpha }) {
+        // Same push-in as the picture, so the drawn bar and sparkles stay exactly on the painted ones (otherwise the
+        // painted bar drifts out from under the drawn one and shows as a second bar behind it).
+        Canvas(
+            Modifier.fillMaxSize().graphicsLayer {
+                alpha = sceneAlpha
+                val zoom = 1f + ZOOM * FastOutSlowInEasing.transform(progress.value)
+                scaleX = zoom
+                scaleY = zoom
+            }
+        ) {
             // Sparkles on the scene's painted stars (art coordinates), each on its own phase.
             STARS.forEachIndexed { i, star ->
                 val t = (pulse.value + i * 0.23f) % 1f
