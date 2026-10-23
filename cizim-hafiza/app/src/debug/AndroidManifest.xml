@@ -17,5 +17,9 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.TourPreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the account page on its own (see AccountPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.AccountPreviewActivity"
+            android:exported="true" />
     </application>
 </manifest>
