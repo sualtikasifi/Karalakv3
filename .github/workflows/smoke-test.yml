@@ -21,6 +21,7 @@ on:
           - realpreview.sh
           - updatepreview.sh
           - chestpreview.sh
+          - tourpreview.sh
           - runes.sh
           - frames.sh
           - pens.sh

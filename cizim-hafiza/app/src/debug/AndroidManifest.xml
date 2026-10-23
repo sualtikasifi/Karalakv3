@@ -13,5 +13,9 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.ChestPreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the "what is new" tour on its own (see TourPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.TourPreviewActivity"
+            android:exported="true" />
     </application>
 </manifest>
