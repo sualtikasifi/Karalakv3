@@ -22,6 +22,7 @@ on:
           - updatepreview.sh
           - chestpreview.sh
           - tourpreview.sh
+          - accountpreview.sh
           - runes.sh
           - frames.sh
           - pens.sh
