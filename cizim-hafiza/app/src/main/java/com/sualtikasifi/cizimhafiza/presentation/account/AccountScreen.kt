@@ -9,12 +9,8 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.ui.semantics.Role
-import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -346,11 +342,11 @@ fun AccountScreen(
 
         // ---- Sign out / sign in --------------------------------------------------------------------------------
         when {
-            uiState.isBusy -> Box(box(120f, 1292f, 720f, 1460f), contentAlignment = Alignment.Center) {
+            uiState.isBusy -> Box(box(120f, 1320f, 720f, 1490f), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(modifier = Modifier.size(40.dp))
             }
             uiState.isSignedIn -> Box(
-                box(120f, 1292f, 720f, 1292f + 172f)
+                box(120f, 1316f, 720f, 1316f + 172f)
                     .pressable(pressedScale = 0.95f, onClick = viewModel::promptSignOut)
                     .a11yButton(stringResource(R.string.account_sign_out)),
                 contentAlignment = Alignment.Center
@@ -362,7 +358,7 @@ fun AccountScreen(
                     modifier = Modifier.offset(y = (-10f * us).dp).fillMaxWidth(0.7f).height((86f * us).dp), minScale = 0.5f
                 )
             }
-            uiState.isGoogleSignInConfigured -> Box(box(130f, 1318f, 710f, 1440f), contentAlignment = Alignment.Center) {
+            uiState.isGoogleSignInConfigured -> Box(box(120f, 1330f, 720f, 1476f), contentAlignment = Alignment.Center) {
                 GoogleSignInButton(
                     onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::signIn),
                     modifier = Modifier.fillMaxWidth().graphicsLayer { alpha = if (online) 1f else 0.55f }
@@ -370,43 +366,11 @@ fun AccountScreen(
             }
         }
 
-        // ---- Videolarda öne çık ---------------------------------------------------------------------------------
-        // Off until the player turns it on (and agrees to the dialog below saying what will be shown).
-        val featureConsent by viewModel.featureConsent.collectAsState()
-        Row(
-            box(120f, 1484f, 720f, 1562f)
-                .clip(RoundedCornerShape(50))
-                .background(Color(0xFFFFF8EA))
-                .border((3f * us).dp, if (featureConsent) Color(0xFFF26A1B) else Color(0xFFC9A46A), RoundedCornerShape(50))
-                .toggleable(
-                    value = featureConsent,
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    role = Role.Switch,
-                    onValueChange = viewModel::setFeatureConsent
-                )
-                .padding(start = (22f * us).dp, end = (16f * us).dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Filled.Videocam, contentDescription = null, tint = Color(0xFFF26A1B), modifier = Modifier.size((40f * us).dp))
-            Spacer(Modifier.size((12f * us).dp))
-            FitText(
-                text = stringResource(R.string.account_feature_consent),
-                style = PaintedStyle(color = Color(0xFF4A2A12), fontSize = fs(29f), textAlign = TextAlign.Start),
-                maxLines = 1,
-                minScale = 0.55f,
-                contentAlignment = Alignment.CenterStart,
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(Modifier.size((10f * us).dp))
-            com.sualtikasifi.cizimhafiza.presentation.settings.SceneSwitch(featureConsent, Modifier.size((96f * us).dp, (52f * us).dp))
-        }
-
         // ---- Delete --------------------------------------------------------------------------------------------
         // Offered whether or not a Google account is signed in: an anonymous player still has a uid with a profile, a
         // friends list and a league entry under it, and Play's requirement is about the data, not about how the
         // account was created.
-        Box(box(120f, 1584f, 720f, 1660f), contentAlignment = Alignment.Center) {
+        Box(box(120f, 1580f, 720f, 1664f), contentAlignment = Alignment.Center) {
             if (uiState.isDeleting) {
                 CircularProgressIndicator(modifier = Modifier.size(32.dp))
             } else {
@@ -461,17 +425,6 @@ fun AccountScreen(
             dismissText = stringResource(R.string.account_sign_out_cancel),
             onConfirm = viewModel::signOut,
             onDismiss = viewModel::dismissSignOutPrompt
-        )
-    }
-
-    if (uiState.showFeatureConsentPrompt) {
-        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
-            title = stringResource(R.string.account_feature_consent_title),
-            message = stringResource(R.string.account_feature_consent_message, uiState.nickname.ifBlank { "Oyuncu" }),
-            confirmText = stringResource(R.string.account_feature_consent_confirm),
-            dismissText = stringResource(R.string.account_feature_consent_cancel),
-            onConfirm = viewModel::confirmFeatureConsent,
-            onDismiss = viewModel::dismissFeatureConsentPrompt
         )
     }
 
