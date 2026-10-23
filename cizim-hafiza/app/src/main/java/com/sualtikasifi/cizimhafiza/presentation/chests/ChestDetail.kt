@@ -502,10 +502,10 @@ private fun ChestStage(tier: ChestTier, bubble: Bubble?, wobble: Float, u: Dp, f
     ) {
         Box(
             modifier = Modifier
-                .padding(bottom = u * 44f)
+                .padding(bottom = u * 36f)
                 .graphicsLayer { rotationZ = wobble * 6f }
         ) {
-            ChestImage(tier = tier, width = u * 350f)
+            ChestImage(tier = tier, width = u * 400f)
         }
         AnimatedVisibility(
             visible = bubble != null,
