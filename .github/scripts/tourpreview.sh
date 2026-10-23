@@ -9,6 +9,9 @@ mkdir -p "$OUT"
 APK=$(ls cizim-hafiza/app/build/outputs/apk/debug/*.apk | head -1)
 adb wait-for-device
 adb shell input keyevent 82 || true
+# the CI emulator sometimes pops an "app isn't responding" box over the screen: keep those away and let it settle
+adb shell settings put global hide_error_dialogs 1 || true
+sleep 20
 adb install -r -t "$APK"
 adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.TourPreviewActivity"
 sleep 6
