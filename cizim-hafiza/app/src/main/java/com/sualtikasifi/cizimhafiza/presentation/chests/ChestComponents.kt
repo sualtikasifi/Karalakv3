@@ -211,13 +211,10 @@ private fun ChestOpeningVideo(tier: ChestTier, onEnded: () -> Unit) {
 }
 
 /**
- * How much of the opening video's white-out tail is skipped. The apprentice clip already ends right as it turns
- * fully white, so only a few frames are left to cut; the older clips still carry a long white tail.
+ * How much of the opening video's white-out tail is skipped. Every clip now ends right as it turns fully white, so
+ * only a few frames are left to cut.
  */
-private fun ChestTier.openVideoTailMs(): Long = when (this) {
-    ChestTier.SILVER -> 150L
-    ChestTier.GOLD, ChestTier.RARE -> 1_500L
-}
+private fun ChestTier.openVideoTailMs(): Long = 150L
 
 /**
  * The full-screen "kasa açma" moment: a tier-specific hand-made video plays
