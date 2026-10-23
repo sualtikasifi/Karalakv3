@@ -17,6 +17,9 @@ import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
@@ -166,6 +169,26 @@ fun DrawingScreen(
         val ink = Color(0xFF3A2A22)
         val noRipple = remember { MutableInteractionSource() }
 
+        // The "+10 Saniye" joker: a spark flies from its button to the countdown ring, and the ten seconds are added when it
+        // lands (the ring pops and a "+10" rises), like the XP spark on the way home.
+        var flyTrigger by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+        var flying by remember { mutableStateOf(false) }
+        val flight = remember { androidx.compose.animation.core.Animatable(0f) }
+        val landed = remember { androidx.compose.animation.core.Animatable(0f) }
+        val latestTimeJoker by androidx.compose.runtime.rememberUpdatedState(onTimeJoker)
+        var pillCenter by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
+        var ringCenter by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
+        LaunchedEffect(flyTrigger) {
+            if (flyTrigger == 0) return@LaunchedEffect
+            if (pillCenter == null || ringCenter == null) { latestTimeJoker(); return@LaunchedEffect }
+            flying = true
+            flight.snapTo(0f); landed.snapTo(0f)
+            flight.animateTo(1f, androidx.compose.animation.core.tween(620, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+            latestTimeJoker()
+            landed.animateTo(1f, androidx.compose.animation.core.tween(650))
+            flying = false
+        }
+
         ThreeSliceBackground(
             res = R.drawable.bg_draw,
             topSrc = 720,
@@ -217,6 +240,15 @@ fun DrawingScreen(
             modifier = Modifier
                 .offset(a(712f), a(82f))
                 .size(a(98f))
+                .onGloballyPositioned { c ->
+                    val pos = c.positionInRoot()
+                    ringCenter = pos + androidx.compose.ui.geometry.Offset(c.size.width / 2f, c.size.height / 2f)
+                }
+                .graphicsLayer {
+                    val s = 1f + 0.22f * kotlin.math.sin(Math.PI.toFloat() * landed.value)
+                    scaleX = s
+                    scaleY = s
+                }
                 .background(Color.White, CircleShape)
                 .border(1.dp, Color(0x33000000), CircleShape)
         ) {
@@ -293,9 +325,15 @@ fun DrawingScreen(
                 if (!state.isUntimed) {
                     TimeJokerPill(
                         count = timeJokerCount,
-                        enabled = !state.jokerTimeUsed,
-                        onClick = onTimeJoker,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(top = a(8f), end = a(10f))
+                        enabled = !state.jokerTimeUsed && !flying,
+                        onClick = { if (!flying) flyTrigger++ },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = a(8f), end = a(10f))
+                            .onGloballyPositioned { c ->
+                                val pos = c.positionInRoot()
+                                pillCenter = pos + androidx.compose.ui.geometry.Offset(c.size.width * 0.4f, c.size.height / 2f)
+                            }
                     )
                 }
             }
@@ -352,6 +390,9 @@ fun DrawingScreen(
                         .pressable(enabled = !hintRequested, pressedScale = 0.92f, onClick = hintTap)
                 )
             }
+        }
+        if (flying) {
+            TimeJokerFlight(from = pillCenter, to = ringCenter, flight = flight.value, landed = landed.value)
         }
         if (adErrorShown) {
             TintedBadge(
@@ -468,7 +509,7 @@ private fun TimeJokerPill(count: Int, enabled: Boolean, onClick: () -> Unit, mod
                     text = stringResource(R.string.drawing_time_joker),
                     size = 16.sp,
                     outline = Color(0xFF8A3A00),
-                    modifier = Modifier.width(54.dp).height(24.dp),
+                    modifier = Modifier.width(84.dp).height(24.dp),
                     minScale = 0.7f
                 )
             }
@@ -483,6 +524,70 @@ private fun TimeJokerPill(count: Int, enabled: Boolean, onClick: () -> Unit, mod
             contentAlignment = Alignment.Center
         ) {
             Text(count.toString(), style = PaintedStyle(color = Color.White, fontSize = 12.sp, textAlign = TextAlign.Center), maxLines = 1)
+        }
+    }
+}
+
+/** The spark of the "+10 Saniye" joker: a glowing head with a trail curving from the joker's button to the countdown ring, then a burst and a rising "+10". */
+@Composable
+private fun TimeJokerFlight(
+    from: androidx.compose.ui.geometry.Offset?,
+    to: androidx.compose.ui.geometry.Offset?,
+    flight: Float,
+    landed: Float
+) {
+    if (from == null || to == null) return
+    var origin by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    val a = from - origin
+    val b = to - origin
+    val gold = Color(0xFFFFD34D)
+    val orange = Color(0xFFFF8A1F)
+    Box(modifier = Modifier.fillMaxSize().onGloballyPositioned { origin = it.positionInRoot() }) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            val control = androidx.compose.ui.geometry.Offset((a.x + b.x) / 2f - size.width * 0.12f, minOf(a.y, b.y) - size.height * 0.05f)
+            fun at(t: Float): androidx.compose.ui.geometry.Offset {
+                val u = 1f - t
+                return androidx.compose.ui.geometry.Offset(
+                    u * u * a.x + 2 * u * t * control.x + t * t * b.x,
+                    u * u * a.y + 2 * u * t * control.y + t * t * b.y
+                )
+            }
+            if (flight < 1f) {
+                val head = at(flight)
+                for (k in 0 until 12) {
+                    val f = 1f - k / 12f
+                    drawCircle(orange.copy(alpha = 0.55f * f), 10.dp.toPx() * f, at((flight - k * 0.025f).coerceAtLeast(0f)))
+                }
+                drawCircle(
+                    brush = Brush.radialGradient(listOf(Color.White, gold, orange.copy(alpha = 0.6f), Color.Transparent), center = head, radius = 26.dp.toPx()),
+                    radius = 26.dp.toPx(),
+                    center = head
+                )
+            }
+            if (landed > 0f && landed < 1f) {
+                val fade = 1f - landed
+                drawCircle(
+                    Brush.radialGradient(listOf(Color.White.copy(alpha = 0.9f * fade), gold.copy(alpha = 0.6f * fade), Color.Transparent), center = b, radius = 80.dp.toPx() * (0.3f + landed)),
+                    radius = 80.dp.toPx() * (0.3f + landed),
+                    center = b
+                )
+                for (i in 0 until 10) {
+                    val ang = i * 2f * Math.PI.toFloat() / 10f
+                    val r = 60.dp.toPx() * landed
+                    drawCircle(gold.copy(alpha = fade), 3.dp.toPx() * fade + 1f, b + androidx.compose.ui.geometry.Offset(kotlin.math.cos(ang) * r, kotlin.math.sin(ang) * r))
+                }
+            }
+        }
+        if (landed > 0f && landed < 1f) {
+            Text(
+                text = "+10",
+                color = Color.White,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 22.sp,
+                modifier = Modifier
+                    .offset { IntOffset((b.x - 18.dp.toPx()).toInt(), (b.y + 44.dp.toPx() + 30.dp.toPx() * landed).toInt()) }
+                    .alpha(1f - landed)
+            )
         }
     }
 }
