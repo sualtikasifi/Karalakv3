@@ -364,18 +364,18 @@ fun ResultScreen(
                         ) {
                             // Both lines centred on the button's face, the clapper beside the small line's left. The face is
                             // the orange part only: the picture's dark rim is thicker under it (about 16 units of 100) than
-                            // over it (about 12), so the two lines are kept inside that band and share it 60/40; each line
+                            // over it (about 12), so the two lines are kept inside that band and share it 64/36 (the amount is the lure, so it gets the room; the small line sits a little low); each line
                             // shrinks to its room, so neither can run onto the rim.
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center,
-                                modifier = Modifier.fillMaxSize().padding(top = u * 12f, bottom = u * 17f)
+                                modifier = Modifier.fillMaxSize().padding(top = u * 9f, bottom = u * 15f)
                             ) {
-                                LetteredText(stringResource(R.string.result_x2_amount, com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(state.xpEarned) * 2), fs(36f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth().weight(0.6f))
+                                LetteredText(stringResource(R.string.result_x2_amount, com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(state.xpEarned) * 2), fs(46f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth().weight(0.64f))
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center,
-                                    modifier = Modifier.fillMaxWidth().weight(0.4f)
+                                    modifier = Modifier.fillMaxWidth().weight(0.36f).offset(y = u * 4f)
                                 ) {
                                     Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 22f))
                                     Spacer(Modifier.width(u * 6f))
