@@ -9,5 +9,9 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.UpdatePreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the chest window on its own (see ChestPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.ChestPreviewActivity"
+            android:exported="true" />
     </application>
 </manifest>

@@ -29,7 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,16 +53,34 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sualtikasifi.cizimhafiza.R
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache
+import com.sualtikasifi.cizimhafiza.presentation.common.FitText
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink
+import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
+import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenArt
 import com.sualtikasifi.cizimhafiza.domain.model.Chest
 import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
-import com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog
-import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
 import com.sualtikasifi.cizimhafiza.presentation.common.labelRes
-import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 import com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont
 
 /** A short answer the chest "says" — [tick] changes on every message so repeating one still replays the animation. */
-private data class Bubble(val res: Int, val tick: Int)
+internal data class Bubble(val res: Int, val tick: Int)
 
 /**
  * The chest window shared by the home screen and My Chests: tap a chest and
@@ -120,8 +137,33 @@ fun ChestDetailHost(selectedId: String?, onDismiss: () -> Unit, viewModel: Chest
     }
 }
 
+// chest_card is 793 x 1390; the rectangles are x0, y0, x1, y1 in the picture's own pixels. The picture has the title
+// banner, the lit stage, the parchment for the prize list, the dark plate for the timer and the orange button painted in.
+private const val CardW = 793f
+private const val CardH = 1390f
+private val TitleRect = floatArrayOf(150f, 108f, 620f, 228f)
+private val StageRect = floatArrayOf(92f, 258f, 702f, 704f)
+private val ContentsRect = floatArrayOf(96f, 772f, 698f, 940f)
+private val TimerRect = floatArrayOf(108f, 1012f, 688f, 1174f)
+private val ButtonRect = floatArrayOf(104f, 1224f, 690f, 1346f)
+private val CloseRect = floatArrayOf(662f, 28f, 786f, 142f)
+
+private val ChestInk = Color(0xFF3A2416)
+private val ChestButtonOutline = Color(0xFF8A3A00)
+private val ChestAmber = Color(0xFFFFC94D)
+
+/** One action of the chest window: what it says, what it does, and whether it is an ad. */
+private class ChestAction(
+    val label: String,
+    val onClick: () -> Unit,
+    val enabled: Boolean = true,
+    val ad: Boolean = false,
+    val badge: String? = null,
+    val veiled: Boolean = false
+)
+
 @Composable
-private fun ChestDetailDialog(
+internal fun ChestDetailDialog(
     chest: Chest,
     nowMillis: Long,
     anotherUnlocking: Boolean,
@@ -155,221 +197,263 @@ private fun ChestDetailDialog(
             onBubbleDone()
         }
     }
-    AppWindowDialog(
-        title = stringResource(tier.labelRes()),
-        onDismiss = onDismiss,
-        footer = {
-            when {
-                ready -> {
-                    Text(
-                        text = stringResource(R.string.chest_detail_ready),
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = AppTheme.tokens.success
+
+    // What the window offers: one main button on the picture, and (while unlocking with both on offer) a second one
+    // under the card.
+    val speedupClick = com.sualtikasifi.cizimhafiza.presentation.common.adOnly(onSpeedup)
+    val openLabel = stringResource(R.string.chests_open_button)
+    val instantLabel = stringResource(R.string.chest_instant_button)
+    val speedupLabel = stringResource(R.string.chest_speedup_button)
+    val speedupBadge = stringResource(R.string.chest_speedup_badge)
+    val usedTodayLabel = stringResource(R.string.chest_speedup_used_today)
+    val busyLabel = stringResource(R.string.chest_slot_busy)
+    val startLabel = stringResource(R.string.chests_start_button) + " · " + tier.durationText()
+    val actions: List<ChestAction> = when {
+        ready -> listOf(ChestAction(openLabel, onOpen))
+        unlocking -> buildList {
+            if (instantAvailable) add(ChestAction(instantLabel, onInstant))
+            if (speedupAvailable) add(ChestAction(speedupLabel, speedupClick, ad = true, badge = speedupBadge, veiled = !isOnline))
+            if (isEmpty()) add(ChestAction(usedTodayLabel, {}, enabled = false))
+        }
+        anotherUnlocking -> listOf(ChestAction(busyLabel, {}, enabled = false))
+        else -> listOf(ChestAction(startLabel, onStart))
+    }
+    val main = actions[0]
+    val second = actions.getOrNull(1)
+
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xB31A0E05))
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
+            contentAlignment = Alignment.Center
+        ) {
+            val reserve = if (second != null) 66.dp else 0.dp
+            val frameW = minOf(maxWidth - 24.dp, (maxHeight - 24.dp - reserve) * (CardW / CardH), 440.dp)
+            val u = frameW / CardW
+            val fontScale0 = LocalDensity.current.fontScale
+            val fs: (Float) -> TextUnit = { px -> (px * u.value / fontScale0).sp }
+            val context = LocalContext.current
+            val sheet = remember { runCatching { BackdropCache.get(context.resources, R.drawable.chest_card) }.getOrNull() }
+            val pxK = (sheet?.width ?: CardW.toInt()) / CardW
+
+            fun Modifier.at(r: FloatArray) = offset(u * r[0], u * r[1]).size(u * (r[2] - r[0]), u * (r[3] - r[1]))
+
+            val enter = remember { Animatable(0f) }
+            LaunchedEffect(Unit) { enter.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.6f, stiffness = 380f)) }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.graphicsLayer {
+                    val e = enter.value
+                    scaleX = 0.85f + 0.15f * e
+                    scaleY = 0.85f + 0.15f * e
+                    alpha = (e * 3f).coerceIn(0f, 1f)
+                }
+            ) {
+                Box(
+                    Modifier
+                        .size(frameW, frameW * (CardH / CardW))
+                        // Taps on the card itself must not reach the dim area behind it, which closes the window.
+                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.chest_card),
+                        contentDescription = null,
+                        contentScale = ContentScale.FillBounds,
+                        modifier = Modifier.fillMaxSize()
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    PrimaryButton(text = stringResource(R.string.chests_open_button), onClick = onOpen, modifier = Modifier.fillMaxWidth())
-                }
-    
-                unlocking -> {
-                    if (instantAvailable) {
-                        PrimaryButton(text = stringResource(R.string.chest_instant_button), onClick = onInstant, modifier = Modifier.fillMaxWidth())
-                        Spacer(modifier = Modifier.height(10.dp))
-                    }
-                    if (speedupAvailable) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .graphicsLayer { alpha = if (isOnline) 1f else 0.55f }
-                                .pressable(pressedScale = 0.95f, onClick = com.sualtikasifi.cizimhafiza.presentation.common.adOnly(onSpeedup))
-                                .clip(RoundedCornerShape(50))
-                                .background(Color(0xFF2E8B45))
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.Filled.PlayCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
-                            Spacer(modifier = Modifier.size(8.dp))
-                            Text(
-                                text = stringResource(R.string.chest_speedup_button),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White
-                            )
-                            Spacer(modifier = Modifier.size(8.dp))
-                            Box(
-                                modifier = Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFFFE066)).padding(horizontal = 9.dp, vertical = 3.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.chest_speedup_badge),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF3A2416)
-                                )
-                            }
+                    FitText(
+                        text = stringResource(tier.labelRes()),
+                        style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(68f), color = ChestInk, textAlign = TextAlign.Center),
+                        maxLines = 1, minScale = 0.5f,
+                        modifier = Modifier.at(TitleRect)
+                    )
+                    ChestStage(tier = tier, bubble = bubble, wobble = wiggle.value, u = u, fs = fs, onTapChest = onTapChest, modifier = Modifier.at(StageRect))
+                    ChestContentsPanel(tier = tier, u = u, fs = fs, modifier = Modifier.at(ContentsRect))
+                    ChestTimerPanel(chest = chest, nowMillis = nowMillis, ready = ready, unlocking = unlocking, u = u, fs = fs, modifier = Modifier.at(TimerRect))
+
+                    // The main button is painted into the card, so it sinks the way the home screen's painted buttons do.
+                    val (x0, y0, x1, y1) = ButtonRect
+                    val sink = rememberSink(0.94f)
+                    Box(
+                        modifier = Modifier
+                            .at(ButtonRect)
+                            .sunkenArt(sink, sheet, x0 * pxK, y0 * pxK, (x1 - x0) * pxK, (y1 - y0) * pxK, u * ((y1 - y0) / 2f))
+                            .clickable(interactionSource = sink.source, indication = null, enabled = main.enabled, onClick = main.onClick)
+                    ) {
+                        if (!main.enabled || main.veiled) {
+                            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(50)).background(Color(if (main.enabled) 0x66301A08 else 0x99301A08)))
                         }
-                    } else {
-                        Text(
-                            text = stringResource(R.string.chest_speedup_used_today),
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Box(Modifier.fillMaxSize().sinkWith(sink, 0.5f, 0.5f), contentAlignment = Alignment.Center) {
+                            ChestButtonFace(action = main, u = u, fs = fs)
+                        }
+                    }
+
+                    Image(
+                        painter = painterResource(R.drawable.chest_card_close),
+                        contentDescription = stringResource(R.string.close),
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .at(CloseRect)
+                            .pressable(pressedScale = 0.9f, onClick = onDismiss)
+                    )
+                }
+                if (second != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(frameW * 0.88f)
+                            .height(frameW * 0.88f * (173f / 689f))
+                            .graphicsLayer { alpha = if (second.enabled && !second.veiled) 1f else 0.6f }
+                            .pressable(enabled = second.enabled, pressedScale = 0.94f, onClick = second.onClick),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(painter = painterResource(R.drawable.chest_card_btn), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                        ChestButtonFace(action = second, u = u, fs = fs)
                     }
                 }
-    
-                anotherUnlocking -> Text(
-                    text = stringResource(R.string.chest_slot_busy),
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-    
-                else -> PrimaryButton(
-                    text = stringResource(R.string.chests_start_button) + " · " + tier.durationText(),
-                    onClick = onStart,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
         }
+    }
+}
+
+/** The lettering on a button: the label, with the ad's little play icon and "−2 sa" chip when it is one. */
+@Composable
+private fun ChestButtonFace(action: ChestAction, u: Dp, fs: (Float) -> TextUnit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = u * 56f)
     ) {
-        ChestStage(tier = tier, bubble = bubble, wobble = wiggle.value, onTapChest = onTapChest)
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        ChestContentsPanel(tier = tier)
-
-        if (!ready) {
-            Spacer(modifier = Modifier.height(12.dp))
-            ChestTimerPlate(chest = chest, nowMillis = nowMillis, unlocking = unlocking)
+        if (action.ad) {
+            Icon(Icons.Filled.PlayCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 54f))
+            Spacer(Modifier.width(u * 12f))
+        }
+        LetteredText(
+            text = action.label,
+            size = fs(58f),
+            outline = ChestButtonOutline,
+            maxLines = if (action.enabled) 1 else 2,
+            minScale = 0.5f,
+            modifier = Modifier.weight(1f, fill = false)
+        )
+        if (action.badge != null) {
+            Spacer(Modifier.width(u * 12f))
+            Box(Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFFFE066)).padding(horizontal = u * 16f, vertical = u * 5f)) {
+                Text(text = action.badge, style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(32f), color = ChestInk), maxLines = 1)
+            }
         }
     }
 }
 
 /**
- * What a chest of this tier can hold, as a small titled panel with one row per
- * kind of prize and the tier's rarity as a chip — in place of the single
- * grey run-on line this used to be. The percentages mirror ChestLoot (the
- * numbers that actually decide the drop); keep the two in step.
+ * What a chest of this tier can hold, written on the card's parchment: a title, the tier's rarity as a chip and one row
+ * per kind of prize. The percentages mirror ChestLoot (the numbers that actually decide the drop); keep the two in step.
  */
 @Composable
-private fun ChestContentsPanel(tier: ChestTier) {
+private fun ChestContentsPanel(tier: ChestTier, u: Dp, fs: (Float) -> TextUnit, modifier: Modifier) {
     val stars = tier.rarityStars()
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(tier.accent().copy(alpha = 0.10f))
-            .border(1.5.dp, tier.accent().copy(alpha = 0.45f), RoundedCornerShape(18.dp))
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(9.dp)
+        modifier = modifier.padding(horizontal = u * 14f, vertical = u * 6f),
+        verticalArrangement = Arrangement.SpaceEvenly
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.chest_detail_contents_title),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF3A2416),
+                style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(36f), color = ChestInk),
+                maxLines = 1,
                 modifier = Modifier.weight(1f)
             )
             Text(
                 text = "★".repeat(stars) + "☆".repeat(3 - stars) + " " + stringResource(tier.rarityLabelRes()),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = tier.accent(),
+                style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(28f), color = tier.accent()),
+                maxLines = 1,
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
                     .background(tier.accent().copy(alpha = 0.16f))
-                    .padding(horizontal = 10.dp, vertical = 3.dp)
+                    .padding(horizontal = u * 18f, vertical = u * 4f)
             )
         }
-        ContentsRow(emoji = "🪙", text = stringResource(R.string.chest_detail_gold, tier.goldReward.first, tier.goldReward.last))
+        ContentsRow(emoji = "🪙", text = stringResource(R.string.chest_detail_gold, tier.goldReward.first, tier.goldReward.last), u = u, fs = fs)
         ContentsRow(
             emoji = "🎲",
             text = when (tier) {
                 ChestTier.SILVER -> stringResource(R.string.chest_detail_jokers_silver, 30)
                 ChestTier.GOLD -> stringResource(R.string.chest_detail_jokers_gold, 30)
                 ChestTier.RARE -> stringResource(R.string.chest_detail_jokers_rare, 40)
-            }
+            },
+            u = u, fs = fs
         )
         if (tier == ChestTier.RARE) {
-            ContentsRow(emoji = "✏️", text = stringResource(R.string.chest_detail_pen, 12))
+            ContentsRow(emoji = "✏️", text = stringResource(R.string.chest_detail_pen, 12), u = u, fs = fs)
         }
     }
 }
 
 @Composable
-private fun ContentsRow(emoji: String, text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+private fun ContentsRow(emoji: String, text: String, u: Dp, fs: (Float) -> TextUnit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(u * 16f)) {
         Box(
-            modifier = Modifier.size(28.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color.White.copy(alpha = 0.85f)),
+            modifier = Modifier.size(u * 38f).clip(androidx.compose.foundation.shape.CircleShape).background(Color.White.copy(alpha = 0.8f)),
             contentAlignment = Alignment.Center
-        ) { Text(text = emoji, fontSize = 15.sp) }
-        Text(
+        ) { Text(text = emoji, fontSize = fs(24f)) }
+        FitText(
             text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF4A3426)
+            style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.Bold, fontSize = fs(30f), color = Color(0xFF4A3426)),
+            maxLines = 1, minScale = 0.6f,
+            contentAlignment = Alignment.CenterStart,
+            modifier = Modifier.weight(1f)
         )
     }
 }
 
 /**
- * The countdown on a dark plate with a gold rim — big amber digits, a label
- * above and, once it is counting, a gold progress bar inside the same plate.
- * Before the unlock has been started the same plate shows the total time, so
- * the two states look like one object rather than a bare number appearing.
+ * The countdown on the card's dark plate: a label, big amber digits and, once it is counting, a gold progress bar. Before
+ * the unlock has been started the same plate shows the total time; a ready chest just says so.
  */
 @Composable
-private fun ChestTimerPlate(chest: Chest, nowMillis: Long, unlocking: Boolean) {
-    val shape = RoundedCornerShape(20.dp)
-    val amber = Color(0xFFFFC94D)
+private fun ChestTimerPanel(chest: Chest, nowMillis: Long, ready: Boolean, unlocking: Boolean, u: Dp, fs: (Float) -> TextUnit, modifier: Modifier) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF3B2617), Color(0xFF1C1109))))
-            .border(2.dp, amber.copy(alpha = 0.85f), shape)
-            .padding(horizontal = 18.dp, vertical = 14.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = modifier.padding(horizontal = u * 20f, vertical = u * 8f),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceEvenly
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Icon(Icons.Filled.Schedule, contentDescription = null, tint = amber, modifier = Modifier.size(16.dp))
+        if (ready) {
+            LetteredText(
+                text = stringResource(R.string.chest_detail_ready),
+                size = fs(72f),
+                fill = Color(0xFFFFE08A),
+                outline = Color(0xFF2A1608),
+                maxLines = 1, minScale = 0.5f,
+                modifier = Modifier.fillMaxWidth()
+            )
+            return@Column
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(u * 10f)) {
+            Icon(Icons.Filled.Schedule, contentDescription = null, tint = ChestAmber, modifier = Modifier.size(u * 30f))
             Text(
                 text = stringResource(if (unlocking) R.string.chest_timer_remaining else R.string.chest_timer_total).uppercase(androidx.compose.ui.text.intl.Locale.current.platformLocale),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 1.2.sp,
-                color = amber.copy(alpha = 0.9f)
+                style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(26f), letterSpacing = 1.2.sp, color = ChestAmber.copy(alpha = 0.9f)),
+                maxLines = 1
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = formatCountdown(chest.remainingMillis(nowMillis)),
             textAlign = TextAlign.Center,
-            fontFamily = DisplayFont,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 40.sp,
-            color = Color(0xFFFFE08A)
+            style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(86f), color = Color(0xFFFFE08A)),
+            maxLines = 1
         )
-        Spacer(modifier = Modifier.height(8.dp))
         if (unlocking) {
-            LinearProgressIndicator(
-                progress = { chest.unlockProgress(nowMillis) },
-                color = amber,
-                trackColor = Color.White.copy(alpha = 0.16f),
-                modifier = Modifier.fillMaxWidth().height(9.dp).clip(RoundedCornerShape(5.dp))
-            )
+            Box(Modifier.fillMaxWidth().height(u * 16f).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.16f))) {
+                Box(Modifier.fillMaxWidth(chest.unlockProgress(nowMillis).coerceIn(0f, 1f)).height(u * 16f).clip(RoundedCornerShape(50)).background(ChestAmber))
+            }
         } else {
             Text(
                 text = stringResource(R.string.chest_timer_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center
+                style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.Bold, fontSize = fs(26f), color = Color.White.copy(alpha = 0.75f)),
+                textAlign = TextAlign.Center,
+                maxLines = 1
             )
         }
     }
@@ -409,32 +493,23 @@ private fun SpeechBubble(text: String) {
 }
 
 
-/** The tier's own backdrop with the chest on it, tappable, with the chest's answer as a speech bubble above. */
+/** The card's lit stage with the chest on it, tappable, with the chest's answer as a speech bubble above. */
 @Composable
-private fun ChestStage(tier: ChestTier, bubble: Bubble?, wobble: Float, onTapChest: () -> Unit) {
-    // Scales with the screen so a short phone still has room for the timer and the action button.
-    val stageHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.30f).coerceIn(170f, 282f)
-    val chestWidth = stageHeight * 0.84f
+private fun ChestStage(tier: ChestTier, bubble: Bubble?, wobble: Float, u: Dp, fs: (Float) -> TextUnit, onTapChest: () -> Unit, modifier: Modifier) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(stageHeight.dp)
-            .clip(RoundedCornerShape(22.dp))
-            .border(3.dp, tier.borderColor(), RoundedCornerShape(22.dp))
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onTapChest),
-        contentAlignment = Alignment.Center
+        modifier = modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onTapChest),
+        contentAlignment = Alignment.BottomCenter
     ) {
-        ChestBackdrop(tier = tier, modifier = Modifier.matchParentSize())
         Box(
             modifier = Modifier
-                .padding(top = 40.dp)
+                .padding(bottom = u * 36f)
                 .graphicsLayer { rotationZ = wobble * 6f }
         ) {
-            ChestImage(tier = tier, width = chestWidth.dp)
+            ChestImage(tier = tier, width = u * 400f)
         }
         AnimatedVisibility(
             visible = bubble != null,
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 10.dp, start = 16.dp, end = 16.dp),
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = u * 14f, start = u * 16f, end = u * 16f),
             enter = fadeIn(tween(120)) + scaleIn(initialScale = 0.7f),
             exit = fadeOut(tween(160)) + scaleOut(targetScale = 0.9f)
         ) {

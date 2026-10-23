@@ -20,6 +20,7 @@ on:
           - smoke.sh
           - realpreview.sh
           - updatepreview.sh
+          - chestpreview.sh
           - runes.sh
           - frames.sh
           - pens.sh
