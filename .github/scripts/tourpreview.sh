@@ -13,9 +13,9 @@ adb install -r -t "$APK"
 adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.TourPreviewActivity"
 sleep 6
 adb exec-out screencap -p > "$OUT/tour_1.png"
-# the orange button sits at about 89% of the screen height
+# the orange button sits at about 79% of the screen height
 for n in 2 3; do
-  adb shell input tap 540 1750
+  adb shell input tap 540 1900
   sleep 2
   adb exec-out screencap -p > "$OUT/tour_$n.png"
 done
