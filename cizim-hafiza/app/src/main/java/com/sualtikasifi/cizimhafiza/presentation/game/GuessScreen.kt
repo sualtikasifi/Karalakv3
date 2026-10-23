@@ -474,16 +474,35 @@ fun GuessScreen(
                 )
 
                 if (state.isRevisit) {
-                    Text(
-                        text = stringResource(R.string.guess_revisit),
-                        style = PaintedStyle(color = Color.White, fontSize = 13.sp * f, textAlign = TextAlign.Center),
-                        maxLines = 1,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 10.dp)
-                            .background(Color(0xCC8A2A10), RoundedCornerShape(50))
-                            .padding(horizontal = 14.dp, vertical = 4.dp)
+                    // A see-through note that blinks for three seconds and then fades away, so it never hides the drawing.
+                    val fade = remember(state.strokes) { androidx.compose.animation.core.Animatable(1f) }
+                    LaunchedEffect(state.strokes) {
+                        fade.snapTo(1f)
+                        kotlinx.coroutines.delay(2400)
+                        fade.animateTo(0f, androidx.compose.animation.core.tween(600))
+                    }
+                    val blink by androidx.compose.animation.core.rememberInfiniteTransition(label = "revisitBlink").animateFloat(
+                        initialValue = 1f,
+                        targetValue = 0.45f,
+                        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                            androidx.compose.animation.core.tween(450),
+                            androidx.compose.animation.core.RepeatMode.Reverse
+                        ),
+                        label = "revisitBlinkAlpha"
                     )
+                    if (fade.value > 0f) {
+                        Text(
+                            text = stringResource(R.string.guess_revisit),
+                            style = PaintedStyle(color = Color.White, fontSize = 13.sp * f, textAlign = TextAlign.Center),
+                            maxLines = 1,
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 10.dp)
+                                .graphicsLayer { alpha = blink * fade.value }
+                                .background(Color(0x808A2A10), RoundedCornerShape(50))
+                                .padding(horizontal = 14.dp, vertical = 4.dp)
+                        )
+                    }
                 }
                 state.skipSavedSeconds?.let { SkipSavedChip(seconds = it, modifier = Modifier.align(Alignment.Center)) }
 

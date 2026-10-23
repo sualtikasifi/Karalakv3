@@ -290,9 +290,9 @@ private fun ChestWonScene(chest: Chest, onDismiss: () -> Unit) {
         // The chest: falls, squashes on landing, then floats.
         Box(
             modifier = Modifier
-                .offset(y = chestCenterY - 170.dp)
+                .offset(y = chestCenterY - 200.dp)
                 .align(Alignment.TopCenter)
-                .size(340.dp)
+                .size(400.dp)
                 .graphicsLayer {
                     val drop = (1f - fall.value)
                     translationY = -drop * (chestCenterY.toPx() + 260.dp.toPx()) + bob.value * 6.dp.toPx() * settle.value
@@ -304,14 +304,14 @@ private fun ChestWonScene(chest: Chest, onDismiss: () -> Unit) {
                 },
             contentAlignment = Alignment.Center
         ) {
-            ChestImage(tier = tier, width = 320.dp)
+            ChestImage(tier = tier, width = 390.dp)
         }
 
         // Title, rarity, unlock time, button.
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .offset(y = chestCenterY + 175.dp)
+                .offset(y = chestCenterY + 205.dp)
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
