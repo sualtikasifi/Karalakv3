@@ -54,9 +54,9 @@ import com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont
 private const val CardW = 956f
 private const val CardH = 1576f
 private val TitleRect = floatArrayOf(190f, 150f, 770f, 245f)
-private val EmojiRect = floatArrayOf(330f, 320f, 626f, 580f)
-private val PageTitleRect = floatArrayOf(150f, 600f, 806f, 720f)
-private val BodyRect = floatArrayOf(150f, 735f, 806f, 1170f)
+private val EmojiRect = floatArrayOf(350f, 310f, 606f, 520f)
+private val PageTitleRect = floatArrayOf(150f, 530f, 806f, 630f)
+private val BodyRect = floatArrayOf(150f, 645f, 806f, 1180f)
 private val DotsRect = floatArrayOf(300f, 1195f, 656f, 1255f)
 private val ButtonRect = floatArrayOf(160f, 1385f, 800f, 1520f)
 private val CloseRect = floatArrayOf(818f, 36f, 952f, 172f)
@@ -122,7 +122,7 @@ internal fun FeatureTourDialog(onFinish: () -> Unit) {
                     modifier = Modifier.at(TitleRect)
                 )
                 Box(Modifier.at(EmojiRect), contentAlignment = Alignment.Center) {
-                    Text(text = emoji, fontSize = fs(190f))
+                    Text(text = emoji, fontSize = fs(150f))
                 }
                 FitText(
                     text = stringResource(title),
@@ -133,7 +133,7 @@ internal fun FeatureTourDialog(onFinish: () -> Unit) {
                 FitText(
                     text = stringResource(body),
                     style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.Bold, fontSize = fs(46f), lineHeight = fs(62f), color = TourBodyInk, textAlign = TextAlign.Center),
-                    maxLines = 9, minScale = 0.55f,
+                    maxLines = 11, minScale = 0.55f,
                     modifier = Modifier.at(BodyRect)
                 )
                 Row(
