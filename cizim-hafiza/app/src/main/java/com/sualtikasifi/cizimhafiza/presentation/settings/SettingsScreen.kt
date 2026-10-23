@@ -334,12 +334,24 @@ fun SettingsScreen(
         }
         // What came of the last try, as a pill with its own icon: what was won (green), or why not (red).
         var lastMessage by remember { mutableStateOf<CouponMessage?>(null) }
-        LaunchedEffect(couponState.message) { couponState.message?.let { lastMessage = it } }
+        // A win fades away by itself after five seconds; a mistake stays until the player types again.
+        var pillHidden by remember { mutableStateOf(false) }
+        // (The five seconds start once the chest-opening scenes are done, so the note is there to be read afterwards.)
+        val chestsPending = couponState.chestRewards.isNotEmpty()
+        LaunchedEffect(couponState.message, chestsPending) {
+            val m = couponState.message
+            m?.let { lastMessage = it }
+            pillHidden = false
+            if (m is CouponMessage.Ok && !chestsPending) {
+                kotlinx.coroutines.delay(5_000)
+                pillHidden = true
+            }
+        }
         Box(box(352f, 1042f, 754f, 1100f), contentAlignment = Alignment.CenterStart) {
             androidx.compose.animation.AnimatedVisibility(
-                visible = couponState.message != null,
+                visible = couponState.message != null && !pillHidden,
                 enter = androidx.compose.animation.fadeIn(tween(160)) + androidx.compose.animation.slideInVertically(tween(220)) { it / 3 },
-                exit = androidx.compose.animation.fadeOut(tween(160))
+                exit = androidx.compose.animation.fadeOut(tween(700))
             ) {
                 val message = lastMessage
                 val ok = message as? CouponMessage.Ok
@@ -347,7 +359,7 @@ fun SettingsScreen(
                     ok != null -> buildList {
                         if (ok.gold > 0) add(stringResource(R.string.coupon_won_gold, ok.gold))
                         if (ok.xp > 0) add(stringResource(R.string.coupon_won_xp, ok.xp))
-                        if (ok.chests > 0) add(stringResource(R.string.coupon_won_chest, ok.chests))
+                        if (ok.chests > 0) add(stringResource(R.string.coupon_won_chest))
                     }.joinToString("  ·  ").ifBlank { stringResource(R.string.coupon_won_nothing) }
                     message is CouponMessage.Error -> stringResource(message.res)
                     else -> ""

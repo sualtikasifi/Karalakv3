@@ -1473,7 +1473,7 @@
     <string name="coupon_use">Kullan</string>
     <string name="coupon_won_gold">+%1$d altın</string>
     <string name="coupon_won_xp">+%1$d XP</string>
-    <string name="coupon_won_chest">+%1$d kasa</string>
+    <string name="coupon_won_chest">Kasa Ödülü Alındı!</string>
     <string name="coupon_won_nothing">Kod kabul edildi</string>
     <string name="coupon_error_not_found">Kod bulunamadı. Kontrol edip tekrar dene.</string>
     <string name="coupon_error_expired">Bu kodun süresi dolmuş.</string>
