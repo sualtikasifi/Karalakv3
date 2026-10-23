@@ -169,8 +169,9 @@ private fun ChestOpeningVideo(tier: ChestTier, onEnded: () -> Unit) {
         }
     }
     // Every clip fades to white at its very end, and the tail is dead time:
-    // hand over to the reward screen [VIDEO_TAIL_TRIM_MS] before the last frame
+    // hand over to the reward screen [ChestTier.openVideoTailMs] before the last frame
     // (or at the real end, whichever comes first) so opening feels quick.
+    val tailMs = tier.openVideoTailMs()
     androidx.compose.runtime.LaunchedEffect(player) {
         var fired = false
         fun fire() {
@@ -185,8 +186,8 @@ private fun ChestOpeningVideo(tier: ChestTier, onEnded: () -> Unit) {
         try {
             while (!fired) {
                 val duration = player.duration
-                if (duration != androidx.media3.common.C.TIME_UNSET && duration > VIDEO_TAIL_TRIM_MS * 2 &&
-                    player.currentPosition >= duration - VIDEO_TAIL_TRIM_MS
+                if (duration != androidx.media3.common.C.TIME_UNSET && duration > tailMs * 2 &&
+                    player.currentPosition >= duration - tailMs
                 ) fire()
                 delay(40)
             }
@@ -209,8 +210,14 @@ private fun ChestOpeningVideo(tier: ChestTier, onEnded: () -> Unit) {
     )
 }
 
-/** How much of the opening video's white-out tail is skipped. */
-private const val VIDEO_TAIL_TRIM_MS = 1_500L
+/**
+ * How much of the opening video's white-out tail is skipped. The apprentice clip already ends right as it turns
+ * fully white, so only a few frames are left to cut; the older clips still carry a long white tail.
+ */
+private fun ChestTier.openVideoTailMs(): Long = when (this) {
+    ChestTier.SILVER -> 150L
+    ChestTier.GOLD, ChestTier.RARE -> 1_500L
+}
 
 /**
  * The full-screen "kasa açma" moment: a tier-specific hand-made video plays
