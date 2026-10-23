@@ -1460,7 +1460,7 @@
     <string name="coupon_use">Redeem</string>
     <string name="coupon_won_gold">+%1$d gold</string>
     <string name="coupon_won_xp">+%1$d XP</string>
-    <string name="coupon_won_chest">+%1$d chest</string>
+    <string name="coupon_won_chest">Chest reward received!</string>
     <string name="coupon_won_nothing">Code accepted</string>
     <string name="coupon_error_not_found">Code not found. Check it and try again.</string>
     <string name="coupon_error_expired">This code has expired.</string>
