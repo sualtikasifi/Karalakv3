@@ -21,5 +21,9 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.AccountPreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the lobby's seats on their own (see LobbyPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.LobbyPreviewActivity"
+            android:exported="true" />
     </application>
 </manifest>

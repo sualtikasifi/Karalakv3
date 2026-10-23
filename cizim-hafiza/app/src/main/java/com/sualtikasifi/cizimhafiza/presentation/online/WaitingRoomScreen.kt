@@ -42,6 +42,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -49,9 +50,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Person
@@ -321,7 +320,6 @@ fun WaitingRoomScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 20.dp)
-                .verticalScroll(rememberScrollState())
                 // Starts under the painted sign.
                 // A little air under the last row, so "waiting for friends" is never cut by the chat dock when the
                 // content is a hair taller than the screen (it scrolls the rest into view).
@@ -389,30 +387,15 @@ fun WaitingRoomScreen(
                     )
                 }
             } else {
-                // A fixed 2-column grid of GameConstants.MAX_ROOM_SIZE slots —
-                // each occupied player takes half a row instead of a whole one,
-                // and the still-empty slots stay visible as placeholders so the
-                // room reads as "being filled in" rather than a short list.
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 4.dp)
-                ) {
-                    playerSlots.chunked(2).forEach { rowSlots ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            rowSlots.forEach { slot ->
-                                PlayerSlotCell(
-                                    slot = slot,
-                                    activeReaction = slot?.let { activeReactionsByUid[it.uid] },
-                                    onInvite = { invitePickerOpen = true },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-                    }
-                }
+                // A fixed 2-column grid of GameConstants.MAX_ROOM_SIZE slots, taking exactly the height left between the
+                // room code card and the chat dock: the page does not scroll, so every seat is always on screen.
+                PlayerSlotsGrid(
+                    slots = playerSlots,
+                    activeReactionsByUid = activeReactionsByUid,
+                    onInvite = { invitePickerOpen = true },
+                    compact = compact,
+                    modifier = Modifier.weight(1f)
+                )
             }
 
             if (isHost && room?.kickedUsers?.isNotEmpty() == true) {
@@ -884,7 +867,7 @@ private fun KickedUsersSection(kickedUsers: List<KickedUser>, onUnban: (String) 
 }
 
 /** One slot in the lobby's 2-column grid — a real player, or null for a still-empty seat. */
-private data class PlayerSlotUiState(
+internal data class PlayerSlotUiState(
     val uid: String,
     val name: String,
     val level: Int,
@@ -923,6 +906,42 @@ private fun TeamColumn(
                 onInvite = onInvite,
                 modifier = Modifier.fillMaxWidth()
             )
+        }
+    }
+}
+
+/**
+ * The lobby's seats: [slots] in two columns, the rows sharing the height this is given equally (so 8 seats fit
+ * without scrolling), each card shrinking its picture and lines to the row it gets.
+ */
+@Composable
+internal fun PlayerSlotsGrid(
+    slots: List<PlayerSlotUiState?>,
+    activeReactionsByUid: Map<String, Reaction>,
+    onInvite: () -> Unit,
+    compact: Boolean,
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.runtime.CompositionLocalProvider(LocalSlotHeight provides 0.dp) {
+        Column(
+            modifier = modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 4.dp)
+        ) {
+            slots.chunked(2).forEach { rowSlots ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    rowSlots.forEach { slot ->
+                        PlayerSlotCell(
+                            slot = slot,
+                            activeReaction = slot?.let { activeReactionsByUid[it.uid] },
+                            onInvite = onInvite,
+                            modifier = Modifier.weight(1f).fillMaxHeight()
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -977,9 +996,20 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
             if (slot.onTap != null) Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = slot.onTap) else Modifier
         )
     ) {
-        Box(modifier = Modifier.fillMaxWidth().heightIn(min = LocalSlotHeight.current)) {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().heightIn(min = LocalSlotHeight.current)) {
+            // The grid hands each row the same share of the page; the picture and the lines under the name shrink to it
+            // (in a team room the height is open-ended, so the usual size is used).
+            val rowH = if (maxHeight == androidx.compose.ui.unit.Dp.Infinity) 54.dp else maxHeight
+            val avatarSize = (rowH - 14.dp).coerceIn(26.dp, 38.dp)
+            val tight = rowH < 46.dp
+            val statusH = when {
+                rowH >= 56.dp -> 17.dp
+                rowH >= 46.dp -> 13.dp
+                else -> 0.dp
+            }
+            val hasStatus = activeReaction != null || slot.pending
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
+                modifier = Modifier.fillMaxWidth().align(Alignment.Center).padding(horizontal = 8.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // The level badge stands in for a profile picture — it's the
@@ -990,7 +1020,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                 LevelAvatar(
                     level = slot.level,
                     frame = slot.frame,
-                    size = 38.dp,
+                    size = avatarSize,
                     photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(slot.avatarUrl)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -1015,7 +1045,8 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     }
                     // Level and rank take turns under the name every five seconds, set in the same
                     // type as the league table's rows (see RankLevelLabel).
-                    com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(
+                    // (On a very short row the chat message / waiting note takes this line's place while there is one.)
+                    if (!(tight && hasStatus)) com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(
                         level = slot.level, bullet = false,
                         style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(fontSize = 11.sp, lineHeight = 14.sp, textAlign = TextAlign.Start)
                     )
@@ -1026,7 +1057,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     // never changes the row's height — the card stays
                     // exactly SLOT_HEIGHT tall whether or not there's
                     // anything to show here right now.
-                    Box(modifier = Modifier.height(17.dp)) {
+                    Box(modifier = Modifier.height(if (tight && hasStatus) 16.dp else statusH)) {
                         Crossfade(targetState = activeReaction, label = "slot-status") { reaction ->
                             if (reaction != null) {
                                 val phraseTextRes = presetPhraseTextRes(reaction.messageKey)

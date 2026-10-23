@@ -23,6 +23,7 @@ on:
           - chestpreview.sh
           - tourpreview.sh
           - accountpreview.sh
+          - lobbypreview.sh
           - runes.sh
           - frames.sh
           - pens.sh
