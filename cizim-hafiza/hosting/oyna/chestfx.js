@@ -98,8 +98,8 @@ export function wonScene(cv, chestImg, tier, onLanded) {
     tw.forEach((q) => sparkle(g, q.x * w, q.y * h, 9 * U * q.s, `rgba(255,255,255,${(0.2 + 0.8 * Math.abs(Math.sin((q.o * 3 + t * 0.9) * Math.PI))) * L})`));
     const flash = Math.max(0, 1 - landed / 0.16); if (landed > 0 && flash > 0) { g.fillStyle = `rgba(255,255,255,${flash * 0.85})`; g.fillRect(0, 0, w, h); }
     // the chest itself
-    const size = 320 * U, drop = 1 - fe, bob = Math.sin(t * 2.1) * 6 * U * sq;
-    g.save(); g.translate(w / 2, cy - 170 * U + 170 * U + (-drop * (cy + 260 * U)) + bob); g.rotate(drop * -14 * Math.PI / 180);
+    const size = 390 * U, drop = 1 - fe, bob = Math.sin(t * 2.1) * 6 * U * sq; // the app's chest scene: a bigger chest, 30 dp higher
+    g.save(); g.translate(w / 2, cy - 30 * U + (-drop * (cy + 260 * U)) + bob); g.rotate(drop * -14 * Math.PI / 180);
     const sx = 1.22 - 0.22 * sq, sy = 0.72 + 0.28 * sq; g.translate(0, size * 0.35); g.scale(sx, sy); g.translate(0, -size * 0.35);
     if (chestImg.complete && chestImg.naturalWidth) { const iw = size, ih = size * chestImg.naturalHeight / chestImg.naturalWidth; g.drawImage(chestImg, -iw / 2, -ih / 2, iw, ih); }
     g.restore();

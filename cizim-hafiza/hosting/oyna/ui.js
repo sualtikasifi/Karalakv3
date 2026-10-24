@@ -54,6 +54,30 @@ export function exitDialog(host, { style = "game", title, message, confirm, dism
 }
 
 /**
+ * The app's painted windows (the chest window, the "what is new" tour): one picture carries the sign, the parchment, the
+ * plate and the button, and the words are laid over it at fixed spots of the picture. `w`/`h` are the picture's own size, so a
+ * spot is given in its pixels; `--k` (card width / picture width) turns a font size in picture pixels into screen pixels.
+ * Returns { ov, card, put, fit, close }; `below` is an optional element shown under the card (a second button).
+ */
+export function paintedCard(host, { art, w, h, cls = "", onClose, below }) {
+  const pc = (v, t) => (v / t * 100).toFixed(3) + "%";
+  const ov = el("div", "pc-ov wait " + cls), col = el("div", "pc-col"), card = el("div", "pc-card");
+  card.style.setProperty("--ar", (w / h).toFixed(4)); card.style.aspectRatio = `${w}/${h}`;
+  const img = el("img"); img.src = `img/${art}.webp`; img.alt = ""; card.append(img); col.append(card); if (below) col.append(below); ov.append(col);
+  const close = () => { window.removeEventListener("resize", size); ov.remove(); onClose && onClose(); };
+  const put = (c, r, html) => { const e = el("div", c, html); e.style.cssText = `left:${pc(r[0], w)};top:${pc(r[1], h)};width:${pc(r[2] - r[0], w)};height:${pc(r[3] - r[1], h)}`; card.append(e); return e; };
+  const size = () => card.style.setProperty("--k", (card.getBoundingClientRect().width / w).toFixed(5));
+  /** Shrinks the words in `e` (its first child) from `base` picture pixels until they fit its box on `lines` lines. */
+  const fit = (e, base, lines = 1, min = 0.5) => { const sp = e.firstElementChild || e, k = card.getBoundingClientRect().width / w; let q = 1; sp.style.fontSize = base * k + "px"; while (q > min && (e.scrollHeight > e.clientHeight + 1 || sp.scrollWidth > e.clientWidth + 1 || (lines === 1 && sp.offsetHeight > base * k * 1.5))) { q -= 0.04; sp.style.fontSize = base * k * q + "px"; } };
+  ov.onclick = (e) => { if (e.target === ov || e.target === col) close(); };
+  host.append(ov); ov.close = close; window.addEventListener("resize", size);
+  const show = () => { ov.classList.remove("wait"); size(); };
+  if (img.complete && img.naturalWidth) show(); else { img.addEventListener("load", show, { once: true }); img.addEventListener("error", show, { once: true }); setTimeout(show, 1500); }
+  size();
+  return { ov, card, put, fit, close, size };
+}
+
+/**
  * Ads only exist in the phone app, so every "watch an ad" spot on the web says so and sends the player to the store instead
  * of pretending to show one.
  */
@@ -69,4 +93,35 @@ export function appOnlyDialog(host) {
   foot.append(go);
   const ov = appWindow(host, { title: x.title, body, footer: foot, centerTitle: false });
   return ov;
+}
+
+/** The spark of the "+10 Saniye" joker, as in the app's DrawingScreen: a glowing head with a trail curves from [from] to [to], then bursts and a "+10" rises. */
+export function sparkFlight(from, to, label) {
+  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+  const A = { x: a.left + a.width / 2, y: a.top + a.height / 2 }, B = { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+  const C = { x: (A.x + B.x) / 2 - innerWidth * 0.12, y: Math.min(A.y, B.y) - innerHeight * 0.05 };
+  const at = (t) => { const u = 1 - t; return { x: u * u * A.x + 2 * u * t * C.x + t * t * B.x, y: u * u * A.y + 2 * u * t * C.y + t * t * B.y }; };
+  const root = document.createElement("div"); root.className = "spark-root"; document.body.appendChild(root);
+  const dot = (cls) => { const d = document.createElement("i"); d.className = cls; root.appendChild(d); return d; };
+  const head = dot("spark-head"), trail = Array.from({ length: 12 }, () => dot("spark-trail"));
+  const burst = Array.from({ length: 10 }, () => dot("spark-bit")), glow = dot("spark-glow"), plus = document.createElement("b");
+  plus.className = "spark-plus"; plus.textContent = label; root.appendChild(plus);
+  const put = (e, p, sc = 1, al = 1) => { e.style.transform = `translate(${p.x}px,${p.y}px) translate(-50%,-50%) scale(${sc})`; e.style.opacity = al; };
+  const FLY = 650, BURST = 600, t0 = performance.now();
+  const step = (now) => {
+    const t = now - t0;
+    if (t < FLY) {
+      const f = t / FLY; put(head, at(f));
+      trail.forEach((e, k) => { const g = 1 - k / 12; put(e, at(Math.max(0, f - k * 0.025)), g, 0.55 * g); });
+      [...burst, glow, plus].forEach((e) => (e.style.opacity = 0));
+    } else if (t < FLY + BURST) {
+      const l = (t - FLY) / BURST, fade = 1 - l;
+      head.style.opacity = 0; trail.forEach((e) => (e.style.opacity = 0));
+      put(glow, B, 0.3 + l, 0.9 * fade);
+      burst.forEach((e, i) => { const ang = i * Math.PI * 2 / 10; put(e, { x: B.x + Math.cos(ang) * 60 * l, y: B.y + Math.sin(ang) * 60 * l }, fade, fade); });
+      put(plus, { x: B.x, y: B.y + 44 + 30 * l }, 1, fade);
+    } else return root.remove();
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }

@@ -3,7 +3,7 @@
 // scene) and ChestInfoDialog.kt. The texts are the app's own (i18n.js / strings.json).
 import { penList } from "./store.js";
 import { S, fmtNum, ready as strReady } from "./i18n.js";
-import { el, primary, appWindow } from "./ui.js";
+import { el, primary, appWindow, paintedCard, appOnlyDialog } from "./ui.js";
 import { TIER, backdrop, wonScene, rewardScene, rgba, glowOf } from "./chestfx.js";
 import { todayEpoch } from "./daily.js";
 
@@ -88,45 +88,58 @@ export function renderChests(c) {
 }
 
 // ---------- the chest window (ChestDetailHost) ----------
+/** Shrinks the prize lines of the parchment, one by one, until each fits the width it has (FitText in the app). */
+function fitRows(box, card) { const k = card.card.getBoundingClientRect().width / 793; box.querySelectorAll(".cd2-r span").forEach((sp) => { let q = 1; sp.style.fontSize = 30 * k + "px"; while (q > 0.55 && sp.scrollWidth > sp.clientWidth + 1) { q -= 0.04; sp.style.fontSize = 30 * k * q + "px"; } }); }
+// One painted card (chest_card, 793x1390): the title sign, the lit stage, the parchment, the timer plate and the orange button
+// are in the picture; the words, the chest and the clock are laid over it at the same spots as ChestDetail.kt.
+const CD = { title: [150, 108, 620, 228], stage: [92, 258, 702, 704], contents: [96, 772, 698, 940], timer: [108, 1012, 688, 1174], button: [104, 1224, 690, 1346], close: [662, 28, 786, 142] };
 function detail(c, id) {
   const { $, P } = c, C = ensure(P), ch = C.slots.find((s) => s && s.id === id); if (!ch) return;
   const tier = ch.tier, T = TIER[tier], host = $("stage");
-  const body = el("div", "cd-body"), footer = el("div", "cd-foot");
-  // the stage: the tier's own backdrop, the chest (tappable, it answers in a speech bubble) and the answer above it
-  const u = c.u(), screenDp = c.stageH() / u / 2.05, stageH = Math.min(282, Math.max(170, screenDp * 0.30)) * 2.05 * u;
-  const stage = el("div", "cd-stage"); stage.style.height = stageH + "px"; stage.style.borderColor = T.border;
-  const cv = el("canvas", "cd-cv"), img = el("img", "cd-chest"); img.src = `img/${T.art}.webp`; img.alt = ""; img.style.width = stageH * 0.84 + "px"; img.style.marginTop = 40 * 2.05 * u + "px";
-  const bubble = el("div", "cd-bubble hidden"); stage.append(cv, img, bubble); body.append(stage);
-  let bubbleT = null;
+  const below = el("div", "pc-b2 hidden"); // the second button (the ad speed-up) under the card, as in the app
+  below.style.cssText = "width:88%;aspect-ratio:689/173"; below.style.display = "none";
+  const card = paintedCard(host, { art: "chest_card", w: 793, h: 1390, cls: "cd2", below, onClose: () => { clearInterval(tick); clearTimeout(bubbleT); } });
+  const { put, fit } = card; let bubbleT = null;
+  const title = put("pc-t", CD.title, `<span>${S(T.label)}</span>`);
+  // the stage: the chest (tappable, it answers in a speech bubble)
+  const stage = put("cd2-stage", CD.stage, ""), img = el("img", "cd2-chest"); img.src = `img/${T.art}.webp`; img.alt = ""; stage.append(img);
+  const bubble = el("div", "cd-bubble hidden"); stage.append(bubble);
   const say = (key) => { bubble.innerHTML = `<span>${S(key)}</span><i></i>`; bubble.classList.remove("hidden"); img.classList.remove("wig"); void img.offsetWidth; img.classList.add("wig"); clearTimeout(bubbleT); bubbleT = setTimeout(() => bubble.classList.add("hidden"), 1900 + 500); };
   // what a chest of this tier can hold
   const stars = "★".repeat(T.stars) + "☆".repeat(3 - T.stars);
-  const panel = el("div", "cd-contents"); panel.style.cssText = `background:${rgba(T.accent, 0.1)};border-color:${rgba(T.accent, 0.45)}`;
   const jokersKey = { SILVER: ["chest_detail_jokers_silver", 30], GOLD: ["chest_detail_jokers_gold", 30], RARE: ["chest_detail_jokers_rare", 40] }[tier];
-  panel.innerHTML = `<div class="cd-ch"><b>${S("chest_detail_contents_title")}</b><span style="color:${T.accent};background:${rgba(T.accent, 0.16)}">${stars} ${S(T.rarity)}</span></div>
-    <div class="cd-cr"><i>🪙</i><span>${S("chest_detail_gold", GOLD[tier][0], GOLD[tier][1])}</span></div><div class="cd-cr"><i>🎲</i><span>${S(jokersKey[0], jokersKey[1])}</span></div>${tier === "RARE" ? `<div class="cd-cr"><i>✏️</i><span>${S("chest_detail_pen", 12)}</span></div>` : ""}`;
-  body.append(panel);
-  const plate = el("div", "cd-plate"); body.append(plate);
-  let readyNow = false;
-  const paint = () => {
-    const now = Date.now(), cur = C.slots.find((s) => s && s.id === id); if (!cur) { ov.close(); return; }
-    const ready = isReady(cur, now), unlocking = cur.start != null && !ready, another = anyUnlocking(C, now) && cur.start == null;
-    plate.style.display = ready ? "none" : "";
-    if (!ready) plate.innerHTML = `<div class="cd-pl"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#FFC94D" stroke-width="2"/><path d="M12 7v5l3 2" stroke="#FFC94D" stroke-width="2" fill="none" stroke-linecap="round"/></svg><span>${S(unlocking ? "chest_timer_remaining" : "chest_timer_total").toLocaleUpperCase(c.lang())}</span></div>
-      <div class="cd-pt">${fmtLeft(remaining(c, cur, now))}</div>${unlocking ? `<div class="cd-bar"><i style="width:${Math.max(0, Math.min(1, 1 - remaining(c, cur, now) / effMs(c, cur.tier))) * 100}%"></i></div>` : `<div class="cd-ph">${S("chest_timer_hint")}</div>`}`;
-    // the footer only changes when the state does
-    const state = ready ? "ready" : unlocking ? "go" + instantOk() : another ? "busy" : "start";
-    if (footer.dataset.s === state) return; footer.dataset.s = state; footer.replaceChildren(); readyNow = ready;
-    if (ready) footer.append(el("div", "cd-ok", S("chest_detail_ready")), primary(S("chests_open_button"), () => openChest(c, cur, ov)));
-    else if (unlocking) { if (instantOk()) footer.append(primary(S("chest_instant_button"), () => { cur.start = Date.now() - rawMs(cur.tier); P.instantDay = todayEpoch(); c.saveP(); footer.dataset.s = ""; paint(); renderChests(c); })); }
-    else if (another) footer.append(el("div", "cd-busy", S("chest_slot_busy")));
-    else footer.append(primary(S("chests_start_button") + " · " + durText(c, cur.tier), () => { cur.start = Date.now() - Math.floor(rawMs(cur.tier) * c.runeFx("CTIME") / 100); c.saveP(); footer.dataset.s = ""; paint(); renderChests(c); }));
-  };
-  const instantOk = () => c.runeHas("INSTANT") && P.instantDay !== todayEpoch();
-  const ov = appWindow(host, { title: S(T.label), body, footer, onClose: () => { stopFx(); clearInterval(tick); clearTimeout(bubbleT); } });
-  const stopFx = backdrop(cv, tier);
+  const contents = put("cd2-contents", CD.contents, `<div class="cd2-h"><b>${S("chest_detail_contents_title")}</b><span style="color:${T.accent};background:${rgba(T.accent, 0.16)}">${stars} ${S(T.rarity)}</span></div>
+    <div class="cd2-r"><i>🪙</i><span>${S("chest_detail_gold", GOLD[tier][0], GOLD[tier][1])}</span></div><div class="cd2-r"><i>🎲</i><span>${S(jokersKey[0], jokersKey[1])}</span></div>${tier === "RARE" ? `<div class="cd2-r"><i>✏️</i><span>${S("chest_detail_pen", 12)}</span></div>` : ""}`);
+  const timer = put("cd2-timer", CD.timer, "");
+  const btn = put("pc-btn cd2-btn", CD.button, "");
+  const x = put("pc-x", CD.close, ""); x.setAttribute("aria-label", S("close")); x.onclick = () => card.close();
   stage.onclick = () => { const cur = C.slots.find((s) => s && s.id === id); if (!cur || isReady(cur)) return; say(cur.start != null ? "chest_slot_still_unlocking" : anyUnlocking(C, Date.now()) ? "chest_slot_busy" : "chest_detail_tap_to_start"); };
-  paint(); const tick = setInterval(paint, 1000);
+  const instantOk = () => c.runeHas("INSTANT") && P.instantDay !== todayEpoch();
+  const refresh = () => { renderChests(c); paint(); };
+  const label = (html, base = 58, lines = 1) => { btn.innerHTML = `<span class="pc-lt">${html}</span>`; btn.classList.remove("dis"); fit(btn, base, lines, 0.5); };
+  const paint = () => {
+    const now = Date.now(), cur = C.slots.find((s) => s && s.id === id); if (!cur) { card.close(); return; }
+    const ready = isReady(cur, now), unlocking = cur.start != null && !ready, another = anyUnlocking(C, now) && cur.start == null;
+    // the clock plate: label, big digits and a bar (or the "starts when you tap" hint); a ready chest just says so
+    if (ready) timer.innerHTML = `<span class="pc-lt cd2-ready" style="--ol:#2a1608;color:#ffe08a">${S("chest_detail_ready")}</span>`;
+    else timer.innerHTML = `<div class="cd2-tl"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#FFC94D" stroke-width="2"/><path d="M12 7v5l3 2" stroke="#FFC94D" stroke-width="2" fill="none" stroke-linecap="round"/></svg><span>${S(unlocking ? "chest_timer_remaining" : "chest_timer_total").toLocaleUpperCase(c.lang())}</span></div>
+      <div class="cd2-td">${fmtLeft(remaining(c, cur, now))}</div>${unlocking ? `<div class="cd2-bar"><i style="width:${Math.max(0, Math.min(1, 1 - remaining(c, cur, now) / effMs(c, cur.tier))) * 100}%"></i></div>` : `<div class="cd2-th">${S("chest_timer_hint")}</div>`}`;
+    // the buttons only change when the state does
+    const state = ready ? "ready" : unlocking ? "go" + instantOk() : another ? "busy" : "start" + c.lang();
+    if (btn.dataset.s === state) return; btn.dataset.s = state; below.style.display = "none"; below.replaceChildren();
+    if (ready) { label(S("chests_open_button")); btn.onclick = () => openChest(c, cur, card); }
+    else if (unlocking) {
+      const adBtn = (host, main) => { host.innerHTML = `<span class="pc-lt cd2-ad"><svg viewBox="0 0 24 24" width="1em" height="1em"><circle cx="12" cy="12" r="11" fill="#fff"/><path d="M9.5 7.5v9l7-4.5z" fill="#f26a1b"/></svg> ${S("chest_speedup_button")} <em>${S("chest_speedup_badge")}</em></span>`; host.onclick = () => appOnlyDialog(host.closest(".pc-ov") ? $("stage") : $("stage")); };
+      if (instantOk()) { label(S("chest_instant_button")); btn.onclick = () => { cur.start = Date.now() - rawMs(cur.tier); P.instantDay = todayEpoch(); c.saveP(); btn.dataset.s = ""; refresh(); }; below.style.display = "flex"; adBtn(below); fit(below, 48, 1, 0.5); }
+      else { adBtn(btn, true); fit(btn, 58, 1, 0.5); }
+    } else if (another) { label(S("chest_slot_busy"), 44, 2); btn.firstElementChild.classList.add("wrap"); fit(btn, 44, 2, 0.5); btn.classList.add("dis"); btn.onclick = null; }
+    else { label(S("chests_start_button") + " · " + durText(c, cur.tier)); btn.onclick = () => { cur.start = Date.now() - Math.floor(rawMs(cur.tier) * c.runeFx("CTIME") / 100); c.saveP(); btn.dataset.s = ""; refresh(); }; }
+    // the title, the contents and the labels all shrink to their boxes
+    fit(title, 68, 1, 0.5);
+  };
+  const tick = setInterval(paint, 1000);
+  requestAnimationFrame(() => { fit(title, 68, 1, 0.5); paint(); fitRows(contents, card); });
+  card.size();
 }
 
 /** Opens a ready chest: the reward is paid at once (and the reserve chest slides into the freed slot), then the opening scene plays. */
@@ -144,7 +157,7 @@ export function openNow(c, tier) {
 export const reward = (c, tier, rw) => openingScene(c, { tier, ...rw });
 
 // ---------- the opening scene: the tier's video, then the reward (ChestOpeningScene) ----------
-const TAIL_TRIM = 1.5;
+const TAIL_TRIM = 0.15; // the clips now end as the screen turns white
 function openingScene(c, rw) {
   const { $ } = c, T = TIER[rw.tier], host = $("stage"), ov = el("div", "os2"); host.append(ov);
   let stage = 0, stopFx = null, done = false; const timers = [];

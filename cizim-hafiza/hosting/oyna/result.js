@@ -21,7 +21,7 @@ function statList(d, lang) {
   if (g.daily > 0) list.push({ ic: "cal", label: T("result_stat_daily_gold"), value: gold(g.daily), color: or });
   if (g.win > 0) list.push({ ic: "trophy", label: T("result_stat_win_gold"), value: gold(g.win), color: or });
   if (g.runeBonus > 0) list.push({ ic: "rune", label: T("result_stat_rune_bonus"), value: gold(g.runeBonus), color: or });
-  if (d.eventMult > 1) list.push({ ic: "event", label: T("result_stat_event"), value: T("result_stat_multiplier", d.eventMult), color: or });
+  if (d.eventMult > 1) list.push({ ic: "event", label: T("result_stat_event"), value: d.eventMult >= 2 - 1e-6 ? T("result_stat_multiplier", Math.round(d.eventMult)) : T("result_stat_bonus", Math.round((d.eventMult - 1) * 100)), color: or });
   if (d.daily == null) list.push({ ic: "star", label: "", value: T("result_xp_won", d.xp), color: "#f2541b", headline: true });
   return list;
 }

@@ -21,7 +21,7 @@ import { setLang, loadStrings, S } from "./i18n.js";
 import { syncNow, scheduleBackup } from "./sync.js";
 import { openRankLadder } from "./ranks.js";
 import { startSearch, stopSearch } from "./search.js";
-import { exitDialog, appOnlyDialog, PLAY_URL } from "./ui.js";
+import { exitDialog, appOnlyDialog, sparkFlight, PLAY_URL } from "./ui.js";
 import { makeGhostRun, loadGhostNames, isGhostId } from "./ghost.js";
 import { layoutBreak, startBreak, stopBreak } from "./brk.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
@@ -71,7 +71,7 @@ const ctx = {
     const best = raw > 0 && runeHas(P, "BEST") && P.bestDay !== todayEpoch(); if (best) P.bestDay = todayEpoch();
     const g = eco.roomGold({ fx: (k) => runeFx(P, k), correctCount: me.correctCount || 0, won, newAchievements: newAch, asHost: hostUid === myUid, bestFriendBonus: best });
     P.gold += g.total;
-    const matchXp = (eco.ONLINE_MATCH_XP + (won ? eco.ONLINE_WIN_XP : 0)) * xpEventOnly;
+    const matchXp = Math.round((eco.ONLINE_MATCH_XP + (won ? eco.ONLINE_WIN_XP : 0)) * xpEventOnly);
     ctx.lastXp = (ctx.lastXp || 0) + eco.addXp(P, matchXp, runeFx(P, "XP"));
     ctx.lastGold = g.total; ctx.lastRune = g.runeBonus;
     let chest; if (place === 1 && !tied) chest = awardChest(P, (k) => runeHas(P, k)) || null;
@@ -344,8 +344,12 @@ for (const id of ["d-music", "g-music"]) $(id).onclick = () => { P.prefs.s1 = !P
 // Pictures of screens that are not showing are only fetched when the screen first opens (the first load used to pull 3.7 MB).
 function loadImgs(id) { const s = document.getElementById(id); if (!s) return; s.querySelectorAll("img[data-src]").forEach((i) => { i.src = i.dataset.src; i.removeAttribute("data-src"); }); }
 let freshScreen = true;
+// As in the app: the login-streak window opens once, after the first game finished in a visit (not when the page is opened), when the player is back on the home screen.
+let gamePlayed = false;
 function show(id) {
   freshScreen = true;
+  if (id === "res2" || id === "result") gamePlayed = true;
+  else if (id === "home" && gamePlayed) { gamePlayed = false; setTimeout(() => { if (current === "home") checkStreak(ctx); }, 600); }
   loadImgs(id);
   current = id; if (typeof paintMusic === "function" && P.prefs) paintMusic();
   for (const s of document.querySelectorAll(".screen")) s.classList.toggle("on", s.id === id);
@@ -568,7 +572,7 @@ async function startTutorial() {
   const picked = TUT_WORDS[lang].map((s, i) => byText.get(s) || { id: 900000 + i, text: s, difficulty: "EASY" });
   begin(picked);
 }
-function endTutorial() { const first = !P.tutorialDone; P.tutorialDone = true; if (first) for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); setTimeout(() => checkStreak(ctx), 900); }
+function endTutorial() { const first = !P.tutorialDone; P.tutorialDone = true; if (first) for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); }
 async function startDaily() {
   if (dailyState(P).done) return;
   await ensureWords(); kind = "daily"; levelRun = null; relaxed = false;
@@ -691,7 +695,7 @@ function nextDraw() {
   tool = "pen"; refreshTools(); paintLive();
   const tj = $("d-timej"), refreshTj = () => { const n = P.jokers.EXTRA_TIME || 0; $("d-timej-n").textContent = n; $("d-timej-t").textContent = S("drawing_time_joker"); tj.classList.toggle("dis", usedTime || n <= 0); tj.style.display = relaxed || tut ? "none" : ""; };
   refreshTj();
-  tj.onclick = () => { if (usedTime || (P.jokers.EXTRA_TIME || 0) <= 0) return; usedTime = true; P.jokers.EXTRA_TIME--; saveP(); left += 10; total += 10; setRing($("d-ring"), arc, $("d-time"), left, total); sfx.buy(); refreshTj(); };
+  tj.onclick = () => { if (usedTime || (P.jokers.EXTRA_TIME || 0) <= 0) return; usedTime = true; P.jokers.EXTRA_TIME--; saveP(); left += 10; total += 10; setRing($("d-ring"), arc, $("d-time"), left, total); sfx.buy(); sparkFlight(tj, $("d-ring"), "+10"); refreshTj(); };
   if (!relaxed && !untimed) dTimer = setInterval(() => {
     left--; setRing($("d-ring"), arc, $("d-time"), left, total); paintProg(Math.max(0, left));
     if (left > 0 && left <= 3) sfx.tick();
@@ -788,7 +792,7 @@ function answer(text) {
   w.guess = text; w.ms = Math.round(performance.now() - shownAt); w.correct = isCorrect(text, w.text);
   w.points = w.correct ? POINTS + (w.ms < SPEED_MS ? SPEED_BONUS : 0) : 0;
   // XP is not the score: a right word pays by difficulty and speed (XpAwards.wordXp); the daily challenge pays its own total.
-  w.xp = w.correct && kind !== "daily" ? eco.wordXp(w.difficulty, w.ms) * xpMult : 0;
+  w.xp = w.correct && kind !== "daily" ? Math.round(eco.wordXp(w.difficulty, w.ms) * xpMult) : 0;
   paintRight(); score += w.points; answered++; // idx moves on only after the tick has been shown, so the drawing under it stays the one just answered
   if (w.correct) sfx.correct(); else { sfx.wrong(); vibrate(60); }
   showFeedback(w); setTimeout(() => { hideFeedback(); idx++; if (current === "guess") nextGuess(); }, 1200);
@@ -864,12 +868,12 @@ async function finish() {
   if (kind === "daily") {
     dailyRes = dailyRecord(P, round.map((w) => w.correct), score);
     // The daily challenge pays its own XP total (times the streak), at the round's XP rate, instead of per-word XP.
-    if (dailyRes) { dailyRes.xp *= xpMult; eco.addXp(P, dailyRes.xp, fxp); if (P.daily.result) P.daily.result.xp = dailyRes.xp; }
+    if (dailyRes) { dailyRes.xp = Math.round(dailyRes.xp * xpMult); eco.addXp(P, dailyRes.xp, fxp); if (P.daily.result) P.daily.result.xp = dailyRes.xp; }
   }
   if (kind === "level") {
     stars = starsFor(n, round.length); const k = levelRun.w + ":" + levelRun.l, best = P.levels[k] ?? 0;
     newStars = Math.max(0, stars - best); recordLevel(P, levelRun.w, levelRun.l, stars);
-    eco.addXp(P, eco.levelCompletionBonus(stars) * xpMult, fxp);
+    eco.addXp(P, Math.round(eco.levelCompletionBonus(stars) * xpMult), fxp);
   }
   if (kind === "quick" && quickOpp) { opp = quickOpp; items = quickItems; net.recordRound({ ...me, level: levelFor(P.xp), frameId: P.frame, nickname: P.nick }).catch(() => {}); }
   let duelNote = null, duelRematch = null;
@@ -908,7 +912,7 @@ async function finish() {
 // GameViewModel.forfeitDaily: leaving a daily challenge ends today's chance — what was guessed so far counts, the rest is wrong.
 function forfeitDaily() {
   const flags = round.map((w) => !!w.correct), res = dailyRecord(P, flags, score);
-  if (res) { res.xp *= xpMult; eco.addXp(P, res.xp, runeFx(P, "XP")); if (P.daily.result) P.daily.result.xp = res.xp; }
+  if (res) { res.xp = Math.round(res.xp * xpMult); eco.addXp(P, res.xp, runeFx(P, "XP")); if (P.daily.result) P.daily.result.xp = res.xp; }
   saveP(); refreshHome();
 }
 function confirmLeave() {
@@ -1041,7 +1045,7 @@ loadStrings().then(() => { applyLang(); }).catch(() => {});
 setTimeout(() => syncNow(ctx).then((r) => { if (r === "restored") { refreshHome(); if (current === "home") show("home"); } }), 2500);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") scheduleBackup(ctx, true); });
 loadRunes().then(() => refreshHome()).catch(() => {});
-if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); setTimeout(() => checkStreak(ctx), 900); }; } else { show("home"); setTimeout(() => { if (!dailyRescue(ctx, () => checkStreak(ctx))) checkStreak(ctx); }, 1800); }
+if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); }; } else { show("home"); setTimeout(() => dailyRescue(ctx, () => {}), 1800); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 // After the home screen is up, quietly fetch the pictures of the screens people open most (skipped on data saver).
 setTimeout(() => {
