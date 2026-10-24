@@ -344,8 +344,12 @@ for (const id of ["d-music", "g-music"]) $(id).onclick = () => { P.prefs.s1 = !P
 // Pictures of screens that are not showing are only fetched when the screen first opens (the first load used to pull 3.7 MB).
 function loadImgs(id) { const s = document.getElementById(id); if (!s) return; s.querySelectorAll("img[data-src]").forEach((i) => { i.src = i.dataset.src; i.removeAttribute("data-src"); }); }
 let freshScreen = true;
+// As in the app: the login-streak window opens once, after the first game finished in a visit (not when the page is opened), when the player is back on the home screen.
+let gamePlayed = false;
 function show(id) {
   freshScreen = true;
+  if (id === "res2" || id === "result") gamePlayed = true;
+  else if (id === "home" && gamePlayed) { gamePlayed = false; setTimeout(() => { if (current === "home") checkStreak(ctx); }, 600); }
   loadImgs(id);
   current = id; if (typeof paintMusic === "function" && P.prefs) paintMusic();
   for (const s of document.querySelectorAll(".screen")) s.classList.toggle("on", s.id === id);
@@ -568,7 +572,7 @@ async function startTutorial() {
   const picked = TUT_WORDS[lang].map((s, i) => byText.get(s) || { id: 900000 + i, text: s, difficulty: "EASY" });
   begin(picked);
 }
-function endTutorial() { const first = !P.tutorialDone; P.tutorialDone = true; if (first) for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); setTimeout(() => checkStreak(ctx), 900); }
+function endTutorial() { const first = !P.tutorialDone; P.tutorialDone = true; if (first) for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); }
 async function startDaily() {
   if (dailyState(P).done) return;
   await ensureWords(); kind = "daily"; levelRun = null; relaxed = false;
@@ -1041,7 +1045,7 @@ loadStrings().then(() => { applyLang(); }).catch(() => {});
 setTimeout(() => syncNow(ctx).then((r) => { if (r === "restored") { refreshHome(); if (current === "home") show("home"); } }), 2500);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") scheduleBackup(ctx, true); });
 loadRunes().then(() => refreshHome()).catch(() => {});
-if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); setTimeout(() => checkStreak(ctx), 900); }; } else { show("home"); setTimeout(() => { if (!dailyRescue(ctx, () => checkStreak(ctx))) checkStreak(ctx); }, 1800); }
+if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); }; } else { show("home"); setTimeout(() => dailyRescue(ctx, () => {}), 1800); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 // After the home screen is up, quietly fetch the pictures of the screens people open most (skipped on data saver).
 setTimeout(() => {
