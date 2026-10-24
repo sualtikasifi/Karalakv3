@@ -1035,7 +1035,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                             text = if (slot.isYou) stringResource(R.string.online_you_label, slot.name) else slot.name,
                             style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
                                 color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, textAlign = TextAlign.Start, lineHeight = 15.sp
-                            ),
+                            ).copy(lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both)),
                             minScale = 0.7f,
                             contentAlignment = Alignment.CenterStart,
                             modifier = Modifier.weight(1f, fill = false)
@@ -1050,7 +1050,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     // (On a very short row the chat message / waiting note takes this line's place while there is one.)
                     if (!(tight && hasStatus)) com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(
                         level = slot.level, bullet = false,
-                        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(fontSize = 11.sp, lineHeight = 12.sp, textAlign = TextAlign.Start)
+                        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(fontSize = 11.sp, lineHeight = 12.sp, textAlign = TextAlign.Start).copy(lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both))
                     )
                     // A chat message takes over this exact spot instead of
                     // opening a bubble above the card. A fixed-height Box
