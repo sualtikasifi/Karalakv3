@@ -102,13 +102,13 @@ function detail(c, id) {
   const { put, fit } = card; let bubbleT = null;
   const title = put("pc-t", CD.title, `<span>${S(T.label)}</span>`);
   // the stage: the chest (tappable, it answers in a speech bubble)
-  const stage = put("cd2-stage", CD.stage, ""), img = el("img", "cd2-chest"); img.src = `img/${T.art}.webp`; img.alt = ""; stage.append(img);
+  const stage = put("cd2-stage", CD.stage, ""), img = el("img", "cd2-chest"); img.src = `img/${T.art}.webp`; img.alt = ""; img.style.setProperty("--fp", { SILVER: 0.148, GOLD: 0.019, RARE: 0.0375 }[tier]); img.style.setProperty("--cw", { SILVER: 500, GOLD: 515, RARE: 551 }[tier]); /* same visible width for every tier */ stage.append(img);
   const bubble = el("div", "cd-bubble hidden"); stage.append(bubble);
   const say = (key) => { bubble.innerHTML = `<span>${S(key)}</span><i></i>`; bubble.classList.remove("hidden"); img.classList.remove("wig"); void img.offsetWidth; img.classList.add("wig"); clearTimeout(bubbleT); bubbleT = setTimeout(() => bubble.classList.add("hidden"), 1900 + 500); };
   // what a chest of this tier can hold
   const stars = "★".repeat(T.stars) + "☆".repeat(3 - T.stars);
   const jokersKey = { SILVER: ["chest_detail_jokers_silver", 30], GOLD: ["chest_detail_jokers_gold", 30], RARE: ["chest_detail_jokers_rare", 40] }[tier];
-  const contents = put("cd2-contents", CD.contents, `<div class="cd2-h"><b>${S("chest_detail_contents_title")}</b><span style="color:${T.accent};background:${rgba(T.accent, 0.16)}">${stars} ${S(T.rarity)}</span></div>
+  const contents = put("cd2-contents" + (tier === "RARE" ? " tight" : ""), CD.contents, `<div class="cd2-h"><b>${S("chest_detail_contents_title")}</b><span style="color:${T.accent};background:${rgba(T.accent, 0.16)}">${stars} ${S(T.rarity)}</span></div>
     <div class="cd2-r"><i>🪙</i><span>${S("chest_detail_gold", GOLD[tier][0], GOLD[tier][1])}</span></div><div class="cd2-r"><i>🎲</i><span>${S(jokersKey[0], jokersKey[1])}</span></div>${tier === "RARE" ? `<div class="cd2-r"><i>✏️</i><span>${S("chest_detail_pen", 12)}</span></div>` : ""}`);
   const timer = put("cd2-timer", CD.timer, "");
   const btn = put("pc-btn cd2-btn", CD.button, "");
