@@ -986,8 +986,8 @@
     <string name="result_gold_level">⭐ Bölüm yıldızı +%1$d altın</string>
     <string name="result_gold_daily">📅 Günlük ödül +%1$d altın</string>
     <string name="result_your_drawings">Çizimlerin</string>
-    <string name="result_stat_correct">Doğru tahmin</string>
-    <string name="result_stat_wrong">Yanlış tahmin</string>
+    <string name="result_stat_correct">Doğru</string>
+    <string name="result_stat_wrong">Yanlış</string>
     <string name="result_stat_achievement">Başarım ödülü</string>
     <string name="result_stat_level_gold">Bölüm yıldızı</string>
     <string name="result_stat_daily_gold">Günlük ödül</string>

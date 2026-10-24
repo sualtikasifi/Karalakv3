@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.game
 
+import com.sualtikasifi.cizimhafiza.presentation.common.floating
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 
 import androidx.compose.animation.AnimatedVisibility
@@ -690,6 +691,13 @@ private const val HeaderTop = 158f
 private const val TopBandEnd = 400f
 private const val BottomBandStart = 985f
 
+private val JokerSparkles = listOf(
+    com.sualtikasifi.cizimhafiza.presentation.common.SparkleSpot(0.10f, 0.14f, 0.085f),
+    com.sualtikasifi.cizimhafiza.presentation.common.SparkleSpot(0.92f, 0.30f, 0.065f),
+    com.sualtikasifi.cizimhafiza.presentation.common.SparkleSpot(0.84f, 0.90f, 0.075f),
+    com.sualtikasifi.cizimhafiza.presentation.common.SparkleSpot(0.06f, 0.78f, 0.06f)
+)
+
 /**
  * One tile of the joker row, drawn over the painted tile of the scene: the icon on top, the label under it and, for the
  * two jokers, how many are left in a white badge on the corner. A tile that can't be used right now is veiled.
@@ -739,11 +747,56 @@ private fun JokerTile(
             )
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
+            // The painted tile has a thick lip along its bottom, so the content sits a little above the middle.
+            modifier = Modifier.fillMaxSize().padding(start = 4.dp, end = 4.dp, bottom = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            icon()
+            if (badge != null) {
+                // The two jokers: the picture floats over a soft pulsing glow with a few twinkling stars, so it reads as
+                // something precious rather than a sticker pasted on the tile.
+                val glowT by androidx.compose.animation.core.rememberInfiniteTransition(label = "jokerGlow").animateFloat(
+                    initialValue = 0.28f, targetValue = 0.62f,
+                    animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                        androidx.compose.animation.core.tween(1700, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                        androidx.compose.animation.core.RepeatMode.Reverse
+                    ),
+                    label = "jokerGlowT"
+                )
+                Box(contentAlignment = Alignment.Center) {
+                    if (enabled) {
+                        androidx.compose.foundation.Canvas(Modifier.size(height * 0.72f)) {
+                            drawCircle(
+                                androidx.compose.ui.graphics.Brush.radialGradient(
+                                    listOf(Color(0xFFFFF1B8).copy(alpha = glowT), Color(0xFFFFF1B8).copy(alpha = glowT * 0.35f), Color.Transparent)
+                                )
+                            )
+                        }
+                    }
+                    // A thin cream-and-gold frame round the picture, over a faint light plate.
+                    val plate = androidx.compose.foundation.shape.RoundedCornerShape(11.dp)
+                    Box(
+                        Modifier
+                            .then(if (enabled) Modifier.floating(2f, 1.5f, 2300) else Modifier)
+                            .background(Color(0x40FFFFFF), plate)
+                            .border(
+                                2.dp,
+                                androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFF3C4), Color(0xFFE8B84A))),
+                                plate
+                            )
+                            .padding(3.dp)
+                    ) { icon() }
+                    if (enabled) {
+                        com.sualtikasifi.cizimhafiza.presentation.common.SparkleField(
+                            spots = JokerSparkles,
+                            modifier = Modifier.size(height * 0.66f),
+                            periodMs = 2100
+                        )
+                    }
+                }
+            } else {
+                icon()
+            }
             Spacer(modifier = Modifier.height(2.dp))
             val size = (height.value * 0.115f).coerceIn(12f, 17f)
             if (outline != null) {

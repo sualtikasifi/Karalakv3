@@ -169,7 +169,7 @@ internal sealed interface StatIcon {
 }
 
 /** [headline]: one centred line over the whole card (the round's XP), no icon, no label. */
-internal data class ResultStat(val icon: StatIcon, val label: String, val value: String, val valueColor: Color, val headline: Boolean = false)
+internal data class ResultStat(val icon: StatIcon, val label: String, val value: String, val valueColor: Color, val headline: Boolean = false, val second: ResultStat? = null)
 
 /** The round's numbers as painted cards two to a row (an odd last one centred): hits, misses, stars, gold, bonuses. */
 @Composable
@@ -205,6 +205,36 @@ private fun StatCard(stat: ResultStat, u: Dp, leafOnRight: Boolean, modifier: Mo
                 minScale = 0.45f,
                 modifier = Modifier.fillMaxSize().padding(top = u * 6f, start = u * 40f, end = u * 40f)
             )
+            return@Box
+        }
+        if (stat.second != null) {
+            // Hits and misses share one card: a small picture, the word and the number, twice.
+            Row(
+                modifier = Modifier.fillMaxSize().padding(top = u * 6f, start = u * (if (leafOnRight) 22f else 36f), end = u * (if (leafOnRight) 46f else 22f)),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                listOf(stat, stat.second).forEach { half ->
+                    Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(u * 4f)) {
+                        Box(Modifier.size(u * 50f), contentAlignment = Alignment.Center) {
+                            (half.icon as? StatIcon.Art)?.let { Image(painterResource(it.res), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize()) }
+                        }
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+                            FitText(
+                                text = half.label,
+                                style = PaintedStyle(color = ResultInk, fontSize = fs(24f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+                                maxLines = 1, minScale = 0.6f,
+                                modifier = Modifier.fillMaxWidth().offset(y = u * 8f)
+                            )
+                            FitText(
+                                text = half.value,
+                                style = PaintedStyle(color = half.valueColor, fontSize = fs(46f), textAlign = TextAlign.Center),
+                                maxLines = 1, minScale = 0.5f,
+                                modifier = Modifier.fillMaxWidth().offset(y = -(u * 8f))
+                            )
+                        }
+                    }
+                }
+            }
             return@Box
         }
         Row(
@@ -252,8 +282,10 @@ internal fun resultStats(state: GamePhase.Result, xp: Int, withXpCard: Boolean):
     val red = Color(0xFFE23B32)
     val orange = Color(0xFFE8650F)
     val list = mutableListOf(
-        ResultStat(StatIcon.Art(R.drawable.rs_ic_check), stringResource(R.string.result_stat_correct), state.correctCount.toString(), green),
-        ResultStat(StatIcon.Art(R.drawable.rs_ic_x), stringResource(R.string.result_stat_wrong), state.wrongCount.toString(), red)
+        ResultStat(
+            StatIcon.Art(R.drawable.rs_ic_check), stringResource(R.string.result_stat_correct), state.correctCount.toString(), green,
+            second = ResultStat(StatIcon.Art(R.drawable.rs_ic_x), stringResource(R.string.result_stat_wrong), state.wrongCount.toString(), red)
+        )
     )
     // (The fastest-answer card used to follow here; it is gone to leave room for the drawings.)
     val stars = state.levelStars

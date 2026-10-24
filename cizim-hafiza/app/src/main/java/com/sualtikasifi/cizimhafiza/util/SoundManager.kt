@@ -1,7 +1,10 @@
 package com.sualtikasifi.cizimhafiza.util
 
+import android.content.Context
 import android.media.AudioManager
+import android.media.MediaPlayer
 import android.media.ToneGenerator
+import com.sualtikasifi.cizimhafiza.R
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,6 +39,22 @@ class SoundManager @Inject constructor(
 
     /** Coins pouring out of an opened chest. */
     fun playCoinShower() = playSynth(ChestSounds.reward)
+
+    /**
+     * The ring-out of the chest-opening clip: the video's sound stops the instant the reward screen takes over, so
+     * this soft decay (the clip's last moments with a reverb that dies away, res/raw/chest_open_tail) carries it into
+     * the next screen instead of cutting it dead.
+     */
+    fun playChestOpenTail(context: Context) {
+        if (!settingsRepository.soundEnabled.value) return
+        runCatching {
+            MediaPlayer.create(context.applicationContext, R.raw.chest_open_tail)?.apply {
+                setOnCompletionListener { it.release() }
+                setOnErrorListener { mp, _, _ -> mp.release(); true }
+                start()
+            }
+        }
+    }
 
     private fun playSynth(samples: ShortArray) {
         if (!settingsRepository.soundEnabled.value) return

@@ -225,15 +225,8 @@ fun CizimHafizaNavGraph(
                         }
                     }
                 },
-                onLevelNextAction = if (worldIdArg != null && levelIndexArg != null &&
-                    levelIndexArg < LevelCatalog.LEVELS_PER_WORLD
-                ) {
-                    {
-                        navController.navigate(Screen.levelGameRoute(worldIdArg, levelIndexArg + 1)) {
-                            popUpTo(Screen.WorldMap)
-                        }
-                    }
-                } else null,
+                // No "next level" button: the reward is claimed and the player lands back on the road map to pick the next step.
+                onLevelNextAction = null,
                 nextActionLabel = stringResource(R.string.next_level),
                 onFindAnotherOpponent = if (backStackEntry.arguments?.getString(Screen.ArgGhost) != null) {
                     {

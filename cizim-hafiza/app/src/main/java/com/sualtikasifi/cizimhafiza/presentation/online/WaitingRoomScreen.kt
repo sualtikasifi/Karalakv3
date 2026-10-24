@@ -1005,8 +1005,8 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
             val avatarSize = (rowH - 14.dp).coerceIn(26.dp, 38.dp)
             val tight = rowH < 46.dp
             val statusH = when {
-                rowH >= 56.dp -> 17.dp
-                rowH >= 46.dp -> 13.dp
+                rowH >= 56.dp -> 16.dp
+                rowH >= 46.dp -> 14.dp
                 else -> 0.dp
             }
             val hasStatus = activeReaction != null || slot.pending
@@ -1026,16 +1026,18 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(slot.avatarUrl)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                // The whole text column sits a little above the card's middle: its last line (the chat message) used to run
-                // into the card's lower frame.
-                Column(modifier = Modifier.weight(1f).offset(y = (-3).dp)) {
+                // Three lines — name, rank/level, chat message — each in a box of its own fixed height, so the font's own
+                // line spacing can never push the last line out of the card (it kept doing that when the lines just
+                // followed each other).
+                Column(modifier = Modifier.weight(1f)) {
+                  Box(modifier = Modifier.fillMaxWidth().height(17.dp), contentAlignment = Alignment.CenterStart) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         // Shrinks before it ellipsises, so "Name (Sen)" keeps its "(Sen)" next to the host crown.
                         com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                             text = if (slot.isYou) stringResource(R.string.online_you_label, slot.name) else slot.name,
                             style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
-                                color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, textAlign = TextAlign.Start, lineHeight = 16.sp
-                            ),
+                                color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, textAlign = TextAlign.Start, lineHeight = 15.sp
+                            ).copy(lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both)),
                             minScale = 0.7f,
                             contentAlignment = Alignment.CenterStart,
                             modifier = Modifier.weight(1f, fill = false)
@@ -1045,13 +1047,14 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                             Image(painter = painterResource(R.drawable.lobby_crown), contentDescription = null, modifier = Modifier.size(16.dp))
                         }
                     }
+                  }
                     // Level and rank take turns under the name every five seconds, set in the same
                     // type as the league table's rows (see RankLevelLabel).
-                    // (On a very short row the chat message / waiting note takes this line's place while there is one.)
-                    if (!(tight && hasStatus)) com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(
+                    // (Only on a very short row does a chat message / waiting note take this line's place.)
+                    if (!(tight && hasStatus)) Box(modifier = Modifier.fillMaxWidth().height(13.dp), contentAlignment = Alignment.CenterStart) { com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(
                         level = slot.level, bullet = false,
-                        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(fontSize = 11.sp, lineHeight = 14.sp, textAlign = TextAlign.Start)
-                    )
+                        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(fontSize = 11.sp, lineHeight = 12.sp, textAlign = TextAlign.Start).copy(lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both))
+                    ) }
                     // A chat message takes over this exact spot instead of
                     // opening a bubble above the card. A fixed-height Box
                     // around the Crossfade (rather than letting an empty
@@ -1059,15 +1062,15 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     // never changes the row's height — the card stays
                     // exactly SLOT_HEIGHT tall whether or not there's
                     // anything to show here right now.
-                    Box(modifier = Modifier.height(if (tight && hasStatus) 16.dp else statusH)) {
+                    Box(modifier = Modifier.fillMaxWidth().height(if (tight && hasStatus) 16.dp else statusH), contentAlignment = Alignment.CenterStart) {
                         Crossfade(targetState = activeReaction, label = "slot-status") { reaction ->
                             if (reaction != null) {
                                 val phraseTextRes = presetPhraseTextRes(reaction.messageKey)
                                 Text(
                                     text = phraseTextRes?.let { stringResource(it) } ?: reaction.emoji,
                                     style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
-                                        color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, lineHeight = 16.sp, textAlign = TextAlign.Start
-                                    ),
+                                        color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, lineHeight = 13.sp, textAlign = TextAlign.Start
+                                    ).copy(lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both)),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -1075,8 +1078,8 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                                 Text(
                                     text = stringResource(R.string.online_pending_badge),
                                     style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
-                                        color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, lineHeight = 16.sp, textAlign = TextAlign.Start
-                                    ),
+                                        color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, lineHeight = 13.sp, textAlign = TextAlign.Start
+                                    ).copy(lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both)),
                                     maxLines = 1
                                 )
                             }

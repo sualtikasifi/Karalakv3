@@ -37,5 +37,21 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.FriendsPreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the level result's stat cards (see ResultStatsPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.ResultStatsPreviewActivity"
+            android:exported="true" />
+        <!-- Debug builds only: the pen picker window (see PenPickerPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.PenPickerPreviewActivity"
+            android:exported="true" />
+        <!-- Debug builds only: the vine-and-parchment window with its painted button (see FrameDialogPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.FrameDialogPreviewActivity"
+            android:exported="true" />
+        <!-- Debug builds only: the painted chest guide (see ChestInfoPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.ChestInfoPreviewActivity"
+            android:exported="true" />
     </application>
 </manifest>

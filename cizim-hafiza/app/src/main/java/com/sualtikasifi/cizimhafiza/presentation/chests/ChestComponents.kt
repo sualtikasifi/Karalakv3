@@ -275,6 +275,7 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
     var stage by remember { mutableIntStateOf(0) }
     val haptic = LocalHapticFeedback.current
     val sound = com.sualtikasifi.cizimhafiza.presentation.common.rememberSoundManager()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(stage == 1) {
         if (stage != 1) return@LaunchedEffect
@@ -282,6 +283,7 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
         launch { fadeIn.animateTo(1f, tween(320)) }
         launch { burst.animateTo(1f, tween(1300, easing = LinearOutSlowInEasing)) }
         launch { reveal.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 220f)) }
+        sound.playChestOpenTail(context)
         sound.playCoinShower()
         delay(250)
         count.animateTo(reward.gold.toFloat(), tween(900, easing = FastOutSlowInEasing))

@@ -24,6 +24,10 @@ on:
           - tourpreview.sh
           - accountpreview.sh
           - friendspreview.sh
+          - resultstatspreview.sh
+          - penpickerpreview.sh
+          - framedialogpreview.sh
+          - chestinfopreview.sh
           - lobbypreview.sh
           - waitingpreview.sh
           - penthumbs.sh

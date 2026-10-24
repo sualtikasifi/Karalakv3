@@ -43,7 +43,7 @@ class LobbyPreviewActivity : ComponentActivity() {
                     Image(painter = cachedPainterResource(R.drawable.bg_lobby), contentDescription = null, contentScale = ContentScale.Crop, alignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize())
                     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                         Spacer(Modifier.height(378.dp))
-                        PlayerSlotsGrid(slots = slots, activeReactionsByUid = emptyMap(), onInvite = {}, compact = false, modifier = Modifier.height(218.dp))
+                        PlayerSlotsGrid(slots = slots, activeReactionsByUid = mapOf("u0" to com.sualtikasifi.cizimhafiza.domain.model.Reaction(uid = "u0", emoji = "", messageKey = "chat_hazir_misin", sentAtMillis = 0L)), onInvite = {}, compact = false, modifier = Modifier.height(218.dp))
                     }
                 }
             }

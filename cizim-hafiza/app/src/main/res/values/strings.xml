@@ -972,8 +972,8 @@
     <string name="result_gold_level">⭐ Level stars +%1$d gold</string>
     <string name="result_gold_daily">📅 Daily reward +%1$d gold</string>
     <string name="result_your_drawings">Your drawings</string>
-    <string name="result_stat_correct">Correct guesses</string>
-    <string name="result_stat_wrong">Wrong guesses</string>
+    <string name="result_stat_correct">Correct</string>
+    <string name="result_stat_wrong">Wrong</string>
     <string name="result_stat_achievement">Achievement reward</string>
     <string name="result_stat_level_gold">Level stars</string>
     <string name="result_stat_daily_gold">Daily reward</string>

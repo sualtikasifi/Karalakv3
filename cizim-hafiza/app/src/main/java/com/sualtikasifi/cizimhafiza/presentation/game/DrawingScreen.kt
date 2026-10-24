@@ -51,6 +51,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -365,7 +366,31 @@ fun DrawingScreen(
             modifier = Modifier.offset(a(520f), fromBottom(1428f)).size(a(278f), a(104f))
         ) {
             if (state.isUntimed) {
-                PrimaryButton(text = stringResource(R.string.next_word), onClick = onNextWord, height = 46.dp)
+                // The painted orange pill, its words centred on it; it caves in under the finger like the other painted buttons.
+                val nextSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.9f)
+                val nextFontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        // 252 wide, nudged 6 left of the slot's end: centred between the bin button and the tray's edge.
+                        .offset(x = -a(6f))
+                        .size(a(252f), a(70f))
+                        .graphicsLayer { scaleX = nextSink.scale.value; scaleY = nextSink.scale.value }
+                        .clickable(interactionSource = nextSink.source, indication = null, onClick = onNextWord)
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.btn_next_word),
+                        contentDescription = null,
+                        contentScale = ContentScale.FillBounds,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                        text = stringResource(R.string.next_word),
+                        size = (a(36f).value / nextFontScale).sp,
+                        outline = Color(0xFF8A3A00),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = a(34f))
+                    )
+                }
             } else if (!state.hintUsed && GameConstants.ADMOB_ENABLED) {
                 // One rewarded-ad "+time" hint per whole match, not per word — separate budget from the guessing
                 // screen's hint (see GameViewModel/OnlineGameViewModel.useDrawingHint). Hidden entirely while ads

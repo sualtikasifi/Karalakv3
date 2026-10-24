@@ -1,214 +1,95 @@
 package com.sualtikasifi.cizimhafiza.presentation.mainmenu
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.sualtikasifi.cizimhafiza.R
-import com.sualtikasifi.cizimhafiza.domain.model.ChestSlots
-import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
-import com.sualtikasifi.cizimhafiza.presentation.chests.ChestImage
-import com.sualtikasifi.cizimhafiza.presentation.chests.accent
-import com.sualtikasifi.cizimhafiza.presentation.chests.durationText
-import com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog
-import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
-import com.sualtikasifi.cizimhafiza.presentation.common.labelRes
-import com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont
+import com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache
 
-private val InfoInk = Color(0xFF3A2416)
-private val InfoSoft = Color(0xFF7A5A44)
+// The guide is one finished picture per language (chests_info in drawable-nodpi = English, drawable-tr-nodpi = Turkish):
+// the title, the three steps, the three chests with their gold and jokers and the ad tip are all painted into it, and
+// so is the "Anladım" / "Got it" button, which the code only makes tappable and lets cave in.
+private const val InfoArtW = 922f
+
+/** The painted button, as fractions of the picture's size (the two language versions are not exactly the same height). */
+private fun buttonFractions(artH: Float): FloatArray =
+    if (artH > 1690f) floatArrayOf(175f / InfoArtW, 1500f / artH, 750f / InfoArtW, 1625f / artH)   // Turkish, 922 x 1694
+    else floatArrayOf(175f / InfoArtW, 1498f / artH, 750f / InfoArtW, 1622f / artH)               // English, 922 x 1673
 
 /**
- * "Kasalar nasıl çalışır?" as a compact guide that fits on one screen: a three-step timeline, one card
- * per chest (picture, opening time, what is inside) and the ad speed-up tip, with the confirm button
- * pinned at the bottom. Only a genuinely short screen falls back to scrolling.
+ * "Kasalar nasıl çalışır?": the painted guide picture over a dimmed screen. The numbers in it (gold, jokers, times) are
+ * part of the picture, so they must be repainted when the chest values in [ChestTier] change.
  */
 @Composable
 internal fun ChestInfoDialog(onDismiss: () -> Unit) {
-    AppWindowDialog(
-        title = stringResource(R.string.home_chests_info_title),
-        onDismiss = onDismiss,
-        centerTitle = true,
-        // Always bounded: the "Anladım" button stays pinned under the body on every screen size, the body scrolls
-        // only if it ever has to (it used to be cut off at the bottom on phones that were not quite "short").
-        scrollBody = true,
-        footer = {
-            PrimaryButton(
-                text = stringResource(R.string.home_chests_info_ok),
-                onClick = onDismiss,
-                height = 46.dp,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-    ) {
-        InfoStep(1, "🏆", stringResource(R.string.chest_info_step_win_title), stringResource(R.string.chest_info_step_win_body), first = true, last = false)
-        InfoStep(2, "⏳", stringResource(R.string.chest_info_step_open_title), stringResource(R.string.chest_info_step_open_body), first = false, last = false)
-        InfoStep(3, "🔓", stringResource(R.string.chest_info_step_slots_title), stringResource(R.string.chest_info_step_slots_body, ChestSlots.SLOT_COUNT), first = false, last = true)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = stringResource(R.string.chest_info_contents_title),
-            fontFamily = DisplayFont,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 14.sp,
-            color = InfoInk,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            ChestTier.entries.forEach { tier -> InfoChestCard(tier) }
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        BoxWithConstraints(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(Color(0xFF2E8B45).copy(alpha = 0.12f))
-                .border(1.5.dp, Color(0xFF2E8B45).copy(alpha = 0.45f), RoundedCornerShape(14.dp))
-                .padding(horizontal = 10.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(text = "🎬", fontSize = 16.sp)
-            Text(
-                text = stringResource(R.string.chest_info_speedup_tip),
-                fontSize = 11.sp,
-                lineHeight = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = InfoInk
-            )
-        }
-    }
-}
-
-/**
- * One numbered step on a vertical timeline: a glossy orange badge (white ring, soft shadow) joined to the
- * next one by a thin line, with the step's emoji-led title and a short explanation beside it.
- */
-@Composable
-private fun InfoStep(number: Int, emoji: String, title: String, body: String, first: Boolean, last: Boolean) {
-    val line = Color(0xFFFF7A21).copy(alpha = 0.45f)
-    Row(
-        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .width(32.dp)
-                .fillMaxHeight()
-                .drawBehind {
-                    val x = size.width / 2f
-                    val mid = size.height / 2f
-                    if (!first) drawLine(line, Offset(x, 0f), Offset(x, mid), strokeWidth = 3.dp.toPx())
-                    if (!last) drawLine(line, Offset(x, mid), Offset(x, size.height), strokeWidth = 3.dp.toPx())
-                },
+                .fillMaxSize()
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
             contentAlignment = Alignment.Center
         ) {
+            val context = LocalContext.current
+            val sheet = remember { runCatching { BackdropCache.get(context.resources, R.drawable.chests_info) }.getOrNull() }
+            val artW = sheet?.width?.toFloat() ?: InfoArtW
+            val artH = sheet?.height?.toFloat() ?: 1694f
+            val frameW = minOf(maxWidth - 16.dp, 480.dp, (maxHeight - 32.dp) * (artW / artH))
+            val u = frameW / artW
+            val b = buttonFractions(artH)
+            val x0 = b[0] * artW; val y0 = b[1] * artH; val x1 = b[2] * artW; val y1 = b[3] * artH
+            val sink = rememberSink(0.94f)
+            val enter = remember { Animatable(0f) }
+            LaunchedEffect(Unit) { enter.animateTo(1f, spring(dampingRatio = 0.6f, stiffness = 380f)) }
             Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .shadow(4.dp, CircleShape)
-                    .clip(CircleShape)
-                    .background(Brush.verticalGradient(listOf(Color(0xFFFFA24D), Color(0xFFF2611B))))
-                    .border(2.dp, Color.White, CircleShape),
-                contentAlignment = Alignment.Center
+                Modifier
+                    .size(frameW, frameW * (artH / artW))
+                    .graphicsLayer {
+                        val e = enter.value
+                        scaleX = 0.85f + 0.15f * e
+                        scaleY = 0.85f + 0.15f * e
+                        alpha = (e * 3f).coerceIn(0f, 1f)
+                    }
+                    .semantics { contentDescription = context.getString(R.string.home_chests_info_title) }
+                    // A tap on the guide itself is not a tap outside it.
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
             ) {
-                Text(
-                    text = number.toString(),
-                    color = Color.White,
-                    fontFamily = DisplayFont,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 16.sp
+                Image(
+                    painter = painterResource(R.drawable.chests_info),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillBounds,
+                    modifier = Modifier.fillMaxSize()
                 )
-            }
-        }
-        Column(modifier = Modifier.weight(1f).padding(vertical = 2.dp)) {
-            Text(text = "$emoji  $title", fontSize = 14.sp, lineHeight = 17.sp, fontWeight = FontWeight.ExtraBold, color = InfoInk)
-            Text(text = body, fontSize = 11.5.sp, lineHeight = 13.5.sp, color = InfoSoft)
-        }
-    }
-}
-
-@Composable
-private fun InfoChestCard(tier: ChestTier) {
-    val accent = tier.accent()
-    val shape = RoundedCornerShape(16.dp)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(accent.copy(alpha = 0.10f))
-            .border(1.5.dp, accent.copy(alpha = 0.5f), shape)
-            .padding(horizontal = 10.dp, vertical = 3.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Box(modifier = Modifier.width(42.dp), contentAlignment = Alignment.Center) {
-            ChestImage(tier = tier, width = 34.dp)
-        }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(0.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = stringResource(tier.labelRes()),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = InfoInk,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                Text(
-                    text = "⏱ " + tier.durationText(),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
+                Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(accent)
-                        .padding(horizontal = 8.dp, vertical = 1.dp)
+                        .offset(u * x0, u * y0)
+                        .size(u * (x1 - x0), u * (y1 - y0))
+                        .sunkenArt(sink, sheet, x0, y0, x1 - x0, y1 - y0, u * ((y1 - y0) / 2f))
+                        .clickable(interactionSource = sink.source, indication = null, onClick = onDismiss)
+                        .semantics { contentDescription = context.getString(R.string.home_chests_info_ok) }
                 )
             }
-            // Gold and jokers (and the pen, for the rare chest) on one line: the window has to fit without scrolling.
-            Text(
-                text = listOfNotNull(
-                    "🪙 " + stringResource(R.string.chest_detail_gold, tier.goldReward.first, tier.goldReward.last),
-                    "🎲 " + when (tier) {
-                        ChestTier.SILVER -> stringResource(R.string.chest_detail_jokers_silver, 30)
-                        ChestTier.GOLD -> stringResource(R.string.chest_detail_jokers_gold, 30)
-                        ChestTier.RARE -> stringResource(R.string.chest_detail_jokers_rare, 40)
-                    },
-                    if (tier == ChestTier.RARE) "✏️ " + stringResource(R.string.chest_detail_pen, 12) else null
-                ).joinToString("\n"),
-                fontSize = 11.sp,
-                lineHeight = 13.sp,
-                color = InfoInk
-            )
         }
     }
 }
