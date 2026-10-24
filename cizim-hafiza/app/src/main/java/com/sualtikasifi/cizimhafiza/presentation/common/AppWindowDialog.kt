@@ -55,7 +55,7 @@ fun AppWindowDialog(
     scrollBody: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()

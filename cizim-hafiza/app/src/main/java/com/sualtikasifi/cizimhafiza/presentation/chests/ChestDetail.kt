@@ -222,7 +222,7 @@ internal fun ChestDetailDialog(
     val main = actions[0]
     val second = actions.getOrNull(1)
 
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
