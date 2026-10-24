@@ -236,7 +236,9 @@ fun WaitingRoomScreen(
         if (viewModel.roomCode == BotRoomEngine.ROOM_CODE) {
             slots.sortedByDescending { it.uid == BotRoomEngine.BOT_UID }
         } else {
-            slots
+            // The room's founder always has the first seat (top-left), whoever is looking; everyone else keeps their
+            // order (the sort is stable), with you ahead of the others.
+            slots.sortedByDescending { it.isHost }
         }
     }
     // Padded to a fixed 8-slot grid (see GameConstants.MAX_ROOM_SIZE) so the
