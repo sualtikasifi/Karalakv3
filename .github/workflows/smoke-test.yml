@@ -25,6 +25,7 @@ on:
           - accountpreview.sh
           - lobbypreview.sh
           - waitingpreview.sh
+          - penthumbs.sh
           - runes.sh
           - frames.sh
           - pens.sh

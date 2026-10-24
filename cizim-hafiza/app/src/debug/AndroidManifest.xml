@@ -29,5 +29,9 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.WaitingScenePreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the end-of-game drawings board in several pens (see PenThumbsPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.PenThumbsPreviewActivity"
+            android:exported="true" />
     </application>
 </manifest>

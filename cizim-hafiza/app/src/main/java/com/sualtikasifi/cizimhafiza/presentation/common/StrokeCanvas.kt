@@ -77,7 +77,9 @@ fun StrokeCanvas(
     // a Rainbow gradient at 40dp is just mud.
     penSkin: PenSkin? = null,
     // A premium pen's effects keep moving when this is true (a drawing shown on its own); thumbnails stay still.
-    animated: Boolean = false
+    animated: Boolean = false,
+    // How thin a line may get when the drawing is shrunk; a thumbnail that wants its pen's colour to read passes more.
+    minStrokeWidthPx: Float = 1.6f
 ) {
     val penTime = rememberPenTime(animated && penSkin?.effect?.isPremium == true)
     Canvas(modifier = modifier) {
@@ -85,7 +87,7 @@ fun StrokeCanvas(
         val time = penTime.value
         clipRect {
             var distance = 0f
-            strokes.forEach { stroke -> distance = drawFittedStroke(stroke, fit, penSkin, strokeColor, strokeWidthPx, distance, time) }
+            strokes.forEach { stroke -> distance = drawFittedStroke(stroke, fit, penSkin, strokeColor, strokeWidthPx, distance, time, minStrokeWidthPx) }
         }
     }
 }
@@ -163,15 +165,16 @@ internal fun DrawScope.drawFittedStroke(
     strokeColor: Color,
     strokeWidthPx: Float,
     startDistance: Float,
-    timeSec: Float = 0f
-): Float = drawPenStroke(stroke.map(fit::map), penSkin, strokeColor, fittedStrokeWidth(strokeWidthPx, fit.scale), startDistance, timeSec)
+    timeSec: Float = 0f,
+    minWidthPx: Float = 1.6f
+): Float = drawPenStroke(stroke.map(fit::map), penSkin, strokeColor, fittedStrokeWidth(strokeWidthPx, fit.scale, minWidthPx), startDistance, timeSec)
 
 /**
  * The pen width scaled along with the drawing. A fixed width turned a drawing shrunk into a small thumbnail into a
  * black blob (a calendar's grid lines, nine pixels thick at a tenth of the size, simply merged); capped so a small
  * drawing blown up to fill a large canvas does not turn into a marker either.
  */
-private fun fittedStrokeWidth(widthPx: Float, scale: Float): Float = (widthPx * scale).coerceIn(1.6f, widthPx * 1.5f)
+private fun fittedStrokeWidth(widthPx: Float, scale: Float, minPx: Float = 1.6f): Float = (widthPx * scale).coerceIn(minPx.coerceAtMost(widthPx * 1.5f), widthPx * 1.5f)
 
 /**
  * Interactive drawing surface. Points are captured as raw [Offset]s while

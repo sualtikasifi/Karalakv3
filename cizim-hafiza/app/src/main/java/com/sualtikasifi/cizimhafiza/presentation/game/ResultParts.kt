@@ -517,7 +517,8 @@ private fun WordSheet(number: Int, item: ResultItem?, wordLanguage: String, onCl
                     modifier = Modifier.padding(start = 5.dp, top = 2.dp)
                 )
                 Column(modifier = Modifier.fillMaxSize().padding(start = 8.dp, end = 3.dp, top = 12.dp, bottom = 2.dp)) {
-                    StrokeCanvas(strokes = item.strokes, modifier = Modifier.weight(1f).fillMaxWidth(), penSkin = item.pen())
+                    // A bit thicker than the plain thumbnail line, so the drawer's pen colour is easy to tell on a small sheet.
+                    StrokeCanvas(strokes = item.strokes, modifier = Modifier.weight(1f).fillMaxWidth(), penSkin = item.pen(), minStrokeWidthPx = if (item.pen() != null) 3.2f else 1.6f)
                     FitText(
                         text = item.word.capitalizeForWordLanguage(wordLanguage),
                         style = PaintedStyle(color = ResultInk, fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
