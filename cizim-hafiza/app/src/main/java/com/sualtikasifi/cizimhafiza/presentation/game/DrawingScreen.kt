@@ -372,8 +372,9 @@ fun DrawingScreen(
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .width(a(278f))
-                        .aspectRatio(900f / 241f)
+                        // 252 wide, nudged 6 left of the slot's end: centred between the bin button and the tray's edge.
+                        .offset(x = -a(6f))
+                        .size(a(252f), a(70f))
                         .graphicsLayer { scaleX = nextSink.scale.value; scaleY = nextSink.scale.value }
                         .clickable(interactionSource = nextSink.source, indication = null, onClick = onNextWord)
                 ) {
