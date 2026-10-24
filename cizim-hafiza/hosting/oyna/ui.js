@@ -54,6 +54,30 @@ export function exitDialog(host, { style = "game", title, message, confirm, dism
 }
 
 /**
+ * The app's painted windows (the chest window, the "what is new" tour): one picture carries the sign, the parchment, the
+ * plate and the button, and the words are laid over it at fixed spots of the picture. `w`/`h` are the picture's own size, so a
+ * spot is given in its pixels; `--k` (card width / picture width) turns a font size in picture pixels into screen pixels.
+ * Returns { ov, card, put, fit, close }; `below` is an optional element shown under the card (a second button).
+ */
+export function paintedCard(host, { art, w, h, cls = "", onClose, below }) {
+  const pc = (v, t) => (v / t * 100).toFixed(3) + "%";
+  const ov = el("div", "pc-ov wait " + cls), col = el("div", "pc-col"), card = el("div", "pc-card");
+  card.style.setProperty("--ar", (w / h).toFixed(4)); card.style.aspectRatio = `${w}/${h}`;
+  const img = el("img"); img.src = `img/${art}.webp`; img.alt = ""; card.append(img); col.append(card); if (below) col.append(below); ov.append(col);
+  const close = () => { window.removeEventListener("resize", size); ov.remove(); onClose && onClose(); };
+  const put = (c, r, html) => { const e = el("div", c, html); e.style.cssText = `left:${pc(r[0], w)};top:${pc(r[1], h)};width:${pc(r[2] - r[0], w)};height:${pc(r[3] - r[1], h)}`; card.append(e); return e; };
+  const size = () => card.style.setProperty("--k", (card.getBoundingClientRect().width / w).toFixed(5));
+  /** Shrinks the words in `e` (its first child) from `base` picture pixels until they fit its box on `lines` lines. */
+  const fit = (e, base, lines = 1, min = 0.5) => { const sp = e.firstElementChild || e, k = card.getBoundingClientRect().width / w; let q = 1; sp.style.fontSize = base * k + "px"; while (q > min && (e.scrollHeight > e.clientHeight + 1 || sp.scrollWidth > e.clientWidth + 1 || (lines === 1 && sp.offsetHeight > base * k * 1.5))) { q -= 0.04; sp.style.fontSize = base * k * q + "px"; } };
+  ov.onclick = (e) => { if (e.target === ov || e.target === col) close(); };
+  host.append(ov); ov.close = close; window.addEventListener("resize", size);
+  const show = () => { ov.classList.remove("wait"); size(); };
+  if (img.complete && img.naturalWidth) show(); else { img.addEventListener("load", show, { once: true }); img.addEventListener("error", show, { once: true }); setTimeout(show, 1500); }
+  size();
+  return { ov, card, put, fit, close, size };
+}
+
+/**
  * Ads only exist in the phone app, so every "watch an ad" spot on the web says so and sends the player to the store instead
  * of pretending to show one.
  */
