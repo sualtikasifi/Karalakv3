@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -451,7 +452,7 @@ internal fun PlayerPicture(player: OnlinePlayer, size: androidx.compose.ui.unit.
  * card with their own score and a line for every player — a tick when they are done, an hourglass while they are not.
  */
 @Composable
-private fun OnlineWaitingScene(me: OnlinePlayer, others: List<OnlinePlayer>, myUid: String?, onBack: () -> Unit) {
+internal fun OnlineWaitingScene(me: OnlinePlayer, others: List<OnlinePlayer>, myUid: String?, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     val everyone = listOf(me) + others
     val doneCount = everyone.count { it.finished }
@@ -467,21 +468,22 @@ private fun OnlineWaitingScene(me: OnlinePlayer, others: List<OnlinePlayer>, myU
             modifier = Modifier.fillMaxSize()
         )
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0x66180A02), Color(0x22180A02), Color(0x88180A02)))))
+        // The picture is cropped to the screen the way the lobby crops it, so the painted sign sits at the same place: the
+        // title is written on its front face (268..440 of the 2401-px picture) and the card is centred in what is left below it.
+        val density = LocalDensity.current
+        val artScale = with(density) { maxOf(maxWidth.toPx() / 841f, maxHeight.toPx() / 1870f) }
+        fun sceneY(fraction: Float) = with(density) { (1870f * artScale * fraction).toDp() }
+        Box(
+            modifier = Modifier.fillMaxWidth().offset(y = sceneY(354f / 2401f) - 30.dp + 1.dp).height(60.dp).springIn(index = 0, fromY = -40),
+            contentAlignment = Alignment.Center
+        ) {
+            LetteredText(text = stringResource(R.string.online_finished_title), size = 36.sp, title = true, maxLines = 1, minScale = 0.5f)
+        }
         Column(
-            modifier = Modifier.fillMaxSize().navigationBarsPadding().padding(horizontal = u * 56f),
+            modifier = Modifier.fillMaxSize().padding(top = sceneY(450f / 2401f)).navigationBarsPadding().padding(horizontal = u * 56f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            LetteredText(
-                text = stringResource(R.string.online_finished_title),
-                size = fs(78f),
-                outline = Color(0xFF4A2410),
-                maxLines = 1,
-                minScale = 0.5f,
-                title = true,
-                modifier = Modifier.fillMaxWidth().springIn(index = 0, fromY = -40)
-            )
-            Spacer(Modifier.height(u * 18f))
             PaperPanel(modifier = Modifier.fillMaxWidth().springIn(index = 1, stepMs = 90)) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     Text(

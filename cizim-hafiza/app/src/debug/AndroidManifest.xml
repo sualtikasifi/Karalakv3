@@ -25,5 +25,9 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.LobbyPreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the online "Bitirdin!" waiting scene on its own (see WaitingScenePreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.WaitingScenePreviewActivity"
+            android:exported="true" />
     </application>
 </manifest>
