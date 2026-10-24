@@ -11,7 +11,7 @@
 <meta property="og:image" content="https://karalak.com/oyna/icons/icon-512.png">
 <meta property="og:url" content="https://karalak.com/indir">
 <link rel="icon" href="/oyna/icons/icon-192.png">
-<link rel="preload" as="image" href="indir_tr.webp" fetchpriority="high" media="(max-width:2000px)">
+
 <style>
   @font-face{font-family:Baloo;src:url(/oyna/fonts/baloo2_extrabold.woff2) format("woff2");font-weight:800;font-display:swap}
   @font-face{font-family:Baloo;src:url(/oyna/fonts/baloo2_bold.woff2) format("woff2");font-weight:600;font-display:swap}
@@ -37,6 +37,7 @@
   body.painted{display:block;padding:0;background:radial-gradient(circle at 50% 40%,#8a4a1a,#3a1a06);overflow:hidden}
   body.painted::before{display:none}
   body.painted .card{display:none}
+  body.en .pg .stage{background-image:url(indir_en.webp)}
   .pg{display:none}
   body.painted .pg{display:block;position:fixed;inset:0}
   .pg .stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,calc(100dvh*841/1870));aspect-ratio:841/1870;background:url(indir_tr.webp) 0 0/100% 100%}
@@ -89,9 +90,9 @@
   var referrer = code ? "karalak_" + type + "=" + code : (ref ? "karalak_ref=" + ref.replace(/[^0-9A-Za-z]/g, "").slice(0, 16) : "");
   var store = "https://play.google.com/store/apps/details?id=" + pkg + (referrer ? "&referrer=" + encodeURIComponent(referrer) : "");
   $("store").href = store; $("pg-play").href = store;
-  if (tr) document.body.classList.add("painted");
+  document.body.classList.add("painted"); if (!tr) document.body.classList.add("en");
   var android = /Android/i.test(navigator.userAgent), ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (code) { $("pg-inv").classList.add("on"); $("pg-invl").textContent = type === "friend" ? "Arkadaş kodu" : "Oda kodu"; $("pg-code").textContent = code; }
+  if (code) { $("pg-inv").classList.add("on"); $("pg-invl").textContent = type === "friend" ? (tr ? "Arkadaş kodu" : "Friend code") : (tr ? "Oda kodu" : "Room code"); $("pg-open").textContent = L.open; $("pg-code").textContent = code; }
   if (code) { $("invite").classList.add("on"); $("invl").textContent = type === "friend" ? L.friend : L.room; $("code").textContent = code; document.title = L.title; }
   if (!(android && code)) $("pg-open").style.display = "none";
   if (android && code) {
