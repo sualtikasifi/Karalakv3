@@ -11,7 +11,7 @@
 <meta property="og:image" content="https://karalak.com/oyna/icons/icon-512.png">
 <meta property="og:url" content="https://karalak.com/indir">
 <link rel="icon" href="/oyna/icons/icon-192.png">
-<link rel="preload" as="image" href="/oyna/img/bg_home_scene.webp" fetchpriority="high">
+<link rel="preload" as="image" href="indir_tr.webp" fetchpriority="high" media="(max-width:2000px)">
 <style>
   @font-face{font-family:Baloo;src:url(/oyna/fonts/baloo2_extrabold.woff2) format("woff2");font-weight:800;font-display:swap}
   @font-face{font-family:Baloo;src:url(/oyna/fonts/baloo2_bold.woff2) format("woff2");font-weight:600;font-display:swap}
@@ -33,11 +33,34 @@
   a.second{background:#fff;color:#c4500f;border:3px solid #e9801d;box-shadow:0 5px 0 #e0b878}
   a.btn svg{width:26px;height:26px;flex:none}
   .hidden{display:none!important}
+  /* Turkish visitors get the painted page: the picture is the whole design, the links sit on its buttons */
+  body.painted{display:block;padding:0;background:radial-gradient(circle at 50% 40%,#8a4a1a,#3a1a06);overflow:hidden}
+  body.painted::before{display:none}
+  body.painted .card{display:none}
+  .pg{display:none}
+  body.painted .pg{display:block;position:fixed;inset:0}
+  .pg .stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,calc(100dvh*841/1870));aspect-ratio:841/1870;background:url(indir_tr.webp) 0 0/100% 100%}
+  .pg a{position:absolute;display:block;text-decoration:none;border-radius:999px;-webkit-tap-highlight-color:transparent;transition:transform .12s,filter .12s}
+  .pg a:active{transform:scale(.97);filter:brightness(.92)}
+  .pg .play{left:9.5%;top:56.1%;width:82%;height:8.6%}
+  .pg .web{left:11.9%;top:66.1%;width:77.3%;height:7.1%}
+  .pg .inv{display:none;left:14%;top:79.5%;width:72%;height:9.6%;background:#fff6e2;border:.5vmin solid #e0b878;color:#3b2314;text-align:center;font-family:Baloo,system-ui,sans-serif;box-shadow:0 .8vmin 0 #c9a46a;border-radius:4vmin}
+  .pg .inv.on{display:block}
+  .pg .inv small{display:block;font-size:min(3.3vw,1.5dvh);font-weight:600;color:#7a5a40;margin-top:1.4vmin}
+  .pg .inv b{display:block;font-size:min(8vw,3.6dvh);letter-spacing:.14em;color:#f26a1b;font-weight:800;line-height:1.1}
+  .pg .inv i{display:block;font-style:normal;font-size:min(3.3vw,1.5dvh);font-weight:800;color:#c4500f}
   .foot{margin:16px 0 0;font-size:15px;font-weight:600;color:#7a5a40}
   .foot a{color:#c4500f}
 </style>
 </head>
 <body>
+<div class="pg">
+  <div class="stage">
+    <a class="play" id="pg-play" href="#" aria-label="Google Play'den indir"></a>
+    <a class="web" href="/" aria-label="Tarayıcıda hemen oyna"></a>
+    <a class="inv" id="pg-inv" href="#"><small id="pg-invl"></small><b id="pg-code"></b><i id="pg-open">Karalak'ta aç</i></a>
+  </div>
+</div>
 <main class="card">
   <img class="hero" src="/oyna/img/qm_mascot.webp" alt="" width="190" height="178">
   <h1>Karalak</h1>
@@ -65,12 +88,15 @@
   // the code rides along to the Play Store (Install Referrer), so a new player's invite can be recognised after the install
   var referrer = code ? "karalak_" + type + "=" + code : (ref ? "karalak_ref=" + ref.replace(/[^0-9A-Za-z]/g, "").slice(0, 16) : "");
   var store = "https://play.google.com/store/apps/details?id=" + pkg + (referrer ? "&referrer=" + encodeURIComponent(referrer) : "");
-  $("store").href = store;
+  $("store").href = store; $("pg-play").href = store;
+  if (tr) document.body.classList.add("painted");
   var android = /Android/i.test(navigator.userAgent), ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (code) { $("pg-inv").classList.add("on"); $("pg-invl").textContent = type === "friend" ? "Arkadaş kodu" : "Oda kodu"; $("pg-code").textContent = code; }
   if (code) { $("invite").classList.add("on"); $("invl").textContent = type === "friend" ? L.friend : L.room; $("code").textContent = code; document.title = L.title; }
+  if (!(android && code)) $("pg-open").style.display = "none";
   if (android && code) {
     var intent = "intent://" + type + "/" + code + "#Intent;scheme=karalak;package=" + pkg + ";S.browser_fallback_url=" + encodeURIComponent(store) + ";end";
-    $("open").href = intent; $("open").classList.remove("hidden");
+    $("open").href = intent; $("open").classList.remove("hidden"); $("pg-inv").href = intent;
     setTimeout(function () { location.href = intent; }, 300);
   }
   // an iPhone has no app: the browser game is the main button there
