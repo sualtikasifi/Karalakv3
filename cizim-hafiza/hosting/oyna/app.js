@@ -292,14 +292,15 @@ function layoutScene() {
 /** Lays the scene out, then measures where its widgets end so the next pass can crop the decor below them. */
 /** Text that must stay on one line inside its box (class "fitw"): shrinks until it fits, never below 55%, so a longer language never spills out. */
 function fitAll() {
-  for (const e of document.querySelectorAll(".screen.on .fitw, .screen.on .fith, .aw-ov .fitw, .aw-ov .fith")) {
-    e.style.fontSize = ""; if (e.clientWidth < 4) continue;
-    const base = parseFloat(getComputedStyle(e).fontSize); let k = 1;
-    // the real width of the text against the real width of the box (scrollWidth is rounded, and Safari starts the "…" at a fraction of a pixel)
-    const tw = () => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect().width; };
-    const over = () => (e.classList.contains("fitw") && (e.scrollWidth > e.clientWidth + 1 || tw() > e.getBoundingClientRect().width + 0.01)) || (e.classList.contains("fith") && e.scrollHeight > e.clientHeight + 1);
-    while (k > 0.55 && over()) { k -= 0.04; e.style.fontSize = base * k + "px"; }
-  }
+  const els = [...document.querySelectorAll(".screen.on .fitw, .screen.on .fith, .aw-ov .fitw, .aw-ov .fith")];
+  // all writes first, then all reads, then the shrinking of the few that overflow: one layout pass instead of one per element
+  for (const e of els) e.style.fontSize = "";
+  // the real width of the text against the real width of the box (scrollWidth is rounded, and Safari starts the "…" at a fraction of a pixel)
+  const over = (e) => (e.classList.contains("fitw") && (e.scrollWidth > e.clientWidth + 1 || textWidth(e) > e.getBoundingClientRect().width + 0.01)) || (e.classList.contains("fith") && e.scrollHeight > e.clientHeight + 1);
+  const textWidth = (e) => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect().width; };
+  const todo = [];
+  for (const e of els) if (e.clientWidth >= 4 && over(e)) todo.push([e, parseFloat(getComputedStyle(e).fontSize)]);
+  for (const [e, base] of todo) { let k = 1; while (k > 0.55 && over(e)) { k -= 0.04; e.style.fontSize = base * k + "px"; } }
 }
 function layout() {
   layoutOnce(); fitAll();
