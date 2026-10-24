@@ -135,7 +135,7 @@ export async function xpEventMultiplier() {
   let mult = 1;
   try {
     const { fs, db } = await init(), s = await fs.getDoc(fs.doc(db, "config", "xpEvent")), d = s.exists() ? s.data() : null;
-    if (d && d.active === true && Date.now() < (d.endsAtMillis || 0)) mult = Math.max(1, Math.min(10, Math.trunc(d.multiplier || 1)));
+    if (d && d.active === true && Date.now() < (d.endsAtMillis || 0)) mult = Math.max(1, Math.min(10, Number(d.multiplier) || 1));
   } catch {}
   xpEv = { at: Date.now(), mult }; return mult;
 }

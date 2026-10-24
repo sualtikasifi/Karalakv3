@@ -71,7 +71,7 @@ const ctx = {
     const best = raw > 0 && runeHas(P, "BEST") && P.bestDay !== todayEpoch(); if (best) P.bestDay = todayEpoch();
     const g = eco.roomGold({ fx: (k) => runeFx(P, k), correctCount: me.correctCount || 0, won, newAchievements: newAch, asHost: hostUid === myUid, bestFriendBonus: best });
     P.gold += g.total;
-    const matchXp = (eco.ONLINE_MATCH_XP + (won ? eco.ONLINE_WIN_XP : 0)) * xpEventOnly;
+    const matchXp = Math.round((eco.ONLINE_MATCH_XP + (won ? eco.ONLINE_WIN_XP : 0)) * xpEventOnly);
     ctx.lastXp = (ctx.lastXp || 0) + eco.addXp(P, matchXp, runeFx(P, "XP"));
     ctx.lastGold = g.total; ctx.lastRune = g.runeBonus;
     let chest; if (place === 1 && !tied) chest = awardChest(P, (k) => runeHas(P, k)) || null;
@@ -788,7 +788,7 @@ function answer(text) {
   w.guess = text; w.ms = Math.round(performance.now() - shownAt); w.correct = isCorrect(text, w.text);
   w.points = w.correct ? POINTS + (w.ms < SPEED_MS ? SPEED_BONUS : 0) : 0;
   // XP is not the score: a right word pays by difficulty and speed (XpAwards.wordXp); the daily challenge pays its own total.
-  w.xp = w.correct && kind !== "daily" ? eco.wordXp(w.difficulty, w.ms) * xpMult : 0;
+  w.xp = w.correct && kind !== "daily" ? Math.round(eco.wordXp(w.difficulty, w.ms) * xpMult) : 0;
   paintRight(); score += w.points; answered++; // idx moves on only after the tick has been shown, so the drawing under it stays the one just answered
   if (w.correct) sfx.correct(); else { sfx.wrong(); vibrate(60); }
   showFeedback(w); setTimeout(() => { hideFeedback(); idx++; if (current === "guess") nextGuess(); }, 1200);
@@ -864,12 +864,12 @@ async function finish() {
   if (kind === "daily") {
     dailyRes = dailyRecord(P, round.map((w) => w.correct), score);
     // The daily challenge pays its own XP total (times the streak), at the round's XP rate, instead of per-word XP.
-    if (dailyRes) { dailyRes.xp *= xpMult; eco.addXp(P, dailyRes.xp, fxp); if (P.daily.result) P.daily.result.xp = dailyRes.xp; }
+    if (dailyRes) { dailyRes.xp = Math.round(dailyRes.xp * xpMult); eco.addXp(P, dailyRes.xp, fxp); if (P.daily.result) P.daily.result.xp = dailyRes.xp; }
   }
   if (kind === "level") {
     stars = starsFor(n, round.length); const k = levelRun.w + ":" + levelRun.l, best = P.levels[k] ?? 0;
     newStars = Math.max(0, stars - best); recordLevel(P, levelRun.w, levelRun.l, stars);
-    eco.addXp(P, eco.levelCompletionBonus(stars) * xpMult, fxp);
+    eco.addXp(P, Math.round(eco.levelCompletionBonus(stars) * xpMult), fxp);
   }
   if (kind === "quick" && quickOpp) { opp = quickOpp; items = quickItems; net.recordRound({ ...me, level: levelFor(P.xp), frameId: P.frame, nickname: P.nick }).catch(() => {}); }
   let duelNote = null, duelRematch = null;
@@ -908,7 +908,7 @@ async function finish() {
 // GameViewModel.forfeitDaily: leaving a daily challenge ends today's chance — what was guessed so far counts, the rest is wrong.
 function forfeitDaily() {
   const flags = round.map((w) => !!w.correct), res = dailyRecord(P, flags, score);
-  if (res) { res.xp *= xpMult; eco.addXp(P, res.xp, runeFx(P, "XP")); if (P.daily.result) P.daily.result.xp = res.xp; }
+  if (res) { res.xp = Math.round(res.xp * xpMult); eco.addXp(P, res.xp, runeFx(P, "XP")); if (P.daily.result) P.daily.result.xp = res.xp; }
   saveP(); refreshHome();
 }
 function confirmLeave() {
