@@ -23,6 +23,7 @@ on:
           - chestpreview.sh
           - tourpreview.sh
           - accountpreview.sh
+          - friendspreview.sh
           - lobbypreview.sh
           - waitingpreview.sh
           - penthumbs.sh

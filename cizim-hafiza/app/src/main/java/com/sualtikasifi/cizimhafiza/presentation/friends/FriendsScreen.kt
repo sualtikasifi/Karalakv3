@@ -136,9 +136,12 @@ fun FriendsScreen(
     onBack: () -> Unit,
     onDuel: (opponentUid: String, opponentName: String) -> Unit,
     onDuelList: () -> Unit,
-    viewModel: FriendsViewModel = hiltViewModel()
+    viewModel: FriendsViewModel = hiltViewModel(),
+    /** Debug previews only: draws the page from this state instead of the live one (see FriendsPreviewActivity). */
+    previewState: FriendsUiState? = null
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val liveState by viewModel.uiState.collectAsState()
+    val uiState = previewState ?: liveState
     val duelBadgeCount by viewModel.duelBadgeCount.collectAsState()
     val context = LocalContext.current
 
