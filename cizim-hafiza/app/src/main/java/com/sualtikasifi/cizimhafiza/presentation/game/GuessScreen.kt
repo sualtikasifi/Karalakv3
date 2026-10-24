@@ -747,7 +747,8 @@ private fun JokerTile(
             )
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
+            // The painted tile has a thick lip along its bottom, so the content sits a little above the middle.
+            modifier = Modifier.fillMaxSize().padding(start = 4.dp, end = 4.dp, bottom = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -772,7 +773,19 @@ private fun JokerTile(
                             )
                         }
                     }
-                    Box(Modifier.then(if (enabled) Modifier.floating(2f, 1.5f, 2300) else Modifier)) { icon() }
+                    // A thin cream-and-gold frame round the picture, over a faint light plate.
+                    val plate = androidx.compose.foundation.shape.RoundedCornerShape(11.dp)
+                    Box(
+                        Modifier
+                            .then(if (enabled) Modifier.floating(2f, 1.5f, 2300) else Modifier)
+                            .background(Color(0x40FFFFFF), plate)
+                            .border(
+                                2.dp,
+                                androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFF3C4), Color(0xFFE8B84A))),
+                                plate
+                            )
+                            .padding(3.dp)
+                    ) { icon() }
                     if (enabled) {
                         com.sualtikasifi.cizimhafiza.presentation.common.SparkleField(
                             spots = JokerSparkles,
