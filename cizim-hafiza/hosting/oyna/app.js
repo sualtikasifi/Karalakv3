@@ -1,6 +1,7 @@
 import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
 import { checkStreak, dailyRescue } from "./streak.js";
+import { paintXpEvent } from "./xpevent.js";
 import { renderResult, loadResultStrings } from "./result.js";
 import { loadChat, chatText } from "./chat.js";
 import { loadRunes, layoutRunes, renderRunes, effect as runeFx, has as runeHas, applyRuneConfig, anyAffordable } from "./runes.js";
@@ -11,7 +12,7 @@ import { todayEpoch, msToMidnight, dailyWords, state as dailyState, record as da
 import { drawFxStroke } from "./penfx.js";
 import { openPenPicker, openFramePicker, openNickEdit } from "./picker.js";
 import { setPrefs, sfx, vibrate, initAudio, syncMusic } from "./audio.js";
-import { layoutOnline, renderEntry, renderCreate, renderJoin, leaveLobby, submitAndWait, joinWithCode, quickInvite } from "./online.js";
+import { layoutOnline, renderFinished, renderEntry, renderCreate, renderJoin, leaveLobby, submitAndWait, joinWithCode, quickInvite } from "./online.js";
 import { openDuels, stopDuels, renderDuels, openCreateDuel, recordReceived as duelReceived } from "./duel.js";
 import { layoutFriends, openFriends, renderFriends, stop as stopFriends } from "./friends.js";
 import { loadWorlds, layoutWorlds, renderWorlds, layoutMap, renderMap, mixFor, starsFor, recordLevel, currentWorld } from "./levels.js";
@@ -150,6 +151,7 @@ const WIDE = {
   offs: { src: "img/bg_offline_wide.webp", x0: 114, x1: 840, y0: -6, w: 941, h: 1672 },
   onc: { src: "img/bg_offline_wide.webp", x0: 114, x1: 840, y0: -6, w: 941, h: 1672 },
   onw: { src: "img/bg_lobby_wide.webp", x0: 90, x1: 792, y0: 0, w: 941, h: 1672 },
+  onfin: { src: "img/bg_lobby_wide.webp", x0: 90, x1: 792, y0: 0, w: 941, h: 1672 },
 };
 /** Every back button sits in the same spot of the window, with the same size, whatever the painted scene behind it does. */
 function pinBack() {
@@ -188,6 +190,7 @@ function layoutScene() {
     place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214); place($("h-rbadge"), 682, 84, 70, 70);
     place($("h-pen"), 266, 260, 243, 62);
     place($("h-avatar"), 66, 361, 138, 138);
+    place($("h-xpsign"), 390, 754, 66, 66); place($("h-xpbadge"), 363, 770, 120, 38); place($("h-xpbanner"), 50, 8, 741, 206);
     place($("h-name"), 224, 357, 556, 42);
     place($("h-rank"), 222, 400, 266, 47);
     place($("h-xpnext"), 496, 406, 284, 40);
@@ -203,8 +206,9 @@ function layoutScene() {
     for (const [id, x, y, w, h, lx0, ly0, lx1, ly1] of T) { place($("tl-" + id), x, y, w, h); place($("tx-" + id), lx0, ly0, lx1 - lx0, ly1 - ly0); }
   } else if (current === "store") {
     layoutStore(ctx); renderStore(ctx);
-  } else if (current === "onl" || current === "onj" || current === "onc" || current === "onw") {
+  } else if (current === "onl" || current === "onj" || current === "onc" || current === "onw" || current === "onfin") {
     layoutOnline(ctx);
+    if (current === "onfin") renderFinished(ctx);
     if (current === "onl") renderEntry(ctx, freshScreen); else if (current === "onj") renderJoin(ctx); else if (current === "onc") renderCreate(ctx);
   } else if (current === "offs") {
     layoutOffline(ctx); renderOffline(ctx);
@@ -352,6 +356,7 @@ function show(id) {
   if (id === "res2" || id === "result") gamePlayed = true;
   else if (id === "home" && gamePlayed) { gamePlayed = false; setTimeout(() => { if (current === "home") checkStreak(ctx); }, 600); }
   loadImgs(id);
+  if (id === "home") paintXpEvent(ctx);
   current = id; if (typeof paintMusic === "function" && P.prefs) paintMusic();
   for (const s of document.querySelectorAll(".screen")) s.classList.toggle("on", s.id === id);
   paintBackdrop(id);
@@ -1061,7 +1066,7 @@ setTimeout(() => {
 function warmImages() {
   if (navigator.connection && navigator.connection.saveData) return;
   const urls = [], seen = new Set(), add = (u) => { if (u && !seen.has(u)) { seen.add(u); urls.push(u); } };
-  for (const id of ["draw", "guess", "search", "found", "store", "settings", "league", "friends", "onl", "onc", "onj", "offs", "onw", "ach", "worlds", "lvmap", "runes", "account", "report", "duels", "res2", "result"]) {
+  for (const id of ["draw", "guess", "search", "onfin", "found", "store", "settings", "league", "friends", "onl", "onc", "onj", "offs", "onw", "ach", "worlds", "lvmap", "runes", "account", "report", "duels", "res2", "result"]) {
     document.querySelectorAll("#" + id + " img[data-src]").forEach((i) => add(i.dataset.src));
   }
   // painted windows are built by script, so no stylesheet or tag mentions them: fetch them too, or the first open shows the words before the picture

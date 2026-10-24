@@ -129,16 +129,18 @@ export async function redeemCoupon(rawCode) {
 }
 
 // config/xpEvent: a 2x-XP event started from the developer panel (XpEventRepositoryImpl). Cached for five minutes.
-let xpEv = { at: 0, mult: 1 };
-export async function xpEventMultiplier() {
-  if (Date.now() - xpEv.at < 300000) return xpEv.mult;
-  let mult = 1;
+let xpEv = { at: 0, mult: 1, endsAt: 0, label: "" };
+/** The running event (multiplier, end time, name) or multiplier 1 when none is on. Cached for five minutes. */
+export async function xpEventInfo() {
+  if (Date.now() - xpEv.at < 300000 && (xpEv.mult === 1 || Date.now() < xpEv.endsAt)) return xpEv;
+  let ev = { mult: 1, endsAt: 0, label: "" };
   try {
     const { fs, db } = await init(), s = await fs.getDoc(fs.doc(db, "config", "xpEvent")), d = s.exists() ? s.data() : null;
-    if (d && d.active === true && Date.now() < (d.endsAtMillis || 0)) mult = Math.max(1, Math.min(10, Number(d.multiplier) || 1));
+    if (d && d.active === true && Date.now() < (d.endsAtMillis || 0)) ev = { mult: Math.max(1, Math.min(10, Number(d.multiplier) || 1)), endsAt: d.endsAtMillis, label: typeof d.label === "string" ? d.label : "" };
   } catch {}
-  xpEv = { at: Date.now(), mult }; return mult;
+  xpEv = { at: Date.now(), ...ev }; return xpEv;
 }
+export const xpEventMultiplier = async () => (await xpEventInfo()).mult;
 // config/economy: the amounts gold pays, tunable without an update (EconomyConfigRepository).
 // config/runes: when each rune ring opens and what the later rings cost (RuneConfigRepository).
 export async function runeConfig() {
