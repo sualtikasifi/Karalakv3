@@ -1020,3 +1020,17 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .spark-bit{width:7px;height:7px;border-radius:50%;background:#ffd34d}
 .spark-glow{width:160px;height:160px;border-radius:50%;background:radial-gradient(rgba(255,255,255,.9),rgba(255,211,77,.6) 40%,transparent 70%)}
 .spark-plus{color:#fff;font-size:22px;font-weight:800;text-shadow:0 2px 4px rgba(0,0,0,.6)}
+
+/* The waiting room's eight seats never scroll (as in the app): the code card shrinks and the four rows share what is left. */
+#ow-main:has(.ow-grid){overflow:hidden;padding-bottom:calc(var(--u)*12)}
+#ow-main:has(.ow-grid) .ow-cp{width:calc(var(--u)*540)}
+.ow-grid{flex:1 1 0;min-height:0;grid-auto-rows:minmax(0,1fr)}
+.ow-grid .ow-card,.ow-grid .ow-slot{min-height:0;height:100%}
+.ow-grid .ow-card::before,.ow-grid .ow-slot::before{border-width:calc(var(--u)*34);border-image-width:calc(var(--u)*34)}
+.ow-grid .ow-card{padding:calc(var(--u)*4) calc(var(--u)*14);gap:calc(var(--u)*10)}
+.ow-grid .ow-av{width:calc(var(--u)*76);height:calc(var(--u)*76)}
+.ow-grid .ow-tx{position:relative;transform:none}
+.ow-grid .ow-n{font-size:calc(var(--u)*32);line-height:calc(var(--u)*36)}
+.ow-grid .ow-rk{height:calc(var(--u)*32);font-size:calc(var(--u)*25);line-height:calc(var(--u)*32)}
+.ow-grid .ow-s{position:absolute;left:0;right:0;top:calc(var(--u)*36);height:calc(var(--u)*32);font-size:calc(var(--u)*25);line-height:calc(var(--u)*32)}
+.ow-grid .ow-card.st .ow-rk{visibility:hidden}

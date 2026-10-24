@@ -180,7 +180,7 @@ function renderLobby(c) {
   // ---- seats ----
   const seat = (p) => {
     const isMe = p.uid === myId, host = p.uid === room.hostUid, bub = bubbles[p.uid], ready = rdy(p);
-    const card = el("div", "ow-card" + (ready ? " rdy" : ""));
+    const card = el("div", "ow-card" + (ready ? " rdy" : "") + (bub || p.pendingNextRound ? " st" : ""));
     const av = frameRing(frameById(p.frameId), "ow-av"); av.style.position = "relative";
     const nm = isMe ? S("online_you_label", p.displayName) : p.displayName, lv = p.level || 1;
     const status = bub ? esc(messageOf(bub, lg)) : p.pendingNextRound ? S("online_pending_badge") : "";
@@ -218,7 +218,8 @@ function renderLobby(c) {
     }
     main.append(cols);
   } else {
-    const cells = [...mine, ...theirs]; while (cells.length < 8) cells.push(empty());
+    // the room's founder always takes the first seat (top left), whoever is looking
+    const order = [...(meP ? [meP] : []), ...others], seats = [...mine, ...theirs], cells = order.map((p, i) => ({ p, e: seats[i] })).sort((a, b) => (b.p.uid === room.hostUid) - (a.p.uid === room.hostUid)).map((x) => x.e); while (cells.length < 8) cells.push(empty());
     const grid = el("div", "ow-grid"); cells.forEach((x) => grid.append(x)); main.append(grid);
   }
   const kicked = Object.entries(room.kickedUsers || {}).filter(([, k]) => k && k.until > now);
