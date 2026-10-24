@@ -747,8 +747,9 @@ private fun JokerTile(
             )
     ) {
         Column(
-            // The painted tile has a thick lip along its bottom, so the content sits a little above the middle.
-            modifier = Modifier.fillMaxSize().padding(start = 4.dp, end = 4.dp, bottom = 10.dp),
+            // The joker tiles have a thick painted lip along their bottom, so their content sits a little above the
+            // middle; the Hint and Skip tiles barely have one, and their icon and label sit right in the middle.
+            modifier = Modifier.fillMaxSize().padding(start = 4.dp, end = 4.dp, bottom = if (badge != null) 10.dp else 0.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -764,12 +765,18 @@ private fun JokerTile(
                     label = "jokerGlowT"
                 )
                 Box(contentAlignment = Alignment.Center) {
+                    // The glow and the stars are drawn past the framed picture but take no room of their own: sized
+                    // larger they made this box taller than the picture and squeezed the label underneath to a whisper.
                     if (enabled) {
-                        androidx.compose.foundation.Canvas(Modifier.size(height * 0.72f)) {
+                        androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
+                            val r = size.minDimension * 0.75f
                             drawCircle(
                                 androidx.compose.ui.graphics.Brush.radialGradient(
-                                    listOf(Color(0xFFFFF1B8).copy(alpha = glowT), Color(0xFFFFF1B8).copy(alpha = glowT * 0.35f), Color.Transparent)
-                                )
+                                    listOf(Color(0xFFFFF1B8).copy(alpha = glowT), Color(0xFFFFF1B8).copy(alpha = glowT * 0.35f), Color.Transparent),
+                                    center = center,
+                                    radius = r
+                                ),
+                                radius = r
                             )
                         }
                     }
@@ -789,7 +796,7 @@ private fun JokerTile(
                     if (enabled) {
                         com.sualtikasifi.cizimhafiza.presentation.common.SparkleField(
                             spots = JokerSparkles,
-                            modifier = Modifier.size(height * 0.66f),
+                            modifier = Modifier.matchParentSize().graphicsLayer { scaleX = 1.38f; scaleY = 1.38f },
                             periodMs = 2100
                         )
                     }

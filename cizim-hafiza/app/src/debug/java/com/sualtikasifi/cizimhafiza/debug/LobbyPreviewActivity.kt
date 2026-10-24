@@ -30,6 +30,8 @@ class LobbyPreviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val players = intent.getIntExtra("players", 2).coerceIn(1, 8)
+        // How tall the seats area is: 218dp is a lobby without the ready button, 188dp one with it (the grid shrinks).
+        val gridDp = intent.getIntExtra("grid", 218)
         val frame = AvatarFrame.entries.first()
         val slots: List<PlayerSlotUiState?> = List(8) { i ->
             if (i < players) PlayerSlotUiState(
@@ -43,7 +45,7 @@ class LobbyPreviewActivity : ComponentActivity() {
                     Image(painter = cachedPainterResource(R.drawable.bg_lobby), contentDescription = null, contentScale = ContentScale.Crop, alignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize())
                     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                         Spacer(Modifier.height(378.dp))
-                        PlayerSlotsGrid(slots = slots, activeReactionsByUid = mapOf("u0" to com.sualtikasifi.cizimhafiza.domain.model.Reaction(uid = "u0", emoji = "", messageKey = "chat_hazir_misin", sentAtMillis = 0L)), onInvite = {}, compact = false, modifier = Modifier.height(218.dp))
+                        PlayerSlotsGrid(slots = slots, activeReactionsByUid = mapOf("u0" to com.sualtikasifi.cizimhafiza.domain.model.Reaction(uid = "u0", emoji = "", messageKey = "chat_hazir_misin", sentAtMillis = 0L)), onInvite = {}, compact = false, modifier = Modifier.height(gridDp.dp))
                     }
                 }
             }

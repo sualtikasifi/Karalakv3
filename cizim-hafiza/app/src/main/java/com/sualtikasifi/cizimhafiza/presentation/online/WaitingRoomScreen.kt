@@ -998,20 +998,15 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
             if (slot.onTap != null) Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = slot.onTap) else Modifier
         )
     ) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().heightIn(min = LocalSlotHeight.current)) {
+        // Fills the whole card (not just its minimum height), so the avatar and the three text lines sit in the card's
+        // true vertical middle however tall the grid makes the row.
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().heightIn(min = LocalSlotHeight.current)) {
             // The grid hands each row the same share of the page; the picture and the lines under the name shrink to it
             // (in a team room the height is open-ended, so the usual size is used).
             val rowH = if (maxHeight == androidx.compose.ui.unit.Dp.Infinity) 54.dp else maxHeight
             val avatarSize = (rowH - 14.dp).coerceIn(26.dp, 38.dp)
-            val tight = rowH < 46.dp
-            val statusH = when {
-                rowH >= 56.dp -> 16.dp
-                rowH >= 46.dp -> 14.dp
-                else -> 0.dp
-            }
-            val hasStatus = activeReaction != null || slot.pending
             Row(
-                modifier = Modifier.fillMaxWidth().align(Alignment.Center).padding(horizontal = 8.dp, vertical = 3.dp),
+                modifier = Modifier.fillMaxWidth().fillMaxHeight().align(Alignment.Center).padding(horizontal = 8.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // The level badge stands in for a profile picture — it's the
@@ -1026,11 +1021,10 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(slot.avatarUrl)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                // Three lines — name, rank/level, chat message — each in a box of its own fixed height, so the font's own
-                // line spacing can never push the last line out of the card (it kept doing that when the lines just
-                // followed each other).
-                Column(modifier = Modifier.weight(1f)) {
-                  Box(modifier = Modifier.fillMaxWidth().height(17.dp), contentAlignment = Alignment.CenterStart) {
+                // Three lines — name, rank/level, chat message — placed by their text baselines (see SlotTextLines), so
+                // the gaps between them and to the card's edges are equal on any card height.
+                SlotTextLines(capsSp = listOf(14.sp, 11.sp, 11.sp), modifier = Modifier.weight(1f).fillMaxHeight()) {
+                  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         // Shrinks before it ellipsises, so "Name (Sen)" keeps its "(Sen)" next to the host crown.
                         com.sualtikasifi.cizimhafiza.presentation.common.FitText(
@@ -1050,19 +1044,13 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                   }
                     // Level and rank take turns under the name every five seconds, set in the same
                     // type as the league table's rows (see RankLevelLabel).
-                    // (Only on a very short row does a chat message / waiting note take this line's place.)
-                    if (!(tight && hasStatus)) Box(modifier = Modifier.fillMaxWidth().height(13.dp), contentAlignment = Alignment.CenterStart) { com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) { com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(
                         level = slot.level, bullet = false,
                         style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(fontSize = 11.sp, lineHeight = 12.sp, textAlign = TextAlign.Start).copy(lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both))
                     ) }
-                    // A chat message takes over this exact spot instead of
-                    // opening a bubble above the card. A fixed-height Box
-                    // around the Crossfade (rather than letting an empty
-                    // state collapse to 0dp) means this line's own presence
-                    // never changes the row's height — the card stays
-                    // exactly SLOT_HEIGHT tall whether or not there's
-                    // anything to show here right now.
-                    Box(modifier = Modifier.fillMaxWidth().height(if (tight && hasStatus) 16.dp else statusH), contentAlignment = Alignment.CenterStart) {
+                    // A chat message shows on the third line instead of opening a bubble above the card. Its place is
+                    // kept whether or not there is one, so the card never changes height.
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
                         Crossfade(targetState = activeReaction, label = "slot-status") { reaction ->
                             if (reaction != null) {
                                 val phraseTextRes = presetPhraseTextRes(reaction.messageKey)
@@ -1232,6 +1220,43 @@ private fun LobbyInviteSheet(
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+/** Baloo 2's capital height as a share of its font size (OS/2 sCapHeight 602 of 1000 units). */
+private const val BalooCapHeight = 0.602f
+
+/**
+ * A lobby card's name, rank and chat lines, placed by their text baselines rather than stacked: the space left over
+ * after the three capital heights ([capsSp], one per child, in order) is split into four equal parts — above the
+ * first line, between the lines, and below the last — so the gaps match each other and the card's edges on any card
+ * height. A gap never grows past 9.5dp (a tall card keeps the extra room at its edges) or shrinks under 2dp.
+ * A child with no text (no chat message right now) keeps its place empty.
+ */
+@Composable
+private fun SlotTextLines(capsSp: List<androidx.compose.ui.unit.TextUnit>, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    androidx.compose.ui.layout.Layout(content = content, modifier = modifier) { measurables, constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0, maxHeight = androidx.compose.ui.unit.Constraints.Infinity)
+        val placeables = measurables.map { it.measure(loose) }
+        val caps = placeables.indices.map { capsSp.getOrElse(it) { capsSp.last() }.toPx() * BalooCapHeight }
+        val baselines = placeables.mapIndexed { i, p ->
+            val b = p[androidx.compose.ui.layout.FirstBaseline]
+            if (b != androidx.compose.ui.layout.AlignmentLine.Unspecified) b.toFloat() else p.height / 2f + caps[i] / 2f
+        }
+        val capSum = caps.sum()
+        val minGap = 2.dp.toPx()
+        val maxGap = 9.5.dp.toPx()
+        val height = if (constraints.hasBoundedHeight) constraints.maxHeight.toFloat() else capSum + 4 * 6.dp.toPx()
+        val gap = ((height - capSum) / 4f).coerceIn(minGap, maxGap)
+        val top = (height - capSum - (placeables.size - 1) * gap) / 2f
+        layout(constraints.maxWidth, kotlin.math.round(height).toInt()) {
+            var capTop = top
+            placeables.forEachIndexed { i, p ->
+                val baseline = capTop + caps[i]
+                p.placeRelative(0, kotlin.math.round(baseline - baselines[i]).toInt())
+                capTop = baseline + gap
+            }
         }
     }
 }
