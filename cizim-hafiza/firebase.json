@@ -71,6 +71,15 @@
             "value": "public, max-age=31536000"
           }
         ]
+      },
+      {
+        "source": "/indir/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
       }
     ],
     "redirects": [
@@ -89,6 +98,26 @@
       {
         "source": "/",
         "destination": "/oyna/index.html"
+      },
+      {
+        "source": "/download",
+        "destination": "/indir/index.html"
+      },
+      {
+        "source": "/download/",
+        "destination": "/indir/index.html"
+      },
+      {
+        "source": "/indir",
+        "destination": "/indir/index.html"
+      },
+      {
+        "source": "/d/**",
+        "destination": "/indir/index.html"
+      },
+      {
+        "source": "/f/**",
+        "destination": "/indir/index.html"
       }
     ]
   }

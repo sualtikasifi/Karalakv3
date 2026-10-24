@@ -2,7 +2,6 @@ package com.sualtikasifi.cizimhafiza.util
 
 import android.content.Context
 import android.content.Intent
-import com.sualtikasifi.cizimhafiza.BuildConfig
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.presentation.navigation.Screen
 
@@ -75,10 +74,10 @@ object InviteShareUtil {
 
     /** One https link that opens the app when installed and the Play Store when not (see hosting/davet). */
     private fun webInviteLink(type: String, code: String) =
-        "https://karalak-b6e11.web.app/davet/?t=$type&c=$code"
+        "https://karalak.com/${if (type == "friend") "f" else "d"}/$code"
 
-    private fun playStoreLink() =
-        "https://play.google.com/store/apps/details?id=${BuildConfig.APPLICATION_ID}"
+    /** The download page (hosting/indir) picks the right store or the browser game itself, and reads better than a raw Play Store address. */
+    private fun playStoreLink() = "https://karalak.com/indir"
 
     private fun share(context: Context, message: String) {
         val intent = Intent(Intent.ACTION_SEND).apply {

@@ -2,7 +2,6 @@ package com.sualtikasifi.cizimhafiza.util
 
 import android.content.Context
 import android.content.Intent
-import com.sualtikasifi.cizimhafiza.BuildConfig
 import com.sualtikasifi.cizimhafiza.R
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -22,7 +21,7 @@ object DailyChallengeShareUtil {
     fun shareResult(context: Context, correctFlags: List<Boolean>, streak: Int) {
         val grid = correctFlags.joinToString("") { if (it) "✅" else "❌" }
         val date = LocalDate.now().format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.getDefault()))
-        val playStoreLink = "https://play.google.com/store/apps/details?id=${BuildConfig.APPLICATION_ID}"
+        val playStoreLink = "https://karalak.com/indir"
         val message = context.getString(
             R.string.daily_challenge_share_text,
             date,
