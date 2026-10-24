@@ -21,7 +21,7 @@ import { setLang, loadStrings, S } from "./i18n.js";
 import { syncNow, scheduleBackup } from "./sync.js";
 import { openRankLadder } from "./ranks.js";
 import { startSearch, stopSearch } from "./search.js";
-import { exitDialog, appOnlyDialog, PLAY_URL } from "./ui.js";
+import { exitDialog, appOnlyDialog, sparkFlight, PLAY_URL } from "./ui.js";
 import { makeGhostRun, loadGhostNames, isGhostId } from "./ghost.js";
 import { layoutBreak, startBreak, stopBreak } from "./brk.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
@@ -691,7 +691,7 @@ function nextDraw() {
   tool = "pen"; refreshTools(); paintLive();
   const tj = $("d-timej"), refreshTj = () => { const n = P.jokers.EXTRA_TIME || 0; $("d-timej-n").textContent = n; $("d-timej-t").textContent = S("drawing_time_joker"); tj.classList.toggle("dis", usedTime || n <= 0); tj.style.display = relaxed || tut ? "none" : ""; };
   refreshTj();
-  tj.onclick = () => { if (usedTime || (P.jokers.EXTRA_TIME || 0) <= 0) return; usedTime = true; P.jokers.EXTRA_TIME--; saveP(); left += 10; total += 10; setRing($("d-ring"), arc, $("d-time"), left, total); sfx.buy(); refreshTj(); };
+  tj.onclick = () => { if (usedTime || (P.jokers.EXTRA_TIME || 0) <= 0) return; usedTime = true; P.jokers.EXTRA_TIME--; saveP(); left += 10; total += 10; setRing($("d-ring"), arc, $("d-time"), left, total); sfx.buy(); sparkFlight(tj, $("d-ring"), "+10"); refreshTj(); };
   if (!relaxed && !untimed) dTimer = setInterval(() => {
     left--; setRing($("d-ring"), arc, $("d-time"), left, total); paintProg(Math.max(0, left));
     if (left > 0 && left <= 3) sfx.tick();

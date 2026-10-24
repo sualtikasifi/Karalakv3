@@ -94,3 +94,34 @@ export function appOnlyDialog(host) {
   const ov = appWindow(host, { title: x.title, body, footer: foot, centerTitle: false });
   return ov;
 }
+
+/** The spark of the "+10 Saniye" joker, as in the app's DrawingScreen: a glowing head with a trail curves from [from] to [to], then bursts and a "+10" rises. */
+export function sparkFlight(from, to, label) {
+  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+  const A = { x: a.left + a.width / 2, y: a.top + a.height / 2 }, B = { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+  const C = { x: (A.x + B.x) / 2 - innerWidth * 0.12, y: Math.min(A.y, B.y) - innerHeight * 0.05 };
+  const at = (t) => { const u = 1 - t; return { x: u * u * A.x + 2 * u * t * C.x + t * t * B.x, y: u * u * A.y + 2 * u * t * C.y + t * t * B.y }; };
+  const root = document.createElement("div"); root.className = "spark-root"; document.body.appendChild(root);
+  const dot = (cls) => { const d = document.createElement("i"); d.className = cls; root.appendChild(d); return d; };
+  const head = dot("spark-head"), trail = Array.from({ length: 12 }, () => dot("spark-trail"));
+  const burst = Array.from({ length: 10 }, () => dot("spark-bit")), glow = dot("spark-glow"), plus = document.createElement("b");
+  plus.className = "spark-plus"; plus.textContent = label; root.appendChild(plus);
+  const put = (e, p, sc = 1, al = 1) => { e.style.transform = `translate(${p.x}px,${p.y}px) translate(-50%,-50%) scale(${sc})`; e.style.opacity = al; };
+  const FLY = 650, BURST = 600, t0 = performance.now();
+  const step = (now) => {
+    const t = now - t0;
+    if (t < FLY) {
+      const f = t / FLY; put(head, at(f));
+      trail.forEach((e, k) => { const g = 1 - k / 12; put(e, at(Math.max(0, f - k * 0.025)), g, 0.55 * g); });
+      [...burst, glow, plus].forEach((e) => (e.style.opacity = 0));
+    } else if (t < FLY + BURST) {
+      const l = (t - FLY) / BURST, fade = 1 - l;
+      head.style.opacity = 0; trail.forEach((e) => (e.style.opacity = 0));
+      put(glow, B, 0.3 + l, 0.9 * fade);
+      burst.forEach((e, i) => { const ang = i * Math.PI * 2 / 10; put(e, { x: B.x + Math.cos(ang) * 60 * l, y: B.y + Math.sin(ang) * 60 * l }, fade, fade); });
+      put(plus, { x: B.x, y: B.y + 44 + 30 * l }, 1, fade);
+    } else return root.remove();
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}

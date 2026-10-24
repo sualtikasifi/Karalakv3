@@ -1012,3 +1012,11 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .cd2-ad{display:inline-flex;align-items:center;gap:.25em}.cd2-ad svg{flex:none}.cd2-ad em{font-style:normal;background:#ffe066;color:#3a2416;border-radius:99px;padding:0 .35em;font-size:.55em;-webkit-text-stroke:0;text-shadow:none;margin-left:.15em}
 .cd2-btn .pc-lt.wrap{white-space:normal;line-height:1.08;-webkit-text-stroke-width:calc(var(--k,.4)*6px)}
 .cd2-td{font-size:calc(var(--k,.4)*76px)}.cd2-timer{padding:calc(var(--k,.4)*4px) calc(var(--k,.4)*20px)}
+
+.spark-root{position:fixed;inset:0;pointer-events:none;z-index:90}
+.spark-root i,.spark-root b{position:absolute;left:0;top:0;opacity:0;will-change:transform}
+.spark-head{width:52px;height:52px;border-radius:50%;background:radial-gradient(#fff,#ffd34d 35%,rgba(255,138,31,.6) 65%,transparent 72%)}
+.spark-trail{width:20px;height:20px;border-radius:50%;background:#ff8a1f}
+.spark-bit{width:7px;height:7px;border-radius:50%;background:#ffd34d}
+.spark-glow{width:160px;height:160px;border-radius:50%;background:radial-gradient(rgba(255,255,255,.9),rgba(255,211,77,.6) 40%,transparent 70%)}
+.spark-plus{color:#fff;font-size:22px;font-weight:800;text-shadow:0 2px 4px rgba(0,0,0,.6)}
