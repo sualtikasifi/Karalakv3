@@ -84,6 +84,9 @@ class MainMenuViewModel @Inject constructor(
     val loginChests: StateFlow<List<com.sualtikasifi.cizimhafiza.domain.model.ChestReward>> = _loginChests.asStateFlow()
     private var pendingLoginChests: List<com.sualtikasifi.cizimhafiza.domain.model.ChestReward> = emptyList()
 
+    /** The login reward window only opens once a game has been played this run (see checkLoginStreak's caller). */
+    val gamePlayedThisRun: StateFlow<Boolean> = settingsRepository.gamePlayedThisRun
+
     private var loginDay = 0L
     private var loginChecking = false
     private var loginHandled = false
