@@ -45,5 +45,9 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.PenPickerPreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the vine-and-parchment window with its painted button (see FrameDialogPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.FrameDialogPreviewActivity"
+            android:exported="true" />
     </application>
 </manifest>

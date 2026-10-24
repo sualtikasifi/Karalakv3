@@ -163,19 +163,12 @@ fun RunesScreen(onBack: () -> Unit, viewModel: RunesViewModel = hiltViewModel())
     var showIntro by remember { mutableStateOf(!viewModel.introSeen()) }
     if (showIntro) {
         val close = { viewModel.markIntroSeen(); showIntro = false }
-        com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog(
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedFrameDialog(
             title = stringResource(R.string.rune_intro_title),
-            onDismiss = close,
-            buttons = {
-                com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
-                    text = stringResource(R.string.rune_intro_ok),
-                    onClick = close,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        ) {
-            com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialogText(stringResource(R.string.rune_intro_body))
-        }
+            body = stringResource(R.string.rune_intro_body),
+            buttonText = stringResource(R.string.rune_intro_ok),
+            onClick = close
+        )
     }
 
     Box(Modifier.fillMaxSize()) {
