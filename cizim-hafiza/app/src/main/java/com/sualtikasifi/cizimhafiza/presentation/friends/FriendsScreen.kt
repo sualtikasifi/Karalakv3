@@ -61,6 +61,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -136,9 +139,12 @@ fun FriendsScreen(
     onBack: () -> Unit,
     onDuel: (opponentUid: String, opponentName: String) -> Unit,
     onDuelList: () -> Unit,
-    viewModel: FriendsViewModel = hiltViewModel()
+    viewModel: FriendsViewModel = hiltViewModel(),
+    /** Debug previews only: draws the page from this state instead of the live one (see FriendsPreviewActivity). */
+    previewState: FriendsUiState? = null
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val liveState by viewModel.uiState.collectAsState()
+    val uiState = previewState ?: liveState
     val duelBadgeCount by viewModel.duelBadgeCount.collectAsState()
     val context = LocalContext.current
 
@@ -438,8 +444,27 @@ private fun FriendsPanel(uiState: FriendsUiState, viewModel: FriendsViewModel, s
         }
         return
     }
+    // A long list scrolls inside the frame: its bottom edge melts away into the parchment while there is more below, so a row
+    // cut in half by the frame reads as "scroll for more" instead of a mistake.
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val moreBelow by remember { derivedStateOf { listState.canScrollForward } }
+    val fadePx = with(androidx.compose.ui.platform.LocalDensity.current) { 30.dp.toPx() }
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        state = listState,
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                if (moreBelow) {
+                    drawRect(
+                        brush = Brush.verticalGradient(listOf(Color.Black, Color.Transparent), startY = size.height - fadePx, endY = size.height),
+                        topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - fadePx),
+                        size = androidx.compose.ui.geometry.Size(size.width, fadePx),
+                        blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+                    )
+                }
+            },
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         if (uiState.friendRequests.isNotEmpty()) {

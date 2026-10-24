@@ -64,7 +64,7 @@ fun PaintedPenaltyDialog(
     buttonText: String,
     onDismiss: () -> Unit
 ) {
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             val frameW = minOf(maxWidth - 24.dp, (maxHeight - 24.dp) * (ArtW / ArtH), 440.dp)
             val u = frameW / ArtW
