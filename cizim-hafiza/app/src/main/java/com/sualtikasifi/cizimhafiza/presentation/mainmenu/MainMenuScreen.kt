@@ -347,12 +347,14 @@ fun MainMenuScreen(
             com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog(reward = reward, onDismiss = viewModel::consumeFreeChestReward)
         }
 
-        // Giriş Serisi: once a day, on the first entry, over everything else. It needs the internet (today comes from the
-        // server), so the check runs once the connection is there. Held back while the daily-streak rescue is on screen.
+        // Giriş Serisi: once a day, after the first game played in a visit (not when the app is opened), over everything
+        // else. It needs the internet (today comes from the server), so the check runs once the connection is there.
+        // Held back while the daily-streak rescue is on screen.
         val loginPopup by viewModel.loginPopup.collectAsState()
         val loginChests by viewModel.loginChests.collectAsState()
         val onlineNow = com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current
-        LaunchedEffect(onlineNow) { if (onlineNow) viewModel.checkLoginStreak() }
+        val gamePlayed by viewModel.gamePlayedThisRun.collectAsState()
+        LaunchedEffect(onlineNow, gamePlayed) { if (onlineNow && gamePlayed) viewModel.checkLoginStreak() }
         val rescueOnScreen = dailyState.rescuableStreak > 0 && GameConstants.ADMOB_ENABLED
         if (!rescueOnScreen && freeChestReward == null) {
             loginPopup?.let { popup ->

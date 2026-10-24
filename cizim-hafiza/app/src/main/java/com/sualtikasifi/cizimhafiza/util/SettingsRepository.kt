@@ -144,6 +144,11 @@ class SettingsRepository @Inject constructor(
     // (see domain.model.Achievement) — same rationale as lifetimeWordsDrawn:
     // game_sessions is pruned, so it can't answer "ever" questions.
     val lifetimeGamesPlayed: Int get() = prefs.getInt(KEY_LIFETIME_GAMES_PLAYED, 0)
+
+    // True once a game has been finished since the app was started (not remembered across launches). The daily login
+    // reward window waits for it: it opens after the first game of a visit, not when the app is opened.
+    private val _gamePlayedThisRun = MutableStateFlow(false)
+    val gamePlayedThisRun: StateFlow<Boolean> = _gamePlayedThisRun.asStateFlow()
     val lifetimePerfectRounds: Int get() = prefs.getInt(KEY_LIFETIME_PERFECT_ROUNDS, 0)
     val lifetimeOnlineWins: Int get() = prefs.getInt(KEY_LIFETIME_ONLINE_WINS, 0)
     val bestStreak: Int get() = prefs.getInt(KEY_BEST_STREAK, 0)
@@ -732,6 +737,7 @@ class SettingsRepository @Inject constructor(
      * [addScore]/[addWordsDrawn] — see GameRepositoryImpl.finishSaving.
      */
     fun recordFinishedGame(wasPerfectRound: Boolean, wasOnlineWin: Boolean) {
+        _gamePlayedThisRun.value = true
         prefs.edit {
             putInt(KEY_LIFETIME_GAMES_PLAYED, lifetimeGamesPlayed + 1)
             if (wasPerfectRound) putInt(KEY_LIFETIME_PERFECT_ROUNDS, lifetimePerfectRounds + 1)
