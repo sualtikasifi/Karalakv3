@@ -245,7 +245,7 @@ function layoutScene() {
     place($("d-line"), 235, 343, 250, 8);
     place($("d-canvas"), 36, 438, 770, 948);
     [["t-pen", 48], ["t-erase", 165], ["t-undo", 290], ["t-clear", 418]].forEach(([id, x]) => place($(id), x, 1433, 98, 98));
-    place($("d-next"), 540, 1436, 258, 92);
+    place($("d-next"), 540, 1454, 258, 69);
     fitCanvas($("pad"));
     paintLive();
   } else if (current === "guess") {
