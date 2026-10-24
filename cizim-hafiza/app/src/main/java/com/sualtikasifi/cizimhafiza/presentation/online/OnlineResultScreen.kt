@@ -250,13 +250,18 @@ fun OnlineResultScreen(
                     )
                     // The runes' share of that gold, so the rune map is felt where the gold lands.
                     if (uiState.runeBonusGold > 0) {
-                        Text(
-                            text = stringResource(R.string.result_rune_bonus_line, uiState.runeBonusGold),
-                            color = Color(0xFF8A5A2B),
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        // On a small parchment pill of its own, so it reads against the painted wall behind it.
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = stringResource(R.string.result_rune_bonus_line, uiState.runeBonusGold),
+                                style = PaintedStyle(color = Color(0xFF6B4122), fontSize = 15.sp, textAlign = TextAlign.Center),
+                                maxLines = 1,
+                                modifier = Modifier
+                                    .background(Color(0xFFFFF3DC), RoundedCornerShape(50))
+                                    .border(2.dp, Color(0xFFC9A46A), RoundedCornerShape(50))
+                                    .padding(horizontal = 16.dp, vertical = 5.dp)
+                            )
+                        }
                     }
 
                     // ---- Everyone's drawings, one player at a time ----
