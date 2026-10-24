@@ -998,7 +998,9 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
             if (slot.onTap != null) Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = slot.onTap) else Modifier
         )
     ) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().heightIn(min = LocalSlotHeight.current)) {
+        // Fills the whole card (not just its minimum height), so the avatar and the three text lines sit in the card's
+        // true vertical middle however tall the grid makes the row.
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().heightIn(min = LocalSlotHeight.current)) {
             // The grid hands each row the same share of the page; the picture and the lines under the name shrink to it
             // (in a team room the height is open-ended, so the usual size is used).
             val rowH = if (maxHeight == androidx.compose.ui.unit.Dp.Infinity) 54.dp else maxHeight
@@ -1028,7 +1030,8 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                 Spacer(modifier = Modifier.width(6.dp))
                 // Three lines — name, rank/level, chat message — each in a box of its own fixed height, so the font's own
                 // line spacing can never push the last line out of the card (it kept doing that when the lines just
-                // followed each other).
+                // followed each other). The rank's glyphs sit low in their box, so that box is lifted 3dp: measured on a
+                // phone and the emulator, the name-to-rank and rank-to-message gaps were 12.6dp and 6.5dp before, ~9.5dp each now.
                 Column(modifier = Modifier.weight(1f)) {
                   Box(modifier = Modifier.fillMaxWidth().height(17.dp), contentAlignment = Alignment.CenterStart) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1051,7 +1054,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     // Level and rank take turns under the name every five seconds, set in the same
                     // type as the league table's rows (see RankLevelLabel).
                     // (Only on a very short row does a chat message / waiting note take this line's place.)
-                    if (!(tight && hasStatus)) Box(modifier = Modifier.fillMaxWidth().height(13.dp), contentAlignment = Alignment.CenterStart) { com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(
+                    if (!(tight && hasStatus)) Box(modifier = Modifier.fillMaxWidth().height(13.dp).offset(y = (-3).dp), contentAlignment = Alignment.CenterStart) { com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(
                         level = slot.level, bullet = false,
                         style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(fontSize = 11.sp, lineHeight = 12.sp, textAlign = TextAlign.Start).copy(lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both))
                     ) }
