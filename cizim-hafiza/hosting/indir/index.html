@@ -40,16 +40,21 @@
   body.en .pg .stage{background-image:url(indir_en.webp)}
   .pg{display:none}
   body.painted .pg{display:block;position:fixed;inset:0}
-  .pg .stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,calc(100dvh*841/1870));aspect-ratio:841/1870;background:url(indir_tr.webp) 0 0/100% 100%}
-  .pg a{position:absolute;display:block;text-decoration:none;border-radius:999px;-webkit-tap-highlight-color:transparent;transition:transform .12s,filter .12s}
-  .pg a:active{transform:scale(.97);filter:brightness(.92)}
-  .pg .play{left:9.5%;top:56.1%;width:82%;height:8.6%}
-  .pg .web{left:11.9%;top:66.1%;width:77.3%;height:7.1%}
-  .pg .inv{display:none;left:14%;top:79.5%;width:72%;height:9.6%;background:#fff6e2;border:.5vmin solid #e0b878;color:#3b2314;text-align:center;font-family:Baloo,system-ui,sans-serif;box-shadow:0 .8vmin 0 #c9a46a;border-radius:4vmin}
+  /* the picture fills the width of a phone (the bottom floor is cropped a little more than the top), so there is no empty band beside it */
+  .pg .stage{--w:min(100vw,calc(100dvh*.55));--h:calc(var(--w)*1870/841);--pgimg:url(indir_tr.webp);position:absolute;left:50%;transform:translateX(-50%);top:min(0px,calc((100dvh - var(--h))*.25));width:var(--w);height:var(--h);background:var(--pgimg) 0 0/100% 100%}
+  body.en .pg .stage{--pgimg:url(indir_en.webp)}
+  @media (min-aspect-ratio:3/4){.pg .stage{--w:min(100vw,calc(100dvh*841/1870));top:0}}
+  .pg a{position:absolute;display:block;border-radius:999px;-webkit-tap-highlight-color:transparent;text-decoration:none;transition:transform .09s,filter .09s}
+  /* the two painted buttons are drawn again from the same picture, so pressing one can sink it (a little smaller and lower, darker) */
+  .pg a.play,.pg a.web{background:var(--pgimg) no-repeat}
+  .pg a.play:active,.pg a.web:active{transform:translateY(.6vmin) scale(.955);filter:brightness(.88)}
+  .pg a.play{left:9.5%;top:56.1%;width:82%;height:8.6%;background-size:121.95% 1162.8%;background-position:52.8% 61.4%}
+  .pg a.web{left:11.9%;top:66.1%;width:77.3%;height:7.1%;background-size:129.4% 1408.5%;background-position:52.4% 71.2%}
+  .pg .inv{display:none;left:14%;top:79%;width:72%;height:8.4%;background:#fff6e2;border:.5vmin solid #e0b878;color:#3b2314;text-align:center;font-family:Baloo,system-ui,sans-serif;box-shadow:0 .8vmin 0 #c9a46a;border-radius:4vmin}
   .pg .inv.on{display:block}
-  .pg .inv small{display:block;font-size:min(3.3vw,1.5dvh);font-weight:600;color:#7a5a40;margin-top:1.4vmin}
-  .pg .inv b{display:block;font-size:min(8vw,3.6dvh);letter-spacing:.14em;color:#f26a1b;font-weight:800;line-height:1.1}
-  .pg .inv i{display:block;font-style:normal;font-size:min(3.3vw,1.5dvh);font-weight:800;color:#c4500f}
+  .pg .inv small{display:block;font-size:calc(var(--w)*.028);font-weight:600;color:#7a5a40;margin-top:.6%}
+  .pg .inv b{display:block;font-size:calc(var(--w)*.064);letter-spacing:.14em;color:#f26a1b;font-weight:800;line-height:1.1}
+  .pg .inv i{display:block;font-style:normal;font-size:calc(var(--w)*.028);font-weight:800;color:#c4500f}
   .foot{margin:16px 0 0;font-size:15px;font-weight:600;color:#7a5a40}
   .foot a{color:#c4500f}
 </style>
