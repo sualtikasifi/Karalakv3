@@ -1026,9 +1026,11 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(slot.avatarUrl)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                // The whole text column sits a little above the card's middle: its last line (the chat message) used to run
-                // into the card's lower frame.
-                Column(modifier = Modifier.weight(1f).offset(y = (-5).dp)) {
+                // Three lines — name, rank/level, chat message — each in a box of its own fixed height, so the font's own
+                // line spacing can never push the last line out of the card (it kept doing that when the lines just
+                // followed each other).
+                Column(modifier = Modifier.weight(1f)) {
+                  Box(modifier = Modifier.fillMaxWidth().height(17.dp), contentAlignment = Alignment.CenterStart) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         // Shrinks before it ellipsises, so "Name (Sen)" keeps its "(Sen)" next to the host crown.
                         com.sualtikasifi.cizimhafiza.presentation.common.FitText(
@@ -1045,13 +1047,14 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                             Image(painter = painterResource(R.drawable.lobby_crown), contentDescription = null, modifier = Modifier.size(16.dp))
                         }
                     }
+                  }
                     // Level and rank take turns under the name every five seconds, set in the same
                     // type as the league table's rows (see RankLevelLabel).
-                    // (While there is a chat message / waiting note it takes this line's place, as on the web: three lines never fit the row.)
-                    if (!hasStatus) com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(
+                    // (Only on a very short row does a chat message / waiting note take this line's place.)
+                    if (!(tight && hasStatus)) Box(modifier = Modifier.fillMaxWidth().height(13.dp), contentAlignment = Alignment.CenterStart) { com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(
                         level = slot.level, bullet = false,
                         style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(fontSize = 11.sp, lineHeight = 12.sp, textAlign = TextAlign.Start).copy(lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both))
-                    )
+                    ) }
                     // A chat message takes over this exact spot instead of
                     // opening a bubble above the card. A fixed-height Box
                     // around the Crossfade (rather than letting an empty
@@ -1059,7 +1062,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     // never changes the row's height — the card stays
                     // exactly SLOT_HEIGHT tall whether or not there's
                     // anything to show here right now.
-                    Box(modifier = Modifier.height(if (hasStatus) 16.dp else statusH)) {
+                    Box(modifier = Modifier.fillMaxWidth().height(if (tight && hasStatus) 16.dp else statusH), contentAlignment = Alignment.CenterStart) {
                         Crossfade(targetState = activeReaction, label = "slot-status") { reaction ->
                             if (reaction != null) {
                                 val phraseTextRes = presetPhraseTextRes(reaction.messageKey)
