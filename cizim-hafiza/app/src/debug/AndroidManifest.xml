@@ -37,5 +37,9 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.FriendsPreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the level result's stat cards (see ResultStatsPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.ResultStatsPreviewActivity"
+            android:exported="true" />
     </application>
 </manifest>
