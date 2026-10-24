@@ -4,16 +4,21 @@
 import { exitDialog } from "./ui.js";
 import { S } from "./i18n.js";
 
-let leaving = false, armed = false;
+let leaving = false, depth = 0;
+// Chrome treats a history entry that a page adds without a touch as "skippable" and jumps over it on back, straight out of the site.
+// An entry added inside the back-button handler counts as such, so that approach worked only once. Instead a stack of spare entries is
+// added during a touch, each back press uses one up, and the next touch tops the stack up again.
+const SPARE = 8;
 
 export function initPhoneBack(c) {
   try { history.replaceState({ k: "base" }, ""); } catch { return; }
-  // Chrome skips history entries a page adds before the player has touched it, so the guard entry is added at the first touch
-  const arm = () => { if (armed) return; armed = true; try { history.pushState({ k: "app" }, ""); } catch {} };
-  for (const ev of ["pointerdown", "touchstart", "keydown"]) addEventListener(ev, arm, { once: true, capture: true, passive: true });
+  const topUp = () => { try { while (depth < SPARE) { history.pushState({ k: "app", n: depth + 1 }, ""); depth++; } } catch {} };
+  addEventListener("pointerdown", topUp, { capture: true, passive: true });
+  addEventListener("touchstart", topUp, { capture: true, passive: true });
+  addEventListener("keydown", topUp, { capture: true, passive: true });
   addEventListener("popstate", () => {
-    if (leaving || !armed) return;
-    try { history.pushState({ k: "app" }, ""); } catch {} // stay on the guarded entry, so the next press is caught too
+    if (leaving || depth === 0) return;
+    depth--;
     back(c);
   });
 }
@@ -34,8 +39,8 @@ function back(c) {
   if (cur === "home") {
     exitDialog($("stage"), {
       style: "menu", title: S("exit_confirm_title"), message: S("exit_confirm_message"), confirm: S("exit_confirm_yes"), dismiss: S("exit_confirm_no"),
-      // two steps back: past the guarded entry and the page's own, which leaves for whatever was open before Karalak
-      onConfirm: () => { leaving = true; history.go(-2); setTimeout(() => { leaving = false; }, 600); },
+      // back past every spare entry and the page's own, which leaves for whatever was open before Karalak
+      onConfirm: () => { leaving = true; history.go(-(depth + 1)); setTimeout(() => { leaving = false; }, 800); },
     });
     return;
   }
