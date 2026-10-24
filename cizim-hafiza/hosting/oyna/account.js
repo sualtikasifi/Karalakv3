@@ -17,12 +17,6 @@ const T = {
 };
 let who = null, msg = "", busy = false, linkedNow = false;
 
-// "Videolarda öne çık", as in the app's Hesap screen: off until the player turns it on and agrees to what will be shown. It belongs
-// to the account, so signing in, out or deleting turns it off here (the profile itself keeps what its owner chose).
-const FC = "karalak_feature_consent";
-const fcOn = () => { try { return localStorage.getItem(FC) === "1"; } catch { return false; } };
-const fcSet = (on) => { try { localStorage.setItem(FC, on ? "1" : "0"); } catch {} };
-
 export function layoutAccount(c) {
   const { place, $ } = c;
   place($("ak-back"), 20, 40, 110, 106); place($("ak-sign"), 130, 132, 580, 387); place($("ak-title"), 219, 343, 420, 113);
@@ -33,9 +27,7 @@ export function layoutAccount(c) {
   place($("ak-sec"), 166, 1066, 574, 68); place($("ak-strip"), 166, 1150, 576, 82);
   place($("ak-form"), 110, 1262, 620, 330);
   place($("ak-out"), 120, 1304, 600, 132);
-  // the consent row sits above "delete" for a signed-in player, and under the sign-in form for a guest
-  place($("ak-fc"), 120, linkedNow ? 1484 : 1606, 600, 78);
-  place($("ak-del"), 120, 1584, 600, 76); place($("ak-msg"), 60, linkedNow ? 1680 : 1700, 720, 80);
+  place($("ak-del"), 120, 1460, 600, 76); place($("ak-msg"), 60, linkedNow ? 1560 : 1620, 720, 80);
 }
 
 function backupLine() {
@@ -71,16 +63,6 @@ function paint(c) {
   $("ak-user").placeholder = x.user; $("ak-pass").placeholder = x.pass; $("ak-login-t").textContent = x.login; $("ak-reg-t").textContent = x.create;
   $("ak-out").style.display = linked ? "" : "none"; $("ak-out-t").textContent = S("account_sign_out");
   $("ak-del").textContent = "🗑 " + S("account_delete_action"); $("ak-del").style.display = linked ? "" : "none";
-  $("ak-fc-t").textContent = "🎥 " + S("account_feature_consent"); $("ak-fc").classList.toggle("on", fcOn());
-  $("ak-fc").onclick = () => {
-    if (busy) return;
-    const set = async (on) => {
-      fcSet(on); paint(c);
-      try { await net.publishFeatureConsent(on); } catch { fcSet(!on); msg = x.net; paint(c); }
-    };
-    if (fcOn()) set(false);
-    else c.confirm(S("account_feature_consent_title") + " " + S("account_feature_consent_message", P.nick), S("account_feature_consent_confirm"), () => set(true));
-  };
   const m = $("ak-msg"); m.textContent = msg; m.style.display = msg ? "" : "none";
   const done = (text) => { msg = text; busy = false; c.refreshHome(); renderAccount(c); };
   const read = () => {
@@ -93,7 +75,7 @@ function paint(c) {
   const go = async (fn, okText) => {
     if (busy) return; const v = read(); if (!v) return; busy = true; msg = "…"; renderMsg();
     try {
-      who = await fn(v.name, v.pass); markAccount(true); forgetRemote(); fcSet(false);
+      who = await fn(v.name, v.pass); markAccount(true); forgetRemote();
       const r = await syncNow(c); c.saveP();
       done(r === "restored" ? x.welcome : okText);
     } catch (e) { done(errText(x, e)); }
@@ -103,10 +85,10 @@ function paint(c) {
   $("ak-pass").onkeydown = (e) => { if (e.key === "Enter") $("ak-login").click(); };
   $("ak-out").onclick = () => c.confirm(S("account_sign_out_message"), S("account_sign_out_confirm"), async () => {
     if ((await syncNow(c)) === "error") return done(S("account_sign_out_backup_failed"));
-    try { await net.signOutAccount(); markAccount(false); c.resetProgress(); forgetRemote(); fcSet(false); done(S("account_signed_out_done")); } catch { done(S("account_sign_out_failed")); }
+    try { await net.signOutAccount(); markAccount(false); c.resetProgress(); forgetRemote(); done(S("account_signed_out_done")); } catch { done(S("account_sign_out_failed")); }
   });
   $("ak-del").onclick = () => c.confirm(S("account_delete_message"), S("account_delete_continue"), () => c.confirm(S("account_delete_final_message"), S("account_delete_final_confirm"), async () => {
-    try { await net.deleteAccount(); markAccount(false); c.resetProgress(); forgetRemote(); fcSet(false); done(S("account_delete_done")); }
+    try { await net.deleteAccount(); markAccount(false); c.resetProgress(); forgetRemote(); done(S("account_delete_done")); }
     catch (e) { done(e.code === "auth/requires-recent-login" ? S("account_delete_reauth_needed") : S("account_delete_failed")); }
   }));
 }
