@@ -33,5 +33,9 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.PenThumbsPreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the friends page with a long list (see FriendsPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.FriendsPreviewActivity"
+            android:exported="true" />
     </application>
 </manifest>
