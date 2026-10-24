@@ -18,4 +18,9 @@ for n in 2 8; do
   sleep 6
   adb exec-out screencap -p > "$OUT/lobby_$n.png"
 done
+# The same 8 seats squeezed the way a lobby with the ready button squeezes them.
+adb shell am force-stop "$PKG"
+adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.LobbyPreviewActivity" --ei players 8 --ei grid 188
+sleep 6
+adb exec-out screencap -p > "$OUT/lobby_8_short.png"
 ls -la "$OUT"
