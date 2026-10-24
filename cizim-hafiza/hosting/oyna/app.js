@@ -2,6 +2,7 @@ import { isCorrect } from "./matcher.js";
 import * as net from "./firebase.js";
 import { checkStreak, dailyRescue } from "./streak.js";
 import { paintXpEvent } from "./xpevent.js";
+import { initPhoneBack } from "./phoneback.js";
 import { renderResult, loadResultStrings } from "./result.js";
 import { loadChat, chatText } from "./chat.js";
 import { loadRunes, layoutRunes, renderRunes, effect as runeFx, has as runeHas, applyRuneConfig, anyAffordable } from "./runes.js";
@@ -1045,6 +1046,7 @@ setTimeout(() => net.listen("invites", (list) => {
 }).catch(() => {}), 4000);
 applyLang();
 setTimeout(() => net.economyConfig().then((d) => eco.applyConfig(d)).catch(() => {}), 1800);
+initPhoneBack(ctx);
 window.__karalak = ctx; // handle for the visual checks in docs/web-parity.md (opens dialogs and scenes without playing a round)
 loadStrings().then(() => { applyLang(); }).catch(() => {});
 // A signed-in browser picks up the cloud save (when it holds more) and keeps it current; hiding the page uploads at once.
