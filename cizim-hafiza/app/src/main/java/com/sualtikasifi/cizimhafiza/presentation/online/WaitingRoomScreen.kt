@@ -1067,7 +1067,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                                     text = phraseTextRes?.let { stringResource(it) } ?: reaction.emoji,
                                     style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
                                         color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, lineHeight = 13.sp, textAlign = TextAlign.Start
-                                    ),
+                                    ).copy(lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both)),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -1076,7 +1076,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                                     text = stringResource(R.string.online_pending_badge),
                                     style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
                                         color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, lineHeight = 13.sp, textAlign = TextAlign.Start
-                                    ),
+                                    ).copy(lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both)),
                                     maxLines = 1
                                 )
                             }
