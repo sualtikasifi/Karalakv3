@@ -41,5 +41,9 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.ResultStatsPreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the pen picker window (see PenPickerPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.PenPickerPreviewActivity"
+            android:exported="true" />
     </application>
 </manifest>

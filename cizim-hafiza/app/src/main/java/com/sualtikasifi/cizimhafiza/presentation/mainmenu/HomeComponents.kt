@@ -844,12 +844,12 @@ internal fun GradientTile(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PenPickerSheet(items: List<PenSkinUiItem>, onSelect: (PenSkin) -> Unit, onDismiss: () -> Unit) {
-    com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog(title = stringResource(R.string.pen_picker_title), onDismiss = onDismiss) {
+    com.sualtikasifi.cizimhafiza.presentation.common.PaintedPenWindow(title = stringResource(R.string.pen_picker_title), onDismiss = onDismiss) {
         Column(modifier = Modifier.fillMaxWidth().weight(1f, fill = false)) {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.weight(1f, fill = false)
             ) {
                 gridItems(items, key = { it.skin.name }) { item ->
