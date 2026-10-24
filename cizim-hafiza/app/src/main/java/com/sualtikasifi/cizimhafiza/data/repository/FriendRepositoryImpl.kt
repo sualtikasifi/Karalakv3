@@ -21,6 +21,7 @@ import com.sualtikasifi.cizimhafiza.domain.repository.BotFriendRequestPendingExc
 import com.sualtikasifi.cizimhafiza.domain.repository.CannotAddSelfException
 import com.sualtikasifi.cizimhafiza.domain.repository.FriendCodeNotFoundException
 import com.sualtikasifi.cizimhafiza.domain.repository.FriendRepository
+import com.sualtikasifi.cizimhafiza.domain.repository.PendingRewardTotals
 import com.sualtikasifi.cizimhafiza.domain.repository.FriendRequestLimitException
 import com.sualtikasifi.cizimhafiza.util.GameConstants
 import kotlinx.coroutines.channels.awaitClose
@@ -658,23 +659,27 @@ class FriendRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun claimPendingRewards(): Int {
+    override suspend fun claimPendingRewards(): PendingRewardTotals {
         val uid = requireUid()
         val rewardsRef = users.document(uid).collection(PRIVATE_COLLECTION).document(PENDING_REWARDS_DOC)
         return runCatching {
-            firestore.runTransaction<Long> { tx ->
+            firestore.runTransaction<PendingRewardTotals> { tx ->
                 val doc = tx.get(rewardsRef)
                 @Suppress("UNCHECKED_CAST")
                 val pending = doc.get("pending") as? List<Map<String, Any?>> ?: emptyList()
-                if (pending.isEmpty()) return@runTransaction 0L
+                if (pending.isEmpty()) return@runTransaction PendingRewardTotals()
                 // Cleared in the same transaction that reads it: a crash
-                // between this commit and the caller applying the XP loses
+                // between this commit and the caller applying the reward loses
                 // that one reward rather than risking it being read (and
                 // applied) twice on the next attempt.
                 tx.update(rewardsRef, "pending", emptyList<Map<String, Any?>>())
-                pending.sumOf { (it["amount"] as? Number)?.toLong() ?: 0L }
+                fun sum(gold: Boolean) = pending
+                    .filter { ((it["currency"] as? String) == "gold") == gold }
+                    .sumOf { (it["amount"] as? Number)?.toLong() ?: 0L }
+                    .coerceIn(0L, 1_000_000L).toInt()
+                PendingRewardTotals(xp = sum(gold = false), gold = sum(gold = true))
             }.await()
-        }.getOrDefault(0L).toInt()
+        }.getOrDefault(PendingRewardTotals())
     }
 
     override fun observeLeagueTable(): Flow<LeagueTable> =
