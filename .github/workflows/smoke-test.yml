@@ -24,6 +24,7 @@ on:
           - tourpreview.sh
           - accountpreview.sh
           - lobbypreview.sh
+          - waitingpreview.sh
           - runes.sh
           - frames.sh
           - pens.sh
