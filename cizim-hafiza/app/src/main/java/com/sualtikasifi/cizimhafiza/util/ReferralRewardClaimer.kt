@@ -1,7 +1,9 @@
 package com.sualtikasifi.cizimhafiza.util
 
 import android.util.Log
+import android.content.Context
 import com.sualtikasifi.cizimhafiza.domain.repository.FriendRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,7 +37,8 @@ import javax.inject.Singleton
 @Singleton
 class ReferralRewardClaimer @Inject constructor(
     private val friendRepository: FriendRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    @ApplicationContext private val context: Context
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var started = false
@@ -44,11 +47,16 @@ class ReferralRewardClaimer @Inject constructor(
     /** The amount just claimed, for a one-time "kazandın!" toast — see MainMenuViewModel. */
     val lastClaimedXp: StateFlow<Int> = _lastClaimedXp.asStateFlow()
 
+    private val _lastClaimedGold = MutableStateFlow(0)
+    /** The gold just claimed (the invite reward is 500 gold), for the same one-time toast. */
+    val lastClaimedGold: StateFlow<Int> = _lastClaimedGold.asStateFlow()
+
     /** Safe to call repeatedly; only the first call actually claims. */
     fun start() {
         if (started) return
         started = true
         scope.launch {
+            attributeInstallInvite()
             // A reward is only ever added by a once-a-day server job, so looking on every single
             // start is a server read that almost always finds nothing. Once per few hours is
             // plenty; a reward simply waits until the next check.
@@ -56,10 +64,14 @@ class ReferralRewardClaimer @Inject constructor(
             if (now - settingsRepository.lastRewardCheckMillis < REWARD_CHECK_INTERVAL_MILLIS) return@launch
             settingsRepository.lastRewardCheckMillis = now
             runCatching { friendRepository.claimPendingRewards() }
-                .onSuccess { amount ->
-                    if (amount > 0) {
-                        settingsRepository.addXp(amount)
-                        _lastClaimedXp.value = amount
+                .onSuccess { totals ->
+                    if (totals.xp > 0) {
+                        settingsRepository.addXp(totals.xp)
+                        _lastClaimedXp.value = totals.xp
+                    }
+                    if (totals.gold > 0) {
+                        settingsRepository.earnGold(totals.gold)
+                        _lastClaimedGold.value = totals.gold
                     }
                 }
                 .onFailure { NonFatal.report(TAG, "Pending reward claim failed", it) }
@@ -68,6 +80,25 @@ class ReferralRewardClaimer @Inject constructor(
 
     fun consumeClaimedNotice() {
         _lastClaimedXp.value = 0
+        _lastClaimedGold.value = 0
+    }
+
+    /**
+     * A new player who installed from a friend's karalak.com/f/CODE link: the Play Store keeps the code (only for the
+     * first launch), so it is read once, then attributed like a friend link opened in the app. The friend code of this
+     * account is made first, because the attribution is merged onto the same document (see FriendsViewModel).
+     */
+    private suspend fun attributeInstallInvite() {
+        if (!settingsRepository.installReferrerHandled) {
+            settingsRepository.pendingInviterCode = InstallReferrerReader.friendCode(context)
+            settingsRepository.installReferrerHandled = true
+        }
+        val code = settingsRepository.pendingInviterCode ?: return
+        runCatching {
+            friendRepository.ensureFriendCode(settingsRepository.nicknameOrDefault)
+            friendRepository.recordReferralIfEligible(code)
+        }.onSuccess { settingsRepository.pendingInviterCode = null }
+            .onFailure { NonFatal.report(TAG, "Install invite attribution failed", it) }
     }
 
     private companion object {

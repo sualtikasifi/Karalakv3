@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url)), root = path.join(here, "..", "hosting"), shots = path.join(here, "shots");
 fs.mkdirSync(shots, { recursive: true });
-const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".webp": "image/webp", ".png": "image/png", ".ttf": "font/ttf", ".m4a": "audio/mp4", ".mp4": "video/mp4" };
+const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".webp": "image/webp", ".png": "image/png", ".ttf": "font/ttf", ".woff2": "font/woff2", ".m4a": "audio/mp4", ".mp4": "video/mp4" };
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(new URL(req.url, "http://x").pathname);
   if (p === "/" || p === "/oyna" || p === "/oyna/") p = "/oyna/index.html";

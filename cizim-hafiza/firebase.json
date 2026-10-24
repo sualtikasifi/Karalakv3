@@ -64,11 +64,20 @@
         ]
       },
       {
-        "source": "/oyna/**/*.@(webp|ttf|png|jpg|svg|m4a|mp3|mp4)",
+        "source": "/oyna/**/*.@(webp|ttf|woff2|png|jpg|svg|m4a|mp3|mp4)",
         "headers": [
           {
             "key": "Cache-Control",
             "value": "public, max-age=31536000"
+          }
+        ]
+      },
+      {
+        "source": "/indir/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
           }
         ]
       }
@@ -89,6 +98,26 @@
       {
         "source": "/",
         "destination": "/oyna/index.html"
+      },
+      {
+        "source": "/download",
+        "destination": "/indir/index.html"
+      },
+      {
+        "source": "/download/",
+        "destination": "/indir/index.html"
+      },
+      {
+        "source": "/indir",
+        "destination": "/indir/index.html"
+      },
+      {
+        "source": "/d/**",
+        "destination": "/indir/index.html"
+      },
+      {
+        "source": "/f/**",
+        "destination": "/indir/index.html"
       }
     ]
   }

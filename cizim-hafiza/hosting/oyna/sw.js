@@ -5,7 +5,7 @@ self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil((async () => { for (const k of await caches.keys()) if (k !== CACHE) await caches.delete(k); await self.clients.claim(); })()));
 self.addEventListener("fetch", (e) => {
   const u = new URL(e.request.url);
-  if (e.request.method !== "GET" || u.origin !== location.origin || !/\.(webp|png|jpg|svg|ttf|m4a|mp3|mp4)$/.test(u.pathname)) return;
+  if (e.request.method !== "GET" || u.origin !== location.origin || !/\.(webp|png|jpg|svg|ttf|woff2|m4a|mp3|mp4)$/.test(u.pathname)) return;
   // Pictures are served from the phone at once (they are kept for a year); a quiet re-check in the background picks up a changed
   // file for the next visit, so a replaced picture still arrives without a version number in its name.
   e.respondWith((async () => {

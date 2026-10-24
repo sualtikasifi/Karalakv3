@@ -734,19 +734,19 @@ export async function runFinalizeLeaguePeriod(): Promise<void> {
 // ---------------------------------------------------------------------------
 
 /**
- * XP granted to BOTH sides — whoever sent a friend-invite link and the person
+ * Gold granted to BOTH sides — whoever sent a friend-invite link and the person
  * who opened it — once the invitee reaches the level below. Keep in sync with FriendsScreen's
  * friends_invite_reward_hint / InviteShareUtil's share_friend_reward_hint on
  * the Android side — there is no shared source of truth between the two,
  * this project has no build step that could enforce one.
  */
-const REFERRAL_REWARD_XP = 500;
+const REFERRAL_REWARD_GOLD = 500;
 const REFERRAL_REWARD_MIN_LEVEL = 5;
 // Both closed the same way an audit flagged this pipeline as farmable:
 // `level` is a client-published field (see users/{uid} in firestore.rules)
 // with no proof the invitee ever actually played to earn it — a script
 // could create a throwaway anon account, stamp invitedByUid, then
-// immediately publish level: 5 and collect 500 XP with zero real gameplay,
+// immediately publish level: 5 and collect 500 gold with zero real gameplay,
 // repeated without limit for one inviter.
 //
 // MIN_ACCOUNT_AGE_MS makes that require real wall-clock time per fake
@@ -756,7 +756,7 @@ const REFERRAL_REWARD_MIN_LEVEL = 5;
 const REFERRAL_REWARD_MIN_ACCOUNT_AGE_MS = 24 * 60 * 60 * 1000;
 // A cap on how many rewards one inviter can ever collect — generous enough
 // that no real player's genuine friend circle hits it, but it bounds the
-// worst case of the exploit above to a fixed, small amount of stolen XP
+// worst case of the exploit above to a fixed, small amount of stolen gold
 // instead of an unbounded farm.
 const REFERRAL_REWARD_MAX_PER_INVITER = 30;
 
@@ -833,7 +833,8 @@ export async function runGrantReferralRewards(): Promise<void> {
       db.doc(`users/${inviterUid}/private/pendingRewards`),
       {
         pending: admin.firestore.FieldValue.arrayUnion({
-          amount: REFERRAL_REWARD_XP,
+          amount: REFERRAL_REWARD_GOLD,
+          currency: "gold",
           reason: "referral",
           sourceUid: doc.id,
           createdAt: Date.now(),
@@ -848,7 +849,8 @@ export async function runGrantReferralRewards(): Promise<void> {
       db.doc(`users/${doc.id}/private/pendingRewards`),
       {
         pending: admin.firestore.FieldValue.arrayUnion({
-          amount: REFERRAL_REWARD_XP,
+          amount: REFERRAL_REWARD_GOLD,
+          currency: "gold",
           reason: "referral_invitee",
           sourceUid: inviterUid,
           createdAt: Date.now(),

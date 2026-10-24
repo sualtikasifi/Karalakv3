@@ -180,6 +180,7 @@ baselineProfile {
 
 dependencies {
     baselineProfile(project(":baselineprofile"))
+    implementation("com.android.installreferrer:installreferrer:2.2")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

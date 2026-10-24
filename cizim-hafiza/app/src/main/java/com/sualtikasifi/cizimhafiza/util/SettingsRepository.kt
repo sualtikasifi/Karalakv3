@@ -270,6 +270,16 @@ class SettingsRepository @Inject constructor(
         get() = prefs.getLong(KEY_LAST_REWARD_CHECK, 0L)
         set(value) = prefs.edit { putLong(KEY_LAST_REWARD_CHECK, value) }
 
+    /** True once the Play install referrer has been looked at (it only exists for the first launch after an install). */
+    var installReferrerHandled: Boolean
+        get() = prefs.getBoolean(KEY_INSTALL_REFERRER_HANDLED, false)
+        set(value) = prefs.edit { putBoolean(KEY_INSTALL_REFERRER_HANDLED, value) }
+
+    /** The friend code an install link carried, kept until it has been attributed (see ReferralRewardClaimer). */
+    var pendingInviterCode: String?
+        get() = prefs.getString(KEY_PENDING_INVITER_CODE, null)
+        set(value) = prefs.edit { if (value == null) remove(KEY_PENDING_INVITER_CODE) else putString(KEY_PENDING_INVITER_CODE, value) }
+
     /** Stores the server-verified username and locks it for good. */
     fun lockUsername(name: String) {
         setNickname(name)
@@ -1250,6 +1260,8 @@ class SettingsRepository @Inject constructor(
         const val KEY_USERNAME_CHANGES = "username_changes"
         const val KEY_USERNAME_VERIFIED = "username_verified"
         const val KEY_LAST_REWARD_CHECK = "last_reward_check_millis"
+        const val KEY_INSTALL_REFERRER_HANDLED = "install_referrer_handled"
+        const val KEY_PENDING_INVITER_CODE = "pending_inviter_code"
         const val KEY_LAST_PENALTY_CHECK = "last_penalty_check_millis"
         const val KEY_AVATAR_SOURCE = "avatar_source"
         const val NICKNAME_MIN = 2

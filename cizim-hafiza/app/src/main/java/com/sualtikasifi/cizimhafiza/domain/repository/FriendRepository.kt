@@ -137,7 +137,7 @@ interface FriendRepository {
      * amount actually applied, for a one-time "kazandın!" toast, or 0 if
      * nothing was pending.
      */
-    suspend fun claimPendingRewards(): Int
+    suspend fun claimPendingRewards(): PendingRewardTotals
 }
 
 class FriendCodeNotFoundException : Exception("Bu kodla bir kullanıcı bulunamadı")
@@ -154,3 +154,8 @@ class FriendRequestLimitException : Exception("Bugün çok fazla arkadaşlık is
  * outright rejection.
  */
 class BotFriendRequestPendingException : Exception("İstek gönderildi, henüz cevap yok")
+
+/** What [FriendRepository.claimPendingRewards] brought in: entries tagged `currency: "gold"` count as gold, older untagged ones as XP. */
+data class PendingRewardTotals(val xp: Int = 0, val gold: Int = 0) {
+    val isEmpty get() = xp <= 0 && gold <= 0
+}

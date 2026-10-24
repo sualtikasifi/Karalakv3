@@ -188,6 +188,8 @@ class MainMenuViewModel @Inject constructor(
     /** A referral reward claimed since app start, for a one-time "kazandın!" toast — see ReferralRewardClaimer. */
     val referralRewardXp: StateFlow<Int> = referralRewardClaimer.lastClaimedXp
 
+    val referralRewardGold: StateFlow<Int> = referralRewardClaimer.lastClaimedGold
+
     fun consumeReferralRewardNotice() = referralRewardClaimer.consumeClaimedNotice()
 
     private val _penaltyWarning = MutableStateFlow<Penalty?>(null)
