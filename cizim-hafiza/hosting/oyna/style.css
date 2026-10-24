@@ -1,6 +1,6 @@
-@font-face{font-family:Baloo;src:url(fonts/baloo2_extrabold.ttf);font-weight:800}
-@font-face{font-family:Nunito;src:url(fonts/nunito_extrabold.ttf);font-weight:800;font-display:swap}
-@font-face{font-family:Baloo;src:url(fonts/baloo2_bold.ttf);font-weight:600}
+@font-face{font-family:Baloo;src:url(fonts/baloo2_extrabold.woff2) format("woff2");font-weight:800}
+@font-face{font-family:Nunito;src:url(fonts/nunito_extrabold.woff2) format("woff2");font-weight:800;font-display:swap}
+@font-face{font-family:Baloo;src:url(fonts/baloo2_bold.woff2) format("woff2");font-weight:600}
 :root{--u:1px;--ink:#3a2a22;--orange:#f26a1b;--wood:#7a3a10}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{-webkit-text-size-adjust:100%;text-size-adjust:100%;margin:0;height:100%;overflow:hidden;background:#5a2a0c url(img/bg_result_wood.webp) center/cover;font-family:Baloo,system-ui,sans-serif;font-weight:800;color:var(--ink);overscroll-behavior:none;user-select:none;-webkit-user-select:none}

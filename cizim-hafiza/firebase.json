@@ -64,7 +64,7 @@
         ]
       },
       {
-        "source": "/oyna/**/*.@(webp|ttf|png|jpg|svg|m4a|mp3|mp4)",
+        "source": "/oyna/**/*.@(webp|ttf|woff2|png|jpg|svg|m4a|mp3|mp4)",
         "headers": [
           {
             "key": "Cache-Control",
