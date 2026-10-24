@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.chests
 
+import androidx.compose.animation.core.animateFloat
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 
 import android.app.Activity
@@ -354,6 +355,8 @@ private fun ChestButtonFace(action: ChestAction, u: Dp, fs: (Float) -> TextUnit)
 @Composable
 private fun ChestContentsPanel(tier: ChestTier, u: Dp, fs: (Float) -> TextUnit, modifier: Modifier) {
     val stars = tier.rarityStars()
+    // the surprise chest lists one more prize: its four lines are set a little smaller so every one fits the parchment
+    val tight = tier == ChestTier.RARE
     Column(
         modifier = modifier.padding(horizontal = u * 14f, vertical = u * 6f),
         verticalArrangement = Arrangement.SpaceEvenly
@@ -361,13 +364,13 @@ private fun ChestContentsPanel(tier: ChestTier, u: Dp, fs: (Float) -> TextUnit, 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.chest_detail_contents_title),
-                style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(36f), color = ChestInk),
+                style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(if (tight) 31f else 36f), color = ChestInk),
                 maxLines = 1,
                 modifier = Modifier.weight(1f)
             )
             Text(
                 text = "★".repeat(stars) + "☆".repeat(3 - stars) + " " + stringResource(tier.rarityLabelRes()),
-                style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(28f), color = tier.accent()),
+                style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(if (tight) 24f else 28f), color = tier.accent()),
                 maxLines = 1,
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
@@ -375,7 +378,7 @@ private fun ChestContentsPanel(tier: ChestTier, u: Dp, fs: (Float) -> TextUnit, 
                     .padding(horizontal = u * 18f, vertical = u * 4f)
             )
         }
-        ContentsRow(emoji = "🪙", text = stringResource(R.string.chest_detail_gold, tier.goldReward.first, tier.goldReward.last), u = u, fs = fs)
+        ContentsRow(emoji = "🪙", text = stringResource(R.string.chest_detail_gold, tier.goldReward.first, tier.goldReward.last), u = u, fs = fs, tight = tight)
         ContentsRow(
             emoji = "🎲",
             text = when (tier) {
@@ -383,24 +386,24 @@ private fun ChestContentsPanel(tier: ChestTier, u: Dp, fs: (Float) -> TextUnit, 
                 ChestTier.GOLD -> stringResource(R.string.chest_detail_jokers_gold, 30)
                 ChestTier.RARE -> stringResource(R.string.chest_detail_jokers_rare, 40)
             },
-            u = u, fs = fs
+            u = u, fs = fs, tight = tight
         )
         if (tier == ChestTier.RARE) {
-            ContentsRow(emoji = "✏️", text = stringResource(R.string.chest_detail_pen, 12), u = u, fs = fs)
+            ContentsRow(emoji = "✏️", text = stringResource(R.string.chest_detail_pen, 12), u = u, fs = fs, tight = tight)
         }
     }
 }
 
 @Composable
-private fun ContentsRow(emoji: String, text: String, u: Dp, fs: (Float) -> TextUnit) {
+private fun ContentsRow(emoji: String, text: String, u: Dp, fs: (Float) -> TextUnit, tight: Boolean = false) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(u * 16f)) {
         Box(
-            modifier = Modifier.size(u * 38f).clip(androidx.compose.foundation.shape.CircleShape).background(Color.White.copy(alpha = 0.8f)),
+            modifier = Modifier.size(u * (if (tight) 32f else 38f)).clip(androidx.compose.foundation.shape.CircleShape).background(Color.White.copy(alpha = 0.8f)),
             contentAlignment = Alignment.Center
-        ) { Text(text = emoji, fontSize = fs(24f)) }
+        ) { Text(text = emoji, fontSize = fs(if (tight) 20f else 24f)) }
         FitText(
             text = text,
-            style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.Bold, fontSize = fs(30f), color = Color(0xFF4A3426)),
+            style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.Bold, fontSize = fs(if (tight) 26f else 30f), color = Color(0xFF4A3426)),
             maxLines = 1, minScale = 0.6f,
             contentAlignment = Alignment.CenterStart,
             modifier = Modifier.weight(1f)
@@ -500,12 +503,41 @@ private fun ChestStage(tier: ChestTier, bubble: Bubble?, wobble: Float, u: Dp, f
         modifier = modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onTapChest),
         contentAlignment = Alignment.BottomCenter
     ) {
+        // The chest hovers over the stage as if in open space: it drifts up and down slowly while a soft shadow on the floor breathes
+        // with it. The pictures leave different empty margins below the chest, so each tier says how much of its width that is, and is
+        // sized for the same visible width (372 units).
+        val chestW = when (tier) { ChestTier.SILVER -> 500f; ChestTier.GOLD -> 515f; ChestTier.RARE -> 551f }
+        val floorGap = when (tier) { ChestTier.SILVER -> 0.148f; ChestTier.GOLD -> 0.019f; ChestTier.RARE -> 0.0375f }
+        val hoverTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "chestHover")
+        val hover by hoverTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                androidx.compose.animation.core.tween(1400, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                androidx.compose.animation.core.RepeatMode.Reverse
+            ),
+            label = "chestHoverY"
+        )
+        androidx.compose.foundation.Canvas(
+            modifier = Modifier
+                .offset(y = -(u * 22f))
+                .size(u * 300f, u * 30f)
+                .graphicsLayer { val s = 1f - 0.2f * hover; scaleX = s; scaleY = s }
+        ) {
+            for ((k, a) in listOf(1f to 0.07f, 0.72f to 0.09f, 0.46f to 0.12f)) {
+                drawOval(
+                    color = Color.Black.copy(alpha = a),
+                    topLeft = androidx.compose.ui.geometry.Offset(size.width * (1f - k) / 2f, size.height * (1f - k) / 2f),
+                    size = androidx.compose.ui.geometry.Size(size.width * k, size.height * k)
+                )
+            }
+        }
         Box(
             modifier = Modifier
-                .padding(bottom = u * 36f)
+                .offset(y = u * (floorGap * chestW - 38f - 24f - 20f * hover))
                 .graphicsLayer { rotationZ = wobble * 6f }
         ) {
-            ChestImage(tier = tier, width = u * 400f)
+            ChestImage(tier = tier, width = u * chestW)
         }
         AnimatedVisibility(
             visible = bubble != null,

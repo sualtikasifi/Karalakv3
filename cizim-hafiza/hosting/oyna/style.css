@@ -996,8 +996,15 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .pc-x{cursor:pointer;-webkit-tap-highlight-color:transparent}.pc-x:active{transform:scale(.9)}
 .pc-b2{position:relative;display:flex;align-items:center;justify-content:center;background:url(img/chest_card_btn.webp) center/100% 100% no-repeat;cursor:pointer;-webkit-tap-highlight-color:transparent}.pc-b2:active{transform:scale(.94)}
 .cd2 .pc-t span{display:block;color:#3a2416;font-weight:800;white-space:nowrap}
-.cd2-stage{align-items:flex-end!important;padding-bottom:calc(var(--k,.4)*36px);cursor:pointer}
-.cd2-chest{width:65.6%;display:block;transform-origin:50% 80%;position:relative}.cd2-chest.wig{animation:wig .56s}
+.cd2-stage{align-items:flex-end!important;padding-bottom:0;cursor:pointer}
+/* the chest stands on the stage floor: its base sits 38 units above the panel edge whatever empty margin its picture has (--fp) */
+.cd2-hover{width:calc(var(--cw,488)/610*100%);margin-bottom:calc(var(--k,.4)*1px*(62 - var(--fp,0)*var(--cw,488)));position:relative;animation:cdhover 1.4s ease-in-out infinite alternate}
+.cd2-chest{width:100%;display:block;transform-origin:50% 80%;position:relative}.cd2-chest.wig{animation:wig .56s}
+/* the chest drifts up and down as if in open space, with a soft shadow on the floor breathing along */
+@keyframes cdhover{from{transform:translateY(0)}to{transform:translateY(calc(var(--k,.4)*-20px))}}
+.cd2-shadow{position:absolute;left:50%;bottom:calc(var(--k,.4)*22px);width:calc(var(--k,.4)*300px);height:calc(var(--k,.4)*30px);margin-left:calc(var(--k,.4)*-150px);border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.32) 0,rgba(0,0,0,.16) 45%,transparent 72%);animation:cdshadow 1.4s ease-in-out infinite alternate;pointer-events:none}
+@keyframes cdshadow{from{transform:scale(1)}to{transform:scale(.8)}}
+@media (prefers-reduced-motion:reduce){.cd2-hover,.cd2-shadow{animation:none}}
 .cd2-stage .cd-bubble{top:calc(var(--k,.4)*14px)}.cd2-stage .cd-bubble span{font-size:calc(var(--k,.4)*30px);padding:calc(var(--k,.4)*10px) calc(var(--k,.4)*22px);border-radius:calc(var(--k,.4)*34px);border-width:calc(var(--k,.4)*3px);max-width:calc(var(--k,.4)*560px)}.cd2-stage .cd-bubble i{width:calc(var(--k,.4)*22px);height:calc(var(--k,.4)*12px)}
 .cd2-contents{flex-direction:column;align-items:stretch!important;justify-content:space-evenly!important;text-align:left!important;padding:calc(var(--k,.4)*6px) calc(var(--k,.4)*14px)}
 .cd2-h{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--k,.4)*8px)}.cd2-h b{font-size:calc(var(--k,.4)*36px);font-weight:800;color:#3a2416;white-space:nowrap}.cd2-h span{font-size:calc(var(--k,.4)*28px);font-weight:800;padding:calc(var(--k,.4)*4px) calc(var(--k,.4)*18px);border-radius:99px;white-space:nowrap}
@@ -1067,3 +1074,10 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #h-xpbanner.strip .xb-time{left:70%;width:26%;top:22%;height:56%;background:#2a1808;border-radius:99px}
 @keyframes xpb{0%{opacity:1}14.3%{opacity:.35}28.6%{opacity:1}42.9%{opacity:.35}57.1%{opacity:1}71.4%{opacity:.35}85.7%{opacity:1}100%{opacity:0}}
 #h-xpsign.hidden,#h-xpbadge.hidden,#h-xpbanner.hidden{display:none!important}
+/* the surprise chest lists one more prize: four lines, a little smaller */
+.cd2.t-RARE .cd2-h b,.cd2-contents.tight .cd2-h b{font-size:calc(var(--k,.4)*31px)}
+.cd2-contents.tight .cd2-h span{font-size:calc(var(--k,.4)*24px)}
+.cd2-contents.tight .cd2-r i{width:calc(var(--k,.4)*32px);height:calc(var(--k,.4)*32px);font-size:calc(var(--k,.4)*20px)}
+.cd2-contents.tight .cd2-r span{font-size:calc(var(--k,.4)*26px)}
+.cd2-contents.tight .cd2-h,.cd2-contents.tight .cd2-r{height:calc(var(--k,.4)*34px);line-height:1}
+.cd2-contents.tight .cd2-r span{line-height:1}

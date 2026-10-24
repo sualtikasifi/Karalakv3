@@ -7,7 +7,13 @@ export async function loadStrings() { if (!STR) STR = await (await fetch("string
 export const ready = () => !!STR;
 export function S(key, ...a) {
   const e = STR && STR[key]; if (!e) return key;
-  return (e[L] || e.en || key).replace(/%(\d)\$[ds]/g, (_, i) => (a[+i - 1] ?? "")).replace(/%%/g, "%");
+  // %1$d / %1$s plain, %1$,d grouped like the app ("6.245" / "6,245"), %1$.1f with that many decimals (comma in Turkish)
+  return (e[L] || e.en || key).replace(/%(\d)\$(,|\.(\d))?([dsf])/g, (_, i, flag, prec) => {
+    const v = a[+i - 1]; if (v == null) return "";
+    if (flag === ",") return fmtNum(v);
+    if (prec !== undefined) { const t = Number(v).toFixed(+prec); return L === "tr" ? t.replace(".", ",") : t; }
+    return v;
+  }).replace(/%%/g, "%");
 }
 /** A thousands-grouped number the way the app writes it in Turkish ("6.245") and English ("6,245"). */
 export const fmtNum = (n) => Number(n).toLocaleString(L === "tr" ? "tr-TR" : "en-US");
