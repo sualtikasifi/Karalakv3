@@ -46,6 +46,11 @@ export function layoutOnline(c) {
     place($("oc-back"), 20, 40, 110, 106); place($("oc-title"), 160, 258, 520, 110);
     place($("oc-paper"), 42, 472, 757, 925); place($("oc-body"), 110, 520, 621, 840);
     place($("oc-make"), 65, 1610, 710, 172); place($("oc-msg"), 60, 1790, 720, 60);
+  } else if (cur === "onfin") {
+    // as the app's waiting scene: the title is written on the painted sign, the score card is centred in what is left below it
+    place($("of-title"), 0, 216, 841, 123);
+    const u = c.u(), col = $("of-col");
+    col.style.left = 56 * u + "px"; col.style.width = 729 * u + "px"; col.style.top = 350 * u + "px"; col.style.bottom = (1870 - 1800) * u + "px";
   } else if (cur === "onw") {
     place($("ow-back"), 20, 40, 110, 106);
     place($("ow-title"), 0, 216, 841, 123);
@@ -142,7 +147,8 @@ function onRoom(c, r) {
   if (c.current() === "onw") {
     if (r.status === "PLAYING" && !started && !(r.players[myId]?.pendingNextRound)) { started = true; clearInterval(cdTimer); c.startOnlineGame(r, code); return; }
     renderLobby(c);
-  } else if (c.current() === "res2" && c.kind() === "online" && r.status === "FINISHED") renderOnlineResult(c, true);
+  } else if (c.current() === "onfin") { if (r.status === "FINISHED") renderOnlineResult(c); else renderFinished(c); }
+  else if (c.current() === "res2" && c.kind() === "online" && r.status === "FINISHED") renderOnlineResult(c, true);
   else if (c.current() === "search" && c.kind() === "online" && r.status === "FINISHED") renderOnlineResult(c);
   else if (r.status === "WAITING" && started && c.kind() === "online" && c.current() === "res2") { /* host sent everyone back */ started = false; c.show("onw"); }
 }
@@ -274,10 +280,30 @@ function inviteSheet(c) {
 }
 
 // ---------- after the game ----------
+let myScore = 0;
+/** The "Bitirdin!" scene while the others are still drawing: your score, everyone's tick or hourglass, and how many are done. */
+export function renderFinished(c) {
+  const { $ } = c; $("of-title").textContent = S("online_finished_title");
+  const card = $("of-card"), all = Object.entries((room && room.players) || {}).map(([uid, p]) => ({ uid, ...p })).filter((p) => !p.left && !p.pendingNextRound);
+  all.sort((a, b) => (b.uid === myId) - (a.uid === myId));
+  const me = all.find((p) => p.uid === myId);
+  const done = all.filter((p) => p.uid === myId || p.finished).length;
+  card.replaceChildren();
+  const rows = all.map((p) => {
+    const row = el("div", "of-row"), av = frameRing(frameById(p.frameId), "ow-av");
+    row.append(av, el("span", "of-nm fitw", esc(p.uid === myId ? S("online_you_label", p.displayName) : p.displayName)));
+    const ok = p.uid === myId || p.finished;
+    row.append(el("i", "of-st" + (ok ? " ok" : ""), ok ? "✓" : "⏳"));
+    return row;
+  });
+  card.append(el("div", "of-score", String(me && me.totalScore != null ? me.totalScore : myScore)), el("div", "of-lbl", S("online_score_label")), ...rows,
+    el("div", "of-wait", S("online_waiting_for_opponent_result")), el("div", "of-cnt", S("online_players_done", done, all.length)));
+}
+
 export async function submitAndWait(c, round, score) {
   const x = T[c.lang()], ok = round.filter((w) => w.correct).length, times = round.filter((w) => w.correct).map((w) => w.ms);
   const items = round.map((w) => ({ word: w.text, isCorrect: w.correct, strokes: w.strokes, penSkin: c.P.pen }));
-  c.show("search"); c.$("s-text").textContent = x.done(score); c.$("s-sub").textContent = x.waiting;
+  myScore = score; c.show("onfin");
   try { await net.submitRoomResult(code, score, ok, round.length - ok, times.length ? Math.min(...times) : null, items); }
   catch { /* the room listener below still ends the wait if others finish */ }
   finishedLocal = true;
