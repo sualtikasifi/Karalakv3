@@ -1047,8 +1047,8 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     }
                     // Level and rank take turns under the name every five seconds, set in the same
                     // type as the league table's rows (see RankLevelLabel).
-                    // (On a very short row the chat message / waiting note takes this line's place while there is one.)
-                    if (!(tight && hasStatus)) com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(
+                    // (While there is a chat message / waiting note it takes this line's place, as on the web: three lines never fit the row.)
+                    if (!hasStatus) com.sualtikasifi.cizimhafiza.presentation.common.RankLevelLabel(
                         level = slot.level, bullet = false,
                         style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(fontSize = 11.sp, lineHeight = 12.sp, textAlign = TextAlign.Start).copy(lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both))
                     )
@@ -1059,7 +1059,7 @@ private fun PlayerSlotCard(slot: PlayerSlotUiState, activeReaction: Reaction?, m
                     // never changes the row's height — the card stays
                     // exactly SLOT_HEIGHT tall whether or not there's
                     // anything to show here right now.
-                    Box(modifier = Modifier.height(if (tight && hasStatus) 16.dp else statusH)) {
+                    Box(modifier = Modifier.height(if (hasStatus) 16.dp else statusH)) {
                         Crossfade(targetState = activeReaction, label = "slot-status") { reaction ->
                             if (reaction != null) {
                                 val phraseTextRes = presetPhraseTextRes(reaction.messageKey)
