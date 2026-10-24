@@ -102,7 +102,9 @@ function detail(c, id) {
   const { put, fit } = card; let bubbleT = null;
   const title = put("pc-t", CD.title, `<span>${S(T.label)}</span>`);
   // the stage: the chest (tappable, it answers in a speech bubble)
-  const stage = put("cd2-stage", CD.stage, ""), img = el("img", "cd2-chest"); img.src = `img/${T.art}.webp`; img.alt = ""; img.style.setProperty("--fp", { SILVER: 0.148, GOLD: 0.019, RARE: 0.0375 }[tier]); img.style.setProperty("--cw", { SILVER: 500, GOLD: 515, RARE: 551 }[tier]); /* same visible width for every tier */ stage.append(img);
+  const stage = put("cd2-stage", CD.stage, ""), img = el("img", "cd2-chest"), hov = el("div", "cd2-hover"); img.src = `img/${T.art}.webp`; img.alt = "";
+  hov.style.setProperty("--fp", { SILVER: 0.148, GOLD: 0.019, RARE: 0.0375 }[tier]); hov.style.setProperty("--cw", { SILVER: 500, GOLD: 515, RARE: 551 }[tier]); /* same visible width for every tier */
+  hov.append(img); stage.append(el("i", "cd2-shadow"), hov);
   const bubble = el("div", "cd-bubble hidden"); stage.append(bubble);
   const say = (key) => { bubble.innerHTML = `<span>${S(key)}</span><i></i>`; bubble.classList.remove("hidden"); img.classList.remove("wig"); void img.offsetWidth; img.classList.add("wig"); clearTimeout(bubbleT); bubbleT = setTimeout(() => bubble.classList.add("hidden"), 1900 + 500); };
   // what a chest of this tier can hold

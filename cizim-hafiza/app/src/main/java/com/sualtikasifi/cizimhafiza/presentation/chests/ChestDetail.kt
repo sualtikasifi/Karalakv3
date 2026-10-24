@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.chests
 
+import androidx.compose.animation.core.animateFloat
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 
 import android.app.Activity
@@ -502,14 +503,38 @@ private fun ChestStage(tier: ChestTier, bubble: Bubble?, wobble: Float, u: Dp, f
         modifier = modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onTapChest),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // The chest stands on the stage's wooden floor (its base about 38 units above the card's lit panel edge), not in mid-air.
-        // The pictures carry different empty margins below the chest, so each tier says how much of its width that is.
-        // The three pictures leave different empty margins around the chest, so each is sized for the same visible width (372 units).
+        // The chest hovers over the stage as if in open space: it drifts up and down slowly while a soft shadow on the floor breathes
+        // with it. The pictures leave different empty margins below the chest, so each tier says how much of its width that is, and is
+        // sized for the same visible width (372 units).
         val chestW = when (tier) { ChestTier.SILVER -> 500f; ChestTier.GOLD -> 515f; ChestTier.RARE -> 551f }
         val floorGap = when (tier) { ChestTier.SILVER -> 0.148f; ChestTier.GOLD -> 0.019f; ChestTier.RARE -> 0.0375f }
+        val hoverTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "chestHover")
+        val hover by hoverTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                androidx.compose.animation.core.tween(1400, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                androidx.compose.animation.core.RepeatMode.Reverse
+            ),
+            label = "chestHoverY"
+        )
+        androidx.compose.foundation.Canvas(
+            modifier = Modifier
+                .offset(y = -(u * 22f))
+                .size(u * 300f, u * 30f)
+                .graphicsLayer { val s = 1f - 0.2f * hover; scaleX = s; scaleY = s }
+        ) {
+            for ((k, a) in listOf(1f to 0.07f, 0.72f to 0.09f, 0.46f to 0.12f)) {
+                drawOval(
+                    color = Color.Black.copy(alpha = a),
+                    topLeft = androidx.compose.ui.geometry.Offset(size.width * (1f - k) / 2f, size.height * (1f - k) / 2f),
+                    size = androidx.compose.ui.geometry.Size(size.width * k, size.height * k)
+                )
+            }
+        }
         Box(
             modifier = Modifier
-                .offset(y = u * (floorGap * chestW - 38f))
+                .offset(y = u * (floorGap * chestW - 38f - 24f - 20f * hover))
                 .graphicsLayer { rotationZ = wobble * 6f }
         ) {
             ChestImage(tier = tier, width = u * chestW)
