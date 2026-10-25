@@ -620,6 +620,7 @@ function showFound(opp, go) {
   const x = t(); show("found"); $("f-title").src = lang === "tr" ? "img/mf_title.webp" : "img/mf_title_en.webp";
   $("f-tagt").textContent = x.found; $("f-tagt").style.whiteSpace = "pre-line";
   $("f-t1").querySelector("span").textContent = x.tip1(10); $("f-t2").querySelector("span").textContent = x.tip2; $("f-t3").querySelector("span").textContent = x.tip3;
+  fitAll(); // the tips are written after show() laid the screen out; on a small phone the longest runs past its note otherwise
   const card = (id, nick, lvl, frame, xp) => {
     const e = $(id); e.querySelector(".mc-rb span").textContent = nick; e.querySelector(".mc-xp b").textContent = xp.toLocaleString() + " XP";
     const fr = frameRing(frameById(frame)); fr.style.cssText += ";width:100%;height:100%"; const av = e.querySelector(".mc-av"); av.replaceChildren(fr); av.append(Object.assign(document.createElement("b"), { className: "mc-lv", textContent: lvl }));
