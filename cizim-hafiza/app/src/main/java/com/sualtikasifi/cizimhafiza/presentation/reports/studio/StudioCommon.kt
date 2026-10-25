@@ -195,6 +195,17 @@ class TextPainter {
         return layout.height.toFloat()
     }
 
+    /** How wide its longest line and how tall [draw] would lay [text] out, without drawing it (to fit a box behind it). */
+    fun measure(
+        text: String, width: Int, size: Float, maxLines: Int, face: Typeface, color: Int,
+        align: Layout.Alignment = Layout.Alignment.ALIGN_CENTER, spacing: Float = 1.02f, balanced: Boolean = false
+    ): Pair<Float, Float> {
+        if (text.isBlank()) return 0f to 0f
+        val key = "$text|$width|$size|$maxLines|${face.hashCode()}|$color|$align|$spacing|$balanced"
+        val layout = cache.getOrPut(key) { build(text, width, size, maxLines, face, color, align, spacing, balanced) }
+        return (0 until layout.lineCount).maxOf { layout.getLineWidth(it) } to layout.height.toFloat()
+    }
+
     /**
      * Karaoke subtitle: the words already said in [spoken], the rest in [upcoming]. Rebuilt every frame (the split
      * moves), which is cheap next to everything else a frame draws.

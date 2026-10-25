@@ -23,14 +23,15 @@ import kotlin.math.hypot
 import kotlin.math.min
 
 /**
- * Draws "Gerçek Olsaydı" in 1080×1920. When the project has a hook it opens on the game's own drawing screen: the
- * opening drawing is drawn again on its canvas while the timer runs down, its word on the notepad and the hook on
- * the board under the canvas; then the first clip opens out of the drawing. After that, the clips one after the
- * other, each full frame with its own sound, and over each, in the top left, the Karalak card (the game's wooden
- * frame with its logo): the player's drawing in the middle of it, the player's frame with the default picture in the
- * round slot at the bottom and their name (or "anonymous") beside it. Its size and place are the [layout] set in the
- * panel. The only voice is the hook's, when it was voiced; plain cuts between clips, no subtitles. The right edge
- * and the bottom band stay clear for the buttons and caption TikTok, Reels and Shorts put there.
+ * Draws a "Gerçek Olsaydı" video in 1080×1920: one drawing's, the project's featured one. When it has a hook it
+ * opens on the game's own drawing screen: the drawing is drawn again on its canvas while the timer runs down, its word
+ * on the notepad and the hook on the board under the canvas; then the clip opens out of the drawing. The clip plays
+ * full frame with its own sound and, in the top left, the Karalak card (the game's wooden frame with its logo): the
+ * player's drawing in the middle of it, the player's frame with the default picture in the round slot at the bottom
+ * and their name (or "anonymous") beside it. Its size and place are the [layout] set in the panel. When it has a
+ * closing line, the clip's last frame is then held under it. Karalak's voice says the hook and the closing when they
+ * were voiced, never over the clip. The right edge and the bottom band stay clear for the buttons and caption TikTok,
+ * Reels and Shorts put there.
  */
 class RealRenderer(
     private val assets: StudioAssets,
@@ -43,19 +44,24 @@ class RealRenderer(
     layout: CardLayout = CardLayout(),
     /** Pictures picked by hand for the round slot, by drawing id; any drawing without one gets the default picture. */
     private val photoFiles: Map<String, File> = emptyMap(),
-    /** The project's [RealProject.hookVoice] file: the opening line said aloud, laid at the start of the opening. */
-    hookVoiceFile: File? = null
+    /** The featured reveal's lines said aloud: the hook's voice, laid at the start of the opening, and the closing's, at its start. */
+    hookVoiceFile: File? = null,
+    outroVoiceFile: File? = null
 ) : VoicedVideo {
-    private val shown = project.shown
-    val events: List<RealEvent> = RealTimeline.build(shown, project.hookMs)
+    /** The video is one drawing's: the project's featured one. */
+    private val featured = project.featured
+    private val shown = listOfNotNull(featured)
+    val events: List<RealEvent> = RealTimeline.build(featured)
     override val totalMs: Long = RealTimeline.totalMs(events)
     override val voiceStarts: List<Pair<Int, Long>> = emptyList()
     override val sounds: List<ClipSound> = buildList {
-        if (events.firstOrNull()?.phase == RealPhase.Hook && hookVoiceFile != null && project.hookVoice != null) {
-            add(ClipSound(hookVoiceFile, RealTimeline.VOICE_AT, project.hookVoiceMs, 1f))
-        }
-        if (clipGain > 0f) events.filter { it.phase == RealPhase.Clip }.forEach { e ->
-            clipFiles[shown.getOrNull(e.index)?.sampleId]?.let { add(ClipSound(it, e.clipAtMs, e.clipMs, clipGain)) }
+        val f = featured ?: return@buildList
+        events.forEach { e ->
+            when (e.phase) {
+                RealPhase.Hook -> if (hookVoiceFile != null && f.hook.voice != null) add(ClipSound(hookVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.hook.voiceMs, 1f))
+                RealPhase.Clip -> if (clipGain > 0f) clipFiles[f.sampleId]?.let { add(ClipSound(it, e.clipAtMs, e.clipMs, clipGain)) }
+                RealPhase.Outro -> if (outroVoiceFile != null && f.outro.voice != null) add(ClipSound(outroVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.outro.voiceMs, 1f))
+            }
         }
     }
 
@@ -110,6 +116,7 @@ class RealRenderer(
         val e = RealTimeline.at(events, t)
         val reveal = shown.getOrNull(e.index) ?: return
         if (e.phase == RealPhase.Hook) { drawHook(canvas, e, reveal, t); return }
+        if (e.phase == RealPhase.Outro) { drawOutro(canvas, e, reveal, t); return }
         canvas.drawColor(C.INK)
         val frame = clips[reveal.sampleId]?.frameAt((t - e.clipAtMs).coerceIn(0L, e.clipMs))
         if (frame != null) cover(canvas, frame, RectF(0f, 0f, W.toFloat(), H.toFloat()))
@@ -190,7 +197,7 @@ class RealRenderer(
         val pop = 0.86f + 0.14f * Ease.backOut(min(1f, local / 260f))
         canvas.save()
         canvas.scale(pop, pop, W / 2f, boardCy)
-        text.draw(canvas, project.hook.trim(), W / 2f, boardCy, BOARD_W, 74f, 2, assets.display, SCENE_INK, spacing = 0.8f, balanced = true)
+        text.draw(canvas, reveal.hook.text.trim(), W / 2f, boardCy, BOARD_W, 74f, 2, assets.display, SCENE_INK, spacing = 0.8f, balanced = true)
         canvas.restore()
 
         // the first clip opens out of the drawing
@@ -210,6 +217,37 @@ class RealRenderer(
             edge.strokeWidth = 10f * (1f - p)
             if (edge.strokeWidth > 0.5f) canvas.drawCircle(cx, cy, r, edge)
         }
+    }
+
+    /**
+     * The closing: the clip's last frame held, drifting slowly closer so it does not look stuck, the card still on it,
+     * and Karalak's reaction as a white subtitle above the band the apps cover.
+     */
+    private fun drawOutro(canvas: Canvas, e: RealEvent, reveal: RealReveal, t: Long) {
+        canvas.drawColor(C.INK)
+        val frame = clips[reveal.sampleId]?.frameAt((e.clipMs - LAST_FRAME_BACK).coerceAtLeast(0L))
+        if (frame != null) {
+            val z = 1f + 0.04f * Ease.out(e.progress(t))
+            canvas.save()
+            canvas.scale(z, z, W / 2f, H / 2f)
+            cover(canvas, frame, RectF(0f, 0f, W.toFloat(), H.toFloat()))
+            canvas.restore()
+        }
+        project.drawing(reveal.sampleId)?.let { drawCard(canvas, it, 1f) }
+
+        val line = reveal.outro.text.trim()
+        val (w, h) = text.measure(line, SUB_W, SUB_SIZE, 2, assets.display, C.INK, spacing = 0.8f, balanced = true)
+        if (h <= 0f) return
+        val pop = 0.86f + 0.14f * Ease.backOut(min(1f, (t - e.startMs) / 260f))
+        canvas.save()
+        canvas.scale(pop, pop, W / 2f, SUB_CY)
+        val box = RectF(W / 2f - w / 2f - 38f, SUB_CY - h / 2f - 24f, W / 2f + w / 2f + 38f, SUB_CY + h / 2f + 24f)
+        plain.color = C.WHITE
+        plain.alpha = 240
+        canvas.drawRoundRect(box, 32f, 32f, plain)
+        plain.alpha = 255
+        text.draw(canvas, line, W / 2f, SUB_CY, SUB_W, SUB_SIZE, 2, assets.display, C.INK, spacing = 0.8f, balanced = true)
+        canvas.restore()
     }
 
     /** bg_draw at the video's width: its top and bottom as painted, its plain middle squeezed into what is left. */
@@ -287,6 +325,12 @@ class RealRenderer(
         private const val SCENE_BOTTOM = 801
         /** The hook may take the board's width less the game's margins and the strip TikTok's buttons cover. */
         private const val BOARD_W = 880
+        /** The closing's subtitle: its widest line, its size, and its middle, kept above the apps' caption band. */
+        private const val SUB_W = 860
+        private const val SUB_SIZE = 70f
+        private const val SUB_CY = 1360f
+        /** How far before its end the clip's held frame is taken, clear of a last frame that may come out black. */
+        private const val LAST_FRAME_BACK = 60L
         /** The game's 24 sp and 34 sp for the word, on a 411 dp phone, in video pixels. */
         private const val WORD_MIN = 63f
         private const val WORD_MAX = 89f

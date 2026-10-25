@@ -49,8 +49,9 @@ data class RecentDrawing(
 
 /**
  * A drawing turned real: its realistic picture (made in ChatGPT, kept for sharing as a swipe-through post and as
- * the starting frame for Gemini) and the clip of that picture moving, with sound (made in Gemini, the only thing
- * of it that goes into the video). [image] and [clip] are file names in the project's media folder.
+ * the starting frame for Gemini) and the clip of that picture moving, with sound (made in Gemini), and what Karalak
+ * says around that clip in the video: the [hook] it opens with and the [outro] it closes on. [image], [clip] and the
+ * lines' voices are file names in the project's media folder. Each drawing is a video of its own.
  */
 @Serializable
 data class RealReveal(
@@ -63,46 +64,71 @@ data class RealReveal(
     val motion: String = "",
     val image: String? = null,
     val clip: String? = null,
-    val clipMs: Long = 0L
-)
+    val clipMs: Long = 0L,
+    val hook: VoicedLine = VoicedLine(),
+    val outro: VoicedLine = VoicedLine()
+) {
+    val media: Set<String> get() = listOfNotNull(image, clip, hook.voice, outro.voice).toSet()
+
+    fun line(kind: RealLine): VoicedLine = when (kind) {
+        RealLine.Hook -> hook
+        RealLine.Outro -> outro
+    }
+
+    fun withLine(kind: RealLine, line: VoicedLine): RealReveal = when (kind) {
+        RealLine.Hook -> copy(hook = line)
+        RealLine.Outro -> copy(outro = line)
+    }
+
+    /** How long the opening lasts: long enough to read the line, and to hear all of it when it is voiced. */
+    val hookMs: Long get() = RealTimeline.hookMs(hook.text, hook.voiceMs)
+
+    /** How long the closing lasts, the same way. */
+    val outroMs: Long get() = RealTimeline.outroMs(outro.text, outro.voiceMs)
+}
+
+/** The two things Karalak says in a "Gerçek Olsaydı" video: the opening hook and the closing reaction. */
+enum class RealLine { Hook, Outro }
 
 /**
- * "Gerçek Olsaydı": a few drawings by different players, each turned into a realistic picture and a clip
- * with sound. The video opens on the [hook] (the opening drawing drawn again on the game's own screen, the
- * line on the board under it), then plays those clips one after the other, each with its drawing, its player
- * and the app's name over it.
+ * One of Karalak's lines in a video: the [text] the video shows and says (empty: none), the assistant's [options]
+ * to pick it from (each can also be rewritten by hand), and the [text] said aloud in ElevenLabs, [voice] (a file in
+ * the project's media folder) lasting [voiceMs]; no voice: the line is only written. The voice always belongs to the
+ * current [text]: changing the words drops it.
+ */
+@Serializable
+data class VoicedLine(
+    val text: String = "",
+    val options: List<String> = emptyList(),
+    val voice: String? = null,
+    val voiceMs: Long = 0L
+) {
+    /** The line set to [words]; its voice goes unless the words stay the same. */
+    fun withText(words: String): VoicedLine = if (words == text) this else copy(text = words, voice = null, voiceMs = 0L)
+}
+
+/**
+ * "Gerçek Olsaydı": drawings by different players, each turned into a realistic picture and a clip with sound,
+ * each a short video of its own. Several can be made at once and kept (the library holds them all); the video is
+ * made from the [featured] one: its drawing drawn again on the game's own screen under its hook, its clip with the
+ * player's card over it, and Karalak's closing reaction on the clip's last frame.
  */
 @Serializable
 data class RealProject(
     val drawings: List<RealDrawing> = emptyList(),
-    val reveals: List<RealReveal> = emptyList(),
-    /** The line the video opens with; empty: no opening, the video starts on the first clip. */
-    val hook: String = "",
-    /** The assistant's last ten ideas for [hook], to pick from. */
-    val hooks: List<String> = emptyList(),
-    /** The drawing [hooks] were written for: they speak of its word and its seconds. */
-    val hooksFor: String = "",
-    /**
-     * [hook] said aloud (ElevenLabs), a file in the project's media folder, and how long it lasts; null: the opening
-     * is silent. It always belongs to the current [hook]: changing the line drops it.
-     */
-    val hookVoice: String? = null,
-    val hookVoiceMs: Long = 0L
+    val reveals: List<RealReveal> = emptyList()
 ) {
     fun drawing(id: String): RealDrawing? = drawings.find { it.id == id }
-    val media: Set<String> get() = (reveals.flatMap { listOfNotNull(it.image, it.clip) } + drawings.mapNotNull { it.photo } + listOfNotNull(hookVoice)).toSet()
+    val media: Set<String> get() = (reveals.flatMap { it.media } + drawings.mapNotNull { it.photo }).toSet()
 
-    /** How long the opening lasts: long enough to read the line, and to hear all of it when it is voiced. */
-    val hookMs: Long get() = RealTimeline.hookMs(hook, if (hookVoice != null) hookVoiceMs else 0L)
-
-    /** The opening line set to [text]; its voice goes unless the line stays the same. */
-    fun withHook(text: String): RealProject = if (text == hook) this else copy(hook = text, hookVoice = null, hookVoiceMs = 0L)
-
-    /** Only reveals with their clip make it into the video; the pictures are shared on their own. */
+    /** The reveals with their clip; the pictures alone are shared on their own. */
     val shown: List<RealReveal> get() = reveals.filter { it.clip != null && drawing(it.sampleId) != null }
 
-    /** The drawing the video opens on: the first one with a clip, or the first chosen while none has one yet. */
-    val opening: RealDrawing? get() = (shown.firstOrNull() ?: reveals.firstOrNull())?.let { drawing(it.sampleId) }
+    /** The one the video is made of: the first with a clip. */
+    val featured: RealReveal? get() = shown.firstOrNull()
+
+    /** The one the video opens on, and its hook and closing are written for: [featured], or the first chosen while none has a clip. */
+    val opening: RealReveal? get() = featured ?: reveals.firstOrNull { drawing(it.sampleId) != null }
 }
 
 /**
@@ -125,18 +151,21 @@ data class CardLayout(val scale: Float = DEFAULT_SCALE, val x: Float = DEFAULT_X
 
 /**
  * One finished piece kept in the library on this phone: a drawing with everything the card shows (name, frame, picture),
- * its realistic picture and its clip. [id] is the drawing's id, so saving the same drawing again updates its entry.
+ * its realistic picture, its clip and Karalak's lines with their voices: a video ready to be made again. [id] is the drawing's id, so saving the same drawing again updates its entry.
  * The [reveal]'s files live in the project's media folder, which nothing in the library is ever pruned from.
  */
 @Serializable
 data class LibraryItem(val id: String, val savedAt: Long, val drawing: RealDrawing, val reveal: RealReveal) {
-    val media: Set<String> get() = listOfNotNull(reveal.image, reveal.clip, drawing.photo).toSet()
+    val media: Set<String> get() = reveal.media + listOfNotNull(drawing.photo)
     val hasClip: Boolean get() = reveal.clip != null
 }
 
-enum class RealPhase { Hook, Clip }
+enum class RealPhase { Hook, Clip, Outro }
 
-/** One stretch of the video: the opening (its drawing is the first clip's), or a clip playing from [clipAtMs] for [clipMs]. */
+/**
+ * One stretch of the video: the opening, a clip playing from [clipAtMs] for [clipMs], or the closing on that clip's
+ * last frame. [index] is the clip's, in the reveals shown.
+ */
 data class RealEvent(
     val phase: RealPhase,
     val index: Int,
@@ -178,8 +207,24 @@ object RealTimeline {
         return if (voiceMs <= 0L) read else maxOf(read, VOICE_AT + voiceMs + VOICE_TAIL).coerceAtMost(HOOK_VOICE_MAX)
     }
 
-    /** The opening (when [hookMs] is above 0) and then the clips, back to back. */
-    fun build(shown: List<RealReveal>, hookMs: Long = 0L): List<RealEvent> {
+    /** The closing stays long enough to read; voiced, until it has been said and a breath after. */
+    const val OUTRO_MIN = 1_500L
+    const val OUTRO_MAX = 2_600L
+    private const val OUTRO_TAIL = 350L
+    const val OUTRO_VOICE_MAX = 5_000L
+
+    /** How long the closing with [outro] lasts; 0 when there is none. Like [hookMs], but shorter: it is one quick reaction. */
+    fun outroMs(outro: String, voiceMs: Long = 0L): Long {
+        if (outro.isBlank()) return 0L
+        val read = (1_000L + outro.trim().length * 30L).coerceIn(OUTRO_MIN, OUTRO_MAX)
+        return if (voiceMs <= 0L) read else maxOf(read, VOICE_AT + voiceMs + OUTRO_TAIL).coerceAtMost(OUTRO_VOICE_MAX)
+    }
+
+    /** The video of one reveal: its opening and closing as [RealReveal.hookMs] and [RealReveal.outroMs] say. */
+    fun build(reveal: RealReveal?): List<RealEvent> = if (reveal == null) emptyList() else build(listOf(reveal), reveal.hookMs, reveal.outroMs)
+
+    /** The opening (when [hookMs] is above 0), the clips back to back, and the closing (when [outroMs] is above 0). */
+    fun build(shown: List<RealReveal>, hookMs: Long = 0L, outroMs: Long = 0L): List<RealEvent> {
         val out = mutableListOf<RealEvent>()
         var t = 0L
         if (hookMs > 0 && shown.isNotEmpty()) {
@@ -191,6 +236,9 @@ object RealTimeline {
             out += RealEvent(RealPhase.Clip, i, t, ms, clipAtMs = t, clipMs = ms)
             t += ms
         }
+        // the closing holds the last clip's last frame: it carries that clip's timing to find it
+        val last = out.lastOrNull { it.phase == RealPhase.Clip }
+        if (outroMs > 0 && last != null) out += RealEvent(RealPhase.Outro, last.index, t, outroMs, clipAtMs = last.clipAtMs, clipMs = last.clipMs)
         return out
     }
 
@@ -201,9 +249,10 @@ object RealTimeline {
 }
 
 object RealCopy {
-    /** How many ideas for the opening line the assistant writes at once. */
+    /** How many ideas for the opening line, and for the closing one, the assistant writes at once. */
     const val HOOK_COUNT = 10
-    /** Longer than this and an opening line no longer fits the board, nor is read in time. */
+    const val OUTRO_COUNT = 5
+    /** Longer than this and a line no longer fits the board or the subtitle, nor is read in time. */
     const val HOOK_CHARS = 80
     private val SECONDS = Regex("(\\d+)(\\s*(?:saniye|sn))", RegexOption.IGNORE_CASE)
     private val NUMBERING = Regex("^\\d+[.)]\\s+")
@@ -273,18 +322,31 @@ object RealCopy {
     /** The opening line as Karalak says it: eagerly ("[excited]" in front, with v3). */
     fun hookLine(text: String): SpokenLine = SpokenLine(text.trim(), MascotEmotion.Excited)
 
+    /** The closing line as Karalak says it: playfully, a reaction and a question. */
+    fun outroLine(text: String): SpokenLine = SpokenLine(text.trim(), MascotEmotion.Point)
+
+    fun spoken(kind: RealLine, text: String): SpokenLine = when (kind) {
+        RealLine.Hook -> hookLine(text)
+        RealLine.Outro -> outroLine(text)
+    }
+
     /**
      * The assistant's ideas for the opening line: `{"hooks":["…",…]}`, cleaned (see [cleanHook]), the same one
      * only once, at most [HOOK_COUNT]. [seconds] are the opening drawing's.
      */
-    fun parseHooks(text: String, seconds: Int): List<String> {
+    fun parseHooks(text: String, seconds: Int): List<String> = parseLines(text, "hooks", seconds, HOOK_COUNT)
+
+    /** The assistant's ideas for the closing line: `{"outros":["…",…]}`, cleaned the same way, at most [OUTRO_COUNT]. */
+    fun parseOutros(text: String, seconds: Int): List<String> = parseLines(text, "outros", seconds, OUTRO_COUNT)
+
+    private fun parseLines(text: String, key: String, seconds: Int, count: Int): List<String> {
         val o = GuessCopy.objectIn(text) ?: return emptyList()
-        val raw = runCatching { o["hooks"]!!.jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull } }.getOrNull().orEmpty()
-        return raw.map { cleanHook(it, seconds) }.filter { it.isNotEmpty() }.distinctBy { GuessCopy.normalize(it) }.take(HOOK_COUNT)
+        val raw = runCatching { o[key]!!.jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull } }.getOrNull().orEmpty()
+        return raw.map { cleanHook(it, seconds) }.filter { it.isNotEmpty() }.distinctBy { GuessCopy.normalize(it) }.take(count)
     }
 
     /**
-     * One opening line as the video shows it: no quotes or list number around it, and any time it gives set to the
+     * One line as the video shows it: no quotes or list number around it, and any time it gives set to the
      * drawing's real [seconds] (0: not known, left as written), so the video never claims a time the game did not give.
      */
     fun cleanHook(text: String, seconds: Int): String {

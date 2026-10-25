@@ -13,6 +13,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealPhase
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealRenderer
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VoicedLine
 import java.io.File
 
 /**
@@ -42,10 +43,12 @@ class RealPreviewActivity : Activity() {
             RealDrawing("b", spoon(), "bağlama", 7, "Zeynep", 12, com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame.entries.filter { !it.retired }.last().name),
             RealDrawing("c", cat(), "kedi", 5, "", 28, "")
         )
+        // the video is the first drawing's: its hook, its clip, its closing
         val project = RealProject(
             drawings = drawings,
-            reveals = drawings.map { RealReveal(it.id, clip = it.id + ".mp4", clipMs = 3_000L) },
-            hook = "7 saniyede roket çizebilir misin?"
+            reveals = drawings.map { RealReveal(it.id, clip = it.id + ".mp4", clipMs = 3_000L) }.mapIndexed { i, r ->
+                if (i > 0) r else r.copy(hook = VoicedLine("7 saniyede roket çizebilir misin?"), outro = VoicedLine("Bu rokete kim biner? Yorumlara yaz!"))
+            }
         )
         val renderer = RealRenderer(assets, project, clips = drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f)
         val shots = buildList {
@@ -56,12 +59,17 @@ class RealPreviewActivity : Activity() {
                     add("hook_half" to e.durationMs * 2 / 5)
                     add("hook_done" to e.durationMs - 500)
                     add("hook_open" to e.durationMs - 330)
+                } else if (e.phase == RealPhase.Outro) {
+                    add("outro_start" to e.startMs + 120)
+                    add("outro_end" to e.endMs - 80)
                 } else {
                     add("clip${e.index}_start" to e.startMs + 120)
                     add("clip${e.index}_mid" to e.startMs + 1_800)
                 }
             }
         }
+        // the card's own shots: in the middle of the clip
+        val clipMid = renderer.events.first { it.phase == RealPhase.Clip }.startMs + 1_800L
         val bmp = Bitmap.createBitmap(RealRenderer.W, RealRenderer.H, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
         shots.forEachIndexed { i, (name, t) ->
@@ -72,11 +80,11 @@ class RealPreviewActivity : Activity() {
         // the card moved to the bottom right and made smaller, as the panel's sliders can
         val small = RealRenderer(assets, project, clips = drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f, layout = CardLayout(0.7f, 0.95f, 0.62f))
         canvas.drawColor(0xFF000000.toInt())
-        small.draw(canvas, 1_800L)
+        small.draw(canvas, clipMid)
         File(out, "90_layout_small.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
         val big = RealRenderer(assets, project, clips = drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f, layout = CardLayout(1.5f, 0.5f, 0.5f))
         canvas.drawColor(0xFF000000.toInt())
-        big.draw(canvas, 1_800L)
+        big.draw(canvas, clipMid)
         File(out, "91_layout_big.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
         frames.close()
     }

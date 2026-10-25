@@ -55,6 +55,9 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.LibraryItem
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDirector
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealPhase
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VoicedLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealImages
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealRenderer
@@ -171,13 +174,13 @@ data class RealUi(
     val project: RealProject? = null,
     val writing: Boolean = false,
     val writeError: String? = null,
-    /** The assistant is writing ideas for the opening line. */
-    val hooksWriting: Boolean = false,
-    val hooksError: String? = null,
-    /** The opening line being voiced in ElevenLabs right now. */
-    val hookVoicing: String? = null,
-    /** The opening lines already voiced with the current voice settings (paid for, kept on this phone). */
-    val hookVoiced: Set<String> = emptySet(),
+    /** Which of Karalak's lines the assistant is writing ideas for. */
+    val lineWriting: RealLine? = null,
+    val lineErrors: Map<RealLine, String> = emptyMap(),
+    /** The line being voiced in ElevenLabs right now. */
+    val lineVoicing: Pair<RealLine, String>? = null,
+    /** The video drawing's ideas already voiced with the current voice settings (paid for, kept on this phone), per line. */
+    val lineVoiced: Map<RealLine, Set<String>> = emptyMap(),
     /** The drawing whose picture, clip or reaction is being worked on. */
     val busy: String? = null,
     /** Starting over while the project has pictures in it: asks before throwing them away. */
@@ -258,8 +261,8 @@ private const val MAX_DRAWINGS = 5
  *   turned on "Videolarda öne çık" (reviewed pool rounds only, name and level but never a photo).
  * - "Hafıza Tuzağı": how many could not recognise their own drawing of a word, from the anonymous
  *   archive the panel keeps.
- * - "Gerçek Olsaydı": quick drawings of one word from that archive with Karalak's jokes, then some
- *   of them as real pictures and clips made in ChatGPT and Gemini and brought back here.
+ * - "Gerçek Olsaydı": one player's quick drawing as a real picture and clip made in ChatGPT and Gemini
+ *   and brought back here, opened on the game's screen with a hook and closed on Karalak's reaction.
  *
  * The assistant writes Karalak's lines from the drawings themselves, the phone's Turkish voice
  * says them, and the phone renders the 1080×1920 video with sound.
@@ -721,8 +724,8 @@ class StudioViewModel @Inject constructor(
         return list
     }
 
-    private fun updateReveal(sampleId: String, change: (RealReveal) -> RealReveal) =
-        updateProject { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) change(it) else it }) }
+    private fun updateReveal(sampleId: String, saveNow: Boolean = false, change: (RealReveal) -> RealReveal) =
+        updateProject(saveNow) { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) change(it) else it }) }
 
     /** The project left from last time, if any, and the latest drawings read last time. */
     private fun loadReal() {
@@ -880,97 +883,116 @@ class StudioViewModel @Inject constructor(
         }
     }
 
+    private fun updateLine(sampleId: String, kind: RealLine, saveNow: Boolean = false, change: (VoicedLine) -> VoicedLine) =
+        updateReveal(sampleId, saveNow) { r -> r.withLine(kind, change(r.line(kind))) }
+
+    private fun lineError(kind: RealLine, message: String) = updateReal { it.copy(lineErrors = it.lineErrors + (kind to message)) }
+
+    /** Moves the preview to where [kind] shows: the very start for the hook, the closing for the closing. */
+    private fun previewLine(kind: RealLine) {
+        val outro = _state.value.real.project?.featured?.let { RealTimeline.build(it) }?.lastOrNull { it.phase == RealPhase.Outro }
+        setPreviewTime(if (kind == RealLine.Outro && outro != null) outro.startMs + 400L else 0L)
+    }
+
     /**
-     * Has the assistant write [RealCopy.HOOK_COUNT] ideas for the line the video opens with, for the drawing it opens
-     * on, to pick one from. The first one is taken while no line is set, so the preview shows the opening at once.
+     * Has the assistant write ideas for one of Karalak's lines in the video's drawing: [RealCopy.HOOK_COUNT] hooks, or
+     * [RealCopy.OUTRO_COUNT] closings. The first is taken while no line is set, so the preview shows it at once; the
+     * line already in the video stays on the list, with its voice.
      */
-    fun writeHooks() {
+    fun writeLines(kind: RealLine) {
         val s = _state.value
         val p = s.real.project ?: return
-        if (s.real.hooksWriting) return
+        if (s.real.lineWriting != null) return
         val key = prefs().getString(AssistantViewModel.KEY, "").orEmpty()
-        if (key.isBlank()) { updateReal { it.copy(hooksError = "Önce Asistan ayarlarından OpenRouter anahtarını gir.") }; return }
+        if (key.isBlank()) { lineError(kind, "Önce Asistan ayarlarından OpenRouter anahtarını gir."); return }
         val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
-        val opening = p.opening ?: run { updateReal { it.copy(hooksError = "Önce en az bir çizim seç") }; return }
-        val others = (p.shown.ifEmpty { p.reveals }).mapNotNull { r -> p.drawing(r.sampleId)?.takeIf { it.id != opening.id }?.word }
-        updateReal { it.copy(hooksWriting = true, hooksError = null) }
+        val reveal = p.opening ?: run { lineError(kind, "Önce en az bir çizim seç"); return }
+        val drawing = p.drawing(reveal.sampleId) ?: return
+        updateReal { it.copy(lineWriting = kind, lineErrors = it.lineErrors - kind) }
         viewModelScope.launch {
-            RealDirector(OpenRouterClient(key), model).hooks(opening, others).onSuccess { h ->
-                updateReal { it.copy(hooksWriting = false) }
-                _state.update { it.copy(aiCost = h.costUsd, previewMs = 0L) }
-                updateProject { proj ->
-                    // the line already in the video stays on the list, with its voice
-                    val kept = listOfNotNull(proj.hook.takeIf { it.isNotBlank() && it !in h.hooks })
-                    proj.copy(hooks = kept + h.hooks, hooksFor = opening.id).let { if (it.hook.isBlank()) it.withHook(h.hooks.first()) else it }
+            RealDirector(OpenRouterClient(key), model).lines(kind, drawing, reveal).onSuccess { w ->
+                updateReal { it.copy(lineWriting = null) }
+                _state.update { it.copy(aiCost = w.costUsd) }
+                updateLine(reveal.sampleId, kind) { l ->
+                    val kept = listOfNotNull(l.text.takeIf { it.isNotBlank() && it !in w.lines })
+                    l.copy(options = kept + w.lines).let { if (it.text.isBlank()) it.withText(w.lines.first()) else it }
                 }
-            }.onFailure { e -> updateReal { it.copy(hooksWriting = false, hooksError = e.message ?: "Yazılamadı") } }
+                previewLine(kind)
+            }.onFailure { e -> updateReal { it.copy(lineWriting = null, lineErrors = it.lineErrors + (kind to (e.message ?: "Yazılamadı"))) } }
         }
     }
 
-    /** Takes one of the ideas as the opening line, silent until its voice is added, and shows the opening in the preview. */
-    fun chooseHook(text: String) {
-        _state.update { it.copy(previewMs = 0L) }
-        updateProject { it.withHook(text) }
+    /** Takes one of the ideas as the line in the video, silent until its voice is added, and shows it in the preview. */
+    fun chooseLine(kind: RealLine, text: String) {
+        val id = _state.value.real.project?.opening?.sampleId ?: return
+        updateLine(id, kind) { it.withText(text) }
+        previewLine(kind)
     }
 
-    /** No opening: the video starts on the first clip. */
-    fun clearHook() = updateProject { it.withHook("") }
+    /** No hook (the video starts on the clip) or no closing (it ends with the clip). */
+    fun clearLine(kind: RealLine) {
+        val id = _state.value.real.project?.opening?.sampleId ?: return
+        updateLine(id, kind) { it.withText("") }
+    }
 
     /**
      * Rewrites one idea by hand; emptied, it leaves the list. When it is the line in the video, the video takes the new
      * words, and its voice goes with the old ones.
      */
-    fun editHookOption(old: String, text: String) {
+    fun editLineOption(kind: RealLine, old: String, text: String) {
         val new = text.trim().take(RealCopy.HOOK_CHARS)
-        updateProject { p ->
-            if (old !in p.hooks || new == old) return@updateProject p
-            if (new.isNotEmpty() && new in p.hooks) return@updateProject p
-            val hooks = if (new.isEmpty()) p.hooks - old else p.hooks.map { if (it == old) new else it }
-            val next = p.copy(hooks = hooks)
-            if (p.hook == old) next.withHook(new) else next
+        val id = _state.value.real.project?.opening?.sampleId ?: return
+        updateLine(id, kind) { l ->
+            if (old !in l.options || new == old) return@updateLine l
+            if (new.isNotEmpty() && new in l.options) return@updateLine l
+            val options = if (new.isEmpty()) l.options - old else l.options.map { if (it == old) new else it }
+            val next = l.copy(options = options)
+            if (l.text == old) next.withText(new) else next
         }
     }
 
     /** A line of one's own, put at the top of the list to edit, voice and add like the assistant's. */
-    fun addHookOption(text: String) {
+    fun addLineOption(kind: RealLine, text: String) {
         val line = text.trim().take(RealCopy.HOOK_CHARS)
+        val id = _state.value.real.project?.opening?.sampleId ?: return
         if (line.isEmpty()) return
-        updateProject { p -> if (line in p.hooks) p else p.copy(hooks = listOf(line) + p.hooks) }
+        updateLine(id, kind) { l -> if (line in l.options) l else l.copy(options = listOf(line) + l.options) }
     }
 
     /**
-     * Voices one opening line in ElevenLabs with the current voice settings and plays it. Credits are spent only here,
-     * on the person's tap, and once per line and settings: the voice is kept on this phone.
+     * Voices one line in ElevenLabs with the current voice settings and plays it. Credits are spent only here, on the
+     * person's tap, and once per line and settings: the voice is kept on this phone.
      */
-    fun voiceHook(text: String) {
-        if (_state.value.real.hookVoicing != null || text.isBlank()) return
-        val client = elevenClient() ?: run { updateReal { it.copy(hooksError = "Önce aşağıdaki Ses bölümüne ElevenLabs anahtarını gir.") }; return }
+    fun voiceLine(kind: RealLine, text: String) {
+        if (_state.value.real.lineVoicing != null || text.isBlank()) return
+        val client = elevenClient() ?: run { lineError(kind, "Önce aşağıdaki “Karalak'ın sesi” bölümüne ElevenLabs anahtarını gir."); return }
         val spec = _state.value.eleven.spec
-        updateReal { it.copy(hookVoicing = text, hooksError = null) }
+        updateReal { it.copy(lineVoicing = kind to text, lineErrors = it.lineErrors - kind) }
         viewModelScope.launch {
-            voiceBank.file(client, RealCopy.hookLine(text), spec)
+            voiceBank.file(client, RealCopy.spoken(kind, text), spec)
                 .onSuccess { f -> play(f) }
-                .onFailure { e -> updateReal { it.copy(hooksError = e.message ?: "Seslendirilemedi") } }
-            updateReal { it.copy(hookVoicing = null) }
+                .onFailure { e -> lineError(kind, e.message ?: "Seslendirilemedi") }
+            updateReal { it.copy(lineVoicing = null) }
             refreshVoicePlan()
             refreshEleven()
         }
     }
 
-    /** Plays an opening line's voice: the one in the video for the line in the video, otherwise the one just made. */
-    fun listenHook(text: String) {
-        val p = _state.value.real.project
-        val inVideo = p?.takeIf { it.hook == text }?.hookVoice?.let { realStore.file(it) }?.takeIf { it.exists() }
-        (inVideo ?: voiceBank.cached(RealCopy.hookLine(text), _state.value.eleven.spec))?.let { play(it) }
+    /** Plays a line's voice: the one in the video for the line in the video, otherwise the one just made. */
+    fun listenLine(kind: RealLine, text: String) {
+        val l = _state.value.real.project?.opening?.line(kind)
+        val inVideo = l?.takeIf { it.text == text }?.voice?.let { realStore.file(it) }?.takeIf { it.exists() }
+        (inVideo ?: voiceBank.cached(RealCopy.spoken(kind, text), _state.value.eleven.spec))?.let { play(it) }
     }
 
     /**
-     * Puts an opening line into the video with its voice: the voice is copied into the project (so changing the voice
-     * settings later does not take it away) and the opening lasts until it has been said.
+     * Puts a line into the video with its voice: the voice is copied into the project (so changing the voice settings
+     * later does not take it away), and the opening or the closing lasts until it has been said.
      */
-    fun addHookToVideo(text: String) {
-        val voice = voiceBank.cached(RealCopy.hookLine(text), _state.value.eleven.spec) ?: run {
-            _state.update { it.copy(message = "Önce bu kancayı seslendir") }
+    fun addLineToVideo(kind: RealLine, text: String) {
+        val id = _state.value.real.project?.opening?.sampleId ?: return
+        val voice = voiceBank.cached(RealCopy.spoken(kind, text), _state.value.eleven.spec) ?: run {
+            _state.update { it.copy(message = "Önce seslendir") }
             return
         }
         viewModelScope.launch {
@@ -978,18 +1000,19 @@ class StudioViewModel @Inject constructor(
                 runCatching {
                     val ms = ClipAudio.decode(voice, VOICE_MAX_MS)?.durationMs ?: error("Ses çözülemedi")
                     if (ms <= 0L) error("Ses boş")
-                    realStore.copyIn(voice, "hook_voice", "mp3") to ms
+                    realStore.copyIn(voice, if (kind == RealLine.Hook) "hook_voice" else "outro_voice", "mp3") to ms
                 }
             }
             result.onSuccess { (name, ms) ->
-                _state.update { it.copy(previewMs = 0L, message = "Kanca sesi videoya eklendi") }
-                updateProject(saveNow = true) { it.withHook(text).copy(hookVoice = name, hookVoiceMs = ms) }
+                _state.update { it.copy(message = if (kind == RealLine.Hook) "Kanca sesi videoya eklendi" else "Kapanış sesi videoya eklendi") }
+                updateLine(id, kind, saveNow = true) { it.withText(text).copy(voice = name, voiceMs = ms) }
                 pruneRealMedia()
+                previewLine(kind)
             }.onFailure { e -> _state.update { it.copy(message = "Ses eklenemedi: ${e.message}") } }
         }
     }
 
-    /** Makes a drawing the one the video opens on (and plays first). */
+    /** Makes a drawing the one the video is made of (the first with a clip); its own hook and closing come with it. */
     fun moveRevealFirst(sampleId: String) {
         _state.update { it.copy(previewMs = 0L) }
         updateProject { p ->
@@ -1175,14 +1198,14 @@ class StudioViewModel @Inject constructor(
         updateReal { it.copy(librarySelected = it.librarySelected + id) }
     }
 
-    /** Makes the ticked pieces the current video, in the order they were ticked; the card, name and frame come with each. */
+    /** Brings the ticked pieces back as the project, in the order they were ticked, each with its card, lines and voices; the video is the first one's. */
     fun libraryMakeVideo() {
         val r = _state.value.real
         val items = r.librarySelected.mapNotNull { id -> r.library.find { it.id == id } }.filter { it.hasClip }
         if (items.isEmpty()) { _state.update { it.copy(message = "Önce videosu olan kayıtları seç") }; return }
         val project = RealProject(drawings = items.map { it.drawing }, reveals = items.map { it.reveal })
         updateReal { it.copy(project = project, librarySelected = emptyList(), libraryShown = false) }
-        _state.update { it.copy(video = null, previewMs = 0L, message = "${items.size} video hazırlandı; aşağıdan videoyu oluştur") }
+        _state.update { it.copy(video = null, previewMs = 0L, message = if (items.size == 1) "Hazır; aşağıdan videoyu oluştur" else "${items.size} kayıt alındı; video en üsttekiyle yapılır (Başa al ile değiştir)") }
         viewModelScope.launch { withContext(Dispatchers.IO) { runCatching { realStore.save(project) } } }
         loadRealMedia(project)
         refreshPreview()
@@ -1377,9 +1400,11 @@ class StudioViewModel @Inject constructor(
         val spec = s.eleven.spec
         val missing = lines.filter { voiceBank.cached(it, spec) == null }.distinctBy { ElevenLabs.textFor(it, spec.model, spec.tags) }
         updateEleven { it.copy(ready = lines.count { l -> voiceBank.cached(l, spec) != null }, missing = missing.size, missingCredits = missing.sumOf { l -> spec.credits(l) }) }
-        val hooks = s.real.project?.hooks.orEmpty()
-        val voiced = hooks.filter { voiceBank.cached(RealCopy.hookLine(it), spec) != null }.toSet()
-        if (voiced != _state.value.real.hookVoiced) updateReal { it.copy(hookVoiced = voiced) }
+        val opening = s.real.project?.opening
+        val voiced = RealLine.entries.associateWith { k ->
+            opening?.line(k)?.options.orEmpty().filter { voiceBank.cached(RealCopy.spoken(k, it), spec) != null }.toSet()
+        }
+        if (voiced != _state.value.real.lineVoiced) updateReal { it.copy(lineVoiced = voiced) }
     }
 
     private fun speakOnPhone(line: SpokenLine) {
@@ -1453,16 +1478,18 @@ class StudioViewModel @Inject constructor(
     ): VoicedVideo? {
         if (s.format == StudioFormat.RealLife) {
             val p = s.real.project ?: return null
-            val shown = p.shown
-            if (shown.isEmpty()) return null
+            // the video is one drawing's: only its clip is opened
+            val f = p.featured ?: return null
+            val clip = f.clip ?: return null
             return RealRenderer(
                 assetsOrLoad(), p,
-                clips = shown.mapNotNull { r -> r.clip?.let(clipSource)?.let { r.sampleId to it } }.toMap(),
-                clipFiles = shown.mapNotNull { r -> r.clip?.let { r.sampleId to realStore.file(it) } }.toMap(),
+                clips = listOfNotNull(clipSource(clip)?.let { f.sampleId to it }).toMap(),
+                clipFiles = mapOf(f.sampleId to realStore.file(clip)),
                 clipGain = CLIP_GAIN,
                 layout = s.real.card,
                 photoFiles = p.drawings.mapNotNull { d -> d.photo?.let { d.id to realStore.file(it) } }.toMap(),
-                hookVoiceFile = p.hookVoice?.let { realStore.file(it) }
+                hookVoiceFile = f.hook.voice?.let { realStore.file(it) },
+                outroVoiceFile = f.outro.voice?.let { realStore.file(it) }
             )
         }
         val sp = sprites ?: return null
