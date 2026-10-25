@@ -534,7 +534,8 @@ private fun ChestStage(tier: ChestTier, bubble: Bubble?, wobble: Float, u: Dp, f
         }
         Box(
             modifier = Modifier
-                .offset(y = u * (floorGap * chestW - 38f - 24f - 20f * hover))
+                // read in the layout phase: the hover animates every frame, and this keeps it from recomposing each one
+                .offset { androidx.compose.ui.unit.IntOffset(0, (u * (floorGap * chestW - 38f - 24f - 20f * hover)).roundToPx()) }
                 .graphicsLayer { rotationZ = wobble * 6f }
         ) {
             ChestImage(tier = tier, width = u * chestW)

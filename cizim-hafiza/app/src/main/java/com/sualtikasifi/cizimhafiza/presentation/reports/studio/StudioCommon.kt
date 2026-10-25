@@ -159,6 +159,9 @@ class TextPainter {
         textSize = size; typeface = face; this.color = color
     }
 
+    // Layout's BREAK_STRATEGY_* are the very values LineBreaker's are (0, 1, 2); lint only knows the newer names,
+    // and LineBreaker itself is API 29.
+    @android.annotation.SuppressLint("WrongConstant")
     private fun build(
         text: CharSequence, width: Int, size: Float, maxLines: Int, face: Typeface, color: Int, align: Layout.Alignment,
         spacing: Float = 1.02f, balanced: Boolean = false

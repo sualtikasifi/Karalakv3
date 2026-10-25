@@ -53,6 +53,9 @@ internal fun ChestInfoDialog(onDismiss: () -> Unit) {
         ) {
             val context = LocalContext.current
             val sheet = remember { runCatching { BackdropCache.get(context.resources, R.drawable.chests_info) }.getOrNull() }
+            // read as resources, so a language switched while the guide is open is followed
+            val title = stringResource(R.string.home_chests_info_title)
+            val ok = stringResource(R.string.home_chests_info_ok)
             val artW = sheet?.width?.toFloat() ?: InfoArtW
             val artH = sheet?.height?.toFloat() ?: 1694f
             val frameW = minOf(maxWidth - 16.dp, 480.dp, (maxHeight - 32.dp) * (artW / artH))
@@ -71,7 +74,7 @@ internal fun ChestInfoDialog(onDismiss: () -> Unit) {
                         scaleY = 0.85f + 0.15f * e
                         alpha = (e * 3f).coerceIn(0f, 1f)
                     }
-                    .semantics { contentDescription = context.getString(R.string.home_chests_info_title) }
+                    .semantics { contentDescription = title }
                     // A tap on the guide itself is not a tap outside it.
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
             ) {
@@ -87,7 +90,7 @@ internal fun ChestInfoDialog(onDismiss: () -> Unit) {
                         .size(u * (x1 - x0), u * (y1 - y0))
                         .sunkenArt(sink, sheet, x0, y0, x1 - x0, y1 - y0, u * ((y1 - y0) / 2f))
                         .clickable(interactionSource = sink.source, indication = null, onClick = onDismiss)
-                        .semantics { contentDescription = context.getString(R.string.home_chests_info_ok) }
+                        .semantics { contentDescription = ok }
                 )
             }
         }

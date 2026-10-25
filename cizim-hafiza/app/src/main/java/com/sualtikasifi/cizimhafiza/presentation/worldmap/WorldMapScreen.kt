@@ -79,7 +79,9 @@ fun WorldMapScreen(
         if (currentIndex > 0) listState.scrollToItem((currentIndex - 1).coerceAtLeast(0))
     }
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { _ ->
+    // The art runs under the system bars; only the list's end keeps clear of the navigation bar (Scaffold's bottom
+    // padding), so the last world is never left under it.
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { scaffoldPadding ->
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
@@ -108,7 +110,7 @@ fun WorldMapScreen(
                                 blendMode = BlendMode.DstIn
                             )
                         },
-                    contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 40.dp, bottom = 24.dp),
+                    contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 40.dp, bottom = 24.dp + scaffoldPadding.calculateBottomPadding()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     itemsIndexed(worlds, key = { _, card -> card.world.id }) { _, card ->

@@ -641,7 +641,7 @@ internal fun SceneSwitch(checked: Boolean, modifier: Modifier) {
         val pad = maxHeight * 0.1f
         Box(
             Modifier
-                .offset(x = pad + (maxWidth - knob - pad * 2) * t, y = pad)
+                .offset { androidx.compose.ui.unit.IntOffset((pad + (maxWidth - knob - pad * 2) * t).roundToPx(), pad.roundToPx()) }
                 .size(knob)
                 .shadow(2.dp, CircleShape)
                 .background(Color.White, CircleShape)

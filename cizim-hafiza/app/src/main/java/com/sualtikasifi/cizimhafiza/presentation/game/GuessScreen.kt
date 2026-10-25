@@ -938,7 +938,7 @@ private fun GuessFeedbackOverlay(
             }
             Column(
                 modifier = Modifier
-                    .offset(x = shakeOffset.value.dp)
+                    .offset { androidx.compose.ui.unit.IntOffset(shakeOffset.value.dp.roundToPx(), 0) }
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f), MaterialTheme.shapes.large)
                     .padding(horizontal = 20.dp, vertical = 14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
