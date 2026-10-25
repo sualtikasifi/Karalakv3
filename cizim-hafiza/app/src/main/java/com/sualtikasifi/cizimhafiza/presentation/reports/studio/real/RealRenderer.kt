@@ -275,9 +275,11 @@ class RealRenderer(
     private fun drawJokers(canvas: Canvas) {
         val h = JOKER_H
         val top = boardCy - h / 2f
+        // the names share one size, the one the longest fits at
+        val nameSize = JOKERS.minOf { (_, name, _) -> fitSize(name, JOKER_W - h * 0.8f - 52f, 40f) }
         var x = BOARD_LEFT
         JOKERS.forEach { (art, name, count) ->
-            drawJokerPill(canvas, RectF(x, top, x + JOKER_W, top + h), assets.picture(art), name, count)
+            drawJokerPill(canvas, RectF(x, top, x + JOKER_W, top + h), assets.picture(art), name, count, nameSize)
             x += JOKER_W + JOKER_GAP
         }
         assets.picture(R.drawable.btn_ad_extra_time)?.let { b ->
@@ -287,7 +289,7 @@ class RealRenderer(
         }
     }
 
-    private fun drawJokerPill(canvas: Canvas, box: RectF, art: Bitmap?, name: String, count: Int) {
+    private fun drawJokerPill(canvas: Canvas, box: RectF, art: Bitmap?, name: String, count: Int, nameSize: Float) {
         pill?.let { b ->
             // three slices: the round ends as painted, the middle stretched
             val cap = PILL_CAP * box.height() / b.height
@@ -310,7 +312,7 @@ class RealRenderer(
             canvas.drawBitmap(a, null, RectF(artBox.left - grow, artBox.top - grow, artBox.right + grow, artBox.bottom + grow), fill)
             canvas.restore()
         }
-        outlined(canvas, name, artBox.right + 12f, box.centerY(), box.right - artBox.right - 30f, 40f)
+        outlined(canvas, name, artBox.right + 12f, box.centerY(), nameSize)
         // how many are left: a dark coin with a gold rim on the corner
         val r = 23f
         val cx = box.right - 6f
@@ -323,11 +325,18 @@ class RealRenderer(
         text.draw(canvas, count.toString(), cx, cy, (r * 2).toInt(), 28f, 1, assets.display, C.WHITE)
     }
 
-    /** One line in white with the game's dark orange edge, shrunk until it fits [maxW]; [x] is where it starts. */
-    private fun outlined(canvas: Canvas, line: String, x: Float, cy: Float, maxW: Float, size: Float) {
+    /** The size, at most [size], at which [line] fits [maxW] in the display face. */
+    private fun fitSize(line: String, maxW: Float, size: Float): Float {
         label.typeface = assets.display
         label.textSize = size
         while (label.measureText(line) > maxW && label.textSize > size * 0.6f) label.textSize *= 0.94f
+        return label.textSize
+    }
+
+    /** One line in white with the game's dark orange edge, at [size]; [x] is where it starts. */
+    private fun outlined(canvas: Canvas, line: String, x: Float, cy: Float, size: Float) {
+        label.typeface = assets.display
+        label.textSize = size
         val fm = label.fontMetrics
         val y = cy - (fm.ascent + fm.descent) / 2f
         label.style = Paint.Style.STROKE
