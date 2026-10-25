@@ -159,13 +159,17 @@ class TextPainter {
         textSize = size; typeface = face; this.color = color
     }
 
-    private fun build(text: CharSequence, width: Int, size: Float, maxLines: Int, face: Typeface, color: Int, align: Layout.Alignment): StaticLayout {
+    private fun build(
+        text: CharSequence, width: Int, size: Float, maxLines: Int, face: Typeface, color: Int, align: Layout.Alignment,
+        spacing: Float = 1.02f, balanced: Boolean = false
+    ): StaticLayout {
         var s = size
         while (true) {
             val built = StaticLayout.Builder.obtain(text, 0, text.length, paint(s, face, color), width)
                 .setAlignment(align)
                 .setIncludePad(false)
-                .setLineSpacing(0f, 1.02f)
+                .setLineSpacing(0f, spacing)
+                .setBreakStrategy(if (balanced) Layout.BREAK_STRATEGY_BALANCED else Layout.BREAK_STRATEGY_SIMPLE)
                 .setMaxLines(maxLines)
                 .setEllipsize(TextUtils.TruncateAt.END)
                 .build()
@@ -175,14 +179,18 @@ class TextPainter {
         }
     }
 
-    /** Draws [text] centred on ([cx], [cy]); returns the height it took. */
+    /**
+     * Draws [text] centred on ([cx], [cy]); returns the height it took. [spacing] multiplies the font's own line height
+     * (Baloo's is tall: a big two-line title reads better pulled together); [balanced] breaks lines to even lengths
+     * rather than filling the first one.
+     */
     fun draw(
         canvas: Canvas, text: String, cx: Float, cy: Float, width: Int, size: Float, maxLines: Int, face: Typeface, color: Int,
-        alpha: Float = 1f, align: Layout.Alignment = Layout.Alignment.ALIGN_CENTER
+        alpha: Float = 1f, align: Layout.Alignment = Layout.Alignment.ALIGN_CENTER, spacing: Float = 1.02f, balanced: Boolean = false
     ): Float {
         if (text.isBlank() || alpha <= 0f) return 0f
-        val key = "$text|$width|$size|$maxLines|${face.hashCode()}|$color|$align"
-        val layout = cache.getOrPut(key) { build(text, width, size, maxLines, face, color, align) }
+        val key = "$text|$width|$size|$maxLines|${face.hashCode()}|$color|$align|$spacing|$balanced"
+        val layout = cache.getOrPut(key) { build(text, width, size, maxLines, face, color, align, spacing, balanced) }
         drawLayout(canvas, layout, cx, cy, width, alpha)
         return layout.height.toFloat()
     }

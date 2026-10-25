@@ -183,7 +183,7 @@ class RealRenderer(
         val pop = 0.86f + 0.14f * Ease.backOut(min(1f, local / 260f))
         canvas.save()
         canvas.scale(pop, pop, W / 2f, boardCy)
-        text.draw(canvas, project.hook.trim(), W / 2f, boardCy, BOARD_W, 74f, 2, assets.display, SCENE_INK)
+        text.draw(canvas, project.hook.trim(), W / 2f, boardCy, BOARD_W, 74f, 2, assets.display, SCENE_INK, spacing = 0.8f, balanced = true)
         canvas.restore()
 
         // the first clip opens out of the drawing
