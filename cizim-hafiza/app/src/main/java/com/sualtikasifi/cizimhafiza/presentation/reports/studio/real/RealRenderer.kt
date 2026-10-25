@@ -3,9 +3,11 @@ package com.sualtikasifi.cizimhafiza.presentation.reports.studio.real
 import android.graphics.Bitmap
 import android.graphics.BitmapShader
 import android.graphics.Canvas
+import android.graphics.LinearGradient
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RadialGradient
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
@@ -99,7 +101,8 @@ class RealRenderer(
     private val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = C.WHITE }
     private val circle = Path()
     private val label = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeJoin = Paint.Join.ROUND }
-    private val pill = if (scene != null) assets.picture(R.drawable.st_pill_orange) else null
+    /** The guessing screen's scene, for its painted joker tiles. */
+    private val guessScene = if (scene != null) assets.picture(R.drawable.bg_guess) else null
 
     // the card is 941 x 1672 (real_card): everything below is placed in its own pixels, then scaled
     private val lay = layout.clamped()
@@ -215,7 +218,7 @@ class RealRenderer(
         if (d.seconds > 0) drawTimer(canvas, d.seconds, drawn)
 
         // the board under the canvas: the game's jokers, as the app shows them (the hook is only ever said, never written)
-        drawJokers(canvas)
+        drawJokers(canvas, local)
 
         // the first clip opens out of the drawing
         val openFrom = e.durationMs - RealTimeline.HOOK_REVEAL
@@ -268,85 +271,160 @@ class RealRenderer(
     }
 
     /**
-     * The game's jokers on the tool board, the way the app draws a joker: an orange pill with the joker's picture, its
-     * name in white with a dark orange edge and, on its corner, how many are left; then the "+10 sn" button the drawing
-     * screen has there. ("+ Süre", the drawer's own joker, is already painted on the canvas.)
+     * The guessing screen's joker row, as the game has it, on the tool board: its four painted tiles cut out of bg_guess
+     * (İpucu, İlk harf, Harf sayısı, Atla) with what GuessScreen's JokerTile lays on each — the hint's play mark, the
+     * two jokers' pictures in their gold frame over a soft pulsing glow, gently floating, with how many are left in a
+     * white badge, and Atla's skip mark — at the game's own sizes, the whole row scaled to fit the board.
      */
-    private fun drawJokers(canvas: Canvas) {
-        val h = JOKER_H
-        val top = boardCy - h / 2f
-        // the names share one size, the one the longest fits at
-        val nameSize = JOKERS.minOf { (_, name, _) -> fitSize(name, JOKER_W - h * 0.8f - 52f, 40f) }
-        var x = BOARD_LEFT
-        JOKERS.forEach { (art, name, count) ->
-            drawJokerPill(canvas, RectF(x, top, x + JOKER_W, top + h), assets.picture(art), name, count, nameSize)
-            x += JOKER_W + JOKER_GAP
-        }
-        assets.picture(R.drawable.btn_ad_extra_time)?.let { b ->
-            val w = BOARD_RIGHT - x
-            val bh = w * b.height / b.width
-            canvas.drawBitmap(b, null, RectF(x, boardCy - bh / 2f, x + w, boardCy + bh / 2f), fill)
-        }
-    }
-
-    private fun drawJokerPill(canvas: Canvas, box: RectF, art: Bitmap?, name: String, count: Int, nameSize: Float) {
-        pill?.let { b ->
-            // three slices: the round ends as painted, the middle stretched
-            val cap = PILL_CAP * box.height() / b.height
-            src.set(0, 0, PILL_CAP, b.height)
-            canvas.drawBitmap(b, src, RectF(box.left, box.top, box.left + cap, box.bottom), fill)
-            src.set(PILL_CAP, 0, b.width - PILL_CAP, b.height)
-            canvas.drawBitmap(b, src, RectF(box.left + cap, box.top, box.right - cap, box.bottom), fill)
-            src.set(b.width - PILL_CAP, 0, b.width, b.height)
-            canvas.drawBitmap(b, src, RectF(box.right - cap, box.top, box.right, box.bottom), fill)
-        }
-        val side = box.height() * 0.8f
-        val artBox = RectF(box.left + 10f, box.centerY() - side / 2f, box.left + 10f + side, box.centerY() + side / 2f)
-        art?.let { a ->
-            // as JokerArt: rounded, the picture a little larger than its frame
+    private fun drawJokers(canvas: Canvas, t: Long) {
+        val bmp = guessScene ?: return
+        val k = bmp.width / ART_W
+        val s = ROW_SCALE
+        val left = W / 2f - (ROW_RIGHT - ROW_LEFT) * k * s / 2f
+        val top = boardCy - TILE_H * k * s / 2f
+        // one art unit of bg_guess on the video, and one of the game's dp (the scene is 841 art units on a 411 dp phone)
+        val u = k * s
+        val dp = u * ART_W / 411f
+        GUESS_TILES.forEach { tile ->
+            val box = RectF(left + (tile.x - ROW_LEFT) * u, top, left + (tile.x + tile.w - ROW_LEFT) * u, top + TILE_H * u)
+            // the painted tile, cut out along its rounded edge
             circle.reset()
-            circle.addRoundRect(artBox, side * 0.24f, side * 0.24f, Path.Direction.CW)
+            circle.addRoundRect(box, box.height() * 0.17f, box.height() * 0.17f, Path.Direction.CW)
             canvas.save()
             canvas.clipPath(circle)
-            val grow = side * 0.11f
-            canvas.drawBitmap(a, null, RectF(artBox.left - grow, artBox.top - grow, artBox.right + grow, artBox.bottom + grow), fill)
+            src.set(((tile.x - 2f) * k).toInt(), ((TILE_TOP - 2f) * k).toInt(), ((tile.x + tile.w + 2f) * k).toInt(), ((TILE_TOP + TILE_H + 2f) * k).toInt())
+            canvas.drawBitmap(bmp, src, RectF(box.left - 2f * u, box.top - 2f * u, box.right + 2f * u, box.bottom + 2f * u), fill)
             canvas.restore()
+
+            val icon = 66f * u
+            val labelSize = 12f * dp
+            val joker = tile.art != 0
+            // the column: icon, 2 dp, label; the jokers sit a little higher over their tile's thick lip
+            val labelH = labelSize * 1.1f
+            val plate = if (joker) icon + 2f * 3f * dp else icon
+            val colH = plate + 2f * dp + labelH
+            val colTop = box.top + (box.height() - (if (joker) 10f * dp else 0f) - colH) / 2f
+            val cx = box.centerX()
+            val iconCy = colTop + plate / 2f
+            if (joker) {
+                drawJokerArt(canvas, tile.art, cx, iconCy, icon, dp, t)
+            } else if (tile.skip) {
+                drawSkip(canvas, cx, iconCy, icon, tile.labelColor)
+            } else {
+                drawPlay(canvas, cx, iconCy, icon, HINT_ICON)
+            }
+            val labelCy = colTop + plate + 2f * dp + labelH / 2f
+            lettered(canvas, tile.label, cx, labelCy, labelSize, tile.labelColor, tile.outline, box.width() - 8f * dp, dp)
+            if (tile.badge > 0) {
+                val d = box.height() * 0.245f
+                val bcx = box.right - box.width() * 0.03f - d / 2f
+                val bcy = box.top + box.height() * 0.04f + d / 2f
+                plain.color = C.WHITE
+                canvas.drawCircle(bcx, bcy, d / 2f, plain)
+                ring.strokeWidth = 1.5f * dp
+                ring.color = tile.badgeColor
+                canvas.drawCircle(bcx, bcy, d / 2f - ring.strokeWidth / 2f, ring)
+                text.draw(canvas, tile.badge.toString(), bcx, bcy, d.toInt(), 13f * dp, 1, assets.display, tile.badgeColor)
+            }
         }
-        outlined(canvas, name, artBox.right + 12f, box.centerY(), nameSize)
-        // how many are left: a dark coin with a gold rim on the corner
-        val r = 23f
-        val cx = box.right - 6f
-        val cy = box.top + 4f
-        plain.color = BADGE
+    }
+
+    /** A joker's picture as the tile shows it: over a soft pulsing glow, on a faint light plate in a cream-and-gold frame, floating. */
+    private fun drawJokerArt(canvas: Canvas, art: Int, cx: Float, cy0: Float, size: Float, dp: Float, t: Long) {
+        val cy = cy0 + kotlin.math.sin(t * 2.0 * Math.PI / FLOAT_MS).toFloat() * 2f * dp
+        val pad = 3f * dp
+        val outer = size + pad * 2f
+        // the glow pulses between 0.28 and 0.62 over 1.7 s, there and back
+        val phase = (t % (GLOW_MS * 2)).toFloat() / GLOW_MS
+        val glow = 0.28f + 0.34f * Ease.out(if (phase <= 1f) phase else 2f - phase)
+        val r = outer * 0.75f
+        plain.shader = RadialGradient(
+            cx, cy, r,
+            intArrayOf(withAlpha(GLOW, glow), withAlpha(GLOW, glow * 0.35f), 0x00FFF1B8),
+            null, Shader.TileMode.CLAMP
+        )
         canvas.drawCircle(cx, cy, r, plain)
-        ring.strokeWidth = 3f
-        ring.color = BADGE_RIM
-        canvas.drawCircle(cx, cy, r, ring)
-        text.draw(canvas, count.toString(), cx, cy, (r * 2).toInt(), 28f, 1, assets.display, C.WHITE)
+        plain.shader = null
+        val plateBox = RectF(cx - outer / 2f, cy - outer / 2f, cx + outer / 2f, cy + outer / 2f)
+        plain.color = 0x40FFFFFF
+        canvas.drawRoundRect(plateBox, 11f * dp, 11f * dp, plain)
+        ring.strokeWidth = 2f * dp
+        ring.shader = LinearGradient(0f, plateBox.top, 0f, plateBox.bottom, FRAME_TOP, FRAME_BOTTOM, Shader.TileMode.CLAMP)
+        val inset = ring.strokeWidth / 2f
+        canvas.drawRoundRect(RectF(plateBox.left + inset, plateBox.top + inset, plateBox.right - inset, plateBox.bottom - inset), 11f * dp, 11f * dp, ring)
+        ring.shader = null
+        // as JokerArt: rounded, the picture a little larger than its frame
+        val bmp = assets.picture(art) ?: return
+        val artBox = RectF(cx - size / 2f, cy - size / 2f, cx + size / 2f, cy + size / 2f)
+        circle.reset()
+        circle.addRoundRect(artBox, size * 0.24f, size * 0.24f, Path.Direction.CW)
+        canvas.save()
+        canvas.clipPath(circle)
+        val grow = size * 0.11f
+        canvas.drawBitmap(bmp, null, RectF(artBox.left - grow, artBox.top - grow, artBox.right + grow, artBox.bottom + grow), fill)
+        canvas.restore()
     }
 
-    /** The size, at most [size], at which [line] fits [maxW] in the display face. */
-    private fun fitSize(line: String, maxW: Float, size: Float): Float {
-        label.typeface = assets.display
-        label.textSize = size
-        while (label.measureText(line) > maxW && label.textSize > size * 0.6f) label.textSize *= 0.94f
-        return label.textSize
+    /** Material's play-circle (the hint is a rewarded ad): a filled circle with the triangle cut out of it. */
+    private fun drawPlay(canvas: Canvas, cx: Float, cy: Float, size: Float, color: Int) {
+        val q = size / 24f
+        val x0 = cx - size / 2f
+        val y0 = cy - size / 2f
+        circle.reset()
+        circle.fillType = Path.FillType.EVEN_ODD
+        circle.addCircle(cx, cy, 10f * q, Path.Direction.CW)
+        circle.moveTo(x0 + 10f * q, y0 + 16.5f * q)
+        circle.lineTo(x0 + 16f * q, y0 + 12f * q)
+        circle.lineTo(x0 + 10f * q, y0 + 7.5f * q)
+        circle.close()
+        plain.color = color
+        canvas.drawPath(circle, plain)
+        circle.fillType = Path.FillType.WINDING
     }
 
-    /** One line in white with the game's dark orange edge, at [size]; [x] is where it starts. */
-    private fun outlined(canvas: Canvas, line: String, x: Float, cy: Float, size: Float) {
+    /** Material's skip-next: a triangle and a bar. */
+    private fun drawSkip(canvas: Canvas, cx: Float, cy: Float, size: Float, color: Int) {
+        val q = size / 24f
+        val x0 = cx - size / 2f
+        val y0 = cy - size / 2f
+        circle.reset()
+        circle.moveTo(x0 + 6f * q, y0 + 18f * q)
+        circle.lineTo(x0 + 14.5f * q, y0 + 12f * q)
+        circle.lineTo(x0 + 6f * q, y0 + 6f * q)
+        circle.close()
+        circle.addRect(x0 + 16f * q, y0 + 6f * q, x0 + 18f * q, y0 + 18f * q, Path.Direction.CW)
+        plain.color = color
+        canvas.drawPath(circle, plain)
+    }
+
+    /**
+     * A tile's label as the game letters it, centred on ([cx], [cy]): with an [outline], white over that edge with a
+     * soft shadow (LetteredText); without, plain in [color]. It shrinks to fit [maxW].
+     */
+    private fun lettered(canvas: Canvas, line: String, cx: Float, cy: Float, size: Float, color: Int, outline: Int?, maxW: Float, dp: Float) {
         label.typeface = assets.display
+        label.textAlign = Paint.Align.CENTER
         label.textSize = size
+        while (label.measureText(line) > maxW && label.textSize > size * 0.55f) label.textSize *= 0.94f
         val fm = label.fontMetrics
         val y = cy - (fm.ascent + fm.descent) / 2f
-        label.style = Paint.Style.STROKE
-        label.strokeWidth = label.textSize * 0.16f
-        label.color = LABEL_EDGE
-        canvas.drawText(line, x, y, label)
-        label.style = Paint.Style.FILL
-        label.color = C.WHITE
-        canvas.drawText(line, x, y, label)
+        if (outline != null) {
+            label.style = Paint.Style.STROKE
+            label.strokeWidth = (size / dp * 0.11f).coerceIn(1.3f, 4.2f) * dp * (label.textSize / size)
+            label.color = outline
+            label.setShadowLayer(3f * dp, 0f, 2f * dp, 0x66000000)
+            canvas.drawText(line, cx, y, label)
+            label.clearShadowLayer()
+            label.style = Paint.Style.FILL
+            label.color = C.WHITE
+        } else {
+            label.style = Paint.Style.FILL
+            label.color = color
+        }
+        canvas.drawText(line, cx, y, label)
     }
+
+    private fun withAlpha(color: Int, a: Float): Int = (color and 0x00FFFFFF) or ((a.coerceIn(0f, 1f) * 255).toInt() shl 24)
 
     /** bg_draw at the video's width: its top and bottom as painted, its plain middle squeezed into what is left. */
     private fun drawScene(canvas: Canvas, bmp: Bitmap) {
@@ -421,22 +499,37 @@ class RealRenderer(
         private const val ART_H = 1870f
         private const val SCENE_TOP = 720
         private const val SCENE_BOTTOM = 801
-        /** The board's use: its margins on the left, and on the right the strip TikTok's buttons cover. */
-        private const val BOARD_LEFT = 56f
-        private const val BOARD_RIGHT = 964f
-        /** The joker pills: their size, the gap between them, and the round end of st_pill_orange in its own pixels. */
-        private const val JOKER_W = 290f
-        private const val JOKER_H = 100f
-        private const val JOKER_GAP = 14f
-        private const val PILL_CAP = 72
-        /** The jokers shown, with how many are left: the guesser's two (the drawer's "+ Süre" is painted on the canvas). */
-        private val JOKERS = listOf(
-            Triple(R.drawable.joker_first_letter, "İlk harf", 3),
-            Triple(R.drawable.joker_letter_count, "Harf sayısı", 3)
+        /**
+         * GuessScreen's joker row in bg_guess's art units: the tiles' top and height, and where the row starts and
+         * ends; [ROW_SCALE] fits it on bg_draw's tool board.
+         */
+        private const val TILE_TOP = 1406f
+        private const val TILE_H = 164f
+        private const val ROW_LEFT = 48f
+        private const val ROW_RIGHT = 797f
+        private const val ROW_SCALE = 0.82f
+        /** The joker pictures float over 2.3 s and their glow pulses over 1.7 s, as in the game. */
+        private const val FLOAT_MS = 2_300.0
+        private const val GLOW_MS = 1_700L
+        private const val GLOW = 0xFFFFF1B8.toInt()
+        private const val FRAME_TOP = 0xFFFFF3C4.toInt()
+        private const val FRAME_BOTTOM = 0xFFE8B84A.toInt()
+        private const val HINT_ICON = 0xFFF26A1B.toInt()
+
+        /** One tile of the row as GuessScreen lays it out: its place, its label and colours, and for a joker its picture and count. */
+        private class GuessTile(
+            val x: Float, val w: Float, val label: String, val labelColor: Int, val outline: Int?,
+            val art: Int = 0, val badge: Int = 0, val badgeColor: Int = 0, val skip: Boolean = false
         )
-        private const val LABEL_EDGE = 0xFF8A3A00.toInt()
-        private const val BADGE = 0xFF3A2112.toInt()
-        private const val BADGE_RIM = 0xFFFFC94D.toInt()
+
+        /** İpucu, the two jokers (with how many are left), Atla. */
+        private val GUESS_TILES = listOf(
+            GuessTile(48f, 172f, "İpucu", 0xFFB4501A.toInt(), null),
+            GuessTile(237f, 171f, "İlk harf", C.WHITE, 0xFF4A1F8A.toInt(), R.drawable.joker_first_letter, 3, 0xFF6A2DBF.toInt()),
+            GuessTile(426f, 178f, "Harf sayısı", C.WHITE, 0xFF0B4F8A.toInt(), R.drawable.joker_letter_count, 3, 0xFF1B7FE0.toInt()),
+            GuessTile(621f, 176f, "Atla", 0xFF4A2A10.toInt(), null, skip = true)
+        )
+
         /** The closing's subtitle: its widest line, its size, and its middle, kept above the apps' caption band. */
         private const val SUB_W = 860
         private const val SUB_SIZE = 70f
