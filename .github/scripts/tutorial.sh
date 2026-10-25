@@ -173,7 +173,7 @@ step t15_lesson2 2
 clear_overlays
 adb shell input tap 547 2210   # Letter Count button (middle tile)
 step t16_lesson2_done 2
-adb shell input text "dog"
+adb shell input text "flag"
 sleep 4
 
 # --- Guess 3: free choice card, then the third word ----------------------------------------------------

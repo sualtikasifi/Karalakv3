@@ -414,7 +414,7 @@
     <!-- The tutorial's 3 practice words — deliberately not in the real word
          pool (see TutorialViewModel), so they need their own translation. -->
     <string name="tutorial_word_1">kitap</string>
-    <string name="tutorial_word_2">köpek</string>
+    <string name="tutorial_word_2">bayrak</string>
     <string name="tutorial_word_3">elma</string>
     <string name="settings_replay_tutorial">Eğitimi Tekrar İzle</string>
 
