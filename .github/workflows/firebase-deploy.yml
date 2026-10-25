@@ -24,6 +24,7 @@ on:
     branches: [main]
     paths:
       - "cizim-hafiza/firestore.rules"
+      - "cizim-hafiza/rules-tests/**"
       - "cizim-hafiza/firestore.indexes.json"
       - "cizim-hafiza/functions/**"
       - "cizim-hafiza/firebase.json"
@@ -53,8 +54,25 @@ jobs:
         run: npx tsc --noEmit
         working-directory: cizim-hafiza/functions
 
+      # Through the environment, never pasted into the script: a secret spliced into a shell line is run as part
+      # of it, so one stray quote or $ in it would break the line or be expanded.
+      # The rules are tested on the Firestore emulator before they are published: a rule that refuses honest
+      # play (or lets a modified client through) is caught here instead of by every player at once.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Test the rules on the emulator
+        working-directory: cizim-hafiza/rules-tests
+        run: |
+          npm ci
+          npm test
+
       - name: Write service account credentials
-        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$GITHUB_WORKSPACE/service-account.json"
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: printf '%s' "$SA" > "$GITHUB_WORKSPACE/service-account.json"
 
       # Indexes travel with the rules for the same reason the rules travel
       # with the code: a query whose composite index was never created fails

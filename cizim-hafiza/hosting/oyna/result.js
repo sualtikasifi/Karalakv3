@@ -57,7 +57,8 @@ export function renderResult(c, d) {
   // versus card
   if (d.opp) {
     const me = d.score, op = d.opp.totalScore, won = me > op, drew = me === op;
-    const side = (name, score, ring, right, col) => `<div class="av ${right ? "r" : "l"}"></div><div class="nm ${right ? "r" : "l"}">${name}</div><div class="sc ${right ? "r" : "l"}" style="color:${col}">${score}</div>`;
+    // The opponent's name is another player's (a recorded round's nickname), so it is escaped like every other name.
+    const side = (name, score, ring, right, col) => `<div class="av ${right ? "r" : "l"}"></div><div class="nm ${right ? "r" : "l"}">${esc(name)}</div><div class="sc ${right ? "r" : "l"}" style="color:${col}">${esc(score)}</div>`;
     const v = el("div", "rs-vs", `${side(d.nick || T("quick_match_you"), me, null, false, won ? "#1f9a3a" : drew ? "#3b2314" : "#8e1f1f")}${side(d.opp.nickname || "?", op, null, true, !won && !drew ? "#1f9a3a" : drew ? "#3b2314" : "#8e1f1f")}<div class="out" style="background:${drew ? "#8a6a50" : won ? "#2ea043" : "#d23b2e"}">${T(drew ? "quick_match_drew" : won ? "quick_match_won" : "quick_match_lost")}</div><div class="vs">${T("quick_match_versus")}</div>${won ? '<img class="cr" src="img/lobby_crown.webp" alt="">' : ""}`);
     const a1 = d.myRing(), a2 = d.oppRing(); v.querySelector(".av.l").append(a1); v.querySelector(".av.r").append(a2);
     inner.append(v);

@@ -80,21 +80,31 @@ jobs:
           fi
           grep -E "versionCode|versionName" $F | head -2
 
+      # The secrets come in through the environment, never pasted into the script: spliced into a shell line, a
+      # password holding a $ or a quote would be expanded or cut short and the build signed with the wrong one.
       - name: Write signing key and local.properties
         env:
           KS: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KS_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          ADMOB_APP_ID: ${{ secrets.ADMOB_APP_ID }}
+          ADMOB_INTERSTITIAL: ${{ secrets.ADMOB_INTERSTITIAL_UNIT_ID }}
+          ADMOB_REWARDED: ${{ secrets.ADMOB_REWARDED_UNIT_ID }}
+          DEV_CODE: ${{ secrets.DEVELOPER_ACCESS_CODE }}
+          REPORTS_CODE: ${{ secrets.REPORTS_ACCESS_CODE }}
         run: |
-          echo "$KS" | base64 -d > "$RUNNER_TEMP/release.jks"
+          printf '%s' "$KS" | base64 -d > "$RUNNER_TEMP/release.jks"
           {
-            echo "RELEASE_KEYSTORE_PATH=$RUNNER_TEMP/release.jks"
-            echo "RELEASE_KEYSTORE_PASSWORD=${{ secrets.RELEASE_KEYSTORE_PASSWORD }}"
-            echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}"
-            echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}"
-            echo "ADMOB_APP_ID=${{ secrets.ADMOB_APP_ID }}"
-            echo "ADMOB_INTERSTITIAL_UNIT_ID=${{ secrets.ADMOB_INTERSTITIAL_UNIT_ID }}"
-            echo "ADMOB_REWARDED_UNIT_ID=${{ secrets.ADMOB_REWARDED_UNIT_ID }}"
-            echo "DEVELOPER_ACCESS_CODE=${{ secrets.DEVELOPER_ACCESS_CODE }}"
-            echo "REPORTS_ACCESS_CODE=${{ secrets.REPORTS_ACCESS_CODE }}"
+            printf 'RELEASE_KEYSTORE_PATH=%s\n' "$RUNNER_TEMP/release.jks"
+            printf 'RELEASE_KEYSTORE_PASSWORD=%s\n' "$KS_PASSWORD"
+            printf 'RELEASE_KEY_ALIAS=%s\n' "$KEY_ALIAS"
+            printf 'RELEASE_KEY_PASSWORD=%s\n' "$KEY_PASSWORD"
+            printf 'ADMOB_APP_ID=%s\n' "$ADMOB_APP_ID"
+            printf 'ADMOB_INTERSTITIAL_UNIT_ID=%s\n' "$ADMOB_INTERSTITIAL"
+            printf 'ADMOB_REWARDED_UNIT_ID=%s\n' "$ADMOB_REWARDED"
+            printf 'DEVELOPER_ACCESS_CODE=%s\n' "$DEV_CODE"
+            printf 'REPORTS_ACCESS_CODE=%s\n' "$REPORTS_CODE"
           } > local.properties
 
       - name: Unit tests

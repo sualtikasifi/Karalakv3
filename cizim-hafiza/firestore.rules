@@ -93,6 +93,12 @@ service cloud.firestore {
       // depend on the host's screen still being open). It is only reachable
       // out of FINISHED and always clears the vote list, which is what keeps
       // this exception from being a general-purpose "rewrite everyone" hole.
+      // Who is barred from the room is the host's call alone (kicking and unbanning, see isHost below): a
+      // listed player who could write it could ban everyone else from coming back.
+      function kickListUntouched() {
+        return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['kickedUsers']);
+      }
+
       function isRoundReset() {
         return resource.data.status == 'FINISHED'
                && request.resource.data.rematchVotes.size() == 0
@@ -136,7 +142,8 @@ service cloud.firestore {
                       // A listed player edits their own row only — ready-up,
                       // presence heartbeat, their own result — or takes part
                       // in a round reset.
-                      || (isListed() && (touchedPlayers().hasOnly([request.auth.uid]) || isRoundReset()))
+                      || (isListed() && kickListUntouched()
+                          && (touchedPlayers().hasOnly([request.auth.uid]) || isRoundReset()))
 
                       // A newcomer joining an open room adds exactly one
                       // entry: their own. Capacity, status and ban checks
@@ -148,6 +155,8 @@ service cloud.firestore {
                       // at 4, not 8.
                       || (
                         !isListed()
+                        // joining writes the newcomer's own row and nothing else of the room
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players'])
                         && touchedPlayers().hasOnly([request.auth.uid])
                         && resource.data.players.size() < (resource.data.get('teamMode', false) ? 4 : 8)
                         && resource.data.status in ['WAITING', 'PLAYING', 'FINISHED']
@@ -276,8 +285,12 @@ service cloud.firestore {
       // Either the author filing their own finished round, or the reviewer
       // sending one back out of the live pool for a second look — that copy
       // carries the ORIGINAL author's uid, so it cannot pass the first test.
-      allow create: if (signedIn() && request.resource.data.uid == request.auth.uid)
-                    || reviewer();
+      // The nickname a round carries is shown to every opponent it is matched against, so it is held to the
+      // same shape the reviewer's rename is (the apps cap their own names at 16): a string, at most 40 long.
+      allow create: if ((signedIn() && request.resource.data.uid == request.auth.uid)
+                    || reviewer())
+                    && (!('nickname' in request.resource.data)
+                        || (request.resource.data.nickname is string && request.resource.data.nickname.size() <= 40));
       // One field, one writer. The reviewer may change the name a round is
       // presented under and nothing else — while the pool is seeded largely
       // by one person's own play, every opponent otherwise carries the same
