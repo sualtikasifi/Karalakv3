@@ -197,8 +197,8 @@ object RealTimeline {
 
     /** When a voiced line starts, a beat after its stretch begins. */
     const val VOICE_AT = 150L
-    /** After the voice ends, the first clip's own sound waits this long. */
-    private const val VOICE_TAIL = 200L
+    /** After the voice ends, the first clip's own sound waits this long, so it never covers the voice's last syllable. */
+    private const val VOICE_TAIL = 300L
     /** However long a voice runs, the opening never goes past this; the rest plays over the first clip. */
     const val HOOK_VOICE_MAX = 7_000L
 
@@ -262,6 +262,12 @@ object RealMix {
     private const val RAMP = 180L
     private const val FADE_IN = 300L
     const val FADE_OUT = 900L
+
+    /** A clip's own sound comes in over this long, so a loud first frame does not land on the end of the hook. */
+    const val CLIP_FADE_IN = 120L
+
+    /** How loud a clip's own sound is at [ms] from its start: it comes in over [CLIP_FADE_IN]. */
+    fun clipGainAt(ms: Long): Float = (ms.toFloat() / CLIP_FADE_IN).coerceIn(0f, 1f)
 
     /** The share at [ms] of a video of [totalMs], with Karalak speaking in [voices] and the clip playing in [clip]. */
     fun gainAt(ms: Long, totalMs: Long, voices: List<LongRange>, clip: LongRange?): Float {

@@ -152,12 +152,25 @@ class ElevenLabs(private val apiKey: String) {
             MascotEmotion.Shrug -> "[playfully]"
         }
 
-        /** What is sent for a line: with v3, its mood as a tag in front. The subtitle always shows the plain line. */
+        /**
+         * What is sent for a line: with v3, its mood as a tag in front, and always a pause at the end. ElevenLabs (v3
+         * most of all) at times swallows a line's last syllable or stops dead on it; a finished sentence followed by
+         * a pause gives it room to say all of it and let it ring out. The subtitle always shows the plain line.
+         */
         fun textFor(line: SpokenLine, model: VoiceModel, tags: Boolean): String {
-            val text = line.text.trim()
+            val text = withRoomToFinish(line.text.trim())
             val tag = if (model.tags && tags) tagFor(line.emotion) else null
             return if (tag == null) text else "$tag $text"
         }
+
+        /** [text] as a finished sentence (a full stop when it has no ending of its own) with a pause after it. */
+        internal fun withRoomToFinish(text: String): String {
+            if (text.isEmpty() || text.endsWith("...") || text.endsWith("…")) return text
+            val sentence = if (text.last() in ".!?") text else "$text."
+            return "$sentence $TAIL_PAUSE"
+        }
+
+        private const val TAIL_PAUSE = "..."
 
         /** A file name that changes whenever anything that changes the sound does. */
         fun cacheName(text: String, voiceId: String, model: VoiceModel, stability: Double): String {

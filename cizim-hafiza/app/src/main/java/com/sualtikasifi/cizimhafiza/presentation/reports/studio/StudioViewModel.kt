@@ -1575,7 +1575,7 @@ class StudioViewModel @Inject constructor(
                         _state.update { it.copy(renderStage = "Karalak'ın sesi hazırlanıyor ${i + 1}/${lines.size}", progress = 0.15f * i / lines.size) }
                         val f = voiceBank.cached(l, spec) ?: error("“${l.text.take(30)}” sesi bulunamadı")
                         val pcm = withContext(Dispatchers.IO) { ClipAudio.decode(f, VOICE_MAX_MS) } ?: error("“${l.text.take(30)}” sesi çözülemedi")
-                        voices[i] = PcmOps.resample(pcm, RATE)
+                        voices[i] = PcmOps.softEnd(PcmOps.resample(pcm, RATE))
                     }
                 } else if (s.voiceOn && lines.isNotEmpty()) {
                     val synth = SpeechSynth.open(context).getOrThrow()
@@ -1584,7 +1584,7 @@ class StudioViewModel @Inject constructor(
                         lines.forEachIndexed { i, l ->
                             _state.update { it.copy(renderStage = "Karalak konuşuyor ${i + 1}/${lines.size}", progress = 0.15f * i / lines.size) }
                             val pcm = synth.synth(l.text, dir) ?: error("“${l.text.take(30)}” seslendirilemedi")
-                            voices[i] = PcmOps.resample(pcm, RATE)
+                            voices[i] = PcmOps.softEnd(PcmOps.resample(pcm, RATE))
                         }
                     } finally {
                         synth.close()
@@ -1606,7 +1606,7 @@ class StudioViewModel @Inject constructor(
                         if (s.format == StudioFormat.RealLife) s.real.project?.featured?.music?.let { runCatching { RealMusic.ensure(context, it) } }
                         renderer.sounds.forEach { snd ->
                             runCatching { ClipAudio.decode(snd.file, snd.durationMs) }.getOrNull()?.let { pcm ->
-                                val at = PcmOps.resample(pcm, RATE)
+                                val at = PcmOps.resample(pcm, RATE).let { if (snd.voice) PcmOps.softEnd(it) else it }
                                 placed += Placed(snd.shape?.let { PcmOps.shaped(at, it) } ?: at, snd.startMs, snd.gain)
                             }
                         }

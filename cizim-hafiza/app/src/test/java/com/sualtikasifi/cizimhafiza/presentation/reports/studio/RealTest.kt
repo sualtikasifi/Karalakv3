@@ -92,6 +92,17 @@ class RealTest {
     }
 
     @Test
+    fun theClipsOwnSoundComesInSoftlyAfterTheHook() {
+        assertEquals(0f, RealMix.clipGainAt(0), 0f)
+        assertEquals(0.5f, RealMix.clipGainAt(RealMix.CLIP_FADE_IN / 2), 0.01f)
+        assertEquals(1f, RealMix.clipGainAt(RealMix.CLIP_FADE_IN), 0f)
+        assertEquals(1f, RealMix.clipGainAt(5_000), 0f)
+        // and the hook's voice has room before it: the opening outlasts the voice by more than the clip's fade-in
+        val voice = 2_500L
+        assertTrue(RealTimeline.hookMs(voice) - (RealTimeline.VOICE_AT + voice) >= 300L)
+    }
+
+    @Test
     fun theMusicStepsBackUnderTheVoiceAndTheClipAndFadesOut() {
         val total = 13_000L
         val voices = listOf(150L..2_650L, 11_150L..12_400L)

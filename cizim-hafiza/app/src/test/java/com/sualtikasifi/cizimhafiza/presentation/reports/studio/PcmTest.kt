@@ -13,6 +13,22 @@ import java.nio.ByteOrder
 
 class PcmTest {
 
+    @Test
+    fun aVoiceEndsByFadingOutNotByStoppingDead() {
+        val rate = 1_000
+        val pcm = Pcm(rate, ShortArray(200) { 10_000 })
+        val soft = PcmOps.softEnd(pcm, fadeMs = 30)
+        // nothing is cut: the same length, untouched up to the last 30 ms
+        assertEquals(pcm.samples.size, soft.samples.size)
+        assertEquals(10_000, soft.samples[169].toInt())
+        // then it falls steadily to silence on the very last sample
+        assertTrue(soft.samples[185] in 1 until 10_000)
+        assertTrue(soft.samples[190] < soft.samples[180])
+        assertEquals(0, soft.samples.last().toInt())
+        // a voice shorter than the fade is faded all the way, never read past its end
+        assertEquals(5, PcmOps.softEnd(Pcm(rate, ShortArray(5) { 100 }), fadeMs = 30).samples.size)
+    }
+
     private fun wav(rate: Int, channels: Int, frames: ShortArray, extraChunk: Boolean = false): ByteArray {
         val data = ByteBuffer.allocate(frames.size * 2).order(ByteOrder.LITTLE_ENDIAN).apply { frames.forEach { putShort(it) } }.array()
         val list = if (extraChunk) "LIST".toByteArray() + intLe(4) + "INFO".toByteArray() else ByteArray(0)

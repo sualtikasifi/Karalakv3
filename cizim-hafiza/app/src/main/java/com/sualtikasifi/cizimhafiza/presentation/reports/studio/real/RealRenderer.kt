@@ -66,15 +66,15 @@ class RealRenderer(
         events.forEach { e ->
             when (e.phase) {
                 RealPhase.Hook -> if (hookVoiceFile != null && f.hook.voice != null) {
-                    add(ClipSound(hookVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.hook.voiceMs, 1f))
+                    add(ClipSound(hookVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.hook.voiceMs, 1f, voice = true))
                     voices += (e.startMs + RealTimeline.VOICE_AT).let { it..it + f.hook.voiceMs }
                 }
                 RealPhase.Clip -> {
                     clipRange = e.clipAtMs until e.clipAtMs + e.clipMs
-                    if (clipGain > 0f) clipFiles[f.sampleId]?.let { add(ClipSound(it, e.clipAtMs, e.clipMs, clipGain)) }
+                    if (clipGain > 0f) clipFiles[f.sampleId]?.let { add(ClipSound(it, e.clipAtMs, e.clipMs, clipGain, RealMix::clipGainAt)) }
                 }
                 RealPhase.Outro -> if (outroVoiceFile != null && f.outro.voice != null) {
-                    add(ClipSound(outroVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.outro.voiceMs, 1f))
+                    add(ClipSound(outroVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.outro.voiceMs, 1f, voice = true))
                     voices += (e.startMs + RealTimeline.VOICE_AT).let { it..it + f.outro.voiceMs }
                 }
             }
@@ -82,7 +82,7 @@ class RealRenderer(
         if (musicFile != null && f.music != null && f.musicVolume > 0f) {
             val total = RealTimeline.totalMs(events)
             val clip = clipRange
-            add(ClipSound(musicFile, 0L, total, f.musicVolume.coerceAtMost(RealMix.MAX_VOLUME)) { ms -> RealMix.gainAt(ms, total, voices, clip) })
+            add(ClipSound(musicFile, 0L, total, f.musicVolume.coerceAtMost(RealMix.MAX_VOLUME), shape = { ms -> RealMix.gainAt(ms, total, voices, clip) }))
         }
     }
 

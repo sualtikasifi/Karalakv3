@@ -6,9 +6,14 @@ import java.io.File
 /**
  * Sound from a file, laid on the track at [startMs] for [durationMs]: an imported clip's own audio, a line voiced
  * beforehand and kept with the project (the "Gerçek Olsaydı" hook), or background music — not the lines a format
- * voices while rendering. [shape], when given, scales [gain] at each moment (in ms from the sound's own start).
+ * voices while rendering. [shape], when given, scales [gain] at each moment (in ms from the sound's own start); a
+ * [voice] has its very end faded so it never stops dead.
  */
-class ClipSound(val file: File, val startMs: Long, val durationMs: Long, val gain: Float, val shape: ((Long) -> Float)? = null)
+class ClipSound(
+    val file: File, val startMs: Long, val durationMs: Long, val gain: Float,
+    val shape: ((Long) -> Float)? = null,
+    val voice: Boolean = false
+)
 
 /**
  * What every studio format hands the renderer pipeline: how long the video runs, when each
