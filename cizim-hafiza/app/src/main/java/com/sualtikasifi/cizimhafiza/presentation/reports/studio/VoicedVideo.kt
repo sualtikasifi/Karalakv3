@@ -3,7 +3,10 @@ package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 import android.graphics.Canvas
 import java.io.File
 
-/** Sound that is not Karalak's voice — an imported clip's own audio — laid on the track at [startMs] for [durationMs]. */
+/**
+ * Sound from a file, laid on the track at [startMs] for [durationMs]: an imported clip's own audio, or a line voiced
+ * beforehand and kept with the project (the "Gerçek Olsaydı" hook) — not the lines a format voices while rendering.
+ */
 class ClipSound(val file: File, val startMs: Long, val durationMs: Long, val gain: Float)
 
 /**

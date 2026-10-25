@@ -86,6 +86,46 @@ class RealTest {
     }
 
     @Test
+    fun aVoicedHookLastsUntilItHasBeenSaid() {
+        val hook = "Bu gerçekten bir yetenek!"
+        val read = RealTimeline.hookMs(hook)
+        // a short voice changes nothing: the line still has to be read
+        assertEquals(read, RealTimeline.hookMs(hook, voiceMs = 500))
+        // a longer one keeps the opening on until it has finished, and a beat after
+        val long = RealTimeline.hookMs(hook, voiceMs = 3_400)
+        assertTrue(long >= RealTimeline.VOICE_AT + 3_400)
+        assertTrue(long > read)
+        // however long it runs, the opening never drags on
+        assertEquals(RealTimeline.HOOK_VOICE_MAX, RealTimeline.hookMs(hook, voiceMs = 20_000))
+        assertEquals(0L, RealTimeline.hookMs("", voiceMs = 3_000))
+    }
+
+    @Test
+    fun theHooksVoiceBelongsToItsLineAndIsKeptWithTheProject() {
+        val p = RealProject(drawings = listOf(drawing("a")), reveals = listOf(RealReveal("a", clip = "a.mp4", clipMs = 8_000)))
+            .withHook("7 saniyede kedi çizdi!").copy(hookVoice = "hook_voice_1.mp3", hookVoiceMs = 3_000)
+        assertTrue("hook_voice_1.mp3" in p.media)
+        assertEquals(RealTimeline.hookMs(p.hook, 3_000), p.hookMs)
+        // choosing the same line keeps its voice; another line, or none, lets it go
+        assertEquals(p, p.withHook("7 saniyede kedi çizdi!"))
+        val other = p.withHook("Bu gerçekten bir yetenek!")
+        assertNull(other.hookVoice)
+        assertEquals(0L, other.hookVoiceMs)
+        assertEquals(RealTimeline.hookMs(other.hook), other.hookMs)
+        assertNull(p.withHook("").hookVoice)
+        assertEquals(0L, p.withHook("").hookMs)
+        // the voice is a file that is not there for a silent hook
+        assertEquals(RealTimeline.hookMs(p.hook), p.copy(hookVoice = null).hookMs)
+    }
+
+    @Test
+    fun karalakSaysTheHookEagerly() {
+        val line = RealCopy.hookLine("  5 saniyede elbise çizdi!  ")
+        assertEquals("5 saniyede elbise çizdi!", line.text)
+        assertEquals(com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion.Excited, line.emotion)
+    }
+
+    @Test
     fun theVideoOpensOnTheFirstDrawingWithAClip() {
         val p = RealProject(
             drawings = listOf(drawing("a"), drawing("b")),
@@ -235,11 +275,13 @@ class RealTest {
             reveals = listOf(RealReveal("a", "cat", "six legs", "wobble", image = "a.jpg", clip = "a.mp4", clipMs = 8_000)),
             hook = "7 saniyede kedi çizdi!",
             hooks = listOf("7 saniyede kedi çizdi!", "Bu gerçekten bir yetenek!"),
-            hooksFor = "a"
+            hooksFor = "a",
+            hookVoice = "hook_voice_1.mp3",
+            hookVoiceMs = 2_900
         )
         val back = json.decodeFromString(RealProject.serializer(), json.encodeToString(RealProject.serializer(), project))
         assertEquals(project, back)
-        assertEquals(setOf("a.jpg", "a.mp4"), back.media)
+        assertEquals(setOf("a.jpg", "a.mp4", "hook_voice_1.mp3"), back.media)
         // a project saved before the video was simplified carried a script and no reveals of its own
         val old = json.decodeFromString(RealProject.serializer(), """{"wordKey":"kedi","script":{"word":"Kedi"},"drawings":[]}""")
         assertTrue(old.reveals.isEmpty())
@@ -247,5 +289,6 @@ class RealTest {
         val noHook = json.decodeFromString(RealProject.serializer(), """{"drawings":[],"reveals":[]}""")
         assertEquals("", noHook.hook)
         assertTrue(noHook.hooks.isEmpty())
+        assertNull(noHook.hookVoice)
     }
 }

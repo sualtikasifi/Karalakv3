@@ -2,6 +2,8 @@ package com.sualtikasifi.cizimhafiza.presentation.reports.studio.real
 
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessCopy
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -79,10 +81,22 @@ data class RealProject(
     /** The assistant's last ten ideas for [hook], to pick from. */
     val hooks: List<String> = emptyList(),
     /** The drawing [hooks] were written for: they speak of its word and its seconds. */
-    val hooksFor: String = ""
+    val hooksFor: String = "",
+    /**
+     * [hook] said aloud (ElevenLabs), a file in the project's media folder, and how long it lasts; null: the opening
+     * is silent. It always belongs to the current [hook]: changing the line drops it.
+     */
+    val hookVoice: String? = null,
+    val hookVoiceMs: Long = 0L
 ) {
     fun drawing(id: String): RealDrawing? = drawings.find { it.id == id }
-    val media: Set<String> get() = (reveals.flatMap { listOfNotNull(it.image, it.clip) } + drawings.mapNotNull { it.photo }).toSet()
+    val media: Set<String> get() = (reveals.flatMap { listOfNotNull(it.image, it.clip) } + drawings.mapNotNull { it.photo } + listOfNotNull(hookVoice)).toSet()
+
+    /** How long the opening lasts: long enough to read the line, and to hear all of it when it is voiced. */
+    val hookMs: Long get() = RealTimeline.hookMs(hook, if (hookVoice != null) hookVoiceMs else 0L)
+
+    /** The opening line set to [text]; its voice goes unless the line stays the same. */
+    fun withHook(text: String): RealProject = if (text == hook) this else copy(hook = text, hookVoice = null, hookVoiceMs = 0L)
 
     /** Only reveals with their clip make it into the video; the pictures are shared on their own. */
     val shown: List<RealReveal> get() = reveals.filter { it.clip != null && drawing(it.sampleId) != null }
@@ -147,8 +161,22 @@ object RealTimeline {
     /** The finished drawing stays still for a moment before the clip opens out of it. */
     const val HOOK_HOLD = 300L
 
-    /** How long the opening with [hook] lasts: by the line's length, as it has to be read; 0 when there is none. */
-    fun hookMs(hook: String): Long = if (hook.isBlank()) 0L else (1_200L + hook.trim().length * 30L).coerceIn(HOOK_MIN, HOOK_MAX)
+    /** When the voiced line starts, a beat after the first frame. */
+    const val VOICE_AT = 150L
+    /** After the voice ends, the first clip's own sound waits this long. */
+    private const val VOICE_TAIL = 200L
+    /** However long a voice runs, the opening never goes past this; the rest plays over the first clip. */
+    const val HOOK_VOICE_MAX = 7_000L
+
+    /**
+     * How long the opening with [hook] lasts; 0 when there is none. Silent, by the line's length, as it has to be read;
+     * voiced ([voiceMs] above 0), at least until the voice has finished.
+     */
+    fun hookMs(hook: String, voiceMs: Long = 0L): Long {
+        if (hook.isBlank()) return 0L
+        val read = (1_200L + hook.trim().length * 30L).coerceIn(HOOK_MIN, HOOK_MAX)
+        return if (voiceMs <= 0L) read else maxOf(read, VOICE_AT + voiceMs + VOICE_TAIL).coerceAtMost(HOOK_VOICE_MAX)
+    }
 
     /** The opening (when [hookMs] is above 0) and then the clips, back to back. */
     fun build(shown: List<RealReveal>, hookMs: Long = 0L): List<RealEvent> {
@@ -241,6 +269,9 @@ object RealCopy {
      * `{"reveals":[{"index":1,"word_en":"…","describe":"…","motion":"…"}],"caption":"…","hashtags":"…"}`.
      */
     data class Picks(val reveals: List<RevealPick>, val caption: String, val hashtags: String)
+
+    /** The opening line as Karalak says it: eagerly ("[excited]" in front, with v3). */
+    fun hookLine(text: String): SpokenLine = SpokenLine(text.trim(), MascotEmotion.Excited)
 
     /**
      * The assistant's ideas for the opening line: `{"hooks":["…",…]}`, cleaned (see [cleanHook]), the same one

@@ -29,8 +29,8 @@ import kotlin.math.min
  * other, each full frame with its own sound, and over each, in the top left, the Karalak card (the game's wooden
  * frame with its logo): the player's drawing in the middle of it, the player's frame with the default picture in the
  * round slot at the bottom and their name (or "anonymous") beside it. Its size and place are the [layout] set in the
- * panel. Plain cuts between clips, no voice, no subtitles. The right edge and the bottom band stay clear for the
- * buttons and caption TikTok, Reels and Shorts put there.
+ * panel. The only voice is the hook's, when it was voiced; plain cuts between clips, no subtitles. The right edge
+ * and the bottom band stay clear for the buttons and caption TikTok, Reels and Shorts put there.
  */
 class RealRenderer(
     private val assets: StudioAssets,
@@ -42,14 +42,21 @@ class RealRenderer(
     private val clipGain: Float,
     layout: CardLayout = CardLayout(),
     /** Pictures picked by hand for the round slot, by drawing id; any drawing without one gets the default picture. */
-    private val photoFiles: Map<String, File> = emptyMap()
+    private val photoFiles: Map<String, File> = emptyMap(),
+    /** The project's [RealProject.hookVoice] file: the opening line said aloud, laid at the start of the opening. */
+    hookVoiceFile: File? = null
 ) : VoicedVideo {
     private val shown = project.shown
-    val events: List<RealEvent> = RealTimeline.build(shown, RealTimeline.hookMs(project.hook))
+    val events: List<RealEvent> = RealTimeline.build(shown, project.hookMs)
     override val totalMs: Long = RealTimeline.totalMs(events)
     override val voiceStarts: List<Pair<Int, Long>> = emptyList()
-    override val sounds: List<ClipSound> = if (clipGain <= 0f) emptyList() else events.filter { it.phase == RealPhase.Clip }.mapNotNull { e ->
-        clipFiles[shown.getOrNull(e.index)?.sampleId]?.let { ClipSound(it, e.clipAtMs, e.clipMs, clipGain) }
+    override val sounds: List<ClipSound> = buildList {
+        if (events.firstOrNull()?.phase == RealPhase.Hook && hookVoiceFile != null && project.hookVoice != null) {
+            add(ClipSound(hookVoiceFile, RealTimeline.VOICE_AT, project.hookVoiceMs, 1f))
+        }
+        if (clipGain > 0f) events.filter { it.phase == RealPhase.Clip }.forEach { e ->
+            clipFiles[shown.getOrNull(e.index)?.sampleId]?.let { add(ClipSound(it, e.clipAtMs, e.clipMs, clipGain)) }
+        }
     }
 
     private val text = TextPainter()

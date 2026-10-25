@@ -232,6 +232,13 @@ class RealStore(context: Context) {
         return name
     }
 
+    /** Copies a file of this phone's (a voiced line, say) into the project; returns its file name. */
+    fun copyIn(source: File, prefix: String, ext: String): String {
+        val name = prefix.replace(Regex("[^A-Za-z0-9_-]"), "_").take(60) + "_" + System.currentTimeMillis() + "." + ext
+        source.copyTo(file(name), overwrite = true)
+        return name
+    }
+
     /**
      * Deletes the imported files the project no longer uses. A file copied in the last few minutes
      * is spared: it may belong to an import that has not reached the project yet.
