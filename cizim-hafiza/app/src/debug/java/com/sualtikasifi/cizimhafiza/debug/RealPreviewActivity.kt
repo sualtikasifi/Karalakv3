@@ -9,6 +9,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioAssets
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipFrames
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealPhase
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealRenderer
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
@@ -43,13 +44,22 @@ class RealPreviewActivity : Activity() {
         )
         val project = RealProject(
             drawings = drawings,
-            reveals = drawings.map { RealReveal(it.id, clip = it.id + ".mp4", clipMs = 3_000L) }
+            reveals = drawings.map { RealReveal(it.id, clip = it.id + ".mp4", clipMs = 3_000L) },
+            hook = "7 saniyede roket çizebilir misin?"
         )
         val renderer = RealRenderer(assets, project, clips = drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f)
         val shots = buildList {
             renderer.events.forEach { e ->
-                add("clip${e.index}_start" to e.startMs + 120)
-                add("clip${e.index}_mid" to e.startMs + 1_800)
+                if (e.phase == RealPhase.Hook) {
+                    // the first frame is the cover; then the drawing half drawn, finished, and the clip opening out of it
+                    add("hook_first" to 0L)
+                    add("hook_half" to e.durationMs * 2 / 5)
+                    add("hook_done" to e.durationMs - 500)
+                    add("hook_open" to e.durationMs - 330)
+                } else {
+                    add("clip${e.index}_start" to e.startMs + 120)
+                    add("clip${e.index}_mid" to e.startMs + 1_800)
+                }
             }
         }
         val bmp = Bitmap.createBitmap(RealRenderer.W, RealRenderer.H, Bitmap.Config.ARGB_8888)

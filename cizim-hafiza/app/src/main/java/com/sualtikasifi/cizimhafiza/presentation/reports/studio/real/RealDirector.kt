@@ -40,7 +40,51 @@ class RealDirector(private val client: OpenRouterClient, private val model: Stri
         )
     }
 
+    class Hooks(val hooks: List<String>, val costUsd: Double?)
+
+    /**
+     * Ten ideas for the line the video opens with, to pick one from. The video opens on [opening] being drawn again
+     * on the game's screen with its word above it, so the lines may speak of the word, and of its seconds when they
+     * are known; [others] are the words of the clips that follow it.
+     */
+    suspend fun hooks(opening: RealDrawing, others: List<String>): Result<Hooks> = runCatching {
+        val image = withContext(Dispatchers.Default) { StrokeReplay.png(opening.strokes, 1f, 384) }
+        val word = opening.word.ifBlank { "?" }
+        val seconds = opening.seconds
+        val after = others.filter { it.isNotBlank() }.joinToString(", ")
+        val prompt = """
+            Kısa bir TikTok/Reels videosunun ilk 2–3 saniyesi için KANCA yazıyorsun: ekranda büyük harflerle duracak tek bir cümle.
+            Video şöyle açılıyor: Karalak çizim oyununun ekranında bir oyuncunun "$word" kelimesi için ${if (seconds > 0) "$seconds saniyede " else ""}yaptığı karalama (ekteki görsel) baştan çiziliyor; kelime ekranın üstünde yazıyor ve kanca çizimin hemen altında duruyor.
+            Sonra bu karalamanın gerçek olsaydı nasıl görüneceği kısa bir video olarak açılıyor${if (after.isNotEmpty()) "; ardından şu çizimlerinki de geliyor: $after" else ""}.
+
+            Kancanın tek işi izleyiciyi ilk saniyede durdurup sonuna kadar izletmek: merak uyandırsın, şaşırtsın, meydan okusun ya da tatlı bir iğneleme yapsın.
+            Tarz örnekleri (birebir kopyalama):
+            - "4 saniyede mikrodalga fırın çizebilir misin?"
+            - "5 saniyede elbise çizdi!"
+            - "Bu gerçekten bir yetenek!"
+
+            Birbirinden FARKLI $HOOK_COUNT kanca yaz ve tarzları karıştır: izleyiciye meydan okuyan soru, şaşkın bir tespit, ironik bir övgü, "gerçek olsaydı" merakı, izleyiciye doğrudan seslenen bir cümle.
+            Kurallar:
+            - Türkçe, konuşma dilinde; en fazla 8 kelime. Emoji, etiket, tırnak yok.
+            - ${if (seconds > 0) "Süreden söz edersen tam olarak $seconds saniye de, başka bir sayı yazma." else "Süre bilinmiyor: saniyeden ya da süreden hiç söz etme."}
+            - Sonu söyleme: gerçek hâlinin neye benzediğini anlatma.
+            - Çizeni küçümseme, kimseyle alay etme; şaka çizimle ilgili olsun.
+
+            Yalnızca şu JSON'u yaz:
+            {"hooks":["…","…"]}
+        """.trimIndent()
+        val answer = client.generate(HOOK_SYSTEM, prompt, model, webSearch = false, images = listOf(image), json = true, temperature = 1.0, maxTokens = 900).getOrThrow()
+        val hooks = RealCopy.parseHooks(answer.text, seconds)
+        if (hooks.isEmpty()) error("Kancalar okunamadı; tekrar dene.")
+        Hooks(hooks, answer.costUsd)
+    }
+
     private companion object {
+        const val HOOK_COUNT = RealCopy.HOOK_COUNT
+        val HOOK_SYSTEM = """
+            Sen Karalak çizim oyununun sosyal medya editörüsün. Kısa videoların ilk saniyesini yazarsın: kısa, çarpıcı, merak uyandıran tek cümleler.
+            Çizen kişiyi asla küçümsemezsin; şakaların çizimle ilgilidir. Küfür, argo, siyaset yok.
+        """.trimIndent()
         const val MAX_CANDIDATES = 6
         val SYSTEM = """
             Sen Karalak çizim oyununun sosyal medya editörüsün. Çocuk çizimlerinin "gerçek olsaydı" hâlini gösteren kısa videolar için hazırlık yapıyorsun.

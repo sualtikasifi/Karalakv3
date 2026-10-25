@@ -5,6 +5,7 @@ import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
@@ -18,15 +19,18 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioColors as 
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.TextPainter
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.VoicedVideo
 import java.io.File
+import kotlin.math.hypot
 import kotlin.math.min
 
 /**
- * Draws "Gerçek Olsaydı" in 1080×1920: the clips one after the other, each full frame with its own sound, and
- * over each, in the top left, the Karalak card (the game's wooden frame with its logo): the player's drawing in
- * the middle of it, the player's frame with the default picture in the round slot at the bottom and their name
- * (or "anonymous") beside it. Its size and place are the [layout] set in the panel. Plain cuts between clips, no voice,
- * no subtitles. The right edge and the bottom band stay clear for the buttons and caption TikTok, Reels and
- * Shorts put there.
+ * Draws "Gerçek Olsaydı" in 1080×1920. When the project has a hook it opens on the game's own drawing screen: the
+ * opening drawing is drawn again on its canvas while the timer runs down, its word on the notepad and the hook on
+ * the board under the canvas; then the first clip opens out of the drawing. After that, the clips one after the
+ * other, each full frame with its own sound, and over each, in the top left, the Karalak card (the game's wooden
+ * frame with its logo): the player's drawing in the middle of it, the player's frame with the default picture in the
+ * round slot at the bottom and their name (or "anonymous") beside it. Its size and place are the [layout] set in the
+ * panel. Plain cuts between clips, no voice, no subtitles. The right edge and the bottom band stay clear for the
+ * buttons and caption TikTok, Reels and Shorts put there.
  */
 class RealRenderer(
     private val assets: StudioAssets,
@@ -41,7 +45,7 @@ class RealRenderer(
     private val photoFiles: Map<String, File> = emptyMap()
 ) : VoicedVideo {
     private val shown = project.shown
-    val events: List<RealEvent> = RealTimeline.build(shown)
+    val events: List<RealEvent> = RealTimeline.build(shown, RealTimeline.hookMs(project.hook))
     override val totalMs: Long = RealTimeline.totalMs(events)
     override val voiceStarts: List<Pair<Int, Long>> = emptyList()
     override val sounds: List<ClipSound> = if (clipGain <= 0f) emptyList() else events.filter { it.phase == RealPhase.Clip }.mapNotNull { e ->
@@ -56,6 +60,12 @@ class RealRenderer(
     private val src = Rect()
     private val card = assets.picture(R.drawable.real_card)
     private val dino = assets.picture(R.drawable.avatar_dino)
+    private val scene: Bitmap? = if (events.firstOrNull()?.phase == RealPhase.Hook) assets.picture(R.drawable.bg_draw) else null
+    private val sceneInk = StrokeReplay.inkPaint(0xFF1B1B22.toInt())
+    private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
+    private val plain = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = C.WHITE }
+    private val circle = Path()
 
     // the card is 941 x 1672 (real_card): everything below is placed in its own pixels, then scaled
     private val lay = layout.clamped()
@@ -92,6 +102,7 @@ class RealRenderer(
     override fun draw(canvas: Canvas, t: Long) {
         val e = RealTimeline.at(events, t)
         val reveal = shown.getOrNull(e.index) ?: return
+        if (e.phase == RealPhase.Hook) { drawHook(canvas, e, reveal, t); return }
         canvas.drawColor(C.INK)
         val frame = clips[reveal.sampleId]?.frameAt((t - e.clipAtMs).coerceIn(0L, e.clipMs))
         if (frame != null) cover(canvas, frame, RectF(0f, 0f, W.toFloat(), H.toFloat()))
@@ -136,6 +147,109 @@ class RealRenderer(
         frameBmp?.let { canvas.drawBitmap(it, null, RectF(slotCx - size / 2f, slotCy - size / 2f, slotCx + size / 2f, slotCy + size / 2f), fill) }
     }
 
+    /**
+     * The opening: the game's drawing screen (bg_draw, its top and bottom kept and the plain middle squeezed, as the
+     * game does on a short screen), the player's name in the header, the word on the notepad, the timer ring running
+     * down while the drawing is drawn again on the canvas, and the hook on the board under it. It is all there from
+     * the very first frame, which is also the video's cover. At the end the first clip opens out of the drawing in a
+     * growing circle.
+     */
+    private fun drawHook(canvas: Canvas, e: RealEvent, reveal: RealReveal, t: Long) {
+        val d = project.drawing(reveal.sampleId) ?: return
+        val local = t - e.startMs
+        canvas.drawColor(C.CREAM)
+        scene?.let { drawScene(canvas, it) }
+
+        // header: who drew it, in the pill beside the back button
+        val name = if (d.named) "@${d.nickname}" else "Anonim oyuncu"
+        text.draw(canvas, name, art(152f + 148f), art(88f + 41f), art(296f - 36f).toInt(), 44f, 1, assets.display, SCENE_INK)
+
+        // the word on the notepad, sized as the game sizes it (short words large, long ones smaller), with its orange underline
+        val word = d.word.trim().replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale("tr")) else it.toString() }
+        val wordSize = (art(425f) * 0.97f / (word.length.coerceAtLeast(1) * 0.5f)).coerceIn(WORD_MIN, WORD_MAX)
+        text.draw(canvas, word, art(125f + 222.5f), art(232f + 56f), art(445f - 20f).toInt(), wordSize, 2, assets.display, SCENE_INK)
+        plain.color = UNDERLINE
+        canvas.drawRoundRect(RectF(art(235f), art(343f), art(485f), art(351f)), art(4f), art(4f), plain)
+
+        // the drawing, drawn again in the time the opening leaves before the clip
+        val drawEnd = (e.durationMs - RealTimeline.HOOK_REVEAL - RealTimeline.HOOK_HOLD).coerceAtLeast(1L)
+        val drawn = (local.toFloat() / drawEnd).coerceIn(0f, 1f)
+        replay(d.id)?.draw(canvas, hookBox, drawn, sceneInk, 0.02f)
+
+        // the timer ring, running down with the drawing
+        if (d.seconds > 0) drawTimer(canvas, d.seconds, drawn)
+
+        // the hook on the board under the canvas; it pops in, but is already readable on the very first frame
+        val pop = 0.86f + 0.14f * Ease.backOut(min(1f, local / 260f))
+        canvas.save()
+        canvas.scale(pop, pop, W / 2f, boardCy)
+        text.draw(canvas, project.hook.trim(), W / 2f, boardCy, BOARD_W, 74f, 2, assets.display, SCENE_INK)
+        canvas.restore()
+
+        // the first clip opens out of the drawing
+        val openFrom = e.durationMs - RealTimeline.HOOK_REVEAL
+        if (local >= openFrom) {
+            val frame = clips[reveal.sampleId]?.frameAt(0L) ?: return
+            val p = Ease.out(((local - openFrom).toFloat() / RealTimeline.HOOK_REVEAL).coerceIn(0f, 1f))
+            val cx = hookBox.centerX()
+            val cy = hookBox.centerY()
+            val r = p * hypot(maxOf(cx, W - cx), maxOf(cy, H - cy))
+            circle.reset()
+            circle.addCircle(cx, cy, r, Path.Direction.CW)
+            canvas.save()
+            canvas.clipPath(circle)
+            cover(canvas, frame, RectF(0f, 0f, W.toFloat(), H.toFloat()))
+            canvas.restore()
+            edge.strokeWidth = 10f * (1f - p)
+            if (edge.strokeWidth > 0.5f) canvas.drawCircle(cx, cy, r, edge)
+        }
+    }
+
+    /** bg_draw at the video's width: its top and bottom as painted, its plain middle squeezed into what is left. */
+    private fun drawScene(canvas: Canvas, bmp: Bitmap) {
+        val k = W.toFloat() / bmp.width
+        val topDst = SCENE_TOP * k
+        val bottomDst = SCENE_BOTTOM * k
+        src.set(0, 0, bmp.width, SCENE_TOP)
+        canvas.drawBitmap(bmp, src, RectF(0f, 0f, W.toFloat(), topDst), fill)
+        src.set(0, SCENE_TOP, bmp.width, bmp.height - SCENE_BOTTOM)
+        canvas.drawBitmap(bmp, src, RectF(0f, topDst, W.toFloat(), H - bottomDst), fill)
+        src.set(0, bmp.height - SCENE_BOTTOM, bmp.width, bmp.height)
+        canvas.drawBitmap(bmp, src, RectF(0f, H - bottomDst, W.toFloat(), H.toFloat()), fill)
+    }
+
+    /** The game's countdown ring in the top right: the seconds left and the ring emptying as the drawing is drawn. */
+    private fun drawTimer(canvas: Canvas, seconds: Int, drawn: Float) {
+        val size = art(98f)
+        val cx = art(712f) + size / 2f
+        val cy = art(82f) + size / 2f
+        plain.color = C.WHITE
+        canvas.drawCircle(cx, cy, size / 2f, plain)
+        ring.strokeWidth = 2f
+        ring.color = 0x33000000
+        canvas.drawCircle(cx, cy, size / 2f, ring)
+        val left = 1f - drawn
+        val shown = kotlin.math.ceil(seconds * left - 0.001f).toInt().coerceAtLeast(0)
+        val color = if (shown <= 1) TIMER_WARNING else TIMER
+        val inset = 9f
+        val arc = RectF(cx - size / 2f + inset, cy - size / 2f + inset, cx + size / 2f - inset, cy + size / 2f - inset)
+        ring.strokeWidth = 11f
+        ring.color = TIMER_TRACK
+        canvas.drawArc(arc, -90f, 360f, false, ring)
+        ring.color = color
+        if (left > 0f) canvas.drawArc(arc, -90f, 360f * left, false, ring)
+        text.draw(canvas, shown.toString(), cx, cy, size.toInt(), 58f, 1, assets.display, color)
+    }
+
+    /** A place on bg_draw, in the game's art units (the picture is 841 of them wide), as video pixels. */
+    private fun art(v: Float) = v * W / ART_W
+
+    /** The game's canvas: from below the notepad to above the tool board, the painted "+ Süre" pill left clear. */
+    private val hookBox = RectF(art(36f) + 24f, art(438f) + 120f, art(806f) - 24f, H - art(ART_H - 1386f) - 16f)
+
+    /** The middle of the tool board under the canvas, where the game's tool buttons sit. */
+    private val boardCy = H - art(ART_H - 1433f) + art(49f)
+
     /** Fills [dst] with [bmp], cropped to its shape. */
     private fun cover(canvas: Canvas, bmp: Bitmap, dst: RectF) {
         if (bmp.isRecycled) return
@@ -158,5 +272,22 @@ class RealRenderer(
         const val FPS = 30
         /** The card's width on the frame; its height follows its own shape. */
         private const val CARD_W = 450f
+
+        /** bg_draw in the game's art units, and the rows of its own pixels kept as painted at the top and the bottom. */
+        private const val ART_W = 841f
+        private const val ART_H = 1870f
+        private const val SCENE_TOP = 720
+        private const val SCENE_BOTTOM = 801
+        /** The hook may take the board's width less the game's margins and the strip TikTok's buttons cover. */
+        private const val BOARD_W = 880
+        /** The game's 24 sp and 34 sp for the word, on a 411 dp phone, in video pixels. */
+        private const val WORD_MIN = 63f
+        private const val WORD_MAX = 89f
+
+        private const val SCENE_INK = 0xFF3A2A22.toInt()
+        private const val UNDERLINE = 0xFFF58A1F.toInt()
+        private const val TIMER = 0xFFF97316.toInt()
+        private const val TIMER_WARNING = 0xFFE23A2C.toInt()
+        private const val TIMER_TRACK = 0xFFFFE3CC.toInt()
     }
 }

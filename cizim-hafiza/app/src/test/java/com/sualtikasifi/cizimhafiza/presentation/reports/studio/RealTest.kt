@@ -53,7 +53,70 @@ class RealTest {
     @Test
     fun noClipsMeansNoVideo() {
         assertTrue(RealTimeline.build(emptyList()).isEmpty())
+        assertTrue(RealTimeline.build(emptyList(), hookMs = 3_000).isEmpty())
         assertEquals(0L, RealTimeline.totalMs(emptyList()))
+    }
+
+    @Test
+    fun theHookOpensTheVideoOnTheFirstClipsDrawingAndTheClipsFollowIt() {
+        val shown = listOf(RealReveal("a", clip = "a.mp4", clipMs = 8_000), RealReveal("b", clip = "b.mp4", clipMs = 6_000))
+        val events = RealTimeline.build(shown, hookMs = 2_800)
+        assertEquals(listOf(RealPhase.Hook, RealPhase.Clip, RealPhase.Clip), events.map { it.phase })
+        assertEquals(0L, events[0].startMs)
+        assertEquals(2_800L, events[0].durationMs)
+        assertEquals(0, events[0].index)
+        events.zipWithNext().forEach { (x, y) -> assertEquals(x.endMs, y.startMs) }
+        // each clip's sound is laid where the clip now starts
+        assertEquals(listOf(2_800L, 10_800L), events.drop(1).map { it.clipAtMs })
+        assertEquals(16_800L, RealTimeline.totalMs(events))
+        assertEquals(RealPhase.Hook, RealTimeline.at(events, 2_799L).phase)
+        assertEquals(RealPhase.Clip, RealTimeline.at(events, 2_800L).phase)
+    }
+
+    @Test
+    fun theHookLastsLongEnoughToReadAndNoLonger() {
+        assertEquals(0L, RealTimeline.hookMs(""))
+        assertEquals(0L, RealTimeline.hookMs("   "))
+        assertEquals(RealTimeline.HOOK_MIN, RealTimeline.hookMs("Bu bir yetenek!"))
+        assertEquals(RealTimeline.HOOK_MAX, RealTimeline.hookMs("x".repeat(200)))
+        val mid = RealTimeline.hookMs("4 saniyede mikrodalga fırın çizebilir misin?")
+        assertTrue(mid in RealTimeline.HOOK_MIN..RealTimeline.HOOK_MAX)
+        // the drawing gets time to be drawn and seen before the clip opens out of it
+        assertTrue(RealTimeline.HOOK_MIN > RealTimeline.HOOK_REVEAL + RealTimeline.HOOK_HOLD + 1_000L)
+    }
+
+    @Test
+    fun theVideoOpensOnTheFirstDrawingWithAClip() {
+        val p = RealProject(
+            drawings = listOf(drawing("a"), drawing("b")),
+            reveals = listOf(RealReveal("a", image = "a.jpg"), RealReveal("b", clip = "b.mp4", clipMs = 8_000))
+        )
+        assertEquals("b", p.opening?.id)
+        // before any clip is in, the first chosen one
+        assertEquals("a", p.copy(reveals = p.reveals.map { it.copy(clip = null) }).opening?.id)
+        assertNull(RealProject().opening)
+    }
+
+    @Test
+    fun hooksAreCleanedTheirSecondsMadeTrueAndKeptToTen() {
+        val list = (1..14).joinToString(",") { "\"Kanca numara $it\"" }
+        val text = """
+            ```json
+            {"hooks":["“3 saniyede mikrodalga fırın çizebilir misin?”","1. 10 sn'de elbise çizdi!","Bu gerçekten bir yetenek!","bu gerçekten bir YETENEK!","  ",$list]}
+            ```
+        """.trimIndent()
+        val hooks = RealCopy.parseHooks(text, 4)
+        assertEquals(RealCopy.HOOK_COUNT, hooks.size)
+        assertEquals("4 saniyede mikrodalga fırın çizebilir misin?", hooks[0])
+        assertEquals("4 sn'de elbise çizdi!", hooks[1])
+        assertEquals("Bu gerçekten bir yetenek!", hooks[2])
+        // the same line twice is offered once
+        assertEquals("Kanca numara 1", hooks[3])
+        // with the seconds unknown, what was written stays
+        assertEquals("3 saniyede çizdi!", RealCopy.cleanHook("3 saniyede çizdi!", 0))
+        assertTrue(RealCopy.cleanHook("x".repeat(300), 4).length <= RealCopy.HOOK_CHARS)
+        assertTrue(RealCopy.parseHooks("bilmiyorum", 4).isEmpty())
+        assertTrue(RealCopy.parseHooks("{\"hooks\":[]}", 4).isEmpty())
     }
 
     @Test
@@ -169,7 +232,10 @@ class RealTest {
         val json = Json { ignoreUnknownKeys = true }
         val project = RealProject(
             drawings = listOf(drawing("a")),
-            reveals = listOf(RealReveal("a", "cat", "six legs", "wobble", image = "a.jpg", clip = "a.mp4", clipMs = 8_000))
+            reveals = listOf(RealReveal("a", "cat", "six legs", "wobble", image = "a.jpg", clip = "a.mp4", clipMs = 8_000)),
+            hook = "7 saniyede kedi çizdi!",
+            hooks = listOf("7 saniyede kedi çizdi!", "Bu gerçekten bir yetenek!"),
+            hooksFor = "a"
         )
         val back = json.decodeFromString(RealProject.serializer(), json.encodeToString(RealProject.serializer(), project))
         assertEquals(project, back)
@@ -177,5 +243,9 @@ class RealTest {
         // a project saved before the video was simplified carried a script and no reveals of its own
         val old = json.decodeFromString(RealProject.serializer(), """{"wordKey":"kedi","script":{"word":"Kedi"},"drawings":[]}""")
         assertTrue(old.reveals.isEmpty())
+        // one saved before there were hooks opens straight on its first clip
+        val noHook = json.decodeFromString(RealProject.serializer(), """{"drawings":[],"reveals":[]}""")
+        assertEquals("", noHook.hook)
+        assertTrue(noHook.hooks.isEmpty())
     }
 }

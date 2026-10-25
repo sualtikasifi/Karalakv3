@@ -171,6 +171,9 @@ data class RealUi(
     val project: RealProject? = null,
     val writing: Boolean = false,
     val writeError: String? = null,
+    /** The assistant is writing ideas for the opening line. */
+    val hooksWriting: Boolean = false,
+    val hooksError: String? = null,
     /** The drawing whose picture, clip or reaction is being worked on. */
     val busy: String? = null,
     /** Starting over while the project has pictures in it: asks before throwing them away. */
@@ -870,6 +873,47 @@ class StudioViewModel @Inject constructor(
                 }
                 _state.update { it.copy(caption = w.caption.ifBlank { it.caption }, hashtags = w.hashtags.ifBlank { it.hashtags }, aiCost = w.costUsd) }
             }.onFailure { e -> updateReal { it.copy(writing = false, writeError = e.message ?: "Yazılamadı") } }
+        }
+    }
+
+    /**
+     * Has the assistant write [RealCopy.HOOK_COUNT] ideas for the line the video opens with, for the drawing it opens
+     * on, to pick one from. The first one is taken while no line is set, so the preview shows the opening at once.
+     */
+    fun writeHooks() {
+        val s = _state.value
+        val p = s.real.project ?: return
+        if (s.real.hooksWriting) return
+        val key = prefs().getString(AssistantViewModel.KEY, "").orEmpty()
+        if (key.isBlank()) { updateReal { it.copy(hooksError = "Önce Asistan ayarlarından OpenRouter anahtarını gir.") }; return }
+        val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
+        val opening = p.opening ?: run { updateReal { it.copy(hooksError = "Önce en az bir çizim seç") }; return }
+        val others = (p.shown.ifEmpty { p.reveals }).mapNotNull { r -> p.drawing(r.sampleId)?.takeIf { it.id != opening.id }?.word }
+        updateReal { it.copy(hooksWriting = true, hooksError = null) }
+        viewModelScope.launch {
+            RealDirector(OpenRouterClient(key), model).hooks(opening, others).onSuccess { h ->
+                updateReal { it.copy(hooksWriting = false) }
+                _state.update { it.copy(aiCost = h.costUsd, previewMs = 0L) }
+                updateProject { proj -> proj.copy(hooks = h.hooks, hooksFor = opening.id, hook = proj.hook.ifBlank { h.hooks.first() }) }
+            }.onFailure { e -> updateReal { it.copy(hooksWriting = false, hooksError = e.message ?: "Yazılamadı") } }
+        }
+    }
+
+    /** Takes one of the assistant's ideas as the opening line, and shows the opening in the preview. */
+    fun chooseHook(text: String) {
+        _state.update { it.copy(previewMs = 0L) }
+        updateProject { it.copy(hook = text) }
+    }
+
+    /** The opening line, typed or corrected by hand; empty: the video starts on the first clip. */
+    fun setHook(text: String) = updateProject { it.copy(hook = text.take(RealCopy.HOOK_CHARS)) }
+
+    /** Makes a drawing the one the video opens on (and plays first). */
+    fun moveRevealFirst(sampleId: String) {
+        _state.update { it.copy(previewMs = 0L) }
+        updateProject { p ->
+            val r = p.reveals.find { it.sampleId == sampleId } ?: return@updateProject p
+            p.copy(reveals = listOf(r) + p.reveals.filterNot { it.sampleId == sampleId })
         }
     }
 

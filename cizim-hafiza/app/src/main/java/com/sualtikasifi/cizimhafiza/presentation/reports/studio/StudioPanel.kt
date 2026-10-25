@@ -37,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Movie
@@ -103,6 +104,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.LibraryItem
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealTimeline
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RecentDrawing
 import java.io.File
 import java.util.Locale
@@ -498,7 +500,36 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
         item(key = "rv-" + rv.sampleId) { RevealCard(i, rv, p, r.busy == rv.sampleId, r.busy != null, vm, context) }
     }
 
-    item { Step("3", "Kartın yeri ve boyu") }
+    item { Step("3", "Kanca: videonun ilk saniyeleri", if (p.hook.isBlank()) "yok" else "≈ ${(RealTimeline.hookMs(p.hook) + 999) / 1000} sn") }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            val opening = p.opening
+            Text(
+                "Video, açılış çiziminin oyun ekranında baştan çizilmesiyle başlar: kelime üstte, süre köşede akar, kanca çizimin altındaki tahtada " +
+                    "büyük yazıyla durur. Sonra ilk video çizimin içinden açılır. Açılışı başka bir çizim yapmak için o çizimin kartında “Başa al”a dokun.",
+                style = Console.Small
+            )
+            opening?.let { Text("Açılış çizimi: ${it.word}" + if (it.seconds > 0) " · ${it.seconds} sn" else "", style = Console.Subtitle, modifier = Modifier.padding(top = 6.dp)) }
+            Spacer(Modifier.height(8.dp))
+            DarkButton(
+                text = if (r.hooksWriting) "Asistan kanca yazıyor…" else if (p.hooks.isEmpty()) "Asistan ${RealCopy.HOOK_COUNT} kanca yazsın" else "${RealCopy.HOOK_COUNT} yeni kanca yazsın",
+                busy = r.hooksWriting,
+                enabled = !r.hooksWriting
+            ) { vm.writeHooks() }
+            r.hooksError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
+            if (p.hooks.isNotEmpty() && opening != null && p.hooksFor != opening.id) {
+                Text("Bu kancalar başka bir açılış çizimi için yazıldı; yenilerini yazdır.", style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp))
+            }
+            if (p.hooks.isNotEmpty()) {
+                Text("Birine dokunup seç:", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
+                p.hooks.forEach { h -> HookOption(h, selected = h == p.hook.trim()) { vm.chooseHook(h) } }
+            }
+            Field("Kanca (seçtiğini düzeltebilir ya da kendin yazabilirsin; boşsa video doğrudan ilk videoyla başlar)", p.hook, vm::setHook, lines = 2)
+            if (p.hook.isNotBlank()) SmallLink("Kancayı kaldır", Console.Critical) { vm.setHook("") }
+        }
+    }
+
+    item { Step("4", "Kartın yeri ve boyu") }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Karalak kartının videodaki yerini ve boyunu ayarla; aşağıdaki önizleme anında değişir.", style = Console.Small)
@@ -507,6 +538,22 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
             PreciseSlider("Sağa–sola", r.card.x, 0f..1f) { vm.setCard(r.card.copy(x = it)) }
             PreciseSlider("Yukarı–aşağı", r.card.y, 0f..1f) { vm.setCard(r.card.copy(y = it)) }
             SmallLink("Varsayılana dön") { vm.resetCard() }
+        }
+    }
+}
+
+/** One of the assistant's opening lines; the chosen one is outlined in orange. */
+@Composable
+private fun HookOption(text: String, selected: Boolean, onClick: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = if (selected) Console.AccentSoft else Console.SurfaceAlt,
+        border = BorderStroke(if (selected) 1.5.dp else 1.dp, if (selected) Console.Accent else Console.Border),
+        modifier = Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp)) {
+            Text(text, style = Console.Body, modifier = Modifier.weight(1f))
+            if (selected) Icon(Icons.Filled.Check, contentDescription = "Seçili", tint = Console.Accent, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -544,6 +591,7 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
             }
             if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = Console.Accent, strokeWidth = 2.dp)
         }
+        if (index > 0) SmallLink("Başa al (video bu çizimle açılır)") { vm.moveRevealFirst(rv.sampleId) }
         PlayerEditor(project.drawing(rv.sampleId), vm, anyBusy)
         Field("Çizimin şekli (görsel istemine eklenir)", rv.describe, { vm.setRevealDescribe(rv.sampleId, it) }, lines = 3)
         Field("Videodaki sahne (video istemine eklenir): kim, nerede, ne yapıyor, hangi sesler? Ne kadar ayrıntılı yazarsan o kadar iyi.", rv.motion, { vm.setRevealMotion(rv.sampleId, it) }, lines = 7)
@@ -813,7 +861,7 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
                     )
                     Text(
                         if (st.format == StudioFormat.Guess && st.script == null) "Örnek cümlelerle gösteriliyor; Karalak yazınca kendi cümleleri gelir."
-                        else if (st.format == StudioFormat.RealLife) "Videoların kendi sesi çalar; üstüne Karalak kartı gelir: çizim, oyuncunun çerçevesi ve adı."
+                        else if (st.format == StudioFormat.RealLife) "Kanca varsa video oyun ekranında açılış çizimiyle başlar. Videoların kendi sesi çalar; üstüne Karalak kartı gelir: çizim, oyuncunun çerçevesi ve adı."
                         else "Sesli videoda süreler sesin gerçek uzunluğuna göre ayarlanır.",
                         style = Console.Small, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
                     )

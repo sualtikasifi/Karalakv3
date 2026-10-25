@@ -66,19 +66,29 @@ data class RealReveal(
 
 /**
  * "Gerçek Olsaydı": a few drawings by different players, each turned into a realistic picture and a clip
- * with sound. The video is those clips one after the other, each with its drawing, its player and the app's
- * name and Google Play badge over it.
+ * with sound. The video opens on the [hook] (the opening drawing drawn again on the game's own screen, the
+ * line on the board under it), then plays those clips one after the other, each with its drawing, its player
+ * and the app's name over it.
  */
 @Serializable
 data class RealProject(
     val drawings: List<RealDrawing> = emptyList(),
-    val reveals: List<RealReveal> = emptyList()
+    val reveals: List<RealReveal> = emptyList(),
+    /** The line the video opens with; empty: no opening, the video starts on the first clip. */
+    val hook: String = "",
+    /** The assistant's last ten ideas for [hook], to pick from. */
+    val hooks: List<String> = emptyList(),
+    /** The drawing [hooks] were written for: they speak of its word and its seconds. */
+    val hooksFor: String = ""
 ) {
     fun drawing(id: String): RealDrawing? = drawings.find { it.id == id }
     val media: Set<String> get() = (reveals.flatMap { listOfNotNull(it.image, it.clip) } + drawings.mapNotNull { it.photo }).toSet()
 
     /** Only reveals with their clip make it into the video; the pictures are shared on their own. */
     val shown: List<RealReveal> get() = reveals.filter { it.clip != null && drawing(it.sampleId) != null }
+
+    /** The drawing the video opens on: the first one with a clip, or the first chosen while none has one yet. */
+    val opening: RealDrawing? get() = (shown.firstOrNull() ?: reveals.firstOrNull())?.let { drawing(it.sampleId) }
 }
 
 /**
@@ -110,9 +120,9 @@ data class LibraryItem(val id: String, val savedAt: Long, val drawing: RealDrawi
     val hasClip: Boolean get() = reveal.clip != null
 }
 
-enum class RealPhase { Clip }
+enum class RealPhase { Hook, Clip }
 
-/** One stretch of the video: a clip, playing from [clipAtMs] for [clipMs]. */
+/** One stretch of the video: the opening (its drawing is the first clip's), or a clip playing from [clipAtMs] for [clipMs]. */
 data class RealEvent(
     val phase: RealPhase,
     val index: Int,
@@ -129,10 +139,25 @@ object RealTimeline {
     /** Gemini clips are about eight seconds; anything longer is cut here. */
     const val CLIP_MAX = 10_000L
     private const val CLIP_MIN = 1_000L
+    /** The opening stays long enough to read its line, never so long that people swipe on. */
+    const val HOOK_MIN = 2_400L
+    const val HOOK_MAX = 3_600L
+    /** The end of the opening, in which the first clip opens out of the drawing. */
+    const val HOOK_REVEAL = 450L
+    /** The finished drawing stays still for a moment before the clip opens out of it. */
+    const val HOOK_HOLD = 300L
 
-    fun build(shown: List<RealReveal>): List<RealEvent> {
+    /** How long the opening with [hook] lasts: by the line's length, as it has to be read; 0 when there is none. */
+    fun hookMs(hook: String): Long = if (hook.isBlank()) 0L else (1_200L + hook.trim().length * 30L).coerceIn(HOOK_MIN, HOOK_MAX)
+
+    /** The opening (when [hookMs] is above 0) and then the clips, back to back. */
+    fun build(shown: List<RealReveal>, hookMs: Long = 0L): List<RealEvent> {
         val out = mutableListOf<RealEvent>()
         var t = 0L
+        if (hookMs > 0 && shown.isNotEmpty()) {
+            out += RealEvent(RealPhase.Hook, 0, 0L, hookMs)
+            t = hookMs
+        }
         shown.forEachIndexed { i, r ->
             val ms = min(r.clipMs, CLIP_MAX).coerceAtLeast(CLIP_MIN)
             out += RealEvent(RealPhase.Clip, i, t, ms, clipAtMs = t, clipMs = ms)
@@ -148,6 +173,13 @@ object RealTimeline {
 }
 
 object RealCopy {
+    /** How many ideas for the opening line the assistant writes at once. */
+    const val HOOK_COUNT = 10
+    /** Longer than this and an opening line no longer fits the board, nor is read in time. */
+    const val HOOK_CHARS = 80
+    private val SECONDS = Regex("(\\d+)(\\s*(?:saniye|sn))", RegexOption.IGNORE_CASE)
+    private val NUMBERING = Regex("^\\d+[.)]\\s+")
+
     /** Where the video sends people: the app's page in Google Play, never the website. */
     const val STORE_URL = "https://play.google.com/store/apps/details?id=com.sualtikasifi.cizimhafiza"
     const val STORE_LINE = "Karalak'ı Google Play'den indir: $STORE_URL"
@@ -209,6 +241,26 @@ object RealCopy {
      * `{"reveals":[{"index":1,"word_en":"…","describe":"…","motion":"…"}],"caption":"…","hashtags":"…"}`.
      */
     data class Picks(val reveals: List<RevealPick>, val caption: String, val hashtags: String)
+
+    /**
+     * The assistant's ideas for the opening line: `{"hooks":["…",…]}`, cleaned (see [cleanHook]), the same one
+     * only once, at most [HOOK_COUNT]. [seconds] are the opening drawing's.
+     */
+    fun parseHooks(text: String, seconds: Int): List<String> {
+        val o = GuessCopy.objectIn(text) ?: return emptyList()
+        val raw = runCatching { o["hooks"]!!.jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull } }.getOrNull().orEmpty()
+        return raw.map { cleanHook(it, seconds) }.filter { it.isNotEmpty() }.distinctBy { GuessCopy.normalize(it) }.take(HOOK_COUNT)
+    }
+
+    /**
+     * One opening line as the video shows it: no quotes or list number around it, and any time it gives set to the
+     * drawing's real [seconds] (0: not known, left as written), so the video never claims a time the game did not give.
+     */
+    fun cleanHook(text: String, seconds: Int): String {
+        var s = text.trim().trim('"', '“', '”', '\'', '«', '»').trim().replace(NUMBERING, "").trim()
+        if (seconds > 0) s = SECONDS.replace(s) { m -> "$seconds" + m.groupValues[2] }
+        return s.take(HOOK_CHARS).trim()
+    }
 
     fun parsePicks(text: String, candidates: Int): Picks? {
         val o = GuessCopy.objectIn(text) ?: return null
