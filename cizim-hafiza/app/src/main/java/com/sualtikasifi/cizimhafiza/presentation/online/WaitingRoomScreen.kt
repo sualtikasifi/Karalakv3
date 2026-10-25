@@ -569,7 +569,15 @@ private fun HintPlate(text: String, color: Color, modifier: Modifier = Modifier)
 
 /** The painted pill with its label: orange to press, green once chosen; it dips while pressed and can pulse. */
 @Composable
-private fun LobbyButton(text: String, green: Boolean, pulse: Float, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun LobbyButton(
+    text: String,
+    green: Boolean,
+    pulse: Float,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    /** A smaller second line under [text]; the button grows a little to hold both. */
+    subText: String? = null
+) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.92f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f), label = "lobby-btn")
@@ -578,12 +586,25 @@ private fun LobbyButton(text: String, green: Boolean, pulse: Float, onClick: () 
         slicePx = 86,
         edge = 27.dp,
         modifier = modifier
-            .height(56.dp)
+            .height(if (subText != null) 66.dp else 56.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale; alpha = 1f - 0.12f * pulse }
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
     ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            OutlinedLabel(text, 24.sp, outline = if (green) Color(0xFF1B6B12) else Color(0xFF8A3A00))
+        val outline = if (green) Color(0xFF1B6B12) else Color(0xFF8A3A00)
+        if (subText == null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                OutlinedLabel(text, 24.sp, outline = outline)
+            }
+        } else {
+            // Two centred lines. The painted pill has a thicker lip along its bottom, so they sit a touch high.
+            Column(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 30.dp).padding(bottom = 3.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                OutlinedLabel(text, 21.sp, outline = outline)
+                OutlinedLabel(subText, 13.sp, outline = outline)
+            }
         }
     }
 }
@@ -693,21 +714,33 @@ private fun WaitingRoomActions(
                 // One button for everybody. Once everyone is ready the host's turns into "Oyunu Başlat"; the others are told
                 // who they wait for.
                 val hostCanStart = allReady && isHost && countdownSeconds == null && !isStarting
-                if (allReady && !isHost && countdownSeconds == null && !isStarting) {
-                    HintPlate(stringResource(R.string.online_waiting_for_host), Color(0xFFFFF1D6))
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
+                val waitingForHost = allReady && !isHost && countdownSeconds == null && !isStarting
                 ReadyButton(
                     amReady = amReady,
                     countdownSeconds = countdownSeconds,
                     locked = isStarting,
                     onClick = if (hostCanStart) onStartGame else onToggleReady,
                     modifier = Modifier.fillMaxWidth(),
-                    startLabel = if (hostCanStart) stringResource(R.string.online_start_game) else null
+                    startLabel = when {
+                        hostCanStart -> stringResource(R.string.online_start_game)
+                        waitingForHost -> stringResource(R.string.online_everyone_ready)
+                        else -> null
+                    },
+                    subLabel = if (waitingForHost) stringResource(R.string.online_waiting_for_host_sub) else null
                 )
             }
         }
     }
+}
+
+/** The ready button as the lobby shows it once everyone is ready and the host has not started yet (debug preview). */
+@Composable
+internal fun ReadyButtonWaitingForHostPreview() {
+    ReadyButton(
+        amReady = true, countdownSeconds = null, locked = false, onClick = {}, modifier = Modifier.fillMaxWidth(),
+        startLabel = stringResource(R.string.online_everyone_ready),
+        subLabel = stringResource(R.string.online_waiting_for_host_sub)
+    )
 }
 
 /**
@@ -721,7 +754,8 @@ private fun ReadyButton(
     locked: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    startLabel: String? = null
+    startLabel: String? = null,
+    subLabel: String? = null
 ) {
     val green = AppTheme.tokens.success
     val counting = countdownSeconds != null
@@ -790,6 +824,7 @@ private fun ReadyButton(
     ) {
         LobbyButton(
             text = countdownSeconds?.toString() ?: startLabel ?: stringResource(R.string.online_ready),
+            subText = if (counting) null else subLabel,
             green = amReady || counting,
             pulse = if (amReady || counting) 0f else blink,
             onClick = { if (!counting && !locked) onClick() },

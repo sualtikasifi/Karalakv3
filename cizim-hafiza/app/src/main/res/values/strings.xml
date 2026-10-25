@@ -80,7 +80,8 @@
     <string name="online_ready">Ready</string>
     <string name="online_ready_cancel">Not ready</string>
     <string name="online_start_game">Start Game</string>
-    <string name="online_waiting_for_host">Everyone\'s ready! Waiting for the host to start…</string>
+    <string name="online_everyone_ready">Everyone\'s ready!</string>
+    <string name="online_waiting_for_host_sub">Waiting for the host to start…</string>
     <string name="online_you_label">%1$s (You)</string>
     <string name="online_player_left_lobby">Left the lobby</string>
     <string name="online_chat_row_empty">No messages yet — tap to send</string>

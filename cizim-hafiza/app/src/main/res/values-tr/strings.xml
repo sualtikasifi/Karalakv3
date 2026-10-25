@@ -84,7 +84,8 @@
     <string name="online_ready">Hazır</string>
     <string name="online_ready_cancel">Hazır değilim</string>
     <string name="online_start_game">Oyunu Başlat</string>
-    <string name="online_waiting_for_host">Herkes hazır! Oda sahibinin başlatmasını bekliyoruz…</string>
+    <string name="online_everyone_ready">Herkes hazır!</string>
+    <string name="online_waiting_for_host_sub">Oda sahibinin başlatmasını bekliyoruz…</string>
     <string name="online_you_label">%1$s (Sen)</string>
     <string name="online_player_left_lobby">Lobiden ayrıldı</string>
     <string name="online_chat_row_empty">Henüz mesaj yok — dokun, gönder</string>
