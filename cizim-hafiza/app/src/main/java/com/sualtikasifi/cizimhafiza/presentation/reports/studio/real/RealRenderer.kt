@@ -23,15 +23,15 @@ import kotlin.math.hypot
 import kotlin.math.min
 
 /**
- * Draws a "Gerçek Olsaydı" video in 1080×1920: one drawing's, the project's featured one. When it has a hook it
- * opens on the game's own drawing screen: the drawing is drawn again on its canvas while the timer runs down, its word
- * on the notepad and the hook on the board under the canvas; then the clip opens out of the drawing. The clip plays
+ * Draws a "Gerçek Olsaydı" video in 1080×1920: one drawing's, the project's featured one. It opens on the game's own
+ * drawing screen: the drawing is drawn again on its canvas while the timer runs down, its word on the notepad and the
+ * game's jokers on the board under the canvas, while Karalak says the hook; then the clip opens out of the drawing. The clip plays
  * full frame with its own sound and, in the top left, the Karalak card (the game's wooden frame with its logo): the
  * player's drawing in the middle of it, the player's frame with the default picture in the round slot at the bottom
  * and their name (or "anonymous") beside it. Its size and place are the [layout] set in the panel. When it has a
  * closing line, the clip's last frame is then held under it. Karalak's voice says the hook and the closing when they
- * were voiced, never over the clip. The right edge and the bottom band stay clear for the buttons and caption TikTok,
- * Reels and Shorts put there.
+ * were voiced, never over the clip; the app's music, when chosen, plays under it all. The right edge and the bottom
+ * band stay clear for the buttons and caption TikTok, Reels and Shorts put there.
  */
 class RealRenderer(
     private val assets: StudioAssets,
@@ -46,7 +46,9 @@ class RealRenderer(
     private val photoFiles: Map<String, File> = emptyMap(),
     /** The featured reveal's lines said aloud: the hook's voice, laid at the start of the opening, and the closing's, at its start. */
     hookVoiceFile: File? = null,
-    outroVoiceFile: File? = null
+    outroVoiceFile: File? = null,
+    /** Its background music ([RealReveal.music]), under the whole video. */
+    musicFile: File? = null
 ) : VoicedVideo {
     /** The video is one drawing's: the project's featured one. */
     private val featured = project.featured
@@ -56,12 +58,29 @@ class RealRenderer(
     override val voiceStarts: List<Pair<Int, Long>> = emptyList()
     override val sounds: List<ClipSound> = buildList {
         val f = featured ?: return@buildList
+        // where Karalak speaks, for the music to step back
+        val voices = mutableListOf<LongRange>()
+        var clipRange: LongRange? = null
         events.forEach { e ->
             when (e.phase) {
-                RealPhase.Hook -> if (hookVoiceFile != null && f.hook.voice != null) add(ClipSound(hookVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.hook.voiceMs, 1f))
-                RealPhase.Clip -> if (clipGain > 0f) clipFiles[f.sampleId]?.let { add(ClipSound(it, e.clipAtMs, e.clipMs, clipGain)) }
-                RealPhase.Outro -> if (outroVoiceFile != null && f.outro.voice != null) add(ClipSound(outroVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.outro.voiceMs, 1f))
+                RealPhase.Hook -> if (hookVoiceFile != null && f.hook.voice != null) {
+                    add(ClipSound(hookVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.hook.voiceMs, 1f))
+                    voices += (e.startMs + RealTimeline.VOICE_AT).let { it..it + f.hook.voiceMs }
+                }
+                RealPhase.Clip -> {
+                    clipRange = e.clipAtMs until e.clipAtMs + e.clipMs
+                    if (clipGain > 0f) clipFiles[f.sampleId]?.let { add(ClipSound(it, e.clipAtMs, e.clipMs, clipGain)) }
+                }
+                RealPhase.Outro -> if (outroVoiceFile != null && f.outro.voice != null) {
+                    add(ClipSound(outroVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.outro.voiceMs, 1f))
+                    voices += (e.startMs + RealTimeline.VOICE_AT).let { it..it + f.outro.voiceMs }
+                }
             }
+        }
+        if (musicFile != null && f.music != null && f.musicVolume > 0f) {
+            val total = RealTimeline.totalMs(events)
+            val clip = clipRange
+            add(ClipSound(musicFile, 0L, total, f.musicVolume.coerceAtMost(RealMix.MAX_VOLUME)) { ms -> RealMix.gainAt(ms, total, voices, clip) })
         }
     }
 
@@ -79,6 +98,8 @@ class RealRenderer(
     private val plain = Paint(Paint.ANTI_ALIAS_FLAG)
     private val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = C.WHITE }
     private val circle = Path()
+    private val label = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeJoin = Paint.Join.ROUND }
+    private val pill = if (scene != null) assets.picture(R.drawable.st_pill_orange) else null
 
     // the card is 941 x 1672 (real_card): everything below is placed in its own pixels, then scaled
     private val lay = layout.clamped()
@@ -164,8 +185,8 @@ class RealRenderer(
     /**
      * The opening: the game's drawing screen (bg_draw, its top and bottom kept and the plain middle squeezed, as the
      * game does on a short screen), the player's name in the header, the word on the notepad, the timer ring running
-     * down while the drawing is drawn again on the canvas, and the hook on the board under it. It is all there from
-     * the very first frame, which is also the video's cover. At the end the first clip opens out of the drawing in a
+     * down while the drawing is drawn again on the canvas, and the game's jokers on the board under it. It is all there
+     * from the very first frame, which is also the video's cover. At the end the clip opens out of the drawing in a
      * growing circle.
      */
     private fun drawHook(canvas: Canvas, e: RealEvent, reveal: RealReveal, t: Long) {
@@ -193,12 +214,8 @@ class RealRenderer(
         // the timer ring, running down with the drawing
         if (d.seconds > 0) drawTimer(canvas, d.seconds, drawn)
 
-        // the hook on the board under the canvas; it pops in, but is already readable on the very first frame
-        val pop = 0.86f + 0.14f * Ease.backOut(min(1f, local / 260f))
-        canvas.save()
-        canvas.scale(pop, pop, W / 2f, boardCy)
-        text.draw(canvas, reveal.hook.text.trim(), W / 2f, boardCy, BOARD_W, 74f, 2, assets.display, SCENE_INK, spacing = 0.8f, balanced = true)
-        canvas.restore()
+        // the board under the canvas: the game's jokers, as the app shows them (the hook is only ever said, never written)
+        drawJokers(canvas)
 
         // the first clip opens out of the drawing
         val openFrom = e.durationMs - RealTimeline.HOOK_REVEAL
@@ -248,6 +265,78 @@ class RealRenderer(
         plain.alpha = 255
         text.draw(canvas, line, W / 2f, SUB_CY, SUB_W, SUB_SIZE, 2, assets.display, C.INK, spacing = 0.8f, balanced = true)
         canvas.restore()
+    }
+
+    /**
+     * The game's jokers on the tool board, the way the app draws a joker: an orange pill with the joker's picture, its
+     * name in white with a dark orange edge and, on its corner, how many are left; then the "+10 sn" button the drawing
+     * screen has there. ("+ Süre", the drawer's own joker, is already painted on the canvas.)
+     */
+    private fun drawJokers(canvas: Canvas) {
+        val h = JOKER_H
+        val top = boardCy - h / 2f
+        var x = BOARD_LEFT
+        JOKERS.forEach { (art, name, count) ->
+            drawJokerPill(canvas, RectF(x, top, x + JOKER_W, top + h), assets.picture(art), name, count)
+            x += JOKER_W + JOKER_GAP
+        }
+        assets.picture(R.drawable.btn_ad_extra_time)?.let { b ->
+            val w = BOARD_RIGHT - x
+            val bh = w * b.height / b.width
+            canvas.drawBitmap(b, null, RectF(x, boardCy - bh / 2f, x + w, boardCy + bh / 2f), fill)
+        }
+    }
+
+    private fun drawJokerPill(canvas: Canvas, box: RectF, art: Bitmap?, name: String, count: Int) {
+        pill?.let { b ->
+            // three slices: the round ends as painted, the middle stretched
+            val cap = PILL_CAP * box.height() / b.height
+            src.set(0, 0, PILL_CAP, b.height)
+            canvas.drawBitmap(b, src, RectF(box.left, box.top, box.left + cap, box.bottom), fill)
+            src.set(PILL_CAP, 0, b.width - PILL_CAP, b.height)
+            canvas.drawBitmap(b, src, RectF(box.left + cap, box.top, box.right - cap, box.bottom), fill)
+            src.set(b.width - PILL_CAP, 0, b.width, b.height)
+            canvas.drawBitmap(b, src, RectF(box.right - cap, box.top, box.right, box.bottom), fill)
+        }
+        val side = box.height() * 0.8f
+        val artBox = RectF(box.left + 10f, box.centerY() - side / 2f, box.left + 10f + side, box.centerY() + side / 2f)
+        art?.let { a ->
+            // as JokerArt: rounded, the picture a little larger than its frame
+            circle.reset()
+            circle.addRoundRect(artBox, side * 0.24f, side * 0.24f, Path.Direction.CW)
+            canvas.save()
+            canvas.clipPath(circle)
+            val grow = side * 0.11f
+            canvas.drawBitmap(a, null, RectF(artBox.left - grow, artBox.top - grow, artBox.right + grow, artBox.bottom + grow), fill)
+            canvas.restore()
+        }
+        outlined(canvas, name, artBox.right + 12f, box.centerY(), box.right - artBox.right - 30f, 40f)
+        // how many are left: a dark coin with a gold rim on the corner
+        val r = 23f
+        val cx = box.right - 6f
+        val cy = box.top + 4f
+        plain.color = BADGE
+        canvas.drawCircle(cx, cy, r, plain)
+        ring.strokeWidth = 3f
+        ring.color = BADGE_RIM
+        canvas.drawCircle(cx, cy, r, ring)
+        text.draw(canvas, count.toString(), cx, cy, (r * 2).toInt(), 28f, 1, assets.display, C.WHITE)
+    }
+
+    /** One line in white with the game's dark orange edge, shrunk until it fits [maxW]; [x] is where it starts. */
+    private fun outlined(canvas: Canvas, line: String, x: Float, cy: Float, maxW: Float, size: Float) {
+        label.typeface = assets.display
+        label.textSize = size
+        while (label.measureText(line) > maxW && label.textSize > size * 0.6f) label.textSize *= 0.94f
+        val fm = label.fontMetrics
+        val y = cy - (fm.ascent + fm.descent) / 2f
+        label.style = Paint.Style.STROKE
+        label.strokeWidth = label.textSize * 0.16f
+        label.color = LABEL_EDGE
+        canvas.drawText(line, x, y, label)
+        label.style = Paint.Style.FILL
+        label.color = C.WHITE
+        canvas.drawText(line, x, y, label)
     }
 
     /** bg_draw at the video's width: its top and bottom as painted, its plain middle squeezed into what is left. */
@@ -323,8 +412,22 @@ class RealRenderer(
         private const val ART_H = 1870f
         private const val SCENE_TOP = 720
         private const val SCENE_BOTTOM = 801
-        /** The hook may take the board's width less the game's margins and the strip TikTok's buttons cover. */
-        private const val BOARD_W = 880
+        /** The board's use: its margins on the left, and on the right the strip TikTok's buttons cover. */
+        private const val BOARD_LEFT = 56f
+        private const val BOARD_RIGHT = 964f
+        /** The joker pills: their size, the gap between them, and the round end of st_pill_orange in its own pixels. */
+        private const val JOKER_W = 290f
+        private const val JOKER_H = 100f
+        private const val JOKER_GAP = 14f
+        private const val PILL_CAP = 72
+        /** The jokers shown, with how many are left: the guesser's two (the drawer's "+ Süre" is painted on the canvas). */
+        private val JOKERS = listOf(
+            Triple(R.drawable.joker_first_letter, "İlk harf", 3),
+            Triple(R.drawable.joker_letter_count, "Harf sayısı", 3)
+        )
+        private const val LABEL_EDGE = 0xFF8A3A00.toInt()
+        private const val BADGE = 0xFF3A2112.toInt()
+        private const val BADGE_RIM = 0xFFFFC94D.toInt()
         /** The closing's subtitle: its widest line, its size, and its middle, kept above the apps' caption band. */
         private const val SUB_W = 860
         private const val SUB_SIZE = 70f

@@ -74,6 +74,16 @@ object PcmOps {
         return Pcm(toRate, out)
     }
 
+    /** [pcm] with each sample scaled by [gainAt] its time in ms from the start: music ducked under a voice, faded out. */
+    fun shaped(pcm: Pcm, gainAt: (Long) -> Float): Pcm {
+        val out = ShortArray(pcm.samples.size)
+        for (i in out.indices) {
+            val g = gainAt(i * 1000L / pcm.sampleRate)
+            out[i] = (pcm.samples[i] * g).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        return Pcm(pcm.sampleRate, out)
+    }
+
     /**
      * Lays clips onto one silent track of [totalMs]: each clip at its own start time, mixed (and clipped) where two
      * overlap, scaled by its own gain.

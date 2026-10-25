@@ -4,6 +4,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VoicedLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealPhase
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
@@ -76,30 +77,41 @@ class RealTest {
     }
 
     @Test
-    fun theHookLastsLongEnoughToReadAndNoLonger() {
-        assertEquals(0L, RealTimeline.hookMs(""))
-        assertEquals(0L, RealTimeline.hookMs("   "))
-        assertEquals(RealTimeline.HOOK_MIN, RealTimeline.hookMs("Bu bir yetenek!"))
-        assertEquals(RealTimeline.HOOK_MAX, RealTimeline.hookMs("x".repeat(200)))
-        val mid = RealTimeline.hookMs("4 saniyede mikrodalga fırın çizebilir misin?")
-        assertTrue(mid in RealTimeline.HOOK_MIN..RealTimeline.HOOK_MAX)
+    fun theOpeningIsAlwaysThereAndLastsAsLongAsTheVoicedHook() {
+        // the hook is never written on screen: silent, the opening is a fixed beat for the drawing
+        assertEquals(RealTimeline.HOOK_SILENT, RealTimeline.hookMs())
+        assertEquals(RealTimeline.HOOK_SILENT, RealTimeline.hookMs(voiceMs = 0))
         // the drawing gets time to be drawn and seen before the clip opens out of it
         assertTrue(RealTimeline.HOOK_MIN > RealTimeline.HOOK_REVEAL + RealTimeline.HOOK_HOLD + 1_000L)
+        // a short voice still leaves the drawing its time
+        assertEquals(RealTimeline.HOOK_MIN, RealTimeline.hookMs(voiceMs = 500))
+        // a longer one keeps the opening on until it has finished, and a beat after
+        assertTrue(RealTimeline.hookMs(voiceMs = 3_400) >= RealTimeline.VOICE_AT + 3_400)
+        // however long it runs, the opening never drags on
+        assertEquals(RealTimeline.HOOK_VOICE_MAX, RealTimeline.hookMs(voiceMs = 20_000))
     }
 
     @Test
-    fun aVoicedHookLastsUntilItHasBeenSaid() {
-        val hook = "Bu gerçekten bir yetenek!"
-        val read = RealTimeline.hookMs(hook)
-        // a short voice changes nothing: the line still has to be read
-        assertEquals(read, RealTimeline.hookMs(hook, voiceMs = 500))
-        // a longer one keeps the opening on until it has finished, and a beat after
-        val long = RealTimeline.hookMs(hook, voiceMs = 3_400)
-        assertTrue(long >= RealTimeline.VOICE_AT + 3_400)
-        assertTrue(long > read)
-        // however long it runs, the opening never drags on
-        assertEquals(RealTimeline.HOOK_VOICE_MAX, RealTimeline.hookMs(hook, voiceMs = 20_000))
-        assertEquals(0L, RealTimeline.hookMs("", voiceMs = 3_000))
+    fun theMusicStepsBackUnderTheVoiceAndTheClipAndFadesOut() {
+        val total = 13_000L
+        val voices = listOf(150L..2_650L, 11_150L..12_400L)
+        val clip = 2_800L until 10_800L
+        fun g(ms: Long) = RealMix.gainAt(ms, total, voices, clip)
+        // a quick fade in, then under the hook's voice
+        assertEquals(0f, g(0), 0.001f)
+        assertEquals(RealMix.UNDER_VOICE, g(1_000), 0.001f)
+        // between the voice and the clip it comes back up, then sits a little lower under the clip
+        assertTrue(g(2_780) > RealMix.UNDER_VOICE)
+        assertEquals(RealMix.UNDER_CLIP, g(6_000), 0.001f)
+        // under the closing's voice again, and out by the very end
+        assertEquals(RealMix.UNDER_VOICE, g(11_800), 0.001f)
+        assertEquals(0f, g(total), 0.001f)
+        // with nobody speaking at the end, it fades out over the last moments
+        val quiet = { ms: Long -> RealMix.gainAt(ms, total, emptyList(), clip) }
+        assertEquals(1f, quiet(total - RealMix.FADE_OUT - 10), 0.001f)
+        assertEquals(0.5f, quiet(total - RealMix.FADE_OUT / 2), 0.01f)
+        // never louder than chosen
+        (0L..total step 50).forEach { assertTrue(g(it) in 0f..1f) }
     }
 
     @Test
@@ -109,7 +121,7 @@ class RealTest {
         val r = RealReveal("a", clip = "a.mp4", clipMs = 8_000, hook = hook, outro = outro)
         val p = RealProject(drawings = listOf(drawing("a")), reveals = listOf(r))
         assertEquals(setOf("a.mp4", "hook_voice_1.mp3", "outro_voice_1.mp3"), p.media)
-        assertEquals(RealTimeline.hookMs(hook.text, 3_000), r.hookMs)
+        assertEquals(RealTimeline.hookMs(3_000), r.hookMs)
         assertEquals(RealTimeline.outroMs(outro.text, 1_800), r.outroMs)
         // the same words keep their voice; other words, or none, let it go
         assertEquals(hook, hook.withText("7 saniyede kedi çizdi!"))
@@ -117,8 +129,9 @@ class RealTest {
         assertNull(other.voice)
         assertEquals(0L, other.voiceMs)
         assertEquals(hook.options, other.options)
-        assertEquals(RealTimeline.hookMs(other.text), r.copy(hook = other).hookMs)
-        assertEquals(0L, r.copy(hook = hook.withText("")).hookMs)
+        // its words changed, the hook is silent again and the opening goes back to its plain beat
+        assertEquals(RealTimeline.HOOK_SILENT, r.copy(hook = other).hookMs)
+        assertEquals(RealTimeline.HOOK_SILENT, r.copy(hook = hook.withText("")).hookMs)
         assertEquals(0L, r.copy(outro = outro.withText("")).outroMs)
         // each line is reached by its kind
         assertEquals(hook, r.line(RealLine.Hook))
@@ -148,8 +161,8 @@ class RealTest {
         assertEquals(r.hookMs + 8_000 + r.outroMs, RealTimeline.totalMs(events))
         // about 13 seconds: inside the 8–20 the video aims at
         assertTrue(RealTimeline.totalMs(events) in 8_000L..20_000L)
-        // with neither line it is the clip alone
-        assertEquals(listOf(RealPhase.Clip), RealTimeline.build(r.copy(hook = VoicedLine(), outro = VoicedLine())).map { it.phase })
+        // with neither line it still opens on the game's screen, and ends with the clip
+        assertEquals(listOf(RealPhase.Hook, RealPhase.Clip), RealTimeline.build(r.copy(hook = VoicedLine(), outro = VoicedLine())).map { it.phase })
         assertTrue(RealTimeline.build(null).isEmpty())
     }
 
@@ -340,10 +353,12 @@ class RealTest {
         // a project saved before the video was simplified carried a script and no reveals of its own
         val old = json.decodeFromString(RealProject.serializer(), """{"wordKey":"kedi","script":{"word":"Kedi"},"drawings":[]}""")
         assertTrue(old.reveals.isEmpty())
-        // a drawing saved before there were lines plays its clip alone
+        // a drawing saved before there were lines opens on the game's screen and plays its clip, with no music
         val noLines = json.decodeFromString(RealReveal.serializer(), """{"sampleId":"a","clip":"a.mp4","clipMs":8000}""")
         assertEquals(VoicedLine(), noLines.hook)
         assertEquals(VoicedLine(), noLines.outro)
-        assertEquals(listOf(RealPhase.Clip), RealTimeline.build(noLines).map { it.phase })
+        assertEquals(listOf(RealPhase.Hook, RealPhase.Clip), RealTimeline.build(noLines).map { it.phase })
+        assertNull(noLines.music)
+        assertEquals(RealMix.DEFAULT_VOLUME, noLines.musicVolume, 0f)
     }
 }

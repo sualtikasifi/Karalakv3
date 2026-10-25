@@ -56,6 +56,8 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDirector
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMusic
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealPhase
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VoicedLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealImages
@@ -181,6 +183,8 @@ data class RealUi(
     val lineVoicing: Pair<RealLine, String>? = null,
     /** The video drawing's ideas already voiced with the current voice settings (paid for, kept on this phone), per line. */
     val lineVoiced: Map<RealLine, Set<String>> = emptyMap(),
+    /** The music track playing on the speaker to choose from, if any. */
+    val musicPlaying: String? = null,
     /** The drawing whose picture, clip or reaction is being worked on. */
     val busy: String? = null,
     /** Starting over while the project has pictures in it: asks before throwing them away. */
@@ -1012,6 +1016,34 @@ class StudioViewModel @Inject constructor(
         }
     }
 
+    /** The app's music under the video of the drawing it is made of; null: none. */
+    fun setMusic(name: String?) {
+        val id = _state.value.real.project?.opening?.sampleId ?: return
+        updateReveal(id) { it.copy(music = name) }
+    }
+
+    fun setMusicVolume(volume: Float) {
+        val id = _state.value.real.project?.opening?.sampleId ?: return
+        updateReveal(id) { it.copy(musicVolume = volume.coerceIn(0f, RealMix.MAX_VOLUME)) }
+    }
+
+    /** Plays a track on the speaker to choose by; the same one again stops it. */
+    fun listenMusic(name: String) {
+        if (_state.value.real.musicPlaying == name) { stopPlaying(); return }
+        viewModelScope.launch {
+            val file = withContext(Dispatchers.IO) { runCatching { RealMusic.ensure(context, name) }.getOrNull() }
+                ?: run { _state.update { it.copy(message = "Müzik açılamadı") }; return@launch }
+            play(file) { updateReal { it.copy(musicPlaying = null) } }
+            updateReal { it.copy(musicPlaying = name) }
+        }
+    }
+
+    fun stopPlaying() {
+        player?.release()
+        player = null
+        updateReal { it.copy(musicPlaying = null) }
+    }
+
     /** Makes a drawing the one the video is made of (the first with a clip); its own hook and closing come with it. */
     fun moveRevealFirst(sampleId: String) {
         _state.update { it.copy(previewMs = 0L) }
@@ -1316,12 +1348,14 @@ class StudioViewModel @Inject constructor(
         }
     }
 
-    private fun play(file: File) {
+    private fun play(file: File, onDone: () -> Unit = {}) {
         player?.release()
+        // whatever played before is cut off, a music track included
+        if (_state.value.real.musicPlaying != null) updateReal { it.copy(musicPlaying = null) }
         player = runCatching {
             MediaPlayer().apply {
                 setDataSource(file.path)
-                setOnCompletionListener { mp -> mp.release(); if (player === mp) player = null }
+                setOnCompletionListener { mp -> mp.release(); if (player === mp) { player = null; onDone() } }
                 prepare()
                 start()
             }
@@ -1489,7 +1523,8 @@ class StudioViewModel @Inject constructor(
                 layout = s.real.card,
                 photoFiles = p.drawings.mapNotNull { d -> d.photo?.let { d.id to realStore.file(it) } }.toMap(),
                 hookVoiceFile = f.hook.voice?.let { realStore.file(it) },
-                outroVoiceFile = f.outro.voice?.let { realStore.file(it) }
+                outroVoiceFile = f.outro.voice?.let { realStore.file(it) },
+                musicFile = f.music?.let { RealMusic.target(context, it) }
             )
         }
         val sp = sprites ?: return null
@@ -1567,8 +1602,13 @@ class StudioViewModel @Inject constructor(
                         _state.update { it.copy(renderStage = "Ses birleştiriliyor", progress = 0.17f) }
                         val placed = mutableListOf<Placed>()
                         if (s.voiceOn) placed += renderer.voiceStarts.mapNotNull { (index, start) -> voices[index]?.let { Placed(it, start) } }
+                        // the background music is copied out of the app the first time it is used
+                        if (s.format == StudioFormat.RealLife) s.real.project?.featured?.music?.let { runCatching { RealMusic.ensure(context, it) } }
                         renderer.sounds.forEach { snd ->
-                            runCatching { ClipAudio.decode(snd.file, snd.durationMs) }.getOrNull()?.let { placed += Placed(PcmOps.resample(it, RATE), snd.startMs, snd.gain) }
+                            runCatching { ClipAudio.decode(snd.file, snd.durationMs) }.getOrNull()?.let { pcm ->
+                                val at = PcmOps.resample(pcm, RATE)
+                                placed += Placed(snd.shape?.let { PcmOps.shaped(at, it) } ?: at, snd.startMs, snd.gain)
+                            }
                         }
                         val audio = if (placed.isNotEmpty()) AacEncoder.encode(PcmOps.mix(renderer.totalMs, RATE, placed)) else null
                         // 3. the picture, full HD when the phone's encoder takes it, 720p otherwise

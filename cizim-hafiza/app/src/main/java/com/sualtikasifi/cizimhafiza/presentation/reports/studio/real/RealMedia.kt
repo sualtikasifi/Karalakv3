@@ -11,6 +11,7 @@ import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
+import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Pcm
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -261,6 +262,35 @@ class RealStore(context: Context) {
     private companion object {
         const val MAX_IMPORT_BYTES = 300L * 1024 * 1024
         const val FRESH_MS = 5 * 60_000L
+    }
+}
+
+/** The app's own background music, offered to lay under a "Gerçek Olsaydı" video. */
+object RealMusic {
+    /** By name (the raw resource's), in the app's own playing order. */
+    val TRACKS: List<Pair<String, Int>> = listOf(
+        "music_1" to R.raw.music_1,
+        "music_2" to R.raw.music_2,
+        "music_3" to R.raw.music_3,
+        "music_4" to R.raw.music_4,
+        "music_5" to R.raw.music_5
+    )
+
+    fun label(name: String): String = "Müzik " + (TRACKS.indexOfFirst { it.first == name } + 1)
+
+    /** Where the track is kept as a file (the decoder and the player need one); it may not be there yet, see [ensure]. */
+    fun target(context: Context, name: String): File = File(File(context.cacheDir, "studio_music"), "$name.m4a")
+
+    /** The track as a file, copied out of the app the first time it is asked for. */
+    fun ensure(context: Context, name: String): File {
+        val f = target(context, name)
+        if (f.exists() && f.length() > 0) return f
+        val id = TRACKS.find { it.first == name }?.second ?: error("Bilinmeyen müzik: $name")
+        f.parentFile?.mkdirs()
+        val tmp = File(f.parentFile, f.name + ".part")
+        context.resources.openRawResource(id).use { input -> tmp.outputStream().use { input.copyTo(it) } }
+        if (!tmp.renameTo(f)) { tmp.delete(); error("Müzik hazırlanamadı") }
+        return f
     }
 }
 

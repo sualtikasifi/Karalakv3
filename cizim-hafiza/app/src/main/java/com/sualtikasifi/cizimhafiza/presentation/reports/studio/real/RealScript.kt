@@ -66,7 +66,11 @@ data class RealReveal(
     val clip: String? = null,
     val clipMs: Long = 0L,
     val hook: VoicedLine = VoicedLine(),
-    val outro: VoicedLine = VoicedLine()
+    val outro: VoicedLine = VoicedLine(),
+    /** The app's background music under the video (a [RealMusic] track's name); null: none. */
+    val music: String? = null,
+    /** How loud the music is, before it steps back under Karalak's voice and the clip (see [RealMix]). */
+    val musicVolume: Float = RealMix.DEFAULT_VOLUME
 ) {
     val media: Set<String> get() = listOfNotNull(image, clip, hook.voice, outro.voice).toSet()
 
@@ -80,11 +84,11 @@ data class RealReveal(
         RealLine.Outro -> copy(outro = line)
     }
 
-    /** How long the opening lasts: long enough to read the line, and to hear all of it when it is voiced. */
-    val hookMs: Long get() = RealTimeline.hookMs(hook.text, hook.voiceMs)
+    /** How long the opening lasts: long enough to see the drawing drawn, and to hear all of the hook when it is voiced. */
+    val hookMs: Long get() = RealTimeline.hookMs(if (hook.voice != null) hook.voiceMs else 0L)
 
-    /** How long the closing lasts, the same way. */
-    val outroMs: Long get() = RealTimeline.outroMs(outro.text, outro.voiceMs)
+    /** How long the closing lasts: long enough to read it, and to hear all of it when it is voiced. */
+    val outroMs: Long get() = RealTimeline.outroMs(outro.text, if (outro.voice != null) outro.voiceMs else 0L)
 }
 
 /** The two things Karalak says in a "Gerçek Olsaydı" video: the opening hook and the closing reaction. */
@@ -182,15 +186,16 @@ object RealTimeline {
     /** Gemini clips are about eight seconds; anything longer is cut here. */
     const val CLIP_MAX = 10_000L
     private const val CLIP_MIN = 1_000L
-    /** The opening stays long enough to read its line, never so long that people swipe on. */
+    /** A voiced opening is never shorter than this, so the drawing has time to be drawn. */
     const val HOOK_MIN = 2_400L
-    const val HOOK_MAX = 3_600L
+    /** A silent opening: the drawing drawn, held, and the clip opening out of it. */
+    const val HOOK_SILENT = 2_600L
     /** The end of the opening, in which the first clip opens out of the drawing. */
     const val HOOK_REVEAL = 450L
     /** The finished drawing stays still for a moment before the clip opens out of it. */
     const val HOOK_HOLD = 300L
 
-    /** When the voiced line starts, a beat after the first frame. */
+    /** When a voiced line starts, a beat after its stretch begins. */
     const val VOICE_AT = 150L
     /** After the voice ends, the first clip's own sound waits this long. */
     private const val VOICE_TAIL = 200L
@@ -198,14 +203,11 @@ object RealTimeline {
     const val HOOK_VOICE_MAX = 7_000L
 
     /**
-     * How long the opening with [hook] lasts; 0 when there is none. Silent, by the line's length, as it has to be read;
-     * voiced ([voiceMs] above 0), at least until the voice has finished.
+     * How long the opening lasts. Its hook is never written on screen, only said: silent, a fixed beat for the drawing;
+     * voiced ([voiceMs] above 0), until the voice has finished.
      */
-    fun hookMs(hook: String, voiceMs: Long = 0L): Long {
-        if (hook.isBlank()) return 0L
-        val read = (1_200L + hook.trim().length * 30L).coerceIn(HOOK_MIN, HOOK_MAX)
-        return if (voiceMs <= 0L) read else maxOf(read, VOICE_AT + voiceMs + VOICE_TAIL).coerceAtMost(HOOK_VOICE_MAX)
-    }
+    fun hookMs(voiceMs: Long = 0L): Long =
+        if (voiceMs <= 0L) HOOK_SILENT else maxOf(HOOK_MIN, VOICE_AT + voiceMs + VOICE_TAIL).coerceAtMost(HOOK_VOICE_MAX)
 
     /** The closing stays long enough to read; voiced, until it has been said and a breath after. */
     const val OUTRO_MIN = 1_500L
@@ -246,6 +248,36 @@ object RealTimeline {
     fun at(events: List<RealEvent>, t: Long): RealEvent = events.firstOrNull { t < it.endMs } ?: events.last()
 
     fun totalMs(events: List<RealEvent>): Long = events.lastOrNull()?.endMs ?: 0L
+}
+
+/**
+ * How the background music sits under a video, as a share of its chosen volume at each moment: it steps back under
+ * Karalak's voice, a little under the clip's own sound, comes in quickly and goes out slowly at the very end.
+ */
+object RealMix {
+    const val DEFAULT_VOLUME = 0.25f
+    const val MAX_VOLUME = 0.6f
+    const val UNDER_VOICE = 0.3f
+    const val UNDER_CLIP = 0.7f
+    private const val RAMP = 180L
+    private const val FADE_IN = 300L
+    const val FADE_OUT = 900L
+
+    /** The share at [ms] of a video of [totalMs], with Karalak speaking in [voices] and the clip playing in [clip]. */
+    fun gainAt(ms: Long, totalMs: Long, voices: List<LongRange>, clip: LongRange?): Float {
+        var g = if (clip != null && ms in clip) UNDER_CLIP else 1f
+        voices.forEach { w ->
+            val away = when {
+                ms < w.first -> w.first - ms
+                ms > w.last -> ms - w.last
+                else -> 0L
+            }
+            if (away < RAMP) g = min(g, UNDER_VOICE + (1f - UNDER_VOICE) * away / RAMP)
+        }
+        g *= (ms.toFloat() / FADE_IN).coerceIn(0f, 1f)
+        g *= ((totalMs - ms).toFloat() / FADE_OUT).coerceIn(0f, 1f)
+        return g
+    }
 }
 
 object RealCopy {
