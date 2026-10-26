@@ -158,6 +158,8 @@ fun MainMenuScreen(
     val nickname by viewModel.nickname.collectAsState()
     val dailyState by viewModel.dailyState.collectAsState()
     val penaltyWarning by viewModel.penaltyWarning.collectAsState()
+    // A dialog is a window of its own, above the opening scene too: it waits until the scene has lifted.
+    val splashDone by com.sualtikasifi.cizimhafiza.presentation.splash.SplashHandOff.brandSplashDone
     val levelProgress by viewModel.levelProgress.collectAsState()
     val xpFly by com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.active.collectAsState()
     val xpFlyArrived by com.sualtikasifi.cizimhafiza.presentation.common.XpFlyBus.arrivedId.collectAsState()
@@ -288,7 +290,7 @@ fun MainMenuScreen(
         // Gated on ads: the rescue IS watching an ad, so with ads off the
         // streak simply breaks rather than opening a dialog whose only
         // button cannot work.
-        if (dailyState.rescuableStreak > 0 && GameConstants.ADMOB_ENABLED) {
+        if (splashDone && dailyState.rescuableStreak > 0 && GameConstants.ADMOB_ENABLED) {
             StreakRescueDialog(
                 lostStreak = dailyState.rescuableStreak,
                 onRescue = { activity?.let(viewModel::rescueStreak) },
@@ -338,14 +340,14 @@ fun MainMenuScreen(
         }
 
         val ratingPrompt by viewModel.ratingPrompt.collectAsState()
-        if (ratingPrompt && freeChestReward == null) {
+        if (splashDone && ratingPrompt && freeChestReward == null) {
             com.sualtikasifi.cizimhafiza.presentation.common.RatingPromptDialog(
                 onRate = viewModel::rateAndClaimBonus,
                 onDismiss = viewModel::dismissRatingPrompt
             )
         }
 
-        freeChestReward?.let { reward ->
+        freeChestReward?.takeIf { splashDone }?.let { reward ->
             com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog(reward = reward, onDismiss = viewModel::consumeFreeChestReward)
         }
 
@@ -358,7 +360,7 @@ fun MainMenuScreen(
         val gamePlayed by viewModel.gamePlayedThisRun.collectAsState()
         LaunchedEffect(onlineNow, gamePlayed) { if (onlineNow && gamePlayed) viewModel.checkLoginStreak() }
         val rescueOnScreen = dailyState.rescuableStreak > 0 && GameConstants.ADMOB_ENABLED
-        if (!rescueOnScreen && freeChestReward == null) {
+        if (splashDone && !rescueOnScreen && freeChestReward == null) {
             loginPopup?.let { popup ->
                 LoginStreakDialog(
                     popup = popup,
@@ -382,7 +384,7 @@ fun MainMenuScreen(
             RankLadderSheet(progress = levelProgress, onDismiss = { rankLadderOpen = false })
         }
 
-        if (featureTourOpen) {
+        if (splashDone && featureTourOpen) {
             FeatureTourDialog(onFinish = { viewModel.markFeatureTourSeen(); featureTourOpen = false })
         }
 
@@ -407,7 +409,7 @@ fun MainMenuScreen(
         }
 
     }
-    penaltyWarning?.let { penalty ->
+    penaltyWarning?.takeIf { splashDone }?.let { penalty ->
         PenaltyDialog(penalty = penalty, onDismiss = viewModel::dismissPenaltyWarning)
     }
 }

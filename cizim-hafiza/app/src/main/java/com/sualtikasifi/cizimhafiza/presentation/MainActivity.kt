@@ -180,6 +180,9 @@ class MainActivity : AppCompatActivity() {
                     // Last, so it is above everything: an install older than the lowest allowed version gets the update
                     // card and cannot reach the game (see UpdateGate; nothing is shown for anyone else).
                     com.sualtikasifi.cizimhafiza.presentation.common.ForcedUpdateHost()
+                    LaunchedEffect(brandSplashVisible) {
+                        com.sualtikasifi.cizimhafiza.presentation.splash.SplashHandOff.brandSplashDone.value = !brandSplashVisible
+                    }
                     if (brandSplashVisible) {
                         BrandSplash(appReady = appDrawn, onFinished = {
                             brandSplashVisible = false
