@@ -760,7 +760,6 @@ class StudioViewModel @Inject constructor(
         previewPromo?.close()
         previewPromo = frames
         updateReal { it.copy(promo = file, promoMs = if (file != null) ms.coerceAtMost(RealTimeline.PROMO_MAX) else 0L, promoOn = on, promoBusy = false) }
-        _state.update { it.copy(video = null) }
         refreshPreview()
     }
 
@@ -778,6 +777,8 @@ class StudioViewModel @Inject constructor(
                 }
             }
             ok.onFailure { e -> _state.update { it.copy(message = "Tanıtım videosu eklenemedi: ${e.message}") } }
+            // a finished video made with the earlier promo is out of date
+            _state.update { it.copy(video = null) }
             loadPromo()
         }
     }
@@ -787,6 +788,7 @@ class StudioViewModel @Inject constructor(
             previewPromo?.close()
             previewPromo = null
             withContext(Dispatchers.IO) { runCatching { realStore.clearPromo() } }
+            _state.update { it.copy(video = null) }
             loadPromo()
         }
     }
