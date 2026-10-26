@@ -532,7 +532,8 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
     item {
         LineCard(RealLine.Outro, p, st, vm) {
             Text(
-                "Video bitince son kare donar, Karalak klipte olana kısa bir tepki verip izleyiciyi yoruma çağırır; alt yazı olarak da görünür. " +
+                "Klibin son saniyelerinde, video oynamaya devam ederken Karalak klipte olana kısa bir tepki verip izleyiciyi yoruma çağırır; " +
+                    "alt yazı olarak da görünür, klibin sesi o sırada kısılır. " +
                     "Asistan kliple ilgili sahne yazısını (yukarıdaki “Videodaki sahne”) ve kancayı da okur.",
                 style = Console.Small
             )
@@ -551,6 +552,42 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
             PreciseSlider("Sağa–sola", r.card.x, 0f..1f) { vm.setCard(r.card.copy(x = it)) }
             PreciseSlider("Yukarı–aşağı", r.card.y, 0f..1f) { vm.setCard(r.card.copy(y = it)) }
             SmallLink("Varsayılana dön") { vm.resetCard() }
+        }
+    }
+
+    item {
+        Step("7", "Tanıtım videosu: her videonun sonu", if (r.promo == null) "yok" else if (!r.promoOn) "kapalı" else String.format(Locale("tr"), "%.1f sn", r.promoMs / 1000f))
+    }
+    item { PromoCard(r, vm) }
+}
+
+/**
+ * The app's promo video, made once by hand and kept on this phone: it closes every video, with its own sound, after
+ * the drawing's video ends. It can be swapped, removed or left out of a video.
+ */
+@Composable
+private fun PromoCard(r: RealUi, vm: StudioViewModel) {
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let { vm.importPromo(it) } }
+    ConsoleCard(Modifier.fillMaxWidth()) {
+        Text(
+            "Uygulamayı tanıtan kısa videon her videonun sonuna, kendi sesiyle eklenir; bir kez seçmen yeterli, telefonda saklanır. " +
+                "Dikey 9:16 en iyisi; başka oranda bir video kırpılmadan, arkası bulanık olarak yerleşir. En fazla ${RealTimeline.PROMO_MAX / 1000} saniyesi girer.",
+            style = Console.Small
+        )
+        if (r.promo != null) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text("Videoların sonuna ekle", style = Console.Subtitle)
+                    Text(String.format(Locale("tr"), "%.1f sn", r.promoMs / 1000f) + " · önizlemede en sonda görünür", style = Console.Small)
+                }
+                Switch(checked = r.promoOn, onCheckedChange = vm::setPromoOn, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+            ActionButton(Icons.Filled.Movie, if (r.promoBusy) "Ekleniyor…" else if (r.promo == null) "Tanıtım videosu seç" else "Değiştir", Console.Surface, Console.Ink, Modifier.weight(1.4f)) {
+                if (!r.promoBusy) picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
+            }
+            if (r.promo != null) ActionButton(Icons.Filled.Refresh, "Kaldır", Console.Surface, Console.Critical, Modifier.weight(1f)) { vm.removePromo() }
         }
     }
 }

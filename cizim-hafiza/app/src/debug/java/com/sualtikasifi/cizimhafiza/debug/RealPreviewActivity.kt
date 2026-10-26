@@ -46,11 +46,12 @@ class RealPreviewActivity : Activity() {
         // the video is the first drawing's: its hook, its clip, its closing
         val project = RealProject(
             drawings = drawings,
-            reveals = drawings.map { RealReveal(it.id, clip = it.id + ".mp4", clipMs = 3_000L) }.mapIndexed { i, r ->
+            reveals = drawings.map { RealReveal(it.id, clip = it.id + ".mp4", clipMs = 5_000L) }.mapIndexed { i, r ->
                 if (i > 0) r else r.copy(hook = VoicedLine("7 saniyede roket çizebilir misin?"), outro = VoicedLine("Bu rokete kim biner? Yorumlara yaz!"))
             }
         )
-        val renderer = RealRenderer(assets, project, clips = drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f)
+        // the made-up clip stands in for the app's promo too
+        val renderer = RealRenderer(assets, project, clips = drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f, promo = frames, promoMs = 2_000L)
         val shots = buildList {
             renderer.events.forEach { e ->
                 if (e.phase == RealPhase.Hook) {
@@ -60,8 +61,12 @@ class RealPreviewActivity : Activity() {
                     add("hook_done" to e.durationMs - 500)
                     add("hook_open" to e.durationMs - 330)
                 } else if (e.phase == RealPhase.Outro) {
+                    // the clip keeps playing under the closing
                     add("outro_start" to e.startMs + 120)
                     add("outro_end" to e.endMs - 80)
+                } else if (e.phase == RealPhase.Promo) {
+                    add("promo_fade" to e.startMs + 150)
+                    add("promo_mid" to e.startMs + 1_000)
                 } else {
                     add("clip${e.index}_start" to e.startMs + 120)
                     add("clip${e.index}_mid" to e.startMs + 1_800)

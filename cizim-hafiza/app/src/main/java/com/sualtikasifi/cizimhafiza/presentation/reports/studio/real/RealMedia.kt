@@ -241,6 +241,28 @@ class RealStore(context: Context) {
     }
 
     /**
+     * The app's promo video that closes every video, kept beside the project rather than in its media folder, so no
+     * project or library clean-up ever touches it; null when none was added.
+     */
+    fun promo(): File? = root.listFiles()?.firstOrNull { it.name.startsWith(PROMO + ".") && it.length() > 0 }
+
+    /** Makes the picked video the promo, in place of any earlier one; returns its file. */
+    fun setPromo(uri: Uri): File {
+        val ext = extensionOf(uri, video = true)
+        val tmp = File(root, "${PROMO}_new.part")
+        resolver.openInputStream(uri)?.use { input -> tmp.outputStream().use { input.copyTo(it) } } ?: error("Dosya açılamadı")
+        require(tmp.length() in 1..MAX_IMPORT_BYTES) { tmp.delete(); "Dosya boş ya da çok büyük (en fazla 300 MB)" }
+        clearPromo()
+        val target = File(root, "$PROMO.$ext")
+        if (!tmp.renameTo(target)) { tmp.delete(); error("Video kaydedilemedi") }
+        return target
+    }
+
+    fun clearPromo() {
+        root.listFiles()?.filter { it.name.startsWith(PROMO + ".") }?.forEach { it.delete() }
+    }
+
+    /**
      * Deletes the imported files the project no longer uses. A file copied in the last few minutes
      * is spared: it may belong to an import that has not reached the project yet.
      */
@@ -260,6 +282,7 @@ class RealStore(context: Context) {
     }
 
     private companion object {
+        const val PROMO = "promo"
         const val MAX_IMPORT_BYTES = 300L * 1024 * 1024
         const val FRESH_MS = 5 * 60_000L
     }

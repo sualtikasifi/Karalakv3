@@ -115,7 +115,7 @@ data class VoicedLine(
  * "Gerçek Olsaydı": drawings by different players, each turned into a realistic picture and a clip with sound,
  * each a short video of its own. Several can be made at once and kept (the library holds them all); the video is
  * made from the [featured] one: its drawing drawn again on the game's own screen under its hook, its clip with the
- * player's card over it, and Karalak's closing reaction on the clip's last frame.
+ * player's card over it, and Karalak's closing reaction over the clip's last seconds.
  */
 @Serializable
 data class RealProject(
@@ -164,11 +164,12 @@ data class LibraryItem(val id: String, val savedAt: Long, val drawing: RealDrawi
     val hasClip: Boolean get() = reveal.clip != null
 }
 
-enum class RealPhase { Hook, Clip, Outro }
+enum class RealPhase { Hook, Clip, Outro, Promo }
 
 /**
- * One stretch of the video: the opening, a clip playing from [clipAtMs] for [clipMs], or the closing on that clip's
- * last frame. [index] is the clip's, in the reveals shown.
+ * One stretch of the video: the opening, a clip playing from [clipAtMs] for [clipMs], the closing over that clip's
+ * last seconds (it keeps playing; only a closing longer than what is left of it holds its last frame), or the app's
+ * own promo video after it all. [index] is the clip's, in the reveals shown.
  */
 data class RealEvent(
     val phase: RealPhase,
@@ -222,11 +223,26 @@ object RealTimeline {
         return if (voiceMs <= 0L) read else maxOf(read, VOICE_AT + voiceMs + OUTRO_TAIL).coerceAtMost(OUTRO_VOICE_MAX)
     }
 
-    /** The video of one reveal: its opening and closing as [RealReveal.hookMs] and [RealReveal.outroMs] say. */
-    fun build(reveal: RealReveal?): List<RealEvent> = if (reveal == null) emptyList() else build(listOf(reveal), reveal.hookMs, reveal.outroMs)
+    /** The clip always plays at least this long, or all of it when shorter, before the closing comes in over it. */
+    const val OUTRO_LEAD = 2_000L
 
-    /** The opening (when [hookMs] is above 0), the clips back to back, and the closing (when [outroMs] is above 0). */
-    fun build(shown: List<RealReveal>, hookMs: Long = 0L, outroMs: Long = 0L): List<RealEvent> {
+    /** The app's promo video at the end is cut after this long. */
+    const val PROMO_MAX = 15_000L
+
+    /**
+     * The video of one reveal: its opening and closing as [RealReveal.hookMs] and [RealReveal.outroMs] say, and the
+     * app's promo video of [promoMs] after it (0: none).
+     */
+    fun build(reveal: RealReveal?, promoMs: Long = 0L): List<RealEvent> =
+        if (reveal == null) emptyList() else build(listOf(reveal), reveal.hookMs, reveal.outroMs, promoMs)
+
+    /**
+     * The opening (when [hookMs] is above 0), the clips back to back, the closing (when [outroMs] is above 0) over the
+     * last clip's last seconds, and the promo (when [promoMs] is above 0). The clip keeps playing under the closing:
+     * it comes in [outroMs] before the clip ends, but never before the clip has played [OUTRO_LEAD]; what does not fit
+     * holds the clip's last frame.
+     */
+    fun build(shown: List<RealReveal>, hookMs: Long = 0L, outroMs: Long = 0L, promoMs: Long = 0L): List<RealEvent> {
         val out = mutableListOf<RealEvent>()
         var t = 0L
         if (hookMs > 0 && shown.isNotEmpty()) {
@@ -238,9 +254,16 @@ object RealTimeline {
             out += RealEvent(RealPhase.Clip, i, t, ms, clipAtMs = t, clipMs = ms)
             t += ms
         }
-        // the closing holds the last clip's last frame: it carries that clip's timing to find it
-        val last = out.lastOrNull { it.phase == RealPhase.Clip }
-        if (outroMs > 0 && last != null) out += RealEvent(RealPhase.Outro, last.index, t, outroMs, clipAtMs = last.clipAtMs, clipMs = last.clipMs)
+        // the closing comes in over the last clip's end: it carries that clip's timing to keep playing it
+        val lastAt = out.indexOfLast { it.phase == RealPhase.Clip }
+        if (outroMs > 0 && lastAt >= 0) {
+            val last = out[lastAt]
+            val from = maxOf(last.startMs + min(OUTRO_LEAD, last.clipMs), last.endMs - outroMs)
+            out[lastAt] = last.copy(durationMs = from - last.startMs)
+            out += RealEvent(RealPhase.Outro, last.index, from, outroMs, clipAtMs = last.clipAtMs, clipMs = last.clipMs)
+            t = maxOf(t, from + outroMs)
+        }
+        if (promoMs > 0 && lastAt >= 0) out += RealEvent(RealPhase.Promo, 0, t, promoMs.coerceAtMost(PROMO_MAX))
         return out
     }
 
@@ -248,6 +271,9 @@ object RealTimeline {
     fun at(events: List<RealEvent>, t: Long): RealEvent = events.firstOrNull { t < it.endMs } ?: events.last()
 
     fun totalMs(events: List<RealEvent>): Long = events.lastOrNull()?.endMs ?: 0L
+
+    /** Where the drawing's own video ends and the promo starts: the whole video when there is no promo. */
+    fun mainMs(events: List<RealEvent>): Long = events.lastOrNull { it.phase != RealPhase.Promo }?.endMs ?: 0L
 }
 
 /**
@@ -266,22 +292,39 @@ object RealMix {
     /** A clip's own sound comes in over this long, so a loud first frame does not land on the end of the hook. */
     const val CLIP_FADE_IN = 120L
 
+    /** A clip's own sound under Karalak's closing, which is said over the clip's last seconds. */
+    const val CLIP_UNDER_VOICE = 0.4f
+
     /** How loud a clip's own sound is at [ms] from its start: it comes in over [CLIP_FADE_IN]. */
     fun clipGainAt(ms: Long): Float = (ms.toFloat() / CLIP_FADE_IN).coerceIn(0f, 1f)
+
+    /**
+     * How loud the clip's own sound is at [ms] of the video, the clip starting at [clipAtMs]: it comes in softly and
+     * steps back while Karalak speaks in [voices], so the closing said over it is heard.
+     */
+    fun clipGainAt(ms: Long, clipAtMs: Long, voices: List<LongRange>): Float =
+        clipGainAt(ms - clipAtMs) * duck(ms, voices, CLIP_UNDER_VOICE)
 
     /** The share at [ms] of a video of [totalMs], with Karalak speaking in [voices] and the clip playing in [clip]. */
     fun gainAt(ms: Long, totalMs: Long, voices: List<LongRange>, clip: LongRange?): Float {
         var g = if (clip != null && ms in clip) UNDER_CLIP else 1f
+        g = min(g, duck(ms, voices, UNDER_VOICE))
+        g *= (ms.toFloat() / FADE_IN).coerceIn(0f, 1f)
+        g *= ((totalMs - ms).toFloat() / FADE_OUT).coerceIn(0f, 1f)
+        return g
+    }
+
+    /** [floor] while someone speaks in [voices], 1 away from them, with a short ramp between. */
+    private fun duck(ms: Long, voices: List<LongRange>, floor: Float): Float {
+        var g = 1f
         voices.forEach { w ->
             val away = when {
                 ms < w.first -> w.first - ms
                 ms > w.last -> ms - w.last
                 else -> 0L
             }
-            if (away < RAMP) g = min(g, UNDER_VOICE + (1f - UNDER_VOICE) * away / RAMP)
+            if (away < RAMP) g = min(g, floor + (1f - floor) * away / RAMP)
         }
-        g *= (ms.toFloat() / FADE_IN).coerceIn(0f, 1f)
-        g *= ((totalMs - ms).toFloat() / FADE_OUT).coerceIn(0f, 1f)
         return g
     }
 }

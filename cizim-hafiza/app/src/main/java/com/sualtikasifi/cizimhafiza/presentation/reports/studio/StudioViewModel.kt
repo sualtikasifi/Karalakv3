@@ -191,6 +191,11 @@ data class RealUi(
     val confirmReset: Boolean = false,
     /** Where the Karalak card sits on the video and how big it is, kept on this phone. */
     val card: CardLayout = CardLayout(),
+    /** The app's promo video that closes every video (one, kept on this phone), its length, and whether it goes in. */
+    val promo: File? = null,
+    val promoMs: Long = 0L,
+    val promoOn: Boolean = true,
+    val promoBusy: Boolean = false,
     /** A picture ready to hand to ChatGPT or Gemini, with the prompt to paste. */
     val share: RealShare? = null,
     /** The swipe-through post: each drawing followed by what it became, ready for the share sheet. */
@@ -296,9 +301,10 @@ class StudioViewModel @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true }
     private val realStore = RealStore(context)
     private var realSaveJob: Job? = null
-    /** Imported pictures by file name, decoded once. */
     /** Imported clips by file name, opened for quick preview frames. */
     private val previewClips = ConcurrentHashMap<String, ClipFrames>()
+    /** The promo video, opened the same way for the preview. */
+    @Volatile private var previewPromo: ClipFrames? = null
 
     init {
         loadDrawings()
@@ -739,7 +745,58 @@ class StudioViewModel @Inject constructor(
             val library = withContext(Dispatchers.IO) { realStore.loadLibrary() }
             updateReal { it.copy(project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media })) }
             p?.let { loadRealMedia(it) }
+            loadPromo()
         }
+    }
+
+    /** The promo video kept on this phone, if any: its length, and opened for the preview. */
+    private suspend fun loadPromo() {
+        val on = prefs().getBoolean(PROMO_ON, true)
+        val (file, ms, frames) = withContext(Dispatchers.IO) {
+            val f = realStore.promo()
+            val ms = f?.let { RealImages.clipMs(it) } ?: 0L
+            Triple(f?.takeIf { ms > 0 }, ms, f?.takeIf { ms > 0 }?.let { runCatching { ClipFrames(it, exact = false) }.getOrNull() })
+        }
+        previewPromo?.close()
+        previewPromo = frames
+        updateReal { it.copy(promo = file, promoMs = if (file != null) ms.coerceAtMost(RealTimeline.PROMO_MAX) else 0L, promoOn = on, promoBusy = false) }
+        _state.update { it.copy(video = null) }
+        refreshPreview()
+    }
+
+    /** Makes the picked video the promo that closes every video, in place of any earlier one. */
+    fun importPromo(uri: Uri) {
+        if (_state.value.real.promoBusy) return
+        updateReal { it.copy(promoBusy = true) }
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                runCatching {
+                    previewPromo?.close()
+                    previewPromo = null
+                    val f = realStore.setPromo(uri)
+                    if (RealImages.clipMs(f) <= 0L) { realStore.clearPromo(); error("Video okunamadı") }
+                }
+            }
+            ok.onFailure { e -> _state.update { it.copy(message = "Tanıtım videosu eklenemedi: ${e.message}") } }
+            loadPromo()
+        }
+    }
+
+    fun removePromo() {
+        viewModelScope.launch {
+            previewPromo?.close()
+            previewPromo = null
+            withContext(Dispatchers.IO) { runCatching { realStore.clearPromo() } }
+            loadPromo()
+        }
+    }
+
+    /** Whether the promo goes at the end of the video; kept on this phone. */
+    fun setPromoOn(on: Boolean) {
+        prefs().edit().putBoolean(PROMO_ON, on).apply()
+        updateReal { it.copy(promoOn = on) }
+        _state.update { it.copy(video = null) }
+        refreshPreview()
     }
 
     /**
@@ -1508,13 +1565,15 @@ class StudioViewModel @Inject constructor(
      */
     private fun videoFor(
         s: StudioState, voice: Map<Int, FloatArray>?, preview: Boolean,
-        clipSource: (String) -> ClipFrames? = { previewClips[it] }
+        clipSource: (String) -> ClipFrames? = { previewClips[it] },
+        promoSource: (File) -> ClipFrames? = { previewPromo }
     ): VoicedVideo? {
         if (s.format == StudioFormat.RealLife) {
             val p = s.real.project ?: return null
             // the video is one drawing's: only its clip is opened
             val f = p.featured ?: return null
             val clip = f.clip ?: return null
+            val promo = s.real.promo?.takeIf { s.real.promoOn && s.real.promoMs > 0 }
             return RealRenderer(
                 assetsOrLoad(), p,
                 clips = listOfNotNull(clipSource(clip)?.let { f.sampleId to it }).toMap(),
@@ -1524,7 +1583,10 @@ class StudioViewModel @Inject constructor(
                 photoFiles = p.drawings.mapNotNull { d -> d.photo?.let { d.id to realStore.file(it) } }.toMap(),
                 hookVoiceFile = f.hook.voice?.let { realStore.file(it) },
                 outroVoiceFile = f.outro.voice?.let { realStore.file(it) },
-                musicFile = f.music?.let { RealMusic.target(context, it) }
+                musicFile = f.music?.let { RealMusic.target(context, it) },
+                promo = promo?.let(promoSource),
+                promoFile = promo,
+                promoMs = if (promo != null) s.real.promoMs else 0L
             )
         }
         val sp = sprites ?: return null
@@ -1592,13 +1654,16 @@ class StudioViewModel @Inject constructor(
                 }
                 // every frame of an imported clip, opened for this render only
                 val renderClips = HashMap<String, ClipFrames?>()
+                var renderPromo: ClipFrames? = null
                 try {
                     withContext(Dispatchers.Default) {
                         // 2. timing from the real voice, the voice and any clip sound laid on one track, and that track encoded
                         val envelopes = if (s.voiceOn) voices.mapValues { (_, pcm) -> PcmOps.envelope(pcm, GuessRenderer.FPS) } else null
-                        val renderer = videoFor(s, envelopes, preview = false) { name ->
-                            renderClips.getOrPut(name) { runCatching { ClipFrames(realStore.file(name), exact = true) }.getOrNull() }
-                        } ?: error("Video hazırlanamadı")
+                        val renderer = videoFor(
+                            s, envelopes, preview = false,
+                            clipSource = { name -> renderClips.getOrPut(name) { runCatching { ClipFrames(realStore.file(name), exact = true) }.getOrNull() } },
+                            promoSource = { f -> renderPromo ?: runCatching { ClipFrames(f, exact = true) }.getOrNull().also { renderPromo = it } }
+                        ) ?: error("Video hazırlanamadı")
                         _state.update { it.copy(renderStage = "Ses birleştiriliyor", progress = 0.17f) }
                         val placed = mutableListOf<Placed>()
                         if (s.voiceOn) placed += renderer.voiceStarts.mapNotNull { (index, start) -> voices[index]?.let { Placed(it, start) } }
@@ -1635,6 +1700,7 @@ class StudioViewModel @Inject constructor(
                     }
                 } finally {
                     renderClips.values.forEach { it?.close() }
+                    renderPromo?.close()
                 }
             }
             result.onSuccess { _state.update { it.copy(rendering = false, video = out, progress = 1f, renderStage = "") } }
@@ -1688,6 +1754,8 @@ class StudioViewModel @Inject constructor(
         _state.value.real.project?.let { p -> runCatching { realStore.save(p) } }
         previewClips.values.forEach { it.close() }
         previewClips.clear()
+        previewPromo?.close()
+        previewPromo = null
         super.onCleared()
     }
 
@@ -1701,6 +1769,7 @@ class StudioViewModel @Inject constructor(
         const val CARD_SCALE = "studio_real_card_scale"
         const val CARD_X = "studio_real_card_x"
         const val CARD_Y = "studio_real_card_y"
+        const val PROMO_ON = "studio_real_promo_on"
         /** No line of Karalak's runs this long; a longer decode means something went wrong. */
         const val VOICE_MAX_MS = 60_000L
         /** The voice track's sample rate: what every AAC encoder takes. */

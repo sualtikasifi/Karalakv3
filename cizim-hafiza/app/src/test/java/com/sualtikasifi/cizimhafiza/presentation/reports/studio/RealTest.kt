@@ -166,15 +166,62 @@ class RealTest {
         assertEquals(listOf(RealPhase.Hook, RealPhase.Clip, RealPhase.Outro), events.map { it.phase })
         events.zipWithNext().forEach { (x, y) -> assertEquals(x.endMs, y.startMs) }
         val clip = events[1]
-        // the closing holds that clip's last frame, so it carries the clip's timing
-        assertEquals(clip.clipMs, events[2].clipMs)
-        assertEquals(clip.clipAtMs, events[2].clipAtMs)
-        assertEquals(r.hookMs + 8_000 + r.outroMs, RealTimeline.totalMs(events))
-        // about 13 seconds: inside the 8–20 the video aims at
+        val outro = events[2]
+        // the closing comes in over the clip's last seconds and ends with it: the clip is never stopped for it
+        assertEquals(clip.clipMs, outro.clipMs)
+        assertEquals(clip.clipAtMs, outro.clipAtMs)
+        assertEquals(8_000L, clip.clipMs)
+        assertEquals(clip.clipAtMs + clip.clipMs, outro.endMs)
+        assertEquals(r.outroMs, outro.durationMs)
+        assertEquals(r.hookMs + 8_000, RealTimeline.totalMs(events))
+        assertEquals(RealTimeline.totalMs(events), RealTimeline.mainMs(events))
+        // inside the 8–20 seconds the video aims at
         assertTrue(RealTimeline.totalMs(events) in 8_000L..20_000L)
         // with neither line it still opens on the game's screen, and ends with the clip
         assertEquals(listOf(RealPhase.Hook, RealPhase.Clip), RealTimeline.build(r.copy(hook = VoicedLine(), outro = VoicedLine())).map { it.phase })
         assertTrue(RealTimeline.build(null).isEmpty())
+    }
+
+    @Test
+    fun aClosingTooLongForTheClipLetsItPlayFirstThenHoldsItsLastFrame() {
+        val voiced = VoicedLine("Bunu kim sürer ki, gerçekten?", voice = "o.mp3", voiceMs = 4_500)
+        // a 3-second clip: it plays its first two seconds alone, the closing goes on past its end on the last frame
+        val r = RealReveal("a", clip = "a.mp4", clipMs = 3_000, outro = voiced)
+        val events = RealTimeline.build(r)
+        val clip = events.first { it.phase == RealPhase.Clip }
+        val outro = events.first { it.phase == RealPhase.Outro }
+        assertEquals(RealTimeline.OUTRO_LEAD, clip.durationMs)
+        assertEquals(clip.startMs + RealTimeline.OUTRO_LEAD, outro.startMs)
+        assertTrue(outro.endMs > clip.clipAtMs + clip.clipMs)
+        assertEquals(outro.endMs, RealTimeline.totalMs(events))
+        // a clip shorter than the lead plays whole before the closing
+        val tiny = RealTimeline.build(r.copy(clipMs = 1_000)).first { it.phase == RealPhase.Clip }
+        assertEquals(1_000L, tiny.durationMs)
+    }
+
+    @Test
+    fun thePromoClosesTheVideoAfterTheMusicHasGone() {
+        val r = RealReveal("a", clip = "a.mp4", clipMs = 8_000, outro = VoicedLine("Kim alır bunu?"))
+        val events = RealTimeline.build(r, promoMs = 6_000)
+        assertEquals(listOf(RealPhase.Hook, RealPhase.Clip, RealPhase.Outro, RealPhase.Promo), events.map { it.phase })
+        events.zipWithNext().forEach { (x, y) -> assertEquals(x.endMs, y.startMs) }
+        val main = RealTimeline.mainMs(events)
+        assertEquals(main, events.last().startMs)
+        assertEquals(main + 6_000, RealTimeline.totalMs(events))
+        // a long promo is cut
+        assertEquals(RealTimeline.PROMO_MAX, RealTimeline.build(r, promoMs = 60_000).last().durationMs)
+        // no clip, no video: the promo alone is not one
+        assertTrue(RealTimeline.build(emptyList(), promoMs = 6_000).isEmpty())
+    }
+
+    @Test
+    fun theClipsOwnSoundStepsBackUnderTheClosing() {
+        val clipAt = 3_000L
+        val voices = listOf(8_500L..10_500L)
+        assertEquals(1f, RealMix.clipGainAt(5_000, clipAt, voices), 0.001f)
+        assertEquals(RealMix.CLIP_UNDER_VOICE, RealMix.clipGainAt(9_000, clipAt, voices), 0.001f)
+        // and still comes in softly at its start
+        assertEquals(0f, RealMix.clipGainAt(clipAt, clipAt, voices), 0.001f)
     }
 
     @Test

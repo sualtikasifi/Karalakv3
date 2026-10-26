@@ -2,6 +2,7 @@ package com.sualtikasifi.cizimhafiza.presentation.reports.studio.real
 
 import android.graphics.Bitmap
 import android.graphics.BitmapShader
+import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.LinearGradient
 import android.graphics.Matrix
@@ -30,10 +31,11 @@ import kotlin.math.min
  * game's jokers on the board under the canvas, while Karalak says the hook; then the clip opens out of the drawing. The clip plays
  * full frame with its own sound and, in the top left, the Karalak card (the game's wooden frame with its logo): the
  * player's drawing in the middle of it, the player's frame with the default picture in the round slot at the bottom
- * and their name (or "anonymous") beside it. Its size and place are the [layout] set in the panel. When it has a
- * closing line, the clip's last frame is then held under it. Karalak's voice says the hook and the closing when they
- * were voiced, never over the clip; the app's music, when chosen, plays under it all. The right edge and the bottom
- * band stay clear for the buttons and caption TikTok, Reels and Shorts put there.
+ * and their name (or "anonymous") beside it, in a soft dark vignette that lifts it off a bright clip. Its size and place
+ * are the [layout] set in the panel. A closing line comes in over the clip's last seconds while it keeps playing, as a
+ * subtitle and, when voiced, in Karalak's voice, the clip's own sound stepping back under it. The app's music, when
+ * chosen, plays under it all. Last comes the app's own [promo] video, with its own sound, when there is one. The right
+ * edge and the bottom band stay clear for the buttons and caption TikTok, Reels and Shorts put there.
  */
 class RealRenderer(
     private val assets: StudioAssets,
@@ -50,39 +52,51 @@ class RealRenderer(
     hookVoiceFile: File? = null,
     outroVoiceFile: File? = null,
     /** Its background music ([RealReveal.music]), under the whole video. */
-    musicFile: File? = null
+    musicFile: File? = null,
+    /** The app's promo video, played after the drawing's own video with its own sound; [promoMs] long (0: none). */
+    private val promo: ClipFrames? = null,
+    promoFile: File? = null,
+    promoMs: Long = 0L
 ) : VoicedVideo {
     /** The video is one drawing's: the project's featured one. */
     private val featured = project.featured
     private val shown = listOfNotNull(featured)
-    val events: List<RealEvent> = RealTimeline.build(featured)
+    val events: List<RealEvent> = RealTimeline.build(featured, promoMs)
     override val totalMs: Long = RealTimeline.totalMs(events)
     override val voiceStarts: List<Pair<Int, Long>> = emptyList()
     override val sounds: List<ClipSound> = buildList {
         val f = featured ?: return@buildList
-        // where Karalak speaks, for the music to step back
-        val voices = mutableListOf<LongRange>()
+        // where Karalak speaks, for the clip's sound and the music to step back
+        val voices = events.mapNotNull { e ->
+            val line = when (e.phase) {
+                RealPhase.Hook -> f.hook.takeIf { hookVoiceFile != null }
+                RealPhase.Outro -> f.outro.takeIf { outroVoiceFile != null }
+                else -> null
+            }
+            line?.takeIf { it.voice != null }?.let { (e.startMs + RealTimeline.VOICE_AT).let { at -> at..at + it.voiceMs } }
+        }
         var clipRange: LongRange? = null
         events.forEach { e ->
             when (e.phase) {
                 RealPhase.Hook -> if (hookVoiceFile != null && f.hook.voice != null) {
                     add(ClipSound(hookVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.hook.voiceMs, 1f, voice = true))
-                    voices += (e.startMs + RealTimeline.VOICE_AT).let { it..it + f.hook.voiceMs }
                 }
                 RealPhase.Clip -> {
                     clipRange = e.clipAtMs until e.clipAtMs + e.clipMs
-                    if (clipGain > 0f) clipFiles[f.sampleId]?.let { add(ClipSound(it, e.clipAtMs, e.clipMs, clipGain, RealMix::clipGainAt)) }
+                    val at = e.clipAtMs
+                    if (clipGain > 0f) clipFiles[f.sampleId]?.let { add(ClipSound(it, at, e.clipMs, clipGain, shape = { ms -> RealMix.clipGainAt(at + ms, at, voices) })) }
                 }
                 RealPhase.Outro -> if (outroVoiceFile != null && f.outro.voice != null) {
                     add(ClipSound(outroVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.outro.voiceMs, 1f, voice = true))
-                    voices += (e.startMs + RealTimeline.VOICE_AT).let { it..it + f.outro.voiceMs }
                 }
+                RealPhase.Promo -> promoFile?.let { add(ClipSound(it, e.startMs, e.durationMs, 1f, shape = RealMix::clipGainAt)) }
             }
         }
+        // the music is the drawing's video's: it has faded out by the time the promo starts
         if (musicFile != null && f.music != null && f.musicVolume > 0f) {
-            val total = RealTimeline.totalMs(events)
+            val main = RealTimeline.mainMs(events)
             val clip = clipRange
-            add(ClipSound(musicFile, 0L, total, f.musicVolume.coerceAtMost(RealMix.MAX_VOLUME), shape = { ms -> RealMix.gainAt(ms, total, voices, clip) }))
+            add(ClipSound(musicFile, 0L, main, f.musicVolume.coerceAtMost(RealMix.MAX_VOLUME), shape = { ms -> RealMix.gainAt(ms, main, voices, clip) }))
         }
     }
 
@@ -101,6 +115,8 @@ class RealRenderer(
     private val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = C.WHITE }
     private val circle = Path()
     private val label = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeJoin = Paint.Join.ROUND }
+    /** For the vignette's alpha mask (drawn in its colour) and the promo fading in. */
+    private val shade = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     /** The guessing screen's scene, for its painted joker tiles. */
     private val guessScene = if (scene != null) assets.picture(R.drawable.bg_guess) else null
 
@@ -125,6 +141,21 @@ class RealRenderer(
     private fun x(tx: Float) = cardBox.left + tx * k
     private fun y(ty: Float) = cardBox.top + ty * k
 
+    /**
+     * The card's own outline (its wooden frame and the logo on top), blurred: the soft dark vignette drawn under it,
+     * made once at the card's size on the video. Null without the card's picture.
+     */
+    private val vignette: Pair<Bitmap, android.graphics.PointF>? by lazy {
+        val bmp = card ?: return@lazy null
+        runCatching {
+            val small = Bitmap.createScaledBitmap(bmp, cardBox.width().toInt().coerceAtLeast(1), cardBox.height().toInt().coerceAtLeast(1), true)
+            val offset = IntArray(2)
+            val mask = small.extractAlpha(Paint().apply { maskFilter = BlurMaskFilter(VIGNETTE_BLUR * lay.scale, BlurMaskFilter.Blur.NORMAL) }, offset)
+            if (small !== bmp) small.recycle()
+            mask to android.graphics.PointF(offset[0].toFloat(), offset[1].toFloat())
+        }.getOrNull()
+    }
+
     /** The frame picked by hand (any frame, whatever the level); none picked: the one the player's level gives. */
     private fun frameOf(d: RealDrawing): AvatarFrame =
         AvatarFrame.entries.find { it.name == d.frameId } ?: AvatarFrame.resolve(d.frameId, d.level.coerceAtLeast(1))
@@ -138,6 +169,7 @@ class RealRenderer(
 
     override fun draw(canvas: Canvas, t: Long) {
         val e = RealTimeline.at(events, t)
+        if (e.phase == RealPhase.Promo) { drawPromo(canvas, e, t); return }
         val reveal = shown.getOrNull(e.index) ?: return
         if (e.phase == RealPhase.Hook) { drawHook(canvas, e, reveal, t); return }
         if (e.phase == RealPhase.Outro) { drawOutro(canvas, e, reveal, t); return }
@@ -154,6 +186,10 @@ class RealRenderer(
         val bmp = card ?: return
         canvas.save()
         canvas.scale(a, a, cardBox.left, cardBox.top)
+        vignette?.let { (mask, off) ->
+            shade.color = VIGNETTE
+            canvas.drawBitmap(mask, cardBox.left + off.x, cardBox.top + off.y + VIGNETTE_DROP * lay.scale, shade)
+        }
         canvas.drawBitmap(bmp, null, cardBox, fill)
         val m = 8f * lay.scale
         replay(d.id)?.draw(canvas, RectF(parchment.left + m, parchment.top + m, parchment.right - m, parchment.bottom - m), 1f, ink, 0.03f)
@@ -240,14 +276,20 @@ class RealRenderer(
     }
 
     /**
-     * The closing: the clip's last frame held, drifting slowly closer so it does not look stuck, the card still on it,
-     * and Karalak's reaction as a white subtitle above the band the apps cover.
+     * The closing: the clip keeps playing under it, the card still on it, and Karalak's reaction as a white subtitle
+     * above the band the apps cover. Only a closing longer than what is left of the clip holds its last frame, drifting
+     * slowly closer so it does not look stuck.
      */
     private fun drawOutro(canvas: Canvas, e: RealEvent, reveal: RealReveal, t: Long) {
         canvas.drawColor(C.INK)
-        val frame = clips[reveal.sampleId]?.frameAt((e.clipMs - LAST_FRAME_BACK).coerceAtLeast(0L))
+        val held = (e.clipMs - LAST_FRAME_BACK).coerceAtLeast(0L)
+        val at = (t - e.clipAtMs).coerceIn(0L, held)
+        val frame = clips[reveal.sampleId]?.frameAt(at)
         if (frame != null) {
-            val z = 1f + 0.04f * Ease.out(e.progress(t))
+            // past the clip's end: how far into the hold, 0 to 1
+            val clipEnd = e.clipAtMs + held
+            val hold = if (t <= clipEnd || e.endMs <= clipEnd) 0f else ((t - clipEnd).toFloat() / (e.endMs - clipEnd)).coerceIn(0f, 1f)
+            val z = 1f + 0.04f * Ease.out(hold)
             canvas.save()
             canvas.scale(z, z, W / 2f, H / 2f)
             cover(canvas, frame, RectF(0f, 0f, W.toFloat(), H.toFloat()))
@@ -268,6 +310,39 @@ class RealRenderer(
         plain.alpha = 255
         text.draw(canvas, line, W / 2f, SUB_CY, SUB_W, SUB_SIZE, 2, assets.display, C.INK, spacing = 0.8f, balanced = true)
         canvas.restore()
+    }
+
+    /**
+     * The app's promo video, full frame with its own sound, fading in over the drawing's video's last moment. A promo
+     * that is not 9:16 is shown whole over a blurred, darkened copy of itself rather than cropped.
+     */
+    private fun drawPromo(canvas: Canvas, e: RealEvent, t: Long) {
+        val local = t - e.startMs
+        val fade = (local.toFloat() / PROMO_FADE).coerceIn(0f, 1f)
+        if (fade < 1f && e.startMs > 0) draw(canvas, e.startMs - 1) else canvas.drawColor(C.INK)
+        val frame = promo?.frameAt(local) ?: return
+        if (frame.isRecycled) return
+        val full = RectF(0f, 0f, W.toFloat(), H.toFloat())
+        shade.color = C.WHITE
+        shade.alpha = (255 * fade).toInt()
+        val aspect = frame.width.toFloat() / frame.height
+        if (kotlin.math.abs(aspect / (W.toFloat() / H) - 1f) <= PROMO_COVER_SLACK) {
+            cover(canvas, frame, full, shade)
+        } else {
+            // a soft backdrop: the frame shrunk to a few pixels and spread over the screen, darkened
+            val tiny = Bitmap.createScaledBitmap(frame, 18, 32, true)
+            cover(canvas, tiny, full, shade)
+            if (tiny !== frame) tiny.recycle()
+            plain.color = 0x000000
+            plain.alpha = (110 * fade).toInt()
+            canvas.drawRect(full, plain)
+            plain.alpha = 255
+            val s = min(W.toFloat() / frame.width, H.toFloat() / frame.height)
+            val w = frame.width * s
+            val h = frame.height * s
+            canvas.drawBitmap(frame, null, RectF((W - w) / 2f, (H - h) / 2f, (W + w) / 2f, (H + h) / 2f), shade)
+        }
+        shade.alpha = 255
     }
 
     /**
@@ -472,7 +547,7 @@ class RealRenderer(
     private val boardCy = H - art(ART_H - 1433f) + art(49f)
 
     /** Fills [dst] with [bmp], cropped to its shape. */
-    private fun cover(canvas: Canvas, bmp: Bitmap, dst: RectF) {
+    private fun cover(canvas: Canvas, bmp: Bitmap, dst: RectF, paint: Paint = fill) {
         if (bmp.isRecycled) return
         val aspect = dst.width() / dst.height()
         var sw = bmp.width.toFloat()
@@ -484,7 +559,7 @@ class RealRenderer(
         val sx = (bmp.width - sw) / 2f
         val sy = (bmp.height - sh) / 2f
         src.set(sx.toInt(), sy.toInt(), (sx + sw).toInt(), (sy + sh).toInt())
-        canvas.drawBitmap(bmp, src, dst, fill)
+        canvas.drawBitmap(bmp, src, dst, paint)
     }
 
     companion object {
@@ -493,6 +568,13 @@ class RealRenderer(
         const val FPS = 30
         /** The card's width on the frame; its height follows its own shape. */
         private const val CARD_W = 450f
+        /** The vignette around the card: how far it spreads and how dark it is (at the default size), a little lower than the card. */
+        private const val VIGNETTE_BLUR = 54f
+        private const val VIGNETTE = 0x8C000000.toInt()
+        private const val VIGNETTE_DROP = 10f
+        /** The promo fades in over this long; one whose shape is within this share of 9:16 fills the frame. */
+        private const val PROMO_FADE = 300L
+        private const val PROMO_COVER_SLACK = 0.06f
 
         /** bg_draw in the game's art units, and the rows of its own pixels kept as painted at the top and the bottom. */
         private const val ART_W = 841f
