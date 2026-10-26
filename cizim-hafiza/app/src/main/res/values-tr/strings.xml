@@ -1168,8 +1168,11 @@
     <string name="reports_uphold_body">Temel ceza: %1$d XP ve %2$d altın. Çizimin sahibinin ihlal sayısına göre 5 katına kadar artar. Her ihlalde çevrimiçi oyun kapanır (1. ihlalde 6 saat, sonra 12 saat, 24 saat, 3 gün, 7 gün). Aynı çizimin diğer bildirimleri de silinir.</string>
     <string name="reports_uphold_confirm">Cezalandır</string>
     <string name="lock_duration_minutes">%1$d dakika</string>
+    <string name="lock_duration_minutes_one">%1$d dakika</string>
     <string name="lock_duration_days">%1$d gün</string>
+    <string name="lock_duration_days_one">%1$d gün</string>
     <string name="lock_duration_hours">%1$d saat</string>
+    <string name="lock_duration_hours_one">%1$d saat</string>
     <string name="lock_countdown_days">%1$d gün %2$s</string>
     <string name="lock_screen_body">Çizimin inceleme sonucu kurallara aykırı bulundu. Hızlı Eşleş ve Arkadaşınla Yarış süre dolana kadar kapalı. Çevrimdışı oynamaya devam edebilirsin.</string>
     <string name="reports_tab_locks">Kilitler</string>
@@ -1222,6 +1225,7 @@
     <string name="chest_slot_busy">Başka bir kasa açılıyor — önce onun süresi dolmalı.</string>
     <string name="chest_slot_still_unlocking">Bu kasanın süresi dolmadı.</string>
     <string name="chest_duration_hours">%1$d saat</string>
+    <string name="chest_duration_hours_one">%1$d saat</string>
     <string name="chest_duration_minutes">%1$d dk</string>
     <string name="chest_duration_hm">%1$d sa %2$d dk</string>
     <string name="chest_win_unlock_time_text">Açılma süresi: %1$s</string>
@@ -1610,6 +1614,7 @@
     <string name="rune_tile_pct">+%%%1$d</string>
     <string name="rune_tile_pts">+%%%1$d</string>
     <string name="rune_tile_cnt">+%1$d joker</string>
+    <string name="rune_tile_cnt_one">+%1$d joker</string>
     <string name="rune_status_title">Rün Durumu</string>
     <string name="rune_intro_title">Rünlere hoş geldin</string>
     <string name="rune_intro_body">Rünler, altınla satın aldığın kalıcı bonuslardır.\n\n• Bir rüne dokun, ne işe yaradığını oku, sonra satın al ya da yükselt. Her seviye onu güçlendirir.\n• Bonuslar altın, XP, sandık ve joker kazancını artırır; her oyunda geçerlidir.\n• Rünler köpeğin etrafında halkalar halinde durur. Mühürlü halka, seviyen yettiğinde ve önceki halka büyük ölçüde tamamlandığında açılır.\n• Haritayı sürükleyerek kaydır, iki parmakla yakınlaştır; durumunu görmek için ortadaki köpeğe dokun.</string>

@@ -36,7 +36,7 @@ const remaining = (c, ch, now) => (ch.start == null ? effMs(c, ch.tier) : Math.m
 const anyUnlocking = (C, now) => C.slots.some((ch) => ch && ch.start != null && !isReady(ch, now));
 const fmtLeft = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60; return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`; };
 /** "2 saat", "1 sa 48 dk" or "45 dk": the wait as it really is, runes included (ChestTier.durationText). */
-const durText = (c, tier) => { const min = Math.floor(effMs(c, tier) / 60000), h = Math.floor(min / 60), m = min % 60; return m === 0 ? S("chest_duration_hours", h) : h === 0 ? S("chest_duration_minutes", m) : S("chest_duration_hm", h, m); };
+const durText = (c, tier) => { const min = Math.floor(effMs(c, tier) / 60000), h = Math.floor(min / 60), m = min % 60; return m === 0 ? S(h === 1 ? "chest_duration_hours_one" : "chest_duration_hours", h) : h === 0 ? S("chest_duration_minutes", m) : S("chest_duration_hm", h, m); };
 
 /** The loot of a chest, with the chest runes applied (ChestLoot.roll). The percent is taken with integer division, like the app. */
 function roll(P, tier) {

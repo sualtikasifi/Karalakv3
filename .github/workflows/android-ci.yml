@@ -36,6 +36,15 @@ jobs:
         run: npm ci && npm test
         working-directory: cizim-hafiza/functions
 
+      # The web game reads the app's own texts and rune map from files generated out of the Android sources; a text
+      # renamed in the app but not regenerated shows up on the web as its bare key.
+      - name: Web texts match the app
+        run: |
+          node scripts/gen_web_strings.js
+          node scripts/gen_web_runes.js
+          git diff --exit-code -- hosting/oyna/strings.json hosting/oyna/runes.json \
+            || { echo "::error::hosting/oyna/strings.json or runes.json is stale: run node scripts/gen_web_strings.js and node scripts/gen_web_runes.js in cizim-hafiza and commit the result"; exit 1; }
+
       # google-services.json is committed, but the AdMob/keystore values in
       # local.properties are not — the build falls back to Google's public
       # test ad unit IDs when the file is absent, which is exactly what CI

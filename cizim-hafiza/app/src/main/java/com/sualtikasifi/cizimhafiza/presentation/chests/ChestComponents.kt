@@ -105,7 +105,7 @@ fun ChestTier.durationText(): String {
     val hours = (minutes / 60).toInt()
     val rest = (minutes % 60).toInt()
     return when {
-        rest == 0 -> stringResource(R.string.chest_duration_hours, hours)
+        rest == 0 -> stringResource(if (hours == 1) R.string.chest_duration_hours_one else R.string.chest_duration_hours, hours)
         hours == 0 -> stringResource(R.string.chest_duration_minutes, rest)
         else -> stringResource(R.string.chest_duration_hm, hours, rest)
     }

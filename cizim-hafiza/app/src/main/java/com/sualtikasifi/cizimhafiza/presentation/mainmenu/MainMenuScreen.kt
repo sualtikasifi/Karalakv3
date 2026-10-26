@@ -433,9 +433,9 @@ private fun PenaltyDialog(penalty: Penalty, onDismiss: () -> Unit) {
         val lockMillis = (penalty.lockedUntilMillis - penalty.createdAtMillis).coerceAtLeast(0L)
         val minutes = ((lockMillis + 59_999L) / 60_000L).toInt().coerceAtLeast(1)
         val duration = when {
-            minutes < 60 -> stringResource(R.string.lock_duration_minutes, minutes)
-            minutes >= 24 * 60 && minutes % (24 * 60) == 0 -> stringResource(R.string.lock_duration_days, minutes / (24 * 60))
-            else -> stringResource(R.string.lock_duration_hours, (minutes + 59) / 60)
+            minutes < 60 -> stringResource(if (minutes == 1) R.string.lock_duration_minutes_one else R.string.lock_duration_minutes, minutes)
+            minutes >= 24 * 60 && minutes % (24 * 60) == 0 -> (minutes / (24 * 60)).let { stringResource(if (it == 1) R.string.lock_duration_days_one else R.string.lock_duration_days, it) }
+            else -> ((minutes + 59) / 60).let { stringResource(if (it == 1) R.string.lock_duration_hours_one else R.string.lock_duration_hours, it) }
         }
         stringResource(R.string.penalty_locked, penalty.strike, duration)
     } else if (penalty.strike > 0) {

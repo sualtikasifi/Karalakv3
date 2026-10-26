@@ -175,7 +175,7 @@ function tile(c, r, sealed, pl, u, cx, cy, sp) {
 }
 
 // ---------- the info card (InfoCard / RuneDetail) ----------
-const unitText = (ui, unit, v) => (unit === "PERCENT" ? fmt(ui("rune_tile_pct"), v) : unit === "POINTS" ? fmt(ui("rune_tile_pts"), v) : unit === "COUNT" ? fmt(ui("rune_tile_cnt"), v) : ui("rune_tile_on"));
+const unitText = (ui, unit, v) => (unit === "PERCENT" ? fmt(ui("rune_tile_pct"), v) : unit === "POINTS" ? fmt(ui("rune_tile_pts"), v) : unit === "COUNT" ? fmt(ui(v === 1 ? "rune_tile_cnt_one" : "rune_tile_cnt"), v) : ui("rune_tile_on"));
 function drawCard(c) {
   const { $, P, lang } = c, ui = (k) => D.ui[k][lang()], pl = c.levelOf(P.xp).level, det = $("ru-detail"), u = c.u();
   det.replaceChildren();

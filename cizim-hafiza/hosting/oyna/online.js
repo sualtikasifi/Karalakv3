@@ -242,7 +242,7 @@ function renderLobby(c) {
   if (notice) hints.append(el("div", "ow-hint", esc(notice)));
   if (!amPending && others.length) {
     if (!allReady && teamHint) hints.append(el("div", "ow-hint", S(teamHint)));
-    if (allReady && !isHost && !counting && !starting) hints.append(el("div", "ow-hint", S("online_waiting_for_host")));
+    if (allReady && !isHost && !counting && !starting) hints.append(el("div", "ow-hint", `${S("online_everyone_ready")} ${S("online_waiting_for_host_sub")}`));
   }
   const btn = $("ow-ready"); btn.style.display = !amPending && others.length ? "" : "none";
   btn.className = "ow-rb" + (amReady || counting ? " g" : "") + (counting ? " cd" : "") + (!(amReady || counting) ? " blink" : "");

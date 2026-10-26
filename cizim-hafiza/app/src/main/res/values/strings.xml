@@ -1155,8 +1155,11 @@
     <string name="reports_uphold_body">Base penalty: %1$d XP and %2$d gold, up to 5x with the drawer\'s offence count. Online play closes with each offence (6 h on the 1st, then 12 h, 24 h, 3 days, 7 days). Other reports of this drawing are cleared too.</string>
     <string name="reports_uphold_confirm">Penalize</string>
     <string name="lock_duration_minutes">%1$d minutes</string>
+    <string name="lock_duration_minutes_one">%1$d minute</string>
     <string name="lock_duration_days">%1$d days</string>
+    <string name="lock_duration_days_one">%1$d day</string>
     <string name="lock_duration_hours">%1$d hours</string>
+    <string name="lock_duration_hours_one">%1$d hour</string>
     <string name="lock_countdown_days">%1$d d %2$s</string>
     <string name="lock_screen_body">A drawing of yours was found against the rules in review. Quick Match and Play with Friends stay closed until the timer ends. You can keep playing offline.</string>
     <string name="reports_tab_locks">Locks</string>
@@ -1209,6 +1212,7 @@
     <string name="chest_slot_busy">Another chest is unlocking — wait for it to finish first.</string>
     <string name="chest_slot_still_unlocking">This chest is still unlocking.</string>
     <string name="chest_duration_hours">%1$d hours</string>
+    <string name="chest_duration_hours_one">%1$d hour</string>
     <string name="chest_duration_minutes">%1$d min</string>
     <string name="chest_duration_hm">%1$dh %2$dm</string>
     <string name="chest_win_unlock_time_text">Unlock time: %1$s</string>
@@ -1596,7 +1600,8 @@
     <string name="rune_level_n">Level %1$d</string>
     <string name="rune_tile_pct">+%1$d%%</string>
     <string name="rune_tile_pts">+%1$d%%</string>
-    <string name="rune_tile_cnt">+%1$d joker</string>
+    <string name="rune_tile_cnt">+%1$d jokers</string>
+    <string name="rune_tile_cnt_one">+%1$d joker</string>
     <string name="rune_status_title">Rune Status</string>
     <string name="rune_intro_title">Welcome to the Runes</string>
     <string name="rune_intro_body">Runes are permanent bonuses you buy with gold.\n\n• Tap a rune to read what it does, then buy or upgrade it. Every level makes it stronger.\n• Bonuses cover gold, XP, chests and jokers, and they apply to every game.\n• Runes sit in rings around the dog. A sealed ring opens when your level is high enough and the ring before it is mostly done.\n• Drag to move the map, pinch to zoom, and tap the dog in the middle to see your status.</string>

@@ -19,9 +19,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -95,6 +97,8 @@ import com.sualtikasifi.cizimhafiza.util.AppReviewLauncher
 // bg_settings is this size; every control is laid over its painted frame by the frame's own coordinates.
 private const val ArtW = 841f
 private const val ArtH = 1870f
+// Lower edge of the privacy / version strip, in art units.
+private const val PrivacyStripBottom = 1808f
 private val Ink = Color(0xFF3B2314)
 
 /**
@@ -132,9 +136,15 @@ fun SettingsScreen(
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().sceneIn()) {
         // ONE scale in both directions, so the picture is never stretched; spare strips show a blurred copy of it.
-        val unit = minOf(maxWidth / ArtW, maxHeight / ArtH)
+        // The privacy strip sits close to the art's lower edge: where the navigation bar is taller than the room
+        // under it (three-button navigation), the scene is fitted into the height above the bar instead.
+        val navBar = with(LocalDensity.current) { WindowInsets.navigationBars.getBottom(this).toDp() }
+        val fit = minOf(maxWidth / ArtW, maxHeight / ArtH)
+        val underStrip = (maxHeight - fit * ArtH) / 2 + fit * (ArtH - PrivacyStripBottom)
+        val sceneH = if (navBar > underStrip) maxHeight - navBar else maxHeight
+        val unit = minOf(maxWidth / ArtW, sceneH / ArtH)
         val offX = (maxWidth - unit * ArtW) / 2
-        val offY = (maxHeight - unit * ArtH) / 2
+        val offY = (sceneH - unit * ArtH) / 2
         val us = unit.value
         // Lettering on the scene follows the picture, not the system font-size setting.
         val fontScale0 = LocalDensity.current.fontScale
@@ -152,7 +162,7 @@ fun SettingsScreen(
         fun sunk(sink: com.sualtikasifi.cizimhafiza.presentation.mainmenu.SinkState, x0: Float, y0: Float, x1: Float, y1: Float, cornerArt: Float): Modifier =
             Modifier.sunkenArt(sink, sceneBitmap, x0 * pxX, y0 * pxY, (x1 - x0) * pxX, (y1 - y0) * pxY, (cornerArt * us).dp)
 
-        if (offX > 1.dp || offY > 1.dp) {
+        if (offX > 1.dp || offY > 1.dp || sceneH < maxHeight) {
             Image(scene, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(20.dp))
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)))
         }
@@ -566,7 +576,7 @@ fun SettingsScreen(
         // ---- Privacy policy and the build number, on one small parchment strip under the rows -----------------
         val privacyLabel = stringResource(R.string.settings_privacy_policy)
         Row(
-            box(190f, 1752f, 650f, 1808f)
+            box(190f, 1752f, 650f, PrivacyStripBottom)
                 .shadow((3 * us).dp, RoundedCornerShape(50))
                 .background(Brush.verticalGradient(listOf(Color(0xFFFFF3D6), Color(0xFFFFD98A))), RoundedCornerShape(50))
                 .border((2f * us).dp, Color(0xFFE08A1B), RoundedCornerShape(50))

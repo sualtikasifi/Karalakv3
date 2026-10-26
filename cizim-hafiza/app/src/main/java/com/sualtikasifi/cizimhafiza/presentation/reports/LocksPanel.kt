@@ -152,8 +152,8 @@ fun LocksPanel(viewModel: LocksViewModel = hiltViewModel()) {
 private fun remainingText(millis: Long): String {
     val minutes = ((millis.coerceAtLeast(0L) + 59_999L) / 60_000L).toInt().coerceAtLeast(1)
     return when {
-        minutes < 60 -> stringResource(R.string.lock_duration_minutes, minutes)
-        minutes >= 24 * 60 -> stringResource(R.string.lock_duration_days, (minutes + 24 * 60 - 1) / (24 * 60))
-        else -> stringResource(R.string.lock_duration_hours, (minutes + 59) / 60)
+        minutes < 60 -> stringResource(if (minutes == 1) R.string.lock_duration_minutes_one else R.string.lock_duration_minutes, minutes)
+        minutes >= 24 * 60 -> ((minutes + 24 * 60 - 1) / (24 * 60)).let { stringResource(if (it == 1) R.string.lock_duration_days_one else R.string.lock_duration_days, it) }
+        else -> ((minutes + 59) / 60).let { stringResource(if (it == 1) R.string.lock_duration_hours_one else R.string.lock_duration_hours, it) }
     }
 }

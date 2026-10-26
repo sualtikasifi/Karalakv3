@@ -586,7 +586,7 @@ private fun InfoCard(
 private fun tileText(unit: RuneUnit, value: Int): String = when (unit) {
     RuneUnit.PERCENT -> stringResource(R.string.rune_tile_pct, value)
     RuneUnit.POINTS -> stringResource(R.string.rune_tile_pts, value)
-    RuneUnit.COUNT -> stringResource(R.string.rune_tile_cnt, value)
+    RuneUnit.COUNT -> stringResource(if (value == 1) R.string.rune_tile_cnt_one else R.string.rune_tile_cnt, value)
     RuneUnit.FLAG -> stringResource(R.string.rune_tile_on)
 }
 
