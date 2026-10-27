@@ -352,9 +352,11 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                 is Pending.JokerItem -> com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(item.type, 72.dp)
             }
         }
-        // The painted purchase windows carry their words ("Satın al?", "Vazgeç", "Satın Al") in the picture, so they only exist in
-        // Turkish: any other language gets the plain window built from the app's own texts.
-        if (androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language != "tr") {
+        // The painted purchase windows carry their words ("Satın al?", "Comprar?") in the picture, so they exist only in the
+        // languages that have their buy_frame; any other language gets the plain window built from the app's own texts.
+        // The jokers' own painted windows (joker_buy_*) are Turkish only: elsewhere a joker is shown on the empty frame.
+        val language = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language
+        if (language !in PaintedBuyLanguages) {
             PlainPurchaseDialog(
                 name = name,
                 price = price,
@@ -374,7 +376,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             )
             return@let
         }
-        if (item is Pending.JokerItem) {
+        if (item is Pending.JokerItem && language == "tr") {
             JokerPurchaseDialog(
                 type = item.type,
                 quantity = item.quantity,
@@ -403,7 +405,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                         modifier = Modifier.fillMaxSize()
                     )
                     is Pending.FrameItem -> Image(painterResource(item.frame.drawableRes), contentDescription = null, modifier = Modifier.size(u * 380f))
-                    is Pending.JokerItem -> Unit
+                    is Pending.JokerItem -> com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(item.type, u * 300f)
                 }
             },
             onConfirm = {
@@ -1078,6 +1080,9 @@ private fun TabEntrance(tab: Int, direction: Int, openedAt: Long, index: Int, co
 
 private const val BuyArtW = 1086f
 private const val BuyArtH = 1448f
+
+/** The languages that have a painted buy_frame; the rest get the plain window. */
+private val PaintedBuyLanguages = setOf("tr", "pt", "es")
 
 /** Where the painted pieces sit on one purchase picture, in the picture's own pixels (1086 x 1448). */
 private class BuyArtSpec(

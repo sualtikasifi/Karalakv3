@@ -103,13 +103,14 @@ const FRAME_SPEC = { close: [895, 150, 1060, 320], cancel: [95, 1060, 535, 1225]
 const pc = (v, t) => (v / t * 100).toFixed(3) + "%";
 const box = (r, abs) => { const [x, y, a, b] = r; const w = abs ? a - x : a, h = abs ? b - y : b; return `left:${pc(x, 1086)};top:${pc(y, 1448)};width:${pc(w, 1086)};height:${pc(h, 1448)}`; };
 function buy(ctx, o) {
-  // the painted windows carry their words in the picture (Turkish only): other languages get the plain window
-  if (ctx.lang() !== "tr") return plainBuy(ctx, o);
+  // the painted windows carry their words in the picture: frame windows exist in tr / pt / es, the jokers' own only in tr;
+  // anything else gets the plain window
+  if (!(ctx.lang() === "tr" || (!o.joker && (ctx.lang() === "pt" || ctx.lang() === "es")))) return plainBuy(ctx, o);
   const { P, $ } = ctx, d = $("pick"), spec = o.joker ? JOKER_SPEC : FRAME_SPEC, afford = P.gold >= o.price;
   d.classList.remove("hidden"); d.replaceChildren(); d.onclick = null;
   const wrap = el("div", "bd-wrap"), fr = el("div", "bd-frame"); wrap.append(fr);
   const close = () => d.classList.add("hidden");
-  const art = el("img", "bd-art", ""); art.src = `img/${o.art}.webp`; fr.append(art);
+  const art = el("img", "bd-art", ""); art.src = `img/${o.art}${o.art === "buy_frame" && ctx.lang() !== "tr" ? "_" + ctx.lang() : ""}.webp`; fr.append(art);
   if (o.joker) { if (o.qty > 1) fr.append(el("div", "bd-qty", `<span>×${o.qty}</span>`)); }
   else {
     const pv = el("div", "bd-prev"); pv.style.cssText = box([150, 330, 790, 400]); pv.append(o.preview); fr.append(pv);
