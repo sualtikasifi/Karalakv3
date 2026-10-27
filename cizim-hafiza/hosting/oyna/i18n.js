@@ -15,5 +15,15 @@ export function S(key, ...a) {
     return v;
   }).replace(/%%/g, "%");
 }
+/**
+ * Makes [keys] ({ field: "app_string_key" }) of a screen's own word table ({ tr: {…}, en: {…} }) read the app's texts from
+ * strings.json, so a text changed in the app changes here too; until strings.json is in, the table's own words stand.
+ */
+export function useAppTexts(table, keys) {
+  for (const l of Object.keys(table)) for (const [k, key] of Object.entries(keys)) {
+    const own = table[l][k];
+    Object.defineProperty(table[l], k, { get: () => (STR && STR[key] ? STR[key][l] || STR[key].en : own), enumerable: true, configurable: true });
+  }
+}
 /** A thousands-grouped number the way the app writes it in Turkish ("6.245") and English ("6,245"). */
 export const fmtNum = (n) => Number(n).toLocaleString(L === "tr" ? "tr-TR" : "en-US");

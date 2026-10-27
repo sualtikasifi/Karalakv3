@@ -19,7 +19,7 @@ import { layoutFriends, openFriends, renderFriends, stop as stopFriends } from "
 import { loadWorlds, layoutWorlds, renderWorlds, layoutMap, renderMap, mixFor, starsFor, recordLevel, currentWorld } from "./levels.js";
 import { layoutAccount, renderAccount } from "./account.js";
 import { layoutOffline, renderOffline } from "./offline.js";
-import { setLang, loadStrings, S } from "./i18n.js";
+import { setLang, loadStrings, S, useAppTexts } from "./i18n.js";
 import { syncNow, scheduleBackup } from "./sync.js";
 import { openRankLadder } from "./ranks.js";
 import { startSearch, stopSearch } from "./search.js";
@@ -48,6 +48,8 @@ const T = {
         you: "You", win: "You win!", lose: "You lose", draw: "Draw", leaveQ: "Leave the room?", leave: "Leave the game?", yes: "Leave", no: "Stay",
         mine: "Your drawings", tiles: { online: "Race a Friend", quick: "Quick Match", offline: "Play Offline", levels: "Levels", friends: "Friends", ach: "Achievements", league: "Monthly League", store: "Store", settings: "Settings" }, goldLbl: "Classic", adGold: "+500 Gold", daily: "Daily Challenge", adChest: "Free Chest", dailyPlay: "PLAY NOW", dailyDone: "You finished today's challenge!", lvl: "Level", toNext: (n, l) => `${n} XP to Lv. ${l}`, soon: "Coming soon", appOnly: "In the app", ok: "OK", langTitle: "Language",  theirs: "Opponent's drawings", pts: "pts", file: "words_en.json", ph: "Your answer…" },
 };
+// the joker row's words are the app's own (GuessScreen: guess_tile_hint, the jokers' short names, skip_guess)
+useAppTexts(T, { hintT: "guess_tile_hint", firstT: "joker_first_letter_short", countT: "joker_letter_count_short", skipT: "skip_guess" });
 const $ = (id) => document.getElementById(id);
 let lang = localStorage.getItem("lang") || ((navigator.language || "tr").startsWith("tr") ? "tr" : "en");
 let words = [], round = [], idx = 0, current = "home", u = 1;

@@ -1,7 +1,7 @@
 // Account screen. Play Store players use Google in the app; a browser account is a user name + password (see firebase.js), and its
 // progress is saved to users/{uid}/backup/state (sync.js) so it follows the player to any browser.
 import * as net from "./firebase.js";
-import { S } from "./i18n.js";
+import { S, useAppTexts } from "./i18n.js";
 import { rankLevelHtml } from "./ranks.js";
 import { syncNow, lastBackupAt, forgetRemote, markAccount } from "./sync.js";
 import { frameRing, frameById } from "./store.js";
@@ -16,6 +16,8 @@ const T = {
         badName: "User name must be 3-16 characters: lowercase letters, digits, _ or .", badPass: "Password must be at least 6 characters.", taken: "That user name is taken.", wrong: "Wrong user name or password.", off: "Signing in is switched off right now.", net: "Couldn't reach the server.",
         created: "Account created, saving your progress 🎉", welcome: "Welcome back — your progress was restored", loggedIn: "Signed in", progress: (a, b) => `${a} / ${b} XP` },
 };
+// texts that are the app's own (strings.json), so they cannot drift from it
+useAppTexts(T, { linked: "account_signed_in_title", max: "level_max_reached", user: "account_section_username", welcome: "account_signed_in_restored" });
 let who = null, msg = "", busy = false, linkedNow = false;
 
 export function layoutAccount(c) {

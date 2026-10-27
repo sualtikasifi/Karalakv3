@@ -1,6 +1,6 @@
 // Race a Friend: entry, create/join, live lobby, synchronized game start and the ranking screen.
 import * as net from "./firebase.js";
-import { S } from "./i18n.js";
+import { S, useAppTexts } from "./i18n.js";
 import { rankLevelHtml } from "./ranks.js";
 import { roomInviteText, shareInvite } from "./ui.js";
 import { frameRing, frameById } from "./store.js";
@@ -24,6 +24,8 @@ const T = {
         starting: "Game starting!", needTwo: "At least 2 players are needed to start.", pending: "You'll join when the current round ends", leave: "Leave room",
         done: (n) => `Finished! ${n} points`, waiting: "Waiting for the other players to finish…", place: (n) => `You placed #${n}!`, drawings: "Whose drawings?", ofTotal: (a, b) => `${a}/${b} correct`, rematch: "Play Again", lobbyBack: "Back to lobby", pts: "pts", leaveQ: "Leave the room?" },
 };
+// texts that are the app's own (strings.json), so they cannot drift from it
+useAppTexts(T, { full: "error_room_full" });
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
 const PRESENCE = 150000;
