@@ -42,8 +42,8 @@ jobs:
         run: |
           node scripts/gen_web_strings.js
           node scripts/gen_web_runes.js
-          git diff --exit-code -- hosting/oyna/strings.json hosting/oyna/runes.json \
-            || { echo "::error::hosting/oyna/strings.json or runes.json is stale: run node scripts/gen_web_strings.js and node scripts/gen_web_runes.js in cizim-hafiza and commit the result"; exit 1; }
+          git diff --exit-code -- hosting/oyna/strings.json hosting/oyna/runes.json hosting/oyna/result_strings.json hosting/oyna/store_strings.json hosting/oyna/chat_strings.json \
+            || { echo "::error::the web's text files are stale: run node scripts/gen_web_strings.js and node scripts/gen_web_runes.js in cizim-hafiza and commit the result"; exit 1; }
 
       # google-services.json is committed, but the AdMob/keystore values in
       # local.properties are not — the build falls back to Google's public

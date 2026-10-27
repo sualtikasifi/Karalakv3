@@ -1,16 +1,26 @@
 import * as net from "./firebase.js";
 import { S } from "./i18n.js";
+import { friendInviteText, shareInvite } from "./ui.js";
 
-const T = {
-  tr: { title: "Arkadaşlarım", code: "Kodun", hint: "Arkadaşını davet et, seviye 5'e ulaşınca ikiniz de 500 XP kazanın!", share: "Kodumu Paylaş", addL: "Arkadaş ekle", addH: "6 haneli kod", add: "Ekle",
-        listT: "Arkadaşların", reqT: "Arkadaşlık İstekleri", accept: "Kabul et", decline: "Reddet", invite: "Davet Et", empty: "Henüz arkadaşın yok. Kodunu paylaş ya da bir kod gir!", remove: "Kaldır", block: "Engelle", unblock: "Engeli Kaldır", blockedT: "Engellenenler",
-        removeQ: (n) => `${n} adlı kişiyi arkadaşlıktan çıkarmak istediğine emin misin?`, blockQ: (n) => `${n} adlı kişiyi engellersen sana bir daha davet gönderemez.`, yes: "Evet", no: "Vazgeç",
-        notfound: "Bu kodda biri yok.", self: "Bu senin kodun.", already: (n) => `${n} zaten arkadaşın.`, added: (n) => `${n} arkadaş oldunuz!`, sent: (n) => `${n} kişisine istek gönderildi.`, blocked: "İstek gönderilemedi.", limit: "Bugün çok fazla arkadaşlık isteği gönderdin. Yarın tekrar dene.", copied: "Kod kopyalandı", err: "Bir sorun oldu, tekrar dene.", loading: "…" },
-  en: { title: "My Friends", code: "Your code", hint: "Invite a friend — when they reach level 5 you both get 500 XP!", share: "Share my code", addL: "Add a friend", addH: "6-digit code", add: "Add",
-        listT: "Your friends", reqT: "Friend requests", accept: "Accept", decline: "Decline", invite: "Invite", empty: "No friends yet. Share your code or enter one!", remove: "Remove", block: "Block", unblock: "Unblock", blockedT: "Blocked",
-        removeQ: (n) => `Remove ${n} from your friends?`, blockQ: (n) => `If you block ${n}, they can't send you invites any more.`, yes: "Yes", no: "Cancel",
-        notfound: "Nobody has this code.", self: "That's your own code.", already: (n) => `${n} is already your friend.`, added: (n) => `You and ${n} are friends now!`, sent: (n) => `Request sent to ${n}.`, blocked: "Couldn't send the request.", limit: "You have sent a lot of friend requests today. Try again tomorrow.", copied: "Code copied", err: "Something went wrong, try again.", loading: "…" },
+// The screen's words are the app's own (strings.json), so the web never drifts from it (the invite reward was once "500 XP" here
+// while the app paid gold). Only what the app does not say has its own words: it shows one "could not add" for a wrong code or
+// one's own code, and shares through the share sheet rather than copying.
+const OWN = {
+  tr: { notfound: "Bu kodda biri yok.", self: "Bu senin kodun.", copied: "Kod kopyalandı" },
+  en: { notfound: "Nobody has this code.", self: "That's your own code.", copied: "Code copied" },
 };
+const words = (lang) => ({
+  ...(OWN[lang] || OWN.tr),
+  title: S("online_friends_entry"), code: S("friends_my_code_label"), hint: S("friends_invite_reward_hint"), share: S("friends_share_code"),
+  addL: S("friends_add_friend_label"), addH: S("friends_add_friend_hint"), add: S("friends_add_button"),
+  listT: S("friends_list_title"), reqT: S("friends_requests_title"), accept: S("friends_request_accept"), decline: S("friends_request_decline"),
+  invite: S("friends_invite_action"), empty: S("friends_empty"), remove: S("friends_remove_action"), block: S("friends_block_action"),
+  unblock: S("friends_unblock_action"), blockedT: S("friends_blocked_section_title"),
+  removeQ: (n) => S("friends_remove_confirm_message", n), blockQ: (n) => S("friends_block_confirm_message", n),
+  yes: S("friends_remove_confirm_confirm"), yesBlock: S("friends_block_confirm_confirm"), no: S("friends_remove_confirm_cancel"),
+  already: (n) => S("info_friend_already", n), added: (n) => S("info_friend_added", n), sent: (n) => S("info_friend_request_sent", n),
+  blocked: S("error_friend_add_failed"), limit: S("error_friend_request_limit"), err: S("error_friend_add_failed"), loading: "…",
+});
 let myCode = null, friends = [], requests = [], blocked = [], unsubs = [], msg = "";
 const k = 841 / 1080;
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -38,21 +48,20 @@ export async function openFriends(c) {
     unsubs.push(await net.listen("friends", (l) => { friends = l; renderFriends(c); }));
     unsubs.push(await net.listen("friendRequests", (l) => { requests = l; renderFriends(c); }));
     unsubs.push(await net.listen("blockedUsers", (l) => { blocked = l; renderFriends(c); }));
-  } catch { msg = T[c.lang()].err; renderFriends(c); }
+  } catch { msg = words(c.lang()).err; renderFriends(c); }
 }
 export function stop() { unsubs.forEach((u) => { try { u(); } catch {} }); unsubs = []; }
 
 export function renderFriends(c) {
   if (c.current() !== "friends") return;
-  const { $, P, lang } = c, x = T[lang()];
+  const { $, P, lang } = c, x = words(lang());
   $("fr-title").textContent = x.title; $("fr-duelt").textContent = S("duel_list_title"); $("fr-codel").textContent = x.code; $("fr-hint").textContent = x.hint;
   for (let i = 0; i < 6; i++) $("fr-d" + i).textContent = myCode ? myCode[i] : "";
   $("fr-sharet").innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em"><path fill="#fff" d="M18 16.1c-.8 0-1.5.3-2 .8l-7.1-4.2c.1-.2.1-.5.1-.7s0-.5-.1-.7L16 7.2c.5.5 1.2.8 2 .8 1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3c0 .2 0 .5.1.7L8 9.8C7.500 9.300 6.800 9 6 9c-1.700 0-3 1.300-3 3s1.300 3 3 3c.8 0 1.500-.3 2-.8l7.200 4.200c-.1.200-.1.400-.1.600 0 1.600 1.300 2.900 2.900 2.900s2.900-1.300 2.900-2.900-1.200-2.900-2.900-2.900z"/></svg> ` + x.share; $("fr-ribbon1t").textContent = x.addL; $("fr-ribbon2t").textContent = x.listT;
   $("fr-input").placeholder = x.addH; $("fr-addt").textContent = x.add; $("fr-msg").textContent = msg;
   $("fr-share").onclick = async () => {
     if (!myCode) return;
-    const text = lang() === "tr" ? `Karalak'ta arkadaş kodum: ${myCode} — https://karalak-b6e11.web.app/oyna/` : `My Karalak friend code: ${myCode} — https://karalak-b6e11.web.app/oyna/`;
-    try { if (navigator.share) await navigator.share({ text }); else { await navigator.clipboard.writeText(myCode); msg = x.copied; renderFriends(c); } } catch {}
+    await shareInvite(friendInviteText(myCode), myCode, () => { msg = x.copied; renderFriends(c); });
   };
   const inp = $("fr-input");
   inp.oninput = () => { inp.value = inp.value.replace(/\D/g, "").slice(0, 6); };
@@ -94,10 +103,10 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&
 function menu(c, f, x) {
   const { $ } = c, d = $("fr-menu"); d.classList.remove("hidden"); d.replaceChildren();
   const box = el("div", "fr-mbox", `<b>${esc(f.nickname || "?")}</b>`);
-  const a = (label, q, fn) => { const b = el("button", "pill cream small", `<span>${label}</span>`); b.onclick = () => { d.classList.add("hidden"); c.confirm(q, x.yes, fn); }; box.append(b); };
+  const a = (label, q, yes, fn) => { const b = el("button", "pill cream small", `<span>${label}</span>`); b.onclick = () => { d.classList.add("hidden"); c.confirm(q, yes, fn); }; box.append(b); };
   const dl = el("button", "pill orange small", `<span>${S("duel_challenge_action")}</span>`); dl.onclick = () => { d.classList.add("hidden"); c.openDuel({ uid: f.id, name: f.nickname || "?" }); }; box.append(dl);
-  a(x.remove, x.removeQ(f.nickname || "?"), () => net.removeFriend(f.id));
-  a(x.block, x.blockQ(f.nickname || "?"), () => net.blockUser(f.id, f.nickname || "?"));
+  a(x.remove, x.removeQ(f.nickname || "?"), x.yes, () => net.removeFriend(f.id));
+  a(x.block, x.blockQ(f.nickname || "?"), x.yesBlock, () => net.blockUser(f.id, f.nickname || "?"));
   const cancel = el("button", "pill cream small", `<span>${x.no}</span>`); cancel.onclick = () => d.classList.add("hidden"); box.append(cancel);
   d.append(box); d.onclick = (e) => { if (e.target === d) d.classList.add("hidden"); };
 }

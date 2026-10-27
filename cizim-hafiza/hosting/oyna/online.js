@@ -1,9 +1,11 @@
 // Race a Friend: entry, create/join, live lobby, synchronized game start and the ranking screen.
 import * as net from "./firebase.js";
 import { S } from "./i18n.js";
+import { rankLevelHtml } from "./ranks.js";
+import { roomInviteText, shareInvite } from "./ui.js";
 import { frameRing, frameById } from "./store.js";
 import { loadChat, buildDock, watch as watchChat, stop as stopChat, onReactions, activeBubbles, messageOf, reactions as chatNow, chatRow, chatText } from "./chat.js";
-import { setupGroup, fitPaper, SETUP_T } from "./offline.js";
+import { setupGroup, fitPaper, SETUP_T, overflows } from "./offline.js";
 import { renderOnlineResult as drawOnlineResult, loadResultStrings } from "./result.js";
 
 const T = {
@@ -79,21 +81,25 @@ export function renderEntry(c, fresh) {
     requestAnimationFrame(() => { const base = 41 * c.u(); let k = 1; tx.style.fontSize = base + "px"; while (k > 0.6 && [...tx.children].some((e) => e.scrollWidth > tx.clientWidth + 1)) { k -= 0.02; tx.style.fontSize = base * k + "px"; } });
   });
 }
-export async function renderCreate(c) {
+let ocF = 1;
+export async function renderCreate(c, keepScale = false) {
+  if (!keepScale) ocF = 1;
   const { $, lang } = c, x = T[lang()], C = (k) => chatText(k, lang());
   await loadChat();
-  if (!catList.length || catList.lang !== lang()) { try { const w = await (await fetch(lang() === "tr" ? "words_tr.json" : "words_en.json")).json(); catList = [...new Set(w.map((q) => q.category))].sort(); catList.lang = lang(); opts.cats = new Set(); } catch { catList = []; } }
+  if (!catList.length || catList.lang !== lang()) { try { const w = await (await fetch(lang() === "tr" ? "words_tr.json" : "words_en.json")).json(); catList = [...new Set(w.map((q) => q.category))].sort((a, b) => a.localeCompare(b, lang())); catList.lang = lang(); opts.cats = new Set(); } catch { catList = []; } }
   $("oc-title").textContent = x.cTitle; $("oc-make-t").textContent = x.make; $("oc-msg").textContent = "";
   const body = $("oc-body"); body.replaceChildren();
   // The same wooden setup rows as Play Offline (CreateRoomScreen on the shared WoodScreen).
-  const u = c.u(), group = (label, items, cols, h, size) => setupGroup(body, u, label, items, cols, h, size), again = () => renderCreate(c);
+  const u = c.u(), group = (label, items, cols, h, size) => setupGroup(body, u, label, items, cols, h * ocF, size * ocF), again = () => renderCreate(c, true);
   const S = SETUP_T[lang()];
   group(x.nick, [[c.P.nick, false, null]], 1, 78, 30);
   group(S.count, [10, 20, 30, 40, 50].map((n) => [String(n), opts.wordCount === n, () => { opts.wordCount = n; again(); }]), 5, 78, 37);
   group(C("online_room_mode_title"), [[false, C("online_room_mode_free_for_all")], [true, C("online_room_mode_team")]].map(([k, t]) => [t, opts.team === k, () => { opts.team = k; again(); }]), 2, 82, 29);
-  group(C("select_category"), [...catList.map((k) => [`${CAT_EMOJI[k] || "✨"} ${k}`, opts.cats.has(k), () => { opts.cats.has(k) ? opts.cats.delete(k) : opts.cats.add(k); again(); }]), [`🎨 ${C("all_categories")}`, opts.cats.size === 0, () => { opts.cats = new Set(); again(); }]], 4, 82, 25);
+  group(C("select_category"), [...catList.map((k) => [`${CAT_EMOJI[k] || "✨"} ${k}`, opts.cats.has(k), () => { opts.cats.has(k) ? opts.cats.delete(k) : opts.cats.add(k); again(); }]), [`🎨 ${C("all_categories")}`, opts.cats.size === 0, () => { opts.cats = new Set(); again(); }]], 3, 82, 27);
   group(S.diff, [["EASY", x.easy], ["MEDIUM", x.med], ["HARD", x.hard]].map(([k, t]) => [t, opts.diffs.has(k) && opts.diffs.size < 3, () => { opts.diffs.size === 3 ? (opts.diffs = new Set([k])) : opts.diffs.has(k) ? (opts.diffs.size > 1 && opts.diffs.delete(k)) : opts.diffs.add(k); again(); }]).concat([[C("all_difficulties"), opts.diffs.size === 3, () => { opts.diffs = new Set(["EASY", "MEDIUM", "HARD"]); again(); }]]), 4, 78, 27);
   fitPaper(c, "oc-paper", "oc-body");
+  if (overflows(body) && ocF > 0.6) { ocF -= 0.07; return renderCreate(c, true); }
+  c.fit && c.fit();
   $("oc-make").onclick = async () => {
     $("oc-msg").textContent = "…";
     try {
@@ -158,8 +164,6 @@ net.myUid().then((u) => { myId = u; }).catch(() => {});
 
 // The waiting room (WaitingRoomScreen.kt): the code card, "Oyuncular" band with the occupancy pill, the 2-column grid of eight seats
 // (or two team columns), the waiting pill, the chat dock and ONE ready button that turns into "Oyunu Başlat" for the host.
-const RANK_KEYS = ["rank_karalamaci", "rank_cirak", "rank_ressam", "rank_usta_ressam", "rank_sanatci", "rank_buyuk_usta"], RANK_AT = [1, 20, 40, 60, 80, 100];
-const rankKey = (l) => RANK_KEYS[RANK_AT.filter((t) => l >= t).length - 1];
 let readyOverride = null, starting = false, notice = "", noticeT = 0;
 const say = (c, text) => { notice = text; clearTimeout(noticeT); noticeT = setTimeout(() => { notice = ""; if (c.current() === "onw") renderLobby(c); }, 2500); };
 const PERSON = '<svg viewBox="0 0 24 24" width="1em" height="1em"><circle cx="12" cy="8" r="4.2" fill="#e9801d"/><path d="M3.8 21c0-4.4 3.7-7 8.2-7s8.2 2.6 8.2 7z" fill="#e9801d"/></svg>';
@@ -190,7 +194,7 @@ function renderLobby(c) {
     const av = frameRing(frameById(p.frameId), "ow-av"); av.style.position = "relative";
     const nm = isMe ? S("online_you_label", p.displayName) : p.displayName, lv = p.level || 1;
     const status = bub ? esc(messageOf(bub, lg)) : p.pendingNextRound ? S("online_pending_badge") : "";
-    const txt = el("div", "ow-tx", `<div class="ow-n"><span class="fitw">${esc(nm)}</span>${host ? '<img src="img/lobby_crown.webp" alt="">' : ""}</div><div class="ow-rk"><i>${S(rankKey(lv))}</i><i>${S("home_level_inline", lv)}</i></div><div class="ow-s">${status}</div>`);
+    const txt = el("div", "ow-tx", `<div class="ow-n"><span class="fitw">${esc(nm)}</span>${host ? '<img src="img/lobby_crown.webp" alt="">' : ""}</div><div class="ow-rk">${rankLevelHtml(lv)}</div><div class="ow-s">${status}</div>`);
     card.append(av, txt);
     if (team && isMe) { const sw = el("button", "ow-ico", SWAP); sw.title = S("online_switch_team"); sw.onclick = (e) => { e.stopPropagation(); net.setTeam(code, p.teamId === "B" ? "A" : "B").catch(() => {}); }; card.append(sw); }
     if (isHost && !isMe && p.uid !== "karalak-bot") {
@@ -207,8 +211,7 @@ function renderLobby(c) {
   const cp = el("div", "ow-cp");
   cp.innerHTML = `<div class="h">${S("online_room_code_hint")}</div><div class="n">${code}</div><div class="b"><span>${S("online_invite_friend")}</span></div>`;
   cp.querySelector(".b").onclick = async () => {
-    const t = `${S("share_room_invite")} ${S("share_room_code", code)} — https://karalak-b6e11.web.app/oyna/`;
-    try { if (navigator.share) await navigator.share({ text: t }); else { await navigator.clipboard.writeText(code); say(c, lg === "tr" ? "Kod kopyalandı" : "Code copied"); } } catch {}
+    await shareInvite(roomInviteText(code), code, () => say(c, lg === "tr" ? "Davet kopyalandı" : "Invite copied"));
   };
   main.append(cp);
   if (amPending) main.append(el("div", "ow-note", S("online_pending_next_round_message")));
@@ -242,11 +245,13 @@ function renderLobby(c) {
   if (notice) hints.append(el("div", "ow-hint", esc(notice)));
   if (!amPending && others.length) {
     if (!allReady && teamHint) hints.append(el("div", "ow-hint", S(teamHint)));
-    if (allReady && !isHost && !counting && !starting) hints.append(el("div", "ow-hint", `${S("online_everyone_ready")} ${S("online_waiting_for_host_sub")}`));
   }
+  // everyone ready and the host has not started: said on the button itself, in two lines (as the app's ReadyButton)
+  const waitingForHost = !amPending && others.length && allReady && !isHost && !counting && !starting;
   const btn = $("ow-ready"); btn.style.display = !amPending && others.length ? "" : "none";
-  btn.className = "ow-rb" + (amReady || counting ? " g" : "") + (counting ? " cd" : "") + (!(amReady || counting) ? " blink" : "");
-  $("ow-ready-t").textContent = counting ? (left > 0 ? left : S("online_game_starting").replace(/!$/, "")) : hostCanStart ? S("online_start_game") : S("online_ready");
+  btn.className = "ow-rb" + (amReady || counting ? " g" : "") + (counting ? " cd" : "") + (!(amReady || counting) ? " blink" : "") + (waitingForHost ? " two" : "");
+  $("ow-ready-t").textContent = counting ? (left > 0 ? left : S("online_game_starting").replace(/!$/, "")) : hostCanStart ? S("online_start_game") : waitingForHost ? S("online_everyone_ready") : S("online_ready");
+  const sub = $("ow-ready-s"); sub.textContent = waitingForHost ? S("online_waiting_for_host_sub") : ""; sub.style.display = waitingForHost ? "" : "none";
   btn.onclick = () => {
     if (counting || starting) return;
     if (hostCanStart) { starting = true; renderLobby(c); hostStart(c).finally(() => { starting = false; }); return; }
@@ -274,7 +279,7 @@ function inviteSheet(c) {
     row.append(b); box.append(row);
   });
   const share = el("button", "pill cream small", `<span>${x.share}</span>`);
-  share.onclick = async () => { const t = `${lang() === "tr" ? "Karalak odama gel! Kod" : "Join my Karalak room! Code"}: ${code} — https://karalak-b6e11.web.app/oyna/`; try { if (navigator.share) await navigator.share({ text: t }); else await navigator.clipboard.writeText(code); } catch {} };
+  share.onclick = () => shareInvite(roomInviteText(code), code);
   const close = el("button", "pill cream small", `<span>${S("close")}</span>`); close.onclick = () => d.classList.add("hidden");
   box.append(share, close); d.append(box); d.onclick = (e) => { if (e.target === d) d.classList.add("hidden"); };
 }

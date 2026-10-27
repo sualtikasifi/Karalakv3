@@ -297,7 +297,7 @@ function layoutScene() {
 /** Lays the scene out, then measures where its widgets end so the next pass can crop the decor below them. */
 /** Text that must stay on one line inside its box (class "fitw"): shrinks until it fits, never below 55%, so a longer language never spills out. */
 function fitAll() {
-  const els = [...document.querySelectorAll(".screen.on .fitw, .screen.on .fith, .aw-ov .fitw, .aw-ov .fith")];
+  const els = [...document.querySelectorAll(".screen.on .fitw, .screen.on .fith, .aw-ov .fitw, .aw-ov .fith, .pw-ov .fitw")];
   // all writes first, then all reads, then the shrinking of the few that overflow: one layout pass instead of one per element
   for (const e of els) e.style.fontSize = "";
   // the real width of the text against the real width of the box (scrollWidth is rounded, and Safari starts the "…" at a fraction of a pixel)
@@ -306,6 +306,16 @@ function fitAll() {
   const todo = [];
   for (const e of els) if (e.clientWidth >= 4 && over(e)) todo.push([e, parseFloat(getComputedStyle(e).fontSize)]);
   for (const [e, base] of todo) { let k = 1; while (k > 0.55 && over(e)) { k -= 0.04; e.style.fontSize = base * k + "px"; } }
+  // "fit2" (the app's LetteredText with maxLines = 2): one line while it fits at 80% or more of its size, otherwise two lines,
+  // shrinking only if even two lines do not fit
+  for (const e of document.querySelectorAll(".screen.on .fit2")) {
+    e.style.fontSize = ""; e.style.whiteSpace = "nowrap";
+    const base = parseFloat(getComputedStyle(e).fontSize), wide = () => textWidth(e) > e.getBoundingClientRect().width + 0.01;
+    let k = 1; while (k > 0.8 && wide()) { k -= 0.04; e.style.fontSize = base * k + "px"; }
+    if (!wide()) continue;
+    e.style.whiteSpace = "normal"; e.style.fontSize = ""; k = 1;
+    while (k > 0.55 && e.scrollHeight > e.clientHeight + 1) { k -= 0.04; e.style.fontSize = base * k + "px"; }
+  }
 }
 function layout() {
   layoutOnce(); fitAll();
@@ -550,7 +560,8 @@ async function startLevel(w, l) {
   for (const [d, n] of Object.entries(mix)) picks.push(...[...words].filter((x) => x.difficulty === d).sort(() => Math.random() - 0.5).slice(0, n));
   begin(picks.sort(() => Math.random() - 0.5));
 }
-const TUT_WORDS = { tr: ["kitap", "köpek", "elma"], en: ["book", "dog", "apple"] };
+// The tutorial's three words are the app's own (tutorial_word_1..3 in strings.json), so a change there reaches the web too.
+const tutWords = () => [1, 2, 3].map((i) => S(`tutorial_word_${i}`));
 // TutorialViewModel.kt, ported: word 1 untimed, word 2 on a 12 s clock, word 3 on 10 s; guesses on 10 s with the two jokers taught one by one
 // (the clock stands still until the joker is used); coaching cards between the turns; practice jokers that never touch the real stock.
 const TUT = { drawSeconds: [0, 12, 10], guessSeconds: 10, stockStart: 3 };
@@ -576,7 +587,7 @@ async function startTutorial() {
   tutStock = { FIRST_LETTER: TUT.stockStart, LETTER_COUNT: TUT.stockStart }; tutSeen = {}; tutSpot = null;
   await ensureWords(); kind = "tutorial"; levelRun = null; relaxed = false;
   const byText = new Map(words.map((w) => [w.text.toLowerCase(), w]));
-  const picked = TUT_WORDS[lang].map((s, i) => byText.get(s) || { id: 900000 + i, text: s, difficulty: "EASY" });
+  const picked = tutWords().map((s, i) => byText.get(s.toLowerCase()) || { id: 900000 + i, text: s, difficulty: "EASY" });
   begin(picked);
 }
 function endTutorial() { const first = !P.tutorialDone; P.tutorialDone = true; if (first) for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); }
@@ -1054,7 +1065,13 @@ loadStrings().then(() => { applyLang(); }).catch(() => {});
 setTimeout(() => syncNow(ctx).then((r) => { if (r === "restored") { refreshHome(); if (current === "home") show("home"); } }), 2500);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") scheduleBackup(ctx, true); });
 loadRunes().then(() => refreshHome()).catch(() => {});
-if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); }; } else { show("home"); setTimeout(() => dailyRescue(ctx, () => {}), 1800); }
+/** Runs [fn] [delay] ms after the opening scene has lifted (SplashHandOff.brandSplashDone in the app): a window opened earlier would sit over it. */
+function afterSplash(fn, delay = 0) {
+  const go = () => setTimeout(fn, delay);
+  if (!document.getElementById("splash")) return go();
+  const t = setInterval(() => { if (!document.getElementById("splash")) { clearInterval(t); go(); } }, 100);
+}
+if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); }; } else { show("home"); afterSplash(() => { if (current === "home") dailyRescue(ctx, () => {}); }, 600); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 // After the home screen is up, quietly fetch the pictures of the screens people open most (skipped on data saver).
 setTimeout(() => {
@@ -1118,7 +1135,7 @@ function warmMedia() {
     const go = $("ab-go"); go.textContent = ios ? "" : x.get; go.href = PLAY_URL;
     bar.classList.add("on"); timer = setTimeout(() => hide(false), 12000);
   }
-  setTimeout(maybeShow, 5000);
+  afterSplash(maybeShow, 5000);
   // leaving the home screen takes the bar away
   new MutationObserver(() => { if (current !== "home" || dialogOpen()) hide(false); }).observe($("stage"), { subtree: true, attributes: true, attributeFilter: ["class"] });
 })();

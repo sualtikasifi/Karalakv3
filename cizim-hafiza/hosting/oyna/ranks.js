@@ -3,6 +3,16 @@ import { S } from "./i18n.js";
 import { el, appWindow } from "./ui.js";
 const TIERS = [[1, "✏️", "rank_karalamaci"], [20, "🖊️", "rank_cirak"], [40, "🖌️", "rank_ressam"], [60, "🎨", "rank_usta_ressam"], [80, "🖼️", "rank_sanatci"], [100, "👑", "rank_buyuk_usta"]];
 const totalXpForLevel = (l) => { const n = Math.max(l - 1, 0); return 25 * n * n + 75 * n; };
+/** The rank's string key for a level (LevelTier.forLevel(level).rank in the app). */
+export const rankKey = (level) => [...TIERS].reverse().find((t) => level >= t[0])[2];
+/**
+ * RankLevelLabel: "N. Seviye" and the rank's name taking turns in the same spot every five seconds with a soft cross-fade
+ * (no sliding), as in league rows, the lobby and the account page. [bullet] puts "· " in front of both.
+ */
+export const rankLevelHtml = (level, bullet = false) => {
+  const b = bullet ? "· " : "";
+  return `<span class="rkl" style="--rk:-${Date.now() % 10000}ms"><i>${b}${S("home_level_inline", level)}</i><i>${b}${S(rankKey(level))}</i></span>`;
+};
 export function openRankLadder(c) {
   const lv = c.levelOf(c.P.xp).level, cur = [...TIERS].reverse().find((t) => lv >= t[0]);
   const body = el("div", "rl-body", `<p>${S("rank_ladder_subtitle", S(cur[2]))}</p>`);

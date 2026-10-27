@@ -1,5 +1,6 @@
 import * as net from "./firebase.js";
 import { S } from "./i18n.js";
+import { rankLevelHtml } from "./ranks.js";
 import { frameRing, frameList, frameById, penList } from "./store.js";
 
 // ---- Port of LeagueBots.kt: the fillers every phone adds to the published table ----
@@ -14,7 +15,6 @@ function seeded(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-const rankKey = (l) => ["rank_buyuk_usta", "rank_sanatci", "rank_usta_ressam", "rank_ressam", "rank_cirak", "rank_karalamaci"][[100, 80, 60, 40, 20, 1].findIndex((t) => l >= t)];
 const totalXpForLevel = (l) => { const n = Math.max(l - 1, 0); return 25 * n * n + 75 * n; };
 const levelForXp = (xp) => xp <= 0 ? 1 : Math.min(100, Math.max(1, Math.floor((-75 + Math.sqrt(75 * 75 + 100 * xp)) / 50) + 1));
 const nicknames = (periodId, count = 21) => {
@@ -188,7 +188,7 @@ function row(c, e, rank) {
   const frame = e.bot ? botFrame(e.level, e.nickname) : (e.frameId && frameById(e.frameId)) || highestFrame(e.level);
   const av = frameRing(frame, "lg-av", e.bot ? personaFace(e.nickname) : null); av.style.position = "absolute";
   const nm = document.createElement("div"); nm.className = "lg-nm"; nm.textContent = e.me ? S("quick_match_you_named", e.nickname) : e.nickname;
-  const lv = document.createElement("small"); lv.className = "rl"; lv.innerHTML = `<i>· ${S("home_level_inline", e.level)}</i><i>· ${S(rankKey(e.level))}</i>`; nm.append(lv);
+  const lv = document.createElement("small"); lv.className = "rl"; lv.innerHTML = rankLevelHtml(e.level, true); nm.append(lv);
   const xp = document.createElement("div"); xp.className = "lg-xp"; xp.textContent = S("league_xp_format", e.periodXp);
   if (!sprite) { const n = document.createElement("div"); n.className = "lg-rk"; n.textContent = rank + "."; r.append(n); }
   r.append(av, nm, xp); return r;

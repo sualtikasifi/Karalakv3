@@ -25,6 +25,45 @@ export function appWindow(host, { title, body, footer, centerTitle = false, onCl
 }
 
 /**
+ * The invite messages the app shares (InviteShareUtil.kt), word for word: the one https link that opens the app when it is
+ * installed and the download page when not (karalak.com/f/<code> for a friend, /d/<code> for a room), the code itself as the
+ * fallback that always works, and the download page.
+ */
+const SITE = "https://karalak.com";
+export function friendInviteText(code) {
+  return [S("share_friend_invite"), S("share_friend_pitch"), "", S("share_friend_reward_hint"), "", S("share_invite_link", `${SITE}/f/${code}`), "",
+    S("share_friend_code", code), S("share_friend_code_instructions"), "", S("share_room_not_installed", `${SITE}/indir`)].join("\n");
+}
+export function roomInviteText(code) {
+  return [S("share_room_invite"), S("share_room_code", code), "", S("share_invite_link", `${SITE}/d/${code}`),
+    S("share_room_installed", `karalak://join/${code}`), S("share_room_not_installed", `${SITE}/indir`)].join("\n");
+}
+/** The share sheet with [text]; where there is none, [code] is copied and [onCopied] runs. */
+export async function shareInvite(text, code, onCopied) {
+  try {
+    if (navigator.share) { await navigator.share({ text }); return; }
+    await navigator.clipboard.writeText(text); onCopied && onCopied();
+  } catch (e) { if (e && e.name === "AbortError") return; try { await navigator.clipboard.writeText(code); onCopied && onCopied(); } catch {} }
+}
+
+/**
+ * The pen picker's painted window (PaintedPenWindow.kt): one picture (880x1787: wooden sign with pencils on top, parchment,
+ * vines), the title on the sign, a round close button on the top-right leaves and [body] on the parchment, scrolling there.
+ * A tap outside closes it. Returns the overlay, with close().
+ */
+export function penWindow(host, { title, body, onClose }) {
+  const ov = el("div", "pw-ov"), card = el("div", "pw-card");
+  card.innerHTML = '<img src="img/pen_window.webp" alt="">';
+  const close = () => { ov.remove(); onClose && onClose(); };
+  const t = el("div", "pw-t", `<span class="fitw">${title}</span>`), x = el("button", "pw-x", "✕"), bd = el("div", "pw-body");
+  x.setAttribute("aria-label", S("close")); x.onclick = close; bd.append(body);
+  card.append(t, x, bd); ov.append(card);
+  ov.onclick = (e) => { if (e.target === ov) close(); };
+  host.append(ov); ov.close = close;
+  return ov;
+}
+
+/**
  * The painted "leave?" window (PaintedExitDialog.kt): the stern crowned dog on exit_game_dialog (1100x795) or the sad one on
  * exit_dialog (1100x823, the menu's "Karalak'tan çık"). The picture carries the sign and both buttons; the words are laid over it.
  */

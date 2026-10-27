@@ -746,7 +746,10 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .ow-rb::before{content:"";position:absolute;inset:0;z-index:-1;border-style:solid;border-width:calc(var(--u)*55);border-image:url(img/lobby_btn.webp) 86 fill/calc(var(--u)*55) stretch}
 .ow-rb.g::before{border-image-source:url(img/lobby_btn_green.webp)}.ow-rb.g{-webkit-text-stroke-color:#1b6b12}
 .ow-rb:active{transform:scale(.94)}.ow-rb.blink::before{animation:owb 2.6s ease-in-out infinite alternate}@keyframes owb{to{opacity:.88}}
-.ow-rb.g{filter:drop-shadow(0 0 calc(var(--u)*14) #3dd13a66)}.ow-rb.cd{filter:drop-shadow(0 0 calc(var(--u)*24) #3dd13aaa)}
+.ow-rb.g{filter:drop-shadow(0 0 calc(var(--u)*14) #3dd13a66)}
+/* two centred lines (everyone ready, waiting for the host): the pill grows a little; the lines sit a touch high over its thicker lower lip */
+.ow-rb.two{height:calc(var(--u)*136);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 calc(var(--u)*60) calc(var(--u)*6);font-size:calc(var(--u)*43);line-height:1.1}
+#ow-ready-s{font-size:calc(var(--u)*27);-webkit-text-stroke-width:calc(var(--u)*5);line-height:1.2}.ow-rb.cd{filter:drop-shadow(0 0 calc(var(--u)*24) #3dd13aaa)}
 /* code card */
 .ow-cp{position:relative;flex:none;width:calc(var(--u)*637.6);aspect-ratio:753/388;background:url(img/lobby_codepanel.webp) 0 0/100% 100%;container-type:inline-size;color:#5a321f}
 .ow-cp .h{position:absolute;left:0;right:0;top:10%;text-align:center;font-size:4.9cqw;font-weight:600;white-space:nowrap}
@@ -772,8 +775,10 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .ow-tx{flex:1;min-width:0;transform:translateY(calc(var(--u)*-6));color:#3b2314}
 .ow-n{display:flex;align-items:center;gap:calc(var(--u)*6);font-size:calc(var(--u)*29);font-weight:800;line-height:calc(var(--u)*33)}.ow-n span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ow-n img{width:calc(var(--u)*33);height:calc(var(--u)*33);flex:none}
 .ow-rk{position:relative;height:calc(var(--u)*29);font-size:calc(var(--u)*23);line-height:calc(var(--u)*29);font-weight:700;color:#7a5a40}
-.ow-rk i{position:absolute;left:0;font-style:normal;white-space:nowrap;animation:owr 10s infinite}.ow-rk i+i{animation-delay:5s}
-@keyframes owr{0%{opacity:0}6%,44%{opacity:1}50%,100%{opacity:0}}
+/* RankLevelLabel (ranks.js rankLevelHtml): level and rank stacked in one cell, taking turns every 5 s with a soft cross-fade.
+   --rk is set from the clock when the label is drawn, so every label on screen turns over together, as the app's RankLabelClock. */
+.rkl{display:inline-grid;vertical-align:baseline;max-width:100%}.rkl i{grid-area:1/1;font-style:normal;white-space:nowrap;opacity:0;animation:owr 10s infinite both;animation-delay:var(--rk,0s)}.rkl i+i{animation-delay:calc(var(--rk,0s) + 5s)}
+@keyframes owr{0%{opacity:0}5%,45%{opacity:1}50%,100%{opacity:0}}
 .ow-s{height:calc(var(--u)*35);font-size:calc(var(--u)*23);line-height:calc(var(--u)*33);font-weight:700;color:#d26a12;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ow-ico{position:absolute;top:calc(var(--u)*4);right:calc(var(--u)*4);width:calc(var(--u)*53);height:calc(var(--u)*53);font-size:calc(var(--u)*32);display:flex;align-items:center;justify-content:center;padding:0;background:none;border:0}
 .ow-slot{justify-content:center;gap:calc(var(--u)*12);padding:calc(var(--u)*8) calc(var(--u)*16);cursor:pointer}.ow-slot img{width:calc(var(--u)*53);height:calc(var(--u)*53)}
@@ -783,7 +788,6 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #ow-title{font-size:calc(var(--u)*70)}
 .cd-wrap1{position:relative;display:flex;flex-direction:column;gap:calc(var(--u)*8)}.cd-wrap1>.cd-dock{position:relative;width:100%}
 #ow-dock{position:relative;width:100%;aspect-ratio:720/374;flex:none}
-.ow-rk i{opacity:0;animation-fill-mode:both}
 /* store frame cards (StoreScreen.kt): the bare ring, no face; taller card */
 .fcard{aspect-ratio:397/342;padding:7% 6% 5%;gap:calc(var(--u)*10)}
 .fcard .frm{width:50%}.fcard .frm>img:first-child{display:none}
@@ -834,8 +838,19 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .ch-slot:not(.filled){justify-content:flex-end;padding-bottom:calc(var(--u)*10);box-sizing:border-box}
 .ch-slot:not(.filled) .ch-e{display:block;line-height:1.05;font-size:calc(var(--u)*23)}
 .pp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--u)*20)}
+/* PaintedPenWindow: the picture's own pixels (880x1787) as shares of the window; sizes inside follow the window's width (cqw) as the app's dp do */
+.pw-ov{position:fixed;inset:0;z-index:40;background:#0009;display:flex;align-items:center;justify-content:center}
+.pw-card{position:relative;aspect-ratio:880/1787;height:min(calc(100% - 48px),calc((100vw - 24px) * 1787 / 880),975px);container-type:inline-size;animation:awin .22s ease-out}
+.pw-card>img{position:absolute;inset:0;width:100%;height:100%;display:block}
+.pw-t{position:absolute;left:29.77%;top:8.95%;width:45%;height:6.04%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:7.4cqw;color:#3a2416;white-space:nowrap;overflow:hidden}
+.pw-x{position:absolute;left:86.82%;top:1.68%;width:10.91%;aspect-ratio:1;border-radius:50%;background:#fff3dc;border:.57cqw solid #8a4b12;color:#3a2416;font-weight:800;font-size:4.8cqw;display:flex;align-items:center;justify-content:center;padding:0}
+.pw-body{position:absolute;left:13.41%;top:18.02%;width:74.32%;height:69.17%;overflow-y:auto;container-type:inline-size}.pw-body::-webkit-scrollbar{display:none}
+.pw-body .pp-grid{gap:2.8cqw}
+.pw-body .pp-card{gap:2cqw;padding:4.2cqw 2.1cqw;border-radius:5.6cqw;border-width:.35cqw;background:#fff}.pw-body .pp-card.on{border-width:1cqw}
+.pw-body .pp-card svg{height:13.9cqw}.pw-body .pp-card b{font-size:4.9cqw;width:100%;text-align:center;text-overflow:clip}.pw-body .pp-card small{font-size:3.8cqw;line-height:1.2;text-align:center}
 .pp-card{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*8);padding:calc(var(--u)*24) calc(var(--u)*10);border-radius:calc(var(--u)*32);background:#fff;border:calc(var(--u)*3) solid #d9c9b0;color:#3b2314}
-.pp-card.on{border:calc(var(--u)*6) solid #ff7a21}.pp-card svg{width:100%;height:calc(var(--u)*70)}.pp-card.lock svg{opacity:.35}
+.pp-card.on{border:calc(var(--u)*6) solid #ff7a21}.pp-card svg{width:100%;height:calc(var(--u)*80);overflow:visible}.pp-card.lock svg{opacity:.35}
+.pp-stars path{animation:ppst 2.2s ease-in-out infinite;opacity:0}@keyframes ppst{0%,100%{opacity:0;transform:scale(.4) rotate(0)}25%{opacity:.95;transform:scale(1) rotate(25deg)}60%{opacity:.2;transform:scale(.7) rotate(60deg)}}
 .pp-card b{font-size:calc(var(--u)*30);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}.pp-card small{font-size:calc(var(--u)*23);color:#7a5a40}
 .lb-m canvas{display:block;width:100%;height:calc(var(--u)*62);margin-top:calc(var(--u)*6)}
 
@@ -868,9 +883,10 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 /* the word plate drops in with a little spring on every new word (springIn fromY=-26) */
 #d-word{animation:wdrop .45s cubic-bezier(.3,1.5,.5,1)}@keyframes wdrop{from{transform:translateY(calc(var(--u)*-52));opacity:0}to{transform:none;opacity:1}}
 .lg-hint{flex-direction:row!important;align-items:center;text-align:left!important;gap:calc(var(--u)*30)}.lg-hint img{width:calc(var(--u)*120);height:calc(var(--u)*120);flex:none}.lh-t{display:flex;flex-direction:column;gap:calc(var(--u)*10);font-size:calc(var(--u)*34);font-weight:600;color:#3b2314}.lh-t b{color:#f26a1b;font-size:calc(var(--u)*34)}
-.lh-t{font-size:calc(var(--u)*30)!important}.lg-hint img{width:calc(var(--u)*100);height:calc(var(--u)*100)}
+/* the app's sizes (LeagueScreen: 28sp handshake, 13sp text, 14sp action, 12dp apart; 1dp = 2.05 art units) */
+.lh-t{font-size:calc(var(--u)*27)!important;gap:calc(var(--u)*6)}.lh-t b{font-size:calc(var(--u)*29)!important}.lg-hint{gap:calc(var(--u)*24)!important}.lg-hint img{width:calc(var(--u)*72);height:calc(var(--u)*72)}
 /* RankLevelLabel: level and rank take turns every 5 s */
-.lg-nm small.rl{display:inline-grid;vertical-align:baseline}.lg-nm small.rl i{grid-area:1/1;font-style:normal;opacity:0;animation:owr 10s infinite}.lg-nm small.rl i+i{animation-delay:5s}
+.lg-nm small.rl{display:inline-block;vertical-align:baseline}
 
 #tut-spot{position:absolute;inset:0;display:none;background:#000a;z-index:8}#tut-spot.on{display:block}
 #tut-card{position:absolute;border:solid transparent;border-width:calc(var(--u)*50);border-image:url(img/tut_card.webp) 175 fill/calc(var(--u)*50) stretch;padding:calc(var(--u)*6) calc(var(--u)*10);text-align:center;color:var(--ink);display:flex;flex-direction:column;justify-content:center;gap:calc(var(--u)*14)}
@@ -926,6 +942,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .ow-head .owp,.ow-col .owp.t{height:calc(var(--u)*82);font-size:calc(var(--u)*34)}.ow-head .owp svg{width:calc(var(--u)*44);height:calc(var(--u)*44)}
 .ow-hint,#ow-wait{font-size:calc(var(--u)*34)}
 .ow-rb{height:calc(var(--u)*132);font-size:calc(var(--u)*55)}
+.ow-rb.two{height:calc(var(--u)*156);font-size:calc(var(--u)*48)}#ow-ready-s{font-size:calc(var(--u)*30)}
 #g-skipchip{position:absolute;left:50%;top:50%;display:none;white-space:nowrap;color:#fff;font-weight:800;font-size:calc(var(--u)*46);background:#e8650fe6;border-radius:99px;padding:calc(var(--u)*14) calc(var(--u)*36);pointer-events:none;-webkit-text-stroke:calc(var(--u)*4) #8a3a00;paint-order:stroke fill}
 #g-skipchip.go{display:block;animation:skc 1.1s linear forwards}@keyframes skc{0%{opacity:1;transform:translate(-50%,-50%) scale(.6)}25%{transform:translate(-50%,-50%) scale(1)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,calc(-50% - var(--u)*80)) scale(1)}}
 /* "aranıyor" sits centred on its plank; the ticking dots hang after it instead of pushing it off-centre */
@@ -937,7 +954,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #g-input,#fr-input,#oj-nick,#oj-code,#se-code,#ak-user,#ak-pass,.pk-in,.inp{font-size:max(16px,calc(var(--u)*40))!important}
 /* notch / home-indicator insets (read by viewport() in app.js) */
 #safe{position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
-.fitw{white-space:nowrap}#h-ttl-chest,#h-ttl-gold{overflow:visible}
+.fitw{white-space:nowrap}#h-ttl-chest,#h-ttl-gold,#h-ttl-daily{overflow:visible}
 .ls-act .pill span{font-size:3.2cqw!important;white-space:nowrap;-webkit-text-stroke-width:.45cqw}.ls-act .pill{padding:0 1.2cqw;min-width:0}
 .sl-n{top:calc(var(--u)*88);line-height:1.1}.sl-plate{height:calc(var(--u)*42)}
 .pb-body{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*14);text-align:center}.pb-prev{height:calc(var(--u)*230);display:flex;align-items:center;justify-content:center;width:100%}.pb-prev img{max-height:100%;max-width:60%}.pb-prev canvas,.pb-prev .frm{max-height:100%}

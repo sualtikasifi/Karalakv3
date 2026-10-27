@@ -17,3 +17,18 @@ const out = {};
 for (const k of Object.keys(en)) { if (skip.test(k)) continue; out[k] = { tr: tr[k] ?? en[k], en: en[k] }; }
 fs.writeFileSync(path.join(root, "hosting/oyna/strings.json"), JSON.stringify(out));
 console.log(`strings.json: ${Object.keys(out).length} texts, ${(fs.statSync(path.join(root, "hosting/oyna/strings.json")).size / 1024).toFixed(0)} KB`);
+
+// The three older, smaller text files the result, store and chat code read (each with its own placeholder style) are rebuilt from the
+// same source for the keys they carry, so they cannot drift either. A few texts are deliberately different in the browser.
+const WEB_ONLY = { store_daily_joker_action: { tr: "Ücretsiz al", en: "Get it free" } }; // no ads on the web: the free joker is just taken
+const braces = (v) => v.replace(/%(\d)\$[,.\d]*[sdf]/g, (_, i) => `{${i - 1}}`).replace(/%%/g, "%");
+for (const [file, conv] of [["result_strings.json", braces], ["chat_strings.json", braces], ["store_strings.json", (v) => v]]) {
+  const p = path.join(root, "hosting/oyna", file), old = JSON.parse(fs.readFileSync(p, "utf8")), next = {};
+  for (const k of Object.keys(old)) {
+    if (WEB_ONLY[k]) next[k] = WEB_ONLY[k];
+    else if (!(k in en)) next[k] = old[k]; // a web-only text
+    else next[k] = { tr: conv(tr[k] ?? en[k]), en: conv(en[k]) };
+  }
+  fs.writeFileSync(p, JSON.stringify(next));
+  console.log(`${file}: ${Object.keys(next).length} texts`);
+}
