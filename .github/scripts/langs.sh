@@ -91,11 +91,23 @@ dismiss() { tap_text "Wait" || true; sleep 1; }
 # open a home tile (coordinates on the 1080x2400 home screen), screenshot it, come back
 visit() { adb shell input tap $2 $3; sleep 5; shot "$1"; adb shell input keyevent KEYCODE_BACK; sleep 3; }
 
+# The whole device is switched (root + a framework restart), which is what reliably reaches the app on this image;
+# the per-app locale is set as well and both are printed, so a run that stayed in English says why.
+set_locale() {
+  adb root >/dev/null 2>&1; sleep 3; adb wait-for-device
+  adb shell setprop persist.sys.locale "$1"
+  adb shell setprop ctl.restart zygote
+  sleep 25; adb wait-for-device
+  until adb shell pm list packages $PKG 2>/dev/null | grep -q $PKG; do sleep 3; done
+  sleep 20
+  adb shell cmd locale set-app-locales $PKG --locales "$1" || true
+  echo "device locale: $(adb shell getprop persist.sys.locale | tr -d '\r') · app locales: $(adb shell cmd locale get-app-locales $PKG | tr -d '\r')"
+}
 adb shell settings put global animator_duration_scale 0; adb shell settings put global transition_animation_scale 0; adb shell settings put global window_animation_scale 0
 first=1
 for LOC in pt-BR es-419; do
   L=${LOC%%-*}
-  adb shell cmd locale set-app-locales $PKG --locales $LOC
+  set_locale $LOC
   adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 14; dismiss
   if [ $first = 1 ]; then handle_consent 20; first=0; else handle_consent 2; fi
   sleep 2
