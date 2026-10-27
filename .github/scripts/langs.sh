@@ -108,8 +108,10 @@ first=1
 for LOC in pt-BR es-419; do
   L=${LOC%%-*}
   set_locale $LOC
+  # the framework restart drops the runtime grant; without it the permission dialog would sit over the consent form
+  adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
   adb shell am force-stop $PKG; sleep 2; adb shell am start -n $ACT >/dev/null; sleep 14; dismiss
-  if [ $first = 1 ]; then handle_consent 20; first=0; else handle_consent 2; fi
+  if [ $first = 1 ]; then handle_consent 40; first=0; else handle_consent 4; fi
   sleep 2
   shot ${L}_01_home
   visit ${L}_02_race 200 1148
