@@ -173,7 +173,7 @@ internal fun LoginStreakDialog(
                         when (popup) {
                             is LoginPopup.Claim -> if (artButton) {
                                 Image(
-                                    painterResource(if (frameRes == R.drawable.ls_frame) R.drawable.ls_btn_claim else R.drawable.ls_btn_claim_en),
+                                    painterResource(R.drawable.ls_btn_claim),
                                     contentDescription = stringResource(R.string.login_streak_claim),
                                     contentScale = ContentScale.Fit,
                                     modifier = Modifier.fillMaxHeight().pressable(pressedScale = 0.96f, onClick = onClaim)
