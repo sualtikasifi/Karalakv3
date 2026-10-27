@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The lockout picture (drawable bg_locked, Turkish "KAPALI"), in its own 841 x 1870 pixels: the live countdown's
+         top and height under the painted title, then the reason text's top and height above the broken heart.
+         Re-measure when the picture changes. -->
+    <integer-array name="lock_art">
+        <item>992</item><item>92</item><item>1088</item><item>118</item>
+    </integer-array>
+</resources>
