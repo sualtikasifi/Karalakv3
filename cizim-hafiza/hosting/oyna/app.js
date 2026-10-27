@@ -372,7 +372,10 @@ const SPK = '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 
 function paintMusic() { for (const id of ["d-music", "g-music"]) { const b = $(id); b.innerHTML = SPK; b.classList.toggle("off", !(P.prefs.s0 && P.prefs.s1)); } }
 for (const id of ["d-music", "g-music"]) $(id).onclick = () => { P.prefs.s1 = !P.prefs.s1; saveP(); paintMusic(); syncMusic(); };
 // Pictures of screens that are not showing are only fetched when the screen first opens (the first load used to pull 3.7 MB).
-function loadImgs(id) { const s = document.getElementById(id); if (!s) return; s.querySelectorAll("img[data-src]").forEach((i) => { i.src = i.dataset.src; i.removeAttribute("data-src"); }); }
+// pictures that carry words exist once per language: Turkish keeps the plain name, pt / es get _pt / _es, anything else _en
+const LOCAL_IMGS = /img\/(du_title|bg_worlds)\.webp$/;
+const localImg = (u) => (LOCAL_IMGS.test(u) && lang !== "tr" ? u.replace(".webp", "_" + (lang === "pt" || lang === "es" ? lang : "en") + ".webp") : u);
+function loadImgs(id) { const s = document.getElementById(id); if (!s) return; s.querySelectorAll("img[data-src]").forEach((i) => { i.src = localImg(i.dataset.src); i.removeAttribute("data-src"); }); }
 let freshScreen = true;
 // As in the app: the login-streak window opens once, after the first game finished in a visit (not when the page is opened), when the player is back on the home screen.
 let gamePlayed = false;
@@ -644,7 +647,7 @@ async function startQuick() {
 function msgNoOpp() { show("home"); msg(t().noOpp + inLang({ tr: ". Bir süre sonra tekrar dene ya da çevrimdışı oyna.", en: ". Try again in a bit or play offline.", pt: ". Tente de novo daqui a pouco ou jogue offline.", es: ". Inténtalo en un rato o juega sin conexión." })); }
 let foundTimer = null;
 function showFound(opp, go) {
-  const x = t(); show("found"); $("f-title").src = lang === "tr" ? "img/mf_title.webp" : "img/mf_title_en.webp";
+  const x = t(); show("found"); $("f-title").src = lang === "tr" ? "img/mf_title.webp" : "img/mf_title_" + (lang === "pt" || lang === "es" ? lang : "en") + ".webp";
   $("f-tagt").textContent = x.found; $("f-tagt").style.whiteSpace = "pre-line";
   $("f-t1").querySelector("span").textContent = x.tip1(10); $("f-t2").querySelector("span").textContent = x.tip2; $("f-t3").querySelector("span").textContent = x.tip3;
   fitAll(); // the tips are written after show() laid the screen out; on a small phone the longest runs past its note otherwise
@@ -1105,7 +1108,7 @@ function warmImages() {
   if (navigator.connection && navigator.connection.saveData) return;
   const urls = [], seen = new Set(), add = (u) => { if (u && !seen.has(u)) { seen.add(u); urls.push(u); } };
   for (const id of ["draw", "guess", "search", "onfin", "found", "store", "settings", "league", "friends", "onl", "onc", "onj", "offs", "onw", "ach", "worlds", "lvmap", "runes", "account", "report", "duels", "res2", "result"]) {
-    document.querySelectorAll("#" + id + " img[data-src]").forEach((i) => add(i.dataset.src));
+    document.querySelectorAll("#" + id + " img[data-src]").forEach((i) => add(localImg(i.dataset.src)));
   }
   // painted windows are built by script, so no stylesheet or tag mentions them: fetch them too, or the first open shows the words before the picture
   for (const n of ["exit_game_dialog", "exit_dialog", "buy_frame", "joker_buy_first", "joker_buy_count", "joker_buy_time", "ls_frame", "ls_btn_claim", "st_daily_full", "st_card_joker", "rs_dialog_bg", "rs_level_blank", "friends_handshake", "lobby_crown", "lobby_adduser", "lobby_hourglass"]) add(`img/${n}.webp`);
