@@ -425,9 +425,11 @@ function paintBackdrop(id) {
 }
 
 // ---------- text ----------
+const TITLE_TR = document.title;
 function applyLang() {
   const x = t();
   document.documentElement.lang = lang; setLang(lang);
+  document.title = lang === "en" ? "Karalak – Draw, remember, race! Play free in your browser" : TITLE_TR;
   $("d-next-t").textContent = x.next; $("g-ok-t").textContent = S("submit_guess");
   $("w-title").textContent = x.wTitle; $("w-body").textContent = x.wBody; $("w-go-t").textContent = x.wGo; $("w-skip").textContent = x.wSkip;
   $("s-text").textContent = x.searching; $("s-sub").textContent = x.searchSub; $("again-t").textContent = x.again;
@@ -1074,7 +1076,9 @@ function afterSplash(fn, delay = 0) {
   const t = setInterval(() => { if (!document.getElementById("splash")) { clearInterval(t); go(); } }, 100);
 }
 if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); }; } else { show("home"); afterSplash(() => { if (current === "home") dailyRescue(ctx, () => {}); }, 600); }
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+// The game is served at "/" while the worker file lives in /oyna/, so there it asks for the whole site (allowed by the
+// Service-Worker-Allowed header in firebase.json); opened as /oyna/ it keeps its own folder.
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js", location.pathname.startsWith("/oyna/") ? undefined : { scope: "/" }).catch(() => {});
 // After the home screen is up, quietly fetch the pictures of the screens people open most (skipped on data saver).
 setTimeout(() => {
   if (navigator.connection && navigator.connection.saveData) return;

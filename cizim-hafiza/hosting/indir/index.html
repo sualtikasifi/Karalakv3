@@ -6,11 +6,28 @@
 <title>Karalak – Çiz, hatırla, yarış</title>
 <meta name="description" content="Karalak: arkadaşlarınla çizim ve hafıza oyunu. Google Play'den indir ya da tarayıcıda hemen oyna.">
 <meta name="theme-color" content="#7a3a10">
+<meta name="color-scheme" content="only light">
+<meta name="format-detection" content="telephone=no">
 <meta property="og:title" content="Karalak – Çiz, hatırla, yarış">
 <meta property="og:description" content="Arkadaşlarınla çizim ve hafıza oyunu. Hemen indir ya da tarayıcıda oyna!">
-<meta property="og:image" content="https://karalak.com/oyna/icons/icon-512.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Karalak">
+<meta property="og:image" content="https://karalak.com/oyna/img/og_share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Karalak: kalemli köpek maskotu ve “Çiz, hatırla, yarış!” yazısı">
 <meta property="og:url" content="https://karalak.com/indir">
-<link rel="icon" href="/oyna/icons/icon-192.png">
+<meta property="og:locale" content="tr_TR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Karalak – Çiz, hatırla, yarış">
+<meta name="twitter:description" content="Arkadaşlarınla çizim ve hafıza oyunu. Hemen indir ya da tarayıcıda oyna!">
+<meta name="twitter:image" content="https://karalak.com/oyna/img/og_share.jpg">
+<link rel="canonical" href="https://karalak.com/indir">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="192x192" href="/oyna/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/oyna/icons/icon-180.png">
+<link rel="manifest" href="/oyna/manifest.webmanifest">
 
 <style>
   @font-face{font-family:Baloo;src:url(/oyna/fonts/baloo2_extrabold.woff2) format("woff2");font-weight:800;font-display:swap}
@@ -95,7 +112,8 @@
   var referrer = code ? "karalak_" + type + "=" + code : (ref ? "karalak_ref=" + ref.replace(/[^0-9A-Za-z]/g, "").slice(0, 16) : "");
   var store = "https://play.google.com/store/apps/details?id=" + pkg + (referrer ? "&referrer=" + encodeURIComponent(referrer) : "");
   $("store").href = store; $("pg-play").href = store;
-  document.body.classList.add("painted"); if (!tr) document.body.classList.add("en");
+  document.body.classList.add("painted");
+  if (!tr) { document.body.classList.add("en"); document.title = "Karalak – Draw, remember, race"; $("pg-play").setAttribute("aria-label", L.store); document.querySelector(".pg a.web").setAttribute("aria-label", L.web); }
   var android = /Android/i.test(navigator.userAgent), ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (code) { $("pg-inv").classList.add("on"); $("pg-invl").textContent = type === "friend" ? (tr ? "Arkadaş kodu" : "Friend code") : (tr ? "Oda kodu" : "Room code"); $("pg-open").textContent = L.open; $("pg-code").textContent = code; }
   if (code) { $("invite").classList.add("on"); $("invl").textContent = type === "friend" ? L.friend : L.room; $("code").textContent = code; document.title = L.title; }
