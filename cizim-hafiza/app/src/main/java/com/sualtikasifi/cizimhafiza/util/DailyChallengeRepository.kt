@@ -116,13 +116,22 @@ class DailyChallengeRepository @Inject constructor(@ApplicationContext context: 
      * path in [recordCompletion] with no special case anywhere.
      */
     /**
-     * Hides the rescue offer for this app session without spending it.
-     * In-memory rather than persisted: the offer expires on its own within
-     * [MAX_RESCUE_GAP_DAYS], and someone who dismisses it by reflex should
-     * still get it back on their next visit rather than losing a long streak
-     * to one stray tap.
+     * Hides the rescue offer for this app session without spending it, and
+     * counts the refusal. Someone who dismisses it by reflex still gets it
+     * back on their next visit rather than losing a long streak to one stray
+     * tap; but once the same lapse has been turned down [RescueRefusals.MAX]
+     * times it is not offered again — pressing on past that reads as nagging.
+     * A later streak that lapses is a new break and is offered afresh.
      */
     fun dismissRescuePrompt() {
+        if (!rescuePromptDismissed) {
+            val lapse = lastCompletedEpochDay
+            val refusals = RescueRefusals.next(prefs.getLong(KEY_RESCUE_REFUSED_FOR, -1L), prefs.getInt(KEY_RESCUE_REFUSALS, 0), lapse)
+            prefs.edit {
+                putLong(KEY_RESCUE_REFUSED_FOR, lapse)
+                putInt(KEY_RESCUE_REFUSALS, refusals)
+            }
+        }
         rescuePromptDismissed = true
         _state.value = readState()
     }
@@ -172,6 +181,8 @@ class DailyChallengeRepository @Inject constructor(@ApplicationContext context: 
         remove(KEY_RESULT_XP)
         remove(KEY_RESULT_STREAK)
         remove(KEY_LAST_RESCUE_DAY)
+        remove(KEY_RESCUE_REFUSED_FOR)
+        remove(KEY_RESCUE_REFUSALS)
     }
 
     /**
@@ -237,6 +248,8 @@ class DailyChallengeRepository @Inject constructor(@ApplicationContext context: 
             currentStreak <= 0 -> 0
             gap > MAX_RESCUE_GAP_DAYS -> 0
             prefs.getLong(KEY_LAST_RESCUE_DAY, -1L) == today -> 0
+            // this very lapse was already turned down often enough
+            RescueRefusals.enough(prefs.getLong(KEY_RESCUE_REFUSED_FOR, -1L), prefs.getInt(KEY_RESCUE_REFUSALS, 0), last) -> 0
             else -> currentStreak
         }
         return DailyChallengeState(
@@ -280,6 +293,9 @@ class DailyChallengeRepository @Inject constructor(@ApplicationContext context: 
         const val KEY_RESULT_XP = "result_xp"
         const val KEY_RESULT_STREAK = "result_streak"
         const val KEY_LAST_RESCUE_DAY = "last_rescue_epoch_day"
+        /** The lapse (its last completed day) the rescue offer was last turned down for, and how many times. */
+        const val KEY_RESCUE_REFUSED_FOR = "rescue_refused_for_epoch_day"
+        const val KEY_RESCUE_REFUSALS = "rescue_refusals"
 
         /**
          * How stale a break can be and still be bought back: a gap of 3 days
@@ -289,6 +305,21 @@ class DailyChallengeRepository @Inject constructor(@ApplicationContext context: 
          */
         const val MAX_RESCUE_GAP_DAYS = 3L
     }
+}
+
+/**
+ * How often a lapsed streak's rescue offer was turned down. A lapse is known by its last completed day: the same
+ * break keeps counting, a new one starts again at one.
+ */
+internal object RescueRefusals {
+    /** After this many "Şimdi değil"s for the same lapse, the offer is not shown again. */
+    const val MAX = 3
+
+    /** The count after one more refusal of [lapse], the last one having been for [refusedFor]. */
+    fun next(refusedFor: Long, refusals: Int, lapse: Long): Int = if (refusedFor == lapse) refusals + 1 else 1
+
+    /** Whether [lapse] has been turned down [MAX] times already. */
+    fun enough(refusedFor: Long, refusals: Int, lapse: Long): Boolean = refusedFor == lapse && refusals >= MAX
 }
 
 data class DailyChallengeState(

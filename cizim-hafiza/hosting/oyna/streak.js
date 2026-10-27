@@ -30,6 +30,10 @@ export function state(L, today) {
 }
 let today = null, checking = false, handled = false, rescueSeen = false;
 const RESCUE = { tr: "Uygulamada kurtar", en: "Save in the app" };
+// As DailyChallengeRepository's RescueRefusals: turned down three times for the same lapse (known by its last day), it is not offered again.
+const REFUSED_KEY = "karalak_rescue_refused", MAX_REFUSALS = 3;
+const refused = () => { try { return JSON.parse(localStorage.getItem(REFUSED_KEY)) || {}; } catch { return {}; } };
+function refuse(lapse) { const r = refused(); try { localStorage.setItem(REFUSED_KEY, JSON.stringify({ for: lapse, n: r.for === lapse ? (r.n || 0) + 1 : 1 })); } catch {} }
 /**
  * MainMenuScreen's StreakRescueDialog: a daily-challenge streak that lapsed for one to three days is offered back the moment the menu opens.
  * In the app that costs an ad; the browser has none, so the button sends the player to the app. Returns true while the offer is on screen
@@ -37,11 +41,14 @@ const RESCUE = { tr: "Uygulamada kurtar", en: "Save in the app" };
  */
 export function dailyRescue(c, then) {
   const d = c.P.daily, gap = d.last < 0 ? 1e9 : todayEpoch() - d.last;
-  if (rescueSeen || d.streak <= 0 || gap <= 1 || gap > 3) return false;
+  const r = refused();
+  if (rescueSeen || d.streak <= 0 || gap <= 1 || gap > 3 || (r.for === d.last && r.n >= MAX_REFUSALS)) return false;
   rescueSeen = true;
   const body = el("div", "ao-body", `<div class="ao-ic">🔥</div><p>${S("streak_rescue_message")}</p>`), foot = el("div", "aw-btns");
-  const ov = appWindow(c.$("stage"), { title: S("streak_rescue_title", d.streak), body, footer: foot, centerTitle: true, onClose: then });
-  foot.append(primary(RESCUE[getLang()] || RESCUE.tr, () => { window.open(PLAY_URL, "_blank", "noopener"); ov.close(); }), primary(S("streak_rescue_dismiss"), () => ov.close(), "alt"));
+  // closed without going to the app (the button or the window's own close) counts as turned down
+  let toApp = false;
+  const ov = appWindow(c.$("stage"), { title: S("streak_rescue_title", d.streak), body, footer: foot, centerTitle: true, onClose: () => { if (!toApp) refuse(d.last); then && then(); } });
+  foot.append(primary(RESCUE[getLang()] || RESCUE.tr, () => { toApp = true; window.open(PLAY_URL, "_blank", "noopener"); ov.close(); }), primary(S("streak_rescue_dismiss"), () => ov.close(), "alt"));
   return true;
 }
 export async function checkStreak(c) {
