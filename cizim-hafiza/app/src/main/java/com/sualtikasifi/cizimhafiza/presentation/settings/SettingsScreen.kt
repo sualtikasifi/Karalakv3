@@ -427,17 +427,19 @@ fun SettingsScreen(
                 Unit
             }
             if (androidx.compose.ui.res.booleanResource(R.bool.coupon_how_painted_art)) {
-                // The painted window (ls_coupon_frame, 987 x 1371): its buttons are part of the picture, so live, invisible
+                // The painted window (ls_coupon_frame, one per language, sizes in the coupon_art array): its buttons are part of the picture, so live, invisible
                 // buttons sit over them and cave in by redrawing their own pixels while pressed.
                 androidx.compose.ui.window.Dialog(
                     onDismissRequest = { couponInfoOpen = false },
                     properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
                 ) {
                     BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
-                        val frameW = minOf(maxWidth, (maxHeight - 24.dp) * 987f / 1371f)
-                        val k = frameW / 987f
+                        val art = androidx.compose.ui.res.integerArrayResource(R.array.coupon_art).map { it.toFloat() }
+                        val artW = art[0]; val artH = art[1]
+                        val frameW = minOf(maxWidth, (maxHeight - 24.dp) * artW / artH)
+                        val k = frameW / artW
                         val frameBitmap = remember { runCatching { BackdropCache.get(context.resources, R.drawable.ls_coupon_frame) }.getOrNull() }
-                        val px = (frameBitmap?.width ?: 987) / 987f
+                        val px = (frameBitmap?.width ?: artW.toInt()) / artW
                         @Composable
                         fun Hit(x0: Float, y0: Float, x1: Float, y1: Float, corner: Float, label: String, onClick: () -> Unit) {
                             val sink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.94f)
@@ -450,12 +452,12 @@ fun SettingsScreen(
                                     .a11yButton(label)
                             )
                         }
-                        Box(Modifier.size(frameW, k * 1371f)) {
+                        Box(Modifier.size(frameW, k * artH)) {
                             Image(androidx.compose.ui.res.painterResource(R.drawable.ls_coupon_frame), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-                            Hit(841f, 294f, 966f, 419f, 62f, stringResource(R.string.coupon_how_close)) { couponInfoOpen = false }
-                            Hit(150f, 818f, 852f, 976f, 70f, stringResource(R.string.coupon_how_instagram)) { openLink("https://www.instagram.com/karalakapp") }
-                            Hit(150f, 1004f, 852f, 1154f, 70f, stringResource(R.string.coupon_how_tiktok)) { openLink("https://www.tiktok.com/@karalakapp") }
-                            Hit(360f, 1199f, 625f, 1270f, 30f, stringResource(R.string.coupon_how_close)) { couponInfoOpen = false }
+                            Hit(art[2], art[3], art[4], art[5], 62f, stringResource(R.string.coupon_how_close)) { couponInfoOpen = false }
+                            Hit(art[6], art[7], art[8], art[9], 70f, stringResource(R.string.coupon_how_instagram)) { openLink("https://www.instagram.com/karalakapp") }
+                            Hit(art[10], art[11], art[12], art[13], 70f, stringResource(R.string.coupon_how_tiktok)) { openLink("https://www.tiktok.com/@karalakapp") }
+                            Hit(art[14], art[15], art[16], art[17], 30f, stringResource(R.string.coupon_how_close)) { couponInfoOpen = false }
                         }
                     }
                 }
