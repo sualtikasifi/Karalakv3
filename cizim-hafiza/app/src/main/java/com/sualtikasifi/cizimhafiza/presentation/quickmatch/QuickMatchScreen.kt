@@ -350,7 +350,7 @@ private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart
                 // The sign is drawn over the lettering's lower edge at exactly the place it has in the design, so the two read as one
                 // picture (no cut, no fade between them).
                 // the lettering is part of the picture, so languages other than Turkish get their own splash
-                Pic(if (androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language == "tr") R.drawable.mf_title else R.drawable.mf_title_en, 450, 272, 1.2f, 150f, 62f)
+                Pic(R.drawable.mf_title, 450, 272, 1.2f, 150f, 62f)
                 Pic(R.drawable.mf_tag, 354, 106, 1.2f, (841f - 354f * 1.2f) / 2f, 62f + 266f * 1.2f)
                 Box(
                     Modifier.offset(u * ((841f - 354f * 1.2f) / 2f + 354f * 1.2f * 0.18f), u * (381.2f + 106f * 1.2f * 0.1f))
