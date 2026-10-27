@@ -3,6 +3,6 @@
     <!-- The painted chest guide (drawable chests_info, Spanish): its size in pixels, then the painted button's box
          (left, top, right, bottom) in the same pixels, which ChestInfoDialog makes tappable. Re-measure when the picture changes. -->
     <integer-array name="chest_info_art">
-        <item>922</item><item>1674</item><item>174</item><item>1487</item><item>745</item><item>1608</item>
+        <item>922</item><item>1673</item><item>163</item><item>1476</item><item>748</item><item>1598</item>
     </integer-array>
 </resources>
