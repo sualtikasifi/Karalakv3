@@ -144,7 +144,7 @@ estrelas para conquistar em cada uma.
 - XP, níveis e molduras de avatar que mudam conforme você sobe
 - 101 conquistas, das fáceis às impossíveis
 - Uma liga mensal contra seus amigos e o mundo
-- Baús, coringas, lápis especiais e runas para deixar o jogo com a sua cara
+- Baús, curingas, lápis especiais e runas para deixar o jogo com a sua cara
 
 **Funciona offline**
 No modo Jogar Offline você escolhe de 10 a 50 palavras e joga sozinho. A

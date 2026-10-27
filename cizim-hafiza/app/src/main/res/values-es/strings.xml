@@ -1176,8 +1176,8 @@
     <string name="quick_match_locked_body">Este modo está cerrado por un tiempo debido a una infracción. Partida Rápida y Jugar con Amigos vuelven a abrir en unos %1$s.</string>
 
     <!-- Chests (kasalar) — earned only from a WON Race a Friend match. -->
-    <string name="chest_tier_silver">Cofre del Aprendiz</string>
-    <string name="chest_tier_gold">Cofre del Artista</string>
+    <string name="chest_tier_silver">Cofre de Aprendiz</string>
+    <string name="chest_tier_gold">Cofre de Artista</string>
     <string name="chest_tier_rare">Cofre Sorpresa</string>
     <string name="chest_won_title">¡Ganaste un cofre!</string>
     <string name="chest_won_button">¡Genial!</string>

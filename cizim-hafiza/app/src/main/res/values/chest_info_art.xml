@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The painted chest guide (drawable chests_info, English): its size in pixels, then the painted button's box
+         (left, top, right, bottom) in the same pixels, which ChestInfoDialog makes tappable. Re-measure when the picture changes. -->
+    <integer-array name="chest_info_art">
+        <item>922</item><item>1673</item><item>175</item><item>1498</item><item>750</item><item>1622</item>
+    </integer-array>
+</resources>
