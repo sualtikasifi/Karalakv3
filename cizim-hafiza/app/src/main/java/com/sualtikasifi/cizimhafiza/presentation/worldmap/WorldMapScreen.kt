@@ -140,7 +140,7 @@ private fun bannerRes(worldId: Int): Int? = when (worldId) {
 }
 
 /** Banners painted without their title: the name is written over the sky on the right, in the app's language. */
-private val TextFreeBanners = setOf(1, 2, 3, 4, 5, 6, 7)
+private val TextFreeBanners = setOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
 
 /** The world's name in the picture's own lettering: cream fill, brown outline, over the empty sky of the banner. */
 @Composable
