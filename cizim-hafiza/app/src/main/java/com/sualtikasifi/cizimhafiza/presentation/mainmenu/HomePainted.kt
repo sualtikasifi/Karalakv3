@@ -27,7 +27,6 @@ import androidx.compose.animation.core.animateFloat
 import com.sualtikasifi.cizimhafiza.presentation.common.breathing
 import com.sualtikasifi.cizimhafiza.presentation.common.glint
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
-import com.sualtikasifi.cizimhafiza.presentation.common.sceneIn
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.size
@@ -157,7 +156,7 @@ internal fun PaintedHome(
     /** Opens Karalak Rünleri: the mascot at the top right is its door. */
     onRunes: () -> Unit = {}
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxSize().sceneIn()) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         // ONE scale for both directions, so the picture is never stretched: on a phone shaped like it the picture fills
         // the screen exactly; on a wider or taller one it is centred and the spare strips show a blurred copy of it.
         val unit = minOf(maxWidth / ArtW, maxHeight / ArtH)

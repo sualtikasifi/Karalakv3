@@ -86,7 +86,6 @@ import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.a11yButton
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
-import com.sualtikasifi.cizimhafiza.presentation.common.sceneIn
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenArt
@@ -130,7 +129,7 @@ fun SettingsScreen(
     ) { granted -> viewModel.setNotificationsEnabled(granted) }
 
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize().sceneIn()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         // ONE scale in both directions, so the picture is never stretched; spare strips show a blurred copy of it.
         val unit = minOf(maxWidth / ArtW, maxHeight / ArtH)
         val offX = (maxWidth - unit * ArtW) / 2
