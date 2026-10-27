@@ -103,14 +103,11 @@ const FRAME_SPEC = { close: [895, 150, 1060, 320], cancel: [95, 1060, 535, 1225]
 const pc = (v, t) => (v / t * 100).toFixed(3) + "%";
 const box = (r, abs) => { const [x, y, a, b] = r; const w = abs ? a - x : a, h = abs ? b - y : b; return `left:${pc(x, 1086)};top:${pc(y, 1448)};width:${pc(w, 1086)};height:${pc(h, 1448)}`; };
 function buy(ctx, o) {
-  // the painted windows carry their words in the picture: frame windows exist in tr / pt / es, the jokers' own only in tr;
-  // anything else gets the plain window
-  if (!(ctx.lang() === "tr" || (!o.joker && (ctx.lang() === "pt" || ctx.lang() === "es")))) return plainBuy(ctx, o);
   const { P, $ } = ctx, d = $("pick"), spec = o.joker ? JOKER_SPEC : FRAME_SPEC, afford = P.gold >= o.price;
   d.classList.remove("hidden"); d.replaceChildren(); d.onclick = null;
   const wrap = el("div", "bd-wrap"), fr = el("div", "bd-frame"); wrap.append(fr);
   const close = () => d.classList.add("hidden");
-  const art = el("img", "bd-art", ""); art.src = `img/${o.art}${o.art === "buy_frame" && ctx.lang() !== "tr" ? "_" + ctx.lang() : ""}.webp`; fr.append(art);
+  const art = el("img", "bd-art", ""); art.src = `img/${o.art}${ctx.lang() === "tr" ? "" : "_" + (ctx.lang() === "pt" || ctx.lang() === "es" ? ctx.lang() : "en")}.webp`; fr.append(art);
   if (o.joker) { if (o.qty > 1) fr.append(el("div", "bd-qty", `<span>×${o.qty}</span>`)); }
   else {
     const pv = el("div", "bd-prev"); pv.style.cssText = box([150, 330, 790, 400]); pv.append(o.preview); fr.append(pv);
@@ -124,16 +121,6 @@ function buy(ctx, o) {
   });
   d.onclick = (e) => { if (e.target === d) close(); };
   d.append(wrap);
-}
-function plainBuy(ctx, o) {
-  const { P } = ctx, afford = P.gold >= o.price, body = el("div", "pb-body");
-  const pv = el("div", "pb-prev"); if (o.preview) pv.append(o.preview); else if (o.joker) { const i = el("img"); i.src = `img/${o.img}.webp`; i.alt = ""; i.onerror = () => i.remove(); pv.append(i); }
-  body.append(pv, el("div", "pb-name", (o.name || "") + (o.qty > 1 ? " ×" + o.qty : "")), el("div", "pb-price", `${coin}<span>${fmt(o.price)}</span>`));
-  if (!afford) body.append(el("div", "pb-warn", "⚠ " + tt(ctx, "store_missing_gold", o.price - P.gold)));
-  const foot = el("div", "pb-foot"), no = el("button", "pill cream small", `<span>${S0("online_kick_confirm_cancel")}</span>`), yes = el("button", "pill orange small" + (afford ? "" : " dis"), `<span>${S0("store_buy")}</span>`);
-  foot.append(no, yes);
-  const ov = appWindow(ctx.$("stage"), { title: S0("store_buy_confirm_title"), body, footer: foot });
-  no.onclick = () => ov.close(); yes.onclick = () => { if (!afford) return; ov.close(); o.grant(); };
 }
 function bought(ctx, type, nameK, qty) {
   const d = ctx.$("pick"); d.classList.remove("hidden"); d.replaceChildren(); d.onclick = null;
