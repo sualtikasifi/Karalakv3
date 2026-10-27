@@ -109,8 +109,8 @@ internal fun LoginStreakDialog(
             // The painted frame is 1024 x 1536; everything inside is placed in its own units, so it scales with it.
             val frameW = minOf(maxWidth - 8.dp, maxHeight / 1.5f)
             val u = frameW / 1024f
-            // the sign is painted in Turkish; other languages get a copy with the lettering redone
-            val frameRes = if (androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language == "tr") R.drawable.ls_frame else R.drawable.ls_frame_en
+            // the sign is painted once per language (drawable, drawable-tr, -pt, -es)
+            val frameRes = R.drawable.ls_frame
             Box(
                 Modifier
                     .size(frameW, frameW * 1.5f)
