@@ -853,7 +853,6 @@ internal fun PenPickerSheet(items: List<PenSkinUiItem>, onSelect: (PenSkin) -> U
                 modifier = Modifier.weight(1f, fill = false)
             ) {
                 gridItems(items, key = { it.skin.name }) { item ->
-                    val colors = item.skin.colors.map { Color(it) }
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -864,16 +863,11 @@ internal fun PenPickerSheet(items: List<PenSkinUiItem>, onSelect: (PenSkin) -> U
                             .padding(vertical = 12.dp, horizontal = 6.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Canvas(modifier = Modifier.fillMaxWidth().height(34.dp).alpha(if (item.unlocked) 1f else 0.35f)) {
-                            val y = size.height / 2f
-                            drawLine(
-                                brush = if (colors.size > 1) Brush.horizontalGradient(colors) else Brush.horizontalGradient(listOf(colors.first(), colors.first())),
-                                start = Offset(size.width * 0.12f, y + 6.dp.toPx()),
-                                end = Offset(size.width * 0.88f, y - 6.dp.toPx()),
-                                strokeWidth = 12.dp.toPx(),
-                                cap = androidx.compose.ui.graphics.StrokeCap.Round
-                            )
-                        }
+                        // a brush swash in the pen's colours, in the spirit of the store's painted cards
+                        com.sualtikasifi.cizimhafiza.presentation.common.PenSwoosh(
+                            item.skin,
+                            modifier = Modifier.fillMaxWidth().height(40.dp).alpha(if (item.unlocked) 1f else 0.35f)
+                        )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = stringResource(item.skin.labelRes),

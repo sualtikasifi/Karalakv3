@@ -16,7 +16,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import com.sualtikasifi.cizimhafiza.presentation.common.drawPenStroke
 import com.sualtikasifi.cizimhafiza.presentation.common.dotGridBackground
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenArt
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
@@ -348,7 +347,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
         }
         val preview: @Composable () -> Unit = {
             when (item) {
-                is Pending.PenItem -> PenPreview(item.skin)
+                is Pending.PenItem -> com.sualtikasifi.cizimhafiza.presentation.common.PenWave(item.skin, strokeWidth = 13.dp, modifier = Modifier.fillMaxWidth().height(64.dp))
                 is Pending.FrameItem -> Image(painterResource(item.frame.drawableRes), contentDescription = null, modifier = Modifier.size(84.dp))
                 is Pending.JokerItem -> com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(item.type, 72.dp)
             }
@@ -654,43 +653,6 @@ private fun GoldPill(gold: Int) {
             fontWeight = FontWeight.ExtraBold,
             fontSize = 22.sp,
             color = Color.White
-        )
-    }
-}
-
-/** A wavy stroke in the pen's colours — what the pen actually draws (a premium pen's effects play live). */
-@Composable
-private fun PenPreview(skin: PenSkin, modifier: Modifier = Modifier.fillMaxWidth().height(64.dp)) {
-    val colors = skin.colors.map { Color(it) }
-    val premium = skin.effect.isPremium
-    val time = com.sualtikasifi.cizimhafiza.presentation.common.rememberPenTime(premium)
-    Canvas(modifier = modifier) {
-        val path = Path().apply {
-            moveTo(size.width * 0.08f, size.height * 0.62f)
-            cubicTo(
-                size.width * 0.28f, size.height * 0.05f,
-                size.width * 0.42f, size.height * 1.05f,
-                size.width * 0.58f, size.height * 0.45f
-            )
-            cubicTo(
-                size.width * 0.70f, size.height * 0.05f,
-                size.width * 0.82f, size.height * 0.55f,
-                size.width * 0.92f, size.height * 0.30f
-            )
-        }
-        val w = 13.dp.toPx()
-        if (premium) {
-            // The real pen renderer, fed the same wave as points.
-            val measure = androidx.compose.ui.graphics.PathMeasure().apply { setPath(path, false) }
-            val points = (0..80).map { measure.getPosition(measure.length * it / 80f) }
-            drawPenStroke(points, skin, Color.Black, w / 1.15f, 0f, time.value)
-            return@Canvas
-        }
-        drawPath(path, Color.Black.copy(alpha = 0.18f), style = Stroke(width = w + 4.dp.toPx(), cap = StrokeCap.Round))
-        drawPath(
-            path,
-            brush = if (colors.size > 1) Brush.horizontalGradient(colors) else Brush.horizontalGradient(listOf(colors.first(), colors.first())),
-            style = Stroke(width = w, cap = StrokeCap.Round)
         )
     }
 }
