@@ -299,13 +299,83 @@ object GhostPersonas {
         "V.Turner", "W.Parker", "X.Collins", "Z.Edwards"
     )
 
+    /** The Brazilian counterpart to [NICKNAMES_TR] — its own list in the same spirit (clubs, cities, slang), not a translation. */
+    private val NICKNAMES_PT = listOf(
+        "joaopedro10", "Lucas_rj", "gabigol_fan", "Mateus.sp",
+        "rafinha77", "Pedrinho", "vitor_bh", "Thiagao",
+        "guizinho", "Caiozera", "felipe_poa", "Brunao_22",
+        "leozin", "Diegao", "arthur.cwb", "Davizinho",
+        "Mengao1981", "timao_eterno", "Verdao1914", "tricolor_sp",
+        "Vasco_ate_morrer", "galo_doido", "Gremista93", "Colorado_poa",
+        "Cruzeiro_cabuloso", "fogao_rj", "Santista10", "bahea_bbmp",
+        "Juliana.s", "ana_clara", "Beatriz_rj", "mari_sp",
+        "Larissa22", "isa.bela", "Camila_bh", "duda_m",
+        "Leticia.f", "gabi_poa", "Fernandinha", "bia_lima",
+        "Carol_cwb", "lu_santos", "Rafaela_99", "nanda_ssa",
+        "Manu.oliveira", "jessica_rec", "Vivi_floripa", "taty_m",
+        "Seu_Ze", "tio_paulo", "Dona_Cida", "vo_maria",
+        "Professor_Rui", "doutor_carlos", "Mestre_Juca", "sargento_lima",
+        "Capitao_Nunes", "padeiro_ze", "Motoboy_sp", "taxista_rj",
+        "carioca_da_gema", "Paulistano", "mineirinho_uai", "Gaucho_tche",
+        "baiano_arretado", "Nordestino_pe", "Capixaba27", "manauara",
+        "curitibano41", "Goiano_62", "Paraense91", "cearense85",
+        "sonhadora", "Lobo_solitario", "cafe_com_leite", "Pao_de_queijo",
+        "brigadeiro", "Acai_na_tigela", "coxinha_sp", "Guarana",
+        "noite_estrelada", "Sol_de_verao", "chuva_fina", "Lua_cheia",
+        "praia_e_sol", "Pe_na_areia", "bicho_do_mato", "Beija_flor",
+        "Sabia_laranjeira", "tucano_azul", "Jabuti_lento", "capivara_zen",
+        "gamer_br", "Noob_master", "kkkkkk", "Ze_ninguem",
+        "anonimo123", "Fulano", "ciclano_99", "beltrano",
+        "Rodrigo.m", "andre_f", "Marcelo77", "renato_bh",
+        "Fabio.sp", "gustavo_rj", "Henrique22", "igor.lima",
+        "Neymar_jr_fa", "R9_fenomeno", "ronaldinho_10", "Romario11"
+    )
+
+    /** The Latin American Spanish counterpart to [NICKNAMES_TR] — its own list in the same spirit, not a translation. */
+    private val NICKNAMES_ES = listOf(
+        "juanpa_10", "Santi.mx", "mateo_bsas", "Diego_cdmx",
+        "nico.rios", "Seba_22", "tomi_cba", "Andres.bog",
+        "pancho99", "Rodri_gdl", "lucho.lima", "Emi_mty",
+        "fede.ok", "Benja_cl", "cami_lo", "Joaco07",
+        "Boca_juniors_12", "river_plate_ok", "Chivas_campeon", "america_aguilas",
+        "Pumas_unam", "tigres_uanl", "Colo_colo_1925", "nacional_atl",
+        "Millos_azul", "cruzazul_9", "Penarol_1891", "racing_avellaneda",
+        "Valentina.r", "sofi_mx", "Isabella_co", "luciana.b",
+        "Martina22", "vale_cdmx", "Camila.ch", "dani_lima",
+        "Mariana_gdl", "fer.ruiz", "Ximena_mx", "paula_bog",
+        "Renata.07", "abril_ba", "Lupita_99", "jime.sol",
+        "Antonella_ar", "majo_cr", "Gaby.vzla", "romi_uy",
+        "Don_Ramon", "tio_pepe", "Dona_Lucha", "abuela_Rosa",
+        "Profe_Jorge", "doctor_mendez", "Maestro_Chuy", "capitan_Ortiz",
+        "Ingeniero_Raul", "panadero_tito", "Taxista_df", "chofer_luis",
+        "chilango_de_corazon", "Regio_mty", "tapatio_33", "Porteno_bsas",
+        "rolo_bogota", "Paisa_mde", "limeno_ok", "Santiaguino",
+        "cordobes_fernet", "Rosarino", "tico_pura_vida", "Charrua_uy",
+        "sonadora", "Lobo_solitario", "cafe_de_olla", "Taquero_fiel",
+        "mate_amargo", "Empanada_saltena", "arepa_reina", "Alfajor",
+        "noche_estrellada", "Sol_de_verano", "lluvia_fina", "Luna_llena",
+        "playa_y_sol", "Pies_en_la_arena", "colibri_azul", "Quetzal",
+        "condor_andino", "tucan_feliz", "Ajolote_rosa", "carpincho_zen",
+        "gamer_latam", "Noob_master", "jajajaja", "Fulanito",
+        "anonimo123", "Mengano", "zutano_99", "Nadie_sabe",
+        "Alejandro.m", "carlos_f", "Ricardo77", "javi_mx",
+        "Pablo.ar", "gonza_uy", "Hernan22", "ivan.gt",
+        "Messi10_fan", "el_chicharito", "James_10", "Chilavert_1"
+    )
+
     /**
-     * [language] is the device's own ("tr"/"en", see WordSeeder.currentLanguage)
+     * [language] is the device's own ("tr"/"en"/"pt"/"es", see WordSeeder.currentLanguage)
      * — passed in rather than read here, since this is a plain domain model
-     * with no Android Context of its own.
+     * with no Android Context of its own. Any other language gets the English list, matching
+     * the English word pool and UI it falls back to.
      */
     fun nicknameFor(language: String, seed: Long): String {
-        val pool = if (language == "en") NICKNAMES_EN else NICKNAMES_TR
+        val pool = when (language) {
+            "tr" -> NICKNAMES_TR
+            "pt" -> NICKNAMES_PT
+            "es" -> NICKNAMES_ES
+            else -> NICKNAMES_EN
+        }
         return pool[Random(seed + NAME_SALT).nextInt(pool.size)]
     }
 

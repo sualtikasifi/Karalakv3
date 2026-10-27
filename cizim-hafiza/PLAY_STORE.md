@@ -49,11 +49,11 @@ Google hesabınla giriş yaparsan seviyen, serin, başarımların ve bölüm
 ilerlemen buluta yedeklenir. Telefon değiştirdiğinde kaldığın yerden
 devam edersin. İstediğin an hesabını uygulama içinden silebilirsin.
 
-8 kategoride yüzlerce kelime: hayvanlar, eşyalar, meslekler, spor, doğa,
-yiyecekler, taşıtlar, duygular. Türkçe karakterlere ve yazım hatalarına
+9 kategoride binden fazla kelime: hayvanlar, eşyalar, meslekler, spor, doğa,
+yiyecekler, taşıtlar, duygular, giyim. Türkçe karakterlere ve yazım hatalarına
 toleranslı tahmin kontrolü.
 
-Türkçe ve İngilizce.
+Türkçe, İngilizce, Portekizce ve İspanyolca.
 
 ## Store listing (English)
 
@@ -93,7 +93,7 @@ Three stars to earn on each.
 **Progress and rewards**
 - XP and levels, with avatar frames that change as you climb
 - 101 achievements, ordered from easy to brutal
-- A weekly league ranking you against your friends
+- A monthly league ranking you against your friends and the world
 - Pen skins and avatar frames to make it yours
 
 **Works offline**
@@ -105,7 +105,108 @@ Sign in with Google and your level, streak, achievements and level
 progress are backed up. Change phones and pick up where you left off.
 Delete your account from inside the app whenever you want.
 
-Hundreds of words in 8 categories. Turkish and English.
+Over a thousand words in 9 categories. English, Turkish, Portuguese and Spanish.
+
+## Ficha da loja (Português do Brasil)
+
+**Título (máx. 30)**
+Karalak: Desenhe e Lembre
+
+**Descrição curta (80 caracteres)**
+Desenhe e depois lembre! Desafio diário, partida rápida e duelos com amigos.
+
+**Descrição completa**
+
+O Karalak junta dois jogos em um: primeiro você desenha, depois lembra o
+que desenhou.
+
+Desenhe cada palavra antes que o tempo acabe. Quando terminar, faça uma
+pausa curta — depois seus próprios desenhos voltam e você digita o que
+cada um era. Desenhar é a parte fácil.
+
+**Um desafio novo todo dia**
+No Desafio Diário, todo mundo recebe as mesmas palavras. Jogue todo dia e
+sua sequência cresce; quanto maior a sequência, mais XP cada rodada rende.
+
+**Partida Rápida**
+Um toque encontra um rival e te entrega exatamente a rodada que ele jogou.
+Mesmas palavras, mesmo relógio. Quem lembrar melhor vence.
+
+**Jogue com amigos**
+Crie uma sala, compartilhe o código e comecem juntos — até oito jogadores,
+ou 2x2 em equipes. Reaja com emojis e peça revanche no final.
+
+**Fases**
+Centenas de fases em um mapa que fica cada vez mais difícil, com três
+estrelas para conquistar em cada uma.
+
+**Progresso e recompensas**
+- XP, níveis e molduras de avatar que mudam conforme você sobe
+- 101 conquistas, das fáceis às impossíveis
+- Uma liga mensal contra seus amigos e o mundo
+- Baús, coringas, lápis especiais e runas para deixar o jogo com a sua cara
+
+**Funciona offline**
+No modo Jogar Offline você escolhe de 10 a 50 palavras e joga sozinho. A
+internet só é necessária para os modos online e o backup na nuvem.
+
+**Seu progresso é seu**
+Entre com o Google e seu nível, sequência e conquistas ficam salvos. Trocou
+de celular? Continue de onde parou. Exclua sua conta pelo próprio app
+quando quiser.
+
+Mais de mil palavras em 9 categorias. Em português, inglês, espanhol e turco.
+
+## Ficha de la tienda (Español latinoamericano)
+
+**Título (máx. 30)**
+Karalak: Dibuja y Recuerda
+
+**Descripción breve (80 caracteres)**
+¡Dibuja y luego recuerda! Desafío diario, partida rápida y duelos con amigos.
+
+**Descripción completa**
+
+Karalak junta dos juegos en uno: primero dibujas, después recuerdas lo que
+dibujaste.
+
+Dibuja cada palabra antes de que se acabe el tiempo. Al terminar, toma un
+breve descanso — luego tus propios dibujos regresan y escribes qué era
+cada uno. Dibujar es la parte fácil.
+
+**Un desafío nuevo cada día**
+En el Desafío Diario todos reciben las mismas palabras. Juega todos los
+días y tu racha crece; cuanto más larga la racha, más XP da cada ronda.
+
+**Partida Rápida**
+Un toque encuentra un rival y te da exactamente la ronda que jugó. Mismas
+palabras, mismo reloj. Gana quien recuerde mejor.
+
+**Juega con amigos**
+Crea una sala, comparte el código y empiecen juntos — hasta ocho
+jugadores, o 2v2 por equipos. Reacciona con emojis y pide la revancha al
+final.
+
+**Niveles**
+Cientos de niveles en un mapa que se pone cada vez más difícil, con tres
+estrellas por conseguir en cada uno.
+
+**Progreso y recompensas**
+- XP, niveles y marcos de avatar que cambian mientras subes
+- 101 logros, de los fáciles a los imposibles
+- Una liga mensual contra tus amigos y el mundo
+- Cofres, comodines, lápices especiales y runas para hacerlo tuyo
+
+**Funciona sin conexión**
+En Jugar sin Conexión eliges de 10 a 50 palabras y juegas solo. Solo
+necesitas internet para los modos en línea y el respaldo en la nube.
+
+**Tu progreso es tuyo**
+Inicia sesión con Google y tu nivel, racha y logros quedan guardados.
+¿Cambiaste de teléfono? Sigue donde lo dejaste. Elimina tu cuenta desde la
+app cuando quieras.
+
+Más de mil palabras en 9 categorías. En español, inglés, portugués y turco.
 
 ## Kategori
 Oyun / Kelime Oyunu

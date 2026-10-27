@@ -11,12 +11,22 @@ const L = {
         won: (g, x, c) => [g && `+${g} gold`, x && `+${x} XP`, c && `Chests apply in the app`].filter(Boolean).join(" · ") || "Code accepted",
         err: { notfound: "Code not found. Check it and try again.", expired: "This code has expired.", exhausted: "This code has been used up.", used: "You have already used this code.", network: "Could not reach the server. Check your connection." },
         howBody: "We share coupon codes on our @karalakapp social accounts. Follow us on Instagram and TikTok so you don't miss one!", close: "Close", soon: "Coming soon", tutMsg: "The tutorial lives in the app." },
+  pt: { title: "Ajustes", sound: "Som e Vibração", rows: ["Todos os Sons", "Música", "Vibração", "Notificações"], code: "Código de cupom", use: "Resgatar", how: "Como conseguir códigos",
+        lang: "Idioma", tut: "Repetir Tutorial", bug: "Relatar um Problema", acc: "Conta", rate: "Avaliar o App", priv: "Política de Privacidade", ver: "Versão web",
+        won: (g, x, c) => [g && `+${g} de ouro`, x && `+${x} XP`, c && `Os baús valem no app`].filter(Boolean).join(" · ") || "Código aceito",
+        err: { notfound: "Código não encontrado. Confira e tente de novo.", expired: "Este código expirou.", exhausted: "Este código já se esgotou.", used: "Você já usou este código.", network: "Não foi possível falar com o servidor. Verifique sua conexão." },
+        howBody: "Compartilhamos códigos de cupom nas nossas redes @karalakapp. Siga a gente no Instagram e no TikTok para não perder nenhum!", close: "Fechar", soon: "Em breve", tutMsg: "O tutorial fica no app." },
+  es: { title: "Ajustes", sound: "Sonido y Vibración", rows: ["Todos los Sonidos", "Música", "Vibración", "Notificaciones"], code: "Código de cupón", use: "Canjear", how: "Cómo conseguir códigos",
+        lang: "Idioma", tut: "Repetir Tutorial", bug: "Reportar un Problema", acc: "Cuenta", rate: "Calificar la App", priv: "Política de Privacidad", ver: "Versión web",
+        won: (g, x, c) => [g && `+${g} de oro`, x && `+${x} XP`, c && `Los cofres valen en la app`].filter(Boolean).join(" · ") || "Código aceptado",
+        err: { notfound: "Código no encontrado. Revísalo e inténtalo de nuevo.", expired: "Este código expiró.", exhausted: "Este código ya se agotó.", used: "Ya usaste este código.", network: "No se pudo conectar con el servidor. Revisa tu conexión." },
+        howBody: "Compartimos códigos de cupón en nuestras redes @karalakapp. ¡Síguenos en Instagram y TikTok para no perderte ninguno!", close: "Cerrar", soon: "Próximamente", tutMsg: "El tutorial está en la app." },
 };
 const PRIV = "https://sualtikasifi.github.io/app-ads/";
 const RATE = "https://play.google.com/store/apps/details?id=com.sualtikasifi.cizimhafiza";
 
 /** Supported languages: add a line here (and its strings) when a new one ships, as in SupportedLanguage.kt. */
-export const LANGS = [{ code: "en", label: "English", flag: "🇺🇸" }, { code: "tr", label: "Türkçe", flag: "🇹🇷" }];
+export const LANGS = [{ code: "en", label: "English", flag: "🇺🇸" }, { code: "tr", label: "Türkçe", flag: "🇹🇷" }, { code: "pt", label: "Português", flag: "🇧🇷" }, { code: "es", label: "Español", flag: "🇪🇸" }];
 /** The app's language menu: a small list that drops under the row, the current language first, the rest in alphabetical order of their own names. */
 function openLangMenu(c) {
   const row = c.$("se-lang"), cur = c.lang(), stage = c.$("stage");
@@ -29,7 +39,7 @@ function openLangMenu(c) {
   });
   veil.append(box); veil.onclick = (e) => { if (e.target === veil) veil.remove(); }; stage.append(veil);
   const r = row.getBoundingClientRect(), s = stage.getBoundingClientRect();
-  box.style.right = Math.max(8, s.right - r.right + 12) + "px"; box.style.top = Math.min(r.bottom - s.top - 6, s.height - 150) + "px";
+  box.style.right = Math.max(8, s.right - r.right + 12) + "px"; box.style.top = Math.min(r.bottom - s.top - 6, s.height - box.offsetHeight - 12) + "px";
 }
 
 export function layoutSettings(c) {

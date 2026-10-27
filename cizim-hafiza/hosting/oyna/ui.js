@@ -124,9 +124,11 @@ export const PLAY_URL = "https://play.google.com/store/apps/details?id=com.sualt
 const APP_ONLY = {
   tr: { title: "Uygulamada", body: "Reklam ödülleri yalnızca Karalak uygulamasında. Google Play'den indirip bu ödülü orada alabilirsin!", go: "Uygulamayı Aç", close: "Kapat" },
   en: { title: "In the app", body: "Ad rewards are only in the Karalak app. Get it on Google Play to claim this reward there!", go: "Get the app", close: "Close" },
+  pt: { title: "No app", body: "As recompensas de anúncio ficam só no app do Karalak. Baixe na Google Play para resgatar esta recompensa lá!", go: "Baixar o app", close: "Fechar" },
+  es: { title: "En la app", body: "Las recompensas por anuncios solo están en la app de Karalak. ¡Descárgala en Google Play para reclamar esta recompensa ahí!", go: "Descargar la app", close: "Cerrar" },
 };
 export function appOnlyDialog(host) {
-  const x = APP_ONLY[getLang()] || APP_ONLY.tr;
+  const x = APP_ONLY[getLang()] || APP_ONLY.en;
   const body = el("div", "ao-body", `<div class="ao-ic">📱</div><p>${x.body}</p>`);
   const foot = el("div", "ao-foot"), go = primary(x.go, () => { window.open(PLAY_URL, "_blank", "noopener"); ov.close(); });
   foot.append(go);

@@ -97,11 +97,14 @@
 <script>
 (function () {
   var pkg = "com.sualtikasifi.cizimhafiza", $ = function (i) { return document.getElementById(i); };
-  var tr = /^tr/i.test(navigator.language || "tr");
-  var L = tr
-    ? { tag: "Çiz, hatırla, yarış!", room: "Odaya katılmak için oda kodu:", friend: "Arkadaş kodu:", title: "Karalak daveti", open: "Karalak'ta aç", store: "Google Play'den indir", web: "Tarayıcıda hemen oyna", foot: "Ücretsiz. Telefonda ve tarayıcıda." }
-    : { tag: "Draw, remember, race!", room: "Room code to join:", friend: "Friend code:", title: "Karalak invite", open: "Open in Karalak", store: "Get it on Google Play", web: "Play in your browser", foot: "Free. On your phone and in your browser." };
-  document.documentElement.lang = tr ? "tr" : "en";
+  var code2 = (navigator.language || "tr").slice(0, 2).toLowerCase(), lang = /^(tr|pt|es)$/.test(code2) ? code2 : "en", tr = lang === "tr";
+  var L = {
+    tr: { tag: "Çiz, hatırla, yarış!", room: "Odaya katılmak için oda kodu:", friend: "Arkadaş kodu:", title: "Karalak daveti", open: "Karalak'ta aç", store: "Google Play'den indir", web: "Tarayıcıda hemen oyna", foot: "Ücretsiz. Telefonda ve tarayıcıda.", room2: "Oda kodu", friend2: "Arkadaş kodu", page: "" },
+    en: { tag: "Draw, remember, race!", room: "Room code to join:", friend: "Friend code:", title: "Karalak invite", open: "Open in Karalak", store: "Get it on Google Play", web: "Play in your browser", foot: "Free. On your phone and in your browser.", room2: "Room code", friend2: "Friend code", page: "Karalak – Draw, remember, race" },
+    pt: { tag: "Desenhe, lembre, dispute!", room: "Código da sala para entrar:", friend: "Código de amigo:", title: "Convite do Karalak", open: "Abrir no Karalak", store: "Baixar na Google Play", web: "Jogar no navegador", foot: "Grátis. No celular e no navegador.", room2: "Código da sala", friend2: "Código de amigo", page: "Karalak – Desenhe, lembre, dispute" },
+    es: { tag: "¡Dibuja, recuerda, compite!", room: "Código de sala para unirte:", friend: "Código de amigo:", title: "Invitación de Karalak", open: "Abrir en Karalak", store: "Descargar en Google Play", web: "Jugar en el navegador", foot: "Gratis. En tu teléfono y en el navegador.", room2: "Código de sala", friend2: "Código de amigo", page: "Karalak – Dibuja, recuerda, compite" }
+  }[lang];
+  document.documentElement.lang = lang;
   $("tag").textContent = L.tag; $("store-t").textContent = L.store; $("web-t").textContent = L.web; $("open-t").textContent = L.open; $("foot").textContent = L.foot;
   // clean links: /d/CODE (room), /f/CODE (friend); the old /davet/?t=&c= form still works
   var m = location.pathname.match(/^\/(d|f)\/([0-9A-Za-z]{1,16})/), q = new URLSearchParams(location.search);
@@ -113,9 +116,10 @@
   var store = "https://play.google.com/store/apps/details?id=" + pkg + (referrer ? "&referrer=" + encodeURIComponent(referrer) : "");
   $("store").href = store; $("pg-play").href = store;
   document.body.classList.add("painted");
-  if (!tr) { document.body.classList.add("en"); document.title = "Karalak – Draw, remember, race"; $("pg-play").setAttribute("aria-label", L.store); document.querySelector(".pg a.web").setAttribute("aria-label", L.web); }
+  // the painted page exists in Turkish and English; the other languages get the English picture with their own labels
+  if (!tr) { document.body.classList.add("en"); document.title = L.page; $("pg-play").setAttribute("aria-label", L.store); document.querySelector(".pg a.web").setAttribute("aria-label", L.web); }
   var android = /Android/i.test(navigator.userAgent), ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (code) { $("pg-inv").classList.add("on"); $("pg-invl").textContent = type === "friend" ? (tr ? "Arkadaş kodu" : "Friend code") : (tr ? "Oda kodu" : "Room code"); $("pg-open").textContent = L.open; $("pg-code").textContent = code; }
+  if (code) { $("pg-inv").classList.add("on"); $("pg-invl").textContent = type === "friend" ? L.friend2 : L.room2; $("pg-open").textContent = L.open; $("pg-code").textContent = code; }
   if (code) { $("invite").classList.add("on"); $("invl").textContent = type === "friend" ? L.friend : L.room; $("code").textContent = code; document.title = L.title; }
   if (!(android && code)) $("pg-open").style.display = "none";
   if (android && code) {

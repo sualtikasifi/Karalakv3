@@ -9,7 +9,7 @@ private val TR_LOCALE = Locale.forLanguageTag("tr-TR")
  * `Locale("tr")` for a correct dotted "İ" ("istatistik" → "İstatistik"),
  * while English words must NOT use Turkish rules (that would wrongly turn
  * "ice cream" into "İce cream"). Pass the word pool's current language
- * ("tr"/"en" — see WordSeeder.currentLanguage), not the device's raw
+ * ("tr", "en", "pt", "es" — see WordSeeder.currentLanguage), not the device's raw
  * system locale, since the two can differ.
  */
 fun String.capitalizeForWordLanguage(language: String): String {

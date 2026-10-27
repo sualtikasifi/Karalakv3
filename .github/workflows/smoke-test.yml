@@ -18,6 +18,7 @@ on:
         default: smoke.sh
         options:
           - smoke.sh
+          - langs.sh
           - realpreview.sh
           - updatepreview.sh
           - chestpreview.sh

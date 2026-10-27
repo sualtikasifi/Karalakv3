@@ -5,6 +5,8 @@ let openWorld = 1, selected = null;
 const T = {
   tr: { worlds: "Dünyalar", progress: (n) => `${n}/10 tamamlandı`, stage: (n) => `Aşama ${n}`, sub: "Çiz, tahmin et ve yıldızları topla!", play: "OYNA", locked: "Kilitli" },
   en: { worlds: "Worlds", progress: (n) => `${n}/10 completed`, stage: (n) => `Stage ${n}`, sub: "Draw, guess and collect the stars!", play: "PLAY", locked: "Locked" },
+  pt: { worlds: "Mundos", progress: (n) => `${n}/10 concluídas`, stage: (n) => `Fase ${n}`, sub: "Desenhe, adivinhe e colete as estrelas!", play: "JOGAR", locked: "Bloqueado" },
+  es: { worlds: "Mundos", progress: (n) => `${n}/10 completados`, stage: (n) => `Nivel ${n}`, sub: "¡Dibuja, adivina y junta las estrellas!", play: "JUGAR", locked: "Bloqueado" },
 };
 export async function loadWorlds() { if (!W) W = await (await fetch("worlds.json")).json(); }
 export const worldInfo = (id) => W.worlds.find((w) => w.id === id);

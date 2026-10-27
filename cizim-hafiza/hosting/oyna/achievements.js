@@ -2,6 +2,8 @@ let list = [];
 const T = {
   tr: { title: "Başarımlar", count: "başarım açıldı", claim: "Ödülü topla", claimed: "🎁 Ödül alındı", locked: "🔒 Henüz açılmadı", unlocked: "Açıldı!", hint: "Nasıl açılır?", cond: "Koşul", close: "Kapat", xp: (n) => `+${n} XP`, gold: (n) => `+${n} altın` },
   en: { title: "Achievements", count: "achievements unlocked", claim: "Claim reward", claimed: "🎁 Reward claimed", locked: "🔒 Not unlocked yet", unlocked: "Unlocked!", hint: "How to unlock", cond: "Condition", close: "Close", xp: (n) => `+${n} XP`, gold: (n) => `+${n} gold` },
+  pt: { title: "Conquistas", count: "conquistas desbloqueadas", claim: "Resgatar recompensa", claimed: "🎁 Recompensa resgatada", locked: "🔒 Ainda não desbloqueada", unlocked: "Desbloqueada!", hint: "Como desbloquear", cond: "Condição", close: "Fechar", xp: (n) => `+${n} XP`, gold: (n) => `+${n} de ouro` },
+  es: { title: "Logros", count: "logros desbloqueados", claim: "Reclamar recompensa", claimed: "🎁 Recompensa reclamada", locked: "🔒 Aún no desbloqueado", unlocked: "¡Desbloqueado!", hint: "Cómo desbloquearlo", cond: "Condición", close: "Cerrar", xp: (n) => `+${n} XP`, gold: (n) => `+${n} de oro` },
 };
 export async function loadAchievements() { if (!list.length) list = await (await fetch("achievements.json")).json(); }
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };

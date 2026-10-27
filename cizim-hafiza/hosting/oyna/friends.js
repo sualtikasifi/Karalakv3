@@ -8,9 +8,11 @@ import { friendInviteText, shareInvite } from "./ui.js";
 const OWN = {
   tr: { notfound: "Bu kodda biri yok.", self: "Bu senin kodun.", copied: "Kod kopyalandı" },
   en: { notfound: "Nobody has this code.", self: "That's your own code.", copied: "Code copied" },
+  pt: { notfound: "Ninguém tem este código.", self: "Esse é o seu próprio código.", copied: "Código copiado" },
+  es: { notfound: "Nadie tiene este código.", self: "Ese es tu propio código.", copied: "Código copiado" },
 };
 const words = (lang) => ({
-  ...(OWN[lang] || OWN.tr),
+  ...(OWN[lang] || OWN.en),
   title: S("online_friends_entry"), code: S("friends_my_code_label"), hint: S("friends_invite_reward_hint"), share: S("friends_share_code"),
   addL: S("friends_add_friend_label"), addH: S("friends_add_friend_hint"), add: S("friends_add_button"),
   listT: S("friends_list_title"), reqT: S("friends_requests_title"), accept: S("friends_request_accept"), decline: S("friends_request_decline"),

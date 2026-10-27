@@ -89,7 +89,7 @@ import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 /** Stadium/pill shape used for every primary/secondary button and chip. */
 val PillShape = RoundedCornerShape(50)
 
-/** "tr"/"en" — matches the word pool's current language (see WordSeeder.currentLanguage),
+/** The UI language code ("tr", "en", "pt", "es") — matches the word pool's current language (see WordSeeder.currentLanguage),
  *  used for locale-correct first-letter capitalization of displayed words (String.capitalizeForWordLanguage). */
 @Composable
 fun currentWordLanguage(): String = LocalConfiguration.current.locales.get(0).language

@@ -1,0 +1,6873 @@
+[
+  {
+    "id": 10001,
+    "text": "hipopótamo",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10011,
+    "text": "búfalo",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10013,
+    "text": "lhama",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10022,
+    "text": "tamanduá",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10030,
+    "text": "raposa do ártico",
+    "category": "Animais",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10031,
+    "text": "leão-marinho",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10032,
+    "text": "orca",
+    "category": "Animais",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10038,
+    "text": "macaco-aranha",
+    "category": "Animais",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10044,
+    "text": "peru",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10045,
+    "text": "cisne",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10075,
+    "text": "cascavel",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10083,
+    "text": "baiacu",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10100,
+    "text": "lagarta",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10101,
+    "text": "minhoca",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10102,
+    "text": "besouro rola-bosta",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10134,
+    "text": "saz",
+    "category": "Objetos",
+    "difficulty": "MEDIUM",
+    "approved": false
+  },
+  {
+    "id": 10154,
+    "text": "torradeira",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10155,
+    "text": "espremedor",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10156,
+    "text": "rolo de massa",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10157,
+    "text": "espátula",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10158,
+    "text": "pegador",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10159,
+    "text": "luva de forno",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10160,
+    "text": "saleiro",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10162,
+    "text": "tábua de corte",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10163,
+    "text": "batedor",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10164,
+    "text": "grelha",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10165,
+    "text": "churrasqueira",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10169,
+    "text": "espremedor de limão",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10170,
+    "text": "descascador",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10172,
+    "text": "abridor de garrafa",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10173,
+    "text": "saca-rolhas",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10174,
+    "text": "porta-pão",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10175,
+    "text": "jarra",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10176,
+    "text": "guarda-roupa",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10179,
+    "text": "cadeira de balanço",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10182,
+    "text": "passadeira",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10184,
+    "text": "lareira",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10185,
+    "text": "papel higiênico",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10187,
+    "text": "fio dental",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10188,
+    "text": "secador de cabelo",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10190,
+    "text": "espuma de barbear",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10192,
+    "text": "perfume",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10193,
+    "text": "desodorante",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10194,
+    "text": "esmalte",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10195,
+    "text": "cortador de unha",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10196,
+    "text": "modelador de cachos",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10200,
+    "text": "carrinho de mão",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10202,
+    "text": "rolo de pintura",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10203,
+    "text": "nível de bolha",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10206,
+    "text": "torquês",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10207,
+    "text": "machado",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10210,
+    "text": "picareta",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10211,
+    "text": "pá",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10214,
+    "text": "saco",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10215,
+    "text": "marreta",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10218,
+    "text": "giz de cera",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10223,
+    "text": "pen drive",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10226,
+    "text": "compasso",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10230,
+    "text": "marcador de página",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10234,
+    "text": "cartão de visita",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10236,
+    "text": "quadro branco",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10242,
+    "text": "projetor",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10244,
+    "text": "monitor",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10245,
+    "text": "drone",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10246,
+    "text": "webcam",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10247,
+    "text": "controle de videogame",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10248,
+    "text": "óculos de realidade virtual",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10249,
+    "text": "mouse",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10251,
+    "text": "extensão elétrica",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10256,
+    "text": "lupa",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10258,
+    "text": "tripé",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10261,
+    "text": "poste de luz",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10262,
+    "text": "bolsa",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10268,
+    "text": "bebê",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10270,
+    "text": "quebra-cabeça",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10273,
+    "text": "balanço",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10274,
+    "text": "gangorra",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10275,
+    "text": "escorregador",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10277,
+    "text": "chupeta",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10279,
+    "text": "óculos",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10281,
+    "text": "colar",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10282,
+    "text": "anel",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10283,
+    "text": "brinco",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10284,
+    "text": "pulseira",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10285,
+    "text": "cinto",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10287,
+    "text": "tábua de passar",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10289,
+    "text": "pá de lixo",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10291,
+    "text": "medidor de pressão",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10292,
+    "text": "seringa",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10295,
+    "text": "estetoscópio",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10297,
+    "text": "muleta",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10298,
+    "text": "isqueiro",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10299,
+    "text": "fósforo",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10300,
+    "text": "ampulheta",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10301,
+    "text": "leque",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10302,
+    "text": "varal",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10303,
+    "text": "cabide",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10305,
+    "text": "estátua",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10309,
+    "text": "cofrinho",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10311,
+    "text": "guardanapo",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10312,
+    "text": "palito de dente",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10313,
+    "text": "canudo",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10314,
+    "text": "porta-copo",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10316,
+    "text": "cadeado",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10317,
+    "text": "câmera de segurança",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10318,
+    "text": "extintor",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10321,
+    "text": "terço",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10323,
+    "text": "olho grego",
+    "category": "Objetos",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 10324,
+    "text": "narguilé",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10326,
+    "text": "ar-condicionado",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10327,
+    "text": "ventilador",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10329,
+    "text": "fogão a lenha",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10330,
+    "text": "aquecedor",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10331,
+    "text": "bebedouro",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10333,
+    "text": "elevador",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10335,
+    "text": "cesta de piquenique",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10338,
+    "text": "walkie-talkie",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10339,
+    "text": "antena",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10340,
+    "text": "antena parabólica",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10341,
+    "text": "espelho de mão",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10343,
+    "text": "presilha de cabelo",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10344,
+    "text": "cadeirão",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10345,
+    "text": "limpador de para-brisa",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10346,
+    "text": "cerca",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10347,
+    "text": "ninho",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10348,
+    "text": "gaiola",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10349,
+    "text": "aquário",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10350,
+    "text": "casinha de cachorro",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10351,
+    "text": "tigela de cachorro",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10352,
+    "text": "coleira",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10354,
+    "text": "globo terrestre",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10355,
+    "text": "paleta de tintas",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10359,
+    "text": "moedor de café",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10364,
+    "text": "balança de banheiro",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10365,
+    "text": "pau de selfie",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10366,
+    "text": "tabuleiro de xadrez",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10367,
+    "text": "gamão",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10368,
+    "text": "dado",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10370,
+    "text": "peça de dominó",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10372,
+    "text": "árvore de natal",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10374,
+    "text": "balão",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10376,
+    "text": "panela de pressão",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10380,
+    "text": "cadeira de camping",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10382,
+    "text": "caixa de presente",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10383,
+    "text": "fita",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10386,
+    "text": "porta-temperos",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10387,
+    "text": "carrinho de chá",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10390,
+    "text": "campainha de bicicleta",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10391,
+    "text": "macaco de carro",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10395,
+    "text": "máquina de pão",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10397,
+    "text": "forma de gelo",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10398,
+    "text": "pediatra",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10402,
+    "text": "motorista de ambulância",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10409,
+    "text": "pizzaiolo",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10410,
+    "text": "sorveteiro",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10412,
+    "text": "queijeiro",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10421,
+    "text": "borracheiro",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10423,
+    "text": "florista",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10425,
+    "text": "vendedor de simit",
+    "category": "Profissões",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 10426,
+    "text": "engraxate",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10430,
+    "text": "cantor",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10431,
+    "text": "dj",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10434,
+    "text": "palhaço",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10437,
+    "text": "bailarina",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10438,
+    "text": "repórter",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10439,
+    "text": "jogador de vôlei",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10440,
+    "text": "tenista",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10441,
+    "text": "boxeador",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10442,
+    "text": "lutador",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10443,
+    "text": "ginasta",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10444,
+    "text": "esquiador",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10445,
+    "text": "patinador",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10446,
+    "text": "ciclista",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10447,
+    "text": "golfista",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10448,
+    "text": "arqueiro",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10450,
+    "text": "halterofilista",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10451,
+    "text": "alpinista",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10452,
+    "text": "paraquedista",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10453,
+    "text": "jóquei",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10454,
+    "text": "taxista",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10455,
+    "text": "caminhoneiro",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10456,
+    "text": "maquinista",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10459,
+    "text": "barqueiro",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10463,
+    "text": "astrólogo",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10464,
+    "text": "tratador de animais",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10467,
+    "text": "estilista",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10468,
+    "text": "gari",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10469,
+    "text": "porteiro",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10470,
+    "text": "manicure",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10472,
+    "text": "massagista",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10473,
+    "text": "tatuador",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10474,
+    "text": "imã",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10477,
+    "text": "pirata",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10481,
+    "text": "salva-vidas",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 10482,
+    "text": "entregador",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10483,
+    "text": "feirante",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 10487,
+    "text": "dono de loja de ferragens",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10496,
+    "text": "ferrador",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10513,
+    "text": "lavador de pratos",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12009,
+    "text": "troféu",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12010,
+    "text": "alvo de dardos",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12001,
+    "text": "bola",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12002,
+    "text": "cesta de basquete",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12003,
+    "text": "trave",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12004,
+    "text": "rede",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12005,
+    "text": "raquete",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12006,
+    "text": "camisa de time",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12008,
+    "text": "medalha",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12014,
+    "text": "amarelinha",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12015,
+    "text": "queda de braço",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12016,
+    "text": "haltere",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12017,
+    "text": "estádio",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12288,
+    "text": "rosquinha",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12289,
+    "text": "pipoca",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12291,
+    "text": "pirulito",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12292,
+    "text": "chiclete",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12293,
+    "text": "algodão-doce",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12294,
+    "text": "bolacha",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12296,
+    "text": "ketchup",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12297,
+    "text": "maionese",
+    "category": "Comidas",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 12302,
+    "text": "espetinho",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12303,
+    "text": "arroz",
+    "category": "Comidas",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 12307,
+    "text": "casquinha de sorvete",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12317,
+    "text": "coxa de frango",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12327,
+    "text": "batata recheada",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12344,
+    "text": "marshmallow",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12345,
+    "text": "wafer",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12353,
+    "text": "kebab de urfa",
+    "category": "Comidas",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 12369,
+    "text": "anchova frita",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12446,
+    "text": "bife de chorizo",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12447,
+    "text": "wrap",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12448,
+    "text": "maçã do amor",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12457,
+    "text": "kebab beyti",
+    "category": "Comidas",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 12021,
+    "text": "piscina",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12022,
+    "text": "óculos de natação",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12023,
+    "text": "tênis de corrida",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12024,
+    "text": "bolsa esportiva",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12026,
+    "text": "saco de pancada",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12029,
+    "text": "frisbee",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12032,
+    "text": "cronômetro",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12033,
+    "text": "placar",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12034,
+    "text": "bandeira de escanteio",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12037,
+    "text": "esteira",
+    "category": "Esportes",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 12038,
+    "text": "pista de atletismo",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12039,
+    "text": "campo de futebol",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12040,
+    "text": "quadra de basquete",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12046,
+    "text": "ringue de boxe",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12051,
+    "text": "hipismo",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12053,
+    "text": "corrida de carros",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12054,
+    "text": "corrida de motos",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12058,
+    "text": "salto em altura",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12059,
+    "text": "corrida com barreiras",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12062,
+    "text": "cabra-cega",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12063,
+    "text": "sumô",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12065,
+    "text": "corrida de cavalos",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12099,
+    "text": "bolinha de gude",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12104,
+    "text": "luva de goleiro",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12111,
+    "text": "salto triplo",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12112,
+    "text": "corrida de obstáculos",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12124,
+    "text": "goleiro",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12125,
+    "text": "taco de golfe",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12127,
+    "text": "taco de beisebol",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12135,
+    "text": "abdominal",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12136,
+    "text": "flexão",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12138,
+    "text": "fisiculturismo",
+    "category": "Esportes",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 12142,
+    "text": "patins de gelo",
+    "category": "Esportes",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 12143,
+    "text": "bola de futebol americano",
+    "category": "Esportes",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 12145,
+    "text": "parede de escalada",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12150,
+    "text": "cacto",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12153,
+    "text": "rosa",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12155,
+    "text": "margarida",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12156,
+    "text": "girassol",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12157,
+    "text": "lua crescente",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12160,
+    "text": "floco de neve",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12161,
+    "text": "bola de neve",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12162,
+    "text": "boneco de neve",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12163,
+    "text": "castelo de areia",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12164,
+    "text": "concha",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12165,
+    "text": "pérola",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12171,
+    "text": "oliveira",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12175,
+    "text": "orquídea",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12187,
+    "text": "avalanche",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12189,
+    "text": "nascer do sol",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12190,
+    "text": "constelação",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12191,
+    "text": "buraco negro",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12192,
+    "text": "lua cheia",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12198,
+    "text": "chaminé de fada",
+    "category": "Natureza",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 12199,
+    "text": "penhasco",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12222,
+    "text": "petróleo",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12238,
+    "text": "favo de mel",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12239,
+    "text": "teia de aranha",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12244,
+    "text": "chuva de meteoros",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12245,
+    "text": "pingente de gelo",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12253,
+    "text": "aglomerado de estrelas",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12254,
+    "text": "gota de chuva",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12271,
+    "text": "ginja",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12274,
+    "text": "semente de abóbora",
+    "category": "Comidas",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 12275,
+    "text": "semente de girassol",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12276,
+    "text": "amendoim",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12279,
+    "text": "noz",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 12278,
+    "text": "amêndoa",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12281,
+    "text": "ovo frito",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12287,
+    "text": "croissant",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14252,
+    "text": "biquíni",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14362,
+    "text": "bigode falso",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14364,
+    "text": "nariz de palhaço",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14365,
+    "text": "chinelo",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14366,
+    "text": "sapatilha de balé",
+    "category": "Roupas",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14390,
+    "text": "relógio de bolso",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14264,
+    "text": "roupa de mergulho",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14321,
+    "text": "colete salva-vidas",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14337,
+    "text": "patins de rodinha",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14370,
+    "text": "vestido de alcinha",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14049,
+    "text": "trailer de camping",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14002,
+    "text": "barco",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14003,
+    "text": "caiaque",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14004,
+    "text": "barco a vapor",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14005,
+    "text": "limusine",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14012,
+    "text": "rolo compressor",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14015,
+    "text": "escavadeira",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14016,
+    "text": "colheitadeira",
+    "category": "Veículos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14023,
+    "text": "trem de carga",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14024,
+    "text": "trem-bala",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14032,
+    "text": "navio de cruzeiro",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14033,
+    "text": "barco de pesca",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14034,
+    "text": "navio pirata",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14046,
+    "text": "carruagem",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14061,
+    "text": "moto de corrida",
+    "category": "Veículos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14062,
+    "text": "carro de fórmula 1",
+    "category": "Veículos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14073,
+    "text": "avião de combate a incêndio",
+    "category": "Veículos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14074,
+    "text": "bicicleta infantil",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14077,
+    "text": "triciclo motorizado",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14078,
+    "text": "trem de dois andares",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14103,
+    "text": "carrinho de sorvete",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14104,
+    "text": "carrinho de rosca",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14117,
+    "text": "estação espacial",
+    "category": "Veículos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14118,
+    "text": "jipe marciano",
+    "category": "Veículos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14121,
+    "text": "irritado",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14122,
+    "text": "chorando",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14124,
+    "text": "sorrindo",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14126,
+    "text": "sonolento",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14127,
+    "text": "sem dormir",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14130,
+    "text": "grosseiro",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14132,
+    "text": "engraçado",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14133,
+    "text": "esforçado",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14137,
+    "text": "tremendo",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14138,
+    "text": "punho cerrado",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14141,
+    "text": "mal-humorado",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14143,
+    "text": "franzindo a testa",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14144,
+    "text": "fazendo bico",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14150,
+    "text": "sofrendo",
+    "category": "Emoções",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14162,
+    "text": "medroso",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14165,
+    "text": "paralisado",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14166,
+    "text": "sem palavras",
+    "category": "Emoções",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14167,
+    "text": "mão na cara",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14168,
+    "text": "roendo as unhas",
+    "category": "Emoções",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14172,
+    "text": "arrancando os cabelos",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14178,
+    "text": "louco",
+    "category": "Emoções",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14179,
+    "text": "abraçando",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14180,
+    "text": "de mãos dadas",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14181,
+    "text": "brigando",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14183,
+    "text": "braços para cima",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14185,
+    "text": "abrindo presente",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14186,
+    "text": "sonhando acordado",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14187,
+    "text": "pesadelo",
+    "category": "Emoções",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14188,
+    "text": "sonho bom",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14189,
+    "text": "abandonado",
+    "category": "Emoções",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14190,
+    "text": "sentindo-se forte",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14192,
+    "text": "sentindo-se sortudo",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14195,
+    "text": "humilhado",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14198,
+    "text": "de castigo",
+    "category": "Emoções",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14204,
+    "text": "falante",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14205,
+    "text": "calado",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14208,
+    "text": "prestativo",
+    "category": "Emoções",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14211,
+    "text": "coração partido",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14212,
+    "text": "com saudade de casa",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14214,
+    "text": "rangendo os dentes",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14216,
+    "text": "sobrancelha levantada",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14220,
+    "text": "pensativo",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14232,
+    "text": "mostrando a língua",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14233,
+    "text": "torcendo o nariz",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14234,
+    "text": "apertando os olhos",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14239,
+    "text": "bermuda",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14240,
+    "text": "legging",
+    "category": "Roupas",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14241,
+    "text": "calça capri",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14242,
+    "text": "meia-calça",
+    "category": "Roupas",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14244,
+    "text": "camisola",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14245,
+    "text": "terno",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14247,
+    "text": "sobretudo",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14250,
+    "text": "lenço de cabeça",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14253,
+    "text": "sunga",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14257,
+    "text": "calça saruel",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14260,
+    "text": "luvas de boxe",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14263,
+    "text": "óculos de esqui",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14270,
+    "text": "capacete de bicicleta",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14271,
+    "text": "capacete",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14272,
+    "text": "uniforme de enfermeira",
+    "category": "Roupas",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 14292,
+    "text": "chapéu de bruxa",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14293,
+    "text": "fantasia de anjo",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14303,
+    "text": "bolsa de mão",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14305,
+    "text": "relógio de pulso",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14306,
+    "text": "máscara de gás",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 14313,
+    "text": "chuteira",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14317,
+    "text": "máscara de snorkel",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14320,
+    "text": "blusa de gola alta",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14326,
+    "text": "regata",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20604,
+    "text": "campeão",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20606,
+    "text": "corredor",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20615,
+    "text": "skatista",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20622,
+    "text": "gol",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20623,
+    "text": "chute",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20624,
+    "text": "cabeçada",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20637,
+    "text": "bola de futebol",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20638,
+    "text": "bola de basquete",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20639,
+    "text": "bola de vôlei",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20656,
+    "text": "levantando a taça",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20664,
+    "text": "cinco pedrinhas",
+    "category": "Esportes",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 20667,
+    "text": "corrida de bicicleta",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20672,
+    "text": "futebol society",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20680,
+    "text": "okey",
+    "category": "Esportes",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 20696,
+    "text": "trilha na montanha",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20700,
+    "text": "copa do mundo",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20704,
+    "text": "capitão do time",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20708,
+    "text": "chute de lado",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20709,
+    "text": "soco",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20801,
+    "text": "pinheiro",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20819,
+    "text": "trovão",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20822,
+    "text": "estrela cadente",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20432,
+    "text": "vendedor de balões",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20441,
+    "text": "lava-jato",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20442,
+    "text": "posto de gasolina",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20445,
+    "text": "técnico de celular",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20484,
+    "text": "loja de baklava",
+    "category": "Profissões",
+    "difficulty": "MEDIUM",
+    "approved": false
+  },
+  {
+    "id": 20485,
+    "text": "vendedor de kebab",
+    "category": "Profissões",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 20486,
+    "text": "sopa",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20504,
+    "text": "baterista",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20206,
+    "text": "copo de chá",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20215,
+    "text": "caneta esferográfica",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20217,
+    "text": "luz noturna",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20218,
+    "text": "máscara de dormir",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20223,
+    "text": "cotonete",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20056,
+    "text": "inseto",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20057,
+    "text": "jabuti",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20065,
+    "text": "cavalo de corrida",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20681,
+    "text": "carta de baralho",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20683,
+    "text": "dominó",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20684,
+    "text": "pedra papel tesoura",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20685,
+    "text": "jenga",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20214,
+    "text": "cesta de ovos",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20221,
+    "text": "escova de vaso",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20224,
+    "text": "carrinho de brinquedo",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20227,
+    "text": "lego",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20231,
+    "text": "lanterna",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20233,
+    "text": "mesa de piquenique",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20235,
+    "text": "fone sem fio",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20236,
+    "text": "carregador portátil",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20239,
+    "text": "celular",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20240,
+    "text": "notebook",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20253,
+    "text": "saco de lixo",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20254,
+    "text": "lixeira de reciclagem",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20255,
+    "text": "secadora de roupas",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20260,
+    "text": "parquinho",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20264,
+    "text": "aquarela",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20269,
+    "text": "relógio de luz",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 20274,
+    "text": "cartão de crédito",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20281,
+    "text": "álbum de fotos",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20291,
+    "text": "torneira",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20292,
+    "text": "relógio de parede",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20293,
+    "text": "cabeceira",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20294,
+    "text": "capinha de celular",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20302,
+    "text": "cofre",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20303,
+    "text": "maquininha de cartão",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 20308,
+    "text": "cilindro de mergulho",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20309,
+    "text": "avião de papel",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20311,
+    "text": "cavalinho de balanço",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20419,
+    "text": "professor de música",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20425,
+    "text": "rapper",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20846,
+    "text": "nevasca",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20847,
+    "text": "céu estrelado",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20848,
+    "text": "luar",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20849,
+    "text": "luz do sol",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20850,
+    "text": "pico nevado",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20865,
+    "text": "estrela polar",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 20869,
+    "text": "onda",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20870,
+    "text": "colmeia",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 20873,
+    "text": "concha de caracol",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 21015,
+    "text": "ovo cozido",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 21042,
+    "text": "bolo de cenoura",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 21048,
+    "text": "ovos com linguiça",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 21205,
+    "text": "carrinho de compras",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 21246,
+    "text": "carrinho de bebê",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 21421,
+    "text": "cabisbaixo",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1,
+    "text": "gato",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 2,
+    "text": "cachorro",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 3,
+    "text": "elefante",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 4,
+    "text": "girafa",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 5,
+    "text": "borboleta",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 6,
+    "text": "cobra",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 7,
+    "text": "ouriço",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 8,
+    "text": "lápis",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 9,
+    "text": "cadeira",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 10,
+    "text": "copo",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 11,
+    "text": "tesoura",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 12,
+    "text": "guarda-chuva",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 13,
+    "text": "relógio",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 14,
+    "text": "médico",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 15,
+    "text": "professor",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 16,
+    "text": "policial",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 17,
+    "text": "cozinheiro",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 18,
+    "text": "barbeiro",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 19,
+    "text": "arquiteto",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 20,
+    "text": "futebol",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 21,
+    "text": "basquete",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 22,
+    "text": "natação",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 23,
+    "text": "tênis",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 24,
+    "text": "bicicleta",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 25,
+    "text": "tiro com arco",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 26,
+    "text": "sol",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 27,
+    "text": "árvore",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 28,
+    "text": "nuvem",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 29,
+    "text": "montanha",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 30,
+    "text": "rio",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 31,
+    "text": "estrela",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 32,
+    "text": "vulcão",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 33,
+    "text": "maçã",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 34,
+    "text": "banana",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 35,
+    "text": "pizza",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 36,
+    "text": "macarrão",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 37,
+    "text": "melancia",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 38,
+    "text": "sorvete",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 39,
+    "text": "carro",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 40,
+    "text": "ônibus",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 41,
+    "text": "avião",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 42,
+    "text": "trem",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 43,
+    "text": "navio",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 44,
+    "text": "helicóptero",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 45,
+    "text": "feliz",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 46,
+    "text": "triste",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 47,
+    "text": "bravo",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 48,
+    "text": "surpreso",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 49,
+    "text": "assustado",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 50,
+    "text": "animado",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 51,
+    "text": "leão",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 52,
+    "text": "tigre",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 53,
+    "text": "urso",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 54,
+    "text": "coelho",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 55,
+    "text": "pássaro",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 56,
+    "text": "peixe",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 57,
+    "text": "cavalo",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 58,
+    "text": "vaca",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 59,
+    "text": "ovelha",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 60,
+    "text": "cabra",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 61,
+    "text": "galinha",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 62,
+    "text": "galo",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 63,
+    "text": "pato",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 64,
+    "text": "sapo",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 65,
+    "text": "aranha",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 66,
+    "text": "formiga",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 67,
+    "text": "abelha",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 68,
+    "text": "mosca",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 69,
+    "text": "rato",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 70,
+    "text": "macaco",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 71,
+    "text": "zebra",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 72,
+    "text": "crocodilo",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 73,
+    "text": "tartaruga",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 74,
+    "text": "pinguim",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 75,
+    "text": "coruja",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 76,
+    "text": "papagaio",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 77,
+    "text": "golfinho",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 78,
+    "text": "polvo",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 79,
+    "text": "caranguejo",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 80,
+    "text": "camelo",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 81,
+    "text": "panda",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 82,
+    "text": "coala",
+    "category": "Animais",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 83,
+    "text": "leopardo",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 84,
+    "text": "rinoceronte",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 85,
+    "text": "esquilo",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 86,
+    "text": "castor",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 87,
+    "text": "morcego",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 88,
+    "text": "escorpião",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 89,
+    "text": "caracol",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 90,
+    "text": "mesa",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 91,
+    "text": "porta",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 92,
+    "text": "janela",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 93,
+    "text": "luminária",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 94,
+    "text": "telefone",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 95,
+    "text": "livro",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 96,
+    "text": "caderno",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 99,
+    "text": "chave",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 100,
+    "text": "fechadura",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 101,
+    "text": "espelho",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 102,
+    "text": "escova",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 103,
+    "text": "pente",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 104,
+    "text": "vassoura",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 105,
+    "text": "martelo",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 106,
+    "text": "chave de fenda",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 107,
+    "text": "agulha",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 108,
+    "text": "botão",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 109,
+    "text": "zíper",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 110,
+    "text": "bagagem",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 111,
+    "text": "chapéu",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 112,
+    "text": "luva",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 113,
+    "text": "cachecol",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 114,
+    "text": "meia",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 115,
+    "text": "sapato",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 116,
+    "text": "pantufa",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 117,
+    "text": "travesseiro",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 118,
+    "text": "edredom",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 119,
+    "text": "tapete",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 120,
+    "text": "cortina",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 121,
+    "text": "vaso de flores",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 122,
+    "text": "panela",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 123,
+    "text": "frigideira",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 124,
+    "text": "colher",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 125,
+    "text": "garfo",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 126,
+    "text": "faca",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 127,
+    "text": "prato",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 128,
+    "text": "xícara",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 129,
+    "text": "bombeiro",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 130,
+    "text": "advogado",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 131,
+    "text": "engenheiro",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 132,
+    "text": "piloto",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 133,
+    "text": "enfermeiro",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 134,
+    "text": "soldado",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 136,
+    "text": "pescador",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 138,
+    "text": "pintor",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 139,
+    "text": "músico",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 144,
+    "text": "carteiro",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 149,
+    "text": "detetive",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 151,
+    "text": "fotógrafo",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 152,
+    "text": "veterinário",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 153,
+    "text": "farmacêutico",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 154,
+    "text": "dentista",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 155,
+    "text": "cabeleireiro",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 157,
+    "text": "mergulhador",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 160,
+    "text": "corrida",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 161,
+    "text": "boxe",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 164,
+    "text": "dança",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 165,
+    "text": "esqui",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 166,
+    "text": "golfe",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 167,
+    "text": "boliche",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 168,
+    "text": "tênis de mesa",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 170,
+    "text": "levantamento de peso",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 171,
+    "text": "ginástica",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 176,
+    "text": "escalada",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 177,
+    "text": "surfe",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 178,
+    "text": "iatismo",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 180,
+    "text": "salto",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 181,
+    "text": "lançamento de dardo",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 182,
+    "text": "patinação no gelo",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 183,
+    "text": "mar",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 184,
+    "text": "lago",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 185,
+    "text": "floresta",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 187,
+    "text": "ilha",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 188,
+    "text": "cachoeira",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 189,
+    "text": "caverna",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 190,
+    "text": "arco-íris",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 191,
+    "text": "chuva",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 192,
+    "text": "neve",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 193,
+    "text": "vento",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 195,
+    "text": "relâmpago",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 196,
+    "text": "céu",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 197,
+    "text": "lua",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 200,
+    "text": "flor",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 201,
+    "text": "folha",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 202,
+    "text": "grama",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 203,
+    "text": "colina",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 204,
+    "text": "vale",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 205,
+    "text": "geleira",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 206,
+    "text": "terremoto",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 207,
+    "text": "pera",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 208,
+    "text": "morango",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 209,
+    "text": "uva",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 210,
+    "text": "laranja",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 211,
+    "text": "limão",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 212,
+    "text": "cereja",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 213,
+    "text": "pêssego",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 214,
+    "text": "pão",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 215,
+    "text": "queijo",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 216,
+    "text": "ovo",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 217,
+    "text": "leite",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 218,
+    "text": "mel",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 219,
+    "text": "chocolate",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 221,
+    "text": "bolo",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 222,
+    "text": "hambúrguer",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 223,
+    "text": "sanduíche",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 224,
+    "text": "batata",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 225,
+    "text": "tomate",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 226,
+    "text": "pepino",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 227,
+    "text": "cenoura",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 228,
+    "text": "cebola",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 230,
+    "text": "pimentão",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 233,
+    "text": "abacaxi",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 236,
+    "text": "avelã",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 237,
+    "text": "moto",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 238,
+    "text": "caminhão",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 240,
+    "text": "trator",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 242,
+    "text": "ambulância",
+    "category": "Veículos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 243,
+    "text": "caminhão de bombeiros",
+    "category": "Veículos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 244,
+    "text": "viatura de polícia",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 245,
+    "text": "táxi",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 248,
+    "text": "teleférico",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 249,
+    "text": "foguete",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 254,
+    "text": "trenó",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 255,
+    "text": "patins",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 256,
+    "text": "patinete",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 257,
+    "text": "empilhadeira",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 259,
+    "text": "tímido",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 260,
+    "text": "cansado",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 261,
+    "text": "entediado",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 262,
+    "text": "curioso",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 263,
+    "text": "ciumento",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 264,
+    "text": "grato",
+    "category": "Emoções",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 269,
+    "text": "ansioso",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 270,
+    "text": "alegre",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 271,
+    "text": "melancólico",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 272,
+    "text": "furioso",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 275,
+    "text": "arrependido",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 279,
+    "text": "pombo",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 281,
+    "text": "rouxinol",
+    "category": "Animais",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 282,
+    "text": "cegonha",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 283,
+    "text": "flamingo",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 284,
+    "text": "pavão",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 287,
+    "text": "corvo",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 290,
+    "text": "periquito",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 294,
+    "text": "codorna",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 299,
+    "text": "baleia",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 300,
+    "text": "cavalo-marinho",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 301,
+    "text": "estrela-do-mar",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 302,
+    "text": "ouriço-do-mar",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 304,
+    "text": "ostra",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 312,
+    "text": "peixe-espada",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 315,
+    "text": "joaninha",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 316,
+    "text": "vaga-lume",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 317,
+    "text": "gafanhoto",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 320,
+    "text": "mariposa",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 321,
+    "text": "mosquito",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 323,
+    "text": "centopeia",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 324,
+    "text": "piolho",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 327,
+    "text": "burro",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 329,
+    "text": "boi",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 330,
+    "text": "touro",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 331,
+    "text": "bezerro",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 335,
+    "text": "porco",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 337,
+    "text": "chacal",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 340,
+    "text": "puma",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 341,
+    "text": "guepardo",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 342,
+    "text": "hiena",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 344,
+    "text": "gorila",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 345,
+    "text": "canguru",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 348,
+    "text": "cabra-montesa",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 353,
+    "text": "lagarto",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 354,
+    "text": "víbora",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 355,
+    "text": "armário",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 356,
+    "text": "gaveta",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 357,
+    "text": "prateleira",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 358,
+    "text": "poltrona",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 360,
+    "text": "lustre",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 361,
+    "text": "vela",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 362,
+    "text": "balde",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 363,
+    "text": "sabonete",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 364,
+    "text": "xampu",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 365,
+    "text": "escova de dentes",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 366,
+    "text": "toalha",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 368,
+    "text": "cama",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 370,
+    "text": "mala",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 371,
+    "text": "mochila",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 372,
+    "text": "carteira",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 377,
+    "text": "ferro de passar",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 378,
+    "text": "capacho",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 379,
+    "text": "lixeira",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 380,
+    "text": "caixa",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 381,
+    "text": "cesta",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 382,
+    "text": "banquinho",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 383,
+    "text": "escada",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 384,
+    "text": "serrote",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 385,
+    "text": "furadeira",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 386,
+    "text": "alicate",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 389,
+    "text": "prego",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 390,
+    "text": "régua",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 391,
+    "text": "borracha",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 392,
+    "text": "apontador",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 393,
+    "text": "grampeador",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 394,
+    "text": "clipe",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 395,
+    "text": "calendário",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 396,
+    "text": "despertador",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 397,
+    "text": "rádio",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 398,
+    "text": "televisão",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 399,
+    "text": "computador",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 400,
+    "text": "teclado",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 401,
+    "text": "impressora",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 402,
+    "text": "câmera",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 403,
+    "text": "microfone",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 404,
+    "text": "caixa de som",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 405,
+    "text": "fone de ouvido",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 406,
+    "text": "carregador",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 407,
+    "text": "pilha",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 408,
+    "text": "lâmpada",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 409,
+    "text": "tomada",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 411,
+    "text": "cabo",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 412,
+    "text": "sino",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 414,
+    "text": "balança",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 415,
+    "text": "prendedor de roupa",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 416,
+    "text": "gancho",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 417,
+    "text": "corda",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 420,
+    "text": "pote",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 421,
+    "text": "garrafa",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 422,
+    "text": "garrafa térmica",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 423,
+    "text": "mamadeira",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 424,
+    "text": "brinquedo",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 425,
+    "text": "pipa",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 426,
+    "text": "skate",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 427,
+    "text": "corda de pular",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 428,
+    "text": "apito",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 430,
+    "text": "binóculo",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 431,
+    "text": "telescópio",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 432,
+    "text": "bússola",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 433,
+    "text": "mapa",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 434,
+    "text": "bandeira",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 435,
+    "text": "barraca",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 436,
+    "text": "saco de dormir",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 437,
+    "text": "óculos de sol",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 442,
+    "text": "bancário",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 444,
+    "text": "confeiteiro",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 446,
+    "text": "vendedor de chá",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 447,
+    "text": "verdureiro",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 450,
+    "text": "relojoeiro",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 451,
+    "text": "sapateiro",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 452,
+    "text": "pintor de paredes",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 455,
+    "text": "telhadista",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 456,
+    "text": "vidraceiro",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 457,
+    "text": "chaveiro",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 458,
+    "text": "sucateiro",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 459,
+    "text": "mecânico",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 460,
+    "text": "programador",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 462,
+    "text": "designer",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 463,
+    "text": "urbanista",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 464,
+    "text": "arqueólogo",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 465,
+    "text": "historiador",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 466,
+    "text": "geógrafo",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 467,
+    "text": "biólogo",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 469,
+    "text": "físico",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 470,
+    "text": "matemático",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 472,
+    "text": "meteorologista",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 475,
+    "text": "capitão",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 477,
+    "text": "guarda de trânsito",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 480,
+    "text": "vigia",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 482,
+    "text": "árbitro",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 483,
+    "text": "atleta",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 484,
+    "text": "jogador de futebol",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 485,
+    "text": "jogador de basquete",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 486,
+    "text": "nadador",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 488,
+    "text": "dançarino",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 495,
+    "text": "cinegrafista",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 497,
+    "text": "apresentador",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 499,
+    "text": "tradutor",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 500,
+    "text": "intérprete",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 501,
+    "text": "bibliotecário",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 507,
+    "text": "faxineiro",
+    "category": "Profissões",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 509,
+    "text": "caçador",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 510,
+    "text": "pastor",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 511,
+    "text": "apicultor",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 515,
+    "text": "dardos",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 516,
+    "text": "sinuca",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 517,
+    "text": "xadrez",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 518,
+    "text": "damas",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 528,
+    "text": "beisebol",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 530,
+    "text": "squash",
+    "category": "Esportes",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 531,
+    "text": "parapente",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 532,
+    "text": "paraquedas",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 533,
+    "text": "montanhismo",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 534,
+    "text": "caminhada",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 535,
+    "text": "sprint",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 536,
+    "text": "salto em distância",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 537,
+    "text": "salto com vara",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 538,
+    "text": "arremesso de peso",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 539,
+    "text": "lançamento de martelo",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 546,
+    "text": "pilates",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 547,
+    "text": "crossfit",
+    "category": "Esportes",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 549,
+    "text": "pênalti",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 550,
+    "text": "falta",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 551,
+    "text": "enterrada",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 552,
+    "text": "saque",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 556,
+    "text": "litoral",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 557,
+    "text": "praia",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 560,
+    "text": "vulcão em erupção",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 562,
+    "text": "riacho",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 563,
+    "text": "chafariz",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 564,
+    "text": "nascente",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 565,
+    "text": "iceberg",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 566,
+    "text": "polo",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 569,
+    "text": "incêndio florestal",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 570,
+    "text": "neblina",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 573,
+    "text": "granizo",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 574,
+    "text": "furacão",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 575,
+    "text": "tornado",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 576,
+    "text": "enchente",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 577,
+    "text": "deslizamento de terra",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 578,
+    "text": "eco",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 579,
+    "text": "magma",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 580,
+    "text": "lava",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 584,
+    "text": "diamante",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 585,
+    "text": "ouro",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 596,
+    "text": "floresta tropical",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 598,
+    "text": "cometa",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 599,
+    "text": "planeta",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 600,
+    "text": "eclipse solar",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 601,
+    "text": "eclipse lunar",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 602,
+    "text": "amanhecer",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 603,
+    "text": "pôr do sol",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 604,
+    "text": "romã",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 605,
+    "text": "ameixa",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 606,
+    "text": "damasco",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 607,
+    "text": "figo",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 608,
+    "text": "tangerina",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 611,
+    "text": "amora",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 612,
+    "text": "amora silvestre",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 614,
+    "text": "mirtilo",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 615,
+    "text": "coco",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 616,
+    "text": "abacate",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 617,
+    "text": "azeitona",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 618,
+    "text": "azeite",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 619,
+    "text": "manteiga",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 622,
+    "text": "nata",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 623,
+    "text": "queijo kashar",
+    "category": "Comidas",
+    "difficulty": "MEDIUM",
+    "approved": false
+  },
+  {
+    "id": 626,
+    "text": "sucuk",
+    "category": "Comidas",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 627,
+    "text": "salsicha",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 628,
+    "text": "salame",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 629,
+    "text": "pastırma",
+    "category": "Comidas",
+    "difficulty": "MEDIUM",
+    "approved": false
+  },
+  {
+    "id": 630,
+    "text": "almôndega",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 631,
+    "text": "kebab",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 632,
+    "text": "churrasco grego",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 633,
+    "text": "lahmacun",
+    "category": "Comidas",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 634,
+    "text": "pide",
+    "category": "Comidas",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 635,
+    "text": "folhado",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 636,
+    "text": "ravióli",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 641,
+    "text": "grão-de-bico",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 643,
+    "text": "feijão",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 645,
+    "text": "espinafre",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 646,
+    "text": "brócolis",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 647,
+    "text": "couve-flor",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 649,
+    "text": "cogumelo",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 651,
+    "text": "rabanete",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 652,
+    "text": "alface",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 654,
+    "text": "salsinha",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 659,
+    "text": "abóbora",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 660,
+    "text": "batata chips",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 661,
+    "text": "batata frita",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 662,
+    "text": "rosca de gergelim",
+    "category": "Comidas",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 663,
+    "text": "pãozinho",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 664,
+    "text": "cookie",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 665,
+    "text": "waffle",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 666,
+    "text": "crepe",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 668,
+    "text": "baklava",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 669,
+    "text": "manjar turco",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 675,
+    "text": "chá",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 676,
+    "text": "café",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 677,
+    "text": "limonada",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 682,
+    "text": "triciclo",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 683,
+    "text": "lambreta",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 684,
+    "text": "ponto de ônibus",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 687,
+    "text": "guincho",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 688,
+    "text": "caminhão de lixo",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 695,
+    "text": "escada rolante",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 696,
+    "text": "míssil",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 701,
+    "text": "balão de ar quente",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 706,
+    "text": "submarino",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 707,
+    "text": "veleiro",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 708,
+    "text": "barco a remo",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 709,
+    "text": "balsa",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 710,
+    "text": "reboque",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 711,
+    "text": "motor-home",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 715,
+    "text": "charrete",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 717,
+    "text": "cadeira de rodas",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 718,
+    "text": "carrinho de passeio",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 720,
+    "text": "maravilhado",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 722,
+    "text": "farto",
+    "category": "Emoções",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 726,
+    "text": "tranquilo",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 735,
+    "text": "com nojo",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 746,
+    "text": "apaixonado",
+    "category": "Emoções",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 749,
+    "text": "envergonhado",
+    "category": "Emoções",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 772,
+    "text": "primavera",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 773,
+    "text": "verão",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 774,
+    "text": "outono",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 775,
+    "text": "inverno",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 776,
+    "text": "gelo",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 778,
+    "text": "raio",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 780,
+    "text": "meteoro",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 786,
+    "text": "estreito",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 794,
+    "text": "muda",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 795,
+    "text": "semente",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 796,
+    "text": "raiz",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 797,
+    "text": "galho",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 798,
+    "text": "tronco",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 801,
+    "text": "moinho de vento",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 802,
+    "text": "sombra",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 803,
+    "text": "luz",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 804,
+    "text": "escuridão",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 805,
+    "text": "noite",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 806,
+    "text": "dia",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 807,
+    "text": "horizonte",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 808,
+    "text": "paisagem",
+    "category": "Natureza",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 837,
+    "text": "mesa de centro",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 839,
+    "text": "sapateira",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 840,
+    "text": "estante",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 843,
+    "text": "envelope",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 844,
+    "text": "selo",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 847,
+    "text": "porta-retrato",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 851,
+    "text": "tambor",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 852,
+    "text": "violão",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 853,
+    "text": "violino",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 854,
+    "text": "piano",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 855,
+    "text": "flauta",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 856,
+    "text": "saxofone",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 857,
+    "text": "trompete",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 858,
+    "text": "órgão",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 860,
+    "text": "água-viva",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 861,
+    "text": "camarão",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 864,
+    "text": "tubarão",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 866,
+    "text": "anchova",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 871,
+    "text": "enguia",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 872,
+    "text": "dinossauro",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 873,
+    "text": "mamute",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 878,
+    "text": "escritor",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 879,
+    "text": "escultor",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 885,
+    "text": "corretor da bolsa",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 887,
+    "text": "corretor de imóveis",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 891,
+    "text": "cama elástica",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 894,
+    "text": "salto ornamental",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 896,
+    "text": "mergulho",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 899,
+    "text": "pebolim",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 900,
+    "text": "balé",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 906,
+    "text": "carreta",
+    "category": "Veículos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 912,
+    "text": "almôndega crua apimentada",
+    "category": "Comidas",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 913,
+    "text": "kebab iskender",
+    "category": "Comidas",
+    "difficulty": "MEDIUM",
+    "approved": false
+  },
+  {
+    "id": 914,
+    "text": "kebab adana",
+    "category": "Comidas",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 915,
+    "text": "kokoreç",
+    "category": "Comidas",
+    "difficulty": "HARD",
+    "approved": false
+  },
+  {
+    "id": 920,
+    "text": "tzatziki",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 921,
+    "text": "legumes recheados",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 922,
+    "text": "charutinho de uva",
+    "category": "Comidas",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 926,
+    "text": "berinjela recheada",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 930,
+    "text": "costeleta de cordeiro",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 931,
+    "text": "bife",
+    "category": "Comidas",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 932,
+    "text": "sanduíche de peixe",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 933,
+    "text": "künefe",
+    "category": "Comidas",
+    "difficulty": "MEDIUM",
+    "approved": false
+  },
+  {
+    "id": 935,
+    "text": "tulumba",
+    "category": "Comidas",
+    "difficulty": "MEDIUM",
+    "approved": false
+  },
+  {
+    "id": 944,
+    "text": "equilibrismo na corda",
+    "category": "Esportes",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 945,
+    "text": "cabo de guerra",
+    "category": "Esportes",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 952,
+    "text": "tanque",
+    "category": "Veículos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 955,
+    "text": "tarântula",
+    "category": "Animais",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 956,
+    "text": "veado",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 960,
+    "text": "javali",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 961,
+    "text": "cigarra",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 963,
+    "text": "carrapato",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 965,
+    "text": "aspirador de pó",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 966,
+    "text": "lava-louças",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 967,
+    "text": "máquina de lavar",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 968,
+    "text": "geladeira",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 969,
+    "text": "forno",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 970,
+    "text": "micro-ondas",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 971,
+    "text": "fogão",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 972,
+    "text": "coifa",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 973,
+    "text": "torrada",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 974,
+    "text": "omelete",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 975,
+    "text": "ovos mexidos com tomate",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 978,
+    "text": "picles",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 979,
+    "text": "geleia",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 980,
+    "text": "milho",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1002,
+    "text": "vaso de planta",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1003,
+    "text": "tesoura de jardim",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1005,
+    "text": "rastelo",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1007,
+    "text": "mangueira",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1009,
+    "text": "cirurgião",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 1012,
+    "text": "fisioterapeuta",
+    "category": "Profissões",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1019,
+    "text": "cume",
+    "category": "Natureza",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1020,
+    "text": "torta de maçã",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1029,
+    "text": "pica-pau",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1049,
+    "text": "urso-polar",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1050,
+    "text": "sucuri",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1051,
+    "text": "píton",
+    "category": "Animais",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1052,
+    "text": "naja",
+    "category": "Animais",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1057,
+    "text": "escorredor",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1058,
+    "text": "ralador",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1059,
+    "text": "liquidificador",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1060,
+    "text": "sanduicheira",
+    "category": "Objetos",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 1061,
+    "text": "cafeteira",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1062,
+    "text": "chaleira",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1063,
+    "text": "samovar",
+    "category": "Objetos",
+    "difficulty": "MEDIUM",
+    "approved": false
+  },
+  {
+    "id": 1064,
+    "text": "cezve",
+    "category": "Objetos",
+    "difficulty": "EASY",
+    "approved": false
+  },
+  {
+    "id": 1065,
+    "text": "pia",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1066,
+    "text": "banheira",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1067,
+    "text": "chuveiro",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1068,
+    "text": "vaso sanitário",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1069,
+    "text": "pasta de dente",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1071,
+    "text": "barbeador",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1074,
+    "text": "calculadora",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1075,
+    "text": "tablet",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1076,
+    "text": "relógio inteligente",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1077,
+    "text": "videogame",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1078,
+    "text": "controle remoto",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1079,
+    "text": "modem",
+    "category": "Objetos",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1084,
+    "text": "calça",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1085,
+    "text": "camisa",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1086,
+    "text": "vestido",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1087,
+    "text": "saia",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1088,
+    "text": "jaqueta",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1091,
+    "text": "colete",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1092,
+    "text": "gravata",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1093,
+    "text": "gravata-borboleta",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1095,
+    "text": "botas",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1097,
+    "text": "sandálias",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1098,
+    "text": "maiô",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1100,
+    "text": "porta-chaves",
+    "category": "Objetos",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1114,
+    "text": "designer gráfico",
+    "category": "Profissões",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 1140,
+    "text": "pastel",
+    "category": "Comidas",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 1141,
+    "text": "folhado de queijo",
+    "category": "Comidas",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 1142,
+    "text": "rolinho primavera",
+    "category": "Comidas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1152,
+    "text": "sushi",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1153,
+    "text": "espaguete",
+    "category": "Comidas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1170,
+    "text": "camiseta",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1173,
+    "text": "avental",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1174,
+    "text": "peruca",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1175,
+    "text": "máscara",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1176,
+    "text": "elástico de cabelo",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1178,
+    "text": "cardigã",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1180,
+    "text": "roupão",
+    "category": "Roupas",
+    "difficulty": "HARD"
+  },
+  {
+    "id": 1193,
+    "text": "abotoadura",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1194,
+    "text": "capa",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1201,
+    "text": "minissaia",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1202,
+    "text": "saia longa",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1203,
+    "text": "moletom",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1208,
+    "text": "joelheira",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1209,
+    "text": "munhequeira",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1216,
+    "text": "vestido de noiva",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1220,
+    "text": "fantasia de pirata",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1221,
+    "text": "coroa",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1228,
+    "text": "fantasia de palhaço",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1229,
+    "text": "fantasia de bruxa",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1230,
+    "text": "coturno",
+    "category": "Roupas",
+    "difficulty": "MEDIUM"
+  },
+  {
+    "id": 1235,
+    "text": "salto alto",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  },
+  {
+    "id": 1236,
+    "text": "tênis esportivo",
+    "category": "Roupas",
+    "difficulty": "EASY"
+  }
+]

@@ -39,12 +39,14 @@
   <a class="btn second" href="/indir" id="get">Uygulamayı indir</a>
 </main>
 <script>
-  if (!/^tr/i.test(navigator.language || "tr")) {
-    document.documentElement.lang = "en"; document.title = "Page not found – Karalak";
-    document.getElementById("t").textContent = "This page got scribbled out!";
-    document.getElementById("s").textContent = "We couldn't find that page. The address may be mistyped, or the page has moved.";
-    document.getElementById("play").textContent = "Back to the game";
-    document.getElementById("get").textContent = "Get the app";
+  var l = (navigator.language || "tr").slice(0, 2).toLowerCase(), X = {
+    en: ["Page not found – Karalak", "This page got scribbled out!", "We couldn't find that page. The address may be mistyped, or the page has moved.", "Back to the game", "Get the app"],
+    pt: ["Página não encontrada – Karalak", "Esta página foi rabiscada!", "Não encontramos essa página. Talvez o endereço esteja errado ou a página tenha mudado de lugar.", "Voltar ao jogo", "Baixar o app"],
+    es: ["Página no encontrada – Karalak", "¡Esta página quedó garabateada!", "No encontramos esa página. Puede que la dirección esté mal escrita o que la página se haya movido.", "Volver al juego", "Descargar la app"]
+  };
+  if (l !== "tr") {
+    var x = X[l] || X.en; document.documentElement.lang = X[l] ? l : "en"; document.title = x[0];
+    ["t", "s", "play", "get"].forEach(function (id, i) { document.getElementById(id).textContent = x[i + 1]; });
   }
 </script>
 </body>

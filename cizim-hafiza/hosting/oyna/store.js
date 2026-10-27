@@ -1,5 +1,5 @@
 import { appOnlyDialog, appWindow } from "./ui.js";
-import { S as S0 } from "./i18n.js";
+import { S as S0, fmtNum } from "./i18n.js";
 // Store page: jokers, pens, frames. Prices and catalogue come straight from the Android enums.
 const J = [["FIRST_LETTER", 200, "joker_first_letter", "joker_first_letter_desc", "joker_first_letter"], ["LETTER_COUNT", 150, "joker_letter_count", "joker_letter_count_desc", "joker_letter_count"], ["EXTRA_TIME", 250, "joker_extra_time", "joker_extra_time_desc", "joker_extra_time"]];
 let pens = [], frames = [], S = {}, tab = 0, toastTimer = null;
@@ -16,7 +16,7 @@ export const frameById = (id) => frames.find((f) => f.id === id) || frames.find(
 const tt = (ctx, k, ...a) => { const v = (S[k] || {})[ctx.lang()] || k; return v.replace(/%(\d)\$d/g, (_, i) => a[i - 1]).replace(/%%/g, "%"); };
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const coin = '<img src="img/icon_gold_coin.webp" alt="">';
-const fmt = (n) => n.toLocaleString();
+const fmt = (n) => fmtNum(n);
 
 export function layoutStore(ctx) {
   const { place, $ } = ctx;
@@ -63,7 +63,7 @@ export function renderStore(ctx) {
     if (P.dailyJokerDay !== today) {
       const [type, , nameK, descK, img] = J[today % 3];
       const c = el("div", "djoker", `<img class="bg" src="img/st_daily_full.webp" alt=""><span class="dj-tag">${tt(ctx, "store_daily_joker_tag")}</span><div class="dj-art"><img src="img/${img}.webp" alt=""></div><div class="dj-txt"><b>${tt(ctx, nameK)}</b><small>${tt(ctx, descK)}</small></div>`);
-      const b = el("button", "dj-btn", `<svg viewBox="0 0 24 24"><path fill="#fff" d="M12 2a10 10 0 100 20 10 10 0 000-20zm-2 14.5v-9l7 4.5z"/></svg><span>${ctx.lang() === "tr" ? "Uygulamada ücretsiz al" : "Get it free in the app"}</span>`);
+      const b = el("button", "dj-btn", `<svg viewBox="0 0 24 24"><path fill="#fff" d="M12 2a10 10 0 100 20 10 10 0 000-20zm-2 14.5v-9l7 4.5z"/></svg><span>${({ tr: "Uygulamada ücretsiz al", en: "Get it free in the app", pt: "Grátis no app", es: "Gratis en la app" })[ctx.lang()] || "Get it free in the app"}</span>`);
       b.onclick = () => appOnlyDialog(ctx.$("stage"));
       c.append(b); shelf.append(c);
     }

@@ -59,3 +59,11 @@ Yukarıdaki "Sırada" listesindeki her şey yapıldı (Lig, mağaza, harita, dü
 - Güvenlik başlıkları (firebase.json): `Permissions-Policy`, sayfalar için `X-Frame-Options: SAMEORIGIN` + `frame-ancestors 'self'` (Firebase'in `/__/` giriş sayfalarına dokunulmuyor). HSTS'i Firebase zaten gönderiyor.
 - Servis çalışanı: oyun `/` adresinde açıldığı hâlde çalışan `/oyna/` kapsamındaydı, yani hiçbir sayfayı denetlemiyor, görseller hiç önbelleğe alınmıyordu. Artık `Service-Worker-Allowed: /` başlığıyla tüm siteyi kapsıyor; video parça (Range) istekleri ağa bırakılıyor (Safari).
 - `color-scheme: only light` (tarayıcıların zorunlu karanlık modu boyalı ekranları bozmasın) ve `format-detection: telephone=no` (oda kodları telefon linkine dönmesin).
+
+## Diller: Türkçe, İngilizce, Portekizce (Brezilya), İspanyolca (Latin Amerika)
+- Android: `values-pt`, `values-es` (anahtarlar ve sıra `values` ile aynı), `assets/words_pt.json`, `words_es.json` (ID'ler ve zorluklar Türkçe havuzla birebir; `WordPoolParityTest` bunu ve tekrar eden kelime olmamasını denetler). `SupportedLanguage` dört dili listeler; `WordSeeder.assetFileFor` dili havuz dosyasına bağlar; bot isimleri dile göre (`BotGhostRun`).
+- Çevrimiçi oda dil karışık olabilir: kurucu kendi havuzundan kelime ID'si seçer, her oyuncu aynı ID'yi kendi dilinde görür. Türkiye'ye özgü 25 kelime İngilizce, Portekizce ve İspanyolca havuzda `approved: false` (dağıtılmaz ama ID ile bulunur).
+- Web: `strings.json`, `runes.json`, `result/chat/store_strings.json` dört dili taşır (`gen_web_strings.js`, `gen_web_runes.js`); başarımlar, kalemler, çerçeveler, dünyalar, lobi alıntıları ve bot isimleri `gen_web_langs.js` ile Android çevirilerinden doldurulur; `hosting/oyna/words_*.json` Android havuzlarının kopyasıdır. CI hepsini denetler.
+- Web modüllerindeki kendi metin tablolarına (`T`) `pt` ve `es` eklendi; dil yoksa İngilizceye düşer. Sayılar dile göre gruplanır (`fmtNum`: 6.245 / 6,245).
+- Görseller henüz çevrilmedi: boyalı yazılı görseller (Düellolar, Dünyalar, giriş serisi çerçevesi, eşleşme başlığı, indirme sayfası) Portekizce ve İspanyolcada İngilizce/Türkçe sürümüyle görünür.
+- Emülatör kontrolü: `smoke-test.yml` → `langs.sh` ana ekranları iki dilde çeker.

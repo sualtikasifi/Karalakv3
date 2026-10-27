@@ -1,6 +1,6 @@
 // Result screen (port of ResultScreen.kt / ResultParts.kt): painted head, stat cards, level card, versus card,
 // daily card, the words board with every drawing, claim buttons, and the drawing preview scene.
-import { S as appS } from "./i18n.js";
+import { S as appS, locale } from "./i18n.js";
 let S = null;
 const tr = (k, lang, ...a) => ((S && S[k] && S[k][lang]) || k).replace(/\{(\d)\}/g, (_, i) => a[+i]);
 export async function loadResultStrings() { if (!S) S = await (await fetch("result_strings.json")).json(); }
@@ -71,7 +71,7 @@ export function renderResult(c, d) {
     inner.append(el("div", "rs-daily", `<h4>${T("daily_challenge_result_title")}</h4><div class="pips">${pips}</div><div class="pl"><div><span>🔥 <b>${D.streak}</b></span><small>${T("daily_streak_label")}</small></div><div><span>⭐ <b>${T("daily_challenge_xp_earned", D.xp)}</b></span><small>${T("daily_reward_won")}</small></div></div><button class="rs-share"><svg viewBox="0 0 24 24"><path fill="#fff" d="M18 16.1c-.8 0-1.5.3-2 .8l-7.1-4.2a3 3 0 000-1.4L16 7.2A3 3 0 1015 5c0 .2 0 .4.1.7L8 9.9a3 3 0 100 4.2l7.1 4.2c-.1.2-.1.5-.1.7a3 3 0 103-2.9z"/></svg><span class="lt">${T("daily_challenge_share")}</span></button>`));
     // DailyChallengeShareUtil: spoiler-free, a ✅/❌ row and the app's own words, never the words of the day or the drawings
     inner.lastChild.querySelector(".rs-share").onclick = async () => {
-      const date = new Date().toLocaleDateString(lang === "tr" ? "tr-TR" : "en-GB", { day: "numeric", month: "long", year: "numeric" });
+      const date = new Date().toLocaleDateString(lang === "en" ? "en-GB" : locale(), { day: "numeric", month: "long", year: "numeric" });
       const txt = d.flags.map((f) => (f ? "✅" : "❌")).join("") + "\n" + appS("daily_challenge_share_text", date, d.flags.filter(Boolean).length, d.flags.length, D.streak, "https://karalak.com/indir");
       try { if (navigator.share) await navigator.share({ text: txt }); else await navigator.clipboard.writeText(txt); } catch {}
     };

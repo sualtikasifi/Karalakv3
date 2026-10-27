@@ -1,5 +1,5 @@
 import * as net from "./firebase.js";
-import { S } from "./i18n.js";
+import { S, fmtNum } from "./i18n.js";
 import { rankLevelHtml } from "./ranks.js";
 import { frameRing, frameList, frameById, penList } from "./store.js";
 
@@ -96,7 +96,7 @@ export async function renderLeague(c, refetch = true) {
   $("lg-timer").className = "txt lg-timer " + (tab === "friends" ? "star" : "");
   clearInterval(tick); if (tab === "global" && daysRemaining() <= 0) tick = setInterval(() => { if (c.current() !== "league") return clearInterval(tick); $("lg-timer").firstChild.textContent = timerText(); }, 1000);
   const list = $("lg-list"); list.replaceChildren();
-  if (net.isScoreRefused()) list.append(note("⚠️ " + (c.lang() === "tr" ? "Puanın şu an sunucuya yazılamıyor, bu yüzden diğer oyuncular seni bu tabloda göremeyebilir. Sayfayı yenile ya da biraz sonra tekrar dene." : "Your score can't be saved to the server right now, so other players may not see you in this table. Reload or try again later.")));
+  if (net.isScoreRefused()) list.append(note("⚠️ " + ({ tr: "Puanın şu an sunucuya yazılamıyor, bu yüzden diğer oyuncular seni bu tabloda göremeyebilir. Sayfayı yenile ya da biraz sonra tekrar dene.", en: "Your score can't be saved to the server right now, so other players may not see you in this table. Reload or try again later.", pt: "Sua pontuação não pode ser salva no servidor agora, então outros jogadores podem não te ver nesta tabela. Recarregue a página ou tente mais tarde.", es: "Tu puntuación no se puede guardar en el servidor ahora, así que otros jugadores quizá no te vean en esta tabla. Recarga la página o inténtalo más tarde." })[c.lang()]));
   if (tab === "friends") {
     if (refetch || !fr) { list.append(note("…")); try { fr = await net.friendsLeague(periodId()); } catch { fr = []; } if (c.current() !== "league" || tab !== "friends") return; list.replaceChildren(); }
     // my own row is always there, even before this browser has published a profile
@@ -143,10 +143,10 @@ function banner(lang) {
   const b = document.createElement("div"); b.className = "lg-banner";
   const icon = document.createElement("div"); icon.className = "lb-i";
   if (frame) icon.append(frameRing(frame, "lb-fr")); else icon.textContent = "🏆";
-  const label = pen ? pen[lang] || pen.tr : S("league_reward_kind_frame") + (key.startsWith("LEAGUE_CHAMPION_") ? " " + key.replace("LEAGUE_CHAMPION_", "").replace(/_/g, "-") : "");
+  const label = pen ? pen[lang] || pen.en : S("league_reward_kind_frame") + (key.startsWith("LEAGUE_CHAMPION_") ? " " + key.replace("LEAGUE_CHAMPION_", "").replace(/_/g, "-") : "");
   const mid = document.createElement("div"); mid.className = "lb-m"; mid.innerHTML = `<small>${S("league_reward_title")}</small><b>${label}</b>`;
   if (pen) { const cv = document.createElement("canvas"); cv.className = "lb-pen"; mid.append(cv); penPreview(cv, pen.colors); }
-  const r = document.createElement("div"); r.className = "lb-r"; r.innerHTML = `<span>${S("league_reward_bonus_gold", (10000).toLocaleString("tr-TR"))}</span><span>${S("league_reward_bonus_xp", (10000).toLocaleString("tr-TR"))}</span><small>${S("league_reward_top3")}</small>`;
+  const r = document.createElement("div"); r.className = "lb-r"; r.innerHTML = `<span>${S("league_reward_bonus_gold", fmtNum(10000))}</span><span>${S("league_reward_bonus_xp", fmtNum(10000))}</span><small>${S("league_reward_top3")}</small>`;
   b.append(icon, mid, r); return b;
 }
 function timerText() {
@@ -162,7 +162,7 @@ function monthlyCard(c) {
   const my = c.myPeriodXp(), others = table.list, top20 = others[19]?.periodXp, podium = others[2]?.periodXp;
   const rank = others.filter((e) => e.periodXp > my).length + 1, inTop = rank <= 20, inPodium = rank <= 3;
   const card = document.createElement("div"); card.className = "lg-card";
-  const toTop = Math.max(0, (top20 ?? 0) - my + 1), toPod = Math.max(0, (podium ?? 0) - my + 1), n = (v) => v.toLocaleString();
+  const toTop = Math.max(0, (top20 ?? 0) - my + 1), toPod = Math.max(0, (podium ?? 0) - my + 1), n = (v) => fmtNum(v);
   const pct = Math.min(100, Math.round(100 * my / Math.max(1, top20 ?? 1)));
   card.innerHTML = `<div class="lc-h"><div><small>${S("league_monthly_title")}</small><b>${S("league_xp_format", my)}</b></div><span>${inTop ? S("league_monthly_rank", rank) : S("league_monthly_unranked")}</span></div>${top20 != null && !inTop ? `<div class="lc-bar"><i style="width:${pct}%"></i></div>` : ""}<div class="lc-s">${inPodium ? S("league_monthly_in_podium") : inTop ? S("league_monthly_in_top", 20) + " · " + S("league_monthly_to_podium", n(toPod)) : S("league_monthly_to_top", 20, n(toTop))}</div>${!inTop && podium != null ? `<div class="lc-s">${S("league_monthly_to_podium", n(toPod))}</div>` : ""}`;
   return card;

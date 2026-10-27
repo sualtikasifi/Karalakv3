@@ -6,7 +6,8 @@ const SETUP_KEYS = { title: "menu_play", count: "select_word_count", mode: "sele
   all: "all_categories", allDiff: "all_difficulties", diff: "select_difficulty", easy: "difficulty_easy", medium: "difficulty_medium", hard: "difficulty_hard", start: "start_game" };
 export const SETUP_T = new Proxy({}, { get: () => Object.fromEntries(Object.entries(SETUP_KEYS).map(([k, key]) => [k, S(key)])) });
 // Matched on both languages' names, as in WordCountScreen.categoryEmoji.
-export const CAT_EMOJI = { Hayvanlar: "🐶", Animals: "🐶", Eşyalar: "🧺", Objects: "🧺", Meslekler: "👮", Professions: "👮", Spor: "⚽", Sports: "⚽", Doğa: "🌲", Nature: "🌲", Yiyecekler: "🍎", Food: "🍎", Taşıtlar: "🚗", Vehicles: "🚗", Duygular: "😊", Emotions: "😊", Giyim: "👕", Clothing: "👕" };
+export const CAT_EMOJI = { Hayvanlar: "🐶", Animals: "🐶", Animais: "🐶", Animales: "🐶", Eşyalar: "🧺", Objects: "🧺", Objetos: "🧺", Meslekler: "👮", Professions: "👮", Profissões: "👮", Profesiones: "👮", Spor: "⚽", Sports: "⚽", Esportes: "⚽", Deportes: "⚽",
+  Doğa: "🌲", Nature: "🌲", Natureza: "🌲", Naturaleza: "🌲", Yiyecekler: "🍎", Food: "🍎", Comidas: "🍎", Comida: "🍎", Taşıtlar: "🚗", Vehicles: "🚗", Veículos: "🚗", Vehículos: "🚗", Duygular: "😊", Emotions: "😊", Emoções: "😊", Emociones: "😊", Giyim: "👕", Clothing: "👕", Roupas: "👕", Ropa: "👕" };
 const COUNTS = [10, 20, 30, 40, 50];
 const sel = { count: 10, mode: "NORMAL", cats: new Set(), diffs: new Set() };
 let cats = [];
@@ -58,7 +59,7 @@ export async function renderOffline(c, keepScale = false) {
   if (!keepScale) offF = 1.16;
   const { $, lang } = c, x = SETUP_T[lang()], u = c.u();
   if (!cats.length || cats.lang !== lang()) {
-    try { const w = await (await fetch(lang() === "tr" ? "words_tr.json" : "words_en.json")).json(); cats = [...new Set(w.map((q) => q.category))].sort((a, b) => a.localeCompare(b, lang())); cats.lang = lang(); sel.cats = new Set(); } catch { cats = []; }
+    try { const w = await (await fetch(`words_${lang()}.json`)).json(); cats = [...new Set(w.map((q) => q.category))].sort((a, b) => a.localeCompare(b, lang())); cats.lang = lang(); sel.cats = new Set(); } catch { cats = []; }
   }
   $("os-title").textContent = x.title; $("os-go-t").textContent = x.start;
   const body = $("os-body"); body.replaceChildren();

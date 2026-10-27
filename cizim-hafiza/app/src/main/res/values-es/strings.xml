@@ -1,0 +1,1677 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Latin American Spanish (neutral, "tú"). Same keys and order as values/strings.xml; placeholders, \' escapes and the _one singular keys are kept. -->
+    <string name="default_nickname">Jugador</string>
+    <string name="share_room_invite">¡Juega conmigo en Karalak! 🎨</string>
+    <string name="share_room_code">Código de sala: %1$s</string>
+    <string name="share_room_installed">¿Ya tienes Karalak? %1$s</string>
+    <string name="share_room_not_installed">¿Todavía no lo tienes? %1$s</string>
+    <string name="share_invite_link">Toca para abrir (abre Play Store si no está instalado): %1$s</string>
+    <string name="share_friend_invite">¡Te invito a Karalak! 🎨</string>
+    <string name="share_friend_pitch">Primero dibuja, luego recuerda lo que dibujaste. Gánale al reloj, compite con tus amigos y sube en la liga semanal.</string>
+    <string name="share_friend_reward_hint">🎁 Ganamos los dos: entra con mi código y, cuando llegues al nivel 5, ¡cada uno recibe 500 de oro!</string>
+    <string name="share_friend_code">Mi código de amigo: %1$s</string>
+    <string name="share_friend_code_instructions">Si el enlace no se abre: instala Karalak e ingresa este código en \"Agregar amigo\", dentro de Amigos.</string>
+    <string name="referral_reward_gold_earned_format">Llegó tu recompensa por invitar: ¡ganaste %1$d de oro! 🎉</string>
+    <string name="referral_reward_earned_format">Llegó tu recompensa por invitar: ¡ganaste %1$d XP! 🎉</string>
+    <string name="app_name">Karalak</string>
+    <string name="app_tagline">¡Dibuja, Recuerda, Adivina!</string>
+
+    <!-- Main menu -->
+    <string name="menu_play">Jugar sin Conexión</string>
+    <string name="menu_play_online">Jugar con Amigos</string>
+    <string name="menu_achievements">Logros</string>
+    <string name="menu_friends">Amigos</string>
+    <string name="menu_settings">Ajustes</string>
+    <string name="menu_chests">Cofres</string>
+    <string name="menu_league">Liga</string>
+    <string name="mode_card_quickmatch_subtitle">Juega contra un rival grabado</string>
+    <string name="mode_card_playfriend_subtitle">Abre una sala, hasta 8 jugadores</string>
+    <string name="mode_card_offline_subtitle">Solo, 10–50 palabras</string>
+    <string name="menu_levels_subtitle">Avanza por el mapa del mundo</string>
+    <string name="menu_achievements_subtitle">101 insignias te esperan</string>
+    <string name="menu_friends_subtitle">Agrega a tus amigos</string>
+    <string name="menu_settings_subtitle">Cuenta y preferencias</string>
+    <string name="chests_remaining_hours_minutes">%1$dh %2$dmin</string>
+    <string name="chests_remaining_minutes">%1$dmin</string>
+    <string name="menu_bot_training">Entrenamiento de Bots</string>
+
+    <!-- Bot Eğitim (bot opponent training screen) -->
+    <string name="bot_training_progress_format">%1$d / %2$d palabras entrenadas</string>
+    <string name="bot_training_finished_message">¡Todas las palabras están entrenadas!</string>
+    <string name="bot_training_locked_title">El entrenamiento de bots está bloqueado</string>
+    <string name="bot_training_locked_hint">Esta sección no está abierta para todos. Ingresa el código de acceso para continuar.</string>
+    <string name="bot_training_code_label">Código de acceso</string>
+    <string name="bot_training_unlock">Desbloquear</string>
+    <string name="bot_training_code_wrong">Código incorrecto. Inténtalo de nuevo.</string>
+    <string name="menu_bot_names">Nombres de Bots</string>
+    <string name="bot_names_count_format">Nombres guardados: %1$d</string>
+    <string name="bot_names_input_label">Nuevo nombre de bot</string>
+    <string name="bot_names_add_button">Agregar</string>
+    <string name="bot_names_duplicate">Este nombre ya está en la lista.</string>
+    <string name="bot_names_empty">Aún no hay nombres. Agrega el primero arriba.</string>
+    <string name="bot_names_delete_content_description">Eliminar nombre</string>
+    <string name="bot_names_load_failed">No se pudieron cargar los nombres.</string>
+    <string name="bot_names_add_failed">No se pudo agregar, inténtalo de nuevo.</string>
+    <string name="bot_training_skip">Saltar</string>
+    <string name="bot_training_save_next">Guardar y Siguiente</string>
+
+    <!-- Player rank tiers (domain/model/PlayerRank.kt) -->
+    <string name="rank_karalamaci">Garabateador</string>
+    <string name="rank_cirak">Aprendiz</string>
+    <string name="rank_ressam">Pintor</string>
+    <string name="rank_usta_ressam">Maestro Pintor</string>
+    <string name="rank_sanatci">Artista</string>
+    <string name="rank_buyuk_usta">Gran Maestro</string>
+
+    <!-- Online (friend-vs-friend) -->
+    <string name="online_lobby_title">Compite con tus Amigos</string>
+    <string name="online_lobby_subtitle">Recordar lo que dibujaste puede ser más difícil que la física cuántica. ¡Bienvenido a las batallas de garabatos más divertidas!</string>
+    <string name="online_create_room">Crear Sala</string>
+    <string name="online_create_room_action">Crear Sala</string>
+    <string name="online_waiting_room_title">Sala de Espera</string>
+    <string name="online_join_room">Unirse con Código</string>
+    <string name="online_join_room_action">Unirse</string>
+    <string name="online_nickname_label">Tu apodo</string>
+    <string name="online_room_code_label">Código de sala (6 dígitos)</string>
+    <string name="online_room_code_hint">Envía este código a tu amigo</string>
+    <string name="online_invite_friend">Invitar</string>
+    <string name="online_waiting_for_friend">Esperando a tus amigos…</string>
+    <string name="online_room_occupancy">%1$d/%2$d jugadores</string>
+    <string name="online_ready">Listo</string>
+    <string name="online_ready_cancel">No estoy listo</string>
+    <string name="online_start_game">Iniciar Juego</string>
+    <string name="online_everyone_ready">¡Todos listos!</string>
+    <string name="online_waiting_for_host_sub">Esperando a que el anfitrión empiece…</string>
+    <string name="online_you_label">%1$s (Tú)</string>
+    <string name="online_player_left_lobby">Salió de la sala</string>
+    <string name="online_chat_row_empty">Aún no hay mensajes — toca para enviar</string>
+    <string name="online_chat_history_title">Chat</string>
+    <string name="online_you_finished">¡Terminaste! %1$d Puntos</string>
+    <string name="online_waiting_for_opponent_result">Esperando a que los demás jugadores terminen…</string>
+    <string name="online_result_placement">¡Quedaste en el puesto %1$d!</string>
+    <string name="online_whose_drawings">¿Dibujos de quién?</string>
+    <string name="online_correct_of_total">%1$d/%2$d aciertos</string>
+    <string name="online_rematch_ready_count">%1$d de %2$d jugadores listos</string>
+    <string name="online_rematch_waiting">Esperando…</string>
+    <string name="online_game_starting">¡El juego va a empezar!</string>
+    <string name="online_friends_entry">Amigos</string>
+
+    <!-- Joining mid-match (lobby hold), kick/ban -->
+    <string name="online_players_section_title">Jugadores</string>
+    <string name="online_pending_next_round_message">Entrarás cuando termine la ronda actual</string>
+    <string name="online_round_time_remaining">Tiempo restante estimado: %1$s</string>
+    <string name="online_pending_badge">(esperando)</string>
+    <string name="online_kick_player">Expulsar de la sala</string>
+    <string name="online_kick_confirm_title">Expulsar jugador</string>
+    <string name="online_kick_confirm_message">%1$s será expulsado y no podrá volver durante 30 minutos. ¿Seguro?</string>
+    <string name="online_kick_confirm_confirm">Expulsar</string>
+    <string name="online_friend_add_title">¿Agregar amigo?</string>
+    <string name="online_friend_add_message">¿Enviar una solicitud de amistad a %1$s?</string>
+    <string name="online_friend_add_confirm">Enviar</string>
+    <string name="online_kick_confirm_cancel">Cancelar</string>
+    <string name="online_kicked_users_section_title">Jugadores expulsados</string>
+    <string name="online_kicked_user_remaining_format">%1$s — %2$d min</string>
+    <string name="online_unban_player">Perdonar</string>
+    <string name="online_rematch_blocked_message">Alguien se unió — volviendo a la sala…</string>
+
+    <!-- Preset chat phrases (presentation/online/ReactionBar.kt) — sent as
+         short text bubbles, the emoji row above stays as an extra option. -->
+    <string name="chat_selam">¡Hola! 👋</string>
+    <string name="chat_hazir_misin">¿Listo?</string>
+    <string name="chat_bol_sans">¡Buena suerte! 🍀</string>
+    <string name="chat_iyi_eglenceler">¡Diviértete!</string>
+    <string name="chat_hos_geldin">¡Bienvenido!</string>
+    <string name="chat_harikasin">¡Increíble! 🎉</string>
+    <string name="chat_super_cizim">¡Qué buen dibujo!</string>
+    <string name="chat_bildin">¡Le atinaste! 🙌</string>
+    <string name="chat_aynen_oyle">¡Exacto!</string>
+    <string name="chat_vay_canina">¡Wow!</string>
+    <string name="chat_cok_iyiydi">¡Estuvo muy bien!</string>
+    <string name="chat_tam_isabet">¡En el blanco! 🎯</string>
+    <string name="chat_ne_ciziyorsun">¿Qué estás dibujando? 🤔</string>
+    <string name="chat_az_kaldi">¡Casi!</string>
+    <string name="chat_elinden_geliyor">¡Tú puedes!</string>
+    <string name="chat_detaylara_bak_sen">Mira esos detalles 👀</string>
+    <string name="chat_bilecegim">¡Lo voy a adivinar! 💪</string>
+    <string name="chat_zor_bir_tane">Esta está difícil 😅</string>
+    <string name="chat_aklima_geldi">¡Ya me acordé!</string>
+    <string name="chat_ipucu_ver">¡Dame una pista! 😄</string>
+    <string name="chat_ne_bu_oyle">¿Qué es eso? 😂</string>
+    <string name="chat_anlamadim_hic">Ni idea 🙃</string>
+    <string name="chat_sanat_bu">¡Eso es arte! 🎨</string>
+    <string name="chat_bir_daha_dene">Inténtalo otra vez 😆</string>
+    <string name="chat_yakaladim_seni">¡Te atrapé! 😎</string>
+    <string name="chat_bu_turu_kazanacagim">¡Esta ronda es mía!</string>
+    <string name="chat_rovans_istiyorum">¡Revancha!</string>
+    <string name="chat_kafa_kafaya">Cabeza a cabeza</string>
+    <string name="chat_gorusuruz">¡Nos vemos! 👋</string>
+    <string name="chat_tekrar_oynayalim_mi">¿Jugamos otra vez?</string>
+    <string name="reaction_chat_button">Chat</string>
+    <string name="reaction_chat_sheet_title">Di algo</string>
+    <string name="reaction_emoji_picker_content_description">Más emojis</string>
+    <string name="reaction_emoji_sheet_title">Elige un emoji</string>
+
+    <!-- Error messages — see util/UiText.kt. -->
+    <string name="error_no_connection">Revisa tu conexión e inténtalo de nuevo</string>
+    <string name="error_room_not_found">No hay ninguna sala con ese código</string>
+    <string name="error_room_full">Esta sala está llena</string>
+    <string name="error_room_already_started">Esa ronda acaba de terminar, inténtalo en un momento</string>
+    <string name="error_kicked_from_room">Te expulsaron de esta sala. Inténtalo de nuevo en %1$d minutos</string>
+    <string name="error_kicked_from_room_one">Te expulsaron de esta sala. Inténtalo de nuevo en %1$d minuto</string>
+    <string name="error_room_create_failed">No se pudo crear la sala, inténtalo de nuevo</string>
+    <string name="error_game_start_failed">No se pudo iniciar el juego, inténtalo de nuevo</string>
+    <string name="error_friend_code_failed">No se pudo crear un código de amigo, inténtalo de nuevo</string>
+    <string name="error_friend_list_failed">No se pudo cargar tu lista de amigos</string>
+    <string name="error_words_load_failed">No se pudieron cargar las palabras, inténtalo de nuevo</string>
+    <string name="error_trained_words_unavailable">No se pudieron obtener las palabras entrenadas del servidor. Revisa tu conexión e inténtalo de nuevo</string>
+    <string name="retry_action">Reintentar</string>
+    <string name="error_save_failed">No se pudo guardar, inténtalo de nuevo</string>
+    <string name="error_drawing_too_complex">Este dibujo es demasiado complejo — simplifícalo un poco e inténtalo de nuevo</string>
+    <string name="error_report_send_failed">No se pudo enviar, inténtalo de nuevo</string>
+    <string name="error_room_code_length">Ingresa el código de 6 dígitos</string>
+    <string name="error_friend_add_failed">No se pudo agregar a ese amigo</string>
+    <string name="error_invite_blocked">Este jugador te bloqueó, así que no puedes invitarlo</string>
+    <string name="error_invite_cooldown">Podrás invitar a este jugador de nuevo en %1$d minutos</string>
+    <string name="error_invite_cooldown_one">Podrás invitar a este jugador de nuevo en %1$d minuto</string>
+    <string name="error_invite_failed_room_ready">La invitación no se envió, pero tu sala está lista — comparte el código</string>
+    <string name="error_invite_send_failed">No se pudo enviar la invitación</string>
+    <string name="error_friend_remove_failed">No se pudo eliminar a ese amigo</string>
+    <string name="error_block_failed">No se pudo bloquear a ese jugador</string>
+    <string name="error_unblock_failed">No se pudo desbloquear a ese jugador</string>
+    <string name="info_invite_sent">Invitación enviada, esperando respuesta…</string>
+
+    <string name="friends_my_code_label">Tu código</string>
+    <string name="friends_invite_reward_hint">Invita a un amigo — cuando llegue al nivel 5, ¡los dos ganan 500 de oro!</string>
+    <string name="friends_share_code">Compartir Mi Código</string>
+    <string name="friends_add_friend_label">Agregar amigo</string>
+    <string name="friends_add_friend_hint">Código de 6 dígitos</string>
+    <string name="friends_add_button">Agregar</string>
+    <string name="friends_requests_title">Solicitudes de amistad</string>
+    <string name="friends_request_accept">Aceptar</string>
+    <string name="friends_request_decline">Rechazar</string>
+    <string name="info_friend_request_sent">Solicitud de amistad enviada a %1$s</string>
+    <string name="info_friend_added">Ahora %1$s es tu amigo</string>
+    <string name="info_friend_already">%1$s ya es tu amigo</string>
+    <string name="friends_list_title">Tus Amigos</string>
+    <string name="friends_empty">Aún no tienes amigos. ¡Comparte tu código o ingresa uno!</string>
+    <string name="friends_invite_action">Invitar</string>
+    <string name="friends_incoming_invite">¡%1$s te invitó!</string>
+    <string name="friends_accept_invite">Unirse</string>
+    <string name="friends_decline_invite">Rechazar</string>
+    <string name="friends_row_more_actions">Más acciones</string>
+    <string name="friends_remove_action">Eliminar</string>
+    <string name="friends_block_action">Bloquear</string>
+    <string name="friends_unblock_action">Desbloquear</string>
+    <string name="friends_blocked_section_title">Bloqueados</string>
+    <string name="friends_remove_confirm_title">Eliminar amigo</string>
+    <string name="friends_remove_confirm_message">¿Seguro que quieres eliminar a %1$s de tus amigos?</string>
+    <string name="friends_remove_confirm_confirm">Eliminar</string>
+    <string name="friends_remove_confirm_cancel">Cancelar</string>
+    <string name="friends_block_confirm_title">Bloquear usuario</string>
+    <string name="friends_block_confirm_message">Si bloqueas a %1$s, ya no podrá invitarte. Seguirá en tu lista de amigos — puedes eliminarlo aparte o desbloquearlo cuando quieras.</string>
+    <string name="friends_block_confirm_confirm">Bloquear</string>
+    <string name="friends_block_confirm_cancel">Cancelar</string>
+
+    <!-- Word count / category selection -->
+    <string name="select_word_count">¿Con cuántas palabras quieres jugar?</string>
+    <string name="select_category">Elige una categoría (opcional)</string>
+    <string name="start_game">Empezar</string>
+    <string name="all_categories">Todas</string>
+    <string name="select_difficulty">Elige la dificultad (opcional)</string>
+    <string name="all_difficulties">Todas</string>
+    <string name="difficulty_easy">Fácil</string>
+    <string name="difficulty_medium">Media</string>
+    <string name="difficulty_hard">Difícil</string>
+    <string name="select_mode">Elige el modo</string>
+    <string name="mode_normal">Normal</string>
+    <string name="mode_relaxed">Sin tiempo</string>
+    <string name="exit_game_title">¿Salir del juego?</string>
+    <string name="exit_game_message">Perderás tu progreso actual.</string>
+    <string name="exit_game_confirm">Salir</string>
+    <string name="exit_game_cancel">Continuar</string>
+    <string name="daily_exit_title">¿Dejar el desafío?</string>
+    <string name="daily_exit_message_short">Si sales ahora, el intento de hoy termina y las palabras restantes cuentan como falladas.</string>
+    <string name="exit_online_message">Sales de la sala y pierdes el progreso de esta ronda.</string>
+    <string name="daily_exit_message">Si sales ahora, el desafío de hoy termina: tus aciertos hasta ahora cuentan, las palabras restantes cuentan como falladas y no podrás volver a jugarlo hoy. ¿Salir de todos modos?</string>
+
+    <!-- Drawing screen -->
+    <string name="clear_canvas">Borrar todo</string>
+    <string name="next_word">Siguiente Palabra</string>
+    <string name="tool_pen">Lápiz</string>
+    <string name="tool_eraser">Borrador</string>
+    <string name="tool_undo">Deshacer último trazo</string>
+
+    <!-- Break screen -->
+    <string name="get_ready">Prepárate para la fase de adivinar</string>
+
+    <!-- Guess screen -->
+    <string name="what_did_you_draw">¿Qué era esto?</string>
+    <string name="submit_guess">Enviar</string>
+    <string name="skip_guess">Saltar</string>
+    <string name="correct_answer_was">Respuesta correcta: %1$s</string>
+    <string name="watch_ad_for_hint">📺 Pista</string>
+    <string name="watch_ad_for_extra_time">📺 +10s</string>
+    <string name="loading_hint">Cargando…</string>
+    <string name="hint_first_letter">Primera letra: %1$s</string>
+
+    <!-- Result screen -->
+    <string name="game_over">¡Fin del Juego!</string>
+    <string name="total_score">%1$d Puntos</string>
+    <string name="points_unit">pts</string>
+    <string name="correct_count">Aciertos: %1$d</string>
+    <string name="wrong_count">Fallos: %1$d</string>
+    <string name="fastest_correct">Más rápido: %1$.1f s</string>
+    <string name="play_again">Jugar de Nuevo</string>
+    <string name="main_menu">Menú Principal</string>
+    <string name="your_drawings">Tus Dibujos</string>
+    <string name="close">Cerrar</string>
+    <string name="share_drawing">Compartir</string>
+    <string name="share_drawing_choose">¿Cómo quieres compartirlo?</string>
+    <string name="share_as_photo">Compartir como foto</string>
+    <string name="share_as_video">Compartir como video</string>
+    <string name="share_video_preparing">Preparando tu video…</string>
+    <string name="share_video_failed">No se pudo crear el video. Intenta compartirlo como foto.</string>
+    <string name="share_all_drawings">Compartir todos</string>
+
+    <!-- Avatar frame picker -->
+    <string name="avatar_frame_change_cd">Cambiar marco</string>
+    <string name="avatar_frame_picker_title">Elige tu Marco</string>
+    <string name="avatar_frame_locked_level">Nivel %1$d</string>
+    <string name="cosmetic_locked_league">Premio de liga</string>
+
+    <!-- Achievements -->
+    <string name="achievement_first_game_title">Primer Paso</string>
+    <string name="achievement_first_game_desc">Terminaste tu primera partida</string>
+    <string name="achievement_games_10_title">En Calor</string>
+    <string name="achievement_games_10_desc">Terminaste 10 partidas</string>
+    <string name="achievement_games_50_title">Habitual</string>
+    <string name="achievement_games_50_desc">Terminaste 50 partidas</string>
+    <string name="achievement_games_200_title">Leyenda</string>
+    <string name="achievement_games_200_desc">Terminaste 200 partidas</string>
+    <string name="achievement_words_10_title">10 Palabras</string>
+    <string name="achievement_words_10_desc">Dibujaste 10 palabras en total</string>
+    <string name="achievement_words_100_title">100 Palabras</string>
+    <string name="achievement_words_100_desc">Dibujaste 100 palabras en total</string>
+    <string name="achievement_words_500_title">500 Palabras</string>
+    <string name="achievement_words_500_desc">Dibujaste 500 palabras en total</string>
+    <string name="achievement_words_1000_title">1000 Palabras</string>
+    <string name="achievement_words_1000_desc">Dibujaste 1000 palabras en total</string>
+    <string name="achievement_words_2500_title">2500 Palabras</string>
+    <string name="achievement_words_2500_desc">Dibujaste 2500 palabras en total</string>
+    <string name="achievement_perfect_round_title">Ronda Perfecta</string>
+    <string name="achievement_perfect_round_desc">Adivinaste todas las palabras en una partida</string>
+    <string name="achievement_perfect_10_title">Ojo Agudo</string>
+    <string name="achievement_perfect_10_desc">Lograste 10 rondas perfectas</string>
+    <string name="achievement_perfect_50_title">Campeón de la Memoria</string>
+    <string name="achievement_perfect_50_desc">Lograste 50 rondas perfectas</string>
+    <string name="achievement_streak_3_title">Racha de 3 Días</string>
+    <string name="achievement_streak_3_desc">Jugaste 3 días seguidos</string>
+    <string name="achievement_streak_7_title">Racha de 7 Días</string>
+    <string name="achievement_streak_7_desc">Jugaste 7 días seguidos</string>
+    <string name="achievement_streak_30_title">Racha de 30 Días</string>
+    <string name="achievement_streak_30_desc">Jugaste 30 días seguidos</string>
+    <string name="achievement_streak_100_title">Racha de 100 Días</string>
+    <string name="achievement_streak_100_desc">Jugaste 100 días seguidos</string>
+    <string name="achievement_score_250_title">Estrella en Ascenso</string>
+    <string name="achievement_score_250_desc">Llegaste a 250 puntos en total</string>
+    <string name="achievement_score_1000_title">Maestro de Puntos</string>
+    <string name="achievement_score_1000_desc">Llegaste a 1000 puntos en total</string>
+    <string name="achievement_score_5000_title">Cazador de Puntos</string>
+    <string name="achievement_score_5000_desc">Llegaste a 5000 puntos en total</string>
+    <string name="achievement_score_15000_title">Leyenda de Puntos</string>
+    <string name="achievement_score_15000_desc">Llegaste a 15000 puntos en total</string>
+    <string name="achievement_online_win_1_title">Primera Victoria</string>
+    <string name="achievement_online_win_1_desc">Terminaste una partida en línea en primer lugar</string>
+    <string name="achievement_online_win_10_title">Imbatible</string>
+    <string name="achievement_online_win_10_desc">Ganaste 10 partidas en línea</string>
+    <string name="achievement_online_win_50_title">Rey de la Arena</string>
+    <string name="achievement_online_win_50_desc">Ganaste 50 partidas en línea</string>
+
+    <!-- 28 new achievements — the full catalog in Achievement.kt is sorted easiest-to-hardest -->
+    <string name="achievement_score_50_title">Primeros Puntos</string>
+    <string name="achievement_score_50_desc">Llegaste a 50 puntos en total</string>
+    <string name="achievement_streak_1_title">Presente Hoy</string>
+    <string name="achievement_streak_1_desc">Jugaste hoy, tu racha empezó</string>
+    <string name="achievement_words_50_title">50 Palabras</string>
+    <string name="achievement_words_50_desc">Dibujaste 50 palabras en total</string>
+    <string name="achievement_games_3_title">Calentamiento</string>
+    <string name="achievement_games_3_desc">Terminaste 3 partidas</string>
+    <string name="achievement_online_win_3_title">Triple de la Suerte</string>
+    <string name="achievement_online_win_3_desc">Ganaste 3 partidas en línea</string>
+    <string name="achievement_streak_14_title">Racha de 2 Semanas</string>
+    <string name="achievement_streak_14_desc">Jugaste 14 días seguidos</string>
+    <string name="achievement_games_25_title">Jugador Constante</string>
+    <string name="achievement_games_25_desc">Terminaste 25 partidas</string>
+    <string name="achievement_perfect_5_title">Vista Clara</string>
+    <string name="achievement_perfect_5_desc">Lograste 5 rondas perfectas</string>
+    <string name="achievement_score_2500_title">Coleccionista de Puntos</string>
+    <string name="achievement_score_2500_desc">Llegaste a 2500 puntos en total</string>
+    <string name="achievement_streak_60_title">Maratón de 2 Meses</string>
+    <string name="achievement_streak_60_desc">Jugaste 60 días seguidos</string>
+    <string name="achievement_games_100_title">Club de los 100</string>
+    <string name="achievement_games_100_desc">Terminaste 100 partidas</string>
+    <string name="achievement_online_win_25_title">Escalador de la Arena</string>
+    <string name="achievement_online_win_25_desc">Ganaste 25 partidas en línea</string>
+    <string name="achievement_words_5000_title">5000 Palabras</string>
+    <string name="achievement_words_5000_desc">Dibujaste 5000 palabras en total</string>
+    <string name="achievement_streak_200_title">Racha de 200 Días</string>
+    <string name="achievement_streak_200_desc">Jugaste 200 días seguidos</string>
+    <string name="achievement_score_30000_title">Bóveda de Puntos</string>
+    <string name="achievement_score_30000_desc">Llegaste a 30000 puntos en total</string>
+    <string name="achievement_games_500_title">Disciplina de Hierro</string>
+    <string name="achievement_games_500_desc">Terminaste 500 partidas</string>
+    <string name="achievement_words_10000_title">10.000 Palabras</string>
+    <string name="achievement_words_10000_desc">Dibujaste 10000 palabras en total</string>
+    <string name="achievement_online_win_100_title">Leyenda de la Arena</string>
+    <string name="achievement_online_win_100_desc">Ganaste 100 partidas en línea</string>
+    <string name="achievement_streak_365_title">Un Año Completo</string>
+    <string name="achievement_streak_365_desc">Jugaste 365 días seguidos</string>
+    <string name="achievement_perfect_100_title">Memoria Fotográfica</string>
+    <string name="achievement_perfect_100_desc">Lograste 100 rondas perfectas</string>
+    <string name="achievement_score_50000_title">Emperador de Puntos</string>
+    <string name="achievement_score_50000_desc">Llegaste a 50000 puntos en total</string>
+    <string name="achievement_games_1000_title">Viaje de Mil Partidas</string>
+    <string name="achievement_games_1000_desc">Terminaste 1000 partidas</string>
+    <string name="achievement_online_win_250_title">Campeón Invicto</string>
+    <string name="achievement_online_win_250_desc">Ganaste 250 partidas en línea</string>
+    <string name="achievement_words_25000_title">25.000 Palabras</string>
+    <string name="achievement_words_25000_desc">Dibujaste 25000 palabras en total</string>
+    <string name="achievement_score_100000_title">Deidad de los Puntos</string>
+    <string name="achievement_score_100000_desc">Llegaste a 100000 puntos en total</string>
+    <string name="achievement_perfect_250_title">Infalible</string>
+    <string name="achievement_perfect_250_desc">Lograste 250 rondas perfectas</string>
+    <string name="achievement_games_2000_title">Leyenda Viviente</string>
+    <string name="achievement_games_2000_desc">Terminaste 2000 partidas</string>
+    <string name="achievement_words_50000_title">50.000 Palabras</string>
+    <string name="achievement_words_50000_desc">Dibujaste 50000 palabras en total</string>
+
+    <!-- Tutorial -->
+    <string name="tutorial_intro_title">¡Bienvenido a Karalak!</string>
+    <string name="tutorial_intro_body">Hagamos una prueba rápida. Te daré 3 palabras para dibujar. Luego te mostraré tus dibujos y tú recuerdas qué eran. ¡Eso es todo!</string>
+    <string name="tutorial_intro_button">Vamos</string>
+    <string name="tutorial_generic_button">Entendido</string>
+    <string name="tutorial_timed_title">¡Ahora hay tiempo! ⏱️</string>
+    <string name="tutorial_timed_body">En un juego real, cada palabra tiene un límite de tiempo. Termina tu dibujo antes de que se acabe la cuenta regresiva arriba a la derecha. Tranquilo — ¡no tiene que ser una obra maestra!</string>
+    <string name="tutorial_last_word_title">Última palabra</string>
+    <string name="tutorial_last_word_body">Ya le agarraste la mano. Esta es la última, luego toca recordar.</string>
+    <string name="tutorial_guess_title">Hora de recordar</string>
+    <string name="tutorial_guess_body">Ahora te mostraré tus dibujos uno por uno. Escribe qué era cada uno. En un juego real adivinarás tus propios dibujos de la misma forma.</string>
+    <string name="tutorial_joker_first_title">Comodín Primera Letra</string>
+    <string name="tutorial_joker_first_body">¿No sabes qué es el dibujo? Toca este botón y aparece la primera letra de la palabra. El reloj está en pausa hasta que toques. ¡Pruébalo!</string>
+    <string name="tutorial_joker_count_title">Comodín Número de Letras</string>
+    <string name="tutorial_joker_count_body">¿Cuántas letras tiene la palabra? Toca este botón y aparece una raya por cada letra. El reloj vuelve a estar en pausa. ¡Tu turno!</string>
+    <string name="tutorial_joker_free_title">Los comodines son tuyos 🎁</string>
+    <string name="tutorial_joker_free_body">En esta última palabra puedes usar el comodín que quieras, o ninguno. ¡Al terminar el tutorial te quedas con 3 de cada comodín!</string>
+    <string name="tutorial_finale_title">¡Listo! 🎉</string>
+    <string name="tutorial_finale_body">¿Ves? Era así de simple. Ya sabes dibujar y recordar. Ahora va en serio: compite con tus amigos, supera niveles, colecciona insignias. De regalo, se agregaron 3 de cada comodín a tu cuenta. Tu lápiz está listo, ¡buena suerte!</string>
+    <string name="tutorial_finale_button">Empezar a jugar</string>
+    <string name="tutorial_skip">Saltar tutorial</string>
+    <string name="tutorial_word_1">libro</string>
+    <string name="tutorial_word_2">bandera</string>
+    <string name="tutorial_word_3">manzana</string>
+    <string name="settings_replay_tutorial">Repetir Tutorial</string>
+
+    <!-- Report bug -->
+    <string name="report_bug_title">Reportar un Problema</string>
+    <string name="report_bug_hint">¿Tienes una sugerencia o encontraste un problema? Descríbelo brevemente — la información de tu dispositivo se envía con él.</string>
+    <string name="report_bug_intro_title">¿Tienes algún problema?</string>
+    <string name="report_bug_intro_body">Cuéntanos un error que encontraste, una idea o un problema. Revisaremos tu solicitud lo antes posible.</string>
+    <string name="report_bug_category_label">Tipo de Reporte</string>
+    <string name="report_bug_category_suggestion">Sugerencia</string>
+    <string name="report_bug_category_complaint">Queja</string>
+    <string name="report_bug_description_label">Tu mensaje</string>
+    <string name="report_bug_placeholder">Escribe tu idea o el problema que encontraste…</string>
+    <string name="report_bug_char_count_format">%1$d / %2$d</string>
+    <string name="report_bug_submit">Enviar</string>
+    <string name="report_bug_sending">Enviando…</string>
+    <string name="report_bug_success">¡Gracias, recibimos tu reporte!</string>
+    <string name="report_bug_history_title">Mis Reportes Anteriores</string>
+    <string name="report_bug_not_seen_yet">Aún no visto</string>
+    <string name="report_bug_seen">Visto</string>
+    <string name="report_bug_delete">Eliminar reporte</string>
+    <string name="report_bug_delete_all">Eliminar Todo</string>
+    <string name="report_bug_delete_confirm_title">¿Eliminar este reporte?</string>
+    <string name="report_bug_delete_confirm_message">Este reporte se eliminará para siempre. No se puede deshacer.</string>
+    <string name="report_bug_delete_all_confirm_message">Todo tu historial de reportes se eliminará para siempre. No se puede deshacer.</string>
+    <string name="report_bug_delete_confirm_action">Eliminar</string>
+    <string name="report_bug_delete_confirm_cancel">Cancelar</string>
+
+    <!-- Accessibility: shared content descriptions for icon-only controls -->
+    <string name="cd_back">Atrás</string>
+
+    <!-- Settings -->
+    <string name="settings_sound">Todos los Sonidos</string>
+    <string name="settings_vibration">Vibración</string>
+    <string name="settings_notifications">Notificaciones</string>
+    <string name="settings_battery_ok_title">Las notificaciones están listas</string>
+    <string name="settings_battery_ok_body">Karalak puede recordarte a tiempo. Activa o desactiva las notificaciones arriba cuando quieras.</string>
+    <string name="settings_sound_section">Sonido y Vibración</string>
+    <string name="notification_channel_name">Recordatorios del juego</string>
+    <string name="notification_channel_description">Recordatorios enviados como máximo una vez al día para que no te olvides de Karalak.</string>
+    <string name="notification_channel_invite_name">Invitaciones de amigos</string>
+    <string name="notification_channel_invite_description">Notificaciones que llegan cuando un amigo te invita a una partida en línea.</string>
+    <string name="friend_invite_notification_title">¡%1$s te invitó!</string>
+    <string name="friend_invite_notification_body">Toca para jugar juntos en Karalak.</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_language_turkish">Türkçe</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_spanish">Español</string>
+
+    <!-- Daily engagement notification pools (util/NotificationMessages.kt).
+         Weekly arrays are ordered Monday..Sunday, 2 variants each (14 items). -->
+    <string-array name="notif_weekly_titles">
+        <item>¡Empieza bien la semana!</item>
+        <item>Pausa del lunes</item>
+        <item>Pausa del martes</item>
+        <item>¿Cuántas vas a acertar hoy?</item>
+        <item>Momento de mitad de semana</item>
+        <item>Diversión del miércoles</item>
+        <item>Ya casi es fin de semana</item>
+        <item>Pausa del jueves</item>
+        <item>Ambiente de viernes</item>
+        <item>Termina bien la semana</item>
+        <item>Diversión de fin de semana</item>
+        <item>Sin prisa hoy</item>
+        <item>Pausa del domingo</item>
+        <item>Prepárate para la semana</item>
+    </string-array>
+    <string-array name="notif_weekly_bodies">
+        <item>¿Qué tal si dibujas unas palabras?</item>
+        <item>El mejor remedio para el lunes: ¡unos minutos de Karalak!</item>
+        <item>Una pausa rápida — ¡a dibujar unas palabras!</item>
+        <item>Hora de poner a prueba tu memoria.</item>
+        <item>Una pausa para dibujar cae bien ahora.</item>
+        <item>¿Aburrido? ¿Qué tal unas rondas de Karalak?</item>
+        <item>¿Qué tal subir tu puntuación?</item>
+        <item>Dibuja unas palabras, pon a prueba tu memoria.</item>
+        <item>Empieza con Karalak — dibuja unas palabras y alegra tu día.</item>
+        <item>¡Hora de una última ronda!</item>
+        <item>¿Qué tal si dibujas unas palabras?</item>
+        <item>Tómalo con calma, juega unas rondas.</item>
+        <item>Agrega una pausa de Karalak a tu día tranquilo.</item>
+        <item>Calienta: dibuja unas palabras y empieza con todo.</item>
+    </string-array>
+
+    <string-array name="notif_streak_titles">
+        <item>🔥 ¡Tu racha sigue!</item>
+        <item>Mantén viva tu racha</item>
+        <item>Tu racha te espera</item>
+        <item>Ya casi</item>
+        <item>Un último recordatorio</item>
+        <item>Tu racha ya lleva días</item>
+        <item>No te pierdas el día de hoy</item>
+        <item>No dejes que se apague el fuego</item>
+    </string-array>
+    <string-array name="notif_streak_bodies">
+        <item>Juega hoy también para que no se rompa.</item>
+        <item>Si no juegas hoy, tu racha se reinicia — ¿tienes unos minutos?</item>
+        <item>¡No la dejes a medias!</item>
+        <item>¡Termina la ronda de hoy y mantén tu racha!</item>
+        <item>¡Dibuja una ronda para mantener viva tu racha!</item>
+        <item>¡Sigue hoy también, no pares!</item>
+        <item>¡Tu racha está en riesgo!</item>
+        <item>Juega una ronda hoy también y mantén la racha.</item>
+    </string-array>
+
+    <string-array name="notif_inactivity_titles">
+        <item>¡Te extrañamos!</item>
+        <item>Las palabras te esperan</item>
+        <item>¿Qué tal si vuelves?</item>
+        <item>Tu mano debe extrañar dibujar</item>
+        <item>Tienes algo que recuperar</item>
+        <item>Karalak te está esperando</item>
+        <item>¿Nos ponemos al día?</item>
+        <item>¡Hora de volver!</item>
+    </string-array>
+    <string-array name="notif_inactivity_bodies">
+        <item>Estuviste fuera unos días, juguemos una ronda.</item>
+        <item>Hace tiempo que no te vemos.</item>
+        <item>Palabras nuevas te esperan.</item>
+        <item>¡Vuelve!</item>
+        <item>Estuviste fuera unos días, hora de recuperarlo.</item>
+        <item>¿Tienes unos minutos?</item>
+        <item>Ha pasado un tiempo, dibujemos una ronda.</item>
+        <item>Palabras nuevas y nuevas puntuaciones te esperan.</item>
+    </string-array>
+
+    <!-- %1$s = next rank name, %2$d = points remaining. Not every item uses both. -->
+    <string-array name="notif_rank_titles">
+        <item>¡Estás muy cerca de un nuevo rango!</item>
+        <item>Solo faltan %2$d puntos</item>
+        <item>Tu nuevo rango está a la vuelta</item>
+        <item>Si juegas hoy…</item>
+        <item>El rango %1$s te espera</item>
+        <item>¡Ya casi!</item>
+        <item>Estás a un paso de subir de rango</item>
+        <item>Tu próximo rango: %1$s</item>
+    </string-array>
+    <string-array name="notif_rank_bodies">
+        <item>¡Juega unas partidas más y conviértete en %1$s!</item>
+        <item>¡Estás muy cerca de llegar al rango %1$s!</item>
+        <item>%1$s. ¡Dibuja unas palabras más!</item>
+        <item>¡Quedarás al borde del rango %1$s!</item>
+        <item>¡Solo falta un último paso!</item>
+        <item>Solo %2$d puntos más y entrarás a un nuevo rango.</item>
+        <item>¡Juega hoy y conviértete en %1$s!</item>
+        <item>¡Da ese último paso!</item>
+    </string-array>
+
+    <!-- Statistics screen -->
+    <string name="stats_rank_progress">%1$,d XP · faltan %3$,d XP para %2$s</string>
+    <string name="stats_rank_maxed">%1$,d XP · ¡Estás en el rango más alto!</string>
+
+    <!-- Level map ("Bölümler") -->
+    <string name="menu_levels">Niveles</string>
+    <!-- Difficulty tiers now, not word categories — every level in every
+         world mixes all categories together (see World.kt/LevelCatalog).
+         Named as stages of an artist's own growth instead of places. -->
+    <string name="world_name_1">Primeros Trazos</string>
+    <string name="world_name_2">Jardín de Garabatos</string>
+    <string name="world_name_3">Taller de Colores</string>
+    <string name="world_name_4">Reino de la Imaginación</string>
+    <string name="world_name_5">Aprendiz del Maestro</string>
+    <string name="world_name_6">Cumbre Creativa</string>
+    <string name="world_name_7">Laberinto del Arte</string>
+    <string name="world_name_8">Ruta del Genio</string>
+    <string name="world_name_9">Estudio de la Leyenda</string>
+    <!-- Stage names inside a world. The world supplies the identity; these
+         name the shape of the climb, which is the same in every world. -->
+    <string name="level_stage_1">Calentamiento</string>
+    <string name="level_stage_2">Primera Chispa</string>
+    <string name="level_stage_3">Fluidez</string>
+    <string name="level_stage_4">Aguas Mixtas</string>
+    <string name="level_stage_5">Equilibrio</string>
+    <string name="level_stage_6">Enfoque</string>
+    <string name="level_stage_7">Trazo Firme</string>
+    <string name="level_stage_8">La Prueba</string>
+    <string name="level_stage_9">Rumbo a la Cima</string>
+    <string name="level_stage_10">Prueba del Maestro</string>
+    <string name="level_locked">Bloqueado</string>
+    <string name="world_locked_message">Termina el mundo anterior</string>
+    <string name="world_progress_format">%1$d/10 completados</string>
+    <string name="next_level">Siguiente Nivel</string>
+    <string name="stars_content_description">%1$d estrellas</string>
+
+    <!-- Word review ("Kelime İncele") -->
+    <string name="menu_word_review">Revisar Palabras</string>
+    <string name="word_review_keep">Mantener</string>
+    <string name="word_review_delete">Eliminar</string>
+    <string name="word_review_remaining_format">Quedan %1$d palabras</string>
+    <string name="word_review_progress_format">%1$d mantenidas ✓ · %2$d eliminadas ✕</string>
+    <string name="word_review_finished_title">¡Todo revisado!</string>
+    <string name="word_review_finished_message">Las palabras nuevas aparecerán aquí cuando se agreguen.</string>
+    <string name="word_review_export">Exportar Decisiones</string>
+
+    <!-- Difficulty review ("Zorluk Belirle") -->
+    <string name="menu_difficulty_review">Definir Dificultad</string>
+    <string name="difficulty_review_easy">Fácil</string>
+    <string name="difficulty_review_medium">Media</string>
+    <string name="difficulty_review_hard">Difícil</string>
+    <string name="difficulty_review_remaining_format">Quedan %1$d palabras</string>
+    <string name="difficulty_review_progress_format">%1$d fáciles · %2$d medias · %3$d difíciles</string>
+    <string name="difficulty_review_finished_title">¡Todo clasificado!</string>
+    <string name="difficulty_review_finished_message">Las palabras nuevas aparecerán aquí cuando se agreguen.</string>
+    <string name="difficulty_review_export">Exportar Decisiones</string>
+    <!-- Daily challenge -->
+    <string name="daily_challenge_title">Desafío Diario</string>
+    <string name="daily_challenge_ready">%1$d palabras · Hoy todos dibujan las mismas palabras</string>
+    <string name="daily_challenge_done">Hecho hoy · %1$d/%2$d aciertos</string>
+    <string name="daily_challenge_streak">Racha de %1$d días</string>
+    <string name="daily_challenge_result_title">Desafío Diario</string>
+    <string name="daily_challenge_xp_earned">+%1$d XP</string>
+    <string name="daily_challenge_share">Compartir resultado</string>
+    <string name="daily_challenge_share_text">Karalak — Desafío Diario\n%1$s\n%2$d/%3$d · 🔥racha de %4$d días\n%5$s</string>
+    <string name="achievement_xp_reward">+%1$d XP</string>
+    <string name="achievement_gold_reward">+%1$d de oro</string>
+    <string name="achievement_unlock_hint_label">Cómo desbloquearlo</string>
+    <string name="achievement_condition_label">Cómo lo desbloqueaste</string>
+    <string name="achievement_unlocked_label">✅ ¡Desbloqueado!</string>
+    <string name="achievement_locked_label">🔒 Aún no desbloqueado</string>
+    <string name="achievement_claimed_label">🎁 Recompensa reclamada</string>
+    <string name="achievement_claim_button">Reclamar recompensa</string>
+    <string name="achievement_progress_format">%1$d/%2$d</string>
+    <string name="xp_gained_format">+%1$d XP</string>
+    <string name="xp_live_bonus_format">+%1$d XP de bonificación</string>
+    <string name="daily_challenge_resets_in">Se reinicia en: %1$s</string>
+    <string name="daily_challenge_streak_multiplier_increased">🎉 ¡Tu multiplicador de racha subió! El XP de hoy se multiplicó x%1$d</string>
+    <string name="daily_challenge_multiplier_badge">%1$dx XP</string>
+    <string-array name="notif_daily_streak_titles">
+        <item>🔥 ¡Tu racha de %1$d días está en riesgo!</item>
+        <item>¡No pierdas tu racha! 🔥</item>
+        <item>%1$d días seguidos hasta ahora</item>
+    </string-array>
+    <string-array name="notif_daily_streak_bodies">
+        <item>Aún no hiciste el desafío de hoy. Solo toma unos minutos.</item>
+        <item>Las 5 palabras de hoy te esperan para mantener viva tu racha de %1$d días.</item>
+        <item>Termina hoy también y mantén la racha.</item>
+    </string-array>
+    <string-array name="notif_lost_xp_titles">
+        <item>⏳ Se te escapan %1$d XP</item>
+        <item>Tu racha se apaga — quedan %1$d XP por salvar</item>
+        <item>No desperdicies %1$d XP</item>
+    </string-array>
+    <string-array name="notif_lost_xp_bodies">
+        <item>No has jugado en un par de días. Una ronda mantiene viva tu racha — y este XP.</item>
+        <item>Basta una partida rápida para conservar tu racha antes de que se reinicie.</item>
+        <item>Juega una ronda hoy y conserva lo que has construido hasta ahora.</item>
+    </string-array>
+    <string-array name="notif_daily_titles">
+        <item>🎯 El desafío de hoy está listo</item>
+        <item>Las 5 palabras de hoy te esperan</item>
+        <item>Hoy todos dibujan las mismas palabras</item>
+    </string-array>
+    <string-array name="notif_daily_bodies">
+        <item>Las mismas palabras que todos, solo unos minutos.</item>
+        <item>Sofía ya jugó hoy. ¿Puedes ganarle?</item>
+        <item>Empieza una racha y hazla crecer cada día.</item>
+    </string-array>
+
+    <!-- Cosmetic pen skins (domain/model/PenSkin.kt). -->
+    <string name="pen_picker_title">Elige tu lápiz</string>
+    <string name="pen_change_cd">Cambiar lápiz</string>
+    <string name="pen_classic">Clásico</string>
+    <string name="pen_charcoal">Gris</string>
+    <string name="pen_ocean">Océano</string>
+    <string name="pen_sunset">Atardecer</string>
+    <string name="pen_forest">Bosque</string>
+    <string name="pen_berry">Mora</string>
+    <string name="pen_gold">Oro</string>
+    <string name="pen_neon">Neón</string>
+    <string name="pen_lava">Lava</string>
+    <string name="pen_galaxy">Galaxia</string>
+    <string name="pen_rainbow">Arcoíris</string>
+    <string name="pen_league_aurora">Aurora</string>
+    <string name="pen_league_ember">Brasa</string>
+    <string name="pen_league_frost">Escarcha</string>
+    <string name="pen_league_midnight">Medianoche</string>
+    <string name="pen_league_citrus">Cítrico</string>
+    <string name="pen_league_rose">Alba Rosa</string>
+
+    <!-- Streak protection (C3) -->
+    <string name="streak_rescue_title">Tu racha de %1$d días está a punto de romperse</string>
+    <string name="streak_rescue_message">Mira un anuncio corto y tu racha sigue. Después de tres días se reinicia.</string>
+    <string name="streak_rescue_action">Ver anuncio y mantener mi racha</string>
+    <string name="streak_rescue_dismiss">Ahora no</string>
+    <string name="streak_rescue_done">¡Tu racha sigue viva! 🔥</string>
+
+    <!-- Weekly friends league (C1) -->
+    <string name="league_title">Liga Mensual</string>
+    <string name="league_resets_in">Se reinicia en %1$d días</string>
+    <string name="league_resets_in_one">Se reinicia en %1$d día</string>
+    <string name="league_resets_today">Se reinicia hoy</string>
+    <string name="league_resets_countdown">Se reinicia en %1$s</string>
+    <string name="league_empty">Nadie ha jugado este mes todavía. ¡Sé el primero!</string>
+    <string name="league_tab_friends">Amigos</string>
+    <string name="league_tab_global">Global</string>
+    <string name="league_global_empty">La tabla global aún no está lista. Vuelve en un rato.</string>
+    <string name="league_global_failed">No se pudo cargar la tabla global.</string>
+    <string name="league_global_refresh_note">La clasificación global se actualiza cada hora.</string>
+    <string name="league_reward_title">Premio de este mes</string>
+    <string name="league_reward_bonus_gold">+%1$s de Oro</string>
+    <string name="league_reward_bonus_xp">+%1$s XP</string>
+    <string name="account_section_username">Nombre de usuario</string>
+    <string name="account_section_account">Cuenta y respaldo</string>
+    <string name="account_google_linked">Vinculada con Google</string>
+    <string name="account_guest_badge">Cuenta de invitado</string>
+    <string name="account_stat_xp">XP total</string>
+    <string name="account_stat_games">Partidas jugadas</string>
+    <string name="account_stat_streak">Mejor racha (días)</string>
+    <string name="account_xp_progress">%1$d / %2$d XP</string>
+    <string name="account_xp_to_next">Faltan %1$,d XP para el siguiente nivel</string>
+    <string name="account_xp_max">Estás en el nivel más alto</string>
+    <string name="account_guest_hint">Vincula tu cuenta de Google para respaldar tu progreso y seguir donde lo dejaste en otro teléfono.</string>
+    <string name="account_danger_title">Zona de peligro</string>
+    <string name="league_friends_total_caption">Amigos · XP total</string>
+    <string name="league_reward_top3">para los 3 primeros</string>
+    <string name="league_monthly_title">Tu XP este mes</string>
+    <string name="league_monthly_rank">Puesto #%1$d</string>
+    <string name="league_monthly_unranked">Aún sin clasificar</string>
+    <string name="league_monthly_to_top">Te faltan %2$s XP para entrar al top %1$d</string>
+    <string name="league_monthly_in_top">Estás en el top %1$d 🎉</string>
+    <string name="league_monthly_to_podium">Te faltan %1$s XP para un premio (top 3)</string>
+    <string name="league_monthly_in_podium">¡Estás en puesto de premio! 🏆</string>
+    <string name="league_reward_explainer_pen">¡Termina el mes entre los 3 primeros de la clasificación Global para ganar el Lápiz %1$s!</string>
+    <string name="league_reward_explainer_frame">¡Termina el mes entre los 3 primeros de la clasificación Global para ganar el Marco de Campeón %1$s!</string>
+    <string name="league_reward_kind_frame">Marco especial</string>
+    <string name="league_prize_won_title">🏆 ¡Terminaste el mes pasado en el puesto %1$d!</string>
+    <string name="league_prize_won_body">Se agregó tu premio: %1$s. Elígelo en el menú principal.</string>
+    <string name="league_xp_format">%1$,d XP</string>
+    <string name="league_rank_format">#%1$d</string>
+
+    <!-- Cloud backup / account linking (C11) -->
+    <string name="account_title">Cuenta</string>
+    <string name="account_not_configured_message">El inicio de sesión aún no está configurado en esta app. Vuelve más tarde.</string>
+    <string name="account_signed_out_title">Estás jugando como invitado</string>
+    <string name="account_signed_out_message">Inicia sesión con Google para guardar tu nivel, logros y rachas en tu cuenta. Cambia de teléfono y sigue exactamente donde lo dejaste.</string>
+    <string name="account_sign_in_google">Iniciar sesión con Google</string>
+    <string name="rating_prompt_title">¿Nos calificas? ⭐</string>
+    <string name="rating_prompt_body">¡Ya jugaste 3 rondas! Apóyanos con 5 estrellas en Play Store y gana 500 XP.</string>
+    <string name="rating_prompt_rate_button">Calificar y ganar 500 XP</string>
+    <string name="rating_prompt_later_button">Después</string>
+    <string name="sign_in_prompt_title">¡No pierdas tu progreso! 🎉</string>
+    <string name="sign_in_prompt_body">Inicia sesión con Google para que tu puntuación e insignias se queden contigo, aunque cambies de teléfono.</string>
+    <string name="sign_in_prompt_later_button">Después</string>
+    <string name="account_signed_in_restored">Bienvenido de nuevo — tu progreso se restauró</string>
+    <string name="account_signed_out_done">Cerraste sesión, tu progreso está guardado</string>
+    <string name="account_signed_in_title">Sesión iniciada</string>
+    <string name="account_level_format">Nivel %1$d</string>
+    <string name="account_sync_on">Tu progreso se guarda automáticamente</string>
+    <string name="account_sync_pending">Tu progreso está en este teléfono</string>
+    <string name="account_last_backup_format">Último guardado: %1$s</string>
+    <string name="account_backup_today">hoy a las %1$s</string>
+    <string name="account_backup_yesterday">ayer a las %1$s</string>
+    <string name="account_never_backed_up">Aún no guardado — se guardará después de tu primera partida</string>
+    <string name="account_signed_in_progress_kept">Sesión iniciada — el progreso de este dispositivo pasó a tu cuenta 🎉</string>
+    <string name="account_sign_in_failed">No se pudo iniciar sesión. Inténtalo de nuevo.</string>
+    <string name="account_sign_in_failed_code">Error al iniciar sesión (código %1$s). Envía este código al desarrollador.</string>
+    <string name="account_sign_out">Cerrar Sesión</string>
+    <string name="account_sign_out_title">¿Cerrar sesión?</string>
+    <string name="account_sign_out_message">Tu progreso se guarda primero en tu cuenta y luego se borra de este dispositivo. Inicia sesión con la misma cuenta y todo vuelve.</string>
+    <string name="account_sign_out_confirm">Cerrar Sesión</string>
+    <string name="account_sign_out_cancel">Cancelar</string>
+    <string name="account_sign_out_backup_failed">No se pudo guardar tu progreso en este dispositivo, así que no se cerró la sesión. No se borró nada — inténtalo de nuevo.</string>
+    <string name="account_sign_out_local_only">Cerraste sesión. Tu progreso se guardó en este dispositivo pero no llegó a la nube — se subirá cuando vuelvas a tener conexión.</string>
+    <string name="account_sign_out_failed">No se pudo cerrar sesión. Inténtalo de nuevo.</string>
+    <string name="account_sign_out_wipe_failed">Cerraste sesión, pero los datos de este dispositivo no se borraron por completo. Cierra la app, ábrela de nuevo e inténtalo otra vez.</string>
+
+    <!-- 2v2 team mode (C5) -->
+    <string name="online_room_mode_title">Modo de Sala</string>
+    <string name="online_room_mode_free_for_all">Todos contra todos</string>
+    <string name="online_room_mode_team">Equipos 2v2</string>
+    <string name="online_team_a">Equipo A</string>
+    <string name="online_team_b">Equipo B</string>
+    <string name="online_switch_team">Cambiar de equipo</string>
+    <string name="online_team_result_won">¡Tu equipo ganó! 🎉</string>
+    <string name="online_team_result_lost">Tu equipo perdió</string>
+    <string name="online_team_result_tied">¡Empate!</string>
+
+    <!-- Asynchronous duels (C2) -->
+    <string name="duel_challenge_action">Desafiar</string>
+    <string name="duel_rematch_action">Devolver Desafío</string>
+    <string name="duel_challenge_sent">¡Desafío enviado a %1$s!</string>
+    <string name="duel_create_title">Desafío</string>
+    <string name="duel_create_opponent">Duelo con %1$s</string>
+    <string name="duel_create_explainer">Juega una ronda normal ahora — cuando termines de dibujar, se enviará automáticamente a %1$s como desafío. La próxima vez que abra la app, dibujará y adivinará las mismas palabras, y se compararán los resultados.</string>
+    <string name="duel_create_start">Empezar Ronda</string>
+    <string name="duel_list_title">Duelos</string>
+    <string name="duel_list_incoming_title">Te Esperan</string>
+    <string name="duel_list_incoming_empty">No hay desafíos pendientes ahora.</string>
+    <string name="duel_list_sent_title">Enviados por Ti</string>
+    <string name="duel_list_requests_title">Solicitudes Recibidas</string>
+    <string name="duel_list_requests_empty">No hay solicitudes pendientes ahora.</string>
+    <string name="duel_list_friend_request">%1$s quiere ser tu amigo</string>
+    <string name="duel_list_recent_title">Desafíos Recientes</string>
+    <string name="duel_list_recent_empty">Aún no hay desafíos terminados — ¡juega o envía uno!</string>
+    <string name="duel_list_score_line">%1$d – %2$d</string>
+    <string name="duel_list_new_result">Nuevo</string>
+    <string name="duel_list_sent_empty">Aún no has desafiado a nadie.</string>
+    <string name="duel_list_word_count">%1$d palabras</string>
+    <string name="duel_list_status_waiting">Esperando…</string>
+    <string name="duel_list_status_won">¡Ganaste! 🎉</string>
+    <string name="duel_list_status_lost">Perdiste</string>
+    <string name="duel_list_status_tied">Empate</string>
+    <string name="duel_list_delete">Eliminar</string>
+    <string name="duel_result_score_format">%1$s: %2$d puntos</string>
+    <string name="duel_play_title">Dibujos de %1$s</string>
+    <string name="duel_play_title_generic">Duelo</string>
+    <string name="duel_play_complete_title">¡Tus respuestas se enviaron!</string>
+    <string name="duel_play_done">Listo</string>
+    <string name="duel_not_found">Este duelo ya no existe.</string>
+    <!-- Achievement tiers added when the catalog grew to 101. -->
+    <string name="achievement_xp_250_title">250 XP</string>
+    <string name="achievement_xp_250_desc">Ganaste 250 XP en total</string>
+    <string name="achievement_score_100_title">100 Puntos</string>
+    <string name="achievement_score_100_desc">Llegaste a 100 puntos en total</string>
+    <string name="achievement_words_25_title">25 Palabras</string>
+    <string name="achievement_words_25_desc">Dibujaste 25 palabras en total</string>
+    <string name="achievement_xp_500_title">500 XP</string>
+    <string name="achievement_xp_500_desc">Ganaste 500 XP en total</string>
+    <string name="achievement_games_5_title">5 Partidas</string>
+    <string name="achievement_games_5_desc">Terminaste 5 partidas</string>
+    <string name="achievement_xp_1000_title">1.000 XP</string>
+    <string name="achievement_xp_1000_desc">Ganaste 1.000 XP en total</string>
+    <string name="achievement_perfect_3_title">3 Rondas Perfectas</string>
+    <string name="achievement_perfect_3_desc">Adivinaste todas las palabras en 3 partidas</string>
+    <string name="achievement_score_500_title">500 Puntos</string>
+    <string name="achievement_score_500_desc">Llegaste a 500 puntos en total</string>
+    <string name="achievement_games_15_title">15 Partidas</string>
+    <string name="achievement_games_15_desc">Terminaste 15 partidas</string>
+    <string name="achievement_streak_2_title">Racha de 2 Días</string>
+    <string name="achievement_streak_2_desc">Jugaste 2 días seguidos</string>
+    <string name="achievement_xp_2500_title">2.500 XP</string>
+    <string name="achievement_xp_2500_desc">Ganaste 2.500 XP en total</string>
+    <string name="achievement_online_win_5_title">5 Victorias</string>
+    <string name="achievement_online_win_5_desc">Terminaste 5 partidas en línea en primer lugar</string>
+    <string name="achievement_streak_5_title">Racha de 5 Días</string>
+    <string name="achievement_streak_5_desc">Jugaste 5 días seguidos</string>
+    <string name="achievement_words_250_title">250 Palabras</string>
+    <string name="achievement_words_250_desc">Dibujaste 250 palabras en total</string>
+    <string name="achievement_xp_5000_title">5.000 XP</string>
+    <string name="achievement_xp_5000_desc">Ganaste 5.000 XP en total</string>
+    <string name="achievement_games_75_title">75 Partidas</string>
+    <string name="achievement_games_75_desc">Terminaste 75 partidas</string>
+    <string name="achievement_streak_10_title">Racha de 10 Días</string>
+    <string name="achievement_streak_10_desc">Jugaste 10 días seguidos</string>
+    <string name="achievement_xp_10000_title">10.000 XP</string>
+    <string name="achievement_xp_10000_desc">Ganaste 10.000 XP en total</string>
+    <string name="achievement_online_win_15_title">15 Victorias</string>
+    <string name="achievement_online_win_15_desc">Terminaste 15 partidas en línea en primer lugar</string>
+    <string name="achievement_perfect_25_title">25 Rondas Perfectas</string>
+    <string name="achievement_perfect_25_desc">Adivinaste todas las palabras en 25 partidas</string>
+    <string name="achievement_words_750_title">750 Palabras</string>
+    <string name="achievement_words_750_desc">Dibujaste 750 palabras en total</string>
+    <string name="achievement_games_150_title">150 Partidas</string>
+    <string name="achievement_games_150_desc">Terminaste 150 partidas</string>
+    <string name="achievement_streak_21_title">Racha de 21 Días</string>
+    <string name="achievement_streak_21_desc">Jugaste 21 días seguidos</string>
+    <string name="achievement_xp_25000_title">25.000 XP</string>
+    <string name="achievement_xp_25000_desc">Ganaste 25.000 XP en total</string>
+    <string name="achievement_words_1500_title">1.500 Palabras</string>
+    <string name="achievement_words_1500_desc">Dibujaste 1.500 palabras en total</string>
+    <string name="achievement_score_10000_title">10.000 Puntos</string>
+    <string name="achievement_score_10000_desc">Llegaste a 10.000 puntos en total</string>
+    <string name="achievement_games_300_title">300 Partidas</string>
+    <string name="achievement_games_300_desc">Terminaste 300 partidas</string>
+    <string name="achievement_perfect_75_title">75 Rondas Perfectas</string>
+    <string name="achievement_perfect_75_desc">Adivinaste todas las palabras en 75 partidas</string>
+    <string name="achievement_streak_45_title">Racha de 45 Días</string>
+    <string name="achievement_streak_45_desc">Jugaste 45 días seguidos</string>
+    <string name="achievement_xp_50000_title">50.000 XP</string>
+    <string name="achievement_xp_50000_desc">Ganaste 50.000 XP en total</string>
+    <string name="achievement_online_win_75_title">75 Victorias</string>
+    <string name="achievement_online_win_75_desc">Terminaste 75 partidas en línea en primer lugar</string>
+    <string name="achievement_score_20000_title">20.000 Puntos</string>
+    <string name="achievement_score_20000_desc">Llegaste a 20.000 puntos en total</string>
+    <string name="achievement_perfect_150_title">150 Rondas Perfectas</string>
+    <string name="achievement_perfect_150_desc">Adivinaste todas las palabras en 150 partidas</string>
+    <string name="achievement_games_750_title">750 Partidas</string>
+    <string name="achievement_games_750_desc">Terminaste 750 partidas</string>
+    <string name="achievement_xp_100000_title">100.000 XP</string>
+    <string name="achievement_xp_100000_desc">Ganaste 100.000 XP en total</string>
+    <string name="achievement_online_win_150_title">150 Victorias</string>
+    <string name="achievement_online_win_150_desc">Terminaste 150 partidas en línea en primer lugar</string>
+    <string name="achievement_streak_150_title">Racha de 150 Días</string>
+    <string name="achievement_streak_150_desc">Jugaste 150 días seguidos</string>
+    <string name="achievement_words_7500_title">7.500 Palabras</string>
+    <string name="achievement_words_7500_desc">Dibujaste 7.500 palabras en total</string>
+    <string name="achievement_games_1500_title">1.500 Partidas</string>
+    <string name="achievement_games_1500_desc">Terminaste 1.500 partidas</string>
+    <string name="achievement_perfect_500_title">500 Rondas Perfectas</string>
+    <string name="achievement_perfect_500_desc">Adivinaste todas las palabras en 500 partidas</string>
+    <string name="achievement_xp_250000_title">250.000 XP</string>
+    <string name="achievement_xp_250000_desc">Ganaste 250.000 XP en total</string>
+    <string name="achievement_score_75000_title">75.000 Puntos</string>
+    <string name="achievement_score_75000_desc">Llegaste a 75.000 puntos en total</string>
+    <string name="achievement_words_15000_title">15.000 Palabras</string>
+    <string name="achievement_words_15000_desc">Dibujaste 15.000 palabras en total</string>
+    <string name="achievement_online_win_500_title">500 Victorias</string>
+    <string name="achievement_online_win_500_desc">Terminaste 500 partidas en línea en primer lugar</string>
+    <string name="achievement_perfect_1000_title">1.000 Rondas Perfectas</string>
+    <string name="achievement_perfect_1000_desc">Adivinaste todas las palabras en 1.000 partidas</string>
+    <string name="achievement_xp_500000_title">500.000 XP</string>
+    <string name="achievement_xp_500000_desc">Ganaste 500.000 XP en total</string>
+    <string name="achievement_games_5000_title">5.000 Partidas</string>
+    <string name="achievement_games_5000_desc">Terminaste 5.000 partidas</string>
+    <string name="achievement_score_250000_title">250.000 Puntos</string>
+    <string name="achievement_score_250000_desc">Llegaste a 250.000 puntos en total</string>
+    <string name="achievement_xp_1000000_title">1.000.000 XP</string>
+    <string name="achievement_xp_1000000_desc">Ganaste 1.000.000 XP en total</string>
+    <string name="achievement_words_100000_title">100.000 Palabras</string>
+    <string name="achievement_words_100000_desc">Dibujaste 100.000 palabras en total</string>
+    <string name="achievements_progress_count_format">%1$d / %2$d</string>
+    <string name="achievements_progress_caption">logros desbloqueados</string>
+    <string name="achievements_progress_percent">%1$d%%</string>
+    <string name="settings_version_format">Versión %1$s (%2$d)</string>
+    <string name="account_no_google_account">No hay ninguna cuenta de Google en este dispositivo. Agrega una en los ajustes del teléfono e inténtalo de nuevo.</string>
+    <string name="error_blocked_list_failed">No se pudo cargar tu lista de bloqueados. Revisa tu conexión.</string>
+    <string name="error_room_listener_failed">Se perdió la conexión con la sala. Reconectando…</string>
+    <!-- Account deletion (in-app route required by Play policy) -->
+    <string name="account_delete_action">Eliminar mi cuenta y mis datos</string>
+    <string name="account_feature_consent">Aparecer en los videos de Karalak</string>
+    <string name="account_feature_consent_title">¿Aparecer en los videos de Karalak?</string>
+    <string name="account_feature_consent_message">Tus dibujos, tu nombre de usuario (ahora: %1$s) y tu nivel pueden aparecer en los videos de Karalak en TikTok, Instagram y YouTube. Tu correo y tu foto nunca se muestran. Puedes desactivarlo aquí cuando quieras; los videos nuevos ya no te incluirán.</string>
+    <string name="account_feature_consent_confirm">Sí</string>
+    <string name="account_feature_consent_cancel">Ahora no</string>
+    <string name="account_delete_title">¿Eliminar tu cuenta?</string>
+    <string name="account_delete_message">Tu nivel, XP, logros, progreso de niveles, lista de amigos y respaldo en la nube se eliminarán para siempre. No se puede deshacer.</string>
+    <string name="account_delete_confirm">Sí, eliminar</string>
+    <string name="account_delete_cancel">Cancelar</string>
+    <string name="account_delete_continue">Continuar</string>
+    <string name="account_delete_final_title">¡Esto no se puede deshacer!</string>
+    <string name="account_delete_final_message">Tu cuenta y todos tus datos se eliminarán para siempre, sin forma de recuperarlos. ¿Estás realmente seguro?</string>
+    <string name="account_delete_final_keep">Cancelar, conservarla</string>
+    <string name="account_delete_final_confirm">Eliminar para siempre</string>
+    <string name="account_delete_done">Tu cuenta y tus datos se eliminaron.</string>
+    <string name="account_delete_failed">No se pudo eliminar la cuenta. Revisa tu conexión e inténtalo de nuevo.</string>
+    <string name="account_delete_reauth_needed">Por seguridad, primero debes iniciar sesión de nuevo. Cierra sesión, vuelve a conectar tu cuenta de Google e intenta eliminarla.</string>
+    <string name="settings_rate_app">Calificar la App</string>
+    <string name="exit_confirm_title">¿Salir del juego?</string>
+    <string name="exit_confirm_message">Estás a punto de cerrar Karalak.</string>
+    <string name="exit_confirm_yes">Salir</string>
+    <string name="exit_confirm_no">Quedarme</string>
+    <string name="result_double_xp">🎬 Mira un anuncio y duplica tus %1$d XP</string>
+    <string name="result_xp_doubled">🏆 ¡Ganaste %1$d XP!</string>
+    <string name="result_points_are_xp">Hiciste %1$d puntos — se suman a tu XP</string>
+    <string name="result_xp_doubled_note">¡Tu XP se duplicó con la recompensa del anuncio!</string>
+    <string name="result_xp_bonus_applied">🎉 Multiplicador de bonificación</string>
+    <string name="result_level_label">Nivel %1$d</string>
+    <string name="result_level_up">🎉 ¡SUBISTE DE NIVEL!</string>
+    <string name="result_view_drawings">Ver Dibujos</string>
+    <string name="result_view_drawings_sub">Los %1$d dibujos en una página</string>
+    <string name="result_x2_button">🎬 x2 XP</string>
+    <string name="result_claim">Reclamar</string>
+    <string name="result_x2_button_amount">🎬 x2 · %1$d XP</string>
+    <string name="result_claim_amount">Reclamar · %1$d XP</string>
+    <string name="result_xp_won">¡Ganaste %1$d XP!</string>
+    <string name="result_continue">Continuar</string>
+    <string name="result_xp_daily">Tu recompensa del desafío diario</string>
+    <string name="result_xp_formula_mult">%1$d puntos × multiplicador de bonificación %2$d</string>
+    <string name="result_xp_formula_plain">%1$d puntos = %1$d XP</string>
+    <string name="result_xp_formula_extra">%1$d puntos + bonificación de nivel</string>
+    <string name="result_bonus_quick">🔥 Primera Partida Rápida del día: XP ×2</string>
+    <string name="result_bonus_event">🎉 Evento de XP: ×%1$d</string>
+    <string name="result_gold_achievement">🏆 Recompensa de logro +%1$d de oro</string>
+    <string name="result_gold_level">⭐ Estrellas del nivel +%1$d de oro</string>
+    <string name="result_gold_daily">📅 Recompensa diaria +%1$d de oro</string>
+    <string name="result_your_drawings">Tus dibujos</string>
+    <string name="result_stat_correct">Aciertos</string>
+    <string name="result_stat_wrong">Fallos</string>
+    <string name="result_stat_achievement">Recompensa de logro</string>
+    <string name="result_stat_level_gold">Estrellas del nivel</string>
+    <string name="result_stat_daily_gold">Recompensa diaria</string>
+    <string name="result_stat_stars">Tus estrellas</string>
+    <string name="result_stat_fastest">Respuesta más rápida</string>
+    <string name="result_stat_fastest_value">%1$.1f s</string>
+    <string name="result_stat_quick">Primera Partida Rápida hoy</string>
+    <string name="result_stat_event">Evento de XP</string>
+    <string name="result_stat_multiplier">XP ×%1$d</string>
+    <string name="result_stat_bonus">XP +%%%1$d</string>
+    <string name="result_gold_amount">+%1$d de oro</string>
+    <string name="result_words_title">Tus palabras</string>
+    <string name="result_x2_amount">x2 · %1$d XP</string>
+    <string name="result_watch_ad">Ver anuncio</string>
+    <string name="daily_streak_label">Racha diaria</string>
+    <string name="daily_reward_won">¡Recompensa obtenida!</string>
+    <!-- Home level card: level progress and rank progress read separately -->
+    <string name="level_xp_to_next_level">Faltan %1$d XP para el siguiente nivel</string>
+    <string name="level_max_reached">¡Estás en el nivel más alto!</string>
+    <string name="level_next_rank_pill">%1$s %2$s · faltan %3$d XP</string>
+    <string name="level_top_rank_pill">Rango máximo</string>
+    <string name="level_total_xp">%1$d XP</string>
+    <string name="level_stage_label">%1$d. %2$s</string>
+    <string name="online_team_needs_players">El 2v2 necesita 4 jugadores.</string>
+    <string name="online_team_unbalanced">Los equipos deben estar parejos: 2 jugadores cada uno. Toca la insignia de equipo en tu tarjeta para cambiar de lado.</string>
+    <string name="online_team_yours">Equipo %1$s</string>
+    <string name="online_team_mate">Compañero: %1$s</string>
+    <string name="online_team_mate_missing">Aún sin compañero</string>
+    <string name="online_invite_friend_slot">Invitar a un amigo</string>
+    <string name="error_lobby_invite_failed">No se pudo enviar la invitación. Inténtalo de nuevo.</string>
+    <string name="online_invite_sheet_title">Invita a un amigo a esta sala</string>
+    <string name="online_invite_sheet_empty">Aún no tienes amigos. También puedes compartir el código de sala de arriba.</string>
+    <string name="online_invite_send">Invitar</string>
+    <string name="online_invite_sent_short">Invitación enviada ✓</string>
+    <!-- Rank ladder sheet -->
+    <string name="rank_ladder_title">Rangos</string>
+    <string name="rank_ladder_subtitle">Cada rango se desbloquea en un nivel. Ahora eres %1$s.</string>
+    <string name="rank_ladder_unlock_level">Nivel %1$d</string>
+    <string name="rank_ladder_current">Tu rango actual</string>
+    <string name="rank_ladder_remaining">Faltan %1$d XP</string>
+    <string name="rank_ladder_reached">Alcanzado</string>
+    <string name="settings_music">Música</string>
+    <string name="cd_music_on">Apagar la música</string>
+    <string name="cd_music_off">Encender la música</string>
+    <string name="ad_unavailable">No hay anuncios disponibles ahora — inténtalo en un momento</string>
+
+    <!-- Quick match -->
+    <string name="quick_match_title">Partida Rápida</string>
+    <string name="quick_match_searching">Buscando un rival…</string>
+    <string name="quick_match_opponent_found">¡Tu rival está listo!</string>
+    <string name="quick_match_explainer">Los dos dibujarán las mismas %1$d palabras. Los puntajes se comparan al final.</string>
+    <string name="quick_match_tip_words">Los dos dibujarán las mismas %1$d palabras</string>
+    <string name="quick_match_tip_scoring">Los puntajes se comparan al terminar la partida</string>
+    <string name="quick_match_tip_fun">¡Relájate y disfruta el juego!</string>
+    <string name="quick_match_found_tagline">¡Genial!\nRival encontrado.</string>
+    <string name="quick_match_starting_in">La partida empieza en %1$d segundos</string>
+    <string name="quick_match_starting_in_one">La partida empieza en %1$d segundo</string>
+    <string name="quick_match_good_luck">¡Buena suerte!</string>
+    <string name="quick_match_sticky_good_drawings">Buenos\ndibujos 🙂</string>
+    <string name="quick_match_sticky_friendships">Buenos dibujos,\nbuenas amistades 🙂</string>
+    <string name="quick_match_another_opponent">Nuevo Rival</string>
+    <string name="quick_match_search_again">Buscar de Nuevo</string>
+    <string name="quick_match_empty_title">El grupo aún está vacío</string>
+    <string name="quick_match_empty_body">Todavía no se han jugado rondas en tu nivel. Juega algunas y vuelve después — cada ronda jugada agrega un rival al grupo.</string>
+    <string name="quick_match_failed_title">No se pudo encontrar un rival</string>
+    <string name="quick_match_failed_body">Sin conexión. Revisa tu internet e inténtalo de nuevo.</string>
+    <string name="quick_match_won">¡Ganaste!</string>
+    <string name="quick_match_lost">Perdiste</string>
+    <string name="quick_match_drew">Empate</string>
+    <string name="quick_match_you">Tú</string>
+    <string name="quick_match_you_named">%1$s (Tú)</string>
+    <string name="quick_match_versus">VS</string>
+    <string name="quick_match_gallery_yours">Tuyos</string>
+    <string name="account_nickname_save">Guardar</string>
+    <string name="account_nickname_saved">Guardado</string>
+    <string name="account_nickname_label">Apodo</string>
+    <string name="account_nickname_hint">Tus amigos te ven con este nombre</string>
+    <!-- Reporting somebody else's drawing (quick match + online rooms). -->
+    <string name="report_drawing_action">Denunciar</string>
+    <string name="replay_drawing">Ver de nuevo</string>
+    <string name="reports_video_save">Guardar video</string>
+    <string name="reports_video_exporting">Preparando video…</string>
+    <string name="reports_video_failed">No se pudo crear el video.</string>
+    <string name="report_drawing_title">Denunciar dibujo</string>
+    <string name="report_drawing_subtitle">¿Qué tiene de malo el dibujo de \"%1$s\"?</string>
+    <string name="report_reason_written">Escribió la palabra en vez de dibujarla</string>
+    <string name="report_reason_offensive">Ofensivo o inapropiado</string>
+    <string name="report_reason_meaningless">Garabato sin sentido</string>
+    <string name="report_drawing_sent">Denuncia recibida, gracias</string>
+    <string name="report_drawing_cancel">Cancelar</string>
+    <string name="report_drawing_failed">No se pudo enviar la denuncia. Revisa tu conexión e inténtalo de nuevo.</string>
+    <!-- Report inbox (hidden: tap the version line in Settings). -->
+    <string name="reports_title">Panel del Desarrollador</string>
+    <string name="reports_gate_label">Código de acceso</string>
+    <string name="reports_gate_enter">Abrir</string>
+    <string name="reports_gate_wrong">Código incorrecto</string>
+    <string name="reports_empty">Aún no hay denuncias.</string>
+    <string name="reports_load_failed">No se pudieron cargar las denuncias.</string>
+    <string name="reports_refresh">Actualizar</string>
+    <string name="reports_detector_score">Detector: %1$d%%</string>
+    <string name="reports_tab_reports">Denuncias</string>
+    <string name="reports_tab_detector">Detector</string>
+    <string name="reports_tab_league">Liga</string>
+    <string name="reports_league_hint">Elige qué ganan los tres primeros del mes. Si no lo defines, se da el marco del propio mes. El cambio llega a los jugadores en la próxima actualización de la tabla global (en menos de 1 hora).</string>
+    <string name="reports_league_no_rewards">Esta versión no define premios de liga.</string>
+    <string name="reports_tab_xp_event">Evento de XP</string>
+    <string name="reports_tab_update">Actualización</string>
+    <string name="forced_update_title">Nueva versión disponible</string>
+    <string name="forced_update_message">Actualiza Karalak para seguir jugando.</string>
+    <string name="forced_update_button">Actualizar</string>
+    <string name="reports_tab_stats">Estadísticas</string>
+    <string name="stats_hint">Contado en los dispositivos de los jugadores: sirve para tendencias, no para contabilidad. </string>
+    <string name="stats_range_1">Hoy</string>
+    <string name="stats_range_7">7 días</string>
+    <string name="stats_range_30">30 días</string>
+    <string name="stats_players_today">Jugadores hoy</string>
+    <string name="stats_players_avg">Promedio diario</string>
+    <string name="stats_opens">Aperturas de la app</string>
+    <string name="stats_games">Partidas terminadas</string>
+    <string name="stats_ads_title">Ubicaciones de anuncios</string>
+    <string name="stats_ad_rewarded">pedidos %1$d · vistos %2$d (%3$d%%) · saltados %4$d · sin anuncio %5$d</string>
+    <string name="stats_ad_interstitial">mostrados %1$d</string>
+    <string name="stats_empty">Aún no hay datos en este período.</string>
+    <string name="stats_refresh">Actualizar</string>
+    <string name="reports_tab_daily_challenge">Desafío Diario</string>
+    <string name="reports_xp_event_hint">Aumenta cada pago de XP para todos los jugadores conectados, en vivo, hasta que termine, según el multiplicador elegido (30 o 50 por ciento más, o 2x, 3x). Los jugadores ven un aviso en la pantalla de inicio durante los primeros segundos.</string>
+    <string name="reports_xp_event_active">XP %1$s activo hasta %2$s</string>
+    <string name="reports_xp_event_inactive">Ningún evento activo</string>
+    <string name="reports_xp_event_3h">Iniciar — 3 horas</string>
+    <string name="reports_xp_event_24h">Iniciar — 24 horas</string>
+    <string name="reports_xp_event_3d">Iniciar — 3 días</string>
+    <string name="reports_xp_event_stop">Detener ahora</string>
+    <string name="reports_detector_empty">No se rechazó ninguna ronda. O nadie hace trampa, o el detector no funciona.</string>
+    <string name="reports_detector_flagged">%1$d de %2$d palabras parecen escritas</string>
+    <string name="reports_detector_fast">También perfecta y muy rápida</string>
+    <string name="reports_tab_queue">Cola</string>
+    <string name="reports_tab_pool">Grupo</string>
+    <string name="reports_tab_feedback">Comentarios</string>
+    <string name="reports_feedback_empty">Aún no hay comentarios.</string>
+    <string name="reports_feedback_suggestion">Sugerencia</string>
+    <string name="reports_feedback_complaint">Queja</string>
+    <string name="reports_feedback_seen">Visto</string>
+    <string name="reports_feedback_mark_seen">Marcar como visto</string>
+    <string name="reports_feedback_delete">Eliminar reporte</string>
+    <string name="reports_feedback_delete_all">Eliminar todo</string>
+    <string name="reports_feedback_delete_confirm_title">¿Eliminar este reporte?</string>
+    <string name="reports_feedback_delete_confirm_message">Este reporte se eliminará para siempre. No se puede deshacer.</string>
+    <string name="reports_feedback_delete_all_confirm_message">Todos los reportes de esta lista se eliminarán para siempre. No se puede deshacer.</string>
+    <string name="reports_feedback_delete_confirm_action">Eliminar</string>
+    <string name="reports_feedback_delete_confirm_cancel">Cancelar</string>
+    <string name="reports_decision_failed">No funcionó. Las rondas no cambiaron — puede que las reglas de Firestore no estén publicadas.</string>
+    <string name="reports_identity_ok">Revisor: %1$s</string>
+    <string name="reports_identity_wrong">Esta cuenta no es la del revisor. uid: %1$s</string>
+    <string name="reports_load_more">Reintentar</string>
+    <string name="reports_rename">Renombrar</string>
+    <string name="reports_rename_label">Apodo</string>
+    <string name="reports_rename_save">Guardar</string>
+    <string name="reports_rename_cancel">Cancelar</string>
+    <string name="reports_pool_empty">No hay rondas en el grupo.</string>
+    <string name="reports_pool_send_back">Enviar a revisión</string>
+    <string name="reports_queue_empty">No hay rondas esperando revisión.</string>
+    <string name="reports_queue_summary">Nv %1$d · %2$d/%3$d · %4$d XP</string>
+    <string name="reports_daily_challenge_summary">%1$d/%2$d · %3$d XP</string>
+    <string name="reports_daily_challenge_empty">No hay intentos del desafío diario en espera.</string>
+    <string name="reports_queue_approve">Aprobar</string>
+    <string name="reports_queue_reject">Rechazar</string>
+    <string name="penalty_title">Se rechazó una de tus rondas</string>
+    <string name="penalty_body">En una de tus rondas de Partida Rápida, las palabras se escribieron en el área de dibujo en vez de dibujarse. Los %1$d XP que dio esa ronda se descontarán de tu cuenta.</string>
+    <string name="penalty_body_daily">En el Desafío Diario, las palabras se escribieron en el área de dibujo en vez de dibujarse. Los %1$d XP que dio esa ronda se descontarán de tu cuenta y tu racha diaria se reiniciará.</string>
+    <string name="penalty_body_many">En %1$d de tus rondas, las palabras se escribieron en el área de dibujo en vez de dibujarse. Los %2$d XP que dieron esas rondas en total se descontarán de tu cuenta.</string>
+    <string name="penalty_strikes">Esa fue la infracción n.º %1$d. La próxima cuesta más.</string>
+    <string name="penalty_warn_next">Si lo vuelves a hacer, cuesta más.</string>
+    <string name="penalty_locked">Esa fue la infracción n.º %1$d. Partida Rápida y Jugar con Amigos quedan cerrados durante %2$s.</string>
+    <string name="penalty_body_report">Otros jugadores denunciaron un dibujo tuyo y se consideró contrario a las reglas. Se descontarán %1$d XP y %2$d de oro de tu cuenta.</string>
+    <string name="reports_dismiss">Infundada</string>
+    <string name="reports_uphold">Penalizar</string>
+    <string name="reports_uphold_title">¿Penalizar a quien dibujó?</string>
+    <string name="reports_uphold_body">Penalización base: %1$d XP y %2$d de oro, hasta 5x según el número de infracciones de quien dibujó. El juego en línea se cierra con cada infracción (6 h la 1.ª, luego 12 h, 24 h, 3 días, 7 días). También se borran las demás denuncias de este dibujo.</string>
+    <string name="reports_uphold_confirm">Penalizar</string>
+    <string name="lock_duration_minutes">%1$d minutos</string>
+    <string name="lock_duration_minutes_one">%1$d minuto</string>
+    <string name="lock_duration_days">%1$d días</string>
+    <string name="lock_duration_days_one">%1$d día</string>
+    <string name="lock_duration_hours">%1$d horas</string>
+    <string name="lock_duration_hours_one">%1$d hora</string>
+    <string name="lock_countdown_days">%1$d d %2$s</string>
+    <string name="lock_screen_body">En la revisión se consideró que un dibujo tuyo va contra las reglas. Partida Rápida y Jugar con Amigos quedan cerrados hasta que termine el tiempo. Puedes seguir jugando sin conexión.</string>
+    <string name="reports_tab_locks">Bloqueos</string>
+    <string name="locks_empty">Nadie está bloqueado del juego en línea ahora.</string>
+    <string name="locks_line">Infracción %1$d · quedan %2$s</string>
+    <string name="locks_cancel">Cancelar infracción</string>
+    <string name="locks_cancel_title">¿Cancelar esta infracción?</string>
+    <string name="locks_cancel_body">El bloqueo termina ahora y el número de infracciones baja en 1. El XP y el oro ya descontados no se devuelven.</string>
+    <string name="penalty_understood">Entendido</string>
+    <string name="quick_match_locked_title">Este modo está cerrado temporalmente</string>
+    <string name="quick_match_locked_body">Este modo está cerrado por un tiempo debido a una infracción. Partida Rápida y Jugar con Amigos vuelven a abrir en unos %1$s.</string>
+
+    <!-- Chests (kasalar) — earned only from a WON Race a Friend match. -->
+    <string name="chest_tier_silver">Cofre del Aprendiz</string>
+    <string name="chest_tier_gold">Cofre del Artista</string>
+    <string name="chest_tier_rare">Cofre Sorpresa</string>
+    <string name="chest_won_title">¡Ganaste un cofre!</string>
+    <string name="chest_won_button">¡Genial!</string>
+    <string name="chests_title">Mis Cofres</string>
+    <string name="chests_gold_balance">%1$d de Oro</string>
+    <string name="chests_hint">Ganas un cofre al vencer a tu rival en Partida Rápida. Se abre un cofre a la vez; tienes 4 espacios.</string>
+    <string name="chests_slot_empty">Vacío</string>
+    <string name="chests_start_button">Desbloquear</string>
+    <string name="chests_open_button">Abrir</string>
+    <string name="chests_reward_title">¡Cofre abierto!</string>
+    <string name="chests_reward_gold">+%1$d de Oro</string>
+    <string name="chests_reward_button">¡Genial!</string>
+    <string name="home_xp_format">%1$d / %2$d XP</string>
+    <string name="home_level_format">Nv. %1$d</string>
+    <string name="home_pen_label">Lápiz</string>
+    <string name="home_frame_label">Marco</string>
+    <string name="home_chests_tagline">¡Cada victoria es un tesoro!</string>
+    <string name="home_chests_info_title">Cómo funcionan los cofres</string>
+    <string name="home_chests_info_body">¡Vence a tu rival en Partida Rápida y gana un cofre! 🎁 Los cofres tienen oro, comodines y a veces lápices raros. Se abren en 2, 3 o 6 horas según su calidad, y solo corre una cuenta regresiva a la vez. Tienes 4 espacios — cuando están todos llenos, el cofre nuevo se va volando, ¡así que ábrelos a tiempo! 🚀</string>
+    <string name="home_chests_info_ok">Entendido</string>
+    <string name="chest_info_step_win_title">Gana la partida</string>
+    <string name="chest_info_step_win_body">Supera a tus rivales en los modos en línea, gana partidas y recoge tus recompensas.</string>
+    <string name="chest_info_step_open_title">Inicia el tiempo</string>
+    <string name="chest_info_step_open_body">Toca los cofres que ganes para iniciar la cuenta regresiva. Abre el cofre cuando termine el tiempo y recibe tus recompensas al instante.</string>
+    <string name="chest_info_step_slots_title">Haz espacio para nuevos cofres</string>
+    <string name="chest_info_step_slots_body">Cuando tus %1$d espacios están llenos, no cae ningún cofre nuevo. Abre los cofres que tienes para recoger recompensas y hacer espacio.</string>
+    <string name="chest_info_contents_title">¿Qué hay en los cofres?</string>
+    <string name="chest_info_speedup_tip">¿Quieres tu cofre antes? Mira 1 anuncio al día para quitar 2 horas de su tiempo de apertura.</string>
+    <string name="chest_slot_empty_title">Espacio de Cofre</string>
+    <string name="chest_slot_empty_hint">Gana para obtener un cofre</string>
+    <string name="chest_slot_tap_to_start">Toca para desbloquear</string>
+    <string name="chest_slot_ready">¡Toca para abrir!</string>
+    <string name="chest_slot_unlocking">Desbloqueando…</string>
+    <string name="chest_slot_waiting">Esperando</string>
+    <string name="chest_slot_busy">Otro cofre se está desbloqueando — espera a que termine.</string>
+    <string name="chest_slot_still_unlocking">Este cofre todavía se está desbloqueando.</string>
+    <string name="chest_duration_hours">%1$d horas</string>
+    <string name="chest_duration_hours_one">%1$d hora</string>
+    <string name="chest_duration_minutes">%1$d min</string>
+    <string name="chest_duration_hm">%1$dh %2$dmin</string>
+    <string name="chest_win_unlock_time_text">Tiempo para abrir: %1$s</string>
+    <string name="home_chests_reserve">1 cofre esperando en reserva</string>
+    <string name="chest_open_tap_skip">Toca para continuar</string>
+    <string name="chest_open_shake_hint">Abriendo…</string>
+    <string name="chest_open_reward_label">Ganaste</string>
+    <string name="frame_name_scribbler">Anillo de Grafito</string>
+    <string name="frame_name_artist">Taller de Bronce</string>
+    <string name="frame_name_apprentice">Sol de Lápices</string>
+    <string name="frame_name_pop_art">Explosión Pop</string>
+    <string name="frame_name_wood_palette">Paleta de Madera</string>
+    <string name="frame_name_master_painter">Pintura al Óleo</string>
+    <string name="frame_name_watercolor_brushes">Acuarela</string>
+    <string name="frame_name_painter">Flujo de Colores</string>
+    <string name="frame_name_chalk">Tiza</string>
+    <string name="frame_name_graffiti">Grafiti</string>
+    <string name="frame_name_grand_master">Caballete Dorado</string>
+    <string name="frame_name_water_splash">Salpicadura de Agua</string>
+    <string name="frame_name_jasmine_wreath">Corona de Jazmín</string>
+    <string name="frame_name_cherry_blossom">Flor de Cerezo</string>
+    <string name="frame_name_cherry_blossom_gold">Flor Dorada</string>
+    <string name="frame_name_flame_ring">Anillo de Fuego</string>
+    <string name="frame_name_ice_crystal">Cristal de Hielo</string>
+    <string name="frame_name_rainbow_dream">Sueño de Arcoíris</string>
+    <string name="frame_name_amethyst_crystal">Cristal de Amatista</string>
+    <string name="frame_name_ocean_treasure">Tesoro del Océano</string>
+    <string name="frame_name_time_explorer">Explorador del Tiempo</string>
+    <string name="frame_name_galaxy_ring">Anillo Galáctico</string>
+    <string name="frame_name_celestial_moon">Luna Celestial</string>
+    <string name="frame_name_pearl_butterfly">Mariposa de Perla</string>
+    <string name="frame_name_dragon_flame">Llama del Dragón</string>
+    <string name="frame_name_shadow_crown">Corona de Sombras</string>
+    <string name="frame_name_royal_crown">Corona Real</string>
+    <string name="frame_name_candy_world">Tierra de Dulces</string>
+    <string name="frame_name_crystal_wings">Alas de Cristal</string>
+    <string name="frame_name_void_flame">Llama del Vacío</string>
+    <string name="frame_name_angel_halo">Aureola de Ángel</string>
+    <string name="frame_name_lion_king">Rey León</string>
+    <string name="nickname_edit_title">Cambia tu nombre de usuario</string>
+    <string name="nickname_edit_warning">Solo puedes cambiar tu nombre de usuario UNA vez. ¡Elige con cuidado!</string>
+    <string name="nickname_edit_hint">2–16 caracteres</string>
+    <string name="nickname_edit_save">Guardar</string>
+    <string name="nickname_edit_cancel">Cancelar</string>
+    <string name="nickname_edit_invalid">El nombre debe tener entre 2 y 16 caracteres.</string>
+    <string name="home_ad_gold_label">+500 de Oro</string>
+    <string name="home_ad_chest_label">Cofre Gratis</string>
+    <string name="home_ad_watch">Ver anuncio</string>
+    <string name="home_ad_gold_earned">¡Ganaste 500 de oro!</string>
+    <string name="home_ad_unavailable">El anuncio no cargó ahora, inténtalo en un momento.</string>
+    <string name="chest_home_start">Abrir cofre</string>
+    <string name="daily_challenge_ready_short">%1$d palabras · iguales para todos</string>
+    <string name="daily_challenge_words_short">%1$d palabras</string>
+    <string name="username_setup_title">Elige tu nombre de usuario</string>
+    <string name="username_setup_warning">Tu nombre de usuario se define UNA sola vez y nunca se puede cambiar después. Cada nombre pertenece a una persona. ¡Elige con cuidado!</string>
+    <string name="username_setup_confirm">Quedarme con este nombre</string>
+    <string name="username_error_invalid">El nombre debe tener entre 2 y 16 caracteres, usando letras, números, espacios, _ . -</string>
+    <string name="username_error_taken">Este nombre de usuario ya está en uso. Prueba otro.</string>
+    <string name="username_error_network">No se pudo conectar. Revisa tu internet e inténtalo de nuevo.</string>
+    <string name="home_level_inline">Nivel %1$d</string>
+    <string name="avatar_source_title">Foto de perfil</string>
+    <string name="avatar_source_karalak">Karalak</string>
+    <string name="avatar_source_google">Mi foto de Google</string>
+    <string name="avatar_source_google_locked">Inicia sesión con Google para usar tu foto de Google.</string>
+    <string name="avatar_frame_section">Marco</string>
+    <string name="username_finalize_title">Fija tu nombre de usuario</string>
+    <string name="username_finalize_body">Tu cuenta de Google está vinculada. Tu nombre de usuario y tu perfil ahora le pertenecen. Puedes cambiar el nombre una última vez; después será permanente.</string>
+    <string name="username_finalize_keep">Conservarlo (permanente)</string>
+    <string name="username_finalize_change">Cambiar y hacerlo permanente</string>
+    <string name="username_finalize_later">Ahora no</string>
+    <string name="username_change_taken_hint">Puedes cambiar el nombre una vez antes de vincular Google.</string>
+    <string name="daily_play_now">Jugar Ahora</string>
+    <string name="daily_done_badge">Completado</string>
+    <string name="pen_copper">Cobre</string>
+    <string name="pen_emerald">Esmeralda</string>
+    <string name="pen_ruby">Rubí</string>
+    <string name="pen_sapphire">Zafiro</string>
+    <string name="pen_candy">Caramelo</string>
+    <string name="pen_ice">Hielo</string>
+    <string name="pen_sakura">Sakura</string>
+    <string name="pen_sunrise">Amanecer</string>
+    <string name="pen_night">Noche</string>
+    <string name="pen_aurora">Aurora</string>
+    <string name="pen_diamond">Diamante</string>
+    <string name="pen_copper_tagline">¡Clásico y preciso!</string>
+    <string name="pen_emerald_tagline">¡La energía de la naturaleza!</string>
+    <string name="pen_ruby_tagline">¡Llama la atención!</string>
+    <string name="pen_sapphire_tagline">¡Sereno e impactante!</string>
+    <string name="pen_candy_tagline">¡Un toque dulce!</string>
+    <string name="pen_ice_tagline">¡Fresco y nítido!</string>
+    <string name="pen_sakura_tagline">¡Un soplo de primavera!</string>
+    <string name="pen_sunrise_tagline">¡Un nuevo comienzo!</string>
+    <string name="pen_night_tagline">¡Profundo y misterioso!</string>
+    <string name="pen_diamond_tagline">¡Brillante y deslumbrante!</string>
+    <string name="pen_aurum">Aurum</string>
+    <string name="pen_aurum_tagline">¡El lápiz de los ricos!</string>
+    <string name="pen_prism">Prisma</string>
+    <string name="pen_prism_tagline">¡Cada trazo, un color nuevo!</string>
+    <string name="pen_ember">Brasa</string>
+    <string name="pen_ember_tagline">¡Arde mientras dibujas!</string>
+    <string name="pen_storm">Tormenta</string>
+    <string name="pen_storm_tagline">¡Un destello de rayo!</string>
+    <string name="pen_cosmos">Cosmos</string>
+    <string name="pen_cosmos_tagline">¡Las estrellas siguen tu trazo!</string>
+    <string name="pen_specter">Espectro</string>
+    <string name="pen_specter_tagline">¡Un brillo desde la oscuridad!</string>
+    <string name="pen_lion">Rey León</string>
+    <string name="pen_lion_tagline">¡El lápiz del rey de la selva!</string>
+    <string name="store_title">Tienda</string>
+    <string name="store_tab_pens">Lápices</string>
+    <string name="store_tab_frames">Marcos</string>
+    <string name="store_owned">Tuyo</string>
+    <string name="store_equip">Usar</string>
+    <string name="store_equipped">En uso</string>
+    <string name="store_buy">Comprar</string>
+    <string name="store_buy_confirm_title">¿Comprar artículo?</string>
+    <string name="store_buy_confirm_body">¿Comprar %1$s por %2$d de oro?</string>
+    <string name="store_not_enough">Oro insuficiente</string>
+    <string name="store_bought">¡Comprado!</string>
+    <string name="store_missing_gold">Te faltan %1$d de oro</string>
+    <string name="store_frames_soon">¡Pronto llegarán marcos nuevos!</string>
+    <string name="store_in_store">En la tienda</string>
+    <string name="cosmetic_locked_rune">En el mapa de runas</string>
+    <string name="chest_speedup_button">Ver Anuncio</string>
+    <string name="chest_speedup_badge">−2 h</string>
+    <string name="chest_speedup_done">¡Cofre acelerado 2 horas!</string>
+    <string name="chest_speedup_unavailable">No hay anuncios disponibles ahora, inténtalo más tarde.</string>
+    <string name="chest_speedup_used_today">Ya usaste la aceleración de hoy.</string>
+    <string name="home_chests_info_line">%1$s: %2$d min (%3$d h)</string>
+    <string name="home_chests_info_speedup">¿Sin paciencia? ⏩ Una vez al día, mira un anuncio corto para quitar 2 horas a un cofre que se está desbloqueando.</string>
+    <string name="chest_ready_channel_name">Cofres</string>
+    <string name="chest_ready_notif_title">¡Tu cofre está listo! 🎁</string>
+    <string name="chest_ready_notif_body">%1$s está listo para abrir. ¡Ven por tu recompensa!</string>
+    <string name="rarity_common">Común</string>
+    <string name="rarity_rare">Raro</string>
+    <string name="rarity_legendary">Legendario</string>
+    <string name="chest_win_title">¡COFRE GANADO!</string>
+    <string name="chest_win_hint">Inicia el tiempo en Mis Cofres</string>
+    <string name="home_xp_to_next">%1$d XP para Nv. %2$d</string>
+    <string name="store_tab_jokers">Comodines</string>
+    <string name="joker_first_letter">Comodín Primera Letra</string>
+    <string name="joker_letter_count">Comodín Número de Letras</string>
+    <string name="joker_extra_time">Comodín Tiempo Extra</string>
+    <string name="joker_first_letter_desc">Revela la primera letra de la palabra que estás adivinando.</string>
+    <string name="joker_letter_count_desc">Muestra cuántas letras tiene la palabra que estás adivinando.</string>
+    <string name="joker_extra_time_desc">Agrega tiempo extra a la palabra que estás dibujando.</string>
+    <string name="joker_first_letter_short">1.ª letra</string>
+    <string name="joker_letter_count_short">Letras</string>
+    <string name="joker_extra_time_short">+ Tiempo</string>
+    <string name="joker_owned">Tienes: %1$d</string>
+    <string name="joker_buy_one">Comprar 1</string>
+    <string name="joker_buy_bulk">Comprar %1$d · %2$d%% dto.</string>
+    <string name="joker_letter_count_badge">Letras: %1$d</string>
+    <string name="joker_bought">¡Comodín comprado!</string>
+    <string name="joker_reward_label">Comodines</string>
+    <string name="joker_pen_won">¡Ganaste un lápiz!</string>
+    <string name="chest_loot_silver">%1$d–%2$d de oro · 30%% de probabilidad de 1 comodín</string>
+    <string name="chest_loot_gold">%1$d–%2$d de oro · 1 comodín (30%% de probabilidad de 2)</string>
+    <string name="chest_loot_rare">%1$d–%2$d de oro · 2 comodines (40%% de probabilidad de 3) · 12%% de probabilidad de un lápiz de la tienda</string>
+    <string name="league_friends_hint">Eres el único en esta tabla. ¡Agrega amigos y compitan juntos por el premio del mes!</string>
+    <string name="league_friends_hint_action">Agregar amigos ›</string>
+    <string name="nickname_locked_hint">Tu nombre de usuario ya fue elegido. Puedes cambiarlo una vez desde el ícono de lápiz en la pantalla de inicio.</string>
+    <string name="chest_lost_title">¡Espacios de cofre llenos!</string>
+    <string name="chest_lost_body">Ganaste, pero los 4 espacios de cofre están llenos, así que el cofre de esta victoria se perdió. Abre tus cofres en Mis Cofres para tener espacio la próxima vez.</string>
+    <string name="home_chests_full">Espacios llenos — ¡abre un cofre!</string>
+    <string name="chest_notif_off">Las notificaciones están desactivadas — no podemos avisarte cuando tu cofre esté listo.</string>
+    <string name="chest_notif_turn_on">Activar</string>
+    <string name="a11y_gold_chip">Oro: %1$s. Abrir la tienda</string>
+    <string name="a11y_pen_chip">Lápiz: %1$s. Cambiar lápiz</string>
+    <string name="a11y_frame_chip">Marco: %1$s. Cambiar marco</string>
+    <string name="result_gold_earned">+%1$d de oro</string>
+    <string name="store_try">Probar</string>
+    <string name="store_try_title">Probar: %1$s</string>
+    <string name="store_try_clear">Borrar</string>
+    <string name="store_guest_warning">No has iniciado sesión — lo que compres se guarda solo en este teléfono. Toca para vincular tu cuenta y no perder nada.</string>
+    <string name="tour_heading">Novedades</string>
+    <string name="tour_chests_title">Cofres</string>
+    <string name="tour_chests_body">Vence a tu rival en Partida Rápida para ganar un cofre. Toca un cofre para iniciar su cuenta regresiva; cuando termine, ábrelo y recoge tus recompensas. Mientras un cofre está en cuenta regresiva, el siguiente espera, pero puedes iniciar uno nuevo en cuanto uno anterior esté listo, aunque aún no lo hayas abierto. Tienes cuatro espacios de cofre y, mientras estén todos llenos, no puedes ganar otro, así que recuerda abrir los que estén listos. ¡Los cofres más raros dan más oro, comodines y hasta lápices especiales!</string>
+    <string name="tour_jokers_title">Comodines</string>
+    <string name="tour_jokers_body">Los comodines te ayudan en los momentos difíciles. El Comodín Primera Letra revela la primera letra de la palabra, el Comodín Número de Letras muestra cuántas tiene y el Comodín Tiempo Extra le da más tiempo a tu dibujo. Gana comodines en los cofres o cómpralos en la Tienda con oro.</string>
+    <string name="tour_store_title">Tienda</string>
+    <string name="tour_store_body">Gasta tu oro en la Tienda: dale un nuevo estilo a tus dibujos con lápices, elige marcos especiales para tu foto de perfil y recarga tus comodines. Puedes probar un lápiz antes de comprarlo. Solo toca el oro en la pantalla de inicio o el botón de la Tienda.</string>
+    <string name="tour_next">Siguiente</string>
+    <string name="tour_start">¡Vamos!</string>
+    <string name="quick_match_abandon_title">¿Cancelar la partida?</string>
+    <string name="quick_match_abandon_message">Un rival te está esperando. Si cancelas ahora, perderás %1$d XP.</string>
+    <string name="quick_match_abandon_confirm">Cancelar (−%1$d XP)</string>
+    <string name="quick_match_abandon_keep">Seguir jugando</string>
+    <string name="quick_match_exit_message">Si sales de esta partida ahora, perderás %1$d XP.</string>
+    <string name="chest_detail_tap_to_start">Toca el botón de abajo para iniciar el tiempo.</string>
+    <string name="chest_detail_total">Tiempo para abrir: %1$d h</string>
+    <string name="chest_detail_ready">¡Tu cofre está listo!</string>
+    <string name="settings_privacy_policy">Política de Privacidad</string>
+    <string name="guess_tile_hint">Pista</string>
+    <string name="chest_detail_contents_title">¿Qué puede salir?</string>
+    <string name="chest_detail_gold">%1$d–%2$d de oro</string>
+    <string name="chest_detail_jokers_silver">%1$d%% de probabilidad de un comodín extra</string>
+    <string name="chest_detail_jokers_gold">1 comodín + %1$d%% de probabilidad de un 2.º comodín extra</string>
+    <string name="chest_detail_jokers_rare">2 comodines + %1$d%% de probabilidad de un 3.er comodín extra</string>
+    <string name="chest_detail_pen">%1$d%% de probabilidad de un lápiz especial de la tienda</string>
+    <string name="chest_timer_remaining">Tiempo restante</string>
+    <string name="chest_timer_total">Tiempo para abrir</string>
+    <string name="chest_timer_hint">La cuenta regresiva empieza cuando la inicies</string>
+    <string name="get_ready_tag">A continuación</string>
+    <string name="get_ready_sub">Ahora te toca adivinar los dibujos</string>
+    <string name="get_ready_line1">¡Prepárate para</string>
+    <string name="get_ready_line2">adivinar!</string>
+    <string name="store_daily_joker_tag">COMODÍN GRATIS DEL DÍA</string>
+    <string name="store_daily_joker_action">Mira un anuncio y llévatelo gratis</string>
+    <string name="store_daily_joker_claimed">¡Se agregó tu comodín gratis!</string>
+    <string name="store_daily_joker_unavailable">No hay anuncios disponibles ahora, inténtalo en un rato.</string>
+    <string name="xp_event_default_name">Evento de XP</string>
+    <string name="xp_event_banner_sub">Todo el XP vale %1$s ahora</string>
+    <string name="xp_event_banner_sub_percent">Todo el XP da %1$s más ahora</string>
+    <string name="reports_xp_event_multiplier_label">Multiplicador</string>
+    <string name="reports_xp_event_name_label">Nombre del evento</string>
+    <string name="reports_xp_event_name_hint">ej.: Evento de Año Nuevo</string>
+    <string name="reports_xp_event_duration_label">Duración</string>
+    <string name="reports_xp_event_d15">15 min</string>
+    <string name="reports_xp_event_d30">30 min</string>
+    <string name="reports_xp_event_d60">1 hora</string>
+    <string name="reports_xp_event_d180">3 horas</string>
+    <string name="reports_xp_event_d1440">1 día</string>
+    <string name="reports_xp_event_start">Iniciar evento</string>
+    <string name="reports_queue_dismiss">Descartar</string>
+    <string name="level_panel_title">Nivel %1$d</string>
+    <string name="level_panel_subtitle">¡Dibuja, adivina y junta las estrellas!</string>
+    <string name="level_play">JUGAR</string>
+    <string name="quick_match_searching_title">Buscando</string>
+    <string name="quick_match_searching_title2">un rival…</string>
+    <string name="quick_match_searching_sub">Revisando a otros jugadores para encontrarte el mejor rival…</string>
+    <string name="quick_match_dont_worry">¡Tranquilo!</string>
+    <string name="quick_match_dont_worry_body">Te encontraremos un rival de tu nivel en un momento.</string>
+    <string name="drawing_time_joker">+10 Segundos</string>
+    <string name="duel_list_incoming_play">Jugar</string>
+    <string name="offline_needed">Se necesita conexión a internet</string>
+    <string name="offline_screen_title">Sin internet</string>
+    <string name="offline_screen_body">Necesitas conexión a internet para jugar esto. Jugar sin Conexión y Niveles funcionan sin ella.</string>
+    <string name="online_game_lost_title">Conexión perdida</string>
+    <string name="online_game_lost_body">No tenías internet cuando terminó el juego, así que no se pudo enviar el resultado. Vuelve al inicio y sigue jugando sin conexión.</string>
+    <string name="online_game_lost_ok">OK</string>
+    <string name="guess_revisit">Este dibujo se está revisando de nuevo</string>
+    <string name="guess_skip_saved">⏱ %1$d s ahorrados</string>
+    <string name="online_player_left">%1$s salió de la sala</string>
+    <string name="previous_drawing">Dibujo anterior</string>
+    <string name="next_drawing">Siguiente dibujo</string>
+    <string name="result_stat_play_gold">Oro por palabras</string>
+    <string name="online_reward_format">+%1$d XP  ·  +%2$d de oro</string>
+    <string name="guess_transition_locked">No disponible mientras cambia la palabra</string>
+    <string name="coupon_hint">Código de cupón</string>
+    <string name="coupon_use">Canjear</string>
+    <string name="coupon_won_gold">+%1$d de oro</string>
+    <string name="coupon_won_xp">+%1$d XP</string>
+    <string name="coupon_won_chest">¡Recompensa de cofre recibida!</string>
+    <string name="coupon_won_nothing">Código aceptado</string>
+    <string name="coupon_error_not_found">Código no encontrado. Revísalo e inténtalo de nuevo.</string>
+    <string name="coupon_error_expired">Este código expiró.</string>
+    <string name="coupon_error_exhausted">Este código ya se agotó.</string>
+    <string name="coupon_error_used">Ya usaste este código.</string>
+    <string name="coupon_error_chest_full">Este código da cofres y no tienes suficientes espacios libres. Abre algunos primero.</string>
+    <string name="coupon_error_network">No se pudo conectar con el servidor. Revisa tu conexión.</string>
+    <string name="coupon_error_wait">Demasiados intentos fallidos. Espera un momento.</string>
+    <string name="reports_tab_coupons">Cupones</string>
+    <string name="joker_bought_title">¡Comodín comprado!</string>
+    <string name="online_finished_title">¡Terminaste!</string>
+    <string name="online_score_label">puntos</string>
+    <string name="online_players_done">%1$d / %2$d jugadores terminaron</string>
+    <string name="coupon_clear">Borrar</string>
+    <string name="login_streak_title">Racha de Ingreso</string>
+    <string name="login_streak_days">Racha de %1$d días</string>
+    <string name="login_streak_day_n">Día %1$d</string>
+    <string name="login_streak_claim">Reclamar recompensa</string>
+    <string name="login_streak_claimed_title">¡Recompensa reclamada!</string>
+    <string name="login_streak_great">¡Genial!</string>
+    <string name="login_streak_missed_title">¡Tu racha se rompió!</string>
+    <string name="login_streak_missed_message">Tu racha de %1$d días se cortó. Mira un anuncio para seguir o empieza de nuevo.</string>
+    <string name="login_streak_save">Ver anuncio y salvar la racha</string>
+    <string name="login_streak_restart">Empezar de nuevo</string>
+    <string name="login_streak_rescued">¡Racha salvada! Toma la recompensa de hoy.</string>
+    <string name="login_streak_milestone">🎉 Bonificación del día %1$d: ¡se está abriendo un cofre Sorpresa!</string>
+    <string name="login_reward_joker">Comodín</string>
+    <string name="login_reward_chest">Cofre</string>
+    <string name="coupon_how_button">Cómo conseguir códigos</string>
+    <string name="coupon_how_title">¿Cómo consigo un código de cupón?</string>
+    <string name="coupon_how_body">Compartimos códigos de cupón en nuestras redes sociales @karalakapp. ¡Síguenos en Instagram y TikTok para no perderte ninguno!</string>
+    <string name="coupon_how_instagram">Instagram @karalakapp</string>
+    <string name="coupon_how_tiktok">TikTok @karalakapp</string>
+    <string name="coupon_how_close">Cerrar</string>
+    <string name="login_streak_subtitle">¡Entra cada día y no te pierdas ninguna recompensa!</string>
+    <string name="online_chat_empty_window">Aún no hay mensajes. ¡Envía uno de los de abajo!</string>
+    <string name="rune_screen_title">Runas de Karalak</string>
+    <string name="rune_root_name">Corazón de Karalak</string>
+    <string name="rune_root_desc">Todo camino empieza aquí. ¡Toca una runa y traza tu propio camino!</string>
+    <string name="rune_word_gold_name">Monedas del Lápiz</string>
+    <string name="rune_login_gold_name">Regalo de Bienvenida</string>
+    <string name="rune_daily_1_name">Duelo Matutino</string>
+    <string name="rune_win_gold_name">Moneda de la Victoria</string>
+    <string name="rune_chest_gold_name">Cofre Desbordante</string>
+    <string name="rune_chest_joker_name">Comodín Sorpresa</string>
+    <string name="rune_disc_1_name">Regateador</string>
+    <string name="rune_dj_1_name">Comodín Matutino</string>
+    <string name="rune_root_flavor">Toma tu lápiz, la aventura empieza.</string>
+    <string name="rune_word_gold_flavor">Cada palabra acertada, un poco más de oro.</string>
+    <string name="rune_login_gold_flavor">Un detalle para todos los que pasan por aquí.</string>
+    <string name="rune_daily_1_flavor">Empieza el día con un desafío.</string>
+    <string name="rune_win_gold_flavor">Ganar sabe mejor con oro.</string>
+    <string name="rune_chest_gold_flavor">Cofres que apenas cierran.</string>
+    <string name="rune_chest_joker_flavor">Un comodín guiña desde el fondo del cofre.</string>
+    <string name="rune_disc_1_flavor">Los precios bajan cuando te ven.</string>
+    <string name="rune_dj_1_flavor">Un comodín que llega con la primera luz.</string>
+    <string name="rune_fx_word_desc">Cada palabra que aciertas da %1$d%% más de oro por nivel (no en el Desafío Diario).</string>
+    <string name="rune_fx_win_desc">Cada victoria en Partida Rápida o Jugar con Amigos da %1$d%% más de oro por nivel.</string>
+    <string name="rune_fx_login_desc">El oro de la racha de ingreso aumenta un %1$d%% por nivel.</string>
+    <string name="rune_fx_daily_desc">El oro del desafío diario aumenta un %1$d%% por nivel.</string>
+    <string name="rune_fx_chest_desc">El oro de los cofres aumenta un %1$d%% por nivel.</string>
+    <string name="rune_fx_cjoker_desc">La probabilidad de un comodín extra en los cofres sube un %1$d%% por nivel.</string>
+    <string name="rune_fx_disc_desc">Los comodines de la tienda son un %1$d%% más baratos por nivel.</string>
+    <string name="rune_fx_dj_desc">El comodín diario de regalo por anuncio da %1$d comodín extra por nivel.</string>
+    <string name="rune_streak_key_name">Maestro de la Cadena</string>
+    <string name="rune_streak_key_flavor">Tres aciertos seguidos, oro extra en el bolsillo.</string>
+    <string name="rune_chest_key2_name">El Llavero</string>
+    <string name="rune_chest_key2_flavor">Sin espera: un cofre al día se abre al instante.</string>
+    <string name="rune_luck_key_name">Dado de la Suerte</string>
+    <string name="rune_luck_key_flavor">Tira el dado, ¿saldrá un comodín hoy?</string>
+    <string name="rune_time_1_name">Cofre Rápido</string>
+    <string name="rune_time_1_flavor">Los cofres están aprendiendo a mirar el reloj.</string>
+    <string name="rune_ad_1_name">Anuncio Rápido</string>
+    <string name="rune_ad_1_flavor">La puerta de la recompensa se abre un poco antes.</string>
+    <string name="rune_slot_key_name">Espacio de Reserva</string>
+    <string name="rune_slot_key_flavor">Si los espacios están llenos, el cofre espera en reserva.</string>
+    <string name="rune_fr_1_name">Oro de la Amistad</string>
+    <string name="rune_fr_1_flavor">Jugar con amigos vale oro.</string>
+    <string name="rune_fr_2_name">Fundador de la Sala</string>
+    <string name="rune_fr_2_flavor">Quien crea la sala se lleva el primer oro.</string>
+    <string name="rune_fr_key_name">Lazo de Amistad</string>
+    <string name="rune_fr_key_flavor">La primera partida en sala del día da la mitad más.</string>
+    <string name="rune_st_1_name">Lápiz Amanecer</string>
+    <string name="rune_st_1_flavor">Cada trazo que dibujas brilla como un amanecer.</string>
+    <string name="rune_st_3_name">Lápiz Diamante</string>
+    <string name="rune_st_3_flavor">Un lápiz que brilla como un diamante.</string>
+    <string name="rune_st_5_name">Lápiz Aurora</string>
+    <string name="rune_st_5_flavor">Las luces danzantes del cielo vinieron a quedarse en tu lápiz.</string>
+    <string name="rune_st_6_name">Explorador del Tiempo</string>
+    <string name="rune_st_6_flavor">Con una brújula en la mano, nunca te pierdes.</string>
+    <string name="rune_st_7_name">Tesoro del Océano</string>
+    <string name="rune_st_7_flavor">Un tesoro de las profundidades, en tu perfil.</string>
+    <string name="rune_st_key_name">Corona Real</string>
+    <string name="rune_st_key_flavor">Hasta los reyes se inclinan ante esta corona.</string>
+    <string name="rune_xp_1_name">Experiencia</string>
+    <string name="rune_xp_1_flavor">Todo gran pintor empieza como aprendiz.</string>
+    <string name="rune_ins_key_name">Seguro de Racha</string>
+    <string name="rune_ins_key_flavor">Una vez al mes, tu racha queda protegida.</string>
+    <string name="rune_fx_xp_desc">La experiencia que ganas para tu nivel aumenta un %1$d%% por nivel. Los puntos de liga no se ven afectados.</string>
+    <string name="rune_fx_ctime_desc">Los cofres se abren un %1$d%% más rápido por nivel.</string>
+    <string name="rune_fx_adcd_desc">La espera entre regalos gratis por anuncio es un %1$d%% más corta por nivel.</string>
+    <string name="rune_fx_room_desc">El oro de las salas de Jugar con Amigos aumenta un %1$d%% por nivel.</string>
+    <string name="rune_fx_host_desc">Cuando tú creaste la sala, tu oro aumenta un %1$d%% por nivel.</string>
+    <string name="rune_fx_streak_desc">Cada 3 palabras acertadas seguidas ganas 10 de oro extra (no en el Desafío Diario ni en Jugar con Amigos).</string>
+    <string name="rune_fx_instant_desc">Una vez al día puedes abrir al instante un cofre en cuenta regresiva.</string>
+    <string name="rune_fx_dice_desc">Reclamar la recompensa de la racha de ingreso tiene un 25%% de probabilidad de dar un comodín extra.</string>
+    <string name="rune_fx_reserve_desc">Cuando todos los espacios están llenos, el cofre que ganes espera en un espacio de reserva.</string>
+    <string name="rune_fx_best_desc">Una vez al día, el oro de tu primera ronda en Jugar con Amigos aumenta un 50%%.</string>
+    <string name="rune_fx_insure_desc">Una vez al mes, tu racha de ingreso sobrevive a un día perdido.</string>
+    <string name="rune_fx_style_desc">Comprar esta runa agrega a tu colección un lápiz o marco que solo existe en el mapa de runas.</string>
+    <string name="rune_tile_on">Activo</string>
+    <string name="rune_fog_title">Runa misteriosa</string>
+    <string name="rune_fog_body">Desbloquea la runa de la que cuelga para revelar su secreto.</string>
+    <string name="rune_gift_line">Regalo: %1$s</string>
+    <string name="rune_gate_title">Anillo sellado</string>
+    <string name="rune_gate_body">Para abrir este anillo: nivel %1$d y %2$d%% del anillo anterior completado.</string>
+    <string name="rune_gate_now">Ahora: nivel %1$d · anillo anterior %2$d%%</string>
+    <string name="chest_instant_button">Llavero: abrir ahora</string>
+    <string name="reports_tab_runes">Runas</string>
+    <string name="runes_dev_title">Mapa de runas (desarrollo)</string>
+    <string name="runes_dev_state">Niveles de runa comprados: %1$d · oro gastado: %2$s</string>
+    <string name="runes_dev_reset">Deshacer todas las runas</string>
+    <string name="runes_dev_refresh_config">Obtener ahora la configuración de runas y economía</string>
+    <string name="runes_dev_unlock">Desbloquear todas las runas (gratis, prueba)</string>
+    <string name="runes_dev_confirm_title">¿Deshacer todas las runas?</string>
+    <string name="runes_dev_confirm_body">Se quitan todos los niveles de runa y se devuelve el oro gastado. Los regalos de la tienda (lápices, marcos) se conservan.</string>
+    <string name="runes_dev_done">%1$s de oro devueltos, el mapa empieza de nuevo.</string>
+    <string name="rune_soon">Próximamente</string>
+    <string name="rune_soon_desc">Se agregarán nuevos caminos al mapa.</string>
+    <string name="rune_level_of">Nivel %1$d / %2$d</string>
+    <string name="rune_level_n">Nivel %1$d</string>
+    <string name="rune_tile_pct">+%1$d%%</string>
+    <string name="rune_tile_pts">+%1$d%%</string>
+    <string name="rune_tile_cnt">+%1$d comodines</string>
+    <string name="rune_tile_cnt_one">+%1$d comodín</string>
+    <string name="rune_status_title">Estado de las Runas</string>
+    <string name="rune_intro_title">Bienvenido a las Runas</string>
+    <string name="rune_intro_body">Las runas son bonificaciones permanentes que compras con oro.\n\n• Toca una runa para leer qué hace y luego cómprala o mejórala. Cada nivel la hace más fuerte.\n• Las bonificaciones cubren oro, XP, cofres y comodines, y se aplican a todos los juegos.\n• Las runas están en anillos alrededor del perro. Un anillo sellado se abre cuando tu nivel es suficiente y el anillo anterior está casi completo.\n• Arrastra para mover el mapa, pellizca para hacer zoom y toca al perro del centro para ver tu estado.</string>
+    <string name="rune_intro_ok">Entendido</string>
+    <string name="rune_status_hint">Toca al perro del centro para ver tu estado.</string>
+    <string name="rune_status_general">Resumen</string>
+    <string name="rune_status_bonuses">Bonificaciones</string>
+    <string name="rune_status_abilities">Habilidades</string>
+    <string name="rune_status_collection">Colección</string>
+    <string name="rune_status_player_level">Nivel del jugador</string>
+    <string name="rune_status_rune_levels">Niveles de runa comprados</string>
+    <string name="rune_status_spent">Oro gastado</string>
+    <string name="rune_status_rewards">Recompensas de runas</string>
+    <string name="rune_status_ring">Anillo %1$d</string>
+    <string name="rune_status_ring_legend">Anillo legendario</string>
+    <string name="rune_status_ring_locked">Bloqueado · Nivel %1$d</string>
+    <string name="rune_status_percent">%1$d%%</string>
+    <string name="rune_status_locked">Bloqueado</string>
+    <string name="rune_status_on">Activo</string>
+    <string name="rune_status_owned">Tuyo</string>
+    <string name="rune_status_ready_today">Listo hoy</string>
+    <string name="rune_status_used_today">Usado hoy</string>
+    <string name="rune_status_ready_month">Listo este mes</string>
+    <string name="rune_status_used_month">Usado este mes</string>
+    <string name="rune_status_reserve_full">1 cofre esperando</string>
+    <string name="rune_status_reserve_empty">Vacío</string>
+    <string name="rune_status_minus">-%1$d%%</string>
+    <string name="rune_status_count">+%1$d</string>
+    <string name="rune_stat_word">Oro por palabras</string>
+    <string name="rune_stat_win">Oro por victorias</string>
+    <string name="rune_stat_login">Oro por ingreso</string>
+    <string name="rune_stat_daily">Oro del desafío</string>
+    <string name="rune_stat_chest">Oro de cofres</string>
+    <string name="rune_stat_cjoker">Probabilidad de comodín en cofres</string>
+    <string name="rune_stat_disc">Descuento en comodines</string>
+    <string name="rune_stat_dj">Comodines diarios extra</string>
+    <string name="rune_stat_xp">Experiencia</string>
+    <string name="rune_stat_ctime">Tiempo de apertura de cofres</string>
+    <string name="rune_stat_adcd">Espera entre anuncios</string>
+    <string name="rune_stat_room">Oro de sala</string>
+    <string name="rune_stat_host">Oro del fundador</string>
+    <string name="rune_buy">Comprar · %1$s</string>
+    <string name="rune_maxed">¡Dominada! Esta runa está completa.</string>
+    <string name="rune_locked">Primero abre la runa a la que está unida.</string>
+    <string name="rune_hint_next">Próxima parada: %1$s · %2$s de oro</string>
+    <string name="rune_hint_all">Todas las runas abiertas están completas. ¡Pronto habrá nuevos caminos!</string>
+    <string name="coupon_panel_chests">Cofres (se abren al instante, como máximo %1$d en total)</string>
+    <string name="coupon_panel_distribution">Distribución</string>
+    <string name="coupon_panel_recent">Códigos recientes</string>
+    <string name="result_stat_win_gold">Oro por victoria</string>
+    <string name="result_stat_rune_bonus">De las runas</string>
+    <string name="result_rune_bonus_line">De tus runas: +%1$d de oro</string>
+    <string name="league_score_refused">Tu puntuación no se puede guardar en el servidor ahora, así que otros jugadores quizá no te vean en esta tabla. Vuelve a abrir la app o inténtalo más tarde.</string>
+    <string name="error_friend_request_limit">Enviaste muchas solicitudes de amistad hoy. Inténtalo de nuevo mañana.</string>
+    <string-array name="online_lobby_quotes">
+        <item>Tu suerte va a la par de tu talento para dibujar.\nSi no tienes ninguno,\n¡al menos ten confianza!</item>
+        <item>Aquí todos son artistas.\nNadie sabe qué dibujó el otro,\npero todos están muy seguros.</item>
+        <item>¿Eso es un gato\no una papa?</item>
+        <item>Tu dibujo puede ser horrible,\npero cuando ganes,\nnadie lo recordará.</item>
+        <item>Ni la sonrisa de la Mona Lisa\nera tan misteriosa.\n¡Dibuja, adivina, gana!</item>
+        <item>Un trazo, una respuesta,\nmuchas risas.\n¡Que empiece la Guerra de Garabatos!</item>
+        <item>La punta de tu lápiz puede romperse,\n¡pero tu confianza nunca!</item>
+        <item>Tu cerebro dice ‘pato’,\ntu mano dibuja ‘nube’.\n¡Nadie sabe quién gana!</item>
+        <item>El tiempo se acaba,\nel lápiz tiembla,\nlos amigos se ríen.</item>
+        <item>No tienes que ser\nLeonardo da Vinci. ¡Solo dibuja\nmenos mal que tus rivales!</item>
+        <item>Esto no es una galería de arte,\n¡pero las risas están garantizadas!</item>
+        <item>Si nadie entiende tu dibujo,\nllámalo ‘arte abstracto’\ny vete.</item>
+        <item>Ser incomprendido es\nel destino de todo artista.\n¡Dibuja de todos modos!</item>
+    </string-array>
+</resources>
