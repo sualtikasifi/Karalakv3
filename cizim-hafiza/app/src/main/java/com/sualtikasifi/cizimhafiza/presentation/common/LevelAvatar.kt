@@ -596,12 +596,21 @@ private val PersonaLetterColors = listOf(
 )
 
 /**
- * A generated picture for a player without a photo of their own — AI players and recorded rounds: a few keep the
- * Karalak mascot, some have a coloured initial, and the rest an emoji "artwork" on a soft gradient. Always drawn,
- * never a photo of a person: an AI player must not pass for someone real.
+ * A picture for a player without a photo of their own — AI players and recorded rounds. A league filler player wears
+ * the profile photo its name picks (BotPhotos); anyone else gets a generated face: a few keep the Karalak mascot,
+ * some have a coloured initial, and the rest an emoji "artwork" on a soft gradient.
  */
 @Composable
 private fun PersonaFace(seed: String, mascot: @Composable () -> Unit) {
+    BotPhotos.drawableFor(seed)?.let { res ->
+        Image(
+            painter = androidx.compose.ui.res.painterResource(res),
+            contentDescription = null,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        return
+    }
     val hash = (seed.fold(11) { acc, c -> acc * 31 + c.code }) and Int.MAX_VALUE
     val bucket = hash % 20
     when {

@@ -324,8 +324,10 @@ sorusunda bu yaş ekranı ve davranışı açıklanmalı.
   rakip arama ekranında her maçta yazıyor (`quick_match_opponent_note`: anlık eşleşen oyuncu,
   kayıtlı tur ya da yapay zekâ); rakipler tek tek işaretlenmiyor.
 - Global ligdeki dolgu oyuncular lig ekranındaki notla belirtiliyor (`league_global_refresh_note`);
-  fotoğrafları yok (üretilmiş avatar), ödül kazanamazlar (`functions/src/index.ts`, ödüller
-  `users/`'tan seçilir).
+  adlarına göre seçilen profil fotoğrafları var (`BotPhotos.kt`, web: `bot_photos.json`), ödül
+  kazanamazlar (`functions/src/index.ts`, ödüller `users/`'tan seçilir). Fotoğraflar gerçek bir kişiye
+  ait olmamalı (yapay zekâyla üretilmiş ya da kullanım hakkı alınmış) ve başkasına ait çizgi film
+  karakteri içermemeli.
 - Antrenman odasındaki (130246) rakip Sude.
 - Mağaza metinleri, kullanım koşulları ve gizlilik politikası yapay zekâ rakipleri açıkça söylüyor.
 - Canlı (anlık) eşleşme geldiğinde mağaza metinleri ve yasal sayfalar da ona göre güncellenmeli.

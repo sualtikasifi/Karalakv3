@@ -5,7 +5,7 @@ import { rankLevelHtml } from "./ranks.js";
 import { frameRing, frameList, frameById, penList } from "./store.js";
 
 // ---- Port of LeagueBots.kt: the fillers every phone adds to the published table ----
-let NAMES = [];
+let NAMES = [], BOTPHOTO = {};
 const ISTANBUL = "Europe/Istanbul";
 function seeded(seed) {
   let a = Number(BigInt.asIntN(32, BigInt(seed)));
@@ -58,7 +58,7 @@ function botFrame(lvl, seed) {
 
 let tab = "friends", table = null, loading = false, fr = null;
 
-export async function loadLeague() { if (!NAMES.length) NAMES = await (await fetch("league_names.json")).json(); }
+export async function loadLeague() { if (!NAMES.length) NAMES = await (await fetch("league_names.json")).json(); if (!Object.keys(BOTPHOTO).length) BOTPHOTO = await (await fetch("bot_photos.json")).json().catch(() => ({})); }
 
 async function fetchTable() {
   loading = true; table = null;
@@ -169,12 +169,13 @@ function monthlyCard(c) {
   return card;
 }
 
-// LevelAvatar's PersonaFace: an AI player always gets a generated face, never a photo of a person
+// LevelAvatar's PersonaFace: a filler wears the photo its name picks (BotPhotos); any other name gets a generated face
 const LETTER = ["#1A73E8", "#D93025", "#188038", "#E37400", "#9334E6", "#12B5CB", "#E52592", "#5F6368"];
 const GRAD = [["#FFE0B2", "#FFB74D"], ["#C8E6C9", "#81C784"], ["#BBDEFB", "#64B5F6"], ["#F8BBD0", "#F06292"], ["#D1C4E9", "#9575CD"], ["#B2EBF2", "#4DD0E1"], ["#FFF59D", "#FFD54F"]];
 const EMOJI = ["🦊", "🐼", "🎨", "⚽", "🎸", "🌸", "🚀", "🐱", "🎮", "🌵", "🍕", "🐶", "🦁", "📚", "🏀", "🐧"];
 function personaFace(seed) {
   const d = document.createElement("div");
+  if (BOTPHOTO[seed]) { const i = document.createElement("img"); i.src = `img/bots/${BOTPHOTO[seed]}.jpg`; i.alt = ""; i.style.cssText = "width:100%;height:100%;object-fit:cover"; d.append(i); return d; }
   let h = 11; for (const ch of seed) h = (Math.imul(h, 31) + ch.codePointAt(0)) | 0; h &= 0x7fffffff;
   const b = h % 20; d.style.cssText = "display:flex;align-items:center;justify-content:center;color:#fff;font-weight:500;line-height:1";
   if (b <= 2) { const i = document.createElement("img"); i.src = "img/avatar_dino.webp"; i.alt = ""; i.style.cssText = "width:100%;height:100%"; d.append(i); }
