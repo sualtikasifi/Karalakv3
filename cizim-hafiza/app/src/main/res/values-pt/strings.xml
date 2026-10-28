@@ -707,7 +707,7 @@
     <string name="league_tab_global">Global</string>
     <string name="league_global_empty">A tabela global ainda não foi montada. Volte daqui a pouco.</string>
     <string name="league_global_failed">Não foi possível carregar a tabela global.</string>
-    <string name="league_global_refresh_note">O ranking global é atualizado a cada hora. 🤖 indica jogadores de IA; os prêmios vão para os 3 primeiros jogadores reais.</string>
+    <string name="league_global_refresh_note">O ranking global é atualizado a cada hora. Jogadores de IA também participam da liga; os prêmios vão para os 3 primeiros jogadores reais.</string>
     <string name="league_reward_title">Prêmio deste mês</string>
     <string name="league_reward_bonus_gold">+%1$s de Ouro</string>
     <string name="league_reward_bonus_xp">+%1$s XP</string>
@@ -1446,9 +1446,9 @@
     <string name="level_play">JOGAR</string>
     <string name="quick_match_searching_title">Procurando</string>
     <string name="quick_match_searching_title2">um rival…</string>
-    <string name="quick_match_searching_sub">Escolhendo uma rodada gravada ou um adversário de IA do seu nível…</string>
+    <string name="quick_match_searching_sub">Procurando um rival do seu nível…</string>
     <string name="quick_match_dont_worry">Calma!</string>
-    <string name="quick_match_dont_worry_body">Vamos achar um rival do seu nível rapidinho.</string>
+    <string name="quick_match_opponent_note">Seu rival pode ser um jogador ao vivo, a rodada gravada de um jogador real ou uma IA.</string>
     <string name="drawing_time_joker">+10 Segundos</string>
     <string name="duel_list_incoming_play">Jogar</string>
     <string name="offline_needed">É preciso ter conexão com a internet</string>
@@ -1674,7 +1674,6 @@
         <item>Se ninguém entender seu desenho,\nchame de ‘arte abstrata’\ne vá embora.</item>
         <item>Ser incompreendido é\no destino de todo artista.\nDesenhe mesmo assim!</item>
     </string-array>
-    <string name="ai_opponent_badge">🤖 Adversário de IA</string>
     <string name="legal_title">Antes de jogar</string>
     <string name="legal_birth_year_label">Seu ano de nascimento</string>
     <string name="legal_birth_year_placeholder">AAAA</string>

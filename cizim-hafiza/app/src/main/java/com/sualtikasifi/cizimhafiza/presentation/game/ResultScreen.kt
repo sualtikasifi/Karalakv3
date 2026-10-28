@@ -597,12 +597,7 @@ private fun GhostVersusCard(
                 photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(myAvatarUrl)
             )
         },
-        // An AI opponent is named as one, here as on the match-found card.
-        rightName = if (com.sualtikasifi.cizimhafiza.domain.model.BotGhostRuns.isBotRun(ghost.runId)) {
-            stringResource(R.string.ai_player_name, ghost.nickname)
-        } else {
-            ghost.nickname
-        },
+        rightName = ghost.nickname,
         rightScore = ghost.opponentScore,
         rightAvatar = {
             LevelAvatar(

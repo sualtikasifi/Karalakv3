@@ -182,16 +182,18 @@ internal fun SearchingScene(modifier: Modifier = Modifier) {
             FitText(
                 text = stringResource(R.string.quick_match_searching_sub),
                 style = PaintedStyle(color = Ink, fontSize = fs(26f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
-                maxLines = 2,
-                minScale = 0.6f,
-                modifier = Modifier.fillMaxWidth().weight(1f)
-            )
-            FitText(
-                text = stringResource(R.string.quick_match_dont_worry_body),
-                style = PaintedStyle(color = Color(0xFFB5531A), fontSize = fs(20f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
                 maxLines = 1,
                 minScale = 0.6f,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().weight(0.4f)
+            )
+            // What the opponent can be (a live match, a real player's recorded round or an AI): said here, once, for
+            // every match, rather than as a mark on each opponent. Kept in sight the whole time the search runs.
+            FitText(
+                text = stringResource(R.string.quick_match_opponent_note),
+                style = PaintedStyle(color = Color(0xFF7A5A3A), fontSize = fs(20f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
+                maxLines = 2,
+                minScale = 0.6f,
+                modifier = Modifier.fillMaxWidth().weight(0.6f)
             )
         }
     }

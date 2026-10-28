@@ -22,7 +22,7 @@ sıfırlanır — ama telafi hakkın var.
 
 **Hızlı Eşleş**
 Tek tuşla seviyene uygun bir rakiple eşleş: başka bir oyuncunun kayıtlı
-turu ya da 🤖 ile işaretli bir yapay zekâ rakibi. Aynı kelimeler, aynı
+turu ya da bir yapay zekâ rakibi. Aynı kelimeler, aynı
 süre, aynı koşullar. Kimin daha iyi hatırladığı maçın sonunda belli olur.
 
 **Arkadaşınla yarış**
@@ -38,7 +38,7 @@ kadar topla.
   çerçeveleri
 - 101 başarım, kolaydan çok zora sıralı
 - Aylık lig: arkadaşlarınla ve tüm dünyayla aylık XP sıralaması (ligde
-  🤖 ile işaretli yapay zekâ oyuncular da var; ödüller gerçek oyunculara)
+  yapay zekâ oyuncular da var; ödüller gerçek oyunculara)
 - Kalem derileri ve avatar çerçeveleriyle kişiselleştirme
 
 **İnternetsiz de oynanır**
@@ -80,7 +80,7 @@ day and it resets — though you get a chance to make it up.
 
 **Quick Match**
 One tap pairs you with an opponent at your level: another player's
-recorded round or an AI opponent marked with 🤖. Same words, same clock,
+recorded round or an AI opponent. Same words, same clock,
 same conditions. Who remembered better is settled at the final whistle.
 
 **Play with friends**
@@ -95,7 +95,7 @@ to earn on each.
 - XP and levels, with avatar frames that change as you climb
 - 101 achievements, ordered from easy to brutal
 - A monthly league ranking you against your friends and the world (AI
-  players marked with 🤖 take part too; prizes go to real players)
+  players take part too; prizes go to real players)
 - Pen skins and avatar frames to make it yours
 
 **Works offline**
@@ -132,7 +132,7 @@ sua sequência cresce; quanto maior a sequência, mais XP cada rodada rende.
 
 **Partida Rápida**
 Um toque te coloca contra um rival do seu nível: a rodada gravada de outro
-jogador ou um adversário de IA marcado com 🤖. Mesmas palavras, mesmo
+jogador ou um adversário de IA. Mesmas palavras, mesmo
 relógio. Quem lembrar melhor vence.
 
 **Jogue com amigos**
@@ -146,8 +146,8 @@ estrelas para conquistar em cada uma.
 **Progresso e recompensas**
 - XP, níveis e molduras de avatar que mudam conforme você sobe
 - 101 conquistas, das fáceis às impossíveis
-- Uma liga mensal contra seus amigos e o mundo (com jogadores de IA
-  marcados com 🤖; os prêmios vão para jogadores reais)
+- Uma liga mensal contra seus amigos e o mundo (com jogadores de IA;
+  os prêmios vão para jogadores reais)
 - Baús, curingas, lápis especiais e runas para deixar o jogo com a sua cara
 
 **Funciona offline**
@@ -184,7 +184,7 @@ días y tu racha crece; cuanto más larga la racha, más XP da cada ronda.
 
 **Partida Rápida**
 Un toque te empareja con un rival de tu nivel: la ronda grabada de otro
-jugador o un rival de IA marcado con 🤖. Mismas palabras, mismo reloj.
+jugador o un rival de IA. Mismas palabras, mismo reloj.
 Gana quien recuerde mejor.
 
 **Juega con amigos**
@@ -199,8 +199,8 @@ tres estrellas por conseguir en cada uno.
 **Progreso y recompensas**
 - XP, niveles y marcos de avatar que cambian mientras subes
 - 101 logros, de los fáciles a los imposibles
-- Una liga mensual contra tus amigos y el mundo (con jugadores de IA
-  marcados con 🤖; los premios son para jugadores reales)
+- Una liga mensual contra tus amigos y el mundo (con jugadores de IA;
+  los premios son para jugadores reales)
 - Cofres, comodines, lápices especiales y runas para hacerlo tuyo
 
 **Funciona sin conexión**
@@ -320,12 +320,15 @@ sorusunda bu yaş ekranı ve davranışı açıklanmalı.
 
 ## Yapay zekâ rakipler — şeffaflık
 
-- Hızlı Eşleş rakiplerinin çoğu yapay zekâ (`GhostRunRepositoryImpl.BOT_OPPONENT_SHARE`); eşleşme
-  kartında "🤖 Yapay zekâ rakibi" etiketi, sonuç ekranında adın yanında 🤖.
-- Global ligdeki dolgu oyuncular adlarının yanında 🤖 ile gösterilir; fotoğrafları yok (üretilmiş
-  avatar), ödül kazanamazlar (`functions/src/index.ts`, ödüller `users/`'tan seçilir).
-- Antrenman odasındaki (130246) Sude'nin adı "Sude 🤖".
-- Mağaza metinleri ve gizlilik politikası bunu açıkça söylüyor.
+- Hızlı Eşleş rakiplerinin çoğu yapay zekâ (`GhostRunRepositoryImpl.BOT_OPPONENT_SHARE`). Bu,
+  rakip arama ekranında her maçta yazıyor (`quick_match_opponent_note`: anlık eşleşen oyuncu,
+  kayıtlı tur ya da yapay zekâ); rakipler tek tek işaretlenmiyor.
+- Global ligdeki dolgu oyuncular lig ekranındaki notla belirtiliyor (`league_global_refresh_note`);
+  fotoğrafları yok (üretilmiş avatar), ödül kazanamazlar (`functions/src/index.ts`, ödüller
+  `users/`'tan seçilir).
+- Antrenman odasındaki (130246) rakip Sude.
+- Mağaza metinleri, kullanım koşulları ve gizlilik politikası yapay zekâ rakipleri açıkça söylüyor.
+- Canlı (anlık) eşleşme geldiğinde mağaza metinleri ve yasal sayfalar da ona göre güncellenmeli.
 
 ## Yayın öncesi teknik kontrol listesi
 

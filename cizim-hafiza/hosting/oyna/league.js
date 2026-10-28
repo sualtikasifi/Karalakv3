@@ -169,7 +169,7 @@ function monthlyCard(c) {
   return card;
 }
 
-// LevelAvatar's PersonaFace: an AI player always gets a generated face, never a photo of a person (its name carries a 🤖 too)
+// LevelAvatar's PersonaFace: an AI player always gets a generated face, never a photo of a person
 const LETTER = ["#1A73E8", "#D93025", "#188038", "#E37400", "#9334E6", "#12B5CB", "#E52592", "#5F6368"];
 const GRAD = [["#FFE0B2", "#FFB74D"], ["#C8E6C9", "#81C784"], ["#BBDEFB", "#64B5F6"], ["#F8BBD0", "#F06292"], ["#D1C4E9", "#9575CD"], ["#B2EBF2", "#4DD0E1"], ["#FFF59D", "#FFD54F"]];
 const EMOJI = ["🦊", "🐼", "🎨", "⚽", "🎸", "🌸", "🚀", "🐱", "🎮", "🌵", "🍕", "🐶", "🦁", "📚", "🏀", "🐧"];
@@ -187,12 +187,12 @@ function row(c, e, rank) {
   r.className = "lg-row" + (sprite ? " s" + rank : "") + (e.me ? " me" : "");
   const frame = e.bot ? botFrame(e.level, e.nickname) : (e.frameId && frameById(e.frameId)) || highestFrame(e.level);
   const av = frameRing(frame, "lg-av", e.bot ? personaFace(e.nickname) : null); av.style.position = "absolute";
-  const nm = document.createElement("div"); nm.className = "lg-nm"; nm.textContent = e.me ? S("quick_match_you_named", e.nickname) : e.bot ? e.nickname + " 🤖" : e.nickname;
+  const nm = document.createElement("div"); nm.className = "lg-nm"; nm.textContent = e.me ? S("quick_match_you_named", e.nickname) : e.nickname;
   const lv = document.createElement("small"); lv.className = "rl"; lv.innerHTML = rankLevelHtml(e.level, true); nm.append(lv);
   const xp = document.createElement("div"); xp.className = "lg-xp"; xp.textContent = S("league_xp_format", e.periodXp);
   if (!sprite) { const n = document.createElement("div"); n.className = "lg-rk"; n.textContent = rank + "."; r.append(n); }
   r.append(av, nm, xp);
-  // a real player other than you can be reported from their row (LeagueScreen); a 🤖 row is nobody to report
+  // a real player other than you can be reported from their row (LeagueScreen); an AI player's row is nobody to report
   if (!e.me && !e.bot && e.uid) { r.style.cursor = "pointer"; r.title = S("report_player_action"); r.onclick = () => reportPlayerDialog(net, e.uid, e.nickname, "league"); }
   return r;
 }

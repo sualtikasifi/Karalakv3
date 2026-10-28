@@ -716,7 +716,7 @@
     <string name="league_tab_global">Global</string>
     <string name="league_global_empty">Global tablo henüz hazırlanmadı. Birazdan burada olacak.</string>
     <string name="league_global_failed">Global tablo yüklenemedi.</string>
-    <string name="league_global_refresh_note">Global sıralama saatte bir yenilenir. 🤖 işaretliler yapay zekâ oyunculardır; ödüller gerçek oyuncuların ilk 3\'üne verilir.</string>
+    <string name="league_global_refresh_note">Global sıralama saatte bir yenilenir. Ligde yapay zekâ oyuncular da yer alır; ödüller gerçek oyuncuların ilk 3\'üne verilir.</string>
     <string name="league_reward_title">Bu ayın ödülü</string>
     <string name="league_reward_bonus_gold">+%1$s Altın</string>
     <string name="league_reward_bonus_xp">+%1$s XP</string>
@@ -1458,9 +1458,9 @@
     <string name="level_play">OYNA</string>
     <string name="quick_match_searching_title">Rakip</string>
     <string name="quick_match_searching_title2">aranıyor…</string>
-    <string name="quick_match_searching_sub">Seviyene uygun kayıtlı bir tur ya da yapay zekâ rakibi seçiliyor…</string>
+    <string name="quick_match_searching_sub">Seviyene uygun bir rakip aranıyor…</string>
     <string name="quick_match_dont_worry">Merak etme!</string>
-    <string name="quick_match_dont_worry_body">Kısa süre içinde seninle aynı seviyede bir rakip bulacağız.</string>
+    <string name="quick_match_opponent_note">Rakibin anlık eşleşen bir oyuncu, gerçek bir oyuncunun kayıtlı turu ya da yapay zekâ olabilir.</string>
     <string name="drawing_time_joker">+10 Saniye</string>
     <string name="duel_list_incoming_play">Oyna</string>
     <string name="offline_needed">İnternet bağlantısı gerekiyor</string>
@@ -1686,7 +1686,6 @@
         <item>Çizimin anlaşılmazsa\n‘soyut sanat’ de, kurtul.</item>
         <item>Yanlış anlaşılmak\nsanatçıların kaderidir.\nYine de çiz!</item>
     </string-array>
-    <string name="ai_opponent_badge">🤖 Yapay zekâ rakibi</string>
     <string name="legal_title">Başlamadan önce</string>
     <string name="legal_birth_year_label">Doğum yılın</string>
     <string name="legal_birth_year_placeholder">YYYY</string>

@@ -24,7 +24,7 @@ import { syncNow, scheduleBackup } from "./sync.js";
 import { openRankLadder } from "./ranks.js";
 import { startSearch, stopSearch } from "./search.js";
 import { exitDialog, appOnlyDialog, sparkFlight, PLAY_URL } from "./ui.js";
-import { makeGhostRun, loadGhostNames, isGhostId } from "./ghost.js";
+import { makeGhostRun, loadGhostNames } from "./ghost.js";
 import { needsPrompt as legalNeeded, childMode, adultOnly, openAgeGate } from "./agegate.js";
 import { layoutBreak, startBreak, stopBreak } from "./brk.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
@@ -635,15 +635,15 @@ async function pickOpponent() {
   try {
     const ids = await net.trainedWordIds(), have = new Set(words.map((w) => w.id));
     const g = makeGhostRun({ trainedIds: ids, hasWord: (id) => have.has(id), language: lang, level: levelFor(P.xp), points: POINTS, speedBonus: SPEED_BONUS, frameFor: highestFrameFor });
-    // an AI opponent is named as one (Android: ai_player_name, MatchCard's aiOpponent): it must not pass for a person
-    if (g) return Object.assign(g, { nickname: g.nickname + " 🤖", ai: true });
+    // what the opponent can be is said once, on the search screen (quick_match_opponent_note), not on each card
+    if (g) return g;
   } catch {}
   return net.findOpponent(lang, levelFor(P.xp));
 }
 // SearchingScene.kt texts: the sign reads "Rakip / aranıyor…" with its dots ticking, the plate says what is going on.
 function paintSearching() {
   $("s-text").innerHTML = `<span>${S("quick_match_searching_title")}</span><span>${S("quick_match_searching_title2").replace(/[….s]+$/, "")}<span id="s-dots"><i>.</i><i>.</i><i>.</i></span></span>`;
-  $("s-sub").innerHTML = `<b>${S("quick_match_searching_sub")}</b><small>${S("quick_match_dont_worry_body")}</small>`;
+  $("s-sub").replaceChildren(Object.assign(document.createElement("b"), { textContent: S("quick_match_searching_sub") }), Object.assign(document.createElement("small"), { textContent: S("quick_match_opponent_note") }));
 }
 async function startQuick() {
   levelRun = null; kind = "quick"; relaxed = false; quickOpp = null; quickItems = []; quickItemsP = null;
@@ -672,8 +672,6 @@ function showFound(opp, go) {
   };
   const myLv = levelFor(P.xp);
   card("f-cl", P.nick, myLv, P.frame, P.xp); card("f-cr", opp.nickname || "?", opp.level || 1, highestFrameFor(opp.level || 1), xpFor(opp.level || 1));
-  $("f-cr").querySelector(".mc-ai")?.remove();
-  if (opp.ai || isGhostId(opp.id)) $("f-cr").append(Object.assign(document.createElement("div"), { className: "mc-ai", textContent: S("ai_opponent_badge") }));
   $("f-vs").classList.remove("pop"); setTimeout(() => $("f-vs").classList.add("pop"), 350);
   const fill = $("f-fill"); fill.style.transition = "none"; fill.style.width = "3%"; void fill.offsetWidth; fill.style.transition = ""; fill.style.width = "100%";
   let left = 5; const tick = () => { $("f-pt").textContent = x.startIn(left); };

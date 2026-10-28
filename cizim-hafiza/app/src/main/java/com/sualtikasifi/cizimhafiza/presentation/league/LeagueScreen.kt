@@ -134,7 +134,7 @@ fun LeagueScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scoreRefused by viewModel.scoreRefused.collectAsState()
-    // A real player other than you can be reported from their row (a 🤖 row is nobody to report).
+    // A real player other than you can be reported from their row (an AI player's row is nobody to report).
     var reportTarget by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<LeagueEntry?>(null) }
     val reportState by viewModel.reportState.collectAsState()
     reportTarget?.let { target ->
@@ -859,8 +859,8 @@ private fun LeagueRow(rank: Int, entry: LeagueEntry, showTotalXp: Boolean = fals
                     Text(
                         text = when {
                             entry.isMe -> stringResource(R.string.online_you_label, entry.nickname)
-                            // An AI player is marked as one (see league_global_refresh_note): it must not pass for a person.
-                            entry.isBot -> stringResource(R.string.ai_player_name, entry.nickname)
+                            // AI players are not marked one by one: the note over the table says the league has them
+                            // (league_global_refresh_note).
                             else -> entry.nickname
                         },
                         style = PaintedStyle(color = InkBrown, fontSize = 15.sp, textAlign = TextAlign.Start),

@@ -295,8 +295,9 @@ fun QuickMatchScreen(
  * target somebody already hit, when the whole appeal is finding out at the
  * end who did better. And there is no start button — the countdown starts
  * itself, so the round plays like a match that begins for both of you at
- * once. Who the opponent is stays plain, though: an AI opponent's card says
- * so (see MatchCard's aiOpponent).
+ * once. What the opponent can be (a live player, a recorded round or an AI)
+ * is said once, on the search screen before this (SearchingScene), rather
+ * than on each card.
  *
  * Laid out as a painted scene in the design's own 841-wide units (see [MfArtW]): the workshop wall, the "Rakibin Hazır!"
  * splash and its sign, the two player cards hanging side by side with the VS between them, the mascots, the countdown
@@ -384,8 +385,7 @@ private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart
                     // XP for that level: a true lower bound, never a guess above it.
                     lifetimeXp = PlayerLevel.totalXpForLevel(opponent.level),
                     // The same face the result screen gives this opponent (see ResultScreen's versus card).
-                    photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(opponent.nickname),
-                    aiOpponent = com.sualtikasifi.cizimhafiza.domain.model.BotGhostRuns.isBotRun(opponent.id)
+                    photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(opponent.nickname)
                 )
                 val vsScale = remember { Animatable(0f) }
                 LaunchedEffect(Unit) {
@@ -501,9 +501,7 @@ private fun MatchCard(
     frameId: String,
     avatarUrl: String = "",
     photo: com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto? = null,
-    lifetimeXp: Int,
-    /** Labels the card as an AI opponent, on a tag over the picture: an AI player must not pass for a person. */
-    aiOpponent: Boolean = false
+    lifetimeXp: Int
 ) {
     val s = 1.18f
     val fontScale0 = LocalDensity.current.fontScale
@@ -531,23 +529,6 @@ private fun MatchCard(
                 photo = photo ?: com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(avatarUrl),
                 levelBadge = true
             )
-        }
-        if (aiOpponent) {
-            Box(
-                Modifier.offset(u * (cx - 120f), u * 18f).size(u * 240f, u * 44f)
-                    .clip(RoundedCornerShape(50))
-                    .background(Color(0xE62B1A10))
-                    .border(u * 2f, Color(0xFFF2B33A), RoundedCornerShape(50)),
-                contentAlignment = Alignment.Center
-            ) {
-                FitText(
-                    text = stringResource(R.string.ai_opponent_badge),
-                    style = PaintedStyle(color = Color.White, fontSize = fs(24f), textAlign = TextAlign.Center),
-                    maxLines = 1,
-                    minScale = 0.5f,
-                    modifier = Modifier.fillMaxSize().padding(horizontal = u * 12f, vertical = u * 4f)
-                )
-            }
         }
         val ribbonW = 292f
         Box(

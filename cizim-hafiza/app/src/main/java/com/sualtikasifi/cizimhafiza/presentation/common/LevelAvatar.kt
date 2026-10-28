@@ -598,7 +598,7 @@ private val PersonaLetterColors = listOf(
 /**
  * A generated picture for a player without a photo of their own — AI players and recorded rounds: a few keep the
  * Karalak mascot, some have a coloured initial, and the rest an emoji "artwork" on a soft gradient. Always drawn,
- * never a photo of a person: an AI player must not pass for someone real (their names carry a 🤖 for the same reason).
+ * never a photo of a person: an AI player must not pass for someone real.
  */
 @Composable
 private fun PersonaFace(seed: String, mascot: @Composable () -> Unit) {
