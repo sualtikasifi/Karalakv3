@@ -135,6 +135,7 @@ class GameViewModel @Inject constructor(
     private val wordPoolSynchronizer: WordPoolSynchronizer,
     private val xpEventRepository: XpEventRepository,
     private val avatarPhotoResolver: com.sualtikasifi.cizimhafiza.util.AvatarPhotoResolver,
+    private val legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -1121,7 +1122,9 @@ class GameViewModel @Inject constructor(
         // claw it back (see ModerationRepository.rejectDailyChallenge).
         // Fire-and-forget, same as every other post-round Firestore write
         // here — a failed upload must never hold up the player's own result.
-        if (dailyFreshCompletion) {
+        // Nothing a player who may be under 13 draws leaves the device (see LegalConsentStore).
+        val mayUpload = !legalConsentStore.childMode.value
+        if (dailyFreshCompletion && mayUpload) {
             moderationRepository.submitDailyChallengeForReview(
                 items = resultItems,
                 score = totalScore,
@@ -1135,7 +1138,7 @@ class GameViewModel @Inject constructor(
         // told nothing and gets nothing from it directly — this is the pool
         // filling itself, quietly, so that the matching phase opens onto a
         // stocked pool instead of an empty one.
-        if (GhostRuns.isWorthRecording(
+        if (mayUpload && GhostRuns.isWorthRecording(
                 mode = mode,
                 isDailyChallenge = isDaily
             )
@@ -1354,11 +1357,6 @@ class GameViewModel @Inject constructor(
      * result screen sends them back to find a new opponent instead (see
      * ResultScreen's ghost branch).
      */
-    /** RatingPromptDialog's "Puanla" tap — see SettingsRepository.grantRatingBonusXpOnce for why this is safe to call more than once. */
-    fun grantRatingBonusXp() {
-        settingsRepository.grantRatingBonusXpOnce(PostMatchPrompts.RATING_BONUS_XP)
-    }
-
     fun restart() {
         roundXpEarned = 0
         _resultXpDoubled.value = false

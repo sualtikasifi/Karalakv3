@@ -59,6 +59,7 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var googleSignInLauncher: GoogleSignInLauncher
     @Inject lateinit var autoBackupPublisher: dagger.Lazy<AutoBackupPublisher>
     @Inject lateinit var networkMonitor: com.sualtikasifi.cizimhafiza.util.NetworkMonitor
+    @Inject lateinit var legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore
 
     private var navController: NavHostController? = null
 
@@ -130,7 +131,11 @@ class MainActivity : AppCompatActivity() {
         val composeApp = {
         setContent {
             val online by networkMonitor.isOnline.collectAsState()
-            androidx.compose.runtime.CompositionLocalProvider(com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline provides online) {
+            val childMode by legalConsentStore.childMode.collectAsState()
+            androidx.compose.runtime.CompositionLocalProvider(
+                com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline provides online,
+                com.sualtikasifi.cizimhafiza.presentation.common.LocalChildMode provides childMode
+            ) {
             CizimHafizaTheme {
                 // The app's cream page color, not Surface's default white:
                 // this is what shows through anywhere a screen's own
@@ -168,8 +173,10 @@ class MainActivity : AppCompatActivity() {
                         tutorialCompleted = tutorialCompleted
                     )
                     com.sualtikasifi.cizimhafiza.presentation.common.XpFlyOverlay()
-                    RequestNotificationPermissionOnce(settingsRepository)
+                    RequestNotificationPermissionOnce(settingsRepository, legalConsentStore)
                     com.sualtikasifi.cizimhafiza.presentation.common.UsernameFinalizeHost()
+                    // Year of birth and the terms of use, once, right after the tutorial (see LegalConsentStore).
+                    com.sualtikasifi.cizimhafiza.presentation.common.LegalConsentHost()
                     GoogleSignInLauncherHost(googleSignInLauncher)
                     StartMusicAfterFirstFrame(musicPlayer)
                     // Over the app, not instead of it: the nav graph above
@@ -222,15 +229,17 @@ class MainActivity : AppCompatActivity() {
             // silently for players in regions with no form requirement.
             // A brand-new install is asked only once the first-run tutorial is behind it: a consent form is the
             // last thing a first-time player should meet before their first drawing. No ad is requested in the
-            // tutorial, and ads still only start after this resolves.
+            // tutorial, and ads still only start after this resolves. It also waits for the year of birth
+            // (LegalConsentHost): UMP and the ad requests both depend on the player's age.
             val askConsent = {
                 consentManager.ensureConsent(this) {
+                    consentManager.applyAnalyticsConsent()
                     adManager.get().initializeIfConsented(consentManager)
                 }
             }
-            if (settingsRepository.tutorialCompleted) askConsent()
+            if (settingsRepository.tutorialCompleted && !legalConsentStore.needsPrompt) askConsent()
             else lifecycleScope.launch {
-                while (!settingsRepository.tutorialCompleted) kotlinx.coroutines.delay(1_000)
+                while (!settingsRepository.tutorialCompleted || legalConsentStore.needsPrompt) kotlinx.coroutines.delay(1_000)
                 kotlinx.coroutines.delay(1_500)
                 askConsent()
             }
@@ -317,7 +326,10 @@ class MainActivity : AppCompatActivity() {
  * anyone who dismissed this or wants to turn notifications on after having turned them off.
  */
 @Composable
-private fun RequestNotificationPermissionOnce(settingsRepository: SettingsRepository) {
+private fun RequestNotificationPermissionOnce(
+    settingsRepository: SettingsRepository,
+    legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore
+) {
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -325,9 +337,9 @@ private fun RequestNotificationPermissionOnce(settingsRepository: SettingsReposi
 
     LaunchedEffect(Unit) {
         if (settingsRepository.notificationPermissionRequested) return@LaunchedEffect
-        // Waits for the tutorial's end (polled: the flag is a plain preference), then a beat so the dialog does not
-        // land on top of the tutorial's own closing animation.
-        while (!settingsRepository.tutorialCompleted) kotlinx.coroutines.delay(1_000)
+        // Waits for the tutorial's end and the legal prompt after it (polled: both are plain preferences), then a beat
+        // so the dialog does not land on top of the tutorial's own closing animation.
+        while (!settingsRepository.tutorialCompleted || legalConsentStore.needsPrompt) kotlinx.coroutines.delay(1_000)
         kotlinx.coroutines.delay(2_500)
         if (settingsRepository.notificationPermissionRequested) return@LaunchedEffect
         settingsRepository.notificationPermissionRequested = true

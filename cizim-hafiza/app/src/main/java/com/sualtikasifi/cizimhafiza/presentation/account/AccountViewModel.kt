@@ -124,7 +124,8 @@ class AccountViewModel @Inject constructor(
     private val friendRepository: FriendRepository,
     private val settingsRepository: SettingsRepository,
     private val usernameRepository: com.sualtikasifi.cizimhafiza.util.UsernameRepository,
-    private val dailyChallengeRepository: com.sualtikasifi.cizimhafiza.util.DailyChallengeRepository
+    private val dailyChallengeRepository: com.sualtikasifi.cizimhafiza.util.DailyChallengeRepository,
+    private val legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore
 ) : ViewModel() {
 
     private val _actionState = MutableStateFlow(AccountUiState(isGoogleSignInConfigured = authRepository.isGoogleSignInConfigured))
@@ -172,7 +173,9 @@ class AccountViewModel @Inject constructor(
     /** See CreateRoomViewModel.nicknameEditable. */
     /** One change is allowed before Google is linked; linking asks for the final, permanent one (see UsernameFinalizeHost). */
     val nicknameEditable: Boolean
-        get() = !settingsRepository.nicknameRenameUsed.value && settingsRepository.usernameChanges < 1 &&
+        // A player who may be under 13 keeps the generated name: a chosen one is published (see LegalConsentStore).
+        get() = !legalConsentStore.childMode.value &&
+            !settingsRepository.nicknameRenameUsed.value && settingsRepository.usernameChanges < 1 &&
             authRepository.authState.value !is com.sualtikasifi.cizimhafiza.domain.repository.AuthState.Linked
 
     fun setNicknameDraft(name: String) {
@@ -242,6 +245,11 @@ class AccountViewModel @Inject constructor(
      */
     fun signIn() {
         if (_actionState.value.isBusy) return
+        // Linking an account (and with it a name, a photo and a public profile) is for ages 13 and up.
+        if (legalConsentStore.childMode.value) {
+            _actionState.value = _actionState.value.copy(errorMessage = UiText.of(R.string.child_feature_locked))
+            return
+        }
         _actionState.value = _actionState.value.copy(isBusy = true, errorMessage = null, message = null)
         viewModelScope.launch {
             // Held across the sign-in itself, not just the local swap that
@@ -341,6 +349,10 @@ class AccountViewModel @Inject constructor(
 
     /** Turning it on asks first; turning it off takes effect at once. */
     fun setFeatureConsent(on: Boolean) {
+        if (on && legalConsentStore.childMode.value) {
+            _actionState.value = _actionState.value.copy(errorMessage = UiText.of(R.string.child_feature_locked))
+            return
+        }
         if (on) _actionState.value = _actionState.value.copy(showFeatureConsentPrompt = true)
         else settingsRepository.setFeatureConsent(false)
     }

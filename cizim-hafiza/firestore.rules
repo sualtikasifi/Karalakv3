@@ -2,7 +2,7 @@ rules_version = '2';
 
 // Security rules for Karalak.
 // Apply in the Firebase console: Firestore Database → Rules → paste this →
-// Publish. Deployment is also automated — see .github/workflows/firebase-rules.yml,
+// Publish. Deployment is also automated — see .github/workflows/firebase-deploy.yml,
 // which is the mechanism that keeps this file and the live rules from
 // drifting apart (they have before).
 //
@@ -102,12 +102,28 @@ service cloud.firestore {
       function isRoundReset() {
         return resource.data.status == 'FINISHED'
                && request.resource.data.rematchVotes.size() == 0
-               && request.resource.data.status in ['PLAYING', 'WAITING'];
+               && request.resource.data.status in ['PLAYING', 'WAITING']
+               && request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(['status', 'wordIds', 'startedAt', 'players', 'rematchVotes']);
       }
 
-      // Anyone signed in can read a room — needed to look up a room by code
-      // before you are a listed player yet.
-      allow read: if signedIn();
+      // What a listed player who is not the host may change at the room level, besides their own row: the round
+      // ending once everyone has finished (any device may notice that first), and their own rematch vote. Starting a
+      // round, the word list, the countdown and the room's settings are the host's (or a round reset's).
+      function playerRoomFieldsOk() {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
+        return changed.hasOnly(['players', 'status', 'rematchVotes'])
+               && (!changed.hasAny(['status'])
+                   || (resource.data.status == 'PLAYING' && request.resource.data.status == 'FINISHED'))
+               && (!changed.hasAny(['rematchVotes'])
+                   || request.resource.data.rematchVotes.toSet().difference(resource.data.rematchVotes.toSet())
+                        .hasOnly([request.auth.uid]));
+      }
+
+      // A room is looked up by its code (a single get) before you are a listed player, so any signed-in device may
+      // read one room. Listing rooms is not needed by any client and would hand out every open room to strangers.
+      allow get: if signedIn();
+      allow list: if reviewer();
 
       // Creating a room: you must be its host, and the initial players map
       // must contain only you — except the permanent bot room, which has no
@@ -133,7 +149,9 @@ service cloud.firestore {
                       // even here nobody can seize hostUid. The genuinely
                       // irreplaceable asset in this feature is the training
                       // data, and that is protected at botTrainedWords below.
-                      botRoom(roomCode)
+                      // The bot room has no host, so nobody may ban anyone from it: a ban list anyone could write
+                      // would let one device lock every other player out of the shared room.
+                      (botRoom(roomCode) && kickListUntouched())
 
                       // The host additionally owns moderation: kicking
                       // (removing another player's entry) and unbanning.
@@ -143,7 +161,7 @@ service cloud.firestore {
                       // presence heartbeat, their own result — or takes part
                       // in a round reset.
                       || (isListed() && kickListUntouched()
-                          && (touchedPlayers().hasOnly([request.auth.uid]) || isRoundReset()))
+                          && ((touchedPlayers().hasOnly([request.auth.uid]) && playerRoomFieldsOk()) || isRoundReset()))
 
                       // A newcomer joining an open room adds exactly one
                       // entry: their own. Capacity, status and ban checks
@@ -169,24 +187,34 @@ service cloud.firestore {
 
       allow delete: if false;
 
+      // Whether the caller has a row in this room. The drawings and the chat of a room are for the people in it: a
+      // stranger who knows (or guesses) a six-digit code must not be able to read them from outside.
+      function isMember() {
+        return request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomCode)).data.players;
+      }
+
       match /results/{uid} {
         // Every player needs to read every other player's drawings; you can
         // only ever write your own result doc — except the bot's, which is
         // written on its behalf in the bot room.
-        allow read: if signedIn();
+        allow read: if signedIn() && (isMember() || reviewer());
         allow write: if signedIn()
-                     && (request.auth.uid == uid || (botRoom(roomCode) && uid == botUid()));
+                     && (request.auth.uid == uid || (botRoom(roomCode) && uid == botUid()))
+                     && (!('itemsJson' in request.resource.data) || request.resource.data.itemsJson is string);
       }
 
       match /reactions/{reactionId} {
         // Append-only chat log: anyone in the room can read, you can only
         // post a reaction stamped with your own uid, nothing is editable.
-        // The 280-character cap stops this open-to-all-comers collection
-        // being used as free bulk storage.
-        allow read: if signedIn();
+        // Every field is named and bounded, so this collection cannot be
+        // used as free bulk storage.
+        allow read: if signedIn() && (isMember() || reviewer());
         allow create: if signedIn()
-                      && request.resource.data.emoji.size() <= 8
-                      && request.resource.data.messageKey.size() <= 64
+                      && isMember()
+                      && request.resource.data.keys().hasOnly(['uid', 'emoji', 'messageKey', 'sentAt'])
+                      && request.resource.data.emoji is string && request.resource.data.emoji.size() <= 8
+                      && request.resource.data.messageKey is string && request.resource.data.messageKey.size() <= 64
+                      && request.resource.data.sentAt is int
                       && (
                         request.resource.data.uid == request.auth.uid
                         || (botRoom(roomCode) && request.resource.data.uid == botUid())
@@ -209,10 +237,18 @@ service cloud.firestore {
 
       allow read: if signedIn() && isParticipant();
 
+      // A player who blocked the challenger cannot be challenged by them, and every free-text field is bounded.
       allow create: if signedIn()
                     && request.resource.data.challengerUid == request.auth.uid
+                    && request.resource.data.opponentUid is string
+                    && request.resource.data.opponentUid != request.auth.uid
+                    && !exists(/databases/$(database)/documents/users/$(request.resource.data.opponentUid)/blockedUsers/$(request.auth.uid))
                     && request.resource.data.status == 'AWAITING_OPPONENT'
-                    && request.resource.data.opponentScore == null;
+                    && request.resource.data.opponentScore == null
+                    && request.resource.data.get('challengerName', '') is string && request.resource.data.get('challengerName', '').size() <= 40
+                    && request.resource.data.get('opponentName', '') is string && request.resource.data.get('opponentName', '').size() <= 40
+                    && request.resource.data.get('itemsJson', '') is string && request.resource.data.get('itemsJson', '').size() < 400000
+                    && request.resource.data.get('wordIds', []) is list && request.resource.data.get('wordIds', []).size() <= 50;
 
       // Two, and only two, transitions are ever allowed:
       allow update: if signedIn()
@@ -247,6 +283,17 @@ service cloud.firestore {
     // { uid, name, createdAt }. Create-only (a taken name can never be
     // overwritten or re-pointed); only the owner may delete it, which is what
     // frees the name when an account is deleted.
+    //
+    // One account holds one name. usernameOwners/{uid} says which name that is, and it moves in the same transaction
+    // as the names themselves: a name can only be created as the one the account's marker points at, and the marker
+    // can only move off a name that is being released in the same write. Without it a script could reserve every
+    // short or attractive name under one account. The key is the folded form of the name; whether it was folded
+    // correctly cannot be checked here (rules have no Unicode normalisation), so it is held to the same shape the
+    // apps produce instead.
+    function usernameOwnerPath() {
+      return /databases/$(database)/documents/usernameOwners/$(request.auth.uid);
+    }
+
     match /usernames/{key} {
       allow read: if signedIn();
       allow create: if signedIn()
@@ -255,16 +302,48 @@ service cloud.firestore {
                     && request.resource.data.name is string
                     && request.resource.data.name.size() >= 2
                     && request.resource.data.name.size() <= 16
-                    && key.size() >= 2 && key.size() <= 32;
+                    && key.size() >= 2 && key.size() <= 32
+                    && key == key.lower()
+                    && !key.matches('.*[ /].*')
+                    && existsAfter(usernameOwnerPath())
+                    && getAfter(usernameOwnerPath()).data.key == key;
       allow update: if false;
-      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid
+                    && (!existsAfter(usernameOwnerPath()) || getAfter(usernameOwnerPath()).data.key != key);
     }
 
-    // Permanent friend codes — a code->uid lookup doc that never rotates.
+    match /usernameOwners/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid
+                    && request.resource.data.keys().hasOnly(['key'])
+                    && request.resource.data.key is string
+                    && existsAfter(/databases/$(database)/documents/usernames/$(request.resource.data.key))
+                    && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.key)).data.uid == uid;
+      allow update: if signedIn() && request.auth.uid == uid
+                    && request.resource.data.keys().hasOnly(['key'])
+                    && request.resource.data.key is string
+                    && existsAfter(/databases/$(database)/documents/usernames/$(request.resource.data.key))
+                    && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.key)).data.uid == uid
+                    && (resource.data.key == request.resource.data.key
+                        || !existsAfter(/databases/$(database)/documents/usernames/$(resource.data.key)));
+      allow delete: if signedIn() && request.auth.uid == uid
+                    && !existsAfter(/databases/$(database)/documents/usernames/$(resource.data.key));
+    }
+
+    // Permanent friend codes — a code->uid lookup doc that never rotates. One per account: the code is created in the
+    // same transaction that records it on the account's own profile (as both apps already do), so a script cannot
+    // claim a block of codes. The owner may delete theirs when the account is deleted.
     match /friendCodes/{code} {
       allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if false;
+      allow create: if signedIn()
+                    && request.resource.data.keys().hasOnly(['uid'])
+                    && request.resource.data.uid == request.auth.uid
+                    && code.matches('[0-9]{6}')
+                    && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('friendCode', '') == code
+                    && (!exists(/databases/$(database)/documents/users/$(request.auth.uid))
+                        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('friendCode', '') == '');
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
     }
 
     // Recorded rounds that other players get matched against — see
@@ -279,9 +358,9 @@ service cloud.firestore {
     // not work, so a human is the only reliable filter left. See
     // GhostRunRepositoryImpl.write and ModerationRepository.
     match /pendingRuns/{runId} {
-      // Readable by any signed-in client because the review screen runs
-      // inside the app, behind a passcode rather than behind a rule.
-      allow read: if signedIn();
+      // The queue holds drawings, uids and names that are not public until a reviewer approves them, so only the
+      // reviewer and the round's own author may read an entry.
+      allow read: if reviewer() || (signedIn() && resource.data.uid == request.auth.uid);
       // Either the author filing their own finished round, or the reviewer
       // sending one back out of the live pool for a second look — that copy
       // carries the ORIGINAL author's uid, so it cannot pass the first test.
@@ -301,16 +380,17 @@ service cloud.firestore {
                     && request.resource.data.nickname is string
                     && request.resource.data.nickname.size() > 0
                     && request.resource.data.nickname.size() <= 40;
-      allow delete: if reviewer();
+      // The author may withdraw their own round (deleting the account takes these with it).
+      allow delete: if reviewer() || (signedIn() && resource.data.uid == request.auth.uid);
     }
 
     match /pendingRunItems/{runId} {
-      allow read: if signedIn();
+      allow read: if reviewer() || (signedIn() && resource.data.uid == request.auth.uid);
       allow create: if ((signedIn() && request.resource.data.uid == request.auth.uid)
                     || reviewer())
                     && request.resource.data.itemsJson.size() < 200000;
       allow update: if false;
-      allow delete: if reviewer();
+      allow delete: if reviewer() || (signedIn() && resource.data.uid == request.auth.uid);
     }
 
     // Günlük Meydan Okuma review queue — see ModerationRepository's
@@ -322,14 +402,14 @@ service cloud.firestore {
     // words once a day, not worth splitting the way the far higher-volume
     // Hızlı Eşleş queue is.
     match /pendingDailyChallenges/{id} {
-      allow read: if signedIn();
+      allow read: if reviewer() || (signedIn() && resource.data.uid == request.auth.uid);
       allow create: if signedIn()
                     && request.resource.data.uid == request.auth.uid
                     && request.resource.data.itemsJson.size() < 200000;
       allow update: if false;
-      // Reviewer only — approving or rejecting both just remove the row
-      // (see ModerationRepository.approveDailyChallenge/rejectDailyChallenge).
-      allow delete: if reviewer();
+      // Approving or rejecting both just remove the row (see ModerationRepository.approveDailyChallenge/
+      // rejectDailyChallenge); the author may also remove their own when deleting the account.
+      allow delete: if reviewer() || (signedIn() && resource.data.uid == request.auth.uid);
     }
 
     match /ghostRuns/{runId} {
@@ -424,62 +504,115 @@ service cloud.firestore {
       allow write: if reviewer();
     }
 
-    // A sanity ceiling on the two fields that decide the league standings
-    // and every prize built on them — periodXp and level. NOT a real
-    // anti-cheat: a determined player can still inflate their score up to
-    // this ceiling, and the honest fix is a Cloud Function that recomputes
-    // periodXp from actual submitted match results rather than trusting a
-    // client-published number at all. What this closes is the trivial
-    // version of the exploit — a modified client (or a raw REST/SDK call
-    // with nothing but a valid anon auth token) writing periodXp:
-    // 999999999 and instantly topping both the friends table and the
-    // global leaderboard (see GlobalLeagueRepositoryImpl / buildGlobalLeaderboard
-    // in functions/src/index.ts, which both read this field unchecked).
-    // The ceilings are deliberately generous — far above what even a
-    // maximally dedicated player earns in a month (PlayerLevel.MAX_LEVEL is
-    // 100, and periodXp resets every calendar month, see LeaguePeriod) — so
-    // this never rejects a real player's honestly-earned score.
+    // ---- the public profile and the league ---------------------------------
+    //
+    // The league month a score belongs to, as both apps stamp it (LeaguePeriod.periodIdFor): year * 12 + month - 1, on
+    // Istanbul's calendar, which is UTC+3 all year.
+    function istanbulNow() {
+      return request.time + duration.value(3, 'h');
+    }
+
+    function currentPeriodId() {
+      return istanbulNow().year() * 12 + istanbulNow().month() - 1;
+    }
+
+    function periodStartMillis(p) {
+      return (timestamp.date(p / 12, p % 12 + 1, 1) - duration.value(3, 'h')).toMillis();
+    }
+
+    // A sanity ceiling on the fields that decide the league standings and every prize built on them. The score is
+    // still published by the player's own device, so this is not a full anti-cheat (that needs the score computed on
+    // a server); what it guarantees is that no account can be ahead of honest play by more than the margins below.
     function plausibleLeagueFields() {
+      let before = resource == null ? {} : resource.data;
       let after = request.resource.data;
+      let scoreTouched = after.diff(before).affectedKeys().hasAny(['periodXp', 'periodId']);
       return (!('periodXp' in after) || (after.periodXp is int && after.periodXp >= 0 && after.periodXp <= 300000))
              && (!('level' in after) || (after.level is int && after.level >= 1 && after.level <= 100))
              // Lifetime XP, shown on the Friends table. A sanity ceiling only (level 100 is ~252k XP).
              && (!('totalXp' in after) || (after.totalXp is int && after.totalXp >= 0 && after.totalXp <= 5000000))
-             && plausibleXpGrowth();
+             && (!scoreTouched || !('periodXp' in after) || plausibleMonthScore())
+             && periodStampOk();
     }
 
-    // How fast periodXp may grow: a burst allowance plus a steady rate measured from the
-    // server-stamped time of the account's previous score write (periodXpAt). This is what
-    // stops a modified client jumping straight to the ceiling above — reaching it now takes
-    // days, not one write — without recomputing anything server-side.
+    // How much a month's score may hold: a 30000 burst (everything that legitimately lands at once — the monthly
+    // prize, referral rewards, a long offline stretch published in one go) plus 3000 an hour since the month began,
+    // which no hand can reach. Measured from the START OF THE MONTH, not from the previous write: a per-write
+    // allowance let a script climb to the ceiling in a handful of back-to-back writes. The same numbers decide who
+    // appears in the global table and who can win it (functions/src/leagueRules.ts) — keep them in step.
+    // The score must belong to the current month (or to last month during the first hour of a new one, for a device
+    // whose clock runs a little behind), so nobody can pad a month that is over.
     //
-    // The numbers are deliberately far above honest play: a round is worth tens to hundreds
-    // of XP, so 3000 an hour is not reachable by hand, and the 30000 burst covers everything
-    // that legitimately lands at once (the 10000 monthly prize, referral / rating bonuses,
-    // XP earned while offline and published on the next launch). A document that predates
-    // periodXpAt has no reference point, so its first write is held only to the ceiling.
-    // A new month restarts the score from zero, so growth is measured against 0 then.
-    function plausibleXpGrowth() {
+    // The same allowance is also measured from the moment THIS account published its first score of the month
+    // (periodStartAt, stamped by the server on that write and fixed for the rest of the month). A brand-new account —
+    // which costs nothing to make — therefore opens a month at no more than the burst and cannot climb faster than
+    // 3000 an hour, however many writes it sends: a per-write allowance (the earlier rule) handed out a fresh burst
+    // with every write, so a script reached the ceiling in seconds. An honest player who reinstalls starts again from
+    // the burst and catches up within a day (LeagueScoreCap in the app publishes what the rules accept).
+    // A score change must carry the server's time stamp.
+    function plausibleMonthScore() {
       let after = request.resource.data;
-      let existing = resource != null;
-      let sameMonth = existing
-                      && 'periodId' in resource.data && 'periodId' in after
-                      && resource.data.periodId == after.periodId;
-      let before = (sameMonth && 'periodXp' in resource.data) ? resource.data.periodXp : 0;
-      let growth = ('periodXp' in after ? after.periodXp : before) - before;
-      let hasStamp = existing && 'periodXpAt' in resource.data && resource.data.periodXpAt is timestamp;
-      // A profile document that does not exist yet may open with up to the ceiling (not 30000): a player
-      // who reinstalls, signs in on a new phone or restores a cloud backup gets a fresh anonymous uid whose
-      // first publish carries their whole month's XP. With the old 30000 cap that first write was refused for
-      // ever, so the account never appeared in the global league at all.
-      let allowed = !existing ? 300000
-                    : (!hasStamp ? 300000
-                       : 30000 + (request.time.toMillis() - resource.data.periodXpAt.toMillis()) / 1200);
-      // The stamp must be the server's own time, or a client could backdate it to earn allowance.
-      let stampOk = !('periodXpAt' in after)
-                    || (existing && 'periodXpAt' in resource.data && after.periodXpAt == resource.data.periodXpAt)
-                    || after.periodXpAt == request.time;
-      return growth <= allowed && stampOk;
+      let p = after.get('periodId', -1);
+      let current = currentPeriodId();
+      let now = request.time.toMillis();
+      let freshStart = resource == null
+                       || !(resource.data.get('periodStartAt', null) is timestamp)
+                       || resource.data.get('periodId', -2) != p;
+      let startOk = freshStart
+                    ? after.get('periodStartAt', null) == request.time
+                    : after.get('periodStartAt', null) == resource.data.periodStartAt;
+      let startMillis = freshStart ? now : resource.data.periodStartAt.toMillis();
+      return p is int
+             && (p == current || (p == current - 1 && now < periodStartMillis(current) + 3600000))
+             && after.periodXp is int
+             && startOk
+             && after.periodXp <= 30000 + (now - periodStartMillis(p)) / 1200
+             && after.periodXp <= 30000 + (now - startMillis) / 1200
+             && after.get('periodXpAt', null) == request.time;
+    }
+
+    // The score's time stamp must be the server's own time, or a client could backdate it.
+    function periodStampOk() {
+      let after = request.resource.data;
+      return !('periodXpAt' in after)
+             || (resource != null && 'periodXpAt' in resource.data && after.periodXpAt == resource.data.periodXpAt)
+             || after.periodXpAt == request.time;
+    }
+
+    // What every player sees of an account: the name, the picture, the frame. Bounded, and the picture may only be a
+    // Google profile photo — any other address would let one player log the IP of everyone who looks at the table.
+    function profileFieldsOk() {
+      let before = resource == null ? {} : resource.data;
+      let after = request.resource.data;
+      let changed = after.diff(before).affectedKeys();
+      return (!changed.hasAny(['nickname']) || !('nickname' in after)
+                || (after.nickname is string && after.nickname.size() > 0 && after.nickname.size() <= 40))
+             && (!changed.hasAny(['username']) || !('username' in after)
+                || (after.username is string && after.username.size() <= 40))
+             && (!changed.hasAny(['avatarUrl']) || !('avatarUrl' in after)
+                || (after.avatarUrl is string
+                    && (after.avatarUrl == '' || after.avatarUrl.matches('https://lh[0-9]+[.]googleusercontent[.]com/[^ ]{1,1000}'))))
+             && (!changed.hasAny(['frameId']) || !('frameId' in after) || (after.frameId is string && after.frameId.size() <= 64))
+             // The month's start moves only together with the score (plausibleMonthScore checks it there).
+             && (!changed.hasAny(['periodStartAt']) || changed.hasAny(['periodXp', 'periodId']))
+             // The friend code is the account's one code (see friendCodes) and never changes once given.
+             && (!('friendCode' in before) || !('friendCode' in after) || after.friendCode == before.friendCode);
+    }
+
+    // Who invited this account, and whether the referral reward was paid for it. The invitee's own device records the
+    // inviter once (FriendRepositoryImpl.recordReferralIfEligible); after that the inviter cannot be swapped and the
+    // "paid" flag cannot be turned back to false — that flip is what let one account collect the reward every day.
+    // (The reward cron also keeps its own ledger, referrals/{invitee}, which no client can touch.)
+    function referralFieldsOk() {
+      let before = resource == null ? {} : resource.data;
+      let after = request.resource.data;
+      return (!('invitedByUid' in after)
+                || ('invitedByUid' in before && after.invitedByUid == before.invitedByUid)
+                || (!('invitedByUid' in before) && after.invitedByUid is string
+                    && after.invitedByUid != request.auth.uid && after.invitedByUid.size() <= 128))
+             && (!('referralRewardGranted' in after)
+                || ('referralRewardGranted' in before && after.referralRewardGranted == before.referralRewardGranted)
+                || (!('referralRewardGranted' in before) && after.referralRewardGranted == false));
     }
 
     // The cloud save (users/{uid}/backup/state) is restored into the game as
@@ -504,22 +637,31 @@ service cloud.firestore {
              && (hasStamp
                  ? (after.goldBalance - goldBefore <= 300000 + hours * 60000
                     && after.lifetimeXp - xpBefore <= 30000 + hours * 3000)
-                 : (after.goldBalance <= 1500000))
+                 // A first save has nothing to measure growth against. Saves can no longer be deleted (delete: false
+                 // below), so this is once per account; held to what a long-standing honest player could hold.
+                 : (after.goldBalance <= 500000 && after.lifetimeXp <= 1000000))
              && (!('runeLevels' in after) || (after.runeLevels is map && after.runeLevels.size() <= 40))
              && (!('jokerCounts' in after) || (after.jokerCounts is list && after.jokerCounts.size() <= 20));
     }
 
+    // A name shown to other players: a non-empty string of at most 40 characters (the apps cap their own at 16).
+    function shortName(value) {
+      return value is string && value.size() > 0 && value.size() <= 40;
+    }
+
     match /users/{uid} {
-      // Public profile: nickname, friendCode, level/frame, and the weekly
-      // league score (see C1 / WeeklyLeague). Readable by anyone signed in —
-      // that is what lets a friend list resolve nicknames and badges — and
-      // writable only by its owner, and only within plausibleLeagueFields()'s
-      // sanity ceiling (see its own doc comment for why this is a partial
-      // mitigation, not a full one). Note this document deliberately holds
-      // NOTHING private: the FCM token lives in the private/ subcollection
-      // below precisely because this one is world-readable.
+      // Public profile: nickname, friendCode, level/frame, and the monthly
+      // league score. Readable by anyone signed in — that is what lets a
+      // friend list resolve nicknames and badges, and the global league count
+      // the players ahead of you — and writable only by its owner, within the
+      // checks above. Note this document deliberately holds NOTHING private:
+      // the FCM token lives in the private/ subcollection below precisely
+      // because this one is world-readable.
       allow read: if signedIn();
-      allow write: if signedIn() && request.auth.uid == uid && plausibleLeagueFields();
+      allow create, update: if signedIn() && request.auth.uid == uid
+                            && plausibleLeagueFields() && profileFieldsOk() && referralFieldsOk();
+      // Deleting the account takes the public profile with it.
+      allow delete: if signedIn() && request.auth.uid == uid;
 
       // Device push token and anything else that must not be world-readable.
       // Cloud Functions read this with admin credentials, which bypass rules,
@@ -528,47 +670,83 @@ service cloud.firestore {
         allow read: if signedIn() && request.auth.uid == uid;
         // leagueAwards and pendingRewards are documents here the owner may
         // not freely write: leagueAwards records what they won (written by
-        // finalizeWeeklyLeague with admin credentials — owner-writable, it
-        // would be a cosmetics vending machine), and pendingRewards is an
-        // XP grant queue only the referral cron may add to (see the
-        // dedicated match below for how the owner may still consume it).
-        allow write: if signedIn() && request.auth.uid == uid
-                     && docId != 'leagueAwards' && docId != 'pendingRewards';
+        // finalizeLeaguePeriod with admin credentials — owner-writable, it
+        // would be a cosmetics vending machine), and pendingRewards is a
+        // reward queue only the referral cron may add to (see the dedicated
+        // match below for how the owner may still consume it). The owner may
+        // delete either: that is part of deleting the account.
+        allow create, update: if signedIn() && request.auth.uid == uid
+                              && docId != 'leagueAwards' && docId != 'pendingRewards';
+        allow delete: if signedIn() && request.auth.uid == uid;
       }
 
-      // XP a Blaze-free cron script (runGrantReferralRewards, admin
+      // Rewards a Blaze-free cron script (runGrantReferralRewards, admin
       // credentials bypass rules) has granted this account but can't write
       // straight onto the public profile — see LeagueScorePublisher's own
       // doc comment for why a server-side XP write there would just be
       // overwritten on the client's next publish. The owner may read it and
-      // may shrink `pending` (after applying each entry's XP locally, see
-      // ReferralRewardClaimer) but never grow it or touch any other field —
-      // otherwise a signed-in user could hand themselves free XP straight
-      // from the Firestore console with no cron involved at all.
+      // may shrink `pending` (after applying each entry locally, see
+      // ReferralRewardClaimer) but never grow it or touch any other field.
       match /private/pendingRewards {
         allow read: if signedIn() && request.auth.uid == uid;
         allow create: if false;
         allow update: if signedIn() && request.auth.uid == uid
                       && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pending'])
                       && request.resource.data.pending.size() <= resource.data.pending.size();
-        allow delete: if false;
+        allow delete: if signedIn() && request.auth.uid == uid;
       }
 
       // Cloud save of local progress (XP, achievements, level stars,
       // cosmetics) so a new phone can restore it. Strictly owner-only — and,
       // since a restore puts these numbers straight back into the game, held
-      // to plausibleBackup(): a raw write cannot hand an account a fortune.
+      // to plausibleBackup(). Not deletable from a client: deleting it and
+      // writing a "first save" again used to reset the growth limit and hand
+      // out the first-save ceiling as often as wanted. Account deletion
+      // removes it on the server (functions/src/maintenance.ts).
       match /backup/{docId} {
-        allow read, delete: if signedIn() && request.auth.uid == uid;
+        allow read: if signedIn() && request.auth.uid == uid;
         allow create, update: if signedIn() && request.auth.uid == uid && plausibleBackup();
+        allow delete: if false;
+      }
+
+      // A friendship is two documents, one in each player's list. You write your own list freely; you may write
+      // YOUR entry into someone else's list only when they asked for it:
+      //  - accepting: the owner's friend request sits in your inbox (users/{you}/friendRequests/{owner});
+      //  - moving accounts: a guest who signs in to an existing Google account re-creates their friendships under the
+      //    new uid. The old uid leaves a one-time secret in its private/migration document before switching, the new
+      //    uid presents the same secret in its own private/migratedFrom, and only lists that already hold the old uid
+      //    can be written. Nobody else can read either document, so nobody else can present the secret.
+      // Before this, anyone could write themselves into anyone's list — even a player who had blocked them.
+      function migratedFromUid() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)/private/migratedFrom).data.uid;
+      }
+
+      function isSuccessorOf(oldUid) {
+        let mine = /databases/$(database)/documents/users/$(request.auth.uid)/private/migratedFrom;
+        let theirs = /databases/$(database)/documents/users/$(oldUid)/private/migration;
+        return exists(mine) && exists(theirs)
+               && get(mine).data.uid == oldUid
+               && get(theirs).data.token is string && get(theirs).data.token.size() >= 16
+               && get(mine).data.token == get(theirs).data.token;
       }
 
       match /friends/{friendUid} {
-        // Only you read your own friends list. Adding a friend is mutual and
-        // written from one client in a single batch (see addFriendByCode),
-        // so either side of the friendship is allowed to write it.
+        function validEntry() {
+          return request.resource.data.keys().hasOnly(['nickname', 'addedAt'])
+                 && shortName(request.resource.data.nickname)
+                 && (!('addedAt' in request.resource.data) || request.resource.data.addedAt is int);
+        }
+
         allow read: if signedIn() && request.auth.uid == uid;
-        allow write: if signedIn() && (request.auth.uid == uid || request.auth.uid == friendUid);
+        allow create, update: if signedIn() && validEntry()
+                              && (request.auth.uid == uid
+                                  || (request.auth.uid == friendUid
+                                      && !exists(/databases/$(database)/documents/users/$(uid)/blockedUsers/$(request.auth.uid))
+                                      && (exists(/databases/$(database)/documents/users/$(friendUid)/friendRequests/$(uid))
+                                          || (exists(/databases/$(database)/documents/users/$(uid)/friends/$(migratedFromUid()))
+                                              && isSuccessorOf(migratedFromUid())))));
+        // Either side may end a friendship; the successor of a moved account removes the old uid's entries.
+        allow delete: if signedIn() && (request.auth.uid == uid || request.auth.uid == friendUid || isSuccessorOf(friendUid));
       }
 
       match /friendRequests/{fromUid} {
@@ -586,26 +764,33 @@ service cloud.firestore {
         // The sender may withdraw their own pending request; the recipient
         // may decline it or clear it on accept.
         allow delete: if signedIn() && (request.auth.uid == uid || request.auth.uid == fromUid);
+        // fromUid repeats the sender inside the document so that deleting the sender's account can find every request
+        // they left in other players' inboxes (older requests do not have it).
         allow create: if signedIn()
                       && fromUid == request.auth.uid
-                      && request.resource.data.keys().hasOnly(['fromNickname', 'sentAt'])
-                      && request.resource.data.fromNickname is string
-                      && request.resource.data.fromNickname.size() <= 40
+                      && fromUid != uid
+                      && request.resource.data.keys().hasOnly(['fromNickname', 'sentAt', 'fromUid'])
+                      && shortName(request.resource.data.fromNickname)
+                      && (!('fromUid' in request.resource.data) || request.resource.data.fromUid == request.auth.uid)
                       && !exists(/databases/$(database)/documents/users/$(uid)/friends/$(request.auth.uid))
                       && !exists(/databases/$(database)/documents/users/$(uid)/blockedUsers/$(request.auth.uid));
         allow update: if false;
       }
 
       match /invites/{inviteId} {
-        // Only the recipient reads/dismisses their own invites. Anyone signed
-        // in can create one for someone else (that is the point of an invite)
-        // as long as it is stamped with their own uid — unless the recipient
-        // blocked them, or declined them within the last 5 minutes (keep the
-        // 300000ms window in sync with
+        // Only the recipient reads/dismisses their own invites. A match invite
+        // comes from a friend — the recipient must have the sender in their
+        // friends list — stamped with the sender's own uid, and never from
+        // someone the recipient blocked or declined within the last 5 minutes
+        // (keep the 300000ms window in sync with
         // GameConstants.FRIEND_INVITE_COOLDOWN_MILLIS).
         allow read, delete: if signedIn() && request.auth.uid == uid;
         allow create: if signedIn()
+                      && request.resource.data.keys().hasOnly(['fromUid', 'fromNickname', 'roomCode', 'sentAt'])
                       && request.resource.data.fromUid == request.auth.uid
+                      && shortName(request.resource.data.fromNickname)
+                      && request.resource.data.roomCode is string && request.resource.data.roomCode.matches('[0-9]{6}')
+                      && exists(/databases/$(database)/documents/users/$(uid)/friends/$(request.auth.uid))
                       && !exists(/databases/$(database)/documents/users/$(uid)/blockedUsers/$(request.auth.uid))
                       && (
                         !exists(/databases/$(database)/documents/users/$(uid)/inviteCooldowns/$(request.auth.uid))
@@ -620,13 +805,47 @@ service cloud.firestore {
         // friendly "this person blocked you" message instead of a raw
         // permission error.
         allow read: if signedIn() && (request.auth.uid == uid || request.auth.uid == blockedUid);
-        allow write: if signedIn() && request.auth.uid == uid;
+        allow create, update: if signedIn() && request.auth.uid == uid
+                              && (!('nickname' in request.resource.data) || request.resource.data.nickname is string
+                                  && request.resource.data.nickname.size() <= 40);
+        allow delete: if signedIn() && request.auth.uid == uid;
       }
 
       match /inviteCooldowns/{fromUid} {
         allow read: if signedIn() && (request.auth.uid == uid || request.auth.uid == fromUid);
         allow write: if signedIn() && request.auth.uid == uid;
       }
+    }
+
+    // An account's request to be deleted. Written by the account itself right before it signs out for good (both
+    // apps' "Delete account"); the daily maintenance run (functions/src/maintenance.ts runProcessDeletions) then removes
+    // everything the account left behind — including what a client cannot reach — and the sign-in itself.
+    match /deletionRequests/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid
+                    && request.resource.data.keys().hasOnly(['requestedAt', 'platform'])
+                    && request.resource.data.requestedAt == request.time
+                    && (!('platform' in request.resource.data)
+                        || request.resource.data.platform in ['android', 'web']);
+      allow update, delete: if false;
+    }
+
+    // A player reporting another player (their name, or how they behave in a room) — the user-to-user reporting Play
+    // requires of an app with online play. One report per reporter and player: the id is {reportedUid}__{reporterUid}.
+    match /playerReports/{reportId} {
+      allow read, delete: if reviewer();
+      allow create: if signedIn()
+                    && request.resource.data.keys().hasOnly(['reporterUid', 'reportedUid', 'nickname', 'reason', 'context', 'createdAt'])
+                    && request.resource.data.reporterUid == request.auth.uid
+                    && request.resource.data.reportedUid is string
+                    && request.resource.data.reportedUid != request.auth.uid
+                    && reportId == request.resource.data.reportedUid + '__' + request.auth.uid
+                    && request.resource.data.nickname is string && request.resource.data.nickname.size() <= 40
+                    && request.resource.data.reason in ['NAME', 'BEHAVIOUR', 'CHEATING', 'OTHER']
+                    && (!('context' in request.resource.data)
+                        || (request.resource.data.context is string && request.resource.data.context.size() <= 32))
+                    && request.resource.data.createdAt == request.time;
+      allow update: if false;
     }
 
     // Bot-opponent training data: one doc per word id, holding the hand-drawn
@@ -741,7 +960,8 @@ service cloud.firestore {
     }
 
     match /detectorEvents/{eventId} {
-      allow read: if signedIn();
+      // A moderation record with a sample of the player's handwriting: the reviewer's alone to read.
+      allow read: if reviewer();
       allow create: if signedIn()
                     && request.resource.data.uid == request.auth.uid
                     && request.resource.data.sampleStrokesJson is string
@@ -758,9 +978,16 @@ service cloud.firestore {
       // to everyone who played against it.
       allow read: if signedIn();
 
+      // reporterLinked says whether the reporter is signed in with a real account (Google or a browser account)
+      // rather than an anonymous guest; it cannot be claimed falsely. Only linked reports count towards taking a
+      // round out of the pool automatically — two free anonymous accounts must not be enough to retire anyone's
+      // round (see GhostRunRepositoryImpl). Every report still reaches the reviewer.
       allow create: if signedIn()
                     && request.resource.data.reporterUid == request.auth.uid
                     && reportId.matches('.*__' + request.auth.uid)
+                    && (!('reporterLinked' in request.resource.data)
+                        || request.resource.data.reporterLinked == false
+                        || request.auth.token.firebase.sign_in_provider != 'anonymous')
                     && request.resource.data.reason in ['WRITTEN', 'OFFENSIVE', 'MEANINGLESS']
                     && request.resource.data.reportedUid is string
                     && request.resource.data.runId is string
@@ -846,21 +1073,27 @@ service cloud.firestore {
 
     // Daily counters behind the developer panel's İstatistik tab (AdminStats.kt):
     // ad requests / payouts / estimated revenue per placement, app opens, finished
-    // games. Every device adds to the same day's document with FieldValue.increment,
-    // so any signed-in player may write — but only the two expected fields, only under
-    // a real date id, and only a bounded number of counters. Rules cannot prove that
-    // each write is a +1, so a modified client could inflate these numbers; they are
-    // trend figures for the maintainer, not anything the game relies on. Reading is
-    // the reviewer's alone: ad revenue is nobody else's business.
+    // games. Each device keeps its own row for the day (devices/{uid}) and the panel
+    // adds the rows up, capping any single device at a plausible amount. The day's
+    // document itself used to be the one every device added to — any player could
+    // then overwrite everyone's numbers, and every device in the world wrote to a
+    // single document — so it is read-only now (older days keep their totals there).
+    // Reading is the reviewer's alone: ad revenue is nobody else's business.
     match /adminStats/{day} {
       allow read: if reviewer();
-      allow create, update: if signedIn()
-                            && day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
-                            && request.resource.data.keys().hasOnly(['day', 'counts'])
-                            && request.resource.data.day == day
-                            && request.resource.data.counts is map
-                            && request.resource.data.counts.size() <= 300;
-      allow delete: if false;
+      allow create, update, delete: if false;
+
+      match /devices/{uid} {
+        allow read: if reviewer();
+        allow create, update: if signedIn() && request.auth.uid == uid
+                              && day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+                              && request.resource.data.keys().hasOnly(['day', 'uid', 'counts'])
+                              && request.resource.data.day == day
+                              && request.resource.data.get('uid', uid) == uid
+                              && request.resource.data.counts is map
+                              && request.resource.data.counts.size() <= 300;
+        allow delete: if false;
+      }
 
       // One empty marker per player per day: the number of documents here is that
       // day's distinct active players (read with a count() query, no document reads).

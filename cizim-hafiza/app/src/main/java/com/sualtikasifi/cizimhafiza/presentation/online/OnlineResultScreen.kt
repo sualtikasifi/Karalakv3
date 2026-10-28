@@ -421,10 +421,7 @@ fun OnlineResultScreen(
     // Local, not derived from uiState: the flag only decides eligibility once, dismissing is what takes it off screen.
     if (uiState.showRatingPrompt && !ratingPromptDismissed) {
         RatingPromptDialog(
-            onRate = {
-                viewModel.grantRatingBonusXp()
-                ratingPromptDismissed = true
-            },
+            onRate = { ratingPromptDismissed = true },
             onDismiss = { ratingPromptDismissed = true }
         )
     }

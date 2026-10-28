@@ -14,6 +14,7 @@ import com.sualtikasifi.cizimhafiza.data.bot.BotRoomEngine
 import com.sualtikasifi.cizimhafiza.domain.model.AddFriendOutcome
 import com.sualtikasifi.cizimhafiza.domain.model.BlockedUser
 import com.sualtikasifi.cizimhafiza.domain.model.Friend
+import com.sualtikasifi.cizimhafiza.domain.model.FriendMigration
 import com.sualtikasifi.cizimhafiza.domain.model.FriendRequest
 import com.sualtikasifi.cizimhafiza.domain.model.InviteEligibility
 import com.sualtikasifi.cizimhafiza.domain.model.MatchInvite
@@ -171,13 +172,16 @@ class FriendRepositoryImpl @Inject constructor(
                     false
                 } else {
                     tx.set(codeRef, mapOf("uid" to uid))
+                    // Merged: the profile may already hold the league score and who invited this account, and the
+                    // rules refuse a write that would wipe them.
                     tx.set(
                         users.document(uid),
                         mapOf(
                             "nickname" to nickname,
                             "friendCode" to code,
                             "createdAt" to System.currentTimeMillis()
-                        )
+                        ),
+                        SetOptions.merge()
                     )
                     true
                 }
@@ -286,7 +290,8 @@ class FriendRepositoryImpl @Inject constructor(
         // The normal path. One write, into THEIR inbox, carrying nothing but
         // who is asking — the friendship itself is theirs to create.
         users.document(friendUid).collection("friendRequests").document(uid).set(
-            mapOf("fromNickname" to myNickname, "sentAt" to System.currentTimeMillis())
+            // fromUid repeats the sender inside the document so deleting the sender's account can find it.
+            mapOf("fromNickname" to myNickname, "sentAt" to System.currentTimeMillis(), "fromUid" to uid)
         ).await()
         val kept = com.sualtikasifi.cizimhafiza.domain.model.FriendRequestLimit.recent(sentAt, nowMillis) + nowMillis
         limitPrefs.edit().putString("sent_at", kept.joinToString(",")).apply()
@@ -358,7 +363,7 @@ class FriendRepositoryImpl @Inject constructor(
         batch.commit().await()
     }
 
-    override suspend fun prepareFriendMigration(): List<Friend> {
+    override suspend fun prepareFriendMigration(): FriendMigration {
         val uid = requireUid()
         val snapshot = users.document(uid).collection("friends").get().await()
         val friends = snapshot.documents.map { doc ->
@@ -367,39 +372,44 @@ class FriendRepositoryImpl @Inject constructor(
                 nickname = doc.getString("nickname").orEmpty().ifBlank { context.getString(R.string.default_nickname) }
             )
         }
-        if (friends.isEmpty()) return friends
-        val batch = firestore.batch()
-        friends.forEach { friend ->
-            // Both directions of this uid's OWN half of each friendship —
-            // the friend's own half (users/{friend}/friends/{newUid}) is
-            // adoptMigratedFriends' job, written under the new identity.
-            batch.delete(users.document(uid).collection("friends").document(friend.uid))
-            batch.delete(users.document(friend.uid).collection("friends").document(uid))
-        }
-        runCatching { batch.commit().await() }
-            .onFailure { NonFatal.report(TAG, "prepareFriendMigration: detach batch failed", it) }
-        return friends
+        if (friends.isEmpty()) return FriendMigration.NONE
+        // The secret the new account will present (see firestore.rules, isSuccessorOf). Only this uid can read or
+        // write its private/ documents, so nobody else can learn it. Friend-side entries are left in place on
+        // purpose: the rules check that a friend's list still holds THIS uid before the new one may take its place.
+        val token = java.util.UUID.randomUUID().toString() + java.util.UUID.randomUUID().toString()
+        users.document(uid).collection(PRIVATE_COLLECTION).document(MIGRATION_DOC)
+            .set(mapOf("token" to token, "at" to System.currentTimeMillis()))
+            .await()
+        return FriendMigration(fromUid = uid, token = token, friends = friends)
     }
 
-    override suspend fun adoptMigratedFriends(friends: List<Friend>) {
-        if (friends.isEmpty()) return
+    override suspend fun adoptMigratedFriends(migration: FriendMigration) {
+        if (migration.friends.isEmpty() || migration.token.isEmpty()) return
         val uid = requireUid()
+        if (uid == migration.fromUid) return
+        users.document(uid).collection(PRIVATE_COLLECTION).document(MIGRATED_FROM_DOC)
+            .set(mapOf("uid" to migration.fromUid, "token" to migration.token))
+            .await()
         val myNickname = users.document(uid).get().await().getString("nickname")
             ?: context.getString(R.string.default_nickname)
         val now = System.currentTimeMillis()
-        val batch = firestore.batch()
-        friends.forEach { friend ->
-            batch.set(
-                users.document(uid).collection("friends").document(friend.uid),
-                mapOf("nickname" to friend.nickname, "addedAt" to now)
-            )
-            batch.set(
-                users.document(friend.uid).collection("friends").document(uid),
-                mapOf("nickname" to myNickname, "addedAt" to now)
-            )
+        // One small batch per friend: a friend who blocked this account in the meantime (or deleted theirs) fails on
+        // their own, and each batch stays well inside the rules' limit on document lookups per request.
+        migration.friends.filter { it.uid != uid }.forEach { friend ->
+            runCatching {
+                val batch = firestore.batch()
+                batch.set(
+                    users.document(uid).collection("friends").document(friend.uid),
+                    mapOf("nickname" to friend.nickname, "addedAt" to now)
+                )
+                batch.set(
+                    users.document(friend.uid).collection("friends").document(uid),
+                    mapOf("nickname" to myNickname, "addedAt" to now)
+                )
+                batch.delete(users.document(friend.uid).collection("friends").document(migration.fromUid))
+                batch.commit().await()
+            }.onFailure { NonFatal.report(TAG, "adoptMigratedFriends: ${friend.uid} not carried over", it) }
         }
-        runCatching { batch.commit().await() }
-            .onFailure { NonFatal.report(TAG, "adoptMigratedFriends failed", it) }
     }
 
     override fun observeIncomingInvites(): Flow<List<MatchInvite>> = firestoreFlow("invites") { emit, onError ->
@@ -540,90 +550,53 @@ class FriendRepositoryImpl @Inject constructor(
         frameId: String,
         avatarUrl: String,
         totalXp: Int
-    ) {
+    ): Boolean {
         val uid = requireUid()
+        val ref = users.document(uid)
         // Merged onto the public profile document rather than a subcollection:
         // users/{uid} is already world-readable to any signed-in device (that
         // is how a friend list resolves nicknames), so a friend can build the
         // whole table with one read per friend instead of a read plus a
         // profile lookup each. Nothing private goes in here — the FCM token
         // lives in private/device for exactly that reason.
+        val profile = mapOf(
+            "nickname" to nickname,
+            // Lifetime XP, for the Friends table (the global one ranks by periodXp).
+            "totalXp" to totalXp,
+            "level" to level,
+            "frameId" to frameId,
+            "avatarUrl" to avatarUrl
+        )
+        // The rules accept a month's score only within LeagueScoreCap's limits, measured partly from what the server
+        // already holds — read first, so the write carries a value it will take (the server copy when reachable; the
+        // device's cached copy offline, where the write waits in the queue anyway).
+        val stored = runCatching { ref.get(Source.SERVER).await() }.getOrNull()
+            ?: runCatching { ref.get(Source.CACHE).await() }.getOrNull()
+        val storedPeriodId = stored?.getLong("periodId")
+        val plan = com.sualtikasifi.cizimhafiza.domain.model.LeagueScoreCap.plan(
+            targetXp = periodXp.toLong(),
+            periodId = periodId,
+            storedPeriodId = storedPeriodId,
+            storedStartMillis = stored?.getTimestamp("periodStartAt")?.toDate()?.time,
+            storedXp = if (storedPeriodId == periodId) stored?.getLong("periodXp") else null,
+            nowMillis = System.currentTimeMillis()
+        )
+        val score = buildMap<String, Any> {
+            put("periodXp", plan.publishXp)
+            // The server's own clock: the security rules measure how fast the score may grow from it.
+            put("periodXpAt", com.google.firebase.firestore.FieldValue.serverTimestamp())
+            put("periodId", periodId)
+            if (plan.freshStart) put("periodStartAt", com.google.firebase.firestore.FieldValue.serverTimestamp())
+        }
         try {
-            users.document(uid).set(
-                mapOf(
-                    "nickname" to nickname,
-                    "periodXp" to periodXp,
-                    // Lifetime XP, for the Friends table (the global one ranks by periodXp).
-                    "totalXp" to totalXp,
-                    // The server's own clock: the security rules measure how fast periodXp may grow from it.
-                    "periodXpAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
-                    "periodId" to periodId,
-                    "level" to level,
-                    "frameId" to frameId,
-                    "avatarUrl" to avatarUrl
-                ),
-                SetOptions.merge()
-            ).await()
+            ref.set(profile + score, SetOptions.merge()).await()
         } catch (e: com.google.firebase.firestore.FirebaseFirestoreException) {
             if (e.code != com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) throw e
-            // The rules refuse a score that jumped faster than a month's play allows (see plausibleXpGrowth). One
-            // refused field used to throw away the whole write, so the account's name, level and frame went stale too
-            // (and a brand-new profile never came to exist at all). The profile fields are sent again without the
-            // score. The score is then climbed to in steps the rules accept (see [publishScoreInSteps]); only if it still
-            // cannot be reached is the error passed on, so it is retried and reported.
-            runCatching {
-                users.document(uid).set(
-                    mapOf(
-                        "nickname" to nickname,
-                        "totalXp" to totalXp,
-                        "level" to level,
-                        "frameId" to frameId,
-                        "avatarUrl" to avatarUrl
-                    ),
-                    SetOptions.merge()
-                ).await()
-            }
-            if (runCatching { publishScoreInSteps(uid, periodXp, periodId) }.getOrDefault(false)) return
+            // A refused score must not keep the name, level and frame stale too: those go on their own.
+            runCatching { ref.set(profile, SetOptions.merge()).await() }
             throw e
         }
-    }
-
-    /**
-     * Brings the published month score up to [targetXp] in steps the rules accept, and returns whether it got there.
-     *
-     * The rules let one write add 30000 plus 3000 an hour since the last score write. A player who earned a lot between two
-     * publishes (a long offline stretch, a restored backup, a prize) used to be refused as a whole and then missing from the
-     * table for as long as it took the hourly allowance to catch up. Each step here is within what the rules allow; the
-     * hourly table build separately refuses a total no honest month can reach (functions/src/leagueRules.ts), which is the
-     * real guard against inflated scores.
-     */
-    private suspend fun publishScoreInSteps(uid: String, targetXp: Int, periodId: Long): Boolean {
-        val ref = users.document(uid)
-        val doc = ref.get(Source.SERVER).await()
-        var current = if (doc.getLong("periodId") == periodId) doc.getLong("periodXp") ?: 0L else 0L
-        if (current >= targetXp) return true
-        val stampMs = doc.getTimestamp("periodXpAt")?.toDate()?.time
-        var allowance = when {
-            !doc.exists() || stampMs == null -> 300_000L
-            else -> 30_000L + maxOf(0L, System.currentTimeMillis() - stampMs) / 1200L
-        }
-        repeat(MAX_SCORE_STEPS) {
-            // A margin under the rules' limit so a slightly fast phone clock cannot tip a step over it.
-            val next = minOf(targetXp.toLong(), current + allowance - SCORE_STEP_MARGIN)
-            if (next <= current) return false
-            ref.set(
-                mapOf(
-                    "periodXp" to next,
-                    "periodXpAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
-                    "periodId" to periodId
-                ),
-                SetOptions.merge()
-            ).await()
-            current = next
-            if (current >= targetXp) return true
-            allowance = 30_000L
-        }
-        return false
+        return plan.isComplete(periodXp.toLong())
     }
 
     override suspend fun recordReferralIfEligible(inviterFriendCode: String) {
@@ -732,9 +705,6 @@ class FriendRepositoryImpl @Inject constructor(
         }
 
     private companion object {
-        /** Steps [publishScoreInSteps] takes at most (30000 each, so far more than a month of honest play needs). */
-        const val MAX_SCORE_STEPS = 12
-        const val SCORE_STEP_MARGIN = 1_000L
         /** How long a friend's stored name is trusted before it is compared with their live profile again. */
         const val NICKNAME_RECHECK_MS = 30 * 60_000L
         const val TAG = "FriendRepository"
@@ -743,6 +713,8 @@ class FriendRepositoryImpl @Inject constructor(
         const val PRIVATE_COLLECTION = "private"
         const val DEVICE_DOC = "device"
         const val PENDING_REWARDS_DOC = "pendingRewards"
+        const val MIGRATION_DOC = "migration"
+        const val MIGRATED_FROM_DOC = "migratedFrom"
     }
 
     private fun generateFriendCode(): String = (100000..999999).random().toString()

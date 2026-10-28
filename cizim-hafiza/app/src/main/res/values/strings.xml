@@ -663,7 +663,7 @@
     </string-array>
     <string-array name="notif_daily_bodies">
         <item>Same words as everyone else, just a few minutes.</item>
-        <item>Sude had a go today. Can you beat her?</item>
+        <item>New words today. Can you beat your best score?</item>
         <item>Start a streak and grow it every day.</item>
     </string-array>
 
@@ -706,7 +706,7 @@
     <string name="league_tab_global">Global</string>
     <string name="league_global_empty">The global table has not been built yet. Check back shortly.</string>
     <string name="league_global_failed">Could not load the global table.</string>
-    <string name="league_global_refresh_note">The global ranking refreshes every hour.</string>
+    <string name="league_global_refresh_note">The global ranking refreshes every hour. 🤖 marks AI players; prizes go to the top 3 real players.</string>
     <string name="league_reward_title">This month\'s prize</string>
     <string name="league_reward_bonus_gold">+%1$s Gold</string>
     <string name="league_reward_bonus_xp">+%1$s XP</string>
@@ -745,9 +745,9 @@
     <string name="account_signed_out_title">You\'re playing as a guest</string>
     <string name="account_signed_out_message">Sign in with Google so your level, achievements and streaks are saved to your account. Switch phones and you pick up exactly where you left off.</string>
     <string name="account_sign_in_google">Sign in with Google</string>
-    <string name="rating_prompt_title">Rate us? ⭐</string>
-    <string name="rating_prompt_body">You\'ve already played 3 rounds! Support us with 5 stars on the Play Store and earn 500 XP.</string>
-    <string name="rating_prompt_rate_button">Rate &amp; get 500 XP</string>
+    <string name="rating_prompt_title">Enjoying Karalak? ⭐</string>
+    <string name="rating_prompt_body">You\'ve played 3 rounds already. If you have a minute, tell us what you think on the Play Store. Every review helps us make the game better.</string>
+    <string name="rating_prompt_rate_button">Rate on Play Store</string>
     <string name="rating_prompt_later_button">Later</string>
     <string name="sign_in_prompt_title">Don\'t lose your progress! 🎉</string>
     <string name="sign_in_prompt_body">Sign in with Google so your score and badges stay with you, even if you switch phones.</string>
@@ -942,7 +942,7 @@
     <string name="account_delete_final_message">Your account and all your data will be deleted permanently, with no way to bring them back. Are you really sure?</string>
     <string name="account_delete_final_keep">Cancel, keep it</string>
     <string name="account_delete_final_confirm">Delete forever</string>
-    <string name="account_delete_done">Your account and data have been deleted.</string>
+    <string name="account_delete_done">Your account and data have been deleted. Anything left on our servers is removed within 24 hours.</string>
     <string name="account_delete_failed">Could not delete the account. Check your connection and try again.</string>
     <string name="account_delete_reauth_needed">For security you need to sign in again first. Sign out, reconnect your Google account, then try deleting.</string>
     <string name="settings_rate_app">Rate the App</string>
@@ -1400,7 +1400,7 @@
     <string name="tour_next">Next</string>
     <string name="tour_start">Let\'s go!</string>
     <string name="quick_match_abandon_title">Cancel the match?</string>
-    <string name="quick_match_abandon_message">An opponent is waiting for you. If you cancel now you will lose %1$d XP.</string>
+    <string name="quick_match_abandon_message">Your match is ready. If you cancel now you will lose %1$d XP.</string>
     <string name="quick_match_abandon_confirm">Cancel (−%1$d XP)</string>
     <string name="quick_match_abandon_keep">Keep playing</string>
     <string name="quick_match_exit_message">If you leave this match now you will lose %1$d XP.</string>
@@ -1445,7 +1445,7 @@
     <string name="level_play">PLAY</string>
     <string name="quick_match_searching_title">Finding</string>
     <string name="quick_match_searching_title2">an opponent…</string>
-    <string name="quick_match_searching_sub">Scanning other players to find the best match for you…</string>
+    <string name="quick_match_searching_sub">Picking a recorded round or an AI opponent at your level…</string>
     <string name="quick_match_dont_worry">Don\'t worry!</string>
     <string name="quick_match_dont_worry_body">We will find you an opponent at your level in no time.</string>
     <string name="drawing_time_joker">+10 Seconds</string>
@@ -1656,7 +1656,7 @@
     <string name="result_stat_win_gold">Win gold</string>
     <string name="result_stat_rune_bonus">From runes</string>
     <string name="result_rune_bonus_line">From your runes: +%1$d gold</string>
-    <string name="league_score_refused">Your score can\'t be saved to the server right now, so other players may not see you in this table. Reopen the app or try again later.</string>
+    <string name="league_score_refused">Not all of your score is on the table yet: the server takes it in over a few hours. It catches up on its own, nothing to do.</string>
     <string name="error_friend_request_limit">You have sent a lot of friend requests today. Try again tomorrow.</string>
     <string-array name="online_lobby_quotes">
         <item>Your luck matches your drawing skill.\nIf you have neither,\nat least have confidence!</item>
@@ -1673,4 +1673,18 @@
         <item>If nobody gets your drawing,\ncall it ‘abstract art’\nand walk away.</item>
         <item>Being misunderstood is\nthe fate of every artist.\nDraw anyway!</item>
     </string-array>
+    <string name="ai_opponent_badge">🤖 AI opponent</string>
+    <string name="ai_player_name" translatable="false">%1$s 🤖</string>
+    <string name="legal_title">Before you play</string>
+    <string name="legal_birth_year_label">Your year of birth</string>
+    <string name="legal_birth_year_placeholder">YYYY</string>
+    <string name="legal_birth_year_why">We ask so the game stays right for your age. It stays on this device.</string>
+    <string name="legal_birth_year_invalid">Enter a valid year.</string>
+    <string name="legal_accept_text">By continuing you accept the %1$s and confirm you have read the %2$s.</string>
+    <string name="legal_terms_link">Terms of Use</string>
+    <string name="legal_privacy_link">Privacy Policy</string>
+    <string name="legal_continue">Continue</string>
+    <string name="child_locked_title">For ages 13 and up</string>
+    <string name="child_locked_body">Online play, friends and the league are for players aged 13 and over. You can still play offline, the levels and the daily challenge.</string>
+    <string name="child_feature_locked">This is for players aged 13 and over.</string>
 </resources>

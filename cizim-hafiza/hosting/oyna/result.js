@@ -36,7 +36,8 @@ export function renderResult(c, d) {
   const head = el("div", "rs-head", `<img src="img/rs_head_plain.webp" alt=""><div class="rs-title lt">${T("game_over")}</div>`);
   $("rs-fback").onclick = d.onHome; root.append(head);
   const inner = el("div", "rs-inner"); root.append(inner);
-  if (d.note) inner.append(el("div", "rs-note", d.note));
+  // Plain text: the note can carry another player's name (the duel opponent's), which must never be read as markup.
+  if (d.note) { const note = el("div", "rs-note"); note.textContent = d.note; inner.append(note); }
   // stats
   const grid = el("div", "rs-grid"); const sl = statList(d, lang);
   for (let i = 0; i < sl.length; i += 2) {

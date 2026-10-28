@@ -22,7 +22,7 @@ const L = {
         err: { notfound: "Código no encontrado. Revísalo e inténtalo de nuevo.", expired: "Este código expiró.", exhausted: "Este código ya se agotó.", used: "Ya usaste este código.", network: "No se pudo conectar con el servidor. Revisa tu conexión." },
         howBody: "Compartimos códigos de cupón en nuestras redes @karalakapp. ¡Síguenos en Instagram y TikTok para no perderte ninguno!", close: "Cerrar", soon: "Próximamente", tutMsg: "El tutorial está en la app." },
 };
-const PRIV = "https://sualtikasifi.github.io/app-ads/";
+const PRIV = "/gizlilik"; // the privacy policy (hosting/gizlilik), which links on to the terms of use
 const RATE = "https://play.google.com/store/apps/details?id=com.sualtikasifi.cizimhafiza";
 
 /** Supported languages: add a line here (and its strings) when a new one ships, as in SupportedLanguage.kt. */
@@ -64,7 +64,7 @@ export function renderSettings(c) {
   const cl = LANGS.find((l) => l.code === lang()) || LANGS[0], flag = `${cl.flag} ${cl.label}`;
   const nav = (id, label, right) => { $(id).innerHTML = `<span>${label}</span><span>${right || ""}</span>`; };
   nav("se-lang", x.lang, flag); nav("se-tut", x.tut); nav("se-bug", x.bug); nav("se-acc", x.acc); nav("se-rate", x.rate);
-  $("se-priv-t").textContent = "🛡 " + x.priv; $("se-ver").textContent = x.ver; $("se-priv").href = PRIV;
+  $("se-priv-t").textContent = "🛡 " + x.priv; $("se-ver").textContent = x.ver; $("se-priv").href = PRIV + "?lang=" + lang();
   $("se-use").onclick = async () => {
     const code = $("se-code").value; if (!code.trim()) return;
     $("se-msg").textContent = "…";

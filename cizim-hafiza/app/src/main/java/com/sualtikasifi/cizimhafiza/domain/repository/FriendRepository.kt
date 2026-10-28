@@ -3,6 +3,7 @@ package com.sualtikasifi.cizimhafiza.domain.repository
 import com.sualtikasifi.cizimhafiza.domain.model.AddFriendOutcome
 import com.sualtikasifi.cizimhafiza.domain.model.BlockedUser
 import com.sualtikasifi.cizimhafiza.domain.model.Friend
+import com.sualtikasifi.cizimhafiza.domain.model.FriendMigration
 import com.sualtikasifi.cizimhafiza.domain.model.FriendRequest
 import com.sualtikasifi.cizimhafiza.domain.model.InviteEligibility
 import com.sualtikasifi.cizimhafiza.domain.model.MatchInvite
@@ -42,31 +43,27 @@ interface FriendRepository {
     suspend fun removeFriend(friendUid: String): Result<Unit>
 
     /**
-     * Reads this uid's current friends and detaches it from every one of
-     * them — called right before this identity is abandoned in favour of a
-     * different, pre-existing account (see
-     * AuthRepository.switchToExistingAccount). Must run WHILE STILL SIGNED
-     * IN as this uid: firestore.rules only lets a friend remove THEMSELVES
-     * from someone else's list, and once this uid stops being the active
-     * session it can never do that again — an unmigrated friendship would
-     * sit forever pointing at an identity nobody uses.
+     * Reads this uid's current friends and leaves a one-time secret in its own private/migration document — called
+     * right before this identity is abandoned in favour of a different, pre-existing account (see
+     * AuthRepositoryImpl.signInWithGoogle). Must run WHILE STILL SIGNED IN as this uid: only this uid can write that
+     * secret, and the secret is what later lets the new account prove to firestore.rules that it is this one's
+     * successor. Nothing is deleted here, so a sign-in that fails afterwards leaves every friendship as it was.
      *
-     * The returned list is what [adoptMigratedFriends] re-establishes on
-     * the account being switched to.
+     * The returned ticket is what [adoptMigratedFriends] re-establishes on the account being switched to.
      */
-    suspend fun prepareFriendMigration(): List<Friend>
+    suspend fun prepareFriendMigration(): FriendMigration
 
     /**
      * The other half of a migration started by [prepareFriendMigration] —
-     * called once already signed in as the NEW uid. Adds each migrated
-     * friend onto this uid's own list and this uid onto theirs, the same
-     * "write both sides from whichever client is present" pattern
-     * [acceptFriendRequest] already uses. Best-effort: one friend that
-     * fails to migrate (blocked in the meantime, deleted their account)
-     * must not undo the ones that succeeded, and must never block the
-     * account switch itself.
+     * called once already signed in as the NEW uid. Records where this
+     * account came from (with the secret) in its own private/migratedFrom,
+     * then, per friend, adds the friend onto this uid's own list, puts this
+     * uid onto theirs and removes the old uid from it. Best-effort: one
+     * friend that fails to migrate (blocked in the meantime, deleted their
+     * account) must not undo the ones that succeeded, and must never block
+     * the account switch itself.
      */
-    suspend fun adoptMigratedFriends(friends: List<Friend>)
+    suspend fun adoptMigratedFriends(migration: FriendMigration)
 
     fun observeIncomingInvites(): Flow<List<MatchInvite>>
 
@@ -107,9 +104,12 @@ interface FriendRepository {
     /**
      * Publishes this device's weekly-league standing onto its own public
      * profile document, so friends can read it without a per-player
-     * subcollection. Safe to call often — it is a single merged write.
+     * subcollection. Safe to call often — one read of the profile and one
+     * merged write. Returns false when the server's league limits only let
+     * part of [periodXp] through for now (see LeagueScoreCap); the rest is
+     * published by a later call.
      */
-    suspend fun publishLeagueScore(nickname: String, periodXp: Int, periodId: Long, level: Int, frameId: String, avatarUrl: String, totalXp: Int)
+    suspend fun publishLeagueScore(nickname: String, periodXp: Int, periodId: Long, level: Int, frameId: String, avatarUrl: String, totalXp: Int): Boolean
 
     /**
      * The player's own row plus every friend's, already ranked — see

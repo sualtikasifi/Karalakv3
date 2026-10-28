@@ -99,6 +99,15 @@
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="${admobAppId}" />
 
+        <!-- Google Analytics Consent Mode v2: every consent type starts denied, so Analytics stores nothing before the
+             player's choices are known. ConsentManager.applyAnalyticsConsent sets the real values right after the UMP
+             flow (granted outside the EEA/UK/Switzerland, the player's TCF choices inside it, denied for a player who
+             may be under 13). -->
+        <meta-data android:name="google_analytics_default_allow_analytics_storage" android:value="false" />
+        <meta-data android:name="google_analytics_default_allow_ad_storage" android:value="false" />
+        <meta-data android:name="google_analytics_default_allow_ad_user_data" android:value="false" />
+        <meta-data android:name="google_analytics_default_allow_ad_personalization_signals" android:value="false" />
+
         <!-- Delivers push notifications for friend match invites sent while
              this device isn't in the app (see functions/src/index.ts for
              the Cloud Function that sends them). -->
@@ -175,15 +184,11 @@
                 tools:node="remove" />
         </provider>
 
-        <!-- play-services-ads and firebase-analytics (pulled in alongside
-             Crashlytics) each declare this Privacy Sandbox config property
-             pointing at their own XML, and the manifest merger refuses to
-             pick one. The ads SDK's config is the one that matters here:
-             this app serves ads (see the AD_ID / AdServices permissions kept
-             near the top of this file) but has Analytics collection
-             disabled — Crashlytics only needs the Analytics artifact on the
-             classpath, it does not need Analytics itself to be measuring
-             anything. -->
+        <!-- play-services-ads and firebase-analytics each declare this Privacy Sandbox config property pointing at
+             their own XML, and the manifest merger refuses to pick one. The ads SDK's config is the one that matters
+             here: this app serves ads (see the AD_ID / AdServices permissions kept near the top of this file).
+             Analytics runs too, under Consent Mode (the google_analytics_default_allow_* entries above) and switched
+             off entirely for a player who may be under 13 (LegalConsentStore). -->
         <property
             android:name="android.adservices.AD_SERVICES_CONFIG"
             android:resource="@xml/gma_ad_services_config"

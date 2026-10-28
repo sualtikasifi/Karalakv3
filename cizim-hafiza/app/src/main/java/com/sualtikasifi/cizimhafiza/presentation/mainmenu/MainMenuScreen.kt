@@ -342,7 +342,7 @@ fun MainMenuScreen(
         val ratingPrompt by viewModel.ratingPrompt.collectAsState()
         if (splashDone && ratingPrompt && freeChestReward == null) {
             com.sualtikasifi.cizimhafiza.presentation.common.RatingPromptDialog(
-                onRate = viewModel::rateAndClaimBonus,
+                onRate = viewModel::dismissRatingPrompt,
                 onDismiss = viewModel::dismissRatingPrompt
             )
         }

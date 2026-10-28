@@ -671,7 +671,7 @@
     </string-array>
     <string-array name="notif_daily_bodies">
         <item>Herkesle aynı kelimeler, birkaç dakikalık bir tur.</item>
-        <item>Sude de bugün denedi. Onu geçebilir misin?</item>
+        <item>Bugünün kelimeleri yeni. En iyi skorunu geçebilir misin?</item>
         <item>Bir seri başlat, her gün büyüsün.</item>
     </string-array>
 
@@ -716,7 +716,7 @@
     <string name="league_tab_global">Global</string>
     <string name="league_global_empty">Global tablo henüz hazırlanmadı. Birazdan burada olacak.</string>
     <string name="league_global_failed">Global tablo yüklenemedi.</string>
-    <string name="league_global_refresh_note">Global sıralama saatte bir yenilenir.</string>
+    <string name="league_global_refresh_note">Global sıralama saatte bir yenilenir. 🤖 işaretliler yapay zekâ oyunculardır; ödüller gerçek oyuncuların ilk 3\'üne verilir.</string>
     <string name="league_reward_title">Bu ayın ödülü</string>
     <string name="league_reward_bonus_gold">+%1$s Altın</string>
     <string name="league_reward_bonus_xp">+%1$s XP</string>
@@ -755,9 +755,9 @@
     <string name="account_signed_out_title">Misafir olarak oynuyorsun</string>
     <string name="account_signed_out_message">Google hesabınla giriş yap — seviyen, başarımların ve serilerin hesabına kaydedilsin. Telefonunu değiştirsen bile aynı hesapla kaldığın yerden devam edersin.</string>
     <string name="account_sign_in_google">Google ile Giriş Yap</string>
-    <string name="rating_prompt_title">Bizi puanlar mısın? ⭐</string>
-    <string name="rating_prompt_body">3 tur oynadın bile! Play Store\'da bize 5 yıldız vererek bizi destekle ve 500 XP kazan.</string>
-    <string name="rating_prompt_rate_button">Puanla ve 500 XP kazan</string>
+    <string name="rating_prompt_title">Karalak\'ı beğendin mi? ⭐</string>
+    <string name="rating_prompt_body">3 tur oynadın bile. Bir dakikan varsa Play Store\'da görüşünü paylaşır mısın? Her yorum oyunu geliştirmemize yardım ediyor.</string>
+    <string name="rating_prompt_rate_button">Play Store\'da değerlendir</string>
     <string name="rating_prompt_later_button">Daha sonra</string>
     <string name="sign_in_prompt_title">İlerlemeni kaybetme! 🎉</string>
     <string name="sign_in_prompt_body">Google hesabınla giriş yap, puanların ve rozetlerin telefon değişse bile hep seninle kalsın.</string>
@@ -956,7 +956,7 @@
     <string name="account_delete_final_message">Hesabın ve tüm verilerin kalıcı olarak silinecek, geri getirmenin hiçbir yolu yok. Gerçekten silmek istediğine emin misin?</string>
     <string name="account_delete_final_keep">Vazgeç, kalsın</string>
     <string name="account_delete_final_confirm">Kalıcı olarak sil</string>
-    <string name="account_delete_done">Hesabın ve verilerin silindi.</string>
+    <string name="account_delete_done">Hesabın ve verilerin silindi. Sunucularımızda kalan her şey 24 saat içinde kaldırılır.</string>
     <string name="account_delete_failed">Hesap silinemedi. Bağlantını kontrol edip tekrar dene.</string>
     <string name="account_delete_reauth_needed">Güvenlik için önce tekrar giriş yapman gerekiyor. Çıkış yapıp Google hesabınla yeniden bağlan, sonra silmeyi dene.</string>
     <string name="settings_rate_app">Uygulamayı Puanla</string>
@@ -1413,7 +1413,7 @@
     <string name="tour_next">İleri</string>
     <string name="tour_start">Hadi başlayalım!</string>
     <string name="quick_match_abandon_title">Eşleşme iptal edilsin mi?</string>
-    <string name="quick_match_abandon_message">Bir rakip seni bekliyor. Şimdi iptal edersen %1$d XP kaybedersin.</string>
+    <string name="quick_match_abandon_message">Maçın hazır. Şimdi iptal edersen %1$d XP kaybedersin.</string>
     <string name="quick_match_abandon_confirm">İptal et (−%1$d XP)</string>
     <string name="quick_match_abandon_keep">Devam et</string>
     <string name="quick_match_exit_message">Bu maçtan şimdi çıkarsan %1$d XP kaybedersin.</string>
@@ -1458,7 +1458,7 @@
     <string name="level_play">OYNA</string>
     <string name="quick_match_searching_title">Rakip</string>
     <string name="quick_match_searching_title2">aranıyor…</string>
-    <string name="quick_match_searching_sub">Sana en uygun rakibi bulmak için diğer oyuncular taranıyor…</string>
+    <string name="quick_match_searching_sub">Seviyene uygun kayıtlı bir tur ya da yapay zekâ rakibi seçiliyor…</string>
     <string name="quick_match_dont_worry">Merak etme!</string>
     <string name="quick_match_dont_worry_body">Kısa süre içinde seninle aynı seviyede bir rakip bulacağız.</string>
     <string name="drawing_time_joker">+10 Saniye</string>
@@ -1669,7 +1669,7 @@
     <string name="result_stat_win_gold">Zafer altını</string>
     <string name="result_stat_rune_bonus">Rün katkısı</string>
     <string name="result_rune_bonus_line">Rünlerin katkısı: +%1$d altın</string>
-    <string name="league_score_refused">Puanın şu an sunucuya yazılamıyor, bu yüzden diğer oyuncular seni bu tabloda göremeyebilir. Uygulamayı kapatıp aç ya da biraz sonra tekrar dene.</string>
+    <string name="league_score_refused">Puanının tamamı henüz tabloda değil: sunucu onu birkaç saat içinde parça parça alıyor. Kendiliğinden tamamlanır, bir şey yapmana gerek yok.</string>
     <string name="error_friend_request_limit">Bugün çok fazla arkadaşlık isteği gönderdin. Yarın tekrar dene.</string>
     <string-array name="online_lobby_quotes">
         <item>Çizim yeteneğin kadar\nşansın da var. İkisi de yoksa\nen azından özgüvenin olsun!</item>
@@ -1686,4 +1686,17 @@
         <item>Çizimin anlaşılmazsa\n‘soyut sanat’ de, kurtul.</item>
         <item>Yanlış anlaşılmak\nsanatçıların kaderidir.\nYine de çiz!</item>
     </string-array>
+    <string name="ai_opponent_badge">🤖 Yapay zekâ rakibi</string>
+    <string name="legal_title">Başlamadan önce</string>
+    <string name="legal_birth_year_label">Doğum yılın</string>
+    <string name="legal_birth_year_placeholder">YYYY</string>
+    <string name="legal_birth_year_why">Oyunu yaşına uygun tutmak için soruyoruz. Bu bilgi yalnızca cihazında kalır.</string>
+    <string name="legal_birth_year_invalid">Geçerli bir yıl yaz.</string>
+    <string name="legal_accept_text">Devam ederek %1$s\'nı kabul etmiş ve %2$s\'nı okumuş olursun.</string>
+    <string name="legal_terms_link">Kullanım Koşulları</string>
+    <string name="legal_privacy_link">Gizlilik Politikası</string>
+    <string name="legal_continue">Devam</string>
+    <string name="child_locked_title">13 yaş ve üzeri için</string>
+    <string name="child_locked_body">Çevrimiçi oyun, arkadaşlar ve lig 13 yaş ve üzeri oyuncular içindir. Çevrimdışı oyunu, bölümleri ve günlük meydan okumayı oynayabilirsin.</string>
+    <string name="child_feature_locked">Bu özellik 13 yaş ve üzeri oyuncular içindir.</string>
 </resources>

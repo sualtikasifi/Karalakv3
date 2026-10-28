@@ -622,7 +622,8 @@ async function pickOpponent() {
   try {
     const ids = await net.trainedWordIds(), have = new Set(words.map((w) => w.id));
     const g = makeGhostRun({ trainedIds: ids, hasWord: (id) => have.has(id), language: lang, level: levelFor(P.xp), points: POINTS, speedBonus: SPEED_BONUS, frameFor: highestFrameFor });
-    if (g) return g;
+    // an AI opponent is named as one (Android: ai_player_name, MatchCard's aiOpponent): it must not pass for a person
+    if (g) return Object.assign(g, { nickname: g.nickname + " 🤖", ai: true });
   } catch {}
   return net.findOpponent(lang, levelFor(P.xp));
 }
@@ -658,6 +659,8 @@ function showFound(opp, go) {
   };
   const myLv = levelFor(P.xp);
   card("f-cl", P.nick, myLv, P.frame, P.xp); card("f-cr", opp.nickname || "?", opp.level || 1, highestFrameFor(opp.level || 1), xpFor(opp.level || 1));
+  $("f-cr").querySelector(".mc-ai")?.remove();
+  if (opp.ai || isGhostId(opp.id)) $("f-cr").append(Object.assign(document.createElement("div"), { className: "mc-ai", textContent: S("ai_opponent_badge") }));
   $("f-vs").classList.remove("pop"); setTimeout(() => $("f-vs").classList.add("pop"), 350);
   const fill = $("f-fill"); fill.style.transition = "none"; fill.style.width = "3%"; void fill.offsetWidth; fill.style.transition = ""; fill.style.width = "100%";
   let left = 5; const tick = () => { $("f-pt").textContent = x.startIn(left); };

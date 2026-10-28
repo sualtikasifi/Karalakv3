@@ -49,7 +49,14 @@ data class DaySeries(
     }
 }
 
-/** Reads [days] days of statistics; one query for the day documents plus one count() per day. */
+/**
+ * Reads [days] days of statistics: each day's per-device rows (adminStats/{day}/devices), added up, plus the totals
+ * older days kept on the day document itself, and one count() per day for the distinct players.
+ *
+ * Every row is written by a player's own device, so one modified client could still put any number in its OWN row;
+ * each device's counters are therefore capped at what one device can plausibly produce in a day before they are
+ * added, so a single row cannot swing the totals.
+ */
 suspend fun loadDaySeries(firestore: FirebaseFirestore, days: Int): DaySeries = coroutineScope {
     val today = LocalDate.now(ZoneOffset.UTC)
     val ids = (days - 1 downTo 0).map { today.minusDays(it.toLong()).toString() }
@@ -57,6 +64,14 @@ suspend fun loadDaySeries(firestore: FirebaseFirestore, days: Int): DaySeries = 
         firestore.collection(AdminStats.COLLECTION)
             .whereGreaterThanOrEqualTo(FieldPath.documentId(), ids.first())
             .get().await().documents
+    }
+    val devicesJob = ids.map { day ->
+        async {
+            runCatching {
+                firestore.collection(AdminStats.COLLECTION).document(day).collection(AdminStats.DEVICES)
+                    .limit(MAX_DEVICE_ROWS).get().await().documents.map { countsOf(it.get("counts")) }
+            }.getOrDefault(emptyList())
+        }
     }
     val playersJob = ids.map { day ->
         async {
@@ -66,15 +81,32 @@ suspend fun loadDaySeries(firestore: FirebaseFirestore, days: Int): DaySeries = 
             }.getOrDefault(0L)
         }
     }
-    val byDay = docsJob.await().associate { doc ->
-        val counts = (doc.get("counts") as? Map<*, *>).orEmpty().mapNotNull { (k, v) ->
-            val key = k as? String ?: return@mapNotNull null
-            key to ((v as? Number)?.toLong() ?: 0L)
-        }.toMap()
-        doc.id to counts
+    val legacyByDay = docsJob.await().associate { doc -> doc.id to countsOf(doc.get("counts")) }
+    val devicesByDay = devicesJob.awaitAll()
+    val counts = ids.mapIndexed { i, day ->
+        val total = HashMap<String, Long>(legacyByDay[day].orEmpty())
+        devicesByDay[i].forEach { row ->
+            row.forEach { (key, value) -> total[key] = (total[key] ?: 0L) + capPerDevice(key, value) }
+        }
+        total
     }
-    DaySeries(days = ids, players = playersJob.awaitAll(), counts = ids.map { byDay[it].orEmpty() })
+    DaySeries(days = ids, players = playersJob.awaitAll(), counts = counts)
 }
+
+private fun countsOf(raw: Any?): Map<String, Long> = (raw as? Map<*, *>).orEmpty().mapNotNull { (k, v) ->
+    val key = k as? String ?: return@mapNotNull null
+    key to ((v as? Number)?.toLong() ?: 0L)
+}.toMap()
+
+/** What one device can plausibly add to a counter in a day: revenue (micros) and event counts have different scales. */
+internal fun capPerDevice(key: String, value: Long): Long =
+    value.coerceIn(0L, if (key.endsWith("__micros")) MAX_DEVICE_REVENUE_MICROS else MAX_DEVICE_EVENTS)
+
+/** The most device rows read for one day (each is one read). */
+private const val MAX_DEVICE_ROWS = 5_000L
+private const val MAX_DEVICE_EVENTS = 2_000L
+/** 20 units of the account currency in one day from one device — far above what ads pay a single player. */
+private const val MAX_DEVICE_REVENUE_MICROS = 20_000_000L
 
 /** How many documents a collection holds right now (one aggregate read). Null when the rules or the network say no. */
 suspend fun countOf(firestore: FirebaseFirestore, collection: String): Long? = runCatching {

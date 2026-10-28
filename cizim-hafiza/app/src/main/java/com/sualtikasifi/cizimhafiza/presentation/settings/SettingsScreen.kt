@@ -572,22 +572,8 @@ fun SettingsScreen(
                 .background(Brush.verticalGradient(listOf(Color(0xFFFFF3D6), Color(0xFFFFD98A))), RoundedCornerShape(50))
                 .border((2f * us).dp, Color(0xFFE08A1B), RoundedCornerShape(50))
                 .pressable(pressedScale = 0.96f) {
-                    // A Custom Tab rather than handing off to the browser app: it opens over the game, in its colours,
-                    // and back returns straight here (a bare ACTION_VIEW could land on the browser's first-run screen).
-                    val uri = android.net.Uri.parse(PRIVACY_POLICY_URL)
-                    runCatching {
-                        androidx.browser.customtabs.CustomTabsIntent.Builder()
-                            .setShowTitle(true)
-                            .setDefaultColorSchemeParams(
-                                androidx.browser.customtabs.CustomTabColorSchemeParams.Builder()
-                                    .setToolbarColor(android.graphics.Color.parseColor("#8A4E12"))
-                                    .build()
-                            )
-                            .build()
-                            .launchUrl(context, uri)
-                    }.onFailure {
-                        runCatching { activity?.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri)) }
-                    }
+                    // The policy page links on to the terms of use (karalak.com/kosullar).
+                    com.sualtikasifi.cizimhafiza.util.LegalLinks.open(context, com.sualtikasifi.cizimhafiza.util.LegalLinks.privacyPolicy(context))
                 }
                 .a11yButton(privacyLabel)
                 .padding(horizontal = (22f * us).dp),
@@ -649,8 +635,6 @@ internal fun SceneSwitch(checked: Boolean, modifier: Modifier) {
         )
     }
 }
-
-private const val PRIVACY_POLICY_URL = "https://sualtikasifi.github.io/app-ads/"
 
 /**
  * A bright arc that circles the element's edge, lap after lap. Used on the account row for anyone who has not

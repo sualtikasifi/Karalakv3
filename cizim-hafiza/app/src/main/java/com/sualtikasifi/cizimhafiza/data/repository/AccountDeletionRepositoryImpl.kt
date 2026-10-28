@@ -3,23 +3,27 @@ package com.sualtikasifi.cizimhafiza.data.repository
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sualtikasifi.cizimhafiza.data.local.AppDatabase
 import com.sualtikasifi.cizimhafiza.domain.repository.AccountDeletionRepository
-import com.sualtikasifi.cizimhafiza.domain.repository.ReauthenticationRequiredException
+import com.sualtikasifi.cizimhafiza.util.NonFatal
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * See AccountDeletionRepository for why this exists and why the remote half
- * is best-effort.
+ * See AccountDeletionRepository for why this exists.
  *
- * Firestore has no client-side recursive delete, so each subcollection this
- * app writes under `users/{uid}` is listed explicitly. Adding a new one
- * means adding it here too — a subcollection left out of this list survives
- * the account that owned it.
+ * Deletion happens in two places. First the account files deletionRequests/{uid}: the daily maintenance run
+ * (functions/src/maintenance.ts, runProcessDeletions) then removes everything the account left anywhere — including
+ * what no client is allowed to touch (the cloud save, moderation records, entries in other players' lists) — and the
+ * sign-in itself. Filing it is the one step that must succeed: without it the request was not recorded.
+ *
+ * Then, so the player does not wait a day to disappear, this device removes everything the rules let it remove right
+ * away. That part is best-effort: whatever it misses, the server run catches.
  */
 @Singleton
 class AccountDeletionRepositoryImpl @Inject constructor(
@@ -33,25 +37,34 @@ class AccountDeletionRepositoryImpl @Inject constructor(
         val user = auth.currentUser ?: return Result.failure(IllegalStateException("No signed-in user"))
         val uid = user.uid
 
-        // 1) Remote. Failures here are swallowed on purpose: a rules change,
-        //    a lost connection or a document that never existed must not
-        //    strand the player with an account they asked to be rid of.
-        runCatching { deleteUserTree(uid) }
-
-        // 2) The auth user. This one's failure is real — without it the
-        //    account still exists and the player's request was not honoured.
+        // 1) The request. Bounded, because the Task resolves on the server's acknowledgement and offline that never
+        //    comes: a deletion that cannot be recorded is reported as failed, so the player knows to try again online.
         try {
-            user.delete().await()
-        } catch (e: FirebaseAuthRecentLoginRequiredException) {
-            // Firebase refuses to delete a user whose sign-in is old. The
-            // caller has to send them back through Google sign-in first.
-            return Result.failure(ReauthenticationRequiredException())
+            withTimeout(REQUEST_TIMEOUT_MS) {
+                firestore.collection("deletionRequests").document(uid)
+                    .set(mapOf("requestedAt" to FieldValue.serverTimestamp(), "platform" to "android"))
+                    .await()
+            }
         } catch (e: Exception) {
             return Result.failure(e)
         }
 
-        // 3) Local, unconditionally and last: by this point there is no
-        //    account left for the local data to belong to.
+        // 2) What this device can remove now. Failures are swallowed on purpose: the server run removes the rest.
+        runCatching { deleteRemoteData(uid) }.onFailure { NonFatal.report(TAG, "client-side cleanup incomplete", it) }
+
+        // 3) The sign-in. Firebase refuses to delete a user whose sign-in is old; that no longer needs the player to
+        //    sign in again: the request is already filed and the server deletes the sign-in as well. Signing out here
+        //    makes sure this device lets go of the account either way.
+        try {
+            user.delete().await()
+        } catch (e: FirebaseAuthRecentLoginRequiredException) {
+            auth.signOut()
+        } catch (e: Exception) {
+            NonFatal.report(TAG, "auth user not deleted on the device; the server run will", e)
+            auth.signOut()
+        }
+
+        // 4) Local, unconditionally and last: by this point there is no account left for the local data to belong to.
         runCatching { database.clearAllTables() }
         runCatching {
             LOCAL_PREFS.forEach { name ->
@@ -61,8 +74,17 @@ class AccountDeletionRepositoryImpl @Inject constructor(
         return Result.success(Unit)
     }
 
-    private suspend fun deleteUserTree(uid: String) {
+    private suspend fun deleteRemoteData(uid: String) {
         val userDoc = firestore.collection("users").document(uid)
+
+        // This account's entry in each friend's own list goes first, while the list naming them is still readable.
+        runCatching {
+            userDoc.collection("friends").get().await().documents.forEach { friend ->
+                runCatching {
+                    firestore.collection("users").document(friend.id).collection("friends").document(uid).delete().await()
+                }
+            }
+        }
         USER_SUBCOLLECTIONS.forEach { name ->
             runCatching {
                 userDoc.collection(name).get().await().documents.forEach { doc ->
@@ -70,54 +92,70 @@ class AccountDeletionRepositoryImpl @Inject constructor(
                 }
             }
         }
-        // The friend code is intentionally last and intentionally allowed to
-        // fail: firestore.rules currently forbids deleting a friendCodes
-        // document (`allow update, delete: if false`), so the mapping is
-        // left pointing at a uid that no longer exists. Harmless — every
-        // lookup through it dead-ends — but see the note in the account
-        // deletion section of firestore.rules if that ever needs cleaning up.
         runCatching {
             val code = userDoc.get().await().getString("friendCode")
             if (code != null) firestore.collection("friendCodes").document(code).delete().await()
         }
+        // A name and the account's marker pointing at it are released together (see firestore.rules, usernameOwners).
         runCatching {
-            firestore.collection("usernames").whereEqualTo("uid", uid).get().await().documents.forEach { it.reference.delete().await() }
+            val names = firestore.collection("usernames").whereEqualTo("uid", uid).get().await().documents
+            val batch = firestore.batch()
+            names.forEach { batch.delete(it.reference) }
+            batch.delete(firestore.collection("usernameOwners").document(uid))
+            batch.commit().await()
         }
-        // Recorded rounds live in a flat top-level collection, not under
-        // users/{uid}, so the subcollection sweep above cannot reach them —
-        // and they carry this player's nickname, level and drawings. A
-        // deletion request that left those behind would not be a deletion.
-        // Best-effort like the rest: the rule allows deleting only your own,
-        // and a failure here must not strand the account half-deleted.
-        runCatching {
-            firestore.collection("ghostRuns")
-                .whereEqualTo("uid", uid)
-                .get()
-                .await()
-                .documents
-                .forEach { run ->
+        // Recorded rounds live in flat top-level collections, not under users/{uid}, and they carry this player's
+        // nickname and drawings. Each round's drawings are a sibling document sharing its id.
+        listOf("ghostRuns" to "ghostRunItems", "pendingRuns" to "pendingRunItems").forEach { (runs, items) ->
+            runCatching {
+                firestore.collection(runs).whereEqualTo("uid", uid).get().await().documents.forEach { run ->
                     runCatching { run.reference.delete().await() }
-                    // The drawings are a sibling document sharing the run's
-                    // id (see GhostRunRepositoryImpl) — deleting the run does
-                    // not take them, and they are the part with the player's
-                    // own handwriting in it.
-                    runCatching {
-                        firestore.collection("ghostRunItems").document(run.id).delete().await()
-                    }
+                    runCatching { firestore.collection(items).document(run.id).delete().await() }
                 }
+            }
+        }
+        listOf("pendingDailyChallenges", "bugReports").forEach { collection ->
+            runCatching {
+                firestore.collection(collection).whereEqualTo("uid", uid).get().await().documents.forEach { doc ->
+                    runCatching { doc.reference.delete().await() }
+                }
+            }
+        }
+        listOf("challengerUid", "opponentUid").forEach { field ->
+            runCatching {
+                firestore.collection("duels").whereEqualTo(field, uid).get().await().documents.forEach { doc ->
+                    runCatching { doc.reference.delete().await() }
+                }
+            }
         }
         runCatching { userDoc.delete().await() }
     }
 
     private companion object {
+        const val TAG = "AccountDeletion"
+        const val REQUEST_TIMEOUT_MS = 15_000L
+
+        /** Everything under users/{uid} a client may delete. The cloud save (backup) is the server run's. */
         val USER_SUBCOLLECTIONS = listOf(
-            "backup", "friends", "invites", "blockedUsers", "inviteCooldowns", "private"
+            "friends", "friendRequests", "invites", "blockedUsers", "inviteCooldowns", "private"
         )
+
+        /** Every preference file the app writes. A new one belongs here too. */
         val LOCAL_PREFS = listOf(
             "cizim_hafiza_settings",
             "karalak_backup",
             "ad_manager_prefs",
-            "karalak_daily_challenge"
+            "karalak_daily_challenge",
+            "duel_history",
+            "friend_request_limit",
+            "guess_layout",
+            "one_time_flags",
+            "admin_stats",
+            "brand_splash",
+            "config_doc_fetch",
+            "console_ai",
+            "voice_settings",
+            com.sualtikasifi.cizimhafiza.util.LegalConsentStore.PREFS_NAME
         )
     }
 }

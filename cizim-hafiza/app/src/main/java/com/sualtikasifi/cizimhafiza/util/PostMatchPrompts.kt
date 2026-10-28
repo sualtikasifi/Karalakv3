@@ -22,9 +22,6 @@ object PostMatchPrompts {
     /** Finished Quick Match rounds (not games in general) after which the rating ask may appear. */
     const val RATING_PROMPT_AT_GAME = 3
 
-    /** Paid once, via SettingsRepository.grantRatingBonusXpOnce, when the rating prompt's "Puanla" is tapped. */
-    const val RATING_BONUS_XP = 500
-
     /**
      * Later, softer reminders for a player who is still a guest: by the 10th and the 30th finished game there is real
      * progress to lose, which is exactly when "do not lose it" is persuasive. Each is shown once.

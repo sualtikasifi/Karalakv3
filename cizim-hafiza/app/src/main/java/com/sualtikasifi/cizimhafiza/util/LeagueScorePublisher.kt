@@ -42,7 +42,8 @@ import javax.inject.Singleton
 class LeagueScorePublisher @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val friendRepository: FriendRepository,
-    private val avatarPhotoResolver: AvatarPhotoResolver
+    private val avatarPhotoResolver: AvatarPhotoResolver,
+    private val legalConsentStore: LegalConsentStore
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -93,6 +94,8 @@ class LeagueScorePublisher @Inject constructor(
     }
 
     private suspend fun publish(snapshot: Snapshot) {
+        // A player who may be under 13 is kept out of the public table (see LegalConsentStore).
+        if (legalConsentStore.childMode.value) return
         if (settingsRepository.publishedLeagueScoreSignature == snapshot.signature) return
         runCatching {
             friendRepository.publishLeagueScore(
@@ -104,12 +107,12 @@ class LeagueScorePublisher @Inject constructor(
                 avatarUrl = snapshot.avatarUrl,
                 totalXp = snapshot.totalXp
             )
-        }.onSuccess {
-            // Only remembered once the write actually landed — a signature
-            // stored on a failed publish would suppress the retry that is
-            // the whole point of re-publishing at app start.
-            settingsRepository.publishedLeagueScoreSignature = snapshot.signature
-            _scoreRefused.value = false
+        }.onSuccess { complete ->
+            // Only remembered once the whole score actually landed — a signature
+            // stored on a failed or partial publish would suppress the retry that
+            // is the whole point of re-publishing at app start.
+            if (complete) settingsRepository.publishedLeagueScoreSignature = snapshot.signature
+            _scoreRefused.value = !complete
         }.onFailure {
             if ((it as? com.google.firebase.firestore.FirebaseFirestoreException)?.code ==
                 com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED

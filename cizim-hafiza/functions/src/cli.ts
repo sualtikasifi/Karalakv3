@@ -22,12 +22,17 @@ import {
   runFinalizeLeaguePeriod,
   runGrantReferralRewards,
 } from "./index";
+import { runMigrateWebEmails, runProcessDeletions } from "./maintenance";
 
 const tasks: Record<string, () => Promise<void>> = {
   "build-global-leaderboard": runBuildGlobalLeaderboard,
   "finalize-league-period": runFinalizeLeaguePeriod,
   "cleanup-abandoned-rooms": runCleanupAbandonedRooms,
   "grant-referral-rewards": runGrantReferralRewards,
+  // Daily: removes the accounts that asked to be deleted (see maintenance.ts).
+  "process-deletions": runProcessDeletions,
+  // One-off: moves browser accounts off the old @users.karalak.app address domain (see maintenance.ts).
+  "migrate-web-emails": runMigrateWebEmails,
 };
 
 const taskName = process.argv[2];

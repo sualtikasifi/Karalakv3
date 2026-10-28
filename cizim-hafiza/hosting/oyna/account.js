@@ -65,7 +65,7 @@ function paint(c) {
   $("ak-name").textContent = P.nick;
   const lv = c.levelOf(P.xp);
   $("ak-lvl").innerHTML = rankLevelHtml(lv.level);
-  $("ak-badge").className = "txt left badge" + (linked ? "" : " guest"); $("ak-badge").innerHTML = `<span>${linked ? [x.linked, who.userName].filter(Boolean).join(" · ") : x.guest}</span>`;
+  $("ak-badge").className = "txt left badge" + (linked ? "" : " guest"); { const b = document.createElement("span"); b.textContent = linked ? [x.linked, who.userName].filter(Boolean).join(" · ") : x.guest; $("ak-badge").replaceChildren(b); }
   $("ak-fill").style.width = lv.frac * 100 + "%"; $("ak-barl").textContent = lv.max ? x.max : x.progress(lv.into, lv.span);
   const stats = [[fmtNum(P.xp), x.xp], [fmtNum(P.stats.games), x.games], [fmtNum(P.stats.best), x.streak]];
   stats.forEach(([v, l], i) => { const s = $("ak-s" + i); s.children[0].textContent = v; s.children[1].textContent = l; });
@@ -73,7 +73,7 @@ function paint(c) {
   const form = $("ak-form"); form.style.display = linked ? "none" : "";
   $("ak-user").placeholder = x.user; $("ak-pass").placeholder = x.pass; $("ak-login-t").textContent = x.login; $("ak-reg-t").textContent = x.create;
   $("ak-out").style.display = linked ? "" : "none"; $("ak-out-t").textContent = S("account_sign_out");
-  $("ak-del").textContent = "🗑 " + S("account_delete_action"); $("ak-del").style.display = linked ? "" : "none";
+  $("ak-del").textContent = "🗑 " + S("account_delete_action"); $("ak-del").style.display = ""; // a guest has data on the server too (profile, rounds, league score), so it can be deleted as well
   const m = $("ak-msg"); m.textContent = msg; m.style.display = msg ? "" : "none";
   const done = (text) => { msg = text; busy = false; c.refreshHome(); renderAccount(c); };
   const read = () => {

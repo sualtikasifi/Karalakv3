@@ -664,7 +664,7 @@
     </string-array>
     <string-array name="notif_daily_bodies">
         <item>Las mismas palabras que todos, solo unos minutos.</item>
-        <item>Sofía ya jugó hoy. ¿Puedes ganarle?</item>
+        <item>Palabras nuevas hoy. ¿Puedes superar tu mejor puntuación?</item>
         <item>Empieza una racha y hazla crecer cada día.</item>
     </string-array>
 
@@ -707,7 +707,7 @@
     <string name="league_tab_global">Global</string>
     <string name="league_global_empty">La tabla global aún no está lista. Vuelve en un rato.</string>
     <string name="league_global_failed">No se pudo cargar la tabla global.</string>
-    <string name="league_global_refresh_note">La clasificación global se actualiza cada hora.</string>
+    <string name="league_global_refresh_note">La clasificación global se actualiza cada hora. 🤖 indica jugadores de IA; los premios son para los 3 primeros jugadores reales.</string>
     <string name="league_reward_title">Premio de este mes</string>
     <string name="league_reward_bonus_gold">+%1$s de Oro</string>
     <string name="league_reward_bonus_xp">+%1$s XP</string>
@@ -746,9 +746,9 @@
     <string name="account_signed_out_title">Estás jugando como invitado</string>
     <string name="account_signed_out_message">Inicia sesión con Google para guardar tu nivel, logros y rachas en tu cuenta. Cambia de teléfono y sigue exactamente donde lo dejaste.</string>
     <string name="account_sign_in_google">Iniciar sesión con Google</string>
-    <string name="rating_prompt_title">¿Nos calificas? ⭐</string>
-    <string name="rating_prompt_body">¡Ya jugaste 3 rondas! Apóyanos con 5 estrellas en Play Store y gana 500 XP.</string>
-    <string name="rating_prompt_rate_button">Calificar y ganar 500 XP</string>
+    <string name="rating_prompt_title">¿Te gusta Karalak? ⭐</string>
+    <string name="rating_prompt_body">Ya jugaste 3 rondas. Si tienes un minuto, cuéntanos qué te parece en Play Store. Cada reseña nos ayuda a mejorar el juego.</string>
+    <string name="rating_prompt_rate_button">Calificar en Play Store</string>
     <string name="rating_prompt_later_button">Después</string>
     <string name="sign_in_prompt_title">¡No pierdas tu progreso! 🎉</string>
     <string name="sign_in_prompt_body">Inicia sesión con Google para que tu puntuación e insignias se queden contigo, aunque cambies de teléfono.</string>
@@ -943,7 +943,7 @@
     <string name="account_delete_final_message">Tu cuenta y todos tus datos se eliminarán para siempre, sin forma de recuperarlos. ¿Estás realmente seguro?</string>
     <string name="account_delete_final_keep">Cancelar, conservarla</string>
     <string name="account_delete_final_confirm">Eliminar para siempre</string>
-    <string name="account_delete_done">Tu cuenta y tus datos se eliminaron.</string>
+    <string name="account_delete_done">Tu cuenta y tus datos se eliminaron. Lo que quede en nuestros servidores se borra en 24 horas.</string>
     <string name="account_delete_failed">No se pudo eliminar la cuenta. Revisa tu conexión e inténtalo de nuevo.</string>
     <string name="account_delete_reauth_needed">Por seguridad, primero debes iniciar sesión de nuevo. Cierra sesión, vuelve a conectar tu cuenta de Google e intenta eliminarla.</string>
     <string name="settings_rate_app">Calificar la App</string>
@@ -1401,7 +1401,7 @@
     <string name="tour_next">Siguiente</string>
     <string name="tour_start">¡Vamos!</string>
     <string name="quick_match_abandon_title">¿Cancelar la partida?</string>
-    <string name="quick_match_abandon_message">Un rival te está esperando. Si cancelas ahora, perderás %1$d XP.</string>
+    <string name="quick_match_abandon_message">Tu partida está lista. Si cancelas ahora, perderás %1$d XP.</string>
     <string name="quick_match_abandon_confirm">Cancelar (−%1$d XP)</string>
     <string name="quick_match_abandon_keep">Seguir jugando</string>
     <string name="quick_match_exit_message">Si sales de esta partida ahora, perderás %1$d XP.</string>
@@ -1446,7 +1446,7 @@
     <string name="level_play">JUGAR</string>
     <string name="quick_match_searching_title">Buscando</string>
     <string name="quick_match_searching_title2">un rival…</string>
-    <string name="quick_match_searching_sub">Revisando a otros jugadores para encontrarte el mejor rival…</string>
+    <string name="quick_match_searching_sub">Eligiendo una ronda grabada o un rival de IA de tu nivel…</string>
     <string name="quick_match_dont_worry">¡Tranquilo!</string>
     <string name="quick_match_dont_worry_body">Te encontraremos un rival de tu nivel en un momento.</string>
     <string name="drawing_time_joker">+10 Segundos</string>
@@ -1657,7 +1657,7 @@
     <string name="result_stat_win_gold">Oro por victoria</string>
     <string name="result_stat_rune_bonus">De las runas</string>
     <string name="result_rune_bonus_line">De tus runas: +%1$d de oro</string>
-    <string name="league_score_refused">Tu puntuación no se puede guardar en el servidor ahora, así que otros jugadores quizá no te vean en esta tabla. Vuelve a abrir la app o inténtalo más tarde.</string>
+    <string name="league_score_refused">Tu puntuación aún no está completa en la tabla: el servidor la recibe poco a poco durante unas horas. Se completa sola, no tienes que hacer nada.</string>
     <string name="error_friend_request_limit">Enviaste muchas solicitudes de amistad hoy. Inténtalo de nuevo mañana.</string>
     <string-array name="online_lobby_quotes">
         <item>Tu suerte va a la par de tu talento para dibujar.\nSi no tienes ninguno,\n¡al menos ten confianza!</item>
@@ -1674,4 +1674,17 @@
         <item>Si nadie entiende tu dibujo,\nllámalo ‘arte abstracto’\ny vete.</item>
         <item>Ser incomprendido es\nel destino de todo artista.\n¡Dibuja de todos modos!</item>
     </string-array>
+    <string name="ai_opponent_badge">🤖 Rival de IA</string>
+    <string name="legal_title">Antes de jugar</string>
+    <string name="legal_birth_year_label">Tu año de nacimiento</string>
+    <string name="legal_birth_year_placeholder">AAAA</string>
+    <string name="legal_birth_year_why">Lo preguntamos para que el juego sea adecuado para tu edad. El dato se queda solo en tu dispositivo.</string>
+    <string name="legal_birth_year_invalid">Escribe un año válido.</string>
+    <string name="legal_accept_text">Al continuar, aceptas los %1$s y confirmas que has leído la %2$s.</string>
+    <string name="legal_terms_link">Términos de uso</string>
+    <string name="legal_privacy_link">Política de privacidad</string>
+    <string name="legal_continue">Continuar</string>
+    <string name="child_locked_title">Para mayores de 13 años</string>
+    <string name="child_locked_body">El juego en línea, los amigos y la liga son para jugadores de 13 años o más. Puedes seguir jugando sin conexión, los niveles y el desafío diario.</string>
+    <string name="child_feature_locked">Esta función es para jugadores de 13 años o más.</string>
 </resources>

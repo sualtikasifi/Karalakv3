@@ -11,15 +11,16 @@ package com.sualtikasifi.cizimhafiza.domain.repository
  * cloud backup and a weekly-league entry under `users/{uid}`, so signing
  * out alone left all of that behind with no way for the player to reach it.
  *
- * Deliberately best-effort on the remote side and unconditional on the
- * local side: a document this account can no longer prove ownership of is
- * worse than one that lingers, so the auth user is deleted last, and local
- * data is wiped even if a remote delete failed.
+ * The one remote step that must succeed is filing the deletion request
+ * (deletionRequests/{uid}); the server's daily maintenance run then removes
+ * everything the account left behind, including the sign-in. What the device
+ * removes itself on top of that is best-effort, and local data is wiped
+ * unconditionally.
  */
 interface AccountDeletionRepository {
     /**
-     * @return failure only when the account itself could not be deleted.
-     *   A partial remote cleanup still counts as success — see the class doc.
+     * @return failure only when the deletion request could not be recorded (offline, typically).
+     *   A partial client-side cleanup still counts as success — the server finishes it.
      */
     suspend fun deleteAccountAndData(): Result<Unit>
 }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The release build's resource shrinker removes every resource no code refers to by its R name. These are looked up by
+     name at runtime instead (Resources.getIdentifier in RunesScreen: rune_n_<id>, rune_icon_<key>, rune_<id>_flavor), so
+     without this list the shipped app had no rune icons (an emoji stood in for each) and no rune flavour lines, while
+     every debug build looked right. A new resource looked up by name has to be added here too. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/rune_n_*,@drawable/rune_icon_*,@string/rune_*_flavor" />

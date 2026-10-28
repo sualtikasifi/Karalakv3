@@ -837,7 +837,12 @@ private fun LeagueRow(rank: Int, entry: LeagueEntry, showTotalXp: Boolean = fals
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = if (entry.isMe) stringResource(R.string.online_you_label, entry.nickname) else entry.nickname,
+                        text = when {
+                            entry.isMe -> stringResource(R.string.online_you_label, entry.nickname)
+                            // An AI player is marked as one (see league_global_refresh_note): it must not pass for a person.
+                            entry.isBot -> stringResource(R.string.ai_player_name, entry.nickname)
+                            else -> entry.nickname
+                        },
                         style = PaintedStyle(color = InkBrown, fontSize = 15.sp, textAlign = TextAlign.Start),
                         maxLines = 1,
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,

@@ -117,11 +117,6 @@ class OnlineResultViewModel @Inject constructor(
         _uiState.update { it.copy(reportState = ReportSendState.Idle) }
     }
 
-    /** RatingPromptDialog's "Puanla" tap — see SettingsRepository.grantRatingBonusXpOnce for why this is safe to call more than once. */
-    fun grantRatingBonusXp() {
-        settingsRepository.grantRatingBonusXpOnce(PostMatchPrompts.RATING_BONUS_XP)
-    }
-
     private companion object {
         /** Extra passes for a player whose drawings had not landed yet — see loadItems. */
         const val ITEM_FETCH_ATTEMPTS = 25

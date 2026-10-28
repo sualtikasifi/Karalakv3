@@ -49,6 +49,7 @@ class CizimHafizaApp : Application(), Configuration.Provider {
     @Inject lateinit var xpEventRepository: Lazy<com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository>
     @Inject lateinit var runeConfigRepository: Lazy<com.sualtikasifi.cizimhafiza.data.repository.RuneConfigRepository>
     @Inject lateinit var economyConfigRepository: Lazy<com.sualtikasifi.cizimhafiza.data.repository.EconomyConfigRepository>
+    @Inject lateinit var legalConsentStore: Lazy<com.sualtikasifi.cizimhafiza.util.LegalConsentStore>
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
@@ -155,6 +156,8 @@ class CizimHafizaApp : Application(), Configuration.Provider {
             // Your league row lives on your own profile document, so it
             // has to be written by this device — started here so it follows the
             // XP itself even when the player never opens the standings.
+            // Analytics off for a player who may be under 13 (an answer given on an earlier launch; see LegalConsentStore).
+            guarded("analytics by age") { legalConsentStore.get().applyAnalyticsCollection() }
             guarded("league score publisher") { leagueScorePublisher.get().start() }
             // The publisher waits a while to batch a match's XP into one write; this lands whatever is still waiting
             // the moment the player leaves the app (a no-op when the profile already says the same thing).

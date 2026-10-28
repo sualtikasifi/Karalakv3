@@ -147,7 +147,6 @@ fun ResultScreen(
     reportState: ReportSendState = ReportSendState.Idle,
     onDismissReport: () -> Unit = {},
     /** Called once, only when the rating prompt's "Puanla" is actually tapped — see RatingPromptDialog. */
-    onRatingBonusGranted: () -> Unit = {},
     /** Only when [state].duelChallenger is set: send a fresh challenge back to that same person. */
     onRematchDuel: ((opponentUid: String, opponentName: String) -> Unit)? = null,
     levelProgress: com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState? = null,
@@ -546,14 +545,12 @@ fun ResultScreen(
 
     if (state.showRatingPrompt && !ratingPromptDismissed) {
         RatingPromptDialog(
-            onRate = {
-                onRatingBonusGranted()
-                ratingPromptDismissed = true
-            },
+            onRate = { ratingPromptDismissed = true },
             onDismiss = { ratingPromptDismissed = true }
         )
     }
-    if (state.showSignInPrompt && !signInPromptDismissed) {
+    // Not offered to a player who may be under 13: linking an account is for ages 13 and up (see LegalConsentStore).
+    if (state.showSignInPrompt && !signInPromptDismissed && !com.sualtikasifi.cizimhafiza.presentation.common.LocalChildMode.current) {
         SignInPromptDialog(onDismiss = { signInPromptDismissed = true })
     }
     if (state.chestLost) {
@@ -596,7 +593,12 @@ private fun GhostVersusCard(
                 photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(myAvatarUrl)
             )
         },
-        rightName = ghost.nickname,
+        // An AI opponent is named as one, here as on the match-found card.
+        rightName = if (com.sualtikasifi.cizimhafiza.domain.model.BotGhostRuns.isBotRun(ghost.runId)) {
+            stringResource(R.string.ai_player_name, ghost.nickname)
+        } else {
+            ghost.nickname
+        },
         rightScore = ghost.opponentScore,
         rightAvatar = {
             LevelAvatar(

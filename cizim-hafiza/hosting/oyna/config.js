@@ -7,4 +7,8 @@ export const firebaseConfig = {
   storageBucket: "karalak-b6e11.firebasestorage.app",
   messagingSenderId: "991414245044",
 };
+// App Check for the web (reCAPTCHA Enterprise site key, also public): Firebase console -> App Check -> Karalak Web -> reCAPTCHA
+// Enterprise, with karalak.com as the key's domain. Empty = App Check off on the web. Fill this in BEFORE enforcing App Check for
+// Firestore, or the web game stops reaching the database.
+export const appCheckSiteKey = "";
 export const firebaseReady = () => !!(firebaseConfig.apiKey && firebaseConfig.appId);
