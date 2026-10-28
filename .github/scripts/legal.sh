@@ -16,19 +16,20 @@ adb shell input keyevent 82 || true
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 dump_ui() { adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "$OUT/$1.xml" >/dev/null 2>&1; }
-# Prints "x y" of the first node whose text or content-desc contains $1 (case-insensitive).
+# Prints "x y" of the first node whose text or content-desc contains $1 (case-insensitive); with a second
+# argument "exact", only a node whose text or content-desc is exactly $1.
 find_xy() {
   dump_ui _tmp
-  python3 - "$1" "$OUT/_tmp.xml" <<'PY'
+  python3 - "$1" "$OUT/_tmp.xml" "${2:-}" <<'PY'
 import sys, re, xml.etree.ElementTree as ET
-label, path = sys.argv[1].lower(), sys.argv[2]
+label, path, exact = sys.argv[1].lower(), sys.argv[2], sys.argv[3] == "exact"
 try:
     tree = ET.parse(path)
 except Exception:
     sys.exit(0)
 for n in tree.iter('node'):
-    t = ((n.get('text') or '') + ' ' + (n.get('content-desc') or '') + ' ' + (n.get('hint') or '')).lower()
-    if label in t:
+    texts = [(n.get(k) or '').strip().lower() for k in ('text', 'content-desc', 'hint')]
+    if (label in texts) if exact else (label in ' '.join(texts)):
         m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', n.get('bounds') or '')
         if m:
             x1, y1, x2, y2 = map(int, m.groups())
@@ -37,6 +38,16 @@ for n in tree.iter('node'):
 PY
 }
 tap_label() { local xy; xy=$(find_xy "$1"); [ -n "$xy" ] && { echo "tap '$1' at $xy"; adb shell input tap $xy; return 0; }; echo "NOT FOUND: '$1'"; return 1; }
+# The slow emulator sometimes puts a system "Pixel Launcher isn't responding" dialog over the app, which swallows
+# every tap; its "Wait" button dismisses it.
+clear_anr() {
+  local xy i
+  for i in 1 2 3; do
+    xy=$(find_xy "Wait" exact)
+    [ -z "$xy" ] && return 0
+    echo "system dialog: tapping 'Wait' at $xy"; adb shell input tap $xy; sleep 2
+  done
+}
 
 run_case() {  # run_case <name> <year>
   adb uninstall $PKG >/dev/null 2>&1 || true
@@ -49,6 +60,7 @@ run_case() {  # run_case <name> <year>
   adb logcat -c
   adb shell am start -n $ACT
   sleep 14
+  clear_anr
   shot "$1_01_prompt"
   # The year field (its placeholder reads YYYY/AAAA), then the year, then Continue.
   tap_label "YYYY" || tap_label "AAAA" || adb shell input tap 540 1150
@@ -57,6 +69,7 @@ run_case() {  # run_case <name> <year>
   sleep 1
   adb shell input keyevent KEYCODE_BACK   # closes the keyboard, not the dialog (it ignores Back)
   sleep 1
+  clear_anr
   shot "$1_02_year_typed"
   tap_label "Continue" || tap_label "Devam"
   sleep 4
@@ -64,6 +77,7 @@ run_case() {  # run_case <name> <year>
   # Consent form (EEA in debug builds), only by its label.
   tap_label "Consent" || true
   sleep 3
+  clear_anr
   # Quick Match tile (main menu, 1080x2400)
   adb shell input tap 540 1170
   sleep 5
