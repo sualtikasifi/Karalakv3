@@ -58,6 +58,22 @@ class LegalConsentStore @Inject constructor(@ApplicationContext private val cont
     /** The date of birth this device goes by; its year is 0 before the question was answered. */
     val birthDate: BirthDate get() = _birthDate.value
 
+    /** The Google account (uid) this device's date of birth was saved on or taken from, null while it is nobody's yet. */
+    var dateAccount: String?
+        get() = prefs.getString(KEY_DATE_ACCOUNT, null)
+        set(value) = prefs.edit().putString(KEY_DATE_ACCOUNT, value).apply()
+
+    /**
+     * A different Google account signed in, with no date of birth of its own, while this device's date belongs to
+     * another account: it is somebody else's, so the question is asked again (AccountAgeSync). The terms stay accepted.
+     */
+    fun askAgainForNewAccount() {
+        prefs.edit().remove(KEY_BIRTH_YEAR).remove(KEY_BIRTH_MONTH).remove(KEY_BIRTH_DAY).remove(KEY_DATE_ACCOUNT).apply()
+        _birthDate.value = BirthDate(0)
+        _childMode.value = false
+        _needsPromptFlow.value = needsPrompt
+    }
+
     /**
      * Goes by the date saved on the player's Google account instead of the one this device was told (AccountAgeSync):
      * the account's answer wins, so a reinstall cannot change it. The accepted terms are left as they are.
@@ -100,6 +116,7 @@ class LegalConsentStore @Inject constructor(@ApplicationContext private val cont
         private const val KEY_BIRTH_YEAR = "birth_year"
         private const val KEY_BIRTH_MONTH = "birth_month"
         private const val KEY_BIRTH_DAY = "birth_day"
+        private const val KEY_DATE_ACCOUNT = "birth_date_account"
         private const val KEY_TERMS_VERSION = "terms_version"
 
         /** Raise when the terms of use change enough to be accepted again (hosting/kosullar). */
