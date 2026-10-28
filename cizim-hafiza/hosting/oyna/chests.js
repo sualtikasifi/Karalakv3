@@ -4,11 +4,12 @@
 import { penList } from "./store.js";
 import { S, fmtNum, ready as strReady } from "./i18n.js";
 import { el, primary, appWindow, paintedCard, appOnlyDialog } from "./ui.js";
-import { TIER, backdrop, wonScene, rewardScene, rgba, glowOf } from "./chestfx.js";
+import { TIER, backdrop, wonScene, rewardScene, rgba, glowOf, lerpC } from "./chestfx.js";
 import { todayEpoch } from "./daily.js";
 
 const SLOTS = 4, JOKERS = ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"], GOLD = { SILVER: [150, 250], GOLD: [450, 700], RARE: [1500, 2500] };
-const JOKER_TINT = { FIRST_LETTER: "#8E4FE0", LETTER_COUNT: "#1E8FD6", EXTRA_TIME: "#E8672A" }, JOKER_ART = { FIRST_LETTER: "joker_first_letter", LETTER_COUNT: "joker_letter_count", EXTRA_TIME: "joker_extra_time" }, JOKER_SHORT = { FIRST_LETTER: "joker_first_letter_short", LETTER_COUNT: "joker_letter_count_short", EXTRA_TIME: "joker_extra_time_short" };
+const JOKER_ORDER = ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"];
+const JOKER_ART = { FIRST_LETTER: "joker_first_letter", LETTER_COUNT: "joker_letter_count", EXTRA_TIME: "joker_extra_time" }, JOKER_SHORT = { FIRST_LETTER: "joker_first_letter_short", LETTER_COUNT: "joker_letter_count_short", EXTRA_TIME: "joker_extra_time_short" };
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 
 export function ensure(P) { P.chests = P.chests || { slots: [null, null, null, null], idx: 0, seed: Math.floor(Math.random() * 2 ** 31) + 1 }; return P.chests; }
@@ -36,7 +37,7 @@ const remaining = (c, ch, now) => (ch.start == null ? effMs(c, ch.tier) : Math.m
 const anyUnlocking = (C, now) => C.slots.some((ch) => ch && ch.start != null && !isReady(ch, now));
 const fmtLeft = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60; return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`; };
 /** "2 saat", "1 sa 48 dk" or "45 dk": the wait as it really is, runes included (ChestTier.durationText). */
-const durText = (c, tier) => { const min = Math.floor(effMs(c, tier) / 60000), h = Math.floor(min / 60), m = min % 60; return m === 0 ? S("chest_duration_hours", h) : h === 0 ? S("chest_duration_minutes", m) : S("chest_duration_hm", h, m); };
+const durText = (c, tier) => { const min = Math.floor(effMs(c, tier) / 60000), h = Math.floor(min / 60), m = min % 60; return m === 0 ? S(h === 1 ? "chest_duration_hours_one" : "chest_duration_hours", h) : h === 0 ? S("chest_duration_minutes", m) : S("chest_duration_hm", h, m); };
 
 /** The loot of a chest, with the chest runes applied (ChestLoot.roll). The percent is taken with integer division, like the app. */
 function roll(P, tier) {
@@ -168,26 +169,100 @@ function openingScene(c, rw) {
   const toReward = () => { if (stage !== 0) return; stage = 1; vid.pause(); vid.remove(); ov.classList.add("white"); rewardUi(); };
   vid.addEventListener("ended", toReward); vid.addEventListener("error", toReward);
   vid.addEventListener("timeupdate", () => { if (vid.duration && vid.duration > TAIL_TRIM * 2 && vid.currentTime >= vid.duration - TAIL_TRIM) toReward(); });
-  ov.onclick = () => toReward();
+  ov.onclick = () => (stage === 0 ? toReward() : showAll());
   vid.play().catch(() => { vid.muted = true; vid.play().catch(toReward); });
-  const hasExtras = Object.keys(rw.jokers).length > 0 || !!rw.pen;
+  let showAll = () => {};
+  // The reward board (ChestComponents.kt's ChestOpeningScene): laid out in the app's 1080 × 2000 design units, scaled to fit.
   function rewardUi() {
-    const cv = el("canvas", "os2-cv"); ov.append(cv); stopFx = rewardScene(cv, rw.tier, rw.gold);
-    const col = el("div", "os2-col");
-    col.innerHTML = `<div class="os2-title">${S("chests_reward_title")}</div><div class="os2-tier" style="color:${T.accent};background:${rgba(T.accent, 0.14)}">${S(T.label)}</div>
-      <div class="os2-card" style="border-color:${rgba(T.accent, 0.55)}"><img class="os2-coin${hasExtras ? " sm" : ""}" src="img/icon_gold_coin.webp" alt=""><div class="os2-gold${hasExtras ? " sm" : ""}">${S("chests_reward_gold", 0)}</div><div class="os2-extras"></div></div>`;
-    ov.append(col); const goldEl = col.querySelector(".os2-gold"), extras = col.querySelector(".os2-extras");
-    c.sfx && c.sfx.over && c.sfx.over();
-    const t0 = performance.now(), count = (now) => { const p = Math.min(1, Math.max(0, (now - t0 - 250) / 900)), e = 1 - Math.pow(1 - p, 3); goldEl.textContent = S("chests_reward_gold", Math.round(rw.gold * e)); if (p < 1) timers.push(requestAnimationFrame(count)); else settled(); };
-    timers.push(requestAnimationFrame(count));
-    function settled() {
-      if (hasExtras) {
-        for (const [t, n] of Object.entries(rw.jokers)) { const d = el("div", "os2-j"); d.style.background = JOKER_TINT[t]; d.innerHTML = `<span class="ja"><img src="img/${JOKER_ART[t]}.webp" alt=""></span><b>×${n}</b><small>${S(JOKER_SHORT[t])}</small>`; extras.append(d); }
-        if (rw.pen) { const colors = rw.pen.colors.length > 1 ? rw.pen.colors : [rw.pen.colors[0], rw.pen.colors[0]]; extras.append(el("div", "os2-pen", `<i style="background:linear-gradient(90deg,${colors.join(",")})"></i><span>${S("joker_pen_won")} ${rw.pen[c.lang()]}</span>`)); }
-      }
-      const b = primary(S("chests_reward_button"), () => { timers.forEach(cancelAnimationFrame); stopFx && stopFx(); ov.remove(); }); b.classList.add("os2-btn"); col.append(b);
+    const A = T.accent, light = lerpC(A, "#ffffff", 0.25), dark = lerpC(A, "#000000", 0.22);
+    const extras = [...Object.entries(rw.jokers).filter(([, n]) => n > 0).sort(([a], [b]) => JOKER_ORDER.indexOf(a) - JOKER_ORDER.indexOf(b)).map(([t, n]) => ({ t, n })), ...(rw.pen ? [{ pen: rw.pen }] : [])];
+    const compact = !extras.length, heroY = compact ? 1000 : 915, amountY = compact ? 1235 : 1110;
+    const at = (x, y, w, h) => `left:${x / 10.8}%;top:${y / 20}%;width:${w / 10.8}%;height:${h / 20}%`;
+    const k = (n) => `calc(var(--k)*${n})`;
+    const board = el("div", "rb");
+    const cv = el("canvas", "os2-cv"); ov.append(cv, board);
+    const fitBoard = () => { const R = ov.getBoundingClientRect(), wpx = Math.min(R.width, R.height * 1080 / 2000); board.style.width = wpx + "px"; board.style.height = wpx * 2000 / 1080 + "px"; board.style.setProperty("--k", wpx / 1080 + "px"); board.querySelectorAll(".lt").forEach(fitLt); };
+    fitBoard(); addEventListener("resize", fitBoard);
+    stopFx = rewardScene(cv, rw.tier, rw.gold, (d) => { const R = ov.getBoundingClientRect(), B = board.getBoundingClientRect(), kk = B.width / 1080; return { x: (B.left - R.left + 540 * kk) * d, y: (B.top - R.top + heroY * kk) * d, k: kk * d }; });
+    const title = S("chests_reward_title").toLocaleUpperCase(c.lang());
+    const delays = { sign: 0, frame: 140, rib: 340, hero: 460, count: 640 }, countMs = 900, cardAt = (i) => delays.count + countMs + i * 140, btnAt = cardAt(extras.length) + 100;
+    let html = `<img class="rb-frame" style="${at(60, 510, 960, 1180)}" src="img/tut_frame_mid.webp" alt="">
+      <div class="rb-sign" style="${at(90, 20, 900, 563)}"><img src="img/rs_head_plain.webp" alt=""><div class="rb-t">${lt(title, 92, "#FFFAD7", "#FFC032", "#552305")}</div></div>
+      <div class="rb-rib" style="${at(191, 666, 698, 124)}">${ribbonSvg(light, dark)}<div class="rb-rt">${[0, 1, 2].map((i) => `<img src="img/mf_star.webp" alt=""${i < T.stars ? "" : ' class="off"'}>`).join("")}${lt(S(T.label), 46, "#ffffff", "#FFF0DC", lerpC(dark, "#000000", 0.5))}</div></div>
+      <div class="rb-hero" style="${at(310, heroY - 175, 460, 350)}"><img src="img/rune_n_chest_gold.webp" alt="">${[[0.13, 0.18, 24], [0.88, 0.27, 20], [0.80, 0.82, 14], [0.17, 0.76, 16], [0.54, 0.04, 18]].map(([x, y, r], i) => `<i class="rb-spk" style="left:${x * 100}%;top:${y * 100}%;width:${k(r * 2)};height:${k(r * 2)};animation-delay:${i * 0.34}s"></i>`).join("")}</div>
+      <div class="rb-amt" style="${at(0, amountY - 70, 1080, 140)}"><img src="img/icon_gold_coin.webp" alt="">${lt("+0", 120, "#FFF6AA", "#FFA514", "#5A2805", "rb-gold")}</div>
+      <div class="rb-lbl" style="${at(0, amountY + 52, 1080, 56)}">${S("chests_reward_gold_label").toLocaleUpperCase(c.lang())}</div>`;
+    if (!compact) {
+      const tile = extras.length > 3 ? 168 : 190, gap = 28, x0 = (1080 - extras.length * tile - (extras.length - 1) * gap) / 2;
+      html += `<div class="rb-div" style="${at(220, 1232, 640, 20)}"><i class="rb-spk on"></i></div>`;
+      extras.forEach((e, i) => {
+        const art = e.pen ? penSvg(e.pen.colors) : `<img src="img/${JOKER_ART[e.t]}.webp" alt="">`, name = e.pen ? e.pen[c.lang()] : S(JOKER_SHORT[e.t]), tw = tile * 0.56, th = tile * 0.30;
+        html += `<div class="rb-card" style="${at(x0 + i * (tile + gap), 1272, tile, tile + 72)};animation-delay:${cardAt(i)}ms"><div class="tl" style="width:${k(tile)};height:${k(tile)}">${art}</div>
+          <div class="tag" style="left:${k(tile - tw + 16)};top:${k(tile - th + 14)};width:${k(tw)};height:${k(th)}">${lt("×" + (e.n || 1), th * 0.72, "#ffffff", "#FFEBC8", "#6E2800")}</div>
+          <div class="nm" style="top:${k(tile + 16)};font-size:${k(tile * 0.18)}">${esc(name)}</div></div>`;
+      });
     }
+    html += `<div class="rb-btn" style="${at(210, 1712, 660, 275)};animation-delay:${btnAt}ms"><img src="img/rp_pill_orange.webp" alt="">${lt(S("chests_reward_button"), 78, "#ffffff", "#FFEBC8", "#823200")}</div>`;
+    board.innerHTML = html;
+    board.querySelector(".rb-sign").style.animationDelay = delays.sign + "ms";
+    board.querySelector(".rb-frame").style.animationDelay = delays.frame + "ms";
+    board.querySelector(".rb-rib").style.animationDelay = delays.rib + "ms";
+    board.querySelector(".rb-hero").style.animationDelay = board.querySelector(".rb-amt").style.animationDelay = board.querySelector(".rb-lbl").style.animationDelay = delays.hero + "ms";
+    const fitAllLt = () => board.querySelectorAll(".lt").forEach(fitLt);
+    requestAnimationFrame(fitAllLt); document.fonts && document.fonts.ready.then(fitAllLt);
+    c.sfx && c.sfx.over && c.sfx.over();
+    const goldEl = board.querySelector(".rb-gold"), setGold = (n) => { goldEl.querySelector("text").textContent = "+" + fmtNum(n); sizeLt(goldEl); };
+    let skip = false;
+    const t0 = performance.now(), count = (now) => { const p = skip ? 1 : Math.min(1, Math.max(0, (now - t0 - delays.count) / countMs)), e = 1 - Math.pow(1 - p, 3); setGold(Math.round(rw.gold * e)); if (p < 1) timers.push(requestAnimationFrame(count)); };
+    timers.push(requestAnimationFrame(count));
+    const close = () => { if (done) return; done = true; timers.forEach(cancelAnimationFrame); removeEventListener("resize", fitBoard); stopFx && stopFx(); ov.remove(); };
+    const btn = board.querySelector(".rb-btn");
+    btn.onclick = (ev) => { ev.stopPropagation(); if (stage === 2) close(); };
+    timers.push(setTimeout(() => { stage = 2; }, btnAt + 150));
+    // a tap while the board is still coming in shows it all at once (the reward is already paid either way)
+    showAll = () => { if (stage !== 1) return; skip = true; board.classList.add("now"); stage = 2; };
   }
+}
+
+/** The tier's ribbon, drawn as ChestComponents.kt's TierRibbon: a band with folded tails behind it and stitched edges. */
+function ribbonSvg(light, dark) {
+  const back = lerpC(dark, "#000000", 0.25), edge = lerpC(dark, "#000000", 0.55), fold = lerpC(dark, "#000000", 0.5), stitch = lerpC(light, "#ffffff", 0.5), id = "rbg" + Math.random().toString(36).slice(2, 8);
+  const L = 79, R = 619, T0 = 8, B0 = 96, mid = (T0 + B0) / 2;
+  const tail = (sd) => { const inner = sd < 0 ? L + 28 : R - 28, outer = sd < 0 ? 0 : 698, notch = sd < 0 ? 26 : 672, x = sd < 0 ? L : R;
+    return `<polygon points="${inner},${T0 + 18} ${outer},${T0 + 18} ${notch},${mid + 18} ${outer},${B0 + 18} ${inner},${B0 + 18}" fill="${back}" stroke="${edge}" stroke-width="5" stroke-linejoin="round"/><polygon points="${inner},${B0} ${x},${B0} ${inner},${B0 + 18}" fill="${fold}"/>`; };
+  return `<svg viewBox="0 0 698 124" preserveAspectRatio="none"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${light}"/><stop offset="1" stop-color="${dark}"/></linearGradient></defs>${tail(-1)}${tail(1)}
+    <rect x="${L}" y="${T0}" width="${R - L}" height="${B0 - T0}" rx="18" fill="url(#${id})" stroke="${edge}" stroke-width="6"/>
+    <line x1="${L + 22}" y1="${T0 + 14}" x2="${R - 22}" y2="${T0 + 14}" stroke="rgba(255,255,255,.45)" stroke-width="6" stroke-linecap="round"/>
+    <line x1="${L + 26}" y1="${T0 + 26}" x2="${R - 26}" y2="${T0 + 26}" stroke="${stitch}" stroke-width="3" stroke-dasharray="12 14"/>
+    <line x1="${L + 26}" y1="${B0 - 16}" x2="${R - 26}" y2="${B0 - 16}" stroke="${stitch}" stroke-width="3" stroke-dasharray="12 14"/></svg>`;
+}
+/** A won pen as PenWave.kt's PenSwoosh: one brush sweep in the pen's colours. */
+function penSvg(colors) {
+  const cs = colors.length > 1 ? colors : [colors[0], colors[0]], id = "pg" + Math.random().toString(36).slice(2, 8);
+  return `<svg class="pen" viewBox="0 0 100 60"><defs><linearGradient id="${id}">${cs.map((col, i) => `<stop offset="${i / (cs.length - 1)}" stop-color="${col}"/>`).join("")}</linearGradient></defs>
+    <path d="M7 47 C30 6 48 57 70 29 C80 16 88 8 95 13" fill="none" stroke="rgba(0,0,0,.16)" stroke-width="13" stroke-linecap="round" transform="translate(0 4)"/>
+    <path d="M7 47 C30 6 48 57 70 29 C80 16 88 8 95 13" fill="none" stroke="url(#${id})" stroke-width="13" stroke-linecap="round"/>
+    <path d="M9 43 C30 4 48 53 70 25" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="3.5" stroke-linecap="round"/></svg>`;
+}
+const esc = (t) => String(t).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+/** Game lettering (RewardLettering): an outline with a soft drop under it and a top-to-bottom gradient fill. SVG text, so a
+ *  glyph's overlapping outlines merge cleanly (CSS text-stroke and background-clip:text show them as lines). */
+const lt = (text, size, top, bot, outline, cls = "") => {
+  const id = "lg" + Math.random().toString(36).slice(2, 8);
+  return `<svg class="lt ${cls}" style="--fs:${size}"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0.2" stop-color="${top}"/><stop offset="0.85" stop-color="${bot}"/></linearGradient></defs><text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" fill="url(#${id})" stroke="${outline}">${esc(text)}</text></svg>`;
+};
+/** Sizes a lettering to its text (outline included). */
+function sizeLt(svg) {
+  const t = svg.querySelector("text"), sw = parseFloat(getComputedStyle(t).strokeWidth) || 0;
+  svg.style.width = Math.ceil(t.getComputedTextLength() + sw * 1.2) + "px";
+}
+/** Shrinks a lettering until it fits the box it sits in (never wraps), as FitText does in the app. */
+function fitLt(svg) {
+  const box = svg.parentElement; if (!box || !svg.querySelector("text")) return;
+  let fs = parseFloat(svg.dataset.fs0 || svg.style.getPropertyValue("--fs")); svg.dataset.fs0 = fs; const min = fs * 0.5;
+  const room = () => box.clientWidth * 0.98 - [...box.children].filter((x) => x !== svg && getComputedStyle(x).position !== "absolute").reduce((w, x) => w + x.getBoundingClientRect().width, 0);
+  svg.style.setProperty("--fs", fs); sizeLt(svg);
+  while (svg.getBoundingClientRect().width > room() && fs > min) { fs *= 0.94; svg.style.setProperty("--fs", fs); sizeLt(svg); }
 }
 
 // ---------- the win scene (ChestWonScene) ----------

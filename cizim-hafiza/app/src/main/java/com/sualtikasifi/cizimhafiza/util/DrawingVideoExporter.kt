@@ -123,7 +123,7 @@ object DrawingVideoExporter {
             val rawTemplate = BitmapFactory.decodeResource(context.resources, R.drawable.reels_template_bg)
             val template = Bitmap.createScaledBitmap(rawTemplate, WIDTH, HEIGHT, true)
             if (template !== rawTemplate) rawTemplate.recycle()
-            val masked = maskedWord(word)
+            val masked = ShareTemplate.maskedWord(word, com.sualtikasifi.cizimhafiza.data.local.WordSeeder.currentLanguage(context))
 
             val file = File(
                 File(context.cacheDir, "shared_drawings").apply { mkdirs() },
@@ -175,7 +175,7 @@ object DrawingVideoExporter {
             val drawnFrames = (DrawingReplay.durationMillis(totalUnits) * FRAME_RATE * SHARE_SLOWDOWN_FACTOR / 1000)
                 .coerceIn(SHARE_MIN_DRAW_FRAMES, SHARE_MAX_DRAW_FRAMES)
             val totalFrames = drawnFrames + SHARE_TAIL_FRAMES
-            val masked = maskedWord(word)
+            val masked = ShareTemplate.maskedWord(word, com.sualtikasifi.cizimhafiza.data.local.WordSeeder.currentLanguage(context))
             val template = ShareTemplate.load(context)
 
             val file = File(
@@ -207,26 +207,6 @@ object DrawingVideoExporter {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(Intent.createChooser(intent, null))
-    }
-
-    /**
-     * "KEDİ" -> "K _ _ _" — the first letter stays, everything else is a
-     * blank for the caption to invite a guess instead of spoiling it. Only
-     * letters/digits get a blank; a space in the word (two-word answers)
-     * stays a space rather than turning into its own confusing blank.
-     */
-    private fun maskedWord(word: String): String {
-        val upper = word.uppercase()
-        val firstLetterIndex = upper.indexOfFirst { it.isLetterOrDigit() }
-        if (firstLetterIndex < 0) return upper
-        return upper.mapIndexed { index, c ->
-            when {
-                index == firstLetterIndex -> c.toString()
-                c.isWhitespace() -> " "
-                c.isLetterOrDigit() -> "_"
-                else -> c.toString()
-            }
-        }.joinToString(" ")
     }
 
     // ---- frame rendering ----

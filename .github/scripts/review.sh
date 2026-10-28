@@ -28,6 +28,9 @@ adb shell settings put global hide_error_dialogs 1 || true
 adb shell "run-as $PKG mkdir -p shared_prefs"
 printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boolean name=\"tutorial_completed\" value=\"true\" /><boolean name=\"feature_tour_seen\" value=\"true\" /></map>" \
   | adb shell "run-as $PKG sh -c 'cat > shared_prefs/cizim_hafiza_settings.xml'"
+# The first-run year-of-birth and terms prompt (LegalConsentHost) would cover every screen: answered up front.
+printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><int name=\"birth_year\" value=\"1990\" /><int name=\"terms_version\" value=\"1\" /></map>" \
+  | adb shell "run-as $PKG sh -c 'cat > shared_prefs/legal_consent.xml'"
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 

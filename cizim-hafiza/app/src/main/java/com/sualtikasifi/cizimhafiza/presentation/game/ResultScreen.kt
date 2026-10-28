@@ -147,7 +147,6 @@ fun ResultScreen(
     reportState: ReportSendState = ReportSendState.Idle,
     onDismissReport: () -> Unit = {},
     /** Called once, only when the rating prompt's "Puanla" is actually tapped — see RatingPromptDialog. */
-    onRatingBonusGranted: () -> Unit = {},
     /** Only when [state].duelChallenger is set: send a fresh challenge back to that same person. */
     onRematchDuel: ((opponentUid: String, opponentName: String) -> Unit)? = null,
     levelProgress: com.sualtikasifi.cizimhafiza.domain.model.LevelProgressState? = null,
@@ -350,9 +349,10 @@ fun ResultScreen(
                 // (and says how much it is), "x2" watches an ad, pays the round a second time, then leaves.
                 val canDouble = onDoubleXp != null && state.xpEarned > 0 && GameConstants.ADMOB_ENABLED && !xpDoubled
                 Row(horizontalArrangement = Arrangement.spacedBy(u * 14f), modifier = Modifier.fillMaxWidth()) {
-                    run {
-                        // Always there, as in the design; dimmed and inert when this round cannot be doubled (nothing
-                        // earned, no ad available, or already doubled).
+                    // A round that earned nothing has nothing to double: no "x2 · 0 XP" button at all, the claim button
+                    // takes the row.
+                    if (state.xpEarned > 0) run {
+                        // Dimmed and inert when this round cannot be doubled (no ad available, or already doubled).
                         ArtButton(
                             res = R.drawable.rs_btn_claim,
                             u = u,
@@ -469,7 +469,10 @@ fun ResultScreen(
                 // the grounds that their drawings are not the player's to pass on.
                 onAction = {
                     if (showingOpponentGallery && onReportOpponentDrawing != null) reportItem = itemToPreview
-                    else shareChoiceFor = itemToPreview
+                    // An empty canvas would go out as a card with nothing on it.
+                    else if (itemToPreview.strokes.none { it.isNotEmpty() }) {
+                        android.widget.Toast.makeText(context, R.string.share_empty_drawing, android.widget.Toast.LENGTH_SHORT).show()
+                    } else shareChoiceFor = itemToPreview
                 }
             )
         }
@@ -546,14 +549,12 @@ fun ResultScreen(
 
     if (state.showRatingPrompt && !ratingPromptDismissed) {
         RatingPromptDialog(
-            onRate = {
-                onRatingBonusGranted()
-                ratingPromptDismissed = true
-            },
+            onRate = { ratingPromptDismissed = true },
             onDismiss = { ratingPromptDismissed = true }
         )
     }
-    if (state.showSignInPrompt && !signInPromptDismissed) {
+    // Not offered to a player who may be under 13: linking an account is for ages 13 and up (see LegalConsentStore).
+    if (state.showSignInPrompt && !signInPromptDismissed && !com.sualtikasifi.cizimhafiza.presentation.common.LocalChildMode.current) {
         SignInPromptDialog(onDismiss = { signInPromptDismissed = true })
     }
     if (state.chestLost) {

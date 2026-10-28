@@ -78,6 +78,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.integerArrayResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -240,9 +241,9 @@ fun QuickMatchScreen(
                                 stringResource(
                                     R.string.quick_match_locked_body,
                                     when {
-                                        minutes < 60 -> stringResource(R.string.lock_duration_minutes, minutes)
-                                        minutes >= 24 * 60 -> stringResource(R.string.lock_duration_days, (minutes + 24 * 60 - 1) / (24 * 60))
-                                        else -> stringResource(R.string.lock_duration_hours, (minutes + 59) / 60)
+                                        minutes < 60 -> stringResource(if (minutes == 1) R.string.lock_duration_minutes_one else R.string.lock_duration_minutes, minutes)
+                                        minutes >= 24 * 60 -> ((minutes + 24 * 60 - 1) / (24 * 60)).let { stringResource(if (it == 1) R.string.lock_duration_days_one else R.string.lock_duration_days, it) }
+                                        else -> ((minutes + 59) / 60).let { stringResource(if (it == 1) R.string.lock_duration_hours_one else R.string.lock_duration_hours, it) }
                                     }
                                 )
                             },
@@ -293,9 +294,10 @@ fun QuickMatchScreen(
  * the number before drawing a single word turns the round into chasing a
  * target somebody already hit, when the whole appeal is finding out at the
  * end who did better. And there is no start button — the countdown starts
- * itself. Both changes serve the same illusion, which is the one thing that
- * makes a recorded round feel like a match: that the two of you are about
- * to begin at the same moment.
+ * itself, so the round plays like a match that begins for both of you at
+ * once. What the opponent can be (a live player, a recorded round or an AI)
+ * is said once, on the search screen before this (SearchingScene), rather
+ * than on each card.
  *
  * Laid out as a painted scene in the design's own 841-wide units (see [MfArtW]): the workshop wall, the "Rakibin Hazır!"
  * splash and its sign, the two player cards hanging side by side with the VS between them, the mascots, the countdown
@@ -349,7 +351,7 @@ private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart
                 // The sign is drawn over the lettering's lower edge at exactly the place it has in the design, so the two read as one
                 // picture (no cut, no fade between them).
                 // the lettering is part of the picture, so languages other than Turkish get their own splash
-                Pic(if (androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language == "tr") R.drawable.mf_title else R.drawable.mf_title_en, 450, 272, 1.2f, 150f, 62f)
+                Pic(R.drawable.mf_title, 450, 272, 1.2f, 150f, 62f)
                 Pic(R.drawable.mf_tag, 354, 106, 1.2f, (841f - 354f * 1.2f) / 2f, 62f + 266f * 1.2f)
                 Box(
                     Modifier.offset(u * ((841f - 354f * 1.2f) / 2f + 354f * 1.2f * 0.18f), u * (381.2f + 106f * 1.2f * 0.1f))
@@ -612,8 +614,9 @@ private const val LockArtW = 841f
 private const val LockArtH = 1870f
 
 /**
- * The lockout screen: the painted "Bu mod geçici olarak KAPALI" picture (see bg_locked), with the reason and a live
- * countdown written into the empty part of its paper. Laid out in the picture's own units so it scales with it.
+ * The lockout screen: the painted "Bu mod geçici olarak KAPALI" picture (see bg_locked, one per language), with the
+ * reason and a live countdown written into the empty part of its paper. Laid out in the picture's own units so it scales
+ * with it; how far down they sit comes from each language's lock_art resource, as some paint a longer title.
  */
 @Composable
 private fun LockedScene(untilMillis: Long, onUnlocked: () -> Unit) {
@@ -632,6 +635,10 @@ private fun LockedScene(untilMillis: Long, onUnlocked: () -> Unit) {
     val days = left / 86_400L
     val clock = String.format(java.util.Locale.US, "%02d:%02d:%02d", (left % 86_400L) / 3600L, (left % 3600L) / 60L, left % 60L)
     val countdown = if (days > 0) stringResource(R.string.lock_countdown_days, days.toInt(), clock) else clock
+
+    // [countdown top, countdown height, reason top, reason height] on this language's picture
+    val art = integerArrayResource(R.array.lock_art)
+    val pillTop = art[0].toFloat(); val pillH = art[1].toFloat(); val bodyTop = art[2].toFloat(); val bodyH = art[3].toFloat()
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val density = androidx.compose.ui.platform.LocalDensity.current
@@ -657,17 +664,17 @@ private fun LockedScene(untilMillis: Long, onUnlocked: () -> Unit) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .offset(x(190f), y(992f))
-                .size(len(460f), len(92f))
-                .clip(RoundedCornerShape(len(46f)))
+                .offset(x(190f), y(pillTop))
+                .size(len(460f), len(pillH))
+                .clip(RoundedCornerShape(len(pillH / 2f)))
                 .background(androidx.compose.ui.graphics.Color(0xFF4A2814))
-                .border(len(5f), androidx.compose.ui.graphics.Color(0xFFD9892B), RoundedCornerShape(len(46f)))
+                .border(len(5f), androidx.compose.ui.graphics.Color(0xFFD9892B), RoundedCornerShape(len(pillH / 2f)))
         ) {
             com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                 text = countdown,
                 style = androidx.compose.ui.text.TextStyle(
                     fontFamily = com.sualtikasifi.cizimhafiza.presentation.theme.DisplayFont,
-                    fontSize = fs(68f),
+                    fontSize = fs(pillH * 0.74f),
                     fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
                     color = androidx.compose.ui.graphics.Color(0xFFFFE7B0),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -689,7 +696,7 @@ private fun LockedScene(untilMillis: Long, onUnlocked: () -> Unit) {
             ),
             maxLines = 4,
             minScale = 0.6f,
-            modifier = Modifier.offset(x(110f), y(1088f)).size(len(620f), len(118f))
+            modifier = Modifier.offset(x(110f), y(bodyTop)).size(len(620f), len(bodyH))
         )
     }
 }

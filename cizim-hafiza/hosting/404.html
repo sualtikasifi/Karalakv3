@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sayfa bulunamadı – Karalak</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#7a3a10">
+<meta name="color-scheme" content="only light">
+<meta name="format-detection" content="telephone=no">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="192x192" href="/oyna/icons/icon-192.png">
+<style>
+  @font-face{font-family:Baloo;src:url(/oyna/fonts/baloo2_extrabold.woff2) format("woff2");font-weight:800;font-display:swap}
+  @font-face{font-family:Baloo;src:url(/oyna/fonts/baloo2_bold.woff2) format("woff2");font-weight:600;font-display:swap}
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{min-height:100vh;min-height:100dvh;font-family:Baloo,system-ui,sans-serif;color:#3b2314;background:#5a2a0c url(/oyna/img/bg_home_scene.webp) center/cover fixed;display:flex;align-items:center;justify-content:center;padding:max(72px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+  body::before{content:"";position:fixed;inset:0;background:linear-gradient(rgba(40,18,4,.35),rgba(40,18,4,.6));z-index:-1}
+  .card{width:100%;max-width:420px;text-align:center;background:#fff6e2;border:4px solid #e0b878;border-radius:36px;padding:0 22px 26px;box-shadow:0 14px 40px rgba(0,0,0,.45)}
+  .hero{width:170px;height:auto;margin-top:-62px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.35))}
+  .code{margin:2px 0 0;font-size:64px;line-height:1;font-weight:800;color:#f26a1b;-webkit-text-stroke:2px #8a3a00;paint-order:stroke fill;text-shadow:0 3px 0 #8a3a00}
+  h1{margin:8px 0 4px;font-size:28px;line-height:1.15;font-weight:800;color:#3b2314}
+  p{margin:0 0 14px;font-size:19px;font-weight:600;color:#7a5a40;line-height:1.3}
+  a.btn{display:flex;align-items:center;justify-content:center;min-height:58px;margin:10px 0 0;padding:8px 18px;border-radius:999px;font-family:inherit;font-size:22px;font-weight:800;text-decoration:none;transition:transform .12s}
+  a.btn:active{transform:scale(.96)}
+  a.btn:focus-visible{outline:3px solid #2a7de1;outline-offset:3px}
+  a.primary{background:linear-gradient(#ff9a3c,#f26a1b);color:#fff;border:3px solid #c4500f;box-shadow:0 5px 0 #a8420c;text-shadow:0 2px 0 rgba(120,50,0,.6)}
+  a.second{background:#fff;color:#c4500f;border:3px solid #e9801d;box-shadow:0 5px 0 #e0b878}
+</style>
+</head>
+<body>
+<main class="card">
+  <img class="hero" src="/oyna/img/qm_mascot.webp" alt="" width="170" height="159">
+  <div class="code" aria-hidden="true">404</div>
+  <h1 id="t">Bu sayfa karalanıp silinmiş!</h1>
+  <p id="s">Aradığın sayfayı bulamadık. Belki adres yanlış yazıldı ya da sayfa taşındı.</p>
+  <a class="btn primary" href="/" id="play">Oyuna dön</a>
+  <a class="btn second" href="/indir" id="get">Uygulamayı indir</a>
+</main>
+<script>
+  var l = (navigator.language || "tr").slice(0, 2).toLowerCase(), X = {
+    en: ["Page not found – Karalak", "This page got scribbled out!", "We couldn't find that page. The address may be mistyped, or the page has moved.", "Back to the game", "Get the app"],
+    pt: ["Página não encontrada – Karalak", "Esta página foi rabiscada!", "Não encontramos essa página. Talvez o endereço esteja errado ou a página tenha mudado de lugar.", "Voltar ao jogo", "Baixar o app"],
+    es: ["Página no encontrada – Karalak", "¡Esta página quedó garabateada!", "No encontramos esa página. Puede que la dirección esté mal escrita o que la página se haya movido.", "Volver al juego", "Descargar la app"]
+  };
+  if (l !== "tr") {
+    var x = X[l] || X.en; document.documentElement.lang = X[l] ? l : "en"; document.title = x[0];
+    ["t", "s", "play", "get"].forEach(function (id, i) { document.getElementById(id).textContent = x[i + 1]; });
+  }
+</script>
+</body>
+</html>

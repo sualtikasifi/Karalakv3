@@ -1,20 +1,32 @@
 // Account screen. Play Store players use Google in the app; a browser account is a user name + password (see firebase.js), and its
 // progress is saved to users/{uid}/backup/state (sync.js) so it follows the player to any browser.
 import * as net from "./firebase.js";
-import { S } from "./i18n.js";
+import { S, useAppTexts, fmtNum } from "./i18n.js";
+import { rankLevelHtml } from "./ranks.js";
 import { syncNow, lastBackupAt, forgetRemote, markAccount } from "./sync.js";
 import { frameRing, frameById } from "./store.js";
+import { childMode } from "./agegate.js";
 
 const T = {
-  tr: { title: "Hesap", guest: "Misafir hesap", linked: "Hesapla giriş yapıldı", xp: "Toplam XP", games: "Oynanan oyun", streak: "En iyi seri (gün)", sec: "Hesap ve yedek", lvl: (n) => `Seviye ${n}`, max: "En üst seviyedesin",
+  tr: { title: "Hesap", guest: "Misafir hesap", linked: "Hesapla giriş yapıldı", xp: "Toplam XP", games: "Oynanan oyun", streak: "En iyi seri (gün)", sec: "Hesap ve yedek", max: "En üst seviyedesin",
         hint: "Kullanıcı adı ve şifreyle hesap aç: ilerlemen kaydedilsin, istediğin tarayıcıdan kaldığın yerden devam et.", user: "Kullanıcı adı", pass: "Şifre", login: "Giriş Yap", create: "Hesap Oluştur",
         badName: "Kullanıcı adı 3-16 karakter olmalı: küçük harf, rakam, _ veya .", badPass: "Şifre en az 6 karakter olmalı.", taken: "Bu kullanıcı adı alınmış.", wrong: "Kullanıcı adı veya şifre yanlış.", off: "Hesap girişi şu an kapalı.", net: "Sunucuya ulaşılamadı.",
         created: "Hesabın oluşturuldu, ilerlemen kaydediliyor 🎉", welcome: "Hoş geldin — ilerlemen geri yüklendi", loggedIn: "Giriş yapıldı", progress: (a, b) => `${a} / ${b} XP` },
-  en: { title: "Account", guest: "Guest account", linked: "Signed in", xp: "Total XP", games: "Games played", streak: "Best streak (days)", sec: "Account & backup", lvl: (n) => `Level ${n}`, max: "You're at the top level",
+  en: { title: "Account", guest: "Guest account", linked: "Signed in", xp: "Total XP", games: "Games played", streak: "Best streak (days)", sec: "Account & backup", max: "You're at the top level",
         hint: "Create an account with a user name and password: your progress is saved and follows you to any browser.", user: "User name", pass: "Password", login: "Sign in", create: "Create account",
         badName: "User name must be 3-16 characters: lowercase letters, digits, _ or .", badPass: "Password must be at least 6 characters.", taken: "That user name is taken.", wrong: "Wrong user name or password.", off: "Signing in is switched off right now.", net: "Couldn't reach the server.",
         created: "Account created, saving your progress 🎉", welcome: "Welcome back — your progress was restored", loggedIn: "Signed in", progress: (a, b) => `${a} / ${b} XP` },
+  pt: { title: "Conta", guest: "Conta de convidado", linked: "Conectado", xp: "XP total", games: "Partidas jogadas", streak: "Melhor sequência (dias)", sec: "Conta e backup", max: "Você está no nível máximo",
+        hint: "Crie uma conta com nome de usuário e senha: seu progresso fica salvo e te acompanha em qualquer navegador.", user: "Nome de usuário", pass: "Senha", login: "Entrar", create: "Criar conta",
+        badName: "O nome de usuário deve ter de 3 a 16 caracteres: letras minúsculas, números, _ ou .", badPass: "A senha deve ter pelo menos 6 caracteres.", taken: "Esse nome de usuário já está em uso.", wrong: "Nome de usuário ou senha errados.", off: "O login está desativado agora.", net: "Não foi possível falar com o servidor.",
+        created: "Conta criada, salvando seu progresso 🎉", welcome: "Bem-vindo de volta — seu progresso foi restaurado", loggedIn: "Conectado", progress: (a, b) => `${a} / ${b} XP` },
+  es: { title: "Cuenta", guest: "Cuenta de invitado", linked: "Sesión iniciada", xp: "XP total", games: "Partidas jugadas", streak: "Mejor racha (días)", sec: "Cuenta y respaldo", max: "Estás en el nivel más alto",
+        hint: "Crea una cuenta con nombre de usuario y contraseña: tu progreso se guarda y te acompaña en cualquier navegador.", user: "Nombre de usuario", pass: "Contraseña", login: "Iniciar sesión", create: "Crear cuenta",
+        badName: "El nombre de usuario debe tener de 3 a 16 caracteres: minúsculas, números, _ o .", badPass: "La contraseña debe tener al menos 6 caracteres.", taken: "Ese nombre de usuario ya está en uso.", wrong: "Nombre de usuario o contraseña incorrectos.", off: "El inicio de sesión está desactivado ahora.", net: "No se pudo conectar con el servidor.",
+        created: "Cuenta creada, guardando tu progreso 🎉", welcome: "Bienvenido de nuevo — tu progreso se restauró", loggedIn: "Sesión iniciada", progress: (a, b) => `${a} / ${b} XP` },
 };
+// texts that are the app's own (strings.json), so they cannot drift from it
+useAppTexts(T, { linked: "account_signed_in_title", max: "level_max_reached", user: "account_section_username", welcome: "account_signed_in_restored" });
 let who = null, msg = "", busy = false, linkedNow = false;
 
 export function layoutAccount(c) {
@@ -53,16 +65,16 @@ function paint(c) {
   const av = frameRing(frameById(P.frame)); av.style.cssText += ";width:100%;height:100%"; $("ak-avatar").replaceChildren(av);
   $("ak-name").textContent = P.nick;
   const lv = c.levelOf(P.xp);
-  $("ak-lvl").textContent = x.lvl(lv.level);
-  $("ak-badge").className = "txt left badge" + (linked ? "" : " guest"); $("ak-badge").innerHTML = `<span>${linked ? [x.linked, who.userName].filter(Boolean).join(" · ") : x.guest}</span>`;
+  $("ak-lvl").innerHTML = rankLevelHtml(lv.level);
+  $("ak-badge").className = "txt left badge" + (linked ? "" : " guest"); { const b = document.createElement("span"); b.textContent = linked ? [x.linked, who.userName].filter(Boolean).join(" · ") : x.guest; $("ak-badge").replaceChildren(b); }
   $("ak-fill").style.width = lv.frac * 100 + "%"; $("ak-barl").textContent = lv.max ? x.max : x.progress(lv.into, lv.span);
-  const stats = [[P.xp.toLocaleString(), x.xp], [P.stats.games.toLocaleString(), x.games], [P.stats.best.toLocaleString(), x.streak]];
+  const stats = [[fmtNum(P.xp), x.xp], [fmtNum(P.stats.games), x.games], [fmtNum(P.stats.best), x.streak]];
   stats.forEach(([v, l], i) => { const s = $("ak-s" + i); s.children[0].textContent = v; s.children[1].textContent = l; });
   $("ak-sec").textContent = x.sec; $("ak-strip").innerHTML = linked ? `<b class="fitw">${S("account_sync_on")}</b><small class="fitw">${backupLine()}</small>` : x.hint;
   const form = $("ak-form"); form.style.display = linked ? "none" : "";
   $("ak-user").placeholder = x.user; $("ak-pass").placeholder = x.pass; $("ak-login-t").textContent = x.login; $("ak-reg-t").textContent = x.create;
   $("ak-out").style.display = linked ? "" : "none"; $("ak-out-t").textContent = S("account_sign_out");
-  $("ak-del").textContent = "🗑 " + S("account_delete_action"); $("ak-del").style.display = linked ? "" : "none";
+  $("ak-del").textContent = "🗑 " + S("account_delete_action"); $("ak-del").style.display = ""; // a guest has data on the server too (profile, rounds, league score), so it can be deleted as well
   const m = $("ak-msg"); m.textContent = msg; m.style.display = msg ? "" : "none";
   const done = (text) => { msg = text; busy = false; c.refreshHome(); renderAccount(c); };
   const read = () => {
@@ -73,6 +85,7 @@ function paint(c) {
   };
   const renderMsg = () => { const e = $("ak-msg"); e.textContent = msg; e.style.display = msg ? "" : "none"; };
   const go = async (fn, okText) => {
+    if (childMode()) { msg = S("child_feature_locked"); renderMsg(); return; } // a web account is for ages 13 and up (agegate.js)
     if (busy) return; const v = read(); if (!v) return; busy = true; msg = "…"; renderMsg();
     try {
       who = await fn(v.name, v.pass); markAccount(true); forgetRemote();

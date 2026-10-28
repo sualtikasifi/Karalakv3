@@ -1,5 +1,6 @@
 // Result screen (port of ResultScreen.kt / ResultParts.kt): painted head, stat cards, level card, versus card,
 // daily card, the words board with every drawing, claim buttons, and the drawing preview scene.
+import { S as appS, locale } from "./i18n.js";
 let S = null;
 const tr = (k, lang, ...a) => ((S && S[k] && S[k][lang]) || k).replace(/\{(\d)\}/g, (_, i) => a[+i]);
 export async function loadResultStrings() { if (!S) S = await (await fetch("result_strings.json")).json(); }
@@ -35,7 +36,8 @@ export function renderResult(c, d) {
   const head = el("div", "rs-head", `<img src="img/rs_head_plain.webp" alt=""><div class="rs-title lt">${T("game_over")}</div>`);
   $("rs-fback").onclick = d.onHome; root.append(head);
   const inner = el("div", "rs-inner"); root.append(inner);
-  if (d.note) inner.append(el("div", "rs-note", d.note));
+  // Plain text: the note can carry another player's name (the duel opponent's), which must never be read as markup.
+  if (d.note) { const note = el("div", "rs-note"); note.textContent = d.note; inner.append(note); }
   // stats
   const grid = el("div", "rs-grid"); const sl = statList(d, lang);
   for (let i = 0; i < sl.length; i += 2) {
@@ -57,7 +59,8 @@ export function renderResult(c, d) {
   // versus card
   if (d.opp) {
     const me = d.score, op = d.opp.totalScore, won = me > op, drew = me === op;
-    const side = (name, score, ring, right, col) => `<div class="av ${right ? "r" : "l"}"></div><div class="nm ${right ? "r" : "l"}">${name}</div><div class="sc ${right ? "r" : "l"}" style="color:${col}">${score}</div>`;
+    // The opponent's name is another player's (a recorded round's nickname), so it is escaped like every other name.
+    const side = (name, score, ring, right, col) => `<div class="av ${right ? "r" : "l"}"></div><div class="nm ${right ? "r" : "l"}">${esc(name)}</div><div class="sc ${right ? "r" : "l"}" style="color:${col}">${esc(score)}</div>`;
     const v = el("div", "rs-vs", `${side(d.nick || T("quick_match_you"), me, null, false, won ? "#1f9a3a" : drew ? "#3b2314" : "#8e1f1f")}${side(d.opp.nickname || "?", op, null, true, !won && !drew ? "#1f9a3a" : drew ? "#3b2314" : "#8e1f1f")}<div class="out" style="background:${drew ? "#8a6a50" : won ? "#2ea043" : "#d23b2e"}">${T(drew ? "quick_match_drew" : won ? "quick_match_won" : "quick_match_lost")}</div><div class="vs">${T("quick_match_versus")}</div>${won ? '<img class="cr" src="img/lobby_crown.webp" alt="">' : ""}`);
     const a1 = d.myRing(), a2 = d.oppRing(); v.querySelector(".av.l").append(a1); v.querySelector(".av.r").append(a2);
     inner.append(v);
@@ -67,7 +70,12 @@ export function renderResult(c, d) {
   if (d.daily) {
     const D = d.daily, pips = d.flags.map((f) => `<i class="${f ? "ok" : "no"}">${f ? "✓" : "✗"}</i>`).join("");
     inner.append(el("div", "rs-daily", `<h4>${T("daily_challenge_result_title")}</h4><div class="pips">${pips}</div><div class="pl"><div><span>🔥 <b>${D.streak}</b></span><small>${T("daily_streak_label")}</small></div><div><span>⭐ <b>${T("daily_challenge_xp_earned", D.xp)}</b></span><small>${T("daily_reward_won")}</small></div></div><button class="rs-share"><svg viewBox="0 0 24 24"><path fill="#fff" d="M18 16.1c-.8 0-1.5.3-2 .8l-7.1-4.2a3 3 0 000-1.4L16 7.2A3 3 0 1015 5c0 .2 0 .4.1.7L8 9.9a3 3 0 100 4.2l7.1 4.2c-.1.2-.1.5-.1.7a3 3 0 103-2.9z"/></svg><span class="lt">${T("daily_challenge_share")}</span></button>`));
-    inner.lastChild.querySelector(".rs-share").onclick = async () => { const txt = `Karalak 🎨 ${T("daily_challenge_result_title")}\n${d.flags.map((f) => (f ? "🟩" : "🟥")).join("")}\n🔥 ${D.streak}\nhttps://karalak-b6e11.web.app/oyna/`; try { if (navigator.share) await navigator.share({ text: txt }); else { await navigator.clipboard.writeText(txt); } } catch {} };
+    // DailyChallengeShareUtil: spoiler-free, a ✅/❌ row and the app's own words, never the words of the day or the drawings
+    inner.lastChild.querySelector(".rs-share").onclick = async () => {
+      const date = new Date().toLocaleDateString(lang === "en" ? "en-GB" : locale(), { day: "numeric", month: "long", year: "numeric" });
+      const txt = d.flags.map((f) => (f ? "✅" : "❌")).join("") + "\n" + appS("daily_challenge_share_text", date, d.flags.filter(Boolean).length, d.flags.length, D.streak, "https://karalak.com/indir");
+      try { if (navigator.share) await navigator.share({ text: txt }); else await navigator.clipboard.writeText(txt); } catch {}
+    };
   }
   // words board
   const cfg = { title: T("result_words_title", d.items.length), sel: "me", placeholders: d.items.length, pen: d.pen, items: (sel) => (sel === "opp" ? d.oppItems : d.items), theirs: (sel) => sel === "opp",

@@ -41,3 +41,21 @@ test("negative or non-numeric scores are refused", () => {
   assert.equal(isPlausibleScore({ periodXp: -1 }, start, start + HOUR), false);
   assert.equal(isPlausibleScore({ periodXp: NaN }, start, start + HOUR), false);
 });
+
+import { isPrizeEligible, PRIZE_MIN_ACCOUNT_AGE_MS } from "../lib/leagueRules.js";
+
+test("a guest account cannot take the prize", () => {
+  assert.equal(isPrizeEligible({ providers: [], createdMs: start - 100 * 24 * HOUR }, start + 30 * 24 * HOUR), false);
+});
+
+test("a signed-in account of a week or more can", () => {
+  const end = start + 31 * 24 * HOUR;
+  assert.equal(isPrizeEligible({ providers: ["google.com"], createdMs: end - PRIZE_MIN_ACCOUNT_AGE_MS }, end), true);
+  assert.equal(isPrizeEligible({ providers: ["password"], createdMs: start }, end), true);
+});
+
+test("an account made in the last week of the month cannot", () => {
+  const end = start + 31 * 24 * HOUR;
+  assert.equal(isPrizeEligible({ providers: ["google.com"], createdMs: end - 2 * 24 * HOUR }, end), false);
+  assert.equal(isPrizeEligible(null, end), false);
+});

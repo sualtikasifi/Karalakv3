@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "deploy": "npm run build && firebase deploy --only functions",
-    "test": "npm run build && node --test test/leagueRules.test.mjs"
+    "test": "npm run build && node --test test/*.test.mjs"
   },
   "dependencies": {
     "firebase-admin": "^12.6.0",

@@ -27,6 +27,9 @@ adb logcat -c
 adb shell "run-as $PKG mkdir -p shared_prefs"
 printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boolean name=\"tutorial_completed\" value=\"true\" /><boolean name=\"feature_tour_seen\" value=\"true\" /></map>" \
   | adb shell "run-as $PKG sh -c 'cat > shared_prefs/cizim_hafiza_settings.xml'"
+# The first-run year-of-birth and terms prompt (LegalConsentHost) would cover every screen: answered up front.
+printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><int name=\"birth_year\" value=\"1990\" /><int name=\"terms_version\" value=\"1\" /></map>" \
+  | adb shell "run-as $PKG sh -c 'cat > shared_prefs/legal_consent.xml'"
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 
@@ -86,8 +89,32 @@ shot 01_main_menu
 # read off the main-menu screenshot. Each screen: tap, wait, screenshot, Back.
 
 # The ads consent form (UMP) opens over the main menu on a fresh install; accept it so the
-# buttons underneath can be reached (the emulator counts as an EEA device).
-adb shell input tap 540 1678
+# buttons underneath can be reached (the emulator counts as an EEA device). Found by its label, never
+# by position: when no form shows, a blind tap here used to land on the Store tile and send every
+# later step to the wrong screen.
+tap_exact() {
+  dump_ui _tmp
+  local xy
+  xy=$(python3 - "$1" "$OUT/_tmp.xml" <<'PY'
+import sys, re, xml.etree.ElementTree as ET
+label, path = sys.argv[1].strip().lower(), sys.argv[2]
+try:
+    tree = ET.parse(path)
+except Exception:
+    sys.exit(0)
+for n in tree.iter('node'):
+    if (n.get('text') or '').strip().lower() == label or (n.get('content-desc') or '').strip().lower() == label:
+        m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', n.get('bounds') or '')
+        if m:
+            x1, y1, x2, y2 = map(int, m.groups())
+            print((x1 + x2) // 2, (y1 + y2) // 2)
+            break
+PY
+)
+  [ -n "$xy" ] && { echo "tap '$1' at $xy"; adb shell input tap $xy; return 0; }
+  echo "no '$1' on screen"; return 1
+}
+tap_exact "Consent" || tap_exact "Accept" || tap_exact "Kabul ediyorum" || true
 sleep 3
 shot 02_main_menu_after_consent
 

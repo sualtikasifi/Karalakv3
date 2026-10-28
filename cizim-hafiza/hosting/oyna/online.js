@@ -1,9 +1,11 @@
 // Race a Friend: entry, create/join, live lobby, synchronized game start and the ranking screen.
 import * as net from "./firebase.js";
-import { S } from "./i18n.js";
+import { S, useAppTexts } from "./i18n.js";
+import { rankLevelHtml } from "./ranks.js";
+import { roomInviteText, shareInvite, reportPlayerDialog } from "./ui.js";
 import { frameRing, frameById } from "./store.js";
 import { loadChat, buildDock, watch as watchChat, stop as stopChat, onReactions, activeBubbles, messageOf, reactions as chatNow, chatRow, chatText } from "./chat.js";
-import { setupGroup, fitPaper, SETUP_T } from "./offline.js";
+import { setupGroup, fitPaper, SETUP_T, overflows } from "./offline.js";
 import { renderOnlineResult as drawOnlineResult, loadResultStrings } from "./result.js";
 
 const T = {
@@ -21,12 +23,29 @@ const T = {
         you: (n) => `${n} (You)`, host: "Host", inviteF: "Invite a friend", inviteT: "Invite a friend to the room", inviteE: "No friends yet. Share the room code to invite.", invSend: "Invite", invSent: "Invite sent ✓", share: "Share",
         starting: "Game starting!", needTwo: "At least 2 players are needed to start.", pending: "You'll join when the current round ends", leave: "Leave room",
         done: (n) => `Finished! ${n} points`, waiting: "Waiting for the other players to finish…", place: (n) => `You placed #${n}!`, drawings: "Whose drawings?", ofTotal: (a, b) => `${a}/${b} correct`, rematch: "Play Again", lobbyBack: "Back to lobby", pts: "pts", leaveQ: "Leave the room?" },
+  pt: { title: "Desafie seus Amigos", l1: "Lembrar o que você desenhou pode ser", l2: "mais difícil que física quântica.", l3: "Bem-vindo à", l4: "Guerra dos Rabiscos!", create: "Criar Sala", join: "Entrar com Código",
+        cTitle: "Criar Sala", words: "Número de palavras", diff: "Dificuldade", easy: "Fácil", med: "Média", hard: "Difícil", mode: "Modo", normal: "Com tempo", relaxed: "Sem pressa", make: "Criar Sala",
+        jTitle: "Entrar com Código", nick: "Seu apelido", code: "Código da sala (6 dígitos)", go: "Entrar", notfound: "Essa sala não existe.", full: "A sala está cheia.", kicked: "Você foi removido desta sala.", err: "Algo deu errado, tente de novo.",
+        lobby: "Sala de Espera", roomCode: "Código da sala", send: "Envie este código para seu amigo", occ: (a, b) => `${a}/${b} jogadores`, ready: "Pronto", notReady: "Não estou pronto", start: "Começar Jogo", waitHost: "Todos prontos! Esperando o anfitrião começar…",
+        you: (n) => `${n} (Você)`, host: "Anfitrião", inviteF: "Convidar um amigo", inviteT: "Convide um amigo para a sala", inviteE: "Ainda sem amigos. Compartilhe o código da sala para convidar.", invSend: "Convidar", invSent: "Convite enviado ✓", share: "Compartilhar",
+        starting: "O jogo vai começar!", needTwo: "São necessários pelo menos 2 jogadores para começar.", pending: "Você entra quando a rodada atual terminar", leave: "Sair da sala",
+        done: (n) => `Terminou! ${n} pontos`, waiting: "Esperando os outros jogadores terminarem…", place: (n) => `Você ficou em ${n}º!`, drawings: "Desenhos de quem?", ofTotal: (a, b) => `${a}/${b} acertos`, rematch: "Jogar de Novo", lobbyBack: "Voltar à sala", pts: "pts", leaveQ: "Sair da sala?" },
+  es: { title: "Compite con tus Amigos", l1: "Recordar lo que dibujaste puede ser", l2: "más difícil que la física cuántica.", l3: "¡Bienvenido a la", l4: "Guerra de Garabatos!", create: "Crear Sala", join: "Unirse con Código",
+        cTitle: "Crear Sala", words: "Número de palabras", diff: "Dificultad", easy: "Fácil", med: "Media", hard: "Difícil", mode: "Modo", normal: "Con tiempo", relaxed: "Sin prisa", make: "Crear Sala",
+        jTitle: "Unirse con Código", nick: "Tu apodo", code: "Código de sala (6 dígitos)", go: "Unirse", notfound: "Esa sala no existe.", full: "La sala está llena.", kicked: "Te expulsaron de esta sala.", err: "Algo salió mal, inténtalo de nuevo.",
+        lobby: "Sala de Espera", roomCode: "Código de sala", send: "Envía este código a tu amigo", occ: (a, b) => `${a}/${b} jugadores`, ready: "Listo", notReady: "No estoy listo", start: "Iniciar Juego", waitHost: "¡Todos listos! Esperando a que el anfitrión empiece…",
+        you: (n) => `${n} (Tú)`, host: "Anfitrión", inviteF: "Invitar a un amigo", inviteT: "Invita a un amigo a la sala", inviteE: "Aún no tienes amigos. Comparte el código de sala para invitar.", invSend: "Invitar", invSent: "Invitación enviada ✓", share: "Compartir",
+        starting: "¡El juego va a empezar!", needTwo: "Se necesitan al menos 2 jugadores para empezar.", pending: "Entrarás cuando termine la ronda actual", leave: "Salir de la sala",
+        done: (n) => `¡Terminaste! ${n} puntos`, waiting: "Esperando a que los demás jugadores terminen…", place: (n) => `¡Quedaste en el puesto ${n}!`, drawings: "¿Dibujos de quién?", ofTotal: (a, b) => `${a}/${b} aciertos`, rematch: "Jugar de Nuevo", lobbyBack: "Volver a la sala", pts: "pts", leaveQ: "¿Salir de la sala?" },
 };
+// texts that are the app's own (strings.json), so they cannot drift from it
+useAppTexts(T, { full: "error_room_full" });
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
 const PRESENCE = 150000;
 let opts = { wordCount: 10, diffs: new Set(["EASY", "MEDIUM", "HARD"]), mode: "NORMAL", cats: new Set(), team: false };
-const CAT_EMOJI = { Hayvanlar: "🐶", Animals: "🐶", Eşyalar: "🧺", Objects: "🧺", Meslekler: "👮", Professions: "👮", Spor: "⚽", Sports: "⚽", Doğa: "🌲", Nature: "🌲", Yiyecekler: "🍎", Food: "🍎", Taşıtlar: "🚗", Vehicles: "🚗", Duygular: "😊", Emotions: "😊", Giyim: "👕", Clothing: "👕" };
+const CAT_EMOJI = { Hayvanlar: "🐶", Animals: "🐶", Animais: "🐶", Animales: "🐶", Eşyalar: "🧺", Objects: "🧺", Objetos: "🧺", Meslekler: "👮", Professions: "👮", Profissões: "👮", Profesiones: "👮", Spor: "⚽", Sports: "⚽", Esportes: "⚽", Deportes: "⚽",
+  Doğa: "🌲", Nature: "🌲", Natureza: "🌲", Naturaleza: "🌲", Yiyecekler: "🍎", Food: "🍎", Comidas: "🍎", Comida: "🍎", Taşıtlar: "🚗", Vehicles: "🚗", Veículos: "🚗", Vehículos: "🚗", Duygular: "😊", Emotions: "😊", Emoções: "😊", Emociones: "😊", Giyim: "👕", Clothing: "👕", Roupas: "👕", Ropa: "👕" };
 let catList = [];
 let code = null, room = null, unsub = null, hb = null, cdTimer = null, started = false, myFriends = [], sent = new Set(), finishedLocal = false;
 
@@ -70,7 +89,7 @@ export function renderEntry(c, fresh) {
   const tx = $("on-text");
   // a different note every time the screen opens (never the same one twice in a row); entry_quotes.json mirrors the app's online_lobby_quotes
   loadQuotes().then((q) => {
-    const list = q[lang()] || q.tr; let i = 0;
+    const list = q[lang()] || q.en; let i = 0;
     if (!fresh && entryQuote && entryQuote.list === list) i = entryQuote.i; // a re-layout (keyboard, rotation) keeps the note
     else if (list.length > 1) { let last = -1; try { last = +localStorage.getItem("entryQuote"); } catch {} do { i = Math.floor(Math.random() * list.length); } while (i === last); try { localStorage.setItem("entryQuote", i); } catch {} }
     entryQuote = { list, i };
@@ -79,21 +98,25 @@ export function renderEntry(c, fresh) {
     requestAnimationFrame(() => { const base = 41 * c.u(); let k = 1; tx.style.fontSize = base + "px"; while (k > 0.6 && [...tx.children].some((e) => e.scrollWidth > tx.clientWidth + 1)) { k -= 0.02; tx.style.fontSize = base * k + "px"; } });
   });
 }
-export async function renderCreate(c) {
+let ocF = 1;
+export async function renderCreate(c, keepScale = false) {
+  if (!keepScale) ocF = 1;
   const { $, lang } = c, x = T[lang()], C = (k) => chatText(k, lang());
   await loadChat();
-  if (!catList.length || catList.lang !== lang()) { try { const w = await (await fetch(lang() === "tr" ? "words_tr.json" : "words_en.json")).json(); catList = [...new Set(w.map((q) => q.category))].sort(); catList.lang = lang(); opts.cats = new Set(); } catch { catList = []; } }
+  if (!catList.length || catList.lang !== lang()) { try { const w = await (await fetch(`words_${lang()}.json`)).json(); catList = [...new Set(w.map((q) => q.category))].sort((a, b) => a.localeCompare(b, lang())); catList.lang = lang(); opts.cats = new Set(); } catch { catList = []; } }
   $("oc-title").textContent = x.cTitle; $("oc-make-t").textContent = x.make; $("oc-msg").textContent = "";
   const body = $("oc-body"); body.replaceChildren();
   // The same wooden setup rows as Play Offline (CreateRoomScreen on the shared WoodScreen).
-  const u = c.u(), group = (label, items, cols, h, size) => setupGroup(body, u, label, items, cols, h, size), again = () => renderCreate(c);
+  const u = c.u(), group = (label, items, cols, h, size) => setupGroup(body, u, label, items, cols, h * ocF, size * ocF), again = () => renderCreate(c, true);
   const S = SETUP_T[lang()];
   group(x.nick, [[c.P.nick, false, null]], 1, 78, 30);
   group(S.count, [10, 20, 30, 40, 50].map((n) => [String(n), opts.wordCount === n, () => { opts.wordCount = n; again(); }]), 5, 78, 37);
   group(C("online_room_mode_title"), [[false, C("online_room_mode_free_for_all")], [true, C("online_room_mode_team")]].map(([k, t]) => [t, opts.team === k, () => { opts.team = k; again(); }]), 2, 82, 29);
-  group(C("select_category"), [...catList.map((k) => [`${CAT_EMOJI[k] || "✨"} ${k}`, opts.cats.has(k), () => { opts.cats.has(k) ? opts.cats.delete(k) : opts.cats.add(k); again(); }]), [`🎨 ${C("all_categories")}`, opts.cats.size === 0, () => { opts.cats = new Set(); again(); }]], 4, 82, 25);
+  group(C("select_category"), [...catList.map((k) => [`${CAT_EMOJI[k] || "✨"} ${k}`, opts.cats.has(k), () => { opts.cats.has(k) ? opts.cats.delete(k) : opts.cats.add(k); again(); }]), [`🎨 ${C("all_categories")}`, opts.cats.size === 0, () => { opts.cats = new Set(); again(); }]], 3, 82, 27);
   group(S.diff, [["EASY", x.easy], ["MEDIUM", x.med], ["HARD", x.hard]].map(([k, t]) => [t, opts.diffs.has(k) && opts.diffs.size < 3, () => { opts.diffs.size === 3 ? (opts.diffs = new Set([k])) : opts.diffs.has(k) ? (opts.diffs.size > 1 && opts.diffs.delete(k)) : opts.diffs.add(k); again(); }]).concat([[C("all_difficulties"), opts.diffs.size === 3, () => { opts.diffs = new Set(["EASY", "MEDIUM", "HARD"]); again(); }]]), 4, 78, 27);
   fitPaper(c, "oc-paper", "oc-body");
+  if (overflows(body) && ocF > 0.6) { ocF -= 0.07; return renderCreate(c, true); }
+  c.fit && c.fit();
   $("oc-make").onclick = async () => {
     $("oc-msg").textContent = "…";
     try {
@@ -158,8 +181,6 @@ net.myUid().then((u) => { myId = u; }).catch(() => {});
 
 // The waiting room (WaitingRoomScreen.kt): the code card, "Oyuncular" band with the occupancy pill, the 2-column grid of eight seats
 // (or two team columns), the waiting pill, the chat dock and ONE ready button that turns into "Oyunu Başlat" for the host.
-const RANK_KEYS = ["rank_karalamaci", "rank_cirak", "rank_ressam", "rank_usta_ressam", "rank_sanatci", "rank_buyuk_usta"], RANK_AT = [1, 20, 40, 60, 80, 100];
-const rankKey = (l) => RANK_KEYS[RANK_AT.filter((t) => l >= t).length - 1];
 let readyOverride = null, starting = false, notice = "", noticeT = 0;
 const say = (c, text) => { notice = text; clearTimeout(noticeT); noticeT = setTimeout(() => { notice = ""; if (c.current() === "onw") renderLobby(c); }, 2500); };
 const PERSON = '<svg viewBox="0 0 24 24" width="1em" height="1em"><circle cx="12" cy="8" r="4.2" fill="#e9801d"/><path d="M3.8 21c0-4.4 3.7-7 8.2-7s8.2 2.6 8.2 7z" fill="#e9801d"/></svg>';
@@ -190,7 +211,7 @@ function renderLobby(c) {
     const av = frameRing(frameById(p.frameId), "ow-av"); av.style.position = "relative";
     const nm = isMe ? S("online_you_label", p.displayName) : p.displayName, lv = p.level || 1;
     const status = bub ? esc(messageOf(bub, lg)) : p.pendingNextRound ? S("online_pending_badge") : "";
-    const txt = el("div", "ow-tx", `<div class="ow-n"><span class="fitw">${esc(nm)}</span>${host ? '<img src="img/lobby_crown.webp" alt="">' : ""}</div><div class="ow-rk"><i>${S(rankKey(lv))}</i><i>${S("home_level_inline", lv)}</i></div><div class="ow-s">${status}</div>`);
+    const txt = el("div", "ow-tx", `<div class="ow-n"><span class="fitw">${esc(nm)}</span>${host ? '<img src="img/lobby_crown.webp" alt="">' : ""}</div><div class="ow-rk">${rankLevelHtml(lv)}</div><div class="ow-s">${status}</div>`);
     card.append(av, txt);
     if (team && isMe) { const sw = el("button", "ow-ico", SWAP); sw.title = S("online_switch_team"); sw.onclick = (e) => { e.stopPropagation(); net.setTeam(code, p.teamId === "B" ? "A" : "B").catch(() => {}); }; card.append(sw); }
     if (isHost && !isMe && p.uid !== "karalak-bot") {
@@ -198,7 +219,16 @@ function renderLobby(c) {
       kb.onclick = (e) => { e.stopPropagation(); c.confirm(S("online_kick_confirm_message", p.displayName), S("online_kick_confirm_confirm"), () => net.kickPlayer(code, p.uid, p.displayName).catch(() => {})); };
       card.append(kb);
     }
-    if (!isMe && !myFriends.some((f) => f.id === p.uid)) card.onclick = () => c.confirm(S("online_friend_add_message", p.displayName), S("online_friend_add_confirm"), () => net.sendFriendRequestTo(p.uid, p.displayName, c.P.nick).catch(() => {}));
+    // Another real player: a stranger's seat offers a friend request with "report player" beside it, a friend's seat the report
+    // itself (WaitingRoomScreen). The AI player (karalak-bot) is nobody to befriend or report.
+    if (!isMe && p.uid !== "karalak-bot") {
+      const report = () => reportPlayerDialog(net, p.uid, p.displayName, `room ${code}`);
+      card.onclick = myFriends.some((f) => f.id === p.uid) ? report : () => {
+        c.confirm(S("online_friend_add_message", p.displayName), S("online_friend_add_confirm"), () => net.sendFriendRequestTo(p.uid, p.displayName, c.P.nick).catch(() => {}));
+        const r = el("button", "pill cream small"); r.append(Object.assign(document.createElement("span"), { textContent: "🚩 " + S("report_player_action") })); r.onclick = report;
+        document.getElementById("dlg-extra").append(r);
+      };
+    }
     return card;
   };
   const empty = () => { const e = el("div", "ow-slot", `<img src="img/lobby_adduser.webp" alt=""><span>${S("online_invite_friend_slot")}</span>`); e.onclick = () => inviteSheet(c); return e; };
@@ -207,8 +237,7 @@ function renderLobby(c) {
   const cp = el("div", "ow-cp");
   cp.innerHTML = `<div class="h">${S("online_room_code_hint")}</div><div class="n">${code}</div><div class="b"><span>${S("online_invite_friend")}</span></div>`;
   cp.querySelector(".b").onclick = async () => {
-    const t = `${S("share_room_invite")} ${S("share_room_code", code)} — https://karalak-b6e11.web.app/oyna/`;
-    try { if (navigator.share) await navigator.share({ text: t }); else { await navigator.clipboard.writeText(code); say(c, lg === "tr" ? "Kod kopyalandı" : "Code copied"); } } catch {}
+    await shareInvite(roomInviteText(code), code, () => say(c, ({ tr: "Davet kopyalandı", en: "Invite copied", pt: "Convite copiado", es: "Invitación copiada" })[lg] || "Invite copied"));
   };
   main.append(cp);
   if (amPending) main.append(el("div", "ow-note", S("online_pending_next_round_message")));
@@ -242,11 +271,13 @@ function renderLobby(c) {
   if (notice) hints.append(el("div", "ow-hint", esc(notice)));
   if (!amPending && others.length) {
     if (!allReady && teamHint) hints.append(el("div", "ow-hint", S(teamHint)));
-    if (allReady && !isHost && !counting && !starting) hints.append(el("div", "ow-hint", S("online_waiting_for_host")));
   }
+  // everyone ready and the host has not started: said on the button itself, in two lines (as the app's ReadyButton)
+  const waitingForHost = !amPending && others.length && allReady && !isHost && !counting && !starting;
   const btn = $("ow-ready"); btn.style.display = !amPending && others.length ? "" : "none";
-  btn.className = "ow-rb" + (amReady || counting ? " g" : "") + (counting ? " cd" : "") + (!(amReady || counting) ? " blink" : "");
-  $("ow-ready-t").textContent = counting ? (left > 0 ? left : S("online_game_starting").replace(/!$/, "")) : hostCanStart ? S("online_start_game") : S("online_ready");
+  btn.className = "ow-rb" + (amReady || counting ? " g" : "") + (counting ? " cd" : "") + (!(amReady || counting) ? " blink" : "") + (waitingForHost ? " two" : "");
+  $("ow-ready-t").textContent = counting ? (left > 0 ? left : S("online_game_starting").replace(/!$/, "")) : hostCanStart ? S("online_start_game") : waitingForHost ? S("online_everyone_ready") : S("online_ready");
+  const sub = $("ow-ready-s"); sub.textContent = waitingForHost ? S("online_waiting_for_host_sub") : ""; sub.style.display = waitingForHost ? "" : "none";
   btn.onclick = () => {
     if (counting || starting) return;
     if (hostCanStart) { starting = true; renderLobby(c); hostStart(c).finally(() => { starting = false; }); return; }
@@ -274,7 +305,7 @@ function inviteSheet(c) {
     row.append(b); box.append(row);
   });
   const share = el("button", "pill cream small", `<span>${x.share}</span>`);
-  share.onclick = async () => { const t = `${lang() === "tr" ? "Karalak odama gel! Kod" : "Join my Karalak room! Code"}: ${code} — https://karalak-b6e11.web.app/oyna/`; try { if (navigator.share) await navigator.share({ text: t }); else await navigator.clipboard.writeText(code); } catch {} };
+  share.onclick = () => shareInvite(roomInviteText(code), code);
   const close = el("button", "pill cream small", `<span>${S("close")}</span>`); close.onclick = () => d.classList.add("hidden");
   box.append(share, close); d.append(box); d.onclick = (e) => { if (e.target === d) d.classList.add("hidden"); };
 }

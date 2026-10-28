@@ -72,6 +72,7 @@ class BotRoomEngine @Inject constructor(
         // just picked to sit comfortably mid-ladder instead of the bottom or
         // the grind-only top tier.
         const val BOT_LEVEL = 37
+        // The same name wherever it shows (lobby, scores, chat, results), here and on the web alike.
         private const val BOT_DISPLAY_NAME = "Sude"
         private const val WORD_COUNT_TARGET = 10
         private const val WORD_COUNT_MIN = 3

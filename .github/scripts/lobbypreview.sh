@@ -23,4 +23,9 @@ adb shell am force-stop "$PKG"
 adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.LobbyPreviewActivity" --ei players 8 --ei grid 188
 sleep 6
 adb exec-out screencap -p > "$OUT/lobby_8_short.png"
+# The ready button once everyone is ready and the host has not started: two lines inside the green pill.
+adb shell am force-stop "$PKG"
+adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.LobbyPreviewActivity" --ez button true
+sleep 6
+adb exec-out screencap -p > "$OUT/lobby_button.png"
 ls -la "$OUT"

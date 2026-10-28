@@ -6,11 +6,28 @@
 <title>Karalak – Çiz, hatırla, yarış</title>
 <meta name="description" content="Karalak: arkadaşlarınla çizim ve hafıza oyunu. Google Play'den indir ya da tarayıcıda hemen oyna.">
 <meta name="theme-color" content="#7a3a10">
+<meta name="color-scheme" content="only light">
+<meta name="format-detection" content="telephone=no">
 <meta property="og:title" content="Karalak – Çiz, hatırla, yarış">
 <meta property="og:description" content="Arkadaşlarınla çizim ve hafıza oyunu. Hemen indir ya da tarayıcıda oyna!">
-<meta property="og:image" content="https://karalak.com/oyna/icons/icon-512.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Karalak">
+<meta property="og:image" content="https://karalak.com/oyna/img/og_share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Karalak: kalemli köpek maskotu ve “Çiz, hatırla, yarış!” yazısı">
 <meta property="og:url" content="https://karalak.com/indir">
-<link rel="icon" href="/oyna/icons/icon-192.png">
+<meta property="og:locale" content="tr_TR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Karalak – Çiz, hatırla, yarış">
+<meta name="twitter:description" content="Arkadaşlarınla çizim ve hafıza oyunu. Hemen indir ya da tarayıcıda oyna!">
+<meta name="twitter:image" content="https://karalak.com/oyna/img/og_share.jpg">
+<link rel="canonical" href="https://karalak.com/indir">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="192x192" href="/oyna/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/oyna/icons/icon-180.png">
+<link rel="manifest" href="/oyna/manifest.webmanifest">
 
 <style>
   @font-face{font-family:Baloo;src:url(/oyna/fonts/baloo2_extrabold.woff2) format("woff2");font-weight:800;font-display:swap}
@@ -38,11 +55,15 @@
   body.painted::before{display:none}
   body.painted .card{display:none}
   body.en .pg .stage{background-image:url(indir_en.webp)}
+  body.pt .pg .stage{background-image:url(indir_pt.webp)}
+  body.es .pg .stage{background-image:url(indir_es.webp)}
   .pg{display:none}
   body.painted .pg{display:block;position:fixed;inset:0}
   /* the picture fills the width of a phone (the bottom floor is cropped a little more than the top), so there is no empty band beside it */
   .pg .stage{--w:min(100vw,calc(100dvh*.55));--h:calc(var(--w)*1870/841);--pgimg:url(indir_tr.webp);position:absolute;left:50%;transform:translateX(-50%);top:min(0px,calc((100dvh - var(--h))*.25));width:var(--w);height:var(--h);background:var(--pgimg) 0 0/100% 100%}
   body.en .pg .stage{--pgimg:url(indir_en.webp)}
+  body.pt .pg .stage{--pgimg:url(indir_pt.webp)}
+  body.es .pg .stage{--pgimg:url(indir_es.webp)}
   @media (min-aspect-ratio:3/4){.pg .stage{--w:min(100vw,calc(100dvh*841/1870));top:0}}
   .pg a{position:absolute;display:block;border-radius:999px;-webkit-tap-highlight-color:transparent;text-decoration:none;transition:transform .09s,filter .09s}
   /* the two painted buttons are drawn again from the same picture, so pressing one can sink it (a little smaller and lower, darker) */
@@ -80,11 +101,14 @@
 <script>
 (function () {
   var pkg = "com.sualtikasifi.cizimhafiza", $ = function (i) { return document.getElementById(i); };
-  var tr = /^tr/i.test(navigator.language || "tr");
-  var L = tr
-    ? { tag: "Çiz, hatırla, yarış!", room: "Odaya katılmak için oda kodu:", friend: "Arkadaş kodu:", title: "Karalak daveti", open: "Karalak'ta aç", store: "Google Play'den indir", web: "Tarayıcıda hemen oyna", foot: "Ücretsiz. Telefonda ve tarayıcıda." }
-    : { tag: "Draw, remember, race!", room: "Room code to join:", friend: "Friend code:", title: "Karalak invite", open: "Open in Karalak", store: "Get it on Google Play", web: "Play in your browser", foot: "Free. On your phone and in your browser." };
-  document.documentElement.lang = tr ? "tr" : "en";
+  var code2 = (navigator.language || "tr").slice(0, 2).toLowerCase(), lang = /^(tr|pt|es)$/.test(code2) ? code2 : "en", tr = lang === "tr";
+  var L = {
+    tr: { tag: "Çiz, hatırla, yarış!", room: "Odaya katılmak için oda kodu:", friend: "Arkadaş kodu:", title: "Karalak daveti", open: "Karalak'ta aç", store: "Google Play'den indir", web: "Tarayıcıda hemen oyna", foot: "Ücretsiz. Telefonda ve tarayıcıda.", room2: "Oda kodu", friend2: "Arkadaş kodu", page: "" },
+    en: { tag: "Draw, remember, race!", room: "Room code to join:", friend: "Friend code:", title: "Karalak invite", open: "Open in Karalak", store: "Get it on Google Play", web: "Play in your browser", foot: "Free. On your phone and in your browser.", room2: "Room code", friend2: "Friend code", page: "Karalak – Draw, remember, race" },
+    pt: { tag: "Desenhe, lembre, dispute!", room: "Código da sala para entrar:", friend: "Código de amigo:", title: "Convite do Karalak", open: "Abrir no Karalak", store: "Baixar na Google Play", web: "Jogar no navegador", foot: "Grátis. No celular e no navegador.", room2: "Código da sala", friend2: "Código de amigo", page: "Karalak – Desenhe, lembre, dispute" },
+    es: { tag: "¡Dibuja, recuerda, compite!", room: "Código de sala para unirte:", friend: "Código de amigo:", title: "Invitación de Karalak", open: "Abrir en Karalak", store: "Descargar en Google Play", web: "Jugar en el navegador", foot: "Gratis. En tu teléfono y en el navegador.", room2: "Código de sala", friend2: "Código de amigo", page: "Karalak – Dibuja, recuerda, compite" }
+  }[lang];
+  document.documentElement.lang = lang;
   $("tag").textContent = L.tag; $("store-t").textContent = L.store; $("web-t").textContent = L.web; $("open-t").textContent = L.open; $("foot").textContent = L.foot;
   // clean links: /d/CODE (room), /f/CODE (friend); the old /davet/?t=&c= form still works
   var m = location.pathname.match(/^\/(d|f)\/([0-9A-Za-z]{1,16})/), q = new URLSearchParams(location.search);
@@ -95,9 +119,11 @@
   var referrer = code ? "karalak_" + type + "=" + code : (ref ? "karalak_ref=" + ref.replace(/[^0-9A-Za-z]/g, "").slice(0, 16) : "");
   var store = "https://play.google.com/store/apps/details?id=" + pkg + (referrer ? "&referrer=" + encodeURIComponent(referrer) : "");
   $("store").href = store; $("pg-play").href = store;
-  document.body.classList.add("painted"); if (!tr) document.body.classList.add("en");
+  document.body.classList.add("painted");
+  // the painted page exists in Turkish, English, Portuguese and Spanish; any other language gets the English picture
+  if (!tr) { document.body.classList.add(lang); document.title = L.page; $("pg-play").setAttribute("aria-label", L.store); document.querySelector(".pg a.web").setAttribute("aria-label", L.web); }
   var android = /Android/i.test(navigator.userAgent), ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (code) { $("pg-inv").classList.add("on"); $("pg-invl").textContent = type === "friend" ? (tr ? "Arkadaş kodu" : "Friend code") : (tr ? "Oda kodu" : "Room code"); $("pg-open").textContent = L.open; $("pg-code").textContent = code; }
+  if (code) { $("pg-inv").classList.add("on"); $("pg-invl").textContent = type === "friend" ? L.friend2 : L.room2; $("pg-open").textContent = L.open; $("pg-code").textContent = code; }
   if (code) { $("invite").classList.add("on"); $("invl").textContent = type === "friend" ? L.friend : L.room; $("code").textContent = code; document.title = L.title; }
   if (!(android && code)) $("pg-open").style.display = "none";
   if (android && code) {

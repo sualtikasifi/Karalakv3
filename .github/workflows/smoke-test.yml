@@ -18,9 +18,12 @@ on:
         default: smoke.sh
         options:
           - smoke.sh
+          - legal.sh
+          - langs.sh
           - realpreview.sh
           - updatepreview.sh
           - chestpreview.sh
+          - chestrewardpreview.sh
           - tourpreview.sh
           - accountpreview.sh
           - friendspreview.sh

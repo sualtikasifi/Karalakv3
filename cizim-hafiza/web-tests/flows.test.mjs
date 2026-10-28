@@ -23,7 +23,11 @@ async function session(device, seed, name, fn) {
   page.on("pageerror", (e) => problems.push(`${tag} (${step}): script error: ${e.message}`));
   page.on("crash", () => problems.push(`${tag} (${step}): THE PAGE CRASHED`));
   await page.route(/gstatic\.com\/firebasejs/, (r) => r.fulfill({ contentType: "text/javascript", body: fake }));
-  await page.addInitScript((s) => { if (s && !localStorage.getItem("player")) localStorage.setItem("player", JSON.stringify(s)); }, seed);
+  await page.addInitScript((s) => {
+    if (s && !localStorage.getItem("player")) localStorage.setItem("player", JSON.stringify(s));
+    // the first-run year of birth and terms (agegate.js) are answered up front, as an adult's
+    if (!localStorage.getItem("legal")) localStorage.setItem("legal", JSON.stringify({ y: 1990, t: 1 }));
+  }, seed);
   const S = (s) => { step = s; };
   const cur = () => page.evaluate(() => window.__karalak.current());
   const until = async (id, ms = 12000) => { try { await page.waitForFunction((i) => window.__karalak.current() === i, id, { timeout: ms }); } catch { problems.push(`${tag} (${step}): the "${id}" screen never came (stuck on "${await cur().catch(() => "?")}")`); throw new Error("stuck"); } };

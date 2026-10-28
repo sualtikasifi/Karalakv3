@@ -36,7 +36,7 @@ for (const name of DEVICES) {
   const cctx = await cbrowser.newContext({ ...devices[name], locale: "tr-TR", userAgent: devices[name].userAgent }); // the same screen size, drawn by Chrome's engine
   const cpage = await cctx.newPage();
   await cpage.route(/gstatic\.com\/firebasejs/, (r) => r.fulfill({ contentType: "text/javascript", body: fake }));
-  await cpage.addInitScript((s) => { localStorage.setItem("player", JSON.stringify(s)); }, seed);
+  await cpage.addInitScript((s) => { localStorage.setItem("player", JSON.stringify(s)); localStorage.setItem("legal", JSON.stringify({ y: 1990, t: 1 })); }, seed);
   await cpage.goto(base); await cpage.waitForFunction(() => !document.getElementById("splash"), null, { timeout: 20000 }).catch(() => {}); await cpage.waitForTimeout(800);
   const ctx = await browser.newContext({ ...devices[name], locale: "tr-TR" });
   let page = null, current = "";
@@ -46,7 +46,7 @@ for (const name of DEVICES) {
     page.on("crash", () => problems.push(`[${name}] ${current}: THE PAGE CRASHED in WebKit`));
     page.on("console", (m) => { if (m.type() === "error") console.log(`  console error [${name}] ${current}: ${m.text().slice(0, 160)}`); });
     await page.route(/gstatic\.com\/firebasejs/, (r) => r.fulfill({ contentType: "text/javascript", body: fake }));
-    await page.addInitScript((s) => { localStorage.setItem("player", JSON.stringify(s)); }, seed);
+    await page.addInitScript((s) => { localStorage.setItem("player", JSON.stringify(s)); localStorage.setItem("legal", JSON.stringify({ y: 1990, t: 1 })); }, seed);
     await page.goto(base);
   };
   await open(); await page.waitForFunction(() => !document.getElementById("splash"), null, { timeout: 20000 }).catch(() => problems.push(`[${name}] splash never closed`));

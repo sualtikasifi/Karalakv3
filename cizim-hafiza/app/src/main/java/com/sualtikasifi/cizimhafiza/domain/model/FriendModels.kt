@@ -3,6 +3,16 @@ package com.sualtikasifi.cizimhafiza.domain.model
 data class Friend(val uid: String, val nickname: String)
 
 /**
+ * A guest's friendships on their way to the account they are signing in to: the guest's uid, the one-time secret it
+ * left in its private/migration document, and the friends to carry over (see FriendRepository.prepareFriendMigration).
+ */
+data class FriendMigration(val fromUid: String, val token: String, val friends: List<Friend>) {
+    companion object {
+        val NONE = FriendMigration(fromUid = "", token = "", friends = emptyList())
+    }
+}
+
+/**
  * Somebody who entered your friend code and is waiting on your answer.
  *
  * Adding by code used to create the friendship outright, on both sides, from

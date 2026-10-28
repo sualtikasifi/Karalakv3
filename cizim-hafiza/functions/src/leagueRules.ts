@@ -43,3 +43,25 @@ export function monthStartMsFor(periodId: number, istanbulOffsetMs: number): num
   const month = periodId % 12;
   return Date.UTC(year, month, 1) - istanbulOffsetMs;
 }
+
+/** How long an account must exist before the end of a month for that month's prize to be paid to it. */
+export const PRIZE_MIN_ACCOUNT_AGE_MS = 7 * 24 * 3_600_000;
+
+export interface PrizeAccount {
+  /** Sign-in providers on the account (empty for an anonymous guest). */
+  providers: string[];
+  /** When the sign-in was created, epoch ms. */
+  createdMs: number;
+}
+
+/**
+ * Whether a month's prize may go to [account]. A guest account costs nothing to make, so a winner has to be signed in
+ * (Google, or a browser user name and password) and have existed for at least a week before the month ended — a
+ * throwaway account made to farm the table cannot collect. Its score still shows in the table either way.
+ */
+export function isPrizeEligible(account: PrizeAccount | null, periodEndMs: number): boolean {
+  if (!account) return false;
+  if (account.providers.length === 0) return false;
+  if (!Number.isFinite(account.createdMs) || account.createdMs <= 0) return false;
+  return account.createdMs <= periodEndMs - PRIZE_MIN_ACCOUNT_AGE_MS;
+}

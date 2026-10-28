@@ -51,7 +51,6 @@ import com.sualtikasifi.cizimhafiza.presentation.common.NinePatch
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
-import com.sualtikasifi.cizimhafiza.presentation.common.sceneIn
 import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 
 private val Ink = Color(0xFF3B2314)
@@ -72,7 +71,7 @@ fun DuelListScreen(
     val uiState by viewModel.uiState.collectAsState()
     var resultDuel by remember { mutableStateOf<RecentDuel?>(null) }
 
-    Box(modifier = Modifier.fillMaxSize().sceneIn()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = cachedPainterResource(R.drawable.du_bg),
             contentDescription = null,

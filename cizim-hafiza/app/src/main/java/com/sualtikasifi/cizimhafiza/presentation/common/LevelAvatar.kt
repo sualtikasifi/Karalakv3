@@ -596,13 +596,12 @@ private val PersonaLetterColors = listOf(
 )
 
 /**
- * Filler-row pictures that read like a real mix of players: a few keep the Karalak mascot, one or
- * two wear Google's grey default silhouette, some have a coloured initial (Google's own default
- * for accounts without a photo), and the rest an emoji "artwork" on a soft gradient.
+ * A picture for a player without a photo of their own — AI players and recorded rounds. A league filler player wears
+ * the profile photo its name picks (BotPhotos); anyone else gets a generated face: a few keep the Karalak mascot,
+ * some have a coloured initial, and the rest an emoji "artwork" on a soft gradient.
  */
 @Composable
 private fun PersonaFace(seed: String, mascot: @Composable () -> Unit) {
-    // A league bot has a real-looking photo chosen by its name (see BotPhotos); anyone else keeps the generated face.
     BotPhotos.drawableFor(seed)?.let { res ->
         Image(
             painter = androidx.compose.ui.res.painterResource(res),

@@ -20,6 +20,9 @@ adb logcat -c
 adb shell "run-as $PKG mkdir -p shared_prefs"
 printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boolean name=\"feature_tour_seen\" value=\"true\" /></map>" \
   | adb shell "run-as $PKG sh -c 'cat > shared_prefs/cizim_hafiza_settings.xml'"
+# The first-run year-of-birth and terms prompt (LegalConsentHost) would cover every screen: answered up front.
+printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><int name=\"birth_year\" value=\"1990\" /><int name=\"terms_version\" value=\"1\" /></map>" \
+  | adb shell "run-as $PKG sh -c 'cat > shared_prefs/legal_consent.xml'"
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 dump() { adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "$OUT/$1.xml" >/dev/null 2>&1; }
@@ -173,7 +176,7 @@ step t15_lesson2 2
 clear_overlays
 adb shell input tap 547 2210   # Letter Count button (middle tile)
 step t16_lesson2_done 2
-adb shell input text "dog"
+adb shell input text "flag"
 sleep 4
 
 # --- Guess 3: free choice card, then the third word ----------------------------------------------------

@@ -4,13 +4,50 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no,interactive-widget=resizes-content">
 <meta name="theme-color" content="#7a3a10">
+<meta name="color-scheme" content="only light">
+<meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Karalak">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Karalak - Oyna</title>
+<title>Karalak – Çiz, hatırla, yarış! Tarayıcıda ücretsiz oyna</title>
+<meta name="description" content="Karalak: arkadaşlarınla çizim ve hafıza oyunu. Kelimeyi çiz, rakibinin çizimini hatırla, tahmin et ve ligde yüksel. Tarayıcıda ücretsiz oyna ya da Android'e indir.">
+<link rel="canonical" href="https://karalak.com/">
+<link rel="alternate" hreflang="tr" href="https://karalak.com/?lang=tr">
+<link rel="alternate" hreflang="en" href="https://karalak.com/?lang=en">
+<link rel="alternate" hreflang="pt" href="https://karalak.com/?lang=pt">
+<link rel="alternate" hreflang="es" href="https://karalak.com/?lang=es">
+<link rel="alternate" hreflang="x-default" href="https://karalak.com/">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Karalak">
+<meta property="og:title" content="Karalak – Çiz, hatırla, yarış!">
+<meta property="og:description" content="Arkadaşlarınla çizim ve hafıza oyunu. Tarayıcıda hemen oyna ya da Android'e indir.">
+<meta property="og:url" content="https://karalak.com/">
+<meta property="og:image" content="https://karalak.com/oyna/img/og_share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Karalak: kalemli köpek maskotu ve “Çiz, hatırla, yarış!” yazısı">
+<meta property="og:locale" content="tr_TR">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="pt_BR">
+<meta property="og:locale:alternate" content="es_LA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Karalak – Çiz, hatırla, yarış!">
+<meta name="twitter:description" content="Arkadaşlarınla çizim ve hafıza oyunu. Tarayıcıda hemen oyna ya da Android'e indir.">
+<meta name="twitter:image" content="https://karalak.com/oyna/img/og_share.jpg">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Karalak","alternateName":"Karalak – Çiz, hatırla, yarış","url":"https://karalak.com/",
+"description":"Arkadaşlarınla çizim ve hafıza oyunu: kelimeyi çiz, rakibinin çizimini hatırla, tahmin et ve ligde yüksel.",
+"image":"https://karalak.com/oyna/img/og_share.jpg","logo":"https://karalak.com/oyna/icons/icon-512.png",
+"genre":["Çizim","Hafıza","Kelime","Parti"],"inLanguage":["tr","en","pt","es"],"gamePlatform":["Web","Android"],"playMode":["SinglePlayer","MultiPlayer"],
+"applicationCategory":"GameApplication","operatingSystem":"Android, Web",
+"offers":{"@type":"Offer","price":"0","priceCurrency":"TRY"},
+"sameAs":["https://play.google.com/store/apps/details?id=com.sualtikasifi.cizimhafiza"]}
+</script>
 <!-- cache: html/js/css/json are served with no-cache (see firebase.json) -->
 <base href="/oyna/">
 <link rel="stylesheet" href="style.css">
@@ -24,6 +61,8 @@
 <link rel="modulepreload" href="firebase.js">
 <link rel="modulepreload" href="config.js">
 <link rel="modulepreload" href="ghost.js">
+<link rel="modulepreload" href="namefilter.js">
+<link rel="modulepreload" href="namefilter_data.js">
 <link rel="modulepreload" href="streak.js">
 <link rel="modulepreload" href="ui.js">
 <link rel="modulepreload" href="i18n.js">
@@ -40,8 +79,10 @@
 <link rel="modulepreload" href="report.js">
 <link rel="modulepreload" href="penfx.js">
 <link rel="modulepreload" href="picker.js">
+<link rel="modulepreload" href="agegate.js">
 <link rel="modulepreload" href="audio.js">
 <link rel="modulepreload" href="online.js">
+<link rel="modulepreload" href="ranks.js">
 <link rel="modulepreload" href="offline.js">
 <link rel="modulepreload" href="duel.js">
 <link rel="modulepreload" href="friends.js">
@@ -50,42 +91,17 @@
 <link rel="modulepreload" href="sync.js">
 <link rel="modulepreload" href="achievements.js">
 <link rel="modulepreload" href="league.js">
-<link rel="modulepreload" href="ranks.js">
 <link rel="modulepreload" href="search.js">
 <link rel="modulepreload" href="brk.js">
 <link rel="modulepreload" href="settings.js">
 <!-- preload:end -->
 </head>
 <body>
+<noscript><div style="position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;padding:24px;background:#5a2a0c;color:#fff6e2;font:600 20px/1.4 system-ui,sans-serif;text-align:center">Karalak'ı oynamak için tarayıcında JavaScript'i aç. · Turn on JavaScript in your browser to play Karalak.</div></noscript>
 <div id="safe" aria-hidden="true"></div><div id="splash"><img src="img/splash_art.webp" alt="" fetchpriority="high"><div id="sp-bar"><i></i></div></div>
-<script>
-// Brand splash (Android BrandSplash): the painted scene and a loading bar, 1 s the first time and 0.6 s after that - longer only while the first scene is still loading.
-(function () {
-  var sp = document.getElementById("splash"), img = sp.firstChild, bar = document.getElementById("sp-bar"), fill = bar.firstChild;
-  var seen = false; try { seen = localStorage.getItem("splashSeen") === "1"; } catch (e) {}
-  var total = seen ? 600 : 1000, t0 = Date.now(), done = false;
-  function lay() {
-    var w = innerWidth, h = innerHeight, k = Math.max(w / 841, h / 1870), ox = (w - 841 * k) / 2, oy = (h - 1870 * k) / 2;
-    bar.style.left = ox + 196 * k + "px"; bar.style.top = oy + 1354 * k + "px"; bar.style.width = 446 * k + "px"; bar.style.height = 76 * k + "px"; bar.style.padding = 0.17 * 76 * k + "px";
-  }
-  lay(); addEventListener("resize", lay);
-  // The bar only finishes once the first scene's picture and the lettering font are really in, so the game never opens half drawn
-  // (the longest wait is 6 s, for a very slow line).
-  window.__appReady = false;
-  var need = 2, rel = function () { if (--need === 0) window.__appReady = true; };
-  var first = new Image(); first.onload = first.onerror = rel; first.src = "img/bg_home_scene.webp";
-  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(rel, rel);
-  setTimeout(function () { window.__appReady = true; }, 6000);
-  function end() { if (done) return; done = true; try { localStorage.setItem("splashSeen", "1"); } catch (e) {} sp.style.opacity = "0"; setTimeout(function () { sp.remove(); }, 300); }
-  sp.addEventListener("click", function () { total = 170; t0 = Date.now() - (Date.now() - t0); });
-  (function tick() {
-    var p = Math.min(1, (Date.now() - t0) / total), e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-    fill.style.width = (e * 100) + "%"; img.style.transform = "scale(" + (1 + .05 * e) + ")";
-    if (p >= 1 && window.__appReady !== false) return end();
-    requestAnimationFrame(tick);
-  })();
-})();
-</script>
+<!-- External rather than inline so the page can run under a Content-Security-Policy without 'unsafe-inline' scripts
+     (firebase.json). A classic script: it still runs right here, before the rest of the page is parsed. -->
+<script src="splash.js"></script>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="lobby-ready" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values=".78 0 0 0 0  0 .98 0 0 0  0 0 .72 0 0  0 0 0 1 0"/></filter><filter id="ach-green" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values=".663 0 0 0 0  0 .871 0 0 0  0 0 .604 0 0  0 0 0 1 0"/></filter></svg>
 <div id="appbar"><b id="ab-t"></b><a id="ab-go" target="_blank" rel="noopener"></a><button id="ab-x" aria-label="close">×</button></div>
 <div id="backdrop"></div>
@@ -99,13 +115,13 @@
     <div id="h-xpbanner" class="hidden"><img src="img/xp_event_banner.webp" alt=""><div class="xb-name"></div><div class="xb-sub"></div><div class="xb-time"></div></div>
     <button id="h-avatar"></button>
     <div id="h-name" class="txt ink left"><span id="h-nick"></span><small id="h-lvl"></small></div>
-    <div id="h-rank" class="txt"><span id="h-rank-t"></span></div>
+    <div id="h-rank" class="txt"><span id="h-rank-t" class="fitw"></span></div>
     <div id="h-xpnext" class="txt ink right"></div>
     <div id="h-bar"><i id="h-fill"></i><span id="h-barlabel"></span></div>
     <div id="h-veil-gold" class="veil"></div><div id="h-veil-chest" class="veil"></div>
     <img id="h-dcard" src="img/home_daily_card.webp" alt=""><div id="h-dmul" class="txt dm"></div><div id="h-dpips"></div><div id="h-gain-gold" class="txt gain"></div><div id="h-gain-xp" class="txt gain"></div><div id="h-ddone"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="h-ddone-t"></span></div>
     <div id="ch-title" class="txt ink left"></div><div id="ch-tag" class="txt ink right"></div><button id="ch-info" class="hit" aria-label="info"></button><button id="ch-s0" class="ch-slot"></button><button id="ch-s1" class="ch-slot"></button><button id="ch-s2" class="ch-slot"></button><button id="ch-s3" class="ch-slot"></button><button id="h-dplay" class="dplay"></button><div id="h-dcount" class="txt lt"></div>
-    <div id="h-ttl-gold" class="txt lt fitw"></div><div id="h-ttl-daily" class="txt lt"></div><div id="h-ttl-chest" class="txt lt fitw"></div><div id="h-soon-gold" class="txt cap2"></div><div id="h-soon-chest" class="txt cap2"></div>
+    <div id="h-ttl-gold" class="txt lt fitw"></div><div id="h-ttl-daily" class="txt lt fit2"></div><div id="h-ttl-chest" class="txt lt fitw"></div><div id="h-soon-gold" class="txt cap2"></div><div id="h-soon-chest" class="txt cap2"></div>
     <button class="tile" id="tl-online"></button><button class="tile" id="tl-quick"></button><button class="tile" id="tl-offline"></button>
     <button class="tile" id="tl-levels"></button><button class="tile" id="tl-friends"></button><button class="tile" id="tl-ach"></button>
     <button class="tile" id="tl-league"></button><button class="tile" id="tl-store"></button><button class="tile" id="tl-settings"></button>
@@ -213,7 +229,7 @@
     <button id="fr-share" class="frbtn w"><span id="fr-sharet"></span></button>
     <img id="fr-ribbon1" data-src="img/fr_ribbon.webp" alt=""><div id="fr-ribbon1t" class="txt sign4"></div>
     <input id="fr-input" inputmode="numeric" maxlength="6" autocomplete="off">
-    <button id="fr-add" class="frbtn s"><span id="fr-addt"></span></button>
+    <button id="fr-add" class="frbtn s"><span id="fr-addt" class="fitw"></span></button>
     <div id="fr-msg" class="txt sign4 m"></div>
     <img id="fr-ribbon2" data-src="img/fr_ribbon.webp" alt=""><div id="fr-ribbon2t" class="txt sign4"></div>
     <img id="fr-bigpanel" data-src="img/fr_panel_big.webp" alt="">
@@ -257,7 +273,7 @@
     <img class="bg" data-src="img/bg_lobby.webp" alt="">
     <div id="ow-title" class="txt sign"></div>
     <button id="ow-back" class="hit" aria-label="back"><img data-src="img/join_back.webp" alt=""></button>
-    <div id="ow-col"><div id="ow-main"></div><div id="ow-bottom"><div id="ow-wait"></div><div id="ow-dock"></div><div id="ow-hints"></div><button id="ow-ready" class="ow-rb"><span id="ow-ready-t"></span></button></div></div>
+    <div id="ow-col"><div id="ow-main"></div><div id="ow-bottom"><div id="ow-wait"></div><div id="ow-dock"></div><div id="ow-hints"></div><button id="ow-ready" class="ow-rb"><span id="ow-ready-t"></span><span id="ow-ready-s" style="display:none"></span></button></div></div>
     <div id="ow-sheet" class="hidden"></div>
   </section>
 
@@ -274,7 +290,7 @@
     <div id="f-cr" class="mcard"><img data-src="img/mf_card_b.webp" alt=""><div class="mc-av"></div><div class="mc-rb"><img data-src="img/mf_ribbon_b.webp" alt=""><span></span></div><div class="mc-xp"><img data-src="img/mf_star.webp" alt=""><b></b></div></div>
     <img id="f-vs" data-src="img/mf_vs.webp" alt=""><img id="f-mas" data-src="img/mf_mascots.webp" alt="">
     <div id="f-plank"><img data-src="img/mf_plank.webp" alt=""><div id="f-pt" class="txt lt"></div><div id="f-bar"><i id="f-fill"></i></div></div>
-    <div id="f-t1" class="tip"><img data-src="img/mf_tip1.webp" alt=""><span></span></div><div id="f-t2" class="tip"><img data-src="img/mf_tip2.webp" alt=""><span></span></div><div id="f-t3" class="tip"><img data-src="img/mf_tip3.webp" alt=""><span></span></div>
+    <div id="f-t1" class="tip"><img data-src="img/mf_tip1.webp" alt=""><span class="fith"></span></div><div id="f-t2" class="tip"><img data-src="img/mf_tip2.webp" alt=""><span class="fith"></span></div><div id="f-t3" class="tip"><img data-src="img/mf_tip3.webp" alt=""><span class="fith"></span></div>
   </section>
 
   <section id="report" class="screen">

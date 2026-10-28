@@ -33,7 +33,7 @@ export function makeGhostRun({ trainedIds, hasWord, language, level, points, spe
   const wordIds = pool.filter(hasWord).slice(0, RUN_WORDS);
   if (wordIds.length < RUN_WORDS) return null;
   const seed = Math.floor(Math.random() * 2147483647), o = ghostOutcome(seed, wordIds, points, speedBonus);
-  const list = (names && names[language === "en" ? "en" : "tr"]) || ["Player"];
+  const list = (names && (names[language] || names.en)) || ["Player"];
   const lvl = Math.min(100, Math.max(1, level + levelBonus(o.correctCount / wordIds.length) + (Math.floor(rng(seed + LEVEL_SALT)() * (2 * LEVEL_SPREAD + 1)) - LEVEL_SPREAD)));
   return { id: ghostId(seed, wordIds), uid: GHOST_UID, nickname: list[Math.floor(rng(seed + NAME_SALT)() * list.length)], level: lvl, frameId: frameFor ? frameFor(lvl) : "SCRIBBLER", wordIds, totalScore: o.totalScore, correctCount: o.correctCount, fastestCorrectMs: o.fastestCorrectMs };
 }

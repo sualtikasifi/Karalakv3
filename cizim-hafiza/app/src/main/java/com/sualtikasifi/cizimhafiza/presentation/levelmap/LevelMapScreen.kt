@@ -209,7 +209,7 @@ fun LevelMapScreen(
                     )
                     Box(
                         modifier = Modifier
-                            .offset(x = ringX - RingSize / 2, y = ringY - RingSize / 2 + 6.dp)
+                            .offset { androidx.compose.ui.unit.IntOffset((ringX - RingSize / 2).roundToPx(), (ringY - RingSize / 2 + 6.dp).roundToPx()) }
                             .size(RingSize)
                             .graphicsLayer { scaleX = pulse; scaleY = pulse }
                             .border(5.dp, Color(0xFFFFE066), CircleShape)

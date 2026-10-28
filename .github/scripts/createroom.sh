@@ -16,6 +16,9 @@ adb shell settings put global hide_error_dialogs 1 || true
 adb shell "run-as $PKG mkdir -p shared_prefs"
 printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boolean name=\"tutorial_completed\" value=\"true\" /><boolean name=\"feature_tour_seen\" value=\"true\" /></map>" \
   | adb shell "run-as $PKG sh -c 'cat > shared_prefs/cizim_hafiza_settings.xml'"
+# The first-run year-of-birth and terms prompt (LegalConsentHost) would cover every screen: answered up front.
+printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><int name=\"birth_year\" value=\"1990\" /><int name=\"terms_version\" value=\"1\" /></map>" \
+  | adb shell "run-as $PKG sh -c 'cat > shared_prefs/legal_consent.xml'"
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 dump() { adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "$OUT/$1.xml" >/dev/null 2>&1; }
 step() { sleep "${2:-2}"; clear_overlays; shot "$1"; dump "$1"; }
@@ -75,7 +78,24 @@ PY
 adb shell am start -n $ACT
 sleep 8
 sleep 50
-adb shell input tap 540 1678
+# Accepts the ads consent form only if it is really on screen (its blue button sampled at three points):
+# a blind tap where the button would be lands on the Store tile when no form shows.
+consent_tap() {
+  adb exec-out screencap > /tmp/_consent.bin
+  if [ "$(python3 - /tmp/_consent.bin <<'PY'
+import sys, struct
+d = open(sys.argv[1], 'rb').read()
+w, h, fmt = struct.unpack('<III', d[:12])
+ok = 0
+for (x, y) in ((540, 1678), (300, 1680), (780, 1680)):
+    p = 12 + (y * w + x) * 4
+    r, g, b = d[p], d[p + 1], d[p + 2]
+    if r < 60 and 80 < g < 150 and b > 190: ok += 1
+print(1 if ok >= 2 else 0)
+PY
+)" = "1" ]; then adb shell input tap 540 1678; fi
+}
+consent_tap
 sleep 4
 shot 00_menu
 adb shell input tap 200 1140

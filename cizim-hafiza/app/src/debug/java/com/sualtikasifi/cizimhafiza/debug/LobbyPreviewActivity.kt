@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,6 +44,13 @@ class LobbyPreviewActivity : ComponentActivity() {
             CizimHafizaTheme {
                 Box(Modifier.fillMaxSize()) {
                     Image(painter = cachedPainterResource(R.drawable.bg_lobby), contentDescription = null, contentScale = ContentScale.Crop, alignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize())
+                    if (intent.getBooleanExtra("button", false)) {
+                        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp), verticalArrangement = Arrangement.Bottom) {
+                            com.sualtikasifi.cizimhafiza.presentation.online.ReadyButtonWaitingForHostPreview()
+                            Spacer(Modifier.height(60.dp))
+                        }
+                        return@Box
+                    }
                     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                         Spacer(Modifier.height(378.dp))
                         PlayerSlotsGrid(slots = slots, activeReactionsByUid = mapOf("u0" to com.sualtikasifi.cizimhafiza.domain.model.Reaction(uid = "u0", emoji = "", messageKey = "chat_hazir_misin", sentAtMillis = 0L)), onInvite = {}, compact = false, modifier = Modifier.height(gridDp.dp))

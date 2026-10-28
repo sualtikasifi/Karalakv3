@@ -94,20 +94,20 @@ fun WordCountScreen(
     }
 }
 
-// Matched on BOTH languages' category names for the same reason
+// Matched on EVERY language's category names for the same reason
 // WordCategoryColors is (see Color.kt): the pool stores the display name and
 // replaces it when the language changes, so an English player used to get the
 // generic sparkle on every single category.
 internal fun categoryEmoji(category: String?): String = when (category) {
-    "Hayvanlar", "Animals" -> "🐶"
-    "Eşyalar", "Objects" -> "🧺"
-    "Meslekler", "Professions" -> "👮"
-    "Spor", "Sports" -> "⚽"
-    "Doğa", "Nature" -> "🌲"
-    "Yiyecekler", "Food" -> "🍎"
-    "Taşıtlar", "Vehicles" -> "🚗"
-    "Duygular", "Emotions" -> "😊"
-    "Giyim", "Clothing" -> "👕"
+    "Hayvanlar", "Animals", "Animais", "Animales" -> "🐶"
+    "Eşyalar", "Objects", "Objetos" -> "🧺"
+    "Meslekler", "Professions", "Profissões", "Profesiones" -> "👮"
+    "Spor", "Sports", "Esportes", "Deportes" -> "⚽"
+    "Doğa", "Nature", "Natureza", "Naturaleza" -> "🌲"
+    "Yiyecekler", "Food", "Comidas", "Comida" -> "🍎"
+    "Taşıtlar", "Vehicles", "Veículos", "Vehículos" -> "🚗"
+    "Duygular", "Emotions", "Emoções", "Emociones" -> "😊"
+    "Giyim", "Clothing", "Roupas", "Ropa" -> "👕"
     null -> "🎨"
     else -> "✨"
 }

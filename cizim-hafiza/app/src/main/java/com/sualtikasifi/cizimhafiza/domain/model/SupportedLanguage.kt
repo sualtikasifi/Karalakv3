@@ -24,7 +24,9 @@ import com.sualtikasifi.cizimhafiza.R
  */
 enum class SupportedLanguage(val code: String, @StringRes val labelRes: Int, val flagEmoji: String) {
     ENGLISH("en", R.string.settings_language_english, "🇺🇸"),
-    TURKISH("tr", R.string.settings_language_turkish, "🇹🇷");
+    TURKISH("tr", R.string.settings_language_turkish, "🇹🇷"),
+    PORTUGUESE("pt", R.string.settings_language_portuguese, "🇧🇷"),
+    SPANISH("es", R.string.settings_language_spanish, "🇪🇸");
 
     companion object {
         val default = ENGLISH

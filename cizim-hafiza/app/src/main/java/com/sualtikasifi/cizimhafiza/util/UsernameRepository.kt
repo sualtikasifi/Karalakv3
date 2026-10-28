@@ -42,6 +42,8 @@ class UsernameRepository @Inject constructor(
     private val settingsRepository: SettingsRepository
 ) {
     private val usernames get() = firestore.collection("usernames")
+    /** Which name an account holds: one marker per uid, moved together with the names (see firestore.rules). */
+    private val owners get() = firestore.collection("usernameOwners")
     private val users get() = firestore.collection("users")
 
     /**
@@ -100,6 +102,8 @@ class UsernameRepository @Inject constructor(
                 if (!existing.exists()) {
                     tx.set(ref, mapOf("uid" to uid, "name" to name, "createdAt" to FieldValue.serverTimestamp()))
                 }
+                // The account's one name (usernameOwners, see firestore.rules) moves in the same transaction.
+                tx.set(owners.document(uid), mapOf("key" to ref.id))
                 false
             }
         }.await()
@@ -136,6 +140,7 @@ class UsernameRepository @Inject constructor(
                         tx.set(newRef, mapOf("uid" to uid, "name" to name, "createdAt" to FieldValue.serverTimestamp()))
                     }
                     if (oldSnap != null && oldSnap.exists() && oldSnap.getString("uid") == uid) tx.delete(oldRef)
+                    tx.set(owners.document(uid), mapOf("key" to newRef.id))
                     false
                 }
             }.await()
@@ -213,7 +218,9 @@ class UsernameRepository @Inject constructor(
         fun isValid(name: String): Boolean =
             name.length in 2..16 &&
                 name.all { it.isLetterOrDigit() || it == '_' || it == '.' || it == '-' || it == ' ' } &&
-                name.any { it.isLetterOrDigit() }
+                name.any { it.isLetterOrDigit() } &&
+                // Every name here is shown to other players (league, rooms, friend lists).
+                com.sualtikasifi.cizimhafiza.domain.model.NameFilter.isAllowed(name)
 
         fun keyOf(name: String): String =
             Normalizer.normalize(name.trim(), Normalizer.Form.NFD)

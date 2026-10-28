@@ -1145,21 +1145,6 @@ class SettingsRepository @Inject constructor(
         get() = prefs.getBoolean(KEY_USERNAME_OFFER_SHOWN, false)
         set(value) = prefs.edit { putBoolean(KEY_USERNAME_OFFER_SHOWN, value) }
 
-    /**
-     * Pays the rating-prompt's 500 XP bonus exactly once, ever — a second
-     * call (a retried dialog action, a process death replaying the tap)
-     * returns false and grants nothing instead of paying out again. Separate
-     * from [ratingPromptShown]: that flag only guards the DIALOG appearing,
-     * this one guards the XP itself, the same split addScore/addXp keep
-     * from every other reward path.
-     */
-    @Synchronized
-    fun grantRatingBonusXpOnce(amount: Int): Boolean {
-        if (prefs.getBoolean(KEY_RATING_BONUS_XP_GRANTED, false)) return false
-        prefs.edit { putBoolean(KEY_RATING_BONUS_XP_GRANTED, true) }
-        addXp(amount)
-        return true
-    }
 
     /**
      * Called whenever a game (solo or online) finishes. Extends the streak by
@@ -1254,7 +1239,6 @@ class SettingsRepository @Inject constructor(
         const val KEY_USERNAME_OFFER_PENDING = "username_offer_pending"
         const val KEY_RATING_PROMPT_PENDING = "rating_prompt_pending"
         const val FLAGS_PREFS_NAME = "one_time_flags"
-        const val KEY_RATING_BONUS_XP_GRANTED = "rating_bonus_xp_granted"
         const val KEY_NICKNAME_CHOSEN = "nickname_chosen_by_player"
         const val KEY_NICKNAME_RENAME_USED = "nickname_rename_used"
         const val KEY_USERNAME_CHANGES = "username_changes"

@@ -19,12 +19,13 @@ import { layoutFriends, openFriends, renderFriends, stop as stopFriends } from "
 import { loadWorlds, layoutWorlds, renderWorlds, layoutMap, renderMap, mixFor, starsFor, recordLevel, currentWorld } from "./levels.js";
 import { layoutAccount, renderAccount } from "./account.js";
 import { layoutOffline, renderOffline } from "./offline.js";
-import { setLang, loadStrings, S } from "./i18n.js";
+import { setLang, loadStrings, S, useAppTexts, LANGS, fmtNum } from "./i18n.js";
 import { syncNow, scheduleBackup } from "./sync.js";
 import { openRankLadder } from "./ranks.js";
 import { startSearch, stopSearch } from "./search.js";
 import { exitDialog, appOnlyDialog, sparkFlight, PLAY_URL } from "./ui.js";
-import { makeGhostRun, loadGhostNames, isGhostId } from "./ghost.js";
+import { makeGhostRun, loadGhostNames } from "./ghost.js";
+import { needsPrompt as legalNeeded, childMode, adultOnly, openAgeGate } from "./agegate.js";
 import { layoutBreak, startBreak, stopBreak } from "./brk.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
@@ -47,12 +48,26 @@ const T = {
         guess: "Guess", result: "Result", timeJ: "+Time", hintT: "Hint", firstT: "First letter", countT: "Letters", skipT: "Skip", found: "Great!\nMatch found.", startIn: (n) => `Match starts in ${n} seconds`, tip1: (n) => `You'll both draw the same ${n} words`, tip2: "Scores are compared when the match ends", tip3: "Relax and enjoy the game!", wTitle: "Welcome to Karalak!", wBody: "Let's try a quick practice. I'll give you 3 words to draw. Then I'll show your drawings back and you'll remember what they were. That's it!", wGo: "Let's start", wSkip: "Skip tutorial", finT: "That's it! 🎉", finB: "You now know how to draw and remember. As a gift, 3 of each joker were added to your account. Your pen is ready, good luck!", finBtn: "Start playing", searching: "Finding an opponent…", searchSub: "Looking for someone who draws like you", again: "PLAY AGAIN", nextLevel: "Next Level", lobbyHome: "HOME", noOpp: "No opponent found right now",
         you: "You", win: "You win!", lose: "You lose", draw: "Draw", leaveQ: "Leave the room?", leave: "Leave the game?", yes: "Leave", no: "Stay",
         mine: "Your drawings", tiles: { online: "Race a Friend", quick: "Quick Match", offline: "Play Offline", levels: "Levels", friends: "Friends", ach: "Achievements", league: "Monthly League", store: "Store", settings: "Settings" }, goldLbl: "Classic", adGold: "+500 Gold", daily: "Daily Challenge", adChest: "Free Chest", dailyPlay: "PLAY NOW", dailyDone: "You finished today's challenge!", lvl: "Level", toNext: (n, l) => `${n} XP to Lv. ${l}`, soon: "Coming soon", appOnly: "In the app", ok: "OK", langTitle: "Language",  theirs: "Opponent's drawings", pts: "pts", file: "words_en.json", ph: "Your answer…" },
+  pt: { tag: "Desenhe, memorize,\nadivinhe!", start: "JOGAR", note: "Jogue com quem está no Android e no navegador", next: "Pronto", ok: "Enviar",
+        guess: "Adivinhar", result: "Resultado", timeJ: "+Tempo", hintT: "Dica", firstT: "Primeira letra", countT: "Letras", skipT: "Pular", found: "Ótimo!\nRival encontrado.", startIn: (n) => `A partida começa em ${n} segundos`, tip1: (n) => `Vocês dois vão desenhar as mesmas ${n} palavras`, tip2: "As pontuações são comparadas no fim da partida", tip3: "Relaxe e aproveite o jogo!", wTitle: "Bem-vindo ao Karalak!", wBody: "Vamos fazer um teste rápido. Vou te dar 3 palavras para desenhar. Depois vou te mostrar seus desenhos e você lembra o que eram. É só isso!", wGo: "Vamos lá", wSkip: "Pular tutorial", finT: "Pronto! 🎉", finB: "Agora você sabe desenhar e lembrar. De presente, 3 de cada curinga foram adicionados à sua conta. Seu lápis está pronto, boa sorte!", finBtn: "Começar a jogar", searching: "Procurando um rival…", searchSub: "Buscando alguém que desenhe como você", again: "JOGAR DE NOVO", nextLevel: "Próxima Fase", lobbyHome: "INÍCIO", noOpp: "Nenhum rival encontrado agora",
+        you: "Você", win: "Você venceu!", lose: "Você perdeu", draw: "Empate", leaveQ: "Sair da sala?", leave: "Sair do jogo?", yes: "Sair", no: "Ficar",
+        mine: "Seus desenhos", tiles: { online: "Jogar com Amigos", quick: "Partida Rápida", offline: "Jogar Offline", levels: "Fases", friends: "Amigos", ach: "Conquistas", league: "Liga Mensal", store: "Loja", settings: "Ajustes" }, goldLbl: "Clássico", adGold: "+500 de Ouro", daily: "Desafio Diário", adChest: "Baú Grátis", dailyPlay: "JOGAR AGORA", dailyDone: "Você terminou o desafio de hoje!", lvl: "Nível", toNext: (n, l) => `${n} XP até o Nv. ${l}`, soon: "Em breve", appOnly: "No app", ok: "OK", langTitle: "Idioma",  theirs: "Desenhos do rival", pts: "pts", file: "words_pt.json", ph: "Sua resposta…" },
+  es: { tag: "¡Dibuja, memoriza,\nadivina!", start: "JUGAR", note: "Juega con quienes están en Android y en el navegador", next: "Listo", ok: "Enviar",
+        guess: "Adivinar", result: "Resultado", timeJ: "+Tiempo", hintT: "Pista", firstT: "Primera letra", countT: "Letras", skipT: "Saltar", found: "¡Genial!\nRival encontrado.", startIn: (n) => `La partida empieza en ${n} segundos`, tip1: (n) => `Los dos dibujarán las mismas ${n} palabras`, tip2: "Los puntajes se comparan al terminar la partida", tip3: "¡Relájate y disfruta el juego!", wTitle: "¡Bienvenido a Karalak!", wBody: "Hagamos una prueba rápida. Te daré 3 palabras para dibujar. Luego te mostraré tus dibujos y tú recuerdas qué eran. ¡Eso es todo!", wGo: "Vamos", wSkip: "Saltar tutorial", finT: "¡Listo! 🎉", finB: "Ya sabes dibujar y recordar. De regalo, se agregaron 3 de cada comodín a tu cuenta. Tu lápiz está listo, ¡buena suerte!", finBtn: "Empezar a jugar", searching: "Buscando un rival…", searchSub: "Buscando a alguien que dibuje como tú", again: "JUGAR DE NUEVO", nextLevel: "Siguiente Nivel", lobbyHome: "INICIO", noOpp: "No se encontró ningún rival ahora",
+        you: "Tú", win: "¡Ganaste!", lose: "Perdiste", draw: "Empate", leaveQ: "¿Salir de la sala?", leave: "¿Salir del juego?", yes: "Salir", no: "Quedarme",
+        mine: "Tus dibujos", tiles: { online: "Jugar con Amigos", quick: "Partida Rápida", offline: "Jugar sin Conexión", levels: "Niveles", friends: "Amigos", ach: "Logros", league: "Liga Mensual", store: "Tienda", settings: "Ajustes" }, goldLbl: "Clásico", adGold: "+500 de Oro", daily: "Desafío Diario", adChest: "Cofre Gratis", dailyPlay: "JUGAR AHORA", dailyDone: "¡Terminaste el desafío de hoy!", lvl: "Nivel", toNext: (n, l) => `${n} XP para Nv. ${l}`, soon: "Próximamente", appOnly: "En la app", ok: "OK", langTitle: "Idioma",  theirs: "Dibujos del rival", pts: "pts", file: "words_es.json", ph: "Tu respuesta…" },
 };
+// the joker row's words are the app's own (GuessScreen: guess_tile_hint, the jokers' short names, skip_guess)
+useAppTexts(T, { hintT: "guess_tile_hint", firstT: "joker_first_letter_short", countT: "joker_letter_count_short", skipT: "skip_guess" });
 const $ = (id) => document.getElementById(id);
-let lang = localStorage.getItem("lang") || ((navigator.language || "tr").startsWith("tr") ? "tr" : "en");
+// a saved choice, else the browser's language when the game has it, else English (Turkish when the browser says nothing)
+let lang = (() => { const q = new URLSearchParams(location.search).get("lang"); if (LANGS.includes(q)) return q; // karalak.com/?lang=pt (hreflang links, shared links)
+  let s = null; try { s = localStorage.getItem("lang"); } catch {} if (LANGS.includes(s)) return s; const n = (navigator.language || "tr").slice(0, 2).toLowerCase(); return LANGS.includes(n) ? n : "en"; })();
+/** One text in the game's language from a { tr, en, pt, es } set (English when a language is missing). */
+const inLang = (o) => o[lang] || o.en;
 let words = [], round = [], idx = 0, current = "home", u = 1;
 let bonusTimer = null, dTimer = null, gTimer = null, tool = "pen", score = 0, shownAt = 0;
-const t = () => T[lang];
+const t = () => T[lang] || T.en;
 
 // ---------- layout (art units: the paintings are 841 wide) ----------
 const stage = $("stage");
@@ -96,16 +111,17 @@ const ctx = {
   levelOf: (xp) => { const lv = levelFor(xp), fl = xpFor(lv), ce = lv >= 100 ? fl : xpFor(lv + 1); return { level: lv, into: xp - fl, span: ce - fl, frac: ce > fl ? (xp - fl) / (ce - fl) : 1, max: lv >= 100 }; },
   info: (text) => msg(text),
   // Sign-out wipes what belongs to the account (SettingsRepository.clearAccountScopedState); sounds, language and the tutorial stay.
-  resetProgress() { const keep = { prefs: P.prefs, tutorialDone: P.tutorialDone }; const fresh = JSON.parse(JSON.stringify(DEFAULT_P)); for (const k of Object.keys(P)) delete P[k]; Object.assign(P, fresh, keep); P.nick = lang === "tr" ? "Oyuncu" : "Player"; saveP(); refreshHome(); },
+  resetProgress() { const keep = { prefs: P.prefs, tutorialDone: P.tutorialDone }; const fresh = JSON.parse(JSON.stringify(DEFAULT_P)); for (const k of Object.keys(P)) delete P[k]; Object.assign(P, fresh, keep); P.nick = S("default_nickname"); saveP(); refreshHome(); },
   confirm(text, yes, onYes) {
-    $("dlg-text").textContent = text; $("dlg-extra").replaceChildren(); $("dlg-no").style.display = ""; $("dlg-no").textContent = t().no === "Kal" ? "Vazgeç" : "Cancel"; $("dlg-yes").textContent = yes;
+    $("dlg-text").textContent = text; $("dlg-extra").replaceChildren(); $("dlg-no").style.display = ""; $("dlg-no").textContent = S("report_drawing_cancel"); $("dlg-yes").style.display = ""; $("dlg-yes").textContent = yes;
     $("dialog").classList.remove("hidden");
     $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); onYes(); };
     $("dlg-no").onclick = () => $("dialog").classList.add("hidden");
   },
 };
 // ---------- player (web-local progress; the account's level comes from Google sign-in later) ----------
-const RANKS = [[1, "✏️", "Karalamacı", "Scribbler"], [20, "🖊️", "Çırak", "Apprentice"], [40, "🖌️", "Ressam", "Painter"], [60, "🎨", "Usta Ressam", "Master Painter"], [80, "🖼️", "Sanatçı", "Artist"], [100, "👑", "Büyük Usta", "Grand Master"]];
+// [from level, emoji, the rank name's app string]
+const RANKS = [[1, "✏️", "rank_karalamaci"], [20, "🖊️", "rank_cirak"], [40, "🖌️", "rank_ressam"], [60, "🎨", "rank_usta_ressam"], [80, "🖼️", "rank_sanatci"], [100, "👑", "rank_buyuk_usta"]];
 const xpFor = (lv) => { const n = Math.max(0, lv - 1); return 25 * n * n + 75 * n; };
 const levelFor = (xp) => { let l = 1; while (l < 100 && xp >= xpFor(l + 1)) l++; return l; };
 const DEFAULT_P = { nick: "", xp: 0, gold: 0, runes: {}, owned: [], pen: "CLASSIC", frame: "SCRIBBLER", jokers: {}, claimed: [], daily: { last: -1, streak: 0, best: 0, result: null }, levels: {}, stats: { games: 0, score: 0, words: 0, perfect: 0, wins: 0, streak: 0, best: 0, last: "" } };
@@ -297,7 +313,7 @@ function layoutScene() {
 /** Lays the scene out, then measures where its widgets end so the next pass can crop the decor below them. */
 /** Text that must stay on one line inside its box (class "fitw"): shrinks until it fits, never below 55%, so a longer language never spills out. */
 function fitAll() {
-  const els = [...document.querySelectorAll(".screen.on .fitw, .screen.on .fith, .aw-ov .fitw, .aw-ov .fith")];
+  const els = [...document.querySelectorAll(".screen.on .fitw, .screen.on .fith, .aw-ov .fitw, .aw-ov .fith, .pw-ov .fitw")];
   // all writes first, then all reads, then the shrinking of the few that overflow: one layout pass instead of one per element
   for (const e of els) e.style.fontSize = "";
   // the real width of the text against the real width of the box (scrollWidth is rounded, and Safari starts the "…" at a fraction of a pixel)
@@ -306,6 +322,16 @@ function fitAll() {
   const todo = [];
   for (const e of els) if (e.clientWidth >= 4 && over(e)) todo.push([e, parseFloat(getComputedStyle(e).fontSize)]);
   for (const [e, base] of todo) { let k = 1; while (k > 0.55 && over(e)) { k -= 0.04; e.style.fontSize = base * k + "px"; } }
+  // "fit2" (the app's LetteredText with maxLines = 2): one line while it fits at 80% or more of its size, otherwise two lines,
+  // shrinking only if even two lines do not fit
+  for (const e of document.querySelectorAll(".screen.on .fit2")) {
+    e.style.fontSize = ""; e.style.whiteSpace = "nowrap";
+    const base = parseFloat(getComputedStyle(e).fontSize), wide = () => textWidth(e) > e.getBoundingClientRect().width + 0.01;
+    let k = 1; while (k > 0.8 && wide()) { k -= 0.04; e.style.fontSize = base * k + "px"; }
+    if (!wide()) continue;
+    e.style.whiteSpace = "normal"; e.style.fontSize = ""; k = 1;
+    while (k > 0.55 && e.scrollHeight > e.clientHeight + 1) { k -= 0.04; e.style.fontSize = base * k + "px"; }
+  }
 }
 function layout() {
   layoutOnce(); fitAll();
@@ -348,7 +374,10 @@ const SPK = '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 
 function paintMusic() { for (const id of ["d-music", "g-music"]) { const b = $(id); b.innerHTML = SPK; b.classList.toggle("off", !(P.prefs.s0 && P.prefs.s1)); } }
 for (const id of ["d-music", "g-music"]) $(id).onclick = () => { P.prefs.s1 = !P.prefs.s1; saveP(); paintMusic(); syncMusic(); };
 // Pictures of screens that are not showing are only fetched when the screen first opens (the first load used to pull 3.7 MB).
-function loadImgs(id) { const s = document.getElementById(id); if (!s) return; s.querySelectorAll("img[data-src]").forEach((i) => { i.src = i.dataset.src; i.removeAttribute("data-src"); }); }
+// pictures that carry words exist once per language: Turkish keeps the plain name, pt / es get _pt / _es, anything else _en
+const LOCAL_IMGS = /img\/(du_title|bg_worlds)\.webp$/;
+const localImg = (u) => (LOCAL_IMGS.test(u) && lang !== "tr" ? u.replace(".webp", "_" + (lang === "pt" || lang === "es" ? lang : "en") + ".webp") : u);
+function loadImgs(id) { const s = document.getElementById(id); if (!s) return; s.querySelectorAll("img[data-src]").forEach((i) => { i.src = localImg(i.dataset.src); i.removeAttribute("data-src"); }); }
 let freshScreen = true;
 // As in the app: the login-streak window opens once, after the first game finished in a visit (not when the page is opened), when the player is back on the home screen.
 let gamePlayed = false;
@@ -413,9 +442,17 @@ function paintBackdrop(id) {
 }
 
 // ---------- text ----------
+const TITLE_TR = document.title;
 function applyLang() {
   const x = t();
   document.documentElement.lang = lang; setLang(lang);
+  document.title = lang === "tr" ? TITLE_TR : inLang({ en: "Karalak – Draw, remember, race! Play free in your browser", pt: "Karalak – Desenhe, lembre, dispute! Jogue grátis no navegador", es: "Karalak – ¡Dibuja, recuerda, compite! Juega gratis en tu navegador" });
+  // the page's description in the language shown (the static one in index.html is Turkish, for the plain-HTML crawlers)
+  document.querySelector('meta[name="description"]')?.setAttribute("content", inLang({
+    tr: "Karalak: arkadaşlarınla çizim ve hafıza oyunu. Kelimeyi çiz, rakibinin çizimini hatırla, tahmin et ve ligde yüksel. Tarayıcıda ücretsiz oyna ya da Android'e indir.",
+    en: "Karalak: a drawing and memory game to play with friends. Draw the word, remember the drawings, guess and climb the league. Play free in your browser or get it on Android.",
+    pt: "Karalak: um jogo de desenho e memória para jogar com amigos. Desenhe a palavra, lembre dos desenhos, adivinhe e suba na liga. Jogue grátis no navegador ou baixe no Android.",
+    es: "Karalak: un juego de dibujo y memoria para jugar con amigos. Dibuja la palabra, recuerda los dibujos, adivina y sube en la liga. Juega gratis en tu navegador o descárgalo en Android." }));
   $("d-next-t").textContent = x.next; $("g-ok-t").textContent = S("submit_guess");
   $("w-title").textContent = x.wTitle; $("w-body").textContent = x.wBody; $("w-go-t").textContent = x.wGo; $("w-skip").textContent = x.wSkip;
   $("s-text").textContent = x.searching; $("s-sub").textContent = x.searchSub; $("again-t").textContent = x.again;
@@ -550,7 +587,8 @@ async function startLevel(w, l) {
   for (const [d, n] of Object.entries(mix)) picks.push(...[...words].filter((x) => x.difficulty === d).sort(() => Math.random() - 0.5).slice(0, n));
   begin(picks.sort(() => Math.random() - 0.5));
 }
-const TUT_WORDS = { tr: ["kitap", "köpek", "elma"], en: ["book", "dog", "apple"] };
+// The tutorial's three words are the app's own (tutorial_word_1..3 in strings.json), so a change there reaches the web too.
+const tutWords = () => [1, 2, 3].map((i) => S(`tutorial_word_${i}`));
 // TutorialViewModel.kt, ported: word 1 untimed, word 2 on a 12 s clock, word 3 on 10 s; guesses on 10 s with the two jokers taught one by one
 // (the clock stands still until the joker is used); coaching cards between the turns; practice jokers that never touch the real stock.
 const TUT = { drawSeconds: [0, 12, 10], guessSeconds: 10, stockStart: 3 };
@@ -576,10 +614,15 @@ async function startTutorial() {
   tutStock = { FIRST_LETTER: TUT.stockStart, LETTER_COUNT: TUT.stockStart }; tutSeen = {}; tutSpot = null;
   await ensureWords(); kind = "tutorial"; levelRun = null; relaxed = false;
   const byText = new Map(words.map((w) => [w.text.toLowerCase(), w]));
-  const picked = TUT_WORDS[lang].map((s, i) => byText.get(s) || { id: 900000 + i, text: s, difficulty: "EASY" });
+  const picked = tutWords().map((s, i) => byText.get(s.toLowerCase()) || { id: 900000 + i, text: s, difficulty: "EASY" });
   begin(picked);
 }
-function endTutorial() { const first = !P.tutorialDone; P.tutorialDone = true; if (first) for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); }
+// LeagueScorePublisher: this month's score onto the public profile — never for a player who may be under 13 (agegate.js).
+function publishLeague() {
+  if (childMode()) return;
+  net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
+}
+function endTutorial() { const first = !P.tutorialDone; P.tutorialDone = true; if (first) for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); if (legalNeeded()) openAgeGate(stage); }
 async function startDaily() {
   if (dailyState(P).done) return;
   await ensureWords(); kind = "daily"; levelRun = null; relaxed = false;
@@ -592,6 +635,7 @@ async function pickOpponent() {
   try {
     const ids = await net.trainedWordIds(), have = new Set(words.map((w) => w.id));
     const g = makeGhostRun({ trainedIds: ids, hasWord: (id) => have.has(id), language: lang, level: levelFor(P.xp), points: POINTS, speedBonus: SPEED_BONUS, frameFor: highestFrameFor });
+    // what the opponent can be is said once, on the search screen (quick_match_opponent_note), not on each card
     if (g) return g;
   } catch {}
   return net.findOpponent(lang, levelFor(P.xp));
@@ -599,7 +643,7 @@ async function pickOpponent() {
 // SearchingScene.kt texts: the sign reads "Rakip / aranıyor…" with its dots ticking, the plate says what is going on.
 function paintSearching() {
   $("s-text").innerHTML = `<span>${S("quick_match_searching_title")}</span><span>${S("quick_match_searching_title2").replace(/[….s]+$/, "")}<span id="s-dots"><i>.</i><i>.</i><i>.</i></span></span>`;
-  $("s-sub").innerHTML = `<b>${S("quick_match_searching_sub")}</b><small>${S("quick_match_dont_worry_body")}</small>`;
+  $("s-sub").replaceChildren(Object.assign(document.createElement("b"), { textContent: S("quick_match_searching_sub") }), Object.assign(document.createElement("small"), { textContent: S("quick_match_opponent_note") }));
 }
 async function startQuick() {
   levelRun = null; kind = "quick"; relaxed = false; quickOpp = null; quickItems = []; quickItemsP = null;
@@ -614,14 +658,15 @@ async function startQuick() {
   quickItemsP = net.loadItems(quickOpp.id, new Map(words.map((w) => [w.id, w.text])), POINTS, SPEED_BONUS).then((it) => (quickItems = it)).catch(() => quickItems);
   showFound(quickOpp, () => begin(picked));
 }
-function msgNoOpp() { show("home"); msg(t().noOpp + (lang === "tr" ? ". Bir süre sonra tekrar dene ya da çevrimdışı oyna." : ". Try again in a bit or play offline.")); }
+function msgNoOpp() { show("home"); msg(t().noOpp + inLang({ tr: ". Bir süre sonra tekrar dene ya da çevrimdışı oyna.", en: ". Try again in a bit or play offline.", pt: ". Tente de novo daqui a pouco ou jogue offline.", es: ". Inténtalo en un rato o juega sin conexión." })); }
 let foundTimer = null;
 function showFound(opp, go) {
-  const x = t(); show("found"); $("f-title").src = lang === "tr" ? "img/mf_title.webp" : "img/mf_title_en.webp";
+  const x = t(); show("found"); $("f-title").src = lang === "tr" ? "img/mf_title.webp" : "img/mf_title_" + (lang === "pt" || lang === "es" ? lang : "en") + ".webp";
   $("f-tagt").textContent = x.found; $("f-tagt").style.whiteSpace = "pre-line";
   $("f-t1").querySelector("span").textContent = x.tip1(10); $("f-t2").querySelector("span").textContent = x.tip2; $("f-t3").querySelector("span").textContent = x.tip3;
+  fitAll(); // the tips are written after show() laid the screen out; on a small phone the longest runs past its note otherwise
   const card = (id, nick, lvl, frame, xp) => {
-    const e = $(id); e.querySelector(".mc-rb span").textContent = nick; e.querySelector(".mc-xp b").textContent = xp.toLocaleString() + " XP";
+    const e = $(id); e.querySelector(".mc-rb span").textContent = nick; e.querySelector(".mc-xp b").textContent = fmtNum(xp) + " XP";
     const fr = frameRing(frameById(frame)); fr.style.cssText += ";width:100%;height:100%"; const av = e.querySelector(".mc-av"); av.replaceChildren(fr); av.append(Object.assign(document.createElement("b"), { className: "mc-lv", textContent: lvl }));
     e.classList.add(id === "f-cl" ? "in-l" : "in-r"); setTimeout(() => e.classList.remove("in-l", "in-r"), 60);
   };
@@ -727,7 +772,7 @@ function renderHint(w) {
       const room = box.clientWidth - 40 * u, need = (g.length * 54 - 8) * u; if (room > 0 && need > room) e.style.setProperty("--k", Math.max(0.45, room / need).toFixed(3));
     });
   } else if (jk.first) {
-    const e = document.createElement("div"); e.className = "txt ink"; e.style.cssText = "font-size:calc(var(--u)*40);background:#ffe9b0;border-radius:99px;padding:0 calc(var(--u)*26);height:calc(var(--u)*64)"; e.textContent = (lang === "tr" ? "İlk harf: " : "First letter: ") + groups[0][0].toLocaleUpperCase(lang); box.append(e);
+    const e = document.createElement("div"); e.className = "txt ink"; e.style.cssText = "font-size:calc(var(--u)*40);background:#ffe9b0;border-radius:99px;padding:0 calc(var(--u)*26);height:calc(var(--u)*64)"; e.textContent = S("hint_first_letter", groups[0][0].toLocaleUpperCase(lang)); box.append(e);
   }
 }
 /** "n/N Doğru tahmin": updated the moment an answer is judged, so the last right word shows 3/3 before the lesson or round ends. */
@@ -749,7 +794,7 @@ $("jt-skip").onclick = () => {
   w.skipped = true; w.resume = gLeft; gOrder.push(gOrder[idx]); idx++;
   // like the app: "⏱ N s saved" pops over the drawing for a moment, the clock stops, then the next word comes
   clearInterval(gTimer); clearInterval(bonusTimer); locked = true; sfx.tick && sfx.tick();
-  const chip = $("g-skipchip"); chip.textContent = `⏱ ${lang === "tr" ? w.resume + " sn kaydedildi" : w.resume + " s saved"}`; chip.classList.remove("go"); void chip.offsetWidth; chip.classList.add("go");
+  const chip = $("g-skipchip"); chip.textContent = S("guess_skip_saved", w.resume); chip.classList.remove("go"); void chip.offsetWidth; chip.classList.add("go");
   setTimeout(() => { chip.classList.remove("go"); if (locked && current === "guess") nextGuess(); }, 1100);
 };
 function endSpot() {
@@ -776,7 +821,7 @@ function nextGuess() {
   const bonusEl = $("g-bonus"), STAGE = ["#4fd97d", "#2ea043", "#e0c22e", "#e8650f", "#e23b32"];
   const paintBonus = () => {
     const el = (performance.now() - shownAt) / 1000, b = el < 2 ? 3 : el < 4 ? 2 : el < 6 ? 1 : 0;
-    bonusEl.textContent = lang === "tr" ? `+${b} XP bonus` : `+${b} XP bonus`; bonusEl.style.background = STAGE[Math.min(4, Math.floor(el / 2))];
+    bonusEl.textContent = S("xp_live_bonus_format", b); bonusEl.style.background = STAGE[Math.min(4, Math.floor(el / 2))];
   };
   const runClock = () => {
     shownAt = performance.now() - (total - left) * 1000; // a skipped word comes back with the time it had left; its speed bonus still counts from the first look
@@ -840,9 +885,9 @@ function addRow(parent, strokes, ok, label, sub, pen) {
   row.append(cv, lb, ic); parent.append(row); fitCanvas(cv); paint(cv, strokes, false, pen || "CLASSIC");
 }
 function showWaiting() {
-  const tr = lang === "tr";
-  $("s-text").innerHTML = `<span>${tr ? "Sonuçlar" : "Getting your"}</span><span>${tr ? "hazırlanıyor" : "results"}<span id="s-dots"><i>.</i><i>.</i><i>.</i></span></span>`;
-  $("s-sub").innerHTML = `<b>${tr ? "Puanlar hesaplanıyor…" : "Counting the points…"}</b>`;
+  const [a, b, sub] = inLang({ tr: ["Sonuçlar", "hazırlanıyor", "Puanlar hesaplanıyor…"], en: ["Getting your", "results", "Counting the points…"], pt: ["Preparando", "os resultados", "Contando os pontos…"], es: ["Preparando", "resultados", "Contando los puntos…"] });
+  $("s-text").innerHTML = `<span>${a}</span><span>${b}<span id="s-dots"><i>.</i><i>.</i><i>.</i></span></span>`;
+  $("s-sub").innerHTML = `<b>${sub}</b>`;
   show("search");
 }
 async function finish() {
@@ -861,8 +906,8 @@ async function finish() {
   const newAch = Math.max(0, achCount(P) - ach0);
   if (qmBonus) P.qmDay = todayEpoch();
   const fx = (k) => runeFx(P, k), has = (k) => runeHas(P, k);
-  if (kind === "online") { ctx.lastXp = P.xp - xp0; ctx.lastAch = newAch; saveP(); refreshHome(); net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {}); return submitAndWait(ctx, round, score); }
-  net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
+  if (kind === "online") { ctx.lastXp = P.xp - xp0; ctx.lastAch = newAch; saveP(); refreshHome(); publishLeague(); return submitAndWait(ctx, round, score); }
+  publishLeague();
   const me = {
     language: lang, nickname: "Web", wordIds: round.map((w) => w.id),
     perWord: round.map((w) => ({ wordId: w.id, isCorrect: w.correct, responseTimeMs: w.ms, pointsAwarded: w.points })),
@@ -954,7 +999,7 @@ function paintLevel(xpVal) {
   const x = t(), lv = levelFor(xpVal), floor = xpFor(lv), ceil = lv >= 100 ? floor : xpFor(lv + 1), into = xpVal - floor, span = ceil - floor;
   const rank = [...RANKS].reverse().find((r) => lv >= r[0]);
   $("h-lvl").textContent = "• " + x.lvl + " " + lv;
-  $("h-rank-t").textContent = rank[1] + " " + (lang === "tr" ? rank[2] : rank[3]);
+  $("h-rank-t").textContent = rank[1] + " " + S(rank[2]);
   $("h-xpnext").textContent = lv >= 100 ? "MAX" : x.toNext(span - into, lv + 1);
   $("h-fill").style.width = (span ? into / span * 100 : 100) + "%"; $("h-barlabel").textContent = `${into} / ${span} XP`;
   return lv;
@@ -967,18 +1012,18 @@ function homeGain(goldEarned, xpEarned) {
   if (!goldEarned && !xpEarned) return;
   const g1 = P.gold, x1 = P.xp, g0 = Math.max(0, g1 - goldEarned), x0 = Math.max(0, x1 - xpEarned), t0 = performance.now(), D = 1500;
   const fl = (id, v, txt) => { const e = $(id); e.style.display = v ? "flex" : "none"; if (!v) return; e.textContent = txt; e.classList.remove("go"); void e.offsetWidth; e.classList.add("go"); };
-  fl("h-gain-gold", goldEarned, "+" + goldEarned.toLocaleString(lang)); fl("h-gain-xp", xpEarned, "+" + xpEarned.toLocaleString(lang) + " XP");
+  fl("h-gain-gold", goldEarned, "+" + fmtNum(goldEarned)); fl("h-gain-xp", xpEarned, "+" + fmtNum(xpEarned) + " XP");
   const step = (now) => {
-    if (current !== "home") { $("h-gold").textContent = P.gold.toLocaleString(lang); paintLevel(P.xp); return; }
+    if (current !== "home") { $("h-gold").textContent = fmtNum(P.gold); paintLevel(P.xp); return; }
     const p = Math.min(1, (now - t0 - 350) / D), e = p <= 0 ? 0 : 1 - Math.pow(1 - p, 3);
-    $("h-gold").textContent = Math.round(g0 + (g1 - g0) * e).toLocaleString(lang); paintLevel(Math.round(x0 + (x1 - x0) * e));
-    if (p < 1) requestAnimationFrame(step); else { $("h-gold").textContent = g1.toLocaleString(lang); paintLevel(x1); }
+    $("h-gold").textContent = fmtNum(g0 + (g1 - g0) * e); paintLevel(Math.round(x0 + (x1 - x0) * e));
+    if (p < 1) requestAnimationFrame(step); else { $("h-gold").textContent = fmtNum(g1); paintLevel(x1); }
   };
-  $("h-gold").textContent = g0.toLocaleString(lang); paintLevel(x0); requestAnimationFrame(step);
+  $("h-gold").textContent = fmtNum(g0); paintLevel(x0); requestAnimationFrame(step);
 }
 function refreshHome() {
   const x = t(), lv = levelFor(P.xp);
-  $("h-gold").textContent = P.gold.toLocaleString(lang);
+  $("h-gold").textContent = fmtNum(P.gold);
   try { $("h-pen").textContent = penById(P.pen)[lang]; } catch { $("h-pen").textContent = x.goldLbl; }
   try { const fr = frameRing(frameById(P.frame)); fr.style.cssText += ";width:100%;height:100%"; $("h-avatar").replaceChildren(fr); } catch {}
   $("h-nick").textContent = P.nick; paintLevel(P.xp);
@@ -997,8 +1042,8 @@ function msg(text, extra) {
 }
 const soon = (name) => () => msg(`${name} · ${t().soon}`);
 // Online sections need the internet; offline ones (Play Offline, Levels) keep working. Same words as the app's offline screen.
-const needNet = (fn) => (...a) => { if (navigator.onLine === false) return msg(lang === "tr" ? "İnternet bağlantısı gerekiyor. Bu bölümü oynamak için internete bağlanman gerekiyor. Çevrimdışı Oyna ve Seviyeler internetsiz de açık." : "An internet connection is required. Play Offline and Levels work without it."); return fn(...a); };
-$("tl-online").onclick = needNet(async () => { await ensureWords(); show("onl"); });
+const needNet = (fn) => (...a) => { if (navigator.onLine === false) return msg(S("offline_needed") + ". " + S("offline_screen_body")); return fn(...a); };
+$("tl-online").onclick = needNet(adultOnly(msg, async () => { await ensureWords(); show("onl"); }));
 $("on-back").onclick = () => show("home"); $("oj-back").onclick = () => show("onl"); $("oc-back").onclick = () => show("onl");
 $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("onj");
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
@@ -1006,7 +1051,7 @@ $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => lea
 $("h-veil-gold").onclick = $("h-veil-chest").onclick = () => window.open(PLAY_URL, "_blank", "noopener"); $("h-rank").onclick = () => openRankLadder(ctx); $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx);  $("h-rank").onclick = () => openRankLadder(ctx);
 $("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
 $("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; net.runeConfig().then((d) => { applyRuneConfig(d); if (current === "runes") renderRunes(ctx, true); }).catch(() => {}); show("runes"); }; $("ru-back").onclick = () => show("home");
-$("tl-quick").onclick = needNet(() => start("quick")); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };
+$("tl-quick").onclick = needNet(adultOnly(msg, () => start("quick"))); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };
 $("os-back").onclick = () => show("home");
 $("tl-levels").onclick = async () => { await loadWorlds(); show("worlds"); };
 $("wl-back").onclick = () => show("home"); $("lm-back").onclick = () => show("worlds");
@@ -1014,17 +1059,17 @@ $("tl-store").onclick = async () => { await loadStoreData(); show("store"); };
 $("st-back").onclick = () => show("home");
 $("tl-ach").onclick = async () => { await loadAchievements(); show("ach"); };
 $("ac-back").onclick = () => show("home");
-$("tl-league").onclick = needNet(async () => { await loadStoreData(); await loadLeague(); leagueLoaded = false; show("league"); });
+$("tl-league").onclick = needNet(adultOnly(msg, async () => { await loadStoreData(); await loadLeague(); leagueLoaded = false; show("league"); }));
 $("lg-back").onclick = () => show("home");
 $("lg-refresh").onclick = () => { leagueLoaded = false; layout(); };
-$("tl-friends").onclick = needNet(() => { show("friends"); openFriends(ctx); });
+$("tl-friends").onclick = needNet(adultOnly(msg, () => { show("friends"); openFriends(ctx); }));
 $("fr-duel").onclick = () => { stopFriends(); show("duels"); openDuels(ctx); };
 $("du-back").onclick = () => { stopDuels(); show("friends"); openFriends(ctx); };
 $("fr-back").onclick = () => { stopFriends(); show("home"); };
 for (const [id, k] of []) $("tl-" + id).onclick = () => soon(t().tiles[k])();
 const soonMsg = () => msg(t().soon);
 function rankInfo() {
-  const lv = levelFor(P.xp), x = t(), rows = RANKS.map((r) => `${lv >= r[0] ? "✅" : "🔒"} ${r[1]} ${lang === "tr" ? r[2] : r[3]} — ${x.lvl} ${r[0]}`).join("\n");
+  const lv = levelFor(P.xp), x = t(), rows = RANKS.map((r) => `${lv >= r[0] ? "✅" : "🔒"} ${r[1]} ${S(r[2])} — ${x.lvl} ${r[0]}`).join("\n");
   msg(rows); $("dlg-text").style.whiteSpace = "pre-line"; $("dlg-text").style.textAlign = "left"; const y = $("dlg-yes"), o = y.onclick; y.onclick = () => { $("dlg-text").style.whiteSpace = ""; $("dlg-text").style.textAlign = ""; o(); };
 }
 $("tl-settings").onclick = () => show("settings");
@@ -1033,15 +1078,15 @@ $("ak-back").onclick = () => show("settings");
 $("rp-back").onclick = () => show("settings");
 const _oldSettings = () => {
   const mk = (code, label) => { const b = document.createElement("button"); b.className = "chip" + (lang === code ? " on" : ""); b.textContent = label; b.onclick = () => { lang = code; applyLang(); $("dialog").classList.add("hidden"); $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren(); }; return b; };
-  msg(t().langTitle, [mk("tr", "Türkçe"), mk("en", "English")]);
+  msg(t().langTitle, [mk("tr", "Türkçe"), mk("en", "English"), mk("pt", "Português"), mk("es", "Español")]);
 };
 loadStoreData().then(refreshHome).catch(() => {});
 // A name only this account owns (same collection the app uses), claimed once the network is reachable.
-setTimeout(async () => { if (P.nickClaimed) return; const n = await net.ensureUsername(P.nick).catch(() => null); if (n) { P.nick = n; P.nickClaimed = true; saveP(); refreshHome(); } }, 2500);
+setTimeout(async () => { if (P.nickClaimed || childMode()) return; const n = await net.ensureUsername(P.nick).catch(() => null); if (n) { P.nick = n; P.nickClaimed = true; saveP(); refreshHome(); } }, 2500);
 setTimeout(() => net.listen("invites", (list) => {
   const inv = list[0]; if (!inv || current === "onw" || current === "draw" || current === "guess") return;
-  const tx = lang === "tr" ? `${inv.fromNickname} seni davet etti!` : `${inv.fromNickname} invited you!`;
-  ctx.confirm(tx, lang === "tr" ? "Katıl" : "Join", async () => { net.consumeInvite(inv.id).catch(() => {}); const r = await joinWithCode(ctx, inv.roomCode); if (r !== "ok") msg(lang === "tr" ? "Odaya katılınamadı." : "Couldn't join the room."); });
+  const tx = S("friends_incoming_invite", inv.fromNickname);
+  ctx.confirm(tx, S("friends_accept_invite"), async () => { net.consumeInvite(inv.id).catch(() => {}); const r = await joinWithCode(ctx, inv.roomCode); if (r !== "ok") msg(inLang({ tr: "Odaya katılınamadı.", en: "Couldn't join the room.", pt: "Não foi possível entrar na sala.", es: "No se pudo entrar a la sala." })); });
   $("dlg-no").onclick = () => { net.consumeInvite(inv.id).catch(() => {}); $("dialog").classList.add("hidden"); };
 }).catch(() => {}), 4000);
 applyLang();
@@ -1053,8 +1098,16 @@ loadStrings().then(() => { applyLang(); }).catch(() => {});
 setTimeout(() => syncNow(ctx).then((r) => { if (r === "restored") { refreshHome(); if (current === "home") show("home"); } }), 2500);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") scheduleBackup(ctx, true); });
 loadRunes().then(() => refreshHome()).catch(() => {});
-if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); }; } else { show("home"); setTimeout(() => dailyRescue(ctx, () => {}), 1800); }
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+/** Runs [fn] [delay] ms after the opening scene has lifted (SplashHandOff.brandSplashDone in the app): a window opened earlier would sit over it. */
+function afterSplash(fn, delay = 0) {
+  const go = () => setTimeout(fn, delay);
+  if (!document.getElementById("splash")) return go();
+  const t = setInterval(() => { if (!document.getElementById("splash")) { clearInterval(t); go(); } }, 100);
+}
+if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); if (legalNeeded()) openAgeGate(stage); }; } else { show("home"); afterSplash(() => { if (legalNeeded()) openAgeGate(stage); else if (current === "home") dailyRescue(ctx, () => {}); }, 600); }
+// The game is served at "/" while the worker file lives in /oyna/, so there it asks for the whole site (allowed by the
+// Service-Worker-Allowed header in firebase.json); opened as /oyna/ it keeps its own folder.
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js", location.pathname.startsWith("/oyna/") ? undefined : { scope: "/" }).catch(() => {});
 // After the home screen is up, quietly fetch the pictures of the screens people open most (skipped on data saver).
 setTimeout(() => {
   if (navigator.connection && navigator.connection.saveData) return;
@@ -1069,7 +1122,7 @@ function warmImages() {
   if (navigator.connection && navigator.connection.saveData) return;
   const urls = [], seen = new Set(), add = (u) => { if (u && !seen.has(u)) { seen.add(u); urls.push(u); } };
   for (const id of ["draw", "guess", "search", "onfin", "found", "store", "settings", "league", "friends", "onl", "onc", "onj", "offs", "onw", "ach", "worlds", "lvmap", "runes", "account", "report", "duels", "res2", "result"]) {
-    document.querySelectorAll("#" + id + " img[data-src]").forEach((i) => add(i.dataset.src));
+    document.querySelectorAll("#" + id + " img[data-src]").forEach((i) => add(localImg(i.dataset.src)));
   }
   // painted windows are built by script, so no stylesheet or tag mentions them: fetch them too, or the first open shows the words before the picture
   for (const n of ["exit_game_dialog", "exit_dialog", "buy_frame", "joker_buy_first", "joker_buy_count", "joker_buy_time", "ls_frame", "ls_btn_claim", "st_daily_full", "st_card_joker", "rs_dialog_bg", "rs_level_blank", "friends_handshake", "lobby_crown", "lobby_adduser", "lobby_hourglass"]) add(`img/${n}.webp`);
@@ -1102,6 +1155,8 @@ function warmMedia() {
   const T = {
     tr: { app: "Karalak uygulamasını indir, ödülleri orada kazan!", get: "İndir", ios: "Karalak'ı ana ekranına ekle: Paylaş simgesine, sonra “Ana Ekrana Ekle”ye dokun." },
     en: { app: "Get the Karalak app and claim rewards there!", get: "Get it", ios: "Add Karalak to your home screen: tap Share, then “Add to Home Screen”." },
+    pt: { app: "Baixe o app do Karalak e ganhe as recompensas lá!", get: "Baixar", ios: "Adicione o Karalak à tela inicial: toque em Compartilhar e depois em “Adicionar à Tela de Início”." },
+    es: { app: "¡Descarga la app de Karalak y gana las recompensas ahí!", get: "Descargar", ios: "Agrega Karalak a tu pantalla de inicio: toca Compartir y luego “Agregar a inicio”." },
   };
   const dialogOpen = () => !!document.querySelector("#pick:not(.hidden), #dialog:not(.hidden), .aw-ov, .ex-ov");
   const hiddenUntil = () => { try { return +localStorage.getItem(KEY) || 0; } catch { return 0; } };
@@ -1112,12 +1167,12 @@ function warmMedia() {
     if (shown || standalone || current !== "home" || Date.now() < hiddenUntil() || P.tutorialDone !== true) return;
     if (dialogOpen()) { setTimeout(maybeShow, 3000); return; }
     shown = true;
-    const x = T[lang] || T.tr;
+    const x = T[lang] || T.en;
     $("ab-t").textContent = ios ? x.ios : x.app;
     const go = $("ab-go"); go.textContent = ios ? "" : x.get; go.href = PLAY_URL;
     bar.classList.add("on"); timer = setTimeout(() => hide(false), 12000);
   }
-  setTimeout(maybeShow, 5000);
+  afterSplash(maybeShow, 5000);
   // leaving the home screen takes the bar away
   new MutationObserver(() => { if (current !== "home" || dialogOpen()) hide(false); }).observe($("stage"), { subtree: true, attributes: true, attributeFilter: ["class"] });
 })();

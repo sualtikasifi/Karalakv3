@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <bool name="coupon_how_painted_art">true</bool>
+    <!-- Size of the painted window (drawable ls_coupon_frame) and its tappable boxes, in its own pixels:
+         width, height, then left/top/right/bottom of the close button, Instagram, TikTok and the "close" word. -->
+    <integer-array name="coupon_art">
+        <item>1064</item><item>1478</item>
+        <item>887</item><item>302</item><item>1027</item><item>442</item>
+        <item>165</item><item>856</item><item>885</item><item>1030</item>
+        <item>165</item><item>1052</item><item>885</item><item>1225</item>
+        <item>395</item><item>1262</item><item>650</item><item>1322</item>
+    </integer-array>
+</resources>

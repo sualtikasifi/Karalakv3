@@ -60,6 +60,7 @@ class WaitingRoomViewModel @Inject constructor(
     private val onlineGameRepository: OnlineGameRepository,
     private val settingsRepository: SettingsRepository,
     private val friendRepository: FriendRepository,
+    private val playerReporter: com.sualtikasifi.cizimhafiza.util.PlayerReporter,
     botRoomEngine: BotRoomEngine
 ) : ViewModel() {
 
@@ -80,6 +81,22 @@ class WaitingRoomViewModel @Inject constructor(
     fun consumeInviteMessage() = _inviteState.update { it.copy(message = null) }
 
     /** Asks a player met in this lobby to be friends; the result is reported over the lobby like an invite's. */
+    private val _reportState = kotlinx.coroutines.flow.MutableStateFlow(com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState.Idle)
+    /** Where a "report player" from a seat has got to (see ReportPlayerDialog). */
+    val reportState: kotlinx.coroutines.flow.StateFlow<com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState> = _reportState
+
+    fun resetReport() { _reportState.value = com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState.Idle }
+
+    fun reportPlayer(uid: String, name: String, reason: com.sualtikasifi.cizimhafiza.domain.model.PlayerReportReason) {
+        if (_reportState.value == com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState.Sending) return
+        _reportState.value = com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState.Sending
+        viewModelScope.launch {
+            val sent = playerReporter.report(uid, name, reason, context = "room $roomCode").isSuccess
+            _reportState.value = if (sent) com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState.Sent
+            else com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState.Failed
+        }
+    }
+
     fun sendFriendRequest(uid: String, name: String) {
         val nickname = settingsRepository.nicknameOrDefault
         viewModelScope.launch {

@@ -48,7 +48,6 @@ import com.sualtikasifi.cizimhafiza.presentation.common.PaintedBackButton
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
-import com.sualtikasifi.cizimhafiza.presentation.common.sceneIn
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudDone
@@ -141,7 +140,7 @@ fun AccountScreen(
 
     // The page is the workshop picture (bg_account) with the cards painted into it; everything that changes — the
     // name, the figures, the bar, the buttons — is laid over it by the picture's own coordinates.
-    BoxWithConstraints(modifier = Modifier.fillMaxSize().sceneIn()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val unit = minOf(maxWidth / ArtW, maxHeight / ArtH)
         val offX = (maxWidth - unit * ArtW) / 2
         val offY = (maxHeight - unit * ArtH) / 2

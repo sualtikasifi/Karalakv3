@@ -30,7 +30,8 @@ import javax.inject.Singleton
 @Singleton
 class AdManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val adminStats: dagger.Lazy<com.sualtikasifi.cizimhafiza.util.AdminStats>
+    private val adminStats: dagger.Lazy<com.sualtikasifi.cizimhafiza.util.AdminStats>,
+    private val legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore
 ) {
 
     private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -103,18 +104,39 @@ class AdManager @Inject constructor(
         // Console "target audience and content" declaration is a separate,
         // account-side step that has to be done manually — this only
         // configures the SDK's own request behavior.
+        //
+        // The player's age (the first-run year-of-birth question, see LegalConsentStore) narrows that: a player who may
+        // be under 13 gets child-directed treatment (no personalisation, no ad ID, rated G), one who may be under 16
+        // is tagged as under the age of consent (no personalisation). This runs after that question is answered —
+        // MainActivity only asks for ad consent, and so only gets here, once it is.
+        val child = legalConsentStore.childMode.value
         MobileAds.setRequestConfiguration(
             RequestConfiguration.Builder()
-                .setMaxAdContentRating(RequestConfiguration.MAX_AD_CONTENT_RATING_PG)
+                .setMaxAdContentRating(if (child) RequestConfiguration.MAX_AD_CONTENT_RATING_G else RequestConfiguration.MAX_AD_CONTENT_RATING_PG)
+                .setTagForChildDirectedTreatment(
+                    if (child) RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE
+                    else RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_UNSPECIFIED
+                )
+                .setTagForUnderAgeOfConsent(
+                    if (legalConsentStore.underConsentAge) RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE
+                    else RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED
+                )
                 // Developer phone (local.properties) always gets test ads, so
                 // playing on it never counts as invalid traffic on real units.
                 .setTestDeviceIds(listOfNotNull(BuildConfig.ADMOB_TEST_DEVICE_ID.takeIf { it.isNotBlank() }))
                 .build()
         )
-        MobileAds.initialize(context) {
-            preloadInterstitial()
-            preloadRewarded()
-        }
+        // Off the main thread, as Google advises: initialising the SDK reads its config from disk and can take long
+        // enough to drop frames (or, on a slow phone, to trigger an ANR) if it runs on the UI thread. The ads
+        // themselves are still loaded from the main thread once it is done.
+        Thread({
+            MobileAds.initialize(context) {
+                mainHandler.post {
+                    preloadInterstitial()
+                    preloadRewarded()
+                }
+            }
+        }, "ads-init").start()
     }
 
     /**
@@ -262,25 +284,51 @@ class AdManager @Inject constructor(
 
         // Nothing preloaded (e.g. the very first match right after a cold
         // start, before the initial preload finished) — fall back to an
-        // on-demand load exactly as before.
+        // on-demand load, but only for a moment. An ad that arrives later
+        // would open over whatever the player has moved on to, which is
+        // exactly the "unexpected interstitial" AdMob penalises: past
+        // ON_DEMAND_INTERSTITIAL_TIMEOUT_MILLIS the result screen goes on
+        // without one, and a late ad is kept for the next eligible game.
+        var settled = false
+        val finish = {
+            if (!settled) {
+                settled = true
+                onDismissed()
+            }
+        }
+        val timeout = Runnable {
+            if (!settled) Log.d(TAG, "Interstitial took too long to load; skipped this time")
+            finish()
+        }
+        mainHandler.postDelayed(timeout, ON_DEMAND_INTERSTITIAL_TIMEOUT_MILLIS)
         InterstitialAd.load(
             context,
             interstitialUnitId,
             AdRequest.Builder().build(),
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
+                    mainHandler.removeCallbacks(timeout)
+                    if (settled || activity.isFinishing || activity.isDestroyed) {
+                        if (cachedInterstitial == null) {
+                            cachedInterstitial = ad
+                            cachedInterstitialAt = System.currentTimeMillis()
+                        }
+                        finish()
+                        return
+                    }
                     ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                         override fun onAdShowedFullScreenContent() = recordInterstitialShown(placement)
-                        override fun onAdDismissedFullScreenContent() = onDismissed()
-                        override fun onAdFailedToShowFullScreenContent(adError: AdError) = onDismissed()
+                        override fun onAdDismissedFullScreenContent() = finish()
+                        override fun onAdFailedToShowFullScreenContent(adError: AdError) = finish()
                     }
                     trackRevenue(ad, placement)
                     ad.show(activity)
                 }
 
                 override fun onAdFailedToLoad(adError: LoadAdError) {
+                    mainHandler.removeCallbacks(timeout)
                     Log.d(TAG, "Interstitial failed to load: ${adError.message}")
-                    onDismissed()
+                    finish()
                 }
             }
         )
@@ -431,14 +479,31 @@ class AdManager @Inject constructor(
             return
         }
 
+        // Asked for by a tap, so a short wait is expected — but not an open-ended one: past
+        // ON_DEMAND_REWARDED_TIMEOUT_MILLIS the player is told none is available (and can tap again), and an ad that turns
+        // up later is kept for that next tap instead of opening on its own.
+        val timeout = Runnable { settle(RewardedOutcome.UNAVAILABLE) }
+        mainHandler.postDelayed(timeout, ON_DEMAND_REWARDED_TIMEOUT_MILLIS)
         RewardedAd.load(
             context,
             rewardedUnitId,
             AdRequest.Builder().build(),
             object : RewardedAdLoadCallback() {
-                override fun onAdLoaded(ad: RewardedAd) = show(ad)
+                override fun onAdLoaded(ad: RewardedAd) {
+                    mainHandler.removeCallbacks(timeout)
+                    if (settled || activity.isFinishing || activity.isDestroyed) {
+                        if (cachedRewarded == null) {
+                            cachedRewarded = ad
+                            cachedRewardedAt = System.currentTimeMillis()
+                        }
+                        settle(RewardedOutcome.UNAVAILABLE)
+                        return
+                    }
+                    show(ad)
+                }
 
                 override fun onAdFailedToLoad(adError: LoadAdError) {
+                    mainHandler.removeCallbacks(timeout)
                     Log.d(TAG, "Rewarded ad failed to load: ${adError.message}")
                     settle(RewardedOutcome.UNAVAILABLE)
                 }
@@ -451,6 +516,11 @@ class AdManager @Inject constructor(
         const val PREFS_NAME = "ad_manager_prefs"
         const val KEY_TOTAL_GAMES = "total_finished_games"
         const val KEY_LAST_AD_AT = "last_interstitial_at"
+
+        /** How long a result screen waits for an interstitial that was not preloaded before going on without one. */
+        const val ON_DEMAND_INTERSTITIAL_TIMEOUT_MILLIS = 3_500L
+        /** How long a tapped rewarded ad may take to load before the player is told none is available. */
+        const val ON_DEMAND_REWARDED_TIMEOUT_MILLIS = 8_000L
 
         /** Every 2nd finished game (the first never) — see [maybeShowInterstitial]. Matches the Play listing and privacy policy. */
         const val INTERSTITIAL_EVERY_N_GAMES = 2

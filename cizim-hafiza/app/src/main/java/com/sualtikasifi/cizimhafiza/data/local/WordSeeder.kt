@@ -14,6 +14,8 @@ object WordSeeder {
     // (no locale qualifier) is English rather than Turkish.
     const val TURKISH_ASSET_FILE = "words.json"
     const val ENGLISH_ASSET_FILE = "words_en.json"
+    const val PORTUGUESE_ASSET_FILE = "words_pt.json"
+    const val SPANISH_ASSET_FILE = "words_es.json"
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -75,6 +77,10 @@ object WordSeeder {
     // res/values/strings.xml, no longer Turkish); the game words have to
     // follow the same rule, or that same player would see an English menu
     // hand them Turkish words to guess.
-    fun assetFileFor(language: String): String =
-        if (language == "tr") TURKISH_ASSET_FILE else ENGLISH_ASSET_FILE
+    fun assetFileFor(language: String): String = when (language) {
+        "tr" -> TURKISH_ASSET_FILE
+        "pt" -> PORTUGUESE_ASSET_FILE
+        "es" -> SPANISH_ASSET_FILE
+        else -> ENGLISH_ASSET_FILE
+    }
 }

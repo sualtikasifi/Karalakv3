@@ -233,7 +233,8 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                 c.chests[ChestTier.GOLD]?.let { "$it Sanatçı" },
                 c.chests[ChestTier.RARE]?.let { "$it Sürpriz" }
             ).joinToString(", ")
-            val until = if (c.expiresAtMillis > 0) " · " + SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(c.expiresAtMillis)) else ""
+            // the developer panel is Turkish throughout, so its dates are too
+            val until = if (c.expiresAtMillis > 0) " · " + SimpleDateFormat("d MMM", Locale("tr")).format(Date(c.expiresAtMillis)) else ""
             CopyRow(code = "${c.code} · $reward · ${c.usedCount}/${c.maxUses}$until", style = MaterialTheme.typography.bodySmall) {
                 copyToClipboard(context, c.code)
             }

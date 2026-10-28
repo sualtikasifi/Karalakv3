@@ -1,11 +1,11 @@
 package com.sualtikasifi.cizimhafiza.presentation.common
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -45,7 +45,7 @@ object RankLabelClock {
 
 /**
  * "33 Seviye" and the rank title ("Çırak") taking turns in the same spot every five seconds, in the same
- * type style everywhere it appears (league rows, the lobby, the account page), with a soft cross-fade.
+ * type style everywhere it appears (league rows, the lobby, the account page), with a soft cross-fade (no sliding).
  * [bullet] puts the "• " in front, for a label that sits beside a name rather than under it.
  */
 @Composable
@@ -62,8 +62,8 @@ fun RankLevelLabel(
         targetState = showRank,
         modifier = modifier,
         transitionSpec = {
-            (fadeIn(tween(450)) + slideInVertically(tween(450)) { it / 3 })
-                .togetherWith(fadeOut(tween(300)) + slideOutVertically(tween(300)) { -it / 3 })
+            // A plain cross-fade, no sliding: the text stays where it is and only changes.
+            fadeIn(tween(500)).togetherWith(fadeOut(tween(500))).using(SizeTransform(clip = false) { _, _ -> snap() })
         },
         label = "rank-level"
     ) { rank ->

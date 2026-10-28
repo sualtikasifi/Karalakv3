@@ -25,6 +25,45 @@ export function appWindow(host, { title, body, footer, centerTitle = false, onCl
 }
 
 /**
+ * The invite messages the app shares (InviteShareUtil.kt), word for word: the one https link that opens the app when it is
+ * installed and the download page when not (karalak.com/f/<code> for a friend, /d/<code> for a room), the code itself as the
+ * fallback that always works, and the download page.
+ */
+const SITE = "https://karalak.com";
+export function friendInviteText(code) {
+  return [S("share_friend_invite"), S("share_friend_pitch"), "", S("share_friend_reward_hint"), "", S("share_invite_link", `${SITE}/f/${code}`), "",
+    S("share_friend_code", code), S("share_friend_code_instructions"), "", S("share_room_not_installed", `${SITE}/indir`)].join("\n");
+}
+export function roomInviteText(code) {
+  return [S("share_room_invite"), S("share_room_code", code), "", S("share_invite_link", `${SITE}/d/${code}`),
+    S("share_room_installed", `karalak://join/${code}`), S("share_room_not_installed", `${SITE}/indir`)].join("\n");
+}
+/** The share sheet with [text]; where there is none, [code] is copied and [onCopied] runs. */
+export async function shareInvite(text, code, onCopied) {
+  try {
+    if (navigator.share) { await navigator.share({ text }); return; }
+    await navigator.clipboard.writeText(text); onCopied && onCopied();
+  } catch (e) { if (e && e.name === "AbortError") return; try { await navigator.clipboard.writeText(code); onCopied && onCopied(); } catch {} }
+}
+
+/**
+ * The pen picker's painted window (PaintedPenWindow.kt): one picture (880x1787: wooden sign with pencils on top, parchment,
+ * vines), the title on the sign, a round close button on the top-right leaves and [body] on the parchment, scrolling there.
+ * A tap outside closes it. Returns the overlay, with close().
+ */
+export function penWindow(host, { title, body, onClose }) {
+  const ov = el("div", "pw-ov"), card = el("div", "pw-card");
+  card.innerHTML = '<img src="img/pen_window.webp" alt="">';
+  const close = () => { ov.remove(); onClose && onClose(); };
+  const t = el("div", "pw-t", `<span class="fitw">${title}</span>`), x = el("button", "pw-x", "✕"), bd = el("div", "pw-body");
+  x.setAttribute("aria-label", S("close")); x.onclick = close; bd.append(body);
+  card.append(t, x, bd); ov.append(card);
+  ov.onclick = (e) => { if (e.target === ov) close(); };
+  host.append(ov); ov.close = close;
+  return ov;
+}
+
+/**
  * The painted "leave?" window (PaintedExitDialog.kt): the stern crowned dog on exit_game_dialog (1100x795) or the sad one on
  * exit_dialog (1100x823, the menu's "Karalak'tan çık"). The picture carries the sign and both buttons; the words are laid over it.
  */
@@ -81,13 +120,37 @@ export function paintedCard(host, { art, w, h, cls = "", onClose, below }) {
  * Ads only exist in the phone app, so every "watch an ad" spot on the web says so and sends the player to the store instead
  * of pretending to show one.
  */
+// ReportPlayerDialog: four fixed reasons in the shared #dialog, then a thank-you. [context] says where it came from.
+export function reportPlayerDialog(net, uid, nickname, context) {
+  const g = (id) => document.getElementById(id), dlg = g("dialog"), close = () => dlg.classList.add("hidden");
+  const show = (text, chips) => {
+    g("dlg-text").textContent = text; g("dlg-extra").replaceChildren(...chips);
+    g("dlg-extra").style.flexWrap = "wrap"; g("dlg-yes").style.display = "none";
+    g("dlg-no").style.display = ""; g("dlg-no").textContent = S(chips.length ? "report_drawing_cancel" : "close"); g("dlg-no").onclick = () => { g("dlg-yes").style.display = ""; close(); };
+    dlg.classList.remove("hidden");
+  };
+  const reasons = [["NAME", "report_player_reason_name"], ["BEHAVIOUR", "report_player_reason_behaviour"], ["CHEATING", "report_player_reason_cheating"], ["OTHER", "report_player_reason_other"]];
+  const chips = reasons.map(([reason, key]) => {
+    const b = el("button", "pill cream small"); b.append(Object.assign(document.createElement("span"), { textContent: S(key) }));
+    b.onclick = async () => {
+      show("…", []);
+      try { await net.reportPlayer(uid, nickname, reason, context); show(S("report_drawing_sent"), []); }
+      catch { show(S("report_drawing_failed"), []); }
+    };
+    return b;
+  });
+  show(S("report_player_subtitle", nickname), chips);
+}
+
 export const PLAY_URL = "https://play.google.com/store/apps/details?id=com.sualtikasifi.cizimhafiza";
 const APP_ONLY = {
   tr: { title: "Uygulamada", body: "Reklam ödülleri yalnızca Karalak uygulamasında. Google Play'den indirip bu ödülü orada alabilirsin!", go: "Uygulamayı Aç", close: "Kapat" },
   en: { title: "In the app", body: "Ad rewards are only in the Karalak app. Get it on Google Play to claim this reward there!", go: "Get the app", close: "Close" },
+  pt: { title: "No app", body: "As recompensas de anúncio ficam só no app do Karalak. Baixe na Google Play para resgatar esta recompensa lá!", go: "Baixar o app", close: "Fechar" },
+  es: { title: "En la app", body: "Las recompensas por anuncios solo están en la app de Karalak. ¡Descárgala en Google Play para reclamar esta recompensa ahí!", go: "Descargar la app", close: "Cerrar" },
 };
 export function appOnlyDialog(host) {
-  const x = APP_ONLY[getLang()] || APP_ONLY.tr;
+  const x = APP_ONLY[getLang()] || APP_ONLY.en;
   const body = el("div", "ao-body", `<div class="ao-ic">📱</div><p>${x.body}</p>`);
   const foot = el("div", "ao-foot"), go = primary(x.go, () => { window.open(PLAY_URL, "_blank", "noopener"); ov.close(); });
   foot.append(go);

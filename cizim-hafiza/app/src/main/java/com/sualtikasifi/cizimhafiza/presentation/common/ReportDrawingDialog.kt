@@ -141,6 +141,84 @@ fun ReportDrawingDialog(
     }
 }
 
+/**
+ * The in-app way to report another player — their name or their behaviour — from the places strangers meet: the league
+ * table and the room lobby (see util/PlayerReporter). Fixed reasons, no free text, like [ReportDrawingDialog].
+ */
+@Composable
+fun ReportPlayerDialog(
+    nickname: String,
+    sendState: ReportSendState,
+    onReport: (com.sualtikasifi.cizimhafiza.domain.model.PlayerReportReason) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        RaisedCard(corner = 24.dp, modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                IconWell(icon = Icons.Filled.Flag)
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.report_player_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.report_player_subtitle, nickname),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                when (sendState) {
+                    ReportSendState.Sending -> CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                    ReportSendState.Sent -> Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(imageVector = Icons.Filled.Check, contentDescription = null, tint = AppTheme.tokens.success)
+                        Text(
+                            text = stringResource(R.string.report_drawing_sent),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    else -> Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val reasons = listOf(
+                            com.sualtikasifi.cizimhafiza.domain.model.PlayerReportReason.NAME to (Icons.Filled.ReportProblem to R.string.report_player_reason_name),
+                            com.sualtikasifi.cizimhafiza.domain.model.PlayerReportReason.BEHAVIOUR to (Icons.Filled.Flag to R.string.report_player_reason_behaviour),
+                            com.sualtikasifi.cizimhafiza.domain.model.PlayerReportReason.CHEATING to (Icons.Filled.Gesture to R.string.report_player_reason_cheating),
+                            com.sualtikasifi.cizimhafiza.domain.model.PlayerReportReason.OTHER to (Icons.Filled.Brush to R.string.report_player_reason_other)
+                        )
+                        reasons.forEach { (reason, look) ->
+                            ReasonRow(icon = look.first, label = stringResource(look.second), onClick = { onReport(reason) })
+                        }
+                        if (sendState == ReportSendState.Failed) {
+                            Text(
+                                text = stringResource(R.string.report_drawing_failed),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                SecondaryButton(
+                    text = stringResource(if (sendState == ReportSendState.Sent) R.string.close else R.string.report_drawing_cancel),
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun ReasonRow(icon: ImageVector, label: String, onClick: () -> Unit) {
     RaisedCard(corner = 18.dp, onClick = onClick, modifier = Modifier.fillMaxWidth()) {

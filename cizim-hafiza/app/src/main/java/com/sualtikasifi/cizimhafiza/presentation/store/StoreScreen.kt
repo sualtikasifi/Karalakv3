@@ -16,7 +16,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import com.sualtikasifi.cizimhafiza.presentation.common.drawPenStroke
 import com.sualtikasifi.cizimhafiza.presentation.common.dotGridBackground
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenArt
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
@@ -346,35 +345,6 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             is Pending.FrameItem -> item.frame.storePrice
             is Pending.JokerItem -> item.type.priceFor(item.quantity, jokerDiscount)
         }
-        val preview: @Composable () -> Unit = {
-            when (item) {
-                is Pending.PenItem -> PenPreview(item.skin)
-                is Pending.FrameItem -> Image(painterResource(item.frame.drawableRes), contentDescription = null, modifier = Modifier.size(84.dp))
-                is Pending.JokerItem -> com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(item.type, 72.dp)
-            }
-        }
-        // The painted purchase windows carry their words ("Satın al?", "Vazgeç", "Satın Al") in the picture, so they only exist in
-        // Turkish: any other language gets the plain window built from the app's own texts.
-        if (androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language != "tr") {
-            PlainPurchaseDialog(
-                name = name,
-                price = price,
-                gold = gold,
-                preview = preview,
-                onConfirm = {
-                    val ok = when (item) {
-                        is Pending.PenItem -> viewModel.buyPen(item.skin)
-                        is Pending.FrameItem -> viewModel.buyFrame(item.frame)
-                        is Pending.JokerItem -> viewModel.buyJoker(item.type, item.quantity)
-                    }
-                    if (ok && item is Pending.JokerItem) boughtJoker = item
-                    else showToast(if (ok) R.string.store_bought else R.string.store_not_enough, isError = !ok)
-                    pending = null
-                },
-                onDismiss = { pending = null }
-            )
-            return@let
-        }
         if (item is Pending.JokerItem) {
             JokerPurchaseDialog(
                 type = item.type,
@@ -658,43 +628,6 @@ private fun GoldPill(gold: Int) {
     }
 }
 
-/** A wavy stroke in the pen's colours — what the pen actually draws (a premium pen's effects play live). */
-@Composable
-private fun PenPreview(skin: PenSkin, modifier: Modifier = Modifier.fillMaxWidth().height(64.dp)) {
-    val colors = skin.colors.map { Color(it) }
-    val premium = skin.effect.isPremium
-    val time = com.sualtikasifi.cizimhafiza.presentation.common.rememberPenTime(premium)
-    Canvas(modifier = modifier) {
-        val path = Path().apply {
-            moveTo(size.width * 0.08f, size.height * 0.62f)
-            cubicTo(
-                size.width * 0.28f, size.height * 0.05f,
-                size.width * 0.42f, size.height * 1.05f,
-                size.width * 0.58f, size.height * 0.45f
-            )
-            cubicTo(
-                size.width * 0.70f, size.height * 0.05f,
-                size.width * 0.82f, size.height * 0.55f,
-                size.width * 0.92f, size.height * 0.30f
-            )
-        }
-        val w = 13.dp.toPx()
-        if (premium) {
-            // The real pen renderer, fed the same wave as points.
-            val measure = androidx.compose.ui.graphics.PathMeasure().apply { setPath(path, false) }
-            val points = (0..80).map { measure.getPosition(measure.length * it / 80f) }
-            drawPenStroke(points, skin, Color.Black, w / 1.15f, 0f, time.value)
-            return@Canvas
-        }
-        drawPath(path, Color.Black.copy(alpha = 0.18f), style = Stroke(width = w + 4.dp.toPx(), cap = StrokeCap.Round))
-        drawPath(
-            path,
-            brush = if (colors.size > 1) Brush.horizontalGradient(colors) else Brush.horizontalGradient(listOf(colors.first(), colors.first())),
-            style = Stroke(width = w, cap = StrokeCap.Round)
-        )
-    }
-}
-
 /** One tab of the store: the painted wooden plaque (orange when chosen, brown otherwise) with its little picture and word. */
 @Composable
 private fun TabChip(label: String, icon: Int, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
@@ -961,13 +894,15 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
             com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                 text = stringResource(type.labelRes()),
                 style = androidx.compose.ui.text.TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(46f), color = Ink, textAlign = TextAlign.Start),
-                maxLines = 1, minScale = 0.6f, contentAlignment = Alignment.CenterStart,
+                // "Extra Drawing Time Joker" is the longest name in any language: it shrinks rather than run into the gift.
+                maxLines = 1, minScale = 0.5f, contentAlignment = Alignment.CenterStart,
                 modifier = Modifier.fillMaxWidth().height(u * 60f)
             )
             Text(
                 text = stringResource(type.descRes()),
                 style = androidx.compose.ui.text.TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.SemiBold, fontSize = fs(36f), lineHeight = fs(44f), color = Ink.copy(alpha = 0.85f)),
-                maxLines = 3
+                maxLines = 3,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
         // The green button (x 309..994, y 509..616 of the picture): the whole button caves in under the finger,
@@ -1255,64 +1190,6 @@ private fun PaintedPurchaseDialog(
                 PaintedButton(spec.close, 78f, true, onDismiss)
                 PaintedButton(spec.cancel, 76f, true, onDismiss)
                 PaintedButton(spec.confirm, 76f, canAfford, onConfirm)
-            }
-        }
-    }
-}
-
-/** The purchase window for languages the painted pictures are not written in: the item, its price, and the two buttons. */
-@Composable
-private fun PlainPurchaseDialog(
-    name: String,
-    price: Int,
-    gold: Int,
-    preview: @Composable () -> Unit,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    val canAfford = gold >= price
-    com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog(
-        title = stringResource(R.string.store_buy_confirm_title),
-        onDismiss = onDismiss,
-        footer = {
-            if (!canAfford) {
-                Text(
-                    text = "⚠ " + stringResource(R.string.store_missing_gold, price - gold),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color(0xFFB3401A),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton(
-                    text = stringResource(R.string.online_kick_confirm_cancel),
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                    height = 50.dp
-                )
-                com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton(
-                    text = stringResource(R.string.store_buy),
-                    onClick = onConfirm,
-                    modifier = Modifier.weight(1f),
-                    enabled = canAfford,
-                    height = 50.dp
-                )
-            }
-        }
-    ) {
-        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(Modifier.fillMaxWidth().height(110.dp), contentAlignment = Alignment.Center) { preview() }
-            Spacer(Modifier.height(8.dp))
-            Text(text = name, style = MaterialTheme.typography.titleMedium, color = Ink, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(28.dp))
-                Text(
-                    text = NumberFormat.getIntegerInstance().format(price),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Ink
-                )
             }
         }
     }

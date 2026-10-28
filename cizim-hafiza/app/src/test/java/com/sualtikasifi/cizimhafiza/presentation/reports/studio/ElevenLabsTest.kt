@@ -15,11 +15,25 @@ class ElevenLabsTest {
     @Test
     fun v3SaysTheLineWithItsMoodOthersSayItPlain() {
         val line = SpokenLine(" Bu kedi mi, patates mi? ", MascotEmotion.Laughing)
-        assertEquals("[laughs] Bu kedi mi, patates mi?", ElevenLabs.textFor(line, VoiceModel.V3, tags = true))
-        assertEquals("Bu kedi mi, patates mi?", ElevenLabs.textFor(line, VoiceModel.V3, tags = false))
-        assertEquals("Bu kedi mi, patates mi?", ElevenLabs.textFor(line, VoiceModel.V2, tags = true))
+        assertEquals("[laughs] Bu kedi mi, patates mi? ...", ElevenLabs.textFor(line, VoiceModel.V3, tags = true))
+        assertEquals("Bu kedi mi, patates mi? ...", ElevenLabs.textFor(line, VoiceModel.V3, tags = false))
+        assertEquals("Bu kedi mi, patates mi? ...", ElevenLabs.textFor(line, VoiceModel.V2, tags = true))
         // a calm line carries no tag at all
-        assertEquals("Merhaba", ElevenLabs.textFor(SpokenLine("Merhaba", MascotEmotion.Neutral), VoiceModel.V3, tags = true))
+        assertEquals("Merhaba. ...", ElevenLabs.textFor(SpokenLine("Merhaba", MascotEmotion.Neutral), VoiceModel.V3, tags = true))
+    }
+
+    @Test
+    fun everyLineEndsAsASentenceWithAPauseSoItsLastSyllableIsSaid() {
+        // its own ending is kept, and the pause comes after it
+        assertEquals("Bu bir yetenek! ...", ElevenLabs.withRoomToFinish("Bu bir yetenek!"))
+        assertEquals("Kim alır? ...", ElevenLabs.withRoomToFinish("Kim alır?"))
+        assertEquals("Tamam. ...", ElevenLabs.withRoomToFinish("Tamam."))
+        // without one it is finished with a full stop
+        assertEquals("Sen de çiz. ...", ElevenLabs.withRoomToFinish("Sen de çiz"))
+        // a line that already trails off is left as it is
+        assertEquals("Hmm...", ElevenLabs.withRoomToFinish("Hmm..."))
+        assertEquals("Hmm…", ElevenLabs.withRoomToFinish("Hmm…"))
+        assertEquals("", ElevenLabs.withRoomToFinish(""))
     }
 
     @Test
@@ -68,9 +82,9 @@ class ElevenLabsTest {
 
     @Test
     fun theCostShownIsWhatIsSent() {
-        val line = SpokenLine("Bu kedi mi?", MascotEmotion.Laughing)  // "[laughs] Bu kedi mi?" = 20 characters
-        assertEquals(20, VoiceSpec("v", VoiceModel.V3, 0.5, tags = true).credits(line))
-        assertEquals(11, VoiceSpec("v", VoiceModel.V2, 0.5, tags = true).credits(line))
-        assertEquals(6, VoiceSpec("v", VoiceModel.Flash, 0.5, tags = true).credits(line))
+        val line = SpokenLine("Bu kedi mi?", MascotEmotion.Laughing)  // "[laughs] Bu kedi mi? ..." = 24 characters
+        assertEquals(24, VoiceSpec("v", VoiceModel.V3, 0.5, tags = true).credits(line))
+        assertEquals(15, VoiceSpec("v", VoiceModel.V2, 0.5, tags = true).credits(line))
+        assertEquals(8, VoiceSpec("v", VoiceModel.Flash, 0.5, tags = true).credits(line))
     }
 }

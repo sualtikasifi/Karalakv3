@@ -85,17 +85,26 @@ class DrawingReportRepositoryImpl @Inject constructor(
         // failing the report, since the reason and the reported player are
         // the parts that actually accumulate.
         val evidence = if (strokesJson.length <= MAX_STROKES_JSON) strokesJson else ""
-        reports.document(DrawingReports.idFor(scopeKey, uid)).set(
-            mapOf(
-                "reporterUid" to uid,
-                "reportedUid" to reportedUid,
-                "runId" to runId,
-                "reason" to reason.name,
-                "word" to word.take(MAX_WORD_LENGTH),
-                "strokesJson" to evidence,
-                "submittedAt" to System.currentTimeMillis()
-            )
-        ).await()
+        val report = mapOf(
+            "reporterUid" to uid,
+            "reportedUid" to reportedUid,
+            "runId" to runId,
+            "reason" to reason.name,
+            "word" to word.take(MAX_WORD_LENGTH),
+            "strokesJson" to evidence,
+            "submittedAt" to System.currentTimeMillis()
+        )
+        val ref = reports.document(DrawingReports.idFor(scopeKey, uid))
+        // Whether the reporter is signed in with a real account: only those reports retire a round on their own (see
+        // isRetired). The rules check the claim against the sign-in itself; should a freshly linked account's token not
+        // say so yet, the report goes in as a guest's rather than not at all.
+        val linked = auth.currentUser?.isAnonymous == false
+        try {
+            ref.set(report + ("reporterLinked" to linked)).await()
+        } catch (e: com.google.firebase.firestore.FirebaseFirestoreException) {
+            if (!linked || e.code != com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) throw e
+            ref.set(report + ("reporterLinked" to false)).await()
+        }
         // Same reasoning as BugReportRepositoryImpl: set() only confirms the
         // write reached the offline cache. A report that never left the phone
         // is a report that never counted towards retiring anything.
@@ -116,7 +125,10 @@ class DrawingReportRepositoryImpl @Inject constructor(
      */
     override suspend fun isRetired(runId: String): Boolean = runCatching {
         if (runId.isBlank()) return false
+        // Only reports from signed-in accounts count here: a guest account costs nothing to make, so two of them must
+        // not be enough to take a stranger's round out of the pool. Every report still reaches the reviewer.
         reports.whereEqualTo("runId", runId)
+            .whereEqualTo("reporterLinked", true)
             .limit(DrawingReports.RETIREMENT_QUERY_LIMIT.toLong())
             .get()
             .await()

@@ -34,7 +34,10 @@ import javax.inject.Singleton
  * proceeds without one.
  */
 @Singleton
-class ConsentManager @Inject constructor(@ApplicationContext private val context: Context) {
+class ConsentManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore
+) {
 
     private val consentInformation: ConsentInformation by lazy {
         UserMessagingPlatform.getConsentInformation(context)
@@ -62,7 +65,9 @@ class ConsentManager @Inject constructor(@ApplicationContext private val context
         }
 
         val params = ConsentRequestParameters.Builder()
-            .setTagForUnderAgeOfConsent(false)
+            // From the first-run year-of-birth question: below the age of digital consent no consent is asked
+            // (a minor cannot give it) and ads are not personalised (see AdManager's request configuration).
+            .setTagForUnderAgeOfConsent(legalConsentStore.underConsentAge)
             .apply {
                 // In debug builds every device is treated as if it were in
                 // the EEA, so the form can actually be exercised during
@@ -105,6 +110,40 @@ class ConsentManager @Inject constructor(@ApplicationContext private val context
                 settle()
             }
         )
+    }
+
+    /**
+     * Google Analytics Consent Mode v2. The manifest starts every consent type as denied
+     * (google_analytics_default_allow_*), so nothing is stored before this runs, right after the UMP flow resolves:
+     *  - where no consent is required (outside the EEA, the UK and Switzerland), everything is granted;
+     *  - where it is, each type follows the IAB TCF purposes the player agreed to in the UMP form — storage (purpose
+     *    1) for analytics_storage and ad_storage, purposes 1 and 7 for ad_user_data, 3 and 4 for ad_personalization;
+     *  - for a player who may be under 13, everything stays denied (Analytics collection itself is off too, see
+     *    LegalConsentStore.applyAnalyticsCollection).
+     * The SDK keeps the last values set, so a later launch that cannot reach UMP keeps the player's previous answer.
+     */
+    fun applyAnalyticsConsent() {
+        runCatching {
+            val status = consentInformation.consentStatus
+            if (status == ConsentInformation.ConsentStatus.UNKNOWN && !legalConsentStore.childMode.value) return
+            val child = legalConsentStore.childMode.value
+            val required = status != ConsentInformation.ConsentStatus.NOT_REQUIRED
+            // UMP writes the TCF string into the app's default preferences file, as the TCF spec requires.
+            val purposes = context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE)
+                .getString("IABTCF_PurposeConsents", "").orEmpty()
+            fun purpose(n: Int) = !required || purposes.getOrNull(n - 1) == '1'
+            fun state(granted: Boolean) =
+                if (granted && !child) com.google.firebase.analytics.FirebaseAnalytics.ConsentStatus.GRANTED
+                else com.google.firebase.analytics.FirebaseAnalytics.ConsentStatus.DENIED
+            com.google.firebase.analytics.FirebaseAnalytics.getInstance(context).setConsent(
+                mapOf(
+                    com.google.firebase.analytics.FirebaseAnalytics.ConsentType.ANALYTICS_STORAGE to state(purpose(1)),
+                    com.google.firebase.analytics.FirebaseAnalytics.ConsentType.AD_STORAGE to state(purpose(1)),
+                    com.google.firebase.analytics.FirebaseAnalytics.ConsentType.AD_USER_DATA to state(purpose(1) && purpose(7)),
+                    com.google.firebase.analytics.FirebaseAnalytics.ConsentType.AD_PERSONALIZATION to state(purpose(3) && purpose(4))
+                )
+            )
+        }.onFailure { Log.d(TAG, "Analytics consent not applied: ${it.message}") }
     }
 
     /**

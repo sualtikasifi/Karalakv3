@@ -121,7 +121,8 @@ fun ReportBugScreen(
     // (rp_* in drawable-nodpi, cut from the design sheet). It scrolls when it has to: the form fits a normal phone, the
     // history of earlier reports grows below it.
     val ink = Color(0xFF3B2314)
-    val canSend = uiState.description.isNotBlank() && !uiState.isSubmitting
+    // Not dimmed while the message is empty: a tap then says what is missing (ReportBugViewModel.submit).
+    val canSend = !uiState.isSubmitting
     val isOnline = com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current
     Box(modifier = Modifier.fillMaxSize()) {
         androidx.compose.foundation.Image(

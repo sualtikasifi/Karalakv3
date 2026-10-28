@@ -201,7 +201,6 @@ fun GameScreen(
                 onReportOpponentDrawing = viewModel::reportOpponentDrawing,
                 reportState = reportState,
                 onDismissReport = viewModel::dismissReport,
-                onRatingBonusGranted = viewModel::grantRatingBonusXp,
                 onRematchDuel = onRematchDuel,
                 levelProgress = levelProgress,
                 myName = viewModel.myNickname,

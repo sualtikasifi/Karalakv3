@@ -36,6 +36,21 @@ jobs:
         run: npm ci && npm test
         working-directory: cizim-hafiza/functions
 
+      # The web game reads the app's own texts and rune map from files generated out of the Android sources; a text
+      # renamed in the app but not regenerated shows up on the web as its bare key.
+      - name: Web texts match the app
+        run: |
+          node scripts/gen_web_strings.js
+          node scripts/gen_web_runes.js
+          node scripts/gen_web_langs.js
+          node scripts/gen_web_namefilter.js
+          for l in tr en pt es; do src=words_$l.json; [ $l = tr ] && src=words.json
+            cmp -s app/src/main/assets/$src hosting/oyna/words_$l.json || { echo "::error::hosting/oyna/words_$l.json must be a copy of app/src/main/assets/$src"; exit 1; }
+          done
+          git diff --exit-code -- hosting/oyna/strings.json hosting/oyna/runes.json hosting/oyna/result_strings.json hosting/oyna/store_strings.json hosting/oyna/chat_strings.json \
+            hosting/oyna/achievements.json hosting/oyna/pens.json hosting/oyna/frames.json hosting/oyna/worlds.json hosting/oyna/entry_quotes.json hosting/oyna/ghost_names.json hosting/oyna/namefilter_data.js \
+            || { echo "::error::the web's text files are stale: run node scripts/gen_web_strings.js, gen_web_runes.js, gen_web_langs.js and gen_web_namefilter.js in cizim-hafiza and commit the result"; exit 1; }
+
       # google-services.json is committed, but the AdMob/keystore values in
       # local.properties are not — the build falls back to Google's public
       # test ad unit IDs when the file is absent, which is exactly what CI
@@ -45,6 +60,22 @@ jobs:
 
       - name: Assemble debug
         run: ./gradlew :app:assembleDebug --console=plain
+
+      # The store build shrinks code and resources, and a resource the app looks up only by name at runtime
+      # (getIdentifier: the rune icons and texts) is dropped unless res/raw/keep.xml keeps it — invisible in
+      # every debug build and emulator run. Built here (no release keystore, test ad IDs, no Crashlytics mapping
+      # upload) so that is caught before a release instead of by players. packageRelease, not assembleRelease:
+      # the build script refuses assembleRelease/bundleRelease without the real AdMob IDs, which only the
+      # store build has.
+      - name: Build release and check the kept resources
+        run: |
+          ./gradlew :app:packageRelease -PnoMappingUpload --console=plain
+          R=app/build/outputs/mapping/release/resources.txt
+          test -f "$R" || { echo "::error::$R was not produced"; exit 1; }
+          if grep -E "(drawable:rune_n_|drawable:rune_icon_|string:rune_[a-z0-9_]+_flavor)[^ ]* .*not reachable" "$R" | head -5 | grep -q .; then
+            echo "::error::the release build strips runtime-looked-up rune resources; extend app/src/main/res/raw/keep.xml"
+            exit 1
+          fi
 
       # The built APK, kept as a downloadable artifact.
       #

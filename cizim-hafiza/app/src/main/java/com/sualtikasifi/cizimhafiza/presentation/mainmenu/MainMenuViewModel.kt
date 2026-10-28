@@ -262,11 +262,6 @@ class MainMenuViewModel @Inject constructor(
 
     fun dismissRatingPrompt() { _ratingPrompt.value = false }
 
-    fun rateAndClaimBonus() {
-        settingsRepository.grantRatingBonusXpOnce(com.sualtikasifi.cizimhafiza.util.PostMatchPrompts.RATING_BONUS_XP)
-        _ratingPrompt.value = false
-    }
-
     /** When the 500-gold ad button unlocks again (epoch millis; in the past = ready now). */
     val adGoldNextAtMillis: StateFlow<Long> = settingsRepository.adGoldNextAtMillis
 

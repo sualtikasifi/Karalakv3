@@ -1,6 +1,7 @@
 // Firebase layer. Loaded lazily so the game still works offline / before config is filled in.
-import { firebaseConfig, firebaseReady } from "./config.js";
+import { firebaseConfig, firebaseReady, appCheckSiteKey } from "./config.js";
 import { parseGhostId, ghostOutcome } from "./ghost.js";
+import { nameAllowed } from "./namefilter.js";
 
 const V = "10.14.1";
 const CDN = `https://www.gstatic.com/firebasejs/${V}`;
@@ -22,6 +23,14 @@ function init() {
       import(`${CDN}/firebase-app.js`), import(`${CDN}/firebase-auth.js`), import(`${CDN}/firebase-firestore.js`),
     ]);
     const a = app.initializeApp(firebaseConfig);
+    // App Check (reCAPTCHA Enterprise): proves requests come from this site, so Firestore can refuse scripted clients once
+    // enforcement is switched on in the console. Only with a site key in config.js; without one the game runs as before.
+    if (appCheckSiteKey) {
+      try {
+        const ac = await import(`${CDN}/firebase-app-check.js`);
+        ac.initializeAppCheck(a, { provider: new ac.ReCaptchaEnterpriseProvider(appCheckSiteKey), isTokenAutoRefreshEnabled: true });
+      } catch {}
+    }
     const au = auth.getAuth(a);
     await au.authStateReady?.();
     if (!au.currentUser) await auth.signInAnonymously(au);
@@ -171,49 +180,65 @@ export async function friendsLeague(pid) {
 
 // Same fields as FriendRepositoryImpl.publishLeagueScore. A guest's web account is its own uid, so it never
 // collides with an Android profile.
-// True while the server refuses this account's score (permission denied: a jump bigger than the rules' growth allowance).
-// Being offline is not this. The league page tells the player instead of leaving them out of the table without a word.
+// True while the server takes only part of this account's score (its league limits, see leagueScorePlan). Being offline
+// is not this. The league page tells the player instead of leaving them out of the table without a word.
 let scoreRefused = false;
 export const isScoreRefused = () => scoreRefused;
+
+// The app's LeagueScoreCap, line for line: what firestore.rules' plausibleMonthScore accepts right now — a 30000 burst
+// plus 3000 XP an hour, measured both from the start of the month (Istanbul) and from this profile's first score of the
+// month (periodStartAt, stamped by the server). Never below what the server already holds for the month.
+const BURST_XP = 30000, MILLIS_PER_XP = 1200, CEILING_XP = 300000, SAFETY_MARGIN_XP = 1000;
+export const monthStartMillis = (periodId) => Date.UTC(Math.floor(periodId / 12), periodId % 12, 1) - 3 * 3600 * 1000;
+export function leagueScorePlan(targetXp, periodId, storedPeriodId, storedStartMillis, storedXp, nowMillis) {
+  const fresh = storedStartMillis == null || storedPeriodId !== periodId;
+  const start = fresh ? nowMillis : storedStartMillis;
+  const byMonth = BURST_XP + Math.floor((nowMillis - monthStartMillis(periodId)) / MILLIS_PER_XP);
+  const byAccount = BURST_XP + Math.floor((nowMillis - start) / MILLIS_PER_XP);
+  const cap = Math.max(0, Math.min(CEILING_XP, byMonth, byAccount) - SAFETY_MARGIN_XP);
+  const allowed = Math.max(cap, fresh ? 0 : storedXp || 0);
+  return { publishXp: Math.max(0, Math.min(targetXp, allowed)), freshStart: fresh };
+}
+
+// Same fields as FriendRepositoryImpl.publishLeagueScore. A guest's web account is its own uid, so it never
+// collides with an Android profile.
 export async function publishScore({ nickname, periodXp, periodId, level, frameId, totalXp }) {
   const { fs, db, auth } = await init(), ref = fs.doc(db, "users", auth.currentUser.uid);
+  const profile = { nickname, totalXp, level, frameId, avatarUrl: "" };
+  let stored = null;
+  try { stored = await fs.getDocFromServer(ref); } catch { try { stored = await fs.getDoc(ref); } catch {} }
+  const d = stored && stored.exists() ? stored.data() : {};
+  const startMs = d.periodStartAt && d.periodStartAt.toMillis ? d.periodStartAt.toMillis() : null;
+  const plan = leagueScorePlan(periodXp, periodId, d.periodId ?? null, startMs, d.periodId === periodId ? d.periodXp || 0 : null, Date.now());
+  const score = { periodXp: plan.publishXp, periodXpAt: fs.serverTimestamp(), periodId };
+  if (plan.freshStart) score.periodStartAt = fs.serverTimestamp();
   try {
-    await fs.setDoc(ref, { nickname, periodXp, totalXp, periodXpAt: fs.serverTimestamp(), periodId, level, frameId, avatarUrl: "" }, { merge: true });
-    scoreRefused = false;
+    await fs.setDoc(ref, { ...profile, ...score }, { merge: true });
   } catch (e) {
-    if (e && e.code === "permission-denied") {
-      scoreRefused = true;
-      // Keep the profile (name, level, frame) current even though the score itself is refused.
-      try { await fs.setDoc(ref, { nickname, totalXp, level, frameId, avatarUrl: "" }, { merge: true }); } catch {}
-      // Then climb to the real score in steps the rules accept (30000 plus 3000 an hour since the last score write per step).
-      // The hourly table build refuses a total no honest month can reach, which is the real guard against inflated scores.
-      try {
-        const d = await fs.getDoc(ref), data = d.exists() ? d.data() : {};
-        let cur = data.periodId === periodId ? data.periodXp || 0 : 0;
-        const stamp = data.periodXpAt && data.periodXpAt.toMillis ? data.periodXpAt.toMillis() : null;
-        let allow = !d.exists() || stamp == null ? 300000 : 30000 + Math.max(0, Date.now() - stamp) / 1200;
-        for (let i = 0; i < 12 && cur < periodXp; i++) {
-          const next = Math.min(periodXp, Math.floor(cur + allow - 1000)); if (next <= cur) break;
-          await fs.setDoc(ref, { periodXp: next, periodXpAt: fs.serverTimestamp(), periodId }, { merge: true });
-          cur = next; allow = 30000;
-        }
-        if (cur >= periodXp) { scoreRefused = false; return; }
-      } catch {}
-    }
+    // Keep the profile (name, level, frame) current even though the score itself is refused.
+    if (e && e.code === "permission-denied") { scoreRefused = true; try { await fs.setDoc(ref, profile, { merge: true }); } catch {} }
     throw e;
   }
+  scoreRefused = plan.publishXp < periodXp;
 }
 
 // ---- Browser accounts: user name + password ----
 // Play Store players sign in with Google; the browser has no Google button, so a web account is an email/password account whose
-// "email" is made from the user name (name@users.karalak.app — never shown, never mailed). A guest's anonymous uid is LINKED to it,
+// "email" is made from the user name (name@users.karalak.com — never shown, never mailed). A guest's anonymous uid is LINKED to it,
 // so the progress and league entry made before signing up stay with the account. Needs the Email/Password provider enabled in
 // Firebase Authentication.
-const MAIL = "@users.karalak.app";
+//
+// The domain has to be one this project owns and that accepts no mail: Firebase will send a password-reset message to any
+// account's address on request, so whoever receives mail for the domain can take over every browser account. Accounts made
+// before the move carry the old @users.karalak.app address; signing in still finds them, and `node lib/cli.js
+// migrate-web-emails` (functions/) moves them over.
+const MAIL = "@users.karalak.com";
+const OLD_MAIL = "@users.karalak.app";
 export const validUserName = (s) => /^[a-z0-9_.]{3,16}$/.test(s);
+const userNameOf = (email) => (email.endsWith(MAIL) ? email.slice(0, -MAIL.length) : email.endsWith(OLD_MAIL) ? email.slice(0, -OLD_MAIL.length) : "");
 export async function authState() {
   const { auth } = await init(), u = auth.currentUser;
-  return u ? { uid: u.uid, anon: u.isAnonymous, email: u.email || "", userName: (u.email || "").endsWith(MAIL) ? u.email.slice(0, -MAIL.length) : "" } : null;
+  return u ? { uid: u.uid, anon: u.isAnonymous, email: u.email || "", userName: userNameOf(u.email || "") } : null;
 }
 export async function signUpUserName(name, password) {
   const { auth } = await init(), m = await import(`${CDN}/firebase-auth.js`), cred = m.EmailAuthProvider.credential(name + MAIL, password), cur = auth.currentUser;
@@ -222,7 +247,13 @@ export async function signUpUserName(name, password) {
 }
 export async function signInUserName(name, password) {
   const { auth } = await init(), m = await import(`${CDN}/firebase-auth.js`);
-  await m.signInWithEmailAndPassword(auth, name + MAIL, password);
+  try {
+    await m.signInWithEmailAndPassword(auth, name + MAIL, password);
+  } catch (e) {
+    // An account from before the domain move that has not been migrated yet.
+    if (!["auth/invalid-credential", "auth/user-not-found", "auth/invalid-login-credentials", "auth/wrong-password"].includes(e && e.code)) throw e;
+    await m.signInWithEmailAndPassword(auth, name + OLD_MAIL, password);
+  }
   return authState();
 }
 export async function signOutAccount() {
@@ -270,7 +301,7 @@ export async function addFriendByCode(code, myNick) {
   if ((await fs.getDoc(fs.doc(db, "users", uid, "friendRequests", fu))).exists()) { await writeFriendship(uid, myNick, fu, fn); return { status: "added", name: fn }; }
   const log = reqLog();
   if (log.length >= REQ_MAX) return { status: "limit" };
-  try { await fs.setDoc(fs.doc(db, "users", fu, "friendRequests", uid), { fromNickname: myNick, sentAt: Date.now() }); }
+  try { await fs.setDoc(fs.doc(db, "users", fu, "friendRequests", uid), { fromNickname: myNick, sentAt: Date.now(), fromUid: uid }); }
   catch (e) { return { status: "blocked" }; }
   try { localStorage.setItem("friendReqLog", JSON.stringify([...log, Date.now()])); } catch {}
   return { status: "sent", name: fn };
@@ -384,7 +415,7 @@ export async function returnToWaiting(code) {
 export async function consumeInvite(id) { const { fs, db, auth } = await init(); await fs.deleteDoc(fs.doc(db, "users", auth.currentUser.uid, "invites", id)); }
 
 // ================= Usernames: usernames/{foldedName} -> { uid, name, createdAt } (same rules as UsernameRepository) =================
-export const usernameValid = (n) => n.length >= 2 && n.length <= 16 && /^[\p{L}\p{N}_.\- ]+$/u.test(n) && /[\p{L}\p{N}]/u.test(n);
+export const usernameValid = (n) => n.length >= 2 && n.length <= 16 && /^[\p{L}\p{N}_.\- ]+$/u.test(n) && /[\p{L}\p{N}]/u.test(n) && nameAllowed(n); // shown to other players (league, rooms, friends)
 export const usernameKey = (n) => n.trim().normalize("NFD").replace(/\p{M}+/gu, "").replace(/ı/g, "i").replace(/İ/g, "i").toLowerCase().replace(/ /g, "_");
 // Claims `name` for this account, releasing `oldName` if it was ours. Returns "ok" | "taken" | "invalid" | "net".
 export async function claimUsername(name, oldName) {
@@ -397,6 +428,8 @@ export async function claimUsername(name, oldName) {
       if (ns.exists() && ns.data().uid !== uid) return true;
       if (!ns.exists()) tx.set(nref, { uid, name, createdAt: Date.now() });
       if (os && os.exists() && os.data().uid === uid) tx.delete(oref);
+      // The account's one name (usernameOwners, see firestore.rules) moves in the same transaction.
+      tx.set(fs.doc(db, "usernameOwners", uid), { key: usernameKey(name) });
       return false;
     });
     if (taken) return "taken";
@@ -455,23 +488,50 @@ export async function writeBackup(snap) {
 }
 
 // AccountDeletionRepositoryImpl: the user's documents, then the sign-in itself. Throws {code:"auth/requires-recent-login"} when a fresh sign-in is needed.
+// Same two steps as AccountDeletionRepositoryImpl: the deletion request (the server's daily run removes everything the
+// account left anywhere, the sign-in included), then whatever the rules let this browser remove right away.
 export async function deleteAccount() {
   const { fs, db, auth } = await init(), user = auth.currentUser, uid = user.uid, userDoc = fs.doc(db, "users", uid);
+  await fs.setDoc(fs.doc(db, "deletionRequests", uid), { requestedAt: fs.serverTimestamp(), platform: "web" });
   const safe = async (f) => { try { await f(); } catch {} };
-  for (const name of ["backup", "friends", "invites", "blockedUsers", "inviteCooldowns", "private"]) {
-    await safe(async () => { for (const d of (await fs.getDocs(fs.collection(db, "users", uid, name))).docs) await safe(() => fs.deleteDoc(d.ref)); });
+  const all = async (q) => (await fs.getDocs(q)).docs;
+  await safe(async () => { for (const f of await all(fs.collection(db, "users", uid, "friends"))) await safe(() => fs.deleteDoc(fs.doc(db, "users", f.id, "friends", uid))); });
+  for (const name of ["friends", "friendRequests", "invites", "blockedUsers", "inviteCooldowns", "private"]) {
+    await safe(async () => { for (const d of await all(fs.collection(db, "users", uid, name))) await safe(() => fs.deleteDoc(d.ref)); });
   }
   await safe(async () => { const code = (await fs.getDoc(userDoc)).data()?.friendCode; if (code) await fs.deleteDoc(fs.doc(db, "friendCodes", code)); });
-  await safe(async () => { for (const d of (await fs.getDocs(fs.query(fs.collection(db, "usernames"), fs.where("uid", "==", uid)))).docs) await fs.deleteDoc(d.ref); });
-  await safe(async () => { for (const d of (await fs.getDocs(fs.query(fs.collection(db, "ghostRuns"), fs.where("uid", "==", uid)))).docs) { await safe(() => fs.deleteDoc(d.ref)); await safe(() => fs.deleteDoc(fs.doc(db, "ghostRunItems", d.id))); } });
+  await safe(async () => {
+    const b = fs.writeBatch(db);
+    for (const d of await all(fs.query(fs.collection(db, "usernames"), fs.where("uid", "==", uid)))) b.delete(d.ref);
+    b.delete(fs.doc(db, "usernameOwners", uid)); await b.commit();
+  });
+  for (const [runs, items] of [["ghostRuns", "ghostRunItems"], ["pendingRuns", "pendingRunItems"]]) {
+    await safe(async () => { for (const d of await all(fs.query(fs.collection(db, runs), fs.where("uid", "==", uid)))) { await safe(() => fs.deleteDoc(d.ref)); await safe(() => fs.deleteDoc(fs.doc(db, items, d.id))); } });
+  }
+  for (const c of ["pendingDailyChallenges", "bugReports"]) {
+    await safe(async () => { for (const d of await all(fs.query(fs.collection(db, c), fs.where("uid", "==", uid)))) await safe(() => fs.deleteDoc(d.ref)); });
+  }
+  for (const f of ["challengerUid", "opponentUid"]) {
+    await safe(async () => { for (const d of await all(fs.query(fs.collection(db, "duels"), fs.where(f, "==", uid)))) await safe(() => fs.deleteDoc(d.ref)); });
+  }
   await safe(() => fs.deleteDoc(userDoc));
   const m = await import(`${CDN}/firebase-auth.js`);
-  await m.deleteUser(user);
+  // A sign-in too old to delete here is deleted by the server run instead; this browser lets go of it either way.
+  try { await m.deleteUser(user); } catch { await safe(() => m.signOut(auth)); }
   await m.signInAnonymously(auth);
+}
+
+// PlayerReporter.report: one report per player per reporter, read only by the reviewer. A second report of the same player
+// hits the first one's document, which the rules never let anyone overwrite — it is already with the reviewer, so it counts as sent.
+export async function reportPlayer(reportedUid, nickname, reason, context) {
+  const { fs, db, auth } = await init(), me = auth.currentUser.uid;
+  try {
+    await fs.setDoc(fs.doc(db, "playerReports", `${reportedUid}__${me}`), { reporterUid: me, reportedUid, nickname: String(nickname).slice(0, 40), reason, context: String(context).slice(0, 32), createdAt: fs.serverTimestamp() });
+  } catch (e) { if (e.code !== "permission-denied") throw e; }
 }
 
 // A friend request to someone met in a room (FriendRepositoryImpl.sendFriendRequest): one document in their friendRequests.
 export async function sendFriendRequestTo(uid, name, myNick) {
   const { fs, db, auth } = await init();
-  await fs.setDoc(fs.doc(db, "users", uid, "friendRequests", auth.currentUser.uid), { fromNickname: myNick, sentAt: Date.now() });
+  await fs.setDoc(fs.doc(db, "users", uid, "friendRequests", auth.currentUser.uid), { fromNickname: myNick, sentAt: Date.now(), fromUid: auth.currentUser.uid });
 }

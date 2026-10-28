@@ -11,7 +11,7 @@ export function msToMidnight() {
 function rng(seed) { let a = seed | 0; return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const MIX = [["EASY", 2], ["MEDIUM", 2], ["HARD", 1]];
 export function dailyWords(words, epoch, lang) {
-  const lt = lang === "tr" ? 7 : 11, picked = [];
+  const lt = { tr: 7, en: 11, pt: 13, es: 17 }[lang] || 11, picked = [];
   for (const [d, per] of MIX) {
     const deck = words.filter((w) => w.difficulty === d).sort((a, b) => a.id - b.id), cycleLen = Math.floor(deck.length / per);
     if (!cycleLen) { picked.push(...deck.slice(0, per)); continue; }

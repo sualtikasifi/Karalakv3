@@ -75,6 +75,32 @@ object PcmOps {
     }
 
     /**
+     * [pcm] with its last [fadeMs] faded to silence: a voice that stops on a sound (rather than after it) would end
+     * in a click and sound cut off.
+     */
+    fun softEnd(pcm: Pcm, fadeMs: Int = VOICE_FADE_MS): Pcm {
+        val n = (pcm.sampleRate * fadeMs / 1000).coerceAtMost(pcm.samples.size)
+        if (n <= 0) return pcm
+        val out = pcm.samples.copyOf()
+        val from = out.size - n
+        for (i in 0 until n) out[from + i] = (out[from + i] * (1f - (i + 1).toFloat() / n)).toInt().toShort()
+        return Pcm(pcm.sampleRate, out)
+    }
+
+    /** How long a voice's very end takes to fade out (see [softEnd]). */
+    const val VOICE_FADE_MS = 30
+
+    /** [pcm] with each sample scaled by [gainAt] its time in ms from the start: music ducked under a voice, faded out. */
+    fun shaped(pcm: Pcm, gainAt: (Long) -> Float): Pcm {
+        val out = ShortArray(pcm.samples.size)
+        for (i in out.indices) {
+            val g = gainAt(i * 1000L / pcm.sampleRate)
+            out[i] = (pcm.samples[i] * g).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        return Pcm(pcm.sampleRate, out)
+    }
+
+    /**
      * Lays clips onto one silent track of [totalMs]: each clip at its own start time, mixed (and clipped) where two
      * overlap, scaled by its own gain.
      */

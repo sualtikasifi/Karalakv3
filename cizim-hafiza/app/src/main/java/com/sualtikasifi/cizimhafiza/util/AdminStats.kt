@@ -25,8 +25,10 @@ import javax.inject.Singleton
  * revenue per placement, app opens, finished games, and how many different players opened the
  * app each day.
  *
- * One document per UTC day (`adminStats/{yyyy-MM-dd}`), each counter a FieldValue.increment, so
- * every device adds to the same numbers. Events are held in memory and written together — at most
+ * One document per device per UTC day (`adminStats/{yyyy-MM-dd}/devices/{uid}`), each counter a
+ * FieldValue.increment; the developer panel adds the devices up (ConsoleData.loadDaySeries). It used to be one
+ * document per day that every device added to — any player could overwrite everyone's numbers there, and every
+ * device in the world wrote to the same document. Events are held in memory and written together — at most
  * once every [FLUSH_INTERVAL_MILLIS], when [FLUSH_AT_EVENTS] pile up, or when the app leaves the
  * screen — so an ad-heavy session costs a couple of writes, not one per ad. A counter lost with a
  * killed process is an accepted error; these are trends, not accounting.
@@ -37,8 +39,11 @@ import javax.inject.Singleton
 class AdminStats @Inject constructor(
     @ApplicationContext private val context: Context,
     private val firestore: Lazy<FirebaseFirestore>,
-    private val auth: Lazy<FirebaseAuth>
+    private val auth: Lazy<FirebaseAuth>,
+    private val legalConsentStore: Lazy<LegalConsentStore>
 ) {
+    /** No usage numbers at all for a player who may be under 13 (see LegalConsentStore and the privacy policy). */
+    private val counting: Boolean get() = !legalConsentStore.get().childMode.value
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val prefs by lazy { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
     private val pending = HashMap<String, Long>()
@@ -59,7 +64,7 @@ class AdminStats @Inject constructor(
     }
 
     fun record(key: String, amount: Long = 1L) {
-        if (amount == 0L) return
+        if (amount == 0L || !counting) return
         val flushNow = synchronized(pending) {
             pending[key] = (pending[key] ?: 0L) + amount
             pendingEvents++
@@ -70,14 +75,16 @@ class AdminStats @Inject constructor(
 
     /** Counts this player once for today; the day's document is the distinct-player list. */
     fun markActiveToday() {
+        if (!counting) return
         val day = today()
         if (prefs.getString(KEY_LAST_ACTIVE_DAY, null) == day) return
         scope.launch {
             runCatching {
                 val uid = auth.get().currentUser?.uid ?: return@launch
+                // uid inside the marker as well, so deleting the account can find it (functions/src/maintenance.ts).
                 firestore.get().collection(COLLECTION).document(day)
                     .collection(USERS).document(uid)
-                    .set(mapOf("at" to FieldValue.serverTimestamp())).await()
+                    .set(mapOf("at" to FieldValue.serverTimestamp(), "uid" to uid)).await()
                 prefs.edit().putString(KEY_LAST_ACTIVE_DAY, day).apply()
             }
         }
@@ -95,10 +102,11 @@ class AdminStats @Inject constructor(
         val day = today()
         scope.launch {
             runCatching {
-                if (auth.get().currentUser == null) error("not signed in yet")
-                firestore.get().collection(COLLECTION).document(day).set(
+                val uid = auth.get().currentUser?.uid ?: error("not signed in yet")
+                firestore.get().collection(COLLECTION).document(day).collection(DEVICES).document(uid).set(
                     mapOf(
                         "day" to day,
+                        "uid" to uid,
                         "counts" to batch.mapValues { FieldValue.increment(it.value) }
                     ),
                     SetOptions.merge()
@@ -112,6 +120,7 @@ class AdminStats @Inject constructor(
 
     companion object {
         const val COLLECTION = "adminStats"
+        const val DEVICES = "devices"
         const val USERS = "users"
 
         private const val PREFS_NAME = "admin_stats"

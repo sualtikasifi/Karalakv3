@@ -6,10 +6,14 @@ import { openNow } from "./chests.js";
 import { scaled } from "./economy.js";
 import { turkeyMonth, todayEpoch } from "./daily.js";
 const REW = [null, { gold: 300 }, { gold: 400 }, { jokers: true }, { gold: 500 }, { chest: "GOLD" }, { gold: 800 }, { chest: "RARE" }];
+// the painted frame and claim button come once per language: Turkish unmarked, the others _pt / _es / _en
+const sfx = (l) => (l === "tr" ? "" : l === "pt" || l === "es" ? "_" + l : "_en");
 const JK = ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"];
 const T = {
   tr: { title: "Giriş Serisi", day: (n) => `${n}. gün`, claim: "Ödülü Al", claimed: "Ödül alındı!", great: "Harika!", missed: (n) => `${n} günlük serin kesildi. Seriyi kurtarıp devam edebilir ya da baştan başlayabilirsin.`, save: "Seriyi kurtar", restart: "Baştan başla", rescued: "Seri kurtarıldı! Bugünün ödülünü al.", mile: (n) => `🎉 ${n}. gün bonusu: Sürpriz kasa açılıyor!`, joker: "Joker", chest: "Kasa", streak: (n) => `${n} günlük seri` },
   en: { title: "Login Streak", day: (n) => `Day ${n}`, claim: "Claim reward", claimed: "Reward claimed!", great: "Great!", missed: (n) => `Your ${n}-day streak was cut off. Save it to carry on, or start again.`, save: "Save the streak", restart: "Start again", rescued: "Streak saved! Take today's reward.", mile: (n) => `🎉 Day ${n} bonus: a Surprise chest is opening!`, joker: "Joker", chest: "Chest", streak: (n) => `${n}-day streak` },
+  pt: { title: "Sequência de Login", day: (n) => `Dia ${n}`, claim: "Resgatar recompensa", claimed: "Recompensa resgatada!", great: "Ótimo!", missed: (n) => `Sua sequência de ${n} dias foi interrompida. Salve-a para continuar ou comece de novo.`, save: "Salvar a sequência", restart: "Começar de novo", rescued: "Sequência salva! Pegue a recompensa de hoje.", mile: (n) => `🎉 Bônus do dia ${n}: um baú Surpresa está abrindo!`, joker: "Curinga", chest: "Baú", streak: (n) => `Sequência de ${n} dias` },
+  es: { title: "Racha de Ingreso", day: (n) => `Día ${n}`, claim: "Reclamar recompensa", claimed: "¡Recompensa reclamada!", great: "¡Genial!", missed: (n) => `Tu racha de ${n} días se cortó. Sálvala para seguir o empieza de nuevo.`, save: "Salvar la racha", restart: "Empezar de nuevo", rescued: "¡Racha salvada! Toma la recompensa de hoy.", mile: (n) => `🎉 Bonificación del día ${n}: ¡se está abriendo un cofre Sorpresa!`, joker: "Comodín", chest: "Cofre", streak: (n) => `Racha de ${n} días` },
 };
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const dayOf = (ms) => Math.floor((ms + 3 * 3600e3) / 86400e3); // Turkey (UTC+3) calendar day
@@ -29,7 +33,11 @@ export function state(L, today) {
   return { k: "missed", lost: L.streak };
 }
 let today = null, checking = false, handled = false, rescueSeen = false;
-const RESCUE = { tr: "Uygulamada kurtar", en: "Save in the app" };
+const RESCUE = { tr: "Uygulamada kurtar", en: "Save in the app", pt: "Salvar no app", es: "Salvar en la app" };
+// As DailyChallengeRepository's RescueRefusals: turned down three times for the same lapse (known by its last day), it is not offered again.
+const REFUSED_KEY = "karalak_rescue_refused", MAX_REFUSALS = 3;
+const refused = () => { try { return JSON.parse(localStorage.getItem(REFUSED_KEY)) || {}; } catch { return {}; } };
+function refuse(lapse) { const r = refused(); try { localStorage.setItem(REFUSED_KEY, JSON.stringify({ for: lapse, n: r.for === lapse ? (r.n || 0) + 1 : 1 })); } catch {} }
 /**
  * MainMenuScreen's StreakRescueDialog: a daily-challenge streak that lapsed for one to three days is offered back the moment the menu opens.
  * In the app that costs an ad; the browser has none, so the button sends the player to the app. Returns true while the offer is on screen
@@ -37,11 +45,14 @@ const RESCUE = { tr: "Uygulamada kurtar", en: "Save in the app" };
  */
 export function dailyRescue(c, then) {
   const d = c.P.daily, gap = d.last < 0 ? 1e9 : todayEpoch() - d.last;
-  if (rescueSeen || d.streak <= 0 || gap <= 1 || gap > 3) return false;
+  const r = refused();
+  if (rescueSeen || d.streak <= 0 || gap <= 1 || gap > 3 || (r.for === d.last && r.n >= MAX_REFUSALS)) return false;
   rescueSeen = true;
   const body = el("div", "ao-body", `<div class="ao-ic">🔥</div><p>${S("streak_rescue_message")}</p>`), foot = el("div", "aw-btns");
-  const ov = appWindow(c.$("stage"), { title: S("streak_rescue_title", d.streak), body, footer: foot, centerTitle: true, onClose: then });
-  foot.append(primary(RESCUE[getLang()] || RESCUE.tr, () => { window.open(PLAY_URL, "_blank", "noopener"); ov.close(); }), primary(S("streak_rescue_dismiss"), () => ov.close(), "alt"));
+  // closed without going to the app (the button or the window's own close) counts as turned down
+  let toApp = false;
+  const ov = appWindow(c.$("stage"), { title: S("streak_rescue_title", d.streak), body, footer: foot, centerTitle: true, onClose: () => { if (!toApp) refuse(d.last); then && then(); } });
+  foot.append(primary(RESCUE[getLang()] || RESCUE.en, () => { toApp = true; window.open(PLAY_URL, "_blank", "noopener"); ov.close(); }), primary(S("streak_rescue_dismiss"), () => ov.close(), "alt"));
   return true;
 }
 export async function checkStreak(c) {
@@ -60,7 +71,7 @@ function dialog(c, popup) {
   const claimed = popup.k === "claimed", close = () => { d.classList.add("hidden"); if (claimed && popup.chests.length) popup.chests.forEach((t) => openNow(c, t)); };
   const wrap = el("div", "ls-wrap"), fr = el("div", "ls-frame"); wrap.append(fr);
   fr.append(el("img", "ls-bg", ""));
-  fr.firstChild.src = c.lang() === "tr" ? "img/ls_frame.webp" : "img/ls_frame_en.webp";
+  fr.firstChild.src = `img/ls_frame${sfx(c.lang())}.webp`;
   const hint = el("div", "ls-hint"); fr.append(hint);
   if (popup.k === "missed") hint.textContent = x.missed(popup.lost); else if (popup.rescued) { hint.textContent = x.rescued; hint.className += " ok"; } else if (claimed && popup.milestone) { hint.textContent = x.mile(popup.streak); hint.className += " mile"; } else if (claimed) { hint.textContent = x.claimed; hint.className += " big"; } else hint.textContent = x.streak(before);
   const grid = el("div", "ls-grid");
@@ -75,9 +86,9 @@ function dialog(c, popup) {
   const act = el("div", "ls-act"); fr.append(act);
   const pill = (t, cls, fn) => { const b = el("button", "pill " + cls + " small", `<span>${t}</span>`); b.onclick = fn; return b; };
   if (popup.k === "claim") {
-    const b = el("button", "ls-claim", ""); b.append(Object.assign(new Image(), { src: c.lang() === "tr" ? "img/ls_btn_claim.webp" : "img/ls_btn_claim_en.webp", alt: x.claim })); b.onclick = () => claim(c, popup);
+    const b = el("button", "ls-claim", ""); b.append(Object.assign(new Image(), { src: `img/ls_btn_claim${sfx(c.lang())}.webp`, alt: x.claim })); b.onclick = () => claim(c, popup);
     act.append(b);
-  } else if (popup.k === "missed") act.append(pill(getLang() === "tr" ? "Uygulamada kurtar" : "Save in the app", "orange", () => appOnlyDialog(c.$("stage"))), pill(x.restart, "cream", () => dialog(c, { k: "claim", before: 0 })));
+  } else if (popup.k === "missed") act.append(pill(RESCUE[getLang()] || RESCUE.en, "orange", () => appOnlyDialog(c.$("stage"))), pill(x.restart, "cream", () => dialog(c, { k: "claim", before: 0 })));
   else act.append(pill(x.great, "orange", close));
   if (popup.k !== "missed") { const cx = el("button", "ls-x", ""); cx.onclick = close; fr.append(cx); d.onclick = (e) => { if (e.target === d) close(); }; }
   d.append(wrap);

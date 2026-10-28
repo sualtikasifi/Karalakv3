@@ -1,4 +1,4 @@
-import { isPlausibleScore, monthStartMsFor } from "./leagueRules";
+import { isPlausibleScore, isPrizeEligible, monthStartMsFor } from "./leagueRules";
 import { onDocumentCreated, onDocumentWritten } from "firebase-functions/v2/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { logger } from "firebase-functions";
@@ -664,11 +664,12 @@ export async function runFinalizeLeaguePeriod(): Promise<void> {
     const rewardId = (config.get("rewardId") as string | undefined)
       ?? rewardIdFor(finishedPeriodId);
 
+    // More than three: rows that cannot take the prize are passed over below, and the next ones step up.
     const snapshot = await db
       .collection("users")
       .where("periodId", "==", finishedPeriodId)
       .orderBy("periodXp", "desc")
-      .limit(3)
+      .limit(20)
       .get();
 
     // Two sources, best score per player. The users/ query misses anyone who
@@ -705,11 +706,23 @@ export async function runFinalizeLeaguePeriod(): Promise<void> {
       }
     }
 
-    const winners = [...candidates.values()]
+    // Only signed-in accounts that existed for a week before the month ended can take a prize (see isPrizeEligible):
+    // the ranking is walked from the top and ineligible rows are passed over, so the prize goes to the next honest
+    // account instead of to nobody.
+    const ranked = [...candidates.values()]
       .filter((c) => c.periodXp > 0)
-      .sort((a, b) => b.periodXp - a.periodXp || a.nickname.localeCompare(b.nickname))
-      .slice(0, 3)
-      .map((c, index) => ({ ...c, rank: index + 1 }));
+      .sort((a, b) => b.periodXp - a.periodXp || a.nickname.localeCompare(b.nickname));
+    const eligible: typeof ranked = [];
+    for (const c of ranked) {
+      if (eligible.length === 3) break;
+      const user = await admin.auth().getUser(c.uid).catch(() => null);
+      const account = user
+        ? { providers: user.providerData.map((p) => p.providerId), createdMs: Date.parse(user.metadata.creationTime) }
+        : null;
+      if (isPrizeEligible(account, finishedEnd)) eligible.push(c);
+      else logger.warn(`League: ${c.uid} passed over for the prize (guest or too new an account)`);
+    }
+    const winners = eligible.map((c, index) => ({ ...c, rank: index + 1 }));
 
     const batch = db.batch();
     for (const winner of winners) {
@@ -754,7 +767,7 @@ const REFERRAL_REWARD_MIN_LEVEL = 5;
 // takes far longer than this in practice, so it costs nobody honest
 // anything, while turning "run a script" into "wait a day per fake account".
 const REFERRAL_REWARD_MIN_ACCOUNT_AGE_MS = 24 * 60 * 60 * 1000;
-// A cap on how many rewards one inviter can ever collect — generous enough
+// A cap on how many rewards one inviter can ever collect (kept in referralStats/{inviter}) — generous enough
 // that no real player's genuine friend circle hits it, but it bounds the
 // worst case of the exploit above to a fixed, small amount of stolen gold
 // instead of an unbounded farm.
@@ -795,20 +808,36 @@ export async function runGrantReferralRewards(): Promise<void> {
     .where("level", ">=", REFERRAL_REWARD_MIN_LEVEL)
     .get();
 
-  // Counts how many times each inviter has already been paid, so the
-  // per-inviter cap below can be enforced across this whole run without a
-  // Firestore read per candidate — cheap since a farming attempt is the one
-  // case this map grows large, and that is exactly what it exists to stop.
+  // How many rewards each inviter has collected, ever: read from referralStats/{inviter} (written only here) the first
+  // time an inviter comes up in this run, then counted along. This used to be an in-memory count that started from
+  // zero every day, so the "at most 30" cap was really "30 a day".
   const grantedByInviter = new Map<string, number>();
+  const grantedSoFar = async (inviterUid: string): Promise<number> => {
+    if (!grantedByInviter.has(inviterUid)) {
+      const stats = await db.doc(`referralStats/${inviterUid}`).get();
+      grantedByInviter.set(inviterUid, (stats.get("granted") as number | undefined) ?? 0);
+    }
+    return grantedByInviter.get(inviterUid) ?? 0;
+  };
 
   let granted = 0;
   let skippedTooNew = 0;
   let skippedCapped = 0;
+  let skippedPaid = 0;
   for (const doc of snapshot.docs) {
     const inviterUid = doc.get("invitedByUid") as string | undefined;
     if (!inviterUid) continue;
 
-    const alreadyGranted = grantedByInviter.get(inviterUid) ?? 0;
+    // The ledger: an invitee is paid for once, ever — whatever their own profile says. The flag on the profile is
+    // written by the invitee's device and was once flipped back to false to be paid again every day.
+    const ledger = await db.doc(`referrals/${doc.id}`).get();
+    if (ledger.exists) {
+      await doc.ref.update({ referralRewardGranted: true });
+      skippedPaid++;
+      continue;
+    }
+
+    const alreadyGranted = await grantedSoFar(inviterUid);
     if (alreadyGranted >= REFERRAL_REWARD_MAX_PER_INVITER) {
       skippedCapped++;
       continue;
@@ -829,6 +858,12 @@ export async function runGrantReferralRewards(): Promise<void> {
     // invitee can never be paid twice (or paid without the inviter) by a
     // re-run: the query above no longer matches this document afterwards.
     batch.update(doc.ref, { referralRewardGranted: true });
+    batch.create(db.doc(`referrals/${doc.id}`), { inviterUid, grantedAt: Date.now() });
+    batch.set(
+      db.doc(`referralStats/${inviterUid}`),
+      { granted: admin.firestore.FieldValue.increment(1) },
+      { merge: true }
+    );
     batch.set(
       db.doc(`users/${inviterUid}/private/pendingRewards`),
       {
@@ -865,6 +900,6 @@ export async function runGrantReferralRewards(): Promise<void> {
 
   logger.info(
     `Referral rewards: granted ${granted} of ${snapshot.size} eligible invitee(s) ` +
-      `(${skippedTooNew} too-new account(s), ${skippedCapped} over the per-inviter cap)`
+      `(${skippedTooNew} too-new account(s), ${skippedCapped} over the per-inviter cap, ${skippedPaid} already paid)`
   );
 }

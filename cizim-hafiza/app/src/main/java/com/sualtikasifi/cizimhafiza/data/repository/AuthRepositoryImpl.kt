@@ -16,6 +16,7 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.userProfileChangeRequest
 import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.domain.model.FriendMigration
 import com.sualtikasifi.cizimhafiza.domain.repository.AuthRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.AuthState
 import com.sualtikasifi.cizimhafiza.domain.repository.FriendRepository
@@ -157,14 +158,13 @@ class AuthRepositoryImpl @Inject constructor(
             // sign-in as that identity.
             Log.i(TAG, "signInWithGoogle: account already has an identity, signing into it")
             // Must run BEFORE signInWithCredential, while still signed in as
-            // the uid being left: firestore.rules only lets a player remove
-            // THEMSELVES from someone else's friends list, and after the
-            // switch this uid can never do that again.
-            val migratedFriends = runCatching { friendRepository.prepareFriendMigration() }
+            // the uid being left: only this uid can leave the secret that
+            // lets the account being switched to take over its friendships.
+            val migration = runCatching { friendRepository.prepareFriendMigration() }
                 .onFailure { NonFatal.report(TAG, "signInWithGoogle: prepareFriendMigration failed", it) }
-                .getOrDefault(emptyList())
+                .getOrDefault(FriendMigration.NONE)
             auth.signInWithCredential(credential).await()
-            runCatching { friendRepository.adoptMigratedFriends(migratedFriends) }
+            runCatching { friendRepository.adoptMigratedFriends(migration) }
                 .onFailure { NonFatal.report(TAG, "signInWithGoogle: adoptMigratedFriends failed", it) }
             SignInOutcome.SwitchedToAccount
         }.onSuccess {

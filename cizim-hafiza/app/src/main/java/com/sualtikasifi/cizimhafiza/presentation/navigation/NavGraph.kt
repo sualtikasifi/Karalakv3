@@ -250,12 +250,14 @@ fun CizimHafizaNavGraph(
         }
 
         composable(Screen.QuickMatch) {
+            com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             QuickMatchScreen(
                 onBack = { navController.popBackStack() },
                 onStart = { opponent ->
                     navController.navigate(Screen.quickMatchGameRoute(opponent))
                 }
             )
+            }
         }
 
         composable(
@@ -351,12 +353,14 @@ fun CizimHafizaNavGraph(
         }
 
         composable(Screen.OnlineLobby) {
+            com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {
             OnlineLobbyScreen(
                 onBack = { navController.popBackStack() },
                 onCreateRoom = { navController.navigate(Screen.OnlineCreateRoom) },
                 onJoinRoom = { navController.navigate(Screen.OnlineJoinRoomBase) }
             )
+            }
             }
         }
 
@@ -369,8 +373,12 @@ fun CizimHafizaNavGraph(
                     defaultValue = null
                 }
             ),
-            deepLinks = listOf(navDeepLink { uriPattern = Screen.FriendInviteDeepLinkPattern })
+            deepLinks = listOf(
+                navDeepLink { uriPattern = Screen.FriendInviteDeepLinkPattern },
+                navDeepLink { uriPattern = Screen.FriendInviteWebLinkPattern }
+            )
         ) {
+            com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {
             FriendsScreen(
                 onNavigateToWaitingRoom = { roomCode ->
@@ -385,6 +393,7 @@ fun CizimHafizaNavGraph(
                 onDuelList = { navController.navigate(Screen.DuelList) }
             )
             }
+            }
         }
 
         composable(
@@ -394,6 +403,7 @@ fun CizimHafizaNavGraph(
                 navArgument(Screen.ArgDuelOpponentName) { type = NavType.StringType }
             )
         ) { backStackEntry ->
+            com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             val opponentUid = backStackEntry.arguments?.getString(Screen.ArgDuelOpponentUid).orEmpty()
             val opponentNameEncoded = backStackEntry.arguments?.getString(Screen.ArgDuelOpponentName).orEmpty()
             val opponentName = remember(opponentNameEncoded) {
@@ -408,9 +418,11 @@ fun CizimHafizaNavGraph(
                     }
                 }
             )
+            }
         }
 
         composable(Screen.DuelList) {
+            com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {
             DuelListScreen(
                 onBack = { navController.popBackStack() },
@@ -423,15 +435,19 @@ fun CizimHafizaNavGraph(
                 }
             )
             }
+            }
         }
 
         composable(Screen.League) {
+            com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {
             LeagueScreen(onBack = { navController.popBackStack() }, onFriends = { navController.navigate(Screen.FriendsBase) })
+            }
             }
         }
 
         composable(Screen.OnlineCreateRoom) {
+            com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {
             CreateRoomScreen(
                 onBack = { navController.popBackStack() },
@@ -441,6 +457,7 @@ fun CizimHafizaNavGraph(
                     }
                 }
             )
+            }
             }
         }
 
@@ -453,8 +470,12 @@ fun CizimHafizaNavGraph(
                     defaultValue = null
                 }
             ),
-            deepLinks = listOf(navDeepLink { uriPattern = Screen.InviteDeepLinkPattern })
+            deepLinks = listOf(
+                navDeepLink { uriPattern = Screen.InviteDeepLinkPattern },
+                navDeepLink { uriPattern = Screen.InviteWebLinkPattern }
+            )
         ) {
+            com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {
             JoinRoomScreen(
                 onBack = { navController.popBackStack() },
@@ -465,12 +486,14 @@ fun CizimHafizaNavGraph(
                 }
             )
             }
+            }
         }
 
         composable(
             route = Screen.OnlineWaitingRoom,
             arguments = listOf(navArgument(Screen.ArgRoomCode) { type = NavType.StringType })
         ) {
+            com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             WaitingRoomScreen(
                 onGameStarted = { roomCode ->
                     navController.navigate(Screen.onlineGameRoute(roomCode)) {
@@ -479,12 +502,14 @@ fun CizimHafizaNavGraph(
                 },
                 onLeave = { navController.popBackStack(Screen.MainMenu, inclusive = false) }
             )
+            }
         }
 
         composable(
             route = Screen.OnlineGame,
             arguments = listOf(navArgument(Screen.ArgRoomCode) { type = NavType.StringType })
         ) {
+            com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             OnlineGameScreen(
                 onFinished = { roomCode ->
                     navController.navigate(Screen.onlineResultRoute(roomCode)) {
@@ -497,12 +522,14 @@ fun CizimHafizaNavGraph(
                     }
                 }
             )
+            }
         }
 
         composable(
             route = Screen.OnlineResult,
             arguments = listOf(navArgument(Screen.ArgRoomCode) { type = NavType.StringType })
         ) {
+            com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             OnlineResultScreen(
                 onRematchStarted = { roomCode ->
                     navController.navigate(Screen.onlineGameRoute(roomCode)) {
@@ -520,6 +547,7 @@ fun CizimHafizaNavGraph(
                     }
                 }
             )
+            }
         }
     }
 

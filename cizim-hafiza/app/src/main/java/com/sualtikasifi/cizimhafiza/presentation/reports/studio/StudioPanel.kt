@@ -37,6 +37,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Movie
@@ -64,6 +71,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.res.painterResource
 import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMusic
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VoicedLine
 import androidx.compose.runtime.Composable
 import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
@@ -103,6 +114,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.LibraryItem
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealTimeline
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RecentDrawing
 import java.io.File
 import java.util.Locale
@@ -398,7 +410,7 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text(
                 "Ürettiğin görseller ve videolar telefonda otomatik saklanır (uygulamanın boyutunu büyütmez). " +
-                    "Üretim hakkın olmayan günlerde 3–5 eski videoyu seçip yeni bir videoya birleştirebilirsin.",
+                    "Kancası, kapanışı ve sesleriyle birlikte; yani her kayıt hazır bir video (stok). Birini seçip yeniden video yapabilirsin.",
                 style = Console.Small
             )
             Spacer(Modifier.height(8.dp))
@@ -423,10 +435,10 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
         }
         if (r.library.isNotEmpty()) item {
             ConsoleCard(Modifier.fillMaxWidth()) {
-                Text("Videoya birleştirmek için kartların köşesindeki yuvarlağa dokun (sıra dokunduğun sıradır). Karta dokunursan izlersin.", style = Console.Small)
+                Text("Projeye almak için kartın köşesindeki yuvarlağa dokun; video ilk seçtiğinle yapılır, diğerleri sırada bekler. Karta dokunursan izlersin.", style = Console.Small)
                 Spacer(Modifier.height(8.dp))
                 DarkButton(
-                    text = if (r.librarySelected.isEmpty()) "Birleştirmek için video seç" else "${r.librarySelected.size} videoyu birleştir",
+                    text = if (r.librarySelected.isEmpty()) "Video yapmak için kayıt seç" else if (r.librarySelected.size == 1) "Bu kayıtla video yap" else "${r.librarySelected.size} kaydı projeye al",
                     busy = false,
                     enabled = r.librarySelected.isNotEmpty()
                 ) { vm.libraryMakeVideo() }
@@ -440,7 +452,8 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text(
                 "Havuzdaki en son 100 çizim. “Videolarda öne çık” izni veren oyuncunun adı ve seviyesi videoda görünür; " +
-                    "izin vermeyen anonim kalır (yalnızca çerçevesi görünür, resmi hep varsayılan). Farklı kelimelerden 3–5 çizim seç.",
+                    "izin vermeyen anonim kalır (yalnızca çerçevesi görünür, resmi hep varsayılan). Her video tek çizimle yapılır: birkaç çizim seçip " +
+                    "hepsini hazırlayabilirsin (stok); video, “Başa al” ile en üste koyduğun çizimle yapılır.",
                 style = Console.Small
             )
             Spacer(Modifier.height(8.dp))
@@ -476,7 +489,7 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
                     "2) Çıkan görseli kaydet, “Görsel ekle” ile seç. " +
                     "3) “Gemini'ye gönder”: görsel ve video istemi birlikte gider; Gemini'de Video'yu seçip gönder (sesli üretir). " +
                     "4) Çıkan videoyu “Video ekle” ile seç. " +
-                    "Videoya yalnızca Gemini videoları girer; videosu olmayan çizim girmez. " +
+                    "Videoya en üstteki videolu çizimin Gemini videosu girer; kancası ve kapanışı aşağıda. " +
                     "Görseller videoya girmez: kaydırmalı gönderi olarak ayrı paylaşılır.",
                 style = Console.Small
             )
@@ -498,7 +511,39 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
         item(key = "rv-" + rv.sampleId) { RevealCard(i, rv, p, r.busy == rv.sampleId, r.busy != null, vm, context) }
     }
 
-    item { Step("3", "Kartın yeri ve boyu") }
+    val opening = p.opening
+    item {
+        val voiced = opening?.hook?.voice != null
+        Step("3", "Kanca: videonun ilk saniyeleri", opening?.let { "≈ ${(it.hookMs + 999) / 1000} sn · " + if (voiced) "sesli" else "sessiz" })
+    }
+    item {
+        LineCard(RealLine.Hook, p, st, vm) {
+            Text(
+                "Video, çizimin oyun ekranında baştan çizilmesiyle başlar: kelime üstte, süre köşede akar, altta oyunun jokerleri durur. " +
+                    "Kanca ekrana yazılmaz, yalnızca Karalak söyler: seslendirip videoya ekle. Sonra video çizimin içinden açılır.",
+                style = Console.Small
+            )
+        }
+    }
+    item {
+        val l = opening?.outro ?: VoicedLine()
+        Step("4", "Kapanış: Karalak'ın tepkisi", if (l.text.isBlank()) "yok" else "≈ ${(opening!!.outroMs + 999) / 1000} sn · " + if (l.voice != null) "sesli" else "sessiz")
+    }
+    item {
+        LineCard(RealLine.Outro, p, st, vm) {
+            Text(
+                "Klibin son saniyelerinde, video oynamaya devam ederken Karalak klipte olana kısa bir tepki verip izleyiciyi yoruma çağırır; " +
+                    "alt yazı olarak da görünür, klibin sesi o sırada kısılır. " +
+                    "Asistan kliple ilgili sahne yazısını (yukarıdaki “Videodaki sahne”) ve kancayı da okur.",
+                style = Console.Small
+            )
+        }
+    }
+
+    item { Step("5", "Arka plan müziği", opening?.music?.let { RealMusic.label(it) } ?: "yok") }
+    item { MusicCard(opening, st.real.musicPlaying, vm) }
+
+    item { Step("6", "Kartın yeri ve boyu") }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Karalak kartının videodaki yerini ve boyunu ayarla; aşağıdaki önizleme anında değişir.", style = Console.Small)
@@ -507,6 +552,205 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
             PreciseSlider("Sağa–sola", r.card.x, 0f..1f) { vm.setCard(r.card.copy(x = it)) }
             PreciseSlider("Yukarı–aşağı", r.card.y, 0f..1f) { vm.setCard(r.card.copy(y = it)) }
             SmallLink("Varsayılana dön") { vm.resetCard() }
+        }
+    }
+
+    item {
+        Step("7", "Tanıtım videosu: her videonun sonu", if (r.promo == null) "yok" else if (!r.promoOn) "kapalı" else String.format(Locale("tr"), "%.1f sn", r.promoMs / 1000f))
+    }
+    item { PromoCard(r, vm) }
+}
+
+/**
+ * The app's promo video, made once by hand and kept on this phone: it closes every video, with its own sound, after
+ * the drawing's video ends. It can be swapped, removed or left out of a video.
+ */
+@Composable
+private fun PromoCard(r: RealUi, vm: StudioViewModel) {
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let { vm.importPromo(it) } }
+    ConsoleCard(Modifier.fillMaxWidth()) {
+        Text(
+            "Uygulamayı tanıtan kısa videon her videonun sonuna, kendi sesiyle eklenir; bir kez seçmen yeterli, telefonda saklanır. " +
+                "Dikey 9:16 en iyisi; başka oranda bir video kırpılmadan, arkası bulanık olarak yerleşir. En fazla ${RealTimeline.PROMO_MAX / 1000} saniyesi girer.",
+            style = Console.Small
+        )
+        if (r.promo != null) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text("Videoların sonuna ekle", style = Console.Subtitle)
+                    Text(String.format(Locale("tr"), "%.1f sn", r.promoMs / 1000f) + " · önizlemede en sonda görünür", style = Console.Small)
+                }
+                Switch(checked = r.promoOn, onCheckedChange = vm::setPromoOn, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+            ActionButton(Icons.Filled.Movie, if (r.promoBusy) "Ekleniyor…" else if (r.promo == null) "Tanıtım videosu seç" else "Değiştir", Console.Surface, Console.Ink, Modifier.weight(1.4f)) {
+                if (!r.promoBusy) picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
+            }
+            if (r.promo != null) ActionButton(Icons.Filled.Refresh, "Kaldır", Console.Surface, Console.Critical, Modifier.weight(1f)) { vm.removePromo() }
+        }
+    }
+}
+
+/**
+ * The app's music under the video: none or one of its tracks, each to hear first, and how loud. Under Karalak's voice
+ * it steps back on its own, a little under the clip, and it fades out at the end.
+ */
+@Composable
+private fun MusicCard(reveal: RealReveal?, playing: String?, vm: StudioViewModel) {
+    ConsoleCard(Modifier.fillMaxWidth()) {
+        Text(
+            "Uygulamanın müziklerinden biri videonun altında çalar. Karalak konuşurken kısılır, klip boyunca biraz alçalır, sonda yavaşça biter. " +
+                "▶ ile önce dinleyebilirsin.",
+            style = Console.Small
+        )
+        val chosen = reveal?.music
+        val options = listOf<String?>(null) + RealMusic.TRACKS.map { it.first }
+        options.chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 6.dp)) {
+                row.forEach { name ->
+                    val on = name == chosen
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (on) Console.AccentSoft else Console.Surface,
+                        border = BorderStroke(if (on) 1.5.dp else 1.dp, if (on) Console.Accent else Console.Border),
+                        modifier = Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(10.dp)).clickable(enabled = reveal != null) { vm.setMusic(name) }
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp)) {
+                            Text(name?.let { RealMusic.label(it) } ?: "Müzik yok", style = Console.Subtitle, modifier = Modifier.weight(1f))
+                            if (name != null) {
+                                IconButton(onClick = { vm.listenMusic(name) }, modifier = Modifier.size(40.dp)) {
+                                    Icon(if (playing == name) Icons.Filled.Stop else Icons.Filled.PlayArrow, contentDescription = if (playing == name) "Durdur" else "Dinle", tint = Console.Ink)
+                                }
+                            }
+                        }
+                    }
+                }
+                if (row.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+        if (reveal != null && chosen != null) {
+            LabeledSlider("Müzik sesi", reveal.musicVolume, 0f..RealMix.MAX_VOLUME) { vm.setMusicVolume(it) }
+        }
+    }
+}
+
+/**
+ * One of Karalak's lines in the video of the project's [RealProject.opening] drawing: the assistant's ideas for it,
+ * each to rewrite, voice and put into the video, the line now in the video, and one's own line to add. [intro] says
+ * where the line goes.
+ */
+@Composable
+private fun LineCard(kind: RealLine, p: RealProject, st: StudioState, vm: StudioViewModel, intro: @Composable () -> Unit) {
+    val r = st.real
+    val opening = p.opening
+    val drawing = opening?.let { p.drawing(it.sampleId) }
+    val line = opening?.line(kind) ?: VoicedLine()
+    val hook = kind == RealLine.Hook
+    val count = if (hook) RealCopy.HOOK_COUNT else RealCopy.OUTRO_COUNT
+    val name = if (hook) "kanca" else "kapanış"
+    ConsoleCard(Modifier.fillMaxWidth()) {
+        intro()
+        drawing?.let { Text("Videodaki çizim: ${it.word}" + if (it.seconds > 0) " · ${it.seconds} sn" else "", style = Console.Subtitle, modifier = Modifier.padding(top = 6.dp)) }
+        Spacer(Modifier.height(8.dp))
+        DarkButton(
+            text = if (r.lineWriting == kind) "Asistan yazıyor…" else if (line.options.isEmpty()) "Asistan $count $name yazsın" else "$count yeni $name yazsın",
+            busy = r.lineWriting == kind,
+            enabled = r.lineWriting == null && opening != null
+        ) { vm.writeLines(kind) }
+        r.lineErrors[kind]?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
+        if (line.text.isNotBlank()) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text(if (hook) "Videodaki kanca" else "Videodaki kapanış", style = Console.Label)
+                    Text(line.text, style = Console.Subtitle)
+                    Text(
+                        if (line.voice != null) "Sesli · " + String.format(Locale("tr"), "%.1f sn", line.voiceMs / 1000f)
+                        else if (hook) "Sessiz: kanca yazılmadığı için videoda duyulmaz; seslendirip “Videoya ekle”ye bas."
+                        else "Sessiz: yalnızca alt yazı; seslendirip “Videoya ekle”ye basarsan Karalak söyler.",
+                        style = Console.Small
+                    )
+                }
+                if (line.voice != null) IconButton(onClick = { vm.listenLine(kind, line.text) }) { Icon(Icons.Filled.PlayArrow, contentDescription = "Dinle", tint = Console.Ink) }
+                SmallLink("Kaldır", Console.Critical) { vm.clearLine(kind) }
+            }
+        }
+        if (line.options.isNotEmpty()) {
+            Text(
+                "Düzenle, seslendir, beğendiğini “Videoya ekle” ile sesiyle birlikte videoya koy. Seslendirmeden, sessiz koymak için yazısına dokun.",
+                style = Console.Small, modifier = Modifier.padding(top = 10.dp)
+            )
+            line.options.forEach { o ->
+                LineOption(
+                    text = o,
+                    inVideo = o == line.text,
+                    voicedInVideo = o == line.text && line.voice != null,
+                    voiced = o in r.lineVoiced[kind].orEmpty(),
+                    voicing = r.lineVoicing == (kind to o),
+                    canVoice = r.lineVoicing == null && st.eleven.keySet,
+                    credits = st.eleven.spec.credits(RealCopy.spoken(kind, o)),
+                    onChoose = { vm.chooseLine(kind, o) },
+                    onEdit = { vm.editLineOption(kind, o, it) },
+                    onVoice = { vm.voiceLine(kind, o) },
+                    onListen = { vm.listenLine(kind, o) },
+                    onAdd = { vm.addLineToVideo(kind, o) }
+                )
+            }
+        }
+        if (!st.eleven.keySet) Text("Seslendirmek için aşağıdaki “Karalak'ın sesi” bölümüne ElevenLabs anahtarını gir.", style = Console.Small, modifier = Modifier.padding(top = 8.dp))
+        var own by remember(kind) { mutableStateOf("") }
+        Field(if (hook) "Kendi kancanı yaz" else "Kendi kapanışını yaz", own, { own = it.take(RealCopy.HOOK_CHARS) })
+        if (own.isNotBlank()) SmallLink("Listeye ekle") { vm.addLineOption(kind, own); own = "" }
+    }
+}
+
+/**
+ * One idea for a line and what can be done with it: rewrite it, voice it in ElevenLabs, then put it into the video
+ * with its voice ("Seslendir" turns into "Videoya ekle" once the voice is made). Tapping the words puts it in silent.
+ * The line in the video is outlined in orange.
+ */
+@Composable
+private fun LineOption(
+    text: String, inVideo: Boolean, voicedInVideo: Boolean, voiced: Boolean, voicing: Boolean, canVoice: Boolean, credits: Int,
+    onChoose: () -> Unit, onEdit: (String) -> Unit, onVoice: () -> Unit, onListen: () -> Unit, onAdd: () -> Unit
+) {
+    var editing by remember(text) { mutableStateOf(false) }
+    var draft by remember(text) { mutableStateOf(text) }
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = if (inVideo) Console.AccentSoft else Console.SurfaceAlt,
+        border = BorderStroke(if (inVideo) 1.5.dp else 1.dp, if (inVideo) Console.Accent else Console.Border),
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+    ) {
+        Column(Modifier.padding(10.dp)) {
+            if (editing) {
+                Field(null, draft, { draft = it.take(RealCopy.HOOK_CHARS) }, lines = 2)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+                    ActionButton(Icons.Filled.Check, "Kaydet", Console.Accent, Color.White, Modifier.weight(1f)) { onEdit(draft); editing = false }
+                    ActionButton(Icons.Filled.Close, "Vazgeç", Console.Surface, Console.Ink, Modifier.weight(1f)) { draft = text; editing = false }
+                }
+                if (voiced || voicedInVideo) Text("Değişen kanca yeniden seslendirilir.", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).clickable(onClick = onChoose)) {
+                    Text(text, style = Console.Body, modifier = Modifier.weight(1f).padding(vertical = 2.dp))
+                    if (inVideo) Text(if (voicedInVideo) "Videoda · sesli" else "Videoda · sessiz", style = Console.Label.copy(color = Console.Accent), modifier = Modifier.padding(start = 6.dp))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+                    ActionButton(Icons.Filled.Edit, "Düzenle", Console.Surface, Console.Ink, Modifier.weight(1f)) { draft = text; editing = true }
+                    when {
+                        voicing -> ActionButton(Icons.Filled.GraphicEq, "Seslendiriliyor…", Console.InkMuted, Color.White, Modifier.weight(1.3f)) {}
+                        voicedInVideo -> ActionButton(Icons.Filled.Check, "Videoda", Console.GoodSoft, Console.GoodText, Modifier.weight(1.3f)) {}
+                        voiced -> ActionButton(Icons.Filled.AddCircle, "Videoya ekle", Console.Accent, Color.White, Modifier.weight(1.3f), onAdd)
+                        else -> ActionButton(Icons.AutoMirrored.Filled.VolumeUp, "Seslendir", if (canVoice) Console.Dark else Console.InkMuted, Color.White, Modifier.weight(1.3f)) {
+                            if (canVoice) onVoice()
+                        }
+                    }
+                    if (voiced || voicedInVideo) {
+                        IconButton(onClick = onListen, modifier = Modifier.size(46.dp)) { Icon(Icons.Filled.PlayArrow, contentDescription = "Dinle", tint = Console.Ink) }
+                    }
+                }
+                if (!voiced && !voicedInVideo && !voicing) Text("Seslendirmek ~$credits ElevenLabs kredisi; bir kez ödenir, telefonda saklanır.", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
+            }
         }
     }
 }
@@ -544,6 +788,8 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
             }
             if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = Console.Accent, strokeWidth = 2.dp)
         }
+        if (project.featured?.sampleId == rv.sampleId) Text("Videodaki çizim bu", style = Console.Label.copy(color = Console.Accent), modifier = Modifier.padding(top = 6.dp))
+        else if (index > 0) SmallLink("Başa al (video bu çizimle yapılır)") { vm.moveRevealFirst(rv.sampleId) }
         PlayerEditor(project.drawing(rv.sampleId), vm, anyBusy)
         Field("Çizimin şekli (görsel istemine eklenir)", rv.describe, { vm.setRevealDescribe(rv.sampleId, it) }, lines = 3)
         Field("Videodaki sahne (video istemine eklenir): kim, nerede, ne yapıyor, hangi sesler? Ne kadar ayrıntılı yazarsan o kadar iyi.", rv.motion, { vm.setRevealMotion(rv.sampleId, it) }, lines = 7)
@@ -734,7 +980,16 @@ private fun MiniDoodle(strokes: List<List<DrawingPoint>>) {
 /** Voice, mascot artwork, preview, making the video and the result: the same for every format. */
 private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, context: Context) {
     val real = st.format == StudioFormat.RealLife
-    // 4. voice (the "Gerçek Olsaydı" video has none: its sound is the clips' own)
+    // "Gerçek Olsaydı": only the hook is ever said aloud, and only in ElevenLabs; its settings are here
+    if (real) item { Step("♪", "Karalak'ın sesi (ElevenLabs)") }
+    if (real) item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Text("Kancalar bu sesle seslendirilir. Ayarı değiştirirsen kanca yeniden seslendirilir; videoya eklenmiş ses değişmez.", style = Console.Small)
+            ElevenSettings(st, vm)
+            st.voiceError?.let { Text(it, style = Console.Small.copy(color = Console.Critical)) }
+        }
+    }
+    // 4. voice (the "Gerçek Olsaydı" video says only its hook: see above)
     if (!real) item { Step("♪", "Ses") }
     if (!real) item {
         ConsoleCard(Modifier.fillMaxWidth()) {
@@ -813,7 +1068,7 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
                     )
                     Text(
                         if (st.format == StudioFormat.Guess && st.script == null) "Örnek cümlelerle gösteriliyor; Karalak yazınca kendi cümleleri gelir."
-                        else if (st.format == StudioFormat.RealLife) "Videoların kendi sesi çalar; üstüne Karalak kartı gelir: çizim, oyuncunun çerçevesi ve adı."
+                        else if (st.format == StudioFormat.RealLife) "Kanca, video (kendi sesiyle, üstünde Karalak kartı) ve kapanış. Hedef 8–20 sn."
                         else "Sesli videoda süreler sesin gerçek uzunluğuna göre ayarlanır.",
                         style = Console.Small, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
                     )

@@ -13,8 +13,12 @@ internal object SplashHandOff {
     /** True once the system splash starts leaving. */
     val systemSplashGone = mutableStateOf(false)
 
+    /** True once the opening scene has lifted and the home page is visible; windows of their own (dialogs) wait for it. */
+    val brandSplashDone = mutableStateOf(false)
+
     /** A fresh cold start: forget whatever an earlier Activity in this process left here. */
     fun reset() {
         systemSplashGone.value = false
+        brandSplashDone.value = false
     }
 }

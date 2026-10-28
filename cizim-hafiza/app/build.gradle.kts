@@ -44,8 +44,8 @@ android {
         // concerned: the installer may leave the old app in place, and
         // nothing on screen distinguishes the two builds. See the version
         // line on the Settings screen, which prints these back.
-        versionCode = 105
-        versionName = "1.29.0"
+        versionCode = 109
+        versionName = "1.30.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -116,6 +116,11 @@ android {
             }
             isMinifyEnabled = true
             isShrinkResources = true
+            // CI builds the store variant only to check it (android-ci.yml) and passes -PnoMappingUpload: its
+            // mapping file belongs to no published release and must not land in Crashlytics.
+            configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
+                mappingFileUploadEnabled = !project.hasProperty("noMappingUpload")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -149,11 +154,11 @@ android {
         }
     }
 
-    // The app is Turkish + English only (see res/xml/locale_config.xml). Without this every
+    // The app ships Turkish, English, Portuguese and Spanish (see res/xml/locale_config.xml). Without this every
     // library (Play Services, Firebase, Material, ...) ships its translations into ~80 other
     // languages that no screen can ever show.
     androidResources {
-        localeFilters += listOf("tr", "en")
+        localeFilters += listOf("tr", "en", "pt", "es")
     }
 }
 

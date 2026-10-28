@@ -41,13 +41,13 @@ object BotPhotos {
         R.drawable.bot_photo_b13, R.drawable.bot_photo_b16, R.drawable.bot_photo_b19, R.drawable.bot_photo_b22,
         R.drawable.bot_photo_b24, R.drawable.bot_photo_b28, R.drawable.bot_photo_b31, R.drawable.bot_photo_b35
     )
-    /** Pets and views, interleaved so neighbours in the list are not all cats. */
+    /** Pets and views, interleaved so neighbours in the list are not all cats. No cartoon characters owned by others. */
     private val NEUTRAL = listOf(
         R.drawable.bot_photo_a03, R.drawable.bot_photo_a09, R.drawable.bot_photo_a06, R.drawable.bot_photo_a16,
         R.drawable.bot_photo_a14, R.drawable.bot_photo_a18, R.drawable.bot_photo_a20, R.drawable.bot_photo_a28,
         R.drawable.bot_photo_a22, R.drawable.bot_photo_b08, R.drawable.bot_photo_a30, R.drawable.bot_photo_b25,
         R.drawable.bot_photo_b03, R.drawable.bot_photo_b07, R.drawable.bot_photo_b10, R.drawable.bot_photo_b18,
-        R.drawable.bot_photo_b27, R.drawable.bot_photo_b30, R.drawable.bot_photo_b33
+        R.drawable.bot_photo_b30, R.drawable.bot_photo_b33
     )
 
     /** Hand-picked pictures that replace what a bot would otherwise get from its place in the list. */

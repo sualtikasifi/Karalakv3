@@ -9,6 +9,10 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.UpdatePreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the chest-opening reward board on its own (see ChestRewardPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.ChestRewardPreviewActivity"
+            android:exported="true" />
         <!-- Debug builds only: the chest window on its own (see ChestPreviewActivity). -->
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.ChestPreviewActivity"

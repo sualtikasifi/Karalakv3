@@ -9,9 +9,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.scaleIn
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,14 +39,10 @@ import com.sualtikasifi.cizimhafiza.util.AppReviewLauncher
  * first impression of the app, late enough that they've actually played
  * something worth rating.
  *
- * "Puanla" both opens the Play Store listing AND signals the caller to
- * grant the one-time 500 XP bonus in the same tap — the app has no way to
- * confirm a player actually left 5 stars once Play Store opens (that never
- * reports back), so the reward is for making the trip, not a verified
- * rating. [onRate] is expected to call
- * SettingsRepository.grantRatingBonusXpOnce, which is itself idempotent —
- * this dialog only ever shows once anyway, but the XP grant guards itself
- * independently rather than trusting that.
+ * "Puanla" opens the Play Store listing and nothing else. There is no reward
+ * of any kind for rating and the text never asks for a particular score:
+ * Google Play's Ratings & Reviews policy forbids both, and an app that pays
+ * for ratings can be removed from the store.
  */
 @Composable
 fun RatingPromptDialog(onRate: () -> Unit, onDismiss: () -> Unit) {
@@ -73,16 +67,12 @@ fun RatingPromptDialog(onRate: () -> Unit, onDismiss: () -> Unit) {
                     modifier = Modifier.fillMaxWidth().padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        repeat(5) {
-                            Icon(
-                                imageVector = Icons.Filled.Star,
-                                contentDescription = null,
-                                tint = AppTheme.tokens.gold,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = null,
+                        tint = AppTheme.tokens.gold,
+                        modifier = Modifier.size(32.dp)
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = stringResource(R.string.rating_prompt_title),

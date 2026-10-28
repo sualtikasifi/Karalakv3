@@ -7,7 +7,7 @@
     <string name="share_room_not_installed">Don\'t have it yet? %1$s</string>
     <string name="share_invite_link">One tap to open (opens the Play Store if not installed): %1$s</string>
     <string name="share_friend_invite">I\'m inviting you to Karalak! 🎨</string>
-    <string name="share_friend_pitch">Draw first, then remember what you drew. Beat the clock, race your friends and climb the weekly league.</string>
+    <string name="share_friend_pitch">Draw first, then remember what you drew. Beat the clock, race your friends and climb the monthly league.</string>
     <string name="share_friend_reward_hint">🎁 We both win: join with my code and when you reach level 5 we each get 500 gold!</string>
     <string name="share_friend_code">My friend code: %1$s</string>
     <string name="share_friend_code_instructions">If the link doesn\'t open: install Karalak, then enter this code under \"Add a friend\" in Friends.</string>
@@ -80,7 +80,8 @@
     <string name="online_ready">Ready</string>
     <string name="online_ready_cancel">Not ready</string>
     <string name="online_start_game">Start Game</string>
-    <string name="online_waiting_for_host">Everyone\'s ready! Waiting for the host to start…</string>
+    <string name="online_everyone_ready">Everyone\'s ready!</string>
+    <string name="online_waiting_for_host_sub">Waiting for the host to start…</string>
     <string name="online_you_label">%1$s (You)</string>
     <string name="online_player_left_lobby">Left the lobby</string>
     <string name="online_chat_row_empty">No messages yet — tap to send</string>
@@ -406,7 +407,7 @@
     <string name="tutorial_finale_button">Start playing</string>
     <string name="tutorial_skip">Skip tutorial</string>
     <string name="tutorial_word_1">book</string>
-    <string name="tutorial_word_2">dog</string>
+    <string name="tutorial_word_2">flag</string>
     <string name="tutorial_word_3">apple</string>
     <string name="settings_replay_tutorial">Replay Tutorial</string>
 
@@ -423,6 +424,7 @@
     <string name="report_bug_char_count_format">%1$d / %2$d</string>
     <string name="report_bug_submit">Send</string>
     <string name="report_bug_sending">Sending…</string>
+    <string name="report_bug_empty">Write your message before sending.</string>
     <string name="report_bug_success">Thanks, your report reached us!</string>
     <string name="report_bug_history_title">My Past Reports</string>
     <string name="report_bug_not_seen_yet">Not seen yet</string>
@@ -454,6 +456,8 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_turkish">Türkçe</string>
     <string name="settings_language_english">English</string>
+    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_spanish">Español</string>
 
     <!-- Daily engagement notification pools (util/NotificationMessages.kt).
          Weekly arrays are ordered Monday..Sunday, 2 variants each (14 items). -->
@@ -660,7 +664,7 @@
     </string-array>
     <string-array name="notif_daily_bodies">
         <item>Same words as everyone else, just a few minutes.</item>
-        <item>Sude had a go today. Can you beat her?</item>
+        <item>New words today. Can you beat your best score?</item>
         <item>Start a streak and grow it every day.</item>
     </string-array>
 
@@ -703,7 +707,7 @@
     <string name="league_tab_global">Global</string>
     <string name="league_global_empty">The global table has not been built yet. Check back shortly.</string>
     <string name="league_global_failed">Could not load the global table.</string>
-    <string name="league_global_refresh_note">The global ranking refreshes every hour.</string>
+    <string name="league_global_refresh_note">The global ranking refreshes every hour. AI players take part in the league too; prizes go to the top 3 real players.</string>
     <string name="league_reward_title">This month\'s prize</string>
     <string name="league_reward_bonus_gold">+%1$s Gold</string>
     <string name="league_reward_bonus_xp">+%1$s XP</string>
@@ -742,9 +746,9 @@
     <string name="account_signed_out_title">You\'re playing as a guest</string>
     <string name="account_signed_out_message">Sign in with Google so your level, achievements and streaks are saved to your account. Switch phones and you pick up exactly where you left off.</string>
     <string name="account_sign_in_google">Sign in with Google</string>
-    <string name="rating_prompt_title">Rate us? ⭐</string>
-    <string name="rating_prompt_body">You\'ve already played 3 rounds! Support us with 5 stars on the Play Store and earn 500 XP.</string>
-    <string name="rating_prompt_rate_button">Rate &amp; get 500 XP</string>
+    <string name="rating_prompt_title">Enjoying Karalak? ⭐</string>
+    <string name="rating_prompt_body">You\'ve played 3 rounds already. If you have a minute, tell us what you think on the Play Store. Every review helps us make the game better.</string>
+    <string name="rating_prompt_rate_button">Rate on Play Store</string>
     <string name="rating_prompt_later_button">Later</string>
     <string name="sign_in_prompt_title">Don\'t lose your progress! 🎉</string>
     <string name="sign_in_prompt_body">Sign in with Google so your score and badges stay with you, even if you switch phones.</string>
@@ -939,7 +943,7 @@
     <string name="account_delete_final_message">Your account and all your data will be deleted permanently, with no way to bring them back. Are you really sure?</string>
     <string name="account_delete_final_keep">Cancel, keep it</string>
     <string name="account_delete_final_confirm">Delete forever</string>
-    <string name="account_delete_done">Your account and data have been deleted.</string>
+    <string name="account_delete_done">Your account and data have been deleted. Anything left on our servers is removed within 24 hours.</string>
     <string name="account_delete_failed">Could not delete the account. Check your connection and try again.</string>
     <string name="account_delete_reauth_needed">For security you need to sign in again first. Sign out, reconnect your Google account, then try deleting.</string>
     <string name="settings_rate_app">Rate the App</string>
@@ -1154,8 +1158,11 @@
     <string name="reports_uphold_body">Base penalty: %1$d XP and %2$d gold, up to 5x with the drawer\'s offence count. Online play closes with each offence (6 h on the 1st, then 12 h, 24 h, 3 days, 7 days). Other reports of this drawing are cleared too.</string>
     <string name="reports_uphold_confirm">Penalize</string>
     <string name="lock_duration_minutes">%1$d minutes</string>
+    <string name="lock_duration_minutes_one">%1$d minute</string>
     <string name="lock_duration_days">%1$d days</string>
+    <string name="lock_duration_days_one">%1$d day</string>
     <string name="lock_duration_hours">%1$d hours</string>
+    <string name="lock_duration_hours_one">%1$d hour</string>
     <string name="lock_countdown_days">%1$d d %2$s</string>
     <string name="lock_screen_body">A drawing of yours was found against the rules in review. Quick Match and Play with Friends stay closed until the timer ends. You can keep playing offline.</string>
     <string name="reports_tab_locks">Locks</string>
@@ -1182,6 +1189,7 @@
     <string name="chests_open_button">Open</string>
     <string name="chests_reward_title">Chest opened!</string>
     <string name="chests_reward_gold">+%1$d Gold</string>
+    <string name="chests_reward_gold_label">Gold</string>
     <string name="chests_reward_button">Great!</string>
     <string name="home_xp_format">%1$d / %2$d XP</string>
     <string name="home_level_format">Lv. %1$d</string>
@@ -1208,6 +1216,7 @@
     <string name="chest_slot_busy">Another chest is unlocking — wait for it to finish first.</string>
     <string name="chest_slot_still_unlocking">This chest is still unlocking.</string>
     <string name="chest_duration_hours">%1$d hours</string>
+    <string name="chest_duration_hours_one">%1$d hour</string>
     <string name="chest_duration_minutes">%1$d min</string>
     <string name="chest_duration_hm">%1$dh %2$dm</string>
     <string name="chest_win_unlock_time_text">Unlock time: %1$s</string>
@@ -1393,7 +1402,7 @@
     <string name="tour_next">Next</string>
     <string name="tour_start">Let\'s go!</string>
     <string name="quick_match_abandon_title">Cancel the match?</string>
-    <string name="quick_match_abandon_message">An opponent is waiting for you. If you cancel now you will lose %1$d XP.</string>
+    <string name="quick_match_abandon_message">Your match is ready. If you cancel now you will lose %1$d XP.</string>
     <string name="quick_match_abandon_confirm">Cancel (−%1$d XP)</string>
     <string name="quick_match_abandon_keep">Keep playing</string>
     <string name="quick_match_exit_message">If you leave this match now you will lose %1$d XP.</string>
@@ -1438,9 +1447,9 @@
     <string name="level_play">PLAY</string>
     <string name="quick_match_searching_title">Finding</string>
     <string name="quick_match_searching_title2">an opponent…</string>
-    <string name="quick_match_searching_sub">Scanning other players to find the best match for you…</string>
+    <string name="quick_match_searching_sub">Finding an opponent at your level…</string>
     <string name="quick_match_dont_worry">Don\'t worry!</string>
-    <string name="quick_match_dont_worry_body">We will find you an opponent at your level in no time.</string>
+    <string name="quick_match_opponent_note">Your opponent may be a player matched live, a real player\'s recorded round or an AI.</string>
     <string name="drawing_time_joker">+10 Seconds</string>
     <string name="duel_list_incoming_play">Play</string>
     <string name="offline_needed">An internet connection is required</string>
@@ -1595,7 +1604,8 @@
     <string name="rune_level_n">Level %1$d</string>
     <string name="rune_tile_pct">+%1$d%%</string>
     <string name="rune_tile_pts">+%1$d%%</string>
-    <string name="rune_tile_cnt">+%1$d joker</string>
+    <string name="rune_tile_cnt">+%1$d jokers</string>
+    <string name="rune_tile_cnt_one">+%1$d joker</string>
     <string name="rune_status_title">Rune Status</string>
     <string name="rune_intro_title">Welcome to the Runes</string>
     <string name="rune_intro_body">Runes are permanent bonuses you buy with gold.\n\n• Tap a rune to read what it does, then buy or upgrade it. Every level makes it stronger.\n• Bonuses cover gold, XP, chests and jokers, and they apply to every game.\n• Runes sit in rings around the dog. A sealed ring opens when your level is high enough and the ring before it is mostly done.\n• Drag to move the map, pinch to zoom, and tap the dog in the middle to see your status.</string>
@@ -1648,7 +1658,7 @@
     <string name="result_stat_win_gold">Win gold</string>
     <string name="result_stat_rune_bonus">From runes</string>
     <string name="result_rune_bonus_line">From your runes: +%1$d gold</string>
-    <string name="league_score_refused">Your score can\'t be saved to the server right now, so other players may not see you in this table. Reopen the app or try again later.</string>
+    <string name="league_score_refused">Not all of your score is on the table yet: the server takes it in over a few hours. It catches up on its own, nothing to do.</string>
     <string name="error_friend_request_limit">You have sent a lot of friend requests today. Try again tomorrow.</string>
     <string-array name="online_lobby_quotes">
         <item>Your luck matches your drawing skill.\nIf you have neither,\nat least have confidence!</item>
@@ -1665,4 +1675,26 @@
         <item>If nobody gets your drawing,\ncall it ‘abstract art’\nand walk away.</item>
         <item>Being misunderstood is\nthe fate of every artist.\nDraw anyway!</item>
     </string-array>
+    <string name="legal_title">Before you play</string>
+    <string name="legal_birth_year_label">Your year of birth</string>
+    <string name="legal_birth_year_placeholder">YYYY</string>
+    <string name="legal_birth_year_why">We ask so the game stays right for your age. It stays on this device.</string>
+    <string name="legal_birth_year_invalid">Enter a valid year.</string>
+    <string name="legal_accept_text">By continuing you accept the %1$s and confirm you have read the %2$s.</string>
+    <string name="legal_terms_link">Terms of Use</string>
+    <string name="legal_privacy_link">Privacy Policy</string>
+    <string name="legal_continue">Continue</string>
+    <string name="child_locked_title">For ages 13 and up</string>
+    <string name="child_locked_body">Online play, friends and the league are for players aged 13 and over. You can still play offline, the levels and the daily challenge.</string>
+    <string name="child_feature_locked">This is for players aged 13 and over.</string>
+    <string name="report_player_action">Report player</string>
+    <string name="report_player_title">Report player</string>
+    <string name="report_player_subtitle">What is wrong with %1$s?</string>
+    <string name="report_player_reason_name">Offensive name</string>
+    <string name="report_player_reason_behaviour">Harassment or bad behaviour</string>
+    <string name="report_player_reason_cheating">Cheating</string>
+    <string name="report_player_reason_other">Something else</string>
+    <string name="share_card_slogan">Come and play,\njoin the fun!</string>
+    <string name="share_card_collage_title">Can you guess\nthese drawings?</string>
+    <string name="share_empty_drawing">This drawing is empty, there is nothing to share.</string>
 </resources>

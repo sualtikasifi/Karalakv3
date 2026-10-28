@@ -222,27 +222,6 @@ fun ConfettiBurst(modifier: Modifier = Modifier, count: Int = 70, durationMs: In
     }
 }
 
-/**
- * Wraps a screen's content so it eases in as a whole when the screen first appears: a short fade-and-rise on top of
- * the navigation slide, which on its own moves a flat picture. Cheap: one graphics layer, no offscreen buffer.
- */
-@Composable
-fun SceneEntrance(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    var shown by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { shown = true }
-    val p by animateFloatAsState(if (shown) 1f else 0f, tween(420, easing = FastOutSlowInEasing), label = "scene")
-    Box(modifier = modifier.fillMaxSize().graphicsLayer { alpha = 0.55f + 0.45f * p; translationY = (1f - p) * 14.dp.toPx() }) { content() }
-}
-
-
-/** [SceneEntrance] as a modifier, for roots that cannot be wrapped. */
-fun Modifier.sceneIn(): Modifier = composed {
-    var shown by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { shown = true }
-    val p by animateFloatAsState(if (shown) 1f else 0f, tween(460, easing = FastOutSlowInEasing), label = "scene")
-    graphicsLayer { alpha = 0.5f + 0.5f * p; translationY = (1f - p) * 16.dp.toPx() }
-}
-
 /** One sparkle's place in a [SparkleField]: a point in 0..1 of the field, and its size as a fraction of the field's width. */
 class SparkleSpot(val x: Float, val y: Float, val size: Float)
 

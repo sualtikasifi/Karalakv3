@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- bg_locked here paints its title on two lines and ends lower (about 1010), so the countdown and the reason
+         text sit lower and tighter, still clear of the broken heart (from 1213). -->
+    <integer-array name="lock_art">
+        <item>1020</item><item>72</item><item>1096</item><item>110</item>
+    </integer-array>
+</resources>

@@ -7,7 +7,7 @@
     <string name="share_room_not_installed">Yüklü değilse: %1$s</string>
     <string name="share_invite_link">Tek dokunuşla aç (yüklü değilse Play Store açılır): %1$s</string>
     <string name="share_friend_invite">Seni Karalak\'a davet ediyorum! 🎨</string>
-    <string name="share_friend_pitch">Önce çiz, sonra ne çizdiğini hatırla. Kelimeleri süre dolmadan çiz, arkadaşlarınla yarış, haftalık ligde yüksel.</string>
+    <string name="share_friend_pitch">Önce çiz, sonra ne çizdiğini hatırla. Kelimeleri süre dolmadan çiz, arkadaşlarınla yarış, aylık ligde yüksel.</string>
     <string name="share_friend_reward_hint">🎁 İkimiz de kazanıyoruz: Benim kodumla katılıp seviye 5\'e ulaşınca ikimiz de 500 altın alıyoruz!</string>
     <string name="share_friend_code">Arkadaşlık kodum: %1$s</string>
     <string name="share_friend_code_instructions">Link açılmazsa: Karalak\'ı yükle, Arkadaşlar bölümünde \"Arkadaş ekle\" kısmına bu kodu gir.</string>
@@ -84,7 +84,8 @@
     <string name="online_ready">Hazır</string>
     <string name="online_ready_cancel">Hazır değilim</string>
     <string name="online_start_game">Oyunu Başlat</string>
-    <string name="online_waiting_for_host">Herkes hazır! Oda sahibinin başlatmasını bekliyoruz…</string>
+    <string name="online_everyone_ready">Herkes hazır!</string>
+    <string name="online_waiting_for_host_sub">Oda sahibinin başlatmasını bekliyoruz…</string>
     <string name="online_you_label">%1$s (Sen)</string>
     <string name="online_player_left_lobby">Lobiden ayrıldı</string>
     <string name="online_chat_row_empty">Henüz mesaj yok — dokun, gönder</string>
@@ -414,7 +415,7 @@
     <!-- The tutorial's 3 practice words — deliberately not in the real word
          pool (see TutorialViewModel), so they need their own translation. -->
     <string name="tutorial_word_1">kitap</string>
-    <string name="tutorial_word_2">köpek</string>
+    <string name="tutorial_word_2">bayrak</string>
     <string name="tutorial_word_3">elma</string>
     <string name="settings_replay_tutorial">Eğitimi Tekrar İzle</string>
 
@@ -431,6 +432,7 @@
     <string name="report_bug_char_count_format">%1$d / %2$d</string>
     <string name="report_bug_submit">Gönder</string>
     <string name="report_bug_sending">Gönderiliyor…</string>
+    <string name="report_bug_empty">Göndermeden önce mesajını yaz.</string>
     <string name="report_bug_success">Teşekkürler, bildirimin bize ulaştı!</string>
     <string name="report_bug_history_title">Geçmiş Bildirimlerim</string>
     <string name="report_bug_not_seen_yet">Henüz görülmedi</string>
@@ -462,6 +464,8 @@
     <string name="settings_language">Dil</string>
     <string name="settings_language_turkish">Türkçe</string>
     <string name="settings_language_english">English</string>
+    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_spanish">Español</string>
 
     <!-- Daily engagement notification pools (util/NotificationMessages.kt).
          Weekly arrays are ordered Monday..Sunday, 2 variants each (14 items). -->
@@ -668,7 +672,7 @@
     </string-array>
     <string-array name="notif_daily_bodies">
         <item>Herkesle aynı kelimeler, birkaç dakikalık bir tur.</item>
-        <item>Sude de bugün denedi. Onu geçebilir misin?</item>
+        <item>Bugünün kelimeleri yeni. En iyi skorunu geçebilir misin?</item>
         <item>Bir seri başlat, her gün büyüsün.</item>
     </string-array>
 
@@ -713,7 +717,7 @@
     <string name="league_tab_global">Global</string>
     <string name="league_global_empty">Global tablo henüz hazırlanmadı. Birazdan burada olacak.</string>
     <string name="league_global_failed">Global tablo yüklenemedi.</string>
-    <string name="league_global_refresh_note">Global sıralama saatte bir yenilenir.</string>
+    <string name="league_global_refresh_note">Global sıralama saatte bir yenilenir. Ligde yapay zekâ oyuncular da yer alır; ödüller gerçek oyuncuların ilk 3\'üne verilir.</string>
     <string name="league_reward_title">Bu ayın ödülü</string>
     <string name="league_reward_bonus_gold">+%1$s Altın</string>
     <string name="league_reward_bonus_xp">+%1$s XP</string>
@@ -752,9 +756,9 @@
     <string name="account_signed_out_title">Misafir olarak oynuyorsun</string>
     <string name="account_signed_out_message">Google hesabınla giriş yap — seviyen, başarımların ve serilerin hesabına kaydedilsin. Telefonunu değiştirsen bile aynı hesapla kaldığın yerden devam edersin.</string>
     <string name="account_sign_in_google">Google ile Giriş Yap</string>
-    <string name="rating_prompt_title">Bizi puanlar mısın? ⭐</string>
-    <string name="rating_prompt_body">3 tur oynadın bile! Play Store\'da bize 5 yıldız vererek bizi destekle ve 500 XP kazan.</string>
-    <string name="rating_prompt_rate_button">Puanla ve 500 XP kazan</string>
+    <string name="rating_prompt_title">Karalak\'ı beğendin mi? ⭐</string>
+    <string name="rating_prompt_body">3 tur oynadın bile. Bir dakikan varsa Play Store\'da görüşünü paylaşır mısın? Her yorum oyunu geliştirmemize yardım ediyor.</string>
+    <string name="rating_prompt_rate_button">Play Store\'da değerlendir</string>
     <string name="rating_prompt_later_button">Daha sonra</string>
     <string name="sign_in_prompt_title">İlerlemeni kaybetme! 🎉</string>
     <string name="sign_in_prompt_body">Google hesabınla giriş yap, puanların ve rozetlerin telefon değişse bile hep seninle kalsın.</string>
@@ -953,7 +957,7 @@
     <string name="account_delete_final_message">Hesabın ve tüm verilerin kalıcı olarak silinecek, geri getirmenin hiçbir yolu yok. Gerçekten silmek istediğine emin misin?</string>
     <string name="account_delete_final_keep">Vazgeç, kalsın</string>
     <string name="account_delete_final_confirm">Kalıcı olarak sil</string>
-    <string name="account_delete_done">Hesabın ve verilerin silindi.</string>
+    <string name="account_delete_done">Hesabın ve verilerin silindi. Sunucularımızda kalan her şey 24 saat içinde kaldırılır.</string>
     <string name="account_delete_failed">Hesap silinemedi. Bağlantını kontrol edip tekrar dene.</string>
     <string name="account_delete_reauth_needed">Güvenlik için önce tekrar giriş yapman gerekiyor. Çıkış yapıp Google hesabınla yeniden bağlan, sonra silmeyi dene.</string>
     <string name="settings_rate_app">Uygulamayı Puanla</string>
@@ -1167,8 +1171,11 @@
     <string name="reports_uphold_body">Temel ceza: %1$d XP ve %2$d altın. Çizimin sahibinin ihlal sayısına göre 5 katına kadar artar. Her ihlalde çevrimiçi oyun kapanır (1. ihlalde 6 saat, sonra 12 saat, 24 saat, 3 gün, 7 gün). Aynı çizimin diğer bildirimleri de silinir.</string>
     <string name="reports_uphold_confirm">Cezalandır</string>
     <string name="lock_duration_minutes">%1$d dakika</string>
+    <string name="lock_duration_minutes_one">%1$d dakika</string>
     <string name="lock_duration_days">%1$d gün</string>
+    <string name="lock_duration_days_one">%1$d gün</string>
     <string name="lock_duration_hours">%1$d saat</string>
+    <string name="lock_duration_hours_one">%1$d saat</string>
     <string name="lock_countdown_days">%1$d gün %2$s</string>
     <string name="lock_screen_body">Çizimin inceleme sonucu kurallara aykırı bulundu. Hızlı Eşleş ve Arkadaşınla Yarış süre dolana kadar kapalı. Çevrimdışı oynamaya devam edebilirsin.</string>
     <string name="reports_tab_locks">Kilitler</string>
@@ -1195,6 +1202,7 @@
     <string name="chests_open_button">Aç</string>
     <string name="chests_reward_title">Kasa açıldı!</string>
     <string name="chests_reward_gold">+%1$d Altın</string>
+    <string name="chests_reward_gold_label">Altın</string>
     <string name="chests_reward_button">Harika!</string>
     <string name="home_xp_format">%1$d / %2$d XP</string>
     <string name="home_level_format">Sv. %1$d</string>
@@ -1221,6 +1229,7 @@
     <string name="chest_slot_busy">Başka bir kasa açılıyor — önce onun süresi dolmalı.</string>
     <string name="chest_slot_still_unlocking">Bu kasanın süresi dolmadı.</string>
     <string name="chest_duration_hours">%1$d saat</string>
+    <string name="chest_duration_hours_one">%1$d saat</string>
     <string name="chest_duration_minutes">%1$d dk</string>
     <string name="chest_duration_hm">%1$d sa %2$d dk</string>
     <string name="chest_win_unlock_time_text">Açılma süresi: %1$s</string>
@@ -1406,7 +1415,7 @@
     <string name="tour_next">İleri</string>
     <string name="tour_start">Hadi başlayalım!</string>
     <string name="quick_match_abandon_title">Eşleşme iptal edilsin mi?</string>
-    <string name="quick_match_abandon_message">Bir rakip seni bekliyor. Şimdi iptal edersen %1$d XP kaybedersin.</string>
+    <string name="quick_match_abandon_message">Maçın hazır. Şimdi iptal edersen %1$d XP kaybedersin.</string>
     <string name="quick_match_abandon_confirm">İptal et (−%1$d XP)</string>
     <string name="quick_match_abandon_keep">Devam et</string>
     <string name="quick_match_exit_message">Bu maçtan şimdi çıkarsan %1$d XP kaybedersin.</string>
@@ -1451,9 +1460,9 @@
     <string name="level_play">OYNA</string>
     <string name="quick_match_searching_title">Rakip</string>
     <string name="quick_match_searching_title2">aranıyor…</string>
-    <string name="quick_match_searching_sub">Sana en uygun rakibi bulmak için diğer oyuncular taranıyor…</string>
+    <string name="quick_match_searching_sub">Seviyene uygun bir rakip aranıyor…</string>
     <string name="quick_match_dont_worry">Merak etme!</string>
-    <string name="quick_match_dont_worry_body">Kısa süre içinde seninle aynı seviyede bir rakip bulacağız.</string>
+    <string name="quick_match_opponent_note">Rakibin anlık eşleşen bir oyuncu, gerçek bir oyuncunun kayıtlı turu ya da yapay zekâ olabilir.</string>
     <string name="drawing_time_joker">+10 Saniye</string>
     <string name="duel_list_incoming_play">Oyna</string>
     <string name="offline_needed">İnternet bağlantısı gerekiyor</string>
@@ -1609,6 +1618,7 @@
     <string name="rune_tile_pct">+%%%1$d</string>
     <string name="rune_tile_pts">+%%%1$d</string>
     <string name="rune_tile_cnt">+%1$d joker</string>
+    <string name="rune_tile_cnt_one">+%1$d joker</string>
     <string name="rune_status_title">Rün Durumu</string>
     <string name="rune_intro_title">Rünlere hoş geldin</string>
     <string name="rune_intro_body">Rünler, altınla satın aldığın kalıcı bonuslardır.\n\n• Bir rüne dokun, ne işe yaradığını oku, sonra satın al ya da yükselt. Her seviye onu güçlendirir.\n• Bonuslar altın, XP, sandık ve joker kazancını artırır; her oyunda geçerlidir.\n• Rünler köpeğin etrafında halkalar halinde durur. Mühürlü halka, seviyen yettiğinde ve önceki halka büyük ölçüde tamamlandığında açılır.\n• Haritayı sürükleyerek kaydır, iki parmakla yakınlaştır; durumunu görmek için ortadaki köpeğe dokun.</string>
@@ -1661,7 +1671,7 @@
     <string name="result_stat_win_gold">Zafer altını</string>
     <string name="result_stat_rune_bonus">Rün katkısı</string>
     <string name="result_rune_bonus_line">Rünlerin katkısı: +%1$d altın</string>
-    <string name="league_score_refused">Puanın şu an sunucuya yazılamıyor, bu yüzden diğer oyuncular seni bu tabloda göremeyebilir. Uygulamayı kapatıp aç ya da biraz sonra tekrar dene.</string>
+    <string name="league_score_refused">Puanının tamamı henüz tabloda değil: sunucu onu birkaç saat içinde parça parça alıyor. Kendiliğinden tamamlanır, bir şey yapmana gerek yok.</string>
     <string name="error_friend_request_limit">Bugün çok fazla arkadaşlık isteği gönderdin. Yarın tekrar dene.</string>
     <string-array name="online_lobby_quotes">
         <item>Çizim yeteneğin kadar\nşansın da var. İkisi de yoksa\nen azından özgüvenin olsun!</item>
@@ -1678,4 +1688,26 @@
         <item>Çizimin anlaşılmazsa\n‘soyut sanat’ de, kurtul.</item>
         <item>Yanlış anlaşılmak\nsanatçıların kaderidir.\nYine de çiz!</item>
     </string-array>
+    <string name="legal_title">Başlamadan önce</string>
+    <string name="legal_birth_year_label">Doğum yılın</string>
+    <string name="legal_birth_year_placeholder">YYYY</string>
+    <string name="legal_birth_year_why">Oyunu yaşına uygun tutmak için soruyoruz. Bu bilgi yalnızca cihazında kalır.</string>
+    <string name="legal_birth_year_invalid">Geçerli bir yıl yaz.</string>
+    <string name="legal_accept_text">Devam ederek %1$s\'nı kabul etmiş ve %2$s\'nı okumuş olursun.</string>
+    <string name="legal_terms_link">Kullanım Koşulları</string>
+    <string name="legal_privacy_link">Gizlilik Politikası</string>
+    <string name="legal_continue">Devam</string>
+    <string name="child_locked_title">13 yaş ve üzeri için</string>
+    <string name="child_locked_body">Çevrimiçi oyun, arkadaşlar ve lig 13 yaş ve üzeri oyuncular içindir. Çevrimdışı oyunu, bölümleri ve günlük meydan okumayı oynayabilirsin.</string>
+    <string name="child_feature_locked">Bu özellik 13 yaş ve üzeri oyuncular içindir.</string>
+    <string name="report_player_action">Oyuncuyu bildir</string>
+    <string name="report_player_title">Oyuncuyu bildir</string>
+    <string name="report_player_subtitle">%1$s ile ilgili sorun ne?</string>
+    <string name="report_player_reason_name">Uygunsuz kullanıcı adı</string>
+    <string name="report_player_reason_behaviour">Taciz veya kötü davranış</string>
+    <string name="report_player_reason_cheating">Hile</string>
+    <string name="report_player_reason_other">Başka bir sorun</string>
+    <string name="share_card_slogan">Sen de oyna,\nbu eğlenceye katıl!</string>
+    <string name="share_card_collage_title">Bu çizimleri sen de\ntahmin edebilir misin?</string>
+    <string name="share_empty_drawing">Bu çizim boş, paylaşılacak bir şey yok.</string>
 </resources>

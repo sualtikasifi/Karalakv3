@@ -55,6 +55,11 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.LibraryItem
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDirector
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMusic
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealPhase
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VoicedLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealImages
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealRenderer
@@ -171,12 +176,26 @@ data class RealUi(
     val project: RealProject? = null,
     val writing: Boolean = false,
     val writeError: String? = null,
+    /** Which of Karalak's lines the assistant is writing ideas for. */
+    val lineWriting: RealLine? = null,
+    val lineErrors: Map<RealLine, String> = emptyMap(),
+    /** The line being voiced in ElevenLabs right now. */
+    val lineVoicing: Pair<RealLine, String>? = null,
+    /** The video drawing's ideas already voiced with the current voice settings (paid for, kept on this phone), per line. */
+    val lineVoiced: Map<RealLine, Set<String>> = emptyMap(),
+    /** The music track playing on the speaker to choose from, if any. */
+    val musicPlaying: String? = null,
     /** The drawing whose picture, clip or reaction is being worked on. */
     val busy: String? = null,
     /** Starting over while the project has pictures in it: asks before throwing them away. */
     val confirmReset: Boolean = false,
     /** Where the Karalak card sits on the video and how big it is, kept on this phone. */
     val card: CardLayout = CardLayout(),
+    /** The app's promo video that closes every video (one, kept on this phone), its length, and whether it goes in. */
+    val promo: File? = null,
+    val promoMs: Long = 0L,
+    val promoOn: Boolean = true,
+    val promoBusy: Boolean = false,
     /** A picture ready to hand to ChatGPT or Gemini, with the prompt to paste. */
     val share: RealShare? = null,
     /** The swipe-through post: each drawing followed by what it became, ready for the share sheet. */
@@ -251,8 +270,8 @@ private const val MAX_DRAWINGS = 5
  *   turned on "Videolarda öne çık" (reviewed pool rounds only, name and level but never a photo).
  * - "Hafıza Tuzağı": how many could not recognise their own drawing of a word, from the anonymous
  *   archive the panel keeps.
- * - "Gerçek Olsaydı": quick drawings of one word from that archive with Karalak's jokes, then some
- *   of them as real pictures and clips made in ChatGPT and Gemini and brought back here.
+ * - "Gerçek Olsaydı": one player's quick drawing as a real picture and clip made in ChatGPT and Gemini
+ *   and brought back here, opened on the game's screen with a hook and closed on Karalak's reaction.
  *
  * The assistant writes Karalak's lines from the drawings themselves, the phone's Turkish voice
  * says them, and the phone renders the 1080×1920 video with sound.
@@ -282,9 +301,10 @@ class StudioViewModel @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true }
     private val realStore = RealStore(context)
     private var realSaveJob: Job? = null
-    /** Imported pictures by file name, decoded once. */
     /** Imported clips by file name, opened for quick preview frames. */
     private val previewClips = ConcurrentHashMap<String, ClipFrames>()
+    /** The promo video, opened the same way for the preview. */
+    @Volatile private var previewPromo: ClipFrames? = null
 
     init {
         loadDrawings()
@@ -714,8 +734,8 @@ class StudioViewModel @Inject constructor(
         return list
     }
 
-    private fun updateReveal(sampleId: String, change: (RealReveal) -> RealReveal) =
-        updateProject { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) change(it) else it }) }
+    private fun updateReveal(sampleId: String, saveNow: Boolean = false, change: (RealReveal) -> RealReveal) =
+        updateProject(saveNow) { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) change(it) else it }) }
 
     /** The project left from last time, if any, and the latest drawings read last time. */
     private fun loadReal() {
@@ -725,7 +745,60 @@ class StudioViewModel @Inject constructor(
             val library = withContext(Dispatchers.IO) { realStore.loadLibrary() }
             updateReal { it.copy(project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media })) }
             p?.let { loadRealMedia(it) }
+            loadPromo()
         }
+    }
+
+    /** The promo video kept on this phone, if any: its length, and opened for the preview. */
+    private suspend fun loadPromo() {
+        val on = prefs().getBoolean(PROMO_ON, true)
+        val (file, ms, frames) = withContext(Dispatchers.IO) {
+            val f = realStore.promo()
+            val ms = f?.let { RealImages.clipMs(it) } ?: 0L
+            Triple(f?.takeIf { ms > 0 }, ms, f?.takeIf { ms > 0 }?.let { runCatching { ClipFrames(it, exact = false) }.getOrNull() })
+        }
+        previewPromo?.close()
+        previewPromo = frames
+        updateReal { it.copy(promo = file, promoMs = if (file != null) ms.coerceAtMost(RealTimeline.PROMO_MAX) else 0L, promoOn = on, promoBusy = false) }
+        refreshPreview()
+    }
+
+    /** Makes the picked video the promo that closes every video, in place of any earlier one. */
+    fun importPromo(uri: Uri) {
+        if (_state.value.real.promoBusy) return
+        updateReal { it.copy(promoBusy = true) }
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                runCatching {
+                    previewPromo?.close()
+                    previewPromo = null
+                    val f = realStore.setPromo(uri)
+                    if (RealImages.clipMs(f) <= 0L) { realStore.clearPromo(); error("Video okunamadı") }
+                }
+            }
+            ok.onFailure { e -> _state.update { it.copy(message = "Tanıtım videosu eklenemedi: ${e.message}") } }
+            // a finished video made with the earlier promo is out of date
+            _state.update { it.copy(video = null) }
+            loadPromo()
+        }
+    }
+
+    fun removePromo() {
+        viewModelScope.launch {
+            previewPromo?.close()
+            previewPromo = null
+            withContext(Dispatchers.IO) { runCatching { realStore.clearPromo() } }
+            _state.update { it.copy(video = null) }
+            loadPromo()
+        }
+    }
+
+    /** Whether the promo goes at the end of the video; kept on this phone. */
+    fun setPromoOn(on: Boolean) {
+        prefs().edit().putBoolean(PROMO_ON, on).apply()
+        updateReal { it.copy(promoOn = on) }
+        _state.update { it.copy(video = null) }
+        refreshPreview()
     }
 
     /**
@@ -870,6 +943,172 @@ class StudioViewModel @Inject constructor(
                 }
                 _state.update { it.copy(caption = w.caption.ifBlank { it.caption }, hashtags = w.hashtags.ifBlank { it.hashtags }, aiCost = w.costUsd) }
             }.onFailure { e -> updateReal { it.copy(writing = false, writeError = e.message ?: "Yazılamadı") } }
+        }
+    }
+
+    private fun updateLine(sampleId: String, kind: RealLine, saveNow: Boolean = false, change: (VoicedLine) -> VoicedLine) =
+        updateReveal(sampleId, saveNow) { r -> r.withLine(kind, change(r.line(kind))) }
+
+    private fun lineError(kind: RealLine, message: String) = updateReal { it.copy(lineErrors = it.lineErrors + (kind to message)) }
+
+    /** Moves the preview to where [kind] shows: the very start for the hook, the closing for the closing. */
+    private fun previewLine(kind: RealLine) {
+        val outro = _state.value.real.project?.featured?.let { RealTimeline.build(it) }?.lastOrNull { it.phase == RealPhase.Outro }
+        setPreviewTime(if (kind == RealLine.Outro && outro != null) outro.startMs + 400L else 0L)
+    }
+
+    /**
+     * Has the assistant write ideas for one of Karalak's lines in the video's drawing: [RealCopy.HOOK_COUNT] hooks, or
+     * [RealCopy.OUTRO_COUNT] closings. The first is taken while no line is set, so the preview shows it at once; the
+     * line already in the video stays on the list, with its voice.
+     */
+    fun writeLines(kind: RealLine) {
+        val s = _state.value
+        val p = s.real.project ?: return
+        if (s.real.lineWriting != null) return
+        val key = prefs().getString(AssistantViewModel.KEY, "").orEmpty()
+        if (key.isBlank()) { lineError(kind, "Önce Asistan ayarlarından OpenRouter anahtarını gir."); return }
+        val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
+        val reveal = p.opening ?: run { lineError(kind, "Önce en az bir çizim seç"); return }
+        val drawing = p.drawing(reveal.sampleId) ?: return
+        updateReal { it.copy(lineWriting = kind, lineErrors = it.lineErrors - kind) }
+        viewModelScope.launch {
+            RealDirector(OpenRouterClient(key), model).lines(kind, drawing, reveal).onSuccess { w ->
+                updateReal { it.copy(lineWriting = null) }
+                _state.update { it.copy(aiCost = w.costUsd) }
+                updateLine(reveal.sampleId, kind) { l ->
+                    val kept = listOfNotNull(l.text.takeIf { it.isNotBlank() && it !in w.lines })
+                    l.copy(options = kept + w.lines).let { if (it.text.isBlank()) it.withText(w.lines.first()) else it }
+                }
+                previewLine(kind)
+            }.onFailure { e -> updateReal { it.copy(lineWriting = null, lineErrors = it.lineErrors + (kind to (e.message ?: "Yazılamadı"))) } }
+        }
+    }
+
+    /** Takes one of the ideas as the line in the video, silent until its voice is added, and shows it in the preview. */
+    fun chooseLine(kind: RealLine, text: String) {
+        val id = _state.value.real.project?.opening?.sampleId ?: return
+        updateLine(id, kind) { it.withText(text) }
+        previewLine(kind)
+    }
+
+    /** No hook (the video starts on the clip) or no closing (it ends with the clip). */
+    fun clearLine(kind: RealLine) {
+        val id = _state.value.real.project?.opening?.sampleId ?: return
+        updateLine(id, kind) { it.withText("") }
+    }
+
+    /**
+     * Rewrites one idea by hand; emptied, it leaves the list. When it is the line in the video, the video takes the new
+     * words, and its voice goes with the old ones.
+     */
+    fun editLineOption(kind: RealLine, old: String, text: String) {
+        val new = text.trim().take(RealCopy.HOOK_CHARS)
+        val id = _state.value.real.project?.opening?.sampleId ?: return
+        updateLine(id, kind) { l ->
+            if (old !in l.options || new == old) return@updateLine l
+            if (new.isNotEmpty() && new in l.options) return@updateLine l
+            val options = if (new.isEmpty()) l.options - old else l.options.map { if (it == old) new else it }
+            val next = l.copy(options = options)
+            if (l.text == old) next.withText(new) else next
+        }
+    }
+
+    /** A line of one's own, put at the top of the list to edit, voice and add like the assistant's. */
+    fun addLineOption(kind: RealLine, text: String) {
+        val line = text.trim().take(RealCopy.HOOK_CHARS)
+        val id = _state.value.real.project?.opening?.sampleId ?: return
+        if (line.isEmpty()) return
+        updateLine(id, kind) { l -> if (line in l.options) l else l.copy(options = listOf(line) + l.options) }
+    }
+
+    /**
+     * Voices one line in ElevenLabs with the current voice settings and plays it. Credits are spent only here, on the
+     * person's tap, and once per line and settings: the voice is kept on this phone.
+     */
+    fun voiceLine(kind: RealLine, text: String) {
+        if (_state.value.real.lineVoicing != null || text.isBlank()) return
+        val client = elevenClient() ?: run { lineError(kind, "Önce aşağıdaki “Karalak'ın sesi” bölümüne ElevenLabs anahtarını gir."); return }
+        val spec = _state.value.eleven.spec
+        updateReal { it.copy(lineVoicing = kind to text, lineErrors = it.lineErrors - kind) }
+        viewModelScope.launch {
+            voiceBank.file(client, RealCopy.spoken(kind, text), spec)
+                .onSuccess { f -> play(f) }
+                .onFailure { e -> lineError(kind, e.message ?: "Seslendirilemedi") }
+            updateReal { it.copy(lineVoicing = null) }
+            refreshVoicePlan()
+            refreshEleven()
+        }
+    }
+
+    /** Plays a line's voice: the one in the video for the line in the video, otherwise the one just made. */
+    fun listenLine(kind: RealLine, text: String) {
+        val l = _state.value.real.project?.opening?.line(kind)
+        val inVideo = l?.takeIf { it.text == text }?.voice?.let { realStore.file(it) }?.takeIf { it.exists() }
+        (inVideo ?: voiceBank.cached(RealCopy.spoken(kind, text), _state.value.eleven.spec))?.let { play(it) }
+    }
+
+    /**
+     * Puts a line into the video with its voice: the voice is copied into the project (so changing the voice settings
+     * later does not take it away), and the opening or the closing lasts until it has been said.
+     */
+    fun addLineToVideo(kind: RealLine, text: String) {
+        val id = _state.value.real.project?.opening?.sampleId ?: return
+        val voice = voiceBank.cached(RealCopy.spoken(kind, text), _state.value.eleven.spec) ?: run {
+            _state.update { it.copy(message = "Önce seslendir") }
+            return
+        }
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val ms = ClipAudio.decode(voice, VOICE_MAX_MS)?.durationMs ?: error("Ses çözülemedi")
+                    if (ms <= 0L) error("Ses boş")
+                    realStore.copyIn(voice, if (kind == RealLine.Hook) "hook_voice" else "outro_voice", "mp3") to ms
+                }
+            }
+            result.onSuccess { (name, ms) ->
+                _state.update { it.copy(message = if (kind == RealLine.Hook) "Kanca sesi videoya eklendi" else "Kapanış sesi videoya eklendi") }
+                updateLine(id, kind, saveNow = true) { it.withText(text).copy(voice = name, voiceMs = ms) }
+                pruneRealMedia()
+                previewLine(kind)
+            }.onFailure { e -> _state.update { it.copy(message = "Ses eklenemedi: ${e.message}") } }
+        }
+    }
+
+    /** The app's music under the video of the drawing it is made of; null: none. */
+    fun setMusic(name: String?) {
+        val id = _state.value.real.project?.opening?.sampleId ?: return
+        updateReveal(id) { it.copy(music = name) }
+    }
+
+    fun setMusicVolume(volume: Float) {
+        val id = _state.value.real.project?.opening?.sampleId ?: return
+        updateReveal(id) { it.copy(musicVolume = volume.coerceIn(0f, RealMix.MAX_VOLUME)) }
+    }
+
+    /** Plays a track on the speaker to choose by; the same one again stops it. */
+    fun listenMusic(name: String) {
+        if (_state.value.real.musicPlaying == name) { stopPlaying(); return }
+        viewModelScope.launch {
+            val file = withContext(Dispatchers.IO) { runCatching { RealMusic.ensure(context, name) }.getOrNull() }
+                ?: run { _state.update { it.copy(message = "Müzik açılamadı") }; return@launch }
+            play(file) { updateReal { it.copy(musicPlaying = null) } }
+            updateReal { it.copy(musicPlaying = name) }
+        }
+    }
+
+    fun stopPlaying() {
+        player?.release()
+        player = null
+        updateReal { it.copy(musicPlaying = null) }
+    }
+
+    /** Makes a drawing the one the video is made of (the first with a clip); its own hook and closing come with it. */
+    fun moveRevealFirst(sampleId: String) {
+        _state.update { it.copy(previewMs = 0L) }
+        updateProject { p ->
+            val r = p.reveals.find { it.sampleId == sampleId } ?: return@updateProject p
+            p.copy(reveals = listOf(r) + p.reveals.filterNot { it.sampleId == sampleId })
         }
     }
 
@@ -1050,14 +1289,14 @@ class StudioViewModel @Inject constructor(
         updateReal { it.copy(librarySelected = it.librarySelected + id) }
     }
 
-    /** Makes the ticked pieces the current video, in the order they were ticked; the card, name and frame come with each. */
+    /** Brings the ticked pieces back as the project, in the order they were ticked, each with its card, lines and voices; the video is the first one's. */
     fun libraryMakeVideo() {
         val r = _state.value.real
         val items = r.librarySelected.mapNotNull { id -> r.library.find { it.id == id } }.filter { it.hasClip }
         if (items.isEmpty()) { _state.update { it.copy(message = "Önce videosu olan kayıtları seç") }; return }
         val project = RealProject(drawings = items.map { it.drawing }, reveals = items.map { it.reveal })
         updateReal { it.copy(project = project, librarySelected = emptyList(), libraryShown = false) }
-        _state.update { it.copy(video = null, previewMs = 0L, message = "${items.size} video hazırlandı; aşağıdan videoyu oluştur") }
+        _state.update { it.copy(video = null, previewMs = 0L, message = if (items.size == 1) "Hazır; aşağıdan videoyu oluştur" else "${items.size} kayıt alındı; video en üsttekiyle yapılır (Başa al ile değiştir)") }
         viewModelScope.launch { withContext(Dispatchers.IO) { runCatching { realStore.save(project) } } }
         loadRealMedia(project)
         refreshPreview()
@@ -1168,12 +1407,14 @@ class StudioViewModel @Inject constructor(
         }
     }
 
-    private fun play(file: File) {
+    private fun play(file: File, onDone: () -> Unit = {}) {
         player?.release()
+        // whatever played before is cut off, a music track included
+        if (_state.value.real.musicPlaying != null) updateReal { it.copy(musicPlaying = null) }
         player = runCatching {
             MediaPlayer().apply {
                 setDataSource(file.path)
-                setOnCompletionListener { mp -> mp.release(); if (player === mp) player = null }
+                setOnCompletionListener { mp -> mp.release(); if (player === mp) { player = null; onDone() } }
                 prepare()
                 start()
             }
@@ -1252,6 +1493,11 @@ class StudioViewModel @Inject constructor(
         val spec = s.eleven.spec
         val missing = lines.filter { voiceBank.cached(it, spec) == null }.distinctBy { ElevenLabs.textFor(it, spec.model, spec.tags) }
         updateEleven { it.copy(ready = lines.count { l -> voiceBank.cached(l, spec) != null }, missing = missing.size, missingCredits = missing.sumOf { l -> spec.credits(l) }) }
+        val opening = s.real.project?.opening
+        val voiced = RealLine.entries.associateWith { k ->
+            opening?.line(k)?.options.orEmpty().filter { voiceBank.cached(RealCopy.spoken(k, it), spec) != null }.toSet()
+        }
+        if (voiced != _state.value.real.lineVoiced) updateReal { it.copy(lineVoiced = voiced) }
     }
 
     private fun speakOnPhone(line: SpokenLine) {
@@ -1321,19 +1567,28 @@ class StudioViewModel @Inject constructor(
      */
     private fun videoFor(
         s: StudioState, voice: Map<Int, FloatArray>?, preview: Boolean,
-        clipSource: (String) -> ClipFrames? = { previewClips[it] }
+        clipSource: (String) -> ClipFrames? = { previewClips[it] },
+        promoSource: (File) -> ClipFrames? = { previewPromo }
     ): VoicedVideo? {
         if (s.format == StudioFormat.RealLife) {
             val p = s.real.project ?: return null
-            val shown = p.shown
-            if (shown.isEmpty()) return null
+            // the video is one drawing's: only its clip is opened
+            val f = p.featured ?: return null
+            val clip = f.clip ?: return null
+            val promo = s.real.promo?.takeIf { s.real.promoOn && s.real.promoMs > 0 }
             return RealRenderer(
                 assetsOrLoad(), p,
-                clips = shown.mapNotNull { r -> r.clip?.let(clipSource)?.let { r.sampleId to it } }.toMap(),
-                clipFiles = shown.mapNotNull { r -> r.clip?.let { r.sampleId to realStore.file(it) } }.toMap(),
+                clips = listOfNotNull(clipSource(clip)?.let { f.sampleId to it }).toMap(),
+                clipFiles = mapOf(f.sampleId to realStore.file(clip)),
                 clipGain = CLIP_GAIN,
                 layout = s.real.card,
-                photoFiles = p.drawings.mapNotNull { d -> d.photo?.let { d.id to realStore.file(it) } }.toMap()
+                photoFiles = p.drawings.mapNotNull { d -> d.photo?.let { d.id to realStore.file(it) } }.toMap(),
+                hookVoiceFile = f.hook.voice?.let { realStore.file(it) },
+                outroVoiceFile = f.outro.voice?.let { realStore.file(it) },
+                musicFile = f.music?.let { RealMusic.target(context, it) },
+                promo = promo?.let(promoSource),
+                promoFile = promo,
+                promoMs = if (promo != null) s.real.promoMs else 0L
             )
         }
         val sp = sprites ?: return null
@@ -1384,7 +1639,7 @@ class StudioViewModel @Inject constructor(
                         _state.update { it.copy(renderStage = "Karalak'ın sesi hazırlanıyor ${i + 1}/${lines.size}", progress = 0.15f * i / lines.size) }
                         val f = voiceBank.cached(l, spec) ?: error("“${l.text.take(30)}” sesi bulunamadı")
                         val pcm = withContext(Dispatchers.IO) { ClipAudio.decode(f, VOICE_MAX_MS) } ?: error("“${l.text.take(30)}” sesi çözülemedi")
-                        voices[i] = PcmOps.resample(pcm, RATE)
+                        voices[i] = PcmOps.softEnd(PcmOps.resample(pcm, RATE))
                     }
                 } else if (s.voiceOn && lines.isNotEmpty()) {
                     val synth = SpeechSynth.open(context).getOrThrow()
@@ -1393,7 +1648,7 @@ class StudioViewModel @Inject constructor(
                         lines.forEachIndexed { i, l ->
                             _state.update { it.copy(renderStage = "Karalak konuşuyor ${i + 1}/${lines.size}", progress = 0.15f * i / lines.size) }
                             val pcm = synth.synth(l.text, dir) ?: error("“${l.text.take(30)}” seslendirilemedi")
-                            voices[i] = PcmOps.resample(pcm, RATE)
+                            voices[i] = PcmOps.softEnd(PcmOps.resample(pcm, RATE))
                         }
                     } finally {
                         synth.close()
@@ -1401,18 +1656,26 @@ class StudioViewModel @Inject constructor(
                 }
                 // every frame of an imported clip, opened for this render only
                 val renderClips = HashMap<String, ClipFrames?>()
+                var renderPromo: ClipFrames? = null
                 try {
                     withContext(Dispatchers.Default) {
                         // 2. timing from the real voice, the voice and any clip sound laid on one track, and that track encoded
                         val envelopes = if (s.voiceOn) voices.mapValues { (_, pcm) -> PcmOps.envelope(pcm, GuessRenderer.FPS) } else null
-                        val renderer = videoFor(s, envelopes, preview = false) { name ->
-                            renderClips.getOrPut(name) { runCatching { ClipFrames(realStore.file(name), exact = true) }.getOrNull() }
-                        } ?: error("Video hazırlanamadı")
+                        val renderer = videoFor(
+                            s, envelopes, preview = false,
+                            clipSource = { name -> renderClips.getOrPut(name) { runCatching { ClipFrames(realStore.file(name), exact = true) }.getOrNull() } },
+                            promoSource = { f -> renderPromo ?: runCatching { ClipFrames(f, exact = true) }.getOrNull().also { renderPromo = it } }
+                        ) ?: error("Video hazırlanamadı")
                         _state.update { it.copy(renderStage = "Ses birleştiriliyor", progress = 0.17f) }
                         val placed = mutableListOf<Placed>()
                         if (s.voiceOn) placed += renderer.voiceStarts.mapNotNull { (index, start) -> voices[index]?.let { Placed(it, start) } }
+                        // the background music is copied out of the app the first time it is used
+                        if (s.format == StudioFormat.RealLife) s.real.project?.featured?.music?.let { runCatching { RealMusic.ensure(context, it) } }
                         renderer.sounds.forEach { snd ->
-                            runCatching { ClipAudio.decode(snd.file, snd.durationMs) }.getOrNull()?.let { placed += Placed(PcmOps.resample(it, RATE), snd.startMs, snd.gain) }
+                            runCatching { ClipAudio.decode(snd.file, snd.durationMs) }.getOrNull()?.let { pcm ->
+                                val at = PcmOps.resample(pcm, RATE).let { if (snd.voice) PcmOps.softEnd(it) else it }
+                                placed += Placed(snd.shape?.let { PcmOps.shaped(at, it) } ?: at, snd.startMs, snd.gain)
+                            }
                         }
                         val audio = if (placed.isNotEmpty()) AacEncoder.encode(PcmOps.mix(renderer.totalMs, RATE, placed)) else null
                         // 3. the picture, full HD when the phone's encoder takes it, 720p otherwise
@@ -1439,6 +1702,7 @@ class StudioViewModel @Inject constructor(
                     }
                 } finally {
                     renderClips.values.forEach { it?.close() }
+                    renderPromo?.close()
                 }
             }
             result.onSuccess { _state.update { it.copy(rendering = false, video = out, progress = 1f, renderStage = "") } }
@@ -1492,6 +1756,8 @@ class StudioViewModel @Inject constructor(
         _state.value.real.project?.let { p -> runCatching { realStore.save(p) } }
         previewClips.values.forEach { it.close() }
         previewClips.clear()
+        previewPromo?.close()
+        previewPromo = null
         super.onCleared()
     }
 
@@ -1505,6 +1771,7 @@ class StudioViewModel @Inject constructor(
         const val CARD_SCALE = "studio_real_card_scale"
         const val CARD_X = "studio_real_card_x"
         const val CARD_Y = "studio_real_card_y"
+        const val PROMO_ON = "studio_real_promo_on"
         /** No line of Karalak's runs this long; a longer decode means something went wrong. */
         const val VOICE_MAX_MS = 60_000L
         /** The voice track's sample rate: what every AAC encoder takes. */

@@ -86,7 +86,6 @@ import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.a11yButton
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
-import com.sualtikasifi.cizimhafiza.presentation.common.sceneIn
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenArt
@@ -130,7 +129,7 @@ fun SettingsScreen(
     ) { granted -> viewModel.setNotificationsEnabled(granted) }
 
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize().sceneIn()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         // ONE scale in both directions, so the picture is never stretched; spare strips show a blurred copy of it.
         val unit = minOf(maxWidth / ArtW, maxHeight / ArtH)
         val offX = (maxWidth - unit * ArtW) / 2
@@ -428,17 +427,19 @@ fun SettingsScreen(
                 Unit
             }
             if (androidx.compose.ui.res.booleanResource(R.bool.coupon_how_painted_art)) {
-                // The painted window (ls_coupon_frame, 987 x 1371): its buttons are part of the picture, so live, invisible
+                // The painted window (ls_coupon_frame, one per language, sizes in the coupon_art array): its buttons are part of the picture, so live, invisible
                 // buttons sit over them and cave in by redrawing their own pixels while pressed.
                 androidx.compose.ui.window.Dialog(
                     onDismissRequest = { couponInfoOpen = false },
                     properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
                 ) {
                     BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
-                        val frameW = minOf(maxWidth, (maxHeight - 24.dp) * 987f / 1371f)
-                        val k = frameW / 987f
+                        val art = androidx.compose.ui.res.integerArrayResource(R.array.coupon_art).map { it.toFloat() }
+                        val artW = art[0]; val artH = art[1]
+                        val frameW = minOf(maxWidth, (maxHeight - 24.dp) * artW / artH)
+                        val k = frameW / artW
                         val frameBitmap = remember { runCatching { BackdropCache.get(context.resources, R.drawable.ls_coupon_frame) }.getOrNull() }
-                        val px = (frameBitmap?.width ?: 987) / 987f
+                        val px = (frameBitmap?.width ?: artW.toInt()) / artW
                         @Composable
                         fun Hit(x0: Float, y0: Float, x1: Float, y1: Float, corner: Float, label: String, onClick: () -> Unit) {
                             val sink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.94f)
@@ -451,12 +452,12 @@ fun SettingsScreen(
                                     .a11yButton(label)
                             )
                         }
-                        Box(Modifier.size(frameW, k * 1371f)) {
+                        Box(Modifier.size(frameW, k * artH)) {
                             Image(androidx.compose.ui.res.painterResource(R.drawable.ls_coupon_frame), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-                            Hit(841f, 294f, 966f, 419f, 62f, stringResource(R.string.coupon_how_close)) { couponInfoOpen = false }
-                            Hit(150f, 818f, 852f, 976f, 70f, stringResource(R.string.coupon_how_instagram)) { openLink("https://www.instagram.com/karalakapp") }
-                            Hit(150f, 1004f, 852f, 1154f, 70f, stringResource(R.string.coupon_how_tiktok)) { openLink("https://www.tiktok.com/@karalakapp") }
-                            Hit(360f, 1199f, 625f, 1270f, 30f, stringResource(R.string.coupon_how_close)) { couponInfoOpen = false }
+                            Hit(art[2], art[3], art[4], art[5], 62f, stringResource(R.string.coupon_how_close)) { couponInfoOpen = false }
+                            Hit(art[6], art[7], art[8], art[9], 70f, stringResource(R.string.coupon_how_instagram)) { openLink("https://www.instagram.com/karalakapp") }
+                            Hit(art[10], art[11], art[12], art[13], 70f, stringResource(R.string.coupon_how_tiktok)) { openLink("https://www.tiktok.com/@karalakapp") }
+                            Hit(art[14], art[15], art[16], art[17], 30f, stringResource(R.string.coupon_how_close)) { couponInfoOpen = false }
                         }
                     }
                 }
@@ -571,22 +572,8 @@ fun SettingsScreen(
                 .background(Brush.verticalGradient(listOf(Color(0xFFFFF3D6), Color(0xFFFFD98A))), RoundedCornerShape(50))
                 .border((2f * us).dp, Color(0xFFE08A1B), RoundedCornerShape(50))
                 .pressable(pressedScale = 0.96f) {
-                    // A Custom Tab rather than handing off to the browser app: it opens over the game, in its colours,
-                    // and back returns straight here (a bare ACTION_VIEW could land on the browser's first-run screen).
-                    val uri = android.net.Uri.parse(PRIVACY_POLICY_URL)
-                    runCatching {
-                        androidx.browser.customtabs.CustomTabsIntent.Builder()
-                            .setShowTitle(true)
-                            .setDefaultColorSchemeParams(
-                                androidx.browser.customtabs.CustomTabColorSchemeParams.Builder()
-                                    .setToolbarColor(android.graphics.Color.parseColor("#8A4E12"))
-                                    .build()
-                            )
-                            .build()
-                            .launchUrl(context, uri)
-                    }.onFailure {
-                        runCatching { activity?.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri)) }
-                    }
+                    // The policy page links on to the terms of use (karalak.com/kosullar).
+                    com.sualtikasifi.cizimhafiza.util.LegalLinks.open(context, com.sualtikasifi.cizimhafiza.util.LegalLinks.privacyPolicy(context))
                 }
                 .a11yButton(privacyLabel)
                 .padding(horizontal = (22f * us).dp),
@@ -615,7 +602,14 @@ fun SettingsScreen(
                         versionTaps++
                         if (versionTaps >= DEVELOPER_REVEAL_TAPS) {
                             versionTaps = 0
-                            onDeveloperReveal()
+                            // In a store build the panel opens only for the reviewer's own verified Google account
+                            // (the account the Firestore rules give moderation access to): its passcodes sit in the
+                            // APK, so on their own they would only keep out the incurious.
+                            val reviewer = runCatching {
+                                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                                    ?.let { it.email == com.sualtikasifi.cizimhafiza.domain.model.Moderation.REVIEWER_EMAIL && it.isEmailVerified } == true
+                            }.getOrDefault(false)
+                            if (BuildConfig.DEBUG || reviewer) onDeveloperReveal()
                         }
                     }
                 )
@@ -641,15 +635,13 @@ internal fun SceneSwitch(checked: Boolean, modifier: Modifier) {
         val pad = maxHeight * 0.1f
         Box(
             Modifier
-                .offset(x = pad + (maxWidth - knob - pad * 2) * t, y = pad)
+                .offset { androidx.compose.ui.unit.IntOffset((pad + (maxWidth - knob - pad * 2) * t).roundToPx(), pad.roundToPx()) }
                 .size(knob)
                 .shadow(2.dp, CircleShape)
                 .background(Color.White, CircleShape)
         )
     }
 }
-
-private const val PRIVACY_POLICY_URL = "https://sualtikasifi.github.io/app-ads/"
 
 /**
  * A bright arc that circles the element's edge, lap after lap. Used on the account row for anyone who has not

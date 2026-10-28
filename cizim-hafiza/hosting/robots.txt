@@ -1,0 +1,6 @@
+# Invite links (/d/…, /f/…) stay crawlable so their link previews work; they all point to /indir as the canonical page.
+User-agent: *
+Allow: /
+Disallow: /studio/
+
+Sitemap: https://karalak.com/sitemap.xml
