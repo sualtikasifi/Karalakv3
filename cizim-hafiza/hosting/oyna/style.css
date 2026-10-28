@@ -88,7 +88,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #h-name{font-size:calc(var(--u)*36)}
 #h-name small{font-size:calc(var(--u)*26);font-weight:600;color:#7a5a40}
 #h-rank{justify-content:flex-start}
-#h-rank span{background:linear-gradient(90deg,#8a62f0,#5b3fc4);color:#fff;border-radius:99px;padding:calc(var(--u)*4) calc(var(--u)*22);font-size:calc(var(--u)*31);white-space:nowrap}
+#h-rank span{background:linear-gradient(90deg,#8a62f0,#5b3fc4);color:#fff;border-radius:99px;padding:calc(var(--u)*4) calc(var(--u)*22);font-size:calc(var(--u)*31);white-space:nowrap;display:inline-block;max-width:100%;overflow:hidden;box-sizing:border-box}
 #h-avatar{position:absolute}
 #h-avatar img{position:absolute;display:block}
 #h-bar{border-radius:99px;background:#3a2a22;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 2px 0 #0006}
@@ -439,7 +439,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .djoker .dj-tag{position:absolute;left:33.8cqw;top:6cqw;width:43cqw;height:6cqw;display:flex;align-items:center;justify-content:center;color:#fff4d6;font-weight:800;font-size:4.1cqw;text-shadow:0 .25cqw .3cqw #5a2410;white-space:nowrap}
 .djoker .dj-art{position:absolute;left:10.4cqw;top:18.6cqw;width:16.9cqw;height:16.9cqw;border-radius:24%;overflow:hidden}.djoker .dj-art img{width:100%;height:100%;transform:scale(1.22);object-fit:cover}
 .djoker .dj-txt{position:absolute;left:30.8cqw;top:19.2cqw;width:36cqw;height:17.7cqw;display:flex;flex-direction:column;justify-content:center;color:#3a2a22}
-.djoker .dj-txt b{font-size:3.5cqw;font-weight:800;line-height:1.3;white-space:nowrap}.djoker .dj-txt small{font-size:2.75cqw;line-height:1.2;font-weight:600;opacity:.85}
+.djoker .dj-txt b{font-size:3.5cqw;font-weight:800;line-height:1.3;white-space:nowrap;display:block;max-width:100%;overflow:hidden}.djoker .dj-txt small{font-size:2.75cqw;line-height:1.2;font-weight:600;opacity:.85}
 .djoker .dj-btn{position:absolute;left:23.8cqw;top:39.2cqw;width:52.7cqw;height:8.2cqw;background:0 0;border:0;display:flex;align-items:center;justify-content:center;gap:1.2cqw;color:#fff;font:800 4cqw Baloo,sans-serif;text-shadow:0 .25cqw .25cqw #0e3a06;padding:0}
 .djoker .dj-btn svg{width:4.8cqw;height:4.8cqw}.djoker .dj-btn:active{transform:scale(.95)}
 

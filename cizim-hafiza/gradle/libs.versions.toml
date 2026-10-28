@@ -13,12 +13,12 @@ hilt = "2.60.1"
 hiltNavigationCompose = "1.2.0"
 room = "2.8.4"
 serializationJson = "1.8.1"
-playServicesAds = "23.4.0"
-userMessagingPlatform = "3.1.0"
-firebaseCrashlyticsPlugin = "3.0.2"
+playServicesAds = "25.5.0"
+userMessagingPlatform = "3.2.0"
+firebaseCrashlyticsPlugin = "3.0.8"
 profileinstaller = "1.4.1"
 googleServices = "4.4.2"
-firebaseBom = "33.5.1"
+firebaseBom = "34.19.0"
 kotlinxCoroutinesPlayServices = "1.9.0"
 coil = "3.3.0"
 workManager = "2.11.2"
@@ -58,13 +58,13 @@ room-testing = { group = "androidx.room", name = "room-testing", version.ref = "
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serializationJson" }
 play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServicesAds" }
 user-messaging-platform = { group = "com.google.android.ump", name = "user-messaging-platform", version.ref = "userMessagingPlatform" }
-firebase-crashlytics-ktx = { group = "com.google.firebase", name = "firebase-crashlytics-ktx" }
-firebase-analytics-ktx = { group = "com.google.firebase", name = "firebase-analytics-ktx" }
+firebase-crashlytics-ktx = { group = "com.google.firebase", name = "firebase-crashlytics" }
+firebase-analytics-ktx = { group = "com.google.firebase", name = "firebase-analytics" }
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
-firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx" }
-firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx" }
-firebase-messaging-ktx = { group = "com.google.firebase", name = "firebase-messaging-ktx" }
+firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth" }
+firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore" }
+firebase-messaging-ktx = { group = "com.google.firebase", name = "firebase-messaging" }
 firebase-appcheck-playintegrity = { group = "com.google.firebase", name = "firebase-appcheck-playintegrity" }
 firebase-appcheck-debug = { group = "com.google.firebase", name = "firebase-appcheck-debug" }
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutinesPlayServices" }

@@ -602,7 +602,14 @@ fun SettingsScreen(
                         versionTaps++
                         if (versionTaps >= DEVELOPER_REVEAL_TAPS) {
                             versionTaps = 0
-                            onDeveloperReveal()
+                            // In a store build the panel opens only for the reviewer's own verified Google account
+                            // (the account the Firestore rules give moderation access to): its passcodes sit in the
+                            // APK, so on their own they would only keep out the incurious.
+                            val reviewer = runCatching {
+                                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                                    ?.let { it.email == com.sualtikasifi.cizimhafiza.domain.model.Moderation.REVIEWER_EMAIL && it.isEmailVerified } == true
+                            }.getOrDefault(false)
+                            if (BuildConfig.DEBUG || reviewer) onDeveloperReveal()
                         }
                     }
                 )

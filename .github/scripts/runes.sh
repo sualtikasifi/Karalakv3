@@ -27,6 +27,9 @@ adb logcat -c
 adb shell "run-as $PKG mkdir -p shared_prefs"
 printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><int name=\"lifetime_xp\" value=\"80000\" /><boolean name=\"tutorial_completed\" value=\"true\" /><boolean name=\"feature_tour_seen\" value=\"true\" /><string name=\"rune_levels\">{&quot;word_gold&quot;:5,&quot;win_gold&quot;:4,&quot;streak_key&quot;:1,&quot;chest_gold&quot;:5,&quot;chest_joker&quot;:4,&quot;chest_key2&quot;:1,&quot;disc_1&quot;:4,&quot;dj_1&quot;:3,&quot;luck_key&quot;:1,&quot;login_gold&quot;:5,&quot;daily_1&quot;:5,&quot;ins_key&quot;:1,&quot;time_1&quot;:4,&quot;ad_1&quot;:3,&quot;fr_1&quot;:4,&quot;fr_2&quot;:3,&quot;xp_1&quot;:5,&quot;st_1&quot;:1,&quot;st_5&quot;:1,&quot;st_3&quot;:1}</string></map>" \
   | adb shell "run-as $PKG sh -c 'cat > shared_prefs/cizim_hafiza_settings.xml'"
+# The first-run year-of-birth and terms prompt (LegalConsentHost) would cover every screen: answered up front.
+printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><int name=\"birth_year\" value=\"1990\" /><int name=\"terms_version\" value=\"1\" /></map>" \
+  | adb shell "run-as $PKG sh -c 'cat > shared_prefs/legal_consent.xml'"
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 

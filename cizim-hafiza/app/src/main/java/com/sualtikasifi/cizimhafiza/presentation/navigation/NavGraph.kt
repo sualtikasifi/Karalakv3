@@ -373,7 +373,10 @@ fun CizimHafizaNavGraph(
                     defaultValue = null
                 }
             ),
-            deepLinks = listOf(navDeepLink { uriPattern = Screen.FriendInviteDeepLinkPattern })
+            deepLinks = listOf(
+                navDeepLink { uriPattern = Screen.FriendInviteDeepLinkPattern },
+                navDeepLink { uriPattern = Screen.FriendInviteWebLinkPattern }
+            )
         ) {
             com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {
@@ -467,7 +470,10 @@ fun CizimHafizaNavGraph(
                     defaultValue = null
                 }
             ),
-            deepLinks = listOf(navDeepLink { uriPattern = Screen.InviteDeepLinkPattern })
+            deepLinks = listOf(
+                navDeepLink { uriPattern = Screen.InviteDeepLinkPattern },
+                navDeepLink { uriPattern = Screen.InviteWebLinkPattern }
+            )
         ) {
             com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {

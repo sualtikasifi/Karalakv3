@@ -15,6 +15,11 @@
 <title>Karalak – Çiz, hatırla, yarış! Tarayıcıda ücretsiz oyna</title>
 <meta name="description" content="Karalak: arkadaşlarınla çizim ve hafıza oyunu. Kelimeyi çiz, rakibinin çizimini hatırla, tahmin et ve ligde yüksel. Tarayıcıda ücretsiz oyna ya da Android'e indir.">
 <link rel="canonical" href="https://karalak.com/">
+<link rel="alternate" hreflang="tr" href="https://karalak.com/?lang=tr">
+<link rel="alternate" hreflang="en" href="https://karalak.com/?lang=en">
+<link rel="alternate" hreflang="pt" href="https://karalak.com/?lang=pt">
+<link rel="alternate" hreflang="es" href="https://karalak.com/?lang=es">
+<link rel="alternate" hreflang="x-default" href="https://karalak.com/">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <meta property="og:type" content="website">
@@ -38,7 +43,7 @@
 {"@context":"https://schema.org","@type":"VideoGame","name":"Karalak","alternateName":"Karalak – Çiz, hatırla, yarış","url":"https://karalak.com/",
 "description":"Arkadaşlarınla çizim ve hafıza oyunu: kelimeyi çiz, rakibinin çizimini hatırla, tahmin et ve ligde yüksel.",
 "image":"https://karalak.com/oyna/img/og_share.jpg","logo":"https://karalak.com/oyna/icons/icon-512.png",
-"genre":["Çizim","Hafıza","Kelime","Parti"],"inLanguage":["tr","en"],"gamePlatform":["Web","Android"],"playMode":["SinglePlayer","MultiPlayer"],
+"genre":["Çizim","Hafıza","Kelime","Parti"],"inLanguage":["tr","en","pt","es"],"gamePlatform":["Web","Android"],"playMode":["SinglePlayer","MultiPlayer"],
 "applicationCategory":"GameApplication","operatingSystem":"Android, Web",
 "offers":{"@type":"Offer","price":"0","priceCurrency":"TRY"},
 "sameAs":["https://play.google.com/store/apps/details?id=com.sualtikasifi.cizimhafiza"]}
@@ -56,6 +61,8 @@
 <link rel="modulepreload" href="firebase.js">
 <link rel="modulepreload" href="config.js">
 <link rel="modulepreload" href="ghost.js">
+<link rel="modulepreload" href="namefilter.js">
+<link rel="modulepreload" href="namefilter_data.js">
 <link rel="modulepreload" href="streak.js">
 <link rel="modulepreload" href="ui.js">
 <link rel="modulepreload" href="i18n.js">
@@ -72,8 +79,10 @@
 <link rel="modulepreload" href="report.js">
 <link rel="modulepreload" href="penfx.js">
 <link rel="modulepreload" href="picker.js">
+<link rel="modulepreload" href="agegate.js">
 <link rel="modulepreload" href="audio.js">
 <link rel="modulepreload" href="online.js">
+<link rel="modulepreload" href="ranks.js">
 <link rel="modulepreload" href="offline.js">
 <link rel="modulepreload" href="duel.js">
 <link rel="modulepreload" href="friends.js">
@@ -82,7 +91,6 @@
 <link rel="modulepreload" href="sync.js">
 <link rel="modulepreload" href="achievements.js">
 <link rel="modulepreload" href="league.js">
-<link rel="modulepreload" href="ranks.js">
 <link rel="modulepreload" href="search.js">
 <link rel="modulepreload" href="brk.js">
 <link rel="modulepreload" href="settings.js">
@@ -107,7 +115,7 @@
     <div id="h-xpbanner" class="hidden"><img src="img/xp_event_banner.webp" alt=""><div class="xb-name"></div><div class="xb-sub"></div><div class="xb-time"></div></div>
     <button id="h-avatar"></button>
     <div id="h-name" class="txt ink left"><span id="h-nick"></span><small id="h-lvl"></small></div>
-    <div id="h-rank" class="txt"><span id="h-rank-t"></span></div>
+    <div id="h-rank" class="txt"><span id="h-rank-t" class="fitw"></span></div>
     <div id="h-xpnext" class="txt ink right"></div>
     <div id="h-bar"><i id="h-fill"></i><span id="h-barlabel"></span></div>
     <div id="h-veil-gold" class="veil"></div><div id="h-veil-chest" class="veil"></div>

@@ -62,7 +62,7 @@ export function renderStore(ctx) {
     const today = Math.floor((Date.now() + 3 * 3600e3) / 86400e3);
     if (P.dailyJokerDay !== today) {
       const [type, , nameK, descK, img] = J[today % 3];
-      const c = el("div", "djoker", `<img class="bg" src="img/st_daily_full.webp" alt=""><span class="dj-tag">${tt(ctx, "store_daily_joker_tag")}</span><div class="dj-art"><img src="img/${img}.webp" alt=""></div><div class="dj-txt"><b>${tt(ctx, nameK)}</b><small>${tt(ctx, descK)}</small></div>`);
+      const c = el("div", "djoker", `<img class="bg" src="img/st_daily_full.webp" alt=""><span class="dj-tag">${tt(ctx, "store_daily_joker_tag")}</span><div class="dj-art"><img src="img/${img}.webp" alt=""></div><div class="dj-txt"><b class="fitw">${tt(ctx, nameK)}</b><small>${tt(ctx, descK)}</small></div>`);
       const b = el("button", "dj-btn", `<svg viewBox="0 0 24 24"><path fill="#fff" d="M12 2a10 10 0 100 20 10 10 0 000-20zm-2 14.5v-9l7 4.5z"/></svg><span>${({ tr: "Uygulamada ücretsiz al", en: "Get it free in the app", pt: "Grátis no app", es: "Gratis en la app" })[ctx.lang()] || "Get it free in the app"}</span>`);
       b.onclick = () => appOnlyDialog(ctx.$("stage"));
       c.append(b); shelf.append(c);

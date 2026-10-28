@@ -126,10 +126,17 @@ class AdManager @Inject constructor(
                 .setTestDeviceIds(listOfNotNull(BuildConfig.ADMOB_TEST_DEVICE_ID.takeIf { it.isNotBlank() }))
                 .build()
         )
-        MobileAds.initialize(context) {
-            preloadInterstitial()
-            preloadRewarded()
-        }
+        // Off the main thread, as Google advises: initialising the SDK reads its config from disk and can take long
+        // enough to drop frames (or, on a slow phone, to trigger an ANR) if it runs on the UI thread. The ads
+        // themselves are still loaded from the main thread once it is done.
+        Thread({
+            MobileAds.initialize(context) {
+                mainHandler.post {
+                    preloadInterstitial()
+                    preloadRewarded()
+                }
+            }
+        }, "ads-init").start()
     }
 
     /**

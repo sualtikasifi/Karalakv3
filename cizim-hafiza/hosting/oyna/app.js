@@ -61,7 +61,8 @@ const T = {
 useAppTexts(T, { hintT: "guess_tile_hint", firstT: "joker_first_letter_short", countT: "joker_letter_count_short", skipT: "skip_guess" });
 const $ = (id) => document.getElementById(id);
 // a saved choice, else the browser's language when the game has it, else English (Turkish when the browser says nothing)
-let lang = (() => { let s = null; try { s = localStorage.getItem("lang"); } catch {} if (LANGS.includes(s)) return s; const n = (navigator.language || "tr").slice(0, 2).toLowerCase(); return LANGS.includes(n) ? n : "en"; })();
+let lang = (() => { const q = new URLSearchParams(location.search).get("lang"); if (LANGS.includes(q)) return q; // karalak.com/?lang=pt (hreflang links, shared links)
+  let s = null; try { s = localStorage.getItem("lang"); } catch {} if (LANGS.includes(s)) return s; const n = (navigator.language || "tr").slice(0, 2).toLowerCase(); return LANGS.includes(n) ? n : "en"; })();
 /** One text in the game's language from a { tr, en, pt, es } set (English when a language is missing). */
 const inLang = (o) => o[lang] || o.en;
 let words = [], round = [], idx = 0, current = "home", u = 1;
@@ -446,6 +447,12 @@ function applyLang() {
   const x = t();
   document.documentElement.lang = lang; setLang(lang);
   document.title = lang === "tr" ? TITLE_TR : inLang({ en: "Karalak – Draw, remember, race! Play free in your browser", pt: "Karalak – Desenhe, lembre, dispute! Jogue grátis no navegador", es: "Karalak – ¡Dibuja, recuerda, compite! Juega gratis en tu navegador" });
+  // the page's description in the language shown (the static one in index.html is Turkish, for the plain-HTML crawlers)
+  document.querySelector('meta[name="description"]')?.setAttribute("content", inLang({
+    tr: "Karalak: arkadaşlarınla çizim ve hafıza oyunu. Kelimeyi çiz, rakibinin çizimini hatırla, tahmin et ve ligde yüksel. Tarayıcıda ücretsiz oyna ya da Android'e indir.",
+    en: "Karalak: a drawing and memory game to play with friends. Draw the word, remember the drawings, guess and climb the league. Play free in your browser or get it on Android.",
+    pt: "Karalak: um jogo de desenho e memória para jogar com amigos. Desenhe a palavra, lembre dos desenhos, adivinhe e suba na liga. Jogue grátis no navegador ou baixe no Android.",
+    es: "Karalak: un juego de dibujo y memoria para jugar con amigos. Dibuja la palabra, recuerda los dibujos, adivina y sube en la liga. Juega gratis en tu navegador o descárgalo en Android." }));
   $("d-next-t").textContent = x.next; $("g-ok-t").textContent = S("submit_guess");
   $("w-title").textContent = x.wTitle; $("w-body").textContent = x.wBody; $("w-go-t").textContent = x.wGo; $("w-skip").textContent = x.wSkip;
   $("s-text").textContent = x.searching; $("s-sub").textContent = x.searchSub; $("again-t").textContent = x.again;

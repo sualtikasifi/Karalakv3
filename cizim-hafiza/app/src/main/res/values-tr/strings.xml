@@ -1708,4 +1708,5 @@
     <string name="report_player_reason_other">Başka bir sorun</string>
     <string name="share_card_slogan">Sen de oyna,\nbu eğlenceye katıl!</string>
     <string name="share_card_collage_title">Bu çizimleri sen de\ntahmin edebilir misin?</string>
+    <string name="share_empty_drawing">Bu çizim boş, paylaşılacak bir şey yok.</string>
 </resources>

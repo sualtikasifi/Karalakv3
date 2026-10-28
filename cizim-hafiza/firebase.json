@@ -285,6 +285,10 @@
       {
         "source": "/delete-account/",
         "destination": "/hesap-silme/index.html"
+      },
+      {
+        "source": "/.well-known/assetlinks.json",
+        "destination": "/assetlinks.json"
       }
     ]
   }

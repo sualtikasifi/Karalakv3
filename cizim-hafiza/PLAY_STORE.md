@@ -336,9 +336,12 @@ sorusunda bu yaş ekranı ve davranışı açıklanmalı.
   `jarsigner -verify` ile doğrula.
 - [ ] Release derlemesinin `app/build/outputs/mapping/release/resources.txt` dosyasında `rune_n_*`,
   `rune_icon_*`, `rune_*_flavor` için "is not reachable" **olmamalı** (`res/raw/keep.xml`).
-- [ ] Play App Signing SHA-1 **ve** SHA-256'sı: SHA-1 → Firebase (Google girişi), SHA-256 →
-  `hosting/.well-known/assetlinks.json` (davet linkleri). Debug SHA-1'i canlı Firebase projesinden
-  kaldır.
+- [ ] Play App Signing SHA-1 **ve** SHA-256'sı: SHA-1 → Firebase (Google girişi); SHA-256 →
+  `hosting/assetlinks.json` (karalak.com/.well-known/assetlinks.json adresine yönlendirilir; davet
+  linkleri uygulamada doğrudan açılsın diye). İçeriği Play Console → Uygulama bütünlüğü →
+  "Dijital Varlık Bağlantıları JSON" kutusundan olduğu gibi kopyalanır:
+  `[{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"android_app","package_name":"com.sualtikasifi.cizimhafiza","sha256_cert_fingerprints":["AA:BB:…"]}}]`.
+  Debug SHA-1'i canlı Firebase projesinden kaldır.
 - [ ] Önce uygulama yayınlanır, **sonra** bu dal main'e alınır (Firestore kuralları ve site main'den
   dağıtılıyor); kurallar canlıya çıktıktan sonra `config/economy.minVersionCode` = 109 yapılır
   (eski sürümler yeni kurallarla bazı yazmalarda reddedilir).
@@ -347,6 +350,12 @@ sorusunda bu yaş ekranı ve davranışı açıklanmalı.
 - [ ] App Check: Android Play Integrity zaten açık; web için reCAPTCHA Enterprise anahtarı
   `hosting/oyna/config.js` → `appCheckSiteKey`'e yazılır, ardından Firestore için zorunlu kılınır.
 - [ ] AdMob → Privacy & messaging: GDPR mesajı yayınlı; "Google consent mode" açık.
+- [ ] Google Cloud Console → APIs & Services → Credentials: Firebase API anahtarlarını kısıtla. Android
+  anahtarı: "Android apps" → paket `com.sualtikasifi.cizimhafiza` + Play App Signing SHA-1 (ve yükleme
+  anahtarının SHA-1'i). Web anahtarı (`hosting/oyna/config.js`): "Websites" → `https://karalak.com/*`,
+  `https://karalak-b6e11.firebaseapp.com/*`, `https://karalak-b6e11.web.app/*`. Her ikisinde de API
+  listesi yalnızca kullanılan Firebase API'leriyle sınırlanır (Identity Toolkit, Token Service,
+  Firestore, Installations, Remote Config/Performance, App Check, FCM).
 - [ ] Data safety formu yukarıdaki tabloya göre güncellendi; gizlilik ve hesap silme adresleri girildi.
 - [ ] IARC anketi ve hedef kitle formu yukarıdaki notlara göre dolduruldu.
 - [ ] Gerçek cihazda ve Play'in Pre-launch raporunda release derlemesi test edildi.

@@ -894,13 +894,15 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
             com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                 text = stringResource(type.labelRes()),
                 style = androidx.compose.ui.text.TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(46f), color = Ink, textAlign = TextAlign.Start),
-                maxLines = 1, minScale = 0.6f, contentAlignment = Alignment.CenterStart,
+                // "Extra Drawing Time Joker" is the longest name in any language: it shrinks rather than run into the gift.
+                maxLines = 1, minScale = 0.5f, contentAlignment = Alignment.CenterStart,
                 modifier = Modifier.fillMaxWidth().height(u * 60f)
             )
             Text(
                 text = stringResource(type.descRes()),
                 style = androidx.compose.ui.text.TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.SemiBold, fontSize = fs(36f), lineHeight = fs(44f), color = Ink.copy(alpha = 0.85f)),
-                maxLines = 3
+                maxLines = 3,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
         // The green button (x 309..994, y 509..616 of the picture): the whole button caves in under the finger,

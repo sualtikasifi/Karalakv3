@@ -61,6 +61,22 @@ jobs:
       - name: Assemble debug
         run: ./gradlew :app:assembleDebug --console=plain
 
+      # The store build shrinks code and resources, and a resource the app looks up only by name at runtime
+      # (getIdentifier: the rune icons and texts) is dropped unless res/raw/keep.xml keeps it — invisible in
+      # every debug build and emulator run. Built here (no release keystore, test ad IDs, no Crashlytics mapping
+      # upload) so that is caught before a release instead of by players. packageRelease, not assembleRelease:
+      # the build script refuses assembleRelease/bundleRelease without the real AdMob IDs, which only the
+      # store build has.
+      - name: Build release and check the kept resources
+        run: |
+          ./gradlew :app:packageRelease -PnoMappingUpload --console=plain
+          R=app/build/outputs/mapping/release/resources.txt
+          test -f "$R" || { echo "::error::$R was not produced"; exit 1; }
+          if grep -E "(drawable:rune_n_|drawable:rune_icon_|string:rune_[a-z0-9_]+_flavor)[^ ]* .*not reachable" "$R" | head -5 | grep -q .; then
+            echo "::error::the release build strips runtime-looked-up rune resources; extend app/src/main/res/raw/keep.xml"
+            exit 1
+          fi
+
       # The built APK, kept as a downloadable artifact.
       #
       # Debug-signed, because the release keystore deliberately lives only in

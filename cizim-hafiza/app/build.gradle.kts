@@ -116,6 +116,11 @@ android {
             }
             isMinifyEnabled = true
             isShrinkResources = true
+            // CI builds the store variant only to check it (android-ci.yml) and passes -PnoMappingUpload: its
+            // mapping file belongs to no published release and must not land in Crashlytics.
+            configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
+                mappingFileUploadEnabled = !project.hasProperty("noMappingUpload")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

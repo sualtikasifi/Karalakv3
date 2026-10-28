@@ -39,8 +39,11 @@ import javax.inject.Singleton
 class AdminStats @Inject constructor(
     @ApplicationContext private val context: Context,
     private val firestore: Lazy<FirebaseFirestore>,
-    private val auth: Lazy<FirebaseAuth>
+    private val auth: Lazy<FirebaseAuth>,
+    private val legalConsentStore: Lazy<LegalConsentStore>
 ) {
+    /** No usage numbers at all for a player who may be under 13 (see LegalConsentStore and the privacy policy). */
+    private val counting: Boolean get() = !legalConsentStore.get().childMode.value
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val prefs by lazy { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
     private val pending = HashMap<String, Long>()
@@ -61,7 +64,7 @@ class AdminStats @Inject constructor(
     }
 
     fun record(key: String, amount: Long = 1L) {
-        if (amount == 0L) return
+        if (amount == 0L || !counting) return
         val flushNow = synchronized(pending) {
             pending[key] = (pending[key] ?: 0L) + amount
             pendingEvents++
@@ -72,6 +75,7 @@ class AdminStats @Inject constructor(
 
     /** Counts this player once for today; the day's document is the distinct-player list. */
     fun markActiveToday() {
+        if (!counting) return
         val day = today()
         if (prefs.getString(KEY_LAST_ACTIVE_DAY, null) == day) return
         scope.launch {

@@ -162,6 +162,8 @@ object Screen {
     const val FriendsBase = FriendsBaseRoute
     const val Friends = "$FriendsBaseRoute?refCode={refCode}"
     const val FriendInviteDeepLinkPattern = "karalak://friend/{refCode}"
+    /** The same invite as a web link (hosting/indir serves it to anyone without the app): an Android App Link. */
+    const val FriendInviteWebLinkPattern = "https://karalak.com/f/{refCode}"
     fun friendInviteDeepLink(friendCode: String): String = "karalak://friend/$friendCode"
     const val League = "league"
 
@@ -177,6 +179,8 @@ object Screen {
     const val OnlineJoinRoomBase = OnlineJoinRoomBaseRoute
     const val OnlineJoinRoom = "$OnlineJoinRoomBaseRoute?roomCode={roomCode}"
     const val InviteDeepLinkPattern = "karalak://join/{roomCode}"
+    /** The same room invite as a web link (karalak.com/d/482913): an Android App Link. */
+    const val InviteWebLinkPattern = "https://karalak.com/d/{roomCode}"
     private const val OnlineWaitingRoomRoute = "online_waiting_room/{roomCode}"
     const val OnlineWaitingRoom = OnlineWaitingRoomRoute
     private const val OnlineGameRoute = "online_game/{roomCode}"

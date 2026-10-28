@@ -349,9 +349,10 @@ fun ResultScreen(
                 // (and says how much it is), "x2" watches an ad, pays the round a second time, then leaves.
                 val canDouble = onDoubleXp != null && state.xpEarned > 0 && GameConstants.ADMOB_ENABLED && !xpDoubled
                 Row(horizontalArrangement = Arrangement.spacedBy(u * 14f), modifier = Modifier.fillMaxWidth()) {
-                    run {
-                        // Always there, as in the design; dimmed and inert when this round cannot be doubled (nothing
-                        // earned, no ad available, or already doubled).
+                    // A round that earned nothing has nothing to double: no "x2 · 0 XP" button at all, the claim button
+                    // takes the row.
+                    if (state.xpEarned > 0) run {
+                        // Dimmed and inert when this round cannot be doubled (no ad available, or already doubled).
                         ArtButton(
                             res = R.drawable.rs_btn_claim,
                             u = u,
@@ -468,7 +469,10 @@ fun ResultScreen(
                 // the grounds that their drawings are not the player's to pass on.
                 onAction = {
                     if (showingOpponentGallery && onReportOpponentDrawing != null) reportItem = itemToPreview
-                    else shareChoiceFor = itemToPreview
+                    // An empty canvas would go out as a card with nothing on it.
+                    else if (itemToPreview.strokes.none { it.isNotEmpty() }) {
+                        android.widget.Toast.makeText(context, R.string.share_empty_drawing, android.widget.Toast.LENGTH_SHORT).show()
+                    } else shareChoiceFor = itemToPreview
                 }
             )
         }

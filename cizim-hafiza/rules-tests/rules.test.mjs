@@ -235,6 +235,15 @@ await check("nobody files a deletion request for someone else", assertFails(setD
 await seed(["users", "del", "private", "pendingRewards"], { pending: [] });
 await check("the owner deletes their reward queue", assertSucceeds(deleteDoc(doc(db("del"), "users", "del", "private", "pendingRewards"))));
 
+// Reporting a player (PlayerReporter): one report per pair, read only by the reviewer, never rewritten.
+const preport = (by, about, extra = {}) => ({ reporterUid: by, reportedUid: about, nickname: "Kaba", reason: "NAME", context: "league", createdAt: serverTimestamp(), ...extra });
+await check("a player reports another player", assertSucceeds(setDoc(doc(db("pr1"), "playerReports", "bad1__pr1"), preport("pr1", "bad1"))));
+await check("a report cannot be filed under someone else's name", assertFails(setDoc(doc(db("pr2"), "playerReports", "bad1__pr3"), preport("pr3", "bad1"))));
+await check("nobody reports themselves", assertFails(setDoc(doc(db("pr4"), "playerReports", "pr4__pr4"), preport("pr4", "pr4"))));
+await check("a report's reason is one of the four", assertFails(setDoc(doc(db("pr5"), "playerReports", "bad1__pr5"), preport("pr5", "bad1", { reason: "SPAM" }))));
+await check("a filed report is not rewritten", assertFails(setDoc(doc(db("pr1"), "playerReports", "bad1__pr1"), preport("pr1", "bad1", { reason: "OTHER" }))));
+await check("the reviewer reads reports", assertSucceeds(getDoc(doc(reviewer(), "playerReports", "bad1__pr1"))));
+
 await env.cleanup();
 console.log(failures ? `\n${failures} FAILED` : "\nall passed");
 process.exit(failures ? 1 : 0);
