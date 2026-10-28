@@ -1379,6 +1379,8 @@
     <string name="chest_loot_rare">%1$d–%2$d de oro · 2 comodines (40%% de probabilidad de 3) · 12%% de probabilidad de un lápiz de la tienda</string>
     <string name="league_friends_hint">Eres el único en esta tabla. ¡Agrega amigos y compitan juntos por el premio del mes!</string>
     <string name="league_friends_hint_action">Agregar amigos ›</string>
+    <string name="league_child_join">Vincula tu cuenta con Google para entrar en la clasificación mensual.</string>
+    <string name="league_child_join_action">Iniciar sesión con Google ›</string>
     <string name="nickname_locked_hint">Tu nombre de usuario ya fue elegido. Puedes cambiarlo una vez desde el ícono de lápiz en la pantalla de inicio.</string>
     <string name="chest_lost_title">¡Espacios de cofre llenos!</string>
     <string name="chest_lost_body">Ganaste, pero los 4 espacios de cofre están llenos, así que el cofre de esta victoria se perdió. Abre tus cofres en Mis Cofres para tener espacio la próxima vez.</string>
@@ -1451,6 +1453,7 @@
     <string name="quick_match_searching_sub">Buscando un rival de tu nivel…</string>
     <string name="quick_match_dont_worry">¡Tranquilo!</string>
     <string name="quick_match_opponent_note">Tu rival puede ser un jugador en vivo, la ronda grabada de un jugador real o una IA.</string>
+    <string name="quick_match_opponent_note_child">Tu rival es la ronda grabada de un jugador aprobado o una IA que juega con nuestros dibujos.</string>
     <string name="drawing_time_joker">+10 Segundos</string>
     <string name="duel_list_incoming_play">Jugar</string>
     <string name="offline_needed">Se necesita conexión a internet</string>
@@ -1686,7 +1689,7 @@
     <string name="legal_privacy_link">Política de privacidad</string>
     <string name="legal_continue">Continuar</string>
     <string name="child_locked_title">Para mayores de 13 años</string>
-    <string name="child_locked_body">El juego en línea, los amigos y la liga son para jugadores de 13 años o más. Puedes seguir jugando sin conexión, los niveles y el desafío diario.</string>
+    <string name="child_locked_body">Jugar con Amigos, los amigos y los duelos son para jugadores de 13 años o más. Puedes seguir jugando la Partida Rápida, sin conexión, los niveles y el desafío diario.</string>
     <string name="child_feature_locked">Esta función es para jugadores de 13 años o más.</string>
     <string name="report_player_action">Denunciar jugador</string>
     <string name="report_player_title">Denunciar jugador</string>

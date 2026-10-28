@@ -235,6 +235,21 @@ await check("nobody files a deletion request for someone else", assertFails(setD
 await seed(["users", "del", "private", "pendingRewards"], { pending: [] });
 await check("the owner deletes their reward queue", assertSucceeds(deleteDoc(doc(db("del"), "users", "del", "private", "pendingRewards"))));
 
+// The year of birth bound to a Google account (AccountAgeSync): saved once, locked until the player is 18.
+{
+  const Y = new Date().getUTCFullYear();
+  const ageDoc = (u) => doc(linked(u), "users", u, "private", "age");
+  await check("the owner saves their year of birth", assertSucceeds(setDoc(ageDoc("age1"), { birthYear: Y - 10, savedAt: serverTimestamp() })));
+  await check("the owner reads their year of birth", assertSucceeds(getDoc(ageDoc("age1"))));
+  await check("nobody else reads a year of birth", assertFails(getDoc(doc(linked("age2"), "users", "age1", "private", "age"))));
+  await check("a child's year cannot be rewritten older", assertFails(setDoc(ageDoc("age1"), { birthYear: Y - 30, savedAt: serverTimestamp() })));
+  await check("nothing but the year is kept", assertFails(setDoc(ageDoc("age3"), { birthYear: Y - 20, savedAt: serverTimestamp(), email: "x@y.z" })));
+  await check("an impossible year is refused", assertFails(setDoc(ageDoc("age4"), { birthYear: Y + 1, savedAt: serverTimestamp() })));
+  await seed(["users", "age5", "private", "age"], { birthYear: Y - 25, savedAt: 1 });
+  await check("an adult's year can be corrected", assertSucceeds(setDoc(ageDoc("age5"), { birthYear: Y - 26, savedAt: serverTimestamp() })));
+  await check("the owner deletes their year of birth with the account", assertSucceeds(deleteDoc(ageDoc("age1"))));
+}
+
 // Reporting a player (PlayerReporter): one report per pair, read only by the reviewer, never rewritten.
 const preport = (by, about, extra = {}) => ({ reporterUid: by, reportedUid: about, nickname: "Kaba", reason: "NAME", context: "league", createdAt: serverTimestamp(), ...extra });
 await check("a player reports another player", assertSucceeds(setDoc(doc(db("pr1"), "playerReports", "bad1__pr1"), preport("pr1", "bad1"))));

@@ -1,8 +1,9 @@
 // LegalConsentHost.kt for the browser: once, after the tutorial, the player's year of birth (a neutral age screen — no year
 // preselected, nothing hinting at an answer) and acceptance of the terms of use, both legal pages a tap away. Kept in this
 // browser only (localStorage "legal"), never in the cloud save. A player who may be under 13 (LegalConsentStore.childMode:
-// only a year is asked, so the young end of it counts) keeps online play, friends, the league, web accounts and a chosen
-// name closed, and nothing they draw is uploaded.
+// only a year is asked, so the young end of it counts) keeps rooms, friends, duels, web accounts and a chosen name closed;
+// Quick Match brings them approved recordings and the AI only, the league shows them the global table without ranking
+// them (that takes a Google account, in the app), and nothing they draw is uploaded.
 import { S, getLang } from "./i18n.js";
 
 const KEY = "legal", TERMS_VERSION = 1, MIN_AGE = 13;

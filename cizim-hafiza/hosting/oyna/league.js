@@ -1,6 +1,7 @@
 import * as net from "./firebase.js";
 import { S, fmtNum } from "./i18n.js";
 import { reportPlayerDialog } from "./ui.js";
+import { childMode } from "./agegate.js";
 import { rankLevelHtml } from "./ranks.js";
 import { frameRing, frameList, frameById, penList } from "./store.js";
 
@@ -88,7 +89,10 @@ export async function renderLeague(c, refetch = true) {
   const { $, lang } = c;
   $("lg-title").textContent = S("league_title");
   const tabs = $("lg-tabs"); tabs.replaceChildren();
-  for (const k of ["friends", "global"]) {
+  // A player who may be under 13 (agegate.js) has no friends list and meets no other player: the global table only, no
+  // report, and a word on how they join it (a Google account, which only the app has; the web never ranks them).
+  if (childMode()) tab = "global";
+  for (const k of childMode() ? ["global"] : ["friends", "global"]) {
     const b = document.createElement("button"); b.className = "lg-pill " + (tab === k ? "on" : "off"); b.textContent = S("league_tab_" + k);
     b.onclick = () => { tab = k; renderLeague(c, false); }; tabs.append(b);
   }
@@ -113,6 +117,7 @@ export async function renderLeague(c, refetch = true) {
   if (refetch || (!table && !loading)) { list.append(note("…")); await fetchTable(); if (c.current() !== "league" || tab !== "global") return; list.replaceChildren(); }
   if (!table) return;
   if (!table.ok) list.append(note(S("league_global_failed")));
+  if (childMode()) list.append(note("🏆 " + ({ tr: "Aylık sıralamaya Android uygulamasında Google hesabınla katılabilirsin.", en: "You can join the monthly ranking with your Google account in the Android app.", pt: "Você pode entrar no ranking mensal com sua conta Google no app Android.", es: "Puedes entrar en la clasificación mensual con tu cuenta de Google en la app de Android." })[c.lang()]));
   const bn = banner(c.lang()); if (bn) list.append(bn);
   list.append(monthlyCard(c));
   table.list.forEach((e, i) => list.append(row(c, e, i + 1)));
@@ -194,6 +199,6 @@ function row(c, e, rank) {
   if (!sprite) { const n = document.createElement("div"); n.className = "lg-rk"; n.textContent = rank + "."; r.append(n); }
   r.append(av, nm, xp);
   // a real player other than you can be reported from their row (LeagueScreen); an AI player's row is nobody to report
-  if (!e.me && !e.bot && e.uid) { r.style.cursor = "pointer"; r.title = S("report_player_action"); r.onclick = () => reportPlayerDialog(net, e.uid, e.nickname, "league"); }
+  if (!childMode() && !e.me && !e.bot && e.uid) { r.style.cursor = "pointer"; r.title = S("report_player_action"); r.onclick = () => reportPlayerDialog(net, e.uid, e.nickname, "league"); }
   return r;
 }

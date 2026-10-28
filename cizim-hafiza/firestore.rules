@@ -676,7 +676,26 @@ service cloud.firestore {
         // match below for how the owner may still consume it). The owner may
         // delete either: that is part of deleting the account.
         allow create, update: if signedIn() && request.auth.uid == uid
-                              && docId != 'leagueAwards' && docId != 'pendingRewards';
+                              && docId != 'leagueAwards' && docId != 'pendingRewards' && docId != 'age';
+        allow delete: if signedIn() && request.auth.uid == uid;
+      }
+
+      // The player's year of birth, bound to their Google account (AccountAgeSync): saved once from the year the
+      // device was given, so the age rules follow the account to a reinstall or a new phone. Only the year. It cannot
+      // be rewritten while it says the player may still be under 18, so a fresh install that is told an older age
+      // does not overwrite it. The owner may delete it: that is part of deleting the account.
+      function validAgeDoc() {
+        return request.resource.data.keys().hasOnly(['birthYear', 'savedAt'])
+               && request.resource.data.birthYear is int
+               && request.resource.data.birthYear >= request.time.year() - 110
+               && request.resource.data.birthYear <= request.time.year()
+               && request.resource.data.savedAt == request.time;
+      }
+      match /private/age {
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow create: if signedIn() && request.auth.uid == uid && validAgeDoc();
+        allow update: if signedIn() && request.auth.uid == uid && validAgeDoc()
+                      && resource.data.birthYear <= request.time.year() - 19;
         allow delete: if signedIn() && request.auth.uid == uid;
       }
 

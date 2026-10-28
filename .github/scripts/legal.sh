@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # The first-run legal prompt (LegalConsentHost) and the under-13 mode, in an emulator. Two installs:
 #  1) an adult year: the prompt appears after the tutorial, takes 1990, closes, and the home screen works;
-#  2) a child's year: the prompt takes 2016, and Quick Match shows the "for ages 13 and up" panel instead.
+#  2) a child's year: the prompt takes 2016; Quick Match opens (approved recordings and the AI only, the searching
+#     screen says so) and Race a Friend shows the "for ages 13 and up" panel instead.
 # Run through .github/workflows/smoke-test.yml with script=legal.sh; results go to smoke-out/ like smoke.sh's.
 set -u
 
@@ -82,6 +83,12 @@ run_case() {  # run_case <name> <year>
   adb shell input tap 540 1170
   sleep 5
   shot "$1_04_quick_match"
+  adb shell input keyevent KEYCODE_BACK
+  sleep 2
+  # Race a Friend tile
+  adb shell input tap 200 1148
+  sleep 4
+  shot "$1_05_race"
   adb shell input keyevent KEYCODE_BACK
   sleep 2
   adb logcat -d > "$OUT/$1_logcat.txt"

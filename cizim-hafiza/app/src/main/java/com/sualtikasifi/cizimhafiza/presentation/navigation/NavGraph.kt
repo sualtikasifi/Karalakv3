@@ -249,15 +249,14 @@ fun CizimHafizaNavGraph(
             )
         }
 
+        // Open to a player who may be under 13: they only ever meet approved recordings and the AI (see QuickMatchViewModel).
         composable(Screen.QuickMatch) {
-            com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             QuickMatchScreen(
                 onBack = { navController.popBackStack() },
                 onStart = { opponent ->
                     navController.navigate(Screen.quickMatchGameRoute(opponent))
                 }
             )
-            }
         }
 
         composable(
@@ -438,11 +437,14 @@ fun CizimHafizaNavGraph(
             }
         }
 
+        // Open to a player who may be under 13: the global table only, and they are ranked once linked to Google.
         composable(Screen.League) {
-            com.sualtikasifi.cizimhafiza.presentation.common.ChildGate(onBack = { navController.popBackStack() }) {
             com.sualtikasifi.cizimhafiza.presentation.common.OfflineGate(onBack = { navController.popBackStack() }) {
-            LeagueScreen(onBack = { navController.popBackStack() }, onFriends = { navController.navigate(Screen.FriendsBase) })
-            }
+            LeagueScreen(
+                onBack = { navController.popBackStack() },
+                onFriends = { navController.navigate(Screen.FriendsBase) },
+                onAccount = { navController.navigate(Screen.Account) }
+            )
             }
         }
 

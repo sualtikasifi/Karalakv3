@@ -12,11 +12,14 @@ import javax.inject.Singleton
 /**
  * The player's answers to the first-run legal prompt (see presentation/common/LegalConsentHost): their year of birth
  * (a neutral age screen — Play's Families policy for an app that may appeal to children) and which version of the terms
- * of use they accepted. Kept on this device only; the birth year is never uploaded.
+ * of use they accepted. Kept on this device; once the player links Google, the year (only the year) is also saved on
+ * their account and from then on the account's year is the one that counts (AccountAgeSync).
  *
  * What the age changes, all of it promised in the privacy policy (hosting/gizlilik):
- *  - under 13 ([childMode]): online and sharing features stay closed (ChildGate), no drawing is uploaded, no league score
- *    is published, Analytics collects nothing, and ads are child-directed (TFCD, rated G, never personalised);
+ *  - under 13 ([childMode]): rooms, friends and duels stay closed (ChildGate); Quick Match only ever brings approved
+ *    recordings and the AI; the league ranks them only once linked to Google, under the generated name and without a
+ *    photo; no drawing is uploaded, Analytics collects nothing, and ads are child-directed (TFCD, rated G, never
+ *    personalised);
  *  - under 16 ([underConsentAge]): ads are never personalised (TFUA, and UMP is told the player is under the age of consent).
  *
  * Only a year is asked, so the age is known to within a year. Both checks take the young end of that range: someone born
@@ -44,6 +47,22 @@ class LegalConsentStore @Inject constructor(@ApplicationContext private val cont
     /** The player may be under 16, the highest age of digital consent in the EU. */
     val underConsentAge: Boolean
         get() = youngestPossibleAge(_birthYear.value)?.let { it < CONSENT_AGE } ?: false
+
+    /** The year of birth this device goes by, or 0 before the question was answered. */
+    val birthYear: Int get() = _birthYear.value
+
+    /**
+     * Goes by the year saved on the player's Google account instead of the one this device was told (AccountAgeSync):
+     * the account's answer wins, so a reinstall cannot change it. The accepted terms are left as they are.
+     */
+    fun adoptAccountYear(birthYear: Int) {
+        if (!isValidBirthYear(birthYear) || birthYear == _birthYear.value) return
+        prefs.edit().putInt(KEY_BIRTH_YEAR, birthYear).apply()
+        _birthYear.value = birthYear
+        _childMode.value = isChild(birthYear)
+        _needsPromptFlow.value = needsPrompt
+        applyAnalyticsCollection()
+    }
 
     /** Records the answers. [birthYear] has already been checked with [isValidBirthYear]. */
     fun accept(birthYear: Int) {

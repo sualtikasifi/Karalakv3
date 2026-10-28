@@ -1,6 +1,7 @@
 // Result screen (port of ResultScreen.kt / ResultParts.kt): painted head, stat cards, level card, versus card,
 // daily card, the words board with every drawing, claim buttons, and the drawing preview scene.
 import { S as appS, locale } from "./i18n.js";
+import { childMode } from "./agegate.js";
 let S = null;
 const tr = (k, lang, ...a) => ((S && S[k] && S[k][lang]) || k).replace(/\{(\d)\}/g, (_, i) => a[+i]);
 export async function loadResultStrings() { if (!S) S = await (await fetch("result_strings.json")).json(); }
@@ -156,7 +157,8 @@ function preview(c, d, items, idx, lang, T, theirs) {
     play();
     const mkBtn = (r, fn, label) => { const b = el("button", "pv-hit", ""); b.style.cssText = box(...r); b.setAttribute("aria-label", label); b.onclick = fn; scene.append(b); return b; };
     mkBtn([704, 188, 828, 316], close, T("close")); mkBtn([650, 1000, 800, 1140], play, T("replay_drawing"));
-    const act = mkBtn([150, 1205, 692, 1345], () => { if (!theirs) shareDrawing(c, it, cv); }, ""); act.className += " pv-act lt"; act.style.fontSize = 54 * unit + "px"; act.textContent = T(theirs ? "report_drawing_action" : "share_drawing");
+    // a player who may be under 13 only meets approved recordings and the AI (agegate.js): nothing of theirs to report
+    if (!(theirs && childMode())) { const act = mkBtn([150, 1205, 692, 1345], () => { if (!theirs) shareDrawing(c, it, cv); }, ""); act.className += " pv-act lt"; act.style.fontSize = 54 * unit + "px"; act.textContent = T(theirs ? "report_drawing_action" : "share_drawing"); }
     if (items.length > 1) {
       const arrow = (r, left, en) => { const b = mkBtn(r, () => { cur.i += left ? -1 : 1; show(); }, ""); b.className += " pv-ar" + (en ? "" : " dis"); b.textContent = left ? "‹" : "›"; b.style.fontSize = 64 * unit + "px"; if (!en) b.onclick = null; };
       arrow([94, 780, 174, 860], true, cur.i > 0); arrow([666, 780, 746, 860], false, cur.i < items.length - 1);

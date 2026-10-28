@@ -1378,6 +1378,8 @@
     <string name="chest_loot_rare">%1$d–%2$d gold · 2 jokers (40%% chance of 3) · 12%% chance of a store pen</string>
     <string name="league_friends_hint">You are the only one on this table. Add friends and race for the monthly prize together!</string>
     <string name="league_friends_hint_action">Add friends ›</string>
+    <string name="league_child_join">Link your account to Google to be ranked in the monthly league.</string>
+    <string name="league_child_join_action">Sign in with Google ›</string>
     <string name="nickname_locked_hint">Your username was already chosen. You can change it once, from the pencil icon on the home screen.</string>
     <string name="chest_lost_title">Chest slots full!</string>
     <string name="chest_lost_body">You won, but all 4 chest slots are full, so this win\'s chest was lost. Open your chests from My Chests to make room next time.</string>
@@ -1450,6 +1452,7 @@
     <string name="quick_match_searching_sub">Finding an opponent at your level…</string>
     <string name="quick_match_dont_worry">Don\'t worry!</string>
     <string name="quick_match_opponent_note">Your opponent may be a player matched live, a real player\'s recorded round or an AI.</string>
+    <string name="quick_match_opponent_note_child">Your opponent is an approved player\'s recorded round or an AI that plays with our own drawings.</string>
     <string name="drawing_time_joker">+10 Seconds</string>
     <string name="duel_list_incoming_play">Play</string>
     <string name="offline_needed">An internet connection is required</string>
@@ -1685,7 +1688,7 @@
     <string name="legal_privacy_link">Privacy Policy</string>
     <string name="legal_continue">Continue</string>
     <string name="child_locked_title">For ages 13 and up</string>
-    <string name="child_locked_body">Online play, friends and the league are for players aged 13 and over. You can still play offline, the levels and the daily challenge.</string>
+    <string name="child_locked_body">Race a Friend, friends and duels are for players aged 13 and over. You can still play Quick Match, offline, the levels and the daily challenge.</string>
     <string name="child_feature_locked">This is for players aged 13 and over.</string>
     <string name="report_player_action">Report player</string>
     <string name="report_player_title">Report player</string>

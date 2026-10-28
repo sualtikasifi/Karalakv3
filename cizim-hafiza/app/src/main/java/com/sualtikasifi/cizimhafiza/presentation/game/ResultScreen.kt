@@ -553,8 +553,7 @@ fun ResultScreen(
             onDismiss = { ratingPromptDismissed = true }
         )
     }
-    // Not offered to a player who may be under 13: linking an account is for ages 13 and up (see LegalConsentStore).
-    if (state.showSignInPrompt && !signInPromptDismissed && !com.sualtikasifi.cizimhafiza.presentation.common.LocalChildMode.current) {
+    if (state.showSignInPrompt && !signInPromptDismissed) {
         SignInPromptDialog(onDismiss = { signInPromptDismissed = true })
     }
     if (state.chestLost) {

@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -63,10 +64,23 @@ class LeagueViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val leagueScorePublisher: LeagueScorePublisher,
     private val avatarPhotoResolver: com.sualtikasifi.cizimhafiza.util.AvatarPhotoResolver,
-    private val playerReporter: com.sualtikasifi.cizimhafiza.util.PlayerReporter
+    private val playerReporter: com.sualtikasifi.cizimhafiza.util.PlayerReporter,
+    private val legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore,
+    authRepository: com.sualtikasifi.cizimhafiza.domain.repository.AuthRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(LeagueUiState())
+    /**
+     * A player who may be under 13 (see LegalConsentStore): they have no friends list, so only the global table is
+     * shown, and they meet no other player, so there is nobody for them to report.
+     */
+    val childMode: Boolean get() = legalConsentStore.childMode.value
+
+    /** A player who may be under 13 and is not linked to Google yet: in no table until they are (see LeagueScorePublisher). */
+    val childUnranked: StateFlow<Boolean> = kotlinx.coroutines.flow.combine(legalConsentStore.childMode, authRepository.authState) { child, auth ->
+        child && auth !is com.sualtikasifi.cizimhafiza.domain.repository.AuthState.Linked
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
+
+    private val _uiState = MutableStateFlow(LeagueUiState(tab = if (legalConsentStore.childMode.value) LeagueTab.Global else LeagueTab.Friends))
     val uiState: StateFlow<LeagueUiState> = _uiState.asStateFlow()
 
     init {

@@ -171,7 +171,7 @@ fun LegalConsentHost(viewModel: LegalConsentViewModel = hiltViewModel()) {
 }
 
 /**
- * Wraps a screen that is for ages 13 and up (online play, friends, duels, the league): for a player who may be younger,
+ * Wraps a screen that is for ages 13 and up (rooms, friends, duels): for a player who may be younger,
  * a panel stands in for it, with a way back. Unlike OfflineGate the screen behind is never composed, so nothing it would
  * load or send happens at all.
  */

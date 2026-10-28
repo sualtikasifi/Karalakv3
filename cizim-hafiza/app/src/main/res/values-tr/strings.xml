@@ -1391,6 +1391,8 @@
     <string name="chest_loot_rare">%1$d–%2$d altın · 2 joker (%%40 ihtimalle 3) · %%12 ihtimalle mağaza kalemi</string>
     <string name="league_friends_hint">Bu tabloda tek başınasın. Arkadaşlarını ekle, aylık ödül için birlikte yarışın!</string>
     <string name="league_friends_hint_action">Arkadaş ekle ›</string>
+    <string name="league_child_join">Aylık sıralamada yer almak için hesabını Google\'a bağla.</string>
+    <string name="league_child_join_action">Google ile giriş yap ›</string>
     <string name="nickname_locked_hint">Kullanıcı adın daha önce seçildi. Bir kez, ana ekrandaki kalem simgesinden değiştirebilirsin.</string>
     <string name="chest_lost_title">Kasa yuvaları dolu!</string>
     <string name="chest_lost_body">Kazandın ama 4 kasa yuvan da dolu olduğu için bu galibiyetin kasası kayboldu. Bir dahaki sefere yer açmak için Kasalarım\'dan kasalarını aç.</string>
@@ -1463,6 +1465,7 @@
     <string name="quick_match_searching_sub">Seviyene uygun bir rakip aranıyor…</string>
     <string name="quick_match_dont_worry">Merak etme!</string>
     <string name="quick_match_opponent_note">Rakibin anlık eşleşen bir oyuncu, gerçek bir oyuncunun kayıtlı turu ya da yapay zekâ olabilir.</string>
+    <string name="quick_match_opponent_note_child">Rakibin, onaylanmış bir oyuncunun kayıtlı turu ya da bizim çizimlerimizle oynayan yapay zekâ olur.</string>
     <string name="drawing_time_joker">+10 Saniye</string>
     <string name="duel_list_incoming_play">Oyna</string>
     <string name="offline_needed">İnternet bağlantısı gerekiyor</string>
@@ -1698,7 +1701,7 @@
     <string name="legal_privacy_link">Gizlilik Politikası</string>
     <string name="legal_continue">Devam</string>
     <string name="child_locked_title">13 yaş ve üzeri için</string>
-    <string name="child_locked_body">Çevrimiçi oyun, arkadaşlar ve lig 13 yaş ve üzeri oyuncular içindir. Çevrimdışı oyunu, bölümleri ve günlük meydan okumayı oynayabilirsin.</string>
+    <string name="child_locked_body">Arkadaşınla Yarış, arkadaşlar ve düellolar 13 yaş ve üzeri oyuncular içindir. Hızlı Eşleş\'i, çevrimdışı oyunu, bölümleri ve günlük meydan okumayı oynayabilirsin.</string>
     <string name="child_feature_locked">Bu özellik 13 yaş ve üzeri oyuncular içindir.</string>
     <string name="report_player_action">Oyuncuyu bildir</string>
     <string name="report_player_title">Oyuncuyu bildir</string>
