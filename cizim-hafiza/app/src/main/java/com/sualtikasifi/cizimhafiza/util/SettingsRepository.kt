@@ -1050,8 +1050,8 @@ class SettingsRepository @Inject constructor(
         get() = prefs.getBoolean(KEY_BOT_TRAINING_UNLOCKED, false)
         set(value) = prefs.edit { putBoolean(KEY_BOT_TRAINING_UNLOCKED, value) }
 
-    // Guards the one-time automatic permission prompt in MainActivity so it
-    // only ever fires on a device's very first launch, not every cold start.
+    // Guards the one-time automatic permission prompt on the home screen
+    // (MainMenuScreen.NotificationPermissionWhenQuiet) so it is only ever asked once.
     var notificationPermissionRequested: Boolean
         get() = prefs.getBoolean(KEY_NOTIFICATION_PERMISSION_REQUESTED, false)
         set(value) = prefs.edit { putBoolean(KEY_NOTIFICATION_PERMISSION_REQUESTED, value) }

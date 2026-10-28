@@ -1,8 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
 import android.util.Log
@@ -27,7 +25,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavHostController
 import com.sualtikasifi.cizimhafiza.R
@@ -173,7 +170,6 @@ class MainActivity : AppCompatActivity() {
                         tutorialCompleted = tutorialCompleted
                     )
                     com.sualtikasifi.cizimhafiza.presentation.common.XpFlyOverlay()
-                    RequestNotificationPermissionOnce(settingsRepository, legalConsentStore)
                     com.sualtikasifi.cizimhafiza.presentation.common.UsernameFinalizeHost()
                     // Year of birth and the terms of use, once, right after the tutorial (see LegalConsentStore).
                     com.sualtikasifi.cizimhafiza.presentation.common.LegalConsentHost()
@@ -235,6 +231,8 @@ class MainActivity : AppCompatActivity() {
                 consentManager.ensureConsent(this) {
                     consentManager.applyAnalyticsConsent()
                     adManager.get().initializeIfConsented(consentManager)
+                    // The home screen's own windows wait for this (see StartupPrompts).
+                    com.sualtikasifi.cizimhafiza.presentation.common.StartupPrompts.consentSettled.value = true
                 }
             }
             if (settingsRepository.tutorialCompleted && !legalConsentStore.needsPrompt) askConsent()
@@ -315,39 +313,6 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         navController?.handleDeepLink(intent)
-    }
-}
-
-/**
- * Asks for the POST_NOTIFICATIONS runtime permission (API 33+) exactly once, and only after the player has got through
- * the first-run tutorial (their first finished game) — never over the very first screens, where a system dialog is the
- * first thing a new player sees. A device that already finished the tutorial is asked a moment after launch.
- * Never nags again afterward. The Settings screen's "Bildirimler" toggle offers a way to (re-)request it later for
- * anyone who dismissed this or wants to turn notifications on after having turned them off.
- */
-@Composable
-private fun RequestNotificationPermissionOnce(
-    settingsRepository: SettingsRepository,
-    legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore
-) {
-    val context = LocalContext.current
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted -> settingsRepository.setNotificationsEnabled(granted) }
-
-    LaunchedEffect(Unit) {
-        if (settingsRepository.notificationPermissionRequested) return@LaunchedEffect
-        // Waits for the tutorial's end and the legal prompt after it (polled: both are plain preferences), then a beat
-        // so the dialog does not land on top of the tutorial's own closing animation.
-        while (!settingsRepository.tutorialCompleted || legalConsentStore.needsPrompt) kotlinx.coroutines.delay(1_000)
-        kotlinx.coroutines.delay(2_500)
-        if (settingsRepository.notificationPermissionRequested) return@LaunchedEffect
-        settingsRepository.notificationPermissionRequested = true
-        val alreadyGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        if (!alreadyGranted) {
-            launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
     }
 }
 

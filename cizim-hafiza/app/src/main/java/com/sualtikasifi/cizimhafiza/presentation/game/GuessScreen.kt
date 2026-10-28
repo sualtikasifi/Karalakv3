@@ -747,9 +747,9 @@ private fun JokerTile(
             )
     ) {
         Column(
-            // The joker tiles have a thick painted lip along their bottom, so their content sits a little above the
-            // middle; the Hint and Skip tiles barely have one, and their icon and label sit right in the middle.
-            modifier = Modifier.fillMaxSize().padding(start = 4.dp, end = 4.dp, bottom = if (badge != null) 10.dp else 0.dp),
+            // Icon and label sit right in the middle of every tile: the painted lip along the bottom is the same on
+            // all four, so the jokers are not lifted above it (they used to be, and read as sitting too high).
+            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {

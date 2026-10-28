@@ -19,6 +19,7 @@ on:
         options:
           - smoke.sh
           - legal.sh
+          - opening.sh
           - langs.sh
           - realpreview.sh
           - updatepreview.sh

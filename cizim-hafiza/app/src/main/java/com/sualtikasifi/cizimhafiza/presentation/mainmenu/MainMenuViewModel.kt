@@ -70,8 +70,17 @@ class MainMenuViewModel @Inject constructor(
     private val usernameRepository: com.sualtikasifi.cizimhafiza.util.UsernameRepository,
     private val achievementUnlocker: com.sualtikasifi.cizimhafiza.util.AchievementUnlocker,
     xpEventRepository: com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository,
-    private val serverClock: com.sualtikasifi.cizimhafiza.domain.repository.ServerClock
+    private val serverClock: com.sualtikasifi.cizimhafiza.domain.repository.ServerClock,
+    legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore
 ) : ViewModel() {
+
+    /** The date-of-birth prompt is still to be answered: the home screen's own windows wait for it (see StartupPrompts). */
+    val legalPending: StateFlow<Boolean> = legalConsentStore.needsPromptFlow
+
+    /** The notification permission has been asked once already (see MainMenuScreen's NotificationPermissionWhenQuiet). */
+    val notificationPermissionAsked: Boolean get() = settingsRepository.notificationPermissionRequested
+    fun markNotificationPermissionAsked() { settingsRepository.notificationPermissionRequested = true }
+    fun onNotificationPermissionResult(granted: Boolean) = settingsRepository.setNotificationsEnabled(granted)
 
     // --- Giriş Serisi (login streak) ---
 
