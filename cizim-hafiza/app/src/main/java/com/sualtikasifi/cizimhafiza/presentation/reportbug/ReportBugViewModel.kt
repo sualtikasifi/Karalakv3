@@ -53,7 +53,12 @@ class ReportBugViewModel @Inject constructor(
     fun submit() {
         val state = _uiState.value
         val description = state.description.trim()
-        if (description.isEmpty() || state.isSubmitting) return
+        if (state.isSubmitting) return
+        // The button stays tappable on an empty form; tapping it says what is missing instead of doing nothing.
+        if (description.isEmpty()) {
+            _uiState.update { it.copy(errorMessage = UiText.of(R.string.report_bug_empty)) }
+            return
+        }
         _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
         viewModelScope.launch {
             repository.submitReport(description, state.category)

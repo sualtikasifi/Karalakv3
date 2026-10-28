@@ -425,6 +425,7 @@
     <string name="report_bug_char_count_format">%1$d / %2$d</string>
     <string name="report_bug_submit">Enviar</string>
     <string name="report_bug_sending">Enviando…</string>
+    <string name="report_bug_empty">Escreva sua mensagem antes de enviar.</string>
     <string name="report_bug_success">Obrigado, seu relato chegou até nós!</string>
     <string name="report_bug_history_title">Meus Relatos Anteriores</string>
     <string name="report_bug_not_seen_yet">Ainda não visto</string>
