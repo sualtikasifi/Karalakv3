@@ -189,7 +189,11 @@ internal fun SearchingScene(modifier: Modifier = Modifier) {
             // What the opponent can be (a live match, a real player's recorded round or an AI): said here, once, for
             // every match, rather than as a mark on each opponent. Kept in sight the whole time the search runs.
             FitText(
-                text = stringResource(R.string.quick_match_opponent_note),
+                // A player who may be under 13 is only ever matched with approved recordings and the AI (see QuickMatchViewModel).
+                text = stringResource(
+                    if (com.sualtikasifi.cizimhafiza.presentation.common.LocalChildMode.current) R.string.quick_match_opponent_note_child
+                    else R.string.quick_match_opponent_note
+                ),
                 style = PaintedStyle(color = Color(0xFF7A5A3A), fontSize = fs(20f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
                 maxLines = 2,
                 minScale = 0.6f,

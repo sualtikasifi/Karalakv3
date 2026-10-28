@@ -153,6 +153,9 @@ class QuickMatchViewModel @Inject constructor(
             var best: GhostRun? = null
             var bestRepeats = Int.MAX_VALUE
             for (attempt in 0 until MAX_ATTEMPTS) {
+                // Only approved recordings (every round is reviewed before it joins the pool) and the AI, whose drawings
+                // are our own. A player who may be under 13 must keep meeting nothing else: when live matching comes, it
+                // stays closed to them (see LegalConsentStore and the note on the searching screen).
                 val result = ghostRunRepository.findOpponent(level, seen)
                 val opponent = result.getOrElse {
                     if (best != null) break

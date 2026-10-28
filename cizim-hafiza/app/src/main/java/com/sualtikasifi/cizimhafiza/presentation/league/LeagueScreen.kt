@@ -130,10 +130,12 @@ private const val ArtH = 2401f
 fun LeagueScreen(
     onBack: () -> Unit,
     onFriends: () -> Unit = {},
+    onAccount: () -> Unit = {},
     viewModel: LeagueViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scoreRefused by viewModel.scoreRefused.collectAsState()
+    val childUnranked by viewModel.childUnranked.collectAsState()
     // A real player other than you can be reported from their row (an AI player's row is nobody to report).
     var reportTarget by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<LeagueEntry?>(null) }
     val reportState by viewModel.reportState.collectAsState()
@@ -203,6 +205,26 @@ fun LeagueScreen(
                                 style = DescriptionStyle(13.sp, 17.sp).copy(textAlign = TextAlign.Start),
                                 modifier = Modifier.weight(1f)
                             )
+                        }
+                    }
+                }
+            }
+            // A player who may be under 13 joins the table by linking Google (see LeagueScorePublisher): say so, and offer it.
+            if (childUnranked && uiState.tab == LeagueTab.Global) {
+                item(key = "child-join") {
+                    PaperPanel(modifier = Modifier.pressable(pressedScale = 0.97f, onClick = onAccount)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(text = "🏆", style = PaintedStyle(fontSize = 28.sp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.league_child_join),
+                                    style = DescriptionStyle(13.sp, 17.sp).copy(textAlign = TextAlign.Start)
+                                )
+                                Text(
+                                    text = stringResource(R.string.league_child_join_action),
+                                    style = PaintedStyle(color = ButtonOrange, fontSize = 14.sp, textAlign = TextAlign.Start)
+                                )
+                            }
                         }
                     }
                 }
@@ -304,7 +326,7 @@ fun LeagueScreen(
                                 rank = index + 1,
                                 entry = entry,
                                 showTotalXp = uiState.tab == LeagueTab.Friends,
-                                onClick = if (!entry.isMe && !entry.isBot && entry.uid.isNotBlank()) ({ reportTarget = entry }) else null
+                                onClick = if (!viewModel.childMode && !entry.isMe && !entry.isBot && entry.uid.isNotBlank()) ({ reportTarget = entry }) else null
                             )
                         }
                     }
@@ -382,7 +404,7 @@ fun LeagueScreen(
             modifier = Modifier.fillMaxWidth().offset(y = yOf(430f)).padding(horizontal = 26.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            LeagueTab.entries.forEach { tab ->
+            LeagueTab.entries.filter { !viewModel.childMode || it == LeagueTab.Global }.forEach { tab ->
                 val selected = uiState.tab == tab
                 NinePatch(
                     res = if (selected) R.drawable.league_pill_on else R.drawable.league_pill_off,

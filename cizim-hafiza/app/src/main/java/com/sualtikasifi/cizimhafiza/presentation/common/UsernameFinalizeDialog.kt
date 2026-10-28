@@ -49,7 +49,8 @@ import javax.inject.Inject
 class UsernameFinalizeViewModel @Inject constructor(
     authRepository: AuthRepository,
     private val settingsRepository: SettingsRepository,
-    private val usernameRepository: UsernameRepository
+    private val usernameRepository: UsernameRepository,
+    private val legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore
 ) : ViewModel() {
 
     private val dismissed = MutableStateFlow(false)
@@ -73,8 +74,9 @@ class UsernameFinalizeViewModel @Inject constructor(
         checked
     ) { auth, locked, nickname, dismissed, checked ->
         // usernameOfferShown: the offer is made once per account, ever — see markOffered.
+        // A player who may be under 13 keeps the generated name, so is never offered a chosen one.
         checked && auth is AuthState.Linked && !locked && nickname.isNotBlank() && !dismissed &&
-            !settingsRepository.usernameOfferShown
+            !settingsRepository.usernameOfferShown && !legalConsentStore.childMode.value
     }
         // Only a guest account linked to Google just now is ever offered the name; an account the
         // player signed back in to (reinstall, new phone) has had its offer already.

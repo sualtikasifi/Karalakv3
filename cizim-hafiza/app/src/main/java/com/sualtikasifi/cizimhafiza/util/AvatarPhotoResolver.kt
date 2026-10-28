@@ -14,20 +14,22 @@ import javax.inject.Singleton
  * A Google photo is used when the account has one and the player has not picked the mascot
  * (see [SettingsRepository.avatarSource]). Publishing it means other players in the league and in
  * rooms see the same picture; it is the same URL the account already exposes publicly.
+ * A player who may be under 13 always wears the mascot: their photo is never published (see LegalConsentStore).
  */
 @Singleton
 class AvatarPhotoResolver @Inject constructor(
     private val authRepository: AuthRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val legalConsentStore: LegalConsentStore
 ) {
-    val url: Flow<String> = combine(authRepository.authState, settingsRepository.avatarSource) { auth, source ->
+    val url: Flow<String> = combine(authRepository.authState, settingsRepository.avatarSource, legalConsentStore.childMode) { auth, source, _ ->
         resolve(auth, source)
     }
 
     fun currentUrl(): String = resolve(authRepository.authState.value, settingsRepository.avatarSource.value)
 
     private fun resolve(auth: AuthState, source: String): String {
-        if (source == "DINO") return ""
+        if (source == "DINO" || legalConsentStore.childMode.value) return ""
         return (auth as? AuthState.Linked)?.photoUrl?.takeIf { it.isNotBlank() }.orEmpty()
     }
 }

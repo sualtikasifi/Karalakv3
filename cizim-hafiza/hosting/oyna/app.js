@@ -204,8 +204,9 @@ function layoutScene() {
   paintEdges(Wv, H, (vw - Wv) / 2, parseFloat(s.top));
   if (!$("tut-spot").classList.contains("coach")) place($("tut-card"), 70, 250, 700, 360);
   if (current === "home") {
-    place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214); place($("h-rbadge"), 682, 84, 70, 70);
-    place($("h-pen"), 266, 260, 243, 62);
+    place($("h-gold"), 97.3, 267.8, 140.6, 46.7); place($("h-runes"), 520, 86, 240, 214); place($("h-rbadge"), 682, 84, 70, 70);
+    // the writing of the two top chips sits in the painted dark well, right of its icon (the coin, the pencil)
+    place($("h-pen"), 320.8, 266.2, 173.3, 46.7);
     place($("h-avatar"), 66, 361, 138, 138);
     place($("h-xpsign"), 390, 754, 66, 66); place($("h-xpbadge"), 363, 770, 120, 38); place($("h-xpbanner"), 50, 8, 741, 206);
     place($("h-name"), 224, 357, 556, 42);
@@ -643,7 +644,7 @@ async function pickOpponent() {
 // SearchingScene.kt texts: the sign reads "Rakip / aranıyor…" with its dots ticking, the plate says what is going on.
 function paintSearching() {
   $("s-text").innerHTML = `<span>${S("quick_match_searching_title")}</span><span>${S("quick_match_searching_title2").replace(/[….s]+$/, "")}<span id="s-dots"><i>.</i><i>.</i><i>.</i></span></span>`;
-  $("s-sub").replaceChildren(Object.assign(document.createElement("b"), { textContent: S("quick_match_searching_sub") }), Object.assign(document.createElement("small"), { textContent: S("quick_match_opponent_note") }));
+  $("s-sub").replaceChildren(Object.assign(document.createElement("b"), { textContent: S("quick_match_searching_sub") }), Object.assign(document.createElement("small"), { textContent: S(childMode() ? "quick_match_opponent_note_child" : "quick_match_opponent_note") }));
 }
 async function startQuick() {
   levelRun = null; kind = "quick"; relaxed = false; quickOpp = null; quickItems = []; quickItemsP = null;
@@ -927,7 +928,8 @@ async function finish() {
     newStars = Math.max(0, stars - best); recordLevel(P, levelRun.w, levelRun.l, stars);
     eco.addXp(P, Math.round(eco.levelCompletionBonus(stars) * xpMult), fxp);
   }
-  if (kind === "quick" && quickOpp) { opp = quickOpp; items = quickItems; net.recordRound({ ...me, level: levelFor(P.xp), frameId: P.frame, nickname: P.nick }).catch(() => {}); }
+  // nothing a player who may be under 13 draws is uploaded (agegate.js): their round never joins the pool
+  if (kind === "quick" && quickOpp) { opp = quickOpp; items = quickItems; if (!childMode()) net.recordRound({ ...me, level: levelFor(P.xp), frameId: P.frame, nickname: P.nick }).catch(() => {}); }
   let duelNote = null, duelRematch = null;
   if (kind === "duel" && duelRun) {
     const run = duelRun;
@@ -1051,7 +1053,7 @@ $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => lea
 $("h-veil-gold").onclick = $("h-veil-chest").onclick = () => window.open(PLAY_URL, "_blank", "noopener"); $("h-rank").onclick = () => openRankLadder(ctx); $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx);  $("h-rank").onclick = () => openRankLadder(ctx);
 $("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
 $("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; net.runeConfig().then((d) => { applyRuneConfig(d); if (current === "runes") renderRunes(ctx, true); }).catch(() => {}); show("runes"); }; $("ru-back").onclick = () => show("home");
-$("tl-quick").onclick = needNet(adultOnly(msg, () => start("quick"))); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };
+$("tl-quick").onclick = needNet(() => start("quick")); // open to a player who may be under 13: approved recordings and the AI only $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };
 $("os-back").onclick = () => show("home");
 $("tl-levels").onclick = async () => { await loadWorlds(); show("worlds"); };
 $("wl-back").onclick = () => show("home"); $("lm-back").onclick = () => show("worlds");
@@ -1059,7 +1061,7 @@ $("tl-store").onclick = async () => { await loadStoreData(); show("store"); };
 $("st-back").onclick = () => show("home");
 $("tl-ach").onclick = async () => { await loadAchievements(); show("ach"); };
 $("ac-back").onclick = () => show("home");
-$("tl-league").onclick = needNet(adultOnly(msg, async () => { await loadStoreData(); await loadLeague(); leagueLoaded = false; show("league"); }));
+$("tl-league").onclick = needNet(async () => { await loadStoreData(); await loadLeague(); leagueLoaded = false; show("league"); }); // a player who may be under 13 sees the global table (league.js)
 $("lg-back").onclick = () => show("home");
 $("lg-refresh").onclick = () => { leagueLoaded = false; layout(); };
 $("tl-friends").onclick = needNet(adultOnly(msg, () => { show("friends"); openFriends(ctx); }));

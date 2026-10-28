@@ -34,11 +34,15 @@ import javax.inject.Singleton
  * own (see BackupRepository.switchToAccount), which lands well after the
  * auth state has already settled. Reacting to auth alone would look at the
  * outgoing player's name and conclude there was nothing to do.
+ *
+ * Never for a player who may be under 13: their Google name is a real name, and they keep the generated one
+ * (see LegalConsentStore).
  */
 @Singleton
 class ProfileNameSynchronizer @Inject constructor(
     private val authRepository: AuthRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val legalConsentStore: LegalConsentStore
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -52,7 +56,7 @@ class ProfileNameSynchronizer @Inject constructor(
             combine(authRepository.authState, settingsRepository.nickname) { authState, nickname ->
                 authState to nickname
             }.collect { (authState, nickname) ->
-                if (nickname.isNotBlank() || settingsRepository.hasChosenNickname) return@collect
+                if (nickname.isNotBlank() || settingsRepository.hasChosenNickname || legalConsentStore.childMode.value) return@collect
                 val displayName = (authState as? AuthState.Linked)?.displayName?.trim()
                 if (!displayName.isNullOrBlank()) settingsRepository.setNickname(displayName)
             }

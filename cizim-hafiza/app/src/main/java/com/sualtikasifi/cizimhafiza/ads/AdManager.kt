@@ -109,23 +109,7 @@ class AdManager @Inject constructor(
         // be under 13 gets child-directed treatment (no personalisation, no ad ID, rated G), one who may be under 16
         // is tagged as under the age of consent (no personalisation). This runs after that question is answered —
         // MainActivity only asks for ad consent, and so only gets here, once it is.
-        val child = legalConsentStore.childMode.value
-        MobileAds.setRequestConfiguration(
-            RequestConfiguration.Builder()
-                .setMaxAdContentRating(if (child) RequestConfiguration.MAX_AD_CONTENT_RATING_G else RequestConfiguration.MAX_AD_CONTENT_RATING_PG)
-                .setTagForChildDirectedTreatment(
-                    if (child) RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE
-                    else RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_UNSPECIFIED
-                )
-                .setTagForUnderAgeOfConsent(
-                    if (legalConsentStore.underConsentAge) RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE
-                    else RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED
-                )
-                // Developer phone (local.properties) always gets test ads, so
-                // playing on it never counts as invalid traffic on real units.
-                .setTestDeviceIds(listOfNotNull(BuildConfig.ADMOB_TEST_DEVICE_ID.takeIf { it.isNotBlank() }))
-                .build()
-        )
+        MobileAds.setRequestConfiguration(requestConfiguration())
         // Off the main thread, as Google advises: initialising the SDK reads its config from disk and can take long
         // enough to drop frames (or, on a slow phone, to trigger an ANR) if it runs on the UI thread. The ads
         // themselves are still loaded from the main thread once it is done.
@@ -137,6 +121,39 @@ class AdManager @Inject constructor(
                 }
             }
         }, "ads-init").start()
+    }
+
+    /**
+     * The player's age changed after ads were set up (their Google account's year of birth was adopted, see
+     * AccountAgeSync): ads asked for from now on follow it, and any already loaded under the old one are dropped.
+     */
+    fun applyAudience() {
+        if (!GameConstants.ADMOB_ENABLED || !initialized) return
+        mainHandler.post {
+            MobileAds.setRequestConfiguration(requestConfiguration())
+            cachedInterstitial = null
+            cachedRewarded = null
+            preloadInterstitial()
+            preloadRewarded()
+        }
+    }
+
+    private fun requestConfiguration(): RequestConfiguration {
+        val child = legalConsentStore.childMode.value
+        return RequestConfiguration.Builder()
+            .setMaxAdContentRating(if (child) RequestConfiguration.MAX_AD_CONTENT_RATING_G else RequestConfiguration.MAX_AD_CONTENT_RATING_PG)
+            .setTagForChildDirectedTreatment(
+                if (child) RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE
+                else RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_UNSPECIFIED
+            )
+            .setTagForUnderAgeOfConsent(
+                if (legalConsentStore.underConsentAge) RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE
+                else RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED
+            )
+            // Developer phone (local.properties) always gets test ads, so
+            // playing on it never counts as invalid traffic on real units.
+            .setTestDeviceIds(listOfNotNull(BuildConfig.ADMOB_TEST_DEVICE_ID.takeIf { it.isNotBlank() }))
+            .build()
     }
 
     /**

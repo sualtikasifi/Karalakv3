@@ -677,7 +677,17 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRewardBackdrop(
     val warm = lerp(light, Color(0xFFFFECBE), 0.5f)
     drawCircle(Brush.radialGradient(listOf(warm.copy(alpha = 0.85f), warm.copy(alpha = 0.35f), Color.Transparent), center, 900f * unit), 900f * unit, center)
     val rayLen = size.maxDimension
-    val rayColor = lerp(accent, Color(0xFFFFD26E), 0.45f)
+    val rayColor = lerp(accent, Color(0xFFFFD26E), 0.25f)
+    // Strong enough to read where the board leaves the backdrop showing (its sides, above and below), and still
+    // there at the screen's corners.
+    val rayBrush = Brush.radialGradient(
+        0f to rayColor.copy(alpha = 0.55f),
+        0.4f to rayColor.copy(alpha = 0.42f),
+        0.8f to rayColor.copy(alpha = 0.20f),
+        1f to Color.Transparent,
+        center = center,
+        radius = 1500f * unit
+    )
     withTransform({ rotate(rayAngle, center) }) {
         for (i in 0 until 24) {
             val ang = (i * 15f) * (PI.toFloat() / 180f)
@@ -688,7 +698,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRewardBackdrop(
                 lineTo(center.x + cos(ang + half) * rayLen, center.y + sin(ang + half) * rayLen)
                 close()
             }
-            drawPath(path, Brush.radialGradient(listOf(rayColor.copy(alpha = 0.30f), rayColor.copy(alpha = 0.12f), Color.Transparent), center, 1000f * unit))
+            drawPath(path, rayBrush)
         }
     }
     val spots = listOf(-0.36f to -0.42f, 0.38f to -0.30f, -0.42f to 0.12f, 0.40f to 0.22f, -0.20f to 0.46f, 0.26f to 0.52f, 0.05f to -0.55f)

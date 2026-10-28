@@ -245,11 +245,8 @@ class AccountViewModel @Inject constructor(
      */
     fun signIn() {
         if (_actionState.value.isBusy) return
-        // Linking an account (and with it a name, a photo and a public profile) is for ages 13 and up.
-        if (legalConsentStore.childMode.value) {
-            _actionState.value = _actionState.value.copy(errorMessage = UiText.of(R.string.child_feature_locked))
-            return
-        }
+        // Open to a player who may be under 13 too: it is what puts them in the monthly league. Their name stays the
+        // generated one and their Google photo is never published (UsernameFinalizeViewModel, AvatarPhotoResolver).
         _actionState.value = _actionState.value.copy(isBusy = true, errorMessage = null, message = null)
         viewModelScope.launch {
             // Held across the sign-in itself, not just the local swap that

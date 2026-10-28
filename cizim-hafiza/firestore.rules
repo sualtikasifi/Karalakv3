@@ -676,7 +676,31 @@ service cloud.firestore {
         // match below for how the owner may still consume it). The owner may
         // delete either: that is part of deleting the account.
         allow create, update: if signedIn() && request.auth.uid == uid
-                              && docId != 'leagueAwards' && docId != 'pendingRewards';
+                              && docId != 'leagueAwards' && docId != 'pendingRewards' && docId != 'age';
+        allow delete: if signedIn() && request.auth.uid == uid;
+      }
+
+      // The player's date of birth, bound to their Google account (AccountAgeSync): saved once from the date the
+      // device was given, so the age rules follow the account to a reinstall or a new phone. Month and day may be
+      // missing (an answer given as a year only). It cannot be rewritten while it says the player may still be under
+      // 18, so a fresh install that is told an older age does not overwrite it. The owner may delete it: that is part
+      // of deleting the account.
+      function validAgeDoc() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['birthYear', 'birthMonth', 'birthDay', 'savedAt'])
+               && d.birthYear is int
+               && d.birthYear >= request.time.year() - 110
+               && d.birthYear <= request.time.year()
+               && (!('birthMonth' in d) || (d.birthMonth is int && d.birthMonth >= 1 && d.birthMonth <= 12))
+               && (!('birthDay' in d) || (d.birthDay is int && d.birthDay >= 1 && d.birthDay <= 31))
+               && ('birthMonth' in d) == ('birthDay' in d)
+               && d.savedAt == request.time;
+      }
+      match /private/age {
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow create: if signedIn() && request.auth.uid == uid && validAgeDoc();
+        allow update: if signedIn() && request.auth.uid == uid && validAgeDoc()
+                      && resource.data.birthYear <= request.time.year() - 19;
         allow delete: if signedIn() && request.auth.uid == uid;
       }
 

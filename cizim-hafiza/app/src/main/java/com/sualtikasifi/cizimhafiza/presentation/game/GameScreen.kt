@@ -198,7 +198,8 @@ fun GameScreen(
                 xpDoubled = xpDoubled,
                 ghostItems = ghostItems,
                 onFindAnotherOpponent = onFindAnotherOpponent,
-                onReportOpponentDrawing = viewModel::reportOpponentDrawing,
+                // A player who may be under 13 only ever meets approved recordings and the AI: nothing for them to report.
+                onReportOpponentDrawing = if (com.sualtikasifi.cizimhafiza.presentation.common.LocalChildMode.current) null else viewModel::reportOpponentDrawing,
                 reportState = reportState,
                 onDismissReport = viewModel::dismissReport,
                 onRematchDuel = onRematchDuel,

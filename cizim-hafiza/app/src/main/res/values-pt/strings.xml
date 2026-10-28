@@ -1379,6 +1379,8 @@
     <string name="chest_loot_rare">%1$d–%2$d de ouro · 2 curingas (40%% de chance de 3) · 12%% de chance de um lápis da loja</string>
     <string name="league_friends_hint">Você é o único nesta tabela. Adicione amigos e disputem juntos o prêmio do mês!</string>
     <string name="league_friends_hint_action">Adicionar amigos ›</string>
+    <string name="league_child_join">Vincule sua conta ao Google para entrar no ranking mensal.</string>
+    <string name="league_child_join_action">Entrar com o Google ›</string>
     <string name="nickname_locked_hint">Seu nome de usuário já foi escolhido. Você pode mudá-lo uma vez pelo ícone de lápis na tela inicial.</string>
     <string name="chest_lost_title">Espaços de baú cheios!</string>
     <string name="chest_lost_body">Você venceu, mas os 4 espaços de baú estão cheios, então o baú desta vitória foi perdido. Abra seus baús em Meus Baús para ter espaço da próxima vez.</string>
@@ -1451,6 +1453,7 @@
     <string name="quick_match_searching_sub">Procurando um rival do seu nível…</string>
     <string name="quick_match_dont_worry">Calma!</string>
     <string name="quick_match_opponent_note">Seu rival pode ser um jogador ao vivo, a rodada gravada de um jogador real ou uma IA.</string>
+    <string name="quick_match_opponent_note_child">Seu rival é a rodada gravada de um jogador aprovado ou uma IA que joga com os nossos desenhos.</string>
     <string name="drawing_time_joker">+10 Segundos</string>
     <string name="duel_list_incoming_play">Jogar</string>
     <string name="offline_needed">É preciso ter conexão com a internet</string>
@@ -1677,16 +1680,21 @@
         <item>Ser incompreendido é\no destino de todo artista.\nDesenhe mesmo assim!</item>
     </string-array>
     <string name="legal_title">Antes de jogar</string>
-    <string name="legal_birth_year_label">Seu ano de nascimento</string>
-    <string name="legal_birth_year_placeholder">AAAA</string>
-    <string name="legal_birth_year_why">Perguntamos para manter o jogo adequado à sua idade. A informação fica só no seu aparelho.</string>
-    <string name="legal_birth_year_invalid">Digite um ano válido.</string>
+    <string name="legal_birth_date_label">Sua data de nascimento</string>
+    <string name="legal_birth_day">Dia</string>
+    <string name="legal_birth_month">Mês</string>
+    <string name="legal_birth_year">Ano</string>
+    <string name="legal_birth_day_hint">DD</string>
+    <string name="legal_birth_month_hint">MM</string>
+    <string name="legal_birth_year_hint">AAAA</string>
+    <string name="legal_birth_date_why">Perguntamos para manter o jogo adequado à sua idade. Se você entrar com o Google, ela também é salva na sua conta.</string>
+    <string name="legal_birth_date_invalid">Digite uma data válida.</string>
     <string name="legal_accept_text">Ao continuar, você aceita os %1$s e confirma que leu a %2$s.</string>
     <string name="legal_terms_link">Termos de Uso</string>
     <string name="legal_privacy_link">Política de Privacidade</string>
     <string name="legal_continue">Continuar</string>
     <string name="child_locked_title">Para maiores de 13 anos</string>
-    <string name="child_locked_body">O jogo online, os amigos e a liga são para jogadores a partir de 13 anos. Você ainda pode jogar offline, as fases e o desafio diário.</string>
+    <string name="child_locked_body">Jogar com Amigos, os amigos e os duelos são para jogadores a partir de 13 anos. Você ainda pode jogar a Partida Rápida, offline, as fases e o desafio diário.</string>
     <string name="child_feature_locked">Este recurso é para jogadores a partir de 13 anos.</string>
     <string name="report_player_action">Denunciar jogador</string>
     <string name="report_player_title">Denunciar jogador</string>

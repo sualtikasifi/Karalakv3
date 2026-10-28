@@ -43,7 +43,8 @@ class LeagueScorePublisher @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val friendRepository: FriendRepository,
     private val avatarPhotoResolver: AvatarPhotoResolver,
-    private val legalConsentStore: LegalConsentStore
+    private val legalConsentStore: LegalConsentStore,
+    private val authRepository: com.sualtikasifi.cizimhafiza.domain.repository.AuthRepository
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -64,7 +65,12 @@ class LeagueScorePublisher @Inject constructor(
         if (started) return
         started = true
         scope.launch {
-            kotlinx.coroutines.flow.combine(settingsRepository.periodXp.debounce(PUBLISH_DEBOUNCE_MS), avatarPhotoResolver.url) { xp, avatarUrl -> snapshotFor(xp, avatarUrl) }
+            kotlinx.coroutines.flow.combine(
+                settingsRepository.periodXp.debounce(PUBLISH_DEBOUNCE_MS),
+                avatarPhotoResolver.url,
+                authRepository.authState,
+                legalConsentStore.childMode
+            ) { xp, avatarUrl, _, _ -> snapshotFor(xp, avatarUrl) }
                 .distinctUntilChanged()
                 .collect { snapshot -> publish(snapshot) }
         }
@@ -89,13 +95,20 @@ class LeagueScorePublisher @Inject constructor(
             level = level,
             frameId = AvatarFrame.resolve(settingsRepository.selectedAvatarFrameId.value, level).name,
             avatarUrl = avatarUrl,
-            totalXp = settingsRepository.lifetimeXp.value
+            totalXp = settingsRepository.lifetimeXp.value,
+            mayPublish = mayPublish()
         )
     }
 
+    /**
+     * A player who may be under 13 is in the public table only once their account is linked to Google: the table is
+     * ours to watch, and their name there stays the generated one (see LegalConsentStore).
+     */
+    private fun mayPublish(): Boolean =
+        !legalConsentStore.childMode.value || authRepository.authState.value is com.sualtikasifi.cizimhafiza.domain.repository.AuthState.Linked
+
     private suspend fun publish(snapshot: Snapshot) {
-        // A player who may be under 13 is kept out of the public table (see LegalConsentStore).
-        if (legalConsentStore.childMode.value) return
+        if (!snapshot.mayPublish) return
         if (settingsRepository.publishedLeagueScoreSignature == snapshot.signature) return
         runCatching {
             friendRepository.publishLeagueScore(
@@ -128,7 +141,9 @@ class LeagueScorePublisher @Inject constructor(
         val level: Int,
         val frameId: String,
         val avatarUrl: String,
-        val totalXp: Int
+        val totalXp: Int,
+        /** Not part of [signature]: it decides whether to write at all, not what is written. */
+        val mayPublish: Boolean
     ) {
         val signature: String get() = "$periodId|$periodXp|$level|$frameId|$nickname|$avatarUrl|$totalXp"
     }

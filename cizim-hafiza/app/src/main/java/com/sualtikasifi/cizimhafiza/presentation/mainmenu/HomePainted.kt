@@ -264,16 +264,18 @@ internal fun PaintedHome(
         }
 
         // ── Top chips ──
+        // Both are painted as one set: a pill with a dark well 10 px in from every side, its icon (the coin, the
+        // pencil) on the well's left end. The writing is centred in the rest of the well.
         val goldChipSink = rememberSink(0.94f)
         Box(
             box(40f, 258f, 256f, 326f)
                 .then(sunk(goldChipSink, 40f, 258f, 256f, 326f, 34f))
                 .clickable(interactionSource = goldChipSink.source, indication = null, onClick = onGoldClick)
         ) {}
-        Box(box(112f, 270f, 238f, 314f).then(follow(goldChipSink, 148f, 292f, 112f, 270f, 238f, 314f)), contentAlignment = Alignment.Center) {
+        Box(box(97.3f, 267.8f, 237.9f, 314.5f).then(follow(goldChipSink, 148f, 292f, 97.3f, 267.8f, 237.9f, 314.5f)), contentAlignment = Alignment.Center) {
             // Counts to the new total whenever gold changes (a reward, a purchase) instead of jumping.
             val goldShown = goldAnim.value.toInt()
-            LetteredText(NumberFormat.getIntegerInstance().format(goldShown), fs(31f), outline = Color(0xFF3A1E08), maxLines = 1)
+            LetteredText(NumberFormat.getIntegerInstance().format(goldShown), fs(30f), outline = Color(0xFF3A1E08), maxLines = 1)
         }
         val penChipSink = rememberSink(0.94f)
         Box(
@@ -282,17 +284,7 @@ internal fun PaintedHome(
                 .clickable(interactionSource = penChipSink.source, indication = null, onClick = onPenClick)
                 .a11yButton(stringResource(pen.labelRes))
         ) {}
-        Box(
-            box(282f, 262f, 344f, 322f)
-                .then(follow(penChipSink, 388f, 292f, 282f, 262f, 344f, 322f))
-                .padding(2.dp)
-                .background(Brush.verticalGradient(listOf(Color(0xFFFFD66B), Color(0xFFF0A21A))), CircleShape)
-                .border(2.dp, Color(0xFF8A4E12), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Filled.Create, contentDescription = null, tint = Color(0xFF5A2E0A), modifier = Modifier.size((30f * us).dp))
-        }
-        FitLettered(stringResource(pen.labelRes), 27f, Color(0xFF3A1E08), 1, box(350f, 266f, 484f, 320f).then(follow(penChipSink, 388f, 292f, 350f, 266f, 484f, 320f)))
+        FitLettered(stringResource(pen.labelRes), 30f, Color(0xFF3A1E08), 1, box(320.8f, 266.2f, 494.1f, 312.9f).then(follow(penChipSink, 388f, 292f, 320.8f, 266.2f, 494.1f, 312.9f)))
 
         // ── The mascot (top right) opens the rune map ──
         Box(

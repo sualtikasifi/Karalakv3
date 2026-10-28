@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # The first-run legal prompt (LegalConsentHost) and the under-13 mode, in an emulator. Two installs:
-#  1) an adult year: the prompt appears after the tutorial, takes 1990, closes, and the home screen works;
-#  2) a child's year: the prompt takes 2016, and Quick Match shows the "for ages 13 and up" panel instead.
+#  1) an adult: the prompt appears after the tutorial, takes 15/06/1990, closes, and the home screen works;
+#  2) a child: the prompt takes 15/06/2016; Quick Match opens (approved recordings and the AI only, the searching
+#     screen says so) and Race a Friend shows the "for ages 13 and up" panel instead.
 # Run through .github/workflows/smoke-test.yml with script=legal.sh; results go to smoke-out/ like smoke.sh's.
 set -u
 
@@ -38,6 +39,7 @@ for n in tree.iter('node'):
 PY
 }
 tap_label() { local xy; xy=$(find_xy "$1"); [ -n "$xy" ] && { echo "tap '$1' at $xy"; adb shell input tap $xy; return 0; }; echo "NOT FOUND: '$1'"; return 1; }
+tap_exact() { local xy; xy=$(find_xy "$1" exact); [ -n "$xy" ] && { echo "tap '$1' at $xy"; adb shell input tap $xy; return 0; }; echo "NOT FOUND: '$1'"; return 1; }
 # The slow emulator sometimes puts a system "Pixel Launcher isn't responding" dialog over the app, which swallows
 # every tap; its "Wait" button dismisses it.
 clear_anr() {
@@ -62,8 +64,12 @@ run_case() {  # run_case <name> <year>
   sleep 14
   clear_anr
   shot "$1_01_prompt"
-  # The year field (its placeholder reads YYYY/AAAA), then the year, then Continue.
-  tap_label "YYYY" || tap_label "AAAA" || adb shell input tap 540 1150
+  # The day, month and year fields (by their hints: DD/GG, MM/AA, YYYY/AAAA), 15 June of the given year, then Continue.
+  tap_exact "DD" || tap_exact "GG"
+  sleep 1; adb shell input text "15"; sleep 1
+  tap_exact "MM" || tap_exact "AA"
+  sleep 1; adb shell input text "06"; sleep 1
+  tap_exact "YYYY" || tap_exact "AAAA" || adb shell input tap 680 1150
   sleep 1
   adb shell input text "$2"
   sleep 1
@@ -78,10 +84,16 @@ run_case() {  # run_case <name> <year>
   tap_label "Consent" || true
   sleep 3
   clear_anr
-  # Quick Match tile (main menu, 1080x2400)
+  # Race a Friend tile (main menu, 1080x2400) — first: Quick Match below starts a game once it finds an opponent
+  adb shell input tap 200 1148
+  sleep 4
+  shot "$1_04_race"
+  adb shell input keyevent KEYCODE_BACK
+  sleep 2
+  # Quick Match tile
   adb shell input tap 540 1170
   sleep 5
-  shot "$1_04_quick_match"
+  shot "$1_05_quick_match"
   adb shell input keyevent KEYCODE_BACK
   sleep 2
   adb logcat -d > "$OUT/$1_logcat.txt"
