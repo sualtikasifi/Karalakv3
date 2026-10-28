@@ -20,16 +20,16 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Binds the player's year of birth to their Google account, so the age rules follow the account to a reinstall or a
+ * Binds the player's date of birth to their Google account, so the age rules follow the account to a reinstall or a
  * new phone instead of being asked again from scratch.
  *
- * The first time an account is linked, the year this device was given is saved on it (users/{uid}/private/age, only
- * the year). From then on the account's year is the one that counts: a device that was told something else takes the
- * account's year (LegalConsentStore.adoptAccountYear), and the ads and Analytics settings follow at once. The rules
- * keep the saved year from being rewritten while it says the player may be under 18 (firestore.rules). A different
- * Google account starts again from whatever its device is told.
+ * The first time an account is linked, the date this device was given is saved on it (users/{uid}/private/age). From
+ * then on the account's date is the one that counts: a device that was told something else takes the account's date
+ * (LegalConsentStore.adoptAccountDate), and the ads and Analytics settings follow at once. The rules keep the saved
+ * date from being rewritten while it says the player may be under 18 (firestore.rules). A different Google account
+ * starts again from whatever its device is told.
  *
- * Runs on every launch for a linked account, so an account linked before this existed gets its year saved too.
+ * Runs on every launch for a linked account, so an account linked before this existed gets its date saved too.
  */
 @Singleton
 class AccountAgeSync @Inject constructor(
@@ -62,16 +62,25 @@ class AccountAgeSync @Inject constructor(
 
     private suspend fun sync(uid: String) {
         val ref = firestore.collection("users").document(uid).collection("private").document("age")
-        val saved = ref.get().await().getLong("birthYear")?.toInt()
-        if (saved == null) {
-            val year = legalConsentStore.birthYear
-            if (year > 0) ref.set(mapOf("birthYear" to year.toLong(), "savedAt" to FieldValue.serverTimestamp())).await()
+        val doc = ref.get().await()
+        val local = legalConsentStore.birthDate
+        val savedYear = doc.getLong("birthYear")?.toInt()
+        if (savedYear == null) {
+            if (local.year <= 0) return
+            val fields = mutableMapOf<String, Any>("birthYear" to local.year.toLong(), "savedAt" to FieldValue.serverTimestamp())
+            if (local.month > 0 && local.day > 0) {
+                fields["birthMonth"] = local.month.toLong()
+                fields["birthDay"] = local.day.toLong()
+            }
+            ref.set(fields).await()
             return
         }
-        if (saved == legalConsentStore.birthYear) return
+        val saved = BirthDate(savedYear, doc.getLong("birthMonth")?.toInt() ?: 0, doc.getLong("birthDay")?.toInt() ?: 0)
+        // A year-only answer saved earlier says no more than this device's full date of the same year.
+        if (saved == local || (saved.month == 0 && saved.year == local.year)) return
         val wasChild = legalConsentStore.childMode.value
         val wasUnderConsentAge = legalConsentStore.underConsentAge
-        legalConsentStore.adoptAccountYear(saved)
+        legalConsentStore.adoptAccountDate(saved)
         if (legalConsentStore.childMode.value != wasChild || legalConsentStore.underConsentAge != wasUnderConsentAge) {
             consentManager.get().applyAnalyticsConsent()
             adManager.get().applyAudience()

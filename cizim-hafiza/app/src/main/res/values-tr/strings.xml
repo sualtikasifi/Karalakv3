@@ -1692,10 +1692,15 @@
         <item>Yanlış anlaşılmak\nsanatçıların kaderidir.\nYine de çiz!</item>
     </string-array>
     <string name="legal_title">Başlamadan önce</string>
-    <string name="legal_birth_year_label">Doğum yılın</string>
-    <string name="legal_birth_year_placeholder">YYYY</string>
-    <string name="legal_birth_year_why">Oyunu yaşına uygun tutmak için soruyoruz. Bu bilgi yalnızca cihazında kalır.</string>
-    <string name="legal_birth_year_invalid">Geçerli bir yıl yaz.</string>
+    <string name="legal_birth_date_label">Doğum tarihin</string>
+    <string name="legal_birth_day">Gün</string>
+    <string name="legal_birth_month">Ay</string>
+    <string name="legal_birth_year">Yıl</string>
+    <string name="legal_birth_day_hint">GG</string>
+    <string name="legal_birth_month_hint">AA</string>
+    <string name="legal_birth_year_hint">YYYY</string>
+    <string name="legal_birth_date_why">Oyunu yaşına uygun tutmak için soruyoruz. Google ile giriş yaparsan hesabına da kaydedilir.</string>
+    <string name="legal_birth_date_invalid">Geçerli bir tarih yaz.</string>
     <string name="legal_accept_text">Devam ederek %1$s\'nı kabul etmiş ve %2$s\'nı okumuş olursun.</string>
     <string name="legal_terms_link">Kullanım Koşulları</string>
     <string name="legal_privacy_link">Gizlilik Politikası</string>

@@ -259,7 +259,7 @@ Oyun / Kelime Oyunu
 | Kişisel bilgiler | **Ad** (Google hesabının görünen adı) | İsteğe bağlı — Google ile giriş | Uygulama işlevselliği, Hesap yönetimi |
 | Kişisel bilgiler | **E-posta adresi** | İsteğe bağlı — Google ile giriş | Uygulama işlevselliği, Hesap yönetimi |
 | Kişisel bilgiler | **Kullanıcı kimlikleri** (Firebase uid, takma ad, arkadaş kodu, web kullanıcı adı) | Zorunlu | Uygulama işlevselliği, Hesap yönetimi |
-| Kişisel bilgiler | **Diğer bilgiler** (doğum yılı — yalnızca yıl, Google hesabına) | İsteğe bağlı — Google ile giriş | Uygulama işlevselliği, Hesap yönetimi |
+| Kişisel bilgiler | **Diğer bilgiler** (doğum tarihi, Google hesabına) | İsteğe bağlı — Google ile giriş | Uygulama işlevselliği, Hesap yönetimi |
 | Fotoğraflar ve videolar | — (toplanmıyor; Google profil fotoğrafının yalnızca adresi saklanıyor) | — | — |
 | Uygulama etkinliği | **Uygulama etkileşimleri** (Analytics olayları) | Zorunlu (AB'de onaya bağlı) | Analiz |
 | Uygulama etkinliği | **Kullanıcı tarafından oluşturulan diğer içerik** (çizimler, tahminler, emoji tepkileri, şikâyetler, hata bildirimi metni) | Zorunlu | Uygulama işlevselliği, Dolandırıcılık önleme/güvenlik |
@@ -271,9 +271,9 @@ Oyun / Kelime Oyunu
 
 Reklam kimliği ve AdMob'un işlediği cihaz verileri hariç hiçbir veri **paylaşılmıyor**. Yapay zekâ
 hizmet sağlayıcılarına (OpenRouter, ElevenLabs) yalnızca kimliksiz çizim ve kelime, bizim adımıza
-işlenmek üzere gidiyor — Play tanımına göre "paylaşım" değil, hizmet sağlayıcı. Doğum yılı
-Google ile giriş yapılmadıkça yalnızca cihazda kalıyor; giriş yapılınca yalnızca yıl hesaba
-kaydediliyor (`AccountAgeSync`, `users/{uid}/private/age`; oyuncu 18 olana kadar kurallarla kilitli).
+işlenmek üzere gidiyor — Play tanımına göre "paylaşım" değil, hizmet sağlayıcı. Doğum tarihi
+Google ile giriş yapılmadıkça yalnızca cihazda kalıyor; giriş yapılınca hesaba kaydediliyor
+(`AccountAgeSync`, `users/{uid}/private/age`; oyuncu 18 olana kadar kurallarla kilitli).
 Hepsi silinebilir.
 
 **Toplanmayanlar — "Hayır":** konum (kesin/yaklaşık), kişiler, takvim, SMS/çağrı, fotoğraf/video,
@@ -316,14 +316,14 @@ diğerini de değiştirir.
 
 Play Console → Target audience: **13–15, 16–17, 18+** (13 altı seçilmez). Çizgi tarzı nedeniyle Play
 uygulamanın çocuklara da hitap ettiğini düşünebilir; bunun için uygulamada tarafsız bir **yaş ekranı**
-var (doğum yılı, hiçbir yıl önceden seçili değil). 13 yaş altı beyan eden oyuncuda (`LegalConsentStore`):
+var (doğum tarihi: gün, ay, yıl; hiçbir tarih önceden seçili değil). 13 yaş altı beyan eden oyuncuda (`LegalConsentStore`):
 - oyun odaları (Arkadaşınla Yarış), arkadaşlar ve düellolar kapalı;
 - Hızlı Eşleş açık ama rakip yalnızca onaylanmış kayıtlı turlar ve bizim çizimlerimizle oynayan yapay
   zekâ — canlı eşleşme gelince de çocuklara kapalı kalacak; arama ekranı bunu söylüyor;
 - aylık lig açık; Google ile giriş yaparsa üretilmiş takma adla, fotoğrafsız sıralanır (seçilmiş ad ve
   Google adı/fotoğrafı yayımlanmaz); web'de sıralanmaz;
 - çizim yüklenmez, Analytics kapalı, reklamlar çocuklara yönelik ve kişiselleştirilmemiş;
-- Google ile girişte doğum yılı hesaba kaydedilir ve hesap hangi cihazda açılırsa o yıl geçerli olur.
+- Google ile girişte doğum tarihi hesaba kaydedilir ve hesap hangi cihazda açılırsa o tarih geçerli olur.
 
 Formdaki "Uygulamanız çocuklara hitap ediyor mu" sorusunda bu yaş ekranı ve davranışı açıklanmalı.
 Hızlı Eşleş ve lig çocuklara açıldığı için hedef kitleye "13 altı"nın eklenmesi (Aileler politikası

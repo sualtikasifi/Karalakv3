@@ -1679,10 +1679,15 @@
         <item>Being misunderstood is\nthe fate of every artist.\nDraw anyway!</item>
     </string-array>
     <string name="legal_title">Before you play</string>
-    <string name="legal_birth_year_label">Your year of birth</string>
-    <string name="legal_birth_year_placeholder">YYYY</string>
-    <string name="legal_birth_year_why">We ask so the game stays right for your age. It stays on this device.</string>
-    <string name="legal_birth_year_invalid">Enter a valid year.</string>
+    <string name="legal_birth_date_label">Your date of birth</string>
+    <string name="legal_birth_day">Day</string>
+    <string name="legal_birth_month">Month</string>
+    <string name="legal_birth_year">Year</string>
+    <string name="legal_birth_day_hint">DD</string>
+    <string name="legal_birth_month_hint">MM</string>
+    <string name="legal_birth_year_hint">YYYY</string>
+    <string name="legal_birth_date_why">We ask so the game stays right for your age. If you sign in with Google, it is saved on your account too.</string>
+    <string name="legal_birth_date_invalid">Enter a valid date.</string>
     <string name="legal_accept_text">By continuing you accept the %1$s and confirm you have read the %2$s.</string>
     <string name="legal_terms_link">Terms of Use</string>
     <string name="legal_privacy_link">Privacy Policy</string>

@@ -1680,10 +1680,15 @@
         <item>Ser incompreendido é\no destino de todo artista.\nDesenhe mesmo assim!</item>
     </string-array>
     <string name="legal_title">Antes de jogar</string>
-    <string name="legal_birth_year_label">Seu ano de nascimento</string>
-    <string name="legal_birth_year_placeholder">AAAA</string>
-    <string name="legal_birth_year_why">Perguntamos para manter o jogo adequado à sua idade. A informação fica só no seu aparelho.</string>
-    <string name="legal_birth_year_invalid">Digite um ano válido.</string>
+    <string name="legal_birth_date_label">Sua data de nascimento</string>
+    <string name="legal_birth_day">Dia</string>
+    <string name="legal_birth_month">Mês</string>
+    <string name="legal_birth_year">Ano</string>
+    <string name="legal_birth_day_hint">DD</string>
+    <string name="legal_birth_month_hint">MM</string>
+    <string name="legal_birth_year_hint">AAAA</string>
+    <string name="legal_birth_date_why">Perguntamos para manter o jogo adequado à sua idade. Se você entrar com o Google, ela também é salva na sua conta.</string>
+    <string name="legal_birth_date_invalid">Digite uma data válida.</string>
     <string name="legal_accept_text">Ao continuar, você aceita os %1$s e confirma que leu a %2$s.</string>
     <string name="legal_terms_link">Termos de Uso</string>
     <string name="legal_privacy_link">Política de Privacidade</string>

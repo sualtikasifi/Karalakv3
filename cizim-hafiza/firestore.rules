@@ -680,16 +680,21 @@ service cloud.firestore {
         allow delete: if signedIn() && request.auth.uid == uid;
       }
 
-      // The player's year of birth, bound to their Google account (AccountAgeSync): saved once from the year the
-      // device was given, so the age rules follow the account to a reinstall or a new phone. Only the year. It cannot
-      // be rewritten while it says the player may still be under 18, so a fresh install that is told an older age
-      // does not overwrite it. The owner may delete it: that is part of deleting the account.
+      // The player's date of birth, bound to their Google account (AccountAgeSync): saved once from the date the
+      // device was given, so the age rules follow the account to a reinstall or a new phone. Month and day may be
+      // missing (an answer given as a year only). It cannot be rewritten while it says the player may still be under
+      // 18, so a fresh install that is told an older age does not overwrite it. The owner may delete it: that is part
+      // of deleting the account.
       function validAgeDoc() {
-        return request.resource.data.keys().hasOnly(['birthYear', 'savedAt'])
-               && request.resource.data.birthYear is int
-               && request.resource.data.birthYear >= request.time.year() - 110
-               && request.resource.data.birthYear <= request.time.year()
-               && request.resource.data.savedAt == request.time;
+        let d = request.resource.data;
+        return d.keys().hasOnly(['birthYear', 'birthMonth', 'birthDay', 'savedAt'])
+               && d.birthYear is int
+               && d.birthYear >= request.time.year() - 110
+               && d.birthYear <= request.time.year()
+               && (!('birthMonth' in d) || (d.birthMonth is int && d.birthMonth >= 1 && d.birthMonth <= 12))
+               && (!('birthDay' in d) || (d.birthDay is int && d.birthDay >= 1 && d.birthDay <= 31))
+               && ('birthMonth' in d) == ('birthDay' in d)
+               && d.savedAt == request.time;
       }
       match /private/age {
         allow read: if signedIn() && request.auth.uid == uid;
