@@ -79,16 +79,16 @@ run_case() {  # run_case <name> <year>
   tap_label "Consent" || true
   sleep 3
   clear_anr
-  # Quick Match tile (main menu, 1080x2400)
-  adb shell input tap 540 1170
-  sleep 5
-  shot "$1_04_quick_match"
-  adb shell input keyevent KEYCODE_BACK
-  sleep 2
-  # Race a Friend tile
+  # Race a Friend tile (main menu, 1080x2400) — first: Quick Match below starts a game once it finds an opponent
   adb shell input tap 200 1148
   sleep 4
-  shot "$1_05_race"
+  shot "$1_04_race"
+  adb shell input keyevent KEYCODE_BACK
+  sleep 2
+  # Quick Match tile
+  adb shell input tap 540 1170
+  sleep 5
+  shot "$1_05_quick_match"
   adb shell input keyevent KEYCODE_BACK
   sleep 2
   adb logcat -d > "$OUT/$1_logcat.txt"
