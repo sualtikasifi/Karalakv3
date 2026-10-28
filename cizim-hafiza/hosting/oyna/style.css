@@ -841,8 +841,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .fp-lk{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*4);color:#2b2b2b;font-weight:800;font-size:calc(var(--u)*30)}.fp-lk svg{width:calc(var(--u)*50);height:calc(var(--u)*50)}.fp-lk span{-webkit-text-stroke:calc(var(--u)*6) #fffc;paint-order:stroke fill}
 /* home: the small pencil badges that say "tap to change" (MainMenuScreen) */
 #h-avatar::after{content:"";position:absolute;left:-2%;top:-6%;width:30%;height:30%;border-radius:50%;background:#f4811f url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E") center/58% no-repeat;border:calc(var(--u)*5) solid #fff;box-sizing:border-box;box-shadow:0 2px 4px #0005}
-#h-pen{position:absolute;padding-left:calc(var(--u)*50)!important}
-#h-pen::before{content:"";position:absolute;left:calc(var(--u)*10);top:50%;width:calc(var(--u)*50);height:calc(var(--u)*50);transform:translateY(-50%);border-radius:50%;background:#7a4313 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffe9c2' d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E") center/62% no-repeat}
+#h-pen{position:absolute}#h-gold,#h-pen{font-size:calc(var(--u)*30)}
 #fr-hint{font-size:calc(var(--u)*26);padding:0 calc(var(--u)*50)}
 #fr-input::placeholder{letter-spacing:0;color:#9c8f82;font-weight:600}
 .ow-head .owp span,.ow-col .owp.t span{color:#5a321f;font-size:calc(var(--u)*29);-webkit-text-stroke:0;text-shadow:none;font-weight:800}

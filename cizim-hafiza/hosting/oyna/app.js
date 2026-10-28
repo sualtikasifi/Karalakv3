@@ -204,8 +204,9 @@ function layoutScene() {
   paintEdges(Wv, H, (vw - Wv) / 2, parseFloat(s.top));
   if (!$("tut-spot").classList.contains("coach")) place($("tut-card"), 70, 250, 700, 360);
   if (current === "home") {
-    place($("h-gold"), 112, 270, 126, 44); place($("h-runes"), 520, 86, 240, 214); place($("h-rbadge"), 682, 84, 70, 70);
-    place($("h-pen"), 266, 260, 243, 62);
+    place($("h-gold"), 97.3, 267.8, 140.6, 46.7); place($("h-runes"), 520, 86, 240, 214); place($("h-rbadge"), 682, 84, 70, 70);
+    // the writing of the two top chips sits in the painted dark well, right of its icon (the coin, the pencil)
+    place($("h-pen"), 320.8, 266.2, 173.3, 46.7);
     place($("h-avatar"), 66, 361, 138, 138);
     place($("h-xpsign"), 390, 754, 66, 66); place($("h-xpbadge"), 363, 770, 120, 38); place($("h-xpbanner"), 50, 8, 741, 206);
     place($("h-name"), 224, 357, 556, 42);
