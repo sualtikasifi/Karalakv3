@@ -8,7 +8,7 @@ export const TIER = {
 };
 const hex = (c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
 export const rgba = (c, a) => { const [r, g, b] = hex(c); return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, a))})`; };
-const lerpC = (a, b, t) => { const A = hex(a), B = hex(b); return "#" + A.map((x, i) => Math.round(x + (B[i] - x) * t).toString(16).padStart(2, "0")).join(""); };
+export const lerpC = (a, b, t) => { const A = hex(a), B = hex(b); return "#" + A.map((x, i) => Math.round(x + (B[i] - x) * t).toString(16).padStart(2, "0")).join(""); };
 /** A much lighter partner of the accent: the glow behind the chest (ChestTier.glow). */
 export const glowOf = (tier) => lerpC(TIER[tier].accent, "#FFFFFF", 0.72);
 const ease = (x) => x * x * (3 - 2 * x);
@@ -108,22 +108,37 @@ export function wonScene(cv, chestImg, tier, onLanded) {
 }
 
 /** The light rays, rings and confetti of the reward half of the opening scene (ChestOpeningScene, stage >= 1). */
-export function rewardScene(cv, tier, gold) {
-  const g = cv.getContext("2d"), { w, h } = sizeCanvas(cv), A = TIER[tier].accent, light = glowOf(tier), U = w / 411;
-  const palette = [A, light, "#FFC928", "#FF7A59", "#5BD6FF", "#7BD88F"], r = rng(gold * 31 + TIER[tier].n);
-  const ps = Array.from({ length: 56 }, (_, i) => ({ a: r() * Math.PI * 2, sp: 260 + r() * 620, size: 6 + r() * 10, spin: (r() - 0.5) * 900, c: Math.floor(r() * palette.length), coin: i % 4 === 0 }));
-  const c0 = [w / 2, h * 0.36];
+/** The white backdrop behind the reward board (ChestComponents.kt's drawRewardBackdrop + drawFallingLoot): warm light round
+ *  the gold chest, the tier's slowly turning rays, a few soft light spots, and coins, gems and crayons still falling from the
+ *  video. `at()` gives the chest's centre and the board's unit, in canvas pixels. */
+export function rewardScene(cv, tier, gold, at) {
+  const g = cv.getContext("2d"), { w, h, d } = sizeCanvas(cv), A = TIER[tier].accent, light = glowOf(tier), r = rng(gold * 31 + TIER[tier].n);
+  const warm = lerpC(light, "#FFECBE", 0.5), rayC = lerpC(A, "#FFD26E", 0.45);
+  const gems = ["#46C878", "#EB4664", "#5096FF", "#AA64F0"], crayons = ["#E63C3C", "#3C78E6", "#FAB41E", "#965ADC"];
+  const loot = Array.from({ length: 34 }, () => { const k = r(), kind = k < 0.5 ? 0 : k < 0.8 ? 1 : 2; return { x: r(), st: r(), sp: 0.8 + r() * 0.9, sw: 0.01 + r() * 0.025, spin: 1 + r() * 3, s: 16 + r() * 12, kind, c: kind === 1 ? gems[Math.floor(r() * 4)] : crayons[Math.floor(r() * 4)] }; });
+  const spots = [[-0.36, -0.42], [0.38, -0.30], [-0.42, 0.12], [0.40, 0.22], [-0.20, 0.46], [0.26, 0.52], [0.05, -0.55]];
   return loop((now) => {
-    const burst = Math.min(1, now / 1300), b = 1 - Math.pow(1 - burst, 3), spin = ((now / 16000) % 1) * 360;
-    g.clearRect(0, 0, w, h);
-    disc(g, c0[0], c0[1], 340 * U, [[0, rgba(light, 0.75)], [0.5, rgba(light, 0.22)], [1, rgba(light, 0)]]);
-    rays(g, c0[0], c0[1], 16, Math.PI / 16 * 0.28, Math.max(w, h), rgba(A, 0.16), rgba(A, 0), spin);
-    g.strokeStyle = rgba(A, (1 - b) * 0.55); g.lineWidth = (14 * (1 - b) + 2) * U; g.beginPath(); g.arc(c0[0], c0[1], (50 + 560 * b) * U, 0, 7); g.stroke();
-    const tt = b * 1.5;
-    ps.forEach((p) => {
-      const x = c0[0] + Math.cos(p.a) * p.sp * tt * U, y = c0[1] + Math.sin(p.a) * p.sp * tt * U + 0.5 * 900 * tt * tt * U, al = Math.max(0, 1 - b * b), s = p.size * U;
-      if (p.coin) { g.fillStyle = `rgba(255,201,40,${al})`; g.beginPath(); g.arc(x, y, s, 0, 7); g.fill(); g.fillStyle = `rgba(255,240,160,${al})`; g.beginPath(); g.arc(x, y, s * 0.6, 0, 7); g.fill(); }
-      else { g.save(); g.translate(x, y); g.rotate(p.spin * tt * Math.PI / 180); g.fillStyle = rgba(palette[p.c], al); g.fillRect(-s / 2, -s / 2, s, s * 1.7); g.restore(); }
+    const { x: cx, y: cy, k } = at(d), U = k, fade = Math.min(1, now / 320), spin = ((now / 18000) % 1) * 360, fall = (now / 9000) % 1;
+    g.clearRect(0, 0, w, h); g.globalAlpha = fade;
+    disc(g, cx, cy, 900 * U, [[0, rgba(warm, 0.85)], [0.5, rgba(warm, 0.35)], [1, rgba(warm, 0)]]);
+    g.save(); g.translate(cx, cy); g.rotate(spin * Math.PI / 180);
+    const grad = g.createRadialGradient(0, 0, 0, 0, 0, 1000 * U); grad.addColorStop(0, rgba(rayC, 0.30)); grad.addColorStop(0.5, rgba(rayC, 0.12)); grad.addColorStop(1, rgba(rayC, 0));
+    const len = Math.max(w, h) * 1.5, half = Math.PI / 24 * 0.5;
+    for (let i = 0; i < 24; i++) { const a = i * Math.PI / 12; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a - half) * len, Math.sin(a - half) * len); g.lineTo(Math.cos(a + half) * len, Math.sin(a + half) * len); g.closePath(); g.fillStyle = grad; g.fill(); }
+    g.restore();
+    spots.forEach(([dx, dy], i) => { const x = w / 2 + dx * w, y = h / 2 + dy * h, rr = (26 + (i % 3) * 14) * U; disc(g, x, y, rr, [[0, rgba(rayC, 0.32)], [1, rgba(rayC, 0)]]); });
+    loot.forEach((p) => {
+      const ph = (p.st + fall * p.sp) % 1, y = (ph * 1.2 - 0.1) * h, x = (p.x + Math.sin((ph * p.spin + p.st) * 2 * Math.PI) * p.sw) * w, s = p.s * U;
+      if (p.kind === 0) { // a coin turning over as it falls
+        const q = 0.35 + 0.65 * Math.abs(Math.cos(ph * p.spin * 2 * Math.PI));
+        g.fillStyle = "#FFC428"; g.beginPath(); g.ellipse(x, y, s, s * q, 0, 0, 7); g.fill(); g.strokeStyle = "#C88214"; g.lineWidth = 3 * U; g.stroke();
+        g.fillStyle = "#FFE68C"; g.beginPath(); g.ellipse(x, y, s * 0.55, s * 0.55 * q, 0, 0, 7); g.fill();
+      } else if (p.kind === 1) { // a gem
+        g.beginPath(); g.moveTo(x, y - s); g.lineTo(x + s * 0.8, y - s * 0.2); g.lineTo(x, y + s); g.lineTo(x - s * 0.8, y - s * 0.2); g.closePath(); g.fillStyle = p.c; g.fill(); g.strokeStyle = "#fff"; g.lineWidth = 2.5 * U; g.stroke();
+      } else { // a crayon
+        g.save(); g.translate(x, y); g.rotate(ph * p.spin * 2 * Math.PI); g.fillStyle = p.c; g.beginPath(); g.roundRect(-s * 1.1, -s * 0.28, s * 2.2, s * 0.56, s * 0.2); g.fill(); g.restore();
+      }
     });
-  });
+    g.globalAlpha = 1;
+  }, 60, cv);
 }

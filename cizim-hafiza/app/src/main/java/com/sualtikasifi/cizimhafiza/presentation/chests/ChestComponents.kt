@@ -345,14 +345,14 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                 modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing),
                 contentAlignment = Alignment.Center
             ) {
-                // The board is laid out in the design's own 1080 × 1920 units, scaled to fit the screen.
+                // The board is laid out in the design's own 1080 × 2000 units, scaled to fit the screen.
                 val u = minOf(maxWidth / BOARD_W, maxHeight / BOARD_H)
                 val fontScale0 = LocalDensity.current.fontScale
                 fun fs(art: Float) = (art * u.value / fontScale0).sp
                 fun Modifier.at(x: Float, y: Float, w: Float, h: Float) = this.offset(u * x, u * y).size(u * w, u * h)
                 val compact = extras.isEmpty()
-                val heroY = if (compact) 960f else 915f
-                val amountY = if (compact) 1185f else 1110f
+                val heroY = if (compact) 1000f else 915f
+                val amountY = if (compact) 1235f else 1110f
 
                 // Behind everything, full-screen: the light, the rays and the loot still falling from the video.
                 Canvas(Modifier.fillMaxSize().graphicsLayer { alpha = fadeIn.value }) {
@@ -368,7 +368,7 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                         painter = painterResource(R.drawable.tut_frame_mid),
                         contentDescription = null,
                         contentScale = ContentScale.FillBounds,
-                        modifier = Modifier.at(60f, 510f, 960f, 1092f).graphicsLayer {
+                        modifier = Modifier.at(60f, 510f, 960f, 1180f).graphicsLayer {
                             alpha = board.value.coerceIn(0f, 1f)
                             val s = 0.86f + 0.14f * board.value
                             scaleX = s; scaleY = s
@@ -427,9 +427,7 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                         RewardLettering(
                             text = "+" + format.format(count.value.toInt()),
                             size = fs(120f),
-                            top = Color(0xFFFFF6AA), bottom = Color(0xFFFFA514), outline = Color(0xFF5A2805),
-                            modifier = Modifier.width(u * 560f),
-                            align = Alignment.CenterStart
+                            top = Color(0xFFFFF6AA), bottom = Color(0xFFFFA514), outline = Color(0xFF5A2805)
                         )
                     }
                     Text(
@@ -438,7 +436,7 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                         modifier = Modifier.at(0f, amountY + 52f, BOARD_W, 56f).graphicsLayer { alpha = hero.value.coerceIn(0f, 1f) }
                     )
                     if (!compact) {
-                        Canvas(Modifier.at(220f, 1222f, 640f, 20f).graphicsLayer { alpha = board.value.coerceIn(0f, 1f) }) {
+                        Canvas(Modifier.at(220f, 1232f, 640f, 20f).graphicsLayer { alpha = board.value.coerceIn(0f, 1f) }) {
                             drawLine(
                                 color = Color(0xFFCDA064), start = Offset(0f, size.height / 2f), end = Offset(size.width, size.height / 2f),
                                 strokeWidth = 4f * u.toPx(),
@@ -446,13 +444,13 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                             )
                             drawSparkle(Offset(size.width / 2f, size.height / 2f), 15f * u.toPx(), Color(0xFFE6AA3C))
                         }
-                        val tile = if (extras.size > 3) 156f else 172f
-                        val gap = 30f
+                        val tile = if (extras.size > 3) 168f else 190f
+                        val gap = 28f
                         val x0 = (BOARD_W - extras.size * tile - (extras.size - 1) * gap) / 2f
                         extras.forEachIndexed { i, extra ->
                             val x = x0 + i * (tile + gap)
                             val t = cards.getOrNull(i)?.value ?: 1f
-                            Box(Modifier.at(x, 1262f, tile, tile + 64f).graphicsLayer {
+                            Box(Modifier.at(x, 1272f, tile, tile + 72f).graphicsLayer {
                                 val s = t.coerceAtLeast(0f); scaleX = s; scaleY = s; alpha = t.coerceIn(0f, 1f)
                             }) {
                                 RewardCard(extra = extra, u = u, tile = tile, fs = ::fs)
@@ -461,7 +459,7 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                     }
                     // "Harika!" on the leafy orange button, once everything is in.
                     Box(
-                        Modifier.at(210f, 1631f, 660f, 275f)
+                        Modifier.at(210f, 1712f, 660f, 275f)
                             .graphicsLayer {
                                 val t = button.value; alpha = t; val s = 0.8f + 0.2f * t; scaleX = s; scaleY = s
                             }
@@ -485,7 +483,7 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
 }
 
 private const val BOARD_W = 1080f
-private const val BOARD_H = 1920f
+private const val BOARD_H = 2000f
 
 /** A chest's rarity, as the stars on its ribbon. */
 private fun ChestTier.stars(): Int = when (this) {
@@ -511,10 +509,9 @@ private fun RewardLettering(
     top: Color,
     bottom: Color,
     outline: Color,
-    modifier: Modifier = Modifier,
-    align: Alignment = Alignment.Center
+    modifier: Modifier = Modifier
 ) {
-    BoxWithConstraints(modifier = modifier, contentAlignment = align) {
+    BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
         val style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(fontSize = size, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
         val scale = rememberFitScale(text, style, 1, 0.5f)
         val base = style.scaledBy(scale)
@@ -620,7 +617,7 @@ private fun RewardCard(extra: RewardExtra, u: Dp, tile: Float, fs: (Float) -> an
             }
         }
         // the count tag, hanging off the lower right corner
-        val tagW = tile * 0.5f; val tagH = tile * 0.24f
+        val tagW = tile * 0.56f; val tagH = tile * 0.30f
         Box(
             Modifier
                 .offset(u * (tile - tagW + 16f), u * (tile - tagH + 14f))
@@ -630,17 +627,17 @@ private fun RewardCard(extra: RewardExtra, u: Dp, tile: Float, fs: (Float) -> an
             contentAlignment = Alignment.Center
         ) {
             val n = when (extra) { is RewardExtra.Joker -> extra.count; is RewardExtra.Pen -> 1 }
-            RewardLettering("×$n", fs(tagH * 0.62f), Color.White, Color(0xFFFFEBC8), Color(0xFF6E2800), Modifier.fillMaxSize(0.8f))
+            RewardLettering("×$n", fs(tagH * 0.72f), Color.White, Color(0xFFFFEBC8), Color(0xFF6E2800), Modifier.fillMaxSize(0.86f))
         }
         Text(
             text = when (extra) {
                 is RewardExtra.Joker -> stringResource(extra.type.shortRes())
                 is RewardExtra.Pen -> stringResource(extra.skin.labelRes)
             },
-            style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFF78410F), fontSize = fs(tile * 0.15f), textAlign = TextAlign.Center),
+            style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFF78410F), fontSize = fs(tile * 0.18f), textAlign = TextAlign.Center),
             maxLines = 1,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            modifier = Modifier.offset(y = u * (tile + 18f)).width(u * (tile + 30f)).offset(x = u * -15f)
+            modifier = Modifier.offset(x = u * -25f, y = u * (tile + 16f)).width(u * (tile + 50f))
         )
     }
 }
