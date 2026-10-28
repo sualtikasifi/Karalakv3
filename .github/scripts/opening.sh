@@ -86,7 +86,7 @@ sleep 6
 clear_anr
 shot "opening_02_after_birth_date"
 log "2) after the date: permission dialog: $(permission_up)"
-tap_label "Consent" || true
+tap_exact "Consent" || true
 sleep 6
 clear_anr
 shot "opening_03_after_consent"
@@ -110,6 +110,8 @@ shot "opening_06_next_launch"
 log "6) next launch: permission dialog: $(permission_up)"
 
 adb logcat -d > "$OUT/opening_logcat.txt"
+# Anything that took the app off the screen on its own (a native crash in the consent form's WebView, a kill).
+grep -E "Fatal signal|has died|Force finishing activity|Process $PKG|ANR in $PKG" "$OUT/opening_logcat.txt" | head -40 > "$OUT/opening_exits.txt" || true
 FAIL=0
 if grep -A 3 "FATAL EXCEPTION" "$OUT/opening_logcat.txt" | grep -q "Process: $PKG"; then
   echo "::error::The app crashed"; grep -A 14 "FATAL EXCEPTION" "$OUT/opening_logcat.txt" | head -40; FAIL=1
