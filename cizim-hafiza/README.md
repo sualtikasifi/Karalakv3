@@ -26,8 +26,10 @@ util/          Constants, AnswerMatcher (Levenshtein), VibratorHelper, SettingsR
 
 `app/src/main/assets/words.json` — her uygulama açılışında Room ile
 senkronize edilir (`WordSeeder` + `CizimHafizaApp.onCreate`): veritabanındaki
-kelime sayısı dosyadakiyle eşleşmiyorsa eksikler otomatik eklenir. Şu an 1169
-kelime var (8 kategori × 83–165). Daha da eklemek için:
+kelime sayısı dosyadakiyle eşleşmiyorsa eksikler otomatik eklenir. Şu an 1141
+kelime var (9 kategori, kategori başına 64–318; İngilizce, Portekizce ve İspanyolca
+listeler aynı kelimelerin çevirisi: `words_en.json`, `words_pt.json`, `words_es.json`).
+Daha da eklemek için:
 
 1. `WORDS_SCHEMA.md` dosyasındaki şemayı ve id/kategori kurallarını oku.
 2. Aynı formatta yeni kayıtları `words.json`'a ekle (id'ler unique olmalı,

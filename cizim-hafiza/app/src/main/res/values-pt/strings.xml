@@ -8,7 +8,7 @@
     <string name="share_room_not_installed">Ainda não tem? %1$s</string>
     <string name="share_invite_link">Toque para abrir (abre a Play Store se não estiver instalado): %1$s</string>
     <string name="share_friend_invite">Estou te convidando para o Karalak! 🎨</string>
-    <string name="share_friend_pitch">Primeiro desenhe, depois lembre o que desenhou. Vença o relógio, dispute com seus amigos e suba na liga semanal.</string>
+    <string name="share_friend_pitch">Primeiro desenhe, depois lembre o que desenhou. Vença o relógio, dispute com seus amigos e suba na liga mensal.</string>
     <string name="share_friend_reward_hint">🎁 Nós dois ganhamos: entre com meu código e, quando você chegar ao nível 5, cada um ganha 500 de ouro!</string>
     <string name="share_friend_code">Meu código de amigo: %1$s</string>
     <string name="share_friend_code_instructions">Se o link não abrir: instale o Karalak e digite este código em \"Adicionar amigo\" na tela Amigos.</string>
@@ -1694,4 +1694,6 @@
     <string name="report_player_reason_behaviour">Assédio ou mau comportamento</string>
     <string name="report_player_reason_cheating">Trapaça</string>
     <string name="report_player_reason_other">Outro problema</string>
+    <string name="share_card_slogan">Venha jogar,\nentre na diversão!</string>
+    <string name="share_card_collage_title">Você consegue adivinhar\nestes desenhos?</string>
 </resources>

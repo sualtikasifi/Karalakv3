@@ -21,23 +21,24 @@ uzar, serin uzadıkça kazandığın XP katlanır. Bir günü kaçırırsan seri
 sıfırlanır — ama telafi hakkın var.
 
 **Hızlı Eşleş**
-Tek tuşla bir rakip bul ve onun oynadığı turun aynısını oyna. Aynı
-kelimeler, aynı süre, aynı koşullar. Kimin daha iyi hatırladığı maçın
-sonunda belli olur.
+Tek tuşla seviyene uygun bir rakiple eşleş: başka bir oyuncunun kayıtlı
+turu ya da 🤖 ile işaretli bir yapay zekâ rakibi. Aynı kelimeler, aynı
+süre, aynı koşullar. Kimin daha iyi hatırladığı maçın sonunda belli olur.
 
 **Arkadaşınla yarış**
 Oda kur, kodu paylaş, aynı anda başlayın. Sekiz kişiye kadar, istersen 2v2
 takım modunda. Maç sırasında emojiyle tepki ver, bitince tekrar oyna.
 
 **Bölümler**
-Yüzlerce elle hazırlanmış bölüm, zorlaşan bir harita üzerinde. Her
-bölümden üç yıldıza kadar topla.
+9 dünyada 90 bölüm, zorlaşan bir harita üzerinde. Her bölümden üç yıldıza
+kadar topla.
 
 **İlerleme ve ödüller**
 - Seviye ve XP: oynadıkça yükselen bir seviye, her kademede değişen avatar
   çerçeveleri
 - 101 başarım, kolaydan çok zora sıralı
-- Haftalık lig: arkadaşlarınla o haftanın XP sıralaması
+- Aylık lig: arkadaşlarınla ve tüm dünyayla aylık XP sıralaması (ligde
+  🤖 ile işaretli yapay zekâ oyuncular da var; ödüller gerçek oyunculara)
 - Kalem derileri ve avatar çerçeveleriyle kişiselleştirme
 
 **İnternetsiz de oynanır**
@@ -57,8 +58,8 @@ Türkçe, İngilizce, Portekizce ve İspanyolca.
 
 ## Store listing (English)
 
-**Title**
-Karalak — Draw, Recall, Compete
+**Title (max. 30)**
+Karalak: Draw, Recall, Compete
 
 **Short description (80 chars)**
 Draw it, then remember it. Daily challenge, quick match and live duels.
@@ -78,22 +79,23 @@ streak grows; the longer the streak, the more XP each round pays. Miss a
 day and it resets — though you get a chance to make it up.
 
 **Quick Match**
-One tap finds an opponent and hands you the exact round they played. Same
-words, same clock, same conditions. Who remembered better is settled at
-the final whistle.
+One tap pairs you with an opponent at your level: another player's
+recorded round or an AI opponent marked with 🤖. Same words, same clock,
+same conditions. Who remembered better is settled at the final whistle.
 
 **Play with friends**
 Create a room, share the code, start together — up to eight players, or
 2v2 in teams. React with emoji mid-match and rematch when it ends.
 
 **Levels**
-Hundreds of hand-built levels across a map that keeps getting harder.
-Three stars to earn on each.
+90 levels across 9 worlds on a map that keeps getting harder. Three stars
+to earn on each.
 
 **Progress and rewards**
 - XP and levels, with avatar frames that change as you climb
 - 101 achievements, ordered from easy to brutal
-- A monthly league ranking you against your friends and the world
+- A monthly league ranking you against your friends and the world (AI
+  players marked with 🤖 take part too; prizes go to real players)
 - Pen skins and avatar frames to make it yours
 
 **Works offline**
@@ -129,21 +131,23 @@ No Desafio Diário, todo mundo recebe as mesmas palavras. Jogue todo dia e
 sua sequência cresce; quanto maior a sequência, mais XP cada rodada rende.
 
 **Partida Rápida**
-Um toque encontra um rival e te entrega exatamente a rodada que ele jogou.
-Mesmas palavras, mesmo relógio. Quem lembrar melhor vence.
+Um toque te coloca contra um rival do seu nível: a rodada gravada de outro
+jogador ou um adversário de IA marcado com 🤖. Mesmas palavras, mesmo
+relógio. Quem lembrar melhor vence.
 
 **Jogue com amigos**
 Crie uma sala, compartilhe o código e comecem juntos — até oito jogadores,
 ou 2x2 em equipes. Reaja com emojis e peça revanche no final.
 
 **Fases**
-Centenas de fases em um mapa que fica cada vez mais difícil, com três
+90 fases em 9 mundos, num mapa que fica cada vez mais difícil, com três
 estrelas para conquistar em cada uma.
 
 **Progresso e recompensas**
 - XP, níveis e molduras de avatar que mudam conforme você sobe
 - 101 conquistas, das fáceis às impossíveis
-- Uma liga mensal contra seus amigos e o mundo
+- Uma liga mensal contra seus amigos e o mundo (com jogadores de IA
+  marcados com 🤖; os prêmios vão para jogadores reais)
 - Baús, curingas, lápis especiais e runas para deixar o jogo com a sua cara
 
 **Funciona offline**
@@ -179,8 +183,9 @@ En el Desafío Diario todos reciben las mismas palabras. Juega todos los
 días y tu racha crece; cuanto más larga la racha, más XP da cada ronda.
 
 **Partida Rápida**
-Un toque encuentra un rival y te da exactamente la ronda que jugó. Mismas
-palabras, mismo reloj. Gana quien recuerde mejor.
+Un toque te empareja con un rival de tu nivel: la ronda grabada de otro
+jugador o un rival de IA marcado con 🤖. Mismas palabras, mismo reloj.
+Gana quien recuerde mejor.
 
 **Juega con amigos**
 Crea una sala, comparte el código y empiecen juntos — hasta ocho
@@ -188,13 +193,14 @@ jugadores, o 2v2 por equipos. Reacciona con emojis y pide la revancha al
 final.
 
 **Niveles**
-Cientos de niveles en un mapa que se pone cada vez más difícil, con tres
-estrellas por conseguir en cada uno.
+90 niveles en 9 mundos, en un mapa que se pone cada vez más difícil, con
+tres estrellas por conseguir en cada uno.
 
 **Progreso y recompensas**
 - XP, niveles y marcos de avatar que cambian mientras subes
 - 101 logros, de los fáciles a los imposibles
-- Una liga mensual contra tus amigos y el mundo
+- Una liga mensual contra tus amigos y el mundo (con jugadores de IA
+  marcados con 🤖; los premios son para jugadores reales)
 - Cofres, comodines, lápices especiales y runas para hacerlo tuyo
 
 **Funciona sin conexión**
@@ -225,162 +231,125 @@ Oyun / Kelime Oyunu
   16:9 ile 9:16 arası) ekran görüntüsü alınmalı — Ana Menü, Çizim ekranı,
   Tahmin ekranı ve Sonuç ekranı iyi adaylar.
 
-## Gizlilik politikası
-Bkz. `privacy-policy.md` — Play Console'da "App content" bölümüne bu
-dosyanın barındırıldığı bir URL girilmelidir (ör. bu repo üzerinden
-GitHub Pages ile yayınlanabilir).
+## Gizlilik politikası, koşullar, hesap silme
+
+- Gizlilik politikası (Play Console → App content → Privacy policy):
+  **https://karalak.com/gizlilik** — 4 dil, kaynağı `hosting/gizlilik/index.html`.
+- Hesap silme adresi (App content → Data safety → "Delete account URL"):
+  **https://karalak.com/hesap-silme** — kaynağı `hosting/hesap-silme/index.html`.
+- Kullanım koşulları: https://karalak.com/kosullar — uygulama ilk açılışta (eğitimden sonra)
+  onaylatıyor (`LegalConsentHost`, web'de `agegate.js`).
+- Eski adres (https://sualtikasifi.github.io/app-ads/) yeni sayfaya yönlendirir; Play Console'daki
+  adres yine de yenisiyle değiştirilmeli.
 
 ## "Veri Güvenliği" (Data Safety) formu — Play Console'da doldurulacak
 
-> **Bu tablo gizlilik politikasıyla birebir tutmak zorunda.** Play ikisini
-> birbirine karşı kontrol ediyor ve uyuşmazlık doğrudan ret sebebi. Politika:
-> https://sualtikasifi.github.io/app-ads/
+> **Bu tablo gizlilik politikasıyla birebir tutmak zorunda.** Play ikisini birbirine karşı kontrol
+> ediyor ve uyuşmazlık doğrudan ret sebebi.
 
-**Güvenlik uygulamaları (formun ilk bölümü)**
+**Güvenlik uygulamaları**
 - Veriler aktarım sırasında şifreleniyor mu? → **Evet**
-- Kullanıcı verisinin silinmesini talep edebiliyor mu? → **Evet**
-  (uygulama içi: Ayarlar → Hesap → Hesabı Sil; ayrıca e-posta ile)
+- Kullanıcı verisinin silinmesini talep edebiliyor mu? → **Evet** (Ayarlar → Hesap →
+  Hesabımı ve verilerimi sil; karalak.com/hesap-silme; e-posta)
 
 **Toplanan veriler**
 
 | Play kategorisi | Veri | Zorunlu mu | Amaç |
 |---|---|---|---|
-| Kişisel bilgiler | **Ad** (Google hesabının görünen adı) | İsteğe bağlı — yalnızca Google ile giriş yapılırsa | Uygulama işlevselliği, Hesap yönetimi |
-| Kişisel bilgiler | **E-posta adresi** | İsteğe bağlı — yalnızca Google ile giriş yapılırsa | Uygulama işlevselliği, Hesap yönetimi |
-| Kişisel bilgiler | **Kullanıcı kimlikleri** (Firebase uid, takma ad, arkadaş kodu) | Zorunlu | Uygulama işlevselliği |
-| Uygulama etkinliği | **Kullanıcı tarafından oluşturulan diğer içerik** (çizimler, sorun bildirimi metni) | Zorunlu | Uygulama işlevselliği |
-| Uygulama etkinliği | **Diğer işlemler** (skorlar, XP, başarımlar, bölüm ilerlemesi, lig puanı) | Zorunlu | Uygulama işlevselliği |
-| Uygulama bilgileri ve performansı | **Kilitlenme günlükleri** (Firebase Crashlytics) | Zorunlu | Analiz, Uygulama işlevselliği |
-| Uygulama bilgileri ve performansı | **Teşhis** (Firebase Crashlytics / Analytics) | Zorunlu | Analiz |
-| Cihaz veya diğer kimlikler | **Cihaz veya diğer kimlikler** (Firebase kurulum kimliği, FCM bildirim jetonu) | Zorunlu | Uygulama işlevselliği, Analiz |
-| Cihaz veya diğer kimlikler | **Reklam kimliği** (advertising ID, AdMob) | İsteğe bağlı — yalnızca bir reklam gösterildiğinde | Reklam, Analiz |
+| Kişisel bilgiler | **Ad** (Google hesabının görünen adı) | İsteğe bağlı — Google ile giriş | Uygulama işlevselliği, Hesap yönetimi |
+| Kişisel bilgiler | **E-posta adresi** | İsteğe bağlı — Google ile giriş | Uygulama işlevselliği, Hesap yönetimi |
+| Kişisel bilgiler | **Kullanıcı kimlikleri** (Firebase uid, takma ad, arkadaş kodu, web kullanıcı adı) | Zorunlu | Uygulama işlevselliği, Hesap yönetimi |
+| Fotoğraflar ve videolar | — (toplanmıyor; Google profil fotoğrafının yalnızca adresi saklanıyor) | — | — |
+| Uygulama etkinliği | **Uygulama etkileşimleri** (Analytics olayları) | Zorunlu (AB'de onaya bağlı) | Analiz |
+| Uygulama etkinliği | **Kullanıcı tarafından oluşturulan diğer içerik** (çizimler, tahminler, emoji tepkileri, şikâyetler, hata bildirimi metni) | Zorunlu | Uygulama işlevselliği, Dolandırıcılık önleme/güvenlik |
+| Uygulama etkinliği | **Diğer işlemler** (skorlar, XP, altın, bölüm ilerlemesi, lig puanı) | Zorunlu | Uygulama işlevselliği |
+| Uygulama bilgileri ve performansı | **Kilitlenme günlükleri** (Crashlytics) | Zorunlu | Analiz |
+| Uygulama bilgileri ve performansı | **Teşhis** (Crashlytics, Analytics) | Zorunlu | Analiz |
+| Cihaz veya diğer kimlikler | **Cihaz veya diğer kimlikler** (Firebase kurulum kimliği, FCM jetonu, App Check) | Zorunlu | Uygulama işlevselliği, Analiz, Dolandırıcılık önleme |
+| Cihaz veya diğer kimlikler | **Reklam kimliği** (AdMob) | Zorunlu (13 yaş altında kullanılmaz) | Reklam, Dolandırıcılık önleme |
 
-Reklam kimliği hariç hepsi **paylaşılmıyor** (üçüncü taraflara aktarılmıyor);
-reklam kimliği yalnızca AdMob'un reklam sunma/dolandırıcılık önleme
-amacıyla Google'a gider. Hepsi silinebilir.
+Reklam kimliği ve AdMob'un işlediği cihaz verileri hariç hiçbir veri **paylaşılmıyor**. Yapay zekâ
+hizmet sağlayıcılarına (OpenRouter, ElevenLabs) yalnızca kimliksiz çizim ve kelime, bizim adımıza
+işlenmek üzere gidiyor — Play tanımına göre "paylaşım" değil, hizmet sağlayıcı. Doğum yılı
+yalnızca cihazda kalıyor; Play tanımına göre "toplanan" veri değil. Hepsi silinebilir.
 
-**Toplanmayanlar — formda "Hayır" işaretlenecek:** konum, kişiler, takvim,
-SMS/çağrı, fotoğraf/video, ses, dosya, sağlık, finans, arama geçmişi,
-web geçmişi, satın alma geçmişi.
+**Toplanmayanlar — "Hayır":** konum (kesin/yaklaşık), kişiler, takvim, SMS/çağrı, fotoğraf/video,
+ses, dosya, sağlık, finans, arama/web geçmişi, satın alma geçmişi.
 
-**Crashlytics ve Analytics neden listede:** ikisi de bağımlılık olarak
-uygulamada (`app/build.gradle.kts`) ve kod yazılmasa bile kendiliğinden
-başlar. Uygulamayı yazan kişinin bunları "kullanmıyorum" sanması Play
-açısından bir savunma değil — paket içindeyse toplanıyordur.
+## Reklamlar (kodla birebir)
 
-**Reklamlar:** `GameConstants.ADMOB_ENABLED = BuildConfig.DEBUG || BuildConfig.ADMOB_REAL_IDS`:
-reklamlar debug build'de ve gerçek AdMob kimlikleri `local.properties`'te varsa
-release build'de açık. İki format: ilk oyun hariç **her ikinci maçın** sonucunda
-gösterilen bir **geçiş reklamı**, ve kullanıcının kendi başlattığı **ödüllü
-reklamlar** (ek ipucu, sonuçta XP x2, seri kurtarma, 4 saatte bir +500 altın,
-günlük bedava kasa). Banner, native
-veya app-open reklam yok. `AD_ID` ve AdServices izinleri artık
-`AndroidManifest.xml`'de kalıcı (bkz. dosyanın başındaki açıklama).
-Formdaki "reklam veya pazarlama" amacı ve "reklam kimliği kullanılıyor mu"
-sorularına **Evet**.
+`GameConstants.ADMOB_ENABLED = BuildConfig.DEBUG || BuildConfig.ADMOB_REAL_IDS`. Gerçek birim
+kimlikleri `local.properties`'te olmalı; yoksa build Google'ın test kimliklerine düşer ve gelir olmaz.
 
-  **Reklamlar açıldı — bu değişiklikte yapılanlar:**
+- **Geçiş reklamı** (yalnızca sonuç ekranında, `AdManager.maybeShowInterstitial`,
+  `GameViewModel.showResultInterstitial`):
+  - Hızlı Eşleş, çevrimdışı ve arkadaşla oyunlar: ilk oyun hariç bitirilen her **2.** oyun, iki geçiş
+    reklamı arasında en az **3 dakika**;
+  - Günlük Meydan Okuma: her bitirişte;
+  - Bölümler: çift numaralı her bölüm (2, 4, 6, 8, 10), önceki reklamdan en az **1 dakika** sonra;
+    tek numaralılarda hiç.
+  - Hazırda reklam yoksa en fazla 3,5 sn beklenir; geç gelen reklam açılmaz, sonraki sefere saklanır.
+- **Ödüllü reklam** (yalnızca dokunuşla): ek çizim süresi, tahmin ipucu, sonuçta XP x2, seri
+  kurtarma, ana menüde altın ve ücretsiz kasa, kasa hızlandırma, mağazada günlük ücretsiz joker.
+  Yükleme 8 sn'de zaman aşımına uğrar.
+- Banner, native, app-open yok. Web oyununda reklam yok.
+- Yaşa göre: 13 altı → çocuklara yönelik (TFCD, G), 16 altı → reşit olmayan (TFUA); UMP de 16 altı
+  için "under age of consent" ile çağrılır.
 
-  1. ✅ `GameConstants.ADMOB_ENABLED` → `BuildConfig.DEBUG` yerine `true`.
-  2. ✅ `AndroidManifest.xml`'deki dört `tools:node="remove"` satırı kaldırıldı
-     (`AD_ID`, `ACCESS_ADSERVICES_AD_ID`, `ACCESS_ADSERVICES_ATTRIBUTION`,
-     `ACCESS_ADSERVICES_TOPICS`).
-  3. ✅ Bu formdaki cevaplar ve gizlilik politikası (`privacy-policy.md`,
-     `docs/index.html`) güncellendi.
+Bu metin ile gizlilik politikasının "Reklamlar" bölümü aynı şeyi söylemeli; birini değiştiren
+diğerini de değiştirir.
 
-  Ayrıca `local.properties`'te gerçek AdMob birim kimlikleri (uygulama kimliği,
-  geçiş ve ödüllü birim kimlikleri) girildi — bunlar gizlilik gereği bu repoya
-  commit edilmez, yalnızca yerel makinede/CI ortam değişkeninde tutulur. Bu
-  dosya boşsa build Google'ın herkese açık TEST kimliklerine düşer ve gerçek
-  oyunculara gösterilen reklamlar hiçbir gelir üretmez — release build'den
-  sonra gelir görünmüyorsa ilk bakılacak yer burasıdır.
+## İçerik derecelendirme (IARC) anketi
 
-  **Kalan manuel adım (bu dosya değil, Play Console'un canlı Data Safety
-  formu):** yukarıdaki tablo ve cevaplar Play Console → App content → Data
-  safety formuna elle işlenmeli — bu repodaki metin formu otomatik güncellemez.
-
-## İçerik derecelendirme (IARC) anketi — dikkat edilecekler
-
-Uygulama kullanıcıların birbirinin içeriğini görmesine izin veriyor, bu
-yüzden ankette şunlar **evet** işaretlenmeli:
-
-- **Kullanıcılar birbiriyle etkileşebiliyor mu / içerik paylaşabiliyor mu?**
-  Evet — arkadaşla yarış odalarında çizimler ve emoji tepkileri, Hızlı
-  Eşleş'te başka oyuncuların turları.
-- **Kullanıcı tarafından oluşturulan içerik için bildirme mekanizması var mı?**
-  Evet — sonuç ekranında "Bildir"; iki farklı oyuncunun bildirdiği tur
-  otomatik olarak havuzdan çıkar, ayrıca her tur havuza girmeden önce elle
-  onaylanıyor.
+- **Kullanıcılar birbiriyle etkileşebiliyor / içerik paylaşabiliyor mu?** Evet — odalarda çizim ve
+  emoji tepkileri, Hızlı Eşleş'te kayıtlı oyuncu turları, ligde takma adlar.
+- **Bildirme mekanizması var mı?** Evet — çizim bildir (sonuç ekranları), oyuncu bildir (lig satırı,
+  lobi koltuğu), engelleme (arkadaşlar). Her tur havuza girmeden önce elle onaylanıyor; takma adlar
+  4 dilde küfür filtresinden geçiyor (`NameFilter`).
+- **Konum paylaşımı:** Hayır. **Dijital satın alma:** Hayır. **Reklam:** Evet.
 - Şiddet, cinsellik, uyuşturucu, kumar, korku: **Hayır**.
-
-Bunları eksik işaretlemek sonradan yanlış yaş derecelendirmesi ve yaptırım
-anlamına gelir.
 
 ## Hedef kitle
 
-13 yaş altını hedef kitle olarak seçme. Seçilirse Play'in Aileler politikası
-devreye girer ve kullanıcı içeriği gösteren bir uygulama için ek şartlar
-doğar. Uygun seçim: **13+**.
+Play Console → Target audience: **13–15, 16–17, 18+** (13 altı seçilmez). Çizgi tarzı nedeniyle Play
+uygulamanın çocuklara da hitap ettiğini düşünebilir; bunun için uygulamada tarafsız bir **yaş ekranı**
+var (doğum yılı, hiçbir yıl önceden seçili değil). 13 yaş altı beyan eden oyuncuda çevrimiçi
+özellikler, yüklemeler, lig yayını, Google girişi ve Analytics kapalı; reklamlar çocuklara yönelik
+ve kişiselleştirilmemiş (`LegalConsentStore`). Formdaki "Uygulamanız çocuklara hitap ediyor mu"
+sorusunda bu yaş ekranı ve davranışı açıklanmalı.
 
-## Bot rakip (oda 130246) — Deceptive Behavior notu
+## Yapay zekâ rakipler — şeffaflık
 
-Oda 130246, gerçek kullanıcıların bir bot hesabıyla (elle eğitilmiş
-çizimlerle "insan gibi" davranan) karşılaşabildiği kalıcı bir oda (bkz.
-`functions/DEPLOY.md`). Bir botu bariz şekilde "insan" gibi sunmak Play
-Store'un Deceptive Behavior politikasına teorik olarak değebilir; ancak
-bu, birçok kelime/bilgi oyununun kullandığı yaygın bir "bot-anchored
-lobby" deseni ve düşük risk taşıyor. Yine de ileride bir inceleme
-reddi/uyarı gelirse ilk bakılacak yer burası — gerekirse botun profilinde
-küçük bir "bot" rozeti eklenerek netleştirilebilir.
+- Hızlı Eşleş rakiplerinin çoğu yapay zekâ (`GhostRunRepositoryImpl.BOT_OPPONENT_SHARE`); eşleşme
+  kartında "🤖 Yapay zekâ rakibi" etiketi, sonuç ekranında adın yanında 🤖.
+- Global ligdeki dolgu oyuncular adlarının yanında 🤖 ile gösterilir; fotoğrafları yok (üretilmiş
+  avatar), ödül kazanamazlar (`functions/src/index.ts`, ödüller `users/`'tan seçilir).
+- Antrenman odasındaki (130246) Sude'nin adı "Sude 🤖".
+- Mağaza metinleri ve gizlilik politikası bunu açıkça söylüyor.
 
 ## Yayın öncesi teknik kontrol listesi
 
-- [x] `compileSdk`/`targetSdk` = 36 (31 Ağustos 2026'dan itibaren Play
-  Store'un zorunlu kıldığı minimum). Bunun için AGP 8.5.2 → 9.0.1,
-  Gradle 8.9 → 9.1.0, Kotlin 2.0.21 → 2.2.10, KSP, Room 2.6.1 → 2.8.4,
-  Hilt 2.51.1 → 2.60.1 ve Compose BOM güncellendi; AGP 9'un zorunlu kıldığı
-  "yerleşik Kotlin" mimari geçişi `gradle.properties`'teki
-  `android.builtInKotlin=false` / `android.newDsl=false` bayraklarıyla
-  şimdilik erteledi (AGP 10.0'a kadar geçerli, o zaman tekrar ele alınmalı).
-- [x] Yayın imzalama anahtarı (keystore) oluşturuldu ve `local.properties`'e
-  eklendi — bkz. `RELEASE_SIGNING.md`. Keystore daha önce kullanıcı
-  tarafından üretilip yüklendi (`karalak-release.jks`, alias `karalak`,
-  sertifika 2054'e kadar geçerli). **Önemli**: bu dosya şu an yalnızca bu
-  geçici bulut ortamının diskinde duruyor — container kapanınca kaybolur.
-  Kaybedilirse uygulama bir daha asla güncellenemez, bu yüzden kendi
-  cihazında/parola yöneticinde/bulut yedeğinde ayrı bir kopyası olduğundan
-  emin ol (RELEASE_SIGNING.md §3).
-- [ ] `.aab` YENİDEN üretilmeli. Aşağıdaki doğrulama versionCode 41 için
-  yapıldı; o zamandan beri Google girişi onarımı, moderasyon paneli, ceza
-  sistemi ve performans düzeltmeleri girdi (şu an versionCode 47). Play'e
-  giden paket bunların hepsini içermeli.
-- [x] `./gradlew :app:bundleRelease` ile **imzalı** `.aab` üretilebiliyor —
-  `jarsigner -verify` ile imza doğrulandı ("jar verified"), sertifika
-  sahibi keystore'daki `karalak` alias'ıyla eşleşiyor (CN=BARIS AVCU,
-  OU=KARALAK). Play Console'a yüklenmeye hazır.
-- [ ] Gerçek cihazda kurulup test edildi — bu ortamda Android
-  emulator/cihaz yok (`adb`/`ANDROID_HOME` bulunamadı), bu adım kullanıcının
-  kendi cihazında yapılmalı.
-- [ ] Play App Signing SHA-1'i Firebase'e eklendi. Play, paketi kendi
-  anahtarıyla yeniden imzalar; o parmak izi Firebase'de kayıtlı değilse
-  mağazadan indiren hiç kimse Google ile giriş yapamaz — geliştiricinin
-  kendi APK'sında çalışıyor olması bunu göstermez. Parmak izi yükleme
-  sonrası Play Console → Test ve yayınla → Uygulama bütünlüğü'nde çıkar.
-- [ ] Firestore kuralları ve indeksleri dağıtıldı. Kurallar şu ana kadar
-  elle yapıştırıldı, indeksler hiç dağıtılmadı — CI işinin
-  (`firebase-deploy.yml`) `FIREBASE_SERVICE_ACCOUNT` sırrı hiç konmadı.
-  İndekssiz bir sorgu kısmi sonuç dönmez, komple hata verir; bu yüzden
-  bugün composite indeks isteyen her sorgu tek eşitlik filtresine
-  indirgendi. Sır eklenene kadar yeni bir sıralı sorgu yazılmamalı.
-- [x] Gizlilik politikası bir web adresinde yayınlandı — GitHub Pages
-  `/docs` klasöründen (`https://sualtikasifi.github.io/app-ads/`).
-  Bu URL Play Console'un "App content" bölümüne girilmeli.
-- [ ] İçerik derecelendirme anketi dolduruldu (Play Console'da, IARC anketi).
-- [ ] En az 12 test kullanıcısıyla 14 gün kesintisiz kapalı test tamamlandı
-  (Kasım 2023 sonrası açılan yeni Play Console hesapları için zorunlu).
-- [x] Öne çıkan grafik (1024×500) hazırlandı — `store-assets/`.
-- [ ] En az 2 telefon ekran görüntüsü hazırlandı (bu ortamda üretilemedi,
-  bkz. yukarıdaki "Grafik varlıkları" notu).
-- [x] Native kütüphaneler 16 KB sayfa boyutuna hizalı (Play Store'un Kasım
-  2025'ten beri zorunlu kıldığı gereksinim) — AGP 9.0.1 ile otomatik
-  sağlanıyor, derlenmiş `.so` dosyalarında doğrulandı.
+- [x] `compileSdk`/`targetSdk` = 36.
+- [x] Yayın imzalama anahtarı — bkz. `RELEASE_SIGNING.md`. Keystore'un kendi cihazında / parola
+  yöneticinde ayrı bir kopyası olduğundan emin ol; kaybolursa uygulama bir daha güncellenemez.
+- [ ] `versionCode` 109 / `versionName` 1.30.0 ile `./gradlew :app:bundleRelease`; imzayı
+  `jarsigner -verify` ile doğrula.
+- [ ] Release derlemesinin `app/build/outputs/mapping/release/resources.txt` dosyasında `rune_n_*`,
+  `rune_icon_*`, `rune_*_flavor` için "is not reachable" **olmamalı** (`res/raw/keep.xml`).
+- [ ] Play App Signing SHA-1 **ve** SHA-256'sı: SHA-1 → Firebase (Google girişi), SHA-256 →
+  `hosting/.well-known/assetlinks.json` (davet linkleri). Debug SHA-1'i canlı Firebase projesinden
+  kaldır.
+- [ ] Önce uygulama yayınlanır, **sonra** bu dal main'e alınır (Firestore kuralları ve site main'den
+  dağıtılıyor); kurallar canlıya çıktıktan sonra `config/economy.minVersionCode` = 109 yapılır
+  (eski sürümler yeni kurallarla bazı yazmalarda reddedilir).
+- [ ] GitHub Actions'ta `league-scheduler.yml` → `migrate-web-emails` görevi bir kez elle çalıştırılır;
+  `users.karalak.com` için null MX (`0 .`) DNS kaydı eklenir.
+- [ ] App Check: Android Play Integrity zaten açık; web için reCAPTCHA Enterprise anahtarı
+  `hosting/oyna/config.js` → `appCheckSiteKey`'e yazılır, ardından Firestore için zorunlu kılınır.
+- [ ] AdMob → Privacy & messaging: GDPR mesajı yayınlı; "Google consent mode" açık.
+- [ ] Data safety formu yukarıdaki tabloya göre güncellendi; gizlilik ve hesap silme adresleri girildi.
+- [ ] IARC anketi ve hedef kitle formu yukarıdaki notlara göre dolduruldu.
+- [ ] Gerçek cihazda ve Play'in Pre-launch raporunda release derlemesi test edildi.
+- [ ] En az 2 telefon ekran görüntüsü (yapay zekâ rakip etiketiyle güncel ekranlar).
+- [x] Öne çıkan grafik (1024×500) — `store-assets/`.
+- [x] 16 KB sayfa boyutu hizası (AGP 9).

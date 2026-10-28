@@ -81,7 +81,7 @@ object DrawingShareUtil {
         template.recycle()
         val canvas = Canvas(bitmap)
         drawStrokes(canvas, strokes, ShareTemplate.drawingRect, paddingRatio = 0.04f)
-        ShareTemplate.drawWordAndCaption(context, canvas, ShareTemplate.maskedWord(word))
+        ShareTemplate.drawWordAndCaption(context, canvas, ShareTemplate.maskedWord(word, language))
         shareBitmap(context, bitmap, "karalak")
     }
 
@@ -115,6 +115,7 @@ object DrawingShareUtil {
      * column count that makes the drawings biggest for however many there are.
      */
     private fun renderResultsCard(context: Context, items: List<ResultItem>): Bitmap {
+        val language = WordSeeder.currentLanguage(context)
         val template = ShareTemplate.loadCollage(context)
         val bitmap = template.copy(Bitmap.Config.ARGB_8888, true)
         template.recycle()
@@ -158,7 +159,7 @@ object DrawingShareUtil {
             drawRoundedCard(canvas, rect, cornerRadius = 20f)
             drawStrokes(canvas, item.strokes, rect, paddingRatio = 0.1f)
             canvas.drawText(
-                ShareTemplate.maskedWord(item.word),
+                ShareTemplate.maskedWord(item.word, language),
                 rect.centerX(),
                 rect.bottom + captionHeight * 0.75f,
                 captionPaint

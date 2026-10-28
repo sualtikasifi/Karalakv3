@@ -7,7 +7,7 @@
     <string name="share_room_not_installed">Don\'t have it yet? %1$s</string>
     <string name="share_invite_link">One tap to open (opens the Play Store if not installed): %1$s</string>
     <string name="share_friend_invite">I\'m inviting you to Karalak! 🎨</string>
-    <string name="share_friend_pitch">Draw first, then remember what you drew. Beat the clock, race your friends and climb the weekly league.</string>
+    <string name="share_friend_pitch">Draw first, then remember what you drew. Beat the clock, race your friends and climb the monthly league.</string>
     <string name="share_friend_reward_hint">🎁 We both win: join with my code and when you reach level 5 we each get 500 gold!</string>
     <string name="share_friend_code">My friend code: %1$s</string>
     <string name="share_friend_code_instructions">If the link doesn\'t open: install Karalak, then enter this code under \"Add a friend\" in Friends.</string>
@@ -1694,4 +1694,6 @@
     <string name="report_player_reason_behaviour">Harassment or bad behaviour</string>
     <string name="report_player_reason_cheating">Cheating</string>
     <string name="report_player_reason_other">Something else</string>
+    <string name="share_card_slogan">Come and play,\njoin the fun!</string>
+    <string name="share_card_collage_title">Can you guess\nthese drawings?</string>
 </resources>
