@@ -452,6 +452,8 @@
     <string name="notification_channel_description">Recordatorios enviados como máximo una vez al día para que no te olvides de Karalak.</string>
     <string name="notification_channel_invite_name">Invitaciones de amigos</string>
     <string name="notification_channel_invite_description">Notificaciones que llegan cuando un amigo te invita a una partida en línea.</string>
+    <string name="notification_channel_news_name">Novedades de Karalak</string>
+    <string name="notification_channel_news_description">Avisos y campañas del equipo de Karalak.</string>
     <string name="friend_invite_notification_title">¡%1$s te invitó!</string>
     <string name="friend_invite_notification_body">Toca para jugar juntos en Karalak.</string>
     <string name="settings_language">Idioma</string>

@@ -486,7 +486,7 @@ class StudioViewModel @Inject constructor(
     private fun prefs() = context.getSharedPreferences(AssistantViewModel.PREFS, Context.MODE_PRIVATE)
 
     private fun director(): GuessDirector? {
-        val key = prefs().getString(AssistantViewModel.KEY, "").orEmpty()
+        val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
         if (key.isBlank()) return null
         val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
         return GuessDirector(OpenRouterClient(key), model)
@@ -676,7 +676,7 @@ class StudioViewModel @Inject constructor(
         val stat = s.memory.selected ?: return
         val script = s.memory.script ?: return
         if (s.memory.writing) return
-        val key = prefs().getString(AssistantViewModel.KEY, "").orEmpty()
+        val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
         if (key.isBlank()) { updateMemory { it.copy(writeError = "Önce Asistan ayarlarından OpenRouter anahtarını gir.") }; return }
         val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
         updateMemory { it.copy(writing = true, writeError = null) }
@@ -928,7 +928,7 @@ class StudioViewModel @Inject constructor(
         val s = _state.value
         val p = s.real.project ?: return
         if (s.real.writing) return
-        val key = prefs().getString(AssistantViewModel.KEY, "").orEmpty()
+        val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
         if (key.isBlank()) { updateReal { it.copy(writeError = "Önce Asistan ayarlarından OpenRouter anahtarını gir.") }; return }
         val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
         val candidates = p.reveals.mapNotNull { r -> p.drawing(r.sampleId) }
@@ -966,7 +966,7 @@ class StudioViewModel @Inject constructor(
         val s = _state.value
         val p = s.real.project ?: return
         if (s.real.lineWriting != null) return
-        val key = prefs().getString(AssistantViewModel.KEY, "").orEmpty()
+        val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
         if (key.isBlank()) { lineError(kind, "Önce Asistan ayarlarından OpenRouter anahtarını gir."); return }
         val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
         val reveal = p.opening ?: run { lineError(kind, "Önce en az bir çizim seç"); return }
@@ -1320,7 +1320,7 @@ class StudioViewModel @Inject constructor(
     fun setVoiceOn(on: Boolean) { _state.update { it.copy(voiceOn = on, video = null) } }
     fun setVoice(pitch: Float, rate: Float) { _state.update { it.copy(voicePitch = pitch, voiceRate = rate, video = null) } }
 
-    private fun elevenKey(): String = prefs().getString(EL_KEY, "").orEmpty().trim()
+    private fun elevenKey(): String = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), EL_KEY).trim()
     private fun elevenClient(): ElevenLabs? = elevenKey().takeIf { it.isNotBlank() }?.let { ElevenLabs(it) }
     private fun updateEleven(change: (ElevenUi) -> ElevenUi) = _state.update { it.copy(eleven = change(it.eleven)) }
 
@@ -1355,7 +1355,7 @@ class StudioViewModel @Inject constructor(
     /** Keeps the key on this phone only (never in the app, the backup or the database), then checks it. */
     fun setElevenKey(raw: String) {
         val key = raw.trim()
-        prefs().edit().putString(EL_KEY, key).apply()
+        com.sualtikasifi.cizimhafiza.util.SecretStore.put(prefs(), EL_KEY, key)
         updateEleven { it.copy(keySet = key.isNotBlank(), keyHint = key.takeLast(4), voices = emptyList(), status = null) }
         if (key.isNotBlank()) refreshEleven()
     }

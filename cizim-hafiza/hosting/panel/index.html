@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Karalak Panel</title>
+<link rel="stylesheet" href="panel.css">
+</head>
+<body>
+<header>
+  <h1>Karalak Panel</h1>
+  <span id="who"></span>
+  <button id="signout" hidden>Çıkış</button>
+</header>
+<main>
+  <section id="gate">
+    <p>Geliştirici hesabıyla giriş yap.</p>
+    <button id="signin" class="primary">Google ile giriş</button>
+    <p id="gate-msg" class="msg"></p>
+  </section>
+  <section id="app" hidden>
+    <nav id="tabs"></nav>
+    <div id="view"></div>
+  </section>
+</main>
+<script type="module" src="panel.js"></script>
+</body>
+</html>

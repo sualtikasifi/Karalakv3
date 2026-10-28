@@ -81,7 +81,7 @@ class AssistantViewModel @Inject constructor(
     init {
         // the panel talked to Gemini directly before OpenRouter; that key and its settings mean nothing now
         prefs.edit().remove("gemini_key").remove("model").remove("web_search").apply()
-        val key = prefs.getString(KEY, "").orEmpty()
+        val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs, KEY)
         _state.value = _state.value.copy(
             hasKey = key.isNotBlank(),
             keyPreview = preview(key),
@@ -95,7 +95,7 @@ class AssistantViewModel @Inject constructor(
 
     /** Reads the key's spend for the day and the month (shown in the header and the settings card). */
     fun refreshUsage() {
-        val key = prefs.getString(KEY, "").orEmpty()
+        val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs, KEY)
         if (key.isBlank()) { _state.value = _state.value.copy(usage = null); return }
         viewModelScope.launch {
             OpenRouterClient(key).usage().onSuccess { u -> _state.value = _state.value.copy(usage = u) }
@@ -106,12 +106,12 @@ class AssistantViewModel @Inject constructor(
 
     fun saveSettings(key: String, model: String, webSearch: Boolean) {
         val k = key.trim()
+        if (k.isNotEmpty()) com.sualtikasifi.cizimhafiza.util.SecretStore.put(prefs, KEY, k)
         prefs.edit().apply {
-            if (k.isNotEmpty()) putString(KEY, k)
             putString(MODEL, model.trim().ifBlank { OpenRouterClient.DEFAULT_MODEL })
             putBoolean(SEARCH, webSearch)
         }.apply()
-        val stored = prefs.getString(KEY, "").orEmpty()
+        val stored = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs, KEY)
         _state.value = _state.value.copy(
             hasKey = stored.isNotBlank(), keyPreview = preview(stored),
             model = model.trim().ifBlank { OpenRouterClient.DEFAULT_MODEL }, webSearch = webSearch, showSettings = stored.isBlank()
@@ -139,7 +139,7 @@ class AssistantViewModel @Inject constructor(
 
     fun run() {
         val st = _state.value
-        val key = prefs.getString(KEY, "").orEmpty()
+        val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs, KEY)
         if (key.isBlank()) { _state.value = st.copy(showSettings = true, error = "Önce OpenRouter anahtarını gir."); return }
         if (st.running) return
         _state.value = st.copy(running = true, error = null)

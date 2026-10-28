@@ -459,6 +459,8 @@
     <string name="notification_channel_description">Karalak\'ı unutmayasın diye günde en fazla bir kez gönderilen hatırlatmalar.</string>
     <string name="notification_channel_invite_name">Arkadaş davetleri</string>
     <string name="notification_channel_invite_description">Bir arkadaşın seni çevrimiçi bir maça davet ettiğinde gönderilen bildirimler.</string>
+    <string name="notification_channel_news_name">Karalak haberleri</string>
+    <string name="notification_channel_news_description">Karalak ekibinden duyurular ve kampanyalar.</string>
     <string name="friend_invite_notification_title">%1$s seni davet etti!</string>
     <string name="friend_invite_notification_body">Karalak\'ta birlikte oynamak için dokun.</string>
     <string name="settings_language">Dil</string>

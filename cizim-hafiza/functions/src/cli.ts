@@ -22,6 +22,8 @@ import {
   runFinalizeLeaguePeriod,
   runGrantReferralRewards,
 } from "./index";
+import * as admin from "firebase-admin";
+import { runProcessAdminCommands, runRollupStats } from "./adminTasks";
 import { runMigrateWebEmails, runProcessDeletions } from "./maintenance";
 
 const tasks: Record<string, () => Promise<void>> = {
@@ -33,7 +35,24 @@ const tasks: Record<string, () => Promise<void>> = {
   "process-deletions": runProcessDeletions,
   // One-off: moves browser accounts off the old @users.karalak.app address domain (see maintenance.ts).
   "migrate-web-emails": runMigrateWebEmails,
+  // Hourly: what the developer panel asked for (gifts, broadcasts) and XP events planned ahead (see adminTasks.ts).
+  "process-admin-commands": runProcessAdminCommands,
+  // Nightly: folds the day's statistics rows into one adminSummary document.
+  "rollup-stats": runRollupStats,
 };
+
+/** Leaves the task's last run where the developer panel's "Arka plan işleri" tab can read it. */
+async function recordRun(task: string, ok: boolean, error?: unknown): Promise<void> {
+  try {
+    await admin.firestore().doc(`adminJobs/${task}`).set({
+      lastRunAt: admin.firestore.FieldValue.serverTimestamp(),
+      ok,
+      error: ok ? "" : String(error instanceof Error ? error.message : error).slice(0, 300),
+    });
+  } catch (e) {
+    console.error("Could not record the run", e);
+  }
+}
 
 const taskName = process.argv[2];
 const run = tasks[taskName];
@@ -44,8 +63,12 @@ if (!run) {
 }
 
 run()
-  .then(() => process.exit(0))
-  .catch((err) => {
+  .then(async () => {
+    await recordRun(taskName, true);
+    process.exit(0);
+  })
+  .catch(async (err) => {
     console.error(err);
+    await recordRun(taskName, false, err);
     process.exit(1);
   });

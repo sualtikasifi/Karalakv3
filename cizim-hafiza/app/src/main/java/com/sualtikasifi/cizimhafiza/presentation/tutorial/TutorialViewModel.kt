@@ -56,6 +56,7 @@ data class TutorialCoach(
 @HiltViewModel
 class TutorialViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
+    private val adminStats: com.sualtikasifi.cizimhafiza.util.AdminStats,
     @ApplicationContext context: Context
 ) : ViewModel() {
 
@@ -322,6 +323,9 @@ class TutorialViewModel @Inject constructor(
     fun completeTutorial() {
         timerJob?.cancel()
         settingsRepository.tutorialCompleted = true
+        // The developer panel's funnel: how many play the tutorial through and how many skip it.
+        val playedThrough = _isFinished.value || _coach.value == FINALE_COACH
+        runCatching { adminStats.record(if (playedThrough) "tutorial__finished__count" else "tutorial__skipped__count") }
         // Whoever plays it through gets the practice jokers for real (once); skipping does not.
         if (_isFinished.value || _coach.value == FINALE_COACH) settingsRepository.grantTutorialJokersOnce()
     }

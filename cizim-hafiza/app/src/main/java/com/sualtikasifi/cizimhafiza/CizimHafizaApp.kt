@@ -20,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -161,6 +162,14 @@ class CizimHafizaApp : Application(), Configuration.Provider {
             guarded("analytics by age") { legalConsentStore.get().applyAnalyticsCollection() }
             // A linked account's year of birth: saved on the account once, then the one that counts (see AccountAgeSync).
             guarded("account age") { accountAgeSync.get().start() }
+            // Broadcasts from the developer panel: only while notifications are on, and never for a child account.
+            guarded("news topic") {
+                val flow = kotlinx.coroutines.flow.combine(
+                    settingsRepository.notificationsEnabled,
+                    legalConsentStore.get().childMode
+                ) { on, child -> on && !child }.distinctUntilChanged()
+                applicationScope.launch { flow.collect { com.sualtikasifi.cizimhafiza.notifications.BroadcastTopic.sync(it) } }
+            }
             guarded("league score publisher") { leagueScorePublisher.get().start() }
             // The publisher waits a while to batch a match's XP into one write; this lands whatever is still waiting
             // the moment the player leaves the app (a no-op when the profile already says the same thing).

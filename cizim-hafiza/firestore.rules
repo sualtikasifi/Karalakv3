@@ -660,6 +660,10 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create, update: if signedIn() && request.auth.uid == uid
                             && plausibleLeagueFields() && profileFieldsOk() && referralFieldsOk();
+      // The reviewer may put a neutral name on an account whose name was reported (developer panel, "Adı sıfırla").
+      allow update: if reviewer()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nickname', 'username', 'nameResetAt'])
+                    && shortName(request.resource.data.nickname);
       // Deleting the account takes the public profile with it.
       allow delete: if signedIn() && request.auth.uid == uid;
 
@@ -1103,6 +1107,48 @@ service cloud.firestore {
     // then overwrite everyone's numbers, and every device in the world wrote to a
     // single document — so it is read-only now (older days keep their totals there).
     // Reading is the reviewer's alone: ad revenue is nobody else's business.
+    // What the developer panel asks the cron script to do with admin credentials (grant a player gold or XP, send a
+    // push to everyone). The panel writes the request; .github/workflows/league-scheduler.yml's
+    // process-admin-commands runs it and stamps `doneAt`. Reviewer only.
+    match /adminCommands/{id} {
+      allow read, delete: if reviewer();
+      allow create: if reviewer()
+                    && request.resource.data.keys().hasOnly(['type', 'uid', 'gold', 'xp', 'note', 'title', 'body', 'by', 'createdAt'])
+                    && request.resource.data.type in ['grant', 'broadcast']
+                    && request.resource.data.createdAt == request.time;
+      allow update: if false;
+    }
+
+    // Who did what in the developer panel. Append-only, reviewer only.
+    match /adminAudit/{id} {
+      allow read: if reviewer();
+      allow create: if reviewer()
+                    && request.resource.data.keys().hasOnly(['action', 'target', 'detail', 'by', 'at'])
+                    && request.resource.data.at == request.time;
+      allow update, delete: if false;
+    }
+
+    // Written by the cron script (admin credentials): the per-day roll-up of adminStats, and the last run of each job.
+    match /adminSummary/{day} {
+      allow read: if reviewer();
+      allow write: if false;
+    }
+    match /adminJobs/{name} {
+      allow read: if reviewer();
+      allow write: if false;
+    }
+
+    // A banner on the home screen, set from the developer panel.
+    match /config/announcement {
+      allow read: if signedIn();
+      allow write: if reviewer();
+    }
+
+    // XP events planned ahead; the cron script switches config/xpEvent on when one is due.
+    match /xpEventPlans/{id} {
+      allow read, write: if reviewer();
+    }
+
     match /adminStats/{day} {
       allow read: if reviewer();
       allow create, update, delete: if false;

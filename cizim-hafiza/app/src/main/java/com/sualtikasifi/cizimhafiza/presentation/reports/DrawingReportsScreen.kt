@@ -5,6 +5,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,6 +27,13 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Report
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Dashboard
@@ -221,6 +230,7 @@ fun DrawingReportsScreen(
                     ReportsTab.League -> 0
                     // Same story as League — see the XpEvent branch below.
                     ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes, ReportsTab.Update,
+                    ReportsTab.PlayerReports, ReportsTab.Players, ReportsTab.Economy, ReportsTab.Announce, ReportsTab.Push, ReportsTab.Jobs, ReportsTab.Audit,
                     ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Studio -> 0
                     ReportsTab.DailyChallenge -> uiState.dailyChallengeQueue.size
                 }
@@ -307,6 +317,20 @@ fun DrawingReportsScreen(
 
                     uiState.tab == ReportsTab.Update -> UpdatePanel()
 
+                    uiState.tab == ReportsTab.PlayerReports -> PlayerReportsPanel()
+
+                    uiState.tab == ReportsTab.Players -> PlayersPanel()
+
+                    uiState.tab == ReportsTab.Economy -> EconomyPanel()
+
+                    uiState.tab == ReportsTab.Announce -> AnnouncePanel()
+
+                    uiState.tab == ReportsTab.Push -> PushPanel()
+
+                    uiState.tab == ReportsTab.Jobs -> JobsPanel()
+
+                    uiState.tab == ReportsTab.Audit -> AuditPanel()
+
                     // Also not a list — a status line plus start/stop
                     // buttons, same shape as the League branch above.
                     uiState.tab == ReportsTab.XpEvent -> XpEventPanel(
@@ -347,6 +371,7 @@ fun DrawingReportsScreen(
                                     // runs, kept only for exhaustiveness.
                                     ReportsTab.League -> R.string.reports_tab_league
                                     ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes, ReportsTab.Update,
+                    ReportsTab.PlayerReports, ReportsTab.Players, ReportsTab.Economy, ReportsTab.Announce, ReportsTab.Push, ReportsTab.Jobs, ReportsTab.Audit,
                                     ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Studio -> R.string.reports_tab_xp_event
                                     ReportsTab.DailyChallenge -> R.string.reports_daily_challenge_empty
                                 }
@@ -418,6 +443,7 @@ fun DrawingReportsScreen(
                             ReportsTab.League -> Unit
                             // Same — see the XpEvent branch above.
                             ReportsTab.XpEvent, ReportsTab.Stats, ReportsTab.Coupons, ReportsTab.Locks, ReportsTab.Runes, ReportsTab.Update,
+                    ReportsTab.PlayerReports, ReportsTab.Players, ReportsTab.Economy, ReportsTab.Announce, ReportsTab.Push, ReportsTab.Jobs, ReportsTab.Audit,
                             ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Studio -> Unit
                             ReportsTab.DailyChallenge -> items(
                                 uiState.dailyChallengeQueue,
@@ -704,7 +730,7 @@ private fun XpEventPanel(
     onStop: () -> Unit
 ) {
     val isRunning = event != null && event.active && System.currentTimeMillis() < event.endsAtMillis
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
         Text(
             text = stringResource(R.string.reports_xp_event_hint),
             style = MaterialTheme.typography.bodySmall,
@@ -805,6 +831,7 @@ private fun XpEventPanel(
                 Text(stringResource(R.string.reports_xp_event_stop))
             }
         }
+        XpPlanSection()
     }
 }
 
@@ -1273,6 +1300,7 @@ private fun ReportsTab.labelRes(): Int = when (this) {
     ReportsTab.Locks -> R.string.reports_tab_locks
     ReportsTab.Runes -> R.string.reports_tab_runes
     ReportsTab.Update -> R.string.reports_tab_update
+    ReportsTab.PlayerReports, ReportsTab.Players, ReportsTab.Economy, ReportsTab.Announce, ReportsTab.Push, ReportsTab.Jobs, ReportsTab.Audit -> R.string.reports_title
     ReportsTab.Dashboard, ReportsTab.Assistant, ReportsTab.Tools, ReportsTab.Studio -> R.string.reports_title
 }
 
@@ -1331,6 +1359,13 @@ private fun ToolsGrid(onOpen: (ReportsTab) -> Unit, onQueueList: () -> Unit, onB
         Tool(Icons.Filled.Lock, "Kilitler", "Oyuncu kilitleri ve cezalar") { onOpen(ReportsTab.Locks) },
         Tool(Icons.Filled.Diamond, "Rünler", "Rün ayarları") { onOpen(ReportsTab.Runes) },
         Tool(Icons.Filled.SystemUpdate, "Güncelleme", "Eski sürümlerde oyunu kilitle") { onOpen(ReportsTab.Update) },
+        Tool(Icons.Filled.Report, "Oyuncu raporları", "Bildirilen oyuncular ve işlem") { onOpen(ReportsTab.PlayerReports) },
+        Tool(Icons.Filled.Search, "Oyuncu ara", "Profil, ceza, ad sıfırlama, telafi") { onOpen(ReportsTab.Players) },
+        Tool(Icons.Filled.Tune, "Ekonomi", "Altın ve ödül ayarları") { onOpen(ReportsTab.Economy) },
+        Tool(Icons.Filled.Campaign, "Duyuru", "Ana sayfa duyuru şeridi") { onOpen(ReportsTab.Announce) },
+        Tool(Icons.Filled.Notifications, "Bildirim gönder", "Tüm oyunculara push") { onOpen(ReportsTab.Push) },
+        Tool(Icons.Filled.Schedule, "Arka plan işleri", "Zamanlanmış işlerin durumu") { onOpen(ReportsTab.Jobs) },
+        Tool(Icons.Filled.History, "Denetim kaydı", "Panelde yapılan işlemler") { onOpen(ReportsTab.Audit) },
         Tool(Icons.Filled.Badge, "Bot isimleri", "Rakip isim havuzu") { onBotNames() }
     )
     androidx.compose.foundation.lazy.LazyColumn(
