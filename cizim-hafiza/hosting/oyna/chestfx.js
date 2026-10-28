@@ -113,7 +113,7 @@ export function wonScene(cv, chestImg, tier, onLanded) {
  *  video. `at()` gives the chest's centre and the board's unit, in canvas pixels. */
 export function rewardScene(cv, tier, gold, at) {
   const g = cv.getContext("2d"), { w, h, d } = sizeCanvas(cv), A = TIER[tier].accent, light = glowOf(tier), r = rng(gold * 31 + TIER[tier].n);
-  const warm = lerpC(light, "#FFECBE", 0.5), rayC = lerpC(A, "#FFD26E", 0.45);
+  const warm = lerpC(light, "#FFECBE", 0.5), rayC = lerpC(A, "#FFD26E", 0.25);
   const gems = ["#46C878", "#EB4664", "#5096FF", "#AA64F0"], crayons = ["#E63C3C", "#3C78E6", "#FAB41E", "#965ADC"];
   const loot = Array.from({ length: 34 }, () => { const k = r(), kind = k < 0.5 ? 0 : k < 0.8 ? 1 : 2; return { x: r(), st: r(), sp: 0.8 + r() * 0.9, sw: 0.01 + r() * 0.025, spin: 1 + r() * 3, s: 16 + r() * 12, kind, c: kind === 1 ? gems[Math.floor(r() * 4)] : crayons[Math.floor(r() * 4)] }; });
   const spots = [[-0.36, -0.42], [0.38, -0.30], [-0.42, 0.12], [0.40, 0.22], [-0.20, 0.46], [0.26, 0.52], [0.05, -0.55]];
@@ -122,7 +122,8 @@ export function rewardScene(cv, tier, gold, at) {
     g.clearRect(0, 0, w, h); g.globalAlpha = fade;
     disc(g, cx, cy, 900 * U, [[0, rgba(warm, 0.85)], [0.5, rgba(warm, 0.35)], [1, rgba(warm, 0)]]);
     g.save(); g.translate(cx, cy); g.rotate(spin * Math.PI / 180);
-    const grad = g.createRadialGradient(0, 0, 0, 0, 0, 1000 * U); grad.addColorStop(0, rgba(rayC, 0.30)); grad.addColorStop(0.5, rgba(rayC, 0.12)); grad.addColorStop(1, rgba(rayC, 0));
+    // Strong enough to read beside, above and below the board, and still there at the screen's corners.
+    const grad = g.createRadialGradient(0, 0, 0, 0, 0, 1500 * U); grad.addColorStop(0, rgba(rayC, 0.55)); grad.addColorStop(0.4, rgba(rayC, 0.42)); grad.addColorStop(0.8, rgba(rayC, 0.20)); grad.addColorStop(1, rgba(rayC, 0));
     const len = Math.max(w, h) * 1.5, half = Math.PI / 24 * 0.5;
     for (let i = 0; i < 24; i++) { const a = i * Math.PI / 12; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a - half) * len, Math.sin(a - half) * len); g.lineTo(Math.cos(a + half) * len, Math.sin(a + half) * len); g.closePath(); g.fillStyle = grad; g.fill(); }
     g.restore();
