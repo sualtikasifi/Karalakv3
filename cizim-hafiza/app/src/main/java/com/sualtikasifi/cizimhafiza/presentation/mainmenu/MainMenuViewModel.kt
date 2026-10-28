@@ -71,8 +71,14 @@ class MainMenuViewModel @Inject constructor(
     private val achievementUnlocker: com.sualtikasifi.cizimhafiza.util.AchievementUnlocker,
     xpEventRepository: com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository,
     private val serverClock: com.sualtikasifi.cizimhafiza.domain.repository.ServerClock,
-    legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore
+    legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore,
+    private val announcementRepository: com.sualtikasifi.cizimhafiza.data.repository.AnnouncementRepository
 ) : ViewModel() {
+
+    /** A notice from the developer panel, shown once per notice (see AnnouncementRepository). */
+    val announcement: StateFlow<com.sualtikasifi.cizimhafiza.data.repository.Announcement?> = announcementRepository.current
+    fun dismissAnnouncement() = announcementRepository.dismiss()
+    init { announcementRepository.refresh() }
 
     /** The date-of-birth prompt is still to be answered: the home screen's own windows wait for it (see StartupPrompts). */
     val legalPending: StateFlow<Boolean> = legalConsentStore.needsPromptFlow

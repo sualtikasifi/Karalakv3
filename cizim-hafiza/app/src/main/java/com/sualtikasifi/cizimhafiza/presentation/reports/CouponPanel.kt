@@ -47,6 +47,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -65,12 +66,16 @@ data class CouponAdminState(
     val busy: Boolean = false,
     val message: String? = null,
     val lastCreated: List<String> = emptyList(),
-    val recent: List<Coupon> = emptyList()
+    val recent: List<Coupon> = emptyList(),
+    /** Who redeemed one code (nicknames), after "Kullananlar" was tapped. */
+    val redeemers: Pair<String, List<String>>? = null
 )
 
 @HiltViewModel
 class CouponAdminViewModel @Inject constructor(
-    private val couponRepository: CouponRepository
+    private val couponRepository: CouponRepository,
+    private val firestore: com.google.firebase.firestore.FirebaseFirestore,
+    private val admin: com.sualtikasifi.cizimhafiza.util.PlayerAdmin
 ) : ViewModel() {
     private val _state = MutableStateFlow(CouponAdminState())
     val state: StateFlow<CouponAdminState> = _state.asStateFlow()
@@ -83,6 +88,34 @@ class CouponAdminViewModel @Inject constructor(
                 .onFailure { _state.update { s -> s.copy(message = "Liste yüklenemedi.") } }
         }
     }
+
+    /** Ends a code now: its expiry is set to a moment in the past, which the redeem check already treats as expired. */
+    fun close(code: String) {
+        viewModelScope.launch {
+            runCatching {
+                firestore.collection("coupons").document(code)
+                    .update("expiresAt", 1L).await()
+            }.onSuccess {
+                admin.audit("coupon-close", code, "")
+                _state.update { it.copy(message = "$code kapatıldı.") }
+                refresh()
+            }.onFailure { _state.update { it.copy(message = "Kapatılamadı (internet ya da yetki).") } }
+        }
+    }
+
+    fun showRedeemers(code: String) {
+        viewModelScope.launch {
+            runCatching {
+                firestore.collection("coupons").document(code).collection("redemptions").limit(60).get().await().documents.map { d ->
+                    runCatching { firestore.collection("users").document(d.id).get().await().getString("nickname") }.getOrNull()
+                        ?.takeIf { it.isNotBlank() } ?: d.id.take(8)
+                }
+            }.onSuccess { names -> _state.update { it.copy(redeemers = code to names) } }
+                .onFailure { _state.update { it.copy(message = "Liste yüklenemedi.") } }
+        }
+    }
+
+    fun hideRedeemers() = _state.update { it.copy(redeemers = null) }
 
     fun create() {
         val s = _state.value
@@ -235,8 +268,24 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
             ).joinToString(", ")
             // the developer panel is Turkish throughout, so its dates are too
             val until = if (c.expiresAtMillis > 0) " · " + SimpleDateFormat("d MMM", Locale("tr")).format(Date(c.expiresAtMillis)) else ""
-            CopyRow(code = "${c.code} · $reward · ${c.usedCount}/${c.maxUses}$until", style = MaterialTheme.typography.bodySmall) {
+            val closed = c.expiresAtMillis in 1..System.currentTimeMillis()
+            CopyRow(code = "${c.code} · $reward · ${c.usedCount}/${c.maxUses}$until" + if (closed) " · kapalı" else "", style = MaterialTheme.typography.bodySmall) {
                 copyToClipboard(context, c.code)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                if (c.usedCount > 0) {
+                    androidx.compose.material3.TextButton(onClick = { viewModel.showRedeemers(c.code) }) { Text("Kullananlar (${c.usedCount})") }
+                }
+                if (!closed && c.usedCount < c.maxUses) {
+                    androidx.compose.material3.TextButton(onClick = { viewModel.close(c.code) }) { Text("Kapat") }
+                }
+            }
+            state.redeemers?.takeIf { it.first == c.code }?.let { (_, names) ->
+                Text(
+                    names.joinToString(", ").ifEmpty { "-" },
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clickable { viewModel.hideRedeemers() }
+                )
             }
         }
     }

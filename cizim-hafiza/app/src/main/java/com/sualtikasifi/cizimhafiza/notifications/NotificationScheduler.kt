@@ -62,6 +62,9 @@ object NotificationScheduler {
     // code has run.
     const val FRIEND_INVITE_CHANNEL_ID = "friend_invite"
 
+    /** Announcements the developer panel broadcasts to everyone (see BroadcastTopic). */
+    const val NEWS_CHANNEL_ID = "news"
+
     const val ACTION_DAILY_REMINDER = "com.sualtikasifi.cizimhafiza.DAILY_REMINDER"
 
     private const val TAG = "NotificationScheduler"
@@ -172,6 +175,18 @@ object NotificationScheduler {
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description = context.getString(R.string.notification_channel_invite_description)
+        }
+        manager.createNotificationChannel(channel)
+    }
+
+    fun createNewsChannel(context: Context) {
+        val manager = context.getSystemService<NotificationManager>() ?: return
+        val channel = NotificationChannel(
+            NEWS_CHANNEL_ID,
+            context.getString(R.string.notification_channel_news_name),
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = context.getString(R.string.notification_channel_news_description)
         }
         manager.createNotificationChannel(channel)
     }

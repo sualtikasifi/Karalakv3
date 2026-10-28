@@ -109,10 +109,43 @@ fun StatsPanel(viewModel: StatsViewModel = hiltViewModel()) {
                 )
             }
         }
+        // Filled in by the nightly roll-up; days it has not covered yet are skipped.
+        val newDays = s.newPlayers.filterNotNull()
+        val d1 = s.d1Return.filterNotNull()
+        val d7 = s.d7Return.filterNotNull()
+        if (newDays.isNotEmpty() || d1.isNotEmpty()) {
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StatTile("Yeni oyuncu", Console.compact(newDays.sum().toDouble()), Modifier.weight(1f), changeCaption = "son 30 günde görülmemiş")
+                    StatTile(
+                        "Ertesi gün dönen",
+                        if (d1.isNotEmpty()) String.format(Locale("tr"), "%%%.0f", d1.average() * 100) else "—",
+                        Modifier.weight(1f),
+                        changeCaption = if (d7.isNotEmpty()) String.format(Locale("tr"), "7. gün: %%%.0f", d7.average() * 100) else "7. gün: veri yok"
+                    )
+                }
+            }
+        }
         item {
             ConsoleCard(Modifier.fillMaxWidth()) {
                 SectionHeader("Aktif oyuncu", subtitle = "Gün içinde uygulamayı açan farklı oyuncu")
                 LineChart(all.map { ChartPoint(s.label(it), s.players[it].toDouble()) })
+            }
+        }
+        // Which modes the finished games came from, and how the tutorial ends.
+        val byMode = HashMap<String, Long>()
+        s.counts.forEach { day -> day.forEach { (k, v) -> if (k.startsWith("games__finished__")) byMode.merge(k.removePrefix("games__finished__"), v, Long::plus) } }
+        val tutDone = s.sumOf(all) { s.counts[it]["tutorial__finished__count"] ?: 0L }
+        val tutSkip = s.sumOf(all) { s.counts[it]["tutorial__skipped__count"] ?: 0L }
+        if (byMode.isNotEmpty() || tutDone + tutSkip > 0) {
+            item {
+                ConsoleCard(Modifier.fillMaxWidth()) {
+                    SectionHeader("Kullanım", subtitle = "Moda göre biten oyun ve eğitim sonu")
+                    byMode.entries.sortedByDescending { it.value }.take(8).forEach { (mode, n) ->
+                        Text("${mode.replace('_', ' ')}: $n", style = Console.Small)
+                    }
+                    if (tutDone + tutSkip > 0) Text("Eğitim: $tutDone bitirdi · $tutSkip atladı", style = Console.Small)
+                }
             }
         }
         item {

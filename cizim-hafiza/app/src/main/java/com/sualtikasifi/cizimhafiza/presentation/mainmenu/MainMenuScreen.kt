@@ -352,6 +352,17 @@ fun MainMenuScreen(
             )
         }
 
+        // A notice from the developer panel: after the opening windows, once per notice.
+        val announcement by viewModel.announcement.collectAsState()
+        val announcementOnScreen = openingClear && !featureTourOpen && !ratingPrompt && freeChestReward == null &&
+            announcement != null && dailyState.rescuableStreak == 0
+        if (announcementOnScreen) {
+            announcement?.let { a ->
+                LaunchedEffect(Unit) { com.sualtikasifi.cizimhafiza.presentation.common.StartupPrompts.openingShownThisLaunch = true }
+                com.sualtikasifi.cizimhafiza.presentation.common.AnnouncementDialog(a.title, a.body, onClose = viewModel::dismissAnnouncement)
+            }
+        }
+
         freeChestReward?.takeIf { splashDone }?.let { reward ->
             com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog(reward = reward, onDismiss = viewModel::consumeFreeChestReward)
         }
@@ -396,7 +407,7 @@ fun MainMenuScreen(
 
         NotificationPermissionWhenQuiet(
             quiet = openingClear && !featureTourOpen && !rescueOnScreen && !ratingPrompt && freeChestReward == null &&
-                loginPopup == null && loginChests.isEmpty() && !gamePlayed && !exitPromptOpen &&
+                loginPopup == null && loginChests.isEmpty() && !gamePlayed && !exitPromptOpen && !announcementOnScreen &&
                 !framePickerOpen && !penPickerOpen && !rankLadderOpen,
             asked = viewModel.notificationPermissionAsked,
             onAsked = viewModel::markNotificationPermissionAsked,

@@ -28,6 +28,10 @@ on:
     - cron: "13 0 * * *"
     # Account deletions requested in the apps: Istanbul ~05:37.
     - cron: "37 2 * * *"
+    # What the developer panel asked for (gifts, broadcast pushes, planned XP events): hourly, at :47.
+    - cron: "47 * * * *"
+    # Statistics roll-up for the panel: Istanbul ~03:53, after the UTC day has closed.
+    - cron: "53 0 * * *"
   workflow_dispatch:
     inputs:
       task:
@@ -41,6 +45,8 @@ on:
           - grant-referral-rewards
           - process-deletions
           - migrate-web-emails
+          - process-admin-commands
+          - rollup-stats
 
 jobs:
   run-task:
@@ -83,6 +89,8 @@ jobs:
             "10 21 * * *") echo "task=finalize-league-period" >> "$GITHUB_OUTPUT" ;;
             "13 0 * * *") echo "task=grant-referral-rewards" >> "$GITHUB_OUTPUT" ;;
             "37 2 * * *") echo "task=process-deletions" >> "$GITHUB_OUTPUT" ;;
+            "47 * * * *") echo "task=process-admin-commands" >> "$GITHUB_OUTPUT" ;;
+            "53 0 * * *") echo "task=rollup-stats" >> "$GITHUB_OUTPUT" ;;
             *) echo "Unrecognized schedule: ${{ github.event.schedule }}"; exit 1 ;;
           esac
 

@@ -262,6 +262,28 @@ await check("a report's reason is one of the four", assertFails(setDoc(doc(db("p
 await check("a filed report is not rewritten", assertFails(setDoc(doc(db("pr1"), "playerReports", "bad1__pr1"), preport("pr1", "bad1", { reason: "OTHER" }))));
 await check("the reviewer reads reports", assertSucceeds(getDoc(doc(reviewer(), "playerReports", "bad1__pr1"))));
 
+// The developer panel's own collections: commands, audit log, roll-ups, announcement, planned XP events, and a reviewer's name reset.
+await seed(["users", "nm1"], { nickname: "Kaba", level: 3 });
+await check("the reviewer puts a neutral name on an account", assertSucceeds(updateDoc(doc(reviewer(), "users", "nm1"), { nickname: "Oyuncu1234", username: "Oyuncu1234", nameResetAt: 5 })));
+await check("the reviewer cannot touch anything else on an account", assertFails(updateDoc(doc(reviewer(), "users", "nm1"), { level: 99 })));
+await check("a stranger cannot rename an account", assertFails(updateDoc(doc(db("nm2"), "users", "nm1"), { nickname: "x" })));
+await check("the reviewer asks for a gift", assertSucceeds(setDoc(doc(reviewer(), "adminCommands", "c1"), { type: "grant", uid: "nm1", gold: 100, xp: 0, note: "n", by: "r", createdAt: serverTimestamp() })));
+await check("an unknown command type is refused", assertFails(setDoc(doc(reviewer(), "adminCommands", "c2"), { type: "wipe", createdAt: serverTimestamp() })));
+await check("a player cannot queue a command", assertFails(setDoc(doc(db("nm2"), "adminCommands", "c3"), { type: "grant", uid: "nm2", gold: 9999, xp: 0, note: "n", by: "x", createdAt: serverTimestamp() })));
+await check("a player cannot read the commands", assertFails(getDoc(doc(db("nm2"), "adminCommands", "c1"))));
+await check("the reviewer writes an audit line", assertSucceeds(setDoc(doc(reviewer(), "adminAudit", "a1"), { action: "lock", target: "nm1", detail: "", by: "r", at: serverTimestamp() })));
+await check("the audit log is not rewritten", assertFails(setDoc(doc(reviewer(), "adminAudit", "a1"), { action: "lock", target: "nm1", detail: "x", by: "r", at: serverTimestamp() })));
+await check("the audit log is not erased", assertFails(deleteDoc(doc(reviewer(), "adminAudit", "a1"))));
+await seed(["adminSummary", "2026-10-27"], { day: "2026-10-27", players: 5, final: true });
+await check("the reviewer reads a roll-up", assertSucceeds(getDoc(doc(reviewer(), "adminSummary", "2026-10-27"))));
+await check("a player cannot read a roll-up", assertFails(getDoc(doc(db("nm2"), "adminSummary", "2026-10-27"))));
+await check("nobody writes a roll-up from the app", assertFails(setDoc(doc(reviewer(), "adminSummary", "2026-10-28"), { day: "2026-10-28", players: 1, final: true })));
+await check("the reviewer sets the announcement", assertSucceeds(setDoc(doc(reviewer(), "config", "announcement"), { active: true, id: "1", texts: { tr: { title: "a", body: "b" } } })));
+await check("a player reads the announcement", assertSucceeds(getDoc(doc(db("nm2"), "config", "announcement"))));
+await check("a player cannot set the announcement", assertFails(setDoc(doc(db("nm2"), "config", "announcement"), { active: true })));
+await check("the reviewer plans an XP event", assertSucceeds(setDoc(doc(reviewer(), "xpEventPlans", "p1"), { startAtMillis: 1, durationHours: 24, multiplier: 2 })));
+await check("a player cannot plan an XP event", assertFails(setDoc(doc(db("nm2"), "xpEventPlans", "p2"), { startAtMillis: 1, durationHours: 24, multiplier: 10 })));
+
 await env.cleanup();
 console.log(failures ? `\n${failures} FAILED` : "\nall passed");
 process.exit(failures ? 1 : 0);

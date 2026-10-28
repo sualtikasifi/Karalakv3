@@ -58,12 +58,40 @@ class FriendInviteMessagingService : FirebaseMessagingService() {
         // pre-built (unlocalized, wrong-channel) notification straight from
         // the payload. Title/body are built from local string resources so
         // they follow this device's own app language, not the sender's.
+        // A broadcast from the developer panel carries its own title and text (data-only as well).
+        if (message.data["type"] == "broadcast") {
+            showBroadcast(message.data["title"].orEmpty(), message.data["body"].orEmpty())
+            return
+        }
         val fromNickname = message.data["fromNickname"] ?: return
         val inviteId = message.data["inviteId"]
         val title = getString(R.string.friend_invite_notification_title, fromNickname)
         val body = getString(R.string.friend_invite_notification_body)
 
         showNotification(title, body, inviteId)
+    }
+
+    private fun showBroadcast(title: String, body: String) {
+        if (title.isBlank() && body.isBlank()) return
+        val context: Context = applicationContext
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        NotificationScheduler.createNewsChannel(context)
+        val openAppIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, BROADCAST_REQUEST_CODE, openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(context, NotificationScheduler.NEWS_CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+        NotificationManagerCompat.from(context).notify(BROADCAST_REQUEST_CODE, notification)
     }
 
     private fun showNotification(title: String, body: String, inviteId: String?) {
@@ -92,5 +120,9 @@ class FriendInviteMessagingService : FirebaseMessagingService() {
             .setContentIntent(pendingIntent)
             .build()
         NotificationManagerCompat.from(context).notify(requestCode, notification)
+    }
+
+    private companion object {
+        const val BROADCAST_REQUEST_CODE = 7301
     }
 }

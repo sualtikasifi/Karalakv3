@@ -22,7 +22,13 @@ data class DaySeries(
     val days: List<String>,
     val players: List<Long>,
     /** Each day's raw counters (`app__open__count`, `ad__<placement>__<event>`, `rev__<placement>__micros`…). */
-    val counts: List<Map<String, Long>>
+    val counts: List<Map<String, Long>>,
+    /** First-seen players per day (not seen in the 30 days before); null for a day with no roll-up yet. */
+    val newPlayers: List<Long?> = emptyList(),
+    /** Of the players active the day before, the share active today (0..1); null when unknown. */
+    val d1Return: List<Double?> = emptyList(),
+    /** Of the players active seven days before, the share active today (0..1); null when unknown. */
+    val d7Return: List<Double?> = emptyList()
 ) {
     val size: Int get() = days.size
 
@@ -50,12 +56,13 @@ data class DaySeries(
 }
 
 /**
- * Reads [days] days of statistics: each day's per-device rows (adminStats/{day}/devices), added up, plus the totals
- * older days kept on the day document itself, and one count() per day for the distinct players.
+ * Reads [days] days of statistics. A day the nightly roll-up has closed (adminSummary/{day}, see functions/src/adminTasks.ts)
+ * is one document; only the days not rolled up yet — today, and any day before the job first ran — are summed from their
+ * per-device rows (adminStats/{day}/devices) plus one count() for the distinct players.
  *
- * Every row is written by a player's own device, so one modified client could still put any number in its OWN row;
+ * Every live row is written by a player's own device, so one modified client could still put any number in its OWN row;
  * each device's counters are therefore capped at what one device can plausibly produce in a day before they are
- * added, so a single row cannot swing the totals.
+ * added (the roll-up applies the same limits), so a single row cannot swing the totals.
  */
 suspend fun loadDaySeries(firestore: FirebaseFirestore, days: Int): DaySeries = coroutineScope {
     val today = LocalDate.now(ZoneOffset.UTC)
@@ -65,7 +72,16 @@ suspend fun loadDaySeries(firestore: FirebaseFirestore, days: Int): DaySeries = 
             .whereGreaterThanOrEqualTo(FieldPath.documentId(), ids.first())
             .get().await().documents
     }
-    val devicesJob = ids.map { day ->
+    val summariesJob = async {
+        runCatching {
+            firestore.collection("adminSummary").whereGreaterThanOrEqualTo("day", ids.first()).get().await().documents
+                .filter { it.getBoolean("final") == true }
+                .associateBy { it.id }
+        }.getOrDefault(emptyMap())
+    }
+    val summaries = summariesJob.await()
+    val live = ids.filter { it !in summaries }
+    val devicesJob = live.associateWith { day ->
         async {
             runCatching {
                 firestore.collection(AdminStats.COLLECTION).document(day).collection(AdminStats.DEVICES)
@@ -73,7 +89,7 @@ suspend fun loadDaySeries(firestore: FirebaseFirestore, days: Int): DaySeries = 
             }.getOrDefault(emptyList())
         }
     }
-    val playersJob = ids.map { day ->
+    val playersJob = live.associateWith { day ->
         async {
             runCatching {
                 firestore.collection(AdminStats.COLLECTION).document(day).collection(AdminStats.USERS)
@@ -82,15 +98,22 @@ suspend fun loadDaySeries(firestore: FirebaseFirestore, days: Int): DaySeries = 
         }
     }
     val legacyByDay = docsJob.await().associate { doc -> doc.id to countsOf(doc.get("counts")) }
-    val devicesByDay = devicesJob.awaitAll()
-    val counts = ids.mapIndexed { i, day ->
+    val counts = ids.map { day ->
+        summaries[day]?.let { return@map countsOf(it.get("counts")) }
         val total = HashMap<String, Long>(legacyByDay[day].orEmpty())
-        devicesByDay[i].forEach { row ->
+        devicesJob.getValue(day).await().forEach { row ->
             row.forEach { (key, value) -> total[key] = (total[key] ?: 0L) + capPerDevice(key, value) }
         }
         total
     }
-    DaySeries(days = ids, players = playersJob.awaitAll(), counts = counts)
+    DaySeries(
+        days = ids,
+        players = ids.map { summaries[it]?.getLong("players") ?: playersJob.getValue(it).await() },
+        counts = counts,
+        newPlayers = ids.map { summaries[it]?.getLong("newPlayers") },
+        d1Return = ids.map { summaries[it]?.getDouble("d1Return") },
+        d7Return = ids.map { summaries[it]?.getDouble("d7Return") }
+    )
 }
 
 private fun countsOf(raw: Any?): Map<String, Long> = (raw as? Map<*, *>).orEmpty().mapNotNull { (k, v) ->

@@ -451,6 +451,8 @@
     <string name="notification_channel_description">Reminders sent at most once a day so you don\'t forget Karalak.</string>
     <string name="notification_channel_invite_name">Friend invites</string>
     <string name="notification_channel_invite_description">Notifications sent when a friend invites you to an online match.</string>
+    <string name="notification_channel_news_name">News from Karalak</string>
+    <string name="notification_channel_news_description">Announcements and campaigns from the Karalak team.</string>
     <string name="friend_invite_notification_title">%1$s invited you!</string>
     <string name="friend_invite_notification_body">Tap to play together on Karalak.</string>
     <string name="settings_language">Language</string>
