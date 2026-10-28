@@ -23,6 +23,7 @@ on:
           - realpreview.sh
           - updatepreview.sh
           - chestpreview.sh
+          - chestrewardpreview.sh
           - tourpreview.sh
           - accountpreview.sh
           - friendspreview.sh

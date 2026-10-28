@@ -1190,6 +1190,7 @@
     <string name="chests_open_button">Abrir</string>
     <string name="chests_reward_title">Baú aberto!</string>
     <string name="chests_reward_gold">+%1$d de Ouro</string>
+    <string name="chests_reward_gold_label">Ouro</string>
     <string name="chests_reward_button">Ótimo!</string>
     <string name="home_xp_format">%1$d / %2$d XP</string>
     <string name="home_level_format">Nv. %1$d</string>

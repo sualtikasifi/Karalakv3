@@ -1189,6 +1189,7 @@
     <string name="chests_open_button">Open</string>
     <string name="chests_reward_title">Chest opened!</string>
     <string name="chests_reward_gold">+%1$d Gold</string>
+    <string name="chests_reward_gold_label">Gold</string>
     <string name="chests_reward_button">Great!</string>
     <string name="home_xp_format">%1$d / %2$d XP</string>
     <string name="home_level_format">Lv. %1$d</string>
