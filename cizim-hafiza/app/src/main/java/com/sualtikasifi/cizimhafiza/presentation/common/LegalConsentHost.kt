@@ -95,6 +95,8 @@ class LegalConsentViewModel @Inject constructor(
 fun LegalConsentHost(viewModel: LegalConsentViewModel = hiltViewModel()) {
     val show by viewModel.shouldShow.collectAsState()
     if (!show) return
+    // Nothing else of the opening is asked in the same launch (see StartupPrompts).
+    StartupPrompts.openingShownThisLaunch = true
     val context = LocalContext.current
     var dayText by rememberSaveable { mutableStateOf("") }
     var monthText by rememberSaveable { mutableStateOf("") }

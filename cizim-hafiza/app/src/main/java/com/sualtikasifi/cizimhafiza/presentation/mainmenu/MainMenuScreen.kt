@@ -187,6 +187,11 @@ fun MainMenuScreen(
     BackHandler(enabled = !exitPromptOpen) { exitPromptOpen = true }
     val context = LocalContext.current
     val activity = context as? Activity
+    // The opening prompts come one at a time (see StartupPrompts): none of the home screen's own windows opens before
+    // the date-of-birth prompt and the ad consent form are through, and "Yenilikler" comes first among them.
+    val legalPending by viewModel.legalPending.collectAsState()
+    val consentSettled by com.sualtikasifi.cizimhafiza.presentation.common.StartupPrompts.consentSettled.collectAsState()
+    val openingClear = splashDone && !legalPending && consentSettled
 
     // Midnight while the menu is open: nothing else re-reads the day, so without this the daily
     // challenge and the free chest stayed "done" until the player left and came back.
@@ -290,7 +295,7 @@ fun MainMenuScreen(
         // Gated on ads: the rescue IS watching an ad, so with ads off the
         // streak simply breaks rather than opening a dialog whose only
         // button cannot work.
-        if (splashDone && dailyState.rescuableStreak > 0 && GameConstants.ADMOB_ENABLED) {
+        if (openingClear && !featureTourOpen && dailyState.rescuableStreak > 0 && GameConstants.ADMOB_ENABLED) {
             StreakRescueDialog(
                 lostStreak = dailyState.rescuableStreak,
                 onRescue = { activity?.let(viewModel::rescueStreak) },
@@ -340,7 +345,7 @@ fun MainMenuScreen(
         }
 
         val ratingPrompt by viewModel.ratingPrompt.collectAsState()
-        if (splashDone && ratingPrompt && freeChestReward == null) {
+        if (openingClear && !featureTourOpen && ratingPrompt && freeChestReward == null) {
             com.sualtikasifi.cizimhafiza.presentation.common.RatingPromptDialog(
                 onRate = viewModel::dismissRatingPrompt,
                 onDismiss = viewModel::dismissRatingPrompt
@@ -360,7 +365,7 @@ fun MainMenuScreen(
         val gamePlayed by viewModel.gamePlayedThisRun.collectAsState()
         LaunchedEffect(onlineNow, gamePlayed) { if (onlineNow && gamePlayed) viewModel.checkLoginStreak() }
         val rescueOnScreen = dailyState.rescuableStreak > 0 && GameConstants.ADMOB_ENABLED
-        if (splashDone && !rescueOnScreen && freeChestReward == null) {
+        if (openingClear && !featureTourOpen && !rescueOnScreen && freeChestReward == null) {
             loginPopup?.let { popup ->
                 LoginStreakDialog(
                     popup = popup,
@@ -384,9 +389,19 @@ fun MainMenuScreen(
             RankLadderSheet(progress = levelProgress, onDismiss = { rankLadderOpen = false })
         }
 
-        if (splashDone && featureTourOpen) {
+        if (openingClear && featureTourOpen) {
+            LaunchedEffect(Unit) { com.sualtikasifi.cizimhafiza.presentation.common.StartupPrompts.openingShownThisLaunch = true }
             FeatureTourDialog(onFinish = { viewModel.markFeatureTourSeen(); featureTourOpen = false })
         }
+
+        NotificationPermissionWhenQuiet(
+            quiet = openingClear && !featureTourOpen && !rescueOnScreen && !ratingPrompt && freeChestReward == null &&
+                loginPopup == null && loginChests.isEmpty() && !gamePlayed && !exitPromptOpen &&
+                !framePickerOpen && !penPickerOpen && !rankLadderOpen,
+            asked = viewModel.notificationPermissionAsked,
+            onAsked = viewModel::markNotificationPermissionAsked,
+            onResult = viewModel::onNotificationPermissionResult
+        )
 
         if (penPickerOpen) {
             PenPickerSheet(
@@ -1118,5 +1133,34 @@ private fun AvatarSourceOption(
             fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.ExtraBold else androidx.compose.ui.text.font.FontWeight.Medium,
             color = Color(0xFF3A2416)
         )
+    }
+}
+
+/**
+ * Asks for the notification permission (API 33+) once, on a quiet visit to the home screen: never in a launch that has
+ * already shown the date-of-birth prompt or "Yenilikler" (see StartupPrompts), not right after a game (the login streak
+ * may be on its way), and only after a few seconds in which nothing else was open. The Settings screen's notifications
+ * switch asks again for anyone who said no.
+ */
+@Composable
+private fun NotificationPermissionWhenQuiet(
+    quiet: Boolean,
+    asked: Boolean,
+    onAsked: () -> Unit,
+    onResult: (Boolean) -> Unit
+) {
+    val context = LocalContext.current
+    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted -> onResult(granted) }
+    // Keyed on [quiet]: anything opening in the meantime cancels the wait, and it starts again once all is quiet.
+    LaunchedEffect(quiet) {
+        if (!quiet || asked || com.sualtikasifi.cizimhafiza.presentation.common.StartupPrompts.openingShownThisLaunch) return@LaunchedEffect
+        delay(2_500)
+        onAsked()
+        val granted = android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU ||
+            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (!granted) launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
     }
 }
