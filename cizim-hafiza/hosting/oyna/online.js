@@ -2,7 +2,7 @@
 import * as net from "./firebase.js";
 import { S, useAppTexts } from "./i18n.js";
 import { rankLevelHtml } from "./ranks.js";
-import { roomInviteText, shareInvite } from "./ui.js";
+import { roomInviteText, shareInvite, reportPlayerDialog } from "./ui.js";
 import { frameRing, frameById } from "./store.js";
 import { loadChat, buildDock, watch as watchChat, stop as stopChat, onReactions, activeBubbles, messageOf, reactions as chatNow, chatRow, chatText } from "./chat.js";
 import { setupGroup, fitPaper, SETUP_T, overflows } from "./offline.js";
@@ -219,7 +219,16 @@ function renderLobby(c) {
       kb.onclick = (e) => { e.stopPropagation(); c.confirm(S("online_kick_confirm_message", p.displayName), S("online_kick_confirm_confirm"), () => net.kickPlayer(code, p.uid, p.displayName).catch(() => {})); };
       card.append(kb);
     }
-    if (!isMe && !myFriends.some((f) => f.id === p.uid)) card.onclick = () => c.confirm(S("online_friend_add_message", p.displayName), S("online_friend_add_confirm"), () => net.sendFriendRequestTo(p.uid, p.displayName, c.P.nick).catch(() => {}));
+    // Another real player: a stranger's seat offers a friend request with "report player" beside it, a friend's seat the report
+    // itself (WaitingRoomScreen). The AI player (karalak-bot) is nobody to befriend or report.
+    if (!isMe && p.uid !== "karalak-bot") {
+      const report = () => reportPlayerDialog(net, p.uid, p.displayName, `room ${code}`);
+      card.onclick = myFriends.some((f) => f.id === p.uid) ? report : () => {
+        c.confirm(S("online_friend_add_message", p.displayName), S("online_friend_add_confirm"), () => net.sendFriendRequestTo(p.uid, p.displayName, c.P.nick).catch(() => {}));
+        const r = el("button", "pill cream small"); r.append(Object.assign(document.createElement("span"), { textContent: "🚩 " + S("report_player_action") })); r.onclick = report;
+        document.getElementById("dlg-extra").append(r);
+      };
+    }
     return card;
   };
   const empty = () => { const e = el("div", "ow-slot", `<img src="img/lobby_adduser.webp" alt=""><span>${S("online_invite_friend_slot")}</span>`); e.onclick = () => inviteSheet(c); return e; };

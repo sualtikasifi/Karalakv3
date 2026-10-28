@@ -1,6 +1,7 @@
 import { S } from "./i18n.js";
 import { appWindow, penWindow } from "./ui.js";
 import { penList, frameList, frameRing } from "./store.js";
+import { childMode } from "./agegate.js";
 const T = { tr: { pen: "Kalemini seç", frame: "Çerçeveni seç", close: "Kapat", nick: "Kullanıcı adı", save: "Kaydet", nickHint: "2-16 karakter. Adını yalnızca bir kez değiştirebilirsin.", nickLocked: "Kullanıcı adını zaten bir kez değiştirdin.", nick_taken: "Bu ad alınmış, başka bir tane dene.", nick_invalid: "Harf, rakam, boşluk, _ . - kullanabilirsin (2-16).", nick_net: "Sunucuya ulaşılamadı.", locked: (n) => `Seviye ${n}` }, en: { pen: "Choose your pen", frame: "Choose your frame", close: "Close", nick: "Username", save: "Save", nickHint: "2-16 characters. You can change your name only once.", nickLocked: "You have already changed your username once.", nick_taken: "That name is taken, try another.", nick_invalid: "Letters, numbers, spaces and _ . - only (2-16).", nick_net: "Couldn't reach the server.", locked: (n) => `Level ${n}` },
   pt: { pen: "Escolha seu lápis", frame: "Escolha sua moldura", close: "Fechar", nick: "Nome de usuário", save: "Salvar", nickHint: "2-16 caracteres. Você só pode mudar seu nome uma vez.", nickLocked: "Você já mudou seu nome de usuário uma vez.", nick_taken: "Esse nome já está em uso, tente outro.", nick_invalid: "Use letras, números, espaços e _ . - (2-16).", nick_net: "Não foi possível falar com o servidor.", locked: (n) => `Nível ${n}` },
   es: { pen: "Elige tu lápiz", frame: "Elige tu marco", close: "Cerrar", nick: "Nombre de usuario", save: "Guardar", nickHint: "2-16 caracteres. Solo puedes cambiar tu nombre una vez.", nickLocked: "Ya cambiaste tu nombre de usuario una vez.", nick_taken: "Ese nombre ya está en uso, prueba otro.", nick_invalid: "Usa letras, números, espacios y _ . - (2-16).", nick_net: "No se pudo conectar con el servidor.", locked: (n) => `Nivel ${n}` } };
@@ -98,6 +99,7 @@ export function openNickEdit(c) {
   const note = el("p", "pk-note", locked ? x.nickLocked : x.nickHint);
   const save = el("button", "pill orange small", `<span>${x.save}</span>`); save.style.display = locked ? "none" : "";
   save.onclick = async () => {
+    if (childMode()) { note.textContent = S("child_feature_locked"); return; } // a chosen name is published (agegate.js)
     const v = inp.value.trim().replace(/\s+/g, " "); if (v === P.nick) { d.classList.add("hidden"); return; }
     note.textContent = "…"; const r = await c.net.claimUsername(v, P.nickClaimed ? P.nick : null);
     if (r === "ok") { P.nick = v; P.nickClaimed = true; P.nameChanges = (P.nameChanges || 0) + 1; c.saveP(); c.refreshHome(); d.classList.add("hidden"); }

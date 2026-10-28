@@ -1699,4 +1699,11 @@
     <string name="child_locked_title">13 yaş ve üzeri için</string>
     <string name="child_locked_body">Çevrimiçi oyun, arkadaşlar ve lig 13 yaş ve üzeri oyuncular içindir. Çevrimdışı oyunu, bölümleri ve günlük meydan okumayı oynayabilirsin.</string>
     <string name="child_feature_locked">Bu özellik 13 yaş ve üzeri oyuncular içindir.</string>
+    <string name="report_player_action">Oyuncuyu bildir</string>
+    <string name="report_player_title">Oyuncuyu bildir</string>
+    <string name="report_player_subtitle">%1$s ile ilgili sorun ne?</string>
+    <string name="report_player_reason_name">Uygunsuz kullanıcı adı</string>
+    <string name="report_player_reason_behaviour">Taciz veya kötü davranış</string>
+    <string name="report_player_reason_cheating">Hile</string>
+    <string name="report_player_reason_other">Başka bir sorun</string>
 </resources>

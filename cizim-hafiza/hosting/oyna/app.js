@@ -25,6 +25,7 @@ import { openRankLadder } from "./ranks.js";
 import { startSearch, stopSearch } from "./search.js";
 import { exitDialog, appOnlyDialog, sparkFlight, PLAY_URL } from "./ui.js";
 import { makeGhostRun, loadGhostNames, isGhostId } from "./ghost.js";
+import { needsPrompt as legalNeeded, childMode, adultOnly, openAgeGate } from "./agegate.js";
 import { layoutBreak, startBreak, stopBreak } from "./brk.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
@@ -111,7 +112,7 @@ const ctx = {
   // Sign-out wipes what belongs to the account (SettingsRepository.clearAccountScopedState); sounds, language and the tutorial stay.
   resetProgress() { const keep = { prefs: P.prefs, tutorialDone: P.tutorialDone }; const fresh = JSON.parse(JSON.stringify(DEFAULT_P)); for (const k of Object.keys(P)) delete P[k]; Object.assign(P, fresh, keep); P.nick = S("default_nickname"); saveP(); refreshHome(); },
   confirm(text, yes, onYes) {
-    $("dlg-text").textContent = text; $("dlg-extra").replaceChildren(); $("dlg-no").style.display = ""; $("dlg-no").textContent = t().no === "Kal" ? "Vazgeç" : "Cancel"; $("dlg-yes").textContent = yes;
+    $("dlg-text").textContent = text; $("dlg-extra").replaceChildren(); $("dlg-no").style.display = ""; $("dlg-no").textContent = S("report_drawing_cancel"); $("dlg-yes").style.display = ""; $("dlg-yes").textContent = yes;
     $("dialog").classList.remove("hidden");
     $("dlg-yes").onclick = () => { $("dialog").classList.add("hidden"); onYes(); };
     $("dlg-no").onclick = () => $("dialog").classList.add("hidden");
@@ -609,7 +610,12 @@ async function startTutorial() {
   const picked = tutWords().map((s, i) => byText.get(s.toLowerCase()) || { id: 900000 + i, text: s, difficulty: "EASY" });
   begin(picked);
 }
-function endTutorial() { const first = !P.tutorialDone; P.tutorialDone = true; if (first) for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); }
+// LeagueScorePublisher: this month's score onto the public profile — never for a player who may be under 13 (agegate.js).
+function publishLeague() {
+  if (childMode()) return;
+  net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
+}
+function endTutorial() { const first = !P.tutorialDone; P.tutorialDone = true; if (first) for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); if (legalNeeded()) openAgeGate(stage); }
 async function startDaily() {
   if (dailyState(P).done) return;
   await ensureWords(); kind = "daily"; levelRun = null; relaxed = false;
@@ -895,8 +901,8 @@ async function finish() {
   const newAch = Math.max(0, achCount(P) - ach0);
   if (qmBonus) P.qmDay = todayEpoch();
   const fx = (k) => runeFx(P, k), has = (k) => runeHas(P, k);
-  if (kind === "online") { ctx.lastXp = P.xp - xp0; ctx.lastAch = newAch; saveP(); refreshHome(); net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {}); return submitAndWait(ctx, round, score); }
-  net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
+  if (kind === "online") { ctx.lastXp = P.xp - xp0; ctx.lastAch = newAch; saveP(); refreshHome(); publishLeague(); return submitAndWait(ctx, round, score); }
+  publishLeague();
   const me = {
     language: lang, nickname: "Web", wordIds: round.map((w) => w.id),
     perWord: round.map((w) => ({ wordId: w.id, isCorrect: w.correct, responseTimeMs: w.ms, pointsAwarded: w.points })),
@@ -1032,7 +1038,7 @@ function msg(text, extra) {
 const soon = (name) => () => msg(`${name} · ${t().soon}`);
 // Online sections need the internet; offline ones (Play Offline, Levels) keep working. Same words as the app's offline screen.
 const needNet = (fn) => (...a) => { if (navigator.onLine === false) return msg(S("offline_needed") + ". " + S("offline_screen_body")); return fn(...a); };
-$("tl-online").onclick = needNet(async () => { await ensureWords(); show("onl"); });
+$("tl-online").onclick = needNet(adultOnly(msg, async () => { await ensureWords(); show("onl"); }));
 $("on-back").onclick = () => show("home"); $("oj-back").onclick = () => show("onl"); $("oc-back").onclick = () => show("onl");
 $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("onj");
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
@@ -1040,7 +1046,7 @@ $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => lea
 $("h-veil-gold").onclick = $("h-veil-chest").onclick = () => window.open(PLAY_URL, "_blank", "noopener"); $("h-rank").onclick = () => openRankLadder(ctx); $("h-avatar").onclick = () => openFramePicker(ctx); $("h-pen").onclick = () => openPenPicker(ctx);  $("h-rank").onclick = () => openRankLadder(ctx);
 $("h-dplay").onclick = startDaily; $("h-dcard").onclick = () => { if (!dailyState(P).done) startDaily(); };
 $("h-runes").onclick = async () => { await loadStoreData(); await loadRunes(); P.runes = P.runes || {}; net.runeConfig().then((d) => { applyRuneConfig(d); if (current === "runes") renderRunes(ctx, true); }).catch(() => {}); show("runes"); }; $("ru-back").onclick = () => show("home");
-$("tl-quick").onclick = needNet(() => start("quick")); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };
+$("tl-quick").onclick = needNet(adultOnly(msg, () => start("quick"))); $("tl-offline").onclick = async () => { await ensureWords(); show("offs"); };
 $("os-back").onclick = () => show("home");
 $("tl-levels").onclick = async () => { await loadWorlds(); show("worlds"); };
 $("wl-back").onclick = () => show("home"); $("lm-back").onclick = () => show("worlds");
@@ -1048,10 +1054,10 @@ $("tl-store").onclick = async () => { await loadStoreData(); show("store"); };
 $("st-back").onclick = () => show("home");
 $("tl-ach").onclick = async () => { await loadAchievements(); show("ach"); };
 $("ac-back").onclick = () => show("home");
-$("tl-league").onclick = needNet(async () => { await loadStoreData(); await loadLeague(); leagueLoaded = false; show("league"); });
+$("tl-league").onclick = needNet(adultOnly(msg, async () => { await loadStoreData(); await loadLeague(); leagueLoaded = false; show("league"); }));
 $("lg-back").onclick = () => show("home");
 $("lg-refresh").onclick = () => { leagueLoaded = false; layout(); };
-$("tl-friends").onclick = needNet(() => { show("friends"); openFriends(ctx); });
+$("tl-friends").onclick = needNet(adultOnly(msg, () => { show("friends"); openFriends(ctx); }));
 $("fr-duel").onclick = () => { stopFriends(); show("duels"); openDuels(ctx); };
 $("du-back").onclick = () => { stopDuels(); show("friends"); openFriends(ctx); };
 $("fr-back").onclick = () => { stopFriends(); show("home"); };
@@ -1071,7 +1077,7 @@ const _oldSettings = () => {
 };
 loadStoreData().then(refreshHome).catch(() => {});
 // A name only this account owns (same collection the app uses), claimed once the network is reachable.
-setTimeout(async () => { if (P.nickClaimed) return; const n = await net.ensureUsername(P.nick).catch(() => null); if (n) { P.nick = n; P.nickClaimed = true; saveP(); refreshHome(); } }, 2500);
+setTimeout(async () => { if (P.nickClaimed || childMode()) return; const n = await net.ensureUsername(P.nick).catch(() => null); if (n) { P.nick = n; P.nickClaimed = true; saveP(); refreshHome(); } }, 2500);
 setTimeout(() => net.listen("invites", (list) => {
   const inv = list[0]; if (!inv || current === "onw" || current === "draw" || current === "guess") return;
   const tx = S("friends_incoming_invite", inv.fromNickname);
@@ -1093,7 +1099,7 @@ function afterSplash(fn, delay = 0) {
   if (!document.getElementById("splash")) return go();
   const t = setInterval(() => { if (!document.getElementById("splash")) { clearInterval(t); go(); } }, 100);
 }
-if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); }; } else { show("home"); afterSplash(() => { if (current === "home") dailyRescue(ctx, () => {}); }, 600); }
+if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); if (legalNeeded()) openAgeGate(stage); }; } else { show("home"); afterSplash(() => { if (legalNeeded()) openAgeGate(stage); else if (current === "home") dailyRescue(ctx, () => {}); }, 600); }
 // The game is served at "/" while the worker file lives in /oyna/, so there it asks for the whole site (allowed by the
 // Service-Worker-Allowed header in firebase.json); opened as /oyna/ it keeps its own folder.
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js", location.pathname.startsWith("/oyna/") ? undefined : { scope: "/" }).catch(() => {});

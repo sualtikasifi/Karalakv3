@@ -1687,4 +1687,11 @@
     <string name="child_locked_title">For ages 13 and up</string>
     <string name="child_locked_body">Online play, friends and the league are for players aged 13 and over. You can still play offline, the levels and the daily challenge.</string>
     <string name="child_feature_locked">This is for players aged 13 and over.</string>
+    <string name="report_player_action">Report player</string>
+    <string name="report_player_title">Report player</string>
+    <string name="report_player_subtitle">What is wrong with %1$s?</string>
+    <string name="report_player_reason_name">Offensive name</string>
+    <string name="report_player_reason_behaviour">Harassment or bad behaviour</string>
+    <string name="report_player_reason_cheating">Cheating</string>
+    <string name="report_player_reason_other">Something else</string>
 </resources>

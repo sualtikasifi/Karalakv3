@@ -1687,4 +1687,11 @@
     <string name="child_locked_title">Para mayores de 13 años</string>
     <string name="child_locked_body">El juego en línea, los amigos y la liga son para jugadores de 13 años o más. Puedes seguir jugando sin conexión, los niveles y el desafío diario.</string>
     <string name="child_feature_locked">Esta función es para jugadores de 13 años o más.</string>
+    <string name="report_player_action">Denunciar jugador</string>
+    <string name="report_player_title">Denunciar jugador</string>
+    <string name="report_player_subtitle">¿Qué problema hay con %1$s?</string>
+    <string name="report_player_reason_name">Nombre ofensivo</string>
+    <string name="report_player_reason_behaviour">Acoso o mal comportamiento</string>
+    <string name="report_player_reason_cheating">Trampas</string>
+    <string name="report_player_reason_other">Otro problema</string>
 </resources>

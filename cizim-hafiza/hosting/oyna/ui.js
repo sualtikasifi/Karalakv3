@@ -120,6 +120,28 @@ export function paintedCard(host, { art, w, h, cls = "", onClose, below }) {
  * Ads only exist in the phone app, so every "watch an ad" spot on the web says so and sends the player to the store instead
  * of pretending to show one.
  */
+// ReportPlayerDialog: four fixed reasons in the shared #dialog, then a thank-you. [context] says where it came from.
+export function reportPlayerDialog(net, uid, nickname, context) {
+  const g = (id) => document.getElementById(id), dlg = g("dialog"), close = () => dlg.classList.add("hidden");
+  const show = (text, chips) => {
+    g("dlg-text").textContent = text; g("dlg-extra").replaceChildren(...chips);
+    g("dlg-extra").style.flexWrap = "wrap"; g("dlg-yes").style.display = "none";
+    g("dlg-no").style.display = ""; g("dlg-no").textContent = S(chips.length ? "report_drawing_cancel" : "close"); g("dlg-no").onclick = () => { g("dlg-yes").style.display = ""; close(); };
+    dlg.classList.remove("hidden");
+  };
+  const reasons = [["NAME", "report_player_reason_name"], ["BEHAVIOUR", "report_player_reason_behaviour"], ["CHEATING", "report_player_reason_cheating"], ["OTHER", "report_player_reason_other"]];
+  const chips = reasons.map(([reason, key]) => {
+    const b = el("button", "pill cream small"); b.append(Object.assign(document.createElement("span"), { textContent: S(key) }));
+    b.onclick = async () => {
+      show("…", []);
+      try { await net.reportPlayer(uid, nickname, reason, context); show(S("report_drawing_sent"), []); }
+      catch { show(S("report_drawing_failed"), []); }
+    };
+    return b;
+  });
+  show(S("report_player_subtitle", nickname), chips);
+}
+
 export const PLAY_URL = "https://play.google.com/store/apps/details?id=com.sualtikasifi.cizimhafiza";
 const APP_ONLY = {
   tr: { title: "Uygulamada", body: "Reklam ödülleri yalnızca Karalak uygulamasında. Google Play'den indirip bu ödülü orada alabilirsin!", go: "Uygulamayı Aç", close: "Kapat" },

@@ -1,5 +1,6 @@
 import * as net from "./firebase.js";
 import { S, fmtNum } from "./i18n.js";
+import { reportPlayerDialog } from "./ui.js";
 import { rankLevelHtml } from "./ranks.js";
 import { frameRing, frameList, frameById, penList } from "./store.js";
 
@@ -190,5 +191,8 @@ function row(c, e, rank) {
   const lv = document.createElement("small"); lv.className = "rl"; lv.innerHTML = rankLevelHtml(e.level, true); nm.append(lv);
   const xp = document.createElement("div"); xp.className = "lg-xp"; xp.textContent = S("league_xp_format", e.periodXp);
   if (!sprite) { const n = document.createElement("div"); n.className = "lg-rk"; n.textContent = rank + "."; r.append(n); }
-  r.append(av, nm, xp); return r;
+  r.append(av, nm, xp);
+  // a real player other than you can be reported from their row (LeagueScreen); a 🤖 row is nobody to report
+  if (!e.me && !e.bot && e.uid) { r.style.cursor = "pointer"; r.title = S("report_player_action"); r.onclick = () => reportPlayerDialog(net, e.uid, e.nickname, "league"); }
+  return r;
 }

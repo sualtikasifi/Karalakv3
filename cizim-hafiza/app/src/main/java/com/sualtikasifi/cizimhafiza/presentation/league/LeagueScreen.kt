@@ -134,6 +134,17 @@ fun LeagueScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scoreRefused by viewModel.scoreRefused.collectAsState()
+    // A real player other than you can be reported from their row (a 🤖 row is nobody to report).
+    var reportTarget by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<LeagueEntry?>(null) }
+    val reportState by viewModel.reportState.collectAsState()
+    reportTarget?.let { target ->
+        com.sualtikasifi.cizimhafiza.presentation.common.ReportPlayerDialog(
+            nickname = target.nickname,
+            sendState = reportState,
+            onReport = { reason -> viewModel.reportPlayer(target, reason) },
+            onDismiss = { reportTarget = null; viewModel.resetReport() }
+        )
+    }
     val table = uiState.table
     val shownTable = if (uiState.tab == LeagueTab.Friends) table else uiState.global?.table
     var tableIntro by androidx.compose.runtime.remember(uiState.tab, shownTable == null) { androidx.compose.runtime.mutableStateOf(true) }
@@ -289,7 +300,12 @@ fun LeagueScreen(
                         // Rows slide up one after another only while the table first appears; rows scrolled into view
                         // later show at once (they used to slide in late, which looked like slow loading).
                         androidx.compose.foundation.layout.Box(if (tableIntro && index < 9) Modifier.springIn(index = index, stepMs = 45, fromY = 36) else Modifier) {
-                            LeagueRow(rank = index + 1, entry = entry, showTotalXp = uiState.tab == LeagueTab.Friends)
+                            LeagueRow(
+                                rank = index + 1,
+                                entry = entry,
+                                showTotalXp = uiState.tab == LeagueTab.Friends,
+                                onClick = if (!entry.isMe && !entry.isBot && entry.uid.isNotBlank()) ({ reportTarget = entry }) else null
+                            )
                         }
                     }
                     if (uiState.tab == LeagueTab.Global) {
@@ -784,7 +800,7 @@ private const val PodiumAspect = 1402f / 215f
 private const val AvatarCentre = 0.181f
 
 @Composable
-private fun LeagueRow(rank: Int, entry: LeagueEntry, showTotalXp: Boolean = false) {
+private fun LeagueRow(rank: Int, entry: LeagueEntry, showTotalXp: Boolean = false, onClick: (() -> Unit)? = null) {
     val sprite = when (rank) {
         1 -> R.drawable.league_row1
         2 -> R.drawable.league_row2
@@ -792,7 +808,11 @@ private fun LeagueRow(rank: Int, entry: LeagueEntry, showTotalXp: Boolean = fals
         else -> null
     }
     // A glow around the row's own frame is what catches a scrolling eye, so the "me" row gets one behind its card.
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxWidth().then(
+            if (onClick != null) Modifier.clickable(onClickLabel = stringResource(R.string.report_player_action), onClick = onClick) else Modifier
+        )
+    ) {
         val rowWidth = maxWidth
         val rowHeight = if (sprite != null) rowWidth / PodiumAspect else 46.dp
         val avatarSize = if (sprite != null) rowHeight * 0.74f else 34.dp

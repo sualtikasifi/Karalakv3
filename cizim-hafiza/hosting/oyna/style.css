@@ -1108,3 +1108,15 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #d-next.pill{background:url(img/btn_next_word.webp) center/100% 100% no-repeat;border:0;box-shadow:none;padding:0 calc(var(--u)*34);transition:transform .1s}
 #d-next.pill span{font-size:calc(var(--u)*36);white-space:nowrap;-webkit-text-stroke:calc(var(--u)*5) #8a3a00;text-shadow:none}
 #d-next.pill:active{transform:scale(.9);box-shadow:none}
+/* agegate.js: the first-run year of birth and terms acceptance (LegalConsentHost) */
+#age-gate{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;z-index:20}
+#age-gate .box{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*16)}
+#age-gate .ag-h{font-size:calc(var(--u)*46);color:var(--ink)}
+#age-gate .ag-l{font-size:calc(var(--u)*32);font-weight:700;color:var(--ink)}
+#age-gate .ag-in{width:60%;font:inherit;font-size:calc(var(--u)*44);text-align:center;padding:calc(var(--u)*12);border:calc(var(--u)*4) solid #b5510f;border-radius:calc(var(--u)*24);background:#fff}
+#age-gate .ag-why{font-size:calc(var(--u)*24);color:#7a5a40;line-height:1.25}
+#age-gate .ag-why.err{color:#c62828}
+#age-gate .ag-acc{font-size:calc(var(--u)*26);color:#5a4030;line-height:1.3;margin:calc(var(--u)*6) 0}
+#age-gate .ag-acc a{color:#b5510f;font-weight:700}
+#age-gate .pill{width:100%;height:calc(var(--u)*110)}
+#age-gate .pill.dis{opacity:.5}

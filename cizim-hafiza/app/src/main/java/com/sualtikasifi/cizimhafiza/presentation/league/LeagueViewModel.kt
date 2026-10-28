@@ -62,7 +62,8 @@ class LeagueViewModel @Inject constructor(
     private val globalLeagueRepository: GlobalLeagueRepository,
     private val settingsRepository: SettingsRepository,
     private val leagueScorePublisher: LeagueScorePublisher,
-    private val avatarPhotoResolver: com.sualtikasifi.cizimhafiza.util.AvatarPhotoResolver
+    private val avatarPhotoResolver: com.sualtikasifi.cizimhafiza.util.AvatarPhotoResolver,
+    private val playerReporter: com.sualtikasifi.cizimhafiza.util.PlayerReporter
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LeagueUiState())
@@ -139,6 +140,22 @@ class LeagueViewModel @Inject constructor(
      * rendered list so a bot — or whichever real player actually earned it —
      * occupies that slot instead).
      */
+    private val _reportState = MutableStateFlow(com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState.Idle)
+    /** Where a "report player" from the table has got to (see ReportPlayerDialog). */
+    val reportState: StateFlow<com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState> = _reportState.asStateFlow()
+
+    fun resetReport() { _reportState.value = com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState.Idle }
+
+    fun reportPlayer(entry: com.sualtikasifi.cizimhafiza.domain.model.LeagueEntry, reason: com.sualtikasifi.cizimhafiza.domain.model.PlayerReportReason) {
+        if (_reportState.value == com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState.Sending) return
+        _reportState.value = com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState.Sending
+        viewModelScope.launch {
+            val sent = playerReporter.report(entry.uid, entry.nickname, reason, context = "league").isSuccess
+            _reportState.value = if (sent) com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState.Sent
+            else com.sualtikasifi.cizimhafiza.presentation.common.ReportSendState.Failed
+        }
+    }
+
     /** The server is refusing this account's score (see LeagueScorePublisher.scoreRefused). */
     val scoreRefused: kotlinx.coroutines.flow.StateFlow<Boolean> get() = leagueScorePublisher.scoreRefused
 

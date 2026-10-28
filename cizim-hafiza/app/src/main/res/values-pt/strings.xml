@@ -1687,4 +1687,11 @@
     <string name="child_locked_title">Para maiores de 13 anos</string>
     <string name="child_locked_body">O jogo online, os amigos e a liga são para jogadores a partir de 13 anos. Você ainda pode jogar offline, as fases e o desafio diário.</string>
     <string name="child_feature_locked">Este recurso é para jogadores a partir de 13 anos.</string>
+    <string name="report_player_action">Denunciar jogador</string>
+    <string name="report_player_title">Denunciar jogador</string>
+    <string name="report_player_subtitle">Qual é o problema com %1$s?</string>
+    <string name="report_player_reason_name">Nome ofensivo</string>
+    <string name="report_player_reason_behaviour">Assédio ou mau comportamento</string>
+    <string name="report_player_reason_cheating">Trapaça</string>
+    <string name="report_player_reason_other">Outro problema</string>
 </resources>

@@ -521,6 +521,15 @@ export async function deleteAccount() {
   await m.signInAnonymously(auth);
 }
 
+// PlayerReporter.report: one report per player per reporter, read only by the reviewer. A second report of the same player
+// hits the first one's document, which the rules never let anyone overwrite — it is already with the reviewer, so it counts as sent.
+export async function reportPlayer(reportedUid, nickname, reason, context) {
+  const { fs, db, auth } = await init(), me = auth.currentUser.uid;
+  try {
+    await fs.setDoc(fs.doc(db, "playerReports", `${reportedUid}__${me}`), { reporterUid: me, reportedUid, nickname: String(nickname).slice(0, 40), reason, context: String(context).slice(0, 32), createdAt: fs.serverTimestamp() });
+  } catch (e) { if (e.code !== "permission-denied") throw e; }
+}
+
 // A friend request to someone met in a room (FriendRepositoryImpl.sendFriendRequest): one document in their friendRequests.
 export async function sendFriendRequestTo(uid, name, myNick) {
   const { fs, db, auth } = await init();

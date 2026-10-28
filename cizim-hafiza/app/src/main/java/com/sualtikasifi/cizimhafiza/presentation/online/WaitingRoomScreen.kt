@@ -171,6 +171,10 @@ fun WaitingRoomScreen(
 
     var kickTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
     var friendTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
+    // Any other real player can be reported from their seat: a stranger's slot offers it beside the friend request,
+    // a friend's slot opens the report straight away (see ReportPlayerDialog).
+    var reportTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val reportState by viewModel.reportState.collectAsState()
     var invitePickerOpen by remember { mutableStateOf(false) }
     val friends by viewModel.friends.collectAsState()
     val inviteState by viewModel.inviteState.collectAsState()
@@ -224,9 +228,11 @@ fun WaitingRoomScreen(
             } else null,
             teamId = player.teamId,
             onSwitchTeam = null,
-            onTap = if (!isBot && friends.none { it.uid == player.uid }) {
-                { friendTarget = player.uid to player.displayName }
-            } else null
+            onTap = when {
+                isBot -> null
+                friends.none { it.uid == player.uid } -> ({ friendTarget = player.uid to player.displayName })
+                else -> ({ reportTarget = player.uid to player.displayName })
+            }
         )
     }
     // In the permanent bot room, Sude always takes the very first slot
@@ -490,7 +496,31 @@ fun WaitingRoomScreen(
                 viewModel.sendFriendRequest(targetUid, targetName)
                 friendTarget = null
             },
-            onDismiss = { friendTarget = null }
+            onDismiss = { friendTarget = null },
+            extra = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        friendTarget = null
+                        reportTarget = targetUid to targetName
+                    },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text(
+                        text = "🚩 " + stringResource(R.string.report_player_action),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        )
+    }
+
+    reportTarget?.let { (targetUid, targetName) ->
+        com.sualtikasifi.cizimhafiza.presentation.common.ReportPlayerDialog(
+            nickname = targetName,
+            sendState = reportState,
+            onReport = { reason -> viewModel.reportPlayer(targetUid, targetName, reason) },
+            onDismiss = { reportTarget = null; viewModel.resetReport() }
         )
     }
 

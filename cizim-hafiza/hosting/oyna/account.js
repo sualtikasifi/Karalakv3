@@ -5,6 +5,7 @@ import { S, useAppTexts, fmtNum } from "./i18n.js";
 import { rankLevelHtml } from "./ranks.js";
 import { syncNow, lastBackupAt, forgetRemote, markAccount } from "./sync.js";
 import { frameRing, frameById } from "./store.js";
+import { childMode } from "./agegate.js";
 
 const T = {
   tr: { title: "Hesap", guest: "Misafir hesap", linked: "Hesapla giriş yapıldı", xp: "Toplam XP", games: "Oynanan oyun", streak: "En iyi seri (gün)", sec: "Hesap ve yedek", max: "En üst seviyedesin",
@@ -84,6 +85,7 @@ function paint(c) {
   };
   const renderMsg = () => { const e = $("ak-msg"); e.textContent = msg; e.style.display = msg ? "" : "none"; };
   const go = async (fn, okText) => {
+    if (childMode()) { msg = S("child_feature_locked"); renderMsg(); return; } // a web account is for ages 13 and up (agegate.js)
     if (busy) return; const v = read(); if (!v) return; busy = true; msg = "…"; renderMsg();
     try {
       who = await fn(v.name, v.pass); markAccount(true); forgetRemote();
