@@ -1,6 +1,9 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio
 
 import android.content.Context
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Backoff
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Pronunciation
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioLang
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +19,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import java.util.Base64
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -48,33 +52,67 @@ class ElevenLabs(private val apiKey: String) {
         val left: Int get() = (limit - used).coerceAtLeast(0)
     }
 
-    class ApiError(val code: Int, message: String) : Exception(message)
+    class ApiError(override val code: Int, message: String, override val retryAfterMs: Long? = null) : Exception(message), Backoff.Coded
 
-    /** The line as speech, MP3 bytes. */
-    suspend fun speak(text: String, voiceId: String, model: VoiceModel, stability: Double): Result<ByteArray> = withContext(Dispatchers.IO) {
-        runCatching {
-            val body = buildJsonObject {
-                put("text", text)
-                put("model_id", model.id)
-                put("language_code", "tr")
-                putJsonObject("voice_settings") { put("stability", stability) }
-            }
-            val conn = open("/v1/text-to-speech/$voiceId?output_format=mp3_44100_128").apply {
-                requestMethod = "POST"
-                readTimeout = 120_000
-                doOutput = true
-                setRequestProperty("Content-Type", "application/json; charset=utf-8")
-                setRequestProperty("Accept", "audio/mpeg")
-            }
-            try {
-                conn.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
-                val code = conn.responseCode
-                if (code !in 200..299) throw ApiError(code, errorMessage(code, readText(conn, code)))
-                conn.inputStream.use { it.readBytes() }.also { if (it.size < 256) throw ApiError(code, "ElevenLabs boş ses döndürdü") }
-            } finally {
-                conn.disconnect()
-            }
+    /** A line as speech: the MP3, and when each word of it is said when ElevenLabs told. */
+    class Spoken(val mp3: ByteArray, val timing: SpeechTiming?)
+
+    /**
+     * The line as speech. It asks for the words' timings along with the sound (for the karaoke subtitle); if that is
+     * refused for this voice or model, the plain sound is asked for instead, so a line is never lost for the sake of
+     * its timings. A busy service (429, 5xx) is waited out and asked again, a few times, before giving up.
+     */
+    suspend fun speak(
+        text: String, voiceId: String, model: VoiceModel, stability: Double, lang: StudioLang = StudioLang.Tr
+    ): Result<Spoken> = withContext(Dispatchers.IO) {
+        Backoff.retrying {
+            val timed = runCatching { speakTimed(text, voiceId, model, stability, lang) }
+            val e = timed.exceptionOrNull()
+            if (e is ApiError && e.code in TIMESTAMPS_REFUSED) runCatching { Spoken(speakPlain(text, voiceId, model, stability, lang), null) } else timed
         }
+    }
+
+    private fun body(text: String, model: VoiceModel, stability: Double, lang: StudioLang) = buildJsonObject {
+        put("text", text)
+        put("model_id", model.id)
+        put("language_code", lang.code)
+        putJsonObject("voice_settings") { put("stability", stability) }
+    }
+
+    private fun post(path: String, body: JsonObject, accept: String): Pair<Int, ByteArray> {
+        val conn = open(path).apply {
+            requestMethod = "POST"
+            readTimeout = 120_000
+            doOutput = true
+            setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            setRequestProperty("Accept", accept)
+        }
+        try {
+            conn.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+            val code = conn.responseCode
+            val bytes = (if (code in 200..299) conn.inputStream else conn.errorStream)?.use { it.readBytes() } ?: ByteArray(0)
+            if (code !in 200..299) {
+                val wait = conn.getHeaderField("retry-after")?.trim()?.toLongOrNull()?.times(1000)
+                throw ApiError(code, errorMessage(code, String(bytes, Charsets.UTF_8)), wait)
+            }
+            return code to bytes
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    private fun speakPlain(text: String, voiceId: String, model: VoiceModel, stability: Double, lang: StudioLang): ByteArray {
+        val (code, bytes) = post("/v1/text-to-speech/$voiceId?output_format=mp3_44100_128", body(text, model, stability, lang), "audio/mpeg")
+        if (bytes.size < 256) throw ApiError(code, "ElevenLabs boş ses döndürdü")
+        return bytes
+    }
+
+    private fun speakTimed(text: String, voiceId: String, model: VoiceModel, stability: Double, lang: StudioLang): Spoken {
+        val (code, bytes) = post("/v1/text-to-speech/$voiceId/with-timestamps?output_format=mp3_44100_128", body(text, model, stability, lang), "application/json")
+        val root = Json.parseToJsonElement(String(bytes, Charsets.UTF_8)).jsonObject
+        val audio = root["audio_base64"]?.jsonPrimitive?.contentOrNull?.let { Base64.getDecoder().decode(it) }
+        if (audio == null || audio.size < 256) throw ApiError(code, "ElevenLabs boş ses döndürdü")
+        return Spoken(audio, (root["alignment"] as? JsonObject)?.let { SpeechTiming.fromAlignment(it) })
     }
 
     /** The account's voices, the ones made with Voice Design included. Needs the key's "Voices: read" permission. */
@@ -122,6 +160,9 @@ class ElevenLabs(private val apiKey: String) {
     companion object {
         private const val BASE = "https://api.elevenlabs.io"
 
+        /** Answers that mean "not this way", not "not you": the plain sound is asked for instead. */
+        private val TIMESTAMPS_REFUSED = setOf(400, 404, 405, 422)
+
         /** Karalak's own voice first (the default), then a few of ElevenLabs' voices to compare with. */
         val PRESETS = listOf(
             Voice("Z6T21S2OyYi1iLYXumk4", "Karalak", "Karalak'ın sesi"),
@@ -157,8 +198,8 @@ class ElevenLabs(private val apiKey: String) {
          * most of all) at times swallows a line's last syllable or stops dead on it; a finished sentence followed by
          * a pause gives it room to say all of it and let it ring out. The subtitle always shows the plain line.
          */
-        fun textFor(line: SpokenLine, model: VoiceModel, tags: Boolean): String {
-            val text = withRoomToFinish(line.text.trim())
+        fun textFor(line: SpokenLine, model: VoiceModel, tags: Boolean, lang: StudioLang = StudioLang.Tr): String {
+            val text = withRoomToFinish(Pronunciation.forSpeech(line.text.trim(), lang))
             val tag = if (model.tags && tags) tagFor(line.emotion) else null
             return if (tag == null) text else "$tag $text"
         }
@@ -173,8 +214,10 @@ class ElevenLabs(private val apiKey: String) {
         private const val TAIL_PAUSE = "..."
 
         /** A file name that changes whenever anything that changes the sound does. */
-        fun cacheName(text: String, voiceId: String, model: VoiceModel, stability: Double): String {
-            val digest = MessageDigest.getInstance("SHA-1").digest("$voiceId|${model.id}|$stability|$text".toByteArray(Charsets.UTF_8))
+        fun cacheName(text: String, voiceId: String, model: VoiceModel, stability: Double, lang: StudioLang = StudioLang.Tr): String {
+            // Turkish lines keep the names they always had, so what was already paid for is still found
+            val where = if (lang == StudioLang.Tr) "" else "${lang.code}|"
+            val digest = MessageDigest.getInstance("SHA-1").digest("$where$voiceId|${model.id}|$stability|$text".toByteArray(Charsets.UTF_8))
             return digest.joinToString("") { "%02x".format(it) } + ".mp3"
         }
 
@@ -201,10 +244,10 @@ class ElevenLabs(private val apiKey: String) {
 }
 
 /** How a line is to be spoken: everything that changes the sound, and so the bill. */
-data class VoiceSpec(val voiceId: String, val model: VoiceModel, val stability: Double, val tags: Boolean) {
+data class VoiceSpec(val voiceId: String, val model: VoiceModel, val stability: Double, val tags: Boolean, val lang: StudioLang = StudioLang.Tr) {
     /** What ElevenLabs charges for the line, in credits: a character each, half on Flash. */
     fun credits(line: SpokenLine): Int {
-        val chars = ElevenLabs.textFor(line, model, tags).length
+        val chars = ElevenLabs.textFor(line, model, tags, lang).length
         return if (model == VoiceModel.Flash) (chars + 1) / 2 else chars
     }
 }
@@ -219,8 +262,20 @@ class VoiceBank(context: Context) {
     private val dir = File(context.filesDir, "studio_voice").apply { mkdirs() }
 
     private fun target(line: SpokenLine, spec: VoiceSpec): File {
-        val text = ElevenLabs.textFor(line, spec.model, spec.tags)
-        return File(dir, ElevenLabs.cacheName(text, spec.voiceId, spec.model, ElevenLabs.stabilityFor(spec.model, spec.stability)))
+        val text = ElevenLabs.textFor(line, spec.model, spec.tags, spec.lang)
+        return File(dir, ElevenLabs.cacheName(text, spec.voiceId, spec.model, ElevenLabs.stabilityFor(spec.model, spec.stability), spec.lang))
+    }
+
+    /** Where a voice file's word timings are kept: beside it, same name, ".words.json". */
+    private fun timingFile(voice: File) = File(voice.parentFile, voice.name.removeSuffix(".mp3") + ".words.json")
+
+    /**
+     * When each word of the line is said, if the voice was made with timings (lines made before they were asked for
+     * have none, and the subtitle then follows the voice by length). Never asks ElevenLabs.
+     */
+    fun timing(line: SpokenLine, spec: VoiceSpec): SpeechTiming? {
+        val f = timingFile(target(line, spec)).takeIf { it.exists() } ?: return null
+        return SpeechTiming.fromJson(runCatching { f.readText() }.getOrDefault(""))
     }
 
     /** The line's MP3 if it was already made with these settings; never asks ElevenLabs. */
@@ -233,15 +288,15 @@ class VoiceBank(context: Context) {
             f.setLastModified(System.currentTimeMillis())
             return Result.success(f)
         }
-        val text = ElevenLabs.textFor(line, spec.model, spec.tags)
+        val text = ElevenLabs.textFor(line, spec.model, spec.tags, spec.lang)
         val s = ElevenLabs.stabilityFor(spec.model, spec.stability)
-        val voiceId = spec.voiceId
-        val model = spec.model
-        val bytes = client.speak(text, voiceId, model, s).getOrElse { return Result.failure(it) }
+        val spoken = client.speak(text, spec.voiceId, spec.model, s, spec.lang).getOrElse { return Result.failure(it) }
         return runCatching {
             withContext(Dispatchers.IO) {
+                // the timings first: a voice with no timings beside it is still a voice, but not the other way round
+                spoken.timing?.let { runCatching { timingFile(f).writeText(it.toJson()) } }
                 val tmp = File(dir, f.name + ".part")
-                tmp.writeBytes(bytes)
+                tmp.writeBytes(spoken.mp3)
                 if (!tmp.renameTo(f)) { tmp.delete(); error("Ses kaydedilemedi") }
                 prune()
                 f
@@ -251,7 +306,7 @@ class VoiceBank(context: Context) {
 
     private fun prune() {
         val files = dir.listFiles { x -> x.name.endsWith(".mp3") }?.sortedByDescending { it.lastModified() } ?: return
-        files.drop(MAX_FILES).forEach { it.delete() }
+        files.drop(MAX_FILES).forEach { it.delete(); timingFile(it).delete() }
     }
 
     private companion object {

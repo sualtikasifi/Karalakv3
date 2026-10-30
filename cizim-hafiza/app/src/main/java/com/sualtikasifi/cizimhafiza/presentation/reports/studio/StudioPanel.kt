@@ -182,6 +182,19 @@ fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
                 modifier = Modifier.fillMaxWidth()
             )
         }
+        item {
+            Column {
+                Text("Video dili", style = Console.Label)
+                Text("Karalak'ın söylediği cümleler, ses ve gönderi metni bu dilde yazılır. Ekrandaki sabit yazılar şimdilik Türkçe.", style = Console.Small)
+                Spacer(Modifier.height(6.dp))
+                Segmented(
+                    options = StudioLang.entries.map { it.name to "${it.label} · ${it.named}" },
+                    selected = st.lang.name,
+                    onSelect = { viewModel.setLang(StudioLang.valueOf(it)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
         when (st.format) {
             StudioFormat.Guess -> { guessSections(st, viewModel); sharedSections(st, viewModel, context) }
             StudioFormat.Memory -> { memorySections(st, viewModel); sharedSections(st, viewModel, context) }
@@ -1229,6 +1242,7 @@ private fun LazyListScope.scriptEditor(sc: GuessScript, st: StudioState, vm: Stu
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Açılış", style = Console.Label)
             LineEditor(sc.intro, { vm.editLine(LineRef.Intro, it) }, { vm.editEmotion(LineRef.Intro, it) }) { vm.listen(sc.intro) }
+            Alternatives(st.introAlts) { vm.pickAlt(LineRef.Intro, it) }
         }
     }
     sc.rounds.forEachIndexed { r, round ->
@@ -1261,9 +1275,24 @@ private fun LazyListScope.scriptEditor(sc: GuessScript, st: StudioState, vm: Stu
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Kapanış", style = Console.Label)
             LineEditor(sc.outro, { vm.editLine(LineRef.Outro, it) }, { vm.editEmotion(LineRef.Outro, it) }) { vm.listen(sc.outro) }
+            Alternatives(st.outroAlts) { vm.pickAlt(LineRef.Outro, it) }
             Spacer(Modifier.height(8.dp))
             SmallLink(if (st.writing) "Yazılıyor…" else "Kararı değiştirdiysen: tepkileri ve kapanışı yeniden yazdır") { if (!st.writing) vm.rewriteFrame() }
         }
+    }
+}
+
+/** The assistant's other openings or closings: a tap swaps one in, and the line it replaces joins the list. */
+@Composable
+private fun Alternatives(alts: List<SpokenLine>, onPick: (SpokenLine) -> Unit) {
+    if (alts.isEmpty()) return
+    Text("Başka seçenekler", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+    alts.forEach { a ->
+        Text(
+            "↻ ${a.text}",
+            style = Console.Small.copy(color = Console.Accent),
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { onPick(a) }.padding(vertical = 6.dp, horizontal = 4.dp)
+        )
     }
 }
 

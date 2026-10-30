@@ -215,10 +215,12 @@ class TextPainter {
      */
     fun karaoke(
         canvas: Canvas, text: String, progress: Float, cx: Float, cy: Float, width: Int, size: Float, maxLines: Int,
-        face: Typeface, spoken: Int, upcoming: Int
+        face: Typeface, spoken: Int, upcoming: Int,
+        /** When each word starts (ms into the line) if the voice told, with how far into the line we are: words light up as they are said. */
+        wordStarts: LongArray? = null, elapsedMs: Long = 0L
     ) {
         if (text.isBlank()) return
-        val split = karaokeSplit(text, progress)
+        val split = if (wordStarts != null) com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Karaoke.splitAt(text, wordStarts, elapsedMs) else karaokeSplit(text, progress)
         val span = SpannableString(text)
         if (split < text.length) span.setSpan(ForegroundColorSpan(upcoming), split, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         val layout = build(span, width, size, maxLines, face, spoken, Layout.Alignment.ALIGN_CENTER)

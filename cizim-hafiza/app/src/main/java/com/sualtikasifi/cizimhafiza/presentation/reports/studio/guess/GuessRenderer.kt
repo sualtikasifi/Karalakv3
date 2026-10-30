@@ -46,7 +46,9 @@ class GuessRenderer(
     private val drawings: Map<Long, StudioDrawing>,
     private val player: PlayerCard,
     /** Voice loudness per video frame for each line (by GuessScript.lines() index); null in the silent preview. */
-    private val voice: Map<Int, FloatArray>?
+    private val voice: Map<Int, FloatArray>?,
+    /** When each word of a line starts, by the same index, for lines whose voice came with timings; the subtitle follows them. */
+    private val wordStarts: Map<Int, LongArray>? = null
 ) : VoicedVideo {
     val events: List<GuessEvent> = GuessTimeline.build(script) { i, line ->
         voice?.get(i)?.let { env -> env.size * 1000L / FPS } ?: GuessTimeline.estimateMs(line.text)
@@ -246,7 +248,7 @@ class GuessRenderer(
         val l = e.line ?: return
         if (e.phase == GuessPhase.Outro) return
         val p = ((t - e.startMs).toFloat() / spokenMs(e).coerceAtLeast(1)).coerceIn(0f, 1f)
-        text.karaoke(canvas, l.text, p, 540f, 790f, 980, 56f, 2, assets.display, C.INK, C.FAINT)
+        text.karaoke(canvas, l.text, p, 540f, 790f, 980, 56f, 2, assets.display, C.INK, C.FAINT, wordStarts?.get(e.lineIndex), t - e.startMs)
     }
 
     private fun drawPaper(canvas: Canvas, e: GuessEvent, t: Long) {
@@ -342,7 +344,7 @@ class GuessRenderer(
         text.draw(canvas, result, 540f, 900f, 960, 76f, 1, assets.display, C.INK)
         e.line?.let { l ->
             val prog = ((t - e.startMs).toFloat() / spokenMs(e).coerceAtLeast(1)).coerceIn(0f, 1f)
-            text.karaoke(canvas, l.text, prog, 540f, 1040f, 960, 50f, 2, assets.display, C.ORANGE_DARK, C.FAINT)
+            text.karaoke(canvas, l.text, prog, 540f, 1040f, 960, 50f, 2, assets.display, C.ORANGE_DARK, C.FAINT, wordStarts?.get(e.lineIndex), t - e.startMs)
         }
         fill.color = C.ORANGE
         val cta = RectF(140f, 1170f, 940f, 1300f)

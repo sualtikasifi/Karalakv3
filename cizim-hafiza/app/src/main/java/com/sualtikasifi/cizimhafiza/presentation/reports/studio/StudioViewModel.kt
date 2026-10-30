@@ -113,6 +113,8 @@ data class ElevenUi(
     val stability: Float = 0.5f,
     /** v3 only: say each line the way Karalak's face says it ("[laughs]", "[surprised]"…). */
     val tags: Boolean = true,
+    /** The language of the videos: what the assistant writes in and what the voice speaks. */
+    val lang: StudioLang = StudioLang.Tr,
     /** The account's own voices, when the key may list them. */
     val voices: List<ElevenLabs.Voice> = emptyList(),
     val status: String? = null,
@@ -126,7 +128,7 @@ data class ElevenUi(
     /** A line not yet voiced that the person wants to hear: asks before spending credits on it. */
     val confirm: SpokenLine? = null
 ) {
-    val spec: VoiceSpec get() = VoiceSpec(voiceId, model, stability.toDouble(), tags)
+    val spec: VoiceSpec get() = VoiceSpec(voiceId, model, stability.toDouble(), tags, lang)
 }
 
 /** Whose drawings "Karalak Bilir mi?" uses: this phone's own, or a player's who agreed to appear in videos. */
@@ -228,6 +230,9 @@ data class StudioState(
     val writeError: String? = null,
     val aiCost: Double? = null,
     val script: GuessScript? = null,
+    /** Other openings and closings the assistant wrote for the script, to swap in with a tap. */
+    val introAlts: List<SpokenLine> = emptyList(),
+    val outroAlts: List<SpokenLine> = emptyList(),
     val caption: String = "",
     val hashtags: String = DEFAULT_TAGS,
     val voiceOn: Boolean = true,
@@ -248,6 +253,9 @@ data class StudioState(
     val memory: MemoryUi = MemoryUi(),
     val real: RealUi = RealUi()
 ) {
+    /** The language the videos are written and spoken in. */
+    val lang: StudioLang get() = eleven.lang
+
     /** The drawings on offer: this phone's, or the chosen featured player's. */
     val pool: List<StudioDrawing> get() = if (source == GuessSource.Mine) drawings else featured.find { it.player.uid == featuredUid }?.drawings.orEmpty()
     val chosen: List<StudioDrawing> get() = selected.mapNotNull { id -> pool.find { it.id == id } }
@@ -489,7 +497,7 @@ class StudioViewModel @Inject constructor(
         val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
         if (key.isBlank()) return null
         val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
-        return GuessDirector(OpenRouterClient(key), model)
+        return GuessDirector(OpenRouterClient(key), model, _state.value.lang)
     }
 
     /** Shows the chosen drawings to Karalak and has the whole script written. */
@@ -502,13 +510,14 @@ class StudioViewModel @Inject constructor(
         viewModelScope.launch {
             val result = d.write(s.chosen, name) { p ->
                 _state.update {
-                    it.copy(writeProgress = if (p.done < s.chosen.size) "Karalak ${p.done + 1}. çizime bakıyor…" else "Açılış ve kapanış yazılıyor…")
+                    it.copy(writeProgress = if (p.done < s.chosen.size) "Karalak çizimlere bakıyor ${p.done}/${s.chosen.size}…" else "Açılış ve kapanış yazılıyor…")
                 }
             }
             result.onSuccess { w ->
                 _state.update {
                     it.copy(
                         writing = false, writeProgress = null, script = w.script, aiCost = d.spentUsd,
+                        introAlts = w.introAlts, outroAlts = w.outroAlts,
                         caption = w.caption.ifBlank { it.caption }, hashtags = w.hashtags.ifBlank { it.hashtags },
                         video = null, previewMs = 0L
                     )
@@ -528,13 +537,34 @@ class StudioViewModel @Inject constructor(
         _state.update { it.copy(writing = true, writeError = null, writeProgress = "Tepkiler yeniden yazılıyor…") }
         viewModelScope.launch {
             d.rewriteFrame(script, s.player?.name ?: "Oyuncu").onSuccess { w ->
-                _state.update { it.copy(writing = false, writeProgress = null, script = w.script, caption = w.caption.ifBlank { it.caption }, video = null) }
+                _state.update {
+                    it.copy(
+                        writing = false, writeProgress = null, script = w.script, caption = w.caption.ifBlank { it.caption }, video = null,
+                        introAlts = w.introAlts, outroAlts = w.outroAlts
+                    )
+                }
                 refreshPreview()
             }.onFailure { e -> _state.update { it.copy(writing = false, writeProgress = null, writeError = e.message) } }
         }
     }
 
     fun editLine(ref: LineRef, text: String) = updateLine(ref) { it.copy(text = text.take(160)) }
+
+    /** Swaps in one of the assistant's other openings or closings; the line it replaces takes its place in the list, so nothing is lost. */
+    fun pickAlt(ref: LineRef, alt: SpokenLine) {
+        val current = when (ref) {
+            LineRef.Intro -> _state.value.script?.intro
+            LineRef.Outro -> _state.value.script?.outro
+            else -> null
+        } ?: return
+        _state.update { s ->
+            when (ref) {
+                LineRef.Intro -> s.copy(introAlts = s.introAlts.map { if (it == alt) current else it })
+                else -> s.copy(outroAlts = s.outroAlts.map { if (it == alt) current else it })
+            }
+        }
+        updateLine(ref) { alt }
+    }
     fun editEmotion(ref: LineRef, emotion: MascotEmotion) = updateLine(ref) { it.copy(emotion = emotion) }
 
     private fun updateLine(ref: LineRef, change: (SpokenLine) -> SpokenLine) {
@@ -682,7 +712,7 @@ class StudioViewModel @Inject constructor(
         updateMemory { it.copy(writing = true, writeError = null) }
         viewModelScope.launch {
             val candidates = s.memory.samples.filter { !it.correct }
-            MemoryDirector(OpenRouterClient(key), model).pick(stat, candidates, DEFAULT_PICKS).onSuccess { w ->
+            MemoryDirector(OpenRouterClient(key), model, _state.value.lang).pick(stat, candidates, DEFAULT_PICKS).onSuccess { w ->
                 updateMemory { it.copy(writing = false, script = script.copy(picks = w.picks, outro = w.outro ?: script.outro)) }
                 _state.update {
                     it.copy(
@@ -935,7 +965,7 @@ class StudioViewModel @Inject constructor(
         if (candidates.isEmpty()) { updateReal { it.copy(writeError = "Önce en az bir çizim seç") }; return }
         updateReal { it.copy(writing = true, writeError = null) }
         viewModelScope.launch {
-            RealDirector(OpenRouterClient(key), model).describe(candidates).onSuccess { w ->
+            RealDirector(OpenRouterClient(key), model, _state.value.lang).describe(candidates).onSuccess { w ->
                 updateReal { it.copy(writing = false) }
                 val byId = w.reveals.associateBy { it.sampleId }
                 updateProject { proj ->
@@ -973,7 +1003,7 @@ class StudioViewModel @Inject constructor(
         val drawing = p.drawing(reveal.sampleId) ?: return
         updateReal { it.copy(lineWriting = kind, lineErrors = it.lineErrors - kind) }
         viewModelScope.launch {
-            RealDirector(OpenRouterClient(key), model).lines(kind, drawing, reveal).onSuccess { w ->
+            RealDirector(OpenRouterClient(key), model, _state.value.lang).lines(kind, drawing, reveal).onSuccess { w ->
                 updateReal { it.copy(lineWriting = null) }
                 _state.update { it.copy(aiCost = w.costUsd) }
                 updateLine(reveal.sampleId, kind) { l ->
@@ -1339,7 +1369,8 @@ class StudioViewModel @Inject constructor(
                     voiceId = p.getString(EL_VOICE, null)?.takeIf { v -> v.isNotBlank() } ?: ElevenLabs.PRESETS.first().id,
                     model = VoiceModel.of(p.getString(EL_MODEL, null)),
                     stability = p.getFloat(EL_STABILITY, 0.5f),
-                    tags = p.getBoolean(EL_TAGS, true)
+                    tags = p.getBoolean(EL_TAGS, true),
+                    lang = StudioLang.of(p.getString(STUDIO_LANG, null))
                 )
             )
         }
@@ -1378,6 +1409,20 @@ class StudioViewModel @Inject constructor(
     fun setElevenStability(v: Float) {
         prefs().edit().putFloat(EL_STABILITY, v).apply()
         updateEleven { it.copy(stability = v) }
+        _state.update { it.copy(video = null) }
+        refreshVoicePlan()
+    }
+
+    /**
+     * The language of the videos. The script already written stays as it is (rewrite it to have it in the new language);
+     * a line voiced in another language is another file, so nothing already paid for is lost by switching back.
+     */
+    fun setLang(lang: StudioLang) {
+        prefs().edit().putString(STUDIO_LANG, lang.code).apply()
+        updateEleven { it.copy(lang = lang) }
+        // the phone's voice is opened for one language
+        listener?.close()
+        listener = null
         _state.update { it.copy(video = null) }
         refreshVoicePlan()
     }
@@ -1470,7 +1515,7 @@ class StudioViewModel @Inject constructor(
         val client = elevenClient() ?: run { _state.update { it.copy(voiceError = "Önce ElevenLabs anahtarını gir.") }; return }
         if (s.eleven.busy) return
         val spec = s.eleven.spec
-        val todo = lines.filter { voiceBank.cached(it, spec) == null }.distinctBy { ElevenLabs.textFor(it, spec.model, spec.tags) }
+        val todo = lines.filter { voiceBank.cached(it, spec) == null }.distinctBy { ElevenLabs.textFor(it, spec.model, spec.tags, spec.lang) }
         if (todo.isEmpty()) return
         updateEleven { it.copy(busy = true) }
         viewModelScope.launch {
@@ -1491,7 +1536,7 @@ class StudioViewModel @Inject constructor(
     private fun refreshVoicePlan(s: StudioState = _state.value) {
         val lines = linesFor(s).orEmpty().filter { it.text.isNotBlank() }
         val spec = s.eleven.spec
-        val missing = lines.filter { voiceBank.cached(it, spec) == null }.distinctBy { ElevenLabs.textFor(it, spec.model, spec.tags) }
+        val missing = lines.filter { voiceBank.cached(it, spec) == null }.distinctBy { ElevenLabs.textFor(it, spec.model, spec.tags, spec.lang) }
         updateEleven { it.copy(ready = lines.count { l -> voiceBank.cached(l, spec) != null }, missing = missing.size, missingCredits = missing.sumOf { l -> spec.credits(l) }) }
         val opening = s.real.project?.opening
         val voiced = RealLine.entries.associateWith { k ->
@@ -1502,7 +1547,7 @@ class StudioViewModel @Inject constructor(
 
     private fun speakOnPhone(line: SpokenLine) {
         viewModelScope.launch {
-            val synth = listener ?: SpeechSynth.open(context).getOrElse { e ->
+            val synth = listener ?: SpeechSynth.open(context, _state.value.lang).getOrElse { e ->
                 _state.update { it.copy(voiceError = e.message) }
                 return@launch
             }.also { listener = it }
@@ -1567,6 +1612,7 @@ class StudioViewModel @Inject constructor(
      */
     private fun videoFor(
         s: StudioState, voice: Map<Int, FloatArray>?, preview: Boolean,
+        wordStarts: Map<Int, LongArray>? = null,
         clipSource: (String) -> ClipFrames? = { previewClips[it] },
         promoSource: (File) -> ClipFrames? = { previewPromo }
     ): VoicedVideo? {
@@ -1596,13 +1642,13 @@ class StudioViewModel @Inject constructor(
             StudioFormat.Guess -> {
                 val script = s.script ?: (if (preview) previewScript(s) else null) ?: return null
                 val player = s.player ?: return null
-                GuessRenderer(assetsOrLoad(), sp, script, s.pool.associateBy { it.id }, player, voice)
+                GuessRenderer(assetsOrLoad(), sp, script, s.pool.associateBy { it.id }, player, voice, wordStarts)
             }
             StudioFormat.Memory -> {
                 val script = s.memory.script ?: return null
                 val pickedIds = script.picks.map { it.sampleId }.toSet()
                 val mosaic = s.memory.samples.filter { !it.correct && it.id !in pickedIds } + s.memory.samples.filter { !it.correct && it.id in pickedIds }
-                MemoryRenderer(assetsOrLoad(), sp, script, s.memory.samples.associateBy { it.id }, mosaic.take(9), voice)
+                MemoryRenderer(assetsOrLoad(), sp, script, s.memory.samples.associateBy { it.id }, mosaic.take(9), voice, wordStarts)
             }
             StudioFormat.RealLife -> null
         }
@@ -1630,6 +1676,8 @@ class StudioViewModel @Inject constructor(
             val result = runCatching {
                 // 1. Karalak's voice, one file per line
                 val voices = HashMap<Int, Pcm>()
+                // when each word is said, for the lines whose voice was made with timings (the karaoke subtitle follows them)
+                val starts = HashMap<Int, LongArray>()
                 if (s.voiceOn && s.voiceEngine == VoiceEngine.ElevenLabs) {
                     // making the video never pays: it uses only lines already voiced with "Seslendir"
                     val spec = s.eleven.spec
@@ -1640,9 +1688,10 @@ class StudioViewModel @Inject constructor(
                         val f = voiceBank.cached(l, spec) ?: error("“${l.text.take(30)}” sesi bulunamadı")
                         val pcm = withContext(Dispatchers.IO) { ClipAudio.decode(f, VOICE_MAX_MS) } ?: error("“${l.text.take(30)}” sesi çözülemedi")
                         voices[i] = PcmOps.softEnd(PcmOps.resample(pcm, RATE))
+                        voiceBank.timing(l, spec)?.startsFor(l.text)?.let { starts[i] = it }
                     }
                 } else if (s.voiceOn && lines.isNotEmpty()) {
-                    val synth = SpeechSynth.open(context).getOrThrow()
+                    val synth = SpeechSynth.open(context, s.lang).getOrThrow()
                     try {
                         synth.tune(s.voicePitch, s.voiceRate)
                         lines.forEachIndexed { i, l ->
@@ -1663,6 +1712,7 @@ class StudioViewModel @Inject constructor(
                         val envelopes = if (s.voiceOn) voices.mapValues { (_, pcm) -> PcmOps.envelope(pcm, GuessRenderer.FPS) } else null
                         val renderer = videoFor(
                             s, envelopes, preview = false,
+                            wordStarts = starts.takeIf { s.voiceOn && it.isNotEmpty() },
                             clipSource = { name -> renderClips.getOrPut(name) { runCatching { ClipFrames(realStore.file(name), exact = true) }.getOrNull() } },
                             promoSource = { f -> renderPromo ?: runCatching { ClipFrames(f, exact = true) }.getOrNull().also { renderPromo = it } }
                         ) ?: error("Video hazırlanamadı")
@@ -1767,6 +1817,7 @@ class StudioViewModel @Inject constructor(
         const val EL_MODEL = "elevenlabs_model"
         const val EL_STABILITY = "elevenlabs_stability"
         const val EL_TAGS = "elevenlabs_tags"
+        const val STUDIO_LANG = "studio_lang"
         const val VOICE_ENGINE = "studio_voice_engine"
         const val CARD_SCALE = "studio_real_card_scale"
         const val CARD_X = "studio_real_card_x"

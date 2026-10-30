@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio.real
 
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.LineRules
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
@@ -335,7 +336,7 @@ object RealCopy {
     const val OUTRO_COUNT = 5
     /** Longer than this and a line no longer fits the board or the subtitle, nor is read in time. */
     const val HOOK_CHARS = 80
-    private val SECONDS = Regex("(\\d+)(\\s*(?:saniye|sn))", RegexOption.IGNORE_CASE)
+    private val SECONDS = Regex("(\\d+)(\\s*(?:saniye|sn|seconds?|secs?|segundos?|seg))", RegexOption.IGNORE_CASE)
     private val NUMBERING = Regex("^\\d+[.)]\\s+")
 
     /** Where the video sends people: the app's page in Google Play, never the website. */
@@ -415,16 +416,26 @@ object RealCopy {
      * The assistant's ideas for the opening line: `{"hooks":["…",…]}`, cleaned (see [cleanHook]), the same one
      * only once, at most [HOOK_COUNT]. [seconds] are the opening drawing's.
      */
-    fun parseHooks(text: String, seconds: Int): List<String> = parseLines(text, "hooks", seconds, HOOK_COUNT)
+    fun parseHooks(text: String, seconds: Int): List<String> = parseLines(text, "hooks", seconds, HOOK_COUNT, LineRules.HOOK_WORDS)
 
     /** The assistant's ideas for the closing line: `{"outros":["…",…]}`, cleaned the same way, at most [OUTRO_COUNT]. */
-    fun parseOutros(text: String, seconds: Int): List<String> = parseLines(text, "outros", seconds, OUTRO_COUNT)
+    fun parseOutros(text: String, seconds: Int): List<String> = parseLines(text, "outros", seconds, OUTRO_COUNT, LineRules.CLOSING_WORDS)
 
-    private fun parseLines(text: String, key: String, seconds: Int, count: Int): List<String> {
+    /**
+     * The ideas under [key], cleaned. Ideas that run past [maxWords] are left out as long as enough others are left to
+     * choose from ([MIN_TO_CHOOSE]); when too few are, the long ones are cut instead of leaving nothing.
+     */
+    private fun parseLines(text: String, key: String, seconds: Int, count: Int, maxWords: Int): List<String> {
         val o = GuessCopy.objectIn(text) ?: return emptyList()
         val raw = runCatching { o[key]!!.jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull } }.getOrNull().orEmpty()
-        return raw.map { cleanHook(it, seconds) }.filter { it.isNotEmpty() }.distinctBy { GuessCopy.normalize(it) }.take(count)
+        val cleaned = raw.map { cleanHook(it, seconds) }.filter { it.isNotEmpty() }.distinctBy { GuessCopy.normalize(it) }
+        val fitting = cleaned.filterNot { LineRules.tooLong(it, maxWords) }
+        val use = if (fitting.size >= minOf(MIN_TO_CHOOSE, cleaned.size)) fitting else cleaned.map { LineRules.fit(it, maxWords) }.distinctBy { GuessCopy.normalize(it) }
+        return use.take(count)
     }
+
+    /** Fewest ideas worth offering: below it a long idea is cut rather than dropped. */
+    private const val MIN_TO_CHOOSE = 3
 
     /**
      * One line as the video shows it: no quotes or list number around it, and any time it gives set to the
@@ -433,7 +444,7 @@ object RealCopy {
     fun cleanHook(text: String, seconds: Int): String {
         var s = text.trim().trim('"', '“', '”', '\'', '«', '»').trim().replace(NUMBERING, "").trim()
         if (seconds > 0) s = SECONDS.replace(s) { m -> "$seconds" + m.groupValues[2] }
-        return s.take(HOOK_CHARS).trim()
+        return if (s.length <= HOOK_CHARS) s else s.take(HOOK_CHARS).substringBeforeLast(' ', s.take(HOOK_CHARS)).trim()
     }
 
     fun parsePicks(text: String, candidates: Int): Picks? {

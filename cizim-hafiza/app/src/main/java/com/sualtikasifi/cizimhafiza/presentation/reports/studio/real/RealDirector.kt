@@ -1,7 +1,10 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio.real
 
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.OpenRouterClient
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Backoff
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.KaralakVoice
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StrokeReplay
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioLang
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -9,7 +12,7 @@ import kotlinx.coroutines.withContext
  * Prepares "Gerçek Olsaydı" with the assistant: it looks at the chosen drawings and, for each, writes what
  * the picture and video prompts need (the drawing's shapes as drawn, a detailed little scene for the video), and a post text for the whole video.
  */
-class RealDirector(private val client: OpenRouterClient, private val model: String) {
+class RealDirector(private val client: OpenRouterClient, private val model: String, private val lang: StudioLang = StudioLang.Tr) {
 
     class Written(val reveals: List<RealReveal>, val caption: String, val hashtags: String, val costUsd: Double?)
 
@@ -30,7 +33,9 @@ class RealDirector(private val client: OpenRouterClient, private val model: Stri
             Yalnızca şu JSON'u yaz:
             {"reveals":[{"index":1,"describe":"…","motion":"…"}],"caption":"…","hashtags":"…"}
         """.trimIndent()
-        val answer = client.generate(SYSTEM, prompt, model, webSearch = false, images = images, json = true, temperature = 0.7, maxTokens = 4000).getOrThrow()
+        // the picture and video prompts stay Turkish (they are pasted into ChatGPT and Gemini and corrected by hand); only the post text follows the language
+        val note = if (lang == StudioLang.Tr) "" else "\n\nÖNEMLİ: \"caption\" ve \"hashtags\" alanlarını ${lang.named} yaz; \"describe\" ve \"motion\" Türkçe kalsın."
+        val answer = Backoff.retrying { client.generate(SYSTEM, prompt + note, model, webSearch = false, images = images, json = true, temperature = 0.7, maxTokens = 4000) }.getOrThrow()
         val parsed = RealCopy.parsePicks(answer.text, shown.size) ?: error("Yanıt okunamadı; tekrar dene.")
         Written(
             reveals = parsed.reveals.map { r -> RealReveal(shown[r.index].id, "", r.describe, r.motion) },
@@ -78,7 +83,10 @@ class RealDirector(private val client: OpenRouterClient, private val model: Stri
             Yalnızca şu JSON'u yaz:
             {"hooks":["…","…"]}
         """.trimIndent()
-        val answer = client.generate(HOOK_SYSTEM, prompt, model, webSearch = false, images = listOf(image), json = true, temperature = 1.0, maxTokens = 900).getOrThrow()
+        val system = KaralakVoice.persona(HOOK_JOB, lang)
+        val answer = Backoff.retrying {
+            client.generate(system, prompt + KaralakVoice.promptNote(lang, "JSON anahtarı"), model, webSearch = false, images = listOf(image), json = true, temperature = 1.0, maxTokens = 900)
+        }.getOrThrow()
         val hooks = RealCopy.parseHooks(answer.text, seconds)
         if (hooks.isEmpty()) error("Kancalar okunamadı; tekrar dene.")
         Lines(hooks, answer.costUsd)
@@ -117,7 +125,10 @@ class RealDirector(private val client: OpenRouterClient, private val model: Stri
             Yalnızca şu JSON'u yaz:
             {"outros":["…","…"]}
         """.trimIndent()
-        val answer = client.generate(OUTRO_SYSTEM, prompt, model, webSearch = false, images = listOf(image), json = true, temperature = 1.0, maxTokens = 600).getOrThrow()
+        val system = KaralakVoice.persona(OUTRO_JOB, lang)
+        val answer = Backoff.retrying {
+            client.generate(system, prompt + KaralakVoice.promptNote(lang, "JSON anahtarı"), model, webSearch = false, images = listOf(image), json = true, temperature = 1.0, maxTokens = 600)
+        }.getOrThrow()
         val outros = RealCopy.parseOutros(answer.text, seconds)
         if (outros.isEmpty()) error("Kapanışlar okunamadı; tekrar dene.")
         Lines(outros, answer.costUsd)
@@ -126,14 +137,8 @@ class RealDirector(private val client: OpenRouterClient, private val model: Stri
     private companion object {
         const val HOOK_COUNT = RealCopy.HOOK_COUNT
         const val OUTRO_COUNT = RealCopy.OUTRO_COUNT
-        val OUTRO_SYSTEM = """
-            Sen Karalak'sın: Karalak çizim oyununun maskotu, sevimli bir köpek yavrusu. Esprili, sıcak, biraz muzip.
-            Türkçe, konuşma dilinde, çok kısa konuşursun; söylediklerin sesli okunacak. Çizen kişiyi asla küçümsemezsin. Küfür, argo, siyaset yok.
-        """.trimIndent()
-        val HOOK_SYSTEM = """
-            Sen Karalak çizim oyununun sosyal medya editörüsün. Kısa videoların ilk saniyesini yazarsın: kısa, çarpıcı, merak uyandıran tek cümleler.
-            Çizen kişiyi asla küçümsemezsin; şakaların çizimle ilgilidir. Küfür, argo, siyaset yok.
-        """.trimIndent()
+        const val OUTRO_JOB = "Kısa bir videonun sonunda söyleyeceğin tek cümleyi yazıyorsun; çok kısa konuşursun. Çizen kişiyi asla küçümsemezsin."
+        const val HOOK_JOB = "Kısa videoların ilk saniyesini yazıyorsun: kısa, çarpıcı, merak uyandıran tek cümleler. Çizen kişiyi asla küçümsemezsin."
         const val MAX_CANDIDATES = 6
         val SYSTEM = """
             Sen Karalak çizim oyununun sosyal medya editörüsün. Çocuk çizimlerinin "gerçek olsaydı" hâlini gösteren kısa videolar için hazırlık yapıyorsun.
