@@ -70,7 +70,13 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.res.painterResource
 import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.PostLink
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.PostStats
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealEnding
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealOpening
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.SocialPlatform
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VideoPost
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMusic
@@ -81,6 +87,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -459,6 +466,7 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
         }
     }
     r.libraryView?.let { id -> r.library.find { it.id == id }?.let { item { LibraryViewer(it, vm) } } }
+    item { HookResults(r.library) }
 
     item { Step("1", "Çizimleri seç", "${chosenIds.size}/5 seçili") }
     item {
@@ -533,8 +541,26 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
         LineCard(RealLine.Hook, p, st, vm) {
             Text(
                 "Video, çizimin oyun ekranında baştan çizilmesiyle başlar: kelime üstte, süre köşede akar, altta oyunun jokerleri durur. " +
-                    "Kanca ekrana yazılmaz, yalnızca Karalak söyler: seslendirip videoya ekle. Sonra video çizimin içinden açılır.",
+                    "Kanca ekranda yazılı da durur (videolar çoğu zaman sessiz izlenir) ve istersen Karalak söyler: seslendirip videoya ekle. " +
+                    "Sonra video çizimin içinden açılır. Açılış ≈2 saniye sürer; kanca ne kadar kısaysa o kadar iyi.",
                 style = Console.Small
+            )
+        }
+    }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Text("Açılış stili", style = Console.Label)
+            Segmented(
+                options = listOf(RealOpening.Classic.name to "Klasik", RealOpening.Teaser.name to "Önce gerçek hâl"),
+                selected = (opening?.opening ?: RealOpening.Classic).name,
+                onSelect = { id -> opening?.let { vm.setOpening(it.sampleId, RealOpening.valueOf(id)) } },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                "Klasik: oyun ekranında çizim baştan çizilir. Önce gerçek hâl: video, klibin bir anıyla (≈1 sn) açılır ve çizimin içine çekilir; " +
+                    "kapak karesi çizim değil gerçek nesne olur ve izleyici neye dönüşeceğini ilk saniyede görür. " +
+                    "Aynı klibi iki stille, farklı hesaplarda paylaşıp hangisinin daha çok tuttuğunu karşılaştırabilirsin.",
+                style = Console.Small, modifier = Modifier.padding(top = 6.dp)
             )
         }
     }
@@ -554,7 +580,7 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
     }
 
     item { Step("5", "Arka plan müziği", opening?.music?.let { RealMusic.label(it) } ?: "yok") }
-    item { MusicCard(opening, st.real.musicPlaying, vm) }
+    item { MusicCard(opening, st.real.musicOn, st.real.musicPlaying, vm) }
 
     item { Step("6", "Kartın yeri ve boyu") }
     item {
@@ -569,33 +595,57 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
     }
 
     item {
-        Step("7", "Tanıtım videosu: her videonun sonu", if (r.promo == null) "yok" else if (!r.promoOn) "kapalı" else String.format(Locale("tr"), "%.1f sn", r.promoMs / 1000f))
+        Step(
+            "7", "Videonun sonu",
+            when (r.ending) {
+                RealEnding.Card -> String.format(Locale("tr"), "bitiş kartı · %.1f sn", RealTimeline.END_CARD_MS / 1000f)
+                RealEnding.Promo -> if (r.promo == null) "tanıtım videosu yok" else String.format(Locale("tr"), "tanıtım · %.1f sn", r.promoMs / 1000f)
+                RealEnding.Nothing -> "yok"
+            }
+        )
     }
-    item { PromoCard(r, vm) }
+    item { EndingCard(r, vm) }
 }
 
 /**
- * The app's promo video, made once by hand and kept on this phone: it closes every video, with its own sound, after
- * the drawing's video ends. It can be swapped, removed or left out of a video.
+ * What closes every video. A short end card is the default: Karalak's badge, "draw yours, make it real", the Google Play
+ * button and "link in bio", over about two seconds; the video stays short and loops. The long promo video is still here
+ * for when it is wanted, and the video can end on Karalak's closing alone.
+ */
+@Composable
+private fun EndingCard(r: RealUi, vm: StudioViewModel) {
+    ConsoleCard(Modifier.fillMaxWidth()) {
+        Segmented(
+            options = listOf(RealEnding.Card.name to "Bitiş kartı", RealEnding.Promo.name to "Tanıtım videosu", RealEnding.Nothing.name to "Yok"),
+            selected = r.ending.name,
+            onSelect = { vm.setEnding(RealEnding.valueOf(it)) },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text(
+            when (r.ending) {
+                RealEnding.Card -> "Klibin ve Karalak'ın tepkisinin hemen ardından ${RealTimeline.END_CARD_MS / 1000f} saniyelik kart: rozet, “Sen de çiz, gerçek olsun!”, Google Play düğmesi, “Link profilde”. Yazılar video diline göre değişir."
+                RealEnding.Promo -> "Kendi tanıtım videon her videonun sonuna eklenir. Uzun bir son, izleyicinin videoyu bitirme ve baştan izleme oranını düşürür; kısa tut ya da karşılaştırmalı dene."
+                RealEnding.Nothing -> "Video Karalak'ın kapanışıyla biter; çağrı yalnızca açıklamada olur."
+            },
+            style = Console.Small, modifier = Modifier.padding(top = 8.dp)
+        )
+        if (r.ending == RealEnding.Promo) PromoCard(r, vm)
+    }
+}
+
+/**
+ * The app's promo video, made once by hand and kept on this phone: when it is chosen as the video's ending it plays,
+ * with its own sound, after the drawing's video ends. It can be swapped or removed.
  */
 @Composable
 private fun PromoCard(r: RealUi, vm: StudioViewModel) {
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let { vm.importPromo(it) } }
-    ConsoleCard(Modifier.fillMaxWidth()) {
+    Column(Modifier.padding(top = 8.dp)) {
         Text(
-            "Uygulamayı tanıtan kısa videon her videonun sonuna, kendi sesiyle eklenir; bir kez seçmen yeterli, telefonda saklanır. " +
-                "Dikey 9:16 en iyisi; başka oranda bir video kırpılmadan, arkası bulanık olarak yerleşir. En fazla ${RealTimeline.PROMO_MAX / 1000} saniyesi girer.",
+            "Bir kez seçmen yeterli, telefonda saklanır. Dikey 9:16 en iyisi; başka oranda bir video kırpılmadan, arkası bulanık olarak yerleşir. En fazla ${RealTimeline.PROMO_MAX / 1000} saniyesi girer.",
             style = Console.Small
         )
-        if (r.promo != null) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                Column(Modifier.weight(1f)) {
-                    Text("Videoların sonuna ekle", style = Console.Subtitle)
-                    Text(String.format(Locale("tr"), "%.1f sn", r.promoMs / 1000f) + " · önizlemede en sonda görünür", style = Console.Small)
-                }
-                Switch(checked = r.promoOn, onCheckedChange = vm::setPromoOn, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
-            }
-        }
+        if (r.promo != null) Text(String.format(Locale("tr"), "%.1f sn", r.promoMs / 1000f) + " · önizlemede en sonda görünür", style = Console.Subtitle, modifier = Modifier.padding(top = 6.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
             ActionButton(Icons.Filled.Movie, if (r.promoBusy) "Ekleniyor…" else if (r.promo == null) "Tanıtım videosu seç" else "Değiştir", Console.Surface, Console.Ink, Modifier.weight(1.4f)) {
                 if (!r.promoBusy) picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
@@ -610,8 +660,19 @@ private fun PromoCard(r: RealUi, vm: StudioViewModel) {
  * it steps back on its own, a little under the clip, and it fades out at the end.
  */
 @Composable
-private fun MusicCard(reveal: RealReveal?, playing: String?, vm: StudioViewModel) {
+private fun MusicCard(reveal: RealReveal?, musicOn: Boolean, playing: String?, vm: StudioViewModel) {
     ConsoleCard(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Müziği videoya göm", style = Console.Subtitle)
+                Text(
+                    if (musicOn) "Açıkken müzik videoya karışır." else "Kapalı: video müziksiz çıkar, dosya adı “_muziksiz” biter. Trend sesi TikTok/Instagram'da sen eklersin; kanca, kapanış ve klibin kendi sesi kalır.",
+                    style = Console.Small
+                )
+            }
+            Switch(checked = musicOn, onCheckedChange = vm::setMusicOn, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
+        }
+        Spacer(Modifier.height(6.dp))
         Text(
             "Uygulamanın müziklerinden biri videonun altında çalar. Karalak konuşurken kısılır, klip boyunca biraz alçalır, sonda yavaşça biter. " +
                 "▶ ile önce dinleyebilirsin.",
@@ -868,6 +929,74 @@ private fun LibraryThumb(item: LibraryItem, order: Int, vm: StudioViewModel, mod
     }
 }
 
+/**
+ * Where this piece was posted and how it did. A posting is noted when the video is shared; its numbers are typed in a
+ * day or two later from the platform's own analytics: views, the share still watching at 3 seconds, the share who
+ * watched to the end, shares and installs.
+ */
+@Composable
+private fun PostsSection(item: LibraryItem, vm: StudioViewModel) {
+    Column(Modifier.fillMaxWidth().padding(top = 14.dp)) {
+        Text("Paylaşımlar ve sonuçlar", style = Console.Subtitle)
+        if (item.posts.isEmpty()) {
+            Text("Bu kayıttan yapılan video paylaşıldığında burada görünür; sonuçları sen girersin.", style = Console.Small)
+        }
+        item.posts.forEach { post ->
+            key(post.id) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp), color = Console.Surface, border = BorderStroke(1.dp, Console.Border),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                ) {
+                    Column(Modifier.padding(10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                val day = java.text.SimpleDateFormat("d MMM HH:mm", Locale("tr")).format(java.util.Date(post.postedAt))
+                                Text("${post.social.label} · $day · " + if (post.opening == RealOpening.Teaser.name) "önce gerçek hâl" else "klasik açılış", style = Console.Label)
+                                if (post.hook.isNotBlank()) Text("“${post.hook}”", style = Console.Small)
+                            }
+                            SmallLink("Sil", Console.Critical) { vm.deletePost(item.id, post.id) }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Box(Modifier.weight(1f)) { NumberField("İzlenme", post.views) { v -> vm.updatePost(item.id, post.id) { it.copy(views = v) } } }
+                            Box(Modifier.weight(1f)) { NumberField("3 sn tutma %", post.hold3s, max = 100) { v -> vm.updatePost(item.id, post.id) { it.copy(hold3s = v) } } }
+                            Box(Modifier.weight(1f)) { NumberField("Bitiren %", post.finished, max = 100) { v -> vm.updatePost(item.id, post.id) { it.copy(finished = v) } } }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Box(Modifier.weight(1f)) { NumberField("Paylaşım", post.shares) { v -> vm.updatePost(item.id, post.id) { it.copy(shares = v) } } }
+                            Box(Modifier.weight(1f)) { NumberField("Kurulum", post.installs) { v -> vm.updatePost(item.id, post.id) { it.copy(installs = v) } } }
+                            Spacer(Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** A whole number typed in (empty is 0), kept to [max] and to a sensible length. */
+@Composable
+private fun NumberField(label: String, value: Int, max: Int = 999_999_999, onChange: (Int) -> Unit) {
+    Field(label, if (value == 0) "" else value.toString(), { raw -> onChange((raw.filter { it.isDigit() }.take(9).toLongOrNull() ?: 0L).coerceAtMost(max.toLong()).toInt()) })
+}
+
+/**
+ * What the postings say about the hooks: for each, the share still watching at 3 seconds and the installs it brought,
+ * over the posts with enough views to count. This is the list to write the next hooks from.
+ */
+@Composable
+private fun HookResults(library: List<LibraryItem>) {
+    val results = PostStats.bestHooks(library.flatMap { it.posts }).take(5)
+    if (results.isEmpty()) return
+    ConsoleCard(Modifier.fillMaxWidth()) {
+        Text("Kanca sonuçları", style = Console.Subtitle)
+        Text("${PostStats.MIN_VIEWS}+ izlenmeli paylaşımlardan, 3. saniyede izlemeye devam edenlere göre sıralı.", style = Console.Small)
+        results.forEachIndexed { i, r ->
+            Text("${i + 1}. “${r.hook}”", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+            Text("3 sn tutma %${r.hold3s} · bitiren %${r.finished} · ${r.installs} kurulum · ${r.views} izlenme · ${r.posts} paylaşım", style = Console.Small)
+        }
+    }
+}
+
 /** A kept piece opened to watch: its clip playing, its picture below, and the way to delete it. */
 @Composable
 private fun LibraryViewer(item: LibraryItem, vm: StudioViewModel) {
@@ -895,6 +1024,7 @@ private fun LibraryViewer(item: LibraryItem, vm: StudioViewModel) {
                     (if (item.drawing.named) "@${item.drawing.nickname}" else "Anonim oyuncu") + " · " + megabytes(vm.libraryBytesOf(item)),
                     style = Console.Small, modifier = Modifier.padding(top = 8.dp)
                 )
+                PostsSection(item, vm)
             }
         },
         confirmButton = { TextButton(onClick = { vm.openLibraryItem(null) }) { Text("Kapat") } },
@@ -1135,10 +1265,24 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
                     )
                 }
                 Spacer(Modifier.height(10.dp))
+                // where it is going to be posted decides what the post text ends with (a link only where it can be tapped)
+                val platform = if (real) st.real.platform else null
+                if (real) {
+                    Text("Nerede paylaşacaksın?", style = Console.Label)
+                    Segmented(
+                        options = SocialPlatform.entries.map { it.name to it.label },
+                        selected = st.real.platform.name,
+                        onSelect = { vm.setPlatform(SocialPlatform.valueOf(it)) },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    )
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ActionButton(Icons.Filled.Share, "Paylaş", Console.Accent, Color.White, Modifier.weight(1.3f)) { share(context, file, st.caption, st.hashtags, store = real) }
+                    ActionButton(Icons.Filled.Share, "Paylaş", Console.Accent, Color.White, Modifier.weight(1.3f)) {
+                        if (real) vm.logPost()
+                        share(context, file, st.caption, st.hashtags, platform, st.lang)
+                    }
                     ActionButton(Icons.Filled.Download, "Galeriye", Console.Surface, Console.Ink, Modifier.weight(1f)) { vm.saveToGallery() }
-                    ActionButton(Icons.Filled.ContentCopy, "Metin", Console.Surface, Console.Ink, Modifier.weight(1f)) { copy(context, postText(st.caption, st.hashtags, store = real)) }
+                    ActionButton(Icons.Filled.ContentCopy, "Metin", Console.Surface, Console.Ink, Modifier.weight(1f)) { copy(context, postText(st.caption, st.hashtags, platform, st.lang)) }
                 }
                 Field("Açıklama", st.caption, vm::setCaption, lines = 3)
                 Field("Etiketler", st.hashtags, vm::setHashtags, lines = 2)
@@ -1146,6 +1290,14 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
                     "Paylaşırken açıklama panoya kopyalanır; TikTok/Instagram'da yapıştır. Arka plan müziğini orada, sesi kısık ekle.",
                     style = Console.Small, modifier = Modifier.padding(top = 6.dp)
                 )
+                if (real) {
+                    Text(
+                        "TikTok ve Instagram açıklamasında link tıklanmaz: açıklama “Link profilde” der, takip kodlu Play linkini profilin biyografisine koyarsın. " +
+                            "YouTube Shorts'ta takip kodlu link açıklamada tıklanır. Google Play Console'da kurulumlar kaynağa göre (utm_source) görünür.",
+                        style = Console.Small, modifier = Modifier.padding(top = 6.dp)
+                    )
+                    SmallLink("Profil linkini kopyala (${st.real.platform.label})") { copy(context, PostLink.url(st.real.platform)) }
+                }
             }
         }
     }
@@ -1509,10 +1661,10 @@ private fun ActionButton(icon: androidx.compose.ui.graphics.vector.ImageVector, 
     }
 }
 
-private fun postText(caption: String, hashtags: String, store: Boolean = false): String {
+private fun postText(caption: String, hashtags: String, platform: SocialPlatform? = null, lang: StudioLang = StudioLang.Tr): String {
     val text = listOf(caption.trim(), hashtags.trim()).filter { it.isNotEmpty() }.joinToString("\n\n")
-    // the viewer is sent to the app's Google Play page, not the website
-    return if (store) RealCopy.withStoreLink(text) else text
+    // the viewer is sent to the app's Google Play page: by the link itself where the platform makes it tappable, by "link in bio" elsewhere
+    return if (platform != null) PostLink.withFooter(text, platform, lang) else text
 }
 
 private fun copy(context: Context, text: String) {
@@ -1568,9 +1720,9 @@ private fun shareImages(context: Context, files: List<File>, text: String) {
 }
 
 /** Hands the video to the system share sheet (Instagram, TikTok, WhatsApp…), with the post text on the clipboard. */
-private fun share(context: Context, file: File, caption: String, hashtags: String, store: Boolean = false) {
+private fun share(context: Context, file: File, caption: String, hashtags: String, platform: SocialPlatform? = null, lang: StudioLang = StudioLang.Tr) {
     runCatching {
-        val text = postText(caption, hashtags, store)
+        val text = postText(caption, hashtags, platform, lang)
         if (text.isNotEmpty()) {
             (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Karalak", text))
         }

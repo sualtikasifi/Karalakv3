@@ -25,7 +25,8 @@ class FeatureConsentPublisher @Inject constructor(
     private val authRepository: AuthRepository,
     private val settingsRepository: SettingsRepository,
     private val friendRepository: FriendRepository,
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val legalConsentStore: LegalConsentStore
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var started = false
@@ -35,7 +36,9 @@ class FeatureConsentPublisher @Inject constructor(
         if (started) return
         started = true
         scope.launch {
-            combine(authRepository.authState, settingsRepository.featureConsent) { _, consent -> consent }
+            // a player who may be under 13 is never featured, whatever the switch says (it was on before their age was
+            // known, say, or the age was corrected afterwards): the profile is then told no
+            combine(authRepository.authState, settingsRepository.featureConsent, legalConsentStore.childMode) { _, consent, child -> consent && !child }
                 .collect { consent -> publish(consent) }
         }
     }

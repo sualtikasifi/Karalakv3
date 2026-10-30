@@ -10,6 +10,11 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealPhase
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealTimeline
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.PostLink
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.PostStats
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealOpening
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.SocialPlatform
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VideoPost
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -393,13 +398,88 @@ class RealTest {
     }
 
     @Test
-    fun postTextEndsWithTheGooglePlayLinkOnceAndNeverTheWebsite() {
-        val text = RealCopy.withStoreLink("Hangisi?\n\n#karalak")
-        assertTrue(text.endsWith(RealCopy.STORE_URL))
-        assertTrue(RealCopy.STORE_URL.startsWith("https://play.google.com/store/apps/details?id="))
-        assertEquals(text, RealCopy.withStoreLink(text))
-        assertFalse(text.contains("karalak.com"))
-        assertEquals(RealCopy.STORE_LINE, RealCopy.withStoreLink(""))
+    fun theFooterIsLinkInBioWhereALinkCannotBeTappedAndTheTrackedPlayLinkWhereItCan() {
+        val tiktok = PostLink.withFooter("Hangisi?\n\n#karalak", SocialPlatform.TikTok)
+        assertTrue(tiktok.endsWith("Link profilde 👆"))
+        assertFalse(tiktok.contains("http"))
+        assertTrue(PostLink.footer(SocialPlatform.Instagram, StudioLang.En).startsWith("Link in bio"))
+        val shorts = PostLink.withFooter("Hangisi?", SocialPlatform.YouTube, content = "roket")
+        assertTrue(shorts.contains("https://play.google.com/store/apps/details?id=com.sualtikasifi.cizimhafiza&referrer="))
+        // the referrer carries the platform, the campaign and which video, and is itself encoded
+        val referrer = java.net.URLDecoder.decode(shorts.substringAfter("referrer=").substringBefore("\n"), "UTF-8")
+        assertEquals("utm_source=youtube&utm_medium=social&utm_campaign=gercek_olsaydi&utm_content=roket", referrer)
+        assertFalse(shorts.contains("karalak.com"))
+        // once: text that already ends with it is left as it is
+        assertEquals(tiktok, PostLink.withFooter(tiktok, SocialPlatform.TikTok))
+        assertEquals(shorts, PostLink.withFooter(shorts, SocialPlatform.YouTube, content = "roket"))
+        assertEquals(PostLink.footer(SocialPlatform.TikTok), PostLink.withFooter("", SocialPlatform.TikTok))
+        assertEquals(SocialPlatform.TikTok, SocialPlatform.of("nope"))
+    }
+
+    @Test
+    fun theHooksAreRankedByHowManyStayedPastThreeSecondsAndTinyPostsDoNotCount() {
+        fun post(hook: String, views: Int, hold: Int, installs: Int = 0, platform: SocialPlatform = SocialPlatform.TikTok) =
+            VideoPost(hook + views + hold, platform.name, 1L, hook, views = views, hold3s = hold, finished = hold / 2, installs = installs)
+        val posts = listOf(
+            post("A", 1_000, 60, 4), post("A", 3_000, 80, 20), // 3000+1000 views: (60*1000 + 80*3000) / 4000 = 75
+            post("B", 2_000, 70, 1), post("C", 50, 99, 9), post("", 5_000, 90)
+        )
+        val best = PostStats.bestHooks(posts)
+        assertEquals(listOf("A", "B"), best.map { it.hook })
+        assertEquals(75, best[0].hold3s)
+        assertEquals(24, best[0].installs)
+        assertEquals(2, best[0].posts)
+        assertTrue(PostStats.bestHooks(emptyList()).isEmpty())
+        // 24 installs over 4000 views is 6 per thousand; too few views say nothing
+        assertEquals(6, PostStats.installsPerThousand(posts.take(2), SocialPlatform.TikTok))
+        assertNull(PostStats.installsPerThousand(posts.take(2), SocialPlatform.YouTube))
+        assertFalse(VideoPost("x", "TikTok", 1L).measured)
+        assertTrue(VideoPost("x", "TikTok", 1L, views = 5).measured)
+    }
+
+    @Test
+    fun aPieceKeptBeforePostsWereTrackedStillOpensAndKeepsWhatIsAddedLater() {
+        val old = """{"id":"a","savedAt":5,"drawing":{"id":"a","strokes":[]},"reveal":{"sampleId":"a"}}"""
+        val item = Json { ignoreUnknownKeys = true }.decodeFromString(com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.LibraryItem.serializer(), old)
+        assertTrue(item.posts.isEmpty())
+        assertEquals(RealOpening.Classic, item.reveal.opening)
+        val posted = item.copy(posts = listOf(VideoPost("p", "YouTube", 9L, "Bu ne?", views = 120, hold3s = 64)))
+        val json = Json { ignoreUnknownKeys = true }
+        val back = json.decodeFromString(com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.LibraryItem.serializer(), json.encodeToString(com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.LibraryItem.serializer(), posted))
+        assertEquals(posted, back)
+    }
+
+    @Test
+    fun theOpeningIsShortAndATeaserAddsItsGlimpseNotMore() {
+        assertEquals(RealTimeline.HOOK_SILENT, RealTimeline.hookMs())
+        assertTrue(RealTimeline.HOOK_SILENT <= 2_400L)
+        assertEquals(RealTimeline.HOOK_SILENT + RealTimeline.TEASE_MS, RealTimeline.hookMs(0L, teaser = true))
+        // a long voice never holds the opening past its cap; the rest is said over the clip
+        assertEquals(RealTimeline.HOOK_VOICE_MAX, RealTimeline.hookMs(20_000L))
+        assertEquals(RealTimeline.HOOK_VOICE_MAX + RealTimeline.TEASE_MS, RealTimeline.hookMs(20_000L, teaser = true))
+        // there is time left to draw the drawing after the glimpse, the hold and the reveal
+        assertTrue(RealTimeline.HOOK_SILENT - RealTimeline.HOOK_REVEAL - RealTimeline.HOOK_HOLD >= 1_200L)
+        val reveal = RealReveal("a", clip = "a.mp4", clipMs = 8_000, opening = RealOpening.Teaser)
+        assertEquals(RealTimeline.HOOK_SILENT + RealTimeline.TEASE_MS, reveal.hookMs)
+        assertEquals(RealTimeline.HOOK_SILENT, reveal.copy(opening = RealOpening.Classic).hookMs)
+    }
+
+    @Test
+    fun theEndCardClosesTheVideoInPlaceOfThePromoAndStaysInsideItsMusic() {
+        val r = RealReveal("a", clip = "a.mp4", clipMs = 8_000, outro = VoicedLine("Bu ne?"))
+        val card = RealTimeline.build(r, promoMs = 0L, endCardMs = RealTimeline.END_CARD_MS)
+        assertEquals(RealPhase.EndCard, card.last().phase)
+        assertEquals(RealTimeline.END_CARD_MS, card.last().durationMs)
+        assertEquals(card.last().startMs, card.first { it.phase == RealPhase.Outro }.endMs)
+        // the music belongs to everything up to the card's end, since it is part of the drawing's own video
+        assertEquals(RealTimeline.totalMs(card), RealTimeline.mainMs(card))
+        // a promo, when there is one, is used instead of the card, never both
+        val promo = RealTimeline.build(r, promoMs = 6_000L, endCardMs = RealTimeline.END_CARD_MS)
+        assertEquals(RealPhase.Promo, promo.last().phase)
+        assertTrue(promo.none { it.phase == RealPhase.EndCard })
+        // no ending asked for: the video ends on the closing
+        assertEquals(RealPhase.Outro, RealTimeline.build(r).last().phase)
+        assertEquals(RealPhase.Clip, RealTimeline.build(r.copy(outro = VoicedLine()), endCardMs = 0L).last().phase)
     }
 
     @Test
