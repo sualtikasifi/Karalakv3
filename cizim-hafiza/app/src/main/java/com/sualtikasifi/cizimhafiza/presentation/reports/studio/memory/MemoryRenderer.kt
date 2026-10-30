@@ -30,7 +30,9 @@ class MemoryRenderer(
     private val samples: Map<String, MemorySample>,
     /** Extra drawings for the opening mosaic (forgotten ones of the same word). */
     private val mosaic: List<MemorySample>,
-    private val voice: Map<Int, FloatArray>?
+    private val voice: Map<Int, FloatArray>?,
+    /** When each word of a line starts, by line index, for lines whose voice came with timings; the subtitle follows them. */
+    private val wordStarts: Map<Int, LongArray>? = null
 ) : VoicedVideo {
     val events: List<MemoryEvent> = MemoryTimeline.build(script) { i, l ->
         voice?.get(i)?.let { it.size * 1000L / FPS } ?: GuessTimeline.estimateMs(l.text)
@@ -62,7 +64,7 @@ class MemoryRenderer(
         e.line?.let { l ->
             if (e.phase != MemoryPhase.Outro) {
                 val p = ((t - e.startMs).toFloat() / spoken.coerceAtLeast(1)).coerceIn(0f, 1f)
-                text.karaoke(canvas, l.text, p, 540f, 615f, 980, 50f, 2, assets.display, C.INK, C.FAINT)
+                text.karaoke(canvas, l.text, p, 540f, 615f, 980, 50f, 2, assets.display, C.INK, C.FAINT, wordStarts?.get(e.lineIndex), t - e.startMs)
             }
         }
         when (e.phase) {
@@ -250,7 +252,7 @@ class MemoryRenderer(
         e.line?.let { l ->
             val spoken = voice?.get(e.lineIndex)?.let { it.size * 1000L / FPS } ?: GuessTimeline.estimateMs(l.text)
             val prog = ((t - e.startMs).toFloat() / spoken.coerceAtLeast(1)).coerceIn(0f, 1f)
-            text.karaoke(canvas, l.text, prog, 540f, 1040f, 960, 48f, 2, assets.display, C.ORANGE_DARK, C.FAINT)
+            text.karaoke(canvas, l.text, prog, 540f, 1040f, 960, 48f, 2, assets.display, C.ORANGE_DARK, C.FAINT, wordStarts?.get(e.lineIndex), t - e.startMs)
         }
         fill.color = C.ORANGE
         val cta = RectF(140f, 1170f, 940f, 1300f)

@@ -275,6 +275,16 @@ class RealTest {
         // with the seconds unknown, what was written stays
         assertEquals("3 saniyede çizdi!", RealCopy.cleanHook("3 saniyede çizdi!", 0))
         assertTrue(RealCopy.cleanHook("x".repeat(300), 4).length <= RealCopy.HOOK_CHARS)
+        // the time is the drawing's in the other languages too
+        assertEquals("Draw a cat in 4 seconds!", RealCopy.cleanHook("Draw a cat in 9 seconds!", 4))
+        assertEquals("Em 4 segundos!", RealCopy.cleanHook("Em 9 segundos!", 4))
+        // an idea that runs on is left out while others are left to choose from
+        val tooLong = "uzun ".repeat(30).trim()
+        assertEquals(3, RealCopy.parseHooks("""{"hooks":["Kısa bir kanca","İkinci kısa kanca","Üçüncü kısa kanca","$tooLong"]}""", 0).size)
+        // …and cut rather than lost when too few are left
+        val few = RealCopy.parseHooks("""{"hooks":["Kısa bir kanca","$tooLong"]}""", 0)
+        assertEquals(2, few.size)
+        assertTrue(few[1].split(' ').size <= 8)
         assertTrue(RealCopy.parseHooks("bilmiyorum", 4).isEmpty())
         assertTrue(RealCopy.parseHooks("{\"hooks\":[]}", 4).isEmpty())
     }

@@ -4,11 +4,11 @@ import android.content.Context
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioLang
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
 import java.io.File
-import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
@@ -61,8 +61,8 @@ class SpeechSynth private constructor(private val tts: TextToSpeech) {
     }
 
     companion object {
-        /** Opens the engine with Turkish selected, or explains why it cannot. */
-        suspend fun open(context: Context): Result<SpeechSynth> {
+        /** Opens the engine with [lang] selected (Turkish unless asked otherwise), or explains why it cannot. */
+        suspend fun open(context: Context, lang: StudioLang = StudioLang.Tr): Result<SpeechSynth> {
             var engine: TextToSpeech? = null
             val status = suspendCancellableCoroutine { cont ->
                 engine = TextToSpeech(context.applicationContext) { s -> if (cont.isActive) cont.resume(s) }
@@ -73,11 +73,12 @@ class SpeechSynth private constructor(private val tts: TextToSpeech) {
                 runCatching { tts.shutdown() }
                 return Result.failure(IllegalStateException("Telefonun seslendirme motoru açılamadı"))
             }
-            val lang = tts.setLanguage(Locale("tr", "TR"))
-            if (lang == TextToSpeech.LANG_MISSING_DATA || lang == TextToSpeech.LANG_NOT_SUPPORTED) {
+            val set = tts.setLanguage(lang.locale)
+            if (set == TextToSpeech.LANG_MISSING_DATA || set == TextToSpeech.LANG_NOT_SUPPORTED) {
                 runCatching { tts.shutdown() }
+                val named = lang.named
                 return Result.failure(
-                    IllegalStateException("Türkçe ses yüklü değil. Ayarlar → Sistem → Diller → Metin okuma çıkışı → Google'dan Türkçe sesi indir.")
+                    IllegalStateException("$named ses yüklü değil. Ayarlar → Sistem → Diller → Metin okuma çıkışı → Google'dan $named sesi indir.")
                 )
             }
             return Result.success(SpeechSynth(tts))

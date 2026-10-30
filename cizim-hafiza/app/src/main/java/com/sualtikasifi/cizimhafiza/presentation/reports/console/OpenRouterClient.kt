@@ -111,7 +111,7 @@ class OpenRouterClient(private val apiKey: String) {
         }
     }
 
-    class ApiError(val code: Int, message: String) : Exception(message)
+    class ApiError(override val code: Int, message: String) : Exception(message), com.sualtikasifi.cizimhafiza.presentation.reports.studio.Backoff.Coded
 
     private fun call(
         model: String,

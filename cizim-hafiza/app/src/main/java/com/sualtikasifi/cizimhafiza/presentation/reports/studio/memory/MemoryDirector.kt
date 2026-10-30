@@ -1,7 +1,11 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory
 
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.OpenRouterClient
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Backoff
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.KaralakVoice
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.LineRules
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StrokeReplay
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioLang
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +16,7 @@ import kotlinx.coroutines.withContext
  * varied ones, and give Karalak a short line for each, plus the closing line and the post text.
  * The numbers in the opening and the twist are not its to write (see MemoryCopy).
  */
-class MemoryDirector(private val client: OpenRouterClient, private val model: String) {
+class MemoryDirector(private val client: OpenRouterClient, private val model: String, private val lang: StudioLang = StudioLang.Tr) {
 
     class Written(val picks: List<MemoryPick>, val outro: SpokenLine?, val caption: String, val hashtags: String, val costUsd: Double?)
 
@@ -35,20 +39,19 @@ class MemoryDirector(private val client: OpenRouterClient, private val model: St
             {"picks":[{"index":3,"emotion":"…","line":"…"}],"outro":{"emotion":"…","line":"…"},"caption":"…","hashtags":"…"}
             emotion yalnızca şunlardan biri: ${MascotEmotion.entries.joinToString(", ") { it.key }}.
         """.trimIndent()
-        val answer = client.generate(SYSTEM, prompt, model, webSearch = false, images = images, json = true, temperature = 0.85, maxTokens = 1200).getOrThrow()
+        val system = KaralakVoice.persona(JOB, lang)
+        val answer = Backoff.retrying {
+            client.generate(system, prompt + KaralakVoice.promptNote(lang, "JSON anahtarları, emotion değerleri ve index"), model, webSearch = false, images = images, json = true, temperature = 0.85, maxTokens = 1200)
+        }.getOrThrow()
         val parsed = MemoryCopy.parsePicks(answer.text, shown.size) ?: error("Seçim okunamadı; tekrar dene.")
         Written(
-            parsed.picks.take(want).map { (i, line) -> MemoryPick(shown[i].id, shown[i].correct, line) },
-            parsed.outro, parsed.caption, parsed.hashtags, answer.costUsd
+            parsed.picks.take(want).map { (i, line) -> MemoryPick(shown[i].id, shown[i].correct, line?.let { it.copy(text = LineRules.fit(it.text, LineRules.PICK_WORDS)) }) },
+            parsed.outro?.let { it.copy(text = LineRules.fit(it.text, LineRules.OUTRO_WORDS)) }, parsed.caption, parsed.hashtags, answer.costUsd
         )
     }
 
     private companion object {
         const val MAX_CANDIDATES = 12
-        val SYSTEM = """
-            Sen Karalak'sın: Karalak çizim oyununun maskotu, sevimli bir köpek yavrusu. Kendinden emin, esprili, sıcak.
-            Türkçe, konuşma dilinde, kısa konuşursun. Şakaların çizimle ilgilidir; kimseyi aşağılamazsın. Küfür, argo, siyaset yok.
-            Şimdi "Hafıza Tuzağı" adlı kısa bir sosyal medya videosu için çizim seçip yorum yazıyorsun; yorumlar sesli okunacak.
-        """.trimIndent()
+        const val JOB = "Şimdi \"Hafıza Tuzağı\" adlı kısa bir sosyal medya videosu için çizim seçip yorum yazıyorsun; yorumlar sesli okunacak."
     }
 }

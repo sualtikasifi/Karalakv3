@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess
 
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.LineRules
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -125,7 +126,12 @@ object GuessTimeline {
 }
 
 /** The words around the rounds, plus what goes under the post. */
-data class FrameCopy(val intro: SpokenLine, val reactions: List<SpokenLine>, val outro: SpokenLine, val caption: String, val hashtags: String)
+data class FrameCopy(
+    val intro: SpokenLine, val reactions: List<SpokenLine>, val outro: SpokenLine, val caption: String, val hashtags: String,
+    /** Other openings and closings to pick from (the same mood as the first), best first; may be empty. */
+    val introAlts: List<SpokenLine> = emptyList(),
+    val outroAlts: List<SpokenLine> = emptyList()
+)
 
 /** Reading the assistant's answers, and judging Karalak's guesses. */
 object GuessCopy {
@@ -165,8 +171,46 @@ object GuessCopy {
         return FrameCopy(
             intro, reactions.take(rounds), outro,
             o["caption"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty(),
-            o["hashtags"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+            o["hashtags"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty(),
+            alternatives(o["intro_alts"], intro), alternatives(o["outro_alts"], outro)
         )
+    }
+
+    /** Other ways to say a line: `["…","…"]` (or objects like the line's own), in [like]'s mood, without repeats of it or of each other. */
+    private fun alternatives(e: kotlinx.serialization.json.JsonElement?, like: SpokenLine): List<SpokenLine> {
+        val array = runCatching { e?.jsonArray }.getOrNull() ?: return emptyList()
+        val seen = mutableSetOf(normalize(like.text))
+        return array.mapNotNull { item ->
+            (item as? JsonObject)?.let { lineOf(it) }
+                ?: runCatching { item.jsonPrimitive.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }?.let { SpokenLine(it, like.emotion) } }.getOrNull()
+        }.filter { seen.add(normalize(it.text)) }.take(MAX_ALTS)
+    }
+
+    /** How many other openings, and other closings, the panel offers. */
+    const val MAX_ALTS = 4
+
+    private fun SpokenLine.fitted(maxWords: Int) = copy(text = LineRules.fit(text, maxWords))
+
+    /** Karalak's looks with each line cut to its length (see [LineRules]). */
+    fun fitLooks(stages: List<SpokenLine>): List<SpokenLine> = stages.map { it.fitted(LineRules.STAGE_WORDS) }
+
+    /** The frame's lines cut to their lengths; what came back short is left as it is. */
+    fun fitFrame(f: FrameCopy): FrameCopy = f.copy(
+        intro = f.intro.fitted(LineRules.INTRO_WORDS),
+        reactions = f.reactions.map { it.fitted(LineRules.REACTION_WORDS) },
+        outro = f.outro.fitted(LineRules.OUTRO_WORDS),
+        introAlts = f.introAlts.map { it.fitted(LineRules.INTRO_WORDS) },
+        outroAlts = f.outroAlts.map { it.fitted(LineRules.OUTRO_WORDS) }
+    )
+
+    /** The lines of Karalak's looks that are too long to keep, as they are written. */
+    fun longLooks(stages: List<SpokenLine>): List<String> = stages.map { it.text }.filter { LineRules.tooLong(it, LineRules.STAGE_WORDS) }
+
+    /** The frame's lines that are too long to keep (the alternatives are only dropped when too long, never asked about). */
+    fun longFrame(f: FrameCopy): List<String> = buildList {
+        if (LineRules.tooLong(f.intro.text, LineRules.INTRO_WORDS)) add(f.intro.text)
+        f.reactions.forEach { if (LineRules.tooLong(it.text, LineRules.REACTION_WORDS)) add(it.text) }
+        if (LineRules.tooLong(f.outro.text, LineRules.OUTRO_WORDS)) add(f.outro.text)
     }
 
     /** Lower-case, Turkish letters folded to plain ones, punctuation gone: "Kara Kedi!" → "kara kedi". */
