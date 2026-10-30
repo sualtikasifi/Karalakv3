@@ -306,7 +306,7 @@ class Lettering(
     companion object {
         /** White with a dark brown edge and shadow: reads on a bright clip and on the game's painted scenes alike. */
         fun onPicture(size: Float) = Lettering(
-            fill = 0xFFFFFFFF.toInt(), outline = 0xFF2B1A10.toInt(), outlineWidth = size * 0.16f,
+            fill = 0xFFFFFFFF.toInt(), outline = 0xFF2B1A10.toInt(), outlineWidth = size * 0.17f,
             shadow = 0xB0000000.toInt(), shadowBlur = size * 0.22f, shadowDy = size * 0.08f
         )
 

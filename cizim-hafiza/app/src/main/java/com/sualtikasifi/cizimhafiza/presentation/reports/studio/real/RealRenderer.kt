@@ -427,7 +427,8 @@ class RealRenderer(
             canvas.save()
             canvas.scale(icon, icon, END_ICON_CX, cy)
             when (i) {
-                0 -> drawRing(canvas, END_ICON_CX, cy, END_ICON, seconds, 1f - step(END_STEP_AT, 2_000f))
+                // the ring runs down while the card is up, but never out: the card is about drawing in time, not missing it
+                0 -> drawRing(canvas, END_ICON_CX, cy, END_ICON, seconds, 1f - END_RING_SPENT * Ease.out(step(END_STEP_AT, 2_000f)))
                 1 -> drawDoodleTile(canvas, d, END_ICON_CX, cy, END_ICON)
                 else -> drawMascotTile(canvas, END_ICON_CX, cy, END_ICON)
             }
@@ -480,7 +481,7 @@ class RealRenderer(
         ring.color = C.ORANGE
         canvas.drawRoundRect(RectF(box.left + 2.5f, box.top + 2.5f, box.right - 2.5f, box.bottom - 2.5f), size * 0.18f, size * 0.18f, ring)
         val m = size * 0.14f
-        d?.let { replay(it.id)?.draw(canvas, RectF(box.left + m, box.top + m, box.right - m, box.bottom - m), 1f, ink, 0.02f) }
+        d?.let { replay(it.id)?.draw(canvas, RectF(box.left + m, box.top + m, box.right - m, box.bottom - m), 1f, ink, 0.045f) }
     }
 
     /** Karalak with his magnifier, peeking out of a round frame: remembering what a drawing was. */
@@ -776,7 +777,13 @@ class RealRenderer(
         val sx = (bmp.width - srcW) / 2f
         src.set(sx.toInt(), BOARD_END_ROW, (sx + srcW).toInt(), bmp.height)
         canvas.drawBitmap(bmp, src, RectF(0f, BOARD_TOP + BOARD_H, W.toFloat(), H.toFloat()), fill)
+        // the board's own soft shadow on the desk: it sits on it, and the enlarged desk meets it without a seam
+        val y = BOARD_TOP + BOARD_H
+        boardShadow.shader = LinearGradient(0f, y, 0f, y + BOARD_SHADOW, BOARD_SHADOW_COLOR, 0x00000000, Shader.TileMode.CLAMP)
+        canvas.drawRect(0f, y, W.toFloat(), y + BOARD_SHADOW, boardShadow)
     }
+
+    private val boardShadow = Paint(Paint.ANTI_ALIAS_FLAG)
 
     /** The game's countdown ring in the top right: the seconds left and the ring emptying as the drawing is drawn. */
     private fun drawTimer(canvas: Canvas, seconds: Int, drawn: Float) {
@@ -858,6 +865,9 @@ class RealRenderer(
         private const val BOARD_TOP = 1172f
         private const val BOARD_H = 236f
         private const val CANVAS_BOTTOM = BOARD_TOP - (BOARD_ROW - CANVAS_EDGE_ROW)
+        /** The board's shadow on the desk: how far down it reaches and how dark it starts. */
+        private const val BOARD_SHADOW = 34f
+        private const val BOARD_SHADOW_COLOR = 0x66311A08
 
         /** GuessScreen's joker row in bg_guess's art units: the tiles' top and height, and where the row starts. */
         private const val TILE_TOP = 1406f
@@ -870,7 +880,7 @@ class RealRenderer(
          * a subtitle fades out over [CAPTION_FADE].
          */
         private const val CAPTION_TOP = 1420f
-        private const val CAPTION_SIZE = 60f
+        private const val CAPTION_SIZE = 66f
         private const val CAPTION_W = 880
         private const val CAPTION_SPACING = 0.86f
         private const val CAPTION_SILENT_AT = 250L
@@ -928,6 +938,8 @@ class RealRenderer(
         private const val END_STORE_CY = 1400f
         private const val END_LINK_CY = 1535f
         private const val END_MUTED = 0xFF6B6157.toInt()
+        /** How much of its time the first step's ring runs down over the card. */
+        private const val END_RING_SPENT = 0.7f
 
         /** How far before its end the clip's held frame is taken, clear of a last frame that may come out black. */
         private const val LAST_FRAME_BACK = 60L
