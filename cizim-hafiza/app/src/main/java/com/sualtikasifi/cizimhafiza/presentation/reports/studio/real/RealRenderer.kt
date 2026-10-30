@@ -271,7 +271,7 @@ class RealRenderer(
         if (teaser && local < tease) drawTease(canvas, reveal, local, box)
 
         // the hook, written on a plaque over the top of the canvas: the video is mostly watched without sound
-        drawHookPlaque(canvas, reveal.hook.text)
+        drawHookPlaque(canvas, reveal.hook.text, plaqueTop(reveal.hook.text, if (teaser) local else null))
 
         // the first clip opens out of the drawing
         val openFrom = e.durationMs - RealTimeline.HOOK_REVEAL
@@ -345,21 +345,33 @@ class RealRenderer(
     }
 
     /**
+     * Where the plaque's top is. Over the top of the canvas, except while a teaser's real thing still fills the frame:
+     * there it waits low, under the subject, and slides up into place as the picture shrinks away.
+     */
+    private fun plaqueTop(hook: String, teaseLocal: Long?): Float {
+        val line = hook.trim()
+        if (teaseLocal == null || line.isEmpty()) return PLAQUE_TOP
+        val low = TEASE_PLAQUE_BOTTOM - plaqueFor(line).height
+        val slide = Ease.out(((teaseLocal - RealTimeline.TEASE_HOLD).toFloat() / (RealTimeline.TEASE_MS - RealTimeline.TEASE_HOLD)).coerceIn(0f, 1f))
+        return low + (PLAQUE_TOP - low) * slide
+    }
+
+    /**
      * The hook as a white plaque with the game's orange edge, over the top of the canvas (the "+ Süre" pill is under
      * it): the lettering is Karalak's own and big, the plaque as wide as the canvas so it looks set into the screen, and
      * it is there from the very first frame, which is the video's cover.
      */
-    private fun drawHookPlaque(canvas: Canvas, hook: String) {
+    private fun drawHookPlaque(canvas: Canvas, hook: String, top: Float) {
         val line = hook.trim()
         if (line.isEmpty()) return
         val pq = plaqueFor(line)
-        val box = RectF(PLAQUE_LEFT, PLAQUE_TOP, PLAQUE_RIGHT, PLAQUE_TOP + pq.height)
+        val box = RectF(PLAQUE_LEFT, top, PLAQUE_RIGHT, top + pq.height)
         plain.color = PLAQUE_SHADOW
         canvas.drawRoundRect(RectF(box.left, box.top + 9f, box.right, box.bottom + 9f), PLAQUE_RADIUS, PLAQUE_RADIUS, plain)
+        // fully opaque: what is under the plaque (the game's "+ Süre" pill, the real thing's subject) must not show through
         plain.color = C.WHITE
-        plain.alpha = 246
-        canvas.drawRoundRect(box, PLAQUE_RADIUS, PLAQUE_RADIUS, plain)
         plain.alpha = 255
+        canvas.drawRoundRect(box, PLAQUE_RADIUS, PLAQUE_RADIUS, plain)
         ring.strokeWidth = 7f
         ring.color = C.ORANGE
         val inset = ring.strokeWidth / 2f
@@ -416,7 +428,7 @@ class RealRenderer(
         }
         // where the link is
         val hint = ((local - 800f) / 300f).coerceIn(0f, 1f)
-        text.draw(canvas, words.link, W / 2f, END_LINK_CY, END_TEXT_W, 42f, 1, assets.body, C.MUTED, alpha = hint)
+        text.draw(canvas, words.link, W / 2f, END_LINK_CY, END_TEXT_W, 44f, 1, assets.body, END_LINK_COLOR, alpha = hint)
     }
 
     private class EndWords(val title: String, val store: String, val link: String)
@@ -781,6 +793,8 @@ class RealRenderer(
         private const val PLAQUE_SIZE_MIN = 56f
         private const val PLAQUE_SPACING = 0.86f
         private const val PLAQUE_SHADOW = 0x38000000
+        /** While a teaser's picture fills the frame the plaque rests with its bottom here, clear of the apps' caption band. */
+        private const val TEASE_PLAQUE_BOTTOM = 1440f
 
         /** The end card: how fast it comes in, and where its parts sit (all above the apps' caption band). */
         private const val END_FADE = 260L
@@ -792,6 +806,7 @@ class RealRenderer(
         private const val END_BUTTON_H = 150f
         private const val END_BUTTON_CY = 1230f
         private const val END_LINK_CY = 1380f
+        private const val END_LINK_COLOR = 0xFF6B6157.toInt()
 
         /** The closing's subtitle: its widest line, its size, and its middle, kept above the apps' caption band. */
         private const val SUB_W = 860
