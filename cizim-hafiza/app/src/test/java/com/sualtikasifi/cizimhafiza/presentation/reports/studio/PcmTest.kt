@@ -84,12 +84,4 @@ class PcmTest {
         assertTrue(PcmOps.audible(Pcm(rate, samples)))
         assertFalse(PcmOps.audible(Pcm(rate, ShortArray(10))))
     }
-
-    @Test
-    fun karaokeStopsAtWordEnds() {
-        val text = "Bir daire güneş mi"
-        assertEquals(0, TextPainter.karaokeSplit(text, 0f))
-        assertEquals(text.length, TextPainter.karaokeSplit(text, 1f))
-        assertEquals(text.indexOf(' ', 5), TextPainter.karaokeSplit(text, 0.3f))
-    }
 }

@@ -16,12 +16,14 @@ import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.ClipSound
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Ease
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Lettering
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StrokeReplay
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioAssets
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioLang
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioColors as C
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.TextPainter
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.VoicedVideo
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Reveal
 import java.io.File
 import kotlin.math.hypot
 import kotlin.math.min
@@ -179,14 +181,60 @@ class RealRenderer(
         if (e.phase == RealPhase.Promo) { drawPromo(canvas, e, t); return }
         if (e.phase == RealPhase.EndCard) { drawEndCard(canvas, e, t); return }
         val reveal = shown.getOrNull(e.index) ?: return
-        if (e.phase == RealPhase.Hook) { drawHook(canvas, e, reveal, t); return }
-        if (e.phase == RealPhase.Outro) { drawOutro(canvas, e, reveal, t); return }
+        when (e.phase) {
+            RealPhase.Hook -> drawHook(canvas, e, reveal, t)
+            RealPhase.Outro -> drawOutro(canvas, e, reveal, t)
+            else -> drawClip(canvas, e, reveal, t)
+        }
+        drawCaptions(canvas, t)
+    }
+
+    private fun drawClip(canvas: Canvas, e: RealEvent, reveal: RealReveal, t: Long) {
         canvas.drawColor(C.INK)
         val frame = clips[reveal.sampleId]?.frameAt((t - e.clipAtMs).coerceIn(0L, e.clipMs))
         if (frame != null) cover(canvas, frame, RectF(0f, 0f, W.toFloat(), H.toFloat()))
         val drawing = project.drawing(reveal.sampleId) ?: return
         val local = t - e.startMs
         drawCard(canvas, drawing, Ease.backOut(min(1f, local / 450f)))
+    }
+
+    /** One of Karalak's lines as a subtitle: what it says, when each letter comes in, and from when to when it is up. */
+    private class Caption(val text: String, val starts: LongArray, val fromMs: Long, val untilMs: Long)
+
+    /**
+     * The hook and the closing as subtitles, coming in with Karalak's voice: by its words when ElevenLabs timed them,
+     * spread over the voice otherwise, and read in at a reading pace when the line is not voiced. The hook stays up
+     * through the opening (and on over the clip while a long voice is still going), the closing through the closing.
+     */
+    private val captions: List<Caption> = buildList {
+        val f = featured ?: return@buildList
+        fun line(l: VoicedLine, e: RealEvent?, keepTo: (Long, LongArray) -> Long) {
+            val words = l.text.trim()
+            if (words.isEmpty() || e == null) return
+            val voiced = l.voice != null && l.voiceMs > 0L
+            val starts = Reveal.charStarts(words, if (voiced) l.wordRanges() else null, if (voiced) l.voiceMs else 0L)
+            val from = e.startMs + if (voiced) RealTimeline.VOICE_AT else CAPTION_SILENT_AT
+            add(Caption(words, starts, from, keepTo(from, starts)))
+        }
+        val hook = events.firstOrNull { it.phase == RealPhase.Hook }
+        line(f.hook, hook) { from, starts -> maxOf(hook!!.endMs, from + Reveal.doneAt(starts) + CAPTION_HOLD) }
+        val outro = events.firstOrNull { it.phase == RealPhase.Outro }
+        line(f.outro, outro) { _, _ -> outro!!.endMs }
+    }
+
+    private val captionLettering = Lettering.onPicture(CAPTION_SIZE)
+
+    /** The subtitles up at [t], in the game's lettering right under the joker board (where the closing sits too). */
+    private fun drawCaptions(canvas: Canvas, t: Long) {
+        captions.forEach { c ->
+            if (t < c.fromMs || t > c.untilMs + CAPTION_FADE) return@forEach
+            val alpha = if (t <= c.untilMs) 1f else 1f - (t - c.untilMs).toFloat() / CAPTION_FADE
+            val (_, h) = text.measure(c.text, CAPTION_W, CAPTION_SIZE, 2, assets.display, C.WHITE, spacing = CAPTION_SPACING, balanced = true)
+            text.reveal(
+                canvas, c.text, c.starts, t - c.fromMs, W / 2f, CAPTION_TOP + h / 2f, CAPTION_W, CAPTION_SIZE, 2,
+                assets.display, captionLettering, alpha, CAPTION_SPACING, balanced = true
+            )
+        }
     }
 
     /** The Karalak card with the player's drawing, frame, picture and name on it; it pops in from its top left corner. */
@@ -256,7 +304,7 @@ class RealRenderer(
         // the drawing, drawn again in the time the opening leaves before the clip (after the glimpse of the real thing, when it opens with one)
         val teaser = reveal.opening == RealOpening.Teaser
         val tease = if (teaser) RealTimeline.TEASE_MS else 0L
-        val box = drawingBox(reveal.hook.text)
+        val box = hookBox
         val drawEnd = (e.durationMs - tease - RealTimeline.HOOK_REVEAL - RealTimeline.HOOK_HOLD).coerceAtLeast(1L)
         val drawn = ((local - tease).toFloat() / drawEnd).coerceIn(0f, 1f)
         replay(d.id)?.draw(canvas, box, drawn, sceneInk, 0.02f)
@@ -264,14 +312,11 @@ class RealRenderer(
         // the timer ring, running down with the drawing
         if (d.seconds > 0) drawTimer(canvas, d.seconds, drawn)
 
-        // the board under the canvas: the game's jokers, as the app shows them
+        // the board under the canvas: the game's jokers, as the app shows them, at the game's own size
         drawJokers(canvas, local)
 
         // a glimpse of the real thing shrinks away into the canvas, then the drawing is drawn
         if (teaser && local < tease) drawTease(canvas, reveal, local, box)
-
-        // the hook, written on a plaque over the top of the canvas: the video is mostly watched without sound
-        drawHookPlaque(canvas, reveal.hook.text, plaqueTop(reveal.hook.text, if (teaser) local else null))
 
         // the first clip opens out of the drawing
         val openFrom = e.durationMs - RealTimeline.HOOK_REVEAL
@@ -321,129 +366,185 @@ class RealRenderer(
         }
     }
 
-    /** How the hook is set on its plaque: the size it is lettered at, and the plaque's height. */
-    private class Plaque(val size: Float, val height: Float)
-
-    private val plaques = HashMap<String, Plaque>()
-
-    private fun plaqueFor(line: String): Plaque = plaques.getOrPut(line) {
-        val size = when {
-            line.length <= 22 -> PLAQUE_SIZE_MAX
-            line.length <= 40 -> 74f
-            line.length <= 60 -> 64f
-            else -> PLAQUE_SIZE_MIN
-        }
-        val (_, h) = text.measure(line, PLAQUE_TEXT_W, size, 3, assets.display, C.INK, spacing = PLAQUE_SPACING, balanced = true)
-        Plaque(size, (h + 2f * PLAQUE_PAD_V).coerceAtLeast(PLAQUE_MIN_H))
-    }
-
-    /** The canvas the drawing is drawn in: all of the game's, or what the hook's plaque leaves of it. */
-    private fun drawingBox(hook: String): RectF {
-        val line = hook.trim()
-        if (line.isEmpty()) return hookBox
-        return RectF(hookBox.left, maxOf(hookBox.top, PLAQUE_TOP + plaqueFor(line).height + PLAQUE_GAP), hookBox.right, hookBox.bottom)
-    }
-
     /**
-     * Where the plaque's top is. Over the top of the canvas, except while a teaser's real thing still fills the frame:
-     * there it waits low, under the subject, and slides up into place as the picture shrinks away.
-     */
-    private fun plaqueTop(hook: String, teaseLocal: Long?): Float {
-        val line = hook.trim()
-        if (teaseLocal == null || line.isEmpty()) return PLAQUE_TOP
-        val low = TEASE_PLAQUE_BOTTOM - plaqueFor(line).height
-        val slide = Ease.out(((teaseLocal - RealTimeline.TEASE_HOLD).toFloat() / (RealTimeline.TEASE_MS - RealTimeline.TEASE_HOLD)).coerceIn(0f, 1f))
-        return low + (PLAQUE_TOP - low) * slide
-    }
-
-    /**
-     * The hook as a white plaque with the game's orange edge, over the top of the canvas (the "+ Süre" pill is under
-     * it): the lettering is Karalak's own and big, the plaque as wide as the canvas so it looks set into the screen, and
-     * it is there from the very first frame, which is the video's cover.
-     */
-    private fun drawHookPlaque(canvas: Canvas, hook: String, top: Float) {
-        val line = hook.trim()
-        if (line.isEmpty()) return
-        val pq = plaqueFor(line)
-        val box = RectF(PLAQUE_LEFT, top, PLAQUE_RIGHT, top + pq.height)
-        plain.color = PLAQUE_SHADOW
-        canvas.drawRoundRect(RectF(box.left, box.top + 9f, box.right, box.bottom + 9f), PLAQUE_RADIUS, PLAQUE_RADIUS, plain)
-        // fully opaque: what is under the plaque (the game's "+ Süre" pill, the real thing's subject) must not show through
-        plain.color = C.WHITE
-        plain.alpha = 255
-        canvas.drawRoundRect(box, PLAQUE_RADIUS, PLAQUE_RADIUS, plain)
-        ring.strokeWidth = 7f
-        ring.color = C.ORANGE
-        val inset = ring.strokeWidth / 2f
-        canvas.drawRoundRect(RectF(box.left + inset, box.top + inset, box.right - inset, box.bottom - inset), PLAQUE_RADIUS, PLAQUE_RADIUS, ring)
-        text.draw(canvas, line, box.centerX(), box.centerY(), PLAQUE_TEXT_W, pq.size, 3, assets.display, C.INK, spacing = PLAQUE_SPACING, balanced = true)
-    }
-
-    /**
-     * The end card, after Karalak's closing: the badge, what to do ("draw yours, make it real"), where (the Google Play
-     * button, which is only a picture of one: there is nothing to tap in a video) and that the link is in the profile.
-     * It comes in over the last frame of the clip and each part follows the one before, so it is not a still. Everything
-     * stays inside what the apps' buttons and caption leave free.
+     * The end card, after Karalak's closing: what the game is, tied to the video just watched. The badge; how long this
+     * doodle took; the game's own slogan; its three steps (draw before the time runs out, your drawings come back after a
+     * short break, remember which word each one was), each with a little picture of it (the timer ring running down,
+     * this very doodle, Karalak with his magnifier); Google's own Play badge of the video's language (a picture of it:
+     * there is nothing to tap in a video) and where the link is. It comes in over the clip's last frame, one part after
+     * another, and stays inside what the apps' buttons and caption leave free.
      */
     private fun drawEndCard(canvas: Canvas, e: RealEvent, t: Long) {
         val local = t - e.startMs
         val fade = (local.toFloat() / END_FADE).coerceIn(0f, 1f)
         if (fade < 1f && e.startMs > 0) draw(canvas, e.startMs - 1) else canvas.drawColor(C.CREAM)
-        val full = RectF(0f, 0f, W.toFloat(), H.toFloat())
         plain.color = C.CREAM
         plain.alpha = (255 * fade).toInt()
-        canvas.drawRect(full, plain)
+        canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), plain)
         // two soft orange washes for depth
         plain.color = C.ORANGE
-        plain.alpha = (28 * fade).toInt()
-        canvas.drawCircle(130f, 300f, 440f, plain)
-        canvas.drawCircle(980f, 1500f, 520f, plain)
+        plain.alpha = (26 * fade).toInt()
+        canvas.drawCircle(90f, 260f, 420f, plain)
+        canvas.drawCircle(1010f, 1560f, 500f, plain)
         plain.alpha = 255
 
         val words = endWords()
+        val d = featured?.let { project.drawing(it.sampleId) }
+        val seconds = d?.seconds ?: 0
+        fun step(from: Float, length: Float) = ((local - from) / length).coerceIn(0f, 1f)
+
         // the badge pops in, then floats a little
-        val badge = assets.logo
-        val pop = Ease.backOut(((local - 80f) / 480f).coerceIn(0f, 1f))
-        if (badge != null && pop > 0f) {
+        val pop = Ease.backOut(step(60f, 420f))
+        assets.logo?.takeIf { pop > 0f }?.let { badge ->
             val size = END_BADGE * pop
-            val cy = END_BADGE_CY + kotlin.math.sin(local * 2.0 * Math.PI / 2_400.0).toFloat() * 7f
+            val cy = END_BADGE_CY + kotlin.math.sin(local * 2.0 * Math.PI / 2_400.0).toFloat() * 6f
             canvas.drawBitmap(badge, null, RectF(W / 2f - size / 2f, cy - size / 2f, W / 2f + size / 2f, cy + size / 2f), fill)
         }
-        // the line
-        val title = ((local - 220f) / 320f).coerceIn(0f, 1f)
-        text.draw(canvas, words.title, W / 2f, END_TITLE_CY + 36f * (1f - Ease.out(title)), END_TEXT_W, 84f, 2, assets.display, C.INK, alpha = title, spacing = 0.9f, balanced = true)
-        // the store button
-        val button = Ease.backOut(((local - 460f) / 420f).coerceIn(0f, 1f))
-        if (button > 0f) {
-            val box = RectF(W / 2f - END_BUTTON_W / 2f, END_BUTTON_CY - END_BUTTON_H / 2f, W / 2f + END_BUTTON_W / 2f, END_BUTTON_CY + END_BUTTON_H / 2f)
+        // the video's own doodle, and how long it took
+        val context = step(200f, 280f)
+        val contextLine = if (seconds > 0) words.drawnIn.format(seconds) else words.drawnHere
+        text.draw(canvas, contextLine, W / 2f, END_CONTEXT_CY + 24f * (1f - Ease.out(context)), END_TEXT_W, 42f, 1, assets.body, END_MUTED, alpha = context)
+        // the slogan, settling in, with its paint stroke drawn under it
+        val slogan = step(320f, 320f)
+        if (slogan > 0f) {
+            val z = 0.92f + 0.08f * Ease.backOut(slogan)
             canvas.save()
-            canvas.scale(button, button, box.centerX(), box.centerY())
-            plain.color = PLAQUE_SHADOW
-            canvas.drawRoundRect(RectF(box.left, box.top + 9f, box.right, box.bottom + 9f), END_BUTTON_H / 2f, END_BUTTON_H / 2f, plain)
+            canvas.scale(z, z, W / 2f, END_SLOGAN_CY)
+            text.draw(canvas, words.slogan, W / 2f, END_SLOGAN_CY, END_TEXT_W, 90f, 1, assets.display, C.INK, alpha = slogan)
+            canvas.restore()
+            val (sw, _) = text.measure(words.slogan, END_TEXT_W, 90f, 1, assets.display, C.INK)
+            val stroke = Ease.out(step(520f, 300f)) * sw * 0.62f
             plain.color = C.ORANGE
-            canvas.drawRoundRect(box, END_BUTTON_H / 2f, END_BUTTON_H / 2f, plain)
-            drawPlay(canvas, box.left + 104f, box.centerY(), 78f, C.WHITE)
-            text.draw(canvas, words.store, box.centerX() + 62f, box.centerY(), (END_BUTTON_W - 230f).toInt(), 50f, 1, assets.display, C.WHITE)
+            canvas.drawRoundRect(RectF(W / 2f - stroke / 2f, END_STROKE_Y, W / 2f + stroke / 2f, END_STROKE_Y + 12f), 6f, 6f, plain)
+        }
+        // the three steps, one after the other
+        words.steps.forEachIndexed { i, line ->
+            val a = step(END_STEP_AT + i * END_STEP_GAP, 300f)
+            if (a <= 0f) return@forEachIndexed
+            val cy = END_STEP_TOP + i * END_STEP_PITCH
+            val slide = 44f * (1f - Ease.out(a))
+            val icon = Ease.backOut(a)
+            canvas.save()
+            canvas.scale(icon, icon, END_ICON_CX, cy)
+            when (i) {
+                // the ring runs down while the card is up, but never out: the card is about drawing in time, not missing it
+                0 -> drawRing(canvas, END_ICON_CX, cy, END_ICON, seconds, 1f - END_RING_SPENT * Ease.out(step(END_STEP_AT, 2_000f)))
+                1 -> drawDoodleTile(canvas, d, END_ICON_CX, cy, END_ICON)
+                else -> drawMascotTile(canvas, END_ICON_CX, cy, END_ICON)
+            }
+            drawStepNumber(canvas, i + 1, END_ICON_CX - END_ICON * 0.38f, cy - END_ICON * 0.38f)
+            canvas.restore()
+            text.draw(
+                canvas, line, END_STEP_TEXT_X + END_STEP_TEXT_W / 2f + slide, cy, END_STEP_TEXT_W.toInt(), 48f, 2, assets.display, C.INK,
+                alpha = a, align = android.text.Layout.Alignment.ALIGN_NORMAL, spacing = 0.9f
+            )
+        }
+        // Google's own badge, in the video's language
+        val store = Ease.backOut(step(END_STORE_AT, 400f))
+        assets.picture(R.drawable.share_play_badge, lang.locale)?.takeIf { store > 0f }?.let { badge ->
+            val w = END_STORE_W
+            val h = w * badge.height / badge.width
+            canvas.save()
+            canvas.scale(store, store, W / 2f, END_STORE_CY)
+            canvas.drawBitmap(badge, null, RectF(W / 2f - w / 2f, END_STORE_CY - h / 2f, W / 2f + w / 2f, END_STORE_CY + h / 2f), fill)
             canvas.restore()
         }
-        // where the link is
-        val hint = ((local - 800f) / 300f).coerceIn(0f, 1f)
-        text.draw(canvas, words.link, W / 2f, END_LINK_CY, END_TEXT_W, 44f, 1, assets.body, END_LINK_COLOR, alpha = hint)
+        val hint = step(END_STORE_AT + 300f, 300f)
+        text.draw(canvas, words.link, W / 2f, END_LINK_CY, END_TEXT_W, 40f, 1, assets.body, END_MUTED, alpha = hint)
     }
 
-    private class EndWords(val title: String, val store: String, val link: String)
+    /** The game's countdown ring at ([cx], [cy]), [size] across: the seconds left of [seconds], and the ring at [left]. */
+    private fun drawRing(canvas: Canvas, cx: Float, cy: Float, size: Float, seconds: Int, left: Float) {
+        plain.color = C.WHITE
+        canvas.drawCircle(cx, cy, size / 2f, plain)
+        ring.strokeWidth = 3f
+        ring.color = 0x22000000
+        canvas.drawCircle(cx, cy, size / 2f, ring)
+        val shown = kotlin.math.ceil(seconds * left - 0.001f).toInt().coerceAtLeast(0)
+        val color = if (seconds > 0 && shown <= 1) TIMER_WARNING else TIMER
+        val inset = size * 0.1f
+        val arc = RectF(cx - size / 2f + inset, cy - size / 2f + inset, cx + size / 2f - inset, cy + size / 2f - inset)
+        ring.strokeWidth = size * 0.11f
+        ring.color = TIMER_TRACK
+        canvas.drawArc(arc, -90f, 360f, false, ring)
+        ring.color = color
+        if (left > 0f) canvas.drawArc(arc, -90f, 360f * left, false, ring)
+        if (seconds > 0) text.draw(canvas, shown.toString(), cx, cy, size.toInt(), size * 0.5f, 1, assets.display, color)
+    }
 
-    private fun endWords(): EndWords = when (lang) {
-        StudioLang.Tr -> EndWords("Sen de çiz, gerçek olsun!", "Google Play'de Karalak", "Link profilde")
-        StudioLang.En -> EndWords("Draw yours, make it real!", "Karalak on Google Play", "Link in bio")
-        StudioLang.Pt -> EndWords("Desenhe o seu e deixe virar real!", "Karalak no Google Play", "Link na bio")
-        StudioLang.Es -> EndWords("¡Dibuja el tuyo y hazlo real!", "Karalak en Google Play", "Enlace en la bio")
+    /** The video's doodle on a little white sheet with the game's orange edge: the drawing that comes back to be remembered. */
+    private fun drawDoodleTile(canvas: Canvas, d: RealDrawing?, cx: Float, cy: Float, size: Float) {
+        val box = RectF(cx - size / 2f, cy - size / 2f, cx + size / 2f, cy + size / 2f)
+        plain.color = C.WHITE
+        canvas.drawRoundRect(box, size * 0.18f, size * 0.18f, plain)
+        ring.strokeWidth = 5f
+        ring.color = C.ORANGE
+        canvas.drawRoundRect(RectF(box.left + 2.5f, box.top + 2.5f, box.right - 2.5f, box.bottom - 2.5f), size * 0.18f, size * 0.18f, ring)
+        val m = size * 0.14f
+        d?.let { replay(it.id)?.draw(canvas, RectF(box.left + m, box.top + m, box.right - m, box.bottom - m), 1f, ink, 0.045f) }
+    }
+
+    /** Karalak with his magnifier, peeking out of a round frame: remembering what a drawing was. */
+    private fun drawMascotTile(canvas: Canvas, cx: Float, cy: Float, size: Float) {
+        plain.color = C.CREAM_DEEP
+        canvas.drawCircle(cx, cy, size / 2f, plain)
+        assets.picture(R.drawable.qm_mascot)?.let { bmp ->
+            circle.reset()
+            circle.addCircle(cx, cy, size / 2f, Path.Direction.CW)
+            canvas.save()
+            canvas.clipPath(circle)
+            val w = size * 0.98f
+            val h = w * bmp.height / bmp.width
+            canvas.drawBitmap(bmp, null, RectF(cx - w / 2f, cy + size / 2f - h, cx + w / 2f, cy + size / 2f), fill)
+            canvas.restore()
+        }
+        ring.strokeWidth = 5f
+        ring.color = C.ORANGE
+        canvas.drawCircle(cx, cy, size / 2f - 2.5f, ring)
+    }
+
+    /** A step's number, on an orange disc with a white rim. */
+    private fun drawStepNumber(canvas: Canvas, n: Int, cx: Float, cy: Float) {
+        plain.color = C.WHITE
+        canvas.drawCircle(cx, cy, END_NUMBER / 2f, plain)
+        plain.color = C.ORANGE
+        canvas.drawCircle(cx, cy, END_NUMBER / 2f - 5f, plain)
+        text.draw(canvas, n.toString(), cx, cy, END_NUMBER.toInt(), END_NUMBER * 0.6f, 1, assets.display, C.WHITE)
     }
 
     /**
-     * The closing: the clip keeps playing under it, the card still on it, and Karalak's reaction as a white subtitle
-     * above the band the apps cover. Only a closing longer than what is left of the clip holds its last frame, drifting
-     * slowly closer so it does not look stuck.
+     * The end card's words in the video's language. [slogan] is the app's own (app_tagline in each language); [drawnIn]
+     * takes the doodle's seconds, [drawnHere] is said when they are not known.
+     */
+    private class EndWords(val drawnIn: String, val drawnHere: String, val slogan: String, val steps: List<String>, val link: String)
+
+    private fun endWords(): EndWords = when (lang) {
+        StudioLang.Tr -> EndWords(
+            "Bu karalama %d saniyede çizildi.", "Bu karalama Karalak'ta çizildi.", "Çiz, Hatırla, Tahmin Et!",
+            listOf("Kelimeyi süre dolmadan çiz", "Kısa bir moladan sonra çizimlerin geri gelir", "Hangi kelimeydi? Hatırla ve yaz!"),
+            "Ücretsiz · Link profilde"
+        )
+        StudioLang.En -> EndWords(
+            "This doodle was drawn in %d seconds.", "This doodle was drawn in Karalak.", "Draw, Remember, Guess!",
+            listOf("Draw the word before time runs out", "After a short break, your drawings come back", "Which word was it? Remember and type it!"),
+            "Free · Link in bio"
+        )
+        StudioLang.Pt -> EndWords(
+            "Este rabisco foi feito em %d segundos.", "Este rabisco foi feito no Karalak.", "Desenhe, Lembre, Adivinhe!",
+            listOf("Desenhe a palavra antes que o tempo acabe", "Após uma pausa, seus desenhos voltam", "Que palavra era? Lembre e escreva!"),
+            "Grátis · Link na bio"
+        )
+        StudioLang.Es -> EndWords(
+            "Este garabato se dibujó en %d segundos.", "Este garabato se dibujó en Karalak.", "¡Dibuja, Recuerda, Adivina!",
+            listOf("Dibuja la palabra antes de que se acabe el tiempo", "Tras una breve pausa, tus dibujos vuelven", "¿Qué palabra era? ¡Recuerda y escríbela!"),
+            "Gratis · Enlace en la bio"
+        )
+    }
+
+    /**
+     * The closing: the clip keeps playing under it, the card still on it, and Karalak's reaction as a subtitle (see
+     * [drawCaptions]). Only a closing longer than what is left of the clip holds its last frame, drifting slowly closer
+     * so it does not look stuck.
      */
     private fun drawOutro(canvas: Canvas, e: RealEvent, reveal: RealReveal, t: Long) {
         canvas.drawColor(C.INK)
@@ -461,20 +562,6 @@ class RealRenderer(
             canvas.restore()
         }
         project.drawing(reveal.sampleId)?.let { drawCard(canvas, it, 1f) }
-
-        val line = reveal.outro.text.trim()
-        val (w, h) = text.measure(line, SUB_W, SUB_SIZE, 2, assets.display, C.INK, spacing = 0.8f, balanced = true)
-        if (h <= 0f) return
-        val pop = 0.86f + 0.14f * Ease.backOut(min(1f, (t - e.startMs) / 260f))
-        canvas.save()
-        canvas.scale(pop, pop, W / 2f, SUB_CY)
-        val box = RectF(W / 2f - w / 2f - 38f, SUB_CY - h / 2f - 24f, W / 2f + w / 2f + 38f, SUB_CY + h / 2f + 24f)
-        plain.color = C.WHITE
-        plain.alpha = 240
-        canvas.drawRoundRect(box, 32f, 32f, plain)
-        plain.alpha = 255
-        text.draw(canvas, line, W / 2f, SUB_CY, SUB_W, SUB_SIZE, 2, assets.display, C.INK, spacing = 0.8f, balanced = true)
-        canvas.restore()
     }
 
     /**
@@ -519,11 +606,11 @@ class RealRenderer(
     private fun drawJokers(canvas: Canvas, t: Long) {
         val bmp = guessScene ?: return
         val k = bmp.width / ART_W
-        val s = ROW_SCALE
-        val left = W / 2f - (ROW_RIGHT - ROW_LEFT) * k * s / 2f
-        val top = boardCy - TILE_H * k * s / 2f
-        // one art unit of bg_guess on the video, and one of the game's dp (the scene is 841 art units on a 411 dp phone)
-        val u = k * s
+        // the row as the game has it: its own size and its own place across the screen, side margins and all
+        val u = k * W / bmp.width
+        val left = ROW_LEFT * u
+        val top = BOARD_TOP + (BOARD_H - TILE_H * u) / 2f
+        // one of the game's dp (the scene is 841 art units on a 411 dp phone)
         val dp = u * ART_W / 411f
         GUESS_TILES.forEach { tile ->
             val box = RectF(left + (tile.x - ROW_LEFT) * u, top, left + (tile.x + tile.w - ROW_LEFT) * u, top + TILE_H * u)
@@ -669,15 +756,34 @@ class RealRenderer(
     /** bg_draw at the video's width: its top and bottom as painted, its plain middle squeezed into what is left. */
     private fun drawScene(canvas: Canvas, bmp: Bitmap) {
         val k = W.toFloat() / bmp.width
-        val topDst = SCENE_TOP * k
-        val bottomDst = SCENE_BOTTOM * k
-        src.set(0, 0, bmp.width, SCENE_TOP)
-        canvas.drawBitmap(bmp, src, RectF(0f, 0f, W.toFloat(), topDst), fill)
-        src.set(0, SCENE_TOP, bmp.width, bmp.height - SCENE_BOTTOM)
-        canvas.drawBitmap(bmp, src, RectF(0f, topDst, W.toFloat(), H - bottomDst), fill)
-        src.set(0, bmp.height - SCENE_BOTTOM, bmp.width, bmp.height)
-        canvas.drawBitmap(bmp, src, RectF(0f, H - bottomDst, W.toFloat(), H.toFloat()), fill)
+        fun slice(fromRow: Int, toRow: Int, top: Float, bottom: Float) {
+            src.set(0, fromRow, bmp.width, toRow)
+            canvas.drawBitmap(bmp, src, RectF(0f, top, W.toFloat(), bottom), fill)
+        }
+        // the header and the notepad as painted; the plain canvas squeezed into what the board leaves of it; the canvas's
+        // bottom edge as painted
+        slice(0, SCENE_TOP, 0f, SCENE_TOP * k)
+        slice(SCENE_TOP, CANVAS_EDGE_ROW, SCENE_TOP * k, CANVAS_BOTTOM)
+        slice(CANVAS_EDGE_ROW, BOARD_ROW, CANVAS_BOTTOM, BOARD_TOP)
+        // the tool board, made as tall as the game's joker row needs: its two edges as painted, its plain middle stretched
+        val edge = BOARD_EDGE_ROWS * k
+        slice(BOARD_ROW, BOARD_ROW + BOARD_EDGE_ROWS, BOARD_TOP, BOARD_TOP + edge)
+        slice(BOARD_ROW + BOARD_EDGE_ROWS, BOARD_END_ROW - BOARD_EDGE_ROWS, BOARD_TOP + edge, BOARD_TOP + BOARD_H - edge)
+        slice(BOARD_END_ROW - BOARD_EDGE_ROWS, BOARD_END_ROW, BOARD_TOP + BOARD_H - edge, BOARD_TOP + BOARD_H)
+        // the desk under it, enlarged evenly (its sides cropped) to fill the rest of the frame
+        val below = H - (BOARD_TOP + BOARD_H)
+        val zoom = below / ((bmp.height - BOARD_END_ROW) * k)
+        val srcW = bmp.width / zoom
+        val sx = (bmp.width - srcW) / 2f
+        src.set(sx.toInt(), BOARD_END_ROW, (sx + srcW).toInt(), bmp.height)
+        canvas.drawBitmap(bmp, src, RectF(0f, BOARD_TOP + BOARD_H, W.toFloat(), H.toFloat()), fill)
+        // the board's own soft shadow on the desk: it sits on it, and the enlarged desk meets it without a seam
+        val y = BOARD_TOP + BOARD_H
+        boardShadow.shader = LinearGradient(0f, y, 0f, y + BOARD_SHADOW, BOARD_SHADOW_COLOR, 0x00000000, Shader.TileMode.CLAMP)
+        canvas.drawRect(0f, y, W.toFloat(), y + BOARD_SHADOW, boardShadow)
     }
+
+    private val boardShadow = Paint(Paint.ANTI_ALIAS_FLAG)
 
     /** The game's countdown ring in the top right: the seconds left and the ring emptying as the drawing is drawn. */
     private fun drawTimer(canvas: Canvas, seconds: Int, drawn: Float) {
@@ -706,10 +812,7 @@ class RealRenderer(
     private fun art(v: Float) = v * W / ART_W
 
     /** The game's canvas: from below the notepad to above the tool board, the painted "+ Süre" pill left clear. */
-    private val hookBox = RectF(art(36f) + 24f, art(438f) + 120f, art(806f) - 24f, H - art(ART_H - 1386f) - 16f)
-
-    /** The middle of the tool board under the canvas, where the game's tool buttons sit. */
-    private val boardCy = H - art(ART_H - 1433f) + art(49f)
+    private val hookBox = RectF(art(36f) + 24f, art(438f) + 120f, art(806f) - 24f, CANVAS_BOTTOM - 14f)
 
     /** Fills [dst] with [bmp], cropped to its shape. */
     private fun cover(canvas: Canvas, bmp: Bitmap, dst: RectF, paint: Paint = fill) {
@@ -741,20 +844,48 @@ class RealRenderer(
         private const val PROMO_FADE = 300L
         private const val PROMO_COVER_SLACK = 0.06f
 
-        /** bg_draw in the game's art units, and the rows of its own pixels kept as painted at the top and the bottom. */
+        /** bg_draw in the game's art units (the picture is 841 of them wide). */
         private const val ART_W = 841f
-        private const val ART_H = 1870f
-        private const val SCENE_TOP = 720
-        private const val SCENE_BOTTOM = 801
+
         /**
-         * GuessScreen's joker row in bg_guess's art units: the tiles' top and height, and where the row starts and
-         * ends; [ROW_SCALE] fits it on bg_draw's tool board.
+         * How bg_draw (1080 x 2401) is cut into the opening, in rows of its own pixels: the top kept as painted, the
+         * plain canvas from there to the canvas's bottom edge, that edge, and the tool board from its top to its bottom
+         * edge ([BOARD_EDGE_ROWS] at each end kept as painted). Measured off the picture: if it is replaced, measure again.
          */
+        private const val SCENE_TOP = 720
+        private const val CANVAS_EDGE_ROW = 1780
+        private const val BOARD_ROW = 1806
+        private const val BOARD_END_ROW = 2000
+        private const val BOARD_EDGE_ROWS = 16
+
+        /**
+         * Where the board sits on the video and how tall it is: tall enough for the game's joker row at its own size,
+         * and high enough that the subtitle under it ends above the band TikTok and Reels cover with their caption.
+         */
+        private const val BOARD_TOP = 1172f
+        private const val BOARD_H = 236f
+        private const val CANVAS_BOTTOM = BOARD_TOP - (BOARD_ROW - CANVAS_EDGE_ROW)
+        /** The board's shadow on the desk: how far down it reaches and how dark it starts. */
+        private const val BOARD_SHADOW = 34f
+        private const val BOARD_SHADOW_COLOR = 0x66311A08
+
+        /** GuessScreen's joker row in bg_guess's art units: the tiles' top and height, and where the row starts. */
         private const val TILE_TOP = 1406f
         private const val TILE_H = 164f
         private const val ROW_LEFT = 48f
-        private const val ROW_RIGHT = 797f
-        private const val ROW_SCALE = 0.82f
+
+        /**
+         * The subtitles (the hook and the closing): their top, right under the board, their size and width, how close
+         * their two lines sit, and their timing: a silent line starts a beat in, the hook stays a moment once said, and
+         * a subtitle fades out over [CAPTION_FADE].
+         */
+        private const val CAPTION_TOP = 1420f
+        private const val CAPTION_SIZE = 66f
+        private const val CAPTION_W = 880
+        private const val CAPTION_SPACING = 0.86f
+        private const val CAPTION_SILENT_AT = 250L
+        private const val CAPTION_HOLD = 700L
+        private const val CAPTION_FADE = 220L
         /** The joker pictures float over 2.3 s and their glow pulses over 1.7 s, as in the game. */
         private const val FLOAT_MS = 2_300.0
         private const val GLOW_MS = 1_700L
@@ -780,38 +911,36 @@ class RealRenderer(
         /** Where the glimpse of the real thing is taken from the clip (a share of its length), for a teaser opening. */
         private const val TEASE_AT = 0.4f
 
-        /** The hook's plaque over the top of the canvas: as wide as the canvas, from its top edge down. */
-        private const val PLAQUE_LEFT = 52f
-        private const val PLAQUE_RIGHT = 1028f
-        private const val PLAQUE_TOP = 566f
-        private const val PLAQUE_GAP = 22f
-        private const val PLAQUE_RADIUS = 40f
-        private const val PLAQUE_PAD_V = 34f
-        private const val PLAQUE_MIN_H = 150f
-        private const val PLAQUE_TEXT_W = 880
-        private const val PLAQUE_SIZE_MAX = 86f
-        private const val PLAQUE_SIZE_MIN = 56f
-        private const val PLAQUE_SPACING = 0.86f
-        private const val PLAQUE_SHADOW = 0x38000000
-        /** While a teaser's picture fills the frame the plaque rests with its bottom here, clear of the apps' caption band. */
-        private const val TEASE_PLAQUE_BOTTOM = 1440f
-
-        /** The end card: how fast it comes in, and where its parts sit (all above the apps' caption band). */
+        /**
+         * The end card: how fast it comes in, and where its parts sit, all inside what the apps leave free (below their
+         * top tabs, above their caption band, clear of their buttons on the right): the badge, the line about the doodle,
+         * the slogan and its stroke, the three steps (their icons, numbers and words, and when they come in), Google's
+         * badge and the line under it.
+         */
         private const val END_FADE = 260L
-        private const val END_BADGE = 400f
-        private const val END_BADGE_CY = 620f
-        private const val END_TITLE_CY = 1000f
-        private const val END_TEXT_W = 900
-        private const val END_BUTTON_W = 800f
-        private const val END_BUTTON_H = 150f
-        private const val END_BUTTON_CY = 1230f
-        private const val END_LINK_CY = 1380f
-        private const val END_LINK_COLOR = 0xFF6B6157.toInt()
+        private const val END_BADGE = 210f
+        private const val END_BADGE_CY = 300f
+        private const val END_TEXT_W = 920
+        private const val END_CONTEXT_CY = 470f
+        private const val END_SLOGAN_CY = 568f
+        private const val END_STROKE_Y = 632f
+        private const val END_STEP_TOP = 790f
+        private const val END_STEP_PITCH = 196f
+        private const val END_STEP_AT = 700f
+        private const val END_STEP_GAP = 300f
+        private const val END_ICON = 150f
+        private const val END_ICON_CX = 170f
+        private const val END_NUMBER = 54f
+        private const val END_STEP_TEXT_X = 285f
+        private const val END_STEP_TEXT_W = 700f
+        private const val END_STORE_AT = 1_650f
+        private const val END_STORE_W = 520f
+        private const val END_STORE_CY = 1400f
+        private const val END_LINK_CY = 1535f
+        private const val END_MUTED = 0xFF6B6157.toInt()
+        /** How much of its time the first step's ring runs down over the card. */
+        private const val END_RING_SPENT = 0.7f
 
-        /** The closing's subtitle: its widest line, its size, and its middle, kept above the apps' caption band. */
-        private const val SUB_W = 860
-        private const val SUB_SIZE = 70f
-        private const val SUB_CY = 1360f
         /** How far before its end the clip's held frame is taken, clear of a last frame that may come out black. */
         private const val LAST_FRAME_BACK = 60L
         /** The game's 24 sp and 34 sp for the word, on a 411 dp phone, in video pixels. */

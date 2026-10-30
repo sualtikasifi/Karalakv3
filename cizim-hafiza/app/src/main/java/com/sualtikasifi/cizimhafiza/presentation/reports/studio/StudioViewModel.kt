@@ -57,6 +57,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDirecto
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealEnding
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealOpening
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.SocialPlatform
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.TimedWord
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VideoPost
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealLine
@@ -1117,10 +1118,13 @@ class StudioViewModel @Inject constructor(
      */
     fun addLineToVideo(kind: RealLine, text: String) {
         val id = _state.value.real.project?.opening?.sampleId ?: return
-        val voice = voiceBank.cached(RealCopy.spoken(kind, text), _state.value.eleven.spec) ?: run {
+        val spec = _state.value.eleven.spec
+        val voice = voiceBank.cached(RealCopy.spoken(kind, text), spec) ?: run {
             _state.update { it.copy(message = "Önce seslendir") }
             return
         }
+        // when each word is said, when ElevenLabs told: the subtitle comes in with the voice (kept with the line, like its voice)
+        val words = voiceBank.timing(RealCopy.spoken(kind, text), spec)?.words.orEmpty().map { TimedWord(it.text, it.startMs, it.endMs) }
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
                 runCatching {
@@ -1131,7 +1135,7 @@ class StudioViewModel @Inject constructor(
             }
             result.onSuccess { (name, ms) ->
                 _state.update { it.copy(message = if (kind == RealLine.Hook) "Kanca sesi videoya eklendi" else "Kapanış sesi videoya eklendi") }
-                updateLine(id, kind, saveNow = true) { it.withText(text).copy(voice = name, voiceMs = ms) }
+                updateLine(id, kind, saveNow = true) { it.withText(text).copy(voice = name, voiceMs = ms, words = words) }
                 pruneRealMedia()
                 previewLine(kind)
             }.onFailure { e -> _state.update { it.copy(message = "Ses eklenemedi: ${e.message}") } }
@@ -1674,7 +1678,7 @@ class StudioViewModel @Inject constructor(
      */
     private fun videoFor(
         s: StudioState, voice: Map<Int, FloatArray>?, preview: Boolean,
-        wordStarts: Map<Int, LongArray>? = null,
+        wordTimes: Map<Int, List<LongRange>>? = null,
         clipSource: (String) -> ClipFrames? = { previewClips[it] },
         promoSource: (File) -> ClipFrames? = { previewPromo }
     ): VoicedVideo? {
@@ -1706,13 +1710,13 @@ class StudioViewModel @Inject constructor(
             StudioFormat.Guess -> {
                 val script = s.script ?: (if (preview) previewScript(s) else null) ?: return null
                 val player = s.player ?: return null
-                GuessRenderer(assetsOrLoad(), sp, script, s.pool.associateBy { it.id }, player, voice, wordStarts)
+                GuessRenderer(assetsOrLoad(), sp, script, s.pool.associateBy { it.id }, player, voice, wordTimes)
             }
             StudioFormat.Memory -> {
                 val script = s.memory.script ?: return null
                 val pickedIds = script.picks.map { it.sampleId }.toSet()
                 val mosaic = s.memory.samples.filter { !it.correct && it.id !in pickedIds } + s.memory.samples.filter { !it.correct && it.id in pickedIds }
-                MemoryRenderer(assetsOrLoad(), sp, script, s.memory.samples.associateBy { it.id }, mosaic.take(9), voice, wordStarts)
+                MemoryRenderer(assetsOrLoad(), sp, script, s.memory.samples.associateBy { it.id }, mosaic.take(9), voice, wordTimes)
             }
             StudioFormat.RealLife -> null
         }
@@ -1742,8 +1746,8 @@ class StudioViewModel @Inject constructor(
             val result = runCatching {
                 // 1. Karalak's voice, one file per line
                 val voices = HashMap<Int, Pcm>()
-                // when each word is said, for the lines whose voice was made with timings (the karaoke subtitle follows them)
-                val starts = HashMap<Int, LongArray>()
+                // when each word is said, for the lines whose voice was made with timings (the subtitle comes in with them)
+                val times = HashMap<Int, List<LongRange>>()
                 if (s.voiceOn && s.voiceEngine == VoiceEngine.ElevenLabs) {
                     // making the video never pays: it uses only lines already voiced with "Seslendir"
                     val spec = s.eleven.spec
@@ -1754,7 +1758,7 @@ class StudioViewModel @Inject constructor(
                         val f = voiceBank.cached(l, spec) ?: error("“${l.text.take(30)}” sesi bulunamadı")
                         val pcm = withContext(Dispatchers.IO) { ClipAudio.decode(f, VOICE_MAX_MS) } ?: error("“${l.text.take(30)}” sesi çözülemedi")
                         voices[i] = PcmOps.softEnd(PcmOps.resample(pcm, RATE))
-                        voiceBank.timing(l, spec)?.startsFor(l.text)?.let { starts[i] = it }
+                        voiceBank.timing(l, spec)?.rangesFor(l.text)?.let { times[i] = it }
                     }
                 } else if (s.voiceOn && lines.isNotEmpty()) {
                     val synth = SpeechSynth.open(context, s.lang).getOrThrow()
@@ -1778,7 +1782,7 @@ class StudioViewModel @Inject constructor(
                         val envelopes = if (s.voiceOn) voices.mapValues { (_, pcm) -> PcmOps.envelope(pcm, GuessRenderer.FPS) } else null
                         val renderer = videoFor(
                             s, envelopes, preview = false,
-                            wordStarts = starts.takeIf { s.voiceOn && it.isNotEmpty() },
+                            wordTimes = times.takeIf { s.voiceOn && it.isNotEmpty() },
                             clipSource = { name -> renderClips.getOrPut(name) { runCatching { ClipFrames(realStore.file(name), exact = true) }.getOrNull() } },
                             promoSource = { f -> renderPromo ?: runCatching { ClipFrames(f, exact = true) }.getOrNull().also { renderPromo = it } }
                         ) ?: error("Video hazırlanamadı")

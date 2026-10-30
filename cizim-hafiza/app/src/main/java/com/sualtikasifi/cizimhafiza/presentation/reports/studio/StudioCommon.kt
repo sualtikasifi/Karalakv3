@@ -3,7 +3,9 @@ package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
@@ -14,7 +16,7 @@ import android.text.Spanned
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
-import android.text.style.ForegroundColorSpan
+import android.text.style.CharacterStyle
 import androidx.core.content.res.ResourcesCompat
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingStroke
@@ -22,6 +24,8 @@ import java.io.ByteArrayOutputStream
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Reveal
 
 /** One drawing made on this phone, ready to be replayed. [answer] is what its drawer typed when trying to remember it. */
 data class StudioDrawing(
@@ -49,6 +53,23 @@ class StudioAssets(context: Context) {
         pictures.getOrPut(id) {
             runCatching {
                 BitmapFactory.decodeResource(resources, id, BitmapFactory.Options().apply { inScaled = false })
+            }.getOrNull()
+        }
+    }
+
+    private val appContext = context.applicationContext
+    private val localPictures = HashMap<String, Bitmap?>()
+
+    /**
+     * One of the app's pictures as it is in [locale], whatever the phone's own language: the Google Play badge is
+     * Google's artwork, one per language, and a video in Spanish carries the Spanish one. Read once.
+     */
+    fun picture(@androidx.annotation.DrawableRes id: Int, locale: java.util.Locale): Bitmap? = synchronized(localPictures) {
+        localPictures.getOrPut("$id|${locale.language}") {
+            runCatching {
+                val conf = android.content.res.Configuration(resources.configuration).apply { setLocale(locale) }
+                val res = appContext.createConfigurationContext(conf).resources
+                BitmapFactory.decodeResource(res, id, BitmapFactory.Options().apply { inScaled = false })
             }.getOrNull()
         }
     }
@@ -210,21 +231,54 @@ class TextPainter {
     }
 
     /**
-     * Karaoke subtitle: the words already said in [spoken], the rest in [upcoming]. Rebuilt every frame (the split
-     * moves), which is cheap next to everything else a frame draws.
+     * A subtitle coming in as it is said: each character appears at its moment in [starts] (see [Reveal]) and fades in,
+     * [elapsedMs] into the line. The whole line is laid out from the first frame and the letters not yet said are only
+     * transparent, so nothing shifts as it fills in. [lettering] says how it looks. Rebuilt every frame, which is cheap
+     * next to everything else a frame draws.
      */
-    fun karaoke(
-        canvas: Canvas, text: String, progress: Float, cx: Float, cy: Float, width: Int, size: Float, maxLines: Int,
-        face: Typeface, spoken: Int, upcoming: Int,
-        /** When each word starts (ms into the line) if the voice told, with how far into the line we are: words light up as they are said. */
-        wordStarts: LongArray? = null, elapsedMs: Long = 0L
+    fun reveal(
+        canvas: Canvas, text: String, starts: LongArray, elapsedMs: Long, cx: Float, cy: Float, width: Int, size: Float, maxLines: Int,
+        face: Typeface, lettering: Lettering, alpha: Float = 1f, spacing: Float = 1.02f, balanced: Boolean = false
     ) {
-        if (text.isBlank()) return
-        val split = if (wordStarts != null) com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Karaoke.splitAt(text, wordStarts, elapsedMs) else karaokeSplit(text, progress)
+        if (text.isBlank() || alpha <= 0f || starts.size != text.length) return
         val span = SpannableString(text)
-        if (split < text.length) span.setSpan(ForegroundColorSpan(upcoming), split, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        val layout = build(span, width, size, maxLines, face, spoken, Layout.Alignment.ALIGN_CENTER)
-        drawLayout(canvas, layout, cx, cy, width, 1f)
+        var hiddenFrom = text.length
+        for (i in text.indices) {
+            val a = Reveal.alpha(starts, i, elapsedMs)
+            if (a <= 0f) { hiddenFrom = i; break }
+            if (a < 1f) span.setSpan(AlphaSpan(a), i, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        if (hiddenFrom == 0) return
+        if (hiddenFrom < text.length) span.setSpan(AlphaSpan(0f), hiddenFrom, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        val layout = build(span, width, size, maxLines, face, lettering.fill, Layout.Alignment.ALIGN_CENTER, spacing, balanced)
+        val p = layout.paint
+        val a = alpha.coerceIn(0f, 1f)
+        canvas.save()
+        canvas.translate(cx - width / 2f, cy - layout.height / 2f)
+        p.strokeJoin = Paint.Join.ROUND
+        if (lettering.shadow != null && lettering.shadowBlur > 0f) {
+            p.style = Paint.Style.FILL_AND_STROKE
+            p.strokeWidth = lettering.outlineWidth
+            p.color = lettering.shadow
+            p.alpha = (Color.alpha(lettering.shadow) * a).roundToInt()
+            p.maskFilter = BlurMaskFilter(lettering.shadowBlur, BlurMaskFilter.Blur.NORMAL)
+            canvas.translate(0f, lettering.shadowDy)
+            layout.draw(canvas)
+            canvas.translate(0f, -lettering.shadowDy)
+            p.maskFilter = null
+        }
+        if (lettering.outline != null && lettering.outlineWidth > 0f) {
+            p.style = Paint.Style.STROKE
+            p.strokeWidth = lettering.outlineWidth
+            p.color = lettering.outline
+            p.alpha = (Color.alpha(lettering.outline) * a).roundToInt()
+            layout.draw(canvas)
+        }
+        p.style = Paint.Style.FILL
+        p.color = lettering.fill
+        p.alpha = (Color.alpha(lettering.fill) * a).roundToInt()
+        layout.draw(canvas)
+        canvas.restore()
     }
 
     private fun drawLayout(canvas: Canvas, layout: StaticLayout, cx: Float, cy: Float, width: Int, alpha: Float) {
@@ -235,16 +289,35 @@ class TextPainter {
         canvas.restore()
         layout.paint.alpha = 255
     }
+}
 
+/**
+ * How a subtitle is lettered: [fill] over an [outline] [outlineWidth] wide, on a soft [shadow] blurred by [shadowBlur]
+ * and dropped by [shadowDy], the way the game letters its labels over busy pictures; with neither, plain [fill] text.
+ */
+class Lettering(
+    val fill: Int,
+    val outline: Int? = null,
+    val outlineWidth: Float = 0f,
+    val shadow: Int? = null,
+    val shadowBlur: Float = 0f,
+    val shadowDy: Float = 0f
+) {
     companion object {
-        /** Where the "already said" colour ends: at the end of the word the voice has reached, never mid-word. */
-        fun karaokeSplit(text: String, progress: Float): Int {
-            if (progress >= 1f) return text.length
-            if (progress <= 0f) return 0
-            val target = (text.length * progress).toInt()
-            val end = text.indexOf(' ', target)
-            return if (end < 0) text.length else end
-        }
+        /** White with a dark brown edge and shadow: reads on a bright clip and on the game's painted scenes alike. */
+        fun onPicture(size: Float) = Lettering(
+            fill = 0xFFFFFFFF.toInt(), outline = 0xFF2B1A10.toInt(), outlineWidth = size * 0.17f,
+            shadow = 0xB0000000.toInt(), shadowBlur = size * 0.22f, shadowDy = size * 0.08f
+        )
+
+        fun plain(color: Int) = Lettering(color)
+    }
+}
+
+/** Takes a share of the paint's own alpha, whatever its colour: one span serves the shadow, the edge and the fill. */
+private class AlphaSpan(private val share: Float) : CharacterStyle() {
+    override fun updateDrawState(tp: TextPaint) {
+        tp.alpha = (tp.alpha * share).roundToInt()
     }
 }
 
