@@ -14,6 +14,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.PostLink
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.PostStats
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealOpening
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.SocialPlatform
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.TimedWord
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VideoPost
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -462,6 +463,23 @@ class RealTest {
         val reveal = RealReveal("a", clip = "a.mp4", clipMs = 8_000, opening = RealOpening.Teaser)
         assertEquals(RealTimeline.HOOK_SILENT + RealTimeline.TEASE_MS, reveal.hookMs)
         assertEquals(RealTimeline.HOOK_SILENT, reveal.copy(opening = RealOpening.Classic).hookMs)
+    }
+
+    @Test
+    fun aVoicedLineKeepsItsWordTimesAndLosesThemWithItsVoice() {
+        val words = listOf(TimedWord("Bu", 0L, 200L), TimedWord("ne?", 300L, 600L))
+        val line = VoicedLine("Bu ne?", voice = "h.mp3", voiceMs = 900L, words = words)
+        assertEquals(listOf(0L..200L, 300L..600L), line.wordRanges())
+        // new words: the voice and its times go together
+        val changed = line.withText("Bu kim?")
+        assertNull(changed.voice)
+        assertTrue(changed.words.isEmpty())
+        assertNull(changed.wordRanges())
+        assertEquals(line, line.withText("Bu ne?"))
+        // a line put in the video before words were timed has none, and the subtitle then follows the voice by length
+        assertNull(line.copy(words = emptyList()).wordRanges())
+        val json = Json { ignoreUnknownKeys = true }
+        assertEquals(VoicedLine("x", voice = "v.mp3", voiceMs = 5L), json.decodeFromString(VoicedLine.serializer(), """{"text":"x","voice":"v.mp3","voiceMs":5}"""))
     }
 
     @Test

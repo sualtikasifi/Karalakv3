@@ -7,7 +7,9 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Ease
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StrokeReplay
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioAssets
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioColors as C
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Lettering
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.TextPainter
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Reveal
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.VoicedVideo
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessTimeline
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
@@ -20,7 +22,7 @@ import kotlin.math.sin
 
 /**
  * Draws "Hafıza Tuzağı" in 1080×1920: Karalak and the headline numbers at the top, its words as
- * karaoke subtitles, then the drawings people could not recognise, the twist (drawing is meant
+ * subtitles that come in as they are said, then the drawings people could not recognise, the twist (drawing is meant
  * to help memory — but not in a few seconds), and the challenge to try it.
  */
 class MemoryRenderer(
@@ -31,8 +33,8 @@ class MemoryRenderer(
     /** Extra drawings for the opening mosaic (forgotten ones of the same word). */
     private val mosaic: List<MemorySample>,
     private val voice: Map<Int, FloatArray>?,
-    /** When each word of a line starts, by line index, for lines whose voice came with timings; the subtitle follows them. */
-    private val wordStarts: Map<Int, LongArray>? = null
+    /** When each word of a line is said, start to end, by the same index, for lines whose voice came with timings; the subtitle follows them. */
+    private val wordTimes: Map<Int, List<LongRange>>? = null
 ) : VoicedVideo {
     val events: List<MemoryEvent> = MemoryTimeline.build(script) { i, l ->
         voice?.get(i)?.let { it.size * 1000L / FPS } ?: GuessTimeline.estimateMs(l.text)
@@ -41,6 +43,14 @@ class MemoryRenderer(
     override val voiceStarts: List<Pair<Int, Long>> = events.filter { it.line != null }.map { it.lineIndex to it.startMs }
 
     private val text = TextPainter()
+
+    /** When each character of a line appears (see [Reveal]), worked out once per line. */
+    private val revealStarts = HashMap<Int, LongArray>()
+
+    private fun startsOf(index: Int, line: String, spokenMs: Long): LongArray = revealStarts.getOrPut(index) {
+        // a voiced line follows its voice: by its words when they were timed, spread over the voice otherwise; a silent one is read in
+        Reveal.charStarts(line, wordTimes?.get(index), if (voice?.get(index) != null) spokenMs else 0L)
+    }
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val ink = StrokeReplay.inkPaint()
@@ -63,8 +73,7 @@ class MemoryRenderer(
         drawStats(canvas, e, t)
         e.line?.let { l ->
             if (e.phase != MemoryPhase.Outro) {
-                val p = ((t - e.startMs).toFloat() / spoken.coerceAtLeast(1)).coerceIn(0f, 1f)
-                text.karaoke(canvas, l.text, p, 540f, 615f, 980, 50f, 2, assets.display, C.INK, C.FAINT, wordStarts?.get(e.lineIndex), t - e.startMs)
+                text.reveal(canvas, l.text, startsOf(e.lineIndex, l.text, spoken), t - e.startMs, 540f, 615f, 980, 50f, 2, assets.display, Lettering.plain(C.INK))
             }
         }
         when (e.phase) {
@@ -251,8 +260,7 @@ class MemoryRenderer(
         text.draw(canvas, "Sen hatırlar mıydın?", 540f, 900f, 960, 76f, 1, assets.display, C.INK)
         e.line?.let { l ->
             val spoken = voice?.get(e.lineIndex)?.let { it.size * 1000L / FPS } ?: GuessTimeline.estimateMs(l.text)
-            val prog = ((t - e.startMs).toFloat() / spoken.coerceAtLeast(1)).coerceIn(0f, 1f)
-            text.karaoke(canvas, l.text, prog, 540f, 1040f, 960, 48f, 2, assets.display, C.ORANGE_DARK, C.FAINT, wordStarts?.get(e.lineIndex), t - e.startMs)
+            text.reveal(canvas, l.text, startsOf(e.lineIndex, l.text, spoken), t - e.startMs, 540f, 1040f, 960, 48f, 2, assets.display, Lettering.plain(C.ORANGE_DARK))
         }
         fill.color = C.ORANGE
         val cta = RectF(140f, 1170f, 940f, 1300f)

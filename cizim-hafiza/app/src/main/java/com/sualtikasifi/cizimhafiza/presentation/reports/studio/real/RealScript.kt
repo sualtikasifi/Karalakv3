@@ -2,6 +2,7 @@ package com.sualtikasifi.cizimhafiza.presentation.reports.studio.real
 
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.LineRules
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.SpeechTiming
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
@@ -118,11 +119,21 @@ data class VoicedLine(
     val text: String = "",
     val options: List<String> = emptyList(),
     val voice: String? = null,
-    val voiceMs: Long = 0L
+    val voiceMs: Long = 0L,
+    /** When each word is said in [voice] (from ElevenLabs, when it told): the subtitle comes in with them. */
+    val words: List<TimedWord> = emptyList()
 ) {
     /** The line set to [words]; its voice goes unless the words stay the same. */
-    fun withText(words: String): VoicedLine = if (words == text) this else copy(text = words, voice = null, voiceMs = 0L)
+    fun withText(words: String): VoicedLine = if (words == text) this else copy(text = words, voice = null, voiceMs = 0L, words = emptyList())
+
+    /** When each of the subtitle's words is said (see [SpeechTiming.rangesFor]); null without a voice or its timings. */
+    fun wordRanges(): List<LongRange>? =
+        if (voice == null || words.isEmpty()) null else SpeechTiming(words.map { SpeechTiming.Word(it.text, it.startMs, it.endMs) }).rangesFor(text)
 }
+
+/** One word of a voiced line and when it is said, in ms from the start of the voice. */
+@Serializable
+data class TimedWord(val text: String, val startMs: Long, val endMs: Long)
 
 /**
  * "Gerçek Olsaydı": drawings by different players, each turned into a realistic picture and a clip with sound,
@@ -249,8 +260,11 @@ object RealTimeline {
     /** The app's promo video at the end is cut after this long. */
     const val PROMO_MAX = 15_000L
 
-    /** The end card after the closing: long enough to read its two lines, short enough to keep the video one that loops. */
-    const val END_CARD_MS = 2_200L
+    /**
+     * The end card after the closing: it says what the game is in three steps, which takes a little reading, and it
+     * stays short enough to keep the video one that loops.
+     */
+    const val END_CARD_MS = 3_500L
 
     /**
      * The video of one reveal: its opening and closing as [RealReveal.hookMs] and [RealReveal.outroMs] say, and the

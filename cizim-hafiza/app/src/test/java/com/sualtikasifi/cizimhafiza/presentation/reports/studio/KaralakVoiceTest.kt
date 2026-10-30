@@ -1,7 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.ElevenLabs
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Karaoke
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Reveal
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.SpeechTiming
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceModel
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessCopy
@@ -63,12 +63,13 @@ class KaralakVoiceTest {
         val timing = SpeechTiming.fromAlignment(chars, chars.indices.map { it * 0.1 }, chars.indices.map { it * 0.1 + 0.1 })!!
         assertEquals(listOf("Bu", "kedi", "mi?"), timing.words.map { it.text })
         assertEquals(1000L, timing.words[0].startMs)
-        assertEquals(listOf(1000L, 1300L, 1800L), timing.startsFor("Bu kedi mi?")!!.toList())
-        // a subtitle with another number of words than the voice said: spread by length, in order
-        val spread = timing.startsFor("Bu kedi mi acaba")!!
+        assertEquals(listOf(1000L..1200L, 1300L..1700L, 1800L..2100L), timing.rangesFor("Bu kedi mi?"))
+        // a subtitle with another number of words than the voice said: the time is shared out by length, in order
+        val spread = timing.rangesFor("Bu kedi mi acaba")!!
         assertEquals(4, spread.size)
-        assertEquals(1000L, spread[0])
-        assertTrue(spread.toList().zipWithNext().all { (a, b) -> a <= b })
+        assertEquals(1000L, spread.first().first)
+        assertEquals(2100L, spread.last().last)
+        assertTrue(spread.zipWithNext().all { (a, b) -> a.last <= b.first })
         // kept beside the voice file and read back
         val back = SpeechTiming.fromJson(timing.toJson())!!
         assertEquals(timing.words.map { Triple(it.text, it.startMs, it.endMs) }, back.words.map { Triple(it.text, it.startMs, it.endMs) })
@@ -76,15 +77,32 @@ class KaralakVoiceTest {
     }
 
     @Test
-    fun karaokeLightsAWordAsItIsSaid() {
+    fun aSubtitleComesInLetterByLetterWithItsWords() {
         val line = "Bu kedi mi?"
-        val starts = longArrayOf(1000, 1300, 1800)
-        assertEquals(0, Karaoke.splitAt(line, starts, 500))
-        assertEquals(2, Karaoke.splitAt(line, starts, 1000))
-        assertEquals(7, Karaoke.splitAt(line, starts, 1400))
-        assertEquals(line.length, Karaoke.splitAt(line, starts, 5000))
-        // a hair early, so the eye is not behind the ear
-        assertEquals(2, Karaoke.splitAt(line, starts, 950))
+        val words = listOf(1000L..1200L, 1300L..1700L, 1800L..2100L)
+        val starts = Reveal.charStarts(line, words, 2_400L)
+        // each word's letters are spread over the time it takes to say it; a space comes with the word after it
+        assertEquals(listOf(1000L, 1100L, 1300L, 1300L, 1400L, 1500L, 1600L, 1800L, 1800L, 1900L, 2000L), starts.toList())
+        // nothing before the first word, then a letter fades in over a moment, a hair ahead of its sound
+        assertEquals(0f, Reveal.alpha(starts, 0, 900L), 0f)
+        assertEquals(1f, Reveal.alpha(starts, 0, 1_050L), 0f)
+        assertTrue(Reveal.alpha(starts, 1, 1_050L) in 0.01f..0.99f)
+        assertEquals(0f, Reveal.alpha(starts, 2, 1_050L), 0f)
+        // and the line is all in once its last letter is
+        assertEquals(2_050L, Reveal.doneAt(starts))
+        assertTrue((0 until line.length).all { Reveal.alpha(starts, it, Reveal.doneAt(starts)) == 1f })
+    }
+
+    @Test
+    fun withoutWordTimesASubtitleFollowsTheVoiceOrIsReadIn() {
+        // voiced but not timed: spread over the voice, its closing pause left out
+        assertEquals(listOf(0L, 412L, 825L, 1237L), Reveal.charStarts("abcd", null, 2_000L).toList())
+        // timings that do not fit the words shown are not trusted
+        assertEquals(Reveal.charStarts("ab cd", null, 2_000L).toList(), Reveal.charStarts("ab cd", listOf(0L..100L), 2_000L).toList())
+        // not voiced: read in at a reading pace
+        assertEquals(listOf(0L, 62L, 125L, 187L), Reveal.charStarts("abcd", null, 0L).toList())
+        assertEquals(0, Reveal.charStarts("", null, 0L).size)
+        assertEquals(0L, Reveal.doneAt(LongArray(0)))
     }
 
     private class Busy(override val code: Int, override val retryAfterMs: Long? = null) : Exception("busy $code"), Backoff.Coded

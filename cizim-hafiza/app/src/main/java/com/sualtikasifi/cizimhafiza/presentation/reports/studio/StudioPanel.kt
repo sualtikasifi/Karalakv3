@@ -541,7 +541,8 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
         LineCard(RealLine.Hook, p, st, vm) {
             Text(
                 "Video, çizimin oyun ekranında baştan çizilmesiyle başlar: kelime üstte, süre köşede akar, altta oyunun jokerleri durur. " +
-                    "Kanca ekranda yazılı da durur (videolar çoğu zaman sessiz izlenir) ve istersen Karalak söyler: seslendirip videoya ekle. " +
+                    "Kanca jokerlerin altında beyaz altyazı olarak çıkar (videolar çoğu zaman sessiz izlenir): Karalak söyledikçe harf harf açılır, " +
+                    "seslendirilmemişse okuma hızında. Seslendirip videoya ekle ki sesle birlikte gelsin. " +
                     "Sonra video çizimin içinden açılır. Açılış ≈2 saniye sürer; kanca ne kadar kısaysa o kadar iyi.",
                 style = Console.Small
             )
@@ -623,7 +624,9 @@ private fun EndingCard(r: RealUi, vm: StudioViewModel) {
         )
         Text(
             when (r.ending) {
-                RealEnding.Card -> "Klibin ve Karalak'ın tepkisinin hemen ardından ${RealTimeline.END_CARD_MS / 1000f} saniyelik kart: rozet, “Sen de çiz, gerçek olsun!”, Google Play düğmesi, “Link profilde”. Yazılar video diline göre değişir."
+                RealEnding.Card -> "Klibin ve Karalak'ın tepkisinin hemen ardından ${RealTimeline.END_CARD_MS / 1000f} saniyelik kart: bu karalamanın kaç saniyede çizildiği, " +
+                    "“Çiz, Hatırla, Tahmin Et!”, oyunun 3 adımı (kelimeyi süre dolmadan çiz, kısa bir moladan sonra çizimlerin geri gelir, hangi kelimeydi hatırla), " +
+                    "Google'ın resmi Play rozeti ve “Ücretsiz · Link profilde”. Yazılar ve rozet video diline göre değişir."
                 RealEnding.Promo -> "Kendi tanıtım videon her videonun sonuna eklenir. Uzun bir son, izleyicinin videoyu bitirme ve baştan izleme oranını düşürür; kısa tut ya da karşılaştırmalı dene."
                 RealEnding.Nothing -> "Video Karalak'ın kapanışıyla biter; çağrı yalnızca açıklamada olur."
             },

@@ -12,7 +12,9 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StrokeReplay
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioAssets
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioColors as C
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioDrawing
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Lettering
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.TextPainter
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Reveal
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.VoicedVideo
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotSprites
@@ -35,7 +37,7 @@ data class PlayerCard(
 
 /**
  * Draws "Karalak Bilir mi?" frames in 1080×1920: a video call between Karalak (left tile) and the
- * player (right tile), the score between them, Karalak's words as karaoke subtitles, and the
+ * player (right tile), the score between them, Karalak's words as subtitles that come in as they are said, and the
  * drawing building up on a sheet of paper below. Everything a viewer must read sits clear of the
  * band TikTok and Reels cover with their buttons and caption.
  */
@@ -47,8 +49,8 @@ class GuessRenderer(
     private val player: PlayerCard,
     /** Voice loudness per video frame for each line (by GuessScript.lines() index); null in the silent preview. */
     private val voice: Map<Int, FloatArray>?,
-    /** When each word of a line starts, by the same index, for lines whose voice came with timings; the subtitle follows them. */
-    private val wordStarts: Map<Int, LongArray>? = null
+    /** When each word of a line is said, start to end, by the same index, for lines whose voice came with timings; the subtitle follows them. */
+    private val wordTimes: Map<Int, List<LongRange>>? = null
 ) : VoicedVideo {
     val events: List<GuessEvent> = GuessTimeline.build(script) { i, line ->
         voice?.get(i)?.let { env -> env.size * 1000L / FPS } ?: GuessTimeline.estimateMs(line.text)
@@ -58,6 +60,14 @@ class GuessRenderer(
 
     private val replays = script.rounds.associate { r -> r.drawingId to StrokeReplay(drawings[r.drawingId]?.strokes.orEmpty()) }
     private val text = TextPainter()
+
+    /** When each character of a line appears (see [Reveal]), worked out once per line. */
+    private val revealStarts = HashMap<Int, LongArray>()
+
+    private fun startsOf(index: Int, line: String, spokenMs: Long): LongArray = revealStarts.getOrPut(index) {
+        // a voiced line follows its voice: by its words when they were timed, spread over the voice otherwise; a silent one is read in
+        Reveal.charStarts(line, wordTimes?.get(index), if (voice?.get(index) != null) spokenMs else 0L)
+    }
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val ink = StrokeReplay.inkPaint()
@@ -247,8 +257,7 @@ class GuessRenderer(
     private fun drawSubtitle(canvas: Canvas, e: GuessEvent, t: Long) {
         val l = e.line ?: return
         if (e.phase == GuessPhase.Outro) return
-        val p = ((t - e.startMs).toFloat() / spokenMs(e).coerceAtLeast(1)).coerceIn(0f, 1f)
-        text.karaoke(canvas, l.text, p, 540f, 790f, 980, 56f, 2, assets.display, C.INK, C.FAINT, wordStarts?.get(e.lineIndex), t - e.startMs)
+        text.reveal(canvas, l.text, startsOf(e.lineIndex, l.text, spokenMs(e)), t - e.startMs, 540f, 790f, 980, 56f, 2, assets.display, Lettering.plain(C.INK))
     }
 
     private fun drawPaper(canvas: Canvas, e: GuessEvent, t: Long) {
@@ -343,8 +352,7 @@ class GuessRenderer(
         }
         text.draw(canvas, result, 540f, 900f, 960, 76f, 1, assets.display, C.INK)
         e.line?.let { l ->
-            val prog = ((t - e.startMs).toFloat() / spokenMs(e).coerceAtLeast(1)).coerceIn(0f, 1f)
-            text.karaoke(canvas, l.text, prog, 540f, 1040f, 960, 50f, 2, assets.display, C.ORANGE_DARK, C.FAINT, wordStarts?.get(e.lineIndex), t - e.startMs)
+            text.reveal(canvas, l.text, startsOf(e.lineIndex, l.text, spokenMs(e)), t - e.startMs, 540f, 1040f, 960, 50f, 2, assets.display, Lettering.plain(C.ORANGE_DARK))
         }
         fill.color = C.ORANGE
         val cta = RectF(140f, 1170f, 940f, 1300f)
