@@ -71,7 +71,9 @@ data class RealReveal(
     /** The app's background music under the video (a [RealMusic] track's name); null: none. */
     val music: String? = null,
     /** How loud the music is, before it steps back under Karalak's voice and the clip (see [RealMix]). */
-    val musicVolume: Float = RealMix.DEFAULT_VOLUME
+    val musicVolume: Float = RealMix.DEFAULT_VOLUME,
+    /** How the video opens: on the game's drawing screen, or with a glimpse of the real thing first. */
+    val opening: RealOpening = RealOpening.Classic
 ) {
     val media: Set<String> get() = listOfNotNull(image, clip, hook.voice, outro.voice).toSet()
 
@@ -86,11 +88,21 @@ data class RealReveal(
     }
 
     /** How long the opening lasts: long enough to see the drawing drawn, and to hear all of the hook when it is voiced. */
-    val hookMs: Long get() = RealTimeline.hookMs(if (hook.voice != null) hook.voiceMs else 0L)
+    val hookMs: Long get() = RealTimeline.hookMs(if (hook.voice != null) hook.voiceMs else 0L, opening == RealOpening.Teaser)
 
     /** How long the closing lasts: long enough to read it, and to hear all of it when it is voiced. */
     val outroMs: Long get() = RealTimeline.outroMs(outro.text, if (outro.voice != null) outro.voiceMs else 0L)
 }
+
+/**
+ * How a "Gerçek Olsaydı" video opens. [Classic]: the game's drawing screen, the drawing drawn again. [Teaser]: a glimpse
+ * of the real thing first (the clip's frame, with the hook over it) that shrinks back into the canvas, and then the
+ * drawing is drawn: the viewer sees what it will become before they see the doodle, which is what keeps them watching.
+ */
+enum class RealOpening { Classic, Teaser }
+
+/** What closes the video: a short end card with the call to play, the app's own promo video, or nothing after the closing. */
+enum class RealEnding { Card, Promo, Nothing }
 
 /** The two things Karalak says in a "Gerçek Olsaydı" video: the opening hook and the closing reaction. */
 enum class RealLine { Hook, Outro }
@@ -160,12 +172,16 @@ data class CardLayout(val scale: Float = DEFAULT_SCALE, val x: Float = DEFAULT_X
  * The [reveal]'s files live in the project's media folder, which nothing in the library is ever pruned from.
  */
 @Serializable
-data class LibraryItem(val id: String, val savedAt: Long, val drawing: RealDrawing, val reveal: RealReveal) {
+data class LibraryItem(
+    val id: String, val savedAt: Long, val drawing: RealDrawing, val reveal: RealReveal,
+    /** Every time this piece was posted, with how it did (see [VideoPost]). */
+    val posts: List<VideoPost> = emptyList()
+) {
     val media: Set<String> get() = reveal.media + listOfNotNull(drawing.photo)
     val hasClip: Boolean get() = reveal.clip != null
 }
 
-enum class RealPhase { Hook, Clip, Outro, Promo }
+enum class RealPhase { Hook, Clip, Outro, EndCard, Promo }
 
 /**
  * One stretch of the video: the opening, a clip playing from [clipAtMs] for [clipMs], the closing over that clip's
@@ -189,9 +205,12 @@ object RealTimeline {
     const val CLIP_MAX = 10_000L
     private const val CLIP_MIN = 1_000L
     /** A voiced opening is never shorter than this, so the drawing has time to be drawn. */
-    const val HOOK_MIN = 2_400L
+    const val HOOK_MIN = 2_000L
     /** A silent opening: the drawing drawn, held, and the clip opening out of it. */
-    const val HOOK_SILENT = 2_600L
+    const val HOOK_SILENT = 2_200L
+    /** The glimpse of the real thing a [RealOpening.Teaser] adds in front of the opening, and how much of it is held before it shrinks away. */
+    const val TEASE_MS = 900L
+    const val TEASE_HOLD = 450L
     /** The end of the opening, in which the first clip opens out of the drawing. */
     const val HOOK_REVEAL = 450L
     /** The finished drawing stays still for a moment before the clip opens out of it. */
@@ -202,14 +221,14 @@ object RealTimeline {
     /** After the voice ends, the first clip's own sound waits this long, so it never covers the voice's last syllable. */
     private const val VOICE_TAIL = 300L
     /** However long a voice runs, the opening never goes past this; the rest plays over the first clip. */
-    const val HOOK_VOICE_MAX = 7_000L
+    const val HOOK_VOICE_MAX = 4_500L
 
     /**
      * How long the opening lasts. Its hook is never written on screen, only said: silent, a fixed beat for the drawing;
      * voiced ([voiceMs] above 0), until the voice has finished.
      */
-    fun hookMs(voiceMs: Long = 0L): Long =
-        if (voiceMs <= 0L) HOOK_SILENT else maxOf(HOOK_MIN, VOICE_AT + voiceMs + VOICE_TAIL).coerceAtMost(HOOK_VOICE_MAX)
+    fun hookMs(voiceMs: Long = 0L, teaser: Boolean = false): Long =
+        (if (voiceMs <= 0L) HOOK_SILENT else maxOf(HOOK_MIN, VOICE_AT + voiceMs + VOICE_TAIL).coerceAtMost(HOOK_VOICE_MAX)) + if (teaser) TEASE_MS else 0L
 
     /** The closing stays long enough to read; voiced, until it has been said and a breath after. */
     const val OUTRO_MIN = 1_500L
@@ -230,12 +249,15 @@ object RealTimeline {
     /** The app's promo video at the end is cut after this long. */
     const val PROMO_MAX = 15_000L
 
+    /** The end card after the closing: long enough to read its two lines, short enough to keep the video one that loops. */
+    const val END_CARD_MS = 2_200L
+
     /**
      * The video of one reveal: its opening and closing as [RealReveal.hookMs] and [RealReveal.outroMs] say, and the
      * app's promo video of [promoMs] after it (0: none).
      */
-    fun build(reveal: RealReveal?, promoMs: Long = 0L): List<RealEvent> =
-        if (reveal == null) emptyList() else build(listOf(reveal), reveal.hookMs, reveal.outroMs, promoMs)
+    fun build(reveal: RealReveal?, promoMs: Long = 0L, endCardMs: Long = 0L): List<RealEvent> =
+        if (reveal == null) emptyList() else build(listOf(reveal), reveal.hookMs, reveal.outroMs, promoMs, endCardMs)
 
     /**
      * The opening (when [hookMs] is above 0), the clips back to back, the closing (when [outroMs] is above 0) over the
@@ -243,7 +265,7 @@ object RealTimeline {
      * it comes in [outroMs] before the clip ends, but never before the clip has played [OUTRO_LEAD]; what does not fit
      * holds the clip's last frame.
      */
-    fun build(shown: List<RealReveal>, hookMs: Long = 0L, outroMs: Long = 0L, promoMs: Long = 0L): List<RealEvent> {
+    fun build(shown: List<RealReveal>, hookMs: Long = 0L, outroMs: Long = 0L, promoMs: Long = 0L, endCardMs: Long = 0L): List<RealEvent> {
         val out = mutableListOf<RealEvent>()
         var t = 0L
         if (hookMs > 0 && shown.isNotEmpty()) {
@@ -264,7 +286,11 @@ object RealTimeline {
             out += RealEvent(RealPhase.Outro, last.index, from, outroMs, clipAtMs = last.clipAtMs, clipMs = last.clipMs)
             t = maxOf(t, from + outroMs)
         }
-        if (promoMs > 0 && lastAt >= 0) out += RealEvent(RealPhase.Promo, 0, t, promoMs.coerceAtMost(PROMO_MAX))
+        // what follows the drawing's own video: the promo, or else the short end card
+        if (lastAt >= 0) {
+            if (promoMs > 0) out += RealEvent(RealPhase.Promo, 0, t, promoMs.coerceAtMost(PROMO_MAX))
+            else if (endCardMs > 0) out += RealEvent(RealPhase.EndCard, 0, t, endCardMs)
+        }
         return out
     }
 
@@ -338,13 +364,6 @@ object RealCopy {
     const val HOOK_CHARS = 80
     private val SECONDS = Regex("(\\d+)(\\s*(?:saniye|sn|seconds?|secs?|segundos?|seg))", RegexOption.IGNORE_CASE)
     private val NUMBERING = Regex("^\\d+[.)]\\s+")
-
-    /** Where the video sends people: the app's page in Google Play, never the website. */
-    const val STORE_URL = "https://play.google.com/store/apps/details?id=com.sualtikasifi.cizimhafiza"
-    const val STORE_LINE = "Karalak'ı Google Play'den indir: $STORE_URL"
-
-    /** The post text with the Play link on the last line. */
-    fun withStoreLink(text: String): String = if (STORE_URL in text) text else listOf(text.trim(), STORE_LINE).filter { it.isNotEmpty() }.joinToString("\n\n")
 
     /**
      * What to paste into ChatGPT (or Gemini) with the doodle, in Turkish so it can be read and corrected by hand. The

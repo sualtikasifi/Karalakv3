@@ -6,9 +6,12 @@ import android.graphics.Canvas
 import android.os.Bundle
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioAssets
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioLang
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipFrames
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealOpening
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealTimeline
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealPhase
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealRenderer
@@ -43,54 +46,67 @@ class RealPreviewActivity : Activity() {
             RealDrawing("b", spoon(), "bağlama", 7, "Zeynep", 12, com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame.entries.filter { !it.retired }.last().name),
             RealDrawing("c", cat(), "kedi", 5, "", 28, "")
         )
-        // the video is the first drawing's: its hook, its clip, its closing
-        val project = RealProject(
-            drawings = drawings,
-            reveals = drawings.map { RealReveal(it.id, clip = it.id + ".mp4", clipMs = 5_000L) }.mapIndexed { i, r ->
-                if (i > 0) r else r.copy(hook = VoicedLine("7 saniyede roket çizebilir misin?"), outro = VoicedLine("Bu rokete kim biner? Yorumlara yaz!"))
-            }
-        )
-        // the made-up clip stands in for the app's promo too
-        val renderer = RealRenderer(assets, project, clips = drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f, promo = frames, promoMs = 2_000L)
-        val shots = buildList {
-            renderer.events.forEach { e ->
-                if (e.phase == RealPhase.Hook) {
-                    // the first frame is the cover; then the drawing half drawn, finished, and the clip opening out of it
-                    add("hook_first" to 0L)
-                    add("hook_half" to e.durationMs * 2 / 5)
-                    add("hook_done" to e.durationMs - 500)
-                    add("hook_open" to e.durationMs - 330)
-                } else if (e.phase == RealPhase.Outro) {
-                    // the clip keeps playing under the closing
-                    add("outro_start" to e.startMs + 120)
-                    add("outro_end" to e.endMs - 80)
-                } else if (e.phase == RealPhase.Promo) {
-                    add("promo_fade" to e.startMs + 150)
-                    add("promo_mid" to e.startMs + 1_000)
-                } else {
-                    add("clip${e.index}_start" to e.startMs + 120)
-                    add("clip${e.index}_mid" to e.startMs + 1_800)
-                }
-            }
-        }
-        // the card's own shots: in the middle of the clip
-        val clipMid = renderer.events.first { it.phase == RealPhase.Clip }.startMs + 1_800L
         val bmp = Bitmap.createBitmap(RealRenderer.W, RealRenderer.H, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
-        shots.forEachIndexed { i, (name, t) ->
+        var n = 0
+        fun shoot(name: String, renderer: RealRenderer, t: Long) {
             canvas.drawColor(0xFF000000.toInt())
             renderer.draw(canvas, t)
-            File(out, "%02d_%s.png".format(i, name)).outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            File(out, "%02d_%s.png".format(n++, name)).outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
-        // the card moved to the bottom right and made smaller, as the panel's sliders can
-        val small = RealRenderer(assets, project, clips = drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f, layout = CardLayout(0.7f, 0.95f, 0.62f))
-        canvas.drawColor(0xFF000000.toInt())
-        small.draw(canvas, clipMid)
-        File(out, "90_layout_small.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        val big = RealRenderer(assets, project, clips = drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f, layout = CardLayout(1.5f, 0.5f, 0.5f))
-        canvas.drawColor(0xFF000000.toInt())
-        big.draw(canvas, clipMid)
-        File(out, "91_layout_big.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        // the video is the first drawing's: its hook, its clip, its closing
+        fun project(first: RealDrawing, hook: String, opening: RealOpening) = RealProject(
+            drawings = listOf(first) + drawings.filter { it.id != first.id },
+            reveals = (listOf(first) + drawings.filter { it.id != first.id }).map { RealReveal(it.id, clip = it.id + ".mp4", clipMs = 5_000L) }.mapIndexed { i, r ->
+                if (i > 0) r else r.copy(hook = VoicedLine(hook), outro = VoicedLine("Bu rokete kim biner? Yorumlara yaz!"), opening = opening)
+            }
+        )
+        fun renderer(p: RealProject, endCardMs: Long = 0L, lang: StudioLang = StudioLang.Tr, promoMs: Long = 0L, layout: CardLayout = CardLayout()) =
+            RealRenderer(assets, p, clips = p.drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f, layout = layout,
+                promo = frames.takeIf { promoMs > 0 }, promoMs = promoMs, endCardMs = endCardMs, lang = lang)
+
+        // 1. the classic opening with a middling hook: the cover, the drawing half drawn and done, the clip opening out, the closing, the end card
+        val classic = renderer(project(drawings[0], "7 saniyede roket çizebilir misin?", RealOpening.Classic), endCardMs = RealTimeline.END_CARD_MS)
+        classic.events.forEach { e ->
+            when (e.phase) {
+                RealPhase.Hook -> {
+                    shoot("classic_first", classic, 0L)
+                    shoot("classic_half", classic, e.durationMs * 2 / 5)
+                    shoot("classic_done", classic, e.durationMs - 500)
+                    shoot("classic_open", classic, e.durationMs - 330)
+                }
+                RealPhase.Clip -> shoot("clip_mid", classic, e.startMs + 1_800)
+                RealPhase.Outro -> shoot("outro", classic, e.startMs + 400)
+                RealPhase.EndCard -> {
+                    shoot("endcard_in", classic, e.startMs + 120)
+                    shoot("endcard_mid", classic, e.startMs + 900)
+                    shoot("endcard_end", classic, e.endMs - 60)
+                }
+                else -> Unit
+            }
+        }
+        // 2. the teaser opening: the real thing full frame (the cover), shrinking into the canvas, then the drawing
+        val teaser = renderer(project(drawings[0], "7 saniyede roket çizebilir misin?", RealOpening.Teaser))
+        shoot("teaser_first", teaser, 0L)
+        shoot("teaser_shrink", teaser, RealTimeline.TEASE_HOLD + 220)
+        shoot("teaser_almost", teaser, RealTimeline.TEASE_MS - 120)
+        shoot("teaser_draw", teaser, RealTimeline.TEASE_MS + 500)
+        // 3. hooks of other lengths and drawings of other shapes: the plaque must fit all of them and leave the drawing room
+        shoot("hook_short", renderer(project(drawings[1], "Bu ne?", RealOpening.Classic)), 1_400L)
+        shoot("hook_long", renderer(project(drawings[2], "Bu kediyi gerçek hayatta görsen kaç saniyede tanırsın, söyle bakalım?", RealOpening.Classic)), 1_400L)
+        shoot("hook_two_lines", renderer(project(drawings[1], "5 saniyede bağlama çizdi! Sence tanınır mı?", RealOpening.Classic)), 1_400L)
+        // 4. the end card in each language
+        StudioLang.entries.forEach { lang ->
+            val r = renderer(project(drawings[0], "Roket", RealOpening.Classic), endCardMs = RealTimeline.END_CARD_MS, lang = lang)
+            shoot("endcard_" + lang.code, r, r.events.first { it.phase == RealPhase.EndCard }.startMs + 1_500)
+        }
+        // 5. the promo still takes the end card's place when it is chosen
+        val promo = renderer(project(drawings[0], "7 saniyede roket çizebilir misin?", RealOpening.Classic), promoMs = 2_000L, endCardMs = RealTimeline.END_CARD_MS)
+        promo.events.firstOrNull { it.phase == RealPhase.Promo }?.let { shoot("promo_mid", promo, it.startMs + 1_000) }
+        // 6. the card moved and resized, as the panel's sliders can
+        val clipMid = classic.events.first { it.phase == RealPhase.Clip }.startMs + 1_800L
+        shoot("layout_small", renderer(project(drawings[0], "x", RealOpening.Classic), layout = CardLayout(0.7f, 0.95f, 0.62f)), clipMid)
+        shoot("layout_big", renderer(project(drawings[0], "x", RealOpening.Classic), layout = CardLayout(1.5f, 0.5f, 0.5f)), clipMid)
         frames.close()
     }
 

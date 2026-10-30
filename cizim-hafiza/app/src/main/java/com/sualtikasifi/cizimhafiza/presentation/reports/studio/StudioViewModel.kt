@@ -54,6 +54,10 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipFrames
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.LibraryItem
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDirector
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealEnding
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealOpening
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.SocialPlatform
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VideoPost
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix
@@ -193,11 +197,16 @@ data class RealUi(
     val confirmReset: Boolean = false,
     /** Where the Karalak card sits on the video and how big it is, kept on this phone. */
     val card: CardLayout = CardLayout(),
-    /** The app's promo video that closes every video (one, kept on this phone), its length, and whether it goes in. */
+    /** The app's promo video (one, kept on this phone) and its length; whether it closes the videos is [ending]'s. */
     val promo: File? = null,
     val promoMs: Long = 0L,
-    val promoOn: Boolean = true,
     val promoBusy: Boolean = false,
+    /** What closes every video: a short end card (the default), the promo video, or nothing after Karalak's closing. */
+    val ending: RealEnding = RealEnding.Card,
+    /** Whether the app's music is mixed into the video; off, it is left out so a trending sound can be added in the app it is posted to. */
+    val musicOn: Boolean = true,
+    /** Where the video is going to be posted: what its post text ends with. */
+    val platform: SocialPlatform = SocialPlatform.TikTok,
     /** A picture ready to hand to ChatGPT or Gemini, with the prompt to paste. */
     val share: RealShare? = null,
     /** The swipe-through post: each drawing followed by what it became, ready for the share sheet. */
@@ -757,7 +766,7 @@ class StudioViewModel @Inject constructor(
         p.reveals.filter { it.image != null || it.clip != null }.forEach { r ->
             val d = p.drawing(r.sampleId) ?: return@forEach
             val existing = list.find { it.id == r.sampleId }
-            val item = LibraryItem(r.sampleId, existing?.savedAt ?: now, d, r)
+            val item = LibraryItem(r.sampleId, existing?.savedAt ?: now, d, r, existing?.posts.orEmpty())
             if (existing == null) list = listOf(item) + list
             else if (existing != item) list = list.map { if (it.id == r.sampleId) item else it }
         }
@@ -773,7 +782,10 @@ class StudioViewModel @Inject constructor(
         viewModelScope.launch {
             val (p, recent) = withContext(Dispatchers.IO) { realStore.load() to realStore.loadRecent() }
             val library = withContext(Dispatchers.IO) { realStore.loadLibrary() }
-            updateReal { it.copy(project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media })) }
+            val prefs = prefs()
+            val ending = runCatching { RealEnding.valueOf(prefs.getString(ENDING, null).orEmpty()) }.getOrDefault(RealEnding.Card)
+            val platform = SocialPlatform.of(prefs.getString(PLATFORM, null))
+            updateReal { it.copy(project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media }), ending = ending, musicOn = prefs.getBoolean(MUSIC_ON, true), platform = platform) }
             p?.let { loadRealMedia(it) }
             loadPromo()
         }
@@ -781,7 +793,6 @@ class StudioViewModel @Inject constructor(
 
     /** The promo video kept on this phone, if any: its length, and opened for the preview. */
     private suspend fun loadPromo() {
-        val on = prefs().getBoolean(PROMO_ON, true)
         val (file, ms, frames) = withContext(Dispatchers.IO) {
             val f = realStore.promo()
             val ms = f?.let { RealImages.clipMs(it) } ?: 0L
@@ -789,7 +800,7 @@ class StudioViewModel @Inject constructor(
         }
         previewPromo?.close()
         previewPromo = frames
-        updateReal { it.copy(promo = file, promoMs = if (file != null) ms.coerceAtMost(RealTimeline.PROMO_MAX) else 0L, promoOn = on, promoBusy = false) }
+        updateReal { it.copy(promo = file, promoMs = if (file != null) ms.coerceAtMost(RealTimeline.PROMO_MAX) else 0L, promoBusy = false) }
         refreshPreview()
     }
 
@@ -807,6 +818,8 @@ class StudioViewModel @Inject constructor(
                 }
             }
             ok.onFailure { e -> _state.update { it.copy(message = "Tanıtım videosu eklenemedi: ${e.message}") } }
+            // a promo that was just picked is meant to be used
+            if (ok.isSuccess) setEnding(RealEnding.Promo)
             // a finished video made with the earlier promo is out of date
             _state.update { it.copy(video = null) }
             loadPromo()
@@ -823,12 +836,32 @@ class StudioViewModel @Inject constructor(
         }
     }
 
-    /** Whether the promo goes at the end of the video; kept on this phone. */
-    fun setPromoOn(on: Boolean) {
-        prefs().edit().putBoolean(PROMO_ON, on).apply()
-        updateReal { it.copy(promoOn = on) }
+    /** What closes the video; kept on this phone. The promo is only used while there is one. */
+    fun setEnding(ending: RealEnding) {
+        prefs().edit().putString(ENDING, ending.name).apply()
+        updateReal { it.copy(ending = ending) }
         _state.update { it.copy(video = null) }
         refreshPreview()
+    }
+
+    /** Whether the app's music is mixed into the video; off, the video comes out without it. Kept on this phone. */
+    fun setMusicOn(on: Boolean) {
+        prefs().edit().putBoolean(MUSIC_ON, on).apply()
+        updateReal { it.copy(musicOn = on) }
+        _state.update { it.copy(video = null) }
+        refreshPreview()
+    }
+
+    /** Where the video will be posted; its post text follows. Kept on this phone. */
+    fun setPlatform(platform: SocialPlatform) {
+        prefs().edit().putString(PLATFORM, platform.name).apply()
+        updateReal { it.copy(platform = platform) }
+    }
+
+    /** How the video opens (see [RealOpening]); the preview goes back to the very start to show it. */
+    fun setOpening(sampleId: String, opening: RealOpening) {
+        updateReveal(sampleId, saveNow = true) { it.copy(opening = opening) }
+        setPreviewTime(0L)
     }
 
     /**
@@ -1332,6 +1365,35 @@ class StudioViewModel @Inject constructor(
         refreshPreview()
     }
 
+    /** Changes one kept piece and keeps the library on disk up to date. */
+    private fun updateLibraryItem(id: String, change: (LibraryItem) -> LibraryItem) {
+        val library = _state.value.real.library.map { if (it.id == id) change(it) else it }
+        updateReal { it.copy(library = library) }
+        viewModelScope.launch(Dispatchers.IO) { runCatching { realStore.saveLibrary(library) } }
+    }
+
+    /**
+     * Notes that the video of the featured drawing is being posted on the chosen platform, with the hook it carries and
+     * how it opens, so its numbers can be typed in later (see [VideoPost]). A video shared again to the same place within
+     * half an hour is the same posting.
+     */
+    fun logPost() {
+        val r = _state.value.real
+        val f = r.project?.featured ?: return
+        val item = r.library.find { it.id == f.sampleId } ?: return
+        val now = System.currentTimeMillis()
+        if (item.posts.any { it.platform == r.platform.name && now - it.postedAt < POST_SAME_MS }) return
+        val post = VideoPost(java.util.UUID.randomUUID().toString(), r.platform.name, now, f.hook.text.trim(), f.opening.name)
+        updateLibraryItem(item.id) { it.copy(posts = listOf(post) + it.posts) }
+    }
+
+    /** Types in (or corrects) a posting's result. */
+    fun updatePost(itemId: String, postId: String, change: (VideoPost) -> VideoPost) =
+        updateLibraryItem(itemId) { item -> item.copy(posts = item.posts.map { if (it.id == postId) change(it) else it }) }
+
+    fun deletePost(itemId: String, postId: String) =
+        updateLibraryItem(itemId) { item -> item.copy(posts = item.posts.filterNot { it.id == postId }) }
+
     /** Takes a piece out of the library and deletes its files, unless the current video still uses them. */
     fun deleteLibraryItem(id: String) {
         val library = _state.value.real.library.filterNot { it.id == id }
@@ -1621,7 +1683,7 @@ class StudioViewModel @Inject constructor(
             // the video is one drawing's: only its clip is opened
             val f = p.featured ?: return null
             val clip = f.clip ?: return null
-            val promo = s.real.promo?.takeIf { s.real.promoOn && s.real.promoMs > 0 }
+            val promo = s.real.promo?.takeIf { s.real.ending == RealEnding.Promo && s.real.promoMs > 0 }
             return RealRenderer(
                 assetsOrLoad(), p,
                 clips = listOfNotNull(clipSource(clip)?.let { f.sampleId to it }).toMap(),
@@ -1631,10 +1693,12 @@ class StudioViewModel @Inject constructor(
                 photoFiles = p.drawings.mapNotNull { d -> d.photo?.let { d.id to realStore.file(it) } }.toMap(),
                 hookVoiceFile = f.hook.voice?.let { realStore.file(it) },
                 outroVoiceFile = f.outro.voice?.let { realStore.file(it) },
-                musicFile = f.music?.let { RealMusic.target(context, it) },
+                musicFile = f.music?.takeIf { s.real.musicOn }?.let { RealMusic.target(context, it) },
                 promo = promo?.let(promoSource),
                 promoFile = promo,
-                promoMs = if (promo != null) s.real.promoMs else 0L
+                promoMs = if (promo != null) s.real.promoMs else 0L,
+                endCardMs = if (s.real.ending == RealEnding.Card) RealTimeline.END_CARD_MS else 0L,
+                lang = s.lang
             )
         }
         val sp = sprites ?: return null
@@ -1671,7 +1735,9 @@ class StudioViewModel @Inject constructor(
         renderJob = viewModelScope.launch {
             val dir = File(context.cacheDir, "studio").apply { mkdirs() }
             dir.listFiles()?.forEach { it.deleteRecursively() }
-            val out = File(dir, "karalak_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".mp4")
+            // a video made without the app's music is named so, to tell the two apart in the gallery
+            val noMusic = if (s.format == StudioFormat.RealLife && !s.real.musicOn) "_muziksiz" else ""
+            val out = File(dir, "karalak_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + noMusic + ".mp4")
             val job = coroutineContext[Job]
             val result = runCatching {
                 // 1. Karalak's voice, one file per line
@@ -1720,7 +1786,7 @@ class StudioViewModel @Inject constructor(
                         val placed = mutableListOf<Placed>()
                         if (s.voiceOn) placed += renderer.voiceStarts.mapNotNull { (index, start) -> voices[index]?.let { Placed(it, start) } }
                         // the background music is copied out of the app the first time it is used
-                        if (s.format == StudioFormat.RealLife) s.real.project?.featured?.music?.let { runCatching { RealMusic.ensure(context, it) } }
+                        if (s.format == StudioFormat.RealLife && s.real.musicOn) s.real.project?.featured?.music?.let { runCatching { RealMusic.ensure(context, it) } }
                         renderer.sounds.forEach { snd ->
                             runCatching { ClipAudio.decode(snd.file, snd.durationMs) }.getOrNull()?.let { pcm ->
                                 val at = PcmOps.resample(pcm, RATE).let { if (snd.voice) PcmOps.softEnd(it) else it }
@@ -1822,7 +1888,10 @@ class StudioViewModel @Inject constructor(
         const val CARD_SCALE = "studio_real_card_scale"
         const val CARD_X = "studio_real_card_x"
         const val CARD_Y = "studio_real_card_y"
-        const val PROMO_ON = "studio_real_promo_on"
+        const val POST_SAME_MS = 30 * 60_000L
+        const val ENDING = "studio_real_ending"
+        const val MUSIC_ON = "studio_real_music_on"
+        const val PLATFORM = "studio_real_platform"
         /** No line of Karalak's runs this long; a longer decode means something went wrong. */
         const val VOICE_MAX_MS = 60_000L
         /** The voice track's sample rate: what every AAC encoder takes. */
