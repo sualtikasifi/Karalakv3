@@ -40,7 +40,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.RaisedIconButton
 import com.sualtikasifi.cizimhafiza.presentation.common.currentWordLanguage
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 import com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance
-import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
+import com.sualtikasifi.cizimhafiza.presentation.common.developerBackground
 import com.sualtikasifi.cizimhafiza.util.WordReviewShareUtil
 import com.sualtikasifi.cizimhafiza.util.capitalizeForWordLanguage
 import kotlinx.coroutines.launch
@@ -63,7 +63,7 @@ fun WordReviewScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .screenBackground()
+                .developerBackground()
                 .padding(padding).padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

@@ -33,7 +33,8 @@ import com.sualtikasifi.cizimhafiza.presentation.common.REPORTS_ACCESS_CODE
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
 import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
-import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
+import com.sualtikasifi.cizimhafiza.presentation.common.developerBackground
+import com.sualtikasifi.cizimhafiza.presentation.common.DEVELOPER_GATE_VEIL
 
 /**
  * The passcode in front of the report inbox.
@@ -90,7 +91,7 @@ fun DrawingReportsGate(onBack: () -> Unit, onBotNames: () -> Unit = {}) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .screenBackground()
+                    .developerBackground(DEVELOPER_GATE_VEIL)
                     .padding(padding)
                     .padding(horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,

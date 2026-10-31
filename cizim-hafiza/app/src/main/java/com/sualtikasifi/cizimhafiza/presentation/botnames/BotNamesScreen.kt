@@ -37,7 +37,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
 import com.sualtikasifi.cizimhafiza.presentation.common.RaisedIconButton
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 import com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance
-import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
+import com.sualtikasifi.cizimhafiza.presentation.common.developerBackground
 import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 import com.sualtikasifi.cizimhafiza.util.asString
 
@@ -57,7 +57,7 @@ fun BotNamesScreen(onBack: () -> Unit, viewModel: BotNamesViewModel = hiltViewMo
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .screenBackground()
+                    .developerBackground()
                     .padding(padding)
                     .padding(horizontal = 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
