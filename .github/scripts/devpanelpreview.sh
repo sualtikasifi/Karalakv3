@@ -26,15 +26,21 @@ shot() {
 
 # warm-up: the first start pays for dex loading and Firebase, so its frame is not one to judge
 shot Dashboard 10
-for s in gate Dashboard Tools Queue Stats Assistant Studio Coupons XpEvent League Players Economy Announce Push Feedback Locks Update Jobs; do
+for s in gate Dashboard Tools Queue Stats Assistant Studio Coupons XpEvent League Players PlayerReports Economy Announce Push Feedback Locks Update Runes Jobs Audit; do
   shot "$s"
 done
 
-# the passcode screen with a wrong code typed in (the shake and the error line)
+# the passcode screen with three digits typed on its own keypad (1, 5, 9)
 adb shell am force-stop "$PKG"
 adb shell am start -W -n "$ACT" --es screen gate
 sleep 6
-adb exec-out screencap -p > "$OUT/devpanel_gate_open.png"
+adb shell input tap 306 1383
+sleep 0.4
+adb shell input tap 540 1593
+sleep 0.4
+adb shell input tap 768 1803
+sleep 1.5
+adb exec-out screencap -p > "$OUT/devpanel_gate_typed.png"
 
 # a tool, then back: the tools grid reached from the bottom bar, scrolled
 adb shell am force-stop "$PKG"

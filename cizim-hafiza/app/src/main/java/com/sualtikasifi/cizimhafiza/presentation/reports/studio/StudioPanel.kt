@@ -178,10 +178,7 @@ fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Video Stüdyosu", style = Console.Title)
-                    Text("Karalak'lı dikey videolar · 1080×1920 · sesli", style = Console.Small)
-                }
+                Text("Karalak'lı dikey videolar · 1080×1920 · sesli", style = Console.Label, modifier = Modifier.weight(1f))
             }
         }
         item {
@@ -194,11 +191,11 @@ fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
         }
         item {
             Column {
-                Text("Video dili", style = Console.Label)
+                Text("Video dili · ${st.lang.named}", style = Console.Label)
                 Text("Karalak'ın söylediği cümleler, ses ve gönderi metni bu dilde yazılır. Ekrandaki sabit yazılar şimdilik Türkçe.", style = Console.Small)
                 Spacer(Modifier.height(6.dp))
                 Segmented(
-                    options = StudioLang.entries.map { it.name to "${it.label} · ${it.named}" },
+                    options = StudioLang.entries.map { it.name to it.label },
                     selected = st.lang.name,
                     onSelect = { viewModel.setLang(StudioLang.valueOf(it)) },
                     modifier = Modifier.fillMaxWidth()

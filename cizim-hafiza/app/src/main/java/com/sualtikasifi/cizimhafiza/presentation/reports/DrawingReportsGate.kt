@@ -182,6 +182,7 @@ fun DrawingReportsGate(onBack: () -> Unit, onBotNames: () -> Unit = {}) {
                     enabled = REPORTS_ACCESS_CODE.isNotEmpty() && entered.isNotEmpty(),
                     icon = Icons.Filled.LockOpen,
                     height = 50.dp,
+                    onDark = true,
                     modifier = Modifier.widthIn(max = 320.dp).fillMaxWidth()
                 )
                 Spacer(Modifier.height(20.dp))
@@ -235,7 +236,7 @@ private fun CodeDots(count: Int, wrong: Boolean, modifier: Modifier = Modifier) 
         contentAlignment = Alignment.Center
     ) {
         if (count == 0) {
-            Text("• • • •", style = Console.Title.copy(color = Console.HeaderMuted.copy(alpha = 0.45f), letterSpacing = 2.sp))
+            Text("Kodu tuşla", style = Console.Label.copy(color = Console.HeaderMuted.copy(alpha = 0.7f), fontSize = 13.sp))
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 repeat(count) { i -> androidx.compose.runtime.key(i) { PopDot(if (wrong) Color(0xFFFF8A80) else Console.HeaderInk) } }

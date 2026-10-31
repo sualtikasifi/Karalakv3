@@ -102,7 +102,9 @@ fun ConsoleButton(
     trailingIcon: ImageVector? = null,
     height: Dp = 44.dp,
     style: ConsoleButtonStyle = ConsoleButtonStyle.Primary,
-    loading: Boolean = false
+    loading: Boolean = false,
+    /** On the dark band: a disabled button stays a dim glass shape rather than a pale slab. */
+    onDark: Boolean = false
 ) {
     val interaction = remember { MutableInteractionSource() }
     val live = enabled && !loading
@@ -112,11 +114,19 @@ fun ConsoleButton(
             live -> c.bg
             style == ConsoleButtonStyle.Ghost -> Color.Transparent
             loading -> c.bg.copy(alpha = 0.75f)
+            onDark -> Console.HeaderFill
             else -> Console.Grid
         },
         tween(160), label = "btnBg"
     )
-    val fg by animateColorAsState(if (live || loading) c.fg else Console.InkMuted, tween(160), label = "btnFg")
+    val fg by animateColorAsState(
+        when {
+            live || loading -> c.fg
+            onDark -> Console.HeaderMuted.copy(alpha = 0.7f)
+            else -> Console.InkMuted
+        },
+        tween(160), label = "btnFg"
+    )
     val h = height.coerceIn(30.dp, 52.dp)
     val shape = RoundedCornerShape(if (h >= 48.dp) 12.dp else Console.ControlCorner)
     Box(

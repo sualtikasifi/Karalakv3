@@ -287,12 +287,12 @@ fun ToolTile(
     onClick: () -> Unit
 ) {
     ConsoleCard(modifier = modifier, padding = 10.dp, onClick = onClick) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconChip(icon, tint, tintSoft, 34.dp)
-            Spacer(Modifier.width(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxHeight()) {
+            IconChip(icon, tint, tintSoft, 32.dp)
+            Spacer(Modifier.width(9.dp))
             Column(Modifier.weight(1f)) {
-                Text(title, style = Console.Subtitle.copy(fontSize = 13.5.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(subtitle, style = Console.Small.copy(fontSize = 11.sp, lineHeight = 14.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(title, style = Console.Subtitle.copy(fontSize = 13.sp, lineHeight = 16.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(subtitle, style = Console.Small.copy(fontSize = 11.sp, lineHeight = 14.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             if (badge != null) {
                 Spacer(Modifier.width(4.dp))

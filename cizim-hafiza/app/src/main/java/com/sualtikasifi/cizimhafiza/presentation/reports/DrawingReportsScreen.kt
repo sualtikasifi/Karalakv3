@@ -23,6 +23,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -1263,11 +1265,12 @@ private fun ToolsGrid(onOpen: (ReportsTab) -> Unit, onQueueList: () -> Unit, onB
             if (tools.isEmpty()) return@forEach
             Overline(group.title, modifier = Modifier.padding(start = 2.dp, top = 8.dp))
             tools.chunked(2).forEach { pair ->
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // both tiles of a row as tall as the taller one, so a two-line name never leaves a ragged row
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.height(IntrinsicSize.Min)) {
                     pair.forEach { t ->
-                        Stagger(order++, Modifier.weight(1f)) {
+                        Stagger(order++, Modifier.weight(1f).fillMaxHeight()) {
                             ToolTile(
-                                t.icon, t.title, t.sub, Modifier.fillMaxWidth(),
+                                t.icon, t.title, t.sub, Modifier.fillMaxSize(),
                                 badge = if (t.key == "queueList" && queueCount > 0) queueCount.toString() else null,
                                 tint = group.tint, tintSoft = group.soft,
                                 onClick = { open(t) }

@@ -41,8 +41,6 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -184,13 +182,6 @@ private fun TextLink(text: String, onClick: () -> Unit) {
     Text(text, style = Console.Label.copy(color = Console.Accent), modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(onClick = onClick).padding(4.dp))
 }
 
-@Composable
-private fun fieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = Console.Accent, unfocusedBorderColor = Console.Border,
-    focusedContainerColor = Console.Surface, unfocusedContainerColor = Console.Surface,
-    focusedTextColor = Console.Ink, unfocusedTextColor = Console.Ink, cursorColor = Console.Accent,
-    focusedLabelColor = Console.Accent, unfocusedLabelColor = Console.InkSecondary
-)
 
 @Composable
 private fun TaskInputs(st: AssistantState, vm: AssistantViewModel) {
@@ -210,10 +201,10 @@ private fun TaskInputs(st: AssistantState, vm: AssistantViewModel) {
                 }
             }
             Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
+            ConsoleTextField(
                 value = st.eventName, onValueChange = { vm.setEvent(it, st.eventDate) },
-                label = { Text("ya da kendi etkinliğin (ör. 100 bin indirme kutlaması)") },
-                singleLine = true, colors = fieldColors(), modifier = Modifier.fillMaxWidth()
+                placeholder = "ya da kendi etkinliğin (ör. 100 bin indirme kutlaması)",
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
             )
         }
         AiTask.Social -> Column {
@@ -224,15 +215,15 @@ private fun TaskInputs(st: AssistantState, vm: AssistantViewModel) {
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
+            ConsoleTextField(
                 value = st.topic, onValueChange = vm::setTopic,
-                label = { Text("Konu (boş bırakabilirsin)") },
-                colors = fieldColors(), modifier = Modifier.fillMaxWidth(), maxLines = 3
+                placeholder = "Konu (boş bırakabilirsin)", singleLine = false, maxLines = 3,
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
             )
         }
-        AiTask.Ask -> OutlinedTextField(
+        AiTask.Ask -> ConsoleTextField(
             value = st.question, onValueChange = vm::setQuestion,
-            label = { Text("Sorun") }, colors = fieldColors(), modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 6
+            placeholder = "Sorun", singleLine = false, minLines = 2, maxLines = 6, modifier = Modifier.fillMaxWidth()
         )
         else -> Text(
             "Son 14 günün canlı verileri, son geri bildirimler ve yaklaşan özel günler otomatik eklenir.",
@@ -281,17 +272,18 @@ private fun SettingsCard(st: AssistantState, vm: AssistantViewModel) {
             }
         }
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
+        ConsoleTextField(
             value = key, onValueChange = { key = it.trim() },
-            label = { Text(if (st.hasKey) "Kayıtlı: ${st.keyPreview} (değiştirmek için yapıştır)" else "API anahtarı") },
-            singleLine = true, visualTransformation = PasswordVisualTransformation(),
+            label = "API anahtarı",
+            placeholder = if (st.hasKey) "Kayıtlı: ${st.keyPreview} (değiştirmek için yapıştır)" else "sk-or-…",
+            visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            colors = fieldColors(), modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
+        ConsoleTextField(
             value = model, onValueChange = { model = it.trim() },
-            label = { Text("Model") }, singleLine = true, colors = fieldColors(), modifier = Modifier.fillMaxWidth()
+            label = "Model", modifier = Modifier.fillMaxWidth()
         )
         Text("Önerilen: ${OpenRouterClient.DEFAULT_MODEL}. Çalışmazsa sırayla ${OpenRouterClient.FALLBACK_MODELS.joinToString()} denenir.", style = Console.Small)
         Spacer(Modifier.height(8.dp))
