@@ -744,12 +744,13 @@ fun Modifier.screenBackground(): Modifier =
         )
 
 /**
- * The developer tools' background: the lobby (the painted workshop with the easels) under a warm parchment veil, on
- * every screen of the developer panel and its tools, the passcode screens included, so they all sit in one world
- * instead of on flat grey. The veil is what keeps the dark text and white cards laid out for these pages readable;
- * [veil] is how much of the picture it covers: [PANEL_VEIL] under working screens, [GATE_VEIL] under a passcode
- * screen, which has little on it and can show the picture. The picture is cropped to the screen from its top, the
- * way the lobby crops it.
+ * The background of the developer tools still built from the game's own pieces (bot training and its passcode, word
+ * and difficulty review): the lobby (the painted workshop with the easels) under a warm parchment veil. The
+ * developer panel itself, its passcode and Bot İsimleri have the console's frame instead (see
+ * reports/console/ConsoleShell), which keeps the lobby only as a faint picture in its dark header band. The veil is
+ * what keeps the dark text and white cards laid out for these pages readable; [veil] is how much of the picture it
+ * covers: [DEVELOPER_PANEL_VEIL] under working screens, [DEVELOPER_GATE_VEIL] under a passcode screen. The picture
+ * is cropped to the screen from its top, the way the lobby crops it.
  */
 @Composable
 fun Modifier.developerBackground(veil: Float = DEVELOPER_PANEL_VEIL): Modifier =

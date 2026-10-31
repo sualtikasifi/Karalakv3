@@ -83,20 +83,17 @@ fun AssistantPanel(pendingPlan: SpecialDay?, onPlanConsumed: () -> Unit, viewMod
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(Console.Gap),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Yapay zeka asistanı", style = Console.Title)
-                    Text(
-                        if (st.hasKey) "OpenRouter · ${st.model}" + st.usage?.let { " · bu ay ${OpenRouterClient.usd(it.monthly)}" }.orEmpty()
-                        else "Kurulum gerekiyor: OpenRouter anahtarı",
-                        style = Console.Small, maxLines = 1, overflow = TextOverflow.Ellipsis
-                    )
-                }
-                IconButton(onClick = viewModel::toggleSettings) { Icon(Icons.Filled.Settings, contentDescription = "Ayarlar", tint = Console.InkSecondary) }
+                Text(
+                    if (st.hasKey) "OpenRouter · ${st.model}" + st.usage?.let { " · bu ay ${OpenRouterClient.usd(it.monthly)}" }.orEmpty()
+                    else "Kurulum gerekiyor: OpenRouter anahtarı",
+                    style = Console.Label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                )
+                ConsoleIconButton(Icons.Filled.Settings, "Ayarlar", viewModel::toggleSettings, size = 32.dp)
             }
         }
         if (st.showSettings) item { SettingsCard(st, viewModel) }
