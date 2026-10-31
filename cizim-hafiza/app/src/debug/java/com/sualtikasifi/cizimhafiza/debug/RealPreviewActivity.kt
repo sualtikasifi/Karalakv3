@@ -84,7 +84,8 @@ class RealPreviewActivity : Activity() {
                     shoot("outro_end", classic, e.endMs - 60)
                 }
                 RealPhase.EndCard -> {
-                    shoot("endcard_in", classic, e.startMs + 140)
+                    shoot("endcard_circle_early", classic, e.startMs + 140)
+                    shoot("endcard_circle_mid", classic, e.startMs + 300)
                     shoot("endcard_slogan", classic, e.startMs + 700)
                     shoot("endcard_steps", classic, e.startMs + 1_250)
                     shoot("endcard_end", classic, e.endMs - 60)

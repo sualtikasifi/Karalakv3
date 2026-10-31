@@ -370,22 +370,30 @@ class RealRenderer(
 
     /**
      * The end card, after Karalak's closing: the game's own picture (what the game is, in three steps, and where to get
-     * it), the same in every video. It fades in over the clip's last frame and settles in from a slight zoom, so it is not
-     * a still; it stays for as long as Karalak's line over it takes (see [RealReveal.endCardMs]).
+     * it), the same in every video. It opens out of the middle of the clip's last frame in a growing circle, the way the
+     * clip opens out of the drawing at the start, and settles in from a slight zoom so it is not a still; it stays for as
+     * long as Karalak's line over it takes (see [RealReveal.endCardMs]).
      */
     private fun drawEndCard(canvas: Canvas, e: RealEvent, t: Long) {
         val local = t - e.startMs
-        val fade = (local.toFloat() / END_FADE).coerceIn(0f, 1f)
-        if (fade < 1f && e.startMs > 0) draw(canvas, e.startMs - 1) else canvas.drawColor(C.CREAM)
+        val open = Ease.out((local.toFloat() / END_OPEN).coerceIn(0f, 1f))
+        // what the circle opens over: the clip's last frame, with the closing
+        if (open < 1f && e.startMs > 0) draw(canvas, e.startMs - 1) else canvas.drawColor(C.CREAM)
         val picture = assets.picture(R.drawable.real_end_card) ?: return
+        val cx = W / 2f
+        val cy = H / 2f
+        val r = open * hypot(cx, cy)
+        circle.reset()
+        circle.addCircle(cx, cy, r, Path.Direction.CW)
         val settle = Ease.out((local.toFloat() / END_SETTLE).coerceIn(0f, 1f))
         val zoom = 1f + END_ZOOM * (1f - settle)
-        fill.alpha = (255 * fade).toInt()
         canvas.save()
-        canvas.scale(zoom, zoom, W / 2f, H / 2f)
-        cover(canvas, picture, RectF(0f, 0f, W.toFloat(), H.toFloat()), fill)
+        canvas.clipPath(circle)
+        canvas.scale(zoom, zoom, cx, cy)
+        cover(canvas, picture, RectF(0f, 0f, W.toFloat(), H.toFloat()))
         canvas.restore()
-        fill.alpha = 255
+        edge.strokeWidth = 10f * (1f - open)
+        if (edge.strokeWidth > 0.5f) canvas.drawCircle(cx, cy, r, edge)
     }
 
     /**
@@ -758,9 +766,9 @@ class RealRenderer(
         /** Where the glimpse of the real thing is taken from the clip (a share of its length), for a teaser opening. */
         private const val TEASE_AT = 0.4f
 
-        /** The end card picture: how fast it fades in, and how long it settles from a slight zoom. */
-        private const val END_FADE = 260L
-        private const val END_SETTLE = 700L
+        /** The end card picture: how long the circle takes to open over the clip, and how long the picture settles from a slight zoom. */
+        private const val END_OPEN = 560L
+        private const val END_SETTLE = 800L
         private const val END_ZOOM = 0.03f
 
         /** How far before its end the clip's held frame is taken, clear of a last frame that may come out black. */
