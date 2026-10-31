@@ -1,0 +1,400 @@
+10-31 14:19:21.163   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{4aa0c07 com.google.android.apps.customization.pixel/10144} BLOCKED
+10-31 14:19:21.163   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{7b7134 com.google.android.tag/10082} BLOCKED
+10-31 14:19:21.163   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3453b5d com.google.android.overlay.permissioncontroller/10003} BLOCKED
+10-31 14:19:21.164   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{37eccd2 com.google.android.partnersetup/10124} BLOCKED
+10-31 14:19:21.164   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{bd161a3 com.google.android.apps.wallpaper.nexus/10145} BLOCKED
+10-31 14:19:21.164   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{af86ca0 com.google.android.apps.nexuslauncher/10169} BLOCKED
+10-31 14:19:21.164   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{9f3059 com.google.android.nearby.halfsheet/10188} BLOCKED
+10-31 14:19:21.164   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{258e41e com.android.theme.font.notoserifsource/10066} BLOCKED
+10-31 14:19:21.164   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{28e74ff com.google.android.safetycenter.resources/10180} BLOCKED
+10-31 14:19:21.164   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a87b2cc com.android.internal.display.cutout.emulation.waterfall/10040} BLOCKED
+10-31 14:19:21.164   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a097915 com.android.internal.systemui.navbar.transparent/10029} BLOCKED
+10-31 14:19:21.164   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{42b242a com.google.android.connectivity.resources/10187} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{ddf621b com.android.providers.contacts.auto_generated_rro_product__/10019} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3e32fb8 com.google.android.feedback/10162} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{959191 com.google.android.printservice.recommendation/10110} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{92f58f6 com.google.android.apps.photos/10141} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a8804f7 com.google.android.documentsui/10098} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{b778f64 com.android.systemui.emulation.pixel_3a_xl/10021} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{af0b5cd com.android.systemui.emulation.pixel_6_pro/10063} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{9700e82 com.android.systemui.emulation.pixel_7_pro/10054} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3adf993 com.android.systemui.emulation.pixel_8_pro/10001} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{dd03dd0 com.google.mainline.telemetry/10151} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{35fe1c9 com.android.carrierconfig.auto_generated_rro_product__/10064} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{11490ce com.android.providers.partnerbookmarks/10101} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{7349bef com.android.wallpaper.livepicker/10091} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2c366fc com.android.providers.telephony.auto_generated_rro_product__/10062} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{97bd185 com.android.phone.auto_generated_rro_vendor__/10081} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{56cebda com.google.mainline.adservices/10136} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3d9080b com.android.imsserviceentitlement/10117} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{75df6e8 com.google.android.healthconnect.controller/10174} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3ad0101 com.android.internal.emulation.pixel_2_xl/10016} BLOCKED
+10-31 14:19:21.165   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{ebdeba6 com.android.internal.emulation.pixel_3_xl/10056} BLOCKED
+10-31 14:19:21.166   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{d0e19e7 com.android.internal.emulation.pixel_4_xl/10047} BLOCKED
+10-31 14:19:21.166   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a8f9994 com.android.internal.emulation.pixel_fold/10006} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c67ac3d com.android.bookmarkprovider/10113} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2cd1c32 com.google.android.overlay.pixelconfigcommon/10014} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{986d83 com.android.systemui.accessibility.accessibilitymenu.auto_generated_rro_product__/10050} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{896bb00 com.android.systemui.emulation.pixel_3a/10013} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{727cf39 com.android.systemui.emulation.pixel_4a/10000} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c2cc97e com.android.systemui.emulation.pixel_6a/10042} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{9ea5edf com.android.systemui.emulation.pixel_7a/10017} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{719b691 com.google.android.settings.intelligence/10120} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{80fc0f2 com.google.android.projection.gearhead/10123} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{92d25f5 com.google.android.uwb.resources/10170} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{25200be com.android.cts.ctsshim/10183} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a47ff8a com.google.android.wifi.resources/10184} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f4009fb com.google.android.wifi.dialog/10185} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{470ea18 com.google.android.apps.wallpaper/10161} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{1f72c71 com.google.android.odad/10121} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{62e8a56 com.android.settings.auto_generated_rro_product__/10028} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{47b4ad7 com.android.internal.systemui.navbar.gestural/10051} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{50df5f com.google.android.apps.youtube.music/10156} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2968fc4 com.android.bluetoothmidiservice/10106} BLOCKED
+10-31 14:19:21.286   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f811ead com.android.storagemanager.auto_generated_rro_product__/10026} BLOCKED
+10-31 14:19:21.293   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{820f5e2 com.google.android.cellbroadcastreceiver/10191} BLOCKED
+10-31 14:19:21.293   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{fbfbd73 com.android.phone.auto_generated_rro_product__/10061} BLOCKED
+10-31 14:19:21.293   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a4ee430 android.auto_generated_rro_product__/10069} BLOCKED
+10-31 14:19:21.293   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a3df8a9 com.android.internal.systemui.navbar.gestural_narrow_back/10052} BLOCKED
+10-31 14:19:21.293   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{9dc8e2e com.google.android.inputmethod.latin/10140} BLOCKED
+10-31 14:19:21.293   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{bcebdcf android.auto_generated_rro_vendor__/10075} BLOCKED
+10-31 14:19:21.293   515  1434 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{1f6135c com.google.android.apps.restore/10118} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{489b8ae com.android.cts.priv.ctsshim/10182} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{97cd64f com.google.android.youtube/10139} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{38d81dc com.android.internal.display.cutout.emulation.corner/10025} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{cf982e5 com.android.internal.display.cutout.emulation.double/10048} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c204046 com.google.android.googlequicksearchbox/10132} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{e3cb1ba com.google.android.onetimeinitializer/10125} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{dda886b com.google.android.ext.shared/10100} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{95edfc8 com.android.internal.systemui.navbar.gestural_wide_back/10007} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2446861 com.android.virtualmachine.res/10177} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{af42f86 com.google.android.federatedcompute/10189} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{8174047 com.android.managedprovisioning.auto_generated_rro_product__/10024} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{5663074 com.android.carrierconfig.auto_generated_rro_vendor__/10078} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{cfe299d com.android.systemui.emulation.pixel_3_xl/10034} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{553be12 com.android.systemui.emulation.pixel_4_xl/10059} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c7d99e3 com.android.systemui.emulation.pixel_fold/10009} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{eefdfe0 com.android.simappdialog.auto_generated_rro_product__/10030} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{998c299 com.android.htmlviewer/10114} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{caba95e com.google.android.health.connect.backuprestore/10175} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f65f13f com.android.systemui.auto_generated_rro_product__/10031} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3a31a0c com.google.android.soundpicker/10137} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{fa9ef55 com.google.android.marvin.talkbackoverlay/10077} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{304fd6a com.google.android.configupdater/10130} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{852625b com.android.internal.emulation.pixel_3a_xl/10044} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{26dcaf8 com.android.internal.emulation.pixel_6_pro/10018} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{672bd1 com.android.internal.emulation.pixel_7_pro/10004} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{fed8636 com.android.internal.emulation.pixel_8_pro/10058} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{acac937 com.android.internal.emulation.pixel_3a/10053} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{9309ea4 com.android.internal.emulation.pixel_4a/10011} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{e1b40d com.android.internal.emulation.pixel_6a/10023} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{403cfc2 com.android.internal.emulation.pixel_7a/10033} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f8c1d3 com.google.android.overlay.googlewebview/10049} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{12b0110 com.google.android.hotspot2.osulogin/10186} BLOCKED
+10-31 14:19:21.293   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c028409 com.android.simappdialog/10112} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{943260e com.android.internal.display.cutout.emulation.hole/10073} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{403a82f com.android.internal.display.cutout.emulation.tall/10065} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{6271e3c com.android.internal.systemui.navbar.threebutton/10068} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{84657c5 com.android.camera2/10142} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c0f951a com.android.systemui.auto_generated_rro_vendor__/10076} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{e2c984b com.google.android.deskclock/10152} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{465e228 com.android.internal.systemui.navbar.twobutton/10020} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{d39ab41 com.google.android.as/10127} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{54296e2 com.google.android.gm/10147} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{901e8e6 com.android.internal.systemui.navbar.gestural_extra_wide_back/10045} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2aa6e27 com.android.systemui.emulation.pixel_3/10015} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{94af8d4 com.android.systemui.emulation.pixel_4/10037} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{4b4ba7d com.android.systemui.emulation.pixel_5/10071} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{b73ad72 com.android.systemui.emulation.pixel_6/10074} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{745c5c3 com.android.systemui.emulation.pixel_7/10072} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2c8ce40 com.android.systemui.emulation.pixel_8/10070} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3d78179 com.android.nfc.auto_generated_rro_product__/10027} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{8cb2ebe com.android.printspooler/10104} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{bb4fb1f com.android.emergency.auto_generated_rro_product__/10041} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{98c8e6c com.google.android.connectivity.resources.goldfish.overlay/10079} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{7c5bc35 com.android.dreams.basic/10103} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{48778ca com.google.android.networkstack.tethering.emulator/10022} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{ab82a3b com.android.providers.settings.auto_generated_rro_product__/10002} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{1ea2558 com.google.android.as.oss/10122} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{222e6b1 com.android.traceur.auto_generated_rro_product__/10005} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c0c8f34 com.google.android.devicelockcontroller/10176} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f52f17 com.android.internal.emulation.pixel_3/10046} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f883f04 com.android.internal.emulation.pixel_4/10060} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{14e3ced com.android.internal.emulation.pixel_5/10012} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{12e5722 com.android.internal.emulation.pixel_6/10038} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{593a5b3 com.android.internal.emulation.pixel_7/10067} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{7cc4770 com.android.internal.emulation.pixel_8/10039} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{5ebae9 com.google.android.captiveportallogin/10115} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{e7ec36e com.android.musicfx/10088} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3c5ef6a com.google.android.apps.maps/10153} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{98ea0f com.google.android.modulemetadata/10146} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f066a9c com.google.android.markup/10135} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{adf1ca5 com.android.providers.settings.auto_generated_rro_vendor__/10080} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{b33015d com.google.android.rkpdapp/10173} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{712fbfe com.google.android.contacts/10154} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c5d9488 com.android.server.telecom.auto_generated_rro_product__/10032} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{49de21 com.google.android.overlay.googleconfig/10055} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{fa7d246 com.android.bips.auto_generated_rro_product__/10035} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{4aa0c07 com.google.android.apps.customization.pixel/10144} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{7b7134 com.google.android.tag/10082} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3453b5d com.google.android.overlay.permissioncontroller/10003} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{37eccd2 com.google.android.partnersetup/10124} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{bd161a3 com.google.android.apps.wallpaper.nexus/10145} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{af86ca0 com.google.android.apps.nexuslauncher/10169} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{9f3059 com.google.android.nearby.halfsheet/10188} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{258e41e com.android.theme.font.notoserifsource/10066} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{28e74ff com.google.android.safetycenter.resources/10180} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a87b2cc com.android.internal.display.cutout.emulation.waterfall/10040} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a097915 com.android.internal.systemui.navbar.transparent/10029} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{42b242a com.google.android.connectivity.resources/10187} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{ddf621b com.android.providers.contacts.auto_generated_rro_product__/10019} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3e32fb8 com.google.android.feedback/10162} BLOCKED
+10-31 14:19:21.294   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{959191 com.google.android.printservice.recommendation/10110} BLOCKED
+10-31 14:19:21.295   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{92f58f6 com.google.android.apps.photos/10141} BLOCKED
+10-31 14:19:21.295   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a8804f7 com.google.android.documentsui/10098} BLOCKED
+10-31 14:19:21.295   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{b778f64 com.android.systemui.emulation.pixel_3a_xl/10021} BLOCKED
+10-31 14:19:21.295   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{af0b5cd com.android.systemui.emulation.pixel_6_pro/10063} BLOCKED
+10-31 14:19:21.295   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{9700e82 com.android.systemui.emulation.pixel_7_pro/10054} BLOCKED
+10-31 14:19:21.295   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3adf993 com.android.systemui.emulation.pixel_8_pro/10001} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{dd03dd0 com.google.mainline.telemetry/10151} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{35fe1c9 com.android.carrierconfig.auto_generated_rro_product__/10064} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{11490ce com.android.providers.partnerbookmarks/10101} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{7349bef com.android.wallpaper.livepicker/10091} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2c366fc com.android.providers.telephony.auto_generated_rro_product__/10062} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{97bd185 com.android.phone.auto_generated_rro_vendor__/10081} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{56cebda com.google.mainline.adservices/10136} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3d9080b com.android.imsserviceentitlement/10117} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{75df6e8 com.google.android.healthconnect.controller/10174} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3ad0101 com.android.internal.emulation.pixel_2_xl/10016} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{ebdeba6 com.android.internal.emulation.pixel_3_xl/10056} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{d0e19e7 com.android.internal.emulation.pixel_4_xl/10047} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a8f9994 com.android.internal.emulation.pixel_fold/10006} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c67ac3d com.android.bookmarkprovider/10113} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2cd1c32 com.google.android.overlay.pixelconfigcommon/10014} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{986d83 com.android.systemui.accessibility.accessibilitymenu.auto_generated_rro_product__/10050} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{896bb00 com.android.systemui.emulation.pixel_3a/10013} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{727cf39 com.android.systemui.emulation.pixel_4a/10000} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c2cc97e com.android.systemui.emulation.pixel_6a/10042} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{9ea5edf com.android.systemui.emulation.pixel_7a/10017} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{719b691 com.google.android.settings.intelligence/10120} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{80fc0f2 com.google.android.projection.gearhead/10123} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{92d25f5 com.google.android.uwb.resources/10170} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{25200be com.android.cts.ctsshim/10183} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a47ff8a com.google.android.wifi.resources/10184} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f4009fb com.google.android.wifi.dialog/10185} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{470ea18 com.google.android.apps.wallpaper/10161} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{1f72c71 com.google.android.odad/10121} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{62e8a56 com.android.settings.auto_generated_rro_product__/10028} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{47b4ad7 com.android.internal.systemui.navbar.gestural/10051} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{50df5f com.google.android.apps.youtube.music/10156} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2968fc4 com.android.bluetoothmidiservice/10106} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f811ead com.android.storagemanager.auto_generated_rro_product__/10026} BLOCKED
+10-31 14:19:21.303   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{820f5e2 com.google.android.cellbroadcastreceiver/10191} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{fbfbd73 com.android.phone.auto_generated_rro_product__/10061} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a4ee430 android.auto_generated_rro_product__/10069} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a3df8a9 com.android.internal.systemui.navbar.gestural_narrow_back/10052} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{9dc8e2e com.google.android.inputmethod.latin/10140} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{bcebdcf android.auto_generated_rro_vendor__/10075} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{1f6135c com.google.android.apps.restore/10118} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{489b8ae com.android.cts.priv.ctsshim/10182} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{97cd64f com.google.android.youtube/10139} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{38d81dc com.android.internal.display.cutout.emulation.corner/10025} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{cf982e5 com.android.internal.display.cutout.emulation.double/10048} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c204046 com.google.android.googlequicksearchbox/10132} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{e3cb1ba com.google.android.onetimeinitializer/10125} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{dda886b com.google.android.ext.shared/10100} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{95edfc8 com.android.internal.systemui.navbar.gestural_wide_back/10007} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2446861 com.android.virtualmachine.res/10177} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{af42f86 com.google.android.federatedcompute/10189} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{8174047 com.android.managedprovisioning.auto_generated_rro_product__/10024} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{5663074 com.android.carrierconfig.auto_generated_rro_vendor__/10078} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{cfe299d com.android.systemui.emulation.pixel_3_xl/10034} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{553be12 com.android.systemui.emulation.pixel_4_xl/10059} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c7d99e3 com.android.systemui.emulation.pixel_fold/10009} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{eefdfe0 com.android.simappdialog.auto_generated_rro_product__/10030} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{998c299 com.android.htmlviewer/10114} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{caba95e com.google.android.health.connect.backuprestore/10175} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f65f13f com.android.systemui.auto_generated_rro_product__/10031} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3a31a0c com.google.android.soundpicker/10137} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{fa9ef55 com.google.android.marvin.talkbackoverlay/10077} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{304fd6a com.google.android.configupdater/10130} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{852625b com.android.internal.emulation.pixel_3a_xl/10044} BLOCKED
+10-31 14:19:21.312   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{26dcaf8 com.android.internal.emulation.pixel_6_pro/10018} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{672bd1 com.android.internal.emulation.pixel_7_pro/10004} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{fed8636 com.android.internal.emulation.pixel_8_pro/10058} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{acac937 com.android.internal.emulation.pixel_3a/10053} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{9309ea4 com.android.internal.emulation.pixel_4a/10011} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{e1b40d com.android.internal.emulation.pixel_6a/10023} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{403cfc2 com.android.internal.emulation.pixel_7a/10033} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f8c1d3 com.google.android.overlay.googlewebview/10049} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{12b0110 com.google.android.hotspot2.osulogin/10186} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c028409 com.android.simappdialog/10112} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{943260e com.android.internal.display.cutout.emulation.hole/10073} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{403a82f com.android.internal.display.cutout.emulation.tall/10065} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{6271e3c com.android.internal.systemui.navbar.threebutton/10068} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{84657c5 com.android.camera2/10142} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c0f951a com.android.systemui.auto_generated_rro_vendor__/10076} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{e2c984b com.google.android.deskclock/10152} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{465e228 com.android.internal.systemui.navbar.twobutton/10020} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{d39ab41 com.google.android.as/10127} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{54296e2 com.google.android.gm/10147} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{901e8e6 com.android.internal.systemui.navbar.gestural_extra_wide_back/10045} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2aa6e27 com.android.systemui.emulation.pixel_3/10015} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{94af8d4 com.android.systemui.emulation.pixel_4/10037} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{4b4ba7d com.android.systemui.emulation.pixel_5/10071} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{b73ad72 com.android.systemui.emulation.pixel_6/10074} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{745c5c3 com.android.systemui.emulation.pixel_7/10072} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2c8ce40 com.android.systemui.emulation.pixel_8/10070} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3d78179 com.android.nfc.auto_generated_rro_product__/10027} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{8cb2ebe com.android.printspooler/10104} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{bb4fb1f com.android.emergency.auto_generated_rro_product__/10041} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{98c8e6c com.google.android.connectivity.resources.goldfish.overlay/10079} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{7c5bc35 com.android.dreams.basic/10103} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{48778ca com.google.android.networkstack.tethering.emulator/10022} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{ab82a3b com.android.providers.settings.auto_generated_rro_product__/10002} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{1ea2558 com.google.android.as.oss/10122} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{222e6b1 com.android.traceur.auto_generated_rro_product__/10005} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c0c8f34 com.google.android.devicelockcontroller/10176} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f52f17 com.android.internal.emulation.pixel_3/10046} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f883f04 com.android.internal.emulation.pixel_4/10060} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{14e3ced com.android.internal.emulation.pixel_5/10012} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{12e5722 com.android.internal.emulation.pixel_6/10038} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{593a5b3 com.android.internal.emulation.pixel_7/10067} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{7cc4770 com.android.internal.emulation.pixel_8/10039} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{5ebae9 com.google.android.captiveportallogin/10115} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{e7ec36e com.android.musicfx/10088} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3c5ef6a com.google.android.apps.maps/10153} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{98ea0f com.google.android.modulemetadata/10146} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f066a9c com.google.android.markup/10135} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{adf1ca5 com.android.providers.settings.auto_generated_rro_vendor__/10080} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{b33015d com.google.android.rkpdapp/10173} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{712fbfe com.google.android.contacts/10154} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c5d9488 com.android.server.telecom.auto_generated_rro_product__/10032} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{49de21 com.google.android.overlay.googleconfig/10055} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{fa7d246 com.android.bips.auto_generated_rro_product__/10035} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{4aa0c07 com.google.android.apps.customization.pixel/10144} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{7b7134 com.google.android.tag/10082} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3453b5d com.google.android.overlay.permissioncontroller/10003} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{37eccd2 com.google.android.partnersetup/10124} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{bd161a3 com.google.android.apps.wallpaper.nexus/10145} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{af86ca0 com.google.android.apps.nexuslauncher/10169} BLOCKED
+10-31 14:19:21.313   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{9f3059 com.google.android.nearby.halfsheet/10188} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{258e41e com.android.theme.font.notoserifsource/10066} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{28e74ff com.google.android.safetycenter.resources/10180} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a87b2cc com.android.internal.display.cutout.emulation.waterfall/10040} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a097915 com.android.internal.systemui.navbar.transparent/10029} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{42b242a com.google.android.connectivity.resources/10187} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{ddf621b com.android.providers.contacts.auto_generated_rro_product__/10019} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3e32fb8 com.google.android.feedback/10162} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{959191 com.google.android.printservice.recommendation/10110} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{92f58f6 com.google.android.apps.photos/10141} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a8804f7 com.google.android.documentsui/10098} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{b778f64 com.android.systemui.emulation.pixel_3a_xl/10021} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{af0b5cd com.android.systemui.emulation.pixel_6_pro/10063} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{9700e82 com.android.systemui.emulation.pixel_7_pro/10054} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3adf993 com.android.systemui.emulation.pixel_8_pro/10001} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{dd03dd0 com.google.mainline.telemetry/10151} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{35fe1c9 com.android.carrierconfig.auto_generated_rro_product__/10064} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{11490ce com.android.providers.partnerbookmarks/10101} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{7349bef com.android.wallpaper.livepicker/10091} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2c366fc com.android.providers.telephony.auto_generated_rro_product__/10062} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{97bd185 com.android.phone.auto_generated_rro_vendor__/10081} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{56cebda com.google.mainline.adservices/10136} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3d9080b com.android.imsserviceentitlement/10117} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{75df6e8 com.google.android.healthconnect.controller/10174} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{3ad0101 com.android.internal.emulation.pixel_2_xl/10016} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{ebdeba6 com.android.internal.emulation.pixel_3_xl/10056} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{d0e19e7 com.android.internal.emulation.pixel_4_xl/10047} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a8f9994 com.android.internal.emulation.pixel_fold/10006} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c67ac3d com.android.bookmarkprovider/10113} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2cd1c32 com.google.android.overlay.pixelconfigcommon/10014} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{986d83 com.android.systemui.accessibility.accessibilitymenu.auto_generated_rro_product__/10050} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{896bb00 com.android.systemui.emulation.pixel_3a/10013} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{727cf39 com.android.systemui.emulation.pixel_4a/10000} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c2cc97e com.android.systemui.emulation.pixel_6a/10042} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{9ea5edf com.android.systemui.emulation.pixel_7a/10017} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{719b691 com.google.android.settings.intelligence/10120} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{80fc0f2 com.google.android.projection.gearhead/10123} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{92d25f5 com.google.android.uwb.resources/10170} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{25200be com.android.cts.ctsshim/10183} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a47ff8a com.google.android.wifi.resources/10184} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f4009fb com.google.android.wifi.dialog/10185} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{470ea18 com.google.android.apps.wallpaper/10161} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{1f72c71 com.google.android.odad/10121} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{62e8a56 com.android.settings.auto_generated_rro_product__/10028} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{47b4ad7 com.android.internal.systemui.navbar.gestural/10051} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{50df5f com.google.android.apps.youtube.music/10156} BLOCKED
+10-31 14:19:21.314   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2968fc4 com.android.bluetoothmidiservice/10106} BLOCKED
+10-31 14:19:21.408   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{f811ead com.android.storagemanager.auto_generated_rro_product__/10026} BLOCKED
+10-31 14:19:21.408   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{820f5e2 com.google.android.cellbroadcastreceiver/10191} BLOCKED
+10-31 14:19:21.408   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{fbfbd73 com.android.phone.auto_generated_rro_product__/10061} BLOCKED
+10-31 14:19:21.408   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a4ee430 android.auto_generated_rro_product__/10069} BLOCKED
+10-31 14:19:21.408   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a3df8a9 com.android.internal.systemui.navbar.gestural_narrow_back/10052} BLOCKED
+10-31 14:19:21.408   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{9dc8e2e com.google.android.inputmethod.latin/10140} BLOCKED
+10-31 14:19:21.408   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{bcebdcf android.auto_generated_rro_vendor__/10075} BLOCKED
+10-31 14:19:21.408   515  2073 I AppsFilter: interaction: PackageSetting{7fca37f com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{1f6135c com.google.android.apps.restore/10118} BLOCKED
+10-31 14:19:21.705  4561  4877 I cr_VariationsUtils: Failed reading seed file "/data/user/0/com.sualtikasifi.cizimhafiza/app_webview/variations_seed_new"
+10-31 14:19:21.705  4561  4877 I cr_VariationsUtils: Failed reading seed file "/data/user/0/com.sualtikasifi.cizimhafiza/app_webview/variations_seed"
+10-31 14:19:21.735  1055  1055 D CarrierSvcBindHelper: onPackageModified: com.sualtikasifi.cizimhafiza
+10-31 14:19:22.112  1501  4856 I BlockstoreStorage: Clearing Blockstore Data for package com.sualtikasifi.cizimhafiza [CONTEXT service_id=258 ]
+10-31 14:19:22.203   515   548 I ActivityManager: Start proc 4890:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0ai9000 for  {com.sualtikasifi.cizimhafiza/org.chromium.content.app.SandboxedProcessService0:0}
+10-31 14:19:22.323  1055  1375 D ImsResolver: maybeAddedImsService, packageName: com.sualtikasifi.cizimhafiza
+10-31 14:19:22.561  1664  1664 I AiAiEcho: AppFetcherImpl onPackageChanged com.sualtikasifi.cizimhafiza.
+10-31 14:19:22.563  1664  2880 I AiAiEcho: AppIndexer Package:[com.sualtikasifi.cizimhafiza] UserProfile:[0] Enabled:[true].
+10-31 14:19:22.563  1664  2880 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.sualtikasifi.cizimhafiza], userId:[0], reason:[package is updated.].
+10-31 14:19:23.030   515  1881 D ConnectivityService: requestNetwork for uid/pid:10192/4561 activeRequest: null callbackRequest: 122 [NetworkRequest [ REQUEST id=123, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.sualtikasifi.cizimhafiza UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647
+10-31 14:19:23.032   515   761 D WifiNetworkFactory: got request NetworkRequest [ REQUEST id=123, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.sualtikasifi.cizimhafiza UnderlyingNetworks: Null] ]
+10-31 14:19:23.032   515   761 D UntrustedWifiNetworkFactory: got request NetworkRequest [ REQUEST id=123, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.sualtikasifi.cizimhafiza UnderlyingNetworks: Null] ]
+10-31 14:19:23.032   515   761 D OemPaidWifiNetworkFactory: got request NetworkRequest [ REQUEST id=123, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.sualtikasifi.cizimhafiza UnderlyingNetworks: Null] ]
+10-31 14:19:23.032   515   761 D MultiInternetWifiNetworkFactory: got request NetworkRequest [ REQUEST id=123, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.sualtikasifi.cizimhafiza UnderlyingNetworks: Null] ]
+10-31 14:19:23.212  4561  4732 D FirebaseSessions: Fetched settings: {"settings_version":3,"cache_duration":158033,"features":{"collect_logged_exceptions":true,"collect_reports":true,"collect_analytics":false,"prompt_enabled":false,"push_enabled":false,"firebase_crashlytics_enabled":false,"collect_anrs":true,"collect_metric_kit":false,"collect_build_ids":true},"app":{"status":"activated","update_required":false,"report_upload_variant":2,"native_report_upload_variant":2},"fabric":{"org_id":"6a9b1141e6dd6b02d9b2183b","bundle_id":"com.sualtikasifi.cizimhafiza"},"on_demand_upload_rate_per_minute":10,"on_demand_backoff_base":1.2,"on_demand_backoff_step_duration_seconds":60,"app_quality":{"sessions_enabled":true,"sampling_rate":1,"session_timeout_seconds":1800},"on_demand_thread_recording_suspension_enabled":true}
+10-31 14:19:23.551  1055  1055 D CarrierSvcBindHelper: onPackageModified: com.sualtikasifi.cizimhafiza
+10-31 14:19:23.619  1055  1375 D ImsResolver: maybeAddedImsService, packageName: com.sualtikasifi.cizimhafiza
+10-31 14:19:27.659  4561  5039 D ProfileInstaller: Installing profile for com.sualtikasifi.cizimhafiza
+10-31 14:19:29.234  5064  5064 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-31 14:19:29.263  5064  5064 I AndroidRuntime: Using default boot image
+10-31 14:19:29.263  5064  5064 I AndroidRuntime: Leaving lock profiling enabled
+10-31 14:19:29.793  5064  5064 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-31 14:19:31.200  5064  5064 D AndroidRuntime: Shutting down VM
+10-31 14:19:31.742   515  1434 D ConnectivityService: requestNetwork for uid/pid:10192/4561 activeRequest: null callbackRequest: 128 [NetworkRequest [ REQUEST id=129, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.sualtikasifi.cizimhafiza UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647
+10-31 14:19:31.745   515   761 D WifiNetworkFactory: got request NetworkRequest [ REQUEST id=129, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.sualtikasifi.cizimhafiza UnderlyingNetworks: Null] ]
+10-31 14:19:31.745   515   761 D UntrustedWifiNetworkFactory: got request NetworkRequest [ REQUEST id=129, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.sualtikasifi.cizimhafiza UnderlyingNetworks: Null] ]
+10-31 14:19:31.745   515   761 D OemPaidWifiNetworkFactory: got request NetworkRequest [ REQUEST id=129, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.sualtikasifi.cizimhafiza UnderlyingNetworks: Null] ]
+10-31 14:19:31.745   515   761 D MultiInternetWifiNetworkFactory: got request NetworkRequest [ REQUEST id=129, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.sualtikasifi.cizimhafiza UnderlyingNetworks: Null] ]
+10-31 14:19:32.586  5143  5143 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-31 14:19:32.596  5143  5143 I AndroidRuntime: Using default boot image
+10-31 14:19:32.596  5143  5143 I AndroidRuntime: Leaving lock profiling enabled
+10-31 14:19:32.662   515   570 I AppsFilter: interaction: PackageSetting{58e941d com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a441692 com.google.android.contacts/10154} BLOCKED
+10-31 14:19:33.139  5143  5143 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-31 14:19:33.362  1664  1664 I AiAiEcho: AppFetcherImpl onPackageChanged com.sualtikasifi.cizimhafiza.
+10-31 14:19:33.394  1664  2880 I AiAiEcho: AppIndexer Package:[com.sualtikasifi.cizimhafiza] UserProfile:[0] Enabled:[true].
+10-31 14:19:33.394  1664  2880 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.sualtikasifi.cizimhafiza], userId:[0], reason:[package is updated.].
+10-31 14:19:33.790  1664  1664 I AiAiEcho: AppFetcherImpl onPackageChanged com.sualtikasifi.cizimhafiza.
+10-31 14:19:33.792  1664  3279 I AiAiEcho: AppIndexer Package:[com.sualtikasifi.cizimhafiza] UserProfile:[0] Enabled:[true].
+10-31 14:19:33.792  1664  3279 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.sualtikasifi.cizimhafiza], userId:[0], reason:[package is updated.].
+10-31 14:19:34.259   515   570 I AppsFilter: interaction: PackageSetting{58e941d com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{90c0e09 com.google.android.youtube/10139} BLOCKED
+10-31 14:19:34.259   515   570 I AppsFilter: interaction: PackageSetting{58e941d com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{91064bd com.google.android.apps.maps/10153} BLOCKED
+10-31 14:19:34.941  5143  5143 D AndroidRuntime: Shutting down VM
+10-31 14:19:36.088  5259  5259 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-31 14:19:36.095  5259  5259 I AndroidRuntime: Using default boot image
+10-31 14:19:36.095  5259  5259 I AndroidRuntime: Leaving lock profiling enabled
+10-31 14:19:36.190   515  2181 D CoreBackPreview: Window{7a5d89f u0 com.sualtikasifi.cizimhafiza/com.sualtikasifi.cizimhafiza.presentation.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@ffe144a, mPriority=0, mIsAnimationCallback=false}
+10-31 14:19:36.362  5259  5259 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-31 14:19:38.178  5259  5259 D AndroidRuntime: Shutting down VM
+10-31 14:19:42.515  1501  5038 W FA-SVC  : Config not found. Using empty config. appId: com.sualtikasifi.cizimhafiza
+10-31 14:19:42.895   515   570 I AppsFilter: interaction: PackageSetting{58e941d com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{183963a com.google.android.contacts/10154} BLOCKED
+10-31 14:19:42.916  1501  5038 W FA-SVC  : Did not find measurement config or missing version info. appId: com.sualtikasifi.cizimhafiza
+10-31 14:19:43.083  1501  5038 W FA-SVC  : Did not find measurement config or missing version info. appId: com.sualtikasifi.cizimhafiza
+10-31 14:19:47.339   515   570 I AppsFilter: interaction: PackageSetting{58e941d com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{8f57ee9 com.google.android.as/10127} BLOCKED
+10-31 14:19:51.083   515   570 I AppsFilter: interaction: PackageSetting{58e941d com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{d233338 com.google.android.googlequicksearchbox/10132} BLOCKED
+10-31 14:19:55.819  1440  1529 I HeterodyneSyncScheduler: Scheduling Phenotype for a PhenotypeSyncImmediately(6, com.google.android.gms.measurement#com.sualtikasifi.cizimhafiza) one off with window [1, 2] in seconds [CONTEXT service_id=51 ]
+10-31 14:20:03.772   515  2161 I AppsFilter: interaction: PackageSetting{58e941d com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{7b393cb com.google.android.settings.intelligence/10120} BLOCKED
+10-31 14:20:05.961   515   570 I AppsFilter: interaction: PackageSetting{58e941d com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{4c57aba com.google.android.as/10127} BLOCKED
+10-31 14:20:07.517   515   570 I AppsFilter: interaction: PackageSetting{58e941d com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{42a9259 com.google.android.googlequicksearchbox/10132} BLOCKED
+10-31 14:20:24.260   515   570 I AppsFilter: interaction: PackageSetting{58e941d com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{c0993e8 com.google.android.contacts/10154} BLOCKED
+10-31 14:20:33.916   515   570 I AppsFilter: interaction: PackageSetting{58e941d com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{e050298 com.google.android.contacts/10154} BLOCKED
+10-31 14:20:46.047   515   570 I AppsFilter: interaction: PackageSetting{58e941d com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{2cc200f com.google.android.contacts/10154} BLOCKED
+10-31 14:21:16.125  5951  6120 I AppLinksAsyncVerifierV2: Verification result: checking for a statement with source https://karalak.com, relation delegate_permission/common.handle_all_urls, and target com.sualtikasifi.cizimhafiza --> false. [CONTEXT service_id=244 ]
+10-31 14:21:16.125  5951  6649 I AppLinksHostsVerifierV2: Verification com.sualtikasifi.cizimhafiza complete. Successful hosts: . Failed hosts: karalak.com. Error hosts: . [CONTEXT service_id=244 ]
+10-31 14:21:18.771   515   570 I AppsFilter: interaction: PackageSetting{58e941d com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{6be64e6 com.google.android.contacts/10154} BLOCKED
+10-31 14:21:28.764   515   570 I AppsFilter: interaction: PackageSetting{58e941d com.sualtikasifi.cizimhafiza/10192} -> PackageSetting{a72dc2d com.google.android.contacts/10154} BLOCKED
