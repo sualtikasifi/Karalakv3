@@ -1,6 +1,37 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PersonOff
+import androidx.compose.material.icons.filled.Redeem
+import androidx.compose.material.icons.filled.Report
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.sp
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Console
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButtonStyle
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleCard
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleEmpty
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleNotice
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSkeleton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.NoticeKind
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Overline
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Tag
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.noticeKindOf
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -98,35 +129,48 @@ internal fun PlayerReportsPanel(viewModel: PlayerReportsViewModel = hiltViewMode
     LaunchedEffect(Unit) { viewModel.load() }
     Column(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(Console.Gap)
     ) {
-        state.message?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
-        if (state.loaded && state.groups.isEmpty()) {
-            Text("Bekleyen oyuncu raporu yok.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
+        if (!state.loaded) ConsoleSkeleton(rows = 3, rowHeight = 120.dp)
+        else if (state.groups.isEmpty()) ConsoleEmpty(Icons.Filled.Report, "Bekleyen oyuncu raporu yok", body = "Oyuncular birini bildirdiğinde burada kişi kişi toplanır.")
         state.groups.forEach { g ->
-            ConsoleSurface(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        "${g.nickname.ifBlank { g.uid.take(8) }} · ${g.count} rapor",
-                        style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        g.reasons.entries.joinToString("  ") { "${reasonLabel(it.key)} ×${it.value}" } +
-                            (if (g.contexts.isNotEmpty()) "  ·  ${g.contexts.joinToString(", ")}" else "") +
-                            "  ·  son: ${clock(g.latestMillis)}",
-                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(g.uid, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                    val busy = state.busyUid != null
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                        ConsoleSecondaryButton("Adı sıfırla", { viewModel.resetName(g) }, Modifier.weight(1f), enabled = !busy, height = 44.dp)
-                        ConsoleSecondaryButton("Kilitle", { viewModel.lock(g) }, Modifier.weight(1f), enabled = !busy, height = 44.dp)
-                        ConsoleButton("Kapat", { viewModel.dismiss(g) }, Modifier.weight(1f), enabled = !busy, height = 44.dp)
+            ConsoleCard(Modifier.fillMaxWidth(), padding = 12.dp) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Avatar(g.nickname.ifBlank { g.uid })
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(g.nickname.ifBlank { g.uid.take(8) }, style = Console.Title, maxLines = 1)
+                        Text("son: ${clock(g.latestMillis)}", style = Console.Small)
                     }
+                    Tag("${g.count} rapor", fg = Console.Critical, bg = Console.CriticalSoft)
+                }
+                Spacer(Modifier.height(8.dp))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    g.reasons.entries.forEach { Tag("${reasonLabel(it.key)} ×${it.value}") }
+                    g.contexts.forEach { Tag(it, fg = Console.Blue, bg = Console.BlueSoft) }
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(g.uid, style = Console.Small.copy(color = Console.InkMuted, fontFamily = FontFamily.Monospace, fontSize = 11.sp))
+                Spacer(Modifier.height(10.dp))
+                val busy = state.busyUid != null
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    ConsoleSecondaryButton("Adı sıfırla", { viewModel.resetName(g) }, Modifier.weight(1f), enabled = !busy, height = 38.dp)
+                    ConsoleButton("Kilitle", { viewModel.lock(g) }, Modifier.weight(1f), enabled = !busy, height = 38.dp, style = ConsoleButtonStyle.DangerSoft)
+                    ConsoleButton("Kapat", { viewModel.dismiss(g) }, Modifier.weight(1f), enabled = !busy, height = 38.dp, style = ConsoleButtonStyle.Dark)
                 }
             }
         }
+    }
+}
+
+/** A round initial for a player: their first letter on a tint picked from their name, so the same player keeps a color. */
+@Composable
+internal fun Avatar(name: String, size: androidx.compose.ui.unit.Dp = 38.dp) {
+    val tints = listOf(Console.Accent to Console.AccentSoft, Console.Blue to Console.BlueSoft, Console.Violet to Console.VioletSoft, Console.Teal to Console.TealSoft)
+    val (fg, bg) = tints[(name.hashCode() and 0x7fffffff) % tints.size]
+    Box(Modifier.size(size).clip(CircleShape).background(bg), contentAlignment = Alignment.Center) {
+        Text(name.trim().take(1).uppercase(java.util.Locale("tr")).ifBlank { "?" }, style = Console.Subtitle.copy(color = fg, fontSize = (size.value * 0.42f).sp))
     }
 }
 
@@ -188,64 +232,98 @@ internal fun PlayersPanel(viewModel: PlayersViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     Column(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(Console.Gap)
     ) {
-        ConsoleTextField(
-            value = state.query,
-            onValueChange = { v -> viewModel.edit { copy(query = v) } },
-            label = "Ad, arkadaş kodu ya da kullanıcı kimliği",
-            modifier = Modifier.fillMaxWidth()
-        )
-        ConsoleButton("Ara", viewModel::search, Modifier.fillMaxWidth(), enabled = !state.busy && state.query.isNotBlank(), height = 48.dp)
-        state.message?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
-        if (state.searched && state.results.isEmpty()) {
-            Text("Böyle bir oyuncu bulunamadı.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ConsoleTextField(
+                value = state.query,
+                onValueChange = { v -> viewModel.edit { copy(query = v) } },
+                placeholder = "Ad, arkadaş kodu ya da kullanıcı kimliği",
+                leading = { Icon(Icons.Filled.Search, contentDescription = null, tint = Console.InkMuted, modifier = Modifier.size(18.dp)) },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { if (state.query.isNotBlank()) viewModel.search() }),
+                modifier = Modifier.weight(1f)
+            )
+            ConsoleButton("Ara", viewModel::search, enabled = !state.busy && state.query.isNotBlank(), loading = state.busy && state.results.isEmpty(), height = 46.dp)
+        }
+        state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
+        if (!state.searched && state.results.isEmpty()) {
+            ConsoleEmpty(Icons.Filled.Search, "Bir oyuncu ara", body = "Profilini, cezalarını ve raporlarını gör; adını sıfırla, kilitle ya da telafi gönder.")
+        } else if (state.searched && state.results.isEmpty()) {
+            ConsoleEmpty(Icons.Filled.PersonOff, "Böyle bir oyuncu bulunamadı", body = "Yazımı kontrol et ya da arkadaş kodunu dene.")
         }
         val now = System.currentTimeMillis()
         state.results.forEach { p ->
-            ConsoleSurface(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(p.nickname.ifBlank { "(adsız)" }, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                    Text(
-                        "Seviye ${p.level} · bu ay ${p.periodXp} XP · kod ${p.friendCode.ifBlank { "-" }}",
-                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        "Ceza: ${p.strikes} · rapor: ${p.reports}" +
-                            if (p.lockedUntilMillis > now) " · KİLİTLİ (${clock(p.lockedUntilMillis)}'e kadar)" else "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (p.lockedUntilMillis > now) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(p.uid, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                        ConsoleSecondaryButton("Adı sıfırla", { viewModel.resetName(p) }, Modifier.weight(1f), enabled = !state.busy, height = 44.dp)
-                        if (p.lockedUntilMillis > now) {
-                            ConsoleSecondaryButton("Kilidi aç", { viewModel.unlock(p) }, Modifier.weight(1f), enabled = !state.busy, height = 44.dp)
-                        } else {
-                            ConsoleSecondaryButton("Kilitle", { viewModel.lock(p) }, Modifier.weight(1f), enabled = !state.busy, height = 44.dp)
-                        }
+            val locked = p.lockedUntilMillis > now
+            ConsoleCard(Modifier.fillMaxWidth(), padding = 12.dp) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Avatar(p.nickname.ifBlank { p.uid }, 42.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(p.nickname.ifBlank { "(adsız)" }, style = Console.Title, maxLines = 1)
+                        Text("Kod ${p.friendCode.ifBlank { "-" }}", style = Console.Small)
                     }
-                    Text("Telafi", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                        ConsoleTextField(
-                            value = state.gold, onValueChange = { v -> viewModel.edit { copy(gold = v.filter(Char::isDigit).take(6)) } },
-                            label = "Altın", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
-                        )
-                        ConsoleTextField(
-                            value = state.xp, onValueChange = { v -> viewModel.edit { copy(xp = v.filter(Char::isDigit).take(6)) } },
-                            label = "XP", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
-                        )
+                    if (locked) Tag("Kilitli", fg = Console.Critical, bg = Console.CriticalSoft)
+                }
+                Spacer(Modifier.height(10.dp))
+                // the record, as four figures side by side
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(Console.ControlCorner)).background(Console.SurfaceAlt).padding(vertical = 8.dp)) {
+                    Figure("Seviye", p.level.toString(), Modifier.weight(1f))
+                    Figure("Bu ay XP", Console.compact(p.periodXp.toDouble()), Modifier.weight(1f))
+                    Figure("Ceza", p.strikes.toString(), Modifier.weight(1f), alert = p.strikes > 0)
+                    Figure("Rapor", p.reports.toString(), Modifier.weight(1f), alert = p.reports > 0)
+                }
+                if (locked) {
+                    Spacer(Modifier.height(8.dp))
+                    ConsoleNotice("${clock(p.lockedUntilMillis)} tarihine kadar kilitli", kind = NoticeKind.Error)
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(p.uid, style = Console.Small.copy(color = Console.InkMuted, fontFamily = FontFamily.Monospace, fontSize = 11.sp))
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    ConsoleSecondaryButton("Adı sıfırla", { viewModel.resetName(p) }, Modifier.weight(1f), enabled = !state.busy, height = 38.dp)
+                    if (locked) {
+                        ConsoleButton("Kilidi aç", { viewModel.unlock(p) }, Modifier.weight(1f), enabled = !state.busy, height = 38.dp, style = ConsoleButtonStyle.Tonal)
+                    } else {
+                        ConsoleButton("Kilitle", { viewModel.lock(p) }, Modifier.weight(1f), enabled = !state.busy, height = 38.dp, style = ConsoleButtonStyle.DangerSoft)
                     }
+                }
+                Spacer(Modifier.height(12.dp))
+                Box(Modifier.fillMaxWidth().height(1.dp).background(Console.Grid))
+                Spacer(Modifier.height(10.dp))
+                Overline("Telafi gönder")
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     ConsoleTextField(
-                        value = state.note, onValueChange = { v -> viewModel.edit { copy(note = v.take(60)) } },
-                        label = "Not (denetim kaydına)", modifier = Modifier.fillMaxWidth()
+                        value = state.gold, onValueChange = { v -> viewModel.edit { copy(gold = v.filter(Char::isDigit).take(6)) } },
+                        placeholder = "Altın", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
                     )
-                    ConsoleButton(
-                        "Telafiyi gönder", { viewModel.grant(p) }, Modifier.fillMaxWidth(),
-                        enabled = !state.busy && ((state.gold.toIntOrNull() ?: 0) + (state.xp.toIntOrNull() ?: 0)) > 0, height = 44.dp
+                    ConsoleTextField(
+                        value = state.xp, onValueChange = { v -> viewModel.edit { copy(xp = v.filter(Char::isDigit).take(6)) } },
+                        placeholder = "XP", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
                     )
                 }
+                Spacer(Modifier.height(8.dp))
+                ConsoleTextField(
+                    value = state.note, onValueChange = { v -> viewModel.edit { copy(note = v.take(60)) } },
+                    placeholder = "Not (denetim kaydına yazılır)", modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(10.dp))
+                ConsoleButton(
+                    "Telafiyi gönder", { viewModel.grant(p) }, Modifier.fillMaxWidth(),
+                    enabled = !state.busy && ((state.gold.toIntOrNull() ?: 0) + (state.xp.toIntOrNull() ?: 0)) > 0,
+                    icon = Icons.Filled.Redeem, height = 40.dp
+                )
             }
         }
+    }
+}
+
+/** One labelled figure in a row of them. */
+@Composable
+private fun Figure(label: String, value: String, modifier: Modifier = Modifier, alert: Boolean = false) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = Console.Subtitle.copy(fontSize = 16.sp, color = if (alert) Console.Critical else Console.Ink))
+        Text(label, style = Console.Small.copy(fontSize = 11.sp))
     }
 }

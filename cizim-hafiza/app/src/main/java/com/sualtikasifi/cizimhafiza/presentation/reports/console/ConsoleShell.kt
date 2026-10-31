@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -178,5 +180,39 @@ fun IdentityChip(ok: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier
             style = Console.Label.copy(color = Console.HeaderInk, fontWeight = FontWeight.SemiBold, fontSize = 11.5.sp),
             maxLines = 1
         )
+    }
+}
+
+/**
+ * A developer screen of its own (opened from the panel, without the panel's bottom bar) in the panel's frame: the
+ * dark band with a back button and the screen's name, and the light sheet under it.
+ */
+@Composable
+fun ConsoleScaffold(
+    title: String,
+    onBack: () -> Unit,
+    overline: String = "Geliştirici paneli",
+    actions: @Composable RowScope.() -> Unit = {},
+    content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit
+) {
+    ConsoleTheme {
+        Box(Modifier.fillMaxSize().background(Console.HeaderBottom)) {
+            Column(Modifier.fillMaxSize().imePadding()) {
+                Box {
+                    ConsoleBackdrop(Modifier.matchParentSize())
+                    ConsoleTopBar(title = title, overline = overline, onBack = onBack, actions = actions)
+                }
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(topStart = Console.SheetCorner, topEnd = Console.SheetCorner))
+                        .background(Console.Bg)
+                        .navigationBarsPadding()
+                        .padding(start = Console.Gutter, end = Console.Gutter, top = 14.dp),
+                    content = content
+                )
+            }
+        }
     }
 }

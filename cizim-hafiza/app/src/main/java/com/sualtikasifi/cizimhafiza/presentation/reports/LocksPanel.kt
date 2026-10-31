@@ -1,6 +1,24 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.sp
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Console
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleCard
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleEmpty
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleNotice
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSkeleton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.NoticeKind
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -86,46 +104,37 @@ fun LocksPanel(viewModel: LocksViewModel = hiltViewModel()) {
     LaunchedEffect(Unit) { viewModel.load() }
 
     Column(
-        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(Console.Gap)
     ) {
-        state.error?.let {
-            Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
-        }
+        state.error?.let { ConsoleNotice(it, kind = NoticeKind.Error) }
+        if (!state.loaded) ConsoleSkeleton(rows = 3, rowHeight = 96.dp)
         if (state.loaded && state.locks.isEmpty() && state.error == null) {
-            Text(
-                text = stringResource(R.string.locks_empty),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(16.dp)
-            )
+            ConsoleEmpty(Icons.Filled.LockOpen, stringResource(R.string.locks_empty))
         }
         val now = System.currentTimeMillis()
         state.locks.forEach { lock ->
-            ConsoleSurface(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = lock.nickname.ifBlank { lock.uid.take(8) },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = stringResource(R.string.locks_line, lock.strike, remainingText(lock.lockedUntilMillis - now)),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    Text(
-                        text = lock.uid,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                    ConsoleSecondaryButton(
-                        text = stringResource(R.string.locks_cancel),
-                        onClick = { pendingCancel = lock },
-                        enabled = !state.busy,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+            ConsoleCard(Modifier.fillMaxWidth(), padding = 12.dp) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Avatar(lock.nickname.ifBlank { lock.uid })
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(lock.nickname.ifBlank { lock.uid.take(8) }, style = Console.Title, maxLines = 1)
+                        Text(lock.uid, style = Console.Small.copy(color = Console.InkMuted, fontFamily = FontFamily.Monospace, fontSize = 11.sp), maxLines = 1)
+                    }
+                    Icon(Icons.Filled.Lock, contentDescription = null, tint = Console.Critical, modifier = Modifier.size(18.dp))
                 }
+                Spacer(Modifier.height(8.dp))
+                ConsoleNotice(stringResource(R.string.locks_line, lock.strike, remainingText(lock.lockedUntilMillis - now)), kind = NoticeKind.Error)
+                Spacer(Modifier.height(10.dp))
+                ConsoleSecondaryButton(
+                    text = stringResource(R.string.locks_cancel),
+                    onClick = { pendingCancel = lock },
+                    enabled = !state.busy,
+                    icon = Icons.Filled.LockOpen,
+                    height = 38.dp,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }

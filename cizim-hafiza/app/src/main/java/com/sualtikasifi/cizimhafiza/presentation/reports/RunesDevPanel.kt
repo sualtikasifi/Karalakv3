@@ -1,6 +1,19 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.RestartAlt
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Console
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButtonStyle
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleNotice
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSection
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.NoticeKind
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.StatTile
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -62,41 +75,39 @@ fun RunesDevPanel(viewModel: RunesDevViewModel = hiltViewModel()) {
     val spent = RuneTree.all.filter { it.id != RuneTree.ROOT_ID }.sumOf { r -> r.costs.take(RuneTree.levelOf(levels, r.id)).sum() }
 
     Column(
-        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(Console.Gap)
     ) {
-        ConsoleSurface(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(stringResource(R.string.runes_dev_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                Text(
-                    stringResource(R.string.runes_dev_state, boughtLevels, format.format(spent)),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                refunded?.let {
-                    Text(
-                        stringResource(R.string.runes_dev_done, format.format(it)),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                ConsoleButton(
-                    text = stringResource(R.string.runes_dev_refresh_config),
-                    onClick = viewModel::refreshConfig,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                ConsoleButton(
-                    text = stringResource(R.string.runes_dev_unlock),
-                    onClick = viewModel::unlockAll,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                ConsoleButton(
-                    text = stringResource(R.string.runes_dev_reset),
-                    onClick = { confirm = true },
-                    enabled = boughtLevels > 0,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+        Row(horizontalArrangement = Arrangement.spacedBy(Console.Gap)) {
+            StatTile("Alınan rün seviyesi", boughtLevels.toString(), Modifier.weight(1f))
+            StatTile("Harcanan altın", format.format(spent), Modifier.weight(1f))
+        }
+        refunded?.let { ConsoleNotice(stringResource(R.string.runes_dev_done, format.format(it)), kind = NoticeKind.Success) }
+        ConsoleSection(stringResource(R.string.runes_dev_title), subtitle = stringResource(R.string.runes_dev_state, boughtLevels, format.format(spent))) {
+            ConsoleButton(
+                text = stringResource(R.string.runes_dev_refresh_config),
+                onClick = viewModel::refreshConfig,
+                icon = Icons.Filled.Refresh,
+                style = ConsoleButtonStyle.Secondary,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(8.dp))
+            ConsoleButton(
+                text = stringResource(R.string.runes_dev_unlock),
+                onClick = viewModel::unlockAll,
+                icon = Icons.Filled.LockOpen,
+                style = ConsoleButtonStyle.Tonal,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(8.dp))
+            ConsoleButton(
+                text = stringResource(R.string.runes_dev_reset),
+                onClick = { confirm = true },
+                enabled = boughtLevels > 0,
+                icon = Icons.Filled.RestartAlt,
+                style = ConsoleButtonStyle.DangerSoft,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 

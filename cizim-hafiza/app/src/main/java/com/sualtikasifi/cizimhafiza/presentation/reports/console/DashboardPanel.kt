@@ -58,25 +58,27 @@ fun DashboardPanel(
     val s = st.series
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(Console.Gap),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
+        // the screen's name is in the header; here only the day, and a way to read it all again
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(LocalDate.now().format(DateTimeFormatter.ofPattern("d MMMM yyyy, EEEE", Locale("tr"))), style = Console.Small)
-                    Text("Genel bakış", style = Console.Hero.copy(fontSize = Console.Title.fontSize * 1.4f))
-                }
-                if (st.loading) CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp, color = Console.Accent)
-                else IconButton(onClick = viewModel::load) { Icon(Icons.Filled.Refresh, contentDescription = "Yenile", tint = Console.InkSecondary) }
+                Text(
+                    LocalDate.now().format(DateTimeFormatter.ofPattern("d MMMM yyyy, EEEE", Locale("tr"))),
+                    style = Console.Label,
+                    modifier = Modifier.weight(1f)
+                )
+                if (st.loading) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = Console.Accent)
+                else ConsoleIconButton(Icons.Filled.Refresh, "Yenile", viewModel::load, size = 32.dp)
             }
+        }
+        if (st.loading && s == null) {
+            item { ConsoleSkeleton(rows = 2, rowHeight = 88.dp) }
         }
         if (st.failed && s == null) {
             item {
-                ConsoleCard(Modifier.fillMaxWidth()) {
-                    Text("İstatistikler okunamadı", style = Console.Subtitle)
-                    Text("Bu cihaz geliştirici hesabıyla giriş yapmamış olabilir ya da internet yok.", style = Console.Small)
-                }
+                ConsoleNotice("İstatistikler okunamadı. Bu cihaz geliştirici hesabıyla giriş yapmamış olabilir ya da internet yok.", kind = NoticeKind.Warning)
             }
         }
         if (s != null && s.size >= 2) {
@@ -88,7 +90,7 @@ fun DashboardPanel(
             val avg7 = s.sumOf(last7) { s.players[it] } / 7.0
             val avgPrev7 = s.sumOf(prev7) { s.players[it] } / 7.0
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Console.Gap)) {
                     StatTile(
                         "Bugün oyuncu", Console.compact(s.players[t].toDouble()), Modifier.weight(1f),
                         change = change(s.players[t], s.players[y]), changeCaption = "düne göre",
@@ -102,7 +104,7 @@ fun DashboardPanel(
                 }
             }
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Console.Gap)) {
                     StatTile(
                         "Bugün oyun", Console.compact(s.games(t).toDouble()), Modifier.weight(1f),
                         change = change(s.games(t), s.games(y)), changeCaption = "düne göre",
@@ -120,7 +122,7 @@ fun DashboardPanel(
                 val earned = s.adEarned(t)
                 val rev = s.revenueMicros(t)
                 val cur = s.currency()
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Console.Gap)) {
                     StatTile(
                         "Ödüllü reklam izlendi", if (req > 0) Console.percent(earned.toDouble() / req) else "—", Modifier.weight(1f),
                         changeCaption = "$earned / $req istek", onClick = onOpenStats

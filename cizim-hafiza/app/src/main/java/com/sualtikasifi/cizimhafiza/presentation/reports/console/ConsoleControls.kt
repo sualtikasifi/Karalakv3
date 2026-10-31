@@ -72,7 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /** What a button is for: the one main action, a lesser one beside it, a quiet one, or one that destroys something. */
-enum class ConsoleButtonStyle { Primary, Secondary, Tonal, Dark, Danger, DangerSoft, Ghost }
+enum class ConsoleButtonStyle { Primary, Secondary, Tonal, Dark, Danger, DangerSoft, Success, Ghost }
 
 private class ButtonColors(val bg: Color, val fg: Color, val border: Color?)
 
@@ -83,6 +83,7 @@ private fun colorsOf(style: ConsoleButtonStyle): ButtonColors = when (style) {
     ConsoleButtonStyle.Dark -> ButtonColors(Console.Dark, Color.White, null)
     ConsoleButtonStyle.Danger -> ButtonColors(Console.Critical, Color.White, null)
     ConsoleButtonStyle.DangerSoft -> ButtonColors(Console.CriticalSoft, Console.Critical, null)
+    ConsoleButtonStyle.Success -> ButtonColors(Console.GoodSoft, Console.GoodText, null)
     ConsoleButtonStyle.Ghost -> ButtonColors(Color.Transparent, Console.AccentInk, null)
 }
 

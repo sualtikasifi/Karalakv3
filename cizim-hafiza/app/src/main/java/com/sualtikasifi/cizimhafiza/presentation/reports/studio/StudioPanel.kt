@@ -107,6 +107,9 @@ import coil3.compose.AsyncImage
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint
 import com.sualtikasifi.cizimhafiza.presentation.common.StrokeCanvas
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.Console
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButtonStyle
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleTextField
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleCard
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.OpenRouterClient
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.Segmented
@@ -1616,66 +1619,38 @@ private fun SmallLink(text: String, color: Color = Console.Accent, onClick: () -
 }
 
 @Composable
-private fun DarkButton(text: String, busy: Boolean, enabled: Boolean, onClick: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = if (enabled && !busy) Console.Dark else Console.InkMuted,
-        modifier = Modifier.fillMaxWidth().height(46.dp).clip(RoundedCornerShape(12.dp)).clickable(enabled = enabled && !busy, onClick = onClick)
-    ) {
-        Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            if (busy) CircularProgressIndicator(Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-            else Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(text, style = Console.Subtitle.copy(color = Color.White), maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-    }
-}
+private fun DarkButton(text: String, busy: Boolean, enabled: Boolean, onClick: () -> Unit) =
+    ConsoleButton(text, onClick, Modifier.fillMaxWidth(), enabled = enabled, icon = Icons.Filled.AutoAwesome, height = 44.dp, style = ConsoleButtonStyle.Dark, loading = busy)
 
 @Composable
-private fun BigButton(text: String, enabled: Boolean, onClick: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = if (enabled) Console.Accent else Console.InkMuted,
-        modifier = Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(14.dp)).clickable(enabled = enabled, onClick = onClick)
-    ) {
-        Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(text, style = Console.Subtitle.copy(color = Color.White))
-        }
-    }
-}
+private fun BigButton(text: String, enabled: Boolean, onClick: () -> Unit) =
+    ConsoleButton(text, onClick, Modifier.fillMaxWidth(), enabled = enabled, icon = Icons.Filled.Movie, height = 50.dp)
 
 @Composable
-private fun Field(label: String?, value: String, onChange: (String) -> Unit, lines: Int = 1, secret: Boolean = false) {
-    OutlinedTextField(
-        value = value, onValueChange = onChange,
-        label = label?.let { l -> @Composable { Text(l) } },
-        singleLine = lines == 1, maxLines = lines.coerceAtLeast(1),
+private fun Field(label: String?, value: String, onChange: (String) -> Unit, lines: Int = 1, secret: Boolean = false) =
+    ConsoleTextField(
+        value = value,
+        onValueChange = onChange,
+        label = label,
+        singleLine = lines == 1,
+        minLines = if (lines > 1) 2 else 1,
+        maxLines = lines.coerceAtLeast(1),
         visualTransformation = if (secret) androidx.compose.ui.text.input.PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Console.Accent, unfocusedBorderColor = Console.Border,
-            focusedContainerColor = Console.Surface, unfocusedContainerColor = Console.Surface,
-            focusedTextColor = Console.Ink, unfocusedTextColor = Console.Ink, cursorColor = Console.Accent,
-            focusedLabelColor = Console.Accent, unfocusedLabelColor = Console.InkSecondary
-        ),
         modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
     )
-}
 
+/** A button in one of the studio's rows; its colors name the console style it stands for. */
 @Composable
 private fun ActionButton(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, bg: Color, fg: Color, modifier: Modifier, onClick: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(12.dp), color = bg,
-        border = if (bg == Console.Surface) BorderStroke(1.dp, Console.Border) else null,
-        modifier = modifier.height(46.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick)
-    ) {
-        Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(6.dp))
-            Text(text, style = Console.Subtitle.copy(color = fg), maxLines = 1)
-        }
+    val style = when {
+        bg == Console.Accent -> ConsoleButtonStyle.Primary
+        bg == Console.Dark -> ConsoleButtonStyle.Dark
+        bg == Console.GoodSoft -> ConsoleButtonStyle.Success
+        bg == Console.InkMuted -> ConsoleButtonStyle.Dark
+        fg == Console.Critical -> ConsoleButtonStyle.DangerSoft
+        else -> ConsoleButtonStyle.Secondary
     }
+    ConsoleButton(text, onClick, modifier, enabled = bg != Console.InkMuted || text.endsWith("…"), icon = icon, height = 42.dp, style = style, loading = bg == Console.InkMuted && text.endsWith("…"))
 }
 
 private fun postText(caption: String, hashtags: String, platform: SocialPlatform? = null, lang: StudioLang = StudioLang.Tr): String {

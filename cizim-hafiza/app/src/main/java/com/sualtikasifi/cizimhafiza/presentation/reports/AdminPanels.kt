@@ -1,6 +1,38 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Console
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButtonStyle
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleCard
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleEmpty
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleNotice
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSection
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSkeleton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.NoticeKind
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Overline
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Segmented
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.StatTile
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Tag
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.noticeKindOf
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,7 +41,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,7 +67,6 @@ import com.sualtikasifi.cizimhafiza.data.repository.EconomyConfigRepository
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleTextField
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButton
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSecondaryButton
-import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSurface
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleChip
 import com.sualtikasifi.cizimhafiza.util.EconomyConfig
 import com.sualtikasifi.cizimhafiza.util.PlayerAdmin
@@ -139,32 +169,56 @@ class EconomyAdminViewModel @Inject constructor(
     }
 }
 
-/** "Ekonomi": every amount in config/economy, with its allowed range and built-in default. */
+/**
+ * "Ekonomi": every amount in config/economy, with its allowed range and built-in default, two to a row. A field that
+ * differs from what is live gets an accent mark, and the save bar at the bottom counts them.
+ */
 @Composable
 internal fun EconomyPanel(viewModel: EconomyAdminViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     LaunchedEffect(Unit) { viewModel.load() }
-    Column(
-        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Text(
-            "Altın ve ödül miktarları. Boş bırakılan ya da aralık dışı değer oyunda yok sayılır ve varsayılan geçerli olur.",
-            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        if (state.loaded) EconomyConfig.fields.forEach { f ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                ConsoleTextField(
-                    value = state.values[f.key].orEmpty(),
-                    onValueChange = { viewModel.edit(f.key, it) },
-                    label = "${ECONOMY_LABELS[f.key] ?: f.key} (${f.range.first}–${f.range.last}, varsayılan ${f.default})",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f)
-                )
+    val changed = EconomyConfig.fields.count { f -> state.loaded && state.values[f.key] != state.serverValues[f.key] }
+    Column(Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(Console.Gap)
+        ) {
+            ConsoleNotice("Boş bırakılan ya da aralık dışı değer oyunda yok sayılır; varsayılan geçerli olur.", kind = NoticeKind.Info)
+            if (!state.loaded) ConsoleSkeleton(rows = 3, rowHeight = 64.dp)
+            else ConsoleSection("Altın ve ödüller", subtitle = "${EconomyConfig.fields.size} ayar · telefonlara yarım saat içinde ulaşır") {
+                EconomyConfig.fields.chunked(2).forEach { pair ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
+                        pair.forEach { f ->
+                            val dirty = state.values[f.key] != state.serverValues[f.key]
+                            ConsoleTextField(
+                                value = state.values[f.key].orEmpty(),
+                                onValueChange = { viewModel.edit(f.key, it) },
+                                label = (if (dirty) "● " else "") + (ECONOMY_LABELS[f.key] ?: f.key),
+                                supporting = "${f.range.first}–${f.range.last} · vars. ${f.default}",
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        if (pair.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                }
             }
+            state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
         }
-        state.message?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
-        ConsoleButton("Kaydet", viewModel::save, Modifier.fillMaxWidth(), enabled = state.loaded && !state.busy, height = 48.dp)
+        SaveBar(
+            text = if (changed > 0) "Kaydet · $changed değişiklik" else "Kaydet",
+            enabled = state.loaded && !state.busy && changed > 0,
+            busy = state.busy,
+            onClick = viewModel::save
+        )
+    }
+}
+
+/** The bottom of a settings panel: one full-width save button that stays in view while the fields scroll. */
+@Composable
+internal fun SaveBar(text: String, enabled: Boolean, busy: Boolean, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth().background(Console.Bg).padding(top = 8.dp, bottom = 12.dp)) {
+        ConsoleButton(text, onClick, Modifier.fillMaxWidth(), enabled = enabled, loading = busy, icon = Icons.Filled.Check, height = 46.dp)
     }
 }
 
@@ -241,38 +295,52 @@ internal fun AnnouncePanel(viewModel: AnnounceViewModel = hiltViewModel()) {
     LaunchedEffect(Unit) { viewModel.load() }
     Column(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(Console.Gap)
     ) {
-        Text(
-            if (state.active) "Şu an yayında." else "Şu an yayında duyuru yok.",
-            style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            LANGS.forEach { (l, name) -> ConsoleChip(name, state.lang == l, { viewModel.edit { copy(lang = l) } }) }
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(10.dp).clip(CircleShape).background(if (state.active) Console.Good else Console.InkMuted))
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Overline("Durum")
+                    Text(if (state.active) "Şu an yayında" else "Yayında duyuru yok", style = Console.Subtitle)
+                }
+                if (state.active) {
+                    ConsoleButton("Kapat", { viewModel.publish(false) }, enabled = !state.busy, icon = Icons.Filled.Close, height = 34.dp, style = ConsoleButtonStyle.DangerSoft)
+                }
+            }
         }
-        ConsoleTextField(
-            value = state.titles[state.lang].orEmpty(),
-            onValueChange = { v -> viewModel.edit { copy(titles = titles + (lang to v.take(60))) } },
-            label = "Başlık", modifier = Modifier.fillMaxWidth()
-        )
-        ConsoleTextField(
-            value = state.bodies[state.lang].orEmpty(),
-            onValueChange = { v -> viewModel.edit { copy(bodies = bodies + (lang to v.take(400))) } },
-            label = "Metin", singleLine = false, minLines = 4, modifier = Modifier.fillMaxWidth()
-        )
-        ConsoleTextField(
-            value = state.days,
-            onValueChange = { v -> viewModel.edit { copy(days = v.filter(Char::isDigit).take(3)) } },
-            label = "Kaç gün yayında kalsın (0 = süresiz)",
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth()
-        )
-        state.message?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
-        ConsoleButton("Yayınla", { viewModel.publish(true) }, Modifier.fillMaxWidth(), enabled = !state.busy, height = 48.dp)
-        if (state.active) {
-            ConsoleSecondaryButton(
-                "Duyuruyu kapat", { viewModel.publish(false) }, Modifier.fillMaxWidth(), enabled = !state.busy, height = 48.dp
+        ConsoleSection("Duyuru metni", subtitle = "Her dil ayrı yazılır; oyuncu kendi dilindekini görür") {
+            Segmented(
+                options = LANGS.map { (l, name) -> l to name + if (state.titles[l].isNullOrBlank()) "" else " ✓" },
+                selected = state.lang,
+                onSelect = { l -> viewModel.edit { copy(lang = l) } },
+                modifier = Modifier.fillMaxWidth()
             )
+            Spacer(Modifier.height(12.dp))
+            ConsoleTextField(
+                value = state.titles[state.lang].orEmpty(),
+                onValueChange = { v -> viewModel.edit { copy(titles = titles + (lang to v.take(60))) } },
+                label = "Başlık", supporting = "${state.titles[state.lang].orEmpty().length}/60", modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(10.dp))
+            ConsoleTextField(
+                value = state.bodies[state.lang].orEmpty(),
+                onValueChange = { v -> viewModel.edit { copy(bodies = bodies + (lang to v.take(400))) } },
+                label = "Metin", singleLine = false, minLines = 4, supporting = "${state.bodies[state.lang].orEmpty().length}/400",
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(10.dp))
+            ConsoleTextField(
+                value = state.days,
+                onValueChange = { v -> viewModel.edit { copy(days = v.filter(Char::isDigit).take(3)) } },
+                label = "Yayında kalacağı gün", supporting = "0 = süresiz",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(14.dp))
+            ConsoleButton("Yayınla", { viewModel.publish(true) }, Modifier.fillMaxWidth(), enabled = !state.busy, loading = state.busy, icon = Icons.Filled.Campaign)
         }
+        state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
     }
 }
 
@@ -340,25 +408,43 @@ internal fun PushPanel(viewModel: PushViewModel = hiltViewModel()) {
     LaunchedEffect(Unit) { viewModel.loadRecent() }
     Column(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(Console.Gap)
     ) {
-        Text(
-            "Bildirimi açık olan 13 yaş ve üstü tüm oyunculara gider. Metin tek dilde (oyuncunun diline çevrilmez); kısa ve net tut.",
-            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        ConsoleTextField(
-            value = state.title, onValueChange = { v -> viewModel.edit { copy(title = v.take(60)) } },
-            label = "Başlık", modifier = Modifier.fillMaxWidth()
-        )
-        ConsoleTextField(
-            value = state.body, onValueChange = { v -> viewModel.edit { copy(body = v.take(200)) } },
-            label = "Metin", singleLine = false, minLines = 3, modifier = Modifier.fillMaxWidth()
-        )
-        state.message?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
-        ConsoleButton("Gönder", { confirm = true }, Modifier.fillMaxWidth(), enabled = !state.busy && state.title.isNotBlank() && state.body.isNotBlank(), height = 48.dp)
+        ConsoleNotice("Bildirimi açık olan 13 yaş ve üstü tüm oyunculara gider. Metin tek dilde gider (çevrilmez); kısa ve net tut.", kind = NoticeKind.Warning)
+        ConsoleSection("Yeni bildirim") {
+            ConsoleTextField(
+                value = state.title, onValueChange = { v -> viewModel.edit { copy(title = v.take(60)) } },
+                label = "Başlık", supporting = "${state.title.length}/60", modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(10.dp))
+            ConsoleTextField(
+                value = state.body, onValueChange = { v -> viewModel.edit { copy(body = v.take(200)) } },
+                label = "Metin", singleLine = false, minLines = 3, supporting = "${state.body.length}/200", modifier = Modifier.fillMaxWidth()
+            )
+            if (state.title.isNotBlank() || state.body.isNotBlank()) {
+                Spacer(Modifier.height(12.dp))
+                Overline("Telefonda böyle görünür")
+                Spacer(Modifier.height(6.dp))
+                PushPreview(state.title, state.body)
+            }
+            Spacer(Modifier.height(14.dp))
+            ConsoleButton(
+                "Herkese gönder", { confirm = true }, Modifier.fillMaxWidth(),
+                enabled = !state.busy && state.title.isNotBlank() && state.body.isNotBlank(), loading = state.busy, icon = Icons.AutoMirrored.Filled.Send
+            )
+        }
+        state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
         if (state.recent.isNotEmpty()) {
-            Text("Son gönderilenler", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
-            state.recent.forEach { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            ConsoleSection("Son gönderilenler") {
+                state.recent.forEachIndexed { i, line ->
+                    if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Console.Grid))
+                    val sent = line.endsWith("gönderildi")
+                    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(line.substringBeforeLast(" · "), style = Console.Small.copy(color = Console.Ink), modifier = Modifier.weight(1f), maxLines = 2)
+                        Tag(if (sent) "gönderildi" else "sırada", fg = if (sent) Console.GoodText else Console.WarningText, bg = if (sent) Console.GoodSoft else Console.WarningSoft)
+                    }
+                }
+            }
         }
     }
     if (confirm) {
@@ -369,6 +455,25 @@ internal fun PushPanel(viewModel: PushViewModel = hiltViewModel()) {
             confirmButton = { TextButton(onClick = { confirm = false; viewModel.send() }) { Text("Gönder") } },
             dismissButton = { TextButton(onClick = { confirm = false }) { Text("Vazgeç") } }
         )
+    }
+}
+
+/** A notification as the shade would show it: app icon, name, title, text. */
+@Composable
+private fun PushPreview(title: String, body: String) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Console.Grid).padding(12.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Box(Modifier.size(30.dp).clip(CircleShape).background(Console.Accent), contentAlignment = Alignment.Center) {
+            Text("K", style = Console.Subtitle.copy(color = androidx.compose.ui.graphics.Color.White))
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text("Karalak · şimdi", style = Console.Small.copy(fontSize = 11.sp))
+            Text(title.ifBlank { "Başlık" }, style = Console.Subtitle, maxLines = 1)
+            Text(body.ifBlank { "Metin" }, style = Console.Small.copy(color = Console.Ink), maxLines = 3)
+        }
     }
 }
 
@@ -427,30 +532,33 @@ internal fun JobsPanel(viewModel: JobsViewModel = hiltViewModel()) {
     val now = System.currentTimeMillis()
     Column(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(Console.Gap)
     ) {
-        if (state.loaded) {
-            Text(
-                "Bekleyen hesap silme talebi: ${state.pendingDeletions ?: "?"} · bekleyen panel komutu: ${state.pendingCommands ?: "?"}",
-                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface
-            )
+        if (!state.loaded) {
+            ConsoleSkeleton(rows = 5, rowHeight = 56.dp)
+            return@Column
         }
-        state.rows.forEach { r ->
-            val stale = r.lastRunMillis > 0 && now - r.lastRunMillis > 36 * 3_600_000L
-            ConsoleSurface(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(r.label, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
-                    val bad = r.ok == false || stale
-                    Text(
-                        when {
-                            r.lastRunMillis == 0L -> "Henüz kayıt yok"
-                            r.ok == false -> "HATA · ${stamp(r.lastRunMillis)} · ${r.error.take(120)}"
-                            stale -> "Uzun süredir çalışmadı · son: ${stamp(r.lastRunMillis)}"
-                            else -> "Çalıştı · ${stamp(r.lastRunMillis)}"
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (bad) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+        Row(horizontalArrangement = Arrangement.spacedBy(Console.Gap)) {
+            StatTile("Bekleyen hesap silme", state.pendingDeletions?.toString() ?: "?", Modifier.weight(1f))
+            StatTile("Bekleyen panel komutu", state.pendingCommands?.toString() ?: "?", Modifier.weight(1f))
+        }
+        ConsoleCard(Modifier.fillMaxWidth(), padding = 4.dp) {
+            state.rows.forEachIndexed { i, r ->
+                if (i > 0) Box(Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(1.dp).background(Console.Grid))
+                val stale = r.lastRunMillis > 0 && now - r.lastRunMillis > 36 * 3_600_000L
+                val (dot, status) = when {
+                    r.lastRunMillis == 0L -> Console.InkMuted to "Henüz kayıt yok"
+                    r.ok == false -> Console.Critical to "Hata · ${stamp(r.lastRunMillis)} · ${r.error.take(120)}"
+                    stale -> Console.Warning to "Uzun süredir çalışmadı · son: ${stamp(r.lastRunMillis)}"
+                    else -> Console.Good to "Çalıştı · ${stamp(r.lastRunMillis)}"
+                }
+                Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(9.dp).clip(CircleShape).background(dot))
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(r.label, style = Console.Subtitle.copy(fontSize = 13.5.sp))
+                        Text(status, style = Console.Small.copy(color = if (r.ok == false) Console.Critical else Console.InkSecondary), maxLines = 3)
+                    }
                 }
             }
         }
@@ -481,24 +589,28 @@ class AuditViewModel @Inject constructor(private val firestore: FirebaseFirestor
     }
 }
 
-/** "Denetim kaydı": the latest things done from this panel. */
+/** "Denetim kaydı": the latest things done from this panel, as a timeline. */
 @Composable
 internal fun AuditPanel(viewModel: AuditViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     LaunchedEffect(Unit) { viewModel.load() }
-    Column(
-        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        if (state.loaded && state.lines.isEmpty()) {
-            Text("Kayıt yok.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        state.lines.forEach { (who, what, detail) ->
-            ConsoleSurface(corner = 16.dp, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(what, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
-                    if (detail.isNotBlank()) Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(who, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+    Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
+        when {
+            !state.loaded -> ConsoleSkeleton(rows = 5, rowHeight = 56.dp)
+            state.lines.isEmpty() -> ConsoleEmpty(Icons.Filled.History, "Kayıt yok", body = "Panelden yapılan işlemler burada sırayla görünür.")
+            else -> ConsoleCard(Modifier.fillMaxWidth(), padding = 4.dp) {
+                state.lines.forEachIndexed { i, (who, what, detail) ->
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp)) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 4.dp)) {
+                            Box(Modifier.size(8.dp).clip(CircleShape).background(if (i == 0) Console.Accent else Console.BorderStrong))
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(what, style = Console.Subtitle.copy(fontSize = 13.5.sp))
+                            if (detail.isNotBlank()) Text(detail, style = Console.Small.copy(color = Console.Ink))
+                            Text(who, style = Console.Small.copy(color = Console.InkMuted, fontSize = 11.sp))
+                        }
+                    }
                 }
             }
         }
@@ -584,43 +696,62 @@ internal fun XpPlanSection(viewModel: XpPlanViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     LaunchedEffect(Unit) { viewModel.load() }
     val upcoming = remember { com.sualtikasifi.cizimhafiza.presentation.reports.console.SpecialDays.upcoming(horizonDays = 45).take(3) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(top = 20.dp)) {
-        Text("İleri tarihli etkinlik", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+    ConsoleSection("İleri tarihli etkinlik", subtitle = "Zamanı gelince kendiliğinden başlar (en geç bir saat gecikmeyle)") {
         if (upcoming.isNotEmpty()) {
-            Text("Özel günden planla (sabah 10, bir gün sürer):", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Overline("Özel günden doldur · sabah 10, bir gün")
+            Spacer(Modifier.height(6.dp))
             androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                upcoming.forEach { d -> ConsoleChip(d.name.take(28), false, { viewModel.planForDay(d.date, d.name) }, verticalPadding = 8.dp) }
+                upcoming.forEach { d -> ConsoleChip(d.name.take(28), state.label == d.name.take(32), { viewModel.planForDay(d.date, d.name) }, accent = Console.Violet) }
             }
+            Spacer(Modifier.height(12.dp))
         }
-        Text("Kaç saat sonra başlasın", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Overline("Kaç saat sonra başlasın")
+        Spacer(Modifier.height(6.dp))
         androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf(1, 6, 12, 24, 48, 72, 168).forEach { h ->
-                ConsoleChip("$h sa", state.startInHours == h, { viewModel.edit { copy(startInHours = h) } }, verticalPadding = 8.dp)
+                ConsoleChip("$h sa", state.startInHours == h, { viewModel.edit { copy(startInHours = h) } })
             }
         }
-        Text("Ne kadar sürsün · çarpan", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(12.dp))
+        Overline("Süre")
+        Spacer(Modifier.height(6.dp))
         androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf(3, 6, 24, 48, 72).forEach { h ->
-                ConsoleChip("$h sa", state.durationHours == h, { viewModel.edit { copy(durationHours = h) } }, verticalPadding = 8.dp)
-            }
-            listOf(1.3, 1.5, 2.0, 3.0).forEach { m ->
-                ConsoleChip("x$m", state.multiplier == m, { viewModel.edit { copy(multiplier = m) } }, verticalPadding = 8.dp)
+                ConsoleChip("$h sa", state.durationHours == h, { viewModel.edit { copy(durationHours = h) } })
             }
         }
+        Spacer(Modifier.height(12.dp))
+        Overline("Çarpan")
+        Spacer(Modifier.height(6.dp))
+        Segmented(
+            options = listOf(1.3, 1.5, 2.0, 3.0).map { it.toString() to "x$it" },
+            selected = state.multiplier.toString(),
+            onSelect = { m -> viewModel.edit { copy(multiplier = m.toDouble()) } },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(12.dp))
         ConsoleTextField(
             value = state.label, onValueChange = { v -> viewModel.edit { copy(label = v.take(32)) } },
             label = "Etkinlik adı", modifier = Modifier.fillMaxWidth()
         )
-        state.message?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
-        ConsoleButton("Planla", viewModel::create, Modifier.fillMaxWidth(), enabled = !state.busy, height = 48.dp)
-        state.plans.forEach { p ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    "${stamp(p.startAtMillis)} · x${p.multiplier} · ${p.durationHours} sa" + (if (p.label.isNotBlank()) " · ${p.label}" else "") +
-                        if (p.started) " · başladı" else "",
-                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f)
-                )
-                if (!p.started) TextButton(onClick = { viewModel.cancel(p) }) { Text("İptal") }
+        Spacer(Modifier.height(14.dp))
+        ConsoleButton("Planla", viewModel::create, Modifier.fillMaxWidth(), enabled = !state.busy, loading = state.busy, icon = Icons.Filled.Schedule, style = ConsoleButtonStyle.Dark)
+        state.message?.let { Spacer(Modifier.height(10.dp)); ConsoleNotice(it, kind = noticeKindOf(it)) }
+        if (state.plans.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            Overline("Planlananlar")
+            state.plans.forEach { p ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            (if (p.label.isNotBlank()) p.label else "XP etkinliği") + " · x${p.multiplier}",
+                            style = Console.Subtitle.copy(fontSize = 13.5.sp)
+                        )
+                        Text("${stamp(p.startAtMillis)} · ${p.durationHours} sa", style = Console.Small)
+                    }
+                    if (p.started) Tag("başladı", fg = Console.GoodText, bg = Console.GoodSoft)
+                    else ConsoleButton("İptal", { viewModel.cancel(p) }, height = 32.dp, style = ConsoleButtonStyle.Ghost)
+                }
             }
         }
     }
