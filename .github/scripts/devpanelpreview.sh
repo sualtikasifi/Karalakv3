@@ -16,6 +16,8 @@ adb install -r -t "$APK"
 adb shell am start -W -n "$ACT" --es screen gate
 sleep 6
 adb exec-out screencap -p > "$OUT/devpanel_gate.png"
+# a fresh start: the activity is already open on the passcode screen and would only be handed the new intent
+adb shell am force-stop "$PKG"
 adb shell am start -W -n "$ACT" --es screen panel
 sleep 6
 adb exec-out screencap -p > "$OUT/devpanel_panel.png"
