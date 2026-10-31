@@ -50,5 +50,19 @@ adb shell input swipe 540 1700 540 700 400
 sleep 2
 adb exec-out screencap -p > "$OUT/devpanel_Tools_scrolled.png"
 
+# moving around for real: the studio card on the tools grid, back to the grid, back again (asks before leaving)
+adb shell am force-stop "$PKG"
+adb shell am start -W -n "$ACT" --es screen Tools
+sleep 6
+adb shell input tap 540 555
+sleep 2
+adb exec-out screencap -p > "$OUT/devpanel_nav_1_studio.png"
+adb shell input keyevent 4
+sleep 2
+adb exec-out screencap -p > "$OUT/devpanel_nav_2_back_to_tools.png"
+adb shell input keyevent 4
+sleep 2
+adb exec-out screencap -p > "$OUT/devpanel_nav_3_exit_ask.png"
+
 adb logcat -d -t 400 | grep -E "AndroidRuntime|FATAL" > "$OUT/crash.txt" || true
 ls -la "$OUT"
