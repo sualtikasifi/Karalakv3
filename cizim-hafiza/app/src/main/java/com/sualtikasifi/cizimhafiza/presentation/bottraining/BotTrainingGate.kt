@@ -34,7 +34,8 @@ import com.sualtikasifi.cizimhafiza.presentation.common.MAX_CODE_INPUT_LENGTH
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
 import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
-import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
+import com.sualtikasifi.cizimhafiza.presentation.common.developerBackground
+import com.sualtikasifi.cizimhafiza.presentation.common.DEVELOPER_GATE_VEIL
 import com.sualtikasifi.cizimhafiza.util.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -90,7 +91,7 @@ fun BotTrainingGate(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .screenBackground()
+                .developerBackground(DEVELOPER_GATE_VEIL)
                 .padding(padding),
             contentAlignment = Alignment.Center
         ) {

@@ -744,6 +744,28 @@ fun Modifier.screenBackground(): Modifier =
         )
 
 /**
+ * The developer tools' background: the lobby (the painted workshop with the easels) under a warm parchment veil, on
+ * every screen of the developer panel and its tools, the passcode screens included, so they all sit in one world
+ * instead of on flat grey. The veil is what keeps the dark text and white cards laid out for these pages readable;
+ * [veil] is how much of the picture it covers: [PANEL_VEIL] under working screens, [GATE_VEIL] under a passcode
+ * screen, which has little on it and can show the picture. The picture is cropped to the screen from its top, the
+ * way the lobby crops it.
+ */
+@Composable
+fun Modifier.developerBackground(veil: Float = DEVELOPER_PANEL_VEIL): Modifier =
+    this
+        .paint(cachedPainterResource(R.drawable.bg_lobby), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
+        .background(
+            Brush.verticalGradient(
+                listOf(Color(0xFFFFF1D8).copy(alpha = veil), Color(0xFFF6DDB4).copy(alpha = (veil - 0.08f).coerceAtLeast(0f)))
+            )
+        )
+
+/** How much of the lobby the developer tools' veil covers: a working screen, and a passcode screen. */
+const val DEVELOPER_PANEL_VEIL = 0.66f
+const val DEVELOPER_GATE_VEIL = 0.40f
+
+/**
  * The app's own text input, replacing Material's OutlinedTextField everywhere.
  *
  * Two things made the Material field wrong here. Its floating label notches a

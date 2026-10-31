@@ -57,22 +57,6 @@ class StudioAssets(context: Context) {
         }
     }
 
-    private val appContext = context.applicationContext
-    private val localPictures = HashMap<String, Bitmap?>()
-
-    /**
-     * One of the app's pictures as it is in [locale], whatever the phone's own language: the Google Play badge is
-     * Google's artwork, one per language, and a video in Spanish carries the Spanish one. Read once.
-     */
-    fun picture(@androidx.annotation.DrawableRes id: Int, locale: java.util.Locale): Bitmap? = synchronized(localPictures) {
-        localPictures.getOrPut("$id|${locale.language}") {
-            runCatching {
-                val conf = android.content.res.Configuration(resources.configuration).apply { setLocale(locale) }
-                val res = appContext.createConfigurationContext(conf).resources
-                BitmapFactory.decodeResource(res, id, BitmapFactory.Options().apply { inScaled = false })
-            }.getOrNull()
-        }
-    }
 }
 
 /** The studio's colours: the game's own cream, ink and orange. */

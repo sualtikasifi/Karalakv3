@@ -22,6 +22,7 @@ on:
           - opening.sh
           - langs.sh
           - realpreview.sh
+          - devpanelpreview.sh
           - updatepreview.sh
           - chestpreview.sh
           - chestrewardpreview.sh

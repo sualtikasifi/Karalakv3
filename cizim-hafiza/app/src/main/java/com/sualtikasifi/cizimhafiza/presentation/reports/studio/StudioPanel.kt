@@ -599,34 +599,45 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
         Step(
             "7", "Videonun sonu",
             when (r.ending) {
-                RealEnding.Card -> String.format(Locale("tr"), "bitiş kartı · %.1f sn", RealTimeline.END_CARD_MS / 1000f)
+                RealEnding.Card -> String.format(Locale("tr"), "kapanış görseli · %.1f sn", (p?.featured ?: p?.opening)?.endCardMs?.div(1000f) ?: (RealTimeline.END_CARD_SILENT_MS / 1000f)) +
+                    if ((p?.opening?.endLine?.voice) != null) " · sesli" else " · sessiz"
                 RealEnding.Promo -> if (r.promo == null) "tanıtım videosu yok" else String.format(Locale("tr"), "tanıtım · %.1f sn", r.promoMs / 1000f)
                 RealEnding.Nothing -> "yok"
             }
         )
     }
     item { EndingCard(r, vm) }
+    // the closing picture's own line, said over it: its length is the picture's
+    if (r.ending == RealEnding.Card && p != null) item {
+        LineCard(RealLine.End, p, st, vm) {
+            Text(
+                "Video, oyunun kapanış görseliyle biter (oyunun ne olduğunu, 3 adımda ve nereden indirileceğini anlatır; her videoda aynıdır). " +
+                    "Aşağıdan bir cümle seç, seslendir, “Videoya ekle”: görsel, Karalak o cümleyi söylerken ekranda kalır; " +
+                    "ses kısaysa görsel kısa, uzunsa uzun durur. Seslendirmezsen ${RealTimeline.END_CARD_SILENT_MS / 1000} saniye sessiz durur.",
+                style = Console.Small
+            )
+        }
+    }
 }
 
 /**
- * What closes every video. A short end card is the default: Karalak's badge, "draw yours, make it real", the Google Play
- * button and "link in bio", over about two seconds; the video stays short and loops. The long promo video is still here
- * for when it is wanted, and the video can end on Karalak's closing alone.
+ * What closes every video. The closing picture is the default: the game's own card (what it is, in three steps, and where
+ * to get it) with a line of Karalak's over it, as long as that line takes. The long promo video is still here for when it
+ * is wanted, and the video can end on Karalak's closing alone.
  */
 @Composable
 private fun EndingCard(r: RealUi, vm: StudioViewModel) {
     ConsoleCard(Modifier.fillMaxWidth()) {
         Segmented(
-            options = listOf(RealEnding.Card.name to "Bitiş kartı", RealEnding.Promo.name to "Tanıtım videosu", RealEnding.Nothing.name to "Yok"),
+            options = listOf(RealEnding.Card.name to "Kapanış görseli", RealEnding.Promo.name to "Tanıtım videosu", RealEnding.Nothing.name to "Yok"),
             selected = r.ending.name,
             onSelect = { vm.setEnding(RealEnding.valueOf(it)) },
             modifier = Modifier.fillMaxWidth()
         )
         Text(
             when (r.ending) {
-                RealEnding.Card -> "Klibin ve Karalak'ın tepkisinin hemen ardından ${RealTimeline.END_CARD_MS / 1000f} saniyelik kart: bu karalamanın kaç saniyede çizildiği, " +
-                    "“Çiz, Hatırla, Tahmin Et!”, oyunun 3 adımı (kelimeyi süre dolmadan çiz, kısa bir moladan sonra çizimlerin geri gelir, hangi kelimeydi hatırla), " +
-                    "Google'ın resmi Play rozeti ve “Ücretsiz · Link profilde”. Yazılar ve rozet video diline göre değişir."
+                RealEnding.Card -> "Klibin ve Karalak'ın tepkisinin hemen ardından oyunu anlatan kapanış görseli: “Çiz, Hatırla, Tahmin Et!”, 3 adım, Google Play düğmesi. " +
+                    "Görsel Türkçe ve her videoda aynıdır; ne kadar kalacağını aşağıdaki seslendirme belirler."
                 RealEnding.Promo -> "Kendi tanıtım videon her videonun sonuna eklenir. Uzun bir son, izleyicinin videoyu bitirme ve baştan izleme oranını düşürür; kısa tut ya da karşılaştırmalı dene."
                 RealEnding.Nothing -> "Video Karalak'ın kapanışıyla biter; çağrı yalnızca açıklamada olur."
             },
@@ -724,13 +735,15 @@ private fun LineCard(kind: RealLine, p: RealProject, st: StudioState, vm: Studio
     val drawing = opening?.let { p.drawing(it.sampleId) }
     val line = opening?.line(kind) ?: VoicedLine()
     val hook = kind == RealLine.Hook
+    val end = kind == RealLine.End
     val count = if (hook) RealCopy.HOOK_COUNT else RealCopy.OUTRO_COUNT
     val name = if (hook) "kanca" else "kapanış"
     ConsoleCard(Modifier.fillMaxWidth()) {
         intro()
         drawing?.let { Text("Videodaki çizim: ${it.word}" + if (it.seconds > 0) " · ${it.seconds} sn" else "", style = Console.Subtitle, modifier = Modifier.padding(top = 6.dp)) }
         Spacer(Modifier.height(8.dp))
-        DarkButton(
+        // the closing picture's lines are ready-made: there is nothing for the assistant to write
+        if (!end) DarkButton(
             text = if (r.lineWriting == kind) "Asistan yazıyor…" else if (line.options.isEmpty()) "Asistan $count $name yazsın" else "$count yeni $name yazsın",
             busy = r.lineWriting == kind,
             enabled = r.lineWriting == null && opening != null
@@ -739,11 +752,12 @@ private fun LineCard(kind: RealLine, p: RealProject, st: StudioState, vm: Studio
         if (line.text.isNotBlank()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
                 Column(Modifier.weight(1f)) {
-                    Text(if (hook) "Videodaki kanca" else "Videodaki kapanış", style = Console.Label)
+                    Text(if (hook) "Videodaki kanca" else if (end) "Kapanış görselinin üstündeki cümle" else "Videodaki kapanış", style = Console.Label)
                     Text(line.text, style = Console.Subtitle)
                     Text(
-                        if (line.voice != null) "Sesli · " + String.format(Locale("tr"), "%.1f sn", line.voiceMs / 1000f)
+                        if (line.voice != null) "Sesli · " + String.format(Locale("tr"), "%.1f sn", line.voiceMs / 1000f) + if (end) " · görsel ≈" + String.format(Locale("tr"), "%.1f sn", RealTimeline.endCardMs(line.voiceMs) / 1000f) + " kalır" else ""
                         else if (hook) "Sessiz: kanca yazılmadığı için videoda duyulmaz; seslendirip “Videoya ekle”ye bas."
+                        else if (end) "Sessiz: görsel ${RealTimeline.END_CARD_SILENT_MS / 1000} saniye durur; seslendirip “Videoya ekle”ye basarsan Karalak söyler, görsel o kadar kalır."
                         else "Sessiz: yalnızca alt yazı; seslendirip “Videoya ekle”ye basarsan Karalak söyler.",
                         style = Console.Small
                     )
@@ -776,7 +790,7 @@ private fun LineCard(kind: RealLine, p: RealProject, st: StudioState, vm: Studio
         }
         if (!st.eleven.keySet) Text("Seslendirmek için aşağıdaki “Karalak'ın sesi” bölümüne ElevenLabs anahtarını gir.", style = Console.Small, modifier = Modifier.padding(top = 8.dp))
         var own by remember(kind) { mutableStateOf("") }
-        Field(if (hook) "Kendi kancanı yaz" else "Kendi kapanışını yaz", own, { own = it.take(RealCopy.HOOK_CHARS) })
+        Field(if (hook) "Kendi kancanı yaz" else if (end) "Kendi cümleni yaz" else "Kendi kapanışını yaz", own, { own = it.take(RealCopy.maxChars(kind)) })
         if (own.isNotBlank()) SmallLink("Listeye ekle") { vm.addLineOption(kind, own); own = "" }
     }
 }
@@ -801,7 +815,7 @@ private fun LineOption(
     ) {
         Column(Modifier.padding(10.dp)) {
             if (editing) {
-                Field(null, draft, { draft = it.take(RealCopy.HOOK_CHARS) }, lines = 2)
+                Field(null, draft, { draft = it.take(RealCopy.maxChars(RealLine.End)) }, lines = 2)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
                     ActionButton(Icons.Filled.Check, "Kaydet", Console.Accent, Color.White, Modifier.weight(1f)) { onEdit(draft); editing = false }
                     ActionButton(Icons.Filled.Close, "Vazgeç", Console.Surface, Console.Ink, Modifier.weight(1f)) { draft = text; editing = false }

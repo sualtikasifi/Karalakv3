@@ -42,7 +42,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.RaisedIconButton
 import com.sualtikasifi.cizimhafiza.presentation.common.currentWordLanguage
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 import com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance
-import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
+import com.sualtikasifi.cizimhafiza.presentation.common.developerBackground
 import com.sualtikasifi.cizimhafiza.presentation.theme.Orange
 import com.sualtikasifi.cizimhafiza.util.DifficultyReviewShareUtil
 import com.sualtikasifi.cizimhafiza.util.capitalizeForWordLanguage
@@ -66,7 +66,7 @@ fun DifficultyReviewScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .screenBackground()
+                .developerBackground()
                 .padding(padding).padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

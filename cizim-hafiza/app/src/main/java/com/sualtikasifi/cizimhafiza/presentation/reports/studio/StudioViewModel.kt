@@ -1017,8 +1017,16 @@ class StudioViewModel @Inject constructor(
 
     /** Moves the preview to where [kind] shows: the very start for the hook, the closing for the closing. */
     private fun previewLine(kind: RealLine) {
-        val outro = _state.value.real.project?.featured?.let { RealTimeline.build(it) }?.lastOrNull { it.phase == RealPhase.Outro }
-        setPreviewTime(if (kind == RealLine.Outro && outro != null) outro.startMs + 400L else 0L)
+        val events = _state.value.real.project?.featured?.let { RealTimeline.build(it, 0L, it.endCardMs) }.orEmpty()
+        val outro = events.lastOrNull { it.phase == RealPhase.Outro }
+        val card = events.lastOrNull { it.phase == RealPhase.EndCard }
+        setPreviewTime(
+            when {
+                kind == RealLine.Outro && outro != null -> outro.startMs + 400L
+                kind == RealLine.End && card != null -> card.startMs + 600L
+                else -> 0L
+            }
+        )
     }
 
     /**
@@ -1067,7 +1075,7 @@ class StudioViewModel @Inject constructor(
      * words, and its voice goes with the old ones.
      */
     fun editLineOption(kind: RealLine, old: String, text: String) {
-        val new = text.trim().take(RealCopy.HOOK_CHARS)
+        val new = text.trim().take(RealCopy.maxChars(kind))
         val id = _state.value.real.project?.opening?.sampleId ?: return
         updateLine(id, kind) { l ->
             if (old !in l.options || new == old) return@updateLine l
@@ -1080,7 +1088,7 @@ class StudioViewModel @Inject constructor(
 
     /** A line of one's own, put at the top of the list to edit, voice and add like the assistant's. */
     fun addLineOption(kind: RealLine, text: String) {
-        val line = text.trim().take(RealCopy.HOOK_CHARS)
+        val line = text.trim().take(RealCopy.maxChars(kind))
         val id = _state.value.real.project?.opening?.sampleId ?: return
         if (line.isEmpty()) return
         updateLine(id, kind) { l -> if (line in l.options) l else l.copy(options = listOf(line) + l.options) }
@@ -1130,11 +1138,11 @@ class StudioViewModel @Inject constructor(
                 runCatching {
                     val ms = ClipAudio.decode(voice, VOICE_MAX_MS)?.durationMs ?: error("Ses çözülemedi")
                     if (ms <= 0L) error("Ses boş")
-                    realStore.copyIn(voice, if (kind == RealLine.Hook) "hook_voice" else "outro_voice", "mp3") to ms
+                    realStore.copyIn(voice, when (kind) { RealLine.Hook -> "hook_voice"; RealLine.Outro -> "outro_voice"; RealLine.End -> "end_voice" }, "mp3") to ms
                 }
             }
             result.onSuccess { (name, ms) ->
-                _state.update { it.copy(message = if (kind == RealLine.Hook) "Kanca sesi videoya eklendi" else "Kapanış sesi videoya eklendi") }
+                _state.update { it.copy(message = when (kind) { RealLine.Hook -> "Kanca sesi videoya eklendi"; RealLine.Outro -> "Kapanış sesi videoya eklendi"; RealLine.End -> "Kapanış görseli sesi videoya eklendi" }) }
                 updateLine(id, kind, saveNow = true) { it.withText(text).copy(voice = name, voiceMs = ms, words = words) }
                 pruneRealMedia()
                 previewLine(kind)
@@ -1701,8 +1709,8 @@ class StudioViewModel @Inject constructor(
                 promo = promo?.let(promoSource),
                 promoFile = promo,
                 promoMs = if (promo != null) s.real.promoMs else 0L,
-                endCardMs = if (s.real.ending == RealEnding.Card) RealTimeline.END_CARD_MS else 0L,
-                lang = s.lang
+                endCardMs = if (s.real.ending == RealEnding.Card) f.endCardMs else 0L,
+                endVoiceFile = f.endLine.voice?.let { realStore.file(it) }
             )
         }
         val sp = sprites ?: return null

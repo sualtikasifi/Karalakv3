@@ -6,7 +6,6 @@ import android.graphics.Canvas
 import android.os.Bundle
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioAssets
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioLang
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipFrames
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
@@ -62,14 +61,14 @@ class RealPreviewActivity : Activity() {
                 if (i > 0) r else r.copy(hook = hook, outro = outro, opening = opening)
             }
         )
-        fun renderer(p: RealProject, endCardMs: Long = 0L, lang: StudioLang = StudioLang.Tr, promoMs: Long = 0L, layout: CardLayout = CardLayout()) =
+        fun renderer(p: RealProject, endCardMs: Long = 0L, promoMs: Long = 0L, layout: CardLayout = CardLayout()) =
             RealRenderer(assets, p, clips = p.drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f, layout = layout,
-                promo = frames.takeIf { promoMs > 0 }, promoMs = promoMs, endCardMs = endCardMs, lang = lang)
+                promo = frames.takeIf { promoMs > 0 }, promoMs = promoMs, endCardMs = endCardMs)
 
         // a voiced hook with its words timed, as ElevenLabs gives them: the subtitle comes in word by word, letter by letter
         val voiced = timed("7 saniyede roket çizebilir misin?", 1_900L)
         // 1. the classic opening: the cover, the subtitle coming in, done, the clip opening out; the clip; the closing; the end card
-        val classic = renderer(project(drawings[0], voiced, RealOpening.Classic), endCardMs = RealTimeline.END_CARD_MS)
+        val classic = renderer(project(drawings[0], voiced, RealOpening.Classic), endCardMs = RealTimeline.END_CARD_SILENT_MS)
         classic.events.forEach { e ->
             when (e.phase) {
                 RealPhase.Hook -> {
@@ -85,7 +84,8 @@ class RealPreviewActivity : Activity() {
                     shoot("outro_end", classic, e.endMs - 60)
                 }
                 RealPhase.EndCard -> {
-                    shoot("endcard_in", classic, e.startMs + 140)
+                    shoot("endcard_circle_early", classic, e.startMs + 140)
+                    shoot("endcard_circle_mid", classic, e.startMs + 300)
                     shoot("endcard_slogan", classic, e.startMs + 700)
                     shoot("endcard_steps", classic, e.startMs + 1_250)
                     shoot("endcard_end", classic, e.endMs - 60)
@@ -103,13 +103,19 @@ class RealPreviewActivity : Activity() {
         val long = renderer(project(drawings[2], VoicedLine("Bu kediyi gerçek hayatta görsen kaç saniyede tanırsın, söyle bakalım?"), RealOpening.Classic))
         shoot("hook_long_coming_in", long, 1_600L)
         shoot("hook_long_over_clip", long, 4_700L)
-        // 4. the end card in each language
-        StudioLang.entries.forEach { lang ->
-            val r = renderer(project(drawings[0], voiced, RealOpening.Classic), endCardMs = RealTimeline.END_CARD_MS, lang = lang)
-            shoot("endcard_" + lang.code, r, r.events.first { it.phase == RealPhase.EndCard }.endMs - 60)
+        // 4. the end card is the game's own picture, over a short voiced line (a short card) and a long one (a long card)
+        val shortLine = project(drawings[0], voiced, RealOpening.Classic).let { p ->
+            p.copy(reveals = p.reveals.map { r -> if (r.sampleId == "a") r.copy(endLine = timed("Çizmek kolay, hatırlamak zor! Karalak'ta kendini dene!", 3_200L)) else r })
         }
+        val short = renderer(shortLine, endCardMs = shortLine.featured!!.endCardMs)
+        short.events.first { it.phase == RealPhase.EndCard }.let { e -> shoot("endcard_short_voice_${e.durationMs}ms", short, e.endMs - 60) }
+        val longLine = project(drawings[0], voiced, RealOpening.Classic).let { p ->
+            p.copy(reveals = p.reveals.map { r -> if (r.sampleId == "a") r.copy(endLine = timed("Birkaç saniyede çiz, sonra ne çizdiğini hatırla. Kulağa kolay geliyor, değil mi?", 6_400L)) else r })
+        }
+        val long2 = renderer(longLine, endCardMs = longLine.featured!!.endCardMs)
+        long2.events.first { it.phase == RealPhase.EndCard }.let { e -> shoot("endcard_long_voice_${e.durationMs}ms", long2, e.startMs + 120); shoot("endcard_long_end", long2, e.endMs - 60) }
         // 5. the promo still takes the end card's place when it is chosen
-        val promo = renderer(project(drawings[0], voiced, RealOpening.Classic), promoMs = 2_000L, endCardMs = RealTimeline.END_CARD_MS)
+        val promo = renderer(project(drawings[0], voiced, RealOpening.Classic), promoMs = 2_000L, endCardMs = RealTimeline.END_CARD_SILENT_MS)
         promo.events.firstOrNull { it.phase == RealPhase.Promo }?.let { shoot("promo_mid", promo, it.startMs + 1_000) }
         // 6. the card moved and resized, as the panel's sliders can
         val clipMid = classic.events.first { it.phase == RealPhase.Clip }.startMs + 1_800L

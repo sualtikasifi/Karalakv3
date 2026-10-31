@@ -74,18 +74,25 @@ data class RealReveal(
     /** How loud the music is, before it steps back under Karalak's voice and the clip (see [RealMix]). */
     val musicVolume: Float = RealMix.DEFAULT_VOLUME,
     /** How the video opens: on the game's drawing screen, or with a glimpse of the real thing first. */
-    val opening: RealOpening = RealOpening.Classic
+    val opening: RealOpening = RealOpening.Classic,
+    /**
+     * What Karalak says over the end card (one of [RealCopy.END_LINES], or one's own): the card stays up for as long as it
+     * is being said. Its options are the ready-made lines; its text is empty (a silent card) until one is chosen.
+     */
+    val endLine: VoicedLine = VoicedLine(options = RealCopy.END_LINES)
 ) {
-    val media: Set<String> get() = listOfNotNull(image, clip, hook.voice, outro.voice).toSet()
+    val media: Set<String> get() = listOfNotNull(image, clip, hook.voice, outro.voice, endLine.voice).toSet()
 
     fun line(kind: RealLine): VoicedLine = when (kind) {
         RealLine.Hook -> hook
         RealLine.Outro -> outro
+        RealLine.End -> endLine
     }
 
     fun withLine(kind: RealLine, line: VoicedLine): RealReveal = when (kind) {
         RealLine.Hook -> copy(hook = line)
         RealLine.Outro -> copy(outro = line)
+        RealLine.End -> copy(endLine = line)
     }
 
     /** How long the opening lasts: long enough to see the drawing drawn, and to hear all of the hook when it is voiced. */
@@ -93,6 +100,9 @@ data class RealReveal(
 
     /** How long the closing lasts: long enough to read it, and to hear all of it when it is voiced. */
     val outroMs: Long get() = RealTimeline.outroMs(outro.text, if (outro.voice != null) outro.voiceMs else 0L)
+
+    /** How long the end card stays: as long as Karalak's line over it takes to say, or a fixed beat when it is silent. */
+    val endCardMs: Long get() = RealTimeline.endCardMs(if (endLine.voice != null) endLine.voiceMs else 0L)
 }
 
 /**
@@ -105,8 +115,8 @@ enum class RealOpening { Classic, Teaser }
 /** What closes the video: a short end card with the call to play, the app's own promo video, or nothing after the closing. */
 enum class RealEnding { Card, Promo, Nothing }
 
-/** The two things Karalak says in a "Gerçek Olsaydı" video: the opening hook and the closing reaction. */
-enum class RealLine { Hook, Outro }
+/** The things Karalak says in a "Gerçek Olsaydı" video: the opening hook, the closing reaction and the line over the end card. */
+enum class RealLine { Hook, Outro, End }
 
 /**
  * One of Karalak's lines in a video: the [text] the video shows and says (empty: none), the assistant's [options]
@@ -261,10 +271,17 @@ object RealTimeline {
     const val PROMO_MAX = 15_000L
 
     /**
-     * The end card after the closing: it says what the game is in three steps, which takes a little reading, and it
-     * stays short enough to keep the video one that loops.
+     * The end card after the closing is the game's own picture (what the game is, in three steps) and it stays for as
+     * long as Karalak's line over it is being said, with a breath after; silent, it stays [END_CARD_SILENT_MS] (it takes
+     * a little reading). However long the voice, it is never shorter than [END_CARD_MIN_MS] nor longer than [END_CARD_MAX_MS].
      */
-    const val END_CARD_MS = 3_500L
+    const val END_CARD_SILENT_MS = 5_000L
+    const val END_CARD_MIN_MS = 2_500L
+    const val END_CARD_MAX_MS = 9_000L
+    private const val END_TAIL = 700L
+
+    fun endCardMs(voiceMs: Long = 0L): Long =
+        if (voiceMs <= 0L) END_CARD_SILENT_MS else (VOICE_AT + voiceMs + END_TAIL).coerceIn(END_CARD_MIN_MS, END_CARD_MAX_MS)
 
     /**
      * The video of one reveal: its opening and closing as [RealReveal.hookMs] and [RealReveal.outroMs] say, and the
@@ -440,10 +457,33 @@ object RealCopy {
     /** The closing line as Karalak says it: playfully, a reaction and a question. */
     fun outroLine(text: String): SpokenLine = SpokenLine(text.trim(), MascotEmotion.Point)
 
+    /** The line over the end card as Karalak says it: cheerfully, an invitation. */
+    fun endLine(text: String): SpokenLine = SpokenLine(text.trim(), MascotEmotion.Wave)
+
     fun spoken(kind: RealLine, text: String): SpokenLine = when (kind) {
         RealLine.Hook -> hookLine(text)
         RealLine.Outro -> outroLine(text)
+        RealLine.End -> endLine(text)
     }
+
+    /** Longest a line of Karalak's may be, by what it is for: the end card's lines are whole sentences, the hook one breath. */
+    fun maxChars(kind: RealLine): Int = if (kind == RealLine.End) END_CHARS else HOOK_CHARS
+    const val END_CHARS = 140
+
+    /**
+     * The ready-made lines for over the end card, to choose from and voice: each says what the game is and asks the
+     * viewer in, in a few seconds. The end card itself is the same picture in every video.
+     */
+    val END_LINES: List<String> = listOf(
+        "Karalak'ta önce çiz, sonra hatırla! Bakalım kendi karalamanı tanıyabilecek misin?",
+        "Çiz, hatırla, tahmin et! Karalak, Google Play'de seni bekliyor!",
+        "Birkaç saniyede çiz, sonra ne çizdiğini hatırla. Kulağa kolay geliyor, değil mi?",
+        "Çizmek kolay, hatırlamak zor! Karalak'ta kendini dene!",
+        "Kendi çizimini tanıyamazsan üzülme, kimse tanıyamıyor! Hemen dene!",
+        "Saniyeler içinde çiz, sonra kendi eserine bak: bu neydi?",
+        "Çizim yeteneğin değil, hafızan konuşsun! Karalak'ta buluşalım!",
+        "Arkadaşlarınla yarış: kim kendi çizimini daha iyi hatırlayacak?"
+    )
 
     /**
      * The assistant's ideas for the opening line: `{"hooks":["…",…]}`, cleaned (see [cleanHook]), the same one

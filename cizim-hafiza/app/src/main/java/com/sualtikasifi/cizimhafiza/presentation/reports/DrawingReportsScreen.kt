@@ -104,7 +104,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.StrokeCanvas
 import com.sualtikasifi.cizimhafiza.util.DrawingVideoExporter
 import kotlinx.coroutines.launch
 import com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance
-import com.sualtikasifi.cizimhafiza.presentation.common.screenBackground
+import com.sualtikasifi.cizimhafiza.presentation.common.developerBackground
 import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 import java.text.DateFormat
 import java.text.SimpleDateFormat
@@ -176,7 +176,8 @@ fun DrawingReportsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(com.sualtikasifi.cizimhafiza.presentation.reports.console.Console.Bg)
+                    // the lobby under a veil, like every screen of the developer tools (see developerBackground)
+                    .developerBackground()
                     .padding(padding)
                     .padding(horizontal = 16.dp)
             ) {
