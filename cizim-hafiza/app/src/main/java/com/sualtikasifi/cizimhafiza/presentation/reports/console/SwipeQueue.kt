@@ -27,6 +27,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Undo
@@ -79,6 +81,9 @@ fun SwipeQueue(
     runs: List<PendingRun>,
     loading: Boolean,
     endReached: Boolean,
+    /** The last read of the queue was refused (no network, or this phone is not the reviewer). */
+    failed: Boolean = false,
+    onRetry: () -> Unit = {},
     failures: Int,
     failedIds: Set<String>,
     done: Int,
@@ -118,27 +123,28 @@ fun SwipeQueue(
         if (visible.size <= 2 && !loading && !endReached) onNeedMore()
     }
 
-    Column(Modifier.fillMaxSize()) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+    Column(Modifier.fillMaxSize().padding(bottom = 12.dp)) {
+        // the screen's name is in the header; here only how the session is going and the way to the list
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 10.dp)) {
             Column(Modifier.weight(1f)) {
-                Text("Onay kuyruğu", style = Console.Title)
                 Text(
-                    if (endReached && visible.isEmpty()) "Kuyruk bitti" else "Bu oturumda $sessionCount karar · sağa onay · sola reddet · yukarı ceza",
-                    style = Console.Small
+                    if (endReached && visible.isEmpty()) "Kuyruk bitti" else "Bu oturumda $sessionCount karar",
+                    style = Console.Subtitle
                 )
+                Text("Sağa onay · sola ret · yukarı ceza", style = Console.Small)
             }
-            Surface(shape = RoundedCornerShape(10.dp), color = Console.Surface, border = BorderStroke(1.dp, Console.Border), modifier = Modifier.clickable(onClick = onListMode)) {
-                Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, tint = Console.InkSecondary, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Liste", style = Console.Label)
-                }
-            }
+            ConsoleButton("Liste", onListMode, icon = Icons.AutoMirrored.Filled.List, height = 32.dp, style = ConsoleButtonStyle.Secondary)
         }
 
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
-                visible.isEmpty() && (loading || !endReached) -> CircularProgressIndicator(Modifier.align(Alignment.Center), color = Console.Accent)
+                visible.isEmpty() && failed && !loading -> ConsoleEmpty(
+                    Icons.Filled.CloudOff, "Kuyruk okunamadı",
+                    modifier = Modifier.align(Alignment.Center),
+                    body = "İnternet bağlantısını ve bu cihazın geliştirici hesabıyla giriş yaptığını kontrol et.",
+                    action = { ConsoleButton("Tekrar dene", onRetry, icon = Icons.Filled.Refresh, style = ConsoleButtonStyle.Secondary) }
+                )
+                visible.isEmpty() && (loading || !endReached) -> ConsoleSkeleton(rows = 1, rowHeight = 360.dp)
                 visible.isEmpty() -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(Modifier.size(64.dp).clip(CircleShape).background(Console.GoodSoft), contentAlignment = Alignment.Center) {
                         Icon(Icons.Filled.Check, contentDescription = null, tint = Console.GoodText, modifier = Modifier.size(34.dp))
@@ -344,14 +350,20 @@ private fun RunCard(run: PendingRun, interactive: Boolean, onPreview: (ResultIte
 
 @Composable
 private fun DeckButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, fg: Color, bg: Color, modifier: Modifier, enabled: Boolean, onClick: () -> Unit) {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = bg,
-        border = if (bg == Console.Surface) BorderStroke(1.dp, Console.Border) else null,
-        modifier = modifier.height(52.dp).graphicsLayer { alpha = if (enabled) 1f else 0.4f }.clip(RoundedCornerShape(14.dp)).clickable(enabled = enabled, onClick = onClick)
+        border = if (bg == Console.Surface) BorderStroke(1.dp, Console.BorderStrong) else null,
+        modifier = modifier
+            .pressScale(interaction, 0.94f)
+            .height(50.dp)
+            .graphicsLayer { alpha = if (enabled) 1f else 0.4f }
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(interaction, androidx.compose.material3.ripple(color = if (bg == Console.Surface) Console.Accent else Color.White), enabled = enabled, onClick = onClick)
     ) {
         Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(20.dp))
+            Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(19.dp))
             Spacer(Modifier.width(6.dp))
             Text(label, style = Console.Subtitle.copy(color = fg))
         }

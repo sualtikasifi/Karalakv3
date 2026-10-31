@@ -6,6 +6,27 @@ import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Console
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButtonStyle
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleCard
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleNotice
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSection
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleStepper
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Overline
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.SectionHeader
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Tag
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.noticeKindOf
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
@@ -38,9 +59,9 @@ import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
 import com.sualtikasifi.cizimhafiza.domain.model.Coupon
 import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
 import com.sualtikasifi.cizimhafiza.domain.repository.CouponRepository
-import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
-import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
-import com.sualtikasifi.cizimhafiza.presentation.common.SelectableChip
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleTextField
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleChip
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -170,157 +191,197 @@ class CouponAdminViewModel @Inject constructor(
 internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     LaunchedEffect(Unit) { viewModel.refresh() }
-    val compact = MaterialTheme.typography.labelMedium
     val context = LocalContext.current
     Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(Console.Gap),
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)
     ) {
-        // Reward: gold and XP side by side, then one stepper line per chest tier.
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            AppTextField(
-                value = state.gold,
-                onValueChange = { v -> viewModel.update { copy(gold = v.filter(Char::isDigit).take(6)) } },
-                label = "Altın",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f)
-            )
-            AppTextField(
-                value = state.xp,
-                onValueChange = { v -> viewModel.update { copy(xp = v.filter(Char::isDigit).take(6)) } },
-                label = "XP",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f)
-            )
-        }
-        Text(stringResource(R.string.coupon_panel_chests, CouponCodes.MAX_CHESTS), style = compact, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-            listOf(ChestTier.SILVER to "Çırak", ChestTier.GOLD to "Sanatçı", ChestTier.RARE to "Sürpriz").forEach { (tier, name) ->
-                ChestStepper(
-                    name = name,
-                    count = state.chests[tier] ?: 0,
-                    onChange = { n -> viewModel.update { copy(chests = chests + (tier to n.coerceIn(0, CouponCodes.MAX_CHESTS))) } },
+        ConsoleSection("Yeni kupon", subtitle = "Ödül, dağıtım ve süre") {
+            // Reward: gold and XP side by side, then one stepper per chest tier.
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                ConsoleTextField(
+                    value = state.gold,
+                    onValueChange = { v -> viewModel.update { copy(gold = v.filter(Char::isDigit).take(6)) } },
+                    label = "Altın",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f)
                 )
-            }
-        }
-        // How it is given out.
-        Text(stringResource(R.string.coupon_panel_distribution), style = compact, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf(0, 3, 5, 10, 20).forEach { n ->
-                SelectableChip(
-                    label = if (n == 0) "Tek ortak kod" else "$n ayrı kod",
-                    selected = state.separateCodes == n,
-                    onClick = { viewModel.update { copy(separateCodes = n) } },
-                    horizontalPadding = 12.dp,
-                    verticalPadding = 6.dp,
-                    style = compact
-                )
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            if (state.separateCodes == 0) {
-                AppTextField(
-                    value = state.maxUses,
-                    onValueChange = { v -> viewModel.update { copy(maxUses = v.filter(Char::isDigit).take(5)) } },
-                    label = "Kaç kişi",
+                ConsoleTextField(
+                    value = state.xp,
+                    onValueChange = { v -> viewModel.update { copy(xp = v.filter(Char::isDigit).take(6)) } },
+                    label = "XP",
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f)
                 )
             }
-            AppTextField(
-                value = state.days,
-                onValueChange = { v -> viewModel.update { copy(days = v.filter(Char::isDigit).take(3)) } },
-                label = "Gün (0 = süresiz)",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f)
-            )
+            Spacer(Modifier.height(12.dp))
+            Overline(stringResource(R.string.coupon_panel_chests, CouponCodes.MAX_CHESTS))
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                listOf(ChestTier.SILVER to "Çırak", ChestTier.GOLD to "Sanatçı", ChestTier.RARE to "Sürpriz").forEach { (tier, name) ->
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+                        Text(name, style = Console.Label, maxLines = 1)
+                        Spacer(Modifier.height(4.dp))
+                        ConsoleStepper(
+                            value = state.chests[tier] ?: 0,
+                            onChange = { n -> viewModel.update { copy(chests = chests + (tier to n.coerceIn(0, CouponCodes.MAX_CHESTS))) } },
+                            min = 0, max = CouponCodes.MAX_CHESTS
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            // How it is given out.
+            Overline(stringResource(R.string.coupon_panel_distribution))
+            Spacer(Modifier.height(6.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf(0, 3, 5, 10, 20).forEach { n ->
+                    ConsoleChip(
+                        label = if (n == 0) "Tek ortak kod" else "$n ayrı kod",
+                        selected = state.separateCodes == n,
+                        onClick = { viewModel.update { copy(separateCodes = n) } }
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                if (state.separateCodes == 0) {
+                    ConsoleTextField(
+                        value = state.maxUses,
+                        onValueChange = { v -> viewModel.update { copy(maxUses = v.filter(Char::isDigit).take(5)) } },
+                        label = "Kaç kişi",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                ConsoleTextField(
+                    value = state.days,
+                    onValueChange = { v -> viewModel.update { copy(days = v.filter(Char::isDigit).take(3)) } },
+                    label = "Gün", supporting = "0 = süresiz",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            if (state.separateCodes == 0) {
+                Spacer(Modifier.height(10.dp))
+                ConsoleTextField(
+                    value = state.customCode,
+                    onValueChange = { v -> viewModel.update { copy(customCode = v.uppercase().filter { it.isLetterOrDigit() || it == '-' }.take(CouponCodes.MAX_LENGTH)) } },
+                    label = "Kod", placeholder = "Boş bırakılırsa otomatik",
+                    textStyle = Console.Body.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            Spacer(Modifier.height(14.dp))
+            ConsoleButton(text = "Kodu oluştur", onClick = viewModel::create, enabled = !state.busy, loading = state.busy, icon = Icons.Filled.ConfirmationNumber, modifier = Modifier.fillMaxWidth())
         }
-        if (state.separateCodes == 0) {
-            AppTextField(
-                value = state.customCode,
-                onValueChange = { v -> viewModel.update { copy(customCode = v.uppercase().filter { it.isLetterOrDigit() || it == '-' }.take(CouponCodes.MAX_LENGTH)) } },
-                label = "Kod (boşsa otomatik)",
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-        PrimaryButton(text = "Kodu oluştur", onClick = viewModel::create, enabled = !state.busy, modifier = Modifier.fillMaxWidth())
-        state.message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-        state.lastCreated.forEach { code ->
-            CopyRow(code = code, style = MaterialTheme.typography.titleSmall) { copyToClipboard(context, code) }
-        }
-        if (state.lastCreated.size > 1) {
-            // all of them at once, one per line, ready to paste into a message
-            CopyRow(code = "Hepsini kopyala", style = MaterialTheme.typography.labelLarge) {
-                copyToClipboard(context, state.lastCreated.joinToString("\n"), "${state.lastCreated.size} kod kopyalandı")
+        state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
+        if (state.lastCreated.isNotEmpty()) {
+            ConsoleCard(Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Oluşturulan kodlar", style = Console.Subtitle, modifier = Modifier.weight(1f))
+                    if (state.lastCreated.size > 1) {
+                        // all of them at once, one per line, ready to paste into a message
+                        ConsoleButton("Hepsini kopyala", {
+                            copyToClipboard(context, state.lastCreated.joinToString("\n"), "${state.lastCreated.size} kod kopyalandı")
+                        }, icon = Icons.Filled.ContentCopy, height = 32.dp, style = ConsoleButtonStyle.Tonal)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                state.lastCreated.forEach { code -> CodeChip(code) { copyToClipboard(context, code) } }
             }
         }
         if (state.recent.isNotEmpty()) {
-            Text(stringResource(R.string.coupon_panel_recent), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
-        }
-        state.recent.forEach { c ->
-            val reward = listOfNotNull(
-                c.gold.takeIf { it > 0 }?.let { "$it altın" },
-                c.xp.takeIf { it > 0 }?.let { "$it XP" },
-                c.chests[ChestTier.SILVER]?.let { "$it Çırak" },
-                c.chests[ChestTier.GOLD]?.let { "$it Sanatçı" },
-                c.chests[ChestTier.RARE]?.let { "$it Sürpriz" }
-            ).joinToString(", ")
-            // the developer panel is Turkish throughout, so its dates are too
-            val until = if (c.expiresAtMillis > 0) " · " + SimpleDateFormat("d MMM", Locale("tr")).format(Date(c.expiresAtMillis)) else ""
-            val closed = c.expiresAtMillis in 1..System.currentTimeMillis()
-            CopyRow(code = "${c.code} · $reward · ${c.usedCount}/${c.maxUses}$until" + if (closed) " · kapalı" else "", style = MaterialTheme.typography.bodySmall) {
-                copyToClipboard(context, c.code)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                if (c.usedCount > 0) {
-                    androidx.compose.material3.TextButton(onClick = { viewModel.showRedeemers(c.code) }) { Text("Kullananlar (${c.usedCount})") }
+            SectionHeader(stringResource(R.string.coupon_panel_recent))
+            ConsoleCard(Modifier.fillMaxWidth(), padding = 4.dp) {
+                state.recent.forEachIndexed { i, c ->
+                    if (i > 0) Box(Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(1.dp).background(Console.Grid))
+                    val reward = listOfNotNull(
+                        c.gold.takeIf { it > 0 }?.let { "$it altın" },
+                        c.xp.takeIf { it > 0 }?.let { "$it XP" },
+                        c.chests[ChestTier.SILVER]?.let { "$it Çırak" },
+                        c.chests[ChestTier.GOLD]?.let { "$it Sanatçı" },
+                        c.chests[ChestTier.RARE]?.let { "$it Sürpriz" }
+                    ).joinToString(", ")
+                    // the developer panel is Turkish throughout, so its dates are too
+                    val until = if (c.expiresAtMillis > 0) SimpleDateFormat("d MMM", Locale("tr")).format(Date(c.expiresAtMillis)) else "süresiz"
+                    val closed = c.expiresAtMillis in 1..System.currentTimeMillis()
+                    val full = c.usedCount >= c.maxUses
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                c.code,
+                                style = Console.Subtitle.copy(fontFamily = FontFamily.Monospace),
+                                modifier = Modifier.weight(1f).clip(RoundedCornerShape(4.dp)).clickable { copyToClipboard(context, c.code) },
+                                maxLines = 1
+                            )
+                            when {
+                                closed -> Tag("kapalı", fg = Console.InkSecondary, bg = Console.Grid)
+                                full -> Tag("doldu", fg = Console.WarningText, bg = Console.WarningSoft)
+                                else -> Tag("açık", fg = Console.GoodText, bg = Console.GoodSoft)
+                            }
+                        }
+                        Text("$reward · $until", style = Console.Small)
+                        Spacer(Modifier.height(6.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            UsageBar(c.usedCount, c.maxUses, Modifier.weight(1f))
+                            Spacer(Modifier.width(8.dp))
+                            Text("${c.usedCount}/${c.maxUses}", style = Console.Label)
+                        }
+                        if (c.usedCount > 0 || (!closed && !full)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 6.dp)) {
+                                if (c.usedCount > 0) {
+                                    ConsoleButton("Kullananlar (${c.usedCount})", { viewModel.showRedeemers(c.code) }, height = 30.dp, style = ConsoleButtonStyle.Secondary)
+                                }
+                                if (!closed && !full) {
+                                    ConsoleButton("Kapat", { viewModel.close(c.code) }, height = 30.dp, style = ConsoleButtonStyle.DangerSoft)
+                                }
+                            }
+                        }
+                        state.redeemers?.takeIf { it.first == c.code }?.let { (_, names) ->
+                            Text(
+                                names.joinToString(", ").ifEmpty { "-" },
+                                style = Console.Small.copy(color = Console.Ink),
+                                modifier = Modifier
+                                    .padding(top = 6.dp)
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Console.SurfaceAlt)
+                                    .clickable { viewModel.hideRedeemers() }
+                                    .padding(8.dp)
+                            )
+                        }
+                    }
                 }
-                if (!closed && c.usedCount < c.maxUses) {
-                    androidx.compose.material3.TextButton(onClick = { viewModel.close(c.code) }) { Text("Kapat") }
-                }
-            }
-            state.redeemers?.takeIf { it.first == c.code }?.let { (_, names) ->
-                Text(
-                    names.joinToString(", ").ifEmpty { "-" },
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.clickable { viewModel.hideRedeemers() }
-                )
             }
         }
     }
 }
 
-/** One chest tier's count with a minus and a plus beside it — three of these fit on one line. */
+/** How much of a coupon is used: a thin bar, accent while there is room, grey once full. */
 @Composable
-private fun ChestStepper(name: String, count: Int, onChange: (Int) -> Unit, modifier: Modifier = Modifier) {
-    Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally, modifier = modifier) {
-        Text(name, style = MaterialTheme.typography.labelSmall, maxLines = 1)
-        Row(
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            SelectableChip(label = "−", selected = false, onClick = { onChange(count - 1) }, horizontalPadding = 10.dp, verticalPadding = 4.dp)
-            Text(count.toString(), style = MaterialTheme.typography.titleMedium)
-            SelectableChip(label = "+", selected = false, onClick = { onChange(count + 1) }, horizontalPadding = 10.dp, verticalPadding = 4.dp)
-        }
+private fun UsageBar(used: Int, max: Int, modifier: Modifier = Modifier) {
+    val f = if (max <= 0) 0f else (used.toFloat() / max).coerceIn(0f, 1f)
+    Box(modifier.height(6.dp).clip(RoundedCornerShape(3.dp)).background(Console.Grid)) {
+        Box(Modifier.fillMaxWidth(f).height(6.dp).clip(RoundedCornerShape(3.dp)).background(if (f >= 1f) Console.InkMuted else Console.Accent))
     }
 }
 
-/** A line of text with a copy icon at its end; the whole line is the tap target. */
+/** A freshly made code, big and monospaced, with a copy button: the line that gets pasted into a message. */
 @Composable
-private fun CopyRow(code: String, style: androidx.compose.ui.text.TextStyle, onCopy: () -> Unit) {
+private fun CodeChip(code: String, onCopy: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onCopy).padding(vertical = 4.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 6.dp)
+            .clip(RoundedCornerShape(Console.ControlCorner))
+            .background(Console.AccentSoft)
+            .clickable(onClick = onCopy)
+            .padding(horizontal = 12.dp, vertical = 10.dp)
     ) {
-        Text(code, style = style, modifier = Modifier.weight(1f, fill = false))
-        Icon(
-            Icons.Filled.ContentCopy,
-            contentDescription = "Kopyala",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 10.dp).size(18.dp)
-        )
+        Text(code, style = Console.Title.copy(fontFamily = FontFamily.Monospace, color = Console.AccentInk, letterSpacing = 1.sp), modifier = Modifier.weight(1f))
+        Icon(Icons.Filled.ContentCopy, contentDescription = "Kopyala", tint = Console.AccentInk, modifier = Modifier.size(18.dp))
     }
 }
 

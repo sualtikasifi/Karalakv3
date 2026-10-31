@@ -50,17 +50,14 @@ fun StatsPanel(viewModel: StatsViewModel = hiltViewModel()) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(com.sualtikasifi.cizimhafiza.presentation.reports.console.Console.Gap),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("İstatistik", style = Console.Title)
-                    Text("Gün sınırı UTC (Türkiye saatiyle 03:00)", style = Console.Small)
-                }
-                if (state.loading) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp, color = Console.Accent)
-                else IconButton(onClick = viewModel::load) { Icon(Icons.Filled.Refresh, contentDescription = "Yenile", tint = Console.InkSecondary) }
+                Text("Gün sınırı UTC (Türkiye saatiyle 03:00)", style = Console.Label, modifier = Modifier.weight(1f))
+                if (state.loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Console.Accent)
+                else com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleIconButton(Icons.Filled.Refresh, "Yenile", viewModel::load, size = 32.dp)
             }
             Spacer(Modifier.height(8.dp))
             Segmented(

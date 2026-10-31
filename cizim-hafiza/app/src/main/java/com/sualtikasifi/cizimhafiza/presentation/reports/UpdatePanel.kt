@@ -1,6 +1,20 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.Console
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButtonStyle
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleNotice
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSecondaryButton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSection
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.NoticeKind
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.StatTile
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.noticeKindOf
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -29,8 +43,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.sualtikasifi.cizimhafiza.BuildConfig
 import com.sualtikasifi.cizimhafiza.data.repository.EconomyConfigRepository
-import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
-import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleTextField
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButton
 import com.sualtikasifi.cizimhafiza.util.UpdateGate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -83,34 +97,37 @@ internal fun UpdatePanel(viewModel: UpdateAdminViewModel = hiltViewModel()) {
     val code = input.toIntOrNull()
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(Console.Gap),
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)
     ) {
-        Text(
-            "Kilitlenen sürümden eski bir uygulama, güncelleme kartını görür ve oyuna giremez; \"Güncelle\" Play Store'u açar. İnternetsiz telefon ve bu hesap kilitlenmez.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+        Row(horizontalArrangement = Arrangement.spacedBy(Console.Gap)) {
+            StatTile("Bu uygulama", "${BuildConfig.VERSION_CODE}", Modifier.weight(1f), changeCaption = "sürüm ${BuildConfig.VERSION_NAME}")
+            StatTile(
+                "En düşük oynanabilir", if (min > 0) "$min" else "—", Modifier.weight(1f),
+                changeCaption = if (min > 0) "altı kilitli" else "kilit yok"
+            )
+        }
+        ConsoleNotice(
+            "Kilitlenen sürümden eski bir uygulama güncelleme kartını görür ve oyuna giremez; \"Güncelle\" Play Store'u açar. İnternetsiz telefon ve bu hesap kilitlenmez.",
+            kind = NoticeKind.Info
         )
-        Text("Bu uygulamanın sürümü: ${BuildConfig.VERSION_NAME} (kod ${BuildConfig.VERSION_CODE})", style = MaterialTheme.typography.titleSmall)
-        Text(
-            if (min > 0) "Şu an kilitli: kod $min altı sürümler" else "Şu an kilit yok",
-            style = MaterialTheme.typography.titleMedium
-        )
-        AppTextField(
-            value = input,
-            onValueChange = { v -> input = v.filter(Char::isDigit).take(6) },
-            label = "En düşük oynanabilir sürüm kodu",
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-        Text(
-            "Dikkat: Bu sayıdan küçük her sürüm kilitlenir. Yeni sürüm Play'de yayınlanmadan kilit koyma, yoksa kimse güncelleyemez.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error
-        )
-        PrimaryButton(text = "Kilidi koy", onClick = { confirm = true }, enabled = !state.busy && code != null && code > 0, modifier = Modifier.fillMaxWidth())
-        OutlinedButton(onClick = { viewModel.setMinimum(0) }, enabled = !state.busy && min > 0, modifier = Modifier.fillMaxWidth()) { Text("Kilidi kaldır") }
-        state.message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        ConsoleSection("Sürüm kilidi") {
+            ConsoleTextField(
+                value = input,
+                onValueChange = { v -> input = v.filter(Char::isDigit).take(6) },
+                label = "En düşük oynanabilir sürüm kodu",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(10.dp))
+            ConsoleNotice("Bu sayıdan küçük her sürüm kilitlenir. Yeni sürüm Play'de yayınlanmadan kilit koyma, yoksa kimse güncelleyemez.", kind = NoticeKind.Warning)
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ConsoleSecondaryButton("Kilidi kaldır", { viewModel.setMinimum(0) }, Modifier.weight(1f), enabled = !state.busy && min > 0, icon = Icons.Filled.LockOpen)
+                ConsoleButton("Kilidi koy", { confirm = true }, Modifier.weight(1f), enabled = !state.busy && code != null && code > 0, loading = state.busy, icon = Icons.Filled.Lock, style = ConsoleButtonStyle.Danger)
+            }
+        }
+        state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
     }
 
     if (confirm && code != null) {
@@ -118,7 +135,7 @@ internal fun UpdatePanel(viewModel: UpdateAdminViewModel = hiltViewModel()) {
             onDismissRequest = { confirm = false },
             title = { Text("Kilit konsun mu?") },
             text = { Text("Kod $code altındaki tüm sürümler güncelleyene kadar oyunu açamayacak. Yeni sürümün Play'de yayında olduğundan emin ol.") },
-            confirmButton = { TextButton(onClick = { confirm = false; viewModel.setMinimum(code) }) { Text("Kilidi koy", color = MaterialTheme.colorScheme.error) } },
+            confirmButton = { TextButton(onClick = { confirm = false; viewModel.setMinimum(code) }) { Text("Kilidi koy", color = Console.Critical) } },
             dismissButton = { TextButton(onClick = { confirm = false }) { Text("Vazgeç") } }
         )
     }
