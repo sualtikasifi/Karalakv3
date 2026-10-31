@@ -3,6 +3,8 @@ package com.sualtikasifi.cizimhafiza.presentation.mainmenu
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -65,17 +67,29 @@ private val TourInk = Color(0xFF3A2416)
 private val TourBodyInk = Color(0xFF5A3A22)
 private val TourButtonOutline = Color(0xFF8A3A00)
 
-/** Three-step "what is new" tour shown once: chests, jokers, the store. */
+/** One page of the tour: an emoji (or, for the runes, the rune map's centre), a title and a few lines. */
+private data class TourPage(val emoji: String?, val title: Int, val body: Int, val runes: Boolean = false)
+
+/**
+ * The "what is new" tour, shown once: chests, jokers, the store and the runes. A player who saw it before it had the
+ * rune page gets that page alone ([runesOnly]); its button then opens the rune map ([onOpenRunes]) instead of only
+ * closing the tour.
+ */
 @Composable
-internal fun FeatureTourDialog(onFinish: () -> Unit) {
+internal fun FeatureTourDialog(onFinish: () -> Unit, runesOnly: Boolean = false, onOpenRunes: (() -> Unit)? = null) {
     var step by remember { mutableIntStateOf(0) }
-    val pages = listOf(
-        Triple("🎁", R.string.tour_chests_title, R.string.tour_chests_body),
-        Triple("🃏", R.string.tour_jokers_title, R.string.tour_jokers_body),
-        Triple("🛍️", R.string.tour_store_title, R.string.tour_store_body)
+    val runesPage = TourPage(null, R.string.tour_runes_title, R.string.tour_runes_body, runes = true)
+    val pages = if (runesOnly) listOf(runesPage) else listOf(
+        TourPage("🎁", R.string.tour_chests_title, R.string.tour_chests_body),
+        TourPage("🃏", R.string.tour_jokers_title, R.string.tour_jokers_body),
+        TourPage("🛍️", R.string.tour_store_title, R.string.tour_store_body),
+        runesPage
     )
-    val (emoji, title, body) = pages[step]
+    val page = pages[step]
+    val title = page.title
+    val body = page.body
     val last = step == pages.lastIndex
+    val opensRunes = last && runesOnly && onOpenRunes != null
     Dialog(onDismissRequest = onFinish, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         BoxWithConstraints(
             modifier = Modifier
@@ -122,7 +136,13 @@ internal fun FeatureTourDialog(onFinish: () -> Unit) {
                     modifier = Modifier.at(TitleRect)
                 )
                 Box(Modifier.at(EmojiRect), contentAlignment = Alignment.Center) {
-                    Text(text = emoji, fontSize = fs(150f))
+                    if (page.runes) {
+                        // the rune map's centre: the dog in its gold ring
+                        Image(painterResource(R.drawable.rune_root), contentDescription = null, modifier = Modifier.fillMaxHeight().aspectRatio(1f))
+                        Image(painterResource(R.drawable.rune_icon_dog), contentDescription = null, modifier = Modifier.fillMaxHeight(0.64f).aspectRatio(1.2f))
+                    } else {
+                        Text(text = page.emoji.orEmpty(), fontSize = fs(150f))
+                    }
                 }
                 FitText(
                     text = stringResource(title),
@@ -157,11 +177,17 @@ internal fun FeatureTourDialog(onFinish: () -> Unit) {
                     modifier = Modifier
                         .at(ButtonRect)
                         .sunkenArt(sink, sheet, x0 * pxK, y0 * pxK, (x1 - x0) * pxK, (y1 - y0) * pxK, u * ((y1 - y0) / 2f))
-                        .clickable(interactionSource = sink.source, indication = null, onClick = { if (last) onFinish() else step++ })
+                        .clickable(interactionSource = sink.source, indication = null, onClick = {
+                            when {
+                                opensRunes -> { onFinish(); onOpenRunes?.invoke() }
+                                last -> onFinish()
+                                else -> step++
+                            }
+                        })
                 ) {
                     Box(Modifier.fillMaxSize().sinkWith(sink, 0.5f, 0.5f), contentAlignment = Alignment.Center) {
                         LetteredText(
-                            text = stringResource(if (last) R.string.tour_start else R.string.tour_next),
+                            text = stringResource(if (opensRunes) R.string.rune_tour_open else if (last) R.string.tour_start else R.string.tour_next),
                             size = fs(78f),
                             outline = TourButtonOutline,
                             maxLines = 1, minScale = 0.5f,

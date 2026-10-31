@@ -152,6 +152,49 @@ object RuneTree {
 
     /** Total gold of the whole map. */
     val totalCost: Int get() = all.sumOf { r -> r.costs.indices.sumOf { RuneGates.price(r, it) ?: 0 } }
+
+    /** Rune levels bought so far (the root, which every player holds, is not one of them). */
+    fun boughtLevels(levels: Map<String, Int>): Int = all.filter { it.id != ROOT_ID }.sumOf { levelOf(levels, it.id) }
+
+    /** The runes that could be bought now, gold apart, with the price of their next level. */
+    private fun buyable(levels: Map<String, Int>, playerLevel: Int): List<Pair<Rune, Int>> =
+        all.mapNotNull { r -> if (canBuy(levels, r, playerLevel)) nextCost(levels, r)?.let { r to it } else null }
+
+    /**
+     * What the home screen's rune sign says: how many runes the gold buys right now, or how much gold the cheapest next
+     * one still needs, or the level the next ring waits for, or that the map is done.
+     */
+    fun hint(levels: Map<String, Int>, gold: Int, playerLevel: Int): RuneHint {
+        val open = buyable(levels, playerLevel)
+        val affordable = open.count { (_, cost) -> cost <= gold }
+        if (affordable > 0) return RuneHint.Affordable(affordable)
+        open.minOfOrNull { it.second }?.let { return RuneHint.Saving(it - gold) }
+        val nextRing = all.filter { it.id != ROOT_ID && levelOf(levels, it.id) < it.maxLevel }.minOfOrNull { it.ring }
+            ?: return RuneHint.Complete
+        val level = RuneGates.levelFor(nextRing)
+        return if (playerLevel < level) RuneHint.Locked(level) else RuneHint.Complete
+    }
+
+    /**
+     * The rune a first-time guide points at: Kalem Parası (more gold for every right word, felt in the very next game)
+     * when it can be bought now, otherwise the cheapest rune the gold buys; null when the gold buys nothing.
+     */
+    fun firstPick(levels: Map<String, Int>, gold: Int, playerLevel: Int): Rune? {
+        val affordable = buyable(levels, playerLevel).filter { (_, cost) -> cost <= gold }
+        return affordable.firstOrNull { it.first.id == WORD_GOLD }?.first ?: affordable.minByOrNull { it.second }?.first
+    }
+}
+
+/** See [RuneTree.hint]. */
+sealed interface RuneHint {
+    /** [count] runes can be bought with the gold held now. */
+    data class Affordable(val count: Int) : RuneHint
+    /** The cheapest rune open now needs [goldNeeded] more gold. */
+    data class Saving(val goldNeeded: Int) : RuneHint
+    /** Nothing is open until the player reaches [level]. */
+    data class Locked(val level: Int) : RuneHint
+    /** Every rune there is has been bought to its last level. */
+    data object Complete : RuneHint
 }
 
 /**
@@ -165,6 +208,12 @@ object RuneGates {
     @Volatile var percentNeeded: Int = 70
     /** Multiplies every rune price of rings 2 and up (1.0 = as designed). */
     @Volatile var priceFactor: Float = 1.0f
+
+    /** Whether the mascot offers a player who has never bought a rune to show them their first one (see MainMenuViewModel). */
+    @Volatile var firstRunePrompt: Boolean = true
+
+    /** Days the mascot keeps quiet after the player closes that offer. */
+    @Volatile var promptSnoozeDays: Int = 3
 
     fun levelFor(ring: Int): Int = when (ring) {
         2 -> ring2Level

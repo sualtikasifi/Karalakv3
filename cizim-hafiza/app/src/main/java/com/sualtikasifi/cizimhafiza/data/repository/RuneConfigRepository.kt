@@ -16,7 +16,9 @@ import javax.inject.Singleton
  * (when each ring opens, and what the later rings cost) can be tuned from the Firebase console without an app update.
  *
  * Every field is optional and kept within a sane range; a missing document or field leaves the built-in default.
- * Fields: ring2Level, ring3Level, ring4Level (player level), percentNeeded (0-100), priceFactor (0.25-4.0).
+ * Fields: ring2Level, ring3Level, ring4Level (player level), percentNeeded (0-100), priceFactor (0.25-4.0),
+ * firstRunePrompt (true/false: the mascot's offer to show a new player their first rune), promptSnoozeDays (1-30: how
+ * long it keeps quiet once closed).
  */
 @Singleton
 class RuneConfigRepository @Inject constructor(
@@ -52,5 +54,7 @@ class RuneConfigRepository @Inject constructor(
         RuneGates.ring4Level = int("ring4Level", 1..100, 40)
         RuneGates.percentNeeded = int("percentNeeded", 0..100, 70)
         RuneGates.priceFactor = (data?.get("priceFactor") as? Number)?.toFloat()?.takeIf { it in 0.25f..4.0f } ?: 1.0f
+        RuneGates.firstRunePrompt = data?.get("firstRunePrompt") as? Boolean ?: true
+        RuneGates.promptSnoozeDays = int("promptSnoozeDays", 1..30, 3)
     }
 }

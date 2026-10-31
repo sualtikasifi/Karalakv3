@@ -38,4 +38,23 @@ class GameAnalytics @Inject constructor(@ApplicationContext private val context:
 
     /** The rune status sheet was opened. */
     fun runeStatusOpened() = log("rune_status_opened") {}
+
+    /**
+     * The rune map was opened, and from where: "chip" (the home screen's Rünler sign), "mascot" (the dog above it),
+     * "prompt" (the mascot's first-rune offer) or "tour" (the Yenilikler tour's rune page).
+     */
+    fun runeMapOpened(source: String, boughtLevels: Int) = log("rune_map_opened") {
+        putString("source", source)
+        putLong("rune_levels", boughtLevels.toLong())
+    }
+
+    /** The mascot's first-rune offer: "shown", "tapped" or "dismissed". */
+    fun runePrompt(action: String) = log("rune_prompt") { putString("action", action) }
+
+    /** The player's very first rune, and whether the first-rune guide led them to it. */
+    fun firstRuneBought(runeId: String, guided: Boolean, playerLevel: Int) = log("rune_first_bought") {
+        putString("rune_id", runeId)
+        putLong("guided", if (guided) 1L else 0L)
+        putLong("player_level", playerLevel.toLong())
+    }
 }

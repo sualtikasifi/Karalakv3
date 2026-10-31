@@ -61,5 +61,9 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.ChestInfoPreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the Rünler sign, the mascot's first-rune offer, the guided rune map, the tour page (see RunePromoPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.RunePromoPreviewActivity"
+            android:exported="true" />
     </application>
 </manifest>

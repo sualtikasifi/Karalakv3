@@ -152,7 +152,7 @@ fun CizimHafizaNavGraph(
                 onChests = { navController.navigate(Screen.Chests) },
                 onStore = { navController.navigate(Screen.Store) },
                 onLeague = { navController.navigate(Screen.League) },
-                onRunes = { navController.navigate(Screen.Runes) }
+                onRunes = { guide -> navController.navigate(Screen.runesRoute(guide)) }
             )
         }
 
@@ -279,9 +279,13 @@ fun CizimHafizaNavGraph(
             com.sualtikasifi.cizimhafiza.presentation.store.StoreScreen(onBack = { navController.popBackStack() }, onAccount = { navController.navigate(Screen.Account) })
         }
 
-        composable(Screen.Runes) {
+        composable(
+            Screen.Runes,
+            arguments = listOf(navArgument(Screen.ArgRuneGuide) { type = NavType.BoolType; defaultValue = false })
+        ) { entry ->
             com.sualtikasifi.cizimhafiza.presentation.runes.RunesScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                guide = entry.arguments?.getBoolean(Screen.ArgRuneGuide) ?: false
             )
         }
 

@@ -47,8 +47,13 @@ object Screen {
     const val Chests = "chests"
     const val Store = "store"
 
-    /** "Karalak Rünleri" — the rune map, opened from the mascot on the home screen. */
-    const val Runes = "runes"
+    /**
+     * "Karalak Rünleri" — the rune map, opened from the home screen's Rünler sign or the mascot. With `guide=true` (the
+     * mascot's first-rune offer) the map opens on the rune it points the player to.
+     */
+    const val ArgRuneGuide = "guide"
+    const val Runes = "runes?$ArgRuneGuide={$ArgRuneGuide}"
+    fun runesRoute(guide: Boolean = false): String = "runes?$ArgRuneGuide=$guide"
     const val Account = "account"
     const val Tutorial = "tutorial"
 

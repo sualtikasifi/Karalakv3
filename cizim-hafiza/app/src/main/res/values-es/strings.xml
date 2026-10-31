@@ -1708,4 +1708,20 @@
     <string name="share_card_slogan">¡Ven a jugar,\núnete a la diversión!</string>
     <string name="share_card_collage_title">¿Puedes adivinar\nestos dibujos?</string>
     <string name="share_empty_drawing">Este dibujo está vacío, no hay nada que compartir.</string>
+    <!-- Rune promotion: the home screen sign, the mascot's first-rune offer, the guide, the tour page -->
+    <string name="rune_chip_title">Runas</string>
+    <string name="rune_chip_affordable">%1$d para comprar</string>
+    <string name="rune_chip_saving">Faltan %1$s de oro</string>
+    <string name="rune_chip_locked">Requiere nivel %1$d</string>
+    <string name="rune_chip_complete">Todo comprado</string>
+    <string name="rune_prompt_text">¡Tu oro puede comprar un poder permanente!</string>
+    <string name="rune_prompt_action">Mostrar</string>
+    <string name="rune_prompt_close">Cerrar</string>
+    <string name="rune_guide_hint">¡Tu primera runa está aquí! Cómprala abajo: empieza a funcionar ya y es tuya para siempre.</string>
+    <string name="rune_first_title">¡Tu primera runa!</string>
+    <string name="rune_first_body">%1$s ya es tuya.</string>
+    <string name="rune_first_ok">Genial</string>
+    <string name="rune_tour_open">Ver las runas</string>
+    <string name="tour_runes_title">Runas de Karalak</string>
+    <string name="tour_runes_body">¡Convierte tu oro en poderes permanentes! Las runas dan bonus en cada partida: más oro por cada palabra acertada, cofres más ricos, descuentos en la tienda y más. Toca el letrero Runas en la pantalla de inicio o el perro; las runas que puedes comprar brillan.</string>
 </resources>

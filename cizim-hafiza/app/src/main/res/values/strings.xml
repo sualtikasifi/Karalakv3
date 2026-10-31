@@ -1707,4 +1707,20 @@
     <string name="share_card_slogan">Come and play,\njoin the fun!</string>
     <string name="share_card_collage_title">Can you guess\nthese drawings?</string>
     <string name="share_empty_drawing">This drawing is empty, there is nothing to share.</string>
+    <!-- Rune promotion: the home screen sign, the mascot's first-rune offer, the guide, the tour page -->
+    <string name="rune_chip_title">Runes</string>
+    <string name="rune_chip_affordable">%1$d to buy</string>
+    <string name="rune_chip_saving">%1$s gold to next</string>
+    <string name="rune_chip_locked">Needs level %1$d</string>
+    <string name="rune_chip_complete">All bought</string>
+    <string name="rune_prompt_text">Your gold can buy a permanent boost!</string>
+    <string name="rune_prompt_action">Show me</string>
+    <string name="rune_prompt_close">Close</string>
+    <string name="rune_guide_hint">Your first rune is right here! Buy it below: it starts working now and stays yours.</string>
+    <string name="rune_first_title">Your first rune!</string>
+    <string name="rune_first_body">%1$s is yours now.</string>
+    <string name="rune_first_ok">Great</string>
+    <string name="rune_tour_open">See the runes</string>
+    <string name="tour_runes_title">Karalak Runes</string>
+    <string name="tour_runes_body">Turn your gold into permanent powers! Runes give bonuses in every game: more gold for every right word, richer chests, store discounts and more. Tap the Runes sign on the home screen, or the dog; the runes you can buy glow.</string>
 </resources>

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -136,6 +138,7 @@ fun DashboardPanel(
                     )
                 }
             }
+            item { RuneFunnelCard(s) }
             item {
                 ConsoleCard(Modifier.fillMaxWidth(), onClick = onOpenStats) {
                     SectionHeader("Aktif oyuncular", subtitle = "Son 14 gün · dokunup gün seç")
@@ -210,3 +213,67 @@ private fun WorkRow(icon: ImageVector, title: String, subtitle: String, count: L
     }
 }
 
+
+/**
+ * How players reach the rune map and their first rune over the last seven days (the RuneFunnel counters): map opens and
+ * where they came from, the mascot's offer and how many took it, first runes with and without the guide, and every rune
+ * level bought.
+ */
+@Composable
+internal fun RuneFunnelCard(s: DaySeries) {
+    val week = (s.size - 7 until s.size)
+    fun sum(key: String, prefix: Boolean = false) = s.sumOf(week) { s.count(it, key, prefix) }
+    val opens = sum("rune__open__", prefix = true)
+    val sources = listOf(
+        Triple("Tabela", sum("rune__open__chip"), Console.Accent),
+        Triple("Maskot", sum("rune__open__mascot"), Console.Blue),
+        Triple("Teklif", sum("rune__open__prompt"), Console.Violet),
+        Triple("Tur", sum("rune__open__tour"), Console.Teal)
+    )
+    val shown = sum("rune__prompt__shown")
+    val tapped = sum("rune__prompt__tapped")
+    val guided = sum("rune__first__guided")
+    val self = sum("rune__first__self")
+    val bought = sum("rune__bought__count")
+    ConsoleCard(Modifier.fillMaxWidth()) {
+        SectionHeader("Rün hunisi", subtitle = "Son 7 gün · rünler ne kadar fark ediliyor")
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(Console.ControlCorner)).background(Console.SurfaceAlt).padding(vertical = 10.dp)) {
+            FunnelFigure("Harita açılışı", Console.compact(opens.toDouble()), Modifier.weight(1f))
+            FunnelFigure("İlk rün", Console.compact((guided + self).toDouble()), Modifier.weight(1f))
+            FunnelFigure("Rün alımı", Console.compact(bought.toDouble()), Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(12.dp))
+        Text("Açılışlar nereden", style = Console.Label)
+        Spacer(Modifier.height(6.dp))
+        // one bar split by source, then the legend with the numbers
+        Row(Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(Console.Grid)) {
+            if (opens > 0) sources.filter { it.second > 0 }.forEach { (_, n, color) ->
+                Box(Modifier.weight(n.toFloat()).fillMaxHeight().background(color))
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            sources.forEach { (name, n, color) ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(color))
+                    Spacer(Modifier.width(4.dp))
+                    Text("$name $n", style = Console.Small.copy(fontSize = 11.sp))
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            "Maskot teklifi: $shown gösterildi · $tapped dokunuldu" + if (shown > 0) " (${Console.percent(tapped.toDouble() / shown)})" else "",
+            style = Console.Small.copy(color = Console.Ink)
+        )
+        Text("İlk rün: $guided rehberle · $self kendiliğinden", style = Console.Small.copy(color = Console.Ink))
+    }
+}
+
+@Composable
+private fun FunnelFigure(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = Console.Value.copy(fontSize = 18.sp))
+        Text(label, style = Console.Small.copy(fontSize = 11.sp))
+    }
+}
