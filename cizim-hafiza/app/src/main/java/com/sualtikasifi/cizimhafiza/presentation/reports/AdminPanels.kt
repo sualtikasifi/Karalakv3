@@ -15,6 +15,8 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.ui.Alignment
@@ -567,7 +569,7 @@ internal fun JobsPanel(viewModel: JobsViewModel = hiltViewModel()) {
 
 // ---------------------------------------------------------------- audit log
 
-data class AuditState(val lines: List<Triple<String, String, String>> = emptyList(), val loaded: Boolean = false)
+data class AuditState(val lines: List<Triple<String, String, String>> = emptyList(), val loaded: Boolean = false, val failed: Boolean = false)
 
 @HiltViewModel
 class AuditViewModel @Inject constructor(private val firestore: FirebaseFirestore) : ViewModel() {
@@ -584,7 +586,7 @@ class AuditViewModel @Inject constructor(private val firestore: FirebaseFirestor
                         d.getString("detail").orEmpty()
                     )
                 }
-            }.onSuccess { _state.value = AuditState(it, true) }.onFailure { _state.value = AuditState(emptyList(), true) }
+            }.onSuccess { _state.value = AuditState(it, true) }.onFailure { _state.value = AuditState(emptyList(), loaded = true, failed = true) }
         }
     }
 }
@@ -597,6 +599,11 @@ internal fun AuditPanel(viewModel: AuditViewModel = hiltViewModel()) {
     Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
         when {
             !state.loaded -> ConsoleSkeleton(rows = 5, rowHeight = 56.dp)
+            state.failed -> ConsoleEmpty(
+                Icons.Filled.CloudOff, "Kayıtlar okunamadı",
+                body = "İnternet bağlantısını ve bu cihazın geliştirici hesabıyla giriş yaptığını kontrol et.",
+                action = { ConsoleButton("Tekrar dene", viewModel::load, icon = Icons.Filled.Refresh, style = ConsoleButtonStyle.Secondary) }
+            )
             state.lines.isEmpty() -> ConsoleEmpty(Icons.Filled.History, "Kayıt yok", body = "Panelden yapılan işlemler burada sırayla görünür.")
             else -> ConsoleCard(Modifier.fillMaxWidth(), padding = 4.dp) {
                 state.lines.forEachIndexed { i, (who, what, detail) ->

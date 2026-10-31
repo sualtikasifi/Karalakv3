@@ -133,7 +133,7 @@ internal fun PlayerReportsPanel(viewModel: PlayerReportsViewModel = hiltViewMode
     ) {
         state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
         if (!state.loaded) ConsoleSkeleton(rows = 3, rowHeight = 120.dp)
-        else if (state.groups.isEmpty()) ConsoleEmpty(Icons.Filled.Report, "Bekleyen oyuncu raporu yok", body = "Oyuncular birini bildirdiğinde burada kişi kişi toplanır.")
+        else if (state.groups.isEmpty() && state.message == null) ConsoleEmpty(Icons.Filled.Report, "Bekleyen oyuncu raporu yok", body = "Oyuncular birini bildirdiğinde burada kişi kişi toplanır.")
         state.groups.forEach { g ->
             ConsoleCard(Modifier.fillMaxWidth(), padding = 12.dp) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
