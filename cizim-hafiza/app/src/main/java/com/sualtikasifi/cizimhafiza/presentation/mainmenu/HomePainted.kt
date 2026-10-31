@@ -744,22 +744,25 @@ private fun RuneChip(
         modifier
             .background(Brush.verticalGradient(listOf(Color(0xFFFFB73E), Color(0xFFE5670B))), RoundedCornerShape(50))
             .border((1.5f).dp, Color(0xFFB04A08), RoundedCornerShape(50))
-            .padding((8f * us).dp)
+            .padding((7f * us).dp)
             .background(Brush.verticalGradient(listOf(Color(0xFF4A1D0A), Color(0xFF5E2A10))), RoundedCornerShape(50))
-            .padding(start = (66f * us).dp, end = (14f * us).dp)
+            .padding(start = (66f * us).dp, end = (14f * us).dp, top = (3f * us).dp, bottom = (3f * us).dp)
     ) {
-        androidx.compose.foundation.layout.Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center
-        ) {
-            LetteredText(stringResource(R.string.rune_chip_title), fs(27f), outline = Color(0xFF3A1E08), maxLines = 1, minScale = 0.6f)
-            FitText(
-                text = line,
-                style = PaintedStyle(color = if (ready) Color(0xFF9CF27A) else Color(0xFFFFD27A), fontSize = fs(19f)),
-                minScale = 0.6f,
-                contentAlignment = Alignment.CenterStart,
-                modifier = Modifier.fillMaxWidth()
-            )
+        // Two fixed bands, so the name can never push the line under it out of the well: the lettering shrinks to
+        // its band instead (see LetteredText).
+        androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
+            Box(Modifier.weight(0.56f).fillMaxWidth(), contentAlignment = Alignment.BottomStart) {
+                LetteredText(stringResource(R.string.rune_chip_title), fs(25f), outline = Color(0xFF3A1E08), maxLines = 1, minScale = 0.6f)
+            }
+            Box(Modifier.weight(0.44f).fillMaxWidth(), contentAlignment = Alignment.TopStart) {
+                FitText(
+                    text = line,
+                    style = PaintedStyle(color = if (ready) Color(0xFF9CF27A) else Color(0xFFFFD27A), fontSize = fs(17f), lineHeight = fs(19f)),
+                    minScale = 0.6f,
+                    contentAlignment = Alignment.TopStart,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
     Box(iconModifier, contentAlignment = Alignment.Center) {
