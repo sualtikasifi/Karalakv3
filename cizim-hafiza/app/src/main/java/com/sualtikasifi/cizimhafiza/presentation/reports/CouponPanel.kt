@@ -38,9 +38,9 @@ import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
 import com.sualtikasifi.cizimhafiza.domain.model.Coupon
 import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
 import com.sualtikasifi.cizimhafiza.domain.repository.CouponRepository
-import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
-import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
-import com.sualtikasifi.cizimhafiza.presentation.common.SelectableChip
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleTextField
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleChip
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -178,14 +178,14 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
     ) {
         // Reward: gold and XP side by side, then one stepper line per chest tier.
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            AppTextField(
+            ConsoleTextField(
                 value = state.gold,
                 onValueChange = { v -> viewModel.update { copy(gold = v.filter(Char::isDigit).take(6)) } },
                 label = "Altın",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.weight(1f)
             )
-            AppTextField(
+            ConsoleTextField(
                 value = state.xp,
                 onValueChange = { v -> viewModel.update { copy(xp = v.filter(Char::isDigit).take(6)) } },
                 label = "XP",
@@ -208,7 +208,7 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
         Text(stringResource(R.string.coupon_panel_distribution), style = compact, color = MaterialTheme.colorScheme.onSurfaceVariant)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf(0, 3, 5, 10, 20).forEach { n ->
-                SelectableChip(
+                ConsoleChip(
                     label = if (n == 0) "Tek ortak kod" else "$n ayrı kod",
                     selected = state.separateCodes == n,
                     onClick = { viewModel.update { copy(separateCodes = n) } },
@@ -220,7 +220,7 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             if (state.separateCodes == 0) {
-                AppTextField(
+                ConsoleTextField(
                     value = state.maxUses,
                     onValueChange = { v -> viewModel.update { copy(maxUses = v.filter(Char::isDigit).take(5)) } },
                     label = "Kaç kişi",
@@ -228,7 +228,7 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                     modifier = Modifier.weight(1f)
                 )
             }
-            AppTextField(
+            ConsoleTextField(
                 value = state.days,
                 onValueChange = { v -> viewModel.update { copy(days = v.filter(Char::isDigit).take(3)) } },
                 label = "Gün (0 = süresiz)",
@@ -237,14 +237,14 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
             )
         }
         if (state.separateCodes == 0) {
-            AppTextField(
+            ConsoleTextField(
                 value = state.customCode,
                 onValueChange = { v -> viewModel.update { copy(customCode = v.uppercase().filter { it.isLetterOrDigit() || it == '-' }.take(CouponCodes.MAX_LENGTH)) } },
                 label = "Kod (boşsa otomatik)",
                 modifier = Modifier.fillMaxWidth()
             )
         }
-        PrimaryButton(text = "Kodu oluştur", onClick = viewModel::create, enabled = !state.busy, modifier = Modifier.fillMaxWidth())
+        ConsoleButton(text = "Kodu oluştur", onClick = viewModel::create, enabled = !state.busy, modifier = Modifier.fillMaxWidth())
         state.message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         state.lastCreated.forEach { code ->
             CopyRow(code = code, style = MaterialTheme.typography.titleSmall) { copyToClipboard(context, code) }
@@ -300,9 +300,9 @@ private fun ChestStepper(name: String, count: Int, onChange: (Int) -> Unit, modi
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            SelectableChip(label = "−", selected = false, onClick = { onChange(count - 1) }, horizontalPadding = 10.dp, verticalPadding = 4.dp)
+            ConsoleChip(label = "−", selected = false, onClick = { onChange(count - 1) }, horizontalPadding = 10.dp, verticalPadding = 4.dp)
             Text(count.toString(), style = MaterialTheme.typography.titleMedium)
-            SelectableChip(label = "+", selected = false, onClick = { onChange(count + 1) }, horizontalPadding = 10.dp, verticalPadding = 4.dp)
+            ConsoleChip(label = "+", selected = false, onClick = { onChange(count + 1) }, horizontalPadding = 10.dp, verticalPadding = 4.dp)
         }
     }
 }

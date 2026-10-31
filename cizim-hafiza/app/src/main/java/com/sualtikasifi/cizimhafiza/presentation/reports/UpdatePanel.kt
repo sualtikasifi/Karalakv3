@@ -29,8 +29,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.sualtikasifi.cizimhafiza.BuildConfig
 import com.sualtikasifi.cizimhafiza.data.repository.EconomyConfigRepository
-import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
-import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleTextField
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButton
 import com.sualtikasifi.cizimhafiza.util.UpdateGate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -96,7 +96,7 @@ internal fun UpdatePanel(viewModel: UpdateAdminViewModel = hiltViewModel()) {
             if (min > 0) "Şu an kilitli: kod $min altı sürümler" else "Şu an kilit yok",
             style = MaterialTheme.typography.titleMedium
         )
-        AppTextField(
+        ConsoleTextField(
             value = input,
             onValueChange = { v -> input = v.filter(Char::isDigit).take(6) },
             label = "En düşük oynanabilir sürüm kodu",
@@ -108,7 +108,7 @@ internal fun UpdatePanel(viewModel: UpdateAdminViewModel = hiltViewModel()) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error
         )
-        PrimaryButton(text = "Kilidi koy", onClick = { confirm = true }, enabled = !state.busy && code != null && code > 0, modifier = Modifier.fillMaxWidth())
+        ConsoleButton(text = "Kilidi koy", onClick = { confirm = true }, enabled = !state.busy && code != null && code > 0, modifier = Modifier.fillMaxWidth())
         OutlinedButton(onClick = { viewModel.setMinimum(0) }, enabled = !state.busy && min > 0, modifier = Modifier.fillMaxWidth()) { Text("Kilidi kaldır") }
         state.message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
     }

@@ -13,6 +13,8 @@ adb shell input keyevent 82 || true
 adb shell settings put global hide_error_dialogs 1 || true
 sleep 20
 adb install -r -t "$APK"
+# the panel is used in Turkish: show its string resources in Turkish too (per-app language, Android 13+)
+adb shell cmd locale set-app-locales "$PKG" --locales tr-TR || true
 
 shot() {
   # a fresh start each time: an open activity would only be handed the new intent

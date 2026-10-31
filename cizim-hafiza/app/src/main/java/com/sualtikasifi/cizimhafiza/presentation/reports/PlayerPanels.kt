@@ -20,10 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
-import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
-import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
-import com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleTextField
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSurface
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSecondaryButton
 import com.sualtikasifi.cizimhafiza.util.PlayerAdmin
 import com.sualtikasifi.cizimhafiza.util.PlayerInfo
 import com.sualtikasifi.cizimhafiza.util.PlayerReportGroup
@@ -105,7 +105,7 @@ internal fun PlayerReportsPanel(viewModel: PlayerReportsViewModel = hiltViewMode
             Text("Bekleyen oyuncu raporu yok.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         state.groups.forEach { g ->
-            RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
+            ConsoleSurface(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         "${g.nickname.ifBlank { g.uid.take(8) }} · ${g.count} rapor",
@@ -120,9 +120,9 @@ internal fun PlayerReportsPanel(viewModel: PlayerReportsViewModel = hiltViewMode
                     Text(g.uid, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                     val busy = state.busyUid != null
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                        SecondaryButton("Adı sıfırla", { viewModel.resetName(g) }, Modifier.weight(1f), enabled = !busy, height = 44.dp)
-                        SecondaryButton("Kilitle", { viewModel.lock(g) }, Modifier.weight(1f), enabled = !busy, height = 44.dp)
-                        PrimaryButton("Kapat", { viewModel.dismiss(g) }, Modifier.weight(1f), enabled = !busy, height = 44.dp)
+                        ConsoleSecondaryButton("Adı sıfırla", { viewModel.resetName(g) }, Modifier.weight(1f), enabled = !busy, height = 44.dp)
+                        ConsoleSecondaryButton("Kilitle", { viewModel.lock(g) }, Modifier.weight(1f), enabled = !busy, height = 44.dp)
+                        ConsoleButton("Kapat", { viewModel.dismiss(g) }, Modifier.weight(1f), enabled = !busy, height = 44.dp)
                     }
                 }
             }
@@ -190,20 +190,20 @@ internal fun PlayersPanel(viewModel: PlayersViewModel = hiltViewModel()) {
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        AppTextField(
+        ConsoleTextField(
             value = state.query,
             onValueChange = { v -> viewModel.edit { copy(query = v) } },
             label = "Ad, arkadaş kodu ya da kullanıcı kimliği",
             modifier = Modifier.fillMaxWidth()
         )
-        PrimaryButton("Ara", viewModel::search, Modifier.fillMaxWidth(), enabled = !state.busy && state.query.isNotBlank(), height = 48.dp)
+        ConsoleButton("Ara", viewModel::search, Modifier.fillMaxWidth(), enabled = !state.busy && state.query.isNotBlank(), height = 48.dp)
         state.message?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
         if (state.searched && state.results.isEmpty()) {
             Text("Böyle bir oyuncu bulunamadı.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         val now = System.currentTimeMillis()
         state.results.forEach { p ->
-            RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
+            ConsoleSurface(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(p.nickname.ifBlank { "(adsız)" }, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                     Text(
@@ -218,29 +218,29 @@ internal fun PlayersPanel(viewModel: PlayersViewModel = hiltViewModel()) {
                     )
                     Text(p.uid, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                        SecondaryButton("Adı sıfırla", { viewModel.resetName(p) }, Modifier.weight(1f), enabled = !state.busy, height = 44.dp)
+                        ConsoleSecondaryButton("Adı sıfırla", { viewModel.resetName(p) }, Modifier.weight(1f), enabled = !state.busy, height = 44.dp)
                         if (p.lockedUntilMillis > now) {
-                            SecondaryButton("Kilidi aç", { viewModel.unlock(p) }, Modifier.weight(1f), enabled = !state.busy, height = 44.dp)
+                            ConsoleSecondaryButton("Kilidi aç", { viewModel.unlock(p) }, Modifier.weight(1f), enabled = !state.busy, height = 44.dp)
                         } else {
-                            SecondaryButton("Kilitle", { viewModel.lock(p) }, Modifier.weight(1f), enabled = !state.busy, height = 44.dp)
+                            ConsoleSecondaryButton("Kilitle", { viewModel.lock(p) }, Modifier.weight(1f), enabled = !state.busy, height = 44.dp)
                         }
                     }
                     Text("Telafi", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                        AppTextField(
+                        ConsoleTextField(
                             value = state.gold, onValueChange = { v -> viewModel.edit { copy(gold = v.filter(Char::isDigit).take(6)) } },
                             label = "Altın", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
                         )
-                        AppTextField(
+                        ConsoleTextField(
                             value = state.xp, onValueChange = { v -> viewModel.edit { copy(xp = v.filter(Char::isDigit).take(6)) } },
                             label = "XP", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
                         )
                     }
-                    AppTextField(
+                    ConsoleTextField(
                         value = state.note, onValueChange = { v -> viewModel.edit { copy(note = v.take(60)) } },
                         label = "Not (denetim kaydına)", modifier = Modifier.fillMaxWidth()
                     )
-                    PrimaryButton(
+                    ConsoleButton(
                         "Telafiyi gönder", { viewModel.grant(p) }, Modifier.fillMaxWidth(),
                         enabled = !state.busy && ((state.gold.toIntOrNull() ?: 0) + (state.xp.toIntOrNull() ?: 0)) > 0, height = 44.dp
                     )

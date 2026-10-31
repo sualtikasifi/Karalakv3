@@ -33,10 +33,11 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.Source
 import com.sualtikasifi.cizimhafiza.data.repository.EconomyConfigRepository
-import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
-import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
-import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
-import com.sualtikasifi.cizimhafiza.presentation.common.SelectableChip
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleTextField
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSecondaryButton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSurface
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleChip
 import com.sualtikasifi.cizimhafiza.util.EconomyConfig
 import com.sualtikasifi.cizimhafiza.util.PlayerAdmin
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -153,7 +154,7 @@ internal fun EconomyPanel(viewModel: EconomyAdminViewModel = hiltViewModel()) {
         )
         if (state.loaded) EconomyConfig.fields.forEach { f ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                AppTextField(
+                ConsoleTextField(
                     value = state.values[f.key].orEmpty(),
                     onValueChange = { viewModel.edit(f.key, it) },
                     label = "${ECONOMY_LABELS[f.key] ?: f.key} (${f.range.first}–${f.range.last}, varsayılan ${f.default})",
@@ -163,7 +164,7 @@ internal fun EconomyPanel(viewModel: EconomyAdminViewModel = hiltViewModel()) {
             }
         }
         state.message?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
-        PrimaryButton("Kaydet", viewModel::save, Modifier.fillMaxWidth(), enabled = state.loaded && !state.busy, height = 48.dp)
+        ConsoleButton("Kaydet", viewModel::save, Modifier.fillMaxWidth(), enabled = state.loaded && !state.busy, height = 48.dp)
     }
 }
 
@@ -247,28 +248,28 @@ internal fun AnnouncePanel(viewModel: AnnounceViewModel = hiltViewModel()) {
             style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface
         )
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            LANGS.forEach { (l, name) -> SelectableChip(name, state.lang == l, { viewModel.edit { copy(lang = l) } }) }
+            LANGS.forEach { (l, name) -> ConsoleChip(name, state.lang == l, { viewModel.edit { copy(lang = l) } }) }
         }
-        AppTextField(
+        ConsoleTextField(
             value = state.titles[state.lang].orEmpty(),
             onValueChange = { v -> viewModel.edit { copy(titles = titles + (lang to v.take(60))) } },
             label = "Başlık", modifier = Modifier.fillMaxWidth()
         )
-        AppTextField(
+        ConsoleTextField(
             value = state.bodies[state.lang].orEmpty(),
             onValueChange = { v -> viewModel.edit { copy(bodies = bodies + (lang to v.take(400))) } },
             label = "Metin", singleLine = false, minLines = 4, modifier = Modifier.fillMaxWidth()
         )
-        AppTextField(
+        ConsoleTextField(
             value = state.days,
             onValueChange = { v -> viewModel.edit { copy(days = v.filter(Char::isDigit).take(3)) } },
             label = "Kaç gün yayında kalsın (0 = süresiz)",
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth()
         )
         state.message?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
-        PrimaryButton("Yayınla", { viewModel.publish(true) }, Modifier.fillMaxWidth(), enabled = !state.busy, height = 48.dp)
+        ConsoleButton("Yayınla", { viewModel.publish(true) }, Modifier.fillMaxWidth(), enabled = !state.busy, height = 48.dp)
         if (state.active) {
-            com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton(
+            ConsoleSecondaryButton(
                 "Duyuruyu kapat", { viewModel.publish(false) }, Modifier.fillMaxWidth(), enabled = !state.busy, height = 48.dp
             )
         }
@@ -345,16 +346,16 @@ internal fun PushPanel(viewModel: PushViewModel = hiltViewModel()) {
             "Bildirimi açık olan 13 yaş ve üstü tüm oyunculara gider. Metin tek dilde (oyuncunun diline çevrilmez); kısa ve net tut.",
             style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        AppTextField(
+        ConsoleTextField(
             value = state.title, onValueChange = { v -> viewModel.edit { copy(title = v.take(60)) } },
             label = "Başlık", modifier = Modifier.fillMaxWidth()
         )
-        AppTextField(
+        ConsoleTextField(
             value = state.body, onValueChange = { v -> viewModel.edit { copy(body = v.take(200)) } },
             label = "Metin", singleLine = false, minLines = 3, modifier = Modifier.fillMaxWidth()
         )
         state.message?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
-        PrimaryButton("Gönder", { confirm = true }, Modifier.fillMaxWidth(), enabled = !state.busy && state.title.isNotBlank() && state.body.isNotBlank(), height = 48.dp)
+        ConsoleButton("Gönder", { confirm = true }, Modifier.fillMaxWidth(), enabled = !state.busy && state.title.isNotBlank() && state.body.isNotBlank(), height = 48.dp)
         if (state.recent.isNotEmpty()) {
             Text("Son gönderilenler", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
             state.recent.forEach { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -436,7 +437,7 @@ internal fun JobsPanel(viewModel: JobsViewModel = hiltViewModel()) {
         }
         state.rows.forEach { r ->
             val stale = r.lastRunMillis > 0 && now - r.lastRunMillis > 36 * 3_600_000L
-            RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
+            ConsoleSurface(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(r.label, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
                     val bad = r.ok == false || stale
@@ -493,7 +494,7 @@ internal fun AuditPanel(viewModel: AuditViewModel = hiltViewModel()) {
             Text("Kayıt yok.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         state.lines.forEach { (who, what, detail) ->
-            RaisedCard(corner = 16.dp, modifier = Modifier.fillMaxWidth()) {
+            ConsoleSurface(corner = 16.dp, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(what, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
                     if (detail.isNotBlank()) Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -588,30 +589,30 @@ internal fun XpPlanSection(viewModel: XpPlanViewModel = hiltViewModel()) {
         if (upcoming.isNotEmpty()) {
             Text("Özel günden planla (sabah 10, bir gün sürer):", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                upcoming.forEach { d -> SelectableChip(d.name.take(28), false, { viewModel.planForDay(d.date, d.name) }, verticalPadding = 8.dp) }
+                upcoming.forEach { d -> ConsoleChip(d.name.take(28), false, { viewModel.planForDay(d.date, d.name) }, verticalPadding = 8.dp) }
             }
         }
         Text("Kaç saat sonra başlasın", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf(1, 6, 12, 24, 48, 72, 168).forEach { h ->
-                SelectableChip("$h sa", state.startInHours == h, { viewModel.edit { copy(startInHours = h) } }, verticalPadding = 8.dp)
+                ConsoleChip("$h sa", state.startInHours == h, { viewModel.edit { copy(startInHours = h) } }, verticalPadding = 8.dp)
             }
         }
         Text("Ne kadar sürsün · çarpan", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf(3, 6, 24, 48, 72).forEach { h ->
-                SelectableChip("$h sa", state.durationHours == h, { viewModel.edit { copy(durationHours = h) } }, verticalPadding = 8.dp)
+                ConsoleChip("$h sa", state.durationHours == h, { viewModel.edit { copy(durationHours = h) } }, verticalPadding = 8.dp)
             }
             listOf(1.3, 1.5, 2.0, 3.0).forEach { m ->
-                SelectableChip("x$m", state.multiplier == m, { viewModel.edit { copy(multiplier = m) } }, verticalPadding = 8.dp)
+                ConsoleChip("x$m", state.multiplier == m, { viewModel.edit { copy(multiplier = m) } }, verticalPadding = 8.dp)
             }
         }
-        AppTextField(
+        ConsoleTextField(
             value = state.label, onValueChange = { v -> viewModel.edit { copy(label = v.take(32)) } },
             label = "Etkinlik adı", modifier = Modifier.fillMaxWidth()
         )
         state.message?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
-        PrimaryButton("Planla", viewModel::create, Modifier.fillMaxWidth(), enabled = !state.busy, height = 48.dp)
+        ConsoleButton("Planla", viewModel::create, Modifier.fillMaxWidth(), enabled = !state.busy, height = 48.dp)
         state.plans.forEach { p ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Text(

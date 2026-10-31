@@ -26,8 +26,8 @@ import androidx.lifecycle.viewModelScope
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.ActiveLock
 import com.sualtikasifi.cizimhafiza.domain.repository.ModerationRepository
-import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
-import com.sualtikasifi.cizimhafiza.presentation.common.SecondaryButton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSurface
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSecondaryButton
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -102,7 +102,7 @@ fun LocksPanel(viewModel: LocksViewModel = hiltViewModel()) {
         }
         val now = System.currentTimeMillis()
         state.locks.forEach { lock ->
-            RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
+            ConsoleSurface(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = lock.nickname.ifBlank { lock.uid.take(8) },
@@ -119,7 +119,7 @@ fun LocksPanel(viewModel: LocksViewModel = hiltViewModel()) {
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline
                     )
-                    SecondaryButton(
+                    ConsoleSecondaryButton(
                         text = stringResource(R.string.locks_cancel),
                         onClick = { pendingCancel = lock },
                         enabled = !state.busy,

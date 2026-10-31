@@ -23,8 +23,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.RuneTree
-import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
-import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButton
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSurface
 import com.sualtikasifi.cizimhafiza.util.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.text.NumberFormat
@@ -65,7 +65,7 @@ fun RunesDevPanel(viewModel: RunesDevViewModel = hiltViewModel()) {
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        RaisedCard(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
+        ConsoleSurface(corner = 20.dp, modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(stringResource(R.string.runes_dev_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                 Text(
@@ -80,17 +80,17 @@ fun RunesDevPanel(viewModel: RunesDevViewModel = hiltViewModel()) {
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-                PrimaryButton(
+                ConsoleButton(
                     text = stringResource(R.string.runes_dev_refresh_config),
                     onClick = viewModel::refreshConfig,
                     modifier = Modifier.fillMaxWidth()
                 )
-                PrimaryButton(
+                ConsoleButton(
                     text = stringResource(R.string.runes_dev_unlock),
                     onClick = viewModel::unlockAll,
                     modifier = Modifier.fillMaxWidth()
                 )
-                PrimaryButton(
+                ConsoleButton(
                     text = stringResource(R.string.runes_dev_reset),
                     onClick = { confirm = true },
                     enabled = boughtLevels > 0,
