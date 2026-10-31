@@ -39,6 +39,10 @@ data class DaySeries(
     fun interstitials(i: Int): Long = counts[i].filterKeys { it.startsWith("ad__") && it.endsWith("__interstitial_shown") }.values.sum()
     fun revenueMicros(i: Int): Long = counts[i].filterKeys { it.startsWith("rev__") && it.endsWith("__micros") }.values.sum()
 
+    /** Day [i]'s counter [key], or the sum of every counter starting with it when [prefix] (see RuneFunnel for the rune ones). */
+    fun count(i: Int, key: String, prefix: Boolean = false): Long =
+        if (prefix) counts[i].filterKeys { it.startsWith(key) }.values.sum() else counts[i][key] ?: 0L
+
     /** The currency the revenue counters are in (most-seen code), or null before any paid event arrived. */
     fun currency(): String? = counts.flatMap { it.entries }
         .filter { it.key.startsWith("revcur__") }

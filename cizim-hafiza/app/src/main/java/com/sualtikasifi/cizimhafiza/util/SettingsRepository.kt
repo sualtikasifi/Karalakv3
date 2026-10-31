@@ -1073,6 +1073,16 @@ class SettingsRepository @Inject constructor(
         get() = prefs.getBoolean(KEY_RUNES_INTRO_SEEN, false)
         set(value) = prefs.edit { putBoolean(KEY_RUNES_INTRO_SEEN, value) }
 
+    /** Until when (epoch ms) the mascot keeps its "your gold buys a rune" offer to itself, after the player closed it. */
+    var runePromptSnoozedUntil: Long
+        get() = prefs.getLong(KEY_RUNE_PROMPT_SNOOZED_UNTIL, 0L)
+        set(value) = prefs.edit { putLong(KEY_RUNE_PROMPT_SNOOZED_UNTIL, value) }
+
+    /** The "Yenilikler" tour's rune page has been shown (players who saw the tour before it had one get just that page). */
+    var runesTourSeen: Boolean
+        get() = prefs.getBoolean(KEY_RUNES_TOUR_SEEN, false)
+        set(value) = prefs.edit { putBoolean(KEY_RUNES_TOUR_SEEN, value) }
+
     var signInReminderStage: Int
         get() = prefs.getInt(KEY_SIGN_IN_REMINDER_STAGE, 0)
         set(value) = prefs.edit { putInt(KEY_SIGN_IN_REMINDER_STAGE, value) }
@@ -1228,6 +1238,8 @@ class SettingsRepository @Inject constructor(
         const val KEY_NOTIFICATION_PERMISSION_REQUESTED = "notification_permission_requested"
         const val KEY_LAST_REMINDER_EPOCH_DAY = "last_reminder_epoch_day"
         const val KEY_RUNES_INTRO_SEEN = "runes_intro_seen"
+        const val KEY_RUNE_PROMPT_SNOOZED_UNTIL = "rune_prompt_snoozed_until"
+        const val KEY_RUNES_TOUR_SEEN = "runes_tour_seen"
         const val KEY_SIGN_IN_REMINDER_STAGE = "sign_in_reminder_stage"
         const val KEY_SIGN_IN_PROMPT_SHOWN = "sign_in_prompt_shown"
         const val KEY_RATING_PROMPT_SHOWN = "rating_prompt_shown"

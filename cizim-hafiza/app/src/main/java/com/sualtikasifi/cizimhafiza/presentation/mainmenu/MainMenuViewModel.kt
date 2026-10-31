@@ -72,7 +72,8 @@ class MainMenuViewModel @Inject constructor(
     xpEventRepository: com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository,
     private val serverClock: com.sualtikasifi.cizimhafiza.domain.repository.ServerClock,
     legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore,
-    private val announcementRepository: com.sualtikasifi.cizimhafiza.data.repository.AnnouncementRepository
+    private val announcementRepository: com.sualtikasifi.cizimhafiza.data.repository.AnnouncementRepository,
+    private val runeFunnel: com.sualtikasifi.cizimhafiza.util.RuneFunnel
 ) : ViewModel() {
 
     /** A notice from the developer panel, shown once per notice (see AnnouncementRepository). */
@@ -365,12 +366,51 @@ class MainMenuViewModel @Inject constructor(
 
     val goldBalance: StateFlow<Int> = settingsRepository.goldBalance
 
-    /** A rune can be bought right now — the home screen's mascot shows a badge for it. */
-    val runeReady: StateFlow<Boolean> = combine(settingsRepository.goldBalance, settingsRepository.runeLevels, settingsRepository.lifetimeXp) { gold, levels, xp ->
-        com.sualtikasifi.cizimhafiza.domain.model.RuneTree.anyAffordable(levels, gold, com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.levelForXp(xp))
+    /** What the home screen's Rünler sign says under its name (see RuneTree.hint). */
+    val runeHint: StateFlow<com.sualtikasifi.cizimhafiza.domain.model.RuneHint> =
+        combine(settingsRepository.goldBalance, settingsRepository.runeLevels, settingsRepository.lifetimeXp) { gold, levels, xp ->
+            com.sualtikasifi.cizimhafiza.domain.model.RuneTree.hint(levels, gold, com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.levelForXp(xp))
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Complete)
+
+    private val runePromptSnoozedUntil = MutableStateFlow(settingsRepository.runePromptSnoozedUntil)
+
+    /**
+     * The mascot offers to show a player their first rune: they have never bought one, their gold buys one now, the
+     * offer is switched on from the server (config/runes.firstRunePrompt) and they have not closed it in the last few
+     * days. Buying any rune ends it for good.
+     */
+    val runePrompt: StateFlow<Boolean> = combine(runeHint, settingsRepository.runeLevels, runePromptSnoozedUntil) { hint, levels, until ->
+        com.sualtikasifi.cizimhafiza.domain.model.RuneGates.firstRunePrompt &&
+            com.sualtikasifi.cizimhafiza.domain.model.RuneTree.boughtLevels(levels) == 0 &&
+            hint is com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Affordable &&
+            System.currentTimeMillis() >= until
     }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun runePromptShown() = runeFunnel.promptShown()
+
+    /** "Göster": the offer turns into the guide on the rune map. */
+    fun runePromptTapped() {
+        runeFunnel.promptTapped()
+        runeMapOpened("prompt")
+    }
+
+    /** The offer was closed: quiet for a few days (config/runes.promptSnoozeDays). */
+    fun runePromptDismissed() {
+        runeFunnel.promptDismissed()
+        val until = System.currentTimeMillis() + com.sualtikasifi.cizimhafiza.domain.model.RuneGates.promptSnoozeDays * 24L * 60 * 60 * 1000
+        settingsRepository.runePromptSnoozedUntil = until
+        runePromptSnoozedUntil.value = until
+    }
+
+    /** The rune map is being opened from [source] ("chip", "mascot", "prompt", "tour"). */
+    fun runeMapOpened(source: String) =
+        runeFunnel.mapOpened(source, com.sualtikasifi.cizimhafiza.domain.model.RuneTree.boughtLevels(settingsRepository.runeLevels.value))
+
     val featureTourSeen: Boolean get() = settingsRepository.featureTourSeen
-    fun markFeatureTourSeen() { settingsRepository.featureTourSeen = true }
+    fun markFeatureTourSeen() { settingsRepository.featureTourSeen = true; settingsRepository.runesTourSeen = true }
+
+    /** A player who saw the tour before it had a rune page has not seen that page yet. */
+    val runesTourSeen: Boolean get() = settingsRepository.runesTourSeen
     val nicknameRenameUsed: StateFlow<Boolean> = settingsRepository.nicknameRenameUsed
 
     init {

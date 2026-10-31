@@ -23,6 +23,7 @@ on:
           - langs.sh
           - realpreview.sh
           - devpanelpreview.sh
+          - runepreview.sh
           - updatepreview.sh
           - chestpreview.sh
           - chestrewardpreview.sh

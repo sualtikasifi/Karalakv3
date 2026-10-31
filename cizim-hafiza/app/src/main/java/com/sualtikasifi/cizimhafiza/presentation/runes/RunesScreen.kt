@@ -101,7 +101,8 @@ import kotlin.math.roundToInt
 @HiltViewModel
 class RunesViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
-    private val analytics: com.sualtikasifi.cizimhafiza.util.GameAnalytics
+    private val analytics: com.sualtikasifi.cizimhafiza.util.GameAnalytics,
+    private val runeFunnel: com.sualtikasifi.cizimhafiza.util.RuneFunnel
 ) : ViewModel() {
     val gold = settingsRepository.goldBalance
     val levels = settingsRepository.runeLevels
@@ -118,8 +119,11 @@ class RunesViewModel @Inject constructor(
         }
     }
 
-    fun buy(id: String): Boolean {
+    /** Buys the next level of [id]; [guided] when the first-rune guide brought the player here. */
+    fun buy(id: String, guided: Boolean = false): Boolean {
+        val first = RuneTree.boughtLevels(settingsRepository.runeLevels.value) == 0
         val bought = settingsRepository.buyRune(id)
+        if (bought) runeFunnel.bought(id, first = first, guided = guided, playerLevel = settingsRepository.playerLevelNow())
         if (bought) RuneTree.get(id)?.let { rune ->
             analytics.runeBought(
                 runeId = id,
@@ -151,16 +155,27 @@ private val Ink = Color(0xFF3A2416)
 
 /** "Karalak Rünleri": a big pannable and zoomable map of nodes, bought with gold, each a small permanent bonus. */
 @Composable
-fun RunesScreen(onBack: () -> Unit, viewModel: RunesViewModel = hiltViewModel()) {
+fun RunesScreen(
+    onBack: () -> Unit,
+    /** Opened from the mascot's first-rune offer: the map points at the rune to buy first and says so. */
+    guide: Boolean = false,
+    viewModel: RunesViewModel = hiltViewModel()
+) {
     val gold by viewModel.gold.collectAsState()
     val levels by viewModel.levels.collectAsState()
     val xp by viewModel.xp.collectAsState()
     val playerLevel = remember(xp) { com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.levelForXp(xp) }
-    var selected by remember { mutableStateOf<String?>(null) }
+    // The rune the guide points at, chosen once as the screen opens (Kalem Parası when the gold buys it).
+    val guideId = remember { if (guide) RuneTree.firstPick(levels, gold, playerLevel)?.id else null }
+    val guiding = guideId != null && RuneTree.levelOf(levels, guideId) == 0
+    var selected by remember { mutableStateOf(guideId) }
     var celebration by remember { mutableIntStateOf(0) }
+    // The player's first rune ever, just bought: a window says what it now does for them.
+    var firstRune by remember { mutableStateOf<String?>(null) }
     // The centre of the map (the dog) opens the status sheet instead of being selected.
     var status by remember { mutableStateOf<RuneAbilityState?>(null) }
-    var showIntro by remember { mutableStateOf(!viewModel.introSeen()) }
+    // The guide explains itself; the general explanation can wait for a visit of the player's own.
+    var showIntro by remember { mutableStateOf(!viewModel.introSeen() && guideId == null) }
     if (showIntro) {
         val close = { viewModel.markIntroSeen(); showIntro = false }
         com.sualtikasifi.cizimhafiza.presentation.common.PaintedFrameDialog(
@@ -202,6 +217,8 @@ fun RunesScreen(onBack: () -> Unit, viewModel: RunesViewModel = hiltViewModel())
                 playerLevel = playerLevel,
                 gold = gold,
                 selected = selected,
+                focusId = guideId,
+                pointAt = guideId.takeIf { guiding },
                 onSelect = { id ->
                     if (id == RuneTree.ROOT_ID) {
                         status = viewModel.abilityState()
@@ -212,12 +229,25 @@ fun RunesScreen(onBack: () -> Unit, viewModel: RunesViewModel = hiltViewModel())
                 onClear = { selected = null },
                 modifier = Modifier.weight(1f).padding(horizontal = 10.dp, vertical = 6.dp)
             )
+            androidx.compose.animation.AnimatedVisibility(
+                visible = guiding && selected == guideId,
+                enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
+                exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically()
+            ) {
+                GuideNote(Modifier.padding(start = 10.dp, end = 10.dp, top = 4.dp))
+            }
             InfoCard(
                 selected = selected,
                 levels = levels,
                 playerLevel = playerLevel,
                 gold = gold,
-                onBuy = { id -> if (viewModel.buy(id)) celebration++ },
+                onBuy = { id ->
+                    val first = RuneTree.boughtLevels(levels) == 0
+                    if (viewModel.buy(id, guided = id == guideId)) {
+                        celebration++
+                        if (first) firstRune = id
+                    }
+                },
                 modifier = Modifier.navigationBarsPadding().padding(start = 10.dp, end = 10.dp, bottom = 10.dp, top = 2.dp)
             )
         }
@@ -227,6 +257,42 @@ fun RunesScreen(onBack: () -> Unit, viewModel: RunesViewModel = hiltViewModel())
         status?.let { abilities ->
             RuneStatusDialog(levels = levels, playerLevel = playerLevel, abilities = abilities, onDismiss = { status = null })
         }
+        firstRune?.let { id -> RuneTree.get(id) }?.let { rune ->
+            com.sualtikasifi.cizimhafiza.presentation.common.PaintedFrameDialog(
+                title = stringResource(R.string.rune_first_title),
+                body = stringResource(R.string.rune_first_body, stringResource(rune.nameRes)) + "\n\n" + stringResource(rune.effect.descRes, rune.perLevel),
+                buttonText = stringResource(R.string.rune_first_ok),
+                onClick = { firstRune = null }
+            )
+        }
+    }
+}
+
+/** The guide's note above the rune card: this is your first rune, buy it below. */
+@Composable
+private fun GuideNote(modifier: Modifier = Modifier) {
+    val bob = rememberInfiniteTransition(label = "guideHand")
+    val dy by bob.animateFloat(-3f, 3f, infiniteRepeatable(tween(650), RepeatMode.Reverse), label = "guideHandY")
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color(0xF2FFF4DC))
+            .border(2.dp, Color(0xFFE08A1B), RoundedCornerShape(18.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text("👇", fontSize = 24.sp, modifier = Modifier.offset(y = dy.dp))
+        Text(
+            stringResource(R.string.rune_guide_hint),
+            fontFamily = DisplayFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp,
+            lineHeight = 18.sp,
+            color = Ink,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -259,6 +325,10 @@ private fun RuneMap(
     playerLevel: Int,
     gold: Int,
     selected: String?,
+    /** A rune to bring to the middle as the map opens. */
+    focusId: String? = null,
+    /** A rune to point at with a bobbing hand (the first-rune guide). */
+    pointAt: String? = null,
     onSelect: (String) -> Unit,
     onClear: () -> Unit,
     modifier: Modifier = Modifier
@@ -298,7 +368,10 @@ private fun RuneMap(
             minOf(w / ((2 * reachX + 1.4f) * spacingPx), h / ((2 * reachY + 1.4f) * spacingPx)).coerceIn(0.12f, 0.6f)
         }
         var scale by remember { mutableFloatStateOf(0.78f) }
-        var pan by remember { mutableStateOf(Offset.Zero) }
+        // The map scales around its middle, so bringing a node to the middle is moving the pan by its scaled distance.
+        var pan by remember {
+            mutableStateOf(focusId?.let { RuneTree.get(it) }?.let { Offset(-it.x * spacingPx * 0.78f, -it.y * spacingPx * 0.78f) } ?: Offset.Zero)
+        }
 
         Box(
             Modifier
@@ -382,6 +455,7 @@ private fun RuneMap(
                             onClick = { onSelect(rune.id) }
                         )
                     }
+                    if (rune.id == pointAt) GuideHand(cx + Spacing * rune.x, cy + Spacing * rune.y + size / 2)
                 }
             }
         }
@@ -523,6 +597,16 @@ private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, sealed: Boolean,
                 }
             }
         }
+    }
+}
+
+/** A hand under the guided rune, bobbing up towards it. [x],[y] is the point just under the tile. */
+@Composable
+private fun GuideHand(x: Dp, y: Dp) {
+    val bob = rememberInfiniteTransition(label = "mapHand")
+    val dy by bob.animateFloat(0f, -8f, infiniteRepeatable(tween(520), RepeatMode.Reverse), label = "mapHandY")
+    Box(Modifier.offset(x - 22.dp, y + 10.dp + dy.dp).size(44.dp), contentAlignment = Alignment.Center) {
+        Text("👆", fontSize = 34.sp)
     }
 }
 

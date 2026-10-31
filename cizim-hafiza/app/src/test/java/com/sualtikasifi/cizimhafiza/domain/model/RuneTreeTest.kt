@@ -135,4 +135,41 @@ class RuneTreeTest {
         assertFalse(RuneTree.anyAffordable(emptyMap(), cheapest - 1, 1))
         assertTrue(RuneTree.anyAffordable(emptyMap(), cheapest, 1))
     }
+
+    @Test
+    fun hintCountsWhatTheGoldBuys() {
+        // a new player with 300 gold can buy the two cheapest first-ring runes (Kalem Parası and the chest gold)
+        val hint = RuneTree.hint(emptyMap(), gold = 300, playerLevel = 1)
+        assertEquals(RuneHint.Affordable(2), hint)
+    }
+
+    @Test
+    fun hintSaysHowMuchGoldTheNextRuneNeeds() {
+        assertEquals(RuneHint.Saving(180), RuneTree.hint(emptyMap(), gold = 120, playerLevel = 1))
+    }
+
+    @Test
+    fun hintNamesTheLevelTheNextRingWaitsFor() {
+        // every first-ring rune bought to its last level, the player still below the second ring's level
+        val ring1 = RuneTree.all.filter { it.ring == 1 && it.id != RuneTree.ROOT_ID }.associate { it.id to it.maxLevel }
+        assertEquals(RuneHint.Locked(RuneGates.ring2Level), RuneTree.hint(ring1, gold = 1_000_000, playerLevel = 3))
+    }
+
+    @Test
+    fun hintIsCompleteWhenEverythingIsBought() {
+        val all = RuneTree.all.filter { it.id != RuneTree.ROOT_ID }.associate { it.id to it.maxLevel }
+        assertEquals(RuneHint.Complete, RuneTree.hint(all, gold = 0, playerLevel = 99))
+    }
+
+    @Test
+    fun firstPickIsKalemParasiWhenAffordable() {
+        assertEquals(RuneTree.WORD_GOLD, RuneTree.firstPick(emptyMap(), gold = 300, playerLevel = 1)?.id)
+        assertNull(RuneTree.firstPick(emptyMap(), gold = 100, playerLevel = 1))
+    }
+
+    @Test
+    fun boughtLevelsLeavesTheRootOut() {
+        assertEquals(0, RuneTree.boughtLevels(emptyMap()))
+        assertEquals(3, RuneTree.boughtLevels(mapOf(RuneTree.WORD_GOLD to 2, RuneTree.CHEST_GOLD to 1)))
+    }
 }

@@ -1720,4 +1720,20 @@
     <string name="share_card_slogan">Sen de oyna,\nbu eğlenceye katıl!</string>
     <string name="share_card_collage_title">Bu çizimleri sen de\ntahmin edebilir misin?</string>
     <string name="share_empty_drawing">Bu çizim boş, paylaşılacak bir şey yok.</string>
+    <!-- Rune promotion: the home screen sign, the mascot's first-rune offer, the guide, the tour page -->
+    <string name="rune_chip_title">Rünler</string>
+    <string name="rune_chip_affordable">%1$d rün alınabilir</string>
+    <string name="rune_chip_saving">Sonrakine %1$s altın</string>
+    <string name="rune_chip_locked">Seviye %1$d gerekli</string>
+    <string name="rune_chip_complete">Hepsi alındı</string>
+    <string name="rune_prompt_text">Altınınla kalıcı bir güç alabilirsin!</string>
+    <string name="rune_prompt_action">Göster</string>
+    <string name="rune_prompt_close">Kapat</string>
+    <string name="rune_guide_hint">İlk rünün burada! Aşağıdan al: etkisi hemen başlar ve hep seninle kalır.</string>
+    <string name="rune_first_title">İlk rünün hazır!</string>
+    <string name="rune_first_body">%1$s artık senin.</string>
+    <string name="rune_first_ok">Harika</string>
+    <string name="rune_tour_open">Rünlere bak</string>
+    <string name="tour_runes_title">Karalak Rünleri</string>
+    <string name="tour_runes_body">Altınlarını kalıcı güçlere çevir! Rünler her oyunda geçerli bonuslar verir: doğru kelime başına daha çok altın, daha zengin sandıklar, mağazada indirim ve fazlası. Ana ekrandaki Rünler tabelasına ya da köpeğe dokun; alabileceğin rünler parlar.</string>
 </resources>

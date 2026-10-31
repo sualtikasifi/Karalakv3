@@ -86,6 +86,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import kotlin.math.roundToInt
@@ -151,10 +152,14 @@ internal fun PaintedHome(
     onStore: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
-    /** A rune can be bought now — the mascot shows a pulsing badge. */
-    runeReady: Boolean = false,
-    /** Opens Karalak Rünleri: the mascot at the top right is its door. */
-    onRunes: () -> Unit = {}
+    /** What the Rünler sign says under its name: what the gold buys now, or what the next rune still needs. */
+    runeHint: com.sualtikasifi.cizimhafiza.domain.model.RuneHint = com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Complete,
+    /** The mascot offers to show a player who has never bought a rune their first one (a speech balloon beside it). */
+    runePrompt: Boolean = false,
+    onRunePromptShow: () -> Unit = {},
+    onRunePromptClose: () -> Unit = {},
+    /** Opens Karalak Rünleri; [source] says from where ("chip": the sign, "mascot": the dog above it). */
+    onRunes: (source: String) -> Unit = {}
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         // ONE scale for both directions, so the picture is never stretched: on a phone shaped like it the picture fills
@@ -286,22 +291,35 @@ internal fun PaintedHome(
         ) {}
         FitLettered(stringResource(pen.labelRes), 30f, Color(0xFF3A1E08), 1, box(320.8f, 266.2f, 494.1f, 312.9f).then(follow(penChipSink, 388f, 292f, 320.8f, 266.2f, 494.1f, 312.9f)))
 
-        // ── The mascot (top right) opens the rune map ──
+        // ── The mascot (top right) opens the rune map too ──
         Box(
-            box(520f, 86f, 760f, 300f)
-                .pressable(pressedScale = 0.96f, onClick = onRunes)
+            box(520f, 86f, 760f, 258f)
+                .pressable(pressedScale = 0.96f, onClick = { onRunes("mascot") })
                 .a11yButton(stringResource(R.string.rune_screen_title))
         ) {}
-        if (runeReady) {
+
+        // ── The Rünler sign: the third chip of the row, in front of the mascot ──
+        // Painted in code in the chips' own colours (the orange rim, the dark well), so it reads as one of the set; the
+        // line under the name says what the gold buys now, so the map is a reason to come back, not a hidden door.
+        RuneChip(
+            hint = runeHint,
+            us = us,
+            fs = ::fs,
+            modifier = box(528f, 258f, 812f, 326f)
+                .pressable(pressedScale = 0.95f, onClick = { onRunes("chip") })
+                .a11yButton(stringResource(R.string.rune_screen_title)),
+            iconModifier = box(516f, 250f, 598f, 332f)
+        )
+        if (runeHint is com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Affordable) {
             val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "runeBadge")
             val k by pulse.animateFloat(
                 initialValue = 0.9f,
-                targetValue = 1.15f,
+                targetValue = 1.12f,
                 animationSpec = androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(700), androidx.compose.animation.core.RepeatMode.Reverse),
                 label = "runeBadgeScale"
             )
             Box(
-                box(682f, 84f, 752f, 154f).graphicsLayer { scaleX = k; scaleY = k },
+                box(772f, 230f, 832f, 290f).graphicsLayer { scaleX = k; scaleY = k },
                 contentAlignment = Alignment.Center
             ) {
                 androidx.compose.foundation.Image(
@@ -310,6 +328,18 @@ internal fun PaintedHome(
                     modifier = Modifier.fillMaxSize()
                 )
             }
+        }
+
+        // ── The mascot's first-rune offer: a speech balloon to its left, over the logo sign ──
+        if (runePrompt) {
+            LaunchedEffect(Unit) { onRunePromptShow() }
+            RunePromptBalloon(
+                us = us,
+                fs = ::fs,
+                onShow = { onRunes("prompt") },
+                onClose = onRunePromptClose,
+                modifier = box(224f, 88f, 586f, 252f)
+            )
         }
 
         // ── Profile ──
@@ -687,5 +717,162 @@ private fun GainFloat(text: String, fontSize: androidx.compose.ui.unit.TextUnit,
         contentAlignment = Alignment.Center
     ) {
         LetteredText(text, fontSize, fill = if (loss) Color(0xFFFF5A4D) else Color(0xFFFFE066), outline = Color(0xFF3A1E08), maxLines = 1, minScale = 0.6f)
+    }
+}
+
+
+/**
+ * The home screen's Rünler sign: an orange-rimmed pill with a dark well like the gold and pen chips beside it, the rune
+ * map's centre (the dog in its gold ring) on its left, the name, and under it what the gold buys now.
+ */
+@Composable
+private fun RuneChip(
+    hint: com.sualtikasifi.cizimhafiza.domain.model.RuneHint,
+    us: Float,
+    fs: (Float) -> androidx.compose.ui.unit.TextUnit,
+    modifier: Modifier,
+    iconModifier: Modifier
+) {
+    val line = when (hint) {
+        is com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Affordable -> stringResource(R.string.rune_chip_affordable, hint.count)
+        is com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Saving -> stringResource(R.string.rune_chip_saving, NumberFormat.getIntegerInstance().format(hint.goldNeeded))
+        is com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Locked -> stringResource(R.string.rune_chip_locked, hint.level)
+        com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Complete -> stringResource(R.string.rune_chip_complete)
+    }
+    val ready = hint is com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Affordable
+    Box(
+        modifier
+            .background(Brush.verticalGradient(listOf(Color(0xFFFFB73E), Color(0xFFE5670B))), RoundedCornerShape(50))
+            .border((1.5f).dp, Color(0xFFB04A08), RoundedCornerShape(50))
+            .padding((7f * us).dp)
+            .background(Brush.verticalGradient(listOf(Color(0xFF4A1D0A), Color(0xFF5E2A10))), RoundedCornerShape(50))
+            .padding(start = (66f * us).dp, end = (14f * us).dp, top = (3f * us).dp, bottom = (3f * us).dp)
+    ) {
+        // Two fixed bands, so the name can never push the line under it out of the well: the lettering shrinks to
+        // its band instead (see LetteredText).
+        androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
+            Box(Modifier.weight(0.56f).fillMaxWidth(), contentAlignment = Alignment.BottomStart) {
+                LetteredText(stringResource(R.string.rune_chip_title), fs(25f), outline = Color(0xFF3A1E08), maxLines = 1, minScale = 0.6f)
+            }
+            Box(Modifier.weight(0.44f).fillMaxWidth(), contentAlignment = Alignment.TopStart) {
+                FitText(
+                    text = line,
+                    style = PaintedStyle(color = if (ready) Color(0xFF9CF27A) else Color(0xFFFFD27A), fontSize = fs(17f), lineHeight = fs(19f)),
+                    minScale = 0.6f,
+                    contentAlignment = Alignment.TopStart,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+    Box(iconModifier, contentAlignment = Alignment.Center) {
+        Image(painterResource(R.drawable.rune_root), contentDescription = null, modifier = Modifier.fillMaxSize())
+        Image(painterResource(R.drawable.rune_icon_dog), contentDescription = null, modifier = Modifier.fillMaxSize(0.66f))
+    }
+}
+
+/**
+ * The mascot's offer to a player who has never bought a rune: a parchment speech balloon with its tail towards the dog,
+ * a line of what runes are, "Göster" and a close button. It pops out of the tail and then bobs gently, so it is seen
+ * without being in the way; it never blocks the screen the way a window would.
+ */
+@Composable
+private fun RunePromptBalloon(
+    us: Float,
+    fs: (Float) -> androidx.compose.ui.unit.TextUnit,
+    onShow: () -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier
+) {
+    val pop = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) { pop.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow)) }
+    val bob = androidx.compose.animation.core.rememberInfiniteTransition(label = "balloonBob")
+    val dy by bob.animateFloat(
+        initialValue = -1f,
+        targetValue = 1f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), androidx.compose.animation.core.RepeatMode.Reverse),
+        label = "balloonBobY"
+    )
+    val paper = Color(0xFFFFF4DC)
+    val rim = Color(0xFF8A4A1C)
+    Box(
+        modifier.graphicsLayer {
+            val p = pop.value
+            scaleX = 0.4f + 0.6f * p
+            scaleY = 0.4f + 0.6f * p
+            alpha = p.coerceIn(0f, 1f)
+            translationY = dy * 3f * us * density
+            // grows out of its tail, which points at the dog on the right
+            transformOrigin = TransformOrigin(1f, 0.62f)
+        }
+    ) {
+        // the balloon and its tail, drawn as one shape so the outline runs round both
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+            val tail = 26f * us * density
+            val r = 30f * us * density
+            val w = size.width - tail
+            val h = size.height
+            val path = Path().apply {
+                addRoundRect(RoundRect(0f, 0f, w, h, CornerRadius(r, r)))
+            }
+            val tailPath = Path().apply {
+                moveTo(w - 2f, h * 0.48f)
+                lineTo(size.width, h * 0.62f)
+                lineTo(w - 2f, h * 0.76f)
+                close()
+            }
+            // a soft drop shadow a few pixels down, so the balloon lifts off the painted sign under it
+            translate(top = 3f * density) {
+                drawPath(path, Color(0x40000000))
+                drawPath(tailPath, Color(0x40000000))
+            }
+            drawPath(tailPath, paper)
+            drawPath(path, paper)
+            drawPath(path, rim, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.2f * density))
+            drawLine(rim, Offset(w - 2f, h * 0.48f), Offset(size.width, h * 0.62f), strokeWidth = 2.2f * density)
+            drawLine(rim, Offset(size.width, h * 0.62f), Offset(w - 2f, h * 0.76f), strokeWidth = 2.2f * density)
+        }
+        androidx.compose.foundation.layout.Column(
+            Modifier
+                .fillMaxSize()
+                .padding(start = (18f * us).dp, end = (44f * us).dp, top = (14f * us).dp, bottom = (14f * us).dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            FitText(
+                text = stringResource(R.string.rune_prompt_text),
+                style = PaintedStyle(color = HomeInk, fontSize = fs(25f), textAlign = TextAlign.Start, lineHeight = fs(30f)),
+                maxLines = 2,
+                minScale = 0.6f,
+                contentAlignment = Alignment.CenterStart,
+                modifier = Modifier.fillMaxWidth().weight(1f)
+            )
+            Box(
+                Modifier
+                    .padding(top = (6f * us).dp)
+                    .pressable(pressedScale = 0.92f, onClick = onShow)
+                    .background(Brush.verticalGradient(listOf(Color(0xFFFF9A3A), Color(0xFFE5600A))), RoundedCornerShape(50))
+                    .border((1.5f).dp, Color(0xFFB04A08), RoundedCornerShape(50))
+                    .padding(horizontal = (22f * us).dp, vertical = (6f * us).dp)
+                    .a11yButton(stringResource(R.string.rune_prompt_action)),
+                contentAlignment = Alignment.Center
+            ) {
+                LetteredText(stringResource(R.string.rune_prompt_action), fs(24f), outline = Color(0xFF8A3A00), maxLines = 1)
+            }
+        }
+        // close: a small round button on the balloon's top-right corner
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = (26f * us).dp)
+                .offset(x = (10f * us).dp, y = (-10f * us).dp)
+                .size((40f * us).dp)
+                .pressable(pressedScale = 0.88f, onClick = onClose)
+                .background(Color(0xFF8A4A1C), CircleShape)
+                .border((1.5f).dp, paper, CircleShape)
+                .a11yButton(stringResource(R.string.rune_prompt_close)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Filled.Close, contentDescription = null, tint = paper, modifier = Modifier.size((24f * us).dp))
+        }
     }
 }

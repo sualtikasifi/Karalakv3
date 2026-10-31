@@ -145,7 +145,8 @@ fun MainMenuScreen(
     onChests: () -> Unit,
     onStore: () -> Unit,
     onLeague: () -> Unit,
-    onRunes: () -> Unit = {},
+    /** Opens the rune map; [guide] when the mascot's first-rune offer leads there (the map then points at that rune). */
+    onRunes: (guide: Boolean) -> Unit = {},
     viewModel: MainMenuViewModel = hiltViewModel()
 ) {
     val hasUnseenAchievement by viewModel.hasUnseenAchievement.collectAsState()
@@ -166,14 +167,20 @@ fun MainMenuScreen(
     val selectedFrame by viewModel.selectedFrame.collectAsState()
     val selectedPen by viewModel.selectedPen.collectAsState()
     val gold by viewModel.goldBalance.collectAsState()
-    val runeReady by viewModel.runeReady.collectAsState()
+    val runeHint by viewModel.runeHint.collectAsState()
+    val runePrompt by viewModel.runePrompt.collectAsState()
+    // The mascot's offer waits for a quiet screen: no opening window, no reward, no picker (set further down, where
+    // those are known).
+    var homeQuiet by remember { mutableStateOf(false) }
     val avatarFrameItems by viewModel.avatarFrameItems.collectAsState()
     val avatarPhoto by viewModel.avatarPhoto.collectAsState()
     val avatarSource by viewModel.avatarSource.collectAsState()
     val googlePhotoUrl by viewModel.googlePhotoUrl.collectAsState()
     var framePickerOpen by remember { mutableStateOf(false) }
     var penPickerOpen by remember { mutableStateOf(false) }
-    var featureTourOpen by remember { mutableStateOf(!viewModel.featureTourSeen) }
+    // The whole tour for a player who has never seen it; just its new rune page for one who saw it before that page existed.
+    val runesTourOnly = remember { viewModel.featureTourSeen && !viewModel.runesTourSeen }
+    var featureTourOpen by remember { mutableStateOf(!viewModel.featureTourSeen || !viewModel.runesTourSeen) }
     val nicknameRenameUsed by viewModel.nicknameRenameUsed.collectAsState()
     val penSkinItems by viewModel.penSkinItems.collectAsState()
     var rankLadderOpen by remember { mutableStateOf(false) }
@@ -273,8 +280,14 @@ fun MainMenuScreen(
             onLeague = onLeague,
             onStore = onStore,
             onSettings = onSettings,
-            runeReady = runeReady,
-            onRunes = onRunes
+            runeHint = runeHint,
+            runePrompt = runePrompt && homeQuiet,
+            onRunePromptShow = viewModel::runePromptShown,
+            onRunePromptClose = viewModel::runePromptDismissed,
+            onRunes = { source ->
+                if (source == "prompt") viewModel.runePromptTapped() else viewModel.runeMapOpened(source)
+                onRunes(source == "prompt")
+            }
         )
         }
 
@@ -402,8 +415,17 @@ fun MainMenuScreen(
 
         if (openingClear && featureTourOpen) {
             LaunchedEffect(Unit) { com.sualtikasifi.cizimhafiza.presentation.common.StartupPrompts.openingShownThisLaunch = true }
-            FeatureTourDialog(onFinish = { viewModel.markFeatureTourSeen(); featureTourOpen = false })
+            FeatureTourDialog(
+                onFinish = { viewModel.markFeatureTourSeen(); featureTourOpen = false },
+                runesOnly = runesTourOnly,
+                onOpenRunes = { viewModel.runeMapOpened("tour"); onRunes(false) }
+            )
         }
+
+        val quietForRunes = openingClear && !featureTourOpen && !rescueOnScreen && !ratingPrompt && freeChestReward == null &&
+            loginPopup == null && loginChests.isEmpty() && !exitPromptOpen && !announcementOnScreen &&
+            !framePickerOpen && !penPickerOpen && !rankLadderOpen
+        LaunchedEffect(quietForRunes) { homeQuiet = quietForRunes }
 
         NotificationPermissionWhenQuiet(
             quiet = openingClear && !featureTourOpen && !rescueOnScreen && !ratingPrompt && freeChestReward == null &&
