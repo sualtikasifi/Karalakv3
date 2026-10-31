@@ -27,6 +27,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Undo
@@ -79,6 +81,9 @@ fun SwipeQueue(
     runs: List<PendingRun>,
     loading: Boolean,
     endReached: Boolean,
+    /** The last read of the queue was refused (no network, or this phone is not the reviewer). */
+    failed: Boolean = false,
+    onRetry: () -> Unit = {},
     failures: Int,
     failedIds: Set<String>,
     done: Int,
@@ -133,6 +138,12 @@ fun SwipeQueue(
 
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
+                visible.isEmpty() && failed && !loading -> ConsoleEmpty(
+                    Icons.Filled.CloudOff, "Kuyruk okunamadı",
+                    modifier = Modifier.align(Alignment.Center),
+                    body = "İnternet bağlantısını ve bu cihazın geliştirici hesabıyla giriş yaptığını kontrol et.",
+                    action = { ConsoleButton("Tekrar dene", onRetry, icon = Icons.Filled.Refresh, style = ConsoleButtonStyle.Secondary) }
+                )
                 visible.isEmpty() && (loading || !endReached) -> ConsoleSkeleton(rows = 1, rowHeight = 360.dp)
                 visible.isEmpty() -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(Modifier.size(64.dp).clip(CircleShape).background(Console.GoodSoft), contentAlignment = Alignment.Center) {

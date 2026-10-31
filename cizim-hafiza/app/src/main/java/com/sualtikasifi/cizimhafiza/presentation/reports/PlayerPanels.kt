@@ -244,7 +244,7 @@ internal fun PlayersPanel(viewModel: PlayersViewModel = hiltViewModel()) {
                 keyboardActions = KeyboardActions(onSearch = { if (state.query.isNotBlank()) viewModel.search() }),
                 modifier = Modifier.weight(1f)
             )
-            ConsoleButton("Ara", viewModel::search, enabled = !state.busy && state.query.isNotBlank(), loading = state.busy && state.results.isEmpty(), height = 46.dp)
+            ConsoleButton("Ara", viewModel::search, enabled = !state.busy && state.query.isNotBlank(), loading = state.busy && state.results.isEmpty(), height = 42.dp)
         }
         state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
         if (!state.searched && state.results.isEmpty()) {

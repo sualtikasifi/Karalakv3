@@ -302,6 +302,11 @@ class DrawingReportsViewModel @Inject constructor(
                 loadFeedback()
             }
             ReportsTab.XpEvent -> loadXpEvent()
+            ReportsTab.DailyChallenge -> {
+                _uiState.value = _uiState.value.copy(dailyChallengeLoaded = false)
+                loadDailyChallengeQueue()
+            }
+            ReportsTab.League -> loadLeagueConfig()
             else -> {
                 _uiState.value = _uiState.value.copy(evidenceLoaded = false)
                 loadEvidence()

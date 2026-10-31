@@ -539,8 +539,8 @@ internal fun JobsPanel(viewModel: JobsViewModel = hiltViewModel()) {
             return@Column
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Console.Gap)) {
-            StatTile("Bekleyen hesap silme", state.pendingDeletions?.toString() ?: "?", Modifier.weight(1f))
-            StatTile("Bekleyen panel komutu", state.pendingCommands?.toString() ?: "?", Modifier.weight(1f))
+            StatTile("Bekleyen hesap silme", state.pendingDeletions?.toString() ?: "—", Modifier.weight(1f))
+            StatTile("Bekleyen panel komutu", state.pendingCommands?.toString() ?: "—", Modifier.weight(1f))
         }
         ConsoleCard(Modifier.fillMaxWidth(), padding = 4.dp) {
             state.rows.forEachIndexed { i, r ->

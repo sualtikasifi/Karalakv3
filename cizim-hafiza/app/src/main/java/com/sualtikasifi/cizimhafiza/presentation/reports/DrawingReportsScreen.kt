@@ -223,7 +223,8 @@ fun DrawingReportsScreen(
                         if (uiState.tab == ReportsTab.Feedback && uiState.feedback.isNotEmpty()) {
                             HeaderIconButton(Icons.Filled.DeleteSweep, stringResource(R.string.reports_feedback_delete_all), { deleteAllFeedbackRequested = true })
                         }
-                        if (place.legacyList) {
+                        // only where the panel's own lists can be read again; the other tools load themselves on entry
+                        if (place.refreshable) {
                             HeaderIconButton(Icons.Filled.Refresh, stringResource(R.string.reports_refresh), viewModel::refresh)
                         }
                         uiState.identity?.let { who -> IdentityChip(ok = who.isReviewer, onClick = { identityShown = true }) }
@@ -374,6 +375,9 @@ fun DrawingReportsScreen(
  */
 private data class Place(val tab: ReportsTab, val queueList: Boolean) {
     val legacyList: Boolean get() = tab.isLegacyTool() || (tab == ReportsTab.Queue && queueList)
+    val refreshable: Boolean get() = (tab == ReportsTab.Queue && queueList) || tab in setOf(
+        ReportsTab.Pool, ReportsTab.Feedback, ReportsTab.Reports, ReportsTab.Detector, ReportsTab.DailyChallenge, ReportsTab.League, ReportsTab.XpEvent
+    )
     val depth: Int get() = if (legacyList || tab == ReportsTab.Studio) 1 else 0
     val title: String get() = when (tab) {
         ReportsTab.Dashboard -> "Genel bakış"
@@ -434,6 +438,8 @@ private fun PlaceContent(
             runs = uiState.queue.runs,
             loading = uiState.queue.loading,
             endReached = uiState.queue.endReached,
+            failed = uiState.queue.failed,
+            onRetry = viewModel::refresh,
             failures = uiState.swipeFailures,
             failedIds = uiState.swipeFailedIds,
             done = uiState.swipeDone,

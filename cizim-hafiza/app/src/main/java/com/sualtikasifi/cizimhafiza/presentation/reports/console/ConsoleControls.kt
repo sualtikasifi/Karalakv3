@@ -54,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -307,7 +308,7 @@ fun ConsoleTextField(
     }
     Column(modifier = modifier.alpha(if (enabled) 1f else 0.55f)) {
         if (label != null) {
-            Text(label, style = Console.Label, modifier = Modifier.padding(start = 2.dp, bottom = 5.dp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(label, style = Console.Label, modifier = Modifier.padding(bottom = 5.dp), maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         BasicTextField(
             value = value,
@@ -325,8 +326,17 @@ fun ConsoleTextField(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
-                .border(3.dp, ring, RoundedCornerShape(corner.coerceAtMost(14.dp) + 2.dp))
-                .padding(2.dp)
+                .drawBehind {
+                    // the focus ring sits just outside the field, so a focused field takes no more room than an idle one
+                    val grow = 3.dp.toPx()
+                    val r = (corner.coerceAtMost(14.dp) + 3.dp).toPx()
+                    drawRoundRect(
+                        ring,
+                        topLeft = Offset(-grow, -grow),
+                        size = androidx.compose.ui.geometry.Size(size.width + 2 * grow, size.height + 2 * grow),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(r)
+                    )
+                }
                 .clip(shape)
                 .background(Console.Surface)
                 .border(if (focused) 1.5.dp else 1.dp, border, shape)
@@ -360,7 +370,7 @@ fun ConsoleTextField(
             }
         )
         if (supporting != null) {
-            Text(supporting, style = Console.Small.copy(fontSize = 11.sp), modifier = Modifier.padding(start = 2.dp, top = 4.dp))
+            Text(supporting, style = Console.Small.copy(fontSize = 11.sp), modifier = Modifier.padding(top = 4.dp))
         }
     }
 }
@@ -411,15 +421,29 @@ fun ConsoleNotice(text: String, modifier: Modifier = Modifier, kind: NoticeKind 
     ) {
         Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(17.dp))
         Spacer(Modifier.width(9.dp))
-        Text(text, style = Console.Small.copy(color = fg, fontWeight = FontWeight.Medium, fontSize = 12.5.sp), modifier = Modifier.weight(1f))
+        Text(humanize(text), style = Console.Small.copy(color = fg, fontWeight = FontWeight.Medium, fontSize = 12.5.sp), modifier = Modifier.weight(1f))
     }
+}
+
+/**
+ * Firestore's own error codes, which some panels pass on as they come ("PERMISSION_DENIED: Missing or insufficient
+ * permissions."), said the way the rest of the panel speaks.
+ */
+fun humanize(message: String): String {
+    val raw = Regex("""(PERMISSION_DENIED|UNAVAILABLE|UNAUTHENTICATED|DEADLINE_EXCEEDED|NOT_FOUND)[^.]*\.?""").find(message) ?: return message
+    val said = when (raw.groupValues[1]) {
+        "PERMISSION_DENIED", "UNAUTHENTICATED" -> "Yetki yok: bu cihaz geliştirici hesabıyla giriş yapmamış."
+        "UNAVAILABLE", "DEADLINE_EXCEEDED" -> "Sunucuya ulaşılamadı; internet bağlantısını kontrol et."
+        else -> "Kayıt bulunamadı."
+    }
+    return message.replace(raw.value, said).trim()
 }
 
 /** Guesses how a free-form status line went from its words, for panels that only keep the text. */
 fun noticeKindOf(message: String): NoticeKind {
     val m = message.lowercase(java.util.Locale("tr"))
     return when {
-        listOf("yazılamadı", "okunamadı", "hata", "başarısız", "olmadı", "gönderilemedi", "yetki", "olmalı", "bulunamadı").any { it in m } -> NoticeKind.Error
+        listOf("yazılamadı", "okunamadı", "yüklenemedi", "alınamadı", "aranamadı", "hata", "başarısız", "olmadı", "gönderilemedi", "yetki", "olmalı", "bulunamadı", "permission", "denied").any { it in m } -> NoticeKind.Error
         listOf("kaydedildi", "gönderildi", "yayınlandı", "oluşturuldu", "tamam", "silindi", "açıldı", "kapatıldı", "başladı", "planlandı", "uygulandı", "kilitlendi", "sıfırlandı").any { it in m } -> NoticeKind.Success
         else -> NoticeKind.Info
     }
