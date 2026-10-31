@@ -483,16 +483,56 @@ class RealTest {
     }
 
     @Test
+    fun theEndCardStaysAsLongAsKaralaksLineOverItTakes() {
+        // silent: a fixed beat
+        assertEquals(RealTimeline.END_CARD_SILENT_MS, RealTimeline.endCardMs())
+        assertEquals(RealTimeline.END_CARD_SILENT_MS, RealReveal("a").endCardMs)
+        // voiced: the line, a beat before it and a breath after, so a short line is a short card and a long one a long card
+        val short = RealTimeline.endCardMs(3_000L)
+        val long = RealTimeline.endCardMs(6_000L)
+        assertTrue(short >= RealTimeline.VOICE_AT + 3_000L && long >= RealTimeline.VOICE_AT + 6_000L)
+        assertEquals(3_000L, long - short)
+        // never shorter or longer than the card can bear
+        assertEquals(RealTimeline.END_CARD_MIN_MS, RealTimeline.endCardMs(300L))
+        assertEquals(RealTimeline.END_CARD_MAX_MS, RealTimeline.endCardMs(60_000L))
+        // only a line that has its voice counts: a chosen but unvoiced line leaves the card at its silent beat
+        val chosen = RealReveal("a", endLine = VoicedLine("Çiz, hatırla!"))
+        assertEquals(RealTimeline.END_CARD_SILENT_MS, chosen.endCardMs)
+        val voiced = chosen.copy(endLine = VoicedLine("Çiz, hatırla!", voice = "e.mp3", voiceMs = 2_000L))
+        assertEquals(RealTimeline.endCardMs(2_000L), voiced.endCardMs)
+        assertTrue("e.mp3" in voiced.media)
+        // changing the words takes the voice, and the card goes back to its silent beat
+        assertEquals(RealTimeline.END_CARD_SILENT_MS, voiced.copy(endLine = voiced.endLine.withText("Başka")).endCardMs)
+    }
+
+    @Test
+    fun theEndCardHasEightReadyLinesAndAnOldSavedVideoGetsThem() {
+        assertEquals(8, RealCopy.END_LINES.size)
+        assertEquals(RealCopy.END_LINES.size, RealCopy.END_LINES.distinct().size)
+        // every one fits what a line over the card may be, and is said as a whole sentence
+        assertTrue(RealCopy.END_LINES.all { it.length <= RealCopy.END_CHARS })
+        assertEquals(com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion.Wave, RealCopy.spoken(RealLine.End, "x").emotion)
+        assertEquals(RealCopy.END_CHARS, RealCopy.maxChars(RealLine.End))
+        assertEquals(RealCopy.HOOK_CHARS, RealCopy.maxChars(RealLine.Hook))
+        // a video saved before the end card had a line has the ready-made ones to choose from, and none chosen
+        val old = Json { ignoreUnknownKeys = true }.decodeFromString(RealReveal.serializer(), """{"sampleId":"a"}""")
+        assertEquals(RealCopy.END_LINES, old.endLine.options)
+        assertEquals("", old.endLine.text)
+        assertEquals(old.endLine, old.line(RealLine.End))
+        assertEquals(VoicedLine("x"), old.withLine(RealLine.End, VoicedLine("x")).endLine)
+    }
+
+    @Test
     fun theEndCardClosesTheVideoInPlaceOfThePromoAndStaysInsideItsMusic() {
         val r = RealReveal("a", clip = "a.mp4", clipMs = 8_000, outro = VoicedLine("Bu ne?"))
-        val card = RealTimeline.build(r, promoMs = 0L, endCardMs = RealTimeline.END_CARD_MS)
+        val card = RealTimeline.build(r, promoMs = 0L, endCardMs = r.endCardMs)
         assertEquals(RealPhase.EndCard, card.last().phase)
-        assertEquals(RealTimeline.END_CARD_MS, card.last().durationMs)
+        assertEquals(RealTimeline.END_CARD_SILENT_MS, card.last().durationMs)
         assertEquals(card.last().startMs, card.first { it.phase == RealPhase.Outro }.endMs)
         // the music belongs to everything up to the card's end, since it is part of the drawing's own video
         assertEquals(RealTimeline.totalMs(card), RealTimeline.mainMs(card))
         // a promo, when there is one, is used instead of the card, never both
-        val promo = RealTimeline.build(r, promoMs = 6_000L, endCardMs = RealTimeline.END_CARD_MS)
+        val promo = RealTimeline.build(r, promoMs = 6_000L, endCardMs = r.endCardMs)
         assertEquals(RealPhase.Promo, promo.last().phase)
         assertTrue(promo.none { it.phase == RealPhase.EndCard })
         // no ending asked for: the video ends on the closing

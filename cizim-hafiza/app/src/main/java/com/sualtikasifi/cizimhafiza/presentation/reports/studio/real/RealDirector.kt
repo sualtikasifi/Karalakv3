@@ -51,6 +51,8 @@ class RealDirector(private val client: OpenRouterClient, private val model: Stri
     suspend fun lines(kind: RealLine, drawing: RealDrawing, reveal: RealReveal): Result<Lines> = when (kind) {
         RealLine.Hook -> hooks(drawing)
         RealLine.Outro -> outros(drawing, reveal.motion, reveal.hook.text)
+        // the end card's lines are ready-made, not written by the assistant
+        RealLine.End -> Result.success(Lines(RealCopy.END_LINES, null))
     }
 
     /**

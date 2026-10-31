@@ -19,7 +19,6 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Ease
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Lettering
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StrokeReplay
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioAssets
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioLang
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioColors as C
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.TextPainter
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.VoicedVideo
@@ -60,10 +59,10 @@ class RealRenderer(
     private val promo: ClipFrames? = null,
     promoFile: File? = null,
     promoMs: Long = 0L,
-    /** The short end card after the closing, [endCardMs] long (0: none; the promo, when there is one, takes its place). */
+    /** The end card after the closing, [endCardMs] long (0: none; the promo, when there is one, takes its place). */
     endCardMs: Long = 0L,
-    /** The language the end card's words are in. */
-    private val lang: StudioLang = StudioLang.Tr
+    /** What Karalak says over the end card, when it is voiced. */
+    endVoiceFile: File? = null
 ) : VoicedVideo {
     /** The video is one drawing's: the project's featured one. */
     private val featured = project.featured
@@ -78,6 +77,7 @@ class RealRenderer(
             val line = when (e.phase) {
                 RealPhase.Hook -> f.hook.takeIf { hookVoiceFile != null }
                 RealPhase.Outro -> f.outro.takeIf { outroVoiceFile != null }
+                RealPhase.EndCard -> f.endLine.takeIf { endVoiceFile != null }
                 else -> null
             }
             line?.takeIf { it.voice != null }?.let { (e.startMs + RealTimeline.VOICE_AT).let { at -> at..at + it.voiceMs } }
@@ -97,8 +97,10 @@ class RealRenderer(
                     add(ClipSound(outroVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.outro.voiceMs, 1f, voice = true))
                 }
                 RealPhase.Promo -> promoFile?.let { add(ClipSound(it, e.startMs, e.durationMs, 1f, shape = RealMix::clipGainAt)) }
-                // the end card is silent: the music runs through it and fades out at its end
-                RealPhase.EndCard -> Unit
+                // the music runs through the end card and fades out at its end; Karalak's line over it, when voiced
+                RealPhase.EndCard -> if (endVoiceFile != null && f.endLine.voice != null) {
+                    add(ClipSound(endVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.endLine.voiceMs, 1f, voice = true))
+                }
             }
         }
         // the music is the drawing's video's: it has faded out by the time the promo starts
@@ -367,178 +369,23 @@ class RealRenderer(
     }
 
     /**
-     * The end card, after Karalak's closing: what the game is, tied to the video just watched. The badge; how long this
-     * doodle took; the game's own slogan; its three steps (draw before the time runs out, your drawings come back after a
-     * short break, remember which word each one was), each with a little picture of it (the timer ring running down,
-     * this very doodle, Karalak with his magnifier); Google's own Play badge of the video's language (a picture of it:
-     * there is nothing to tap in a video) and where the link is. It comes in over the clip's last frame, one part after
-     * another, and stays inside what the apps' buttons and caption leave free.
+     * The end card, after Karalak's closing: the game's own picture (what the game is, in three steps, and where to get
+     * it), the same in every video. It fades in over the clip's last frame and settles in from a slight zoom, so it is not
+     * a still; it stays for as long as Karalak's line over it takes (see [RealReveal.endCardMs]).
      */
     private fun drawEndCard(canvas: Canvas, e: RealEvent, t: Long) {
         val local = t - e.startMs
         val fade = (local.toFloat() / END_FADE).coerceIn(0f, 1f)
         if (fade < 1f && e.startMs > 0) draw(canvas, e.startMs - 1) else canvas.drawColor(C.CREAM)
-        plain.color = C.CREAM
-        plain.alpha = (255 * fade).toInt()
-        canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), plain)
-        // two soft orange washes for depth
-        plain.color = C.ORANGE
-        plain.alpha = (26 * fade).toInt()
-        canvas.drawCircle(90f, 260f, 420f, plain)
-        canvas.drawCircle(1010f, 1560f, 500f, plain)
-        plain.alpha = 255
-
-        val words = endWords()
-        val d = featured?.let { project.drawing(it.sampleId) }
-        val seconds = d?.seconds ?: 0
-        fun step(from: Float, length: Float) = ((local - from) / length).coerceIn(0f, 1f)
-
-        // the badge pops in, then floats a little
-        val pop = Ease.backOut(step(60f, 420f))
-        assets.logo?.takeIf { pop > 0f }?.let { badge ->
-            val size = END_BADGE * pop
-            val cy = END_BADGE_CY + kotlin.math.sin(local * 2.0 * Math.PI / 2_400.0).toFloat() * 6f
-            canvas.drawBitmap(badge, null, RectF(W / 2f - size / 2f, cy - size / 2f, W / 2f + size / 2f, cy + size / 2f), fill)
-        }
-        // the video's own doodle, and how long it took
-        val context = step(200f, 280f)
-        val contextLine = if (seconds > 0) words.drawnIn.format(seconds) else words.drawnHere
-        text.draw(canvas, contextLine, W / 2f, END_CONTEXT_CY + 24f * (1f - Ease.out(context)), END_TEXT_W, 42f, 1, assets.body, END_MUTED, alpha = context)
-        // the slogan, settling in, with its paint stroke drawn under it
-        val slogan = step(320f, 320f)
-        if (slogan > 0f) {
-            val z = 0.92f + 0.08f * Ease.backOut(slogan)
-            canvas.save()
-            canvas.scale(z, z, W / 2f, END_SLOGAN_CY)
-            text.draw(canvas, words.slogan, W / 2f, END_SLOGAN_CY, END_TEXT_W, 90f, 1, assets.display, C.INK, alpha = slogan)
-            canvas.restore()
-            val (sw, _) = text.measure(words.slogan, END_TEXT_W, 90f, 1, assets.display, C.INK)
-            val stroke = Ease.out(step(520f, 300f)) * sw * 0.62f
-            plain.color = C.ORANGE
-            canvas.drawRoundRect(RectF(W / 2f - stroke / 2f, END_STROKE_Y, W / 2f + stroke / 2f, END_STROKE_Y + 12f), 6f, 6f, plain)
-        }
-        // the three steps, one after the other
-        words.steps.forEachIndexed { i, line ->
-            val a = step(END_STEP_AT + i * END_STEP_GAP, 300f)
-            if (a <= 0f) return@forEachIndexed
-            val cy = END_STEP_TOP + i * END_STEP_PITCH
-            val slide = 44f * (1f - Ease.out(a))
-            val icon = Ease.backOut(a)
-            canvas.save()
-            canvas.scale(icon, icon, END_ICON_CX, cy)
-            when (i) {
-                // the ring runs down while the card is up, but never out: the card is about drawing in time, not missing it
-                0 -> drawRing(canvas, END_ICON_CX, cy, END_ICON, seconds, 1f - END_RING_SPENT * Ease.out(step(END_STEP_AT, 2_000f)))
-                1 -> drawDoodleTile(canvas, d, END_ICON_CX, cy, END_ICON)
-                else -> drawMascotTile(canvas, END_ICON_CX, cy, END_ICON)
-            }
-            drawStepNumber(canvas, i + 1, END_ICON_CX - END_ICON * 0.38f, cy - END_ICON * 0.38f)
-            canvas.restore()
-            text.draw(
-                canvas, line, END_STEP_TEXT_X + END_STEP_TEXT_W / 2f + slide, cy, END_STEP_TEXT_W.toInt(), 48f, 2, assets.display, C.INK,
-                alpha = a, align = android.text.Layout.Alignment.ALIGN_NORMAL, spacing = 0.9f
-            )
-        }
-        // Google's own badge, in the video's language
-        val store = Ease.backOut(step(END_STORE_AT, 400f))
-        assets.picture(R.drawable.share_play_badge, lang.locale)?.takeIf { store > 0f }?.let { badge ->
-            val w = END_STORE_W
-            val h = w * badge.height / badge.width
-            canvas.save()
-            canvas.scale(store, store, W / 2f, END_STORE_CY)
-            canvas.drawBitmap(badge, null, RectF(W / 2f - w / 2f, END_STORE_CY - h / 2f, W / 2f + w / 2f, END_STORE_CY + h / 2f), fill)
-            canvas.restore()
-        }
-        val hint = step(END_STORE_AT + 300f, 300f)
-        text.draw(canvas, words.link, W / 2f, END_LINK_CY, END_TEXT_W, 40f, 1, assets.body, END_MUTED, alpha = hint)
-    }
-
-    /** The game's countdown ring at ([cx], [cy]), [size] across: the seconds left of [seconds], and the ring at [left]. */
-    private fun drawRing(canvas: Canvas, cx: Float, cy: Float, size: Float, seconds: Int, left: Float) {
-        plain.color = C.WHITE
-        canvas.drawCircle(cx, cy, size / 2f, plain)
-        ring.strokeWidth = 3f
-        ring.color = 0x22000000
-        canvas.drawCircle(cx, cy, size / 2f, ring)
-        val shown = kotlin.math.ceil(seconds * left - 0.001f).toInt().coerceAtLeast(0)
-        val color = if (seconds > 0 && shown <= 1) TIMER_WARNING else TIMER
-        val inset = size * 0.1f
-        val arc = RectF(cx - size / 2f + inset, cy - size / 2f + inset, cx + size / 2f - inset, cy + size / 2f - inset)
-        ring.strokeWidth = size * 0.11f
-        ring.color = TIMER_TRACK
-        canvas.drawArc(arc, -90f, 360f, false, ring)
-        ring.color = color
-        if (left > 0f) canvas.drawArc(arc, -90f, 360f * left, false, ring)
-        if (seconds > 0) text.draw(canvas, shown.toString(), cx, cy, size.toInt(), size * 0.5f, 1, assets.display, color)
-    }
-
-    /** The video's doodle on a little white sheet with the game's orange edge: the drawing that comes back to be remembered. */
-    private fun drawDoodleTile(canvas: Canvas, d: RealDrawing?, cx: Float, cy: Float, size: Float) {
-        val box = RectF(cx - size / 2f, cy - size / 2f, cx + size / 2f, cy + size / 2f)
-        plain.color = C.WHITE
-        canvas.drawRoundRect(box, size * 0.18f, size * 0.18f, plain)
-        ring.strokeWidth = 5f
-        ring.color = C.ORANGE
-        canvas.drawRoundRect(RectF(box.left + 2.5f, box.top + 2.5f, box.right - 2.5f, box.bottom - 2.5f), size * 0.18f, size * 0.18f, ring)
-        val m = size * 0.14f
-        d?.let { replay(it.id)?.draw(canvas, RectF(box.left + m, box.top + m, box.right - m, box.bottom - m), 1f, ink, 0.045f) }
-    }
-
-    /** Karalak with his magnifier, peeking out of a round frame: remembering what a drawing was. */
-    private fun drawMascotTile(canvas: Canvas, cx: Float, cy: Float, size: Float) {
-        plain.color = C.CREAM_DEEP
-        canvas.drawCircle(cx, cy, size / 2f, plain)
-        assets.picture(R.drawable.qm_mascot)?.let { bmp ->
-            circle.reset()
-            circle.addCircle(cx, cy, size / 2f, Path.Direction.CW)
-            canvas.save()
-            canvas.clipPath(circle)
-            val w = size * 0.98f
-            val h = w * bmp.height / bmp.width
-            canvas.drawBitmap(bmp, null, RectF(cx - w / 2f, cy + size / 2f - h, cx + w / 2f, cy + size / 2f), fill)
-            canvas.restore()
-        }
-        ring.strokeWidth = 5f
-        ring.color = C.ORANGE
-        canvas.drawCircle(cx, cy, size / 2f - 2.5f, ring)
-    }
-
-    /** A step's number, on an orange disc with a white rim. */
-    private fun drawStepNumber(canvas: Canvas, n: Int, cx: Float, cy: Float) {
-        plain.color = C.WHITE
-        canvas.drawCircle(cx, cy, END_NUMBER / 2f, plain)
-        plain.color = C.ORANGE
-        canvas.drawCircle(cx, cy, END_NUMBER / 2f - 5f, plain)
-        text.draw(canvas, n.toString(), cx, cy, END_NUMBER.toInt(), END_NUMBER * 0.6f, 1, assets.display, C.WHITE)
-    }
-
-    /**
-     * The end card's words in the video's language. [slogan] is the app's own (app_tagline in each language); [drawnIn]
-     * takes the doodle's seconds, [drawnHere] is said when they are not known.
-     */
-    private class EndWords(val drawnIn: String, val drawnHere: String, val slogan: String, val steps: List<String>, val link: String)
-
-    private fun endWords(): EndWords = when (lang) {
-        StudioLang.Tr -> EndWords(
-            "Bu karalama %d saniyede çizildi.", "Bu karalama Karalak'ta çizildi.", "Çiz, Hatırla, Tahmin Et!",
-            listOf("Kelimeyi süre dolmadan çiz", "Kısa bir moladan sonra çizimlerin geri gelir", "Hangi kelimeydi? Hatırla ve yaz!"),
-            "Ücretsiz · Link profilde"
-        )
-        StudioLang.En -> EndWords(
-            "This doodle was drawn in %d seconds.", "This doodle was drawn in Karalak.", "Draw, Remember, Guess!",
-            listOf("Draw the word before time runs out", "After a short break, your drawings come back", "Which word was it? Remember and type it!"),
-            "Free · Link in bio"
-        )
-        StudioLang.Pt -> EndWords(
-            "Este rabisco foi feito em %d segundos.", "Este rabisco foi feito no Karalak.", "Desenhe, Lembre, Adivinhe!",
-            listOf("Desenhe a palavra antes que o tempo acabe", "Após uma pausa, seus desenhos voltam", "Que palavra era? Lembre e escreva!"),
-            "Grátis · Link na bio"
-        )
-        StudioLang.Es -> EndWords(
-            "Este garabato se dibujó en %d segundos.", "Este garabato se dibujó en Karalak.", "¡Dibuja, Recuerda, Adivina!",
-            listOf("Dibuja la palabra antes de que se acabe el tiempo", "Tras una breve pausa, tus dibujos vuelven", "¿Qué palabra era? ¡Recuerda y escríbela!"),
-            "Gratis · Enlace en la bio"
-        )
+        val picture = assets.picture(R.drawable.real_end_card) ?: return
+        val settle = Ease.out((local.toFloat() / END_SETTLE).coerceIn(0f, 1f))
+        val zoom = 1f + END_ZOOM * (1f - settle)
+        fill.alpha = (255 * fade).toInt()
+        canvas.save()
+        canvas.scale(zoom, zoom, W / 2f, H / 2f)
+        cover(canvas, picture, RectF(0f, 0f, W.toFloat(), H.toFloat()), fill)
+        canvas.restore()
+        fill.alpha = 255
     }
 
     /**
@@ -911,35 +758,10 @@ class RealRenderer(
         /** Where the glimpse of the real thing is taken from the clip (a share of its length), for a teaser opening. */
         private const val TEASE_AT = 0.4f
 
-        /**
-         * The end card: how fast it comes in, and where its parts sit, all inside what the apps leave free (below their
-         * top tabs, above their caption band, clear of their buttons on the right): the badge, the line about the doodle,
-         * the slogan and its stroke, the three steps (their icons, numbers and words, and when they come in), Google's
-         * badge and the line under it.
-         */
+        /** The end card picture: how fast it fades in, and how long it settles from a slight zoom. */
         private const val END_FADE = 260L
-        private const val END_BADGE = 210f
-        private const val END_BADGE_CY = 300f
-        private const val END_TEXT_W = 920
-        private const val END_CONTEXT_CY = 470f
-        private const val END_SLOGAN_CY = 568f
-        private const val END_STROKE_Y = 632f
-        private const val END_STEP_TOP = 790f
-        private const val END_STEP_PITCH = 196f
-        private const val END_STEP_AT = 700f
-        private const val END_STEP_GAP = 300f
-        private const val END_ICON = 150f
-        private const val END_ICON_CX = 170f
-        private const val END_NUMBER = 54f
-        private const val END_STEP_TEXT_X = 285f
-        private const val END_STEP_TEXT_W = 700f
-        private const val END_STORE_AT = 1_650f
-        private const val END_STORE_W = 520f
-        private const val END_STORE_CY = 1400f
-        private const val END_LINK_CY = 1535f
-        private const val END_MUTED = 0xFF6B6157.toInt()
-        /** How much of its time the first step's ring runs down over the card. */
-        private const val END_RING_SPENT = 0.7f
+        private const val END_SETTLE = 700L
+        private const val END_ZOOM = 0.03f
 
         /** How far before its end the clip's held frame is taken, clear of a last frame that may come out black. */
         private const val LAST_FRAME_BACK = 60L
