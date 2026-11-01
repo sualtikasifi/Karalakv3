@@ -138,9 +138,10 @@ class RuneTreeTest {
 
     @Test
     fun hintCountsWhatTheGoldBuys() {
-        // a new player with 300 gold buys the two cheapest first-ring runes (Kalem Parası and the chest gold), no more
-        val hint = RuneTree.hint(emptyMap(), gold = 300, playerLevel = 1)
-        assertEquals(RuneHint.Affordable(2), hint)
+        // 300 gold is one first level (Kalem Parası and the chest gold both cost 300): the gold is spent once, not per rune
+        assertEquals(RuneHint.Affordable(1), RuneTree.hint(emptyMap(), gold = 300, playerLevel = 1))
+        // 600 buys both
+        assertEquals(RuneHint.Affordable(2), RuneTree.hint(emptyMap(), gold = 600, playerLevel = 1))
     }
 
     @Test
