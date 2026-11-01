@@ -161,12 +161,28 @@ object RuneTree {
         all.mapNotNull { r -> if (canBuy(levels, r, playerLevel)) nextCost(levels, r)?.let { r to it } else null }
 
     /**
-     * What the home screen's rune sign says: how many runes the gold buys right now, or how much gold the cheapest next
-     * one still needs, or the level the next ring waits for, or that the map is done.
+     * How many rune levels [gold] buys in all, walking the whole tree: the cheapest open level is bought first, which
+     * may open its neighbours, its ring's progress and so the next ring, until nothing open is left or the gold runs out.
+     */
+    fun affordableLevels(levels: Map<String, Int>, gold: Int, playerLevel: Int): Int {
+        val held = levels.toMutableMap()
+        var left = gold
+        var count = 0
+        while (true) {
+            val next = buyable(held, playerLevel).filter { (_, cost) -> cost <= left }.minByOrNull { it.second } ?: return count
+            held[next.first.id] = levelOf(held, next.first.id) + 1
+            left -= next.second
+            count++
+        }
+    }
+
+    /**
+     * What the home screen's rune sign says: how many rune levels the gold buys (see [affordableLevels]), or how much
+     * gold the cheapest next one still needs, or the level the next ring waits for, or that the map is done.
      */
     fun hint(levels: Map<String, Int>, gold: Int, playerLevel: Int): RuneHint {
         val open = buyable(levels, playerLevel)
-        val affordable = open.count { (_, cost) -> cost <= gold }
+        val affordable = affordableLevels(levels, gold, playerLevel)
         if (affordable > 0) return RuneHint.Affordable(affordable)
         open.minOfOrNull { it.second }?.let { return RuneHint.Saving(it - gold) }
         val nextRing = all.filter { it.id != ROOT_ID && levelOf(levels, it.id) < it.maxLevel }.minOfOrNull { it.ring }

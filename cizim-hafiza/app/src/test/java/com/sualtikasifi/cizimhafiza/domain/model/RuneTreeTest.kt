@@ -138,9 +138,10 @@ class RuneTreeTest {
 
     @Test
     fun hintCountsWhatTheGoldBuys() {
-        // a new player with 300 gold can buy the two cheapest first-ring runes (Kalem Parası and the chest gold)
-        val hint = RuneTree.hint(emptyMap(), gold = 300, playerLevel = 1)
-        assertEquals(RuneHint.Affordable(2), hint)
+        // 300 gold is one first level (Kalem Parası and the chest gold both cost 300): the gold is spent once, not per rune
+        assertEquals(RuneHint.Affordable(1), RuneTree.hint(emptyMap(), gold = 300, playerLevel = 1))
+        // 600 buys both
+        assertEquals(RuneHint.Affordable(2), RuneTree.hint(emptyMap(), gold = 600, playerLevel = 1))
     }
 
     @Test
@@ -171,5 +172,15 @@ class RuneTreeTest {
     fun boughtLevelsLeavesTheRootOut() {
         assertEquals(0, RuneTree.boughtLevels(emptyMap()))
         assertEquals(3, RuneTree.boughtLevels(mapOf(RuneTree.WORD_GOLD to 2, RuneTree.CHEST_GOLD to 1)))
+    }
+
+    @Test
+    fun affordableLevelsWalksTheWholeTreeWithEnoughGold() {
+        // at level 1 only the first ring can open, however much gold there is: all of its levels, nothing past it
+        val ring1 = RuneTree.all.filter { it.ring == 1 && it.id != RuneTree.ROOT_ID }.sumOf { it.maxLevel }
+        assertEquals(ring1, RuneTree.affordableLevels(emptyMap(), gold = 100_000_000, playerLevel = 1))
+        // at a high level the later rings open as the ring before them fills up: every level of the map
+        val all = RuneTree.all.filter { it.id != RuneTree.ROOT_ID }.sumOf { it.maxLevel }
+        assertEquals(all, RuneTree.affordableLevels(emptyMap(), gold = 100_000_000, playerLevel = 99))
     }
 }

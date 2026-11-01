@@ -739,6 +739,8 @@
     <string name="league_reward_explainer_frame">¡Termina el mes entre los 3 primeros de la clasificación Global para ganar el Marco de Campeón %1$s!</string>
     <string name="league_reward_kind_frame">Marco especial</string>
     <string name="league_prize_won_title">🏆 ¡Terminaste el mes pasado en el puesto %1$d!</string>
+    <string name="league_win_title">¡Terminaste el mes pasado en el puesto %1$d!</string>
+    <string name="league_win_body">Se agregó tu premio. Elígelo en el menú principal.</string>
     <string name="league_prize_won_body">Se agregó tu premio: %1$s. Elígelo en el menú principal.</string>
     <string name="league_xp_format">%1$,d XP</string>
     <string name="league_rank_format">#%1$d</string>

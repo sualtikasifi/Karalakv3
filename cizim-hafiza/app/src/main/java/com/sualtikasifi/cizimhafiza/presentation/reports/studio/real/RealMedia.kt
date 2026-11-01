@@ -299,21 +299,86 @@ object RealMusic {
         "music_5" to R.raw.music_5
     )
 
-    fun label(name: String): String = "Müzik " + (TRACKS.indexOfFirst { it.first == name } + 1)
+    private const val CUSTOM = "custom_"
+
+    /** The longest file taken as a track: a song, not an album. */
+    private const val MAX_BYTES = 25L * 1024 * 1024
+
+    private fun isCustom(name: String) = name.startsWith(CUSTOM)
+
+    /** Where the person's own tracks are kept: not the cache, which the system may empty. */
+    private fun customDir(context: Context) = File(context.filesDir, "studio_music_custom")
+
+    fun label(name: String): String =
+        if (isCustom(name)) name.removePrefix(CUSTOM).replace('_', ' ') else "Müzik " + (TRACKS.indexOfFirst { it.first == name } + 1)
+
+    /** The names of the tracks the person added, oldest first. */
+    fun custom(context: Context): List<String> =
+        customDir(context).listFiles()?.filter { it.isFile && !it.name.endsWith(".part") }?.sortedBy { it.lastModified() }?.map { it.nameWithoutExtension }.orEmpty()
 
     /** Where the track is kept as a file (the decoder and the player need one); it may not be there yet, see [ensure]. */
-    fun target(context: Context, name: String): File = File(File(context.cacheDir, "studio_music"), "$name.m4a")
+    fun target(context: Context, name: String): File =
+        if (isCustom(name)) File(customDir(context), "$name.m4a") else File(File(context.cacheDir, "studio_music"), "$name.m4a")
 
     /** The track as a file, copied out of the app the first time it is asked for. */
     fun ensure(context: Context, name: String): File {
         val f = target(context, name)
         if (f.exists() && f.length() > 0) return f
+        if (isCustom(name)) error("Müzik dosyası bulunamadı")
         val id = TRACKS.find { it.first == name }?.second ?: error("Bilinmeyen müzik: $name")
         f.parentFile?.mkdirs()
         val tmp = File(f.parentFile, f.name + ".part")
         context.resources.openRawResource(id).use { input -> tmp.outputStream().use { input.copyTo(it) } }
         if (!tmp.renameTo(f)) { tmp.delete(); error("Müzik hazırlanamadı") }
         return f
+    }
+
+    /**
+     * Copies a music file chosen by the person into the app and returns its track name. The file must hold sound the
+     * phone can decode; the name is the file's own, so it can be told from the others in the list.
+     */
+    fun import(context: Context, uri: android.net.Uri): String {
+        val display = context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst()) c.getString(0) else null
+        } ?: "muzik"
+        val slug = display.substringBeforeLast('.').lowercase().map { if (it.isLetterOrDigit()) it else '_' }.joinToString("").trim('_').take(24).ifEmpty { "muzik" }
+        val dir = customDir(context).apply { mkdirs() }
+        var name = CUSTOM + slug
+        var n = 2
+        while (File(dir, "$name.m4a").exists()) name = CUSTOM + slug + "_" + n++
+        val tmp = File(dir, "$name.part")
+        try {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                tmp.outputStream().use { out ->
+                    val buf = ByteArray(64 * 1024)
+                    var total = 0L
+                    while (true) {
+                        val r = input.read(buf)
+                        if (r < 0) break
+                        total += r
+                        if (total > MAX_BYTES) error("Dosya çok büyük (en fazla 25 MB)")
+                        out.write(buf, 0, r)
+                    }
+                }
+            } ?: error("Dosya açılamadı")
+            val hasSound = MediaExtractor().let { ex ->
+                try {
+                    ex.setDataSource(tmp.path)
+                    (0 until ex.trackCount).any { ex.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("audio/") == true }
+                } catch (e: Exception) { false } finally { ex.release() }
+            }
+            if (!hasSound) error("Bu dosyada ses yok ya da telefon çözemiyor")
+            if (!tmp.renameTo(File(dir, "$name.m4a"))) error("Müzik kaydedilemedi")
+        } catch (e: Exception) {
+            tmp.delete()
+            throw e
+        }
+        return name
+    }
+
+    /** Takes a track the person added away (the app's own cannot be removed). */
+    fun remove(context: Context, name: String) {
+        if (isCustom(name)) target(context, name).delete()
     }
 }
 

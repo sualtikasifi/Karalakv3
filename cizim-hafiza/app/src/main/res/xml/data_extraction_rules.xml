@@ -4,8 +4,10 @@
 <data-extraction-rules>
     <cloud-backup>
         <include domain="sharedpref" path="one_time_flags.xml" />
+        <include domain="file" path="studio_end_voice/" />
     </cloud-backup>
     <device-transfer>
         <include domain="sharedpref" path="one_time_flags.xml" />
+        <include domain="file" path="studio_end_voice/" />
     </device-transfer>
 </data-extraction-rules>

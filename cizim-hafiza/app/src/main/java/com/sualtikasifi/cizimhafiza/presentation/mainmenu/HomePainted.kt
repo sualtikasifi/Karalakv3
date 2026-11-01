@@ -300,36 +300,17 @@ internal fun PaintedHome(
 
         // ── The Rünler sign: the third chip of the row, in front of the mascot ──
         // Painted in code in the chips' own colours (the orange rim, the dark well), so it reads as one of the set; the
-        // line under the name says what the gold buys now, so the map is a reason to come back, not a hidden door.
+        // number on its right says how many rune levels the gold buys now, so the map is a reason to come back, not a
+        // hidden door (the longer wording is what a screen reader says).
         RuneChip(
             hint = runeHint,
             us = us,
             fs = ::fs,
             modifier = box(528f, 258f, 812f, 326f)
                 .pressable(pressedScale = 0.95f, onClick = { onRunes("chip") })
-                .a11yButton(stringResource(R.string.rune_screen_title)),
+                .a11yButton(stringResource(R.string.rune_screen_title) + ", " + runeHintLine(runeHint)),
             iconModifier = box(516f, 250f, 598f, 332f)
         )
-        if (runeHint is com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Affordable) {
-            val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "runeBadge")
-            val k by pulse.animateFloat(
-                initialValue = 0.9f,
-                targetValue = 1.12f,
-                animationSpec = androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(700), androidx.compose.animation.core.RepeatMode.Reverse),
-                label = "runeBadgeScale"
-            )
-            Box(
-                box(772f, 230f, 832f, 290f).graphicsLayer { scaleX = k; scaleY = k },
-                contentAlignment = Alignment.Center
-            ) {
-                androidx.compose.foundation.Image(
-                    painter = androidx.compose.ui.res.painterResource(R.drawable.badge_upgrade),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-        }
-
         // ── The mascot's first-rune offer: a speech balloon to its left, over the logo sign ──
         if (runePrompt) {
             LaunchedEffect(Unit) { onRunePromptShow() }
@@ -721,9 +702,19 @@ private fun GainFloat(text: String, fontSize: androidx.compose.ui.unit.TextUnit,
 }
 
 
+/** What the sign's hint says in words (for a screen reader; the chip itself only shows the count). */
+@Composable
+private fun runeHintLine(hint: com.sualtikasifi.cizimhafiza.domain.model.RuneHint): String = when (hint) {
+    is com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Affordable -> stringResource(R.string.rune_chip_affordable, hint.count)
+    is com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Saving -> stringResource(R.string.rune_chip_saving, NumberFormat.getIntegerInstance().format(hint.goldNeeded))
+    is com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Locked -> stringResource(R.string.rune_chip_locked, hint.level)
+    com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Complete -> stringResource(R.string.rune_chip_complete)
+}
+
 /**
  * The home screen's Rünler sign: an orange-rimmed pill with a dark well like the gold and pen chips beside it, the rune
- * map's centre (the dog in its gold ring) on its left, the name, and under it what the gold buys now.
+ * map's centre (the dog in its gold ring) on its left and the name at the same size as theirs. When the gold buys rune
+ * levels, a green count (pulsing gently) sits at the right end of the well.
  */
 @Composable
 private fun RuneChip(
@@ -733,35 +724,37 @@ private fun RuneChip(
     modifier: Modifier,
     iconModifier: Modifier
 ) {
-    val line = when (hint) {
-        is com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Affordable -> stringResource(R.string.rune_chip_affordable, hint.count)
-        is com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Saving -> stringResource(R.string.rune_chip_saving, NumberFormat.getIntegerInstance().format(hint.goldNeeded))
-        is com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Locked -> stringResource(R.string.rune_chip_locked, hint.level)
-        com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Complete -> stringResource(R.string.rune_chip_complete)
-    }
-    val ready = hint is com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Affordable
+    val count = (hint as? com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Affordable)?.count
     Box(
         modifier
             .background(Brush.verticalGradient(listOf(Color(0xFFFFB73E), Color(0xFFE5670B))), RoundedCornerShape(50))
             .border((1.5f).dp, Color(0xFFB04A08), RoundedCornerShape(50))
             .padding((7f * us).dp)
             .background(Brush.verticalGradient(listOf(Color(0xFF4A1D0A), Color(0xFF5E2A10))), RoundedCornerShape(50))
-            .padding(start = (66f * us).dp, end = (14f * us).dp, top = (3f * us).dp, bottom = (3f * us).dp)
+            .padding(start = (66f * us).dp, end = (8f * us).dp)
     ) {
-        // Two fixed bands, so the name can never push the line under it out of the well: the lettering shrinks to
-        // its band instead (see LetteredText).
-        androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
-            Box(Modifier.weight(0.56f).fillMaxWidth(), contentAlignment = Alignment.BottomStart) {
-                LetteredText(stringResource(R.string.rune_chip_title), fs(25f), outline = Color(0xFF3A1E08), maxLines = 1, minScale = 0.6f)
+        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                LetteredText(stringResource(R.string.rune_chip_title), fs(30f), outline = Color(0xFF3A1E08), maxLines = 1, minScale = 0.6f)
             }
-            Box(Modifier.weight(0.44f).fillMaxWidth(), contentAlignment = Alignment.TopStart) {
-                FitText(
-                    text = line,
-                    style = PaintedStyle(color = if (ready) Color(0xFF9CF27A) else Color(0xFFFFD27A), fontSize = fs(17f), lineHeight = fs(19f)),
-                    minScale = 0.6f,
-                    contentAlignment = Alignment.TopStart,
-                    modifier = Modifier.fillMaxWidth()
+            if (count != null) {
+                val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "runeCount")
+                val k by pulse.animateFloat(
+                    initialValue = 0.94f,
+                    targetValue = 1.1f,
+                    animationSpec = androidx.compose.animation.core.infiniteRepeatable(tween(700), androidx.compose.animation.core.RepeatMode.Reverse),
+                    label = "runeCountScale"
                 )
+                Box(
+                    Modifier
+                        .size((44f * us).dp)
+                        .graphicsLayer { scaleX = k; scaleY = k }
+                        .background(Brush.verticalGradient(listOf(Color(0xFF6BE04A), Color(0xFF22A12A))), CircleShape)
+                        .border((1.5f).dp, Color.White, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    LetteredText(count.toString(), fs(if (count > 99) 20f else 27f), outline = Color(0xFF14501A), maxLines = 1, minScale = 0.5f)
+                }
             }
         }
     }
