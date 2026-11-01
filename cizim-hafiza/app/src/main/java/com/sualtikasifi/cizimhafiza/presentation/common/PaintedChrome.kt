@@ -168,10 +168,8 @@ fun PaintedDialog(
                 .padding(horizontal = 20.dp, vertical = 40.dp),
             contentAlignment = Alignment.Center
         ) {
-            NinePatch(
-                res = R.drawable.league_card,
-                slicePx = 100,
-                edge = 24.dp,
+            PaintedWindowFrame(
+                title = title,
                 modifier = modifier
                     .widthIn(max = 460.dp)
                     .fillMaxWidth()
@@ -180,16 +178,9 @@ fun PaintedDialog(
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 22.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    FitText(
-                        text = title,
-                        style = PaintedStyle(color = Color(0xFF3A2416), fontSize = 24.sp, textAlign = TextAlign.Center),
-                        maxLines = 2,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(Modifier.height(10.dp))
                     Column(
                         modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
                         horizontalAlignment = Alignment.CenterHorizontally,

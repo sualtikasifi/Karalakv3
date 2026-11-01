@@ -84,6 +84,15 @@ class RunePromoPreviewActivity : ComponentActivity() {
                         val reward = if (screen == "league_win_frame") all.filterIsInstance<com.sualtikasifi.cizimhafiza.domain.model.LeagueReward.Frame>().firstOrNull() else all.firstOrNull()
                         com.sualtikasifi.cizimhafiza.presentation.league.LeaguePrizeDialog(reward = reward ?: all.firstOrNull(), rank = 1, onDismiss = { finish() })
                     }
+                    "window_pick" -> com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog(title = "Çerçeveni Seç", onDismiss = { finish() }) {
+                        androidx.compose.material3.Text("Profil görseli", fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold)
+                        repeat(14) { i -> androidx.compose.material3.Text("Satır ${i + 1}: örnek içerik, pencere uzayınca orta bant esner", modifier = Modifier.padding(vertical = 6.dp)) }
+                    }
+                    "window_confirm" -> com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+                        title = "Arkadaşlıktan çıkarılsın mı?",
+                        message = "Bu kişi arkadaş listenden kalkar. İstersen sonra yeniden ekleyebilirsin.",
+                        confirmText = "Çıkar", dismissText = "Vazgeç", destructive = true, onConfirm = { finish() }, onDismiss = { finish() }
+                    )
                     "tour_runes" -> FeatureTourDialog(onFinish = { finish() }, runesOnly = true, onOpenRunes = {})
                     else -> ConsoleTheme {
                         Box(Modifier.fillMaxSize().background(Console.Bg).statusBarsPadding().padding(16.dp)) {
