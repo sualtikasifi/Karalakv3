@@ -75,6 +75,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.launch
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.Rune
@@ -159,6 +160,8 @@ fun RunesScreen(
     onBack: () -> Unit,
     /** Opened from the mascot's first-rune offer: the map points at the rune to buy first and says so. */
     guide: Boolean = false,
+    /** A rune to bring to the middle and select as the screen opens (debug previews). */
+    focus: String? = null,
     viewModel: RunesViewModel = hiltViewModel()
 ) {
     val gold by viewModel.gold.collectAsState()
@@ -166,10 +169,13 @@ fun RunesScreen(
     val xp by viewModel.xp.collectAsState()
     val playerLevel = remember(xp) { com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.levelForXp(xp) }
     // The rune the guide points at, chosen once as the screen opens (Kalem Parası when the gold buys it).
-    val guideId = remember { if (guide) RuneTree.firstPick(levels, gold, playerLevel)?.id else null }
+    val guideId = remember { focus ?: if (guide) RuneTree.firstPick(levels, gold, playerLevel)?.id else null }
     val guiding = guideId != null && RuneTree.levelOf(levels, guideId) == 0
     var selected by remember { mutableStateOf(guideId) }
     var celebration by remember { mutableIntStateOf(0) }
+    // The purchase that is playing out on the map (see RuneBurst); a new one replaces it, replaying the effects.
+    var burst by remember { mutableStateOf<RuneBurst?>(null) }
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     // The player's first rune ever, just bought: a window says what it now does for them.
     var firstRune by remember { mutableStateOf<String?>(null) }
     // The centre of the map (the dog) opens the status sheet instead of being selected.
@@ -217,6 +223,7 @@ fun RunesScreen(
                 playerLevel = playerLevel,
                 gold = gold,
                 selected = selected,
+                burst = burst,
                 focusId = guideId,
                 pointAt = guideId.takeIf { guiding },
                 onSelect = { id ->
@@ -243,8 +250,17 @@ fun RunesScreen(
                 gold = gold,
                 onBuy = { id ->
                     val first = RuneTree.boughtLevels(levels) == 0
+                    val rune = RuneTree.get(id)
+                    val reached = RuneTree.levelOf(levels, id) + 1
                     if (viewModel.buy(id, guided = id == guideId)) {
                         celebration++
+                        // the last level of a rune (or a one-off ability) is a bigger moment than a level in between
+                        val grand = rune != null && reached >= rune.maxLevel
+                        burst = RuneBurst(id, reached, grand, celebration)
+                        haptics.performHapticFeedback(
+                            if (grand) androidx.compose.ui.hapticfeedback.HapticFeedbackType.Confirm
+                            else androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress
+                        )
                         if (first) firstRune = id
                     }
                 },
@@ -252,8 +268,10 @@ fun RunesScreen(
             )
         }
         if (celebration > 0) {
-            ConfettiExplosion(seed = celebration * 7, count = 60, durationMs = 1400, originY = 0.4f)
+            val grand = burst?.grand == true
+            ConfettiExplosion(seed = celebration * 7, count = if (grand) 150 else 36, durationMs = if (grand) 2300 else 1200, originY = 0.4f)
         }
+        burst?.takeIf { it.grand }?.let { GrandFinish(it.token) }
         status?.let { abilities ->
             RuneStatusDialog(levels = levels, playerLevel = playerLevel, abilities = abilities, onDismiss = { status = null })
         }
@@ -325,6 +343,8 @@ private fun RuneMap(
     playerLevel: Int,
     gold: Int,
     selected: String?,
+    /** The purchase playing out on the map, if any. */
+    burst: RuneBurst? = null,
     /** A rune to bring to the middle as the map opens. */
     focusId: String? = null,
     /** A rune to point at with a bobbing hand (the first-rune guide). */
@@ -452,6 +472,7 @@ private fun RuneMap(
                             sealed = sealed,
                             affordable = unlocked && cost != null && gold >= cost,
                             selected = selected == rune.id,
+                            burst = burst?.takeIf { it.runeId == rune.id },
                             onClick = { onSelect(rune.id) }
                         )
                     }
@@ -530,13 +551,41 @@ private fun tileArt(rune: Rune, owned: Boolean, unlocked: Boolean, maxed: Boolea
 }
 
 @Composable
-private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, sealed: Boolean, affordable: Boolean, selected: Boolean, onClick: () -> Unit) {
+private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, sealed: Boolean, affordable: Boolean, selected: Boolean, burst: RuneBurst?, onClick: () -> Unit) {
     val owned = level >= 1
     val maxed = owned && level >= rune.maxLevel && !rune.isKeystone && rune.id != RuneTree.ROOT_ID
     val size = tileSize(rune, sealed)
     val pulse = rememberInfiniteTransition(label = "runePulse")
     val glow by pulse.animateFloat(0.35f, 1f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "runeGlow")
-    Box(modifier = Modifier.size(size).pressable(pressedScale = 0.92f, onClick = onClick), contentAlignment = Alignment.Center) {
+    // What a purchase does to the tile itself: it jumps (a rune's last level crouches first and leaps higher), the dot of
+    // the level reached pops in, and the effects of [RuneBurstEffects] play round it.
+    val pop = remember { androidx.compose.animation.core.Animatable(1f) }
+    val pipPop = remember { androidx.compose.animation.core.Animatable(1f) }
+    val progress = remember { androidx.compose.animation.core.Animatable(1f) }
+    LaunchedEffect(burst?.token) {
+        val b = burst ?: return@LaunchedEffect
+        progress.snapTo(0f)
+        pipPop.snapTo(2.6f)
+        launch { pipPop.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.4f, stiffness = 240f)) }
+        launch { progress.animateTo(1f, tween(if (b.grand) 1700 else 900, easing = androidx.compose.animation.core.LinearOutSlowInEasing)) }
+        pop.snapTo(1f)
+        if (b.grand) {
+            pop.animateTo(0.8f, tween(150))
+            pop.animateTo(1.5f, tween(230, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+            pop.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.35f, stiffness = 180f))
+        } else {
+            pop.animateTo(1.32f, tween(110))
+            pop.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.35f, stiffness = 320f))
+        }
+    }
+    val playing = burst != null && progress.value < 1f
+    Box(
+        modifier = Modifier.size(size)
+            .graphicsLayer { scaleX = pop.value; scaleY = pop.value }
+            .pressable(pressedScale = 0.92f, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        if (playing && burst != null) RuneBurstEffects(burst, rune, size, progress.value, behind = true)
         if (selected || affordable) {
             Image(
                 painter = painterResource(R.drawable.rune_halo),
@@ -551,6 +600,15 @@ private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, sealed: Boolean,
             contentScale = ContentScale.Fit,
             modifier = Modifier.requiredSize(size * (if (maxed) 1.16f else 1f))
         )
+        // the last level changes the plate: the plate it had before dissolves over the new one, under a flash
+        if (playing && burst != null && burst.grand && maxed) {
+            Image(
+                painter = painterResource(tileArt(rune, owned = true, unlocked = true, maxed = false)),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.requiredSize(size).alpha((1f - progress.value / 0.45f).coerceIn(0f, 1f))
+            )
+        }
         if (sealed) return@Box
         // The medallion of the plate sits a little low on the ornate ones, which carry a crown on top.
         val (sx, sy) = medallionShift(rune, owned, unlocked, maxed)
@@ -592,10 +650,135 @@ private fun RuneTile(rune: Rune, level: Int, unlocked: Boolean, sealed: Boolean,
                     Image(
                         painter = painterResource(if (i < level) R.drawable.rune_pip_full else R.drawable.rune_pip_empty),
                         contentDescription = null,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(14.dp).graphicsLayer {
+                            if (i == level - 1 && burst != null) { scaleX = pipPop.value; scaleY = pipPop.value }
+                        }
                     )
                 }
             }
+        }
+        if (playing && burst != null) RuneBurstEffects(burst, rune, size, progress.value, behind = false)
+    }
+}
+
+/**
+ * A rune level just bought on the map: [token] changes with every purchase so the effects replay, [grand] when it was the
+ * rune's last level (or a one-off ability), which gets the bigger show.
+ */
+private data class RuneBurst(val runeId: String, val level: Int, val grand: Boolean, val token: Int)
+
+/**
+ * The show round a tile that was just bought, [t] being 0..1 through it. Behind the tile (a turning crown of rays, the
+ * last level only); in front of it (a ring of light that widens and thins out, a second one for the last level, sparks
+ * flying off and a white flash as the plate changes, and the gain, "+%8", floating up).
+ */
+@Composable
+private fun RuneBurstEffects(burst: RuneBurst, rune: Rune, size: Dp, t: Float, behind: Boolean) {
+    val (light, deep) = branchColors(rune.branch)
+    val box = size * (if (burst.grand) 4.2f else 3.2f)
+    if (behind) {
+        if (!burst.grand) return
+        androidx.compose.foundation.Canvas(Modifier.requiredSize(box)) {
+            val c = center
+            val reach = this.size.minDimension / 2f
+            val fade = kotlin.math.sin(Math.PI * t.coerceIn(0f, 1f)).toFloat()
+            val spin = t * 70f
+            repeat(14) { i ->
+                val a = Math.toRadians((spin + i * 360f / 14).toDouble())
+                val w = Math.toRadians(5.5)
+                val p = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(c.x, c.y)
+                    lineTo(c.x + reach * kotlin.math.cos(a - w).toFloat(), c.y + reach * kotlin.math.sin(a - w).toFloat())
+                    lineTo(c.x + reach * kotlin.math.cos(a + w).toFloat(), c.y + reach * kotlin.math.sin(a + w).toFloat())
+                    close()
+                }
+                drawPath(p, brush = androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color.White.copy(alpha = 0.85f * fade), light.copy(alpha = 0.55f * fade), Color.Transparent), center = c, radius = reach))
+            }
+        }
+        return
+    }
+    androidx.compose.foundation.Canvas(Modifier.requiredSize(box)) {
+        val c = center
+        val s = size.toPx()
+        // widening rings
+        fun ring(tt: Float, from: Float, to: Float, thick: Float) {
+            if (tt <= 0f || tt >= 1f) return
+            drawCircle(light.copy(alpha = (1f - tt) * 0.95f), radius = s * (from + (to - from) * tt), center = c, style = androidx.compose.ui.graphics.drawscope.Stroke(width = s * thick * (1f - tt) + 1f))
+        }
+        ring(t, 0.45f, 1.3f, 0.14f)
+        if (burst.grand) {
+            ring((t - 0.12f) / 0.88f, 0.4f, 1.9f, 0.16f)
+            ring((t - 0.28f) / 0.72f, 0.4f, 2.3f, 0.10f)
+        }
+        // sparks flying off
+        val n = if (burst.grand) 24 else 10
+        val e = 1f - (1f - t) * (1f - t)
+        repeat(n) { i ->
+            val a = Math.toRadians((i * 360.0 / n) + (if (burst.grand) 7.0 else 0.0) + (i % 2) * 9.0)
+            val dist = s * (0.55f + (0.75f + (i % 3) * 0.28f) * e * (if (burst.grand) 1.6f else 1f))
+            val r = s * (if (i % 3 == 0) 0.085f else 0.055f) * (1f - t)
+            val x = c.x + dist * kotlin.math.cos(a).toFloat()
+            val y = c.y + dist * kotlin.math.sin(a).toFloat()
+            val spark = androidx.compose.ui.graphics.Path().apply {
+                moveTo(x, y - r * 2f); lineTo(x + r * 0.7f, y - r * 0.7f); lineTo(x + r * 2f, y); lineTo(x + r * 0.7f, y + r * 0.7f)
+                lineTo(x, y + r * 2f); lineTo(x - r * 0.7f, y + r * 0.7f); lineTo(x - r * 2f, y); lineTo(x - r * 0.7f, y - r * 0.7f); close()
+            }
+            drawPath(spark, if (i % 2 == 0) Color.White.copy(alpha = 1f - t) else deep.copy(alpha = 1f - t))
+        }
+        // the white flash as the plate changes
+        if (burst.grand) {
+            val f = (1f - kotlin.math.abs(t - 0.2f) / 0.2f).coerceIn(0f, 1f)
+            if (f > 0f) drawCircle(Color.White.copy(alpha = 0.9f * f), radius = s * 0.95f, center = c)
+        }
+    }
+    // the gain floats up above the tile
+    if (rune.effect.unit != RuneUnit.FLAG && rune.perLevel > 0) {
+        val label = tileText(rune.effect.unit, rune.perLevel)
+        val rise = size * (0.55f + 0.9f * t)
+        Text(
+            text = label,
+            fontFamily = DisplayFont,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 17.sp,
+            color = Color.White,
+            style = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color(0xFF5A3A1A), androidx.compose.ui.geometry.Offset(0f, 2f), 6f)),
+            modifier = Modifier
+                .requiredSize(width = size * 3f, height = 26.dp)
+                .offset(y = -rise)
+                .alpha((1f - ((t - 0.55f) / 0.45f)).coerceIn(0f, 1f)),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+/** The screen's part of a rune's last level: a gold wash over it that clears, and the banner that says it is complete. */
+@Composable
+private fun GrandFinish(token: Int) {
+    val wash = remember(token) { androidx.compose.animation.core.Animatable(0f) }
+    val banner = remember(token) { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(token) {
+        launch {
+            wash.animateTo(1f, tween(180))
+            wash.animateTo(0f, tween(900))
+        }
+        banner.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 200f))
+        kotlinx.coroutines.delay(1300)
+        banner.animateTo(0f, tween(450))
+    }
+    Box(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().background(Color(0xFFFFD35E).copy(alpha = 0.38f * wash.value)))
+        Box(Modifier.fillMaxSize().padding(top = 150.dp), contentAlignment = Alignment.TopCenter) {
+            LetteredText(
+                text = stringResource(R.string.rune_complete_banner),
+                size = 34.sp,
+                outline = Color(0xFF8A3A00),
+                maxLines = 1,
+                modifier = Modifier.graphicsLayer {
+                    val b = banner.value
+                    scaleX = 0.4f + 0.6f * b; scaleY = scaleX
+                    alpha = b.coerceIn(0f, 1f)
+                }
+            )
         }
     }
 }

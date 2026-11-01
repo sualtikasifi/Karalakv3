@@ -52,6 +52,14 @@ class RunePromoPreviewActivity : ComponentActivity() {
             val gold = settings.goldBalance.value
             if (gold < 800) settings.earnGold(800 - gold)
         }
+        if (screen == "rune_lvl" || screen == "rune_max") {
+            // Kalem Parası one level short of what the screen will buy: level 1 held, or the 4th of its 5 held
+            settings.resetRunes()
+            settings.runesIntroSeen = true
+            val gold = settings.goldBalance.value
+            if (gold < 50_000) settings.earnGold(50_000 - gold)
+            repeat(if (screen == "rune_max") 4 else 1) { settings.buyRune(com.sualtikasifi.cizimhafiza.domain.model.RuneTree.WORD_GOLD) }
+        }
         setContent {
             CizimHafizaTheme {
                 when (screen) {
@@ -78,6 +86,7 @@ class RunePromoPreviewActivity : ComponentActivity() {
                             startActivity(Intent(this, RunePromoPreviewActivity::class.java).putExtra("screen", if (source == "prompt") "runes_guide" else "runes"))
                         }
                     )
+                    "rune_lvl", "rune_max" -> RunesScreen(onBack = { finish() }, focus = com.sualtikasifi.cizimhafiza.domain.model.RuneTree.WORD_GOLD)
                     "runes_guide", "runes" -> RunesScreen(onBack = { finish() }, guide = screen == "runes_guide")
                     "league_win", "league_win_frame" -> {
                         val all = com.sualtikasifi.cizimhafiza.domain.model.LeagueReward.all

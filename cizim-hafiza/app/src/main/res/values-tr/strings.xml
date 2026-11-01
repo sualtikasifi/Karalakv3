@@ -1734,6 +1734,7 @@
     <string name="rune_guide_hint">İlk rünün burada! Aşağıdan al: etkisi hemen başlar ve hep seninle kalır.</string>
     <string name="rune_first_title">İlk rünün hazır!</string>
     <string name="rune_first_body">%1$s artık senin.</string>
+    <string name="rune_complete_banner">Rün tamamlandı!</string>
     <string name="rune_first_ok">Harika</string>
     <string name="rune_tour_open">Rünlere bak</string>
     <string name="tour_runes_title">Karalak Rünleri</string>

@@ -1721,6 +1721,7 @@
     <string name="rune_guide_hint">Your first rune is right here! Buy it below: it starts working now and stays yours.</string>
     <string name="rune_first_title">Your first rune!</string>
     <string name="rune_first_body">%1$s is yours now.</string>
+    <string name="rune_complete_banner">Rune complete!</string>
     <string name="rune_first_ok">Great</string>
     <string name="rune_tour_open">See the runes</string>
     <string name="tour_runes_title">Karalak Runes</string>
