@@ -185,7 +185,7 @@ fun AchievementsScreen(
                 modifier = Modifier.fillMaxSize()
             )
             Box(
-                modifier = Modifier.fillMaxWidth().offset(x = signWidth * 0.028f, y = signHeight * 0.415f).height(signHeight * 0.36f),
+                modifier = Modifier.fillMaxWidth().offset(x = signWidth * 0.016f, y = signHeight * 0.415f).height(signHeight * 0.36f),
                 contentAlignment = Alignment.Center
             ) {
                 LetteredText(stringResource(R.string.menu_achievements), (len(64f).value).sp, title = true)
@@ -323,7 +323,7 @@ private fun AchievementDetailDialog(item: AchievementUiItem, onClaim: () -> Unit
                     text = stringResource(item.achievement.titleRes),
                     size = fs(64f),
                     outline = Color(0xFF8A2A10),
-                    modifier = Modifier.offset(u * 250f, u * 372f).size(u * 520f, u * 100f),
+                    modifier = Modifier.offset(u * 248f, u * 388f).size(u * 520f, u * 100f),
                     minScale = 0.5f
                 )
                 // Everything else on the paper (x 90..930, y 570..1320).

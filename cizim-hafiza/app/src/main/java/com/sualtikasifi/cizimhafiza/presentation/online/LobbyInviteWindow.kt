@@ -53,7 +53,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 // right end, a cream page between the paint splashes. All positions are in the picture's own pixels.
 private const val ArtW = 1189f
 private const val ArtH = 1323f
-private val RibbonRect = floatArrayOf(300f, 232f, 900f, 340f)
+private val RibbonRect = floatArrayOf(295f, 208.5f, 895f, 316.5f)
 private val CloseRect = floatArrayOf(1030f, 195f, 1170f, 335f)
 private val PageRect = floatArrayOf(95f, 450f, 1095f, 1120f)
 private val Ink = Color(0xFF3A2416)
@@ -100,7 +100,7 @@ internal fun LobbyInviteWindow(
                         outline = Color(0xFF5B1247),
                         maxLines = 2,
                         minScale = 0.5f,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().offset(y = (fs(64f).value * 0.11f).dp)
                     )
                 }
                 // the close button is part of the picture; this is its touch area

@@ -39,8 +39,8 @@ private const val ArtH = 1518f
 private const val BandFrom = 470
 private const val BandTo = 1290
 /** The ribbon's lettering box, in picture units, and where the paper's content starts and ends. */
-private const val RibbonX = 270f
-private const val RibbonY = 118f
+private const val RibbonX = 268f
+private const val RibbonY = 104f
 private const val RibbonW = 500f
 private const val RibbonH = 120f
 private const val ContentTop = 400f
@@ -90,7 +90,7 @@ fun PaintedWindowFrame(
                 content = content
             )
             Box(Modifier.offset(u * RibbonX, u * RibbonY).size(u * RibbonW, u * RibbonH), contentAlignment = Alignment.Center) {
-                LetteredText(text = title, size = 26.sp, outline = Color(0xFF5B1247), maxLines = 2, minScale = 0.5f, modifier = Modifier.fillMaxWidth())
+                LetteredText(text = title, size = 26.sp, outline = Color(0xFF5B1247), maxLines = 2, minScale = 0.5f, modifier = Modifier.fillMaxWidth().offset(y = 2.9.dp))
             }
             if (onClose != null) {
                 // on the gold frame's top-right corner, half over its edge
