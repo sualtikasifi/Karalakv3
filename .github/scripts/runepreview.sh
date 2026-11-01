@@ -12,6 +12,10 @@ APK=$(ls cizim-hafiza/app/build/outputs/apk/debug/*.apk | head -1)
 adb wait-for-device
 adb shell input keyevent 82 || true
 adb shell settings put global hide_error_dialogs 1 || true
+# the emulator image may have animations switched off, which freezes every looping animation at its first frame
+adb shell settings put global animator_duration_scale 1 || true
+adb shell settings put global transition_animation_scale 1 || true
+adb shell settings put global window_animation_scale 1 || true
 sleep 20
 adb install -r -t "$APK"
 # the game is played in Turkish here: show its string resources in Turkish (per-app language, Android 13+)
