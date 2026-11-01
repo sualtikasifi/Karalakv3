@@ -3,6 +3,9 @@ package com.sualtikasifi.cizimhafiza.presentation.league
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -115,7 +118,10 @@ internal fun LeaguePrizeDialog(reward: LeagueReward?, rank: Int, onDismiss: () -
                 if (reward != null) {
                     Column(Modifier.at(PrizeRect), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                         when (reward) {
-                            is LeagueReward.Pen -> PenStrokePreview(reward.skin, Modifier.fillMaxWidth(0.85f).height(u * 84f))
+                            // on a dark plate, so a pale pen (Kutup Işığı, Ayaz…) still shows on the cream page
+                            is LeagueReward.Pen -> Box(
+                                Modifier.fillMaxWidth(0.8f).height(u * 84f).clip(RoundedCornerShape(u * 42f)).background(Color(0xFF3A2416)).padding(horizontal = u * 28f, vertical = u * 12f)
+                            ) { PenStrokePreview(reward.skin, Modifier.fillMaxSize()) }
                             is LeagueReward.Frame -> RewardSwatch(reward, u * 62f)
                         }
                         FitText(
@@ -129,7 +135,7 @@ internal fun LeaguePrizeDialog(reward: LeagueReward?, rank: Int, onDismiss: () -
                 }
                 Text(
                     text = stringResource(R.string.league_win_body),
-                    style = DescriptionStyle(fs(54f), fs(66f)).copy(textAlign = TextAlign.Center),
+                    style = DescriptionStyle(fs(46f), fs(56f)).copy(textAlign = TextAlign.Center),
                     modifier = Modifier.at(BodyRect).padding(top = u * 6f)
                 )
                 // the monthly gold and XP, in the two pills the picture leaves for them (their icons are painted in)
