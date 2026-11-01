@@ -52,11 +52,25 @@ shot home_ready 10
 shot home_saving
 shot tour_runes
 shot funnel
+shot window_pick
+shot invite
+shot invite_empty
+shot window_confirm
 shot league_win
 adb exec-out screencap -p > "$OUT/rune_league_win_b.png"
 sleep 2.5
 adb exec-out screencap -p > "$OUT/rune_league_win_c.png"
 shot runes_guide 8
+
+# the level-up and last-level animations: find the buy button once, tap it, then take frames as fast as the phone allows
+for kind in rune_lvl rune_max; do
+  adb shell am force-stop "$PKG"
+  adb shell am start -W -n "$ACT" --es screen "$kind"
+  sleep 8
+  tap_text "Al · " "$kind"
+  adb exec-out screencap -p > "$OUT/anim_${kind}_0.png"
+  for i in 1 2 3 4 5 6 7 8; do adb exec-out screencap -p > "$OUT/anim_${kind}_$i.png"; done
+done
 
 # the guided map: buy the rune it points at, then the first-rune window
 tap_text "Al · " guide

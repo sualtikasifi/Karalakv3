@@ -35,6 +35,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -163,11 +166,8 @@ fun LevelMapScreen(
         }
 
         Column(modifier = Modifier.fillMaxSize().verticalScroll(scroll)) {
-            // A band for the status bar and the back button: without it the top stops of the map sit under them.
-            Spacer(
-                Modifier.fillMaxWidth().statusBarsPadding().height(56.dp)
-                    .background(Brush.verticalGradient(listOf(Color(0xFF1C3A19), Color(0xFF2F5D2B))))
-            )
+            // No band above the picture any more: it scrolled with the map and showed a plain colour at the top. The
+            // artwork now starts at the very top of the screen, under the status bar.
             Box(modifier = Modifier.width(screenWidth).height(mapHeight)) {
                 Image(
                     painter = cachedPainterResource(worldBackgroundRes(world?.id) ?: R.drawable.bg_world_1),
@@ -229,6 +229,16 @@ fun LevelMapScreen(
                 }
             }
         }
+
+        // A soft shade over the status bar, fixed there while the map scrolls under it, so the clock and the battery stay
+        // readable on any sky.
+        Box(
+            Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .height(WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 18.dp)
+                .background(Brush.verticalGradient(listOf(Color(0x80000000), Color.Transparent)))
+        )
 
         // Which world this is, stated on the page.
         world?.let { w ->

@@ -1722,6 +1722,7 @@
     <string name="rune_guide_hint">¡Tu primera runa está aquí! Cómprala abajo: empieza a funcionar ya y es tuya para siempre.</string>
     <string name="rune_first_title">¡Tu primera runa!</string>
     <string name="rune_first_body">%1$s ya es tuya.</string>
+    <string name="rune_complete_banner">¡Runa completa!</string>
     <string name="rune_first_ok">Genial</string>
     <string name="rune_tour_open">Ver las runas</string>
     <string name="tour_runes_title">Runas de Karalak</string>

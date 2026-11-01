@@ -460,7 +460,7 @@ fun WaitingRoomScreen(
     }
 
     if (invitePickerOpen) {
-        LobbyInviteSheet(
+        LobbyInviteWindow(
             friends = friends,
             sendingToUid = inviteState.sendingToUid,
             sentToUids = inviteState.sentToUids,
@@ -1206,85 +1206,6 @@ private fun EmptySlotCard(onInvite: (() -> Unit)? = null, modifier: Modifier = M
                     maxLines = 2
                 )
             }
-        }
-    }
-}
-
-/**
- * The friends list, opened by tapping an empty seat.
- *
- * Sends an invite into the room already open, unlike FriendsScreen's own
- * invite button which spins up a fresh one — asking from inside a lobby can
- * only sensibly mean "come to this one".
- */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-@Composable
-private fun LobbyInviteSheet(
-    friends: List<Friend>,
-    sendingToUid: String?,
-    sentToUids: Set<String>,
-    message: String?,
-    onInvite: (Friend) -> Unit,
-    onDismiss: () -> Unit
-) {
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState()) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
-            Text(
-                text = stringResource(R.string.online_invite_sheet_title),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            // The sheet is its own window with a scrim over the lobby, so the
-            // result has to be said in here too or it is hidden while open.
-            message?.let {
-                TintedBadge(text = it, modifier = Modifier.padding(bottom = 10.dp))
-            }
-            if (friends.isEmpty()) {
-                EmptyState(
-                    emoji = "🤝",
-                    message = stringResource(R.string.online_invite_sheet_empty),
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.heightIn(max = 360.dp)
-                ) {
-                    items(friends, key = { it.uid }) { friend ->
-                        RaisedCard(corner = 18.dp, modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)
-                            ) {
-                                Text(
-                                    text = friend.nickname,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                if (sendingToUid == friend.uid) {
-                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                } else if (friend.uid in sentToUids) {
-                                    Text(
-                                        text = stringResource(R.string.online_invite_sent_short),
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                        color = AppTheme.tokens.success
-                                    )
-                                } else {
-                                    SecondaryButton(
-                                        text = stringResource(R.string.online_invite_send),
-                                        onClick = { onInvite(friend) },
-                                        height = 38.dp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }

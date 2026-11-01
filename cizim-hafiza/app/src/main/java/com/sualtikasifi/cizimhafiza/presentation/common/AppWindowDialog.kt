@@ -63,11 +63,10 @@ fun AppWindowDialog(
                 .padding(horizontal = 16.dp, vertical = 24.dp),
             contentAlignment = Alignment.Center
         ) {
-            // The same parchment-in-a-wooden-frame panel as PaintedDialog, so every window in the game matches.
-            NinePatch(
-                res = R.drawable.league_card,
-                slicePx = 100,
-                edge = 24.dp,
+            // The painted window every dialog in the game shares (see PaintedWindowFrame): the title is on its ribbon.
+            PaintedWindowFrame(
+                title = title,
+                onClose = if (centerTitle) null else onDismiss,
                 modifier = Modifier
                     .widthIn(max = 480.dp)
                     .fillMaxWidth()
@@ -76,32 +75,6 @@ fun AppWindowDialog(
                     // Swallow taps on the panel itself so only the dim area closes it.
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
             ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = if (centerTitle) Arrangement.Center else Arrangement.Start) {
-                    FitText(
-                        text = title,
-                        style = PaintedStyle(
-                            color = Color(0xFF3A2416),
-                            fontSize = 23.sp,
-                            textAlign = if (centerTitle) androidx.compose.ui.text.style.TextAlign.Center else androidx.compose.ui.text.style.TextAlign.Start
-                        ),
-                        maxLines = 2,
-                        contentAlignment = if (centerTitle) Alignment.Center else Alignment.CenterStart,
-                        modifier = if (centerTitle) Modifier.fillMaxWidth() else Modifier.weight(1f)
-                    )
-                    if (!centerTitle) Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF3A2416).copy(alpha = 0.1f))
-                            .clickable(onClick = onDismiss)
-                            .a11yButton(stringResource(R.string.close)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("✕", color = Color(0xFF3A2416), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
                 if (footer != null) {
                     // Body scrolls, footer (the primary action) stays pinned so it can never be pushed off a short screen.
                     Column(modifier = if (scrollBody) Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()) else Modifier) { content() }
@@ -110,7 +83,6 @@ fun AppWindowDialog(
                 } else {
                     content()
                 }
-            }
             }
         }
     }
