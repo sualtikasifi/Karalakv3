@@ -130,6 +130,9 @@ fun LetteredText(
         val scale = rememberFitScale(text, full, maxLines, minScale)
         val base = full.scaledBy(scale)
         val strokeDp = (strokeDp0 * scale).coerceAtLeast(1.1f)
+        // Baloo's letters sit about 0.11 em above the middle of their line box, so a title laid in the middle of a
+        // sign's plank would read as too high. Titles are dropped by that much so the letters themselves are centred.
+        val lift = if (title) (size.value * scale * 0.11f).dp else 0.dp
         // Page titles (and any title-sized lettering) also get a wide, soft shadow underneath, so a title laid on a
         // painted sign reads as part of the picture instead of as text put on afterwards. Titles are sized from the
         // screen width, so on a narrow phone they can come out small; their shadow keeps a floor so it still shows.
@@ -144,7 +147,7 @@ fun LetteredText(
                 ),
                 maxLines = maxLines,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                modifier = Modifier.offset(y = (d * 0.07f).dp)
+                modifier = Modifier.offset(y = lift + (d * 0.07f).dp)
             )
         }
         if (outline != null) {
@@ -156,11 +159,13 @@ fun LetteredText(
                     shadow = androidx.compose.ui.graphics.Shadow(Color(0x66000000), androidx.compose.ui.geometry.Offset(0f, with(density) { 2.dp.toPx() }), with(density) { 3.dp.toPx() })
                 ),
                 maxLines = maxLines,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.offset(y = lift)
             )
         }
         Text(
             text,
+            modifier = Modifier.offset(y = lift),
             style = base.copy(
                 color = fill,
                 shadow = if (outline == null) androidx.compose.ui.graphics.Shadow(Color(0x66A04000), androidx.compose.ui.geometry.Offset(0f, with(density) { 1.5.dp.toPx() }), with(density) { 2.dp.toPx() }) else null
