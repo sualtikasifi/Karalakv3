@@ -21,7 +21,7 @@ data class Announcement(val id: String, val title: String, val body: String)
 /**
  * The announcement window on the home screen, set from the developer panel (`config/announcement`):
  * `{active, id, untilMillis, texts: {tr|en|pt|es: {title, body}}}`. Shown once per `id` on a device; the language is the
- * phone's, then English, then Turkish. Read through [ConfigDocFetcher] like the economy, so it costs one read per half hour at most.
+ * phone's, then English, then Turkish. Read through [ConfigDocFetcher] like the economy, so it costs one read per two hours at most.
  */
 @Singleton
 class AnnouncementRepository @Inject constructor(
@@ -64,6 +64,6 @@ class AnnouncementRepository @Inject constructor(
     private companion object {
         const val PATH = "config/announcement"
         const val KEY_SEEN = "seen_id"
-        const val TTL_MILLIS = 30L * 60 * 1000
+        const val TTL_MILLIS = 2L * 60 * 60 * 1000
     }
 }

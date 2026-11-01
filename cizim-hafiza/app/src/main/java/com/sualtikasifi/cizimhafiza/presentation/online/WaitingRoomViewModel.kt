@@ -61,7 +61,7 @@ class WaitingRoomViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val friendRepository: FriendRepository,
     private val playerReporter: com.sualtikasifi.cizimhafiza.util.PlayerReporter,
-    botRoomEngine: BotRoomEngine
+    private val botRoomEngine: BotRoomEngine
 ) : ViewModel() {
 
     /**
@@ -225,9 +225,9 @@ class WaitingRoomViewModel @Inject constructor(
     val uiState: StateFlow<WaitingRoomUiState> = _uiState.asStateFlow()
 
     init {
-        // Harmless/no-op for any other room — only ever drives room 130246
-        // (see BotRoomEngine) and only starts its listener once per process.
-        botRoomEngine.ensureRunning()
+        // Only the bot room (130246, see BotRoomEngine) has anything to drive; any other room is ignored, so a
+        // friends' room does not listen to the shared bot room. Released in onCleared.
+        botRoomEngine.acquire(roomCode)
         // Both Flows close with an exception on a Firestore listener error
         // (see OnlineGameRepositoryImpl.observeRoom/observeReactions) —
         // catching keeps that from crashing the app. The room listener now
@@ -404,6 +404,11 @@ class WaitingRoomViewModel @Inject constructor(
     /** Host-only — lifts an active kick ban early. */
     fun unbanPlayer(targetUid: String) {
         viewModelScope.launch { runCatching { onlineGameRepository.unbanPlayer(roomCode, targetUid) } }
+    }
+
+    override fun onCleared() {
+        botRoomEngine.release(roomCode)
+        super.onCleared()
     }
 }
 

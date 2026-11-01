@@ -74,7 +74,7 @@ class OnlineResultViewModel @Inject constructor(
     private val adManager: AdManager,
     private val settingsRepository: SettingsRepository,
     private val authRepository: AuthRepository,
-    botRoomEngine: BotRoomEngine
+    private val botRoomEngine: BotRoomEngine
 ) : ViewModel() {
 
     val roomCode: String = checkNotNull(savedStateHandle[Screen.ArgRoomCode])
@@ -127,9 +127,9 @@ class OnlineResultViewModel @Inject constructor(
     private val requestedUids = mutableSetOf<String>()
 
     init {
-        // Harmless/no-op for any other room — only ever drives room 130246
-        // (see BotRoomEngine) and only starts its listener once per process.
-        botRoomEngine.ensureRunning()
+        // Only the bot room (130246, see BotRoomEngine) has anything to drive; any other room is ignored, so a
+        // friends' room does not listen to the shared bot room. Released in onCleared.
+        botRoomEngine.acquire(roomCode)
         // Both Flows close with an exception on a Firestore listener error
         // (see OnlineGameRepositoryImpl.observeRoom/observeReactions) —
         // .catch{} keeps that from crashing the app; the screen just stops
@@ -361,5 +361,10 @@ class OnlineResultViewModel @Inject constructor(
 
     fun sendReaction(emoji: String, messageKey: String) {
         viewModelScope.launch { runCatching { onlineGameRepository.sendReaction(roomCode, emoji, messageKey) } }
+    }
+
+    override fun onCleared() {
+        botRoomEngine.release(roomCode)
+        super.onCleared()
     }
 }
