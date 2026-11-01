@@ -738,6 +738,8 @@
     <string name="league_reward_explainer_frame">Finish top 3 in the Global ranking by month\'s end to win the %1$s Champion Frame!</string>
     <string name="league_reward_kind_frame">Special frame</string>
     <string name="league_prize_won_title">🏆 You finished #%1$d last month!</string>
+    <string name="league_win_title">You finished #%1$d last month!</string>
+    <string name="league_win_body">Your prize has been added. Pick it from the main menu.</string>
     <string name="league_prize_won_body">Your prize has been added: %1$s. Pick it from the main menu.</string>
     <string name="league_xp_format">%1$,d XP</string>
     <string name="league_rank_format">#%1$d</string>

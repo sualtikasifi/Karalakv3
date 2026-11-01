@@ -34,7 +34,7 @@ import javax.inject.Inject
  * Debug builds only: the pieces that bring the runes forward, for the CI emulator (see runepreview.sh).
  * `screen` = home_ready (the Rünler sign with runes to buy, and the mascot's first-rune offer), home_saving (the sign
  * saving up for the next one), runes_guide (the rune map opened by the offer, pointing at the first rune, on a phone
- * reset to no runes and enough gold), tour_runes (the tour's rune page alone) or funnel (the developer panel's rune
+ * reset to no runes and enough gold), league_win / league_win_frame (the monthly league prize window with a pen / a frame prize), tour_runes (the tour's rune page alone) or funnel (the developer panel's rune
  * funnel card with made-up numbers).
  */
 @AndroidEntryPoint
@@ -79,6 +79,11 @@ class RunePromoPreviewActivity : ComponentActivity() {
                         }
                     )
                     "runes_guide", "runes" -> RunesScreen(onBack = { finish() }, guide = screen == "runes_guide")
+                    "league_win", "league_win_frame" -> {
+                        val all = com.sualtikasifi.cizimhafiza.domain.model.LeagueReward.all
+                        val reward = if (screen == "league_win_frame") all.filterIsInstance<com.sualtikasifi.cizimhafiza.domain.model.LeagueReward.Frame>().firstOrNull() else all.firstOrNull()
+                        com.sualtikasifi.cizimhafiza.presentation.league.LeaguePrizeDialog(reward = reward ?: all.firstOrNull(), rank = 1, onDismiss = { finish() })
+                    }
                     "tour_runes" -> FeatureTourDialog(onFinish = { finish() }, runesOnly = true, onOpenRunes = {})
                     else -> ConsoleTheme {
                         Box(Modifier.fillMaxSize().background(Console.Bg).statusBarsPadding().padding(16.dp)) {

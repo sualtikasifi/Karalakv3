@@ -739,6 +739,8 @@
     <string name="league_reward_explainer_frame">Termine o mês entre os 3 primeiros do ranking Global para ganhar a Moldura de Campeão %1$s!</string>
     <string name="league_reward_kind_frame">Moldura especial</string>
     <string name="league_prize_won_title">🏆 Você terminou o mês passado em %1$dº!</string>
+    <string name="league_win_title">Você terminou o mês passado em %1$dº!</string>
+    <string name="league_win_body">Seu prêmio foi adicionado. Escolha-o no menu principal.</string>
     <string name="league_prize_won_body">Seu prêmio foi adicionado: %1$s. Escolha-o no menu principal.</string>
     <string name="league_xp_format">%1$,d XP</string>
     <string name="league_rank_format">#%1$d</string>

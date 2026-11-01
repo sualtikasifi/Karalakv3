@@ -468,7 +468,7 @@ fun LeagueScreen(
         }
 
         uiState.justWon?.let { prize ->
-            PrizeWonDialog(
+            LeaguePrizeDialog(
                 reward = prize.reward,
                 rank = uiState.global?.myLastPeriodWin?.rank ?: 0,
                 onDismiss = viewModel::dismissPrize
@@ -634,7 +634,7 @@ private const val GLOBAL_VISIBLE_ROWS = 20
  * picture, and drawing is the one thing a pen skin is for.
  */
 @Composable
-private fun PenStrokePreview(skin: PenSkin, modifier: Modifier = Modifier) {
+internal fun PenStrokePreview(skin: PenSkin, modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "pen-stroke-preview")
     val cycle by transition.animateFloat(
         initialValue = 0f,
@@ -682,7 +682,7 @@ private fun PenStrokePreview(skin: PenSkin, modifier: Modifier = Modifier) {
  * curve, so neither reward preview reads as a plain product photo.
  */
 @Composable
-private fun RewardSwatch(reward: LeagueReward.Frame, size: androidx.compose.ui.unit.Dp) {
+internal fun RewardSwatch(reward: LeagueReward.Frame, size: androidx.compose.ui.unit.Dp) {
     val transition = rememberInfiniteTransition(label = "frame-reward-preview")
     val pulse by transition.animateFloat(
         initialValue = 0f,
@@ -738,7 +738,7 @@ private fun MonthlyBonusRow(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun rewardLabel(reward: LeagueReward): String = when (reward) {
+internal fun rewardLabel(reward: LeagueReward): String = when (reward) {
     is LeagueReward.Pen -> stringResource(reward.skin.labelRes)
     // Frames have never been named anywhere in the app — the artwork is the
     // label — so the prize is described by its kind, plus the month it
@@ -764,37 +764,6 @@ private fun rewardExplainer(reward: LeagueReward): String = when (reward) {
         val monthLabel = reward.periodLabel?.let { LeaguePeriod.monthYearLabel(it) }
             ?: stringResource(R.string.league_reward_kind_frame)
         stringResource(R.string.league_reward_explainer_frame, monthLabel)
-    }
-}
-
-/** Shown once, the first time a won prize is actually handed over. */
-@Composable
-private fun PrizeWonDialog(reward: LeagueReward?, rank: Int, onDismiss: () -> Unit) {
-    com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog(
-        title = stringResource(R.string.league_prize_won_title, rank),
-        onDismiss = onDismiss,
-        buttons = { com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(text = stringResource(R.string.close), onClick = onDismiss, modifier = Modifier.fillMaxWidth()) }
-    ) {
-            Column {
-                if (reward is LeagueReward.Pen) {
-                    PenStrokePreview(skin = reward.skin, modifier = Modifier.fillMaxWidth().height(40.dp))
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
-                if (reward != null) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (reward is LeagueReward.Frame) {
-                            RewardSwatch(reward = reward, size = 44.dp)
-                            Spacer(modifier = Modifier.width(12.dp))
-                        }
-                        Text(
-                            text = stringResource(R.string.league_prize_won_body, rewardLabel(reward)),
-                            style = com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle(16.sp, 22.sp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
-                MonthlyBonusRow()
-            }
     }
 }
 
