@@ -261,6 +261,13 @@ data class VoiceSpec(val voiceId: String, val model: VoiceModel, val stability: 
 class VoiceBank(context: Context) {
     private val dir = File(context.filesDir, "studio_voice").apply { mkdirs() }
 
+    /**
+     * The closing lines' voices, kept apart from the bank above: they are paid for once and never pruned, and this folder
+     * is the one Android's own backup carries (see backup_rules.xml), so a reinstall brings them back instead of
+     * paying for them again. [cached] looks here when a voice is not in the bank.
+     */
+    private val keepDir = File(context.filesDir, "studio_end_voice").apply { mkdirs() }
+
     private fun target(line: SpokenLine, spec: VoiceSpec): File {
         val text = ElevenLabs.textFor(line, spec.model, spec.tags, spec.lang)
         return File(dir, ElevenLabs.cacheName(text, spec.voiceId, spec.model, ElevenLabs.stabilityFor(spec.model, spec.stability), spec.lang))
@@ -269,25 +276,87 @@ class VoiceBank(context: Context) {
     /** Where a voice file's word timings are kept: beside it, same name, ".words.json". */
     private fun timingFile(voice: File) = File(voice.parentFile, voice.name.removeSuffix(".mp3") + ".words.json")
 
+    /** The voice as the bank has it, or as the kept folder has it (then copied back into the bank). */
+    private fun locate(line: SpokenLine, spec: VoiceSpec): File? {
+        val f = target(line, spec)
+        if (f.exists() && f.length() > 0) return f
+        val kept = File(keepDir, f.name)
+        if (!kept.exists() || kept.length() == 0L) return null
+        runCatching {
+            kept.copyTo(f, overwrite = true)
+            timingFile(kept).takeIf { it.exists() }?.copyTo(timingFile(f), overwrite = true)
+        }
+        return f.takeIf { it.exists() && it.length() > 0 } ?: kept
+    }
+
     /**
      * When each word of the line is said, if the voice was made with timings (lines made before they were asked for
      * have none, and the subtitle then follows the voice by length). Never asks ElevenLabs.
      */
     fun timing(line: SpokenLine, spec: VoiceSpec): SpeechTiming? {
-        val f = timingFile(target(line, spec)).takeIf { it.exists() } ?: return null
+        val voice = locate(line, spec) ?: return null
+        val f = timingFile(voice).takeIf { it.exists() } ?: return null
         return SpeechTiming.fromJson(runCatching { f.readText() }.getOrDefault(""))
     }
 
     /** The line's MP3 if it was already made with these settings; never asks ElevenLabs. */
-    fun cached(line: SpokenLine, spec: VoiceSpec): File? = target(line, spec).takeIf { it.exists() && it.length() > 0 }
+    fun cached(line: SpokenLine, spec: VoiceSpec): File? = locate(line, spec)
+
+    /** Keeps the line's voice for good (a closing line): copied to the kept folder, which pruning never touches. */
+    fun keep(line: SpokenLine, spec: VoiceSpec) {
+        val f = target(line, spec).takeIf { it.exists() && it.length() > 0 } ?: return
+        val kept = File(keepDir, f.name)
+        if (kept.exists() && kept.length() == f.length()) return
+        runCatching {
+            f.copyTo(kept, overwrite = true)
+            timingFile(f).takeIf { it.exists() }?.copyTo(timingFile(kept), overwrite = true)
+        }
+    }
+
+    /** How many voices are kept for good. */
+    fun keptCount(): Int = keepDir.listFiles { x -> x.name.endsWith(".mp3") }?.size ?: 0
+
+    /** The kept voices as one zip, for a backup file that survives uninstalling the app; the number of files written. */
+    fun exportKept(out: java.io.OutputStream): Int {
+        var n = 0
+        java.util.zip.ZipOutputStream(out).use { zip ->
+            keepDir.listFiles()?.filter { it.isFile }?.forEach { f ->
+                zip.putNextEntry(java.util.zip.ZipEntry(f.name))
+                f.inputStream().use { it.copyTo(zip) }
+                zip.closeEntry()
+                if (f.name.endsWith(".mp3")) n++
+            }
+        }
+        return n
+    }
+
+    /** Brings a backup made by [exportKept] back; the number of voices read. Only plain voice and timing files are taken. */
+    fun importKept(input: java.io.InputStream): Int {
+        var n = 0
+        java.util.zip.ZipInputStream(input).use { zip ->
+            while (true) {
+                val e = zip.nextEntry ?: break
+                val name = e.name
+                val ok = !e.isDirectory && Regex("[0-9a-f]{40}\\.(mp3|words\\.json)").matches(name)
+                if (ok) {
+                    val tmp = File(keepDir, "$name.part")
+                    tmp.outputStream().use { zip.copyTo(it) }
+                    val kept = File(keepDir, name)
+                    if (tmp.renameTo(kept)) { if (name.endsWith(".mp3")) n++ } else tmp.delete()
+                }
+                zip.closeEntry()
+            }
+        }
+        return n
+    }
 
     /** The line's MP3, from disk if it was made before, from ElevenLabs (paid) otherwise. */
     suspend fun file(client: ElevenLabs, line: SpokenLine, spec: VoiceSpec): Result<File> {
-        val f = target(line, spec)
-        if (f.exists() && f.length() > 0) {
+        locate(line, spec)?.let { f ->
             f.setLastModified(System.currentTimeMillis())
             return Result.success(f)
         }
+        val f = target(line, spec)
         val text = ElevenLabs.textFor(line, spec.model, spec.tags, spec.lang)
         val s = ElevenLabs.stabilityFor(spec.model, spec.stability)
         val spoken = client.speak(text, spec.voiceId, spec.model, s, spec.lang).getOrElse { return Result.failure(it) }

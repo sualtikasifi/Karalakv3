@@ -5,4 +5,6 @@
      collected a second time after a reinstall. Everything that belongs to a player comes back from their account. -->
 <full-backup-content>
     <include domain="sharedpref" path="one_time_flags.xml" />
+    <!-- The developer panel's closing-line voices (a few small MP3s, paid for once): see VoiceBank. -->
+    <include domain="file" path="studio_end_voice/" />
 </full-backup-content>

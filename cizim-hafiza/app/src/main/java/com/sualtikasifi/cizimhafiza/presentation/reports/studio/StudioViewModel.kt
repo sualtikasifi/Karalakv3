@@ -206,6 +206,11 @@ data class RealUi(
     val ending: RealEnding = RealEnding.Card,
     /** Whether the app's music is mixed into the video; off, it is left out so a trending sound can be added in the app it is posted to. */
     val musicOn: Boolean = true,
+    /** The music the person added from their own files (names, see RealMusic), after the app's own tracks. */
+    val customMusic: List<String> = emptyList(),
+    /** How many of the ready-made closing lines are voiced with the current settings, and how many voices are kept for good. */
+    val endVoiced: Int = 0,
+    val endKept: Int = 0,
     /** Where the video is going to be posted: what its post text ends with. */
     val platform: SocialPlatform = SocialPlatform.TikTok,
     /** A picture ready to hand to ChatGPT or Gemini, with the prompt to paste. */
@@ -786,7 +791,7 @@ class StudioViewModel @Inject constructor(
             val prefs = prefs()
             val ending = runCatching { RealEnding.valueOf(prefs.getString(ENDING, null).orEmpty()) }.getOrDefault(RealEnding.Card)
             val platform = SocialPlatform.of(prefs.getString(PLATFORM, null))
-            updateReal { it.copy(project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media }), ending = ending, musicOn = prefs.getBoolean(MUSIC_ON, true), platform = platform) }
+            updateReal { it.copy(project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media }), ending = ending, musicOn = prefs.getBoolean(MUSIC_ON, true), platform = platform, customMusic = RealMusic.custom(context)) }
             p?.let { loadRealMedia(it) }
             loadPromo()
         }
@@ -1105,7 +1110,11 @@ class StudioViewModel @Inject constructor(
         updateReal { it.copy(lineVoicing = kind to text, lineErrors = it.lineErrors - kind) }
         viewModelScope.launch {
             voiceBank.file(client, RealCopy.spoken(kind, text), spec)
-                .onSuccess { f -> play(f) }
+                .onSuccess { f ->
+                    // a closing line is paid for once and kept for good (see VoiceBank.keep)
+                    if (kind == RealLine.End) withContext(Dispatchers.IO) { voiceBank.keep(RealCopy.spoken(kind, text), spec) }
+                    play(f)
+                }
                 .onFailure { e -> lineError(kind, e.message ?: "Seslendirilemedi") }
             updateReal { it.copy(lineVoicing = null) }
             refreshVoicePlan()
@@ -1617,6 +1626,63 @@ class StudioViewModel @Inject constructor(
             opening?.line(k)?.options.orEmpty().filter { voiceBank.cached(RealCopy.spoken(k, it), spec) != null }.toSet()
         }
         if (voiced != _state.value.real.lineVoiced) updateReal { it.copy(lineVoiced = voiced) }
+        refreshEndVoices(spec)
+    }
+
+    /** Counts the ready-made closing lines that are voiced, and keeps the voices of those that are (nothing is asked of ElevenLabs). */
+    private fun refreshEndVoices(spec: VoiceSpec = _state.value.eleven.spec) {
+        viewModelScope.launch {
+            val (voiced, kept) = withContext(Dispatchers.IO) {
+                val done = RealCopy.END_LINES.filter { voiceBank.cached(RealCopy.endLine(it), spec) != null }
+                done.forEach { voiceBank.keep(RealCopy.endLine(it), spec) }
+                done.size to voiceBank.keptCount()
+            }
+            updateReal { it.copy(endVoiced = voiced, endKept = kept) }
+        }
+    }
+
+    /** The kept closing voices written to [uri] as one backup file, which stays when the app is uninstalled. */
+    fun exportEndVoices(uri: Uri) {
+        viewModelScope.launch {
+            val n = withContext(Dispatchers.IO) {
+                runCatching { context.contentResolver.openOutputStream(uri)?.use { voiceBank.exportKept(it) } ?: error("Dosya açılamadı") }
+            }
+            _state.update { it.copy(message = n.fold({ c -> "$c kapanış sesi yedeklendi" }, { e -> "Yedeklenemedi: ${e.message}" })) }
+        }
+    }
+
+    /** Kept closing voices read back from a backup file made by [exportEndVoices]. */
+    fun importEndVoices(uri: Uri) {
+        viewModelScope.launch {
+            val n = withContext(Dispatchers.IO) {
+                runCatching { context.contentResolver.openInputStream(uri)?.use { voiceBank.importKept(it) } ?: error("Dosya açılamadı") }
+            }
+            _state.update { it.copy(message = n.fold({ c -> if (c > 0) "$c kapanış sesi geri yüklendi" else "Dosyada kapanış sesi yok" }, { e -> "Yüklenemedi: ${e.message}" })) }
+            refreshVoicePlan()
+        }
+    }
+
+    /** A music file from the phone, added to the tracks to choose from; it is copied into the app and kept. */
+    fun addMusic(uri: Uri) {
+        viewModelScope.launch {
+            val r = withContext(Dispatchers.IO) { runCatching { RealMusic.import(context, uri) } }
+            r.onSuccess { name ->
+                updateReal { it.copy(customMusic = RealMusic.custom(context)) }
+                // a track that was just added is meant to be used, and heard
+                setMusic(name)
+                _state.update { it.copy(message = "Müzik eklendi: ${RealMusic.label(name)}") }
+            }.onFailure { e -> _state.update { it.copy(message = "Müzik eklenemedi: ${e.message}") } }
+        }
+    }
+
+    /** Removes a track the person added; a video that used it goes back to no music. */
+    fun removeMusic(name: String) {
+        viewModelScope.launch {
+            if (_state.value.real.musicPlaying == name) stopPlaying()
+            withContext(Dispatchers.IO) { runCatching { RealMusic.remove(context, name) } }
+            if (_state.value.real.project?.featured?.music == name) setMusic(null)
+            updateReal { it.copy(customMusic = RealMusic.custom(context)) }
+        }
     }
 
     private fun speakOnPhone(line: SpokenLine) {

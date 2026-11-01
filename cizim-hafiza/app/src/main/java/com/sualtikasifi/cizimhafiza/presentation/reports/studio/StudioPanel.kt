@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Refresh
@@ -581,7 +582,7 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
     }
 
     item { Step("5", "Arka plan müziği", opening?.music?.let { RealMusic.label(it) } ?: "yok") }
-    item { MusicCard(opening, st.real.musicOn, st.real.musicPlaying, vm) }
+    item { MusicCard(opening, st.real.musicOn, st.real.musicPlaying, st.real.customMusic, vm) }
 
     item { Step("6", "Kartın yeri ve boyu") }
     item {
@@ -644,6 +645,33 @@ private fun EndingCard(r: RealUi, vm: StudioViewModel) {
             style = Console.Small, modifier = Modifier.padding(top = 8.dp)
         )
         if (r.ending == RealEnding.Promo) PromoCard(r, vm)
+        if (r.ending == RealEnding.Card) EndVoices(r, vm)
+    }
+}
+
+/**
+ * The ready-made closing lines' voices: paid for once, then kept for good (and carried by Android's backup), with a
+ * backup file of their own for the one case that wipes them, uninstalling the app.
+ */
+@Composable
+private fun EndVoices(r: RealUi, vm: StudioViewModel) {
+    val save = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri -> uri?.let { vm.exportEndVoices(it) } }
+    val load = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { vm.importEndVoices(it) } }
+    Column(Modifier.padding(top = 10.dp)) {
+        Text("Kapanış sesleri: ${r.endVoiced} / ${RealCopy.END_LINES.size} hazır · ${r.endKept} ses kalıcı", style = Console.Subtitle)
+        Text(
+            "Hazır cümleler bir kez seslendirilir, telefonda silinmeden durur ve her videoda ücretsiz seçilir. Uygulamayı silmeden önce Yedekle'ye bas; " +
+                "yeniden yükleyince Yedekten yükle ile geri gelir (Google yedeği açıksa kendiliğinden de gelebilir).",
+            style = Console.Small, modifier = Modifier.padding(top = 2.dp)
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+            ActionButton(Icons.Filled.Download, "Yedekle", Console.Surface, Console.Ink, Modifier.weight(1f)) {
+                save.launch("karalak_kapanis_sesleri.zip")
+            }
+            ActionButton(Icons.Filled.Refresh, "Yedekten yükle", Console.Surface, Console.Ink, Modifier.weight(1f)) {
+                load.launch(arrayOf("application/zip", "application/octet-stream"))
+            }
+        }
     }
 }
 
@@ -674,7 +702,8 @@ private fun PromoCard(r: RealUi, vm: StudioViewModel) {
  * it steps back on its own, a little under the clip, and it fades out at the end.
  */
 @Composable
-private fun MusicCard(reveal: RealReveal?, musicOn: Boolean, playing: String?, vm: StudioViewModel) {
+private fun MusicCard(reveal: RealReveal?, musicOn: Boolean, playing: String?, custom: List<String>, vm: StudioViewModel) {
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { vm.addMusic(it) } }
     ConsoleCard(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -693,7 +722,7 @@ private fun MusicCard(reveal: RealReveal?, musicOn: Boolean, playing: String?, v
             style = Console.Small
         )
         val chosen = reveal?.music
-        val options = listOf<String?>(null) + RealMusic.TRACKS.map { it.first }
+        val options = listOf<String?>(null) + RealMusic.TRACKS.map { it.first } + custom
         options.chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 6.dp)) {
                 row.forEach { name ->
@@ -706,6 +735,11 @@ private fun MusicCard(reveal: RealReveal?, musicOn: Boolean, playing: String?, v
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp)) {
                             Text(name?.let { RealMusic.label(it) } ?: "Müzik yok", style = Console.Subtitle, modifier = Modifier.weight(1f))
+                            if (name != null && name in custom) {
+                                IconButton(onClick = { vm.removeMusic(name) }, modifier = Modifier.size(36.dp)) {
+                                    Icon(Icons.Filled.Delete, contentDescription = "Sil", tint = Console.Critical, modifier = Modifier.size(18.dp))
+                                }
+                            }
                             if (name != null) {
                                 IconButton(onClick = { vm.listenMusic(name) }, modifier = Modifier.size(40.dp)) {
                                     Icon(if (playing == name) Icons.Filled.Stop else Icons.Filled.PlayArrow, contentDescription = if (playing == name) "Durdur" else "Dinle", tint = Console.Ink)
@@ -717,6 +751,10 @@ private fun MusicCard(reveal: RealReveal?, musicOn: Boolean, playing: String?, v
                 if (row.size == 1) Spacer(Modifier.weight(1f))
             }
         }
+        ActionButton(Icons.Filled.AddCircle, "Kendi müziğini ekle", Console.Surface, Console.Ink, Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            picker.launch(arrayOf("audio/*"))
+        }
+        Text("Telefondaki bir müzik dosyası (en fazla 25 MB) uygulamaya kopyalanır ve bir kez eklemen yeter; listede kalır. Telifli şarkı sosyal medyada sesi kapatılmasına yol açabilir.", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
         if (reveal != null && chosen != null) {
             LabeledSlider("Müzik sesi", reveal.musicVolume, 0f..RealMix.MAX_VOLUME) { vm.setMusicVolume(it) }
         }
