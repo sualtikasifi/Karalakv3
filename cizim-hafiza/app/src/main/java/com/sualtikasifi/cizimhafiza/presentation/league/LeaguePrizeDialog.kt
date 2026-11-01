@@ -74,7 +74,7 @@ internal fun LeaguePrizeDialog(reward: LeagueReward?, rank: Int, onDismiss: () -
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
             contentAlignment = Alignment.Center
         ) {
-            val frameW = minOf(maxWidth - 16.dp, 480.dp, (maxHeight - 48.dp) * (FrameW / FrameH))
+            val frameW = minOf(maxWidth - 8.dp, 520.dp, (maxHeight - 48.dp) * (FrameW / FrameH))
             val u = frameW / FrameW
             val fontScale0 = LocalDensity.current.fontScale
             val fs: (Float) -> TextUnit = { px -> (px * u.value / fontScale0).sp }
@@ -106,7 +106,7 @@ internal fun LeaguePrizeDialog(reward: LeagueReward?, rank: Int, onDismiss: () -
                 )
                 FitText(
                     text = stringResource(R.string.league_win_title, rank),
-                    style = PaintedStyle(color = Ink, fontSize = fs(78f), textAlign = TextAlign.Center),
+                    style = PaintedStyle(color = Ink, fontSize = fs(92f), textAlign = TextAlign.Center),
                     maxLines = 1,
                     minScale = 0.5f,
                     modifier = Modifier.at(TitleRect)
@@ -115,21 +115,21 @@ internal fun LeaguePrizeDialog(reward: LeagueReward?, rank: Int, onDismiss: () -
                 if (reward != null) {
                     Column(Modifier.at(PrizeRect), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                         when (reward) {
-                            is LeagueReward.Pen -> PenStrokePreview(reward.skin, Modifier.fillMaxWidth(0.8f).height(u * 70f))
+                            is LeagueReward.Pen -> PenStrokePreview(reward.skin, Modifier.fillMaxWidth(0.85f).height(u * 84f))
                             is LeagueReward.Frame -> RewardSwatch(reward, u * 62f)
                         }
                         FitText(
                             text = rewardLabel(reward),
-                            style = PaintedStyle(color = Color(0xFFB4440F), fontSize = fs(68f), textAlign = TextAlign.Center),
+                            style = PaintedStyle(color = Color(0xFFB4440F), fontSize = fs(84f), textAlign = TextAlign.Center),
                             maxLines = 1,
                             minScale = 0.5f,
-                            modifier = Modifier.fillMaxWidth().height(u * 90f)
+                            modifier = Modifier.fillMaxWidth().height(u * 96f)
                         )
                     }
                 }
                 Text(
                     text = stringResource(R.string.league_win_body),
-                    style = DescriptionStyle(fs(46f), fs(60f)).copy(textAlign = TextAlign.Center),
+                    style = DescriptionStyle(fs(54f), fs(66f)).copy(textAlign = TextAlign.Center),
                     modifier = Modifier.at(BodyRect).padding(top = u * 6f)
                 )
                 // the monthly gold and XP, in the two pills the picture leaves for them (their icons are painted in)

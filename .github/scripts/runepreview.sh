@@ -49,7 +49,9 @@ shot home_saving
 shot tour_runes
 shot funnel
 shot league_win
-shot league_win_frame
+adb exec-out screencap -p > "$OUT/rune_league_win_b.png"
+sleep 2.5
+adb exec-out screencap -p > "$OUT/rune_league_win_c.png"
 shot runes_guide 8
 
 # the guided map: buy the rune it points at, then the first-rune window
