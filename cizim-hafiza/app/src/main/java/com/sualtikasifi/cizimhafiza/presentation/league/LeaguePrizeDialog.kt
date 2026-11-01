@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
@@ -59,8 +60,8 @@ private const val FrameH = 1280f
 private val TitleRect = floatArrayOf(150f, 300f, 1080f, 395f)
 private val PrizeRect = floatArrayOf(200f, 410f, 1030f, 585f)
 private val BodyRect = floatArrayOf(150f, 598f, 1080f, 715f)
-private val GoldRect = floatArrayOf(345f, 748f, 585f, 842f)
-private val XpRect = floatArrayOf(765f, 748f, 1035f, 842f)
+private val GoldRect = floatArrayOf(350f, 748f, 560f, 842f)
+private val XpRect = floatArrayOf(770f, 748f, 1000f, 842f)
 private val ButtonRect = floatArrayOf(262f, 895f, 940f, 1085f)
 private val Ink = Color(0xFF3A2416)
 
@@ -118,9 +119,9 @@ internal fun LeaguePrizeDialog(reward: LeagueReward?, rank: Int, onDismiss: () -
                 if (reward != null) {
                     Column(Modifier.at(PrizeRect), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                         when (reward) {
-                            // on a dark plate, so a pale pen (Kutup Işığı, Ayaz…) still shows on the cream page
+                            // on a light plate with a thin warm rim, so the stroke sits in its own little page
                             is LeagueReward.Pen -> Box(
-                                Modifier.fillMaxWidth(0.8f).height(u * 84f).clip(RoundedCornerShape(u * 42f)).background(Color(0xFF3A2416)).padding(horizontal = u * 28f, vertical = u * 12f)
+                                Modifier.fillMaxWidth(0.8f).height(u * 84f).clip(RoundedCornerShape(u * 42f)).background(Color(0xFFFFFBF2)).border(u * 4f, Color(0xFFE8CFA0), RoundedCornerShape(u * 42f)).padding(horizontal = u * 28f, vertical = u * 12f)
                             ) { PenStrokePreview(reward.skin, Modifier.fillMaxSize()) }
                             is LeagueReward.Frame -> RewardSwatch(reward, u * 62f)
                         }
@@ -141,13 +142,13 @@ internal fun LeaguePrizeDialog(reward: LeagueReward?, rank: Int, onDismiss: () -
                 // the monthly gold and XP, in the two pills the picture leaves for them (their icons are painted in)
                 FitText(
                     text = "+" + number.format(GameConstants.LEAGUE_MONTHLY_GOLD),
-                    style = PaintedStyle(color = Ink, fontSize = fs(60f), textAlign = TextAlign.Center),
+                    style = PaintedStyle(color = Ink, fontSize = fs(46f), textAlign = TextAlign.Center),
                     maxLines = 1, minScale = 0.5f,
                     modifier = Modifier.at(GoldRect)
                 )
                 FitText(
                     text = stringResource(R.string.league_reward_bonus_xp, number.format(GameConstants.LEAGUE_MONTHLY_XP)),
-                    style = PaintedStyle(color = Ink, fontSize = fs(60f), textAlign = TextAlign.Center),
+                    style = PaintedStyle(color = Ink, fontSize = fs(46f), textAlign = TextAlign.Center),
                     maxLines = 1, minScale = 0.5f,
                     modifier = Modifier.at(XpRect)
                 )
