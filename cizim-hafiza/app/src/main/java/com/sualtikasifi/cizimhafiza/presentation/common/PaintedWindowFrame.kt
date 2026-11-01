@@ -43,9 +43,9 @@ private const val RibbonX = 270f
 private const val RibbonY = 118f
 private const val RibbonW = 500f
 private const val RibbonH = 120f
-private const val ContentTop = 320f
+private const val ContentTop = 400f
 private const val ContentSide = 100f
-private const val ContentBottom = 110f
+private const val ContentBottom = 140f
 
 /**
  * The game's window: the painted frame with a lettered [title] on its ribbon and, when [onClose] is given, a round

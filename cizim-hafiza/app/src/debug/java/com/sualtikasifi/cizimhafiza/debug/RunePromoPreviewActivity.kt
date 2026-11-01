@@ -93,6 +93,14 @@ class RunePromoPreviewActivity : ComponentActivity() {
                         val reward = if (screen == "league_win_frame") all.filterIsInstance<com.sualtikasifi.cizimhafiza.domain.model.LeagueReward.Frame>().firstOrNull() else all.firstOrNull()
                         com.sualtikasifi.cizimhafiza.presentation.league.LeaguePrizeDialog(reward = reward ?: all.firstOrNull(), rank = 1, onDismiss = { finish() })
                     }
+                    "invite" -> com.sualtikasifi.cizimhafiza.presentation.online.LobbyInviteWindow(
+                        friends = listOf("bob ross", "liliput", "Zeynep", "Mert", "Ayşe Nur", "kaplan34").map { com.sualtikasifi.cizimhafiza.domain.model.Friend(it, it) },
+                        sendingToUid = "Zeynep", sentToUids = setOf("liliput"), message = "Davet gönderildi",
+                        onInvite = {}, onDismiss = { finish() }
+                    )
+                    "invite_empty" -> com.sualtikasifi.cizimhafiza.presentation.online.LobbyInviteWindow(
+                        friends = emptyList(), sendingToUid = null, sentToUids = emptySet(), message = null, onInvite = {}, onDismiss = { finish() }
+                    )
                     "window_pick" -> com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog(title = "Çerçeveni Seç", onDismiss = { finish() }) {
                         androidx.compose.material3.Text("Profil görseli", fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold)
                         repeat(14) { i -> androidx.compose.material3.Text("Satır ${i + 1}: örnek içerik, pencere uzayınca orta bant esner", modifier = Modifier.padding(vertical = 6.dp)) }

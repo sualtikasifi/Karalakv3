@@ -53,6 +53,8 @@ shot home_saving
 shot tour_runes
 shot funnel
 shot window_pick
+shot invite
+shot invite_empty
 shot window_confirm
 shot league_win
 adb exec-out screencap -p > "$OUT/rune_league_win_b.png"
