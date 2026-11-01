@@ -24,6 +24,7 @@ on:
           - realpreview.sh
           - devpanelpreview.sh
           - runepreview.sh
+          - titles_preview.sh
           - updatepreview.sh
           - chestpreview.sh
           - chestrewardpreview.sh
