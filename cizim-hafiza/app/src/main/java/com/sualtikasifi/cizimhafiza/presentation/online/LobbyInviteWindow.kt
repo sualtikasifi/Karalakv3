@@ -173,8 +173,8 @@ private fun FriendRow(friend: Friend, u: androidx.compose.ui.unit.Dp, fs: (Float
                 sending -> CircularProgressIndicator(modifier = Modifier.size(u * 64f), strokeWidth = 2.5.dp, color = Color(0xFFEB6834))
                 sent -> Text(
                     text = stringResource(R.string.online_invite_sent_short),
-                    style = PaintedStyle(color = Good, fontSize = fs(42f), textAlign = TextAlign.Center),
-                    maxLines = 1
+                    style = PaintedStyle(color = Good, fontSize = fs(34f), textAlign = TextAlign.Center, lineHeight = fs(38f)),
+                    maxLines = 2
                 )
                 else -> PaintedPillButton(
                     text = stringResource(R.string.online_invite_send),
