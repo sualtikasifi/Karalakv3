@@ -44,9 +44,9 @@ import kotlin.random.Random
  * because firestore.rules deliberately grants room 130246 (and only that
  * room) open read/write to any signed-in user, see the comment there.
  *
- * [ensureBootstrapped] and [ensureRunning] are cheap to call from every
- * screen that might touch this room — internally this only ever starts its
- * one long-lived listener once per app process (further calls are no-ops).
+ * [ensureBootstrapped] is cheap to call, and [acquire] and [release] from every
+ * screen showing a room — they only do anything for this room, and its
+ * long-lived listeners exist only while a screen holds them.
  * The tradeoff of having no always-on server: if every real player closes
  * the app mid-match, nothing finishes the bot's turn until someone opens
  * the app again — but the next person who tries to join runs
@@ -102,6 +102,8 @@ class BotRoomEngine @Inject constructor(
         private const val HANDLED_LIMIT = 40
         private const val LOCAL_ATTEMPT_CACHE_LIMIT = 200
         private const val ABANDONED_WATCH_INTERVAL_MS = 15_000L
+        /** A rematch moves between screens; the listeners are kept this long across the gap instead of being rebuilt. */
+        private const val LISTENER_GRACE_MS = 20_000L
         // The longest a round can honestly take, from its word count: every word is drawn and then guessed (about
         // 30 s of clock between them even with the hint bonuses), plus a fixed allowance for breaks and slow starts.
         private const val ROUND_MILLIS_PER_WORD = 30_000L
@@ -141,16 +143,47 @@ class BotRoomEngine @Inject constructor(
         runMaintenance()
     }
 
-    /** Starts the long-lived listeners that drive bot behavior, if this process hasn't already started them. */
-    fun ensureRunning() {
-        if (!listenerStarted.compareAndSet(false, true)) return
-        scope.launch {
-            ensureSignedIn()
-            observeAndDrive()
+    // How many screens are in the bot room right now, and the listeners that exist while there is at least one.
+    //
+    // The listeners (the room document and its chat) used to be started by *every* lobby, game and result screen in
+    // *any* room and then never stopped, so every player in a friends' room was also reading the shared bot room's
+    // every change for the rest of the app run, billed once per listening device. They are now held only by someone
+    // who is in the bot room, and let go a short while after the last one leaves.
+    private val holders = java.util.concurrent.atomic.AtomicInteger(0)
+    @Volatile private var listenersJob: kotlinx.coroutines.Job? = null
+
+    /**
+     * A screen showing [roomCode] is open: starts the long-lived listeners that drive bot behaviour if that is the bot
+     * room and they are not running. Every call for the bot room must be paired with a [release]; any other room is
+     * ignored (nothing to drive there, and nothing to pay for).
+     */
+    fun acquire(roomCode: String) {
+        if (roomCode != ROOM_CODE) return
+        holders.incrementAndGet()
+        synchronized(this) {
+            if (listenersJob?.isActive == true) return
+            listenerStarted.set(true)
+            listenersJob = scope.launch {
+                ensureSignedIn()
+                launch { observeAndDrive() }
+                launch { observeChat() }
+            }
         }
+    }
+
+    /** The counterpart of [acquire]; the listeners stop [LISTENER_GRACE_MS] after the last holder has gone. */
+    fun release(roomCode: String) {
+        if (roomCode != ROOM_CODE) return
+        if (holders.decrementAndGet() > 0) return
         scope.launch {
-            ensureSignedIn()
-            observeChat()
+            delay(LISTENER_GRACE_MS)
+            if (holders.get() > 0) return@launch
+            synchronized(this@BotRoomEngine) {
+                listenersJob?.cancel()
+                listenersJob = null
+                listenerStarted.set(false)
+                latestRoom = null
+            }
         }
     }
 

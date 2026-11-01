@@ -103,6 +103,9 @@ fun PaintedStyle(
     )
 )
 
+/** How far, in ems, a title is dropped below the middle of its box (0 = none); see LetteredText. */
+private const val TitleLift = 0f
+
 /**
  * The game's lettering: Baloo 2 ExtraBold, [fill] over a rounded [outline] (about 5 px on a 1080-px screen at title size,
  * thinner for smaller text) and a soft drop shadow. With no outline (orange on a white button) a warm shadow does the job.
@@ -130,6 +133,9 @@ fun LetteredText(
         val scale = rememberFitScale(text, full, maxLines, minScale)
         val base = full.scaledBy(scale)
         val strokeDp = (strokeDp0 * scale).coerceAtLeast(1.1f)
+        // Titles can be dropped by TitleLift ems so the letters themselves, not their line box, are centred (0 for now:
+        // each sign's box is placed by measuring its picture instead).
+        val lift = if (title) (size.value * scale * TitleLift).dp else 0.dp
         // Page titles (and any title-sized lettering) also get a wide, soft shadow underneath, so a title laid on a
         // painted sign reads as part of the picture instead of as text put on afterwards. Titles are sized from the
         // screen width, so on a narrow phone they can come out small; their shadow keeps a floor so it still shows.
@@ -144,7 +150,7 @@ fun LetteredText(
                 ),
                 maxLines = maxLines,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                modifier = Modifier.offset(y = (d * 0.07f).dp)
+                modifier = Modifier.offset(y = lift + (d * 0.07f).dp)
             )
         }
         if (outline != null) {
@@ -156,11 +162,13 @@ fun LetteredText(
                     shadow = androidx.compose.ui.graphics.Shadow(Color(0x66000000), androidx.compose.ui.geometry.Offset(0f, with(density) { 2.dp.toPx() }), with(density) { 3.dp.toPx() })
                 ),
                 maxLines = maxLines,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.offset(y = lift)
             )
         }
         Text(
             text,
+            modifier = Modifier.offset(y = lift),
             style = base.copy(
                 color = fill,
                 shadow = if (outline == null) androidx.compose.ui.graphics.Shadow(Color(0x66A04000), androidx.compose.ui.geometry.Offset(0f, with(density) { 1.5.dp.toPx() }), with(density) { 2.dp.toPx() }) else null
@@ -333,7 +341,7 @@ fun WoodSection(title: String, content: @Composable () -> Unit) {
                     textAlign = TextAlign.Center
                 ),
                 maxLines = 1,
-                modifier = Modifier.padding(horizontal = 26.dp)
+                modifier = Modifier.padding(horizontal = 26.dp).offset(y = 0.9.dp)
             )
         }
     }

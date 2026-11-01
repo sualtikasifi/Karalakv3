@@ -200,7 +200,7 @@ private fun DuelCard(res: Int, nativeH: Float, title: String, modifier: Modifier
                 text = title,
                 size = (unit.value * 56f).sp,
                 outline = Color(0xFF5A2815),
-                modifier = Modifier.offset(unit * 90f, unit * 20f).size(unit * 440f, unit * 78f),
+                modifier = Modifier.offset(unit * 89.5f, unit * 24.5f).size(unit * 390f, unit * 78f),
                 minScale = 0.6f,
                 title = true
             )

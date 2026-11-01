@@ -255,7 +255,7 @@ fun FriendsScreen(
 
         // Title on the hanging sign (plank centre is at 50% / 63% of the sprite).
         Sprite(R.drawable.fr_sign, 215f, 110f, 865f, 349f)
-        SceneBox(scene, 290f, 205f, 790f, 315f) {
+        SceneBox(scene, 290f, 207f, 790f, 317f) {
             LetteredText(stringResource(R.string.online_friends_entry), scene.fs(62f), title = true)
         }
 
@@ -327,7 +327,7 @@ fun FriendsScreen(
         val lower = Scene(s, scene.offX, scene.offY + 120f * s, density)
         // ── Add a friend ──
         Sprite(R.drawable.fr_ribbon, 70f, 835f, 470f, 948f, sc = lower)
-        SceneBox(lower, 110f, 850f, 440f, 935f) {
+        SceneBox(lower, 98f, 851.5f, 428f, 936.5f) {
             LetteredText(stringResource(R.string.friends_add_friend_label), lower.fs(40f), title = true)
         }
         NinePatch(
@@ -390,7 +390,7 @@ fun FriendsScreen(
 
         // ── Friends list ──
         Sprite(R.drawable.fr_ribbon, 70f, 1150f, 490f, 1269f, sc = lower)
-        SceneBox(lower, 105f, 1168f, 455f, 1252f) {
+        SceneBox(lower, 97f, 1169.5f, 447f, 1254.5f) {
             LetteredText(stringResource(R.string.friends_list_title), lower.fs(40f), title = true)
         }
         NinePatch(

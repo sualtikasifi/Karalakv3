@@ -643,7 +643,7 @@ private fun ChatHistoryDialog(
                     outline = Color(0xFF5A2815),
                     maxLines = 1,
                     title = true,
-                    modifier = Modifier.offset(u * 230f, u * 66f).size(u * 480f, u * 112f)
+                    modifier = Modifier.offset(u * 230f, u * 83.5f).size(u * 480f, u * 112f)
                 )
                 // The close badge, on the frame's top right corner.
                 Box(

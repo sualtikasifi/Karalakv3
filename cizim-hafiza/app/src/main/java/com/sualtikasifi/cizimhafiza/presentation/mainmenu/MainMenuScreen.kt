@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.mainmenu
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -155,7 +156,7 @@ fun MainMenuScreen(
     val adGoldNextAt by viewModel.adGoldNextAtMillis.collectAsState()
     val adChestNextAt by viewModel.adChestNextAtMillis.collectAsState()
     val freeChestReward by viewModel.freeChestReward.collectAsState()
-    val pendingFriendRequests by viewModel.pendingFriendRequests.collectAsState()
+    val pendingFriendRequests by viewModel.pendingFriendRequests.collectAsStateWithLifecycle()
     val nickname by viewModel.nickname.collectAsState()
     val dailyState by viewModel.dailyState.collectAsState()
     val penaltyWarning by viewModel.penaltyWarning.collectAsState()

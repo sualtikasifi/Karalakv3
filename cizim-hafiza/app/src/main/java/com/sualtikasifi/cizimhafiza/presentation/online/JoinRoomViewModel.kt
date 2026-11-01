@@ -95,7 +95,6 @@ class JoinRoomViewModel @Inject constructor(
             // transition window between rounds.
             onlineGameRepository.joinRoom(state.roomCode, nickname)
                 .onSuccess {
-                    botRoomEngine.ensureRunning()
                     _uiState.update { it.copy(isJoining = false) }
                     onJoined(state.roomCode)
                 }

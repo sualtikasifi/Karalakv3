@@ -98,7 +98,7 @@ fun JoinRoomScreen(
         // Title on the sign.
         val signCentreX = with(density) { (offX + ArtW * s * 0.503f).toDp() }
         Box(
-            modifier = Modifier.offset(x = signCentreX - len(230f), y = yOf(0.197f) - len(38f)).width(len(460f)),
+            modifier = Modifier.offset(x = signCentreX - len(230f), y = yOf(0.197f) - len(34f)).width(len(460f)),
             contentAlignment = Alignment.Center
         ) {
             LetteredText(stringResource(R.string.online_join_room), with(density) { (46f * s).toSp() }, title = true)

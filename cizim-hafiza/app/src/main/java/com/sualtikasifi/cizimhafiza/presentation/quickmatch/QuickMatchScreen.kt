@@ -354,7 +354,7 @@ private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart
                 Pic(R.drawable.mf_title, 450, 272, 1.2f, 150f, 62f)
                 Pic(R.drawable.mf_tag, 354, 106, 1.2f, (841f - 354f * 1.2f) / 2f, 62f + 266f * 1.2f)
                 Box(
-                    Modifier.offset(u * ((841f - 354f * 1.2f) / 2f + 354f * 1.2f * 0.18f), u * (381.2f + 106f * 1.2f * 0.1f))
+                    Modifier.offset(u * ((841f - 354f * 1.2f) / 2f + 354f * 1.2f * 0.18f), u * (381.2f + 106f * 1.2f * 0.1f + 9.9f))
                         .size(u * 354f * 1.2f * 0.64f, u * 106f * 1.2f * 0.68f),
                     contentAlignment = Alignment.Center
                 ) {

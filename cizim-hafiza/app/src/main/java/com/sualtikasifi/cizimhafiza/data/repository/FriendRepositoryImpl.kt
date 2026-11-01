@@ -107,7 +107,7 @@ class FriendRepositoryImpl @Inject constructor(
      * publishLeagueScore, called on every League open) and therefore always
      * reads back fresh from the cache regardless of this window.
      */
-    private val profileFetchedAtMillis = mutableMapOf<String, Long>()
+    private val profileFetchedAtMillis = com.sualtikasifi.cizimhafiza.util.PersistedClock(context, "friend_profiles")
 
     /**
      * This device's own friend code, once known — see [ensureFriendCode].
@@ -212,7 +212,7 @@ class FriendRepositoryImpl @Inject constructor(
     }
 
     /** When each friend's name was last compared with their live profile — see [refreshStaleNicknames]. */
-    private val nicknameCheckedAtMillis = mutableMapOf<String, Long>()
+    private val nicknameCheckedAtMillis = com.sualtikasifi.cizimhafiza.util.PersistedClock(context, "friend_nicknames")
 
     /**
      * A friendship stores the other player's name as it was the day it was made, so a friend who later renamed
@@ -228,7 +228,7 @@ class FriendRepositoryImpl @Inject constructor(
         scope.launch {
             due.forEach { friend ->
                 runCatching {
-                    val live = users.document(friend.uid).get().await().getString("nickname")?.takeIf { it.isNotBlank() }
+                    val live = readLeagueProfile(friend.uid)?.getString("nickname")?.takeIf { it.isNotBlank() }
                     if (live != null && live != friend.nickname) {
                         users.document(myUid).collection("friends").document(friend.uid)
                             .update("nickname", live).await()
@@ -706,7 +706,7 @@ class FriendRepositoryImpl @Inject constructor(
 
     private companion object {
         /** How long a friend's stored name is trusted before it is compared with their live profile again. */
-        const val NICKNAME_RECHECK_MS = 30 * 60_000L
+        const val NICKNAME_RECHECK_MS = 24 * 60 * 60_000L
         const val TAG = "FriendRepository"
         /** See profileFetchedAtMillis — long enough to collapse a burst of table opens, short enough that a friend's finished game shows up the same session. */
         const val PROFILE_CACHE_TTL_MILLIS = 30 * 60 * 1000L

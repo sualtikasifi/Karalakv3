@@ -271,25 +271,29 @@ internal fun PaintedHome(
         // ── Top chips ──
         // Both are painted as one set: a pill with a dark well 10 px in from every side, its icon (the coin, the
         // pencil) on the well's left end. The writing is centred in the rest of the well.
-        val goldChipSink = rememberSink(0.94f)
-        Box(
-            box(40f, 258f, 256f, 326f)
-                .then(sunk(goldChipSink, 40f, 258f, 256f, 326f, 34f))
-                .clickable(interactionSource = goldChipSink.source, indication = null, onClick = onGoldClick)
-        ) {}
-        Box(box(97.3f, 267.8f, 237.9f, 314.5f).then(follow(goldChipSink, 148f, 292f, 97.3f, 267.8f, 237.9f, 314.5f)), contentAlignment = Alignment.Center) {
+        // The gold and pen chips are the same code-drawn pill as the Rünler sign (a thin orange rim, the dark well close
+        // to it), laid over the ones painted in the scene so all three have the same black margins.
+        HomeChip(
+            us = us,
+            modifier = box(40f, 258f, 256f, 326f)
+                .pressable(pressedScale = 0.95f, onClick = onGoldClick),
+            iconModifier = box(28f, 250f, 110f, 332f),
+            icon = R.drawable.icon_gold_coin
+        ) {
             // Counts to the new total whenever gold changes (a reward, a purchase) instead of jumping.
             val goldShown = goldAnim.value.toInt()
-            LetteredText(NumberFormat.getIntegerInstance().format(goldShown), fs(30f), outline = Color(0xFF3A1E08), maxLines = 1)
+            LetteredText(NumberFormat.getIntegerInstance().format(goldShown), fs(30f), outline = Color(0xFF3A1E08), maxLines = 1, minScale = 0.6f)
         }
-        val penChipSink = rememberSink(0.94f)
-        Box(
-            box(264f, 258f, 512f, 326f)
-                .then(sunk(penChipSink, 264f, 258f, 512f, 326f, 34f))
-                .clickable(interactionSource = penChipSink.source, indication = null, onClick = onPenClick)
-                .a11yButton(stringResource(pen.labelRes))
-        ) {}
-        FitLettered(stringResource(pen.labelRes), 30f, Color(0xFF3A1E08), 1, box(320.8f, 266.2f, 494.1f, 312.9f).then(follow(penChipSink, 388f, 292f, 320.8f, 266.2f, 494.1f, 312.9f)))
+        HomeChip(
+            us = us,
+            modifier = box(264f, 258f, 512f, 326f)
+                .pressable(pressedScale = 0.95f, onClick = onPenClick)
+                .a11yButton(stringResource(pen.labelRes)),
+            iconModifier = box(254f, 250f, 336f, 332f),
+            icon = R.drawable.st_ic_pencil
+        ) {
+            LetteredText(stringResource(pen.labelRes), fs(30f), outline = Color(0xFF3A1E08), maxLines = 1, minScale = 0.6f)
+        }
 
         // ── The mascot (top right) opens the rune map too ──
         Box(
@@ -725,42 +729,59 @@ private fun RuneChip(
     iconModifier: Modifier
 ) {
     val count = (hint as? com.sualtikasifi.cizimhafiza.domain.model.RuneHint.Affordable)?.count
+    HomeChip(us = us, modifier = modifier, iconModifier = iconModifier, icon = null, iconContent = {
+        Image(painterResource(R.drawable.rune_root), contentDescription = null, modifier = Modifier.fillMaxSize())
+        Image(painterResource(R.drawable.rune_icon_dog), contentDescription = null, modifier = Modifier.fillMaxSize(0.66f))
+    }) {
+    Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+            LetteredText(stringResource(R.string.rune_chip_title), fs(30f), outline = Color(0xFF3A1E08), maxLines = 1, minScale = 0.6f)
+        }
+        if (count != null) {
+            val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "runeCount")
+            val k by pulse.animateFloat(
+                initialValue = 0.94f,
+                targetValue = 1.1f,
+                animationSpec = androidx.compose.animation.core.infiniteRepeatable(tween(700), androidx.compose.animation.core.RepeatMode.Reverse),
+                label = "runeCountScale"
+            )
+            Box(
+                Modifier
+                    .size((44f * us).dp)
+                    .graphicsLayer { scaleX = k; scaleY = k }
+                    .background(Brush.verticalGradient(listOf(Color(0xFF6BE04A), Color(0xFF22A12A))), CircleShape)
+                    .border((1.5f).dp, Color.White, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                LetteredText(count.toString(), fs(if (count > 99) 20f else 27f), outline = Color(0xFF14501A), maxLines = 1, minScale = 0.5f)
+            }
+        }
+    }
+    }
+}
+
+/** The chip set's shared pill: an orange rim, a dark well 7 art-px in from it, the icon over the well's left end. */
+@Composable
+private fun HomeChip(
+    us: Float,
+    modifier: Modifier,
+    iconModifier: Modifier,
+    icon: Int?,
+    iconContent: (@Composable androidx.compose.foundation.layout.BoxScope.() -> Unit)? = null,
+    content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit
+) {
     Box(
         modifier
             .background(Brush.verticalGradient(listOf(Color(0xFFFFB73E), Color(0xFFE5670B))), RoundedCornerShape(50))
             .border((1.5f).dp, Color(0xFFB04A08), RoundedCornerShape(50))
             .padding((7f * us).dp)
             .background(Brush.verticalGradient(listOf(Color(0xFF4A1D0A), Color(0xFF5E2A10))), RoundedCornerShape(50))
-            .padding(start = (66f * us).dp, end = (8f * us).dp)
-    ) {
-        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                LetteredText(stringResource(R.string.rune_chip_title), fs(30f), outline = Color(0xFF3A1E08), maxLines = 1, minScale = 0.6f)
-            }
-            if (count != null) {
-                val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "runeCount")
-                val k by pulse.animateFloat(
-                    initialValue = 0.94f,
-                    targetValue = 1.1f,
-                    animationSpec = androidx.compose.animation.core.infiniteRepeatable(tween(700), androidx.compose.animation.core.RepeatMode.Reverse),
-                    label = "runeCountScale"
-                )
-                Box(
-                    Modifier
-                        .size((44f * us).dp)
-                        .graphicsLayer { scaleX = k; scaleY = k }
-                        .background(Brush.verticalGradient(listOf(Color(0xFF6BE04A), Color(0xFF22A12A))), CircleShape)
-                        .border((1.5f).dp, Color.White, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    LetteredText(count.toString(), fs(if (count > 99) 20f else 27f), outline = Color(0xFF14501A), maxLines = 1, minScale = 0.5f)
-                }
-            }
-        }
-    }
+            .padding(start = (66f * us).dp, end = (8f * us).dp),
+        contentAlignment = Alignment.Center,
+        content = content
+    )
     Box(iconModifier, contentAlignment = Alignment.Center) {
-        Image(painterResource(R.drawable.rune_root), contentDescription = null, modifier = Modifier.fillMaxSize())
-        Image(painterResource(R.drawable.rune_icon_dog), contentDescription = null, modifier = Modifier.fillMaxSize(0.66f))
+        if (iconContent != null) iconContent() else if (icon != null) Image(painterResource(icon), contentDescription = null, modifier = Modifier.fillMaxSize())
     }
 }
 

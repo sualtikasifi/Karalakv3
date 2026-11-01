@@ -117,14 +117,14 @@ fun BreakScreen(state: GamePhase.Break) {
         LetteredText(
             text = stringResource(R.string.get_ready_line1),
             size = signSize,
-            modifier = box(186f, 264f, 660f, 330f),
+            modifier = box(181f, 270.5f, 655f, 336.5f),
             minScale = 1f,
             title = true
         )
         LetteredText(
             text = stringResource(R.string.get_ready_line2),
             size = signSize,
-            modifier = box(186f, 330f, 660f, 396f),
+            modifier = box(181f, 336.5f, 655f, 402.5f),
             minScale = 1f,
             title = true
         )

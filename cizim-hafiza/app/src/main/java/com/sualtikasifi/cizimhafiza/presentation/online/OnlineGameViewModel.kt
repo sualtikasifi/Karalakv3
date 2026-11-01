@@ -120,7 +120,7 @@ class OnlineGameViewModel @Inject constructor(
     private val ghostRunRepository: GhostRunRepository,
     private val xpEventRepository: XpEventRepository,
     private val networkMonitor: com.sualtikasifi.cizimhafiza.util.NetworkMonitor,
-    botRoomEngine: BotRoomEngine
+    private val botRoomEngine: BotRoomEngine
 ) : ViewModel() {
 
     val roomCode: String = checkNotNull(savedStateHandle[Screen.ArgRoomCode])
@@ -133,9 +133,9 @@ class OnlineGameViewModel @Inject constructor(
     private var xpEventMultiplier: Double = 1.0
 
     init {
-        // Harmless/no-op for any other room — only ever drives room 130246
-        // (see BotRoomEngine) and only starts its listener once per process.
-        botRoomEngine.ensureRunning()
+        // Only the bot room (130246, see BotRoomEngine) has anything to drive; any other room is ignored, so a
+        // friends' room does not listen to the shared bot room. Released in onCleared.
+        botRoomEngine.acquire(roomCode)
         viewModelScope.launch { xpEventMultiplier = xpEventRepository.currentMultiplier() }
     }
 
@@ -902,6 +902,7 @@ class OnlineGameViewModel @Inject constructor(
 
     override fun onCleared() {
         timerJob?.cancel()
+        botRoomEngine.release(roomCode)
         super.onCleared()
     }
 }

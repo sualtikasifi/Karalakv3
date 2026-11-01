@@ -590,7 +590,7 @@ private fun TierRibbon(
                 text = label,
                 size = fs(46f),
                 top = Color.White, bottom = Color(0xFFFFF0DC), outline = lerp(dark, Color.Black, 0.5f),
-                modifier = Modifier.weight(1f, fill = false).fillMaxHeight()
+                modifier = Modifier.weight(1f, fill = false).fillMaxHeight().offset(y = u * 5f)
             )
         }
     }
