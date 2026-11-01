@@ -122,7 +122,7 @@ internal fun ResultHeader(title: String) {
             size = fs(80f),
             fill = Color.White,
             outline = Color(0xFF4A2410),
-            modifier = box(hx(95f), hy(268f), hx(555f), hy(350f)),
+            modifier = box(hx(92.5f), hy(274f), hx(552.5f), hy(356f)),
             minScale = 0.5f,
             title = true
         )

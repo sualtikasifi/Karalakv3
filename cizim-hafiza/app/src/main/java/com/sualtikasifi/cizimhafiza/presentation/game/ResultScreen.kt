@@ -1091,7 +1091,7 @@ internal fun DrawingPreviewScene(
             text = item.word.capitalizeForWordLanguage(wordLanguage),
             size = fs(54f),
             outline = Color(0xFF4A2410),
-            modifier = box(190f, 462f, 660f, 532f),
+            modifier = box(190f, 466f, 660f, 536f),
             minScale = 0.45f,
             title = true
         )

@@ -327,7 +327,7 @@ fun FriendsScreen(
         val lower = Scene(s, scene.offX, scene.offY + 120f * s, density)
         // ── Add a friend ──
         Sprite(R.drawable.fr_ribbon, 70f, 835f, 470f, 948f, sc = lower)
-        SceneBox(lower, 98f, 849f, 428f, 934f) {
+        SceneBox(lower, 98f, 851.5f, 428f, 936.5f) {
             LetteredText(stringResource(R.string.friends_add_friend_label), lower.fs(40f), title = true)
         }
         NinePatch(
@@ -390,7 +390,7 @@ fun FriendsScreen(
 
         // ── Friends list ──
         Sprite(R.drawable.fr_ribbon, 70f, 1150f, 490f, 1269f, sc = lower)
-        SceneBox(lower, 97f, 1167f, 447f, 1252f) {
+        SceneBox(lower, 97f, 1169.5f, 447f, 1254.5f) {
             LetteredText(stringResource(R.string.friends_list_title), lower.fs(40f), title = true)
         }
         NinePatch(
