@@ -280,7 +280,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             // y 288..436).
             Box(
                 modifier = Modifier
-                    .offset((artOffX + (428f - 200f) * artScale).dp, ((361f - 80f) * artScale).dp)
+                    .offset((artOffX + (428f - 200f) * artScale).dp, ((365f - 80f) * artScale).dp)
                     .size((400f * artScale).dp, (160f * artScale).dp)
             ) {
                 com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(

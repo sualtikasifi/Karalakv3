@@ -255,7 +255,7 @@ fun FriendsScreen(
 
         // Title on the hanging sign (plank centre is at 50% / 63% of the sprite).
         Sprite(R.drawable.fr_sign, 215f, 110f, 865f, 349f)
-        SceneBox(scene, 290f, 205f, 790f, 315f) {
+        SceneBox(scene, 290f, 207f, 790f, 317f) {
             LetteredText(stringResource(R.string.online_friends_entry), scene.fs(62f), title = true)
         }
 

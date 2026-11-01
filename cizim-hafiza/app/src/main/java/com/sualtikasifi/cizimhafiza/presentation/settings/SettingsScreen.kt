@@ -168,7 +168,7 @@ fun SettingsScreen(
         LetteredText(
             text = stringResource(R.string.menu_settings),
             size = fs(80f),
-            modifier = box(196f, 186f, 500f, 276f),
+            modifier = box(196f, 187.5f, 500f, 277.5f),
             minScale = 0.5f,
             title = true
         )

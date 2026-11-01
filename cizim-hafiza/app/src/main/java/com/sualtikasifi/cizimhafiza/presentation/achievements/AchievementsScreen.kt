@@ -185,7 +185,7 @@ fun AchievementsScreen(
                 modifier = Modifier.fillMaxSize()
             )
             Box(
-                modifier = Modifier.fillMaxWidth().offset(x = signWidth * 0.016f, y = signHeight * 0.415f).height(signHeight * 0.36f),
+                modifier = Modifier.fillMaxWidth().offset(x = signWidth * 0.016f, y = signHeight * 0.432f).height(signHeight * 0.36f),
                 contentAlignment = Alignment.Center
             ) {
                 LetteredText(stringResource(R.string.menu_achievements), (len(64f).value).sp, title = true)

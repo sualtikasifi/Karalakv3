@@ -8,6 +8,7 @@ import com.sualtikasifi.cizimhafiza.presentation.achievements.AchievementsScreen
 import com.sualtikasifi.cizimhafiza.presentation.league.LeagueScreen
 import com.sualtikasifi.cizimhafiza.presentation.online.JoinRoomScreen
 import com.sualtikasifi.cizimhafiza.presentation.online.OnlineLobbyScreen
+import com.sualtikasifi.cizimhafiza.presentation.quickmatch.SearchingScene
 import com.sualtikasifi.cizimhafiza.presentation.reportbug.ReportBugScreen
 import com.sualtikasifi.cizimhafiza.presentation.settings.SettingsScreen
 import com.sualtikasifi.cizimhafiza.presentation.store.StoreScreen
@@ -38,6 +39,7 @@ class TitlesPreviewActivity : ComponentActivity() {
                     "lobby" -> OnlineLobbyScreen(onBack = {}, onCreateRoom = {}, onJoinRoom = {})
                     "report" -> ReportBugScreen(onBack = {})
                     "worlds" -> WorldMapScreen(onWorldClick = {}, onBack = {})
+                    "searching" -> SearchingScene()
                     "wordcount" -> WordCountScreen(onStart = { _, _, _, _ -> }, onBack = {})
                 }
             }

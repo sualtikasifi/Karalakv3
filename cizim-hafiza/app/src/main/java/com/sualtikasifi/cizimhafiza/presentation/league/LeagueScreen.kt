@@ -359,7 +359,7 @@ fun LeagueScreen(
                 modifier = Modifier.fillMaxSize()
             )
             Box(
-                modifier = Modifier.fillMaxWidth().offset(x = signWidth * 0.010f, y = signHeight * 0.415f).height(signHeight * 0.36f),
+                modifier = Modifier.fillMaxWidth().offset(x = signWidth * 0.010f, y = signHeight * 0.441f).height(signHeight * 0.36f),
                 contentAlignment = Alignment.Center
             ) {
                 val title = stringResource(R.string.league_title)
