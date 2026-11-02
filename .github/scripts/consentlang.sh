@@ -65,11 +65,12 @@ shot dob_filled
 adb shell input keyevent 4   # closes the keyboard, if open
 sleep 1
 tap_text "devam" || tap_text "continue"
-sleep 4
+sleep 20
 shot after_dob_1
-sleep 8
+sleep 30
 shot after_dob_2
-sleep 8
+sleep 40
 shot after_dob_3
+adb logcat -d | grep -iE 'consent|UMP|ump' | head -40 > "$OUT/consent_log.txt" || true
 adb logcat -d | grep -E "FATAL" | head -5 > "$OUT/crash.txt" || true
 ls -la "$OUT"
