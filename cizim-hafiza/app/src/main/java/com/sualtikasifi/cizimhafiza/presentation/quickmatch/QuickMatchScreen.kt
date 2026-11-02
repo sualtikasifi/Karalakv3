@@ -484,13 +484,13 @@ private fun PlayerPanel(
             levelBadge = true
         )
     }
-    // The name on the ribbon (its cloth is x cx-125..cx+125, y 848..910)
+    // The name on the ribbon (its face is x cx-125..cx+125, y about 850..895; measured on a screenshot, the letters' middle sits on the face's middle)
     FitText(
         text = nickname,
         style = PaintedStyle(color = Color.White, fontSize = fs(31f), textAlign = TextAlign.Center, shadow = androidx.compose.ui.graphics.Shadow(Color(0x99000000), Offset(0f, 2f), 4f)),
         maxLines = 1,
         minScale = 0.5f,
-        modifier = box(cx - 105f, 856f, cx + 105f, 904f).graphicsLayer { alpha = enter.value.coerceIn(0f, 1f) }
+        modifier = box(cx - 105f, 850.5f, cx + 105f, 898.5f).graphicsLayer { alpha = enter.value.coerceIn(0f, 1f) }
     )
     Row(
         box(cx - 125f, 922f, cx + 125f, 966f).graphicsLayer { alpha = enter.value.coerceIn(0f, 1f) },
