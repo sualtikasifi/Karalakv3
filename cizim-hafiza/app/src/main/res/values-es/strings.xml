@@ -1038,6 +1038,8 @@
     <string name="quick_match_tip_scoring">Los puntajes se comparan al terminar la partida</string>
     <string name="quick_match_tip_fun">¡Relájate y disfruta el juego!</string>
     <string name="quick_match_found_tagline">¡Genial!\nRival encontrado.</string>
+    <string name="quick_match_found_title1">Rival</string>
+    <string name="quick_match_found_title2">¡Listo!</string>
     <string name="quick_match_starting_in">La partida empieza en %1$d segundos</string>
     <string name="quick_match_starting_in_one">La partida empieza en %1$d segundo</string>
     <string name="quick_match_good_luck">¡Buena suerte!</string>

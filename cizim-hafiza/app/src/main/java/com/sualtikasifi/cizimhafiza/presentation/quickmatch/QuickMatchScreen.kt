@@ -89,6 +89,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.presentation.common.a11yButton
+import androidx.compose.foundation.layout.wrapContentSize
 import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
 import com.sualtikasifi.cizimhafiza.domain.model.GhostRun
 import com.sualtikasifi.cizimhafiza.domain.model.GhostRuns
@@ -265,20 +267,16 @@ fun QuickMatchScreen(
                     opponent = found.opponent,
                     me = found.me,
                     onStart = { viewModel.onMatchStarted(found.opponent); onStart(found.opponent) },
+                    // Once matched, leaving costs XP, so the back button (part of the scene's picture) asks first.
+                    onBack = { abandonConfirmOpen = true },
                     modifier = Modifier.graphicsLayer { alpha = sceneAlpha.value }
                 )
             }
             (state as? QuickMatchState.Locked)?.let { locked ->
                 LockedScene(untilMillis = locked.untilMillis, onUnlocked = viewModel::search)
             }
-            if (matched) {
-                // Once matched, leaving costs XP, so the back button asks first.
-                com.sualtikasifi.cizimhafiza.presentation.common.PaintedBackButton(
-                    onClick = { abandonConfirmOpen = true },
-                    modifier = Modifier.align(Alignment.TopStart)
-                )
-            } else if (state !is QuickMatchState.Searching) {
-                // While searching, the scene's own picture carries the back button (and its touch area).
+            if (!matched && state !is QuickMatchState.Searching) {
+                // While searching or matched, the scene's own picture carries the back button (and its touch area).
                 ScreenTopActions(
                     onBack = onBack,
                     modifier = Modifier.align(Alignment.TopStart)
@@ -300,12 +298,14 @@ fun QuickMatchScreen(
  * is said once, on the search screen before this (SearchingScene), rather
  * than on each card.
  *
- * Laid out as a painted scene in the design's own 841-wide units (see [MfArtW]): the workshop wall, the "Rakibin Hazır!"
- * splash and its sign, the two player cards hanging side by side with the VS between them, the mascots, the countdown
- * plank with its live bar, and the three tips.
+ * The workshop picture (bg_qm_found) carries only the painted parts: the sign, the blank note plate, the two empty cards
+ * with the VS between them, the mascots, the countdown plank with its empty groove and the three tip notes with their icons.
+ * Everything that is a word or belongs to a player is written live over it by the picture's own coordinates (841 x 1870), so
+ * one picture serves every language: the title on the sign, the note, each player's avatar in its earned frame with the
+ * level on it, the name on the ribbon and the XP under it, the countdown and its bar, and the three tips.
  */
 @Composable
-internal fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart: () -> Unit, modifier: Modifier = Modifier) {
+internal fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart: () -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier) {
     val start by rememberUpdatedState(onStart)
     val progress = remember { Animatable(0f) }
     // Keyed on the run so a genuinely new opponent restarts the countdown,
@@ -326,191 +326,134 @@ internal fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStar
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val unit = maxOf(maxWidth / MfArtW, maxHeight / MfArtH)
+        val offX = (maxWidth - unit * MfArtW) / 2
+        val offY = (maxHeight - unit * MfArtH) / 2
+        val us = unit.value
+        val fontScale0 = LocalDensity.current.fontScale
+        fun fs(art: Float) = (art * us / fontScale0).sp
+        fun box(x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
+            Modifier.offset(offX + unit * x0, offY + unit * y0)
+                // Unbounded: the picture is wider than the screen, and a plain size() would be clamped to it.
+                .wrapContentSize(Alignment.TopStart, unbounded = true)
+                .size(unit * (x1 - x0), unit * (y1 - y0))
+
         Image(
-            painter = cachedPainterResource(R.drawable.mf_bg),
+            painter = cachedPainterResource(R.drawable.bg_qm_found),
             contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
+            contentScale = ContentScale.FillBounds,
+            modifier = box(0f, 0f, MfArtW, MfArtH)
         )
-        BoxWithConstraints(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            val u = maxWidth / MfArtW
-            val fontScale0 = LocalDensity.current.fontScale
-            fun fs(art: Float) = (art * u.value / fontScale0).sp
-            // A picture from the sheet (px) drawn at [scale] design units per px, its top-left at (x, y).
-            @Composable
-            fun Pic(res: Int, wPx: Int, hPx: Int, scale: Float, x: Float, y: Float, modifier: Modifier = Modifier) {
-                Image(
-                    painter = painterResource(res),
-                    contentDescription = null,
-                    contentScale = ContentScale.FillBounds,
-                    modifier = modifier.offset(u * x, u * y).size(u * wPx * scale, u * hPx * scale)
-                )
-            }
-            Box(Modifier.fillMaxWidth().height(u * 1650f)) {
-                // The splash with "Rakibin Hazır!" lettered into it, and the sign under it.
-                // The sign is drawn over the lettering's lower edge at exactly the place it has in the design, so the two read as one
-                // picture (no cut, no fade between them).
-                // the lettering is part of the picture, so languages other than Turkish get their own splash
-                Pic(R.drawable.mf_title, 450, 272, 1.2f, 150f, 62f)
-                Pic(R.drawable.mf_tag, 354, 106, 1.2f, (841f - 354f * 1.2f) / 2f, 62f + 266f * 1.2f)
-                Box(
-                    Modifier.offset(u * ((841f - 354f * 1.2f) / 2f + 354f * 1.2f * 0.18f), u * (381.2f + 106f * 1.2f * 0.1f + 9.9f))
-                        .size(u * 354f * 1.2f * 0.64f, u * 106f * 1.2f * 0.68f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    FitText(
-                        text = stringResource(R.string.quick_match_found_tagline),
-                        style = PaintedStyle(color = Color(0xFF2B1A10), fontSize = fs(38f), textAlign = TextAlign.Center, lineHeight = fs(41f)),
-                        maxLines = 2,
-                        minScale = 0.5f,
-                        modifier = Modifier.fillMaxSize()
+
+        // The back button is part of the picture; this is its touch area (leaving now costs XP, so the caller asks first).
+        Box(
+            box(22f, 80f, 146f, 192f)
+                .clip(RoundedCornerShape(24))
+                .clickable(onClick = onBack)
+                .a11yButton(stringResource(R.string.cd_back))
+        )
+
+        // ---- The sign: two lines on the plank's face (x 215..625, y 245..420) -------------------------------------
+        LetteredText(
+            text = stringResource(R.string.quick_match_found_title1),
+            size = fs(86f),
+            fill = Color.White,
+            outline = Color(0xFF5A2815),
+            modifier = box(215f, 247f, 625f, 337f),
+            minScale = 0.45f,
+            title = true
+        )
+        LetteredText(
+            text = stringResource(R.string.quick_match_found_title2),
+            size = fs(92f),
+            fill = Color(0xFFFFD43B),
+            outline = Color(0xFF7A3A00),
+            modifier = box(215f, 327f, 625f, 417f),
+            minScale = 0.45f,
+            title = true
+        )
+        // ---- The note plate under it (x 150..690, y 470..548) -------------------------------------------------------
+        FitText(
+            text = stringResource(R.string.quick_match_found_tagline).replace('\n', ' '),
+            style = PaintedStyle(color = Color(0xFF2B1A10), fontSize = fs(36f), fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+            maxLines = 1,
+            minScale = 0.5f,
+            modifier = box(195f, 482f, 645f, 536f)
+        )
+
+        // ---- The two players: their avatar, name and XP over the empty cards ------------------------------------------
+        PlayerPanel(
+            u = unit, box = ::box, fs = ::fs, cx = 205f,
+            nickname = me.nickname, level = me.level, frameId = me.frameId, avatarUrl = me.avatarUrl,
+            // Real, not derived — this is the player's own account.
+            lifetimeXp = me.lifetimeXp
+        )
+        PlayerPanel(
+            u = unit, box = ::box, fs = ::fs, cx = 637f,
+            nickname = opponent.nickname, level = opponent.level, frameId = opponent.frameId,
+            // The exact figure was never recorded with the round — only the level it bought. This is the floor
+            // XP for that level: a true lower bound, never a guess above it.
+            lifetimeXp = PlayerLevel.totalXpForLevel(opponent.level),
+            // The same face the result screen gives this opponent (see ResultScreen's versus card).
+            photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(opponent.nickname)
+        )
+
+        // ---- The countdown: the words above the groove, the yellow bar growing along it ----------------------------------
+        LetteredText(
+            text = stringResource(if (secondsLeft == 1) R.string.quick_match_starting_in_one else R.string.quick_match_starting_in, secondsLeft),
+            size = fs(34f),
+            outline = Color(0xFF3B1A08),
+            maxLines = 1,
+            minScale = 0.5f,
+            modifier = box(190f, 1280f, 735f, 1324f)
+        )
+        Box(
+            modifier = box(192f, 1334f, 728f, 1362f)
+                .drawBehind {
+                    val w = size.width * progress.value.coerceIn(0.03f, 1f)
+                    drawRoundRect(
+                        brush = Brush.verticalGradient(listOf(Color(0xFFFFE867), Color(0xFFF7B500))),
+                        size = Size(w, size.height),
+                        cornerRadius = CornerRadius(size.height / 2f)
                     )
                 }
+        )
 
-                // The two players, hanging from their ropes; the VS pops in between them once they have landed.
-                // Both cards are drawn at the same height and hang from the same line, and the two outer margins are
-                // equal, so the pair reads as one symmetrical piece (their pictures differ a little in proportion).
-                MatchCard(
-                    u = u, fromLeft = true, x = CardMargin, y = CardTop,
-                    card = R.drawable.mf_card_r, cardW = 290, cardH = 384, centerX = 148f,
-                    ribbon = R.drawable.mf_ribbon_r,
-                    nickname = me.nickname, level = me.level, frameId = me.frameId, avatarUrl = me.avatarUrl,
-                    // Real, not derived — this is the player's own account.
-                    lifetimeXp = me.lifetimeXp
-                )
-                MatchCard(
-                    u = u, fromLeft = false, x = MfArtW - CardMargin - CardWidth, y = CardTop,
-                    card = R.drawable.mf_card_b, cardW = 266, cardH = 392, centerX = 133f,
-                    ribbon = R.drawable.mf_ribbon_b,
-                    nickname = opponent.nickname, level = opponent.level, frameId = opponent.frameId,
-                    // The exact figure was never recorded with the round — only the level it bought. This is the floor
-                    // XP for that level: a true lower bound, never a guess above it.
-                    lifetimeXp = PlayerLevel.totalXpForLevel(opponent.level),
-                    // The same face the result screen gives this opponent (see ResultScreen's versus card).
-                    photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(opponent.nickname)
-                )
-                val vsScale = remember { Animatable(0f) }
-                LaunchedEffect(Unit) {
-                    delay(350)
-                    vsScale.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 300f))
-                }
-                Pic(
-                    R.drawable.mf_vs, 275, 252, 0.9f, 297f, 664f,
-                    Modifier.graphicsLayer { scaleX = vsScale.value; scaleY = vsScale.value }
-                )
-
-                // The mascots peek over the plank.
-                Pic(R.drawable.mf_mascots, 479, 291, 1.1f, 157f, 966f)
-
-                // The countdown plank: its clock and leaves kept at the picture's own size, the wood between stretched, the
-                // bar and its words live.
-                Box(Modifier.offset(u * 25f, u * 1235f).size(u * 790f, u * 148f)) {
-                    com.sualtikasifi.cizimhafiza.presentation.common.NinePatch(
-                        res = R.drawable.mf_plank,
-                        slicePx = 175,
-                        edge = u * 175f,
-                        sliceYPx = 40,
-                        edgeY = u * 40f,
-                        clampEdgeToHeight = false,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    LetteredText(
-                        text = stringResource(if (secondsLeft == 1) R.string.quick_match_starting_in_one else R.string.quick_match_starting_in, secondsLeft),
-                        size = fs(34f),
-                        outline = Color(0xFF3B1A08),
-                        maxLines = 1,
-                        minScale = 0.5f,
-                        modifier = Modifier.offset(u * 168f, u * 34f).size(u * 560f, u * 40f)
-                    )
-                    // The bar: a dark groove with a golden rim and the yellow fill growing along it.
-                    Box(
-                        modifier = Modifier
-                            .offset(u * 160f, u * 76f)
-                            .size(u * 580f, u * 36f)
-                            .clip(RoundedCornerShape(50))
-                            .background(Brush.verticalGradient(listOf(Color(0xFF3A1F0E), Color(0xFF5A3418))))
-                            .border(u * 2.5f, Color(0xFFF2B33A), RoundedCornerShape(50))
-                            .padding(u * 4f)
-                    ) {
-                        Box(
-                            Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth()
-                                .drawBehind {
-                                    val w = size.width * progress.value.coerceIn(0.03f, 1f)
-                                    drawRoundRect(
-                                        brush = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFE867), Color(0xFFF7B500))),
-                                        size = Size(w, size.height),
-                                        cornerRadius = CornerRadius(size.height / 2f)
-                                    )
-                                }
-                        )
-                    }
-                }
-
-                // Three short facts about the round ahead.
-                val tipTexts = listOf(
-                    stringResource(R.string.quick_match_tip_words, GhostRuns.RUN_WORD_COUNT),
-                    stringResource(R.string.quick_match_tip_scoring),
-                    stringResource(R.string.quick_match_tip_fun)
-                )
-                // Equal outer margins and equal gaps between the three notes (their pictures differ by a few pixels).
-                val tipSizes = listOf(225 to 197, 227 to 197, 229 to 197)
-                val tipsWidth = tipSizes.sumOf { (it.first * 1.1f).toDouble() }.toFloat()
-                val tipGap = (MfArtW - tipsWidth) / 4f
-                var tipX = tipGap
-                val tips = listOf(R.drawable.mf_tip1, R.drawable.mf_tip2, R.drawable.mf_tip3).mapIndexed { i, res ->
-                    Triple(res, tipSizes[i], tipX).also { tipX += tipSizes[i].first * 1.1f + tipGap }
-                }
-                tips.forEachIndexed { i, (res, size, x) ->
-                    Pic(res, size.first, size.second, 1.1f, x, 1405f)
-                    // The words go where the picture's own lettering was: the lower half of the note.
-                    Box(
-                        Modifier.offset(u * (x + 30f), u * (1405f + 100f * 1.1f)).size(u * (size.first * 1.1f - 60f), u * 94f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        FitText(
-                            text = tipTexts[i],
-                            style = PaintedStyle(color = Color(0xFF3B2314), fontSize = fs(25f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = fs(29f)),
-                            maxLines = 3,
-                            minScale = 0.7f,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                }
-            }
+        // ---- Three short facts about the round ahead, one size for all three -----------------------------------------
+        val tipTexts = listOf(
+            stringResource(R.string.quick_match_tip_words, GhostRuns.RUN_WORD_COUNT),
+            stringResource(R.string.quick_match_tip_scoring),
+            stringResource(R.string.quick_match_tip_fun)
+        )
+        // x of each note and its width, in the picture's units
+        val notes = listOf(50f to 238f, 305f to 235f, 557f to 236f)
+        notes.forEachIndexed { i, (x, w) ->
+            FitText(
+                text = tipTexts[i],
+                style = PaintedStyle(color = Color(0xFF3B2314), fontSize = fs(26f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = fs(30f)),
+                maxLines = 3,
+                minScale = 0.7f,
+                modifier = box(x + 20f, 1560f, x + w - 20f, 1654f)
+            )
         }
     }
 }
 
 private const val MfArtW = 841f
-
-/** Where the two player cards hang: the same top, the same height, the same distance from their own edge of the screen. */
-private const val CardMargin = 20f
-private const val CardTop = 538f
-private const val CardHeight = 455f
-private const val CardWidth = 330f
-
-/** The avatar, the name and the XP sit at the same height on both cards, whichever picture is behind them. */
-private const val InnerScale = 1.18f
+private const val MfArtH = 1870f
 
 /**
- * One player's card: the painted card with its own picture hung from the rope, the avatar in its earned frame (with the
- * level on it), the name on the game's ribbon and the XP under it. [x], [y] place the card's picture; [centerX] is the
- * middle of its paper in the picture's own pixels. Slides in from its own side with a small overshoot.
+ * One player's side of the empty card (the card itself is in the picture): the avatar in the frame its level has earned, with
+ * the level on it, the name on the card's ribbon and the XP under it. [cx] is the middle of the card in the picture's units.
+ * It comes in a moment after the scene does, with a small overshoot.
  */
 @Composable
-private fun MatchCard(
+private fun PlayerPanel(
     u: androidx.compose.ui.unit.Dp,
-    fromLeft: Boolean,
-    x: Float,
-    y: Float,
-    card: Int,
-    cardW: Int,
-    cardH: Int,
-    centerX: Float,
-    ribbon: Int,
+    box: (Float, Float, Float, Float) -> Modifier,
+    fs: (Float) -> androidx.compose.ui.unit.TextUnit,
+    cx: Float,
     nickname: String,
     level: Int,
     frameId: String,
@@ -518,61 +461,52 @@ private fun MatchCard(
     photo: com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto? = null,
     lifetimeXp: Int
 ) {
-    // Both pictures are drawn into the same box (they differ by a few percent in proportion), so the two cards are the same
-    // size and the VS between them sits exactly in the middle of the gap.
-    val fontScale0 = LocalDensity.current.fontScale
-    fun fs(art: Float) = (art * u.value / fontScale0).sp
-    val slide = remember { Animatable(if (fromLeft) -1f else 1f) }
-    LaunchedEffect(Unit) { slide.animateTo(0f, spring(dampingRatio = 0.6f, stiffness = 170f)) }
+    val enter = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        delay(250)
+        enter.animateTo(1f, spring(dampingRatio = 0.7f, stiffness = 220f))
+    }
+    val avatar = 190f
     Box(
-        modifier = Modifier
-            .offset(u * x, u * y)
-            .size(u * CardWidth, u * CardHeight)
+        box(cx - avatar / 2f, 650f, cx + avatar / 2f, 650f + avatar)
             .graphicsLayer {
-                translationX = slide.value * size.width
-                alpha = (1f - kotlin.math.abs(slide.value)).coerceIn(0f, 1f)
+                val k = enter.value
+                alpha = k.coerceIn(0f, 1f)
+                scaleX = 0.8f + 0.2f * k; scaleY = 0.8f + 0.2f * k
             }
     ) {
-        Image(painterResource(card), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-        val cx = CardWidth / 2f
-        val avatar = 190f
-        Box(Modifier.offset(u * (cx - avatar / 2f), u * (InnerScale * 190f - avatar / 2f)).size(u * avatar)) {
-            LevelAvatar(
-                level = level,
-                // The stored name is only a preference; resolve() is what decides which ring that level has actually earned.
-                frame = AvatarFrame.resolve(frameId, level),
-                size = u * avatar,
-                photo = photo ?: com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(avatarUrl),
-                levelBadge = true
-            )
-        }
-        val ribbonW = 292f
-        Box(
-            Modifier.offset(u * (cx - ribbonW / 2f), u * (InnerScale * 290f - 28f)).size(u * ribbonW, u * 54f),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(painterResource(ribbon), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-            FitText(
-                text = nickname,
-                style = PaintedStyle(color = Color.White, fontSize = fs(30f), textAlign = TextAlign.Center, shadow = androidx.compose.ui.graphics.Shadow(Color(0x99000000), Offset(0f, 2f), 4f)),
-                maxLines = 1,
-                minScale = 0.5f,
-                modifier = Modifier.fillMaxSize().padding(horizontal = u * 34f, vertical = u * 4f)
-            )
-        }
-        Row(
-            Modifier.offset(u * (cx - 120f), u * (InnerScale * 337f - 30f)).size(u * 240f, u * 40f),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Image(painterResource(R.drawable.mf_star), contentDescription = null, modifier = Modifier.size(u * 40f))
-            Spacer(Modifier.width(u * 8f))
-            Text(
-                text = stringResource(R.string.level_total_xp, lifetimeXp),
-                style = PaintedStyle(color = Color(0xFF3B2314), fontSize = fs(30f)),
-                maxLines = 1
-            )
-        }
+        LevelAvatar(
+            level = level,
+            // The stored name is only a preference; resolve() is what decides which ring that level has actually earned.
+            frame = AvatarFrame.resolve(frameId, level),
+            size = u * avatar,
+            photo = photo ?: com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(avatarUrl),
+            levelBadge = true
+        )
+    }
+    // The name on the ribbon (its cloth is x cx-125..cx+125, y 848..910)
+    FitText(
+        text = nickname,
+        style = PaintedStyle(color = Color.White, fontSize = fs(31f), textAlign = TextAlign.Center, shadow = androidx.compose.ui.graphics.Shadow(Color(0x99000000), Offset(0f, 2f), 4f)),
+        maxLines = 1,
+        minScale = 0.5f,
+        modifier = box(cx - 105f, 856f, cx + 105f, 904f).graphicsLayer { alpha = enter.value.coerceIn(0f, 1f) }
+    )
+    Row(
+        box(cx - 125f, 922f, cx + 125f, 966f).graphicsLayer { alpha = enter.value.coerceIn(0f, 1f) },
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(painterResource(R.drawable.mf_star), contentDescription = null, modifier = Modifier.fillMaxHeight(0.95f).aspectRatio(1f))
+        Spacer(Modifier.width(8.dp))
+        FitText(
+            text = stringResource(R.string.level_total_xp, lifetimeXp),
+            style = PaintedStyle(color = Color(0xFF3B2314), fontSize = fs(31f)),
+            maxLines = 1,
+            minScale = 0.6f,
+            contentAlignment = Alignment.CenterStart,
+            modifier = Modifier.weight(1f, fill = false)
+        )
     }
 }
 

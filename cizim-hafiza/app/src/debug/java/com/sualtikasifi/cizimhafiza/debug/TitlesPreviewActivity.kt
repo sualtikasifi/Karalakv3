@@ -46,7 +46,8 @@ class TitlesPreviewActivity : ComponentActivity() {
                     "found" -> FoundScene(
                         opponent = GhostRun("preview", "x", "mormadenci", 83, "ROYAL_CROWN", listOf(1), 40, 8, 2000L),
                         me = QuickMatchPlayerSnapshot("Avcution", 79, "ROYAL_CROWN", 160_452),
-                        onStart = {}
+                        onStart = {},
+                        onBack = {}
                     )
                     "wordcount" -> WordCountScreen(onStart = { _, _, _, _ -> }, onBack = {})
                 }
