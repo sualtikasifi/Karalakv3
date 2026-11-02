@@ -14,12 +14,12 @@ import kotlinx.coroutines.withContext
  */
 class RealDirector(private val client: OpenRouterClient, private val model: String, private val lang: StudioLang = StudioLang.Tr) {
 
-    class Written(val reveals: List<RealReveal>, val caption: String, val hashtags: String, val costUsd: Double?)
+    class Written(val reveals: List<RealReveal>, val caption: String, val hashtags: String, val costUsd: Double?, val model: String? = null)
 
     suspend fun describe(candidates: List<RealDrawing>): Result<Written> = runCatching {
         val shown = candidates.take(MAX_CANDIDATES)
         require(shown.isNotEmpty()) { "Önce çizim seç" }
-        val images = withContext(Dispatchers.Default) { shown.map { StrokeReplay.png(it.strokes, 1f, 384) } }
+        val images = withContext(Dispatchers.Default) { shown.map { StrokeReplay.png(it.strokes, 1f, 768) } }
         val list = shown.mapIndexed { i, d -> "${i + 1}) ${d.word.ifBlank { "?" }}" + if (d.seconds > 0) " (${d.seconds} sn)" else "" }.joinToString("\n")
         val prompt = """
             Sana oyuncuların farklı kelimeler için birkaç saniyede yaptığı ${shown.size} çizimi gösteriyorum, sırayla 1'den ${shown.size}'e kadar numaralı. Çizimlerin kelimeleri:
@@ -45,7 +45,8 @@ class RealDirector(private val client: OpenRouterClient, private val model: Stri
             reveals = parsed.reveals.map { r -> RealReveal(sampleId = shown[r.index].id, describe = r.describe, motion = r.motion, kind = r.kind, parts = r.parts, material = r.material, scene = r.scene) },
             caption = parsed.caption,
             hashtags = parsed.hashtags,
-            costUsd = answer.costUsd
+            costUsd = answer.costUsd,
+            model = answer.model
         )
     }
 

@@ -244,6 +244,10 @@ data class StudioState(
     val writeProgress: String? = null,
     val writeError: String? = null,
     val aiCost: Double? = null,
+    /** The model that wrote the last one (a fallback may have stepped in for the chosen one). */
+    val aiModel: String? = null,
+    /** The model that reads the drawings in "Gerçek Olsaydı" (an OpenRouter id), kept on this phone. */
+    val analysisModel: String = OpenRouterClient.ANALYSIS_MODEL,
     val script: GuessScript? = null,
     /** Other openings and closings the assistant wrote for the script, to swap in with a tap. */
     val introAlts: List<SpokenLine> = emptyList(),
@@ -336,6 +340,7 @@ class StudioViewModel @Inject constructor(
         refreshMemory()
         loadReal()
         loadVoiceSettings()
+        _state.update { it.copy(analysisModel = analysisModel()) }
     }
 
     // ---- loading
@@ -507,6 +512,15 @@ class StudioViewModel @Inject constructor(
     // ---- the script
 
     private fun prefs() = context.getSharedPreferences(AssistantViewModel.PREFS, Context.MODE_PRIVATE)
+
+    /** The model that reads the drawings in "Gerçek Olsaydı": the one typed in the panel, else [OpenRouterClient.ANALYSIS_MODEL]. */
+    private fun analysisModel(): String =
+        prefs().getString(OpenRouterClient.ANALYSIS_MODEL_PREF, null).orEmpty().trim().ifBlank { OpenRouterClient.ANALYSIS_MODEL }
+
+    fun setAnalysisModel(id: String) {
+        prefs().edit().putString(OpenRouterClient.ANALYSIS_MODEL_PREF, id.trim()).apply()
+        _state.update { it.copy(analysisModel = id.trim().ifBlank { OpenRouterClient.ANALYSIS_MODEL }) }
+    }
 
     private fun director(): GuessDirector? {
         val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
@@ -1003,7 +1017,7 @@ class StudioViewModel @Inject constructor(
         if (s.real.writing) return
         val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
         if (key.isBlank()) { updateReal { it.copy(writeError = "Önce Asistan ayarlarından OpenRouter anahtarını gir.") }; return }
-        val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
+        val model = analysisModel()
         val candidates = p.reveals.mapNotNull { r -> p.drawing(r.sampleId) }
         if (candidates.isEmpty()) { updateReal { it.copy(writeError = "Önce en az bir çizim seç") }; return }
         updateReal { it.copy(writing = true, writeError = null) }
@@ -1014,7 +1028,7 @@ class StudioViewModel @Inject constructor(
                 updateProject { proj ->
                     proj.copy(reveals = proj.reveals.map { r -> byId[r.sampleId]?.let { d -> r.copy(describe = d.describe, motion = d.motion, kind = d.kind, parts = d.parts, material = d.material, scene = d.scene) } ?: r })
                 }
-                _state.update { it.copy(caption = w.caption.ifBlank { it.caption }, hashtags = w.hashtags.ifBlank { it.hashtags }, aiCost = w.costUsd) }
+                _state.update { it.copy(caption = w.caption.ifBlank { it.caption }, hashtags = w.hashtags.ifBlank { it.hashtags }, aiCost = w.costUsd, aiModel = w.model) }
             }.onFailure { e -> updateReal { it.copy(writing = false, writeError = e.message ?: "Yazılamadı") } }
         }
     }

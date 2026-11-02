@@ -525,6 +525,8 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
                 enabled = !r.writing
             ) { vm.describeReal() }
             Text("İsteğe bağlı: aynı alanları aşağıdan elle de doldurabilirsin. Açıklama ve etiketleri de yazar.", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
+            Field("Çizimleri okuyan model (OpenRouter kimliği)", st.analysisModel, { vm.setAnalysisModel(it) }, lines = 1)
+            st.aiModel?.let { Text("Son yazımı yazan model: $it", style = Console.Small) }
             st.aiCost?.let { Text("Son yazımın maliyeti: " + OpenRouterClient.usd(it), style = Console.Small) }
             r.writeError?.let { Text(it, style = Console.Small.copy(color = Console.Critical)) }
         }
