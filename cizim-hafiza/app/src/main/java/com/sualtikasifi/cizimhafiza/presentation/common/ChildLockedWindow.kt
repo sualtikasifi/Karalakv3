@@ -84,7 +84,7 @@ fun ChildLockedWindow(onBack: () -> Unit) {
                     Modifier.at(192f, 992f, 705f, 170f).clip(RoundedCornerShape(50)).clickable(onClick = onBack).a11yButton(stringResource(R.string.cd_back)),
                     contentAlignment = Alignment.Center
                 ) {
-                    LetteredText(stringResource(R.string.cd_back), fs(80f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f, modifier = Modifier.at(200f, 43f, 305f, 84f))
+                    LetteredText(stringResource(R.string.cd_back), fs(80f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f, modifier = Modifier.size(u * 305f, u * 84f))
                 }
             }
         }
