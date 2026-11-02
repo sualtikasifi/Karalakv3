@@ -9,6 +9,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +46,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.presentation.common.a11yButton
+import androidx.compose.ui.draw.clip
 import com.sualtikasifi.cizimhafiza.presentation.common.FitText
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
@@ -54,22 +58,27 @@ import kotlin.math.hypot
 import kotlin.math.pow
 import kotlin.math.sin
 
-// bg_qm_search is this size: the workshop with the hanging sign, the two mascots drawing and the long table between
-// them. It is scaled to fill the screen's height (a phone is narrower than the picture, so its sides are trimmed —
-// only wall and table out there) and everything live is laid over it by the picture's own coordinates.
+// bg_qm_search is this size: the workshop with the blank hanging sign, the two mascots over the sketchbook and the blank note
+// plate on the table, with the wooden back button already in its corner. It is scaled to fill the screen (a phone is a
+// little narrower than the picture, so its sides are trimmed) and everything live is laid over it by the picture's own
+// coordinates.
 private const val ArtW = 841f
 private const val ArtH = 1870f
 
 private val Ink = Color(0xFF3B2314)
 
 /**
- * "Rakip aranıyor…": the title lettered on the hanging sign (its dots ticking), and on the table between the two
- * mascots a sheet of paper where a pencil keeps drawing a little doodle — a star, a heart, a house, a sun — one after
- * another, the drawing-themed stand-in for a spinner (what the opponent being looked for did was draw). A note under
- * it says what is happening.
+ * "Rakip aranıyor…": the title lettered on the hanging sign, and on the sketchbook between the mascots a pencil that keeps
+ * drawing a little doodle — a star, a heart, a house, a sun — one after another, the drawing-themed stand-in for a
+ * spinner (what the opponent being looked for did was draw). The note plate says what is happening, with three dots
+ * that light up in turn.
+ *
+ * Kept deliberately calm: the page, the sign and the plate stand still, one slow doodle is the only drawing motion and the
+ * three dots the only other one — the earlier version swayed the page, ticked dots in the title and faded doodles quickly,
+ * which was tiring to watch for the seconds (sometimes a minute) a search can take.
  */
 @Composable
-internal fun SearchingScene(modifier: Modifier = Modifier) {
+internal fun SearchingScene(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // One clock for everything that moves here, driven by frames rather than by animators: it keeps running even
     // when the phone's animation scale is turned off (an endless spinner stand-in must never sit frozen).
     // Read only inside draw / graphicsLayer lambdas, so it never recomposes the scene.
@@ -79,8 +88,7 @@ internal fun SearchingScene(modifier: Modifier = Modifier) {
         while (true) androidx.compose.runtime.withFrameMillis { clock.longValue = it - start }
     }
     val cycle = androidx.compose.runtime.remember { androidx.compose.runtime.derivedStateOf { (clock.longValue % (DOODLE_MS.toLong() * Doodles.size)) / DOODLE_MS.toFloat() } }
-    val dots = androidx.compose.runtime.remember { androidx.compose.runtime.derivedStateOf { (clock.longValue % 1600L) / 400f } }
-    val sway = androidx.compose.runtime.remember { androidx.compose.runtime.derivedStateOf { sin(clock.longValue / 2400f * PI.toFloat()) } }
+    val pulse = androidx.compose.runtime.remember { androidx.compose.runtime.derivedStateOf { (clock.longValue % PULSE_MS.toLong()) / PULSE_MS.toFloat() } }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val unit = maxOf(maxWidth / ArtW, maxHeight / ArtH)
@@ -102,108 +110,83 @@ internal fun SearchingScene(modifier: Modifier = Modifier) {
             modifier = box(0f, 0f, ArtW, ArtH)
         )
 
-        // ---- The sign ------------------------------------------------------------------------------------------
-        // The workshop picture has no sign of its own (it was painted out): the blank hanging sign is laid on it, and the
-        // title is lettered on that.
-        Image(
-            painter = cachedPainterResource(R.drawable.qm_sign),
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-            modifier = box(60f, 190f, 780f, 555f)
+        // The back button is part of the picture; this is its touch area.
+        Box(
+            box(22f, 106f, 146f, 230f)
+                .clip(RoundedCornerShape(24))
+                .clickable(onClick = onBack)
+                .a11yButton(stringResource(R.string.cd_back))
         )
+
+        // ---- The sign: one line, centred on the plank's face (its face runs from about y 425 to 590) -------------
+        val title = stringResource(R.string.quick_match_searching_title) + " " + stringResource(R.string.quick_match_searching_title2)
         LetteredText(
-            text = stringResource(R.string.quick_match_searching_title),
-            size = fs(82f),
+            text = title,
+            size = fs(74f),
             fill = Color.White,
             outline = Color(0xFF5A2815),
-            modifier = box(160f, 322f, 681f, 418f),
+            modifier = box(150f, 452f, 696f, 566f),
             minScale = 0.45f,
             title = true
         )
-        val second = stringResource(R.string.quick_match_searching_title2).trimEnd('…', '.', ' ')
+
+        // ---- The pencil drawing on the sketchbook's page (its paper is x 112..728, y 960..1282) -----------------
+        Canvas(modifier = box(250f, 992f, 590f, 1268f)) {
+            val c = cycle.value
+            val index = c.toInt().coerceIn(0, Doodles.size - 1)
+            val local = c - index
+            // Drawing takes most of the slot, then the finished doodle rests a moment and fades for the next one.
+            val drawn = (local / DRAW_SHARE).coerceIn(0f, 1f)
+            val fade = if (local > FADE_FROM) 1f - (local - FADE_FROM) / (1f - FADE_FROM) else 1f
+            val tip = drawDoodle(Doodles[index], drawn, fade)
+            if (drawn < 1f || local < FADE_FROM) drawPencil(tip, size.minDimension * 0.30f, fade)
+        }
+
+        // ---- The note plate (its cream face is x 130..712, y 1384..1556) ------------------------------------------
+        FitText(
+            text = stringResource(R.string.quick_match_searching_sub),
+            style = PaintedStyle(color = Ink, fontSize = fs(35f), fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+            maxLines = 1,
+            minScale = 0.55f,
+            modifier = box(140f, 1392f, 702f, 1446f)
+        )
+        // What the opponent can be (a live match, a real player's recorded round or an AI): said here, once, for
+        // every match, rather than as a mark on each opponent. Kept in sight the whole time the search runs.
+        FitText(
+            // A player who may be under 13 is only ever matched with approved recordings and the AI (see QuickMatchViewModel).
+            text = stringResource(
+                if (com.sualtikasifi.cizimhafiza.presentation.common.LocalChildMode.current) R.string.quick_match_opponent_note_child
+                else R.string.quick_match_opponent_note
+            ),
+            style = PaintedStyle(color = Color(0xFF7A5A3A), fontSize = fs(23f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, lineHeight = fs(27f)),
+            maxLines = 2,
+            minScale = 0.6f,
+            modifier = box(150f, 1450f, 692f, 1512f)
+        )
+        // Three dots that light up one after another, slowly.
         Row(
-            modifier = box(160f, 384f, 681f, 480f),
-            horizontalArrangement = Arrangement.Center,
+            modifier = box(300f, 1520f, 540f, 1548f),
+            horizontalArrangement = Arrangement.spacedBy(unit * 16f, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            LetteredText(second, fs(82f), outline = Color(0xFF5A2815), modifier = Modifier.weight(1f, fill = false), minScale = 0.45f, title = true)
-            // Three dots that fill in one by one, then start over; their room is always kept so the line never shifts.
             repeat(3) { i ->
-                LetteredText(
-                    ".",
-                    fs(82f),
-                    outline = Color(0xFF5A2815),
-                    modifier = Modifier.graphicsLayer { alpha = if (dots.value >= i + 1f) 1f else 0.18f },
-                    title = true
+                Box(
+                    Modifier
+                        .size(unit * 20f)
+                        .graphicsLayer {
+                            // Each dot is at full strength for a third of the cycle and rests dimmed otherwise.
+                            val d = ((pulse.value * 3f - i) % 3f + 3f) % 3f
+                            alpha = if (d < 1f) 1f - 0.7f * d else 0.3f
+                        }
+                        .background(Color(0xFFF2A100), CircleShape)
                 )
             }
-        }
-
-        // ---- The sheet on the table, and the pencil drawing on it ---------------------------------------------
-        Box(
-            modifier = box(215f, 1110f, 625f, 1415f)
-                .graphicsLayer {
-                    rotationZ = -3f + sway.value * 0.6f
-                }
-                .shadow((10 * us).coerceAtLeast(4f).let { androidx.compose.ui.unit.Dp(it) }, RoundedCornerShape(6))
-                .background(Brush.verticalGradient(listOf(Color(0xFFFFFCF2), Color(0xFFF7ECD4))), RoundedCornerShape(6))
-                .border(androidx.compose.ui.unit.Dp(1.5f), Color(0xFFE2C89C), RoundedCornerShape(6))
-        ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                // Faint ruled lines, like a page of the sketchbooks the mascots hold.
-                val rule = Color(0x22A0784A)
-                var y = size.height * 0.16f
-                while (y < size.height * 0.95f) {
-                    drawLine(rule, Offset(size.width * 0.05f, y), Offset(size.width * 0.95f, y), strokeWidth = size.height * 0.004f)
-                    y += size.height * 0.12f
-                }
-                val c = cycle.value
-                val index = c.toInt().coerceIn(0, Doodles.size - 1)
-                val local = c - index
-                // Drawing takes most of the slot, then the finished doodle rests a moment and fades for the next one.
-                val drawn = (local / DRAW_SHARE).coerceIn(0f, 1f)
-                val fade = if (local > FADE_FROM) 1f - (local - FADE_FROM) / (1f - FADE_FROM) else 1f
-                val doodle = Doodles[index]
-                val tip = drawDoodle(doodle, drawn, fade)
-                if (drawn < 1f || local < FADE_FROM) drawPencil(tip, size.minDimension * 0.30f, fade)
-            }
-        }
-
-        // ---- What is going on ----------------------------------------------------------------------------------
-        Column(
-            modifier = box(70f, 1480f, 770f, 1610f)
-                .shadow(androidx.compose.ui.unit.Dp(6f), RoundedCornerShape(50))
-                .background(Brush.verticalGradient(listOf(Color(0xFFFFF8E8), Color(0xFFFCE9C8))), RoundedCornerShape(50))
-                .border(androidx.compose.ui.unit.Dp(2f), Color(0xFFE9A23B), RoundedCornerShape(50))
-                .padding(horizontal = androidx.compose.ui.unit.Dp(34f * us), vertical = androidx.compose.ui.unit.Dp(10f * us)),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            FitText(
-                text = stringResource(R.string.quick_match_searching_sub),
-                style = PaintedStyle(color = Ink, fontSize = fs(26f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
-                maxLines = 1,
-                minScale = 0.6f,
-                modifier = Modifier.fillMaxWidth().weight(0.4f)
-            )
-            // What the opponent can be (a live match, a real player's recorded round or an AI): said here, once, for
-            // every match, rather than as a mark on each opponent. Kept in sight the whole time the search runs.
-            FitText(
-                // A player who may be under 13 is only ever matched with approved recordings and the AI (see QuickMatchViewModel).
-                text = stringResource(
-                    if (com.sualtikasifi.cizimhafiza.presentation.common.LocalChildMode.current) R.string.quick_match_opponent_note_child
-                    else R.string.quick_match_opponent_note
-                ),
-                style = PaintedStyle(color = Color(0xFF7A5A3A), fontSize = fs(20f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
-                maxLines = 2,
-                minScale = 0.6f,
-                modifier = Modifier.fillMaxWidth().weight(0.6f)
-            )
         }
     }
 }
 
-private const val DOODLE_MS = 2600
+private const val DOODLE_MS = 3400
+private const val PULSE_MS = 2400
 private const val DRAW_SHARE = 0.72f
 private const val FADE_FROM = 0.86f
 

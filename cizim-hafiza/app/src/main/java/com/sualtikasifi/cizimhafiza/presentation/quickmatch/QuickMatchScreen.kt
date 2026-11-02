@@ -161,7 +161,7 @@ fun QuickMatchScreen(
             )
             val searchingAlpha by animateFloatAsState(if (state is QuickMatchState.Searching) 1f else 0f, tween(450), label = "quick_match_search_scene")
             if (searchingAlpha > 0f) {
-                SearchingScene(modifier = Modifier.alpha(searchingAlpha))
+                SearchingScene(onBack = onBack, modifier = Modifier.alpha(searchingAlpha))
             }
             Column(
                 modifier = Modifier
@@ -277,7 +277,8 @@ fun QuickMatchScreen(
                     onClick = { abandonConfirmOpen = true },
                     modifier = Modifier.align(Alignment.TopStart)
                 )
-            } else {
+            } else if (state !is QuickMatchState.Searching) {
+                // While searching, the scene's own picture carries the back button (and its touch area).
                 ScreenTopActions(
                     onBack = onBack,
                     modifier = Modifier.align(Alignment.TopStart)
