@@ -673,6 +673,7 @@
 
     <!-- Cosmetic pen skins (domain/model/PenSkin.kt). -->
     <string name="pen_picker_title">Elige tu lápiz</string>
+    <string name="pen_available">Disponible</string>
     <string name="pen_change_cd">Cambiar lápiz</string>
     <string name="pen_classic">Clásico</string>
     <string name="pen_charcoal">Gris</string>

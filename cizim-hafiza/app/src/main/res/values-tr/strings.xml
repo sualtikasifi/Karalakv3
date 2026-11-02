@@ -682,6 +682,7 @@
          ladder alongside avatar frames, on the odd fives so a reward lands
          every five levels instead of every ten. -->
     <string name="pen_picker_title">Kalemini seç</string>
+    <string name="pen_available">Kullanılabilir</string>
     <string name="pen_change_cd">Kalemi değiştir</string>
     <string name="pen_classic">Klasik</string>
     <string name="pen_charcoal">Gri</string>

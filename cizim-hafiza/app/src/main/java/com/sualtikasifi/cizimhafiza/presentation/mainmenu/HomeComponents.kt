@@ -876,13 +876,17 @@ internal fun PenPickerSheet(items: List<PenSkinUiItem>, onSelect: (PenSkin) -> U
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1
                         )
-                        if (!item.unlocked) {
-                            Text(
-                                text = when { item.skin.isRuneReward -> stringResource(R.string.cosmetic_locked_rune); item.skin.isStoreItem -> stringResource(R.string.store_in_store); item.skin.isLeagueReward -> stringResource(R.string.cosmetic_locked_league); else -> stringResource(R.string.avatar_frame_locked_level, item.skin.unlockLevel) },
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        // Every card has this second line, so they are all the same height: the reason a pen is locked, or
+                        // "Kullanılabilir" in a warm yellow for one the player can wear.
+                        Text(
+                            text = if (item.unlocked) stringResource(R.string.pen_available)
+                            else when { item.skin.isRuneReward -> stringResource(R.string.cosmetic_locked_rune); item.skin.isStoreItem -> stringResource(R.string.store_in_store); item.skin.isLeagueReward -> stringResource(R.string.cosmetic_locked_league); else -> stringResource(R.string.avatar_frame_locked_level, item.skin.unlockLevel) },
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = if (item.unlocked) FontWeight.Bold else null,
+                            color = if (item.unlocked) Color(0xFFD99A00) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
