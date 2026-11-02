@@ -150,7 +150,11 @@ object GhostPersonas {
     private const val LEVEL_SALT = 0x7F4A_7C15L
 
     /** How far from the challenger's own level an opponent may be drawn. */
-    private const val LEVEL_SPREAD = 6
+    private const val LEVEL_SPREAD = 5
+
+    /** The most a stranger may sit above the challenger: a level-79 player is not matched with a level-100 "stranger". */
+    private const val MAX_ABOVE_CHALLENGER = 8
+    private const val FRAME_SALT = 0x2545_F491L
 
     /**
      * How far above the challenger a synthesised opponent sits, by how much
@@ -165,12 +169,12 @@ object GhostPersonas {
      * thing if GhostRuns.RUN_WORD_COUNT ever changes.
      */
     private fun levelBonusFor(correctFraction: Float): Int = when {
-        correctFraction >= 1f -> 30
-        correctFraction >= 0.9f -> 10
-        correctFraction >= 0.8f -> 5
+        correctFraction >= 1f -> 4
+        correctFraction >= 0.9f -> 3
+        correctFraction >= 0.8f -> 2
         correctFraction >= 0.6f -> 0
-        correctFraction >= 0.4f -> -4
-        else -> -8
+        correctFraction >= 0.4f -> -2
+        else -> -4
     }
 
     /**
@@ -403,6 +407,24 @@ object GhostPersonas {
         } else {
             0
         }
-        return (challengerLevel + bonus + spread).coerceIn(1, PlayerLevel.MAX_LEVEL)
+        val top = minOf(PlayerLevel.MAX_LEVEL, challengerLevel + MAX_ABOVE_CHALLENGER).coerceAtLeast(1)
+        return (challengerLevel + bonus + spread).coerceIn(1, top)
+    }
+
+    /**
+     * The frame a synthesised opponent of [level] wears: one they have actually unlocked, not always the default.
+     * Most players wear the newest one they have earned, many the one before it, and some an older favourite — so
+     * a level-60 stranger shows a level-60 frame and a level-5 one a level-5 frame.
+     */
+    fun frameFor(seed: Long, level: Int): AvatarFrame {
+        val unlocked = AvatarFrame.unlockedFor(level)
+        if (unlocked.isEmpty()) return AvatarFrame.DEFAULT
+        val random = Random(seed + FRAME_SALT)
+        val roll = random.nextInt(100)
+        return when {
+            roll < 55 || unlocked.size == 1 -> unlocked.last()
+            roll < 80 -> unlocked[unlocked.size - 2]
+            else -> unlocked[random.nextInt(unlocked.size)]
+        }
     }
 }

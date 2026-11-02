@@ -332,7 +332,7 @@ class GhostRunRepositoryImpl @Inject constructor(
             uid = GHOST_UID,
             nickname = GhostPersonas.nicknameFor(WordSeeder.currentLanguage(context), seed),
             level = level,
-            frameId = AvatarFrame.resolve(null, level).name,
+            frameId = GhostPersonas.frameFor(seed, level).name,
             wordIds = wordIds,
             totalScore = outcome.totalScore,
             correctCount = outcome.correctCount,

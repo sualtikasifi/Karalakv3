@@ -110,8 +110,9 @@ class BotGhostRunsTest {
         // "Near" now means near the band the round earned, not near the
         // challenger flat: a middling round is still a neighbour, and the
         // bonus is what carries a good one away. Six either side is the
-        // random spread — anything wider would mean the anchor slipped.
-        val bands = mapOf(10 to 30, 9 to 10, 8 to 5, 6 to 0, 4 to -4, 1 to -8)
+        // random spread — anything wider would mean the anchor slipped. The bonus is small on purpose: a stranger
+        // who is 30 levels above you reads as made up.
+        val bands = mapOf(10 to 4, 9 to 3, 8 to 2, 6 to 0, 4 to -2, 1 to -4)
         (1..PlayerLevel.MAX_LEVEL step 7).forEach { challenger ->
             bands.forEach { (correct, bonus) ->
                 (0 until 50).forEach { seed ->
@@ -119,8 +120,8 @@ class BotGhostRunsTest {
                     assertTrue("level $level for challenger $challenger", level in 1..PlayerLevel.MAX_LEVEL)
                     assertTrue(
                         "level $level too far from ${challenger + bonus} ($correct/10)",
-                        kotlin.math.abs(level - (challenger + bonus)) <= 6 ||
-                            level == 1 || level == PlayerLevel.MAX_LEVEL
+                        kotlin.math.abs(level - (challenger + bonus)) <= 5 ||
+                            level == 1 || level == PlayerLevel.MAX_LEVEL || level == challenger + 8
                     )
                 }
             }
@@ -139,9 +140,29 @@ class BotGhostRunsTest {
         val good = mean(9)
         val fair = mean(8)
         val poor = mean(3)
-        assertTrue("perfect $perfect vs good $good", perfect > good + 15)
-        assertTrue("good $good vs fair $fair", good > fair + 2)
-        assertTrue("fair $fair vs poor $poor", fair > poor + 5)
+        assertTrue("perfect $perfect vs good $good", perfect > good + 0.5)
+        assertTrue("good $good vs fair $fair", good > fair + 0.5)
+        assertTrue("fair $fair vs poor $poor", fair > poor + 3)
+    }
+
+    @Test
+    fun `a stranger is never far above the challenger`() {
+        (1..PlayerLevel.MAX_LEVEL).forEach { challenger ->
+            (0 until 30).forEach { seed ->
+                val level = GhostPersonas.levelFor(seed.toLong(), challenger, 10, 10)
+                assertTrue("level $level for challenger $challenger", level <= challenger + 8 || level == 1)
+            }
+        }
+    }
+
+    @Test
+    fun `a stranger wears a frame they have unlocked, not always the default`() {
+        val low = (0 until 100).map { GhostPersonas.frameFor(it.toLong(), 5) }
+        low.forEach { assertTrue("${it.name} not unlocked at 5", 5 >= it.unlockLevel) }
+        val high = (0 until 200).map { GhostPersonas.frameFor(it.toLong(), 60) }
+        high.forEach { assertTrue("${it.name} not unlocked at 60", 60 >= it.unlockLevel) }
+        assertTrue("a level-60 stranger always in the default frame", high.any { it != com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame.DEFAULT })
+        assertEquals(GhostPersonas.frameFor(7L, 40), GhostPersonas.frameFor(7L, 40))
     }
 
     @Test
