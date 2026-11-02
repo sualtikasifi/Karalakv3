@@ -108,22 +108,14 @@ fun LegalConsentHost(viewModel: LegalConsentViewModel = hiltViewModel()) {
     val complete = dayText.isNotEmpty() && monthText.isNotEmpty() && yearText.length == 4
     val valid = complete && date.month > 0 && date.day > 0 && LegalConsentStore.isValidBirthDate(date)
 
-    Dialog(
-        onDismissRequest = {},
-        properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
-    ) {
-        RaisedCard(corner = 28.dp, raise = 8.dp, modifier = Modifier.fillMaxWidth()) {
+    // The game's painted window, not a plain card: this is the first thing a new player sees after the tutorial. Not
+    // dismissable (no close button, back and outside taps do nothing).
+    AppWindowDialog(title = stringResource(R.string.legal_title), onDismiss = {}, centerTitle = true) {
+        run {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 22.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = stringResource(R.string.legal_title),
-                    fontFamily = DisplayFont,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 21.sp,
-                    textAlign = TextAlign.Center
-                )
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(
                     text = stringResource(R.string.legal_birth_date_label),

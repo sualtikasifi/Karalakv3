@@ -119,10 +119,10 @@ internal fun WelcomeScene(onStart: () -> Unit, onSkip: () -> Unit) {
             Box(Modifier.fillMaxSize().sinkWith(skipSink, 0.5f, 0.5f), contentAlignment = Alignment.Center) {
                 FitText(
                     text = stringResource(R.string.tutorial_skip),
-                    style = PaintedStyle(color = Color(0xFF5A4636), fontSize = fs(34f), textAlign = TextAlign.Center),
+                    style = PaintedStyle(color = Color(0xFF3A2410), fontSize = fs(41f), textAlign = TextAlign.Center),
                     maxLines = 1,
                     minScale = 0.55f,
-                    modifier = Modifier.requiredSize(unit * 300f, unit * 50f)
+                    modifier = Modifier.requiredSize(unit * 392f, unit * 64f)
                 )
             }
         }

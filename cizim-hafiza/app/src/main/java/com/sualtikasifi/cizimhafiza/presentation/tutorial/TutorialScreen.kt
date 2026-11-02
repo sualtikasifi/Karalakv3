@@ -221,7 +221,7 @@ private fun CoachOverlay(
                     TextButton(onClick = onSkip) {
                         Text(
                             text = stringResource(R.string.tutorial_skip),
-                            style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFF7A5A44), fontSize = 15.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                            style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFF3A2410), fontSize = 17.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                         )
                     }
                 }

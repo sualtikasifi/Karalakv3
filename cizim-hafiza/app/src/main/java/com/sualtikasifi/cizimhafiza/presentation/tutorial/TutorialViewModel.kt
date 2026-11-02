@@ -323,6 +323,11 @@ class TutorialViewModel @Inject constructor(
     fun completeTutorial() {
         timerJob?.cancel()
         settingsRepository.tutorialCompleted = true
+        // A brand-new player has just been shown how the game works; the "Yenilikler" tour (chests, jokers, store, runes)
+        // is for players who already know it and would only pile a fourth window onto the opening. The mascot's rune offer
+        // and the first use of each feature explain themselves instead.
+        settingsRepository.featureTourSeen = true
+        settingsRepository.runesTourSeen = true
         // The developer panel's funnel: how many play the tutorial through and how many skip it.
         val playedThrough = _isFinished.value || _coach.value == FINALE_COACH
         runCatching { adminStats.record(if (playedThrough) "tutorial__finished__count" else "tutorial__skipped__count") }
