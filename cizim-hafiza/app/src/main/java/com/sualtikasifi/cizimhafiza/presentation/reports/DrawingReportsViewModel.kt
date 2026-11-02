@@ -441,7 +441,7 @@ class DrawingReportsViewModel @Inject constructor(
      * stored with the round, not a guess.
      */
     fun reject(run: PendingRun) = decide(run, movesToPool = false, keepsRun = false) {
-        moderationRepository.reject(run.id, run.xpEarned)
+        moderationRepository.reject(run.id, run.xpEarned, run.goldEarned)
     }
 
     /**
@@ -467,7 +467,7 @@ class DrawingReportsViewModel @Inject constructor(
                 val result = when (action) {
                     SwipeAction.Approve -> moderationRepository.approve(run.id)
                     SwipeAction.Dismiss -> moderationRepository.dismiss(run.id)
-                    SwipeAction.Reject -> moderationRepository.reject(run.id, run.xpEarned)
+                    SwipeAction.Reject -> moderationRepository.reject(run.id, run.xpEarned, run.goldEarned)
                 }
                 val state = _uiState.value
                 _uiState.value = if (result.isFailure) {
@@ -599,7 +599,7 @@ class DrawingReportsViewModel @Inject constructor(
 
     /** The word was typed, not drawn — takes back its XP and breaks the streak (see ModerationRepository.rejectDailyChallenge). */
     fun rejectDailyChallenge(item: PendingDailyChallenge) =
-        decideDailyChallenge(item) { moderationRepository.rejectDailyChallenge(item.id, item.xpEarned) }
+        decideDailyChallenge(item) { moderationRepository.rejectDailyChallenge(item.id, item.xpEarned, item.goldEarned) }
 
     private fun decideDailyChallenge(item: PendingDailyChallenge, action: suspend () -> Result<Unit>) {
         if (_uiState.value.decidingDailyChallengeId != null) return

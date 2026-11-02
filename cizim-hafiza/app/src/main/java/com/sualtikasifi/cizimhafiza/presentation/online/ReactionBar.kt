@@ -56,6 +56,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -227,12 +228,19 @@ fun ReactionSendRow(
     // Most-sent-from-this-device first, least/never-sent last — sortedByDescending
     // is stable, so phrases tied on usage (typically 0) keep the catalog's
     // own order instead of shuffling every recomposition.
-    val orderedPhrases = remember(phraseUsageCounts) {
-        PRESET_PHRASES.sortedByDescending { phraseUsageCounts[it.key] ?: 0 }
+    //
+    // The order is fixed when the player comes into the room and stays put while they are in it: a word that
+    // moved to the far left the moment it was sent made the next answer a hunt for where everything went. The
+    // counts keep counting; they re-order the rows the next time the room is entered. Saved, so turning the phone
+    // does not count as entering again.
+    val phraseOrder = rememberSaveable {
+        ArrayList(PRESET_PHRASES.sortedByDescending { phraseUsageCounts[it.key] ?: 0 }.map { it.key })
     }
-    val orderedEmojis = remember(emojiUsageCounts) {
-        EMOJI_CATALOG.sortedByDescending { emojiUsageCounts[it.key] ?: 0 }
+    val emojiOrder = rememberSaveable {
+        ArrayList(EMOJI_CATALOG.sortedByDescending { emojiUsageCounts[it.key] ?: 0 }.map { it.key })
     }
+    val orderedPhrases = remember(phraseOrder) { phraseOrder.mapNotNull { key -> PRESET_PHRASES.find { it.key == key } } }
+    val orderedEmojis = remember(emojiOrder) { emojiOrder.mapNotNull { key -> EMOJI_CATALOG.find { it.key == key } } }
 
     // The dock is one painted piece (ls_dock, 1740 x 904 px): the dog and the leaves above a cream plank for the ready
     // phrases and a brown one for the emojis. Everything inside is placed in the picture's own units, so it scales with it.

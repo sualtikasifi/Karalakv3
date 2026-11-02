@@ -103,10 +103,11 @@ class GhostRunRepositoryImpl @Inject constructor(
         mode: GameMode,
         perWord: List<GhostRunWord>,
         items: List<ResultItem>,
-        xpEarned: Int
+        xpEarned: Int,
+        goldEarned: Int
     ) {
         scope.launch {
-            runCatching { write(wordIds, mode, perWord, items, xpEarned) }
+            runCatching { write(wordIds, mode, perWord, items, xpEarned, goldEarned) }
                 .onFailure { NonFatal.report(TAG, "Ghost run not recorded", it) }
         }
     }
@@ -134,7 +135,8 @@ class GhostRunRepositoryImpl @Inject constructor(
         mode: GameMode,
         perWord: List<GhostRunWord>,
         items: List<ResultItem>,
-        xpEarned: Int
+        xpEarned: Int,
+        goldEarned: Int
     ) {
         val slice = GhostRuns.recordableSlice(wordIds, perWord, items) ?: run {
             // Says WHY, because a round that never reaches the review queue is
@@ -205,6 +207,7 @@ class GhostRunRepositoryImpl @Inject constructor(
                 // a rejection takes back. Carried into the live pool anyway so
                 // approving stays a straight copy.
                 "xpEarned" to xpEarned.toLong(),
+                "goldEarned" to goldEarned.toLong(),
                 "createdAt" to System.currentTimeMillis()
             )
         )

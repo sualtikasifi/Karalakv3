@@ -815,7 +815,7 @@ private fun PenCard(
         val m = Modifier.offset(w * 0.45f, h * 0.665f).size(w * 0.46f, h * 0.235f)
         when {
             owned -> OwnedPill(equipped, onEquip, m)
-            else -> PaintedPill(R.drawable.st_pill_orange, m, enabled = canAfford, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
+            else -> PaintedPill(R.drawable.st_pill_orange, m, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
                 CoinPrice(skin.storePrice, size = 14.sp, coin = 18.dp)
             }
         }
@@ -857,7 +857,7 @@ private fun FrameCard(
         val m = Modifier.offset(w * 0.17f, h * 0.75f).size(w * 0.66f, h * 0.17f)
         when {
             owned -> OwnedPill(equipped, onEquip, m)
-            else -> PaintedPill(R.drawable.st_pill_orange, m, enabled = canAfford, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
+            else -> PaintedPill(R.drawable.st_pill_orange, m, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
                 CoinPrice(frame.storePrice, size = 13.sp, coin = 17.dp)
             }
         }
@@ -994,7 +994,6 @@ private fun JokerCard(
                 PaintedPill(
                     res = if (qty == 1) R.drawable.st_pill_orange else R.drawable.st_pill_blue,
                     modifier = Modifier.weight(1f).fillMaxHeight(),
-                    enabled = canAfford,
                     onClick = { if (canAfford) onBuy(qty) else onCannotAfford() }
                 ) {
                     if (qty == 1) {
@@ -1189,7 +1188,8 @@ private fun PaintedPurchaseDialog(
                 }
                 PaintedButton(spec.close, 78f, true, onDismiss)
                 PaintedButton(spec.cancel, 76f, true, onDismiss)
-                PaintedButton(spec.confirm, 76f, canAfford, onConfirm)
+                // Always the normal colour and always pressable: when the gold is short, onConfirm answers with the "not enough gold" warning
+                PaintedButton(spec.confirm, 76f, true, onConfirm)
             }
         }
     }

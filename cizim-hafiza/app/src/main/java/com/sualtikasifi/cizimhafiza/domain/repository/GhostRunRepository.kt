@@ -37,7 +37,9 @@ interface GhostRunRepository {
          * exactly what it gave, rather than a guessed figure — see
          * ModerationRepository.reject.
          */
-        xpEarned: Int
+        xpEarned: Int,
+        /** The gold the round paid, stored for the same reason: a rejection takes it back too. */
+        goldEarned: Int = 0
     )
 
     /**
