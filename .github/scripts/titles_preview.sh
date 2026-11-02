@@ -12,6 +12,8 @@ adb shell input keyevent 82 || true
 adb shell settings put global hide_error_dialogs 1 || true
 sleep 20
 adb install -r -t "$APK"
+# the game is played in Turkish: show its string resources in Turkish (per-app language, Android 13+)
+adb shell cmd locale set-app-locales "$PKG" --locales tr-TR || true
 adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
 adb shell "run-as $PKG mkdir -p shared_prefs"
 printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boolean name=\"tutorial_completed\" value=\"true\" /><boolean name=\"feature_tour_seen\" value=\"true\" /></map>" \
