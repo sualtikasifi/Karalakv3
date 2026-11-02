@@ -183,6 +183,9 @@ data class RealUi(
     val project: RealProject? = null,
     val writing: Boolean = false,
     val writeError: String? = null,
+    /** The drawing whose video scene ideas are being written, and why the last try failed. */
+    val pitching: String? = null,
+    val pitchError: String? = null,
     /** Which of Karalak's lines the assistant is writing ideas for. */
     val lineWriting: RealLine? = null,
     val lineErrors: Map<RealLine, String> = emptyMap(),
@@ -1006,6 +1009,47 @@ class StudioViewModel @Inject constructor(
     fun setRevealParts(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(parts = text.take(1000)) }
     fun setRevealMaterial(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(material = text.take(400)) }
     fun setRevealScene(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(scene = text.take(400)) }
+    fun setRevealSize(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(size = text.take(200)) }
+    fun setRevealScaleHint(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(scaleHint = text.take(200)) }
+    fun setRevealFixed(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(fixed = text.take(400)) }
+
+    /** The scene ideas are being written for this drawing (null: none). */
+    private fun setPitching(sampleId: String?, error: String? = null) = updateReal { it.copy(pitching = sampleId, pitchError = error) }
+
+    /**
+     * With the real picture in front of it, the assistant thinks up the video scene: three ideas with a joke each, all in one
+     * shot and one place, the thing never changing. The picture is needed (it is what the scene is written for).
+     */
+    fun writePitches(sampleId: String) {
+        val s = _state.value
+        val p = s.real.project ?: return
+        if (s.real.pitching != null || s.real.writing) return
+        val reveal = p.reveals.find { it.sampleId == sampleId } ?: return
+        val image = reveal.image
+        if (image == null) { setPitching(null, "Önce görseli ekle: sahne, fotoğrafa bakılarak yazılır."); return }
+        val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
+        if (key.isBlank()) { setPitching(null, "Önce Asistan ayarlarından OpenRouter anahtarını gir."); return }
+        val word = p.drawing(sampleId)?.word.orEmpty()
+        setPitching(sampleId)
+        viewModelScope.launch {
+            val png = withContext(Dispatchers.IO) {
+                RealImages.load(realStore.file(image), maxSide = 1024)?.let { bmp ->
+                    java.io.ByteArrayOutputStream().also { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
+                }
+            }
+            if (png == null) { setPitching(null, "Görsel açılamadı"); return@launch }
+            RealDirector(OpenRouterClient(key), analysisModel(), _state.value.lang).pitches(word, reveal, png).onSuccess { w ->
+                updateReveal(sampleId) { it.copy(pitches = w.pitches) }
+                updateReal { it.copy(pitching = null, pitchError = null) }
+                _state.update { it.copy(aiCost = w.costUsd, aiModel = w.model) }
+            }.onFailure { e -> setPitching(null, e.message ?: "Yazılamadı") }
+        }
+    }
+
+    /** Takes one of the written ideas as the video's scene (it can still be edited by hand). */
+    fun choosePitch(sampleId: String, index: Int) = updateReveal(sampleId) { r ->
+        r.pitches.getOrNull(index)?.let { r.copy(motion = it.scene.take(1800)) } ?: r
+    }
 
     /**
      * Lets the assistant describe the chosen drawings (their shapes, a detailed scene for each video)
@@ -1026,7 +1070,7 @@ class StudioViewModel @Inject constructor(
                 updateReal { it.copy(writing = false) }
                 val byId = w.reveals.associateBy { it.sampleId }
                 updateProject { proj ->
-                    proj.copy(reveals = proj.reveals.map { r -> byId[r.sampleId]?.let { d -> r.copy(describe = d.describe, motion = d.motion, kind = d.kind, parts = d.parts, material = d.material, scene = d.scene) } ?: r })
+                    proj.copy(reveals = proj.reveals.map { r -> byId[r.sampleId]?.let { d -> r.copy(describe = d.describe, motion = d.motion, kind = d.kind, parts = d.parts, material = d.material, scene = d.scene, size = d.size, scaleHint = d.scaleHint, fixed = d.fixed) } ?: r })
                 }
                 _state.update { it.copy(caption = w.caption.ifBlank { it.caption }, hashtags = w.hashtags.ifBlank { it.hashtags }, aiCost = w.costUsd, aiModel = w.model) }
             }.onFailure { e -> updateReal { it.copy(writing = false, writeError = e.message ?: "Yazılamadı") } }
@@ -1246,7 +1290,7 @@ class StudioViewModel @Inject constructor(
             val file = withContext(Dispatchers.IO) {
                 runCatching { copyToShare(realStore.file(image), "karalak_gercek_${System.currentTimeMillis()}", clear = true) }.getOrNull()
             } ?: run { _state.update { it.copy(message = "Görsel hazırlanamadı") }; return@launch }
-            updateReal { it.copy(share = RealShare(file, RealCopy.videoPrompt(p.drawing(sampleId)?.word.orEmpty(), reveal.motion), ShareTarget.Gemini)) }
+            updateReal { it.copy(share = RealShare(file, RealCopy.videoPrompt(p.drawing(sampleId)?.word.orEmpty(), reveal), ShareTarget.Gemini)) }
         }
     }
 
@@ -1291,7 +1335,7 @@ class StudioViewModel @Inject constructor(
     fun videoPrompt(sampleId: String): String? {
         val p = _state.value.real.project ?: return null
         val reveal = p.reveals.find { it.sampleId == sampleId } ?: return null
-        return RealCopy.videoPrompt(p.drawing(sampleId)?.word.orEmpty(), reveal.motion)
+        return RealCopy.videoPrompt(p.drawing(sampleId)?.word.orEmpty(), reveal)
     }
 
     fun mediaFile(name: String): File = realStore.file(name)

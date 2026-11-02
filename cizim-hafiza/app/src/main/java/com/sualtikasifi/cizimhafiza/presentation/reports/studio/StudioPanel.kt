@@ -532,7 +532,7 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
         }
     }
     p.reveals.forEachIndexed { i, rv ->
-        item(key = "rv-" + rv.sampleId) { RevealCard(i, rv, p, r.busy == rv.sampleId, r.busy != null, vm, context) }
+        item(key = "rv-" + rv.sampleId) { RevealCard(i, rv, p, r.busy == rv.sampleId, r.busy != null, r.pitching, r.pitchError, vm, context) }
     }
 
     val opening = p.opening
@@ -888,7 +888,7 @@ private fun LineOption(
 
 /** One drawing to turn real: hand it to ChatGPT, bring the picture (and Gemini's clip) back, and Karalak's reaction. */
 @Composable
-private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: Boolean, anyBusy: Boolean, vm: StudioViewModel, context: Context) {
+private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: Boolean, anyBusy: Boolean, pitching: String?, pitchError: String?, vm: StudioViewModel, context: Context) {
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let { vm.importImage(rv.sampleId, it) } }
     val clipPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let { vm.importClip(rv.sampleId, it) } }
     ConsoleCard(Modifier.fillMaxWidth()) {
@@ -927,7 +927,27 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
         Field("Çizimin şekli (görsel istemine eklenir)", rv.describe, { vm.setRevealDescribe(rv.sampleId, it) }, lines = 3)
         Field("Malzeme (gerçekte neyden yapıldığı)", rv.material, { vm.setRevealMaterial(rv.sampleId, it) }, lines = 2)
         Field("Sahne (fotoğrafın çekildiği tek, gerçek mekân)", rv.scene, { vm.setRevealScene(rv.sampleId, it) }, lines = 2)
-        Field("Videodaki sahne (video istemine eklenir): kim, nerede, ne yapıyor, hangi sesler? Ne kadar ayrıntılı yazarsan o kadar iyi.", rv.motion, { vm.setRevealMotion(rv.sampleId, it) }, lines = 7)
+        Field("Gerçek boyutu (ör. yaklaşık 15 cm, avuca sığar): görsel ve video istemine girer", rv.size, { vm.setRevealSize(rv.sampleId, it) }, lines = 1)
+        Field("Boyutu belli eden şey (ör. yanında bir tükenmez kalem): görsel istemine girer", rv.scaleHint, { vm.setRevealScaleHint(rv.sampleId, it) }, lines = 1)
+        Field("Değişmeyenler (ör. sert plastik: bükülmez, esnemez, kendiliğinden hareket etmez): video istemine girer", rv.fixed, { vm.setRevealFixed(rv.sampleId, it) }, lines = 2)
+        Field("Videodaki sahne (video istemine eklenir): tek çekim, tek mekân, bir kişi; 0–2, 2–5, 5–8 sn. Aşağıdan fikir seçebilir ya da kendin yazabilirsin.", rv.motion, { vm.setRevealMotion(rv.sampleId, it) }, lines = 7)
+        ActionButton(
+            Icons.Filled.Refresh,
+            if (pitching == rv.sampleId) "Fikirler yazılıyor…" else if (rv.pitches.isEmpty()) "Fotoğrafa bakarak 3 sahne fikri yaz" else "Üç yeni sahne fikri yaz",
+            Console.Surface, Console.Ink, Modifier.fillMaxWidth().padding(top = 6.dp)
+        ) { if (!anyBusy && pitching == null) vm.writePitches(rv.sampleId) }
+        if (rv.image == null) Text("Sahne fikirleri için önce görseli ekle.", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
+        pitchError?.takeIf { pitching == null }?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
+        rv.pitches.forEachIndexed { i, pitch ->
+            Column(
+                Modifier.fillMaxWidth().padding(top = 8.dp).background(Console.Surface, RoundedCornerShape(12.dp)).padding(12.dp)
+            ) {
+                Text("${i + 1}) " + pitch.joke.ifBlank { "Fikir" }, style = Console.Label)
+                Text(pitch.scene, style = Console.Small, modifier = Modifier.padding(top = 4.dp), maxLines = 8)
+                val chosen = pitch.scene.take(1800) == rv.motion
+                SmallLink(if (chosen) "Seçili" else "Bu sahneyi seç") { if (!chosen) vm.choosePitch(rv.sampleId, i) }
+            }
+        }
 
         Text("Görsel · ChatGPT", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
