@@ -21,6 +21,8 @@ data class PendingRun(
     val correctCount: Int,
     /** What the round paid its author — exactly what a rejection takes back. */
     val xpEarned: Int,
+    /** The gold the round paid — taken back with the XP when it is rejected (0 for a round filed before this was recorded). */
+    val goldEarned: Int = 0,
     val createdAtMillis: Long
 )
 
@@ -79,6 +81,8 @@ data class PendingDailyChallenge(
     val score: Int,
     val correctCount: Int,
     val xpEarned: Int,
+    /** The gold the attempt paid, taken back with the XP when it is rejected. */
+    val goldEarned: Int = 0,
     val createdAtMillis: Long
 )
 

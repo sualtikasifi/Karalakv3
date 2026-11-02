@@ -156,7 +156,7 @@ fun ReportBugScreen(
                 val words = stringResource(R.string.report_bug_title).split(' ')
                 Column(
                     modifier = Modifier
-                        .offset(x = signW * 0.155f, y = signW * 0.405f)
+                        .offset(x = signW * 0.155f, y = signW * 0.399f)
                         .width(signW * 0.66f)
                         .height(signW * 0.21f),
                     horizontalAlignment = Alignment.CenterHorizontally,

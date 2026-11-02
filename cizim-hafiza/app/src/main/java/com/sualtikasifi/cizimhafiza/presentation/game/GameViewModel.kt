@@ -1113,55 +1113,6 @@ class GameViewModel @Inject constructor(
         val fastest = results.filter { it.isCorrect }.minOfOrNull { it.responseTimeMs }
         val resultItems = results.map { ResultItem(it.word.text, it.isCorrect, it.strokes, selectedPen.value.name) }
 
-        // Günlük Meydan Okuma has no drawn-vs-typed check the way Hızlı Eşleş
-        // does (see GhostRunRepository.record below, which never runs for a
-        // daily round) — typing the word straight into the canvas costs
-        // nothing to try and pays the same XP as drawing it. The XP is paid
-        // regardless (see dailySummary above): this only queues the attempt
-        // for the reviewer to catch that specific case after the fact and
-        // claw it back (see ModerationRepository.rejectDailyChallenge).
-        // Fire-and-forget, same as every other post-round Firestore write
-        // here — a failed upload must never hold up the player's own result.
-        // Nothing a player who may be under 13 draws leaves the device (see LegalConsentStore).
-        val mayUpload = !legalConsentStore.childMode.value
-        if (dailyFreshCompletion && mayUpload) {
-            moderationRepository.submitDailyChallengeForReview(
-                items = resultItems,
-                score = totalScore,
-                correctCount = correctCount,
-                xpEarned = dailySummary?.xpEarned ?: 0
-            )
-        }
-
-        // Left behind as an opponent for somebody else's "Hızlı Eşleş"
-        // (see GhostRuns for which rounds qualify and why). The player is
-        // told nothing and gets nothing from it directly — this is the pool
-        // filling itself, quietly, so that the matching phase opens onto a
-        // stocked pool instead of an empty one.
-        if (mayUpload && GhostRuns.isWorthRecording(
-                mode = mode,
-                isDailyChallenge = isDaily
-            )
-        ) {
-            // The totals are not passed along: a longer round is recorded as
-            // its first RUN_WORD_COUNT words only, so its score has to be
-            // recomputed over those rather than inherited (see recordableSlice).
-            ghostRunRepository.record(
-                wordIds = results.map { it.wordId },
-                mode = mode,
-                perWord = results.map {
-                    GhostRunWord(
-                        wordId = it.wordId,
-                        isCorrect = it.isCorrect,
-                        responseTimeMs = it.responseTimeMs,
-                        pointsAwarded = it.pointsAwarded
-                    )
-                },
-                items = resultItems,
-                xpEarned = roundXpEarned
-            )
-        }
-
         // On top of the normal session save/XP/streak above — a duel
         // challenge is still a full, real round for the player who played
         // it, this just ALSO turns its outcome into a challenge for a
@@ -1207,6 +1158,59 @@ class GameViewModel @Inject constructor(
             quickMatchWon = quickMatchWon
         )
         if (gold.total > 0) settingsRepository.earnGold(gold.total)
+        // Filed for review only now that the gold is known too: a rejection takes back exactly what the round paid,
+        // XP as the level bar received it (rune bonus included) and the gold of the round.
+        // Günlük Meydan Okuma has no drawn-vs-typed check the way Hızlı Eşleş
+        // does (see GhostRunRepository.record below, which never runs for a
+        // daily round) — typing the word straight into the canvas costs
+        // nothing to try and pays the same XP as drawing it. The XP is paid
+        // regardless (see dailySummary above): this only queues the attempt
+        // for the reviewer to catch that specific case after the fact and
+        // claw it back (see ModerationRepository.rejectDailyChallenge).
+        // Fire-and-forget, same as every other post-round Firestore write
+        // here — a failed upload must never hold up the player's own result.
+        // Nothing a player who may be under 13 draws leaves the device (see LegalConsentStore).
+        val mayUpload = !legalConsentStore.childMode.value
+        if (dailyFreshCompletion && mayUpload) {
+            moderationRepository.submitDailyChallengeForReview(
+                items = resultItems,
+                score = totalScore,
+                correctCount = correctCount,
+                xpEarned = com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(dailySummary?.xpEarned ?: 0),
+                goldEarned = gold.total
+            )
+        }
+
+        // Left behind as an opponent for somebody else's "Hızlı Eşleş"
+        // (see GhostRuns for which rounds qualify and why). The player is
+        // told nothing and gets nothing from it directly — this is the pool
+        // filling itself, quietly, so that the matching phase opens onto a
+        // stocked pool instead of an empty one.
+        if (mayUpload && GhostRuns.isWorthRecording(
+                mode = mode,
+                isDailyChallenge = isDaily
+            )
+        ) {
+            // The totals are not passed along: a longer round is recorded as
+            // its first RUN_WORD_COUNT words only, so its score has to be
+            // recomputed over those rather than inherited (see recordableSlice).
+            ghostRunRepository.record(
+                wordIds = results.map { it.wordId },
+                mode = mode,
+                perWord = results.map {
+                    GhostRunWord(
+                        wordId = it.wordId,
+                        isCorrect = it.isCorrect,
+                        responseTimeMs = it.responseTimeMs,
+                        pointsAwarded = it.pointsAwarded
+                    )
+                },
+                items = resultItems,
+                xpEarned = com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(roundXpEarned),
+                goldEarned = gold.total
+            )
+        }
+
         if (ghost != null) {
             settingsRepository.recordQuickMatchFinished()
             settingsRepository.markRatingDueIfEligible()

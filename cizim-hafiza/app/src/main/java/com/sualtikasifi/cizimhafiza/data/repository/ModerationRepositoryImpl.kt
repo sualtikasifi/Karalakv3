@@ -107,6 +107,7 @@ class ModerationRepositoryImpl @Inject constructor(
                 totalScore = (doc.getLong("totalScore") ?: 0L).toInt(),
                 correctCount = (doc.getLong("correctCount") ?: 0L).toInt(),
                 xpEarned = (doc.getLong("xpEarned") ?: 0L).toInt(),
+                goldEarned = (doc.getLong("goldEarned") ?: 0L).toInt(),
                 createdAtMillis = doc.getLong("createdAt") ?: 0L
             )
         }
@@ -181,7 +182,7 @@ class ModerationRepositoryImpl @Inject constructor(
         batch.commit().await()
     }
 
-    override suspend fun reject(runId: String, xpToRevoke: Int): Result<Unit> = runCatching {
+    override suspend fun reject(runId: String, xpToRevoke: Int, goldToRevoke: Int): Result<Unit> = runCatching {
         val runDoc = pendingRuns.document(runId).get().await()
         val uid = runDoc.getString("uid").orEmpty()
         require(uid.isNotEmpty()) { "Pending run $runId has no author" }
@@ -209,6 +210,7 @@ class ModerationRepositoryImpl @Inject constructor(
             mapOf(
                 "uid" to uid,
                 "xpRevoked" to xpToRevoke.coerceAtLeast(0).toLong(),
+                "goldRevoked" to goldToRevoke.coerceAtLeast(0).toLong(),
                 "strike" to strike.toLong(),
                 "lockedUntil" to lockedUntil,
                 // Seeded at zero rather than left absent: the offending device
@@ -248,7 +250,8 @@ class ModerationRepositoryImpl @Inject constructor(
         items: List<ResultItem>,
         score: Int,
         correctCount: Int,
-        xpEarned: Int
+        xpEarned: Int,
+        goldEarned: Int
     ): Result<Unit> = runCatching {
         val uid = auth.currentUser?.uid ?: return@runCatching Unit
         val nickname = runCatching {
@@ -262,6 +265,7 @@ class ModerationRepositoryImpl @Inject constructor(
                 "score" to score,
                 "correctCount" to correctCount,
                 "xpEarned" to xpEarned,
+                "goldEarned" to goldEarned,
                 "createdAt" to System.currentTimeMillis()
             )
         ).await()
@@ -298,6 +302,7 @@ class ModerationRepositoryImpl @Inject constructor(
                     score = (doc.getLong("score") ?: 0L).toInt(),
                     correctCount = (doc.getLong("correctCount") ?: 0L).toInt(),
                     xpEarned = (doc.getLong("xpEarned") ?: 0L).toInt(),
+                    goldEarned = (doc.getLong("goldEarned") ?: 0L).toInt(),
                     createdAtMillis = doc.getLong("createdAt") ?: 0L
                 )
             }
@@ -308,7 +313,7 @@ class ModerationRepositoryImpl @Inject constructor(
         Unit
     }
 
-    override suspend fun rejectDailyChallenge(id: String, xpToRevoke: Int): Result<Unit> = runCatching {
+    override suspend fun rejectDailyChallenge(id: String, xpToRevoke: Int, goldToRevoke: Int): Result<Unit> = runCatching {
         val doc = pendingDailyChallenges.document(id).get().await()
         val uid = doc.getString("uid").orEmpty()
         require(uid.isNotEmpty()) { "Pending daily challenge $id has no author" }
@@ -320,6 +325,7 @@ class ModerationRepositoryImpl @Inject constructor(
             mapOf(
                 "uid" to uid,
                 "xpRevoked" to xpToRevoke.coerceAtLeast(0).toLong(),
+                "goldRevoked" to goldToRevoke.coerceAtLeast(0).toLong(),
                 // No strike/lockout here — that ladder is Hızlı Eşleş's own
                 // (see reject() above); a typed daily-challenge word costs XP
                 // and the streak, never online-mode access.

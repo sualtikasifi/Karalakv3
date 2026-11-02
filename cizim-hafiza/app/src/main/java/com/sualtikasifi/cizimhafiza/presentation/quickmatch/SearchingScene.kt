@@ -116,13 +116,13 @@ internal fun SearchingScene(modifier: Modifier = Modifier) {
             size = fs(82f),
             fill = Color.White,
             outline = Color(0xFF5A2815),
-            modifier = box(160f, 308f, 681f, 404f),
+            modifier = box(160f, 322f, 681f, 418f),
             minScale = 0.45f,
             title = true
         )
         val second = stringResource(R.string.quick_match_searching_title2).trimEnd('…', '.', ' ')
         Row(
-            modifier = box(160f, 396f, 681f, 492f),
+            modifier = box(160f, 384f, 681f, 480f),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {

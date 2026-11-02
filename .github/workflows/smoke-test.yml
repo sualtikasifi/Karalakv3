@@ -24,6 +24,8 @@ on:
           - realpreview.sh
           - devpanelpreview.sh
           - runepreview.sh
+          - consentlang.sh
+          - firstrun.sh
           - titles_preview.sh
           - updatepreview.sh
           - chestpreview.sh

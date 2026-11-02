@@ -108,22 +108,14 @@ fun LegalConsentHost(viewModel: LegalConsentViewModel = hiltViewModel()) {
     val complete = dayText.isNotEmpty() && monthText.isNotEmpty() && yearText.length == 4
     val valid = complete && date.month > 0 && date.day > 0 && LegalConsentStore.isValidBirthDate(date)
 
-    Dialog(
-        onDismissRequest = {},
-        properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
-    ) {
-        RaisedCard(corner = 28.dp, raise = 8.dp, modifier = Modifier.fillMaxWidth()) {
+    // The game's painted window, not a plain card: this is the first thing a new player sees after the tutorial. Not
+    // dismissable (no close button, back and outside taps do nothing).
+    AppWindowDialog(title = stringResource(R.string.legal_title), onDismiss = {}, centerTitle = true) {
+        run {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 22.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = stringResource(R.string.legal_title),
-                    fontFamily = DisplayFont,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 21.sp,
-                    textAlign = TextAlign.Center
-                )
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(
                     text = stringResource(R.string.legal_birth_date_label),
@@ -194,6 +186,7 @@ fun LegalConsentHost(viewModel: LegalConsentViewModel = hiltViewModel()) {
                     enabled = complete,
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(14.dp))
             }
         }
     }
@@ -210,46 +203,7 @@ fun ChildGate(onBack: () -> Unit, content: @Composable () -> Unit) {
         content()
         return
     }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF2A1708))
-            .clickable(
-                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                indication = null,
-                onClick = {}
-            )
-            .padding(horizontal = 24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        NinePatch(
-            res = R.drawable.qm_pad,
-            slicePx = 120,
-            edge = 26.dp,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(start = 22.dp, end = 22.dp, top = 34.dp, bottom = 26.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(R.string.child_locked_title),
-                    style = PaintedStyle(color = Color(0xFF2B1A10), fontSize = 24.sp, textAlign = TextAlign.Center)
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.child_locked_body),
-                    style = DescriptionStyle(15.sp, 20.sp)
-                )
-                Spacer(Modifier.height(16.dp))
-                PaintedPillButton(
-                    text = stringResource(R.string.cd_back),
-                    onClick = onBack,
-                    modifier = Modifier.fillMaxWidth(0.7f)
-                )
-            }
-        }
-    }
+    ChildLockedWindow(onBack = onBack)
 }
 
 /** One part of the date of birth: its name above a short numbers-only field. */

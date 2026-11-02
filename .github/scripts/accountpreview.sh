@@ -12,6 +12,8 @@ adb shell input keyevent 82 || true
 adb shell settings put global hide_error_dialogs 1 || true
 sleep 20
 adb install -r -t "$APK"
+# the game is played in Turkish: show its string resources in Turkish (per-app language, Android 13+)
+adb shell cmd locale set-app-locales "$PKG" --locales tr-TR || true
 adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.AccountPreviewActivity"
 sleep 8
 adb exec-out screencap -p > "$OUT/account_page.png"

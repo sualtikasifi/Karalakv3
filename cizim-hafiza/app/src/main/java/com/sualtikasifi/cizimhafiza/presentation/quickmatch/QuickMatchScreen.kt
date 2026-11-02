@@ -304,7 +304,7 @@ fun QuickMatchScreen(
  * plank with its live bar, and the three tips.
  */
 @Composable
-private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart: () -> Unit, modifier: Modifier = Modifier) {
+internal fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart: () -> Unit, modifier: Modifier = Modifier) {
     val start by rememberUpdatedState(onStart)
     val progress = remember { Animatable(0f) }
     // Keyed on the run so a genuinely new opponent restarts the countdown,
@@ -368,8 +368,10 @@ private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart
                 }
 
                 // The two players, hanging from their ropes; the VS pops in between them once they have landed.
+                // Both cards are drawn at the same height and hang from the same line, and the two outer margins are
+                // equal, so the pair reads as one symmetrical piece (their pictures differ a little in proportion).
                 MatchCard(
-                    u = u, fromLeft = true, x = 20f, y = 541f,
+                    u = u, fromLeft = true, x = CardMargin, y = CardTop,
                     card = R.drawable.mf_card_r, cardW = 290, cardH = 384, centerX = 148f,
                     ribbon = R.drawable.mf_ribbon_r,
                     nickname = me.nickname, level = me.level, frameId = me.frameId, avatarUrl = me.avatarUrl,
@@ -377,7 +379,7 @@ private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart
                     lifetimeXp = me.lifetimeXp
                 )
                 MatchCard(
-                    u = u, fromLeft = false, x = 507f, y = 534f,
+                    u = u, fromLeft = false, x = MfArtW - CardMargin - CardWidth, y = CardTop,
                     card = R.drawable.mf_card_b, cardW = 266, cardH = 392, centerX = 133f,
                     ribbon = R.drawable.mf_ribbon_b,
                     nickname = opponent.nickname, level = opponent.level, frameId = opponent.frameId,
@@ -452,11 +454,14 @@ private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart
                     stringResource(R.string.quick_match_tip_scoring),
                     stringResource(R.string.quick_match_tip_fun)
                 )
-                val tips = listOf(
-                    Triple(R.drawable.mf_tip1, 225 to 197, 24f),
-                    Triple(R.drawable.mf_tip2, 227 to 197, 296f),
-                    Triple(R.drawable.mf_tip3, 229 to 197, 568f)
-                )
+                // Equal outer margins and equal gaps between the three notes (their pictures differ by a few pixels).
+                val tipSizes = listOf(225 to 197, 227 to 197, 229 to 197)
+                val tipsWidth = tipSizes.sumOf { (it.first * 1.1f).toDouble() }.toFloat()
+                val tipGap = (MfArtW - tipsWidth) / 4f
+                var tipX = tipGap
+                val tips = listOf(R.drawable.mf_tip1, R.drawable.mf_tip2, R.drawable.mf_tip3).mapIndexed { i, res ->
+                    Triple(res, tipSizes[i], tipX).also { tipX += tipSizes[i].first * 1.1f + tipGap }
+                }
                 tips.forEachIndexed { i, (res, size, x) ->
                     Pic(res, size.first, size.second, 1.1f, x, 1405f)
                     // The words go where the picture's own lettering was: the lower half of the note.
@@ -466,9 +471,9 @@ private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart
                     ) {
                         FitText(
                             text = tipTexts[i],
-                            style = PaintedStyle(color = Color(0xFF3B2314), fontSize = fs(29f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = fs(32f)),
+                            style = PaintedStyle(color = Color(0xFF3B2314), fontSize = fs(25f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = fs(29f)),
                             maxLines = 3,
-                            minScale = 0.55f,
+                            minScale = 0.7f,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -479,6 +484,15 @@ private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart
 }
 
 private const val MfArtW = 841f
+
+/** Where the two player cards hang: the same top, the same height, the same distance from their own edge of the screen. */
+private const val CardMargin = 20f
+private const val CardTop = 538f
+private const val CardHeight = 455f
+private const val CardWidth = 330f
+
+/** The avatar, the name and the XP sit at the same height on both cards, whichever picture is behind them. */
+private const val InnerScale = 1.18f
 
 /**
  * One player's card: the painted card with its own picture hung from the rope, the avatar in its earned frame (with the
@@ -503,7 +517,8 @@ private fun MatchCard(
     photo: com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto? = null,
     lifetimeXp: Int
 ) {
-    val s = 1.18f
+    // Both pictures are drawn into the same box (they differ by a few percent in proportion), so the two cards are the same
+    // size and the VS between them sits exactly in the middle of the gap.
     val fontScale0 = LocalDensity.current.fontScale
     fun fs(art: Float) = (art * u.value / fontScale0).sp
     val slide = remember { Animatable(if (fromLeft) -1f else 1f) }
@@ -511,16 +526,16 @@ private fun MatchCard(
     Box(
         modifier = Modifier
             .offset(u * x, u * y)
-            .size(u * cardW * s, u * cardH * s)
+            .size(u * CardWidth, u * CardHeight)
             .graphicsLayer {
                 translationX = slide.value * size.width
                 alpha = (1f - kotlin.math.abs(slide.value)).coerceIn(0f, 1f)
             }
     ) {
         Image(painterResource(card), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-        val cx = centerX * s
+        val cx = CardWidth / 2f
         val avatar = 190f
-        Box(Modifier.offset(u * (cx - avatar / 2f), u * (190f * s - avatar / 2f)).size(u * avatar)) {
+        Box(Modifier.offset(u * (cx - avatar / 2f), u * (InnerScale * 190f - avatar / 2f)).size(u * avatar)) {
             LevelAvatar(
                 level = level,
                 // The stored name is only a preference; resolve() is what decides which ring that level has actually earned.
@@ -532,7 +547,7 @@ private fun MatchCard(
         }
         val ribbonW = 292f
         Box(
-            Modifier.offset(u * (cx - ribbonW / 2f), u * (290f * s - 28f)).size(u * ribbonW, u * 54f),
+            Modifier.offset(u * (cx - ribbonW / 2f), u * (InnerScale * 290f - 28f)).size(u * ribbonW, u * 54f),
             contentAlignment = Alignment.Center
         ) {
             Image(painterResource(ribbon), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
@@ -545,7 +560,7 @@ private fun MatchCard(
             )
         }
         Row(
-            Modifier.offset(u * (cx - 120f), u * (337f * s - 30f)).size(u * 240f, u * 40f),
+            Modifier.offset(u * (cx - 120f), u * (InnerScale * 337f - 30f)).size(u * 240f, u * 40f),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {

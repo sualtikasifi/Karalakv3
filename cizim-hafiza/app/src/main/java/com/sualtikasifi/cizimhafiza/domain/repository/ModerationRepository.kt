@@ -72,7 +72,7 @@ interface ModerationRepository {
      * stored as an absolute time. A device could otherwise sit out its
      * lockout by moving its own clock forward.
      */
-    suspend fun reject(runId: String, xpToRevoke: Int): Result<Unit>
+    suspend fun reject(runId: String, xpToRevoke: Int, goldToRevoke: Int = 0): Result<Unit>
 
     /**
      * Turns a round down without judging its author: the round is deleted from
@@ -101,7 +101,8 @@ interface ModerationRepository {
         items: List<ResultItem>,
         score: Int,
         correctCount: Int,
-        xpEarned: Int
+        xpEarned: Int,
+        goldEarned: Int = 0
     ): Result<Unit>
 
     /** Oldest first, reviewer only. */
@@ -128,7 +129,7 @@ interface ModerationRepository {
      * streak — see PenaltyRepositoryImpl, which is what actually resets it
      * once this device's own penalty write is applied.
      */
-    suspend fun rejectDailyChallenge(id: String, xpToRevoke: Int): Result<Unit>
+    suspend fun rejectDailyChallenge(id: String, xpToRevoke: Int, goldToRevoke: Int = 0): Result<Unit>
 
     /**
      * Upholds a player's report: writes a penalty (XP and gold back, one more strike, a lockout on

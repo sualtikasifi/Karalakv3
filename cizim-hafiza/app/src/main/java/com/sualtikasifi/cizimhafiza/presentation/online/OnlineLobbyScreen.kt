@@ -101,7 +101,7 @@ fun OnlineLobbyScreen(
             maxLines = 2,
             title = true,
             modifier = Modifier
-                .offset(x(ArtW / 2 - 290f), y(SignTop + signH * 0.54f - 4.5f))
+                .offset(x(ArtW / 2 - 290f), y(SignTop + signH * 0.54f - 8f))
                 .size(len(580f), len(signH * 0.38f))
         )
 

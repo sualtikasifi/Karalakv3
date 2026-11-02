@@ -53,6 +53,7 @@ shot home_saving
 shot tour_runes
 shot funnel
 shot window_pick
+shot child_locked
 shot invite
 shot invite_empty
 shot window_confirm
