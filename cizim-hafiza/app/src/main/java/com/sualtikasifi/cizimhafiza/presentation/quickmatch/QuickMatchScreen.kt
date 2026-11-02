@@ -357,19 +357,19 @@ internal fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStar
         // ---- The sign: two lines on the plank's face (x 215..625, y 245..420) -------------------------------------
         LetteredText(
             text = stringResource(R.string.quick_match_found_title1),
-            size = fs(86f),
+            size = fs(96f),
             fill = Color.White,
             outline = Color(0xFF5A2815),
-            modifier = box(215f, 247f, 625f, 337f),
+            modifier = box(205f, 232f, 635f, 352f),
             minScale = 0.45f,
             title = true
         )
         LetteredText(
             text = stringResource(R.string.quick_match_found_title2),
-            size = fs(92f),
-            fill = Color(0xFFFFD43B),
-            outline = Color(0xFF7A3A00),
-            modifier = box(215f, 327f, 625f, 417f),
+            size = fs(104f),
+            fill = Color(0xFFFFE04A),
+            outline = Color(0xFF8A4300),
+            modifier = box(205f, 312f, 635f, 432f),
             minScale = 0.45f,
             title = true
         )
