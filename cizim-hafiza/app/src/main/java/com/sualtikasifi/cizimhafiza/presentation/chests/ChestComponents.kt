@@ -40,6 +40,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -390,7 +391,8 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                             text = stringResource(R.string.chests_reward_title).uppercase(locale),
                             size = fs(92f),
                             top = Color(0xFFFFFAD7), bottom = Color(0xFFFFC032), outline = Color(0xFF552305),
-                            modifier = Modifier.at(135f, 356f, 630f, 112f)
+                            // centred on the plank's face (x 120..780 on the sign, y about 395..470 of its 563-unit height)
+                            modifier = Modifier.at(124f, 378f, 630f, 112f)
                         )
                     }
                     // The chest's ribbon: its name and its rarity in stars.
@@ -637,7 +639,9 @@ private fun RewardCard(extra: RewardExtra, u: Dp, tile: Float, fs: (Float) -> an
             style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFF78410F), fontSize = fs(tile * 0.18f), textAlign = TextAlign.Center),
             maxLines = 1,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            modifier = Modifier.offset(x = u * -25f, y = u * (tile + 16f)).width(u * (tile + 50f))
+            // requiredWidth: the parent only allows the tile's own width, and a plain width() would be cut down to it, which left the
+            // label 25 units off to the left of the tile it names.
+            modifier = Modifier.offset(x = u * -25f, y = u * (tile + 16f)).requiredWidth(u * (tile + 50f))
         )
     }
 }

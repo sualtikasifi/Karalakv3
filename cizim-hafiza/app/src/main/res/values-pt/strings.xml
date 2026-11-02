@@ -673,6 +673,7 @@
 
     <!-- Cosmetic pen skins (domain/model/PenSkin.kt). -->
     <string name="pen_picker_title">Escolha seu lápis</string>
+    <string name="pen_available">Disponível</string>
     <string name="pen_change_cd">Trocar lápis</string>
     <string name="pen_classic">Clássico</string>
     <string name="pen_charcoal">Cinza</string>
@@ -1038,6 +1039,8 @@
     <string name="quick_match_tip_scoring">As pontuações são comparadas no fim da partida</string>
     <string name="quick_match_tip_fun">Relaxe e aproveite o jogo!</string>
     <string name="quick_match_found_tagline">Ótimo!\nRival encontrado.</string>
+    <string name="quick_match_found_title1">Rival</string>
+    <string name="quick_match_found_title2">Pronto!</string>
     <string name="quick_match_starting_in">A partida começa em %1$d segundos</string>
     <string name="quick_match_starting_in_one">A partida começa em %1$d segundo</string>
     <string name="quick_match_good_luck">Boa sorte!</string>
@@ -1355,6 +1358,11 @@
     <string name="chest_ready_channel_name">Baús</string>
     <string name="chest_ready_notif_title">Seu baú está pronto! 🎁</string>
     <string name="chest_ready_notif_body">%1$s está pronto para abrir. Venha pegar sua recompensa!</string>
+    <string name="gift_ready_channel_name">Presentes</string>
+    <string name="gift_gold_notif_title">Seu ouro grátis está pronto! 🪙</string>
+    <string name="gift_gold_notif_body">%1$d de ouro esperam por você. Assista a um anúncio curto e pegue!</string>
+    <string name="gift_chest_notif_title">Seu baú grátis está pronto! 🎁</string>
+    <string name="gift_chest_notif_body">Assista a um anúncio curto e abra seu baú grátis!</string>
     <string name="rarity_common">Comum</string>
     <string name="rarity_rare">Raro</string>
     <string name="rarity_legendary">Lendário</string>

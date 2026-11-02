@@ -64,6 +64,14 @@ data class RealReveal(
     val describe: String = "",
     /** The small funny scene the video shows (English, a person using or reacting to it), written into the video prompt. */
     val motion: String = "",
+    /** What the drawing is, as the assistant sorted it: "nesne", "canlı", "yiyecek" or "bitki" (empty: not sorted yet). It decides the picture prompt's rules. */
+    val kind: String = "",
+    /** One line per part: the drawn part and the real part of the thing it stands for ("uzun dikdörtgen gövde → şeffaf plastik silindir"). */
+    val parts: String = "",
+    /** The real materials the thing is made of, in the picture prompt (plastic and rubber, fur, dough …). */
+    val material: String = "",
+    /** The one real place the picture is set in. */
+    val scene: String = "",
     val image: String? = null,
     val clip: String? = null,
     val clipMs: Long = 0L,
@@ -396,24 +404,67 @@ object RealCopy {
     private val SECONDS = Regex("(\\d+)(\\s*(?:saniye|sn|seconds?|secs?|segundos?|seg))", RegexOption.IGNORE_CASE)
     private val NUMBERING = Regex("^\\d+[.)]\\s+")
 
+    /** What kind of thing a drawing is: it decides whether the real one may have fur, eyes and limbs at all. */
+    enum class Kind { Object, Creature, Food, Plant, Unknown;
+        companion object {
+            fun of(text: String?): Kind {
+                val t = text.orEmpty().trim().lowercase(java.util.Locale("tr"))
+                return when {
+                    t.startsWith("nesne") || t.startsWith("obje") || t.startsWith("eşya") || t.startsWith("object") -> Object
+                    t.startsWith("canlı") || t.startsWith("hayvan") || t.startsWith("yaratık") || t.startsWith("creature") || t.startsWith("animal") -> Creature
+                    t.startsWith("yiyecek") || t.startsWith("yemek") || t.startsWith("içecek") || t.startsWith("food") -> Food
+                    t.startsWith("bitki") || t.startsWith("ağaç") || t.startsWith("çiçek") || t.startsWith("plant") -> Plant
+                    else -> Unknown
+                }
+            }
+        }
+    }
+
     /**
-     * What to paste into ChatGPT (or Gemini) with the doodle, in Turkish so it can be read and corrected by hand. The
-     * drawing is the blueprint, in the spirit of Tom Curtis's "children's drawings made real": every line keeps its
-     * shape and every mistake stays; only the surfaces become real. A model left to itself "fixes" the drawing into
-     * an ordinary animal, so the prompt says so plainly, more than once. [describe] is the drawing's shapes as drawn.
+     * What to paste into ChatGPT with the doodle, in Turkish so it can be read and corrected by hand. The drawing is the
+     * blueprint, in the spirit of "children's drawings made real": every line keeps its shape and every quirk stays; only the
+     * surfaces become real.
+     *
+     * Short, in sections, and in positive words: a long prompt full of "do not" lines, with an invitation to be "weird or a
+     * little scary", made a model turn a drawn syringe into a living pink sausage with eyes. So what the thing IS comes
+     * first (an object has no eyes, fur or limbs; only a creature has fur and skin), then which drawn part is which real
+     * part, then the materials, one real place and the style (a phone photograph, not an illustration).
      */
-    fun imagePrompt(word: String, seconds: Int, describe: String): String = buildString {
+    fun imagePrompt(word: String, seconds: Int, reveal: RealReveal?): String = buildString {
         val thing = word.ifBlank { "nesne" }
-        append("Ekteki görsel, bir oyuncunun çizim oyununda \"").append(thing).append("\" kelimesi için ").append(seconds).append(" saniyede yaptığı hızlı bir karalama.\n")
-        append("Bu KARALAMANIN BİREBİR AYNISINI, sanki gerçek dünyada canlanmış gibi gösteren bir fotoğraf yap; Tom Curtis'in \"çocuk çizimlerinin gerçek hâli\" fotoğrafları gibi.\n\n")
-        append("Karalama bir ipucu değil, bir plan:\n")
-        append("- Siluetini, duruşunu, oranlarını ve düzenini aynen koru. Üstünden geçer gibi izle.\n")
-        append("- Çizilen her çizgi aynı şekilde gerçek bir vücut parçası olsun: tek çizgilik bir bacak ince ve düz, boru gibi bir bacak olur, daire yuvarlak bir top olarak kalır, üçgen sivri bir üçgen kalır, çizgi karmaşası ya da spiral öyle kalır, dikdörtgen gövde köşeli kalır.\n")
-        append("- Her hatayı koru: aynı bacak sayısı, eksik ya da fazla parçalar, küçücük ya da kocaman bir baş, tuhaf yerlerdeki parçalar. Anatomiyi DÜZELTME, çizilmeyen hiçbir şey EKLEME, onu normal bir \"").append(thing).append("\" hâline GETİRME.\n")
-        append("- Sadece yüzeyler gerçek olsun: \"").append(thing).append("\" için uygun gerçek tüy, deri, pul ya da malzeme; gerçek ışık ve gölgeler. Gerçek, yaşayan bir şey gibi görünsün ama bedeni çizimdeki beden olsun.\n")
-        if (describe.isNotBlank()) append("- Karalamanın şekli: ").append(describe.trim().trimEnd('.')).append(".\n")
-        append("\nTuhaf, komik ya da biraz ürkütücü olması tam istediğimiz şey. Çizimi herkes bir bakışta içinde tanımalı.\n")
-        append("Uygun, gerçek bir yere (tarla, sokak, deniz, oda) yerleştir; sıradan bir telefon fotoğrafı gibi çek. Dikey 9:16. Kâğıt yok, kalem çizgisi yok, yazı yok, çerçeve yok.")
+        val kind = Kind.of(reveal?.kind)
+        append("Ekteki çizim, bir çizim oyununda \"").append(thing).append("\" kelimesi için ").append(seconds).append(" saniyede yapılmış hızlı bir karalama. ")
+        append("Bu çizimi, çizildiği gibi gerçekten var olan bir \"").append(thing).append("\" hâline getir ve onu gerçek bir telefon fotoğrafı olarak göster: bir çocuk çiziminin gerçek hâli.\n\n")
+        append(
+            when (kind) {
+                Kind.Object -> "Bu bir NESNE. Canlı değil: gözü, yüzü, ağzı, kolu, bacağı, teni, tüyü yok."
+                Kind.Creature -> "Bu bir CANLI. Gerçek tüyü, derisi, pulu ya da kabuğu olsun; ama vücudu çizimdeki vücut olsun."
+                Kind.Food -> "Bu bir YİYECEK ya da İÇECEK. Canlı değil: gözü, yüzü, ağzı, kolu, bacağı yok. Gerçek, yenebilir malzemeden yapılmış gibi görünsün."
+                Kind.Plant -> "Bu bir BİTKİ. Gerçek yaprağı, gövdesi, kabuğu ya da çiçeği olsun; gözü, yüzü, ağzı, kolu, bacağı yok."
+                Kind.Unknown -> "Önce \"$thing\" kelimesinin bir nesne, canlı, yiyecek ya da bitki olduğuna karar ver ve ona göre davran. Nesnelerin, yiyeceklerin ve bitkilerin gözü, yüzü, ağzı, kolu, bacağı, teni, tüyü olmaz; yalnızca canlıların tüyü ya da derisi olur."
+            }
+        ).append("\n\n")
+        val parts = reveal?.parts?.lines()?.map { it.trim().trimStart('-', '•', ' ') }?.filter { it.isNotEmpty() }.orEmpty()
+        if (parts.isNotEmpty()) {
+            append("Çizimden gerçeğe eşleme:\n")
+            parts.forEach { append("- ").append(it).append('\n') }
+            append('\n')
+        }
+        val describe = reveal?.describe.orEmpty().trim().trimEnd('.')
+        if (describe.isNotEmpty()) append("Çizimin şekli: ").append(describe).append(".\n\n")
+        append("Siluetini, duruşunu, oranlarını ve parça sayısını aynen koru. Çizimdeki tuhaf, beceriksiz oranlar gerçek hâlinde de kalsın. ")
+        append("Çizimde olmayan hiçbir şey ekleme; çizimdeki hiçbir parçayı da çıkarma. Normal bir \"").append(thing).append("\" hâline getirme.\n")
+        val material = reveal?.material.orEmpty().trim().trimEnd('.')
+        append("Malzeme: ")
+        append(if (material.isNotEmpty()) material else "gerçek bir \"$thing\" neyden yapılıyorsa o gerçek malzemeler")
+        append("; gerçek ışık, yansıma ve gölgeler.\n")
+        append("Tarz: sıradan bir telefon fotoğrafı, gerçek dokular. İllüstrasyon, çizgi film, anime, boyama ve 3B görsel olmasın.\n")
+        val scene = reveal?.scene.orEmpty().trim().trimEnd('.')
+        append("Sahne: ")
+        append(if (scene.isNotEmpty()) scene else "tek, gerçek ve sıradan bir yer (\"$thing\" nerede olurdu ya da bulunurdu)")
+        append("; yumuşak gün ışığı, göz hizasında çekim.\n")
+        append("Ton: komik ve sevimli bir tuhaflık; ürkütücü ya da korkutucu olmasın. Çizimi herkes bir bakışta içinde tanımalı.\n")
+        append("Çıktı: tek görsel, dikey 9:16. Kâğıt, kalem çizgisi, yazı, çerçeve ve fazladan karakter olmasın.")
     }
 
     /**
@@ -443,7 +494,10 @@ object RealCopy {
     }
 
     /** One drawing the assistant described: `index` is 1-based. */
-    data class RevealPick(val index: Int, val wordEn: String, val describe: String, val motion: String)
+    data class RevealPick(
+        val index: Int, val wordEn: String, val describe: String, val motion: String,
+        val kind: String = "", val parts: String = "", val material: String = "", val scene: String = ""
+    )
 
     /**
      * The assistant's description of the chosen drawings:
@@ -527,7 +581,13 @@ object RealCopy {
             o["reveals"]!!.jsonArray.mapNotNull { e ->
                 val p = e.jsonObject
                 val i = p["index"]?.jsonPrimitive?.intOrNull?.takeIf { it in 1..candidates }?.minus(1) ?: return@mapNotNull null
-                RevealPick(i, str(p, "word_en"), str(p, "describe"), str(p, "motion"))
+                // "parts" is a list of lines, or one text with the lines in it
+                val parts = when (val e = p["parts"]) {
+                    is kotlinx.serialization.json.JsonArray -> e.mapNotNull { it.jsonPrimitive.contentOrNull?.trim()?.takeIf(String::isNotEmpty) }.joinToString("\n")
+                    is kotlinx.serialization.json.JsonPrimitive -> e.contentOrNull.orEmpty().trim()
+                    else -> ""
+                }
+                RevealPick(i, str(p, "word_en"), str(p, "describe"), str(p, "motion"), str(p, "kind"), parts, str(p, "material"), str(p, "scene"))
             }.distinctBy { it.index }
         }.getOrNull().orEmpty()
         if (reveals.isEmpty()) return null

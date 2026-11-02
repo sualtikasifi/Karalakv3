@@ -672,6 +672,7 @@
 
     <!-- Cosmetic pen skins (domain/model/PenSkin.kt). -->
     <string name="pen_picker_title">Choose your pen</string>
+    <string name="pen_available">Available</string>
     <string name="pen_change_cd">Change pen</string>
     <string name="pen_classic">Classic</string>
     <string name="pen_charcoal">Grey</string>
@@ -1037,6 +1038,8 @@
     <string name="quick_match_tip_scoring">Scores are compared when the match ends</string>
     <string name="quick_match_tip_fun">Relax and enjoy the game!</string>
     <string name="quick_match_found_tagline">Great!\nMatch found.</string>
+    <string name="quick_match_found_title1">Opponent</string>
+    <string name="quick_match_found_title2">Ready!</string>
     <string name="quick_match_starting_in">Match starts in %1$d seconds</string>
     <string name="quick_match_starting_in_one">Match starts in %1$d second</string>
     <string name="quick_match_good_luck">Good luck!</string>
@@ -1354,6 +1357,11 @@
     <string name="chest_ready_channel_name">Chests</string>
     <string name="chest_ready_notif_title">Your chest is ready! 🎁</string>
     <string name="chest_ready_notif_body">%1$s is ready to open. Come and grab your reward!</string>
+    <string name="gift_ready_channel_name">Gifts</string>
+    <string name="gift_gold_notif_title">Your free gold is ready! 🪙</string>
+    <string name="gift_gold_notif_body">%1$d gold is waiting for you. Watch a short ad and grab it!</string>
+    <string name="gift_chest_notif_title">Your free chest is ready! 🎁</string>
+    <string name="gift_chest_notif_body">Watch a short ad and open your free chest!</string>
     <string name="rarity_common">Common</string>
     <string name="rarity_rare">Rare</string>
     <string name="rarity_legendary">Legendary</string>

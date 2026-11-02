@@ -14,34 +14,39 @@ import kotlinx.coroutines.withContext
  */
 class RealDirector(private val client: OpenRouterClient, private val model: String, private val lang: StudioLang = StudioLang.Tr) {
 
-    class Written(val reveals: List<RealReveal>, val caption: String, val hashtags: String, val costUsd: Double?)
+    class Written(val reveals: List<RealReveal>, val caption: String, val hashtags: String, val costUsd: Double?, val model: String? = null)
 
     suspend fun describe(candidates: List<RealDrawing>): Result<Written> = runCatching {
         val shown = candidates.take(MAX_CANDIDATES)
         require(shown.isNotEmpty()) { "Önce çizim seç" }
-        val images = withContext(Dispatchers.Default) { shown.map { StrokeReplay.png(it.strokes, 1f, 384) } }
+        val images = withContext(Dispatchers.Default) { shown.map { StrokeReplay.png(it.strokes, 1f, 768) } }
         val list = shown.mapIndexed { i, d -> "${i + 1}) ${d.word.ifBlank { "?" }}" + if (d.seconds > 0) " (${d.seconds} sn)" else "" }.joinToString("\n")
         val prompt = """
             Sana oyuncuların farklı kelimeler için birkaç saniyede yaptığı ${shown.size} çizimi gösteriyorum, sırayla 1'den ${shown.size}'e kadar numaralı. Çizimlerin kelimeleri:
             $list
 
             Her çizim için ("reveals"), çizim gerçek bir fotoğrafa ve sonra kısa bir videoya dönüşecek. Her şeyi TÜRKÇE yaz:
+            - "kind": çizimin kelimesi hangisi: "nesne" (şırınga, mikrodalga, saz gibi cansız şeyler), "canlı" (hayvan, insan, yaratık), "yiyecek" (nar, pizza, çay gibi yenen ya da içilen) ya da "bitki" (ağaç, çiçek). Yalnızca bu dört sözcükten birini yaz. Nesnenin, yiyeceğin ve bitkinin gözü, yüzü, ağzı, kolu, bacağı OLMAZ; bunlara canlı gibi davranma;
+            - "parts": çizimin her ana parçasını kelimenin GERÇEK bir parçasına bağlayan 3–6 kısa satır, "çizilen parça → gerçek parça" biçiminde (ör. şırınga için: "uzun dikey dikdörtgen gövde → şeffaf plastik silindir", "üstten çıkan ince düz çizgi → pistonun ince kolu", "alttaki yatay T → piston başı"). Çizimde olmayan parçayı yazma;
+            - "material": o şeyin gerçekte yapıldığı malzemeler, tek kısa cümle (ör. "şeffaf plastik silindir, siyah kauçuk piston, ince metal uç"; canlıysa tüy, deri, pul ya da kabuk türü);
+            - "scene": fotoğrafın çekildiği TEK, gerçek, sıradan mekân ve yüzey, tek kısa cümle (ör. "bir muayene masasının paslanmaz çelik yüzeyinin üstü"; hayvansa doğal yaşam alanı). Çizime ya da kelimeye uygun, abartısız olsun;
             - "describe": çizimin şeklini bir plan gibi, gördüğün çizgilerle birebir anlatan kısa cümleler: gövdenin şekli, kaç bacak ve neye benzedikleri, baş, kuyruk, özel işaretler (ör. "uzun düz dikdörtgen bir gövde, üç parmaklı ayakları olan dört düz çubuk bacak, iki üçgen kulaklı küçük yuvarlak bir baş, üç halkalı bir spiral olarak çizilmiş kuyruk"). Ne olması gerektiğini değil, ne çizildiğini yaz — gerçeğe dönüştürülürken bu şekil korunacak;
             - "motion": bu nesneyle ilgili 8 saniyelik, YARATICI ve KOMİK bir sahne, AYRINTILI (6–9 cümle). Nesne tek başına durup sallanmasın: bir insan gelsin, onunla doğal ama beklenmedik bir şey yapsın, küçük bir tepki versin. Nesnenin şekli hiç değişmez, insan hep sıradan ve gerçek biri. Sahneyi sırayla yaz: nerede olduğu, kim girdiği (yaşı, üstü başı), ilk saniyelerde ne yaptığı, komik anın ne olduğu, sonda nasıl tepki verdiği; araya duyulacak sesleri de koy (ör. düğme tıkırtısı, adım sesi, nesnenin kendi sesi). Örnekler: mikrodalga fırın için "Mutfakta, tezgâhın üstünde duran mikrodalga fırının önüne pijamalı orta yaşlı bir adam gelir. Elindeki yemek tabağını içeri koyar, tuhaf küçük pencereden içeri bakarak kapağı kapatır ve düğmelere basar. Düğme tıkırdar, tabak dönmeye başlar, fırın hafifçe vızıldar ve içi turuncu parlar. Adam iyice eğilip pencereden içeri gözlerini kısarak bakar, sonra memnun bir şekilde başını sallar"; nar için "Pazar yerinde bir adam tezgâhın önünden geçerken durur ve nara şaşkınlıkla bakar. Narı eline alıp çevirir, ters yüz eder, şekline inanamayarak kaşlarını kaldırır. Sonra omuz silker ve narı poşetine atar. Poşet hışırdar, çevrede pazarın uğultusu duyulur"; saz için "Bir ev odasında duvara yaslı duran saza yaşlı bir adam yaklaşır, onu elinde yoklar, sandalyeye oturur ve neşeli bir türkü çalmaya başlar. Teller tınlar, adamın başı ritme göre sallanır, sonda gülümseyerek sazı kucağında sallar". Nesnenin ne işe yaradığını düşün ve ona uygun, günlük hayattan, eğlenceli bir sahne kur.
             Ayrıca üç videoyu birlikte anlatan TikTok/Reels açıklaması (1–2 cümle, soruyla bitsin) ve 5–6 Türkçe ağırlıklı etiket yaz.
 
             Yalnızca şu JSON'u yaz:
-            {"reveals":[{"index":1,"describe":"…","motion":"…"}],"caption":"…","hashtags":"…"}
+            {"reveals":[{"index":1,"kind":"…","describe":"…","parts":["…","…"],"material":"…","scene":"…","motion":"…"}],"caption":"…","hashtags":"…"}
         """.trimIndent()
         // the picture and video prompts stay Turkish (they are pasted into ChatGPT and Gemini and corrected by hand); only the post text follows the language
         val note = if (lang == StudioLang.Tr) "" else "\n\nÖNEMLİ: \"caption\" ve \"hashtags\" alanlarını ${lang.named} yaz; \"describe\" ve \"motion\" Türkçe kalsın."
         val answer = Backoff.retrying { client.generate(SYSTEM, prompt + note, model, webSearch = false, images = images, json = true, temperature = 0.7, maxTokens = 4000) }.getOrThrow()
         val parsed = RealCopy.parsePicks(answer.text, shown.size) ?: error("Yanıt okunamadı; tekrar dene.")
         Written(
-            reveals = parsed.reveals.map { r -> RealReveal(shown[r.index].id, "", r.describe, r.motion) },
+            reveals = parsed.reveals.map { r -> RealReveal(sampleId = shown[r.index].id, describe = r.describe, motion = r.motion, kind = r.kind, parts = r.parts, material = r.material, scene = r.scene) },
             caption = parsed.caption,
             hashtags = parsed.hashtags,
-            costUsd = answer.costUsd
+            costUsd = answer.costUsd,
+            model = answer.model
         )
     }
 

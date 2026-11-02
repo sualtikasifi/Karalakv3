@@ -682,6 +682,7 @@
          ladder alongside avatar frames, on the odd fives so a reward lands
          every five levels instead of every ten. -->
     <string name="pen_picker_title">Kalemini seç</string>
+    <string name="pen_available">Kullanılabilir</string>
     <string name="pen_change_cd">Kalemi değiştir</string>
     <string name="pen_classic">Klasik</string>
     <string name="pen_charcoal">Gri</string>
@@ -1051,6 +1052,8 @@
     <string name="quick_match_tip_scoring">Puanlar maç sonunda karşılaştırılır</string>
     <string name="quick_match_tip_fun">Rahat ol, keyfini çıkar!</string>
     <string name="quick_match_found_tagline">Harika!\nEşleşme bulundu.</string>
+    <string name="quick_match_found_title1">Rakibin</string>
+    <string name="quick_match_found_title2">Hazır!</string>
     <string name="quick_match_starting_in">Maç %1$d saniye sonra başlıyor</string>
     <string name="quick_match_starting_in_one">Maç %1$d saniye sonra başlıyor</string>
     <string name="quick_match_good_luck">Bol şans!</string>
@@ -1367,6 +1370,11 @@
     <string name="chest_ready_channel_name">Kasalar</string>
     <string name="chest_ready_notif_title">Kasan hazır! 🎁</string>
     <string name="chest_ready_notif_body">%1$s açılmaya hazır. Gel ve ödülünü al!</string>
+    <string name="gift_ready_channel_name">Hediyeler</string>
+    <string name="gift_gold_notif_title">Ücretsiz altının hazır! 🪙</string>
+    <string name="gift_gold_notif_body">%1$d altın seni bekliyor. Kısa bir reklam izle, hemen al!</string>
+    <string name="gift_chest_notif_title">Ücretsiz kasan hazır! 🎁</string>
+    <string name="gift_chest_notif_body">Kısa bir reklam izle, ücretsiz kasanı aç!</string>
     <string name="rarity_common">Yaygın</string>
     <string name="rarity_rare">Nadir</string>
     <string name="rarity_legendary">Efsanevi</string>

@@ -530,6 +530,8 @@ class SettingsRepository @Inject constructor(
         val next = now + AD_GOLD_COOLDOWN_MILLIS * (100 - RuneEffects.adCooldownReductionPercent(runes.levels)) / 100
         prefs.edit { putLong(KEY_AD_GOLD_NEXT_AT, next) }
         _adGoldNextAtMillis.value = next
+        // "Ücretsiz altının hazır!" when this wait is over (see GiftReadyNotifier).
+        com.sualtikasifi.cizimhafiza.notifications.GiftReadyNotifier.sync(context, next, _adChestNextAt.value)
         ledger.addGold(AD_GOLD_AMOUNT)
         return true
     }
@@ -545,6 +547,7 @@ class SettingsRepository @Inject constructor(
         val next = now + AD_CHEST_COOLDOWN_MILLIS * (100 - RuneEffects.adCooldownReductionPercent(runes.levels)) / 100
         val reward = chests.payOutright(ChestTier.GOLD) { putLong(KEY_AD_CHEST_NEXT_AT, next) }
         _adChestNextAt.value = next
+        com.sualtikasifi.cizimhafiza.notifications.GiftReadyNotifier.sync(context, _adGoldNextAtMillis.value, next)
         return reward
     }
     @Synchronized
@@ -702,6 +705,7 @@ class SettingsRepository @Inject constructor(
             prefs.edit { putLong(KEY_AD_CHEST_NEXT_AT, adChestNextAt) }
             _adChestNextAt.value = adChestNextAt
         }
+        com.sualtikasifi.cizimhafiza.notifications.GiftReadyNotifier.sync(context, _adGoldNextAtMillis.value, _adChestNextAt.value)
     }
 
     private fun addPeriodXp(amount: Int) {

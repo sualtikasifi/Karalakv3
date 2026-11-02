@@ -525,6 +525,8 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
                 enabled = !r.writing
             ) { vm.describeReal() }
             Text("İsteğe bağlı: aynı alanları aşağıdan elle de doldurabilirsin. Açıklama ve etiketleri de yazar.", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
+            Field("Çizimleri okuyan model (OpenRouter kimliği)", st.analysisModel, { vm.setAnalysisModel(it) }, lines = 1)
+            st.aiModel?.let { Text("Son yazımı yazan model: $it", style = Console.Small) }
             st.aiCost?.let { Text("Son yazımın maliyeti: " + OpenRouterClient.usd(it), style = Console.Small) }
             r.writeError?.let { Text(it, style = Console.Small.copy(color = Console.Critical)) }
         }
@@ -920,7 +922,11 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
         if (project.featured?.sampleId == rv.sampleId) Text("Videodaki çizim bu", style = Console.Label.copy(color = Console.Accent), modifier = Modifier.padding(top = 6.dp))
         else if (index > 0) SmallLink("Başa al (video bu çizimle yapılır)") { vm.moveRevealFirst(rv.sampleId) }
         PlayerEditor(project.drawing(rv.sampleId), vm, anyBusy)
+        Field("Türü: nesne, canlı, yiyecek ya da bitki (nesnenin ve yiyeceğin gözü, yüzü, uzvu olmaz)", rv.kind, { vm.setRevealKind(rv.sampleId, it) }, lines = 1)
+        Field("Çizimden gerçeğe eşleme (her satır: çizilen parça → gerçek parça)", rv.parts, { vm.setRevealParts(rv.sampleId, it) }, lines = 4)
         Field("Çizimin şekli (görsel istemine eklenir)", rv.describe, { vm.setRevealDescribe(rv.sampleId, it) }, lines = 3)
+        Field("Malzeme (gerçekte neyden yapıldığı)", rv.material, { vm.setRevealMaterial(rv.sampleId, it) }, lines = 2)
+        Field("Sahne (fotoğrafın çekildiği tek, gerçek mekân)", rv.scene, { vm.setRevealScene(rv.sampleId, it) }, lines = 2)
         Field("Videodaki sahne (video istemine eklenir): kim, nerede, ne yapıyor, hangi sesler? Ne kadar ayrıntılı yazarsan o kadar iyi.", rv.motion, { vm.setRevealMotion(rv.sampleId, it) }, lines = 7)
 
         Text("Görsel · ChatGPT", style = Console.Label, modifier = Modifier.padding(top = 10.dp))

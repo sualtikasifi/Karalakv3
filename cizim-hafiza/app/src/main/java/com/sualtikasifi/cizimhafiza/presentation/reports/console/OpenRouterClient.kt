@@ -232,6 +232,16 @@ class OpenRouterClient(private val apiKey: String) {
          * so its successor is the default; 2.5 can still be typed in while it lasts.
          */
         const val DEFAULT_MODEL = "google/gemini-3.1-flash-lite"
+
+        /**
+         * Reading a drawing (what its parts are, what real thing each one stands for) needs a model that sees well and
+         * follows a long brief; the Lite model miscounts lines. Claude Sonnet 5.5 through OpenRouter is the studio's choice
+         * for that one step ("Gerçek Olsaydı": the shapes, the parts, the real material and scene, the video scene). It can be
+         * changed in the panel; if the model is refused or renamed the client still falls back (see [FALLBACK_MODELS]), and the
+         * panel says which model really wrote.
+         */
+        const val ANALYSIS_MODEL = "anthropic/claude-sonnet-5.5"
+        const val ANALYSIS_MODEL_PREF = "studio_analysis_model"
         /** Tried in order when the chosen model fails (OpenRouter model list, October 2026). */
         val FALLBACK_MODELS = listOf("google/gemini-3.1-flash-lite", "google/gemini-3.5-flash-lite", "google/gemini-3.8-flash")
 
