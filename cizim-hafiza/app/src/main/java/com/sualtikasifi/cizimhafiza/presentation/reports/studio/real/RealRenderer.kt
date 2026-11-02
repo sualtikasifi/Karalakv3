@@ -412,7 +412,12 @@ class RealRenderer(
         canvas.save()
         canvas.clipPath(circle)
         canvas.scale(zoom, zoom, cx, cy)
-        fitOnBackdrop(canvas, picture, 1f)
+        // a picture near the frame's shape fills it (its sides trimmed a little); one far from it is shown whole over a soft backdrop
+        if (kotlin.math.abs(picture.width.toFloat() / picture.height / (W.toFloat() / H) - 1f) <= END_COVER_SLACK) {
+            cover(canvas, picture, RectF(0f, 0f, W.toFloat(), H.toFloat()))
+        } else {
+            fitOnBackdrop(canvas, picture, 1f)
+        }
         canvas.restore()
         edge.strokeWidth = 10f * (1f - open)
         if (edge.strokeWidth > 0.5f) canvas.drawCircle(cx, cy, r, edge)
@@ -791,6 +796,8 @@ class RealRenderer(
         private const val END_OPEN = 560L
         private const val END_SETTLE = 800L
         private const val END_ZOOM = 0.03f
+        /** An end card picture within this share of the frame's shape fills the frame. */
+        private const val END_COVER_SLACK = 0.25f
 
         /** How far before its end the clip's held frame is taken, clear of a last frame that may come out black. */
         private const val LAST_FRAME_BACK = 60L
