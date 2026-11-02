@@ -304,7 +304,7 @@ fun QuickMatchScreen(
  * plank with its live bar, and the three tips.
  */
 @Composable
-private fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart: () -> Unit, modifier: Modifier = Modifier) {
+internal fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStart: () -> Unit, modifier: Modifier = Modifier) {
     val start by rememberUpdatedState(onStart)
     val progress = remember { Animatable(0f) }
     // Keyed on the run so a genuinely new opponent restarts the countdown,

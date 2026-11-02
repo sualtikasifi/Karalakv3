@@ -18,7 +18,7 @@ adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
 adb shell "run-as $PKG mkdir -p shared_prefs"
 printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boolean name=\"tutorial_completed\" value=\"true\" /><boolean name=\"feature_tour_seen\" value=\"true\" /></map>" \
   | adb shell "run-as $PKG sh -c 'cat > shared_prefs/cizim_hafiza_settings.xml'"
-for s in settings store achievements league join lobby report worlds wordcount searching; do
+for s in settings store achievements league join lobby report worlds wordcount searching found; do
   adb shell am force-stop $PKG
   adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.TitlesPreviewActivity" --es screen $s
   sleep 9

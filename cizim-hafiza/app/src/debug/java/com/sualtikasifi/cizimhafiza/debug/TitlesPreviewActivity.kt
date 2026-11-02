@@ -9,6 +9,9 @@ import com.sualtikasifi.cizimhafiza.presentation.league.LeagueScreen
 import com.sualtikasifi.cizimhafiza.presentation.online.JoinRoomScreen
 import com.sualtikasifi.cizimhafiza.presentation.online.OnlineLobbyScreen
 import com.sualtikasifi.cizimhafiza.presentation.quickmatch.SearchingScene
+import com.sualtikasifi.cizimhafiza.presentation.quickmatch.FoundScene
+import com.sualtikasifi.cizimhafiza.presentation.quickmatch.QuickMatchPlayerSnapshot
+import com.sualtikasifi.cizimhafiza.domain.model.GhostRun
 import com.sualtikasifi.cizimhafiza.presentation.reportbug.ReportBugScreen
 import com.sualtikasifi.cizimhafiza.presentation.settings.SettingsScreen
 import com.sualtikasifi.cizimhafiza.presentation.store.StoreScreen
@@ -40,6 +43,11 @@ class TitlesPreviewActivity : ComponentActivity() {
                     "report" -> ReportBugScreen(onBack = {})
                     "worlds" -> WorldMapScreen(onWorldClick = {}, onBack = {})
                     "searching" -> SearchingScene()
+                    "found" -> FoundScene(
+                        opponent = GhostRun("preview", "x", "mormadenci", 83, "ROYAL_CROWN", listOf(1), 40, 8, 2000L),
+                        me = QuickMatchPlayerSnapshot("Avcution", 79, "ROYAL_CROWN", 160_452),
+                        onStart = {}
+                    )
                     "wordcount" -> WordCountScreen(onStart = { _, _, _, _ -> }, onBack = {})
                 }
             }
