@@ -74,4 +74,48 @@ class RealImagePromptTest {
         assertEquals("p → q", picks.reveals[1].parts)
         assertEquals("s2", picks.reveals[1].scene)
     }
+
+    @Test
+    fun `the picture prompt says the real size and what shows it`() {
+        val prompt = RealCopy.imagePrompt("şırınga", 5, syringe.copy(size = "yaklaşık 15 cm, avuca sığar", scaleHint = "yanında bir tükenmez kalem"))
+        assertTrue(prompt, prompt.contains("gerçek boyutu yaklaşık 15 cm, avuca sığar"))
+        assertTrue(prompt, prompt.contains("yanında bir tükenmez kalem"))
+        assertFalse("no size given, no size line", RealCopy.imagePrompt("şırınga", 5, syringe).contains("Ölçü:"))
+    }
+
+    @Test
+    fun `the video prompt keeps one shot, one place, the real size and a rigid thing`() {
+        val video = RealCopy.videoPrompt(
+            "şırınga",
+            syringe.copy(size = "yaklaşık 15 cm", fixed = "sert plastik ve metal: bükülmez, esnemez", motion = "0–2 sn: hemşire girer.", scene = "çelik bir masa")
+        )
+        // the room cannot change, nobody comes through a door
+        assertTrue(video, video.contains("TEK ÇEKİM"))
+        assertTrue(video, video.contains("Kesme, sahne değişimi, yeni oda, kapı açılması ya da yeni bir kişinin girişi yok"))
+        assertTrue(video, video.contains("en fazla bir kişi"))
+        // the size does not grow
+        assertTrue(video, video.contains("Gerçek boyutu yaklaşık 15 cm"))
+        // a rigid needle is not bent: only the person moves it
+        assertTrue(video, video.contains("sert plastik ve metal: bükülmez, esnemez"))
+        assertTrue(video, video.contains("bükülmez, yaylanmaz"))
+        assertTrue(video, video.contains("Olay: 0–2 sn: hemşire girer."))
+        assertTrue(video, video.contains("çelik bir masa"))
+    }
+
+    @Test
+    fun `the scene ideas are asked for with the same rules and read back`() {
+        val prompt = RealCopy.pitchPrompt("şırınga", syringe.copy(size = "yaklaşık 15 cm"))
+        assertTrue(prompt, prompt.contains("6 farklı espri fikri"))
+        assertTrue(prompt, prompt.contains("en iyi 3'ünü"))
+        // the six one-line jokes are written down first, so the choosing really happens
+        assertTrue(prompt, prompt.contains("\"candidates\""))
+        assertTrue(prompt, prompt.contains("Tek çekim, tek mekân"))
+        assertTrue(prompt, prompt.contains("bükülmez, yaylanmaz, sallanmaz"))
+        assertTrue(prompt, prompt.contains("Gerçek boyutu: yaklaşık 15 cm"))
+        val ideas = RealCopy.parsePitches("""{"ideas":[{"joke":"j1","scene":"s1"},{"joke":"j2","scene":"s2"},{"joke":"","scene":""},{"joke":"j4","scene":"s4"},{"joke":"j5","scene":"s5"}]}""")
+        assertEquals(3, ideas!!.size)
+        assertEquals("j1", ideas[0].joke)
+        assertEquals("s4", ideas[2].scene)
+        assertEquals(null, RealCopy.parsePitches("bilmiyorum"))
+    }
 }

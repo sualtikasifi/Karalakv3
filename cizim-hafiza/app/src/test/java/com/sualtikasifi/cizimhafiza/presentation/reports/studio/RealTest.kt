@@ -337,18 +337,17 @@ class RealTest {
 
     @Test
     fun videoPromptKeepsTheObjectAsPaintedYetMakesSomethingHappenToIt() {
-        val video = RealCopy.videoPrompt("mikrodalga", "Mutfakta bir adam tabağı içeri koyar ve düğmelere basar.")
+        val video = RealCopy.videoPrompt("mikrodalga", RealReveal("m", motion = "Mutfakta bir adam tabağı içeri koyar ve düğmelere basar."))
         assertTrue(video.contains("ilk kare olarak kullan"))
         // the object is never changed ...
-        assertTrue(video.contains("TAMAMEN AYNI kalmalı"))
-        assertTrue(video.contains("göz, yüz, kol, bacak"))
-        // ... but it is not left to sway: a small story with a person, and real sound
-        assertTrue(video.contains("Neler oluyor: Mutfakta bir adam tabağı içeri koyar ve düğmelere basar. "))
-        assertTrue(video.contains("öylece durup sallanmasın"))
-        assertTrue(video.contains("sesi de üret"))
+        assertTrue(video.contains("fotoğraftaki gibi kalır"))
+        assertTrue(video.contains("şekil ya da malzeme değiştirmez"))
+        // ... but something happens to it, by a person, and with real sound
+        assertTrue(video.contains("Olay: Mutfakta bir adam tabağı içeri koyar ve düğmelere basar.\n"))
+        assertTrue(video.contains("Ses:"))
         // with no scene of its own, a person comes and uses the thing
-        val generic = RealCopy.videoPrompt("nar", "")
-        assertTrue(generic.contains("çekime girer"))
+        val generic = RealCopy.videoPrompt("nar", null)
+        assertTrue(generic.contains("merakla bakar"))
         assertTrue(generic.contains("nar"))
         assertFalse(video.contains("Use the attached photo"))
     }
@@ -356,7 +355,7 @@ class RealTest {
     @Test
     fun aLongSceneIsKeptWholeInTheVideoPrompt() {
         val scene = (1..12).joinToString(" ") { "Sahne cümlesi $it." }
-        assertTrue(RealCopy.videoPrompt("saz", scene).contains(scene.trimEnd('.')))
+        assertTrue(RealCopy.videoPrompt("saz", RealReveal("s", motion = scene)).contains(scene.trimEnd('.')))
     }
 
     @Test

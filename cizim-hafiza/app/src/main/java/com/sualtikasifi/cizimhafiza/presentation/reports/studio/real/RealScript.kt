@@ -49,6 +49,10 @@ data class RecentDrawing(
     val strokes: List<List<DrawingPoint>>
 )
 
+/** One idea for the video: the joke in one sentence, and the scene (a beat sheet) that plays it. */
+@Serializable
+data class ScenePitch(val joke: String, val scene: String)
+
 /**
  * A drawing turned real: its realistic picture (made in ChatGPT, kept for sharing as a swipe-through post and as
  * the starting frame for Gemini) and the clip of that picture moving, with sound (made in Gemini), and what Karalak
@@ -72,6 +76,14 @@ data class RealReveal(
     val material: String = "",
     /** The one real place the picture is set in. */
     val scene: String = "",
+    /** The thing's real size ("yaklaşık 15 cm, avuca sığar"): written into the picture and video prompts so it does not grow in the video. */
+    val size: String = "",
+    /** Something small and familiar beside it in the picture that shows its size ("yanında bir tükenmez kalem"). */
+    val scaleHint: String = "",
+    /** What never changes about it ("sert plastik ve metal: bükülmez, esnemez, kendi kendine hareket etmez"). */
+    val fixed: String = "",
+    /** The ideas for the video scene the assistant wrote after looking at the real picture; one is chosen into [motion]. */
+    val pitches: List<ScenePitch> = emptyList(),
     val image: String? = null,
     val clip: String? = null,
     val clipMs: Long = 0L,
@@ -458,6 +470,12 @@ object RealCopy {
         append("Malzeme: ")
         append(if (material.isNotEmpty()) material else "gerçek bir \"$thing\" neyden yapılıyorsa o gerçek malzemeler")
         append("; gerçek ışık, yansıma ve gölgeler.\n")
+        val size = reveal?.size.orEmpty().trim().trimEnd('.')
+        if (size.isNotEmpty()) {
+            append("Ölçü: gerçek boyutu ").append(size).append(". Fotoğrafta bu gerçek boyutuyla görünsün")
+            reveal?.scaleHint.orEmpty().trim().trimEnd('.').takeIf { it.isNotEmpty() }?.let { append("; boyutu anlaşılsın diye ").append(it) }
+            append(".\n")
+        }
         append("Tarz: sıradan bir telefon fotoğrafı, gerçek dokular. İllüstrasyon, çizgi film, anime, boyama ve 3B görsel olmasın.\n")
         val scene = reveal?.scene.orEmpty().trim().trimEnd('.')
         append("Sahne: ")
@@ -469,34 +487,83 @@ object RealCopy {
 
     /**
      * What goes to Gemini together with the picture made from the doodle, in Turkish so it can be corrected by hand.
-     * Two things have to hold at once: the object stays EXACTLY as the picture shows it (Gemini otherwise "improves"
-     * it into a normal one), and yet something must happen to it. An object that only sways in place is a dull video,
-     * so the prompt asks for a small funny story (a person comes in and uses it, reacts to it), with real sound.
-     * [scene] is the assistant's idea for this object, as long and as detailed as wished; without one a generic
-     * "a person comes and uses it" is asked.
+     * Kept short and built from the continuity notes the assistant filled in ([RealReveal.fixed], [RealReveal.size],
+     * [RealReveal.scene]) and the chosen scene ([RealReveal.motion], a beat sheet). The rules answer what went wrong
+     * in the first videos: the room changed when a second person came in (one shot, one place, nobody comes through a
+     * door), the object grew to a metre (its real size is said, and that it is held in a hand), and a rigid needle turned
+     * into a spring (the thing never changes shape; only a person moves it).
      */
-    fun videoPrompt(word: String, scene: String): String {
+    fun videoPrompt(word: String, reveal: RealReveal?): String {
         val thing = word.ifBlank { "nesne" }
-        val story = scene.trim().trimEnd('.').ifBlank {
-            "Sıradan biri çekime girer, tuhaf görünen o nesneyi (\"$thing\") merakla fark eder. Onu herkesin doğal olarak kullanacağı gibi kullanır, " +
-                "sonra durup ne kadar tuhaf olduğuna şaşırarak gülümser ve işine devam eder"
+        val story = reveal?.motion.orEmpty().trim().trimEnd('.').ifBlank {
+            "Sıradan biri (\"$thing\" nesnesine) merakla bakar, onu doğal olarak kullanır, tuhaf göründüğünü fark etse de ciddiyetini bozmadan işine devam eder"
         }
-        return "Ekteki fotoğrafı ilk kare olarak kullan ve onu dikey 9:16, 8 saniyelik, sesli, sıradan bir telefon videosu gibi duran bir videoya dönüştür.\n\n" +
-            "Fotoğraf, bir çocuğun \"$thing\" karalamasının gerçek hâli ve kendine has, beceriksiz, tuhaf şekli işin asıl noktası. \"$thing\" fotoğraftaki hâliyle TAMAMEN AYNI kalmalı: aynı siluet, oranlar, renkler, malzemeler, yer ve ışık. " +
-            "Yeniden tasarlama, düzeltme, güzelleştirme ya da \"iyileştirme\". Daha profesyonel ya da daha gerçekçi yapma. " +
-            "Fotoğrafta olmayan göz, yüz, kol, bacak, kanat, pencere, süs ya da başka bir parça EKLEME, olanlardan da çıkarma. " +
-            "Hâlâ gerçek olmuş bir çocuk çizimi gibi görünmeli.\n\n" +
-            "Neler oluyor: " + story + ". " +
-            "Nesne öylece durup sallanmasın: ona bir şey olsun; net bir başlangıç, bir komik an ve sonda küçük bir tepki olsun, hepsi 8 saniyeye sığsın. " +
-            "Sahnede biri varsa sıradan, gerçek biri olsun; doğal ve telaşsız davransın, yandan, arkadan ya da kısmen görünsün; nesnenin şeklini asla değiştirmesin.\n\n" +
-            "Kamera: elde telefon hissi, sabit ya da çok yavaş yaklaşan; kesme yok.\n\n" +
-            "Ses: sesi de üret. Olanlara uyan gerçekçi sesler (nesnenin kendi sesleri, eller ve ayak sesleri, çevrenin sesi), gerçek bir kayıt gibi. Müzik yok, ekranda yazı yok. Sahnede açıkça yazılmadıkça kimse konuşmasın."
+        val fixed = reveal?.fixed.orEmpty().trim().trimEnd('.')
+        val size = reveal?.size.orEmpty().trim().trimEnd('.')
+        val place = reveal?.scene.orEmpty().trim().trimEnd('.')
+        return buildString {
+            append("Ekteki fotoğrafı ilk kare olarak kullan. 8 saniyelik, dikey 9:16, sesli, sabit tutulan bir telefonla çekilmiş gerçek bir video; TEK ÇEKİM.\n\n")
+            append("Nesne: \"").append(thing).append("\" fotoğraftaki gibi kalır: aynı şekil, oranlar, renkler, malzeme ve yer. ")
+            append(if (fixed.isNotEmpty()) "$fixed. " else "Sert, katı bir nesne gibi davranır: bükülmez, esnemez, şekil ya da malzeme değiştirmez, canlanmaz, göz ya da yüz çıkmaz. ")
+            if (size.isNotEmpty()) append("Gerçek boyutu ").append(size).append(": kişinin yanında bu ölçüde görünür, büyümez ya da küçülmez. ")
+            append("Yeniden tasarlama, güzelleştirme, ekleme ya da çıkarma yok.\n")
+            append("Mekân: fotoğraftaki yer baştan sona AYNI kalır")
+            if (place.isNotEmpty()) append(" (").append(place).append(")")
+            append(": aynı duvar, yüzey, eşyalar ve ışık. Kesme, sahne değişimi, yeni oda, kapı açılması ya da yeni bir kişinin girişi yok.\n")
+            append("Kişi: en fazla bir kişi, sıradan ve gerçek biri; kadrajın içinde ya da kenarından yürüyerek girer, başka kimse girmez.\n")
+            append("Hareket kuralı: nesneyi yalnızca kişi hareket ettirir (tutar, çevirir, iter, bırakır). Nesne kendiliğinden hareket etmez, bükülmez, yaylanmaz, şekil değiştirmez.\n\n")
+            append("Olay: ").append(story).append(".\n\n")
+            append("Kamera: sabit ya da çok yavaş yaklaşan; kesme yok.\n")
+            append("Ses: olanlara uyan gerçekçi sesler (adım, nesnenin kendi sesi, eller), gerçek bir kayıt gibi. Müzik yok, ekranda yazı yok; sahnede açıkça yazılmadıkça kimse konuşmasın.")
+        }
+    }
+
+    /**
+     * What the assistant is asked, with the real picture in front of it, to come up with the video scene: several jokes
+     * thought through, the best three given, each a beat sheet that obeys the same continuity rules as [videoPrompt].
+     */
+    fun pitchPrompt(word: String, reveal: RealReveal): String = buildString {
+        val thing = word.ifBlank { "nesne" }
+        append("Ekteki fotoğraf, bir çocuk çiziminin gerçek hâli: \"").append(thing).append("\". Bu fotoğrafı ilk kare alıp 8 saniyelik, TEK ÇEKİMLİK komik bir video yapacağız.\n\n")
+        append("Bilinenler:\n")
+        if (reveal.kind.isNotBlank()) append("- Türü: ").append(reveal.kind).append('\n')
+        if (reveal.size.isNotBlank()) append("- Gerçek boyutu: ").append(reveal.size).append('\n')
+        if (reveal.material.isNotBlank()) append("- Malzemesi: ").append(reveal.material).append('\n')
+        if (reveal.fixed.isNotBlank()) append("- Değişmeyenler: ").append(reveal.fixed).append('\n')
+        if (reveal.scene.isNotBlank()) append("- Mekân: ").append(reveal.scene).append('\n')
+        if (reveal.describe.isNotBlank()) append("- Çizimin tuhaf şekli: ").append(reveal.describe).append('\n')
+        append("\nÖNCE \"candidates\" listesine 6 farklı espri fikri yaz, her biri TEK kısa cümle. SONRA bunlardan birbirinden FARKLI mekanizmalı en iyi 3'ünü seç ve \"ideas\" içinde sahnesiyle yaz. Espri, nesnenin gerçek kullanımından ya da çizimin tuhaf özelliğinden doğsun. ")
+        append("Espri mekanizmaları: ciddi, sakin bir tepki (kişi nesnenin tuhaflığını hiç yadırgamaz); makul ama yanlış kullanım; üç denemede giderek artan absürtlük; hiçbir şey olmamış gibi davranma; nesnenin kendi sesi ve zamanlaması.\n\n")
+        append("KESİN KURALLAR (her fikir bunlara uymalı, yazmadan önce tek tek kontrol et):\n")
+        append("1. Tek çekim, tek mekân: fotoğraftaki yer baştan sona aynı. Kapı açılması, yeni oda, kesme, ikinci bir kişinin girişi YOK.\n")
+        append("2. En fazla bir kişi; sıradan ve gerçek biri, kadraja içeriden ya da kenarından girer.\n")
+        append("3. Nesne şekil, malzeme ya da boyut değiştirmez: sertse bükülmez, yaylanmaz, sallanmaz, canlanmaz, göz ya da yüz çıkmaz. Hareketi yalnızca kişi yapar (tutar, çevirir, iter, bırakır, düşürür).\n")
+        append("4. Boyut gerçek kalır: kişinin elinde ya da yanında nesnenin gerçek ölçüsünde görünür.\n")
+        append("5. 8 saniyeye sığar: 0–2 sn kurulum, 2–5 sn gelişme, 5–8 sn sürpriz; her aralıkta tek eylem.\n")
+        append("6. Sonda duyulacak bir ses fikri ver (adım, nesnenin sesi, bir tık); konuşma yok.\n\n")
+        append("Her fikir için: \"joke\" esprinin ne olduğunu anlatan TEK cümle; \"scene\" üç zaman aralığıyla yazılmış sahne (mekân, kişi, ne yaptığı, ses). Hepsini TÜRKÇE yaz.\n")
+        append("Yalnızca şu JSON'u yaz: {\"candidates\":[\"…\",\"…\",\"…\",\"…\",\"…\",\"…\"],\"ideas\":[{\"joke\":\"…\",\"scene\":\"…\"},{\"joke\":\"…\",\"scene\":\"…\"},{\"joke\":\"…\",\"scene\":\"…\"}]}")
+    }
+
+    /** The scene ideas out of the assistant's answer; null when none could be read. */
+    fun parsePitches(text: String): List<ScenePitch>? {
+        val o = GuessCopy.objectIn(text) ?: return null
+        val ideas = runCatching {
+            o["ideas"]!!.jsonArray.mapNotNull { e ->
+                val p = e.jsonObject
+                val joke = p["joke"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+                val scene = p["scene"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+                if (scene.isEmpty()) null else ScenePitch(joke, scene)
+            }
+        }.getOrNull().orEmpty()
+        return ideas.take(3).takeIf { it.isNotEmpty() }
     }
 
     /** One drawing the assistant described: `index` is 1-based. */
     data class RevealPick(
         val index: Int, val wordEn: String, val describe: String, val motion: String,
-        val kind: String = "", val parts: String = "", val material: String = "", val scene: String = ""
+        val kind: String = "", val parts: String = "", val material: String = "", val scene: String = "",
+        val size: String = "", val scaleHint: String = "", val fixed: String = ""
     )
 
     /**
@@ -587,7 +654,7 @@ object RealCopy {
                     is kotlinx.serialization.json.JsonPrimitive -> e.contentOrNull.orEmpty().trim()
                     else -> ""
                 }
-                RevealPick(i, str(p, "word_en"), str(p, "describe"), str(p, "motion"), str(p, "kind"), parts, str(p, "material"), str(p, "scene"))
+                RevealPick(i, str(p, "word_en"), str(p, "describe"), str(p, "motion"), str(p, "kind"), parts, str(p, "material"), str(p, "scene"), str(p, "size"), str(p, "scale_hint"), str(p, "fixed"))
             }.distinctBy { it.index }
         }.getOrNull().orEmpty()
         if (reveals.isEmpty()) return null
