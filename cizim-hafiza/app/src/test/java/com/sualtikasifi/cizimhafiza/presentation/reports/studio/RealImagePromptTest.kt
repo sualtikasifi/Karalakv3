@@ -107,6 +107,8 @@ class RealImagePromptTest {
         val prompt = RealCopy.pitchPrompt("şırınga", syringe.copy(size = "yaklaşık 15 cm"))
         assertTrue(prompt, prompt.contains("6 farklı espri fikri"))
         assertTrue(prompt, prompt.contains("en iyi 3'ünü"))
+        // the six one-line jokes are written down first, so the choosing really happens
+        assertTrue(prompt, prompt.contains("\"candidates\""))
         assertTrue(prompt, prompt.contains("Tek çekim, tek mekân"))
         assertTrue(prompt, prompt.contains("bükülmez, yaylanmaz, sallanmaz"))
         assertTrue(prompt, prompt.contains("Gerçek boyutu: yaklaşık 15 cm"))

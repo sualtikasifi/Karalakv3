@@ -532,7 +532,7 @@ object RealCopy {
         if (reveal.fixed.isNotBlank()) append("- Değişmeyenler: ").append(reveal.fixed).append('\n')
         if (reveal.scene.isNotBlank()) append("- Mekân: ").append(reveal.scene).append('\n')
         if (reveal.describe.isNotBlank()) append("- Çizimin tuhaf şekli: ").append(reveal.describe).append('\n')
-        append("\nÖNCE kendi içinde 6 farklı espri fikri düşün, sonra birbirinden FARKLI mekanizmalı en iyi 3'ünü ver. Espri, nesnenin gerçek kullanımından ya da çizimin tuhaf özelliğinden doğsun. ")
+        append("\nÖNCE \"candidates\" listesine 6 farklı espri fikri yaz, her biri TEK kısa cümle. SONRA bunlardan birbirinden FARKLI mekanizmalı en iyi 3'ünü seç ve \"ideas\" içinde sahnesiyle yaz. Espri, nesnenin gerçek kullanımından ya da çizimin tuhaf özelliğinden doğsun. ")
         append("Espri mekanizmaları: ciddi, sakin bir tepki (kişi nesnenin tuhaflığını hiç yadırgamaz); makul ama yanlış kullanım; üç denemede giderek artan absürtlük; hiçbir şey olmamış gibi davranma; nesnenin kendi sesi ve zamanlaması.\n\n")
         append("KESİN KURALLAR (her fikir bunlara uymalı, yazmadan önce tek tek kontrol et):\n")
         append("1. Tek çekim, tek mekân: fotoğraftaki yer baştan sona aynı. Kapı açılması, yeni oda, kesme, ikinci bir kişinin girişi YOK.\n")
@@ -542,7 +542,7 @@ object RealCopy {
         append("5. 8 saniyeye sığar: 0–2 sn kurulum, 2–5 sn gelişme, 5–8 sn sürpriz; her aralıkta tek eylem.\n")
         append("6. Sonda duyulacak bir ses fikri ver (adım, nesnenin sesi, bir tık); konuşma yok.\n\n")
         append("Her fikir için: \"joke\" esprinin ne olduğunu anlatan TEK cümle; \"scene\" üç zaman aralığıyla yazılmış sahne (mekân, kişi, ne yaptığı, ses). Hepsini TÜRKÇE yaz.\n")
-        append("Yalnızca şu JSON'u yaz: {\"ideas\":[{\"joke\":\"…\",\"scene\":\"…\"},{\"joke\":\"…\",\"scene\":\"…\"},{\"joke\":\"…\",\"scene\":\"…\"}]}")
+        append("Yalnızca şu JSON'u yaz: {\"candidates\":[\"…\",\"…\",\"…\",\"…\",\"…\",\"…\"],\"ideas\":[{\"joke\":\"…\",\"scene\":\"…\"},{\"joke\":\"…\",\"scene\":\"…\"},{\"joke\":\"…\",\"scene\":\"…\"}]}")
     }
 
     /** The scene ideas out of the assistant's answer; null when none could be read. */
