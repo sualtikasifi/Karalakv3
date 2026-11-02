@@ -379,7 +379,7 @@ internal fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStar
                     lifetimeXp = me.lifetimeXp
                 )
                 MatchCard(
-                    u = u, fromLeft = false, x = MfArtW - CardMargin - 266f * CardHeight / 392f, y = CardTop,
+                    u = u, fromLeft = false, x = MfArtW - CardMargin - CardWidth, y = CardTop,
                     card = R.drawable.mf_card_b, cardW = 266, cardH = 392, centerX = 133f,
                     ribbon = R.drawable.mf_ribbon_b,
                     nickname = opponent.nickname, level = opponent.level, frameId = opponent.frameId,
@@ -489,6 +489,7 @@ private const val MfArtW = 841f
 private const val CardMargin = 20f
 private const val CardTop = 538f
 private const val CardHeight = 455f
+private const val CardWidth = 330f
 
 /** The avatar, the name and the XP sit at the same height on both cards, whichever picture is behind them. */
 private const val InnerScale = 1.18f
@@ -516,8 +517,8 @@ private fun MatchCard(
     photo: com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto? = null,
     lifetimeXp: Int
 ) {
-    // Each card is scaled to the common height, so a picture that is a little shorter or taller than the other lines up.
-    val s = CardHeight / cardH
+    // Both pictures are drawn into the same box (they differ by a few percent in proportion), so the two cards are the same
+    // size and the VS between them sits exactly in the middle of the gap.
     val fontScale0 = LocalDensity.current.fontScale
     fun fs(art: Float) = (art * u.value / fontScale0).sp
     val slide = remember { Animatable(if (fromLeft) -1f else 1f) }
@@ -525,14 +526,14 @@ private fun MatchCard(
     Box(
         modifier = Modifier
             .offset(u * x, u * y)
-            .size(u * cardW * s, u * CardHeight)
+            .size(u * CardWidth, u * CardHeight)
             .graphicsLayer {
                 translationX = slide.value * size.width
                 alpha = (1f - kotlin.math.abs(slide.value)).coerceIn(0f, 1f)
             }
     ) {
         Image(painterResource(card), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-        val cx = centerX * s
+        val cx = CardWidth / 2f
         val avatar = 190f
         Box(Modifier.offset(u * (cx - avatar / 2f), u * (InnerScale * 190f - avatar / 2f)).size(u * avatar)) {
             LevelAvatar(
