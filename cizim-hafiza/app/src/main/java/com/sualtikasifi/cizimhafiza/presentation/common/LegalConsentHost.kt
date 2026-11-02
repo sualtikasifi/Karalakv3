@@ -186,6 +186,7 @@ fun LegalConsentHost(viewModel: LegalConsentViewModel = hiltViewModel()) {
                     enabled = complete,
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(14.dp))
             }
         }
     }
