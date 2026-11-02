@@ -93,6 +93,7 @@ class RunePromoPreviewActivity : ComponentActivity() {
                         val reward = if (screen == "league_win_frame") all.filterIsInstance<com.sualtikasifi.cizimhafiza.domain.model.LeagueReward.Frame>().firstOrNull() else all.firstOrNull()
                         com.sualtikasifi.cizimhafiza.presentation.league.LeaguePrizeDialog(reward = reward ?: all.firstOrNull(), rank = 1, onDismiss = { finish() })
                     }
+                    "child_locked" -> com.sualtikasifi.cizimhafiza.presentation.common.ChildLockedWindow(onBack = { finish() })
                     "invite" -> com.sualtikasifi.cizimhafiza.presentation.online.LobbyInviteWindow(
                         friends = listOf("bob ross", "liliput", "Zeynep", "Mert", "Ayşe Nur", "kaplan34").map { com.sualtikasifi.cizimhafiza.domain.model.Friend(it, it) },
                         sendingToUid = "Zeynep", sentToUids = setOf("liliput"), message = "Davet gönderildi",

@@ -203,46 +203,7 @@ fun ChildGate(onBack: () -> Unit, content: @Composable () -> Unit) {
         content()
         return
     }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF2A1708))
-            .clickable(
-                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                indication = null,
-                onClick = {}
-            )
-            .padding(horizontal = 24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        NinePatch(
-            res = R.drawable.qm_pad,
-            slicePx = 120,
-            edge = 26.dp,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(start = 22.dp, end = 22.dp, top = 34.dp, bottom = 26.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(R.string.child_locked_title),
-                    style = PaintedStyle(color = Color(0xFF2B1A10), fontSize = 24.sp, textAlign = TextAlign.Center)
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.child_locked_body),
-                    style = DescriptionStyle(15.sp, 20.sp)
-                )
-                Spacer(Modifier.height(16.dp))
-                PaintedPillButton(
-                    text = stringResource(R.string.cd_back),
-                    onClick = onBack,
-                    modifier = Modifier.fillMaxWidth(0.7f)
-                )
-            }
-        }
-    }
+    ChildLockedWindow(onBack = onBack)
 }
 
 /** One part of the date of birth: its name above a short numbers-only field. */
