@@ -323,16 +323,16 @@ class RealTest {
 
     @Test
     fun imagePromptIsTurkishAndCarriesTheWordAndTheOddities() {
-        val prompt = RealCopy.imagePrompt("kedi", 5, "altı bacaklı bir kedi.")
+        val prompt = RealCopy.imagePrompt("kedi", 5, RealReveal("k", kind = "canlı", describe = "altı bacaklı bir kedi."))
         assertTrue(prompt.contains("\"kedi\" kelimesi için 5 saniyede"))
-        assertTrue(prompt.contains("Karalamanın şekli: altı bacaklı bir kedi.\n"))
+        assertTrue(prompt.contains("Çizimin şekli: altı bacaklı bir kedi.\n"))
         // the drawing's shape wins over what a cat should look like
-        assertTrue(prompt.contains("normal bir \"kedi\" hâline GETİRME"))
+        assertTrue(prompt.contains("Normal bir \"kedi\" hâline getirme"))
         assertTrue(prompt.contains("9:16"))
         // no English is left in it, so it can be corrected by hand
         assertFalse(prompt.contains("The attached image"))
-        val noDescribe = RealCopy.imagePrompt("kedi", 5, "")
-        assertFalse(noDescribe.contains("Karalamanın şekli"))
+        val noDescribe = RealCopy.imagePrompt("kedi", 5, RealReveal("k", kind = "canlı"))
+        assertFalse(noDescribe.contains("Çizimin şekli"))
     }
 
     @Test

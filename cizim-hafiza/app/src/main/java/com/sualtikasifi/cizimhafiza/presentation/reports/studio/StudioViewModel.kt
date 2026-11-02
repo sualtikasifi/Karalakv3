@@ -988,6 +988,10 @@ class StudioViewModel @Inject constructor(
 
     fun setRevealDescribe(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(describe = text.take(800)) }
     fun setRevealMotion(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(motion = text.take(1800)) }
+    fun setRevealKind(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(kind = text.take(40)) }
+    fun setRevealParts(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(parts = text.take(1000)) }
+    fun setRevealMaterial(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(material = text.take(400)) }
+    fun setRevealScene(sampleId: String, text: String) = updateReveal(sampleId) { it.copy(scene = text.take(400)) }
 
     /**
      * Lets the assistant describe the chosen drawings (their shapes, a detailed scene for each video)
@@ -1008,7 +1012,7 @@ class StudioViewModel @Inject constructor(
                 updateReal { it.copy(writing = false) }
                 val byId = w.reveals.associateBy { it.sampleId }
                 updateProject { proj ->
-                    proj.copy(reveals = proj.reveals.map { r -> byId[r.sampleId]?.let { d -> r.copy(describe = d.describe, motion = d.motion) } ?: r })
+                    proj.copy(reveals = proj.reveals.map { r -> byId[r.sampleId]?.let { d -> r.copy(describe = d.describe, motion = d.motion, kind = d.kind, parts = d.parts, material = d.material, scene = d.scene) } ?: r })
                 }
                 _state.update { it.copy(caption = w.caption.ifBlank { it.caption }, hashtags = w.hashtags.ifBlank { it.hashtags }, aiCost = w.costUsd) }
             }.onFailure { e -> updateReal { it.copy(writing = false, writeError = e.message ?: "Yazılamadı") } }
@@ -1209,7 +1213,7 @@ class StudioViewModel @Inject constructor(
                     File(dir, "karalak_cizim_${System.currentTimeMillis()}.png").apply { writeBytes(StrokeReplay.png(d.strokes, 1f, 1024)) }
                 }.getOrNull()
             } ?: run { _state.update { it.copy(message = "Çizim hazırlanamadı") }; return@launch }
-            val prompt = RealCopy.imagePrompt(d.word, d.seconds.coerceAtLeast(1), reveal?.describe.orEmpty())
+            val prompt = RealCopy.imagePrompt(d.word, d.seconds.coerceAtLeast(1), reveal)
             updateReal { it.copy(share = RealShare(file, prompt)) }
         }
     }
@@ -1267,7 +1271,7 @@ class StudioViewModel @Inject constructor(
         val p = _state.value.real.project ?: return null
         val d = p.drawing(sampleId) ?: return null
         val reveal = p.reveals.find { it.sampleId == sampleId }
-        return RealCopy.imagePrompt(d.word, d.seconds.coerceAtLeast(1), reveal?.describe.orEmpty())
+        return RealCopy.imagePrompt(d.word, d.seconds.coerceAtLeast(1), reveal)
     }
 
     fun videoPrompt(sampleId: String): String? {
