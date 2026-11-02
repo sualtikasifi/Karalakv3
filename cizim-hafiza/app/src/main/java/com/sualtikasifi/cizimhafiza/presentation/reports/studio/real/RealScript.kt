@@ -253,7 +253,7 @@ object RealTimeline {
     const val TEASE_MS = 900L
     const val TEASE_HOLD = 450L
     /** The end of the opening, in which the first clip opens out of the drawing. */
-    const val HOOK_REVEAL = 450L
+    const val HOOK_REVEAL = 650L
     /** The finished drawing stays still for a moment before the clip opens out of it. */
     const val HOOK_HOLD = 300L
 
@@ -482,6 +482,7 @@ object RealCopy {
         append(if (scene.isNotEmpty()) scene else "tek, gerçek ve sıradan bir yer (\"$thing\" nerede olurdu ya da bulunurdu)")
         append("; yumuşak gün ışığı, göz hizasında çekim.\n")
         append("Ton: komik ve sevimli bir tuhaflık; ürkütücü ya da korkutucu olmasın. Çizimi herkes bir bakışta içinde tanımalı.\n")
+        append("Yerleşim: çizim kare bir kâğıdın ortasına sığacak şekilde çizilmiş. O kâğıdı kadrajın genişliği kadar, dikeyde ortada bir kare say ve nesneyi bu karenin içinde, çizimin kâğıttaki yeri ve oranlarıyla aynen yerleştir; karenin dışı sahnenin devamı olsun. Video bu görselden başlayacak ve çizim ona kayarak dönüşecek.\n")
         append("Çıktı: tek görsel, dikey 9:16. Kâğıt, kalem çizgisi, yazı, çerçeve ve fazladan karakter olmasın.")
     }
 

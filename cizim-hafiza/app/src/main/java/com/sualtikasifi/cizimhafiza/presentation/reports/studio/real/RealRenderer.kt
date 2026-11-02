@@ -290,6 +290,23 @@ class RealRenderer(
         val d = project.drawing(reveal.sampleId) ?: return
         val local = t - e.startMs
         canvas.drawColor(C.CREAM)
+        // the clip's first frame, once it opens: the screen zooms into the drawing as it fades into it (see below)
+        val openFrom = e.durationMs - RealTimeline.HOOK_REVEAL
+        val morph = if (local >= openFrom) ((local - openFrom).toFloat() / RealTimeline.HOOK_REVEAL).coerceIn(0f, 1f) else 0f
+        val m = Ease.inOut(morph)
+        canvas.save()
+        if (morph > 0f) {
+            // the drawing's outline now, and where the same drawing sits in the picture the clip starts from (a square sheet
+            // across the frame's width, centred): the screen is scaled and slid so the one lands on the other
+            val replayOf = replay(d.id)
+            val from = replayOf?.bounds(hookBox) ?: RectF(hookBox)
+            val to = replayOf?.bounds(RectF(0f, (H - W) / 2f, W.toFloat(), (H + W) / 2f)) ?: RectF(0f, (H - W) / 2f, W.toFloat(), (H + W) / 2f)
+            val s = ((to.width() + to.height()) / (from.width() + from.height()).coerceAtLeast(1f)).coerceIn(1f, MORPH_MAX_ZOOM)
+            val scale = 1f + (s - 1f) * m
+            canvas.translate(from.centerX() + (to.centerX() - from.centerX()) * m, from.centerY() + (to.centerY() - from.centerY()) * m)
+            canvas.scale(scale, scale)
+            canvas.translate(-from.centerX(), -from.centerY())
+        }
         scene?.let { canvas.drawBitmap(it, null, RectF(0f, 0f, W.toFloat(), H.toFloat()), fill) }
 
         // the drawing, drawn again in the time the opening leaves before the clip (after the glimpse of the real thing, when it opens with one)
@@ -324,25 +341,23 @@ class RealRenderer(
         // the tray: pen (picked), eraser, undo and clear (dim until there is something drawn), and the ad button
         drawTray(canvas, drawn > 0f)
 
+        canvas.restore()
+
         // a glimpse of the real thing shrinks away into the canvas, then the drawing is drawn
         if (teaser && local < tease) drawTease(canvas, reveal, local, box)
 
-        // the first clip opens out of the drawing
-        val openFrom = e.durationMs - RealTimeline.HOOK_REVEAL
-        if (local >= openFrom) {
+        // the first clip comes in over the zooming screen, settling from a slight push-in, so the drawing turns into it where it stands
+        if (morph > 0f) {
             val frame = clips[reveal.sampleId]?.frameAt(0L) ?: return
-            val p = Ease.out(((local - openFrom).toFloat() / RealTimeline.HOOK_REVEAL).coerceIn(0f, 1f))
-            val cx = box.centerX()
-            val cy = box.centerY()
-            val r = p * hypot(maxOf(cx, W - cx), maxOf(cy, H - cy))
-            circle.reset()
-            circle.addCircle(cx, cy, r, Path.Direction.CW)
+            val a = Ease.inOut(((morph - MORPH_IN) / (MORPH_FULL - MORPH_IN)).coerceIn(0f, 1f))
+            val zoom = 1f + MORPH_SETTLE * (1f - m)
+            shade.color = C.WHITE
+            shade.alpha = (255 * a).toInt()
             canvas.save()
-            canvas.clipPath(circle)
-            cover(canvas, frame, RectF(0f, 0f, W.toFloat(), H.toFloat()))
+            canvas.scale(zoom, zoom, W / 2f, H / 2f)
+            cover(canvas, frame, RectF(0f, 0f, W.toFloat(), H.toFloat()), shade)
             canvas.restore()
-            edge.strokeWidth = 10f * (1f - p)
-            if (edge.strokeWidth > 0.5f) canvas.drawCircle(cx, cy, r, edge)
+            shade.alpha = 255
         }
     }
 
@@ -735,6 +750,12 @@ class RealRenderer(
         private const val ART_W = 841f
 
         private const val ART_H = 1870f
+
+        /** The drawing turns into the clip's first frame: the screen zooms at most this much, and the frame fades in between these shares of the move, settling from a slight push-in. */
+        private const val MORPH_MAX_ZOOM = 8f
+        private const val MORPH_IN = 0.3f
+        private const val MORPH_FULL = 0.8f
+        private const val MORPH_SETTLE = 0.05f
 
         /** The header's match clock runs this many seconds ahead of the drawing's own, and the progress reads "1 / 10"; the "+10 Saniye" joker shows this many left. */
         private const val MATCH_EXTRA_SECONDS = 30
