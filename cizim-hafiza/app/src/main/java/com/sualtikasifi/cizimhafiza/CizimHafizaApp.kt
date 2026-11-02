@@ -89,6 +89,7 @@ class CizimHafizaApp : Application(), Configuration.Provider {
         // two stay synchronous (they are a couple of milliseconds).
         NotificationScheduler.createFriendInviteChannel(this)
         com.sualtikasifi.cizimhafiza.notifications.ChestReadyNotifier.createChannel(this)
+        com.sualtikasifi.cizimhafiza.notifications.GiftReadyNotifier.createChannel(this)
 
         // Needed within the first seconds, but not on the main thread and not
         // before the first frame:
@@ -117,6 +118,15 @@ class CizimHafizaApp : Application(), Configuration.Provider {
             // can be counted; that's an acceptable best-effort estimate.
             // seedLifetimeScoreIfAbsent is itself a no-op once a lifetime score
             // has ever been recorded, so this is safe to call on every launch.
+            // The free gold / free chest "ready" alarms are only in RAM: put them back on every start (see GiftReadyNotifier).
+            guarded("gift alarms") {
+                com.sualtikasifi.cizimhafiza.notifications.GiftReadyNotifier.sync(
+                    this@CizimHafizaApp,
+                    settingsRepository.adGoldNextAtMillis.value,
+                    settingsRepository.adChestNextAtMillis.value
+                )
+            }
+
             guarded("lifetime score seed") {
                 settingsRepository.seedLifetimeScoreIfAbsent(gameSessionDao.get().getTotalScoreSum())
                 // Progression moved from raw score to XP (see PlayerLevel); this

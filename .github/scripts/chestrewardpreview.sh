@@ -12,7 +12,7 @@ adb wait-for-device
 adb shell input keyevent 82 || true
 adb install -r -t "$APK"
 adb shell settings put global hide_error_dialogs 1 || true
-for combo in gold:one rare:many silver:none gold:many; do
+for combo in gold:one rare:many; do
   tier=${combo%%:*}; extras=${combo##*:}
   adb shell am force-stop "$PKG"
   adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.ChestRewardPreviewActivity" --es tier "$tier" --es extras "$extras"

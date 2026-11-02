@@ -1358,6 +1358,11 @@
     <string name="chest_ready_channel_name">Baús</string>
     <string name="chest_ready_notif_title">Seu baú está pronto! 🎁</string>
     <string name="chest_ready_notif_body">%1$s está pronto para abrir. Venha pegar sua recompensa!</string>
+    <string name="gift_ready_channel_name">Presentes</string>
+    <string name="gift_gold_notif_title">Seu ouro grátis está pronto! 🪙</string>
+    <string name="gift_gold_notif_body">%1$d de ouro esperam por você. Assista a um anúncio curto e pegue!</string>
+    <string name="gift_chest_notif_title">Seu baú grátis está pronto! 🎁</string>
+    <string name="gift_chest_notif_body">Assista a um anúncio curto e abra seu baú grátis!</string>
     <string name="rarity_common">Comum</string>
     <string name="rarity_rare">Raro</string>
     <string name="rarity_legendary">Lendário</string>

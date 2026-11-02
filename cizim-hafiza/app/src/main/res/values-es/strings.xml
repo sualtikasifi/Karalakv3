@@ -1358,6 +1358,11 @@
     <string name="chest_ready_channel_name">Cofres</string>
     <string name="chest_ready_notif_title">¡Tu cofre está listo! 🎁</string>
     <string name="chest_ready_notif_body">%1$s está listo para abrir. ¡Ven por tu recompensa!</string>
+    <string name="gift_ready_channel_name">Regalos</string>
+    <string name="gift_gold_notif_title">¡Tu oro gratis está listo! 🪙</string>
+    <string name="gift_gold_notif_body">Te esperan %1$d de oro. ¡Mira un anuncio corto y recógelo!</string>
+    <string name="gift_chest_notif_title">¡Tu cofre gratis está listo! 🎁</string>
+    <string name="gift_chest_notif_body">¡Mira un anuncio corto y abre tu cofre gratis!</string>
     <string name="rarity_common">Común</string>
     <string name="rarity_rare">Raro</string>
     <string name="rarity_legendary">Legendario</string>
