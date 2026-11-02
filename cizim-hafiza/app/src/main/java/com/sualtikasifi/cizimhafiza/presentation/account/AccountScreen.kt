@@ -171,7 +171,7 @@ fun AccountScreen(
             size = fs(104f),
             fill = Color.White,
             outline = Color(0xFF5A2815),
-            modifier = box(219f, 337f, 639f, 450f),
+            modifier = box(219f, 342f, 639f, 455f),
             minScale = 0.5f,
             title = true
         )
