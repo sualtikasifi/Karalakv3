@@ -369,19 +369,19 @@ fun ResultScreen(
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center,
-                                modifier = Modifier.fillMaxSize().padding(top = u * 9f, bottom = u * 15f)
+                                modifier = Modifier.fillMaxSize().padding(top = u * 6f, bottom = u * 12f)
                             ) {
-                                LetteredText(stringResource(R.string.result_x2_amount, com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(state.xpEarned) * 2), fs(46f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth().weight(0.64f))
+                                LetteredText(stringResource(R.string.result_x2_amount, com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(state.xpEarned) * 2), fs(48f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth().weight(0.68f))
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center,
-                                    modifier = Modifier.fillMaxWidth().weight(0.36f).offset(y = u * 4f)
+                                    modifier = Modifier.fillMaxWidth().weight(0.32f).offset(y = u * 3f)
                                 ) {
                                     Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 22f))
                                     Spacer(Modifier.width(u * 6f))
                                     FitText(
                                         text = stringResource(R.string.result_watch_ad),
-                                        style = PaintedStyle(color = Color.White, fontSize = fs(21f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Start),
+                                        style = PaintedStyle(color = Color.White, fontSize = fs(23f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Start),
                                         maxLines = 1,
                                         minScale = 0.5f,
                                         contentAlignment = Alignment.CenterStart,
