@@ -141,4 +141,15 @@ class RealImagePromptTest {
         assertTrue(pitch, pitch.contains("Kadrajda insan yok"))
         assertTrue(pitch, pitch.contains("tuhaf özellik videonun her anında"))
     }
+
+    @Test
+    fun `an object's video keeps its odd shape, the camera, and asks nothing a normal one would do`() {
+        val video = RealCopy.videoPrompt("simit", RealReveal("s", kind = "nesne", describe = "iki hilal gibi kıvrık parça"))
+        assertTrue(video, video.contains("Tuhaf şekli: iki hilal gibi kıvrık parça"))
+        assertTrue(video, video.contains("yalnızca elleri ile kolları görünür"))
+        assertTrue(video, video.contains("Nesne yenmez, ısırılmaz"))
+        assertTrue(video, video.contains("yakınlaşma, kayma ve kişiye dönme yok"))
+        val pitch = RealCopy.pitchPrompt("simit", RealReveal("s", kind = "nesne"))
+        assertTrue(pitch, pitch.contains("(yemek, içmek, giymek, açmak, kesmek) YOK"))
+    }
 }

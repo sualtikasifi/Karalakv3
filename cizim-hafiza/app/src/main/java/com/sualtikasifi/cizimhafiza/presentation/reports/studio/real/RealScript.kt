@@ -244,7 +244,7 @@ data class RealEvent(
 object RealTimeline {
     /** Gemini clips are about eight seconds; anything longer is cut here. */
     const val CLIP_MAX = 10_000L
-    private const val CLIP_MIN = 1_000L
+    const val CLIP_MIN = 1_000L
     /** A voiced opening is never shorter than this, so the drawing has time to be drawn. */
     const val HOOK_MIN = 2_000L
     /** A silent opening: the drawing drawn, held, and the clip opening out of it. */
@@ -511,6 +511,7 @@ object RealCopy {
         return buildString {
             append("Ekteki fotoğrafı ilk kare olarak kullan. 8 saniyelik, dikey 9:16, sesli, sabit tutulan bir telefonla çekilmiş gerçek bir video; TEK ÇEKİM.\n\n")
             append("Fotoğraftaki \"").append(thing).append("\" tuhaf hâliyle baştan sona görünür kalır; yerine sıradan, normal bir \"").append(thing).append("\" KOYMA.\n")
+            reveal?.describe.orEmpty().trim().trimEnd('.').takeIf { it.isNotEmpty() }?.let { append("Tuhaf şekli: ").append(it).append(". Bu şekil videonun her karesinde aynıdır, hiçbir zaman düzgün, normal bir şekle dönmez.\n") }
             append("Nesne: \"").append(thing).append("\" fotoğraftaki gibi kalır: aynı şekil, oranlar, renkler, malzeme ve yer. ")
             append(if (fixed.isNotEmpty()) "$fixed. " else "Sert, katı bir nesne gibi davranır: bükülmez, esnemez, şekil ya da malzeme değiştirmez, canlanmaz, göz ya da yüz çıkmaz. ")
             if (size.isNotEmpty()) append("Gerçek boyutu ").append(size).append(": kişinin yanında bu ölçüde görünür, büyümez ya da küçülmez. ")
@@ -518,8 +519,9 @@ object RealCopy {
             append("Mekân: fotoğraftaki yer baştan sona AYNI kalır")
             if (place.isNotEmpty()) append(" (").append(place).append(")")
             append(": aynı duvar, yüzey, eşyalar ve ışık. Kesme, sahne değişimi, yeni oda, kapı açılması ya da yeni bir kişinin girişi yok.\n")
-            append("Kişi: en fazla bir kişi, sıradan ve gerçek biri; kadrajın içinde ya da kenarından yürüyerek girer, başka kimse girmez.\n")
-            append("Hareket kuralı: nesneyi yalnızca kişi hareket ettirir (tutar, çevirir, iter, bırakır). Nesne kendiliğinden hareket etmez, bükülmez, yaylanmaz, şekil değiştirmez.\n\n")
+            append("Kişi: en fazla bir kişi ve yalnızca elleri ile kolları görünür; kadrajın kenarından girer, yüzü ve gövdesi görünmez, başka kimse girmez.\n")
+            append("Hareket kuralı: nesneyi yalnızca eller hareket ettirir (tutar, çevirir, iter, bırakır). Nesne kendiliğinden hareket etmez, bükülmez, yaylanmaz, şekil değiştirmez. Nesne yenmez, ısırılmaz, açılmaz, kesilmez, giyilmez, kırılmaz; hiçbir parçası çıkmaz ya da eksilmez; normal, sıradan bir kullanım gerektiren eylem yok.\n")
+            append("Kadraj: ilk karedeki gibi KALIR; yakınlaşma, kayma ve kişiye dönme yok. Nesne baştan sona kadrajın içinde ve aynı yerde görünür.\n\n")
             append("Olay: ").append(story).append(".\n\n")
             append("Kamera: sabit ya da çok yavaş yaklaşan; kesme yok.\n")
             append("Ses: olanlara uyan gerçekçi sesler (adım, nesnenin kendi sesi, eller), gerçek bir kayıt gibi. Müzik yok, ekranda yazı yok; sahnede açıkça yazılmadıkça kimse konuşmasın.")
@@ -568,8 +570,8 @@ object RealCopy {
             append("2. Kadrajda insan yok: yıldız hayvanın kendisi. Hayvan doğal davranır (yürür, otlar, yüzer, bakar, kaçar); sıradan bir hayvanla DEĞİŞMEZ.\n")
             append("3. Hayvanın tuhaf vücudu (çizimdeki gibi gövde, bacak, baş) baştan sona aynı kalır ve espri bu vücudun doğal davranışı yaparkenki hâlinden doğar; vücut şekil değiştirmez.\n")
         } else {
-            append("2. En fazla bir kişi; sıradan ve gerçek biri, kadraja içeriden ya da kenarından girer.\n")
-            append("3. Nesne şekil, malzeme ya da boyut değiştirmez: sertse bükülmez, yaylanmaz, sallanmaz, canlanmaz, göz ya da yüz çıkmaz. Hareketi yalnızca kişi yapar (tutar, çevirir, iter, bırakır, düşürür).\n")
+            append("2. En fazla bir kişi ve yalnızca elleri ile kolları görünür (yüz ve gövde yok); eller kadrajın kenarından girer. Kadraj ilk fotoğraftaki gibi kalır, nesne baştan sona aynı yerde görünür.\n")
+            append("3. Nesne şekil, malzeme ya da boyut değiştirmez: sertse bükülmez, yaylanmaz, sallanmaz, canlanmaz, göz ya da yüz çıkmaz. Hareketi yalnızca eller yapar (tutar, çevirir, iter, bırakır). Nesne yenmez, ısırılmaz, açılmaz, kesilmez, giyilmez, kırılmaz; parçası çıkmaz ya da eksilmez; sıradan, doğru kullanım gerektiren eylem (yemek, içmek, giymek, açmak, kesmek) YOK, çünkü model nesneyi normal hâline çevirir.\n")
         }
         append("4. Boyut gerçek kalır: kişinin elinde ya da yanında nesnenin gerçek ölçüsünde görünür.\n")
         append("5. 8 saniyeye sığar: 0–2 sn kurulum, 2–5 sn gelişme, 5–8 sn sürpriz; her aralıkta tek eylem.\n")

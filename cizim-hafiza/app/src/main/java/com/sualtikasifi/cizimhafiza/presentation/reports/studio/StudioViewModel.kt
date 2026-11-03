@@ -1375,6 +1375,20 @@ class StudioViewModel @Inject constructor(
         }
     }
 
+    /**
+     * How much of the clip is used, by hand: a video model keeps the odd shape for the first seconds and then drifts back
+     * to an ordinary one, so the clip can be cut where it is still right. The video's end then holds its last frame.
+     */
+    fun setClipSeconds(sampleId: String, seconds: Double) {
+        val r = _state.value.real.project?.reveals?.firstOrNull { it.sampleId == sampleId } ?: return
+        val file = r.clip?.let { realStore.file(it) } ?: return
+        viewModelScope.launch {
+            val full = withContext(Dispatchers.IO) { RealImages.clipMs(file) }
+            val ms = (seconds * 1000).toLong().coerceIn(RealTimeline.CLIP_MIN, maxOf(RealTimeline.CLIP_MIN, minOf(full, RealTimeline.CLIP_MAX)))
+            updateProject { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) it.copy(clipMs = ms) else it }) }
+        }
+    }
+
     /** Brings the clip made in Gemini into the project; only its first [RealTimeline.CLIP_MAX] ms are used. */
     fun importClip(sampleId: String, uri: Uri) {
         if (_state.value.real.busy != null) return

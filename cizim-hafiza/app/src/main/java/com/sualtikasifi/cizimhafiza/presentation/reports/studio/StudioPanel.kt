@@ -919,6 +919,15 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
             }
             if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = Console.Accent, strokeWidth = 2.dp)
         }
+        if (rv.clip != null) {
+            // the part of the clip that is used: where the odd shape starts to drift back to an ordinary one, cut it there
+            var clipText by remember(rv.sampleId, rv.clip) { mutableStateOf(String.format(Locale("tr"), "%.1f", rv.clipMs / 1000.0)) }
+            Field("Klibin kullanılacak kısmı, saniye (sonu bozuluyorsa kısalt)", clipText, { raw ->
+                val t = raw.filter { it.isDigit() || it == ',' || it == '.' }.take(4)
+                clipText = t
+                t.replace(',', '.').toDoubleOrNull()?.takeIf { it >= 1.0 }?.let { vm.setClipSeconds(rv.sampleId, it) }
+            })
+        }
         if (project.featured?.sampleId == rv.sampleId) Text("Videodaki çizim bu", style = Console.Label.copy(color = Console.Accent), modifier = Modifier.padding(top = 6.dp))
         else if (index > 0) SmallLink("Başa al (video bu çizimle yapılır)") { vm.moveRevealFirst(rv.sampleId) }
         PlayerEditor(project.drawing(rv.sampleId), vm, anyBusy)
