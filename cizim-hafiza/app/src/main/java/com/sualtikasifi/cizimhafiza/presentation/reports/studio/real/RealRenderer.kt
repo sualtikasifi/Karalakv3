@@ -54,6 +54,8 @@ class RealRenderer(
     private val photoFiles: Map<String, File> = emptyMap(),
     /** The featured reveal's lines said aloud: the hook's voice, laid at the start of the opening, and the closing's, at its start. */
     hookVoiceFile: File? = null,
+    /** What Karalak says over the clip as a deadpan narrator ([RealReveal.narration]), laid a beat into the clip. */
+    narrationVoiceFile: File? = null,
     outroVoiceFile: File? = null,
     /** Its background music ([RealReveal.music]), under the whole video. */
     musicFile: File? = null,
@@ -81,10 +83,11 @@ class RealRenderer(
             val line = when (e.phase) {
                 RealPhase.Hook -> f.hook.takeIf { hookVoiceFile != null }
                 RealPhase.Outro -> f.outro.takeIf { outroVoiceFile != null }
+                RealPhase.Clip -> f.narration.takeIf { narrationVoiceFile != null }
                 RealPhase.EndCard -> f.endLine.takeIf { endVoiceFile != null }
                 else -> null
             }
-            line?.takeIf { it.voice != null }?.let { (e.startMs + RealTimeline.VOICE_AT).let { at -> at..at + it.voiceMs } }
+            line?.takeIf { it.voice != null }?.let { ((if (e.phase == RealPhase.Clip) e.clipAtMs + RealTimeline.NARRATION_AT else e.startMs + RealTimeline.VOICE_AT)).let { at -> at..at + it.voiceMs } }
         }
         var clipRange: LongRange? = null
         events.forEach { e ->
@@ -95,6 +98,9 @@ class RealRenderer(
                 RealPhase.Clip -> {
                     clipRange = e.clipAtMs until e.clipAtMs + e.clipMs
                     val at = e.clipAtMs
+                    if (narrationVoiceFile != null && f.narration.voice != null) {
+                        add(ClipSound(narrationVoiceFile, at + RealTimeline.NARRATION_AT, f.narration.voiceMs, 1f, voice = true))
+                    }
                     if (clipGain > 0f) clipFiles[f.sampleId]?.let { add(ClipSound(it, at, e.clipMs, clipGain, shape = { ms -> RealMix.clipGainAt(at + ms, at, voices) })) }
                 }
                 RealPhase.Outro -> if (outroVoiceFile != null && f.outro.voice != null) {
@@ -222,6 +228,19 @@ class RealRenderer(
         }
         val hook = events.firstOrNull { it.phase == RealPhase.Hook }
         line(f.hook, hook) { from, starts -> maxOf(hook!!.endMs, from + Reveal.doneAt(starts) + CAPTION_HOLD) }
+        // the narration: a beat into the clip, up until the closing takes over
+        val clip = events.firstOrNull { it.phase == RealPhase.Clip }
+        val outroAt = events.firstOrNull { it.phase == RealPhase.Outro }?.startMs
+        clip?.let { c ->
+            val words = f.narration.text.trim()
+            if (words.isNotEmpty()) {
+                val voiced = f.narration.voice != null && f.narration.voiceMs > 0L
+                val starts = Reveal.charStarts(words, if (voiced) f.narration.wordRanges() else null, if (voiced) f.narration.voiceMs else 0L)
+                val from = c.clipAtMs + RealTimeline.NARRATION_AT
+                val until = minOf(from + Reveal.doneAt(starts) + CAPTION_HOLD, outroAt ?: c.endMs)
+                add(Caption(words, starts, from, maxOf(until, from + 500L)))
+            }
+        }
         val outro = events.firstOrNull { it.phase == RealPhase.Outro }
         line(f.outro, outro) { _, _ -> outro!!.endMs }
     }

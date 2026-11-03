@@ -88,6 +88,8 @@ data class RealReveal(
     val clip: String? = null,
     val clipMs: Long = 0L,
     val hook: VoicedLine = VoicedLine(),
+    /** What Karalak says over the clip, as a deadpan documentary narrator: the comedy of the video is written here, not left to the video model. */
+    val narration: VoicedLine = VoicedLine(),
     val outro: VoicedLine = VoicedLine(),
     /** The app's background music under the video (a [RealMusic] track's name); null: none. */
     val music: String? = null,
@@ -101,16 +103,18 @@ data class RealReveal(
      */
     val endLine: VoicedLine = VoicedLine(options = RealCopy.END_LINES)
 ) {
-    val media: Set<String> get() = listOfNotNull(image, clip, hook.voice, outro.voice, endLine.voice).toSet()
+    val media: Set<String> get() = listOfNotNull(image, clip, hook.voice, narration.voice, outro.voice, endLine.voice).toSet()
 
     fun line(kind: RealLine): VoicedLine = when (kind) {
         RealLine.Hook -> hook
+        RealLine.Narration -> narration
         RealLine.Outro -> outro
         RealLine.End -> endLine
     }
 
     fun withLine(kind: RealLine, line: VoicedLine): RealReveal = when (kind) {
         RealLine.Hook -> copy(hook = line)
+        RealLine.Narration -> copy(narration = line)
         RealLine.Outro -> copy(outro = line)
         RealLine.End -> copy(endLine = line)
     }
@@ -136,7 +140,7 @@ enum class RealOpening { Classic, Teaser }
 enum class RealEnding { Card, Promo, Nothing }
 
 /** The things Karalak says in a "Gerçek Olsaydı" video: the opening hook, the closing reaction and the line over the end card. */
-enum class RealLine { Hook, Outro, End }
+enum class RealLine { Hook, Narration, Outro, End }
 
 /**
  * One of Karalak's lines in a video: the [text] the video shows and says (empty: none), the assistant's [options]
@@ -244,6 +248,8 @@ data class RealEvent(
 object RealTimeline {
     /** Gemini clips are about eight seconds; anything longer is cut here. */
     const val CLIP_MAX = 10_000L
+    /** The narration starts this long into the clip: a beat to see the thing before it is explained. */
+    const val NARRATION_AT = 700L
     const val CLIP_MIN = 1_000L
     /** A voiced opening is never shorter than this, so the drawing has time to be drawn. */
     const val HOOK_MIN = 2_000L
@@ -611,6 +617,9 @@ object RealCopy {
     /** The opening line as Karalak says it: eagerly ("[excited]" in front, with v3). */
     fun hookLine(text: String): SpokenLine = SpokenLine(text.trim(), MascotEmotion.Excited)
 
+    /** The narration as Karalak says it: calm and completely serious, like a nature documentary. */
+    fun narrationLine(text: String): SpokenLine = SpokenLine(text.trim(), MascotEmotion.Neutral)
+
     /** The closing line as Karalak says it: playfully, a reaction and a question. */
     fun outroLine(text: String): SpokenLine = SpokenLine(text.trim(), MascotEmotion.Point)
 
@@ -619,12 +628,15 @@ object RealCopy {
 
     fun spoken(kind: RealLine, text: String): SpokenLine = when (kind) {
         RealLine.Hook -> hookLine(text)
+        RealLine.Narration -> narrationLine(text)
         RealLine.Outro -> outroLine(text)
         RealLine.End -> endLine(text)
     }
 
     /** Longest a line of Karalak's may be, by what it is for: the end card's lines are whole sentences, the hook one breath. */
-    fun maxChars(kind: RealLine): Int = if (kind == RealLine.End) END_CHARS else HOOK_CHARS
+    fun maxChars(kind: RealLine): Int = when (kind) { RealLine.End -> END_CHARS; RealLine.Narration -> NARRATION_CHARS; else -> HOOK_CHARS }
+    const val NARRATION_CHARS = 110
+    const val NARRATION_COUNT = 5
     const val END_CHARS = 140
 
     /**
@@ -648,6 +660,9 @@ object RealCopy {
      */
     fun parseHooks(text: String, seconds: Int): List<String> = parseLines(text, "hooks", seconds, HOOK_COUNT, LineRules.HOOK_WORDS)
 
+    /** The assistant's ideas for the narration over the clip: `{"narrations":["…",…]}`, cleaned, at most [NARRATION_COUNT]. */
+    fun parseNarrations(text: String, seconds: Int): List<String> = parseLines(text, "narrations", seconds, NARRATION_COUNT, LineRules.NARRATION_WORDS, NARRATION_CHARS)
+
     /** The assistant's ideas for the closing line: `{"outros":["…",…]}`, cleaned the same way, at most [OUTRO_COUNT]. */
     fun parseOutros(text: String, seconds: Int): List<String> = parseLines(text, "outros", seconds, OUTRO_COUNT, LineRules.CLOSING_WORDS)
 
@@ -655,10 +670,10 @@ object RealCopy {
      * The ideas under [key], cleaned. Ideas that run past [maxWords] are left out as long as enough others are left to
      * choose from ([MIN_TO_CHOOSE]); when too few are, the long ones are cut instead of leaving nothing.
      */
-    private fun parseLines(text: String, key: String, seconds: Int, count: Int, maxWords: Int): List<String> {
+    private fun parseLines(text: String, key: String, seconds: Int, count: Int, maxWords: Int, maxChars: Int = HOOK_CHARS): List<String> {
         val o = GuessCopy.objectIn(text) ?: return emptyList()
         val raw = runCatching { o[key]!!.jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull } }.getOrNull().orEmpty()
-        val cleaned = raw.map { cleanHook(it, seconds) }.filter { it.isNotEmpty() }.distinctBy { GuessCopy.normalize(it) }
+        val cleaned = raw.map { cleanHook(it, seconds, maxChars) }.filter { it.isNotEmpty() }.distinctBy { GuessCopy.normalize(it) }
         val fitting = cleaned.filterNot { LineRules.tooLong(it, maxWords) }
         val use = if (fitting.size >= minOf(MIN_TO_CHOOSE, cleaned.size)) fitting else cleaned.map { LineRules.fit(it, maxWords) }.distinctBy { GuessCopy.normalize(it) }
         return use.take(count)
@@ -671,10 +686,10 @@ object RealCopy {
      * One line as the video shows it: no quotes or list number around it, and any time it gives set to the
      * drawing's real [seconds] (0: not known, left as written), so the video never claims a time the game did not give.
      */
-    fun cleanHook(text: String, seconds: Int): String {
+    fun cleanHook(text: String, seconds: Int, maxChars: Int = HOOK_CHARS): String {
         var s = text.trim().trim('"', '“', '”', '\'', '«', '»').trim().replace(NUMBERING, "").trim()
         if (seconds > 0) s = SECONDS.replace(s) { m -> "$seconds" + m.groupValues[2] }
-        return if (s.length <= HOOK_CHARS) s else s.take(HOOK_CHARS).substringBeforeLast(' ', s.take(HOOK_CHARS)).trim()
+        return if (s.length <= maxChars) s else s.take(maxChars).substringBeforeLast(' ', s.take(maxChars)).trim()
     }
 
     fun parsePicks(text: String, candidates: Int): Picks? {
