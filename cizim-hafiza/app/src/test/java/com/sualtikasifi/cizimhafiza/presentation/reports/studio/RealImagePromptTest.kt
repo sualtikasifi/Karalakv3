@@ -1,6 +1,8 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealCopy
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VoicedLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -140,5 +142,29 @@ class RealImagePromptTest {
         val pitch = RealCopy.pitchPrompt("at", RealReveal("a", kind = "canlı"))
         assertTrue(pitch, pitch.contains("Kadrajda insan yok"))
         assertTrue(pitch, pitch.contains("tuhaf özellik videonun her anında"))
+    }
+
+    @Test
+    fun `an object's video keeps its odd shape, the camera, and asks nothing a normal one would do`() {
+        val video = RealCopy.videoPrompt("simit", RealReveal("s", kind = "nesne", describe = "iki hilal gibi kıvrık parça"))
+        assertTrue(video, video.contains("Tuhaf şekli: iki hilal gibi kıvrık parça"))
+        assertTrue(video, video.contains("yalnızca elleri ile kolları görünür"))
+        assertTrue(video, video.contains("Nesne yenmez, ısırılmaz"))
+        assertTrue(video, video.contains("nesne yerinde SABİT durur"))
+        assertTrue(video, video.contains("üstünü örtmez"))
+        assertTrue(video, video.contains("yakınlaşma, kayma ve kişiye dönme yok"))
+        val pitch = RealCopy.pitchPrompt("simit", RealReveal("s", kind = "nesne"))
+        assertTrue(pitch, pitch.contains("(yemek, içmek, giymek, açmak, kesmek) YOK"))
+    }
+
+    @Test
+    fun `the narrator's lines are read back, kept short and the narration is a line of the reveal`() {
+        val lines = RealCopy.parseNarrations("""{"narrations":["Bilim insanları bu canlıyı doğal ortamında ilk kez görüntüledi.","Dikkat edin: nasıl yürüdüğü hâlâ çözülmüş değil.","Bilim insanları bu canlıyı doğal ortamında ilk kez görüntüledi.","Bu cümle çok ama çok uzun, sırf kesilsin diye yazılmış, dinleyen sıkılsın diye uzayıp gidiyor, hiç bitmiyor ve kimse sonuna kadar dinlemek istemiyor"]}""", 0)
+        assertEquals("the same line only once", 3, lines.size)
+        assertTrue(lines.all { it.length <= RealCopy.NARRATION_CHARS })
+        val r = RealReveal("n").withLine(RealLine.Narration, VoicedLine("Ciddi bir cümle."))
+        assertEquals("Ciddi bir cümle.", r.narration.text)
+        assertEquals("Ciddi bir cümle.", r.line(RealLine.Narration).text)
+        assertEquals(RealCopy.NARRATION_CHARS, RealCopy.maxChars(RealLine.Narration))
     }
 }

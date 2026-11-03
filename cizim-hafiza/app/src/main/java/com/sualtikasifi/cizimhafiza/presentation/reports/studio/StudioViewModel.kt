@@ -986,7 +986,7 @@ class StudioViewModel @Inject constructor(
         val p = _state.value.real.project ?: return
         if (p.drawing(id)?.seconds == secs) return
         updateDrawing(id) { it.copy(seconds = secs) }
-        val written = p.reveals.firstOrNull { it.sampleId == id }?.let { it.hook.text.isNotBlank() || it.outro.text.isNotBlank() } == true
+        val written = p.reveals.firstOrNull { it.sampleId == id }?.let { it.hook.text.isNotBlank() || it.narration.text.isNotBlank() || it.outro.text.isNotBlank() } == true
         if (written) _state.update { it.copy(message = "Süre $secs sn oldu: kanca ve kapanışı yeniden yazdırıp seslendir.") }
     }
 
@@ -1100,9 +1100,11 @@ class StudioViewModel @Inject constructor(
     private fun previewLine(kind: RealLine) {
         val events = _state.value.real.project?.featured?.let { RealTimeline.build(it, 0L, it.endCardMs) }.orEmpty()
         val outro = events.lastOrNull { it.phase == RealPhase.Outro }
+        val clip = events.firstOrNull { it.phase == RealPhase.Clip }
         val card = events.lastOrNull { it.phase == RealPhase.EndCard }
         setPreviewTime(
             when {
+                kind == RealLine.Narration && clip != null -> clip.startMs + RealTimeline.NARRATION_AT + 900L
                 kind == RealLine.Outro && outro != null -> outro.startMs + 400L
                 kind == RealLine.End && card != null -> card.startMs + 600L
                 else -> 0L
@@ -1223,11 +1225,11 @@ class StudioViewModel @Inject constructor(
                 runCatching {
                     val ms = ClipAudio.decode(voice, VOICE_MAX_MS)?.durationMs ?: error("Ses çözülemedi")
                     if (ms <= 0L) error("Ses boş")
-                    realStore.copyIn(voice, when (kind) { RealLine.Hook -> "hook_voice"; RealLine.Outro -> "outro_voice"; RealLine.End -> "end_voice" }, "mp3") to ms
+                    realStore.copyIn(voice, when (kind) { RealLine.Hook -> "hook_voice"; RealLine.Narration -> "narration_voice"; RealLine.Outro -> "outro_voice"; RealLine.End -> "end_voice" }, "mp3") to ms
                 }
             }
             result.onSuccess { (name, ms) ->
-                _state.update { it.copy(message = when (kind) { RealLine.Hook -> "Kanca sesi videoya eklendi"; RealLine.Outro -> "Kapanış sesi videoya eklendi"; RealLine.End -> "Kapanış görseli sesi videoya eklendi" }) }
+                _state.update { it.copy(message = when (kind) { RealLine.Hook -> "Kanca sesi videoya eklendi"; RealLine.Narration -> "Anlatıcı sesi videoya eklendi"; RealLine.Outro -> "Kapanış sesi videoya eklendi"; RealLine.End -> "Kapanış görseli sesi videoya eklendi" }) }
                 updateLine(id, kind, saveNow = true) { it.withText(text).copy(voice = name, voiceMs = ms, words = words) }
                 pruneRealMedia()
                 previewLine(kind)
@@ -1372,6 +1374,20 @@ class StudioViewModel @Inject constructor(
                 updateProject(saveNow = true) { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) it.copy(image = name) else it }) }
                 pruneRealMedia()
             }.onFailure { e -> _state.update { it.copy(message = "Görsel eklenemedi: ${e.message}") } }
+        }
+    }
+
+    /**
+     * How much of the clip is used, by hand: a video model keeps the odd shape for the first seconds and then drifts back
+     * to an ordinary one, so the clip can be cut where it is still right. The video's end then holds its last frame.
+     */
+    fun setClipSeconds(sampleId: String, seconds: Double) {
+        val r = _state.value.real.project?.reveals?.firstOrNull { it.sampleId == sampleId } ?: return
+        val file = r.clip?.let { realStore.file(it) } ?: return
+        viewModelScope.launch {
+            val full = withContext(Dispatchers.IO) { RealImages.clipMs(file) }
+            val ms = (seconds * 1000).toLong().coerceIn(RealTimeline.CLIP_MIN, maxOf(RealTimeline.CLIP_MIN, minOf(full, RealTimeline.CLIP_MAX)))
+            updateProject { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) it.copy(clipMs = ms) else it }) }
         }
     }
 
@@ -1846,6 +1862,7 @@ class StudioViewModel @Inject constructor(
                 layout = s.real.card,
                 photoFiles = p.drawings.mapNotNull { d -> d.photo?.let { d.id to realStore.file(it) } }.toMap(),
                 hookVoiceFile = f.hook.voice?.let { realStore.file(it) },
+                narrationVoiceFile = f.narration.voice?.let { realStore.file(it) },
                 outroVoiceFile = f.outro.voice?.let { realStore.file(it) },
                 musicFile = f.music?.takeIf { s.real.musicOn }?.let { RealMusic.target(context, it) },
                 promo = promo?.let(promoSource),

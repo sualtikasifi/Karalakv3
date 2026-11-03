@@ -58,7 +58,7 @@ class RealPreviewActivity : Activity() {
         fun project(first: RealDrawing, hook: VoicedLine, opening: RealOpening, outro: VoicedLine = VoicedLine("Bu rokete kim biner? Yorumlara yaz!")) = RealProject(
             drawings = listOf(first) + drawings.filter { it.id != first.id },
             reveals = (listOf(first) + drawings.filter { it.id != first.id }).map { RealReveal(it.id, clip = it.id + ".mp4", clipMs = 5_000L) }.mapIndexed { i, r ->
-                if (i > 0) r else r.copy(hook = hook, outro = outro, opening = opening)
+                if (i > 0) r else r.copy(hook = hook, outro = outro, opening = opening, narration = VoicedLine("Uzmanlar bu şeklin neden hayatta kaldığını açıklayamıyor."))
             }
         )
         fun renderer(p: RealProject, endCardMs: Long = 0L, promoMs: Long = 0L, layout: CardLayout = CardLayout()) =
@@ -79,7 +79,7 @@ class RealPreviewActivity : Activity() {
                     shoot("classic_open", classic, e.durationMs - 330)
                     shoot("classic_morph_late", classic, e.durationMs - 150)
                 }
-                RealPhase.Clip -> shoot("clip_mid", classic, e.startMs + 1_800)
+                RealPhase.Clip -> { shoot("clip_mid", classic, e.startMs + 1_800); shoot("clip_narration", classic, e.startMs + 3_200) }
                 RealPhase.Outro -> {
                     shoot("outro_coming_in", classic, e.startMs + 900)
                     shoot("outro_end", classic, e.endMs - 60)

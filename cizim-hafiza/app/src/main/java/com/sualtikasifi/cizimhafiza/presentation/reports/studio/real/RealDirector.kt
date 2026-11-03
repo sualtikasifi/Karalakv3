@@ -3,6 +3,7 @@ package com.sualtikasifi.cizimhafiza.presentation.reports.studio.real
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.OpenRouterClient
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Backoff
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.KaralakVoice
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.LineRules
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StrokeReplay
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioLang
 import kotlinx.coroutines.Dispatchers
@@ -71,6 +72,7 @@ class RealDirector(private val client: OpenRouterClient, private val model: Stri
     /** Ideas for one of Karalak's lines in the video of [drawing] and its [reveal]: the hook, or the closing reaction. */
     suspend fun lines(kind: RealLine, drawing: RealDrawing, reveal: RealReveal): Result<Lines> = when (kind) {
         RealLine.Hook -> hooks(drawing)
+        RealLine.Narration -> narrations(drawing, reveal)
         RealLine.Outro -> outros(drawing, reveal.motion, reveal.hook.text)
         // the end card's lines are ready-made, not written by the assistant
         RealLine.End -> Result.success(Lines(RealCopy.END_LINES, null))
@@ -157,7 +159,54 @@ class RealDirector(private val client: OpenRouterClient, private val model: Stri
         Lines(outros, answer.costUsd)
     }
 
+    /**
+     * Five ideas for what Karalak says over the clip, as a deadpan nature-documentary narrator: the funny is in how
+     * seriously the odd thing is explained, so the comedy is written here and not left to the video model.
+     */
+    suspend fun narrations(drawing: RealDrawing, reveal: RealReveal): Result<Lines> = runCatching {
+        val image = withContext(Dispatchers.Default) { StrokeReplay.png(drawing.strokes, 1f, 384) }
+        val word = drawing.word.ifBlank { "?" }
+        val facts = buildString {
+            if (reveal.kind.isNotBlank()) append("- Türü: ").append(reveal.kind).append('\n')
+            if (reveal.describe.isNotBlank()) append("- Tuhaf şekli: ").append(reveal.describe).append('\n')
+            if (reveal.size.isNotBlank()) append("- Gerçek boyutu: ").append(reveal.size).append('\n')
+            if (reveal.scene.isNotBlank()) append("- Yer: ").append(reveal.scene).append('\n')
+            if (reveal.motion.isNotBlank()) append("- Klipte olan: ").append(reveal.motion).append('\n')
+        }
+        val prompt = """
+            Kısa bir TikTok/Reels videosunda, gerçek görünümlü 8 saniyelik klibin üstünde duyulacak ANLATICI cümlesini yazıyorsun.
+            Klip, bir çocuğun "$word" çiziminin gerçek hâli (ekteki görsel çizimin kendisi). Bilinenler:
+            $facts
+            Anlatıcı ciddi bir doğa belgeseli spikeri gibi konuşur: sakin, otoriter, tamamen ciddi. Şaka yapmaya çalışmaz; komiklik, tuhaf olanı ciddiyetle anlatmasından gelir.
+            Tarz örnekleri (birebir kopyalama):
+            - "Bilim insanları bu canlıyı doğal ortamında ilk kez görüntüledi."
+            - "Dikkat edin: nasıl yürüdüğü hâlâ çözülmüş değil."
+            - "Doğa bazen kimsenin beklemediği şeyleri üretir."
+            - "Uzmanlar bu şeklin neden hayatta kaldığını açıklayamıyor."
+
+            Birbirinden FARKLI $NARRATION_COUNT anlatıcı cümlesi yaz.
+            Kurallar:
+            - Türkçe, konuşma dilinde; en fazla ${LineRules.NARRATION_WORDS} kelime (yaklaşık 4 saniyede okunur). Bir ya da iki kısa cümle. Emoji, etiket, tırnak, ünlem yok.
+            - Nesneyi ya da hayvanı gerçekmiş gibi anlat; "çizim", "çocuk" ya da "oyun" deme.
+            - Klipte görünen ve tuhaf olan şeye (şekil, duruş, davranış) değin; klipte olmayan bir şey uydurma.
+            - Kimseyle alay etme; ciddiyetini hiç bozma.
+
+            Yalnızca şu JSON'u yaz:
+            {"narrations":["…","…"]}
+        """.trimIndent()
+        val system = KaralakVoice.persona(NARRATION_JOB, lang)
+        val answer = Backoff.retrying {
+            client.generate(system, prompt + KaralakVoice.promptNote(lang, "JSON anahtarı"), model, webSearch = false, images = listOf(image), json = true, temperature = 1.0, maxTokens = 700)
+        }.getOrThrow()
+        val lines = RealCopy.parseNarrations(answer.text, 0)
+        if (lines.isEmpty()) error("Anlatıcı cümleleri okunamadı; tekrar dene.")
+        Lines(lines, answer.costUsd)
+    }
+
     private companion object {
+        const val NARRATION_COUNT = RealCopy.NARRATION_COUNT
+        const val NARRATION_JOB = "Kısa videolarda ciddi bir belgesel anlatıcısı gibi konuşuyorsun: sakin, otoriter, asla gülmeye çalışmayan; tuhaf olanı tamamen ciddiyetle anlatan tek cümleler yazarsın."
+
         const val HOOK_COUNT = RealCopy.HOOK_COUNT
         const val OUTRO_COUNT = RealCopy.OUTRO_COUNT
         const val OUTRO_JOB = "Kısa bir videonun sonunda söyleyeceğin tek cümleyi yazıyorsun; çok kısa konuşursun. Çizen kişiyi asla küçümsemezsin."

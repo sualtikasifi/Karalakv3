@@ -569,8 +569,23 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
         }
     }
     item {
+        val l = opening?.narration ?: VoicedLine()
+        Step("4", "Anlatıcı: klibin üstünde ciddi belgesel sesi", if (l.text.isBlank()) "yok" else if (l.voice != null) "sesli" else "sessiz")
+    }
+    item {
+        LineCard(RealLine.Narration, p, st, vm) {
+            Text(
+                "Komedi video modeline bırakılmaz, burada yazılır: Karalak klibin üstünde ciddi bir doğa belgeseli spikeri gibi konuşur " +
+                    "(\"Bilim insanları bu canlıyı ilk kez görüntüledi…\"); tuhaf olanı ciddiyetle anlatması komik olur. " +
+                    "Klip başladıktan yarım saniye sonra girer, alt yazı olarak da görünür, klibin sesi o sırada kısılır. " +
+                    "Kısa tut (≈4 saniye): kapanış başlamadan bitmeli. Seslendirip “Videoya ekle”ye bas.",
+                style = Console.Small
+            )
+        }
+    }
+    item {
         val l = opening?.outro ?: VoicedLine()
-        Step("4", "Kapanış: Karalak'ın tepkisi", if (l.text.isBlank()) "yok" else "≈ ${(opening!!.outroMs + 999) / 1000} sn · " + if (l.voice != null) "sesli" else "sessiz")
+        Step("5", "Kapanış: Karalak'ın tepkisi", if (l.text.isBlank()) "yok" else "≈ ${(opening!!.outroMs + 999) / 1000} sn · " + if (l.voice != null) "sesli" else "sessiz")
     }
     item {
         LineCard(RealLine.Outro, p, st, vm) {
@@ -583,10 +598,10 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
         }
     }
 
-    item { Step("5", "Arka plan müziği", opening?.music?.let { RealMusic.label(it) } ?: "yok") }
+    item { Step("6", "Arka plan müziği", opening?.music?.let { RealMusic.label(it) } ?: "yok") }
     item { MusicCard(opening, st.real.musicOn, st.real.musicPlaying, st.real.customMusic, vm) }
 
-    item { Step("6", "Kartın yeri ve boyu") }
+    item { Step("7", "Kartın yeri ve boyu") }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Karalak kartının videodaki yerini ve boyunu ayarla; aşağıdaki önizleme anında değişir.", style = Console.Small)
@@ -600,7 +615,7 @@ private fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, con
 
     item {
         Step(
-            "7", "Videonun sonu",
+            "8", "Videonun sonu",
             when (r.ending) {
                 RealEnding.Card -> String.format(Locale("tr"), "kapanış görseli · %.1f sn", (p?.featured ?: p?.opening)?.endCardMs?.div(1000f) ?: (RealTimeline.END_CARD_SILENT_MS / 1000f)) +
                     if ((p?.opening?.endLine?.voice) != null) " · sesli" else " · sessiz"
@@ -777,7 +792,7 @@ private fun LineCard(kind: RealLine, p: RealProject, st: StudioState, vm: Studio
     val hook = kind == RealLine.Hook
     val end = kind == RealLine.End
     val count = if (hook) RealCopy.HOOK_COUNT else RealCopy.OUTRO_COUNT
-    val name = if (hook) "kanca" else "kapanış"
+    val name = when (kind) { RealLine.Hook -> "kanca"; RealLine.Narration -> "anlatıcı"; else -> "kapanış" }
     ConsoleCard(Modifier.fillMaxWidth()) {
         intro()
         drawing?.let { Text("Videodaki çizim: ${it.word}" + if (it.seconds > 0) " · ${it.seconds} sn" else "", style = Console.Subtitle, modifier = Modifier.padding(top = 6.dp)) }
@@ -792,7 +807,7 @@ private fun LineCard(kind: RealLine, p: RealProject, st: StudioState, vm: Studio
         if (line.text.isNotBlank()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
                 Column(Modifier.weight(1f)) {
-                    Text(if (hook) "Videodaki kanca" else if (end) "Kapanış görselinin üstündeki cümle" else "Videodaki kapanış", style = Console.Label)
+                    Text(if (hook) "Videodaki kanca" else if (kind == RealLine.Narration) "Videodaki anlatıcı" else if (end) "Kapanış görselinin üstündeki cümle" else "Videodaki kapanış", style = Console.Label)
                     Text(line.text, style = Console.Subtitle)
                     Text(
                         if (line.voice != null) "Sesli · " + String.format(Locale("tr"), "%.1f sn", line.voiceMs / 1000f) + if (end) " · görsel ≈" + String.format(Locale("tr"), "%.1f sn", RealTimeline.endCardMs(line.voiceMs) / 1000f) + " kalır" else ""
@@ -918,6 +933,15 @@ private fun RevealCard(index: Int, rv: RealReveal, project: RealProject, busy: B
                 )
             }
             if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = Console.Accent, strokeWidth = 2.dp)
+        }
+        if (rv.clip != null) {
+            // the part of the clip that is used: where the odd shape starts to drift back to an ordinary one, cut it there
+            var clipText by remember(rv.sampleId, rv.clip) { mutableStateOf(String.format(Locale("tr"), "%.1f", rv.clipMs / 1000.0)) }
+            Field("Klibin kullanılacak kısmı, saniye (sonu bozuluyorsa kısalt)", clipText, { raw ->
+                val t = raw.filter { it.isDigit() || it == ',' || it == '.' }.take(4)
+                clipText = t
+                t.replace(',', '.').toDoubleOrNull()?.takeIf { it >= 1.0 }?.let { vm.setClipSeconds(rv.sampleId, it) }
+            })
         }
         if (project.featured?.sampleId == rv.sampleId) Text("Videodaki çizim bu", style = Console.Label.copy(color = Console.Accent), modifier = Modifier.padding(top = 6.dp))
         else if (index > 0) SmallLink("Başa al (video bu çizimle yapılır)") { vm.moveRevealFirst(rv.sampleId) }

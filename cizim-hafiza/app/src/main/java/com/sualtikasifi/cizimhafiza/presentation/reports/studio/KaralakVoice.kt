@@ -60,6 +60,7 @@ object LineRules {
     const val OUTRO_WORDS = 14
     const val HOOK_WORDS = 8
     const val CLOSING_WORDS = 8
+    const val NARRATION_WORDS = 14
     const val PICK_WORDS = 7
 
     /** How many words past the limit still pass: a limit is a target, not a wall. */
