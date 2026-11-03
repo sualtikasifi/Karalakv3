@@ -23,6 +23,7 @@ on:
           - langs.sh
           - realpreview.sh
           - devpanelpreview.sh
+          - wizardpreview.sh
           - runepreview.sh
           - consentlang.sh
           - firstrun.sh
