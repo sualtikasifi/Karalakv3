@@ -566,4 +566,22 @@ class RealTest {
         assertNull(noLines.music)
         assertEquals(RealMix.DEFAULT_VOLUME, noLines.musicVolume, 0f)
     }
+
+    @Test
+    fun theHowToVideoComesBetweenTheClosingAndTheEndCardAndTheMusicRunsThroughIt() {
+        val r = RealReveal("a", clipMs = 8_000L, outro = VoicedLine("kapanış"))
+        val events = RealTimeline.build(r, 0L, 4_000L, 6_300L)
+        val tail = events.takeLast(3).map { it.phase }
+        assertEquals(listOf(RealPhase.Outro, RealPhase.Howto, RealPhase.EndCard), tail)
+        val howto = events.first { it.phase == RealPhase.Howto }
+        val card = events.first { it.phase == RealPhase.EndCard }
+        assertEquals(6_300L, howto.durationMs)
+        assertEquals(howto.endMs, card.startMs)
+        // the music belongs to everything before an own promo: here that is the whole video
+        assertEquals(RealTimeline.totalMs(events), RealTimeline.mainMs(events))
+        // no how-to video, no such stretch
+        assertTrue(RealTimeline.build(r, 0L, 4_000L).none { it.phase == RealPhase.Howto })
+        // an own promo takes the place of both
+        assertTrue(RealTimeline.build(r, 5_000L, 4_000L, 6_300L).none { it.phase == RealPhase.Howto || it.phase == RealPhase.EndCard })
+    }
 }

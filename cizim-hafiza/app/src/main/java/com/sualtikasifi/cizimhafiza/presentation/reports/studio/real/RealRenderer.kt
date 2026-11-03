@@ -63,6 +63,9 @@ class RealRenderer(
     private val promo: ClipFrames? = null,
     promoFile: File? = null,
     promoMs: Long = 0L,
+    /** The video of how the game is played, shown without its sound after Karalak's closing and before the end card; [howtoMs] long (0: none). */
+    private val howto: ClipFrames? = null,
+    howtoMs: Long = 0L,
     /** The end card after the closing, [endCardMs] long (0: none; the promo, when there is one, takes its place). */
     endCardMs: Long = 0L,
     /** What Karalak says over the end card, when it is voiced. */
@@ -71,7 +74,7 @@ class RealRenderer(
     /** The video is one drawing's: the project's featured one. */
     private val featured = project.featured
     private val shown = listOfNotNull(featured)
-    val events: List<RealEvent> = RealTimeline.build(featured, promoMs, endCardMs)
+    val events: List<RealEvent> = RealTimeline.build(featured, promoMs, endCardMs, howtoMs)
     override val totalMs: Long = RealTimeline.totalMs(events)
     override val width: Int get() = W
     override val height: Int get() = H
@@ -106,6 +109,8 @@ class RealRenderer(
                 RealPhase.Outro -> if (outroVoiceFile != null && f.outro.voice != null) {
                     add(ClipSound(outroVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.outro.voiceMs, 1f, voice = true))
                 }
+                // the how-to video is shown without sound: the music runs on under it
+                RealPhase.Howto -> Unit
                 RealPhase.Promo -> promoFile?.let { add(ClipSound(it, e.startMs, e.durationMs, 1f, shape = RealMix::clipGainAt)) }
                 // the music runs through the end card and fades out at its end; Karalak's line over it, when voiced
                 RealPhase.EndCard -> if (endVoiceFile != null && f.endLine.voice != null) {
@@ -189,6 +194,7 @@ class RealRenderer(
     override fun draw(canvas: Canvas, t: Long) {
         val e = RealTimeline.at(events, t)
         if (e.phase == RealPhase.Promo) { drawPromo(canvas, e, t); return }
+        if (e.phase == RealPhase.Howto) { drawPromo(canvas, e, t, howto); return }
         if (e.phase == RealPhase.EndCard) { drawEndCard(canvas, e, t); return }
         val reveal = shown.getOrNull(e.index) ?: return
         when (e.phase) {
@@ -471,11 +477,11 @@ class RealRenderer(
      * The app's promo video, full frame with its own sound, fading in over the drawing's video's last moment. A promo
      * that is not 9:16 is shown whole over a blurred, darkened copy of itself rather than cropped.
      */
-    private fun drawPromo(canvas: Canvas, e: RealEvent, t: Long) {
+    private fun drawPromo(canvas: Canvas, e: RealEvent, t: Long, source: ClipFrames? = promo) {
         val local = t - e.startMs
         val fade = (local.toFloat() / PROMO_FADE).coerceIn(0f, 1f)
         if (fade < 1f && e.startMs > 0) draw(canvas, e.startMs - 1) else canvas.drawColor(C.INK)
-        val frame = promo?.frameAt(local) ?: return
+        val frame = source?.frameAt(local) ?: return
         if (frame.isRecycled) return
         val full = RectF(0f, 0f, W.toFloat(), H.toFloat())
         val aspect = frame.width.toFloat() / frame.height

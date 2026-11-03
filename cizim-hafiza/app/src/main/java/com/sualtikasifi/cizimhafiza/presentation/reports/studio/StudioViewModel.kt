@@ -62,6 +62,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VideoPost
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealHowto
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMusic
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealPhase
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VoicedLine
@@ -207,6 +208,10 @@ data class RealUi(
     val promoBusy: Boolean = false,
     /** What closes every video: a short end card (the default), the promo video, or nothing after Karalak's closing. */
     val ending: RealEnding = RealEnding.Card,
+    /** The video that shows how the game is played (shipped in the app, no sound) and its length; shown before the end card while [howtoOn]. */
+    val howto: File? = null,
+    val howtoMs: Long = 0L,
+    val howtoOn: Boolean = true,
     /** Whether the app's music is mixed into the video; off, it is left out so a trending sound can be added in the app it is posted to. */
     val musicOn: Boolean = true,
     /** The music the person added from their own files (names, see RealMusic), after the app's own tracks. */
@@ -335,6 +340,7 @@ class StudioViewModel @Inject constructor(
     private val previewClips = ConcurrentHashMap<String, ClipFrames>()
     /** The promo video, opened the same way for the preview. */
     @Volatile private var previewPromo: ClipFrames? = null
+    @Volatile private var previewHowto: ClipFrames? = null
 
     init {
         loadDrawings()
@@ -811,7 +817,29 @@ class StudioViewModel @Inject constructor(
             updateReal { it.copy(project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media }), ending = ending, musicOn = prefs.getBoolean(MUSIC_ON, true), platform = platform, customMusic = RealMusic.custom(context)) }
             p?.let { loadRealMedia(it) }
             loadPromo()
+            loadHowto(prefs.getBoolean(HOWTO_ON, true))
         }
+    }
+
+    /** The how-to video that ships in the app: copied out once, its length read, opened for the preview. */
+    private suspend fun loadHowto(on: Boolean) {
+        val (file, ms, frames) = withContext(Dispatchers.IO) {
+            val f = runCatching { RealHowto.ensure(context) }.getOrNull()
+            val ms = f?.let { RealImages.clipMs(it) } ?: 0L
+            Triple(f?.takeIf { ms > 0 }, ms, f?.takeIf { ms > 0 }?.let { runCatching { ClipFrames(it, exact = false) }.getOrNull() })
+        }
+        previewHowto?.close()
+        previewHowto = frames
+        updateReal { it.copy(howto = file, howtoMs = ms.coerceAtMost(RealTimeline.HOWTO_MAX), howtoOn = on) }
+        refreshPreview()
+    }
+
+    /** Whether the video of how the game is played comes before the end card. Kept on this phone. */
+    fun setHowtoOn(on: Boolean) {
+        prefs().edit().putBoolean(HOWTO_ON, on).apply()
+        updateReal { it.copy(howtoOn = on) }
+        _state.update { it.copy(video = null) }
+        refreshPreview()
     }
 
     /** The promo video kept on this phone, if any: its length, and opened for the preview. */
@@ -1853,7 +1881,8 @@ class StudioViewModel @Inject constructor(
         s: StudioState, voice: Map<Int, FloatArray>?, preview: Boolean,
         wordTimes: Map<Int, List<LongRange>>? = null,
         clipSource: (String) -> ClipFrames? = { previewClips[it] },
-        promoSource: (File) -> ClipFrames? = { previewPromo }
+        promoSource: (File) -> ClipFrames? = { previewPromo },
+        howtoSource: (File) -> ClipFrames? = { previewHowto }
     ): VoicedVideo? {
         if (s.format == StudioFormat.RealLife) {
             val p = s.real.project ?: return null
@@ -1861,6 +1890,7 @@ class StudioViewModel @Inject constructor(
             val f = p.featured ?: return null
             val clip = f.clip ?: return null
             val promo = s.real.promo?.takeIf { s.real.ending == RealEnding.Promo && s.real.promoMs > 0 }
+            val howto = s.real.howto?.takeIf { s.real.ending == RealEnding.Card && s.real.howtoOn && s.real.howtoMs > 0 }
             return RealRenderer(
                 assetsOrLoad(), p,
                 clips = listOfNotNull(clipSource(clip)?.let { f.sampleId to it }).toMap(),
@@ -1875,6 +1905,8 @@ class StudioViewModel @Inject constructor(
                 promo = promo?.let(promoSource),
                 promoFile = promo,
                 promoMs = if (promo != null) s.real.promoMs else 0L,
+                howto = howto?.let(howtoSource),
+                howtoMs = if (howto != null) s.real.howtoMs else 0L,
                 endCardMs = if (s.real.ending == RealEnding.Card) f.endCardMs else 0L,
                 endVoiceFile = f.endLine.voice?.let { realStore.file(it) }
             )
@@ -1950,6 +1982,7 @@ class StudioViewModel @Inject constructor(
                 // every frame of an imported clip, opened for this render only
                 val renderClips = HashMap<String, ClipFrames?>()
                 var renderPromo: ClipFrames? = null
+                var renderHowto: ClipFrames? = null
                 try {
                     withContext(Dispatchers.Default) {
                         // 2. timing from the real voice, the voice and any clip sound laid on one track, and that track encoded
@@ -1958,7 +1991,8 @@ class StudioViewModel @Inject constructor(
                             s, envelopes, preview = false,
                             wordTimes = times.takeIf { s.voiceOn && it.isNotEmpty() },
                             clipSource = { name -> renderClips.getOrPut(name) { runCatching { ClipFrames(realStore.file(name), exact = true) }.getOrNull() } },
-                            promoSource = { f -> renderPromo ?: runCatching { ClipFrames(f, exact = true) }.getOrNull().also { renderPromo = it } }
+                            promoSource = { f -> renderPromo ?: runCatching { ClipFrames(f, exact = true) }.getOrNull().also { renderPromo = it } },
+                            howtoSource = { f -> renderHowto ?: runCatching { ClipFrames(f, exact = true) }.getOrNull().also { renderHowto = it } }
                         ) ?: error("Video hazırlanamadı")
                         _state.update { it.copy(renderStage = "Ses birleştiriliyor", progress = 0.17f) }
                         val placed = mutableListOf<Placed>()
@@ -1998,6 +2032,7 @@ class StudioViewModel @Inject constructor(
                 } finally {
                     renderClips.values.forEach { it?.close() }
                     renderPromo?.close()
+                    renderHowto?.close()
                 }
             }
             result.onSuccess { _state.update { it.copy(rendering = false, video = out, progress = 1f, renderStage = "") } }
@@ -2053,6 +2088,8 @@ class StudioViewModel @Inject constructor(
         previewClips.clear()
         previewPromo?.close()
         previewPromo = null
+        previewHowto?.close()
+        previewHowto = null
         super.onCleared()
     }
 
@@ -2070,6 +2107,7 @@ class StudioViewModel @Inject constructor(
         const val POST_SAME_MS = 30 * 60_000L
         const val ENDING = "studio_real_ending"
         const val MUSIC_ON = "studio_real_music_on"
+        const val HOWTO_ON = "studio_real_howto_on"
         const val PLATFORM = "studio_real_platform"
         /** No line of Karalak's runs this long; a longer decode means something went wrong. */
         const val VOICE_MAX_MS = 60_000L

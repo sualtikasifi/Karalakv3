@@ -662,6 +662,19 @@ private fun EndingCard(r: RealUi, vm: StudioViewModel) {
             style = Console.Small, modifier = Modifier.padding(top = 8.dp)
         )
         if (r.ending == RealEnding.Promo) PromoCard(r, vm)
+        if (r.ending == RealEnding.Card && r.howto != null) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text("Oyunun nasıl oynandığı (kısa video)", style = Console.Subtitle)
+                    Text(
+                        String.format(Locale("tr"), "Açık: kapanıştan sonra, bitiş görselinden önce %.1f sn'lik tanıtım videosu sessiz oynar (müzik devam eder). ", r.howtoMs / 1000f) +
+                            "İzleyiciye oyunun ne olduğunu gösterir; uygulamanın içinde gömülüdür, her videoda aynıdır.",
+                        style = Console.Small
+                    )
+                }
+                Switch(checked = r.howtoOn, onCheckedChange = vm::setHowtoOn, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
+            }
+        }
         if (r.ending == RealEnding.Card) EndVoices(r, vm)
     }
 }
