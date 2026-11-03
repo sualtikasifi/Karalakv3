@@ -976,6 +976,20 @@ class StudioViewModel @Inject constructor(
     /** The name on the card; empty makes the player anonymous. A leading @ is dropped (the card adds its own). */
     fun setPlayerName(id: String, text: String) = updateDrawing(id) { it.copy(nickname = text.trimStart('@', ' ').take(30)) }
 
+    /**
+     * How many seconds the drawing is said to have taken, by hand: the game's own figure is often longer than a quick
+     * drawing really takes, and a shorter time makes the video more exciting. The countdown, the lines the assistant
+     * writes, their voices and the picture prompt all read it from the drawing, so this is the one place it is set.
+     */
+    fun setDrawingSeconds(id: String, seconds: Int) {
+        val secs = seconds.coerceIn(1, 99)
+        val p = _state.value.real.project ?: return
+        if (p.drawing(id)?.seconds == secs) return
+        updateDrawing(id) { it.copy(seconds = secs) }
+        val written = p.reveals.firstOrNull { it.sampleId == id }?.let { it.hook.text.isNotBlank() || it.outro.text.isNotBlank() } == true
+        if (written) _state.update { it.copy(message = "Süre $secs sn oldu: kanca ve kapanışı yeniden yazdırıp seslendir.") }
+    }
+
     fun setPlayerFrame(id: String, frameName: String?) = updateDrawing(id) { it.copy(frameId = frameName.orEmpty()) }
 
     /** Brings a picture from the gallery for the card's round slot. */
@@ -1776,7 +1790,7 @@ class StudioViewModel @Inject constructor(
             if (video == null) { _state.update { it.copy(preview = null, totalMs = 0L) }; return@launch }
             val (image, total) = withContext(Dispatchers.Default) {
                 val renderer = video
-                val bmp = Bitmap.createBitmap(GuessRenderer.W / 2, GuessRenderer.H / 2, Bitmap.Config.ARGB_8888)
+                val bmp = Bitmap.createBitmap(renderer.width / 2, renderer.height / 2, Bitmap.Config.ARGB_8888)
                 val canvas = Canvas(bmp)
                 canvas.scale(0.5f, 0.5f)
                 renderer.draw(canvas, s.previewMs.coerceIn(0L, renderer.totalMs))
@@ -1943,17 +1957,18 @@ class StudioViewModel @Inject constructor(
                         }
                         fun encodeAt(w: Int, h: Int) = com.sualtikasifi.cizimhafiza.presentation.reports.studio.VideoEncoder.encode(
                             out = out, width = w, height = h, fps = GuessRenderer.FPS, frames = frames,
-                            drawFrame = { canvas, t -> draw(canvas, t, w.toFloat() / GuessRenderer.W) },
+                            drawFrame = { canvas, t -> draw(canvas, t, w.toFloat() / renderer.width) },
                             onProgress = { p -> _state.update { it.copy(renderStage = "Video oluşturuluyor", progress = 0.2f + 0.8f * p) } },
                             isCancelled = { job?.isActive == false },
                             audio = audio
                         )
                         try {
-                            encodeAt(GuessRenderer.W, GuessRenderer.H)
+                            encodeAt(renderer.width, renderer.height)
                         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
                             throw e
                         } catch (e: Exception) {
-                            encodeAt(720, 1280)
+                            // the same shape, 720 wide (720x1280 for 9:16, 720x1600 for 9:20)
+                            encodeAt(720, (720L * renderer.height / renderer.width).toInt() / 2 * 2)
                         }
                     }
                 } finally {

@@ -24,5 +24,8 @@ interface VoicedVideo {
     val totalMs: Long
     val voiceStarts: List<Pair<Int, Long>>
     val sounds: List<ClipSound> get() = emptyList()
+    /** The picture's size in pixels: the encoder makes the video this big (or the same shape, smaller, when the phone's encoder cannot). */
+    val width: Int get() = 1080
+    val height: Int get() = 1920
     fun draw(canvas: Canvas, t: Long)
 }

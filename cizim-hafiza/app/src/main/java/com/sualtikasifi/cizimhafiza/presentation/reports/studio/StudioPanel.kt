@@ -1123,6 +1123,13 @@ private fun PlayerEditor(d: RealDrawing?, vm: StudioViewModel, anyBusy: Boolean)
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let { vm.importPlayerPhoto(d.id, it) } }
     Text("Kartta görünen oyuncu", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
     Field("Kullanıcı adı (boş: Anonim oyuncu)", d.nickname, { vm.setPlayerName(d.id, it) })
+    // how long the drawing is said to have taken: by hand, since a quick drawing is more exciting than the game's own time
+    var secondsText by remember(d.id) { mutableStateOf(d.seconds.takeIf { it > 0 }?.toString().orEmpty()) }
+    Field("Çizim süresi, saniye (videoda geri sayım ve cümleler bunu kullanır)", secondsText, { raw ->
+        val digits = raw.filter { it.isDigit() }.take(2)
+        secondsText = digits
+        digits.toIntOrNull()?.takeIf { it >= 1 }?.let { vm.setDrawingSeconds(d.id, it) }
+    })
     Text("Çerçeve", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
         item(key = "auto") {
