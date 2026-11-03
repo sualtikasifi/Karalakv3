@@ -224,8 +224,14 @@ data class RealUi(
     /** A picture ready to hand to ChatGPT or Gemini, with the prompt to paste. */
     val share: RealShare? = null,
     /** The swipe-through post: each drawing followed by what it became, ready for the share sheet. */
-    val carousel: List<File>? = null
+    val carousel: List<File>? = null,
+    /** Which part of "Gerçek Olsaydı" is open, which of its seven steps, and which of the voices' five; kept on this phone. */
+    val tab: RealTab = RealTab.Prepare,
+    val step: Int = 1,
+    val voiceStep: Int = 1
 )
+
+enum class RealTab { Prepare, Library, Settings }
 
 enum class ShareTarget { ChatGpt, Gemini }
 
@@ -814,7 +820,8 @@ class StudioViewModel @Inject constructor(
             val prefs = prefs()
             val ending = runCatching { RealEnding.valueOf(prefs.getString(ENDING, null).orEmpty()) }.getOrDefault(RealEnding.Card)
             val platform = SocialPlatform.of(prefs.getString(PLATFORM, null))
-            updateReal { it.copy(project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media }), ending = ending, musicOn = prefs.getBoolean(MUSIC_ON, true), platform = platform, customMusic = RealMusic.custom(context)) }
+            val tab = runCatching { RealTab.valueOf(prefs.getString(TAB, null).orEmpty()) }.getOrDefault(RealTab.Prepare)
+            updateReal { it.copy(tab = tab, step = prefs.getInt(STEP, 1).coerceIn(1, 7), voiceStep = prefs.getInt(VOICE_STEP, 1).coerceIn(1, 5), project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media }), ending = ending, musicOn = prefs.getBoolean(MUSIC_ON, true), platform = platform, customMusic = RealMusic.custom(context)) }
             p?.let { loadRealMedia(it) }
             loadPromo()
             loadHowto(prefs.getBoolean(HOWTO_ON, true))
@@ -832,6 +839,29 @@ class StudioViewModel @Inject constructor(
         previewHowto = frames
         updateReal { it.copy(howto = file, howtoMs = ms.coerceAtMost(RealTimeline.HOWTO_MAX), howtoOn = on) }
         refreshPreview()
+    }
+
+    /** Which part of the panel is open: the steps, the library or the settings. Kept on this phone. */
+    fun setRealTab(tab: RealTab) {
+        prefs().edit().putString(TAB, tab.name).apply()
+        updateReal { it.copy(tab = tab) }
+    }
+
+    /** Goes to one of the seven steps. Kept on this phone, so the work is picked up where it was left. */
+    fun setRealStep(step: Int) {
+        val n = step.coerceIn(1, 7)
+        prefs().edit().putInt(STEP, n).apply()
+        updateReal { it.copy(step = n) }
+        // the preview follows the step: the voice being set, the clip with the card on it, the start
+        when (n) { 5 -> previewVoiceStep(_state.value.real.voiceStep); 6 -> previewLine(RealLine.Narration); 7 -> setPreviewTime(0L); else -> Unit }
+    }
+
+    /** Goes to one of the five voice steps (hook, narrator, closing, music, the line over the end card). */
+    fun setVoiceStep(step: Int) {
+        val n = step.coerceIn(1, 5)
+        prefs().edit().putInt(VOICE_STEP, n).apply()
+        updateReal { it.copy(voiceStep = n) }
+        previewVoiceStep(n)
     }
 
     /** Whether the video of how the game is played comes before the end card. Kept on this phone. */
@@ -971,7 +1001,8 @@ class StudioViewModel @Inject constructor(
     fun resetReal(confirmed: Boolean = false) {
         val current = _state.value.real.project ?: return
         if (!confirmed && current.media.isNotEmpty()) { updateReal { it.copy(confirmReset = true) }; return }
-        updateReal { it.copy(project = null, confirmReset = false, writeError = null) }
+        updateReal { it.copy(project = null, confirmReset = false, writeError = null, step = 1, voiceStep = 1) }
+        prefs().edit().putInt(STEP, 1).putInt(VOICE_STEP, 1).apply()
         _state.update { it.copy(video = null, previewMs = 0L) }
         val kept = _state.value.real.library.flatMap { it.media }.toSet()
         viewModelScope.launch {
@@ -1131,6 +1162,15 @@ class StudioViewModel @Inject constructor(
     private fun lineError(kind: RealLine, message: String) = updateReal { it.copy(lineErrors = it.lineErrors + (kind to message)) }
 
     /** Moves the preview to where [kind] shows: the very start for the hook, the closing for the closing. */
+    /** Moves the preview to where the voice step being set shows. */
+    private fun previewVoiceStep(n: Int) = when (n) {
+        1 -> previewLine(RealLine.Hook)
+        2 -> previewLine(RealLine.Narration)
+        3 -> previewLine(RealLine.Outro)
+        5 -> previewLine(RealLine.End)
+        else -> setPreviewTime(0L)
+    }
+
     private fun previewLine(kind: RealLine) {
         val events = _state.value.real.project?.featured?.let { RealTimeline.build(it, 0L, it.endCardMs) }.orEmpty()
         val outro = events.lastOrNull { it.phase == RealPhase.Outro }
@@ -1506,7 +1546,8 @@ class StudioViewModel @Inject constructor(
         val items = r.librarySelected.mapNotNull { id -> r.library.find { it.id == id } }.filter { it.hasClip }
         if (items.isEmpty()) { _state.update { it.copy(message = "Önce videosu olan kayıtları seç") }; return }
         val project = RealProject(drawings = items.map { it.drawing }, reveals = items.map { it.reveal })
-        updateReal { it.copy(project = project, librarySelected = emptyList(), libraryShown = false) }
+        updateReal { it.copy(project = project, librarySelected = emptyList(), libraryShown = false, tab = RealTab.Prepare, step = 7) }
+        prefs().edit().putString(TAB, RealTab.Prepare.name).putInt(STEP, 7).apply()
         _state.update { it.copy(video = null, previewMs = 0L, message = if (items.size == 1) "Hazır; aşağıdan videoyu oluştur" else "${items.size} kayıt alındı; video en üsttekiyle yapılır (Başa al ile değiştir)") }
         viewModelScope.launch { withContext(Dispatchers.IO) { runCatching { realStore.save(project) } } }
         loadRealMedia(project)
@@ -2106,6 +2147,9 @@ class StudioViewModel @Inject constructor(
         const val CARD_Y = "studio_real_card_y"
         const val POST_SAME_MS = 30 * 60_000L
         const val ENDING = "studio_real_ending"
+        const val TAB = "studio_real_tab"
+        const val STEP = "studio_real_step"
+        const val VOICE_STEP = "studio_real_voice_step"
         const val MUSIC_ON = "studio_real_music_on"
         const val HOWTO_ON = "studio_real_howto_on"
         const val PLATFORM = "studio_real_platform"
