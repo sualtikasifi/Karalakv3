@@ -71,6 +71,8 @@ class RealRenderer(
     private val shown = listOfNotNull(featured)
     val events: List<RealEvent> = RealTimeline.build(featured, promoMs, endCardMs)
     override val totalMs: Long = RealTimeline.totalMs(events)
+    override val width: Int get() = W
+    override val height: Int get() = H
     override val voiceStarts: List<Pair<Int, Long>> = emptyList()
     override val sounds: List<ClipSound> = buildList {
         val f = featured ?: return@buildList

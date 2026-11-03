@@ -1776,7 +1776,7 @@ class StudioViewModel @Inject constructor(
             if (video == null) { _state.update { it.copy(preview = null, totalMs = 0L) }; return@launch }
             val (image, total) = withContext(Dispatchers.Default) {
                 val renderer = video
-                val bmp = Bitmap.createBitmap(GuessRenderer.W / 2, GuessRenderer.H / 2, Bitmap.Config.ARGB_8888)
+                val bmp = Bitmap.createBitmap(renderer.width / 2, renderer.height / 2, Bitmap.Config.ARGB_8888)
                 val canvas = Canvas(bmp)
                 canvas.scale(0.5f, 0.5f)
                 renderer.draw(canvas, s.previewMs.coerceIn(0L, renderer.totalMs))
@@ -1943,17 +1943,18 @@ class StudioViewModel @Inject constructor(
                         }
                         fun encodeAt(w: Int, h: Int) = com.sualtikasifi.cizimhafiza.presentation.reports.studio.VideoEncoder.encode(
                             out = out, width = w, height = h, fps = GuessRenderer.FPS, frames = frames,
-                            drawFrame = { canvas, t -> draw(canvas, t, w.toFloat() / GuessRenderer.W) },
+                            drawFrame = { canvas, t -> draw(canvas, t, w.toFloat() / renderer.width) },
                             onProgress = { p -> _state.update { it.copy(renderStage = "Video oluşturuluyor", progress = 0.2f + 0.8f * p) } },
                             isCancelled = { job?.isActive == false },
                             audio = audio
                         )
                         try {
-                            encodeAt(GuessRenderer.W, GuessRenderer.H)
+                            encodeAt(renderer.width, renderer.height)
                         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
                             throw e
                         } catch (e: Exception) {
-                            encodeAt(720, 1280)
+                            // the same shape, 720 wide (720x1280 for 9:16, 720x1600 for 9:20)
+                            encodeAt(720, (720L * renderer.height / renderer.width).toInt() / 2 * 2)
                         }
                     }
                 } finally {
