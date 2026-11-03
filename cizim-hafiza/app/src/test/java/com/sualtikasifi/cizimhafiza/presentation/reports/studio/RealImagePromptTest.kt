@@ -148,6 +148,8 @@ class RealImagePromptTest {
         assertTrue(video, video.contains("Tuhaf şekli: iki hilal gibi kıvrık parça"))
         assertTrue(video, video.contains("yalnızca elleri ile kolları görünür"))
         assertTrue(video, video.contains("Nesne yenmez, ısırılmaz"))
+        assertTrue(video, video.contains("nesne yerinde SABİT durur"))
+        assertTrue(video, video.contains("üstünü örtmez"))
         assertTrue(video, video.contains("yakınlaşma, kayma ve kişiye dönme yok"))
         val pitch = RealCopy.pitchPrompt("simit", RealReveal("s", kind = "nesne"))
         assertTrue(pitch, pitch.contains("(yemek, içmek, giymek, açmak, kesmek) YOK"))

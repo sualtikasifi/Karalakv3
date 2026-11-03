@@ -520,7 +520,7 @@ object RealCopy {
             if (place.isNotEmpty()) append(" (").append(place).append(")")
             append(": aynı duvar, yüzey, eşyalar ve ışık. Kesme, sahne değişimi, yeni oda, kapı açılması ya da yeni bir kişinin girişi yok.\n")
             append("Kişi: en fazla bir kişi ve yalnızca elleri ile kolları görünür; kadrajın kenarından girer, yüzü ve gövdesi görünmez, başka kimse girmez.\n")
-            append("Hareket kuralı: nesneyi yalnızca eller hareket ettirir (tutar, çevirir, iter, bırakır). Nesne kendiliğinden hareket etmez, bükülmez, yaylanmaz, şekil değiştirmez. Nesne yenmez, ısırılmaz, açılmaz, kesilmez, giyilmez, kırılmaz; hiçbir parçası çıkmaz ya da eksilmez; normal, sıradan bir kullanım gerektiren eylem yok.\n")
+            append("Hareket kuralı: nesne yerinde SABİT durur ve hiç hareket etmez; parçaları birbirine göre kıpırdamaz, yeri ve duruşu değişmez. Eller ona dokunmaz ya da yalnızca kenarına bir an hafifçe değer; nesnenin üstünü örtmez (en fazla %10'unu kapatır), çünkü örtülen yeri model baştan, normal hâliyle çizer. Elin işi göstermek, yaklaşmak, havada işaret etmek, nesnenin yanında tezgâha vurmak gibi hareketlerdir. Nesne kendiliğinden hareket etmez, bükülmez, yaylanmaz, şekil değiştirmez. Nesne yenmez, ısırılmaz, açılmaz, kesilmez, giyilmez, kırılmaz; hiçbir parçası çıkmaz ya da eksilmez; normal, sıradan bir kullanım gerektiren eylem yok.\n")
             append("Kadraj: ilk karedeki gibi KALIR; yakınlaşma, kayma ve kişiye dönme yok. Nesne baştan sona kadrajın içinde ve aynı yerde görünür.\n\n")
             append("Olay: ").append(story).append(".\n\n")
             append("Kamera: sabit ya da çok yavaş yaklaşan; kesme yok.\n")
@@ -571,7 +571,7 @@ object RealCopy {
             append("3. Hayvanın tuhaf vücudu (çizimdeki gibi gövde, bacak, baş) baştan sona aynı kalır ve espri bu vücudun doğal davranışı yaparkenki hâlinden doğar; vücut şekil değiştirmez.\n")
         } else {
             append("2. En fazla bir kişi ve yalnızca elleri ile kolları görünür (yüz ve gövde yok); eller kadrajın kenarından girer. Kadraj ilk fotoğraftaki gibi kalır, nesne baştan sona aynı yerde görünür.\n")
-            append("3. Nesne şekil, malzeme ya da boyut değiştirmez: sertse bükülmez, yaylanmaz, sallanmaz, canlanmaz, göz ya da yüz çıkmaz. Hareketi yalnızca eller yapar (tutar, çevirir, iter, bırakır). Nesne yenmez, ısırılmaz, açılmaz, kesilmez, giyilmez, kırılmaz; parçası çıkmaz ya da eksilmez; sıradan, doğru kullanım gerektiren eylem (yemek, içmek, giymek, açmak, kesmek) YOK, çünkü model nesneyi normal hâline çevirir.\n")
+            append("3. Nesne şekil, malzeme ya da boyut değiştirmez: sertse bükülmez, yaylanmaz, sallanmaz, canlanmaz, göz ya da yüz çıkmaz. Nesne yerinde SABİT kalır, hiç hareket etmez, parçaları birbirine göre kıpırdamaz; eller ona dokunmaz ya da yalnızca kenarına bir an değer ve üstünü örtmez (en fazla %10'u), çünkü örtülen yeri model normal hâliyle yeniden çizer. Elin işi göstermek, yaklaşmak, işaret etmek, yanına vurmaktır. Nesne yenmez, ısırılmaz, açılmaz, kesilmez, giyilmez, kırılmaz; parçası çıkmaz ya da eksilmez; sıradan, doğru kullanım gerektiren eylem (yemek, içmek, giymek, açmak, kesmek) YOK, çünkü model nesneyi normal hâline çevirir.\n")
         }
         append("4. Boyut gerçek kalır: kişinin elinde ya da yanında nesnenin gerçek ölçüsünde görünür.\n")
         append("5. 8 saniyeye sığar: 0–2 sn kurulum, 2–5 sn gelişme, 5–8 sn sürpriz; her aralıkta tek eylem.\n")
