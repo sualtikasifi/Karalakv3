@@ -118,4 +118,27 @@ class RealImagePromptTest {
         assertEquals("s4", ideas[2].scene)
         assertEquals(null, RealCopy.parsePitches("bilmiyorum"))
     }
+
+    @Test
+    fun `the picture prompt keeps the drawn body and does not print the strokes on the surface`() {
+        val creature = RealCopy.imagePrompt("at", 5, RealReveal("a", kind = "canlı"))
+        assertTrue(creature, creature.contains("Vücudunu gerçek hayvana benzetip düzeltme"))
+        assertTrue(creature, creature.contains("kalın çizgileri yüzeye basılmış çizgi olarak kalmasın"))
+        val thing = RealCopy.imagePrompt("top", 5, RealReveal("t", kind = "nesne"))
+        assertFalse("an object is not told about animal bodies", thing.contains("Vücudunu gerçek hayvana"))
+        assertTrue(thing, thing.contains("düz bir disk, çıkartma ya da boyama gibi görünmesin"))
+    }
+
+    @Test
+    fun `a creature's video has no person and keeps its drawn body, an object's keeps its odd look`() {
+        val horse = RealCopy.videoPrompt("at", RealReveal("a", kind = "canlı"))
+        assertTrue(horse, horse.contains("Kadrajda insan yok"))
+        assertTrue(horse, horse.contains("yerine sıradan bir hayvan koyma"))
+        assertFalse(horse, horse.contains("en fazla bir kişi"))
+        val ball = RealCopy.videoPrompt("top", RealReveal("t", kind = "nesne"))
+        assertTrue(ball, ball.contains("yerine sıradan, normal bir \"top\" KOYMA"))
+        val pitch = RealCopy.pitchPrompt("at", RealReveal("a", kind = "canlı"))
+        assertTrue(pitch, pitch.contains("Kadrajda insan yok"))
+        assertTrue(pitch, pitch.contains("tuhaf özellik videonun her anında"))
+    }
 }

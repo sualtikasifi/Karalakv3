@@ -446,7 +446,8 @@ object RealCopy {
         val thing = word.ifBlank { "nesne" }
         val kind = Kind.of(reveal?.kind)
         append("Ekteki çizim, bir çizim oyununda \"").append(thing).append("\" kelimesi için ").append(seconds).append(" saniyede yapılmış hızlı bir karalama. ")
-        append("Bu çizimi, çizildiği gibi gerçekten var olan bir \"").append(thing).append("\" hâline getir ve onu gerçek bir telefon fotoğrafı olarak göster: bir çocuk çiziminin gerçek hâli.\n\n")
+        append("Bu çizimi, çizildiği gibi gerçekten var olan bir \"").append(thing).append("\" hâline getir ve onu gerçek bir telefon fotoğrafı olarak göster: bir çocuk çiziminin gerçek hâli. ")
+        append("Şekli çizimdeki gibi, yüzeyi ve ortamı tamamen gerçek olsun.\n\n")
         append(
             when (kind) {
                 Kind.Object -> "Bu bir NESNE. Canlı değil: gözü, yüzü, ağzı, kolu, bacağı, teni, tüyü yok."
@@ -455,7 +456,9 @@ object RealCopy {
                 Kind.Plant -> "Bu bir BİTKİ. Gerçek yaprağı, gövdesi, kabuğu ya da çiçeği olsun; gözü, yüzü, ağzı, kolu, bacağı yok."
                 Kind.Unknown -> "Önce \"$thing\" kelimesinin bir nesne, canlı, yiyecek ya da bitki olduğuna karar ver ve ona göre davran. Nesnelerin, yiyeceklerin ve bitkilerin gözü, yüzü, ağzı, kolu, bacağı, teni, tüyü olmaz; yalnızca canlıların tüyü ya da derisi olur."
             }
-        ).append("\n\n")
+        ).append("\n")
+        if (kind == Kind.Creature) append("Vücudunu gerçek hayvana benzetip düzeltme: gövde, baş, bacak sayısı ve bunların yerleri çizimdeki gibi kalsın (örneğin tüp gibi bir gövde, ince bacaklar, yanlış yere oturmuş bir baş); yalnızca yüzeyi gerçek tüy, deri ya da pul olsun.\n")
+        append("Çizimin kalın çizgileri yüzeye basılmış çizgi olarak kalmasın: her çizgi gerçek bir kenar, kıvrım, dikiş, boğum ya da gölge olsun. Şekil üç boyutlu, hacimli ve gerçek dokulu olsun; düz bir disk, çıkartma ya da boyama gibi görünmesin.\n\n")
         val parts = reveal?.parts?.lines()?.map { it.trim().trimStart('-', '•', ' ') }?.filter { it.isNotEmpty() }.orEmpty()
         if (parts.isNotEmpty()) {
             append("Çizimden gerçeğe eşleme:\n")
@@ -476,7 +479,7 @@ object RealCopy {
             reveal?.scaleHint.orEmpty().trim().trimEnd('.').takeIf { it.isNotEmpty() }?.let { append("; boyutu anlaşılsın diye ").append(it) }
             append(".\n")
         }
-        append("Tarz: sıradan bir telefon fotoğrafı, gerçek dokular. İllüstrasyon, çizgi film, anime, boyama ve 3B görsel olmasın.\n")
+        append("Tarz: sıradan bir telefon fotoğrafı, gerçek dokular; arka plan da gerçek bir yer. İllüstrasyon, çizgi film, anime, boyama ve 3B görsel olmasın.\n")
         val scene = reveal?.scene.orEmpty().trim().trimEnd('.')
         append("Sahne: ")
         append(if (scene.isNotEmpty()) scene else "tek, gerçek ve sıradan bir yer (\"$thing\" nerede olurdu ya da bulunurdu)")
@@ -496,14 +499,18 @@ object RealCopy {
      */
     fun videoPrompt(word: String, reveal: RealReveal?): String {
         val thing = word.ifBlank { "nesne" }
+        val creature = Kind.of(reveal?.kind) == Kind.Creature
         val story = reveal?.motion.orEmpty().trim().trimEnd('.').ifBlank {
-            "Sıradan biri (\"$thing\" nesnesine) merakla bakar, onu doğal olarak kullanır, tuhaf göründüğünü fark etse de ciddiyetini bozmadan işine devam eder"
+            if (creature) "Hayvan tuhaf vücuduyla doğal bir şekilde yürür, otlar ya da etrafına bakar; tuhaf göründüğünü fark etmez"
+            else "Sıradan biri (\"$thing\" nesnesine) merakla bakar, onu doğal olarak kullanır, tuhaf göründüğünü fark etse de ciddiyetini bozmadan işine devam eder"
         }
         val fixed = reveal?.fixed.orEmpty().trim().trimEnd('.')
         val size = reveal?.size.orEmpty().trim().trimEnd('.')
         val place = reveal?.scene.orEmpty().trim().trimEnd('.')
+        if (creature) return creatureVideoPrompt(thing, story, size, place)
         return buildString {
             append("Ekteki fotoğrafı ilk kare olarak kullan. 8 saniyelik, dikey 9:16, sesli, sabit tutulan bir telefonla çekilmiş gerçek bir video; TEK ÇEKİM.\n\n")
+            append("Fotoğraftaki \"").append(thing).append("\" tuhaf hâliyle baştan sona görünür kalır; yerine sıradan, normal bir \"").append(thing).append("\" KOYMA.\n")
             append("Nesne: \"").append(thing).append("\" fotoğraftaki gibi kalır: aynı şekil, oranlar, renkler, malzeme ve yer. ")
             append(if (fixed.isNotEmpty()) "$fixed. " else "Sert, katı bir nesne gibi davranır: bükülmez, esnemez, şekil ya da malzeme değiştirmez, canlanmaz, göz ya da yüz çıkmaz. ")
             if (size.isNotEmpty()) append("Gerçek boyutu ").append(size).append(": kişinin yanında bu ölçüde görünür, büyümez ya da küçülmez. ")
@@ -517,6 +524,25 @@ object RealCopy {
             append("Kamera: sabit ya da çok yavaş yaklaşan; kesme yok.\n")
             append("Ses: olanlara uyan gerçekçi sesler (adım, nesnenin kendi sesi, eller), gerçek bir kayıt gibi. Müzik yok, ekranda yazı yok; sahnede açıkça yazılmadıkça kimse konuşmasın.")
         }
+    }
+
+    /**
+     * The video prompt for a living thing, in the spirit of children's drawings turned into real animals: the creature
+     * itself is the star, alive and at home in its place, its drawn body kept as it is (never swapped for an ordinary
+     * animal) and made to work; no person is needed.
+     */
+    private fun creatureVideoPrompt(thing: String, story: String, size: String, place: String): String = buildString {
+        append("Ekteki fotoğrafı ilk kare olarak kullan. 8 saniyelik, dikey 9:16, sesli, sabit tutulan bir telefonla çekilmiş gerçek bir video; TEK ÇEKİM.\n\n")
+        append("Canlı: fotoğraftaki \"").append(thing).append("\" baştan sona AYNI kalır: aynı tuhaf vücut, oranlar, bacak sayısı ve yerleri, renk ve tüy ya da deri. Onu normal bir hayvana çevirme, düzeltme, yerine sıradan bir hayvan koyma. ")
+        if (size.isNotEmpty()) append("Gerçek boyutu ").append(size).append(". ")
+        append("Ekleme ya da çıkarma yok.\n")
+        append("Hareket: hayvan canlı ve doğal davranır; tuhaf vücudu bu hareketi gerçekten yapıyormuş gibi çalışır (yavaş, ağır, inandırıcı). Vücudu şekil değiştirmez.\n")
+        append("Mekân: fotoğraftaki yer baştan sona AYNI kalır")
+        if (place.isNotEmpty()) append(" (").append(place).append(")")
+        append(". Kesme, sahne değişimi yok. Kadrajda insan yok.\n\n")
+        append("Olay: ").append(story).append(".\n\n")
+        append("Kamera: sabit ya da çok yavaş yaklaşan; kesme yok. Gerçek bir doğa ya da telefon kaydı gibi.\n")
+        append("Ses: ortama ve hayvana uyan gerçekçi sesler (adım, nefes, rüzgâr, hayvanın kendi sesi). Müzik yok, ekranda yazı yok, konuşma yok.")
     }
 
     /**
@@ -535,13 +561,20 @@ object RealCopy {
         if (reveal.describe.isNotBlank()) append("- Çizimin tuhaf şekli: ").append(reveal.describe).append('\n')
         append("\nÖNCE \"candidates\" listesine 6 farklı espri fikri yaz, her biri TEK kısa cümle. SONRA bunlardan birbirinden FARKLI mekanizmalı en iyi 3'ünü seç ve \"ideas\" içinde sahnesiyle yaz. Espri, nesnenin gerçek kullanımından ya da çizimin tuhaf özelliğinden doğsun. ")
         append("Espri mekanizmaları: ciddi, sakin bir tepki (kişi nesnenin tuhaflığını hiç yadırgamaz); makul ama yanlış kullanım; üç denemede giderek artan absürtlük; hiçbir şey olmamış gibi davranma; nesnenin kendi sesi ve zamanlaması.\n\n")
+        val creature = Kind.of(reveal.kind) == Kind.Creature
         append("KESİN KURALLAR (her fikir bunlara uymalı, yazmadan önce tek tek kontrol et):\n")
         append("1. Tek çekim, tek mekân: fotoğraftaki yer baştan sona aynı. Kapı açılması, yeni oda, kesme, ikinci bir kişinin girişi YOK.\n")
-        append("2. En fazla bir kişi; sıradan ve gerçek biri, kadraja içeriden ya da kenarından girer.\n")
-        append("3. Nesne şekil, malzeme ya da boyut değiştirmez: sertse bükülmez, yaylanmaz, sallanmaz, canlanmaz, göz ya da yüz çıkmaz. Hareketi yalnızca kişi yapar (tutar, çevirir, iter, bırakır, düşürür).\n")
+        if (creature) {
+            append("2. Kadrajda insan yok: yıldız hayvanın kendisi. Hayvan doğal davranır (yürür, otlar, yüzer, bakar, kaçar); sıradan bir hayvanla DEĞİŞMEZ.\n")
+            append("3. Hayvanın tuhaf vücudu (çizimdeki gibi gövde, bacak, baş) baştan sona aynı kalır ve espri bu vücudun doğal davranışı yaparkenki hâlinden doğar; vücut şekil değiştirmez.\n")
+        } else {
+            append("2. En fazla bir kişi; sıradan ve gerçek biri, kadraja içeriden ya da kenarından girer.\n")
+            append("3. Nesne şekil, malzeme ya da boyut değiştirmez: sertse bükülmez, yaylanmaz, sallanmaz, canlanmaz, göz ya da yüz çıkmaz. Hareketi yalnızca kişi yapar (tutar, çevirir, iter, bırakır, düşürür).\n")
+        }
         append("4. Boyut gerçek kalır: kişinin elinde ya da yanında nesnenin gerçek ölçüsünde görünür.\n")
         append("5. 8 saniyeye sığar: 0–2 sn kurulum, 2–5 sn gelişme, 5–8 sn sürpriz; her aralıkta tek eylem.\n")
-        append("6. Sonda duyulacak bir ses fikri ver (adım, nesnenin sesi, bir tık); konuşma yok.\n\n")
+        append("6. Sonda duyulacak bir ses fikri ver (adım, nesnenin sesi, bir tık); konuşma yok.\n")
+        append("7. Çizimdeki tuhaf özellik videonun her anında net görünür kalır ve espri onunla ilgilidir; yerine sıradan bir benzeri geçmez.\n\n")
         append("Her fikir için: \"joke\" esprinin ne olduğunu anlatan TEK cümle; \"scene\" üç zaman aralığıyla yazılmış sahne (mekân, kişi, ne yaptığı, ses). Hepsini TÜRKÇE yaz.\n")
         append("Yalnızca şu JSON'u yaz: {\"candidates\":[\"…\",\"…\",\"…\",\"…\",\"…\",\"…\"],\"ideas\":[{\"joke\":\"…\",\"scene\":\"…\"},{\"joke\":\"…\",\"scene\":\"…\"},{\"joke\":\"…\",\"scene\":\"…\"}]}")
     }
