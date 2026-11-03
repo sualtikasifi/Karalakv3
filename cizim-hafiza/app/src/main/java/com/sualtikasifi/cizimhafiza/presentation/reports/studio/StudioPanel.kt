@@ -1147,6 +1147,13 @@ private fun PlayerEditor(d: RealDrawing?, vm: StudioViewModel, anyBusy: Boolean)
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let { vm.importPlayerPhoto(d.id, it) } }
     Text("Kartta görünen oyuncu", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
     Field("Kullanıcı adı (boş: Anonim oyuncu)", d.nickname, { vm.setPlayerName(d.id, it) })
+    // the level shown on the card, by hand (the frame follows it while it is on "Oto")
+    var levelText by remember(d.id) { mutableStateOf(d.level.takeIf { it > 0 }?.toString().orEmpty()) }
+    Field("Seviye (kartta isimin yanında görünür; çerçeve “Oto” ise buna göre seçilir)", levelText, { raw ->
+        val digits = raw.filter { it.isDigit() }.take(3)
+        levelText = digits
+        digits.toIntOrNull()?.takeIf { it >= 1 }?.let { vm.setPlayerLevel(d.id, it) }
+    })
     // how long the drawing is said to have taken: by hand, since a quick drawing is more exciting than the game's own time
     var secondsText by remember(d.id) { mutableStateOf(d.seconds.takeIf { it > 0 }?.toString().orEmpty()) }
     Field("Çizim süresi, saniye (videoda geri sayım ve cümleler bunu kullanır)", secondsText, { raw ->

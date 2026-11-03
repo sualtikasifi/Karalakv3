@@ -367,7 +367,7 @@ object RealTimeline {
 object RealMix {
     const val DEFAULT_VOLUME = 0.25f
     const val MAX_VOLUME = 0.6f
-    const val UNDER_VOICE = 0.3f
+    const val UNDER_VOICE = 0.55f
     const val UNDER_CLIP = 0.7f
     private const val RAMP = 180L
     private const val FADE_IN = 300L

@@ -990,6 +990,12 @@ class StudioViewModel @Inject constructor(
         if (written) _state.update { it.copy(message = "Süre $secs sn oldu: kanca ve kapanışı yeniden yazdırıp seslendir.") }
     }
 
+    /**
+     * The level shown for the player, by hand: it is written on the card beside the name, and the player's frame follows
+     * it while the frame is left on "Oto". Lets a video show a level the player does not have.
+     */
+    fun setPlayerLevel(id: String, level: Int) = updateDrawing(id) { it.copy(level = level.coerceIn(1, 999)) }
+
     fun setPlayerFrame(id: String, frameName: String?) = updateDrawing(id) { it.copy(frameId = frameName.orEmpty()) }
 
     /** Brings a picture from the gallery for the card's round slot. */
@@ -1123,7 +1129,8 @@ class StudioViewModel @Inject constructor(
         if (s.real.lineWriting != null) return
         val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
         if (key.isBlank()) { lineError(kind, "Önce Asistan ayarlarından OpenRouter anahtarını gir."); return }
-        val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
+        // the lines are the video's copy: written by the strong model that also reads the drawings, not the cheap default
+        val model = analysisModel()
         val reveal = p.opening ?: run { lineError(kind, "Önce en az bir çizim seç"); return }
         val drawing = p.drawing(reveal.sampleId) ?: return
         updateReal { it.copy(lineWriting = kind, lineErrors = it.lineErrors - kind) }

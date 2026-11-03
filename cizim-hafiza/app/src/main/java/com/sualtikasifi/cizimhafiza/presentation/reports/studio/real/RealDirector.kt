@@ -71,46 +71,70 @@ class RealDirector(private val client: OpenRouterClient, private val model: Stri
 
     /** Ideas for one of Karalak's lines in the video of [drawing] and its [reveal]: the hook, or the closing reaction. */
     suspend fun lines(kind: RealLine, drawing: RealDrawing, reveal: RealReveal): Result<Lines> = when (kind) {
-        RealLine.Hook -> hooks(drawing)
+        RealLine.Hook -> hooks(drawing, reveal)
         RealLine.Narration -> narrations(drawing, reveal)
-        RealLine.Outro -> outros(drawing, reveal.motion, reveal.hook.text)
+        RealLine.Outro -> outros(drawing, reveal, reveal.motion, reveal.hook.text)
         // the end card's lines are ready-made, not written by the assistant
         RealLine.End -> Result.success(Lines(RealCopy.END_LINES, null))
     }
 
     /**
-     * Ten ideas for the line the video opens with, to pick one from. The video opens on [opening] being drawn again
-     * on the game's screen with its word above it, so the lines may speak of the word, and of its seconds when they
-     * are known.
+     * What the three spoken lines of a video are written from: the drawing's word and seconds, and, when the picture and
+     * the notes about it exist, what it will turn into and what happens in the clip. The hook may be informed of all of it
+     * but never gives the ending away.
      */
-    suspend fun hooks(opening: RealDrawing): Result<Lines> = runCatching {
-        val image = withContext(Dispatchers.Default) { StrokeReplay.png(opening.strokes, 1f, 384) }
-        val word = opening.word.ifBlank { "?" }
+    private fun facts(drawing: RealDrawing, reveal: RealReveal): String = buildString {
+        append("- Kelime: \"").append(drawing.word.ifBlank { "?" }).append("\"\n")
+        if (drawing.seconds > 0) append("- Çizim süresi: ").append(drawing.seconds).append(" saniye\n")
+        if (reveal.kind.isNotBlank()) append("- Türü: ").append(reveal.kind).append('\n')
+        if (reveal.describe.isNotBlank()) append("- Çizimin tuhaf şekli: ").append(reveal.describe).append('\n')
+        if (reveal.size.isNotBlank()) append("- Gerçek boyutu: ").append(reveal.size).append('\n')
+        if (reveal.scene.isNotBlank()) append("- Gerçek hâlinin yeri: ").append(reveal.scene).append('\n')
+        if (reveal.motion.isNotBlank()) append("- Klipte olan: ").append(reveal.motion).append('\n')
+    }
+
+    /** What every spoken line is judged by: a professional's bar, and what makes a line sound written by a machine. */
+    private val CRAFT = """
+        Bir metin yazarı gibi çalış: önce çok aday yaz, sonra yalnızca en iyilerini bırak. Seçerken şu testi uygula: "Bunu kaydırırken durup bir kez daha bakar mıyım?"
+        İyi satırın özellikleri:
+        - Somut: kelimeye ve çizimin tuhaf özelliğine (kaç bacak, hangi şekil, ne büyüklük) dair bir ayrıntı taşır; her çizime uyabilecek genel cümle yazma.
+        - Cevapsız bir soru ya da tamamlanmamış bir tespit bırakır; izleyici cevabı görmek için kalır. Ama cevabı vermez.
+        - Bir bakış açısı vardır: etiket koymaz, hüküm verir, şüphelenir, ciddiyetle yanlış bir şey iddia eder ya da bir iddiada bulunur.
+        - İnsan konuşması gibi akar: kısa cümleler, doğal ritim, günlük söyleyiş; yazı dili ya da reklam dili değil.
+        Yapay zeka gibi durmasının ve amatörce görünmesinin işaretleri; bunlardan KAÇIN:
+        - "inanılmaz", "muhteşem", "harika", "şok", "efsane", "bunu görmelisin", "hazır mısın", "şaşıracaksın", "sen de dene", "bakalım", "işte", "gerçekten", "kesinlikle"
+        - Ünlem işareti yığmak, her cümleyi soruyla bitirmek, "Gerçek olsaydı nasıl olurdu?" gibi bilinen kalıplar, "bu çizim" diye başlamak
+        - Her aday aynı yapıda olmasın: soru, hüküm, itiraf, şüphe, mini hikâye, rakam, karşılaştırma gibi farklı mekanizmaları karıştır.
+    """.trimIndent()
+
+    /**
+     * Ten hooks, to pick one from: the line over the opening, in which the drawing is drawn again on the game's screen.
+     * Written like a copywriter would: many candidates first, the best ten kept.
+     */
+    suspend fun hooks(opening: RealDrawing, reveal: RealReveal = RealReveal(opening.id)): Result<Lines> = runCatching {
+        val image = withContext(Dispatchers.Default) { StrokeReplay.png(opening.strokes, 1f, 512) }
         val seconds = opening.seconds
         val prompt = """
-            Kısa bir TikTok/Reels videosunun ilk 2–3 saniyesi için KANCA yazıyorsun: ekranda büyük harflerle duracak tek bir cümle.
-            Video şöyle açılıyor: Karalak çizim oyununun ekranında bir oyuncunun "$word" kelimesi için ${if (seconds > 0) "$seconds saniyede " else ""}yaptığı karalama (ekteki görsel) baştan çiziliyor; kelime ekranın üstünde yazıyor ve kanca çizimin hemen altında duruyor.
-            Sonra bu karalamanın gerçek olsaydı nasıl görüneceği 8 saniyelik bir video olarak açılıyor.
+            Kısa bir TikTok/Reels videosunun ilk 2–3 saniyesi için KANCA yazıyorsun: ekranda duran ve seslendirilen tek bir cümle.
+            Video şöyle açılıyor: bir oyuncunun çizim oyununda birkaç saniyede yaptığı karalama (ekteki görsel) oyun ekranında baştan çiziliyor; sonra aynı karalama gerçek bir fotoğrafa ve 8 saniyelik bir videoya dönüşüyor. İzleyici çizimin neye dönüştüğünü kancadan sonra görecek.
+            Bilinenler:
+            ${facts(opening, reveal)}
+            Kancanın tek işi: ilk saniyede durdurmak ve videoyu sonuna kadar izletmek. İzleyici çizimin şekline bakıp kancayla beraber bir şey merak etmeli.
 
-            Kancanın tek işi izleyiciyi ilk saniyede durdurup sonuna kadar izletmek: merak uyandırsın, şaşırtsın, meydan okusun ya da tatlı bir iğneleme yapsın.
-            Tarz örnekleri (birebir kopyalama):
-            - "4 saniyede mikrodalga fırın çizebilir misin?"
-            - "5 saniyede elbise çizdi!"
-            - "Bu gerçekten bir yetenek!"
+            $CRAFT
 
-            Birbirinden FARKLI $HOOK_COUNT kanca yaz ve tarzları karıştır: izleyiciye meydan okuyan soru, şaşkın bir tespit, ironik bir övgü, "gerçek olsaydı" merakı, izleyiciye doğrudan seslenen bir cümle.
+            Önce "candidates" listesine 16 farklı aday yaz (her biri tek kısa cümle), sonra yukarıdaki testi ve kuralları en iyi geçen $HOOK_COUNT tanesini "hooks" listesine yaz; en iyisi başta olsun.
             Kurallar:
             - Türkçe, konuşma dilinde; en fazla 8 kelime. Emoji, etiket, tırnak yok.
-            - ${if (seconds > 0) "Süreden söz edersen tam olarak $seconds saniye de, başka bir sayı yazma." else "Süre bilinmiyor: saniyeden ya da süreden hiç söz etme."}
+            - ${if (seconds > 0) "Süreden söz edersen tam olarak $seconds saniye de, başka bir sayı yazma. Süre güçlü bir malzeme: kısa süreyi tuhaf sonuçla yan yana koyabilirsin." else "Süre bilinmiyor: saniyeden ya da süreden hiç söz etme."}
             - Sonu söyleme: gerçek hâlinin neye benzediğini anlatma.
-            - Çizeni küçümseme, kimseyle alay etme; şaka çizimle ilgili olsun.
+            - Çizeni küçümseme, kimseyle alay etme; komiklik çizimin kendi tuhaflığından gelsin.
 
             Yalnızca şu JSON'u yaz:
-            {"hooks":["…","…"]}
+            {"candidates":["…","…"],"hooks":["…","…"]}
         """.trimIndent()
-        val system = KaralakVoice.persona(HOOK_JOB, lang)
         val answer = Backoff.retrying {
-            client.generate(system, prompt + KaralakVoice.promptNote(lang, "JSON anahtarı"), model, webSearch = false, images = listOf(image), json = true, temperature = 1.0, maxTokens = 900)
+            client.generate(WRITER, prompt + KaralakVoice.promptNote(lang, "JSON anahtarları"), model, webSearch = false, images = listOf(image), json = true, temperature = 1.0, maxTokens = 2500)
         }.getOrThrow()
         val hooks = RealCopy.parseHooks(answer.text, seconds)
         if (hooks.isEmpty()) error("Kancalar okunamadı; tekrar dene.")
@@ -118,99 +142,89 @@ class RealDirector(private val client: OpenRouterClient, private val model: Stri
     }
 
     /**
-     * Five ideas for what Karalak says once the clip is over, on its last frame: a quick reaction to what happened in
-     * it ([scene], the video prompt's own) and, mostly, a question that asks for comments. Some tie back to [hook], so
-     * that when the video starts over it sounds like one sentence going on.
-     */
-    suspend fun outros(drawing: RealDrawing, scene: String, hook: String): Result<Lines> = runCatching {
-        val image = withContext(Dispatchers.Default) { StrokeReplay.png(drawing.strokes, 1f, 384) }
-        val word = drawing.word.ifBlank { "?" }
-        val seconds = drawing.seconds
-        val happens = scene.trim().ifBlank { "Bu nesneyle ilgili kısa, komik, gerçekçi bir sahne: biri gelip onu kullanıyor ve tepki veriyor" }
-        val prompt = """
-            Kısa bir TikTok/Reels videosunun SON 2 saniyesinde Karalak'ın söyleyeceği KAPANIŞ cümlesini yazıyorsun.
-            Video şöyle: Karalak çizim oyununun ekranında bir oyuncunun "$word" için ${if (seconds > 0) "$seconds saniyede " else ""}yaptığı karalama (ekteki görsel) çiziliyor${if (hook.isNotBlank()) "; ekranda \"${hook.trim()}\" yazıyor ve Karalak bunu söylüyor" else ""}.
-            Sonra karalamanın gerçek olsaydı nasıl görüneceği 8 saniyelik, sesli bir videoda gösteriliyor. Videoda olan: $happens.
-            Video bitince son kare donuyor ve Karalak kapanış cümlesini söylüyor; sonra video başa dönüyor.
-
-            Kapanışın işi: klipte olana kısa, komik bir tepki verip izleyiciyi yorum yazmaya çağırmak; çoğu bir soruyla bitsin.
-            Tarz örnekleri (birebir kopyalama):
-            - "Bunu kim mutfağına koyar?"
-            - "Ben olsam kullanmazdım… ya sen?"
-            - "On üzerinden kaç? Yorumlara yaz!"
-            ${if (hook.isNotBlank()) "En az biri videonun başındaki kancaya bağlansın: video başa dönünce cümle devam ediyormuş gibi olsun (ör. kanca \"4 saniyede mikrodalga fırın çizebilir misin?\" ise kapanış \"Sen daha iyisini çizebilir misin?\")." else ""}
-
-            Birbirinden FARKLI $OUTRO_COUNT kapanış yaz.
-            Kurallar:
-            - Türkçe, konuşma dilinde; en fazla 8 kelime. Emoji, etiket, tırnak yok.
-            - ${if (seconds > 0) "Süreden söz edersen tam olarak $seconds saniye de." else "Saniyeden ya da süreden söz etme."}
-            - Uygulamayı indirmeye çağırma, site ya da mağaza adı verme.
-            - Çizeni küçümseme, kimseyle alay etme; şaka çizimle ve klipte olanla ilgili olsun.
-
-            Yalnızca şu JSON'u yaz:
-            {"outros":["…","…"]}
-        """.trimIndent()
-        val system = KaralakVoice.persona(OUTRO_JOB, lang)
-        val answer = Backoff.retrying {
-            client.generate(system, prompt + KaralakVoice.promptNote(lang, "JSON anahtarı"), model, webSearch = false, images = listOf(image), json = true, temperature = 1.0, maxTokens = 600)
-        }.getOrThrow()
-        val outros = RealCopy.parseOutros(answer.text, seconds)
-        if (outros.isEmpty()) error("Kapanışlar okunamadı; tekrar dene.")
-        Lines(outros, answer.costUsd)
-    }
-
-    /**
-     * Five ideas for what Karalak says over the clip, as a deadpan nature-documentary narrator: the funny is in how
-     * seriously the odd thing is explained, so the comedy is written here and not left to the video model.
+     * Five ideas for the narrator over the clip, as a deadpan nature-documentary voice: the funny is in how seriously
+     * the odd thing is explained, so the comedy is written here and not left to the video model.
      */
     suspend fun narrations(drawing: RealDrawing, reveal: RealReveal): Result<Lines> = runCatching {
-        val image = withContext(Dispatchers.Default) { StrokeReplay.png(drawing.strokes, 1f, 384) }
-        val word = drawing.word.ifBlank { "?" }
-        val facts = buildString {
-            if (reveal.kind.isNotBlank()) append("- Türü: ").append(reveal.kind).append('\n')
-            if (reveal.describe.isNotBlank()) append("- Tuhaf şekli: ").append(reveal.describe).append('\n')
-            if (reveal.size.isNotBlank()) append("- Gerçek boyutu: ").append(reveal.size).append('\n')
-            if (reveal.scene.isNotBlank()) append("- Yer: ").append(reveal.scene).append('\n')
-            if (reveal.motion.isNotBlank()) append("- Klipte olan: ").append(reveal.motion).append('\n')
-        }
+        val image = withContext(Dispatchers.Default) { StrokeReplay.png(drawing.strokes, 1f, 512) }
         val prompt = """
             Kısa bir TikTok/Reels videosunda, gerçek görünümlü 8 saniyelik klibin üstünde duyulacak ANLATICI cümlesini yazıyorsun.
-            Klip, bir çocuğun "$word" çiziminin gerçek hâli (ekteki görsel çizimin kendisi). Bilinenler:
-            $facts
-            Anlatıcı ciddi bir doğa belgeseli spikeri gibi konuşur: sakin, otoriter, tamamen ciddi. Şaka yapmaya çalışmaz; komiklik, tuhaf olanı ciddiyetle anlatmasından gelir.
-            Tarz örnekleri (birebir kopyalama):
-            - "Bilim insanları bu canlıyı doğal ortamında ilk kez görüntüledi."
-            - "Dikkat edin: nasıl yürüdüğü hâlâ çözülmüş değil."
-            - "Doğa bazen kimsenin beklemediği şeyleri üretir."
-            - "Uzmanlar bu şeklin neden hayatta kaldığını açıklayamıyor."
+            Klip, bir çocuğun çiziminin gerçek hâli (ekteki görsel çizimin kendisi). Bilinenler:
+            ${facts(drawing, reveal)}
+            Anlatıcı bir doğa belgeseli spikeri gibi konuşur: sakin, otoriter, kuru, tamamen ciddi. Komiklik, tuhaf şeyi hiç şaşırmadan, uzman bir ciddiyetle anlatmasından gelir; kendisi komik olmaya çalışmaz, espri yapmaz, ünlem kullanmaz.
+            Anlatıcının işi tek: klipte GÖRÜNEN tuhaf ayrıntıyı (şekil, duruş, davranış) belgesel diliyle ciddiyetle yorumlamak.
 
-            Birbirinden FARKLI $NARRATION_COUNT anlatıcı cümlesi yaz.
+            $CRAFT
+            Anlatıcıya özel:
+            - Tek bir kuru, somut ayrıntı en iyisidir: sayı, ölçü, kesin bir iddia ya da bilinmezlik ("kimse bilmiyor", "hâlâ çözülemedi"); büyük laf etme.
+            - "Bilim insanları…" kalıbını en fazla bir adayda kullan; diğerlerinde farklı bir yapı kur (gözlem, saha notu, kayıt, ölçüm, sessiz bir hüküm).
+            - Klipte olmayan bir şey uydurma.
+
+            Önce "candidates" listesine 12 farklı aday yaz, sonra en iyi $NARRATION_COUNT tanesini "narrations" listesine yaz; en iyisi başta olsun.
             Kurallar:
-            - Türkçe, konuşma dilinde; en fazla ${LineRules.NARRATION_WORDS} kelime (yaklaşık 4 saniyede okunur). Bir ya da iki kısa cümle. Emoji, etiket, tırnak, ünlem yok.
+            - Türkçe, konuşma dilinde; en fazla ${LineRules.NARRATION_WORDS} kelime (yaklaşık 4 saniye). Bir ya da iki kısa cümle. Emoji, etiket, tırnak, ünlem yok.
             - Nesneyi ya da hayvanı gerçekmiş gibi anlat; "çizim", "çocuk" ya da "oyun" deme.
-            - Klipte görünen ve tuhaf olan şeye (şekil, duruş, davranış) değin; klipte olmayan bir şey uydurma.
             - Kimseyle alay etme; ciddiyetini hiç bozma.
 
             Yalnızca şu JSON'u yaz:
-            {"narrations":["…","…"]}
+            {"candidates":["…","…"],"narrations":["…","…"]}
         """.trimIndent()
-        val system = KaralakVoice.persona(NARRATION_JOB, lang)
         val answer = Backoff.retrying {
-            client.generate(system, prompt + KaralakVoice.promptNote(lang, "JSON anahtarı"), model, webSearch = false, images = listOf(image), json = true, temperature = 1.0, maxTokens = 700)
+            client.generate(WRITER, prompt + KaralakVoice.promptNote(lang, "JSON anahtarları"), model, webSearch = false, images = listOf(image), json = true, temperature = 1.0, maxTokens = 2500)
         }.getOrThrow()
         val lines = RealCopy.parseNarrations(answer.text, 0)
         if (lines.isEmpty()) error("Anlatıcı cümleleri okunamadı; tekrar dene.")
         Lines(lines, answer.costUsd)
     }
 
+    /**
+     * Five ideas for the closing, said over the clip's last seconds: a real reaction to what happened, and an invitation
+     * to argue in the comments, because a divided audience comments.
+     */
+    suspend fun outros(drawing: RealDrawing, reveal: RealReveal, scene: String, hook: String): Result<Lines> = runCatching {
+        val image = withContext(Dispatchers.Default) { StrokeReplay.png(drawing.strokes, 1f, 512) }
+        val seconds = drawing.seconds
+        val happens = scene.trim().ifBlank { "Çizimin gerçek hâli sakin, gerçekçi bir mekânda duruyor ve kısa, komik bir an yaşanıyor" }
+        val prompt = """
+            Kısa bir TikTok/Reels videosunun SON 2 saniyesinde söylenecek KAPANIŞ cümlesini yazıyorsun.
+            Video: oyunda birkaç saniyede yapılmış bir karalama (ekteki görsel) çiziliyor${if (hook.isNotBlank()) "; ekranda ve sesli olarak \"${hook.trim()}\" söyleniyor" else ""}; sonra karalamanın gerçek hâli 8 saniyelik bir videoda gösteriliyor. Videoda olan: $happens.
+            Video bitince son kare donuyor, bu cümle söyleniyor, sonra video başa dönüyor. Bilinenler:
+            ${facts(drawing, reveal)}
+            Kapanışın işi: izleyiciyi YORUM yazmaya itmek. Bunun en iyi yolu, izleyiciyi iki tarafa bölen ya da bir şeyi tartışmaya açan bir cümledir (bir tercih, bir puan, bir iddia, "sen olsan" sorusu). Gerçek bir insan tepkisi gibi dur: önce kısa bir tepki ya da hüküm, sonra isteğe göre soru.
+
+            $CRAFT
+            Kapanışa özel:
+            - "Yorumlara yaz" demeden yorum yazdır: iki seçenek ya da bir iddia ver ("Bunu yer miydin yoksa saklar mıydın?", "Bence bu en az 7. Sence?").
+            ${if (hook.isNotBlank()) "- En az biri videonun başındaki kancaya bağlansın; video başa dönünce cümle devam ediyormuş gibi olsun." else ""}
+
+            Önce "candidates" listesine 10 farklı aday yaz, sonra en iyi $OUTRO_COUNT tanesini "outros" listesine yaz; en iyisi başta olsun.
+            Kurallar:
+            - Türkçe, konuşma dilinde; en fazla 8 kelime. Emoji, etiket, tırnak yok.
+            - ${if (seconds > 0) "Süreden söz edersen tam olarak $seconds saniye de." else "Saniyeden ya da süreden söz etme."}
+            - Uygulamayı indirmeye çağırma, site ya da mağaza adı verme.
+            - Çizeni küçümseme, kimseyle alay etme.
+
+            Yalnızca şu JSON'u yaz:
+            {"candidates":["…","…"],"outros":["…","…"]}
+        """.trimIndent()
+        val answer = Backoff.retrying {
+            client.generate(WRITER, prompt + KaralakVoice.promptNote(lang, "JSON anahtarları"), model, webSearch = false, images = listOf(image), json = true, temperature = 1.0, maxTokens = 2000)
+        }.getOrThrow()
+        val outros = RealCopy.parseOutros(answer.text, seconds)
+        if (outros.isEmpty()) error("Kapanışlar okunamadı; tekrar dene.")
+        Lines(outros, answer.costUsd)
+    }
+
     private companion object {
+        /**
+         * Who writes the three spoken lines: a professional short-video copywriter, not the mascot. Karalak only says them
+         * (in the voice that is set); a cute persona made them sound like a chatbot trying to be fun.
+         */
+        const val WRITER = "Sen deneyimli bir kısa video metin yazarısın: TikTok ve Reels'te milyonlarca izlenen, doğal konuşma diliyle yazan, klişeden ve yapay zeka kokusundan nefret eden biri. Yazdığın cümleler sesli okunacak; bir insan yazmış gibi durmalı, hiçbir zaman reklam ya da yapay zeka metni gibi değil. Çizen kişiyi asla küçümsemezsin."
         const val NARRATION_COUNT = RealCopy.NARRATION_COUNT
-        const val NARRATION_JOB = "Kısa videolarda ciddi bir belgesel anlatıcısı gibi konuşuyorsun: sakin, otoriter, asla gülmeye çalışmayan; tuhaf olanı tamamen ciddiyetle anlatan tek cümleler yazarsın."
 
         const val HOOK_COUNT = RealCopy.HOOK_COUNT
         const val OUTRO_COUNT = RealCopy.OUTRO_COUNT
-        const val OUTRO_JOB = "Kısa bir videonun sonunda söyleyeceğin tek cümleyi yazıyorsun; çok kısa konuşursun. Çizen kişiyi asla küçümsemezsin."
-        const val HOOK_JOB = "Kısa videoların ilk saniyesini yazıyorsun: kısa, çarpıcı, merak uyandıran tek cümleler. Çizen kişiyi asla küçümsemezsin."
         const val MAX_CANDIDATES = 6
         val SYSTEM = """
             Sen Karalak çizim oyununun sosyal medya editörüsün. Çocuk çizimlerinin "gerçek olsaydı" hâlini gösteren kısa videolar için hazırlık yapıyorsun.

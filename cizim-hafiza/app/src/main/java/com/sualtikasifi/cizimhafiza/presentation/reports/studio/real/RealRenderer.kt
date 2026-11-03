@@ -273,7 +273,7 @@ class RealRenderer(
         val m = 8f * lay.scale
         replay(d.id)?.draw(canvas, RectF(parchment.left + m, parchment.top + m, parchment.right - m, parchment.bottom - m), 1f, ink, 0.03f)
         drawAvatar(canvas, d)
-        val name = if (d.named) "@${d.nickname}" else "Anonim oyuncu"
+        val name = (if (d.named) "@${d.nickname}" else "Anonim oyuncu") + if (d.level > 0) " · Sv. ${d.level}" else ""
         text.draw(canvas, name, plate.centerX(), plate.centerY(), (plate.width() - 28f * lay.scale).toInt(), 38f * lay.scale, 1, assets.display, C.WHITE)
         canvas.restore()
     }
