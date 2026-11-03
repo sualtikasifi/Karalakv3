@@ -61,14 +61,14 @@ class RealPreviewActivity : Activity() {
                 if (i > 0) r else r.copy(hook = hook, outro = outro, opening = opening, narration = VoicedLine("Uzmanlar bu şeklin neden hayatta kaldığını açıklayamıyor."))
             }
         )
-        fun renderer(p: RealProject, endCardMs: Long = 0L, promoMs: Long = 0L, layout: CardLayout = CardLayout()) =
+        fun renderer(p: RealProject, endCardMs: Long = 0L, promoMs: Long = 0L, layout: CardLayout = CardLayout(), howtoMs: Long = 0L) =
             RealRenderer(assets, p, clips = p.drawings.associate { it.id to frames }, clipFiles = emptyMap(), clipGain = 0f, layout = layout,
-                promo = frames.takeIf { promoMs > 0 }, promoMs = promoMs, endCardMs = endCardMs)
+                promo = frames.takeIf { promoMs > 0 }, promoMs = promoMs, endCardMs = endCardMs, howto = frames.takeIf { howtoMs > 0 }, howtoMs = howtoMs)
 
         // a voiced hook with its words timed, as ElevenLabs gives them: the subtitle comes in word by word, letter by letter
         val voiced = timed("7 saniyede roket çizebilir misin?", 1_900L)
         // 1. the classic opening: the cover, the subtitle coming in, done, the clip opening out; the clip; the closing; the end card
-        val classic = renderer(project(drawings[0], voiced, RealOpening.Classic), endCardMs = RealTimeline.END_CARD_SILENT_MS)
+        val classic = renderer(project(drawings[0], voiced, RealOpening.Classic), endCardMs = RealTimeline.END_CARD_SILENT_MS, howtoMs = 3_000L)
         classic.events.forEach { e ->
             when (e.phase) {
                 RealPhase.Hook -> {
@@ -84,6 +84,7 @@ class RealPreviewActivity : Activity() {
                     shoot("outro_coming_in", classic, e.startMs + 900)
                     shoot("outro_end", classic, e.endMs - 60)
                 }
+                RealPhase.Howto -> shoot("howto_mid", classic, e.startMs + 1_500)
                 RealPhase.EndCard -> {
                     shoot("endcard_circle_early", classic, e.startMs + 140)
                     shoot("endcard_circle_mid", classic, e.startMs + 300)

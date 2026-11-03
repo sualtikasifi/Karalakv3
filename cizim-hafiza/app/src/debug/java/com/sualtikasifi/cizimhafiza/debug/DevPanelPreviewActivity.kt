@@ -10,6 +10,8 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.DrawingReportsGate
 import com.sualtikasifi.cizimhafiza.presentation.reports.DrawingReportsScreen
 import com.sualtikasifi.cizimhafiza.presentation.reports.DrawingReportsViewModel
 import com.sualtikasifi.cizimhafiza.presentation.reports.ReportsTab
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioFormat
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel
 import com.sualtikasifi.cizimhafiza.presentation.theme.CizimHafizaTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -33,6 +35,11 @@ class DevPanelPreviewActivity : ComponentActivity() {
                     val tab = ReportsTab.entries.find { it.name.equals(screen, ignoreCase = true) } ?: ReportsTab.Dashboard
                     val vm: DrawingReportsViewModel = hiltViewModel()
                     LaunchedEffect(tab) { vm.selectTab(tab) }
+                    // `format=real` opens the studio on "Gerçek Olsaydı" (the studio's own view model is the activity's, as the panel's is)
+                    if (intent.getStringExtra("format") == "real") {
+                        val studio: StudioViewModel = hiltViewModel()
+                        LaunchedEffect(Unit) { studio.setFormat(StudioFormat.RealLife) }
+                    }
                     DrawingReportsScreen(onBack = { finish() }, viewModel = vm)
                 }
             }

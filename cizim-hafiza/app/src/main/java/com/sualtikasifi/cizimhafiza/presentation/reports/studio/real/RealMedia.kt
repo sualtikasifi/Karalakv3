@@ -289,6 +289,22 @@ class RealStore(context: Context) {
 }
 
 /** The app's own background music, offered to lay under a "Gerçek Olsaydı" video. */
+/**
+ * The short video that shows how the game is played, shipped inside the app (res/raw/howto_video, 1080 x 2400, no sound):
+ * copied out of the app the first time it is used, because the decoder needs a file.
+ */
+object RealHowto {
+    fun ensure(context: Context): File {
+        val f = File(File(context.cacheDir, "studio_howto"), "howto_v2.mp4")
+        if (f.exists() && f.length() > 0) return f
+        f.parentFile?.mkdirs()
+        val tmp = File(f.parentFile, f.name + ".part")
+        context.resources.openRawResource(R.raw.howto_video).use { input -> tmp.outputStream().use { input.copyTo(it) } }
+        if (!tmp.renameTo(f)) { tmp.delete(); error("Tanıtım videosu hazırlanamadı") }
+        return f
+    }
+}
+
 object RealMusic {
     /** By name (the raw resource's), in the app's own playing order. */
     val TRACKS: List<Pair<String, Int>> = listOf(

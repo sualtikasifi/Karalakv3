@@ -226,7 +226,7 @@ data class LibraryItem(
     val hasClip: Boolean get() = reveal.clip != null
 }
 
-enum class RealPhase { Hook, Clip, Outro, EndCard, Promo }
+enum class RealPhase { Hook, Clip, Outro, Howto, EndCard, Promo }
 
 /**
  * One stretch of the video: the opening, a clip playing from [clipAtMs] for [clipMs], the closing over that clip's
@@ -248,6 +248,8 @@ data class RealEvent(
 object RealTimeline {
     /** Gemini clips are about eight seconds; anything longer is cut here. */
     const val CLIP_MAX = 10_000L
+    /** The how-to video, which is shown without its sound before the end card, is cut at this length. */
+    const val HOWTO_MAX = 12_000L
     /** The narration starts this long into the clip: a beat to see the thing before it is explained. */
     const val NARRATION_AT = 700L
     const val CLIP_MIN = 1_000L
@@ -313,8 +315,8 @@ object RealTimeline {
      * The video of one reveal: its opening and closing as [RealReveal.hookMs] and [RealReveal.outroMs] say, and the
      * app's promo video of [promoMs] after it (0: none).
      */
-    fun build(reveal: RealReveal?, promoMs: Long = 0L, endCardMs: Long = 0L): List<RealEvent> =
-        if (reveal == null) emptyList() else build(listOf(reveal), reveal.hookMs, reveal.outroMs, promoMs, endCardMs)
+    fun build(reveal: RealReveal?, promoMs: Long = 0L, endCardMs: Long = 0L, howtoMs: Long = 0L): List<RealEvent> =
+        if (reveal == null) emptyList() else build(listOf(reveal), reveal.hookMs, reveal.outroMs, promoMs, endCardMs, howtoMs)
 
     /**
      * The opening (when [hookMs] is above 0), the clips back to back, the closing (when [outroMs] is above 0) over the
@@ -322,7 +324,7 @@ object RealTimeline {
      * it comes in [outroMs] before the clip ends, but never before the clip has played [OUTRO_LEAD]; what does not fit
      * holds the clip's last frame.
      */
-    fun build(shown: List<RealReveal>, hookMs: Long = 0L, outroMs: Long = 0L, promoMs: Long = 0L, endCardMs: Long = 0L): List<RealEvent> {
+    fun build(shown: List<RealReveal>, hookMs: Long = 0L, outroMs: Long = 0L, promoMs: Long = 0L, endCardMs: Long = 0L, howtoMs: Long = 0L): List<RealEvent> {
         val out = mutableListOf<RealEvent>()
         var t = 0L
         if (hookMs > 0 && shown.isNotEmpty()) {
@@ -343,10 +345,17 @@ object RealTimeline {
             out += RealEvent(RealPhase.Outro, last.index, from, outroMs, clipAtMs = last.clipAtMs, clipMs = last.clipMs)
             t = maxOf(t, from + outroMs)
         }
-        // what follows the drawing's own video: the promo, or else the short end card
+        // what follows the drawing's own video: the promo, or else the how-to video (muted, what the game is) and the short end card
         if (lastAt >= 0) {
             if (promoMs > 0) out += RealEvent(RealPhase.Promo, 0, t, promoMs.coerceAtMost(PROMO_MAX))
-            else if (endCardMs > 0) out += RealEvent(RealPhase.EndCard, 0, t, endCardMs)
+            else {
+                if (howtoMs > 0) {
+                    val ms = howtoMs.coerceAtMost(HOWTO_MAX)
+                    out += RealEvent(RealPhase.Howto, 0, t, ms)
+                    t += ms
+                }
+                if (endCardMs > 0) out += RealEvent(RealPhase.EndCard, 0, t, endCardMs)
+            }
         }
         return out
     }
@@ -367,7 +376,7 @@ object RealTimeline {
 object RealMix {
     const val DEFAULT_VOLUME = 0.25f
     const val MAX_VOLUME = 0.6f
-    const val UNDER_VOICE = 0.3f
+    const val UNDER_VOICE = 0.55f
     const val UNDER_CLIP = 0.7f
     private const val RAMP = 180L
     private const val FADE_IN = 300L

@@ -62,6 +62,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VideoPost
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealHowto
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMusic
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealPhase
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.VoicedLine
@@ -207,6 +208,10 @@ data class RealUi(
     val promoBusy: Boolean = false,
     /** What closes every video: a short end card (the default), the promo video, or nothing after Karalak's closing. */
     val ending: RealEnding = RealEnding.Card,
+    /** The video that shows how the game is played (shipped in the app, no sound) and its length; shown before the end card while [howtoOn]. */
+    val howto: File? = null,
+    val howtoMs: Long = 0L,
+    val howtoOn: Boolean = true,
     /** Whether the app's music is mixed into the video; off, it is left out so a trending sound can be added in the app it is posted to. */
     val musicOn: Boolean = true,
     /** The music the person added from their own files (names, see RealMusic), after the app's own tracks. */
@@ -219,8 +224,14 @@ data class RealUi(
     /** A picture ready to hand to ChatGPT or Gemini, with the prompt to paste. */
     val share: RealShare? = null,
     /** The swipe-through post: each drawing followed by what it became, ready for the share sheet. */
-    val carousel: List<File>? = null
+    val carousel: List<File>? = null,
+    /** Which part of "Gerçek Olsaydı" is open, which of its seven steps, and which of the voices' five; kept on this phone. */
+    val tab: RealTab = RealTab.Prepare,
+    val step: Int = 1,
+    val voiceStep: Int = 1
 )
+
+enum class RealTab { Prepare, Library, Settings }
 
 enum class ShareTarget { ChatGpt, Gemini }
 
@@ -335,6 +346,7 @@ class StudioViewModel @Inject constructor(
     private val previewClips = ConcurrentHashMap<String, ClipFrames>()
     /** The promo video, opened the same way for the preview. */
     @Volatile private var previewPromo: ClipFrames? = null
+    @Volatile private var previewHowto: ClipFrames? = null
 
     init {
         loadDrawings()
@@ -808,10 +820,56 @@ class StudioViewModel @Inject constructor(
             val prefs = prefs()
             val ending = runCatching { RealEnding.valueOf(prefs.getString(ENDING, null).orEmpty()) }.getOrDefault(RealEnding.Card)
             val platform = SocialPlatform.of(prefs.getString(PLATFORM, null))
-            updateReal { it.copy(project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media }), ending = ending, musicOn = prefs.getBoolean(MUSIC_ON, true), platform = platform, customMusic = RealMusic.custom(context)) }
+            val tab = runCatching { RealTab.valueOf(prefs.getString(TAB, null).orEmpty()) }.getOrDefault(RealTab.Prepare)
+            updateReal { it.copy(tab = tab, step = prefs.getInt(STEP, 1).coerceIn(1, 7), voiceStep = prefs.getInt(VOICE_STEP, 1).coerceIn(1, 5), project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media }), ending = ending, musicOn = prefs.getBoolean(MUSIC_ON, true), platform = platform, customMusic = RealMusic.custom(context)) }
             p?.let { loadRealMedia(it) }
             loadPromo()
+            loadHowto(prefs.getBoolean(HOWTO_ON, true))
         }
+    }
+
+    /** The how-to video that ships in the app: copied out once, its length read, opened for the preview. */
+    private suspend fun loadHowto(on: Boolean) {
+        val (file, ms, frames) = withContext(Dispatchers.IO) {
+            val f = runCatching { RealHowto.ensure(context) }.getOrNull()
+            val ms = f?.let { RealImages.clipMs(it) } ?: 0L
+            Triple(f?.takeIf { ms > 0 }, ms, f?.takeIf { ms > 0 }?.let { runCatching { ClipFrames(it, exact = false) }.getOrNull() })
+        }
+        previewHowto?.close()
+        previewHowto = frames
+        updateReal { it.copy(howto = file, howtoMs = ms.coerceAtMost(RealTimeline.HOWTO_MAX), howtoOn = on) }
+        refreshPreview()
+    }
+
+    /** Which part of the panel is open: the steps, the library or the settings. Kept on this phone. */
+    fun setRealTab(tab: RealTab) {
+        prefs().edit().putString(TAB, tab.name).apply()
+        updateReal { it.copy(tab = tab) }
+    }
+
+    /** Goes to one of the seven steps. Kept on this phone, so the work is picked up where it was left. */
+    fun setRealStep(step: Int) {
+        val n = step.coerceIn(1, 7)
+        prefs().edit().putInt(STEP, n).apply()
+        updateReal { it.copy(step = n) }
+        // the preview follows the step: the voice being set, the clip with the card on it, the start
+        when (n) { 5 -> previewVoiceStep(_state.value.real.voiceStep); 6 -> previewLine(RealLine.Narration); 7 -> setPreviewTime(0L); else -> Unit }
+    }
+
+    /** Goes to one of the five voice steps (hook, narrator, closing, music, the line over the end card). */
+    fun setVoiceStep(step: Int) {
+        val n = step.coerceIn(1, 5)
+        prefs().edit().putInt(VOICE_STEP, n).apply()
+        updateReal { it.copy(voiceStep = n) }
+        previewVoiceStep(n)
+    }
+
+    /** Whether the video of how the game is played comes before the end card. Kept on this phone. */
+    fun setHowtoOn(on: Boolean) {
+        prefs().edit().putBoolean(HOWTO_ON, on).apply()
+        updateReal { it.copy(howtoOn = on) }
+        _state.update { it.copy(video = null) }
+        refreshPreview()
     }
 
     /** The promo video kept on this phone, if any: its length, and opened for the preview. */
@@ -943,7 +1001,8 @@ class StudioViewModel @Inject constructor(
     fun resetReal(confirmed: Boolean = false) {
         val current = _state.value.real.project ?: return
         if (!confirmed && current.media.isNotEmpty()) { updateReal { it.copy(confirmReset = true) }; return }
-        updateReal { it.copy(project = null, confirmReset = false, writeError = null) }
+        updateReal { it.copy(project = null, confirmReset = false, writeError = null, step = 1, voiceStep = 1) }
+        prefs().edit().putInt(STEP, 1).putInt(VOICE_STEP, 1).apply()
         _state.update { it.copy(video = null, previewMs = 0L) }
         val kept = _state.value.real.library.flatMap { it.media }.toSet()
         viewModelScope.launch {
@@ -989,6 +1048,12 @@ class StudioViewModel @Inject constructor(
         val written = p.reveals.firstOrNull { it.sampleId == id }?.let { it.hook.text.isNotBlank() || it.narration.text.isNotBlank() || it.outro.text.isNotBlank() } == true
         if (written) _state.update { it.copy(message = "Süre $secs sn oldu: kanca ve kapanışı yeniden yazdırıp seslendir.") }
     }
+
+    /**
+     * The level shown for the player, by hand: it is written on the card beside the name, and the player's frame follows
+     * it while the frame is left on "Oto". Lets a video show a level the player does not have.
+     */
+    fun setPlayerLevel(id: String, level: Int) = updateDrawing(id) { it.copy(level = level.coerceIn(1, 999)) }
 
     fun setPlayerFrame(id: String, frameName: String?) = updateDrawing(id) { it.copy(frameId = frameName.orEmpty()) }
 
@@ -1097,6 +1162,15 @@ class StudioViewModel @Inject constructor(
     private fun lineError(kind: RealLine, message: String) = updateReal { it.copy(lineErrors = it.lineErrors + (kind to message)) }
 
     /** Moves the preview to where [kind] shows: the very start for the hook, the closing for the closing. */
+    /** Moves the preview to where the voice step being set shows. */
+    private fun previewVoiceStep(n: Int) = when (n) {
+        1 -> previewLine(RealLine.Hook)
+        2 -> previewLine(RealLine.Narration)
+        3 -> previewLine(RealLine.Outro)
+        5 -> previewLine(RealLine.End)
+        else -> setPreviewTime(0L)
+    }
+
     private fun previewLine(kind: RealLine) {
         val events = _state.value.real.project?.featured?.let { RealTimeline.build(it, 0L, it.endCardMs) }.orEmpty()
         val outro = events.lastOrNull { it.phase == RealPhase.Outro }
@@ -1123,7 +1197,8 @@ class StudioViewModel @Inject constructor(
         if (s.real.lineWriting != null) return
         val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
         if (key.isBlank()) { lineError(kind, "Önce Asistan ayarlarından OpenRouter anahtarını gir."); return }
-        val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
+        // the lines are the video's copy: written by the strong model that also reads the drawings, not the cheap default
+        val model = analysisModel()
         val reveal = p.opening ?: run { lineError(kind, "Önce en az bir çizim seç"); return }
         val drawing = p.drawing(reveal.sampleId) ?: return
         updateReal { it.copy(lineWriting = kind, lineErrors = it.lineErrors - kind) }
@@ -1183,7 +1258,7 @@ class StudioViewModel @Inject constructor(
      */
     fun voiceLine(kind: RealLine, text: String) {
         if (_state.value.real.lineVoicing != null || text.isBlank()) return
-        val client = elevenClient() ?: run { lineError(kind, "Önce aşağıdaki “Karalak'ın sesi” bölümüne ElevenLabs anahtarını gir."); return }
+        val client = elevenClient() ?: run { lineError(kind, "Önce Ayarlar sekmesinde ElevenLabs anahtarını gir."); return }
         val spec = _state.value.eleven.spec
         updateReal { it.copy(lineVoicing = kind to text, lineErrors = it.lineErrors - kind) }
         viewModelScope.launch {
@@ -1471,7 +1546,8 @@ class StudioViewModel @Inject constructor(
         val items = r.librarySelected.mapNotNull { id -> r.library.find { it.id == id } }.filter { it.hasClip }
         if (items.isEmpty()) { _state.update { it.copy(message = "Önce videosu olan kayıtları seç") }; return }
         val project = RealProject(drawings = items.map { it.drawing }, reveals = items.map { it.reveal })
-        updateReal { it.copy(project = project, librarySelected = emptyList(), libraryShown = false) }
+        updateReal { it.copy(project = project, librarySelected = emptyList(), libraryShown = false, tab = RealTab.Prepare, step = 7) }
+        prefs().edit().putString(TAB, RealTab.Prepare.name).putInt(STEP, 7).apply()
         _state.update { it.copy(video = null, previewMs = 0L, message = if (items.size == 1) "Hazır; aşağıdan videoyu oluştur" else "${items.size} kayıt alındı; video en üsttekiyle yapılır (Başa al ile değiştir)") }
         viewModelScope.launch { withContext(Dispatchers.IO) { runCatching { realStore.save(project) } } }
         loadRealMedia(project)
@@ -1846,7 +1922,8 @@ class StudioViewModel @Inject constructor(
         s: StudioState, voice: Map<Int, FloatArray>?, preview: Boolean,
         wordTimes: Map<Int, List<LongRange>>? = null,
         clipSource: (String) -> ClipFrames? = { previewClips[it] },
-        promoSource: (File) -> ClipFrames? = { previewPromo }
+        promoSource: (File) -> ClipFrames? = { previewPromo },
+        howtoSource: (File) -> ClipFrames? = { previewHowto }
     ): VoicedVideo? {
         if (s.format == StudioFormat.RealLife) {
             val p = s.real.project ?: return null
@@ -1854,6 +1931,7 @@ class StudioViewModel @Inject constructor(
             val f = p.featured ?: return null
             val clip = f.clip ?: return null
             val promo = s.real.promo?.takeIf { s.real.ending == RealEnding.Promo && s.real.promoMs > 0 }
+            val howto = s.real.howto?.takeIf { s.real.ending == RealEnding.Card && s.real.howtoOn && s.real.howtoMs > 0 }
             return RealRenderer(
                 assetsOrLoad(), p,
                 clips = listOfNotNull(clipSource(clip)?.let { f.sampleId to it }).toMap(),
@@ -1868,6 +1946,8 @@ class StudioViewModel @Inject constructor(
                 promo = promo?.let(promoSource),
                 promoFile = promo,
                 promoMs = if (promo != null) s.real.promoMs else 0L,
+                howto = howto?.let(howtoSource),
+                howtoMs = if (howto != null) s.real.howtoMs else 0L,
                 endCardMs = if (s.real.ending == RealEnding.Card) f.endCardMs else 0L,
                 endVoiceFile = f.endLine.voice?.let { realStore.file(it) }
             )
@@ -1943,6 +2023,7 @@ class StudioViewModel @Inject constructor(
                 // every frame of an imported clip, opened for this render only
                 val renderClips = HashMap<String, ClipFrames?>()
                 var renderPromo: ClipFrames? = null
+                var renderHowto: ClipFrames? = null
                 try {
                     withContext(Dispatchers.Default) {
                         // 2. timing from the real voice, the voice and any clip sound laid on one track, and that track encoded
@@ -1951,7 +2032,8 @@ class StudioViewModel @Inject constructor(
                             s, envelopes, preview = false,
                             wordTimes = times.takeIf { s.voiceOn && it.isNotEmpty() },
                             clipSource = { name -> renderClips.getOrPut(name) { runCatching { ClipFrames(realStore.file(name), exact = true) }.getOrNull() } },
-                            promoSource = { f -> renderPromo ?: runCatching { ClipFrames(f, exact = true) }.getOrNull().also { renderPromo = it } }
+                            promoSource = { f -> renderPromo ?: runCatching { ClipFrames(f, exact = true) }.getOrNull().also { renderPromo = it } },
+                            howtoSource = { f -> renderHowto ?: runCatching { ClipFrames(f, exact = true) }.getOrNull().also { renderHowto = it } }
                         ) ?: error("Video hazırlanamadı")
                         _state.update { it.copy(renderStage = "Ses birleştiriliyor", progress = 0.17f) }
                         val placed = mutableListOf<Placed>()
@@ -1991,6 +2073,7 @@ class StudioViewModel @Inject constructor(
                 } finally {
                     renderClips.values.forEach { it?.close() }
                     renderPromo?.close()
+                    renderHowto?.close()
                 }
             }
             result.onSuccess { _state.update { it.copy(rendering = false, video = out, progress = 1f, renderStage = "") } }
@@ -2046,6 +2129,8 @@ class StudioViewModel @Inject constructor(
         previewClips.clear()
         previewPromo?.close()
         previewPromo = null
+        previewHowto?.close()
+        previewHowto = null
         super.onCleared()
     }
 
@@ -2062,7 +2147,11 @@ class StudioViewModel @Inject constructor(
         const val CARD_Y = "studio_real_card_y"
         const val POST_SAME_MS = 30 * 60_000L
         const val ENDING = "studio_real_ending"
+        const val TAB = "studio_real_tab"
+        const val STEP = "studio_real_step"
+        const val VOICE_STEP = "studio_real_voice_step"
         const val MUSIC_ON = "studio_real_music_on"
+        const val HOWTO_ON = "studio_real_howto_on"
         const val PLATFORM = "studio_real_platform"
         /** No line of Karalak's runs this long; a longer decode means something went wrong. */
         const val VOICE_MAX_MS = 60_000L
