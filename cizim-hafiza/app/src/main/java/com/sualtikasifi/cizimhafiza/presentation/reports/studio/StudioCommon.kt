@@ -93,6 +93,20 @@ class StrokeReplay(private val strokes: List<DrawingStroke>) {
     private val maxY = strokes.flatten().maxOfOrNull { it.y } ?: 1f
     private val path = Path()
 
+    /** Where the whole drawing lands when [draw] fits it in [box]: its outline, without the pen's width. */
+    fun bounds(box: RectF): RectF {
+        if (strokes.isEmpty()) return RectF(box)
+        val pad = min(box.width(), box.height()) * 0.09f
+        val cw = (maxX - minX).coerceAtLeast(1f)
+        val ch = (maxY - minY).coerceAtLeast(1f)
+        val scale = min((box.width() - pad * 2) / cw, (box.height() - pad * 2) / ch)
+        val w = cw * scale
+        val h = ch * scale
+        val ox = box.left + (box.width() - w) / 2f
+        val oy = box.top + (box.height() - h) / 2f
+        return RectF(ox, oy, ox + w, oy + h)
+    }
+
     /** Draws the first [fraction] of the ink, fitted and centred in [box]. */
     fun draw(canvas: Canvas, box: RectF, fraction: Float, paint: Paint, widthFraction: Float = 0.024f) {
         if (strokes.isEmpty() || fraction <= 0f) return
@@ -308,6 +322,7 @@ private class AlphaSpan(private val share: Float) : CharacterStyle() {
 /** Little easing helpers shared by the renderers. */
 object Ease {
     fun out(x: Float): Float = 1f - (1f - x) * (1f - x) * (1f - x)
+    fun inOut(x: Float): Float = x * x * (3f - 2f * x)
     fun backOut(x: Float): Float {
         val c1 = 1.70158f
         val c3 = c1 + 1f

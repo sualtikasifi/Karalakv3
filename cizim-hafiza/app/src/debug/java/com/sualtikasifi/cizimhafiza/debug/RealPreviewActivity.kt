@@ -77,6 +77,7 @@ class RealPreviewActivity : Activity() {
                     shoot("classic_caption_word4", classic, e.startMs + 1_350)
                     shoot("classic_done", classic, e.durationMs - 500)
                     shoot("classic_open", classic, e.durationMs - 330)
+                    shoot("classic_morph_late", classic, e.durationMs - 150)
                 }
                 RealPhase.Clip -> shoot("clip_mid", classic, e.startMs + 1_800)
                 RealPhase.Outro -> {
