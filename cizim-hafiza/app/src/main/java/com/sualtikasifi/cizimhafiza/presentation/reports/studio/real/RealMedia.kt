@@ -295,7 +295,7 @@ class RealStore(context: Context) {
  */
 object RealHowto {
     fun ensure(context: Context): File {
-        val f = File(File(context.cacheDir, "studio_howto"), "howto_v1.mp4")
+        val f = File(File(context.cacheDir, "studio_howto"), "howto_v2.mp4")
         if (f.exists() && f.length() > 0) return f
         f.parentFile?.mkdirs()
         val tmp = File(f.parentFile, f.name + ".part")
