@@ -1258,7 +1258,7 @@ class StudioViewModel @Inject constructor(
      */
     fun voiceLine(kind: RealLine, text: String) {
         if (_state.value.real.lineVoicing != null || text.isBlank()) return
-        val client = elevenClient() ?: run { lineError(kind, "Önce aşağıdaki “Karalak'ın sesi” bölümüne ElevenLabs anahtarını gir."); return }
+        val client = elevenClient() ?: run { lineError(kind, "Önce Ayarlar sekmesinde ElevenLabs anahtarını gir."); return }
         val spec = _state.value.eleven.spec
         updateReal { it.copy(lineVoicing = kind to text, lineErrors = it.lineErrors - kind) }
         viewModelScope.launch {

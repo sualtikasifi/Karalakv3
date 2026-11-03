@@ -1158,7 +1158,7 @@ private fun LineCard(kind: RealLine, p: RealProject, st: StudioState, vm: Studio
                 )
             }
         }
-        if (!st.eleven.keySet) Text("Seslendirmek için aşağıdaki “Karalak'ın sesi” bölümüne ElevenLabs anahtarını gir.", style = Console.Small, modifier = Modifier.padding(top = 8.dp))
+        if (!st.eleven.keySet) Text("Seslendirmek için Ayarlar sekmesinde ElevenLabs anahtarını gir.", style = Console.Small, modifier = Modifier.padding(top = 8.dp))
         var own by remember(kind) { mutableStateOf("") }
         Field(if (hook) "Kendi kancanı yaz" else if (end) "Kendi cümleni yaz" else "Kendi kapanışını yaz", own, { own = it.take(RealCopy.maxChars(kind)) })
         if (own.isNotBlank()) SmallLink("Listeye ekle") { vm.addLineOption(kind, own); own = "" }
@@ -1361,7 +1361,6 @@ private fun LibraryViewer(item: LibraryItem, vm: StudioViewModel) {
 private fun PlayerEditor(d: RealDrawing?, vm: StudioViewModel, anyBusy: Boolean) {
     if (d == null) return
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let { vm.importPlayerPhoto(d.id, it) } }
-    Text("Kartta görünen oyuncu", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
     Field("Kullanıcı adı (boş: Anonim oyuncu)", d.nickname, { vm.setPlayerName(d.id, it) })
     // the level shown on the card, by hand (the frame follows it while it is on "Oto")
     var levelText by remember(d.id) { mutableStateOf(d.level.takeIf { it > 0 }?.toString().orEmpty()) }
