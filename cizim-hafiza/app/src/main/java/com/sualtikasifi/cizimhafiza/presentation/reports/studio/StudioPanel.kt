@@ -438,7 +438,7 @@ private val VOICE_STEPS = listOf("Kanca", "Anlatıcı", "Kapanış", "Müzik", "
 /** Whether step [n] (1..7) has what it is for: only for the marks on the stepper, the steps themselves can be visited in any order. */
 private fun stepDone(n: Int, st: StudioState): Boolean {
     val p = st.real.project
-    val f = p?.featured
+    val f = p?.opening
     return when (n) {
         1 -> p != null && p.reveals.isNotEmpty()
         2 -> f != null && f.describe.isNotBlank()
@@ -539,7 +539,8 @@ private fun LazyListScope.wizard(st: StudioState, vm: StudioViewModel, context: 
     val p = r.project
     val hasDrawing = p != null && p.reveals.isNotEmpty()
     val step = if (hasDrawing) r.step.coerceIn(1, 7) else 1
-    val f = p?.featured
+    // the drawing being worked on: the first with a clip, or the first chosen while none has one yet
+    val f = p?.opening
     item(key = "wz-head") {
         Column {
             Row(Modifier.fillMaxWidth()) {
@@ -591,11 +592,11 @@ private fun LazyListScope.wizard(st: StudioState, vm: StudioViewModel, context: 
     item(key = "wz-nav") {
         val voices = step == 5
         val vs = r.voiceStep.coerceIn(1, 5)
-        val back = when { step == 1 -> null; voices && vs > 1 -> "← ${VOICE_STEPS[vs - 2]}"; else -> "← ${WIZARD_STEPS[step - 2].short}" }
+        val back = when { step == 1 -> null; voices && vs > 1 -> VOICE_STEPS[vs - 2]; else -> WIZARD_STEPS[step - 2].short }
         val next = when {
             step == 7 -> null
-            voices && vs < 5 -> "${VOICE_STEPS[vs]} →"
-            else -> "${WIZARD_STEPS[step].short} →"
+            voices && vs < 5 -> VOICE_STEPS[vs]
+            else -> WIZARD_STEPS[step].short
         }
         val canNext = step != 1 || hasDrawing
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
