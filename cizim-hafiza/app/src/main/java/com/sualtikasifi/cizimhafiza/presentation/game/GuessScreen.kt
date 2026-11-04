@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
@@ -1057,7 +1058,7 @@ private fun CorrectBadge(xp: Int) {
                 val part = Path()
                 measure.getSegment(0f, measure.length * check.value, part, true)
                 val w = r * 0.27f
-                androidx.compose.ui.graphics.drawscope.withTransform({ translate(0f, r * 0.07f) }) { drawPath(part, Color(0x66063D1B), style = androidx.compose.ui.graphics.drawscope.Stroke(w, cap = StrokeCap.Round, join = StrokeJoin.Round)) }
+                withTransform({ translate(0f, r * 0.07f) }) { drawPath(part, Color(0x66063D1B), style = androidx.compose.ui.graphics.drawscope.Stroke(w, cap = StrokeCap.Round, join = StrokeJoin.Round)) }
                 drawPath(part, Color.White, style = androidx.compose.ui.graphics.drawscope.Stroke(w, cap = StrokeCap.Round, join = StrokeJoin.Round))
             }
         }
