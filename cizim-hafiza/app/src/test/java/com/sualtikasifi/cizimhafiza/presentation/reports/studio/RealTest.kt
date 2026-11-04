@@ -568,20 +568,20 @@ class RealTest {
     }
 
     @Test
-    fun theHowToVideoComesBetweenTheClosingAndTheEndCardAndTheMusicRunsThroughIt() {
+    fun theHowToVideoPlaysInsideTheEndCardWhichStaysAsLongAsItTakes() {
         val r = RealReveal("a", clipMs = 8_000L, outro = VoicedLine("kapanış"))
+        // no stretch of its own: the end card follows the closing, and is long enough for the whole video
         val events = RealTimeline.build(r, 0L, 4_000L, 6_300L)
-        val tail = events.takeLast(3).map { it.phase }
-        assertEquals(listOf(RealPhase.Outro, RealPhase.Howto, RealPhase.EndCard), tail)
-        val howto = events.first { it.phase == RealPhase.Howto }
-        val card = events.first { it.phase == RealPhase.EndCard }
-        assertEquals(6_300L, howto.durationMs)
-        assertEquals(howto.endMs, card.startMs)
-        // the music belongs to everything before an own promo: here that is the whole video
+        assertEquals(listOf(RealPhase.Outro, RealPhase.EndCard), events.takeLast(2).map { it.phase })
+        val card = events.last()
+        assertEquals(6_300L + RealTimeline.END_VIDEO_LEAD + RealTimeline.END_VIDEO_TAIL, card.durationMs)
+        // a longer card (its line takes longer) is not cut short
+        assertEquals(9_000L, RealTimeline.build(r, 0L, 9_000L, 6_300L).last().durationMs)
+        // the music belongs to the whole video
         assertEquals(RealTimeline.totalMs(events), RealTimeline.mainMs(events))
-        // no how-to video, no such stretch
-        assertTrue(RealTimeline.build(r, 0L, 4_000L).none { it.phase == RealPhase.Howto })
-        // an own promo takes the place of both
-        assertTrue(RealTimeline.build(r, 5_000L, 4_000L, 6_300L).none { it.phase == RealPhase.Howto || it.phase == RealPhase.EndCard })
+        // no how-to video: the card is as long as it was
+        assertEquals(4_000L, RealTimeline.build(r, 0L, 4_000L).last().durationMs)
+        // an own promo takes the place of the card
+        assertTrue(RealTimeline.build(r, 5_000L, 4_000L, 6_300L).none { it.phase == RealPhase.EndCard })
     }
 }

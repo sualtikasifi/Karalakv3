@@ -84,9 +84,9 @@ class RealPreviewActivity : Activity() {
                     shoot("outro_coming_in", classic, e.startMs + 900)
                     shoot("outro_end", classic, e.endMs - 60)
                 }
-                RealPhase.Howto -> shoot("howto_mid", classic, e.startMs + 1_500)
                 RealPhase.EndCard -> {
                     shoot("endcard_circle_early", classic, e.startMs + 140)
+                    shoot("endcard_phone_video", classic, e.startMs + 1_800)
                     shoot("endcard_circle_mid", classic, e.startMs + 300)
                     shoot("endcard_slogan", classic, e.startMs + 700)
                     shoot("endcard_steps", classic, e.startMs + 1_250)

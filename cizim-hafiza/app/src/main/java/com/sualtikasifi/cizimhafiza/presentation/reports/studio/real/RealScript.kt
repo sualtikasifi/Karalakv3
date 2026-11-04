@@ -226,7 +226,7 @@ data class LibraryItem(
     val hasClip: Boolean get() = reveal.clip != null
 }
 
-enum class RealPhase { Hook, Clip, Outro, Howto, EndCard, Promo }
+enum class RealPhase { Hook, Clip, Outro, EndCard, Promo }
 
 /**
  * One stretch of the video: the opening, a clip playing from [clipAtMs] for [clipMs], the closing over that clip's
@@ -248,8 +248,11 @@ data class RealEvent(
 object RealTimeline {
     /** Gemini clips are about eight seconds; anything longer is cut here. */
     const val CLIP_MAX = 10_000L
-    /** The how-to video, which is shown without its sound before the end card, is cut at this length. */
+    /** The how-to video, which plays without its sound in the phone on the end card, is cut at this length. */
     const val HOWTO_MAX = 12_000L
+    /** On the end card the how-to video starts after the card has opened, and the card stays a moment after it ends. */
+    const val END_VIDEO_LEAD = 400L
+    const val END_VIDEO_TAIL = 700L
     /** The narration starts this long into the clip: a beat to see the thing before it is explained. */
     const val NARRATION_AT = 700L
     const val CLIP_MIN = 1_000L
@@ -345,16 +348,13 @@ object RealTimeline {
             out += RealEvent(RealPhase.Outro, last.index, from, outroMs, clipAtMs = last.clipAtMs, clipMs = last.clipMs)
             t = maxOf(t, from + outroMs)
         }
-        // what follows the drawing's own video: the promo, or else the how-to video (muted, what the game is) and the short end card
+        // what follows the drawing's own video: the promo, or else the short end card (with the how-to video in its phone)
         if (lastAt >= 0) {
             if (promoMs > 0) out += RealEvent(RealPhase.Promo, 0, t, promoMs.coerceAtMost(PROMO_MAX))
-            else {
-                if (howtoMs > 0) {
-                    val ms = howtoMs.coerceAtMost(HOWTO_MAX)
-                    out += RealEvent(RealPhase.Howto, 0, t, ms)
-                    t += ms
-                }
-                if (endCardMs > 0) out += RealEvent(RealPhase.EndCard, 0, t, endCardMs)
+            else if (endCardMs > 0) {
+                // the how-to video plays inside the phone on the end card: the card stays at least as long as it takes
+                val ms = if (howtoMs > 0) maxOf(endCardMs, howtoMs.coerceAtMost(HOWTO_MAX) + END_VIDEO_LEAD + END_VIDEO_TAIL) else endCardMs
+                out += RealEvent(RealPhase.EndCard, 0, t, ms)
             }
         }
         return out
