@@ -1019,21 +1019,21 @@ private fun CorrectBadge(xp: Int) {
         launch { delay(300); xpIn.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy)) }
     }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        androidx.compose.foundation.Canvas(modifier = Modifier.size(150.dp)) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.size(92.dp)) {
             val c = center
             val r = size.minDimension * 0.30f
             val b = burst.value
             // a ring that opens out of the disc and fades
             drawCircle(
-                color = Color(0xFF4FD97D).copy(alpha = ((1f - b) * 0.8f).coerceIn(0f, 1f)),
-                radius = r * (1f + 0.85f * b), center = c,
+                color = Color(0xFF4FD97D).copy(alpha = ((1f - b) * 0.6f).coerceIn(0f, 1f)),
+                radius = r * (1f + 0.6f * b), center = c,
                 style = androidx.compose.ui.graphics.drawscope.Stroke(width = r * 0.24f * (1f - b) + 1f)
             )
             // sparkles flying outwards, gold and white by turns
-            for (i in 0 until 12) {
-                val ang = (i * 30.0 + 10.0) * Math.PI / 180.0
-                val dist = r * (1.1f + (if (i % 2 == 0) 1.0f else 0.75f) * b)
-                val dot = r * (if (i % 2 == 0) 0.11f else 0.07f) * (1f - b * 0.8f)
+            for (i in 0 until 6) {
+                val ang = (i * 60.0 + 20.0) * Math.PI / 180.0
+                val dist = r * (1.1f + 0.6f * b)
+                val dot = r * 0.07f * (1f - b * 0.8f)
                 val col = if (i % 2 == 0) Color(0xFFFFD43B) else Color.White
                 drawCircle(col.copy(alpha = (1f - b * b).coerceIn(0f, 1f)), dot.coerceAtLeast(0.5f), Offset(c.x + (kotlin.math.cos(ang) * dist).toFloat(), c.y + (kotlin.math.sin(ang) * dist).toFloat()))
             }
@@ -1064,7 +1064,7 @@ private fun CorrectBadge(xp: Int) {
         if (xp > 0) {
             LetteredText(
                 text = stringResource(R.string.xp_gained_format, xp),
-                size = 28.sp,
+                size = 19.sp,
                 fill = Color(0xFFFFD43B),
                 outline = Color(0xFF7A3F00),
                 modifier = Modifier.graphicsLayer {
