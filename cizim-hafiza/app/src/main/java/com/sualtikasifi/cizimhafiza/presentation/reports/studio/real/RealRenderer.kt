@@ -39,7 +39,7 @@ import kotlin.math.min
  * are the [layout] set in the panel. A closing line comes in over the clip's last seconds while it keeps playing, as a
  * subtitle and, when voiced, in Karalak's voice, the clip's own sound stepping back under it. The app's music, when
  * chosen, plays under it all. Last comes the app's own [promo] video, with its own sound, when there is one. The video is
- * cropped to the frame, so a 9:16 clip loses a little of its sides.
+ * shown whole at the frame's width: a 9:16 clip gets soft bands of itself above and below instead of being cropped.
  */
 class RealRenderer(
     private val assets: StudioAssets,
@@ -205,7 +205,7 @@ class RealRenderer(
     private fun drawClip(canvas: Canvas, e: RealEvent, reveal: RealReveal, t: Long) {
         canvas.drawColor(C.INK)
         val frame = clips[reveal.sampleId]?.frameAt((t - e.clipAtMs).coerceIn(0L, e.clipMs))
-        if (frame != null) cover(canvas, frame, RectF(0f, 0f, W.toFloat(), H.toFloat()))
+        if (frame != null) clipFrame(canvas, frame)
         val drawing = project.drawing(reveal.sampleId) ?: return
         val local = t - e.startMs
         drawCard(canvas, drawing, Ease.backOut(min(1f, local / 450f)))
@@ -375,13 +375,10 @@ class RealRenderer(
             val frame = clips[reveal.sampleId]?.frameAt(0L) ?: return
             val a = Ease.inOut(((morph - MORPH_IN) / (MORPH_FULL - MORPH_IN)).coerceIn(0f, 1f))
             val zoom = 1f + MORPH_SETTLE * (1f - m)
-            shade.color = C.WHITE
-            shade.alpha = (255 * a).toInt()
             canvas.save()
             canvas.scale(zoom, zoom, W / 2f, H / 2f)
-            cover(canvas, frame, RectF(0f, 0f, W.toFloat(), H.toFloat()), shade)
+            clipFrame(canvas, frame, a)
             canvas.restore()
-            shade.alpha = 255
         }
     }
 
@@ -406,7 +403,7 @@ class RealRenderer(
         canvas.save()
         canvas.clipPath(circle)
         canvas.scale(zoom, zoom, W / 2f, H / 2f)
-        cover(canvas, frame, RectF(0f, 0f, W.toFloat(), H.toFloat()))
+        clipFrame(canvas, frame)
         canvas.restore()
         if (shrink > 0f) {
             edge.strokeWidth = 10f * shrink.coerceAtMost(1f)
@@ -489,7 +486,7 @@ class RealRenderer(
             val z = 1f + 0.04f * Ease.out(hold)
             canvas.save()
             canvas.scale(z, z, W / 2f, H / 2f)
-            cover(canvas, frame, RectF(0f, 0f, W.toFloat(), H.toFloat()))
+            clipFrame(canvas, frame)
             canvas.restore()
         }
         project.drawing(reveal.sampleId)?.let { drawCard(canvas, it, 1f) }
@@ -514,6 +511,24 @@ class RealRenderer(
             shade.alpha = 255
         } else {
             fitOnBackdrop(canvas, frame, fade)
+        }
+    }
+
+    /**
+     * A clip's frame on the video. The video is 9:20, taller than the 9:16 clips, so a clip is shown whole, as wide as
+     * the frame, its top and bottom bands filled by a soft darkened copy of itself (see [fitOnBackdrop]) instead of being
+     * zoomed in and losing its sides. One already near the frame's shape just fills it.
+     */
+    private fun clipFrame(canvas: Canvas, frame: Bitmap, alpha: Float = 1f) {
+        if (frame.isRecycled) return
+        val aspect = frame.width.toFloat() / frame.height
+        if (kotlin.math.abs(aspect / (W.toFloat() / H) - 1f) <= PROMO_COVER_SLACK) {
+            shade.color = C.WHITE
+            shade.alpha = (255 * alpha).toInt()
+            cover(canvas, frame, RectF(0f, 0f, W.toFloat(), H.toFloat()), shade)
+            shade.alpha = 255
+        } else {
+            fitOnBackdrop(canvas, frame, alpha)
         }
     }
 
