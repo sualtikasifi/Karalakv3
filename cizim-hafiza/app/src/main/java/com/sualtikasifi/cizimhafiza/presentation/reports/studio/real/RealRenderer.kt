@@ -63,9 +63,9 @@ class RealRenderer(
     private val promo: ClipFrames? = null,
     promoFile: File? = null,
     promoMs: Long = 0L,
-    /** The video of how the game is played, shown without its sound after Karalak's closing and before the end card; [howtoMs] long (0: none). */
+    /** The video of how the game is played, shown without its sound inside the phone on the end card; [howtoMs] long (0: none). */
     private val howto: ClipFrames? = null,
-    howtoMs: Long = 0L,
+    private val howtoMs: Long = 0L,
     /** The end card after the closing, [endCardMs] long (0: none; the promo, when there is one, takes its place). */
     endCardMs: Long = 0L,
     /** What Karalak says over the end card, when it is voiced. */
@@ -109,8 +109,6 @@ class RealRenderer(
                 RealPhase.Outro -> if (outroVoiceFile != null && f.outro.voice != null) {
                     add(ClipSound(outroVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.outro.voiceMs, 1f, voice = true))
                 }
-                // the how-to video is shown without sound: the music runs on under it
-                RealPhase.Howto -> Unit
                 RealPhase.Promo -> promoFile?.let { add(ClipSound(it, e.startMs, e.durationMs, 1f, shape = RealMix::clipGainAt)) }
                 // the music runs through the end card and fades out at its end; Karalak's line over it, when voiced
                 RealPhase.EndCard -> if (endVoiceFile != null && f.endLine.voice != null) {
@@ -194,7 +192,6 @@ class RealRenderer(
     override fun draw(canvas: Canvas, t: Long) {
         val e = RealTimeline.at(events, t)
         if (e.phase == RealPhase.Promo) { drawPromo(canvas, e, t); return }
-        if (e.phase == RealPhase.Howto) { drawPromo(canvas, e, t, howto); return }
         if (e.phase == RealPhase.EndCard) { drawEndCard(canvas, e, t); return }
         val reveal = shown.getOrNull(e.index) ?: return
         when (e.phase) {
@@ -428,7 +425,9 @@ class RealRenderer(
         val open = Ease.out((local.toFloat() / END_OPEN).coerceIn(0f, 1f))
         // what the circle opens over: the clip's last frame, with the closing
         if (open < 1f && e.startMs > 0) draw(canvas, e.startMs - 1) else canvas.drawColor(C.CREAM)
-        val picture = assets.picture(R.drawable.real_end_card) ?: return
+        // with the how-to video: the card whose phone screen is cut out, over the video; without it, the plain card
+        val phoneCard = if (howto != null && howtoMs > 0) assets.picture(R.drawable.real_end_card_phone) else null
+        val picture = (phoneCard ?: assets.picture(R.drawable.real_end_card)) ?: return
         val cx = W / 2f
         val cy = H / 2f
         val r = open * hypot(cx, cy)
@@ -439,8 +438,10 @@ class RealRenderer(
         canvas.save()
         canvas.clipPath(circle)
         canvas.scale(zoom, zoom, cx, cy)
-        // a picture near the frame's shape fills it (its sides trimmed a little); one far from it is shown whole over a soft backdrop
-        if (kotlin.math.abs(picture.width.toFloat() / picture.height / (W.toFloat() / H) - 1f) <= END_COVER_SLACK) {
+        if (phoneCard != null) {
+            drawPhoneCard(canvas, phoneCard, local)
+        } else if (kotlin.math.abs(picture.width.toFloat() / picture.height / (W.toFloat() / H) - 1f) <= END_COVER_SLACK) {
+            // a picture near the frame's shape fills it (its sides trimmed a little); one far from it is shown whole over a soft backdrop
             cover(canvas, picture, RectF(0f, 0f, W.toFloat(), H.toFloat()))
         } else {
             fitOnBackdrop(canvas, picture, 1f)
@@ -448,6 +449,27 @@ class RealRenderer(
         canvas.restore()
         edge.strokeWidth = 10f * (1f - open)
         if (edge.strokeWidth > 0.5f) canvas.drawCircle(cx, cy, r, edge)
+    }
+
+    /**
+     * The end card with its phone: the how-to video fills the phone's screen (a little past its edges, which the card's
+     * bezel covers) and the card, whose screen is transparent, goes over it. The video starts once the card has opened
+     * and holds its last frame if the card stays longer.
+     */
+    private fun drawPhoneCard(canvas: Canvas, card: Bitmap, local: Long) {
+        canvas.drawColor(C.CREAM)
+        val screen = RectF(PHONE_LEFT - 3f, PHONE_TOP - 3f, PHONE_RIGHT + 3f, PHONE_BOTTOM + 3f)
+        val at = (local - RealTimeline.END_VIDEO_LEAD).coerceIn(0L, (howtoMs - 1L).coerceAtLeast(0L))
+        val frame = howto?.frameAt(at)
+        plain.color = C.INK
+        canvas.drawRect(screen, plain)
+        if (frame != null && !frame.isRecycled) {
+            canvas.save()
+            canvas.clipRect(screen)
+            cover(canvas, frame, screen)
+            canvas.restore()
+        }
+        canvas.drawBitmap(card, null, RectF(0f, 0f, W.toFloat(), H.toFloat()), fill)
     }
 
     /**
@@ -477,11 +499,11 @@ class RealRenderer(
      * The app's promo video, full frame with its own sound, fading in over the drawing's video's last moment. A promo
      * that is not 9:16 is shown whole over a blurred, darkened copy of itself rather than cropped.
      */
-    private fun drawPromo(canvas: Canvas, e: RealEvent, t: Long, source: ClipFrames? = promo) {
+    private fun drawPromo(canvas: Canvas, e: RealEvent, t: Long) {
         val local = t - e.startMs
         val fade = (local.toFloat() / PROMO_FADE).coerceIn(0f, 1f)
         if (fade < 1f && e.startMs > 0) draw(canvas, e.startMs - 1) else canvas.drawColor(C.INK)
-        val frame = source?.frameAt(local) ?: return
+        val frame = promo?.frameAt(local) ?: return
         if (frame.isRecycled) return
         val full = RectF(0f, 0f, W.toFloat(), H.toFloat())
         val aspect = frame.width.toFloat() / frame.height
@@ -823,6 +845,11 @@ class RealRenderer(
         private const val END_OPEN = 560L
         private const val END_SETTLE = 800L
         private const val END_ZOOM = 0.03f
+        /** Where the phone's screen is on the end card with the phone (real_end_card_phone, 1080 x 2400), in its pixels. */
+        private const val PHONE_LEFT = 64f
+        private const val PHONE_TOP = 710f
+        private const val PHONE_RIGHT = 625f
+        private const val PHONE_BOTTOM = 1912f
         /** An end card picture within this share of the frame's shape fills the frame. */
         private const val END_COVER_SLACK = 0.25f
 

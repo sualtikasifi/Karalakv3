@@ -967,10 +967,10 @@ private fun EndingCard(r: RealUi, vm: StudioViewModel) {
         if (r.ending == RealEnding.Card && r.howto != null) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
                 Column(Modifier.weight(1f)) {
-                    Text("Oyunun nasıl oynandığı (kısa video)", style = Console.Subtitle)
+                    Text("Telefonda oyun videosu", style = Console.Subtitle)
                     Text(
-                        String.format(Locale("tr"), "Açık: kapanıştan sonra, bitiş görselinden önce %.1f sn'lik tanıtım videosu sessiz oynar (müzik devam eder). ", r.howtoMs / 1000f) +
-                            "İzleyiciye oyunun ne olduğunu gösterir; uygulamanın içinde gömülüdür, her videoda aynıdır.",
+                        String.format(Locale("tr"), "Açık: bitiş görselindeki telefonun içinde oyunun nasıl oynandığını gösteren %.1f sn'lik video sessiz oynar (müzik devam eder). ", r.howtoMs / 1000f) +
+                            "Görsel, videonun bitmesine kadar ekranda kalır; uygulamanın içinde gömülüdür, her videoda aynıdır. Kapalıyken düz bitiş görseli çıkar.",
                         style = Console.Small
                     )
                 }
