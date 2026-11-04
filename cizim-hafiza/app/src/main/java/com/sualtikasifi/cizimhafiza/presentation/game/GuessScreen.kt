@@ -40,6 +40,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.text.KeyboardActions
@@ -936,6 +943,10 @@ private fun GuessFeedbackOverlay(
                     )
                 }
             }
+            if (feedback.isCorrect) {
+                CorrectBadge(xp = feedback.xpAwarded)
+                return@AnimatedVisibility
+            }
             Column(
                 modifier = Modifier
                     .offset { androidx.compose.ui.unit.IntOffset(shakeOffset.value.dp.roundToPx(), 0) }
@@ -987,6 +998,81 @@ private fun GuessFeedbackOverlay(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * The badge for a right answer: a glossy green disc with a thick white rim that pops in, a white check that draws itself
+ * stroke by stroke, a ring and a burst of sparkles flying out of it, and the XP in the game's own lettering below.
+ * Only drawn for a correct answer; the wrong one keeps its card (see [GuessFeedbackOverlay]).
+ */
+@Composable
+private fun CorrectBadge(xp: Int) {
+    val pop = remember { Animatable(0.3f) }
+    val check = remember { Animatable(0f) }
+    val burst = remember { Animatable(0f) }
+    val xpIn = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        launch { pop.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)) }
+        launch { delay(140); check.animateTo(1f, tween(360, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
+        launch { burst.animateTo(1f, tween(700, easing = androidx.compose.animation.core.LinearOutSlowInEasing)) }
+        launch { delay(300); xpIn.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy)) }
+    }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.size(92.dp)) {
+            val c = center
+            val r = size.minDimension * 0.30f
+            val b = burst.value
+            // a ring that opens out of the disc and fades
+            drawCircle(
+                color = Color(0xFF4FD97D).copy(alpha = ((1f - b) * 0.6f).coerceIn(0f, 1f)),
+                radius = r * (1f + 0.6f * b), center = c,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = r * 0.24f * (1f - b) + 1f)
+            )
+            // sparkles flying outwards, gold and white by turns
+            for (i in 0 until 6) {
+                val ang = (i * 60.0 + 20.0) * Math.PI / 180.0
+                val dist = r * (1.1f + 0.6f * b)
+                val dot = r * 0.07f * (1f - b * 0.8f)
+                val col = if (i % 2 == 0) Color(0xFFFFD43B) else Color.White
+                drawCircle(col.copy(alpha = (1f - b * b).coerceIn(0f, 1f)), dot.coerceAtLeast(0.5f), Offset(c.x + (kotlin.math.cos(ang) * dist).toFloat(), c.y + (kotlin.math.sin(ang) * dist).toFloat()))
+            }
+            scale(pop.value, c) {
+                // drop shadow, white rim, the glossy green disc
+                drawCircle(Color(0x55000000), r * 1.04f, Offset(c.x, c.y + r * 0.10f))
+                drawCircle(Color.White, r * 1.04f, c)
+                drawCircle(
+                    Brush.radialGradient(listOf(Color(0xFF7BEA9C), Color(0xFF2DBB5B), Color(0xFF168A3E)), center = Offset(c.x - r * 0.25f, c.y - r * 0.35f), radius = r * 1.5f),
+                    r * 0.90f, c
+                )
+                // a soft highlight on the upper half
+                drawOval(Color.White.copy(alpha = 0.28f), Offset(c.x - r * 0.62f, c.y - r * 0.82f), androidx.compose.ui.geometry.Size(r * 1.24f, r * 0.62f))
+                // the check, drawn as far as [check] says
+                val path = Path().apply {
+                    moveTo(c.x - r * 0.42f, c.y + r * 0.04f)
+                    lineTo(c.x - r * 0.11f, c.y + r * 0.34f)
+                    lineTo(c.x + r * 0.44f, c.y - r * 0.30f)
+                }
+                val measure = PathMeasure().apply { setPath(path, false) }
+                val part = Path()
+                measure.getSegment(0f, measure.length * check.value, part, true)
+                val w = r * 0.27f
+                withTransform({ translate(0f, r * 0.07f) }) { drawPath(part, Color(0x66063D1B), style = androidx.compose.ui.graphics.drawscope.Stroke(w, cap = StrokeCap.Round, join = StrokeJoin.Round)) }
+                drawPath(part, Color.White, style = androidx.compose.ui.graphics.drawscope.Stroke(w, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            }
+        }
+        if (xp > 0) {
+            LetteredText(
+                text = stringResource(R.string.xp_gained_format, xp),
+                size = 19.sp,
+                fill = Color(0xFFFFD43B),
+                outline = Color(0xFF7A3F00),
+                modifier = Modifier.graphicsLayer {
+                    scaleX = xpIn.value; scaleY = xpIn.value
+                    alpha = xpIn.value.coerceIn(0f, 1f)
+                }
+            )
         }
     }
 }
