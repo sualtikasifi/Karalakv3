@@ -138,6 +138,7 @@ class RealRenderer(
     private val plain = Paint(Paint.ANTI_ALIAS_FLAG)
     private val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = C.WHITE }
     private val circle = Path()
+    private val fade = Paint()
     private val label = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeJoin = Paint.Join.ROUND }
     /** For the vignette's alpha mask (drawn in its colour) and the promo fading in. */
     private val shade = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
@@ -528,8 +529,45 @@ class RealRenderer(
             cover(canvas, frame, RectF(0f, 0f, W.toFloat(), H.toFloat()), shade)
             shade.alpha = 255
         } else {
-            fitOnBackdrop(canvas, frame, alpha)
+            fitWithMirroredBands(canvas, frame, alpha)
         }
+    }
+
+    /**
+     * [bmp] shown whole at the frame's width, its top and bottom bands (when it is not as tall as the frame) made of its own
+     * edge: the strip next to the band, mirrored across the seam, blurred, and darkening gently away from the clip, so the
+     * colours and the light run on past the clip's edge without a visible line. A picture narrower than the frame
+     * (bars at its sides instead) gets [fitOnBackdrop].
+     */
+    private fun fitWithMirroredBands(canvas: Canvas, bmp: Bitmap, alpha: Float) {
+        val s = W.toFloat() / bmp.width
+        val h = bmp.height * s
+        val band = (H - h) / 2f
+        if (band < 1f) { fitOnBackdrop(canvas, bmp, alpha); return }
+        if (h > H) { fitOnBackdrop(canvas, bmp, alpha); return }
+        shade.color = C.WHITE
+        shade.alpha = (255 * alpha).toInt()
+        // the strip of the clip as tall as a band (in the clip's pixels), blurred by shrinking it to a few pixels
+        val stripPx = (band / s).toInt().coerceIn(1, bmp.height)
+        for (top in booleanArrayOf(true, false)) {
+            val strip = Bitmap.createBitmap(bmp, 0, if (top) 0 else bmp.height - stripPx, bmp.width, stripPx)
+            val soft = Bitmap.createScaledBitmap(strip, BAND_BLUR_W, (BAND_BLUR_W * band / W).toInt().coerceAtLeast(2), true)
+            val y0 = if (top) 0f else H - band
+            canvas.save()
+            // mirrored across the seam: the top band flipped over its own bottom edge, the bottom one over its top
+            canvas.scale(1f, -1f, 0f, y0 + band / 2f)
+            canvas.drawBitmap(soft, null, RectF(0f, y0, W.toFloat(), y0 + band), shade)
+            canvas.restore()
+            if (soft !== strip) soft.recycle()
+            if (strip !== bmp) strip.recycle()
+            // darker away from the clip, none at the seam
+            val seam = if (top) y0 + band else y0
+            val far = if (top) y0 else y0 + band
+            fade.shader = LinearGradient(0f, seam, 0f, far, 0x00000000, ((BAND_DARK * alpha * 255).toInt() shl 24), Shader.TileMode.CLAMP)
+            canvas.drawRect(0f, y0, W.toFloat(), y0 + band, fade)
+        }
+        canvas.drawBitmap(bmp, null, RectF(0f, band, W.toFloat(), band + h), shade)
+        shade.alpha = 255
     }
 
     /** [bmp] shown whole, as wide as the frame allows, over a soft darkened backdrop made of itself, at [alpha] strength. */
@@ -814,6 +852,9 @@ class RealRenderer(
         /** The promo fades in over this long; one whose shape is within this share of 9:16 fills the frame. */
         private const val PROMO_FADE = 300L
         private const val PROMO_COVER_SLACK = 0.06f
+        /** The clip's mirrored bands: how many pixels wide the blurred strip is, and how dark the band's far edge gets (0 to 1). */
+        private const val BAND_BLUR_W = 48
+        private const val BAND_DARK = 0.35f
 
         /** bg_draw in the game's art units (the picture is 841 of them wide). */
         private const val ART_W = 841f
