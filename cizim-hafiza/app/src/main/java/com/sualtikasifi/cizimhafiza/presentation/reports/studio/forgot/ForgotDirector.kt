@@ -7,7 +7,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.LineRules
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StrokeReplay
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioDrawing
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioLang
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

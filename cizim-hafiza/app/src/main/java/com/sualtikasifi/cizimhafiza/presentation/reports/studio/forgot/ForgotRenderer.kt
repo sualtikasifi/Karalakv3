@@ -12,7 +12,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioDrawing
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.TextPainter
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.VoicedVideo
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Reveal
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessTimeline
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotSprites
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MouthState
@@ -37,7 +37,7 @@ class ForgotRenderer(
     private val wordTimes: Map<Int, List<LongRange>>? = null
 ) : VoicedVideo {
     val events: List<ForgotEvent> = ForgotTimeline.build(script) { i, l ->
-        voice?.get(i)?.let { it.size * 1000L / FPS } ?: GuessTimeline.estimateMs(l.text)
+        voice?.get(i)?.let { it.size * 1000L / FPS } ?: StudioCopy.estimateMs(l.text)
     }
     override val totalMs: Long = ForgotTimeline.totalMs(events)
     override val voiceStarts: List<Pair<Int, Long>> = events.filter { it.line != null }.map { it.lineIndex to it.startMs }
@@ -60,7 +60,7 @@ class ForgotRenderer(
     override fun draw(canvas: Canvas, t: Long) {
         canvas.drawColor(C.CREAM)
         val e = ForgotTimeline.at(events, t)
-        val spoken = e.line?.let { l -> voice?.get(e.lineIndex)?.let { it.size * 1000L / FPS } ?: GuessTimeline.estimateMs(l.text) } ?: 0L
+        val spoken = e.line?.let { l -> voice?.get(e.lineIndex)?.let { it.size * 1000L / FPS } ?: StudioCopy.estimateMs(l.text) } ?: 0L
         val speaking = e.line != null && t - e.startMs < spoken
         val level = level(e, t, speaking)
 
@@ -290,7 +290,7 @@ class ForgotRenderer(
         drawMascot(canvas, RectF(240f, 170f, 840f, 820f), e.line?.emotion ?: MascotEmotion.Point, speaking, level, t)
         text.draw(canvas, "Yarın daha zoru geliyor", 540f, 900f, 960, 76f, 1, assets.display, C.INK)
         e.line?.let { l ->
-            val spoken = voice?.get(e.lineIndex)?.let { it.size * 1000L / FPS } ?: GuessTimeline.estimateMs(l.text)
+            val spoken = voice?.get(e.lineIndex)?.let { it.size * 1000L / FPS } ?: StudioCopy.estimateMs(l.text)
             text.reveal(canvas, l.text, startsOf(e.lineIndex, l.text, spoken), t - e.startMs, 540f, 1040f, 960, 48f, 2, assets.display, Lettering.plain(C.ORANGE_DARK))
         }
         fill.color = C.ORANGE

@@ -4,7 +4,7 @@ import android.content.Context
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Backoff
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Pronunciation
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioLang
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

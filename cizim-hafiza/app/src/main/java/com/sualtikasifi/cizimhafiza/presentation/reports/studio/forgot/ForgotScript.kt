@@ -2,8 +2,8 @@ package com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot
 
 import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
 import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessCopy
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioCopy
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -160,9 +160,9 @@ object ForgotCopy {
 
     /** Whether [text] says the drawing's [word]: a line or caption that does would give the code away. */
     fun leaks(text: String, word: String): Boolean {
-        val w = GuessCopy.normalize(word)
+        val w = StudioCopy.normalize(word)
         if (w.isEmpty()) return false
-        val t = GuessCopy.normalize(text)
+        val t = StudioCopy.normalize(text)
         return " $t ".contains(" $w ") || t.split(' ').any { it.length >= 4 && w.length >= 4 && (it == w || it.startsWith(w) || w.startsWith(it)) }
     }
 
@@ -173,7 +173,7 @@ object ForgotCopy {
     )
 
     fun parse(text: String, word: String): Written? {
-        val o = GuessCopy.objectIn(text) ?: return null
+        val o = StudioCopy.objectIn(text) ?: return null
         fun line(e: kotlinx.serialization.json.JsonElement?): SpokenLine? {
             val oo = e as? JsonObject ?: return null
             val l = (oo["line"] ?: oo["text"])?.jsonPrimitive?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() } ?: return null

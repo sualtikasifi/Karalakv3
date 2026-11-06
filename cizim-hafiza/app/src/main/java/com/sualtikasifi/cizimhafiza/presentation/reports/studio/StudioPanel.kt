@@ -117,8 +117,6 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleCard
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.OpenRouterClient
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.Segmented
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.Tag
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessScript
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.ElevenLabs
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceModel
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
@@ -206,218 +204,8 @@ fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
             }
         }
         when (st.format) {
-            StudioFormat.Guess -> { guessSections(st, viewModel); sharedSections(st, viewModel, context) }
-            StudioFormat.Memory -> { memorySections(st, viewModel); sharedSections(st, viewModel, context) }
             StudioFormat.Forgot -> { forgotSections(st, viewModel); sharedSections(st, viewModel, context) }
             StudioFormat.RealLife -> realSections(st, viewModel, context)
-        }
-    }
-}
-
-private fun LazyListScope.guessSections(st: StudioState, vm: StudioViewModel) {
-    // 1. drawings
-    item { Step("1", "Çizimler", "${st.selected.size} seçili · en iyisi 3") }
-    item {
-        Segmented(
-            options = listOf(GuessSource.Mine.name to "Benim çizimlerim", GuessSource.Players.name to "İzin veren oyuncular"),
-            selected = st.source.name,
-            onSelect = { vm.setSource(GuessSource.valueOf(it)) },
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-    if (st.source == GuessSource.Players) featuredPicker(st, vm)
-    when {
-        st.source == GuessSource.Mine && st.loading -> item { Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Console.Accent) } }
-        st.source == GuessSource.Mine && st.drawings.isEmpty() -> item {
-            ConsoleCard(Modifier.fillMaxWidth()) { Text("Bu telefonda kayıtlı çizim yok. Birkaç tur oyna, sonra buraya dön.", style = Console.Small) }
-        }
-        else -> st.pool.take(90).chunked(3).forEach { row ->
-            item(key = "row-" + row.first().id) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    row.forEach { d -> Thumb(d, st.selected.indexOf(d.id), Modifier.weight(1f)) { vm.toggle(d) } }
-                    repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
-                }
-            }
-        }
-    }
-
-    // 2. who is on the right-hand tile
-    item { Step("2", "Oyuncu kartı") }
-    if (st.source == GuessSource.Players) item {
-        ConsoleCard(Modifier.fillMaxWidth()) {
-            Text(st.player?.let { "${it.name} · Sv. ${it.level}" } ?: "Önce bir oyuncu seç", style = Console.Subtitle)
-            Text("Oyuncu videolarda yer almayı kabul etti: adı, seviyesi ve çerçevesi görünür; fotoğrafı yerine dinozor avatarı.", style = Console.Small)
-        }
-    } else item {
-        ConsoleCard(Modifier.fillMaxWidth()) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(st.player?.let { "${it.name} · Sv. ${it.level}" } ?: "Yükleniyor…", style = Console.Subtitle)
-                    Text(
-                        if (st.showName) "Kendi adın, seviyen, çerçeven ve fotoğrafın görünür."
-                        else "Ad yerine \"Oyuncu\", fotoğraf yerine Karalak görünür.",
-                        style = Console.Small
-                    )
-                }
-                Switch(checked = st.showName, onCheckedChange = vm::setShowName, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
-            }
-        }
-    }
-
-    // 3. Karalak's lines
-    item { Step("3", "Karalak'ın senaryosu") }
-    item {
-        ConsoleCard(Modifier.fillMaxWidth()) {
-            DarkButton(
-                text = when {
-                    st.writing -> st.writeProgress ?: "Yazılıyor…"
-                    st.script == null -> "Karalak çizimlere baksın"
-                    else -> "Baştan yazdır"
-                },
-                busy = st.writing,
-                enabled = st.canWrite
-            ) { vm.writeScript() }
-            Text(
-                "Karalak her çizimi üç anda görür (üçte biri, üçte ikisi, bitmiş) ve cevabı bilmeden tahmin eder. Tahminler gerçektir.",
-                style = Console.Small, modifier = Modifier.padding(top = 6.dp)
-            )
-            st.aiCost?.let { Text("Bu yazımın maliyeti: " + OpenRouterClient.usd(it), style = Console.Small) }
-            st.writeError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
-        }
-    }
-    st.script?.let { sc -> scriptEditor(sc, st, vm) }
-}
-
-/** The players who turned on "Videolarda öne çık", to pick whose drawings Karalak looks at. */
-private fun LazyListScope.featuredPicker(st: StudioState, vm: StudioViewModel) {
-    item {
-        ConsoleCard(Modifier.fillMaxWidth()) {
-            Text(
-                "Yalnızca Hesap ekranında “Karalak videolarında öne çık”ı açan oyuncular. Çizimler onaylanmış hızlı eşleş havuzundan gelir.",
-                style = Console.Small
-            )
-            Spacer(Modifier.height(8.dp))
-            DarkButton(
-                text = if (st.featuredLoading) (st.featuredStatus ?: "Aranıyor…") else if (st.featured.isEmpty()) "Oyuncuları bul" else "Yeniden ara",
-                busy = st.featuredLoading,
-                enabled = !st.featuredLoading
-            ) { vm.loadFeatured() }
-            if (!st.featuredLoading) st.featuredStatus?.let { Text(it, style = Console.Small, modifier = Modifier.padding(top = 4.dp)) }
-        }
-    }
-    st.featured.take(40).forEach { f ->
-        item(key = "fp-" + f.player.uid) {
-            WordRow(f.player.nickname, "Sv. ${f.player.level} · ${f.drawings.size} çizim", on = st.featuredUid == f.player.uid, upper = false) { vm.selectFeatured(f.player.uid) }
-        }
-    }
-}
-
-/** "Hafıza Tuzağı": the archive, a word, its drawings, and Karalak's lines. */
-private fun LazyListScope.memorySections(st: StudioState, vm: StudioViewModel) {
-    val m = st.memory
-    item { Step("1", "Veri", "${m.roundsSeen} tur arşivde") }
-    item {
-        ConsoleCard(Modifier.fillMaxWidth()) {
-            Text(
-                "Panel, incelediğin her hızlı eşleş turunu ve günlük meydan okumayı bu telefonda isimsiz olarak sayar. " +
-                    "Günlük denemeler onaylanınca sunucudan silinir; sayıları burada kalır.",
-                style = Console.Small
-            )
-            Spacer(Modifier.height(8.dp))
-            DarkButton(
-                text = if (m.scanning) (m.scanStatus ?: "Okunuyor…") else "Havuzu ve bekleyenleri tara",
-                busy = m.scanning,
-                enabled = !m.scanning
-            ) { vm.scanAll() }
-            if (!m.scanning) m.scanStatus?.let { Text(it, style = Console.Small, modifier = Modifier.padding(top = 4.dp)) }
-        }
-    }
-
-    item { Step("2", "Kelime", "en az 5 çizim") }
-    if (m.words.isEmpty()) {
-        item { ConsoleCard(Modifier.fillMaxWidth()) { Text("Henüz 5 kez çizilmiş kelime yok. Havuzu tara ya da kuyruğu incele.", style = Console.Small) } }
-    } else {
-        m.words.take(40).forEach { w ->
-            item(key = "word-" + w.key) {
-                val on = m.selected?.key == w.key
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (on) Console.AccentSoft else Console.Surface,
-                    border = BorderStroke(if (on) 1.5.dp else 1.dp, if (on) Console.Accent else Console.Border),
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { vm.selectWord(w) }
-                ) {
-                    Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(w.word.uppercase(Locale("tr")), style = Console.Subtitle)
-                            Text(
-                                "${w.drawn} çizim · ${w.forgot} tanıyamadı · ≈ ${w.avgDelaySec} sn · ${w.samples} örnek" +
-                                    if (w.daily > 0) " · ${w.daily} günlük" else "",
-                                style = Console.Small
-                            )
-                        }
-                        Tag(
-                            "%${w.forgotPercent}",
-                            fg = Color.White,
-                            bg = if (w.drawn >= 50) Console.Critical else Console.InkMuted
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    val script = m.script
-    val stat = m.selected
-    if (script != null && stat != null) {
-        item {
-            Step("3", "Çizimler", "${script.picks.size} seçili")
-        }
-        if (stat.drawn < 50) {
-            item {
-                Text(
-                    "Bu kelime ${stat.drawn} kez çizilmiş. Videoda yüzde değil sayı gösterilir; yayın için 50 ve üzeri önerilir.",
-                    style = Console.Small.copy(color = Console.Critical)
-                )
-            }
-        }
-        val forgotFirst = m.samples.sortedBy { it.correct }
-        forgotFirst.take(48).chunked(3).forEach { row ->
-            item(key = "ms-" + row.first().id) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    row.forEach { sample ->
-                        val order = script.picks.indexOfFirst { it.sampleId == sample.id }
-                        SampleThumb(sample, order, Modifier.weight(1f)) { vm.togglePick(sample) }
-                    }
-                    repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
-                }
-            }
-        }
-        item {
-            ConsoleCard(Modifier.fillMaxWidth()) {
-                DarkButton(
-                    text = if (m.writing) "Karalak seçiyor…" else "Karalak seçsin ve yorumlasın",
-                    busy = m.writing,
-                    enabled = !m.writing
-                ) { vm.writeMemory() }
-                Text("En ilginç ve birbirinden farklı çizimleri seçer, her birine kısa bir cümle yazar. Sayıları değiştiremez.", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
-                m.writeError?.let { Text(it, style = Console.Small.copy(color = Console.Critical)) }
-            }
-        }
-        item { Step("4", "Senaryo") }
-        item {
-            ConsoleCard(Modifier.fillMaxWidth()) {
-                Text("Açılış (sayılar arşivden)", style = Console.Label)
-                LineEditor(script.hook, { vm.editLine(LineRef.MemoryHook, it) }, { vm.editEmotion(LineRef.MemoryHook, it) }) { vm.listen(script.hook) }
-                script.picks.forEachIndexed { i, p ->
-                    Text("Çizim ${i + 1} yorumu (boş bırakılabilir)", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
-                    val l = p.comment ?: SpokenLine("", MascotEmotion.Laughing)
-                    LineEditor(l, { vm.editLine(LineRef.MemoryPickLine(i), it) }, { vm.editEmotion(LineRef.MemoryPickLine(i), it) }) { vm.listen(l) }
-                }
-                Text("Ters köşe", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
-                LineEditor(script.paradox, { vm.editLine(LineRef.MemoryParadox, it) }, { vm.editEmotion(LineRef.MemoryParadox, it) }) { vm.listen(script.paradox) }
-                Text("Kapanış", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
-                LineEditor(script.outro, { vm.editLine(LineRef.MemoryOutro, it) }, { vm.editEmotion(LineRef.MemoryOutro, it) }) { vm.listen(script.outro) }
-            }
         }
     }
 }
@@ -1548,21 +1336,6 @@ private fun FrameChoice(selected: Boolean, onClick: () -> Unit, content: @Compos
 }
 
 @Composable
-private fun WordRow(word: String, detail: String, on: Boolean, upper: Boolean = true, onClick: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = if (on) Console.AccentSoft else Console.Surface,
-        border = BorderStroke(if (on) 1.5.dp else 1.dp, if (on) Console.Accent else Console.Border),
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick)
-    ) {
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-            Text(if (upper) word.uppercase(Locale("tr")) else word, style = Console.Subtitle)
-            Text(detail, style = Console.Small)
-        }
-    }
-}
-
-@Composable
 private fun RealThumb(strokes: List<List<DrawingPoint>>, label: String, order: Int, modifier: Modifier, onClick: () -> Unit) {
     val on = order >= 0
     Surface(
@@ -1633,7 +1406,7 @@ private fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, c
                     LabeledSlider("Konuşma hızı", st.voiceRate, 0.8f..1.4f) { vm.setVoice(st.voicePitch, it) }
                 }
                 SmallLink(if (st.eleven.busy) "Seslendiriliyor…" else "Sesi dinle") {
-                    vm.listen(st.script?.intro ?: SpokenLine("Merhaba, ben Karalak! Çizimlerini tahmin etmeye geldim.", MascotEmotion.Excited))
+                    vm.listen(st.forgot.script?.hook ?: SpokenLine("Merhaba, ben Karalak! Çizimlerini tahmin etmeye geldim.", MascotEmotion.Excited))
                 }
             }
             st.voiceError?.let { Text(it, style = Console.Small.copy(color = Console.Critical)) }
@@ -1676,7 +1449,6 @@ private fun PreviewCard(st: StudioState, vm: StudioViewModel) {
         if (st.preview == null && st.totalMs == 0L) {
             Text(
                 when (st.format) {
-                    StudioFormat.Guess -> "Önizleme için en az bir çizim seç."
                     StudioFormat.RealLife -> "Önizleme için çizim seç ve Gemini videosunu yükle."
                     StudioFormat.Forgot -> "Önizleme için kendi çizimini tanıyamadığın bir çizim seç."
                     else -> "Önizleme için bir kelime seç."
@@ -1699,8 +1471,7 @@ private fun PreviewCard(st: StudioState, vm: StudioViewModel) {
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    if (st.format == StudioFormat.Guess && st.script == null) "Örnek cümlelerle gösteriliyor; Karalak yazınca kendi cümleleri gelir."
-                    else if (st.format == StudioFormat.RealLife) "≈ ${(st.totalMs + 999) / 1000} sn · kanca, video (üstünde Karalak kartı), kapanış, tanıtım ve bitiş görseli."
+                    if (st.format == StudioFormat.RealLife) "≈ ${(st.totalMs + 999) / 1000} sn · kanca, video (üstünde Karalak kartı), kapanış, tanıtım ve bitiş görseli."
                     else "Sesli videoda süreler sesin gerçek uzunluğuna göre ayarlanır.",
                     style = Console.Small, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
                 )
@@ -1725,9 +1496,6 @@ private fun LazyListScope.renderItems(st: StudioState, vm: StudioViewModel) {
             BigButton("Videoyu oluştur", enabled = st.ready && !voiceMissing) { vm.render() }
             if (st.ready && voiceMissing) {
                 Text("Önce Ses bölümünde “Seslendir”e bas: ${st.eleven.missing} cümle, ~${st.eleven.missingCredits} kredi.", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
-            }
-            if (st.format == StudioFormat.Guess && st.script == null && st.selected.isNotEmpty()) {
-                Text("Önce Karalak çizimlere baksın (3. adım).", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
             }
         }
     }
@@ -1881,66 +1649,6 @@ private fun ElevenSettings(st: StudioState, vm: StudioViewModel) {
     }
 }
 
-/** Every line Karalak will say, editable, with its face and a button to hear it. */
-private fun LazyListScope.scriptEditor(sc: GuessScript, st: StudioState, vm: StudioViewModel) {
-    item {
-        ConsoleCard(Modifier.fillMaxWidth()) {
-            Text("Açılış", style = Console.Label)
-            LineEditor(sc.intro, { vm.editLine(LineRef.Intro, it) }, { vm.editEmotion(LineRef.Intro, it) }) { vm.listen(sc.intro) }
-            Alternatives(st.introAlts) { vm.pickAlt(LineRef.Intro, it) }
-        }
-    }
-    sc.rounds.forEachIndexed { r, round ->
-        item(key = "round-$r") {
-            ConsoleCard(Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Çizim ${r + 1} · ${round.word.uppercase(Locale("tr"))}", style = Console.Subtitle)
-                        Text("Karalak'ın son tahmini: “${round.finalGuess}”" + (round.playerAnswer?.let { " · çizenin cevabı: “$it”" } ?: ""), style = Console.Small)
-                    }
-                    Tag(
-                        if (round.correct) "Bildi ✓" else "Bilemedi ✗",
-                        fg = Color.White,
-                        bg = if (round.correct) Console.Good else Console.Critical,
-                        modifier = Modifier.clip(RoundedCornerShape(50)).clickable { vm.toggleVerdict(r) }
-                    )
-                }
-                listOf("Üçte biri", "Üçte ikisi", "Bitince").forEachIndexed { k, label ->
-                    round.stages.getOrNull(k)?.let { l ->
-                        Text(label, style = Console.Label, modifier = Modifier.padding(top = 8.dp))
-                        LineEditor(l, { vm.editLine(LineRef.Stage(r, k), it) }, { vm.editEmotion(LineRef.Stage(r, k), it) }) { vm.listen(l) }
-                    }
-                }
-                Text("Sonuca tepkisi", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
-                LineEditor(round.reaction, { vm.editLine(LineRef.Reaction(r), it) }, { vm.editEmotion(LineRef.Reaction(r), it) }) { vm.listen(round.reaction) }
-            }
-        }
-    }
-    item {
-        ConsoleCard(Modifier.fillMaxWidth()) {
-            Text("Kapanış", style = Console.Label)
-            LineEditor(sc.outro, { vm.editLine(LineRef.Outro, it) }, { vm.editEmotion(LineRef.Outro, it) }) { vm.listen(sc.outro) }
-            Alternatives(st.outroAlts) { vm.pickAlt(LineRef.Outro, it) }
-            Spacer(Modifier.height(8.dp))
-            SmallLink(if (st.writing) "Yazılıyor…" else "Kararı değiştirdiysen: tepkileri ve kapanışı yeniden yazdır") { if (!st.writing) vm.rewriteFrame() }
-        }
-    }
-}
-
-/** The assistant's other openings or closings: a tap swaps one in, and the line it replaces joins the list. */
-@Composable
-private fun Alternatives(alts: List<SpokenLine>, onPick: (SpokenLine) -> Unit) {
-    if (alts.isEmpty()) return
-    Text("Başka seçenekler", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
-    alts.forEach { a ->
-        Text(
-            "↻ ${a.text}",
-            style = Console.Small.copy(color = Console.Accent),
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { onPick(a) }.padding(vertical = 6.dp, horizontal = 4.dp)
-        )
-    }
-}
-
 @Composable
 private fun LineEditor(line: SpokenLine, onText: (String) -> Unit, onEmotion: (MascotEmotion) -> Unit, onListen: () -> Unit) {
     var open by remember { mutableStateOf(false) }
@@ -1991,31 +1699,6 @@ private fun Thumb(d: StudioDrawing, order: Int, modifier: Modifier, onClick: () 
                 }
             }
             Text(d.word, style = Console.Label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 6.dp))
-        }
-    }
-}
-
-@Composable
-private fun SampleThumb(sample: com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemorySample, order: Int, modifier: Modifier, onClick: () -> Unit) {
-    val on = order >= 0
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = Console.Surface,
-        border = BorderStroke(if (on) 2.dp else 1.dp, if (on) Console.Accent else Console.Border),
-        modifier = modifier.clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick)
-    ) {
-        Box(Modifier.fillMaxWidth().aspectRatio(1f)) {
-            StrokeCanvas(strokes = sample.strokes, modifier = Modifier.fillMaxSize().padding(6.dp), strokeWidthPx = 4f)
-            Box(
-                Modifier.padding(5.dp).size(18.dp).clip(CircleShape).background(if (sample.correct) Console.Good else Console.Critical).align(Alignment.BottomStart),
-                contentAlignment = Alignment.Center
-            ) { Text(if (sample.correct) "✓" else "✗", style = Console.Label.copy(color = Color.White)) }
-            if (on) {
-                Box(
-                    Modifier.padding(5.dp).size(22.dp).clip(CircleShape).background(Console.Accent).align(Alignment.TopEnd),
-                    contentAlignment = Alignment.Center
-                ) { Text("${order + 1}", style = Console.Label.copy(color = Color.White)) }
-            }
         }
     }
 }

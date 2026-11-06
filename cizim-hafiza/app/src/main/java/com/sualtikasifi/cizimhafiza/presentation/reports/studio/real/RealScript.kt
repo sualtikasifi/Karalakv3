@@ -3,8 +3,8 @@ package com.sualtikasifi.cizimhafiza.presentation.reports.studio.real
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.LineRules
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.SpeechTiming
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessCopy
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioCopy
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -598,7 +598,7 @@ object RealCopy {
 
     /** The scene ideas out of the assistant's answer; null when none could be read. */
     fun parsePitches(text: String): List<ScenePitch>? {
-        val o = GuessCopy.objectIn(text) ?: return null
+        val o = StudioCopy.objectIn(text) ?: return null
         val ideas = runCatching {
             o["ideas"]!!.jsonArray.mapNotNull { e ->
                 val p = e.jsonObject
@@ -680,11 +680,11 @@ object RealCopy {
      * choose from ([MIN_TO_CHOOSE]); when too few are, the long ones are cut instead of leaving nothing.
      */
     private fun parseLines(text: String, key: String, seconds: Int, count: Int, maxWords: Int, maxChars: Int = HOOK_CHARS): List<String> {
-        val o = GuessCopy.objectIn(text) ?: return emptyList()
+        val o = StudioCopy.objectIn(text) ?: return emptyList()
         val raw = runCatching { o[key]!!.jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull } }.getOrNull().orEmpty()
-        val cleaned = raw.map { cleanHook(it, seconds, maxChars) }.filter { it.isNotEmpty() }.distinctBy { GuessCopy.normalize(it) }
+        val cleaned = raw.map { cleanHook(it, seconds, maxChars) }.filter { it.isNotEmpty() }.distinctBy { StudioCopy.normalize(it) }
         val fitting = cleaned.filterNot { LineRules.tooLong(it, maxWords) }
-        val use = if (fitting.size >= minOf(MIN_TO_CHOOSE, cleaned.size)) fitting else cleaned.map { LineRules.fit(it, maxWords) }.distinctBy { GuessCopy.normalize(it) }
+        val use = if (fitting.size >= minOf(MIN_TO_CHOOSE, cleaned.size)) fitting else cleaned.map { LineRules.fit(it, maxWords) }.distinctBy { StudioCopy.normalize(it) }
         return use.take(count)
     }
 
@@ -702,7 +702,7 @@ object RealCopy {
     }
 
     fun parsePicks(text: String, candidates: Int): Picks? {
-        val o = GuessCopy.objectIn(text) ?: return null
+        val o = StudioCopy.objectIn(text) ?: return null
         fun str(p: JsonObject, key: String) = p[key]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
         val reveals = runCatching {
             o["reveals"]!!.jsonArray.mapNotNull { e ->

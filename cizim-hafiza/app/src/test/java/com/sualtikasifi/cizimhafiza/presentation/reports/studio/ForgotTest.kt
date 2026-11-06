@@ -7,7 +7,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMod
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotPhase
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotScript
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotTimeline
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
