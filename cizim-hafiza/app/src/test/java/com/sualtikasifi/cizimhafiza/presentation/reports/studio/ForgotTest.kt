@@ -149,7 +149,7 @@ class ForgotTest {
 
     @Test
     fun theHandSetRewardReadsWithoutAChest() {
-        assertEquals("1250 altın + 40 XP", ForgotCopy.rewardLabel(1250, 40, ForgotChest.None.chests))
+        assertEquals("40 XP + 1250 altın", ForgotCopy.rewardLabel(1250, 40, ForgotChest.None.chests))
         assertEquals("Sürpriz Kasası + 40 XP", ForgotCopy.rewardLabel(0, 40, ForgotChest.Rare.chests))
     }
 
