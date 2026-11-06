@@ -135,7 +135,6 @@ data class ElevenUi(
 sealed interface LineRef {
     data object ForgotHook : LineRef
     data class ForgotGuess(val index: Int) : LineRef
-    data object ForgotReaction : LineRef
     data object ForgotCode : LineRef
     data object ForgotOutro : LineRef
 }
@@ -389,12 +388,11 @@ class StudioViewModel @Inject constructor(
 
     private fun updateLine(ref: LineRef, change: (SpokenLine) -> SpokenLine) {
         _state.update { s ->
-            if (ref is LineRef.ForgotHook || ref is LineRef.ForgotGuess || ref is LineRef.ForgotReaction || ref is LineRef.ForgotCode || ref is LineRef.ForgotOutro) {
+            if (ref is LineRef.ForgotHook || ref is LineRef.ForgotGuess || ref is LineRef.ForgotCode || ref is LineRef.ForgotOutro) {
                 val fs = s.forgot.script ?: return@update s
                 val next = when (ref) {
                     LineRef.ForgotHook -> fs.copy(hook = change(fs.hook))
                     is LineRef.ForgotGuess -> fs.copy(guesses = fs.guesses.mapIndexed { i, l -> if (i == ref.index) change(l) else l })
-                    LineRef.ForgotReaction -> fs.copy(reaction = change(fs.reaction))
                     LineRef.ForgotCode -> fs.copy(codeLine = change(fs.codeLine))
                     LineRef.ForgotOutro -> fs.copy(outro = change(fs.outro))
                     else -> fs
@@ -416,9 +414,8 @@ class StudioViewModel @Inject constructor(
         return ForgotScript(
             drawingId = d.id, word = d.word,
             hook = previous?.hook ?: SpokenLine(ForgotCopy.HOOK, MascotEmotion.Shocked),
-            guesses = previous?.guesses ?: ForgotCopy.placeholderGuesses(),
-            guessAt = previous?.guessAt ?: ForgotTimeline.stopsFor(ForgotCopy.placeholderGuesses().size, emptyList()),
-            reaction = previous?.reaction ?: SpokenLine(ForgotCopy.REACTION, MascotEmotion.Laughing),
+            guesses = previous?.guesses ?: ForgotCopy.placeholderGuesses().take(ForgotCopy.DEFAULT_GUESSES),
+            guessAt = previous?.guessAt ?: ForgotTimeline.stopsFor(ForgotCopy.DEFAULT_GUESSES, emptyList()),
             codeLine = previous?.codeLine?.takeIf { it.text != other } ?: SpokenLine(ForgotCopy.codeLineFor(ui.mode), MascotEmotion.Point),
             outro = previous?.outro ?: SpokenLine(ForgotCopy.OUTRO, MascotEmotion.Wave),
             mode = ui.mode,
@@ -466,14 +463,15 @@ class StudioViewModel @Inject constructor(
         sc.copy(guesses = List(count) { sc.guesses.getOrNull(it) ?: stock[it] }, guessAt = ForgotTimeline.stopsFor(count, emptyList()))
     }
 
-    /** Moves where guess [index] stops the drawing by [deltaPercent] points, between its neighbours' stops. */
-    fun stepForgotStop(index: Int, deltaPercent: Int) = editForgotScript { sc ->
-        val stops = sc.stops.toMutableList()
-        if (index !in stops.indices) return@editForgotScript sc
-        val low = if (index == 0) ForgotTimeline.MIN_STOP else stops[index - 1] + 0.01f
-        val high = if (index == stops.lastIndex) 1f else stops[index + 1] - 0.01f
-        stops[index] = (stops[index] + deltaPercent / 100f).coerceIn(low, high.coerceAtLeast(low))
-        sc.copy(guessAt = stops)
+    /** Sets where guess [index] stops the drawing (0 to 1), held between its neighbours' stops: what the panel's bar drags. */
+    fun setForgotStop(index: Int, share: Float) = editForgotScript { sc ->
+        sc.copy(guessAt = ForgotTimeline.moveStop(sc.stops, index, share))
+    }
+
+    /** Moves where guess [index] stops the drawing by [deltaPercent] points, for the fine nudge beside the bar. */
+    fun stepForgotStop(index: Int, deltaPercent: Int) {
+        val now = _state.value.forgot.script?.stops?.getOrNull(index) ?: return
+        setForgotStop(index, now + deltaPercent / 100f)
     }
 
     fun setForgotShowPercent(on: Boolean) = editForgotScript { it.copy(showPercent = on) }
@@ -487,7 +485,7 @@ class StudioViewModel @Inject constructor(
         refreshPreview()
     }
 
-    /** Lets the assistant look at the drawing and write Karalak's guesses, reaction, hook and closing, and the post text. */
+    /** Lets the assistant look at the drawing and write Karalak's guesses, hook and closing, and the post text. */
     fun writeForgot() {
         val s = _state.value
         val d = s.drawings.find { it.id == s.forgot.drawingId } ?: return
@@ -508,7 +506,7 @@ class StudioViewModel @Inject constructor(
                                 hook = c.hook ?: cur.hook,
                                 // one line per stop, the assistant's where it wrote one, else what was there
                                 guesses = List(cur.guesses.size) { k -> c.guesses.getOrNull(k) ?: cur.guesses[k] },
-                                reaction = c.reaction ?: cur.reaction, outro = c.outro ?: cur.outro
+                                outro = c.outro ?: cur.outro
                             )
                         ),
                         caption = c.caption.ifBlank { st.caption }, hashtags = c.hashtags.ifBlank { st.hashtags },

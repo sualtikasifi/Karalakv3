@@ -40,8 +40,6 @@ data class ForgotScript(
      * spread evenly (see [ForgotTimeline.stopsFor]). The assistant writes each guess from the drawing as far as this.
      */
     val guessAt: List<Float> = emptyList(),
-    /** Its reaction once the countdown is over, over the whole drawing. */
-    val reaction: SpokenLine,
     val codeLine: SpokenLine,
     val outro: SpokenLine,
     val mode: ForgotMode = ForgotMode.Word,
@@ -59,7 +57,6 @@ data class ForgotScript(
     fun lines(): List<SpokenLine> = buildList {
         add(hook)
         addAll(guesses.take(ForgotTimeline.MAX_GUESSES))
-        add(reaction)
         add(codeLine)
         add(outro)
     }
@@ -76,7 +73,7 @@ enum class ForgotChest(val title: String, val tier: ChestTier?) {
     val chests: Map<ChestTier, Int> get() = tier?.let { mapOf(it to 1) } ?: emptyMap()
 }
 
-enum class ForgotPhase { Hook, Draw, Guess, Countdown, Answer, Code, Outro }
+enum class ForgotPhase { Hook, Draw, Guess, Countdown, Code, Outro }
 
 data class ForgotEvent(
     val phase: ForgotPhase,
@@ -98,12 +95,14 @@ object ForgotTimeline {
     const val MAX_GUESSES = 3
     /** The earliest a guess may come: a few strokes in. */
     const val MIN_STOP = 0.05f
-    const val COUNTDOWN_MS = 2_400L
-    private const val HOOK_MIN = 3_000L
-    private const val DRAW_MS = 1_000L
-    private const val GUESS_MIN = 1_400L
-    private const val ANSWER_MIN = 3_200L
-    private const val CODE_MIN = 3_600L
+    /** 3 · 2 · 1, half a second each: still readable, and tenser. */
+    const val COUNTDOWN_MS = 1_500L
+    private const val HOOK_MIN = 2_000L
+    private const val DRAW_MS = 600L
+    private const val GUESS_MIN = 1_100L
+    private const val CODE_MIN = 2_600L
+    /** The drawing is already begun on the first frame (a few strokes), so the video's cover is never an empty board. */
+    private const val HOOK_FROM = 0.08f
     private const val OUTRO_HOLD = 1_800L
 
     /**
@@ -120,22 +119,23 @@ object ForgotTimeline {
             index++
             t += d
         }
-        // the finished drawing stands on the paper while the hook is said, then it is drawn again, Karalak guessing
-        speak(ForgotPhase.Hook, -1, script.hook, HOOK_MIN, 400, 1f, 1f)
         val guesses = script.guesses.take(MAX_GUESSES)
         val stops = stopsFor(guesses.size, script.guessAt)
-        var shown = 0f
+        // the drawing is drawn while the hook is said, as far as the first guess stops it; no finished picture first
+        val first = stops.firstOrNull() ?: 1f
+        speak(ForgotPhase.Hook, -1, script.hook, HOOK_MIN, 250, minOf(HOOK_FROM, first), first)
         guesses.forEachIndexed { k, line ->
             val upTo = stops[k]
-            out += ForgotEvent(ForgotPhase.Draw, k, t, DRAW_MS, drawFrom = shown, drawTo = upTo)
-            t += DRAW_MS
-            shown = upTo
-            speak(ForgotPhase.Guess, k, line, GUESS_MIN, 300, upTo, upTo)
+            if (k > 0) {
+                out += ForgotEvent(ForgotPhase.Draw, k, t, DRAW_MS, drawFrom = stops[k - 1], drawTo = upTo)
+                t += DRAW_MS
+            }
+            speak(ForgotPhase.Guess, k, line, GUESS_MIN, 200, upTo, upTo)
         }
         out += ForgotEvent(ForgotPhase.Countdown, -1, t, COUNTDOWN_MS)
         t += COUNTDOWN_MS
-        speak(ForgotPhase.Answer, -1, script.reaction, ANSWER_MIN, 500, 1f, 1f)
-        speak(ForgotPhase.Code, -1, script.codeLine, CODE_MIN, 500, 1f, 1f)
+        // Karalak's reaction and the code are one line, said as the code comes up
+        speak(ForgotPhase.Code, -1, script.codeLine, CODE_MIN, 400, 1f, 1f)
         val cardMin = if (howtoMs > 0) howtoMs.coerceAtMost(RealTimeline.HOWTO_MAX) + RealTimeline.END_VIDEO_LEAD + RealTimeline.END_VIDEO_TAIL else 0L
         speak(ForgotPhase.Outro, -1, script.outro, cardMin, OUTRO_HOLD, 1f, 1f)
         return out
@@ -153,17 +153,30 @@ object ForgotTimeline {
         }
     }
 
+    /** [stops] with guess [index] moved to [wanted], held between the stops on either side of it (a hundredth apart) and the paper's ends. */
+    fun moveStop(stops: List<Float>, index: Int, wanted: Float): List<Float> {
+        if (index !in stops.indices) return stops
+        val low = if (index == 0) MIN_STOP else stops[index - 1] + 0.01f
+        val high = if (index == stops.lastIndex) 1f else stops[index + 1] - 0.01f
+        return stops.toMutableList().also { it[index] = wanted.coerceIn(low, high.coerceAtLeast(low)) }
+    }
+
     fun at(events: List<ForgotEvent>, t: Long): ForgotEvent = events.firstOrNull { t < it.endMs } ?: events.last()
 
     fun totalMs(events: List<ForgotEvent>): Long = events.lastOrNull()?.endMs ?: 0L
 }
 
 object ForgotCopy {
-    const val HOOK = "Bunu çizen kişi bile ne olduğunu bilemedi. Sen bilebilir misin?"
+    const val HOOK = "Çizen bile bilemedi. Sen bilir misin?"
     const val OUTRO = "Yarın daha zoru geliyor. Sen de karalak.com'da çiz!"
-    const val REACTION = "Zor muydu? Çizen de bilemedi!"
-    const val CODE_WORD = "Doğru cevap senin kodun. Bilen kasayı alır!"
-    const val CODE_SHOWN = "İşte kodun. Uygulamada Ayarlar'dan gir!"
+    const val CODE_WORD = "Bilemedin mi? Doğru cevap senin kodun!"
+    const val CODE_SHOWN = "Bilemedin mi? Kodu Ayarlar'dan gir!"
+
+    /** Karalak makes two guesses unless told otherwise (three at most), and none runs longer than this, nor the hook or the code line. */
+    const val DEFAULT_GUESSES = 2
+    const val GUESS_WORDS = 5
+    const val HOOK_WORDS = 8
+    const val CODE_WORDS = 9
 
     fun codeLineFor(mode: ForgotMode) = if (mode == ForgotMode.Word) CODE_WORD else CODE_SHOWN
 
@@ -195,9 +208,9 @@ object ForgotCopy {
         return " $t ".contains(" $w ") || t.split(' ').any { it.length >= 4 && w.length >= 4 && (it == w || it.startsWith(w) || w.startsWith(it)) }
     }
 
-    /** The assistant's lines: `{"guesses":[{"emotion","line"}…],"reaction":{…},"hook":{…},"outro":{…},"caption":"…","hashtags":"…"}`. */
+    /** The assistant's lines: `{"guesses":[{"emotion","line"}…],"hook":{…},"outro":{…},"caption":"…","hashtags":"…"}`. */
     data class Written(
-        val guesses: List<SpokenLine>, val reaction: SpokenLine?, val hook: SpokenLine?, val outro: SpokenLine?,
+        val guesses: List<SpokenLine>, val hook: SpokenLine?, val outro: SpokenLine?,
         val caption: String, val hashtags: String
     )
 
@@ -213,7 +226,7 @@ object ForgotCopy {
         val guesses = runCatching { o["guesses"]!!.jsonArray.mapNotNull { line(it) } }.getOrNull().orEmpty()
         if (guesses.isEmpty()) return null
         fun clean(key: String) = o[key]?.jsonPrimitive?.contentOrNull?.trim().orEmpty().takeIf { !leaks(it, word) }.orEmpty()
-        return Written(guesses.take(ForgotTimeline.MAX_GUESSES), line(o["reaction"]), line(o["hook"]), line(o["outro"]), clean("caption"), clean("hashtags"))
+        return Written(guesses.take(ForgotTimeline.MAX_GUESSES), line(o["hook"]), line(o["outro"]), clean("caption"), clean("hashtags"))
     }
 
     /** When a new code stops working unless the person picks another time: two days from now. */
@@ -236,14 +249,14 @@ object ForgotCopy {
 
             Video: Karalak çizimi canlı izliyor ve tahmin ediyor; izleyici de aynı anda tahmin edecek. Doğru cevap bir kupon kodu, o yüzden hiçbir cümlede "$word" kelimesi (ya da kökü) geçmemeli.
 
-            1) "guesses": tam $n tahmin, Görsel 1'den Görsel $n'e sırayla. Her tahmini YALNIZCA kendi görseline bakarak yaz: Karalak o anda yalnızca o kadarını görüyor, sonrasını bilmiyor. Her biri en fazla 8 kelime, o görselde gerçekten görünen bir şeye bakan komik ve yanlış (ama makul) bir tahmin olsun; ilk tahminler daha belirsiz, sonuncusu en kendinden emini. Çizenle asla dalga geçme.
-            2) "reaction": geri sayım bittikten sonra Karalak'ın tepkisi (Görsel ${n + 1}'e bakarak), en fazla 10 kelime; izleyiciye "bildin mi?" diye takılsın.
-            3) "hook": videonun ilk cümlesi; "çizen kişi bile bilemedi" fikrini söylesin ve izleyiciyi tahmine çağırsın, en fazla 12 kelime.
-            4) "outro": kapanış, yarın daha zorunun geleceğini söylesin, en fazla 14 kelime, "karalak.com" geçsin.
-            5) "caption": TikTok/Reels açıklaması (1–2 cümle, izleyiciye soruyla bitsin, doğru kelime geçmesin) ve "hashtags": 5–6 Türkçe ağırlıklı etiket.
+            Video 20 saniyenin altında olmalı: bütün cümleler kısa ve konuşma diliyle olsun.
+            1) "guesses": tam $n tahmin, Görsel 1'den Görsel $n'e sırayla. Her tahmini YALNIZCA kendi görseline bakarak yaz: Karalak o anda yalnızca o kadarını görüyor, sonrasını bilmiyor. Her biri EN FAZLA ${GUESS_WORDS} kelime (ör. "Mantar mı bu?"), o görselde gerçekten görünen bir şeye bakan komik ve yanlış (ama makul) bir tahmin olsun; ilk tahminler daha belirsiz, sonuncusu en kendinden emini. Çizenle asla dalga geçme.
+            2) "hook": videonun ilk cümlesi; "çizen kişi bile bilemedi" fikrini söylesin ve izleyiciyi tahmine çağırsın, EN FAZLA ${HOOK_WORDS} kelime.
+            3) "outro": kapanış, yarın daha zorunun geleceğini söylesin, en fazla 14 kelime, "karalak.com" geçsin.
+            4) "caption": TikTok/Reels açıklaması (1–2 cümle, izleyiciye soruyla bitsin, doğru kelime geçmesin) ve "hashtags": 5–6 Türkçe ağırlıklı etiket.
 
             Yalnızca şu JSON'u yaz:
-            {"guesses":[{"emotion":"…","line":"…"}],"reaction":{"emotion":"…","line":"…"},"hook":{"emotion":"…","line":"…"},"outro":{"emotion":"…","line":"…"},"caption":"…","hashtags":"…"}
+            {"guesses":[{"emotion":"…","line":"…"}],"hook":{"emotion":"…","line":"…"},"outro":{"emotion":"…","line":"…"},"caption":"…","hashtags":"…"}
             emotion yalnızca şunlardan biri: $moods.
         """.trimIndent().replace("@@PICTURES@@", pictures)
     }

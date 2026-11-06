@@ -23,25 +23,26 @@ class ForgotTest {
 
     private fun script(guesses: Int = 3, mode: ForgotMode = ForgotMode.Word) = ForgotScript(
         drawingId = 1, word = "şemsiye",
-        hook = line("hook"), guesses = List(guesses) { line("tahmin $it") }, reaction = line("tepki"),
+        hook = line("hook"), guesses = List(guesses) { line("tahmin $it") },
         codeLine = line("kod"), outro = line("bitiş"), mode = mode, reward = "Sanatçı Kasası", code = "SEMSIYE"
     )
 
     @Test
     fun linesAreInSpeakingOrderAndCapped() {
-        assertEquals(listOf("hook", "tahmin 0", "tahmin 1", "tahmin 2", "tepki", "kod", "bitiş"), script().lines().map { it.text })
+        assertEquals(listOf("hook", "tahmin 0", "tahmin 1", "tahmin 2", "kod", "bitiş"), script().lines().map { it.text })
         // more looks than the video has room for are left out
-        assertEquals(1 + ForgotTimeline.MAX_GUESSES + 3, script(guesses = 7).lines().size)
+        assertEquals(1 + ForgotTimeline.MAX_GUESSES + 2, script(guesses = 7).lines().size)
     }
 
     @Test
-    fun timelineRunsHookDrawGuessCountdownAnswerCodeOutro() {
+    fun timelineRunsHookGuessesCountdownCodeOutro() {
         val s = script(guesses = 2)
         val events = ForgotTimeline.build(s) { _, _ -> 1_000L }
         assertEquals(
+            // the hook already draws the drawing as far as the first guess: only the later guesses have a stretch of drawing of their own
             listOf(
-                ForgotPhase.Hook, ForgotPhase.Draw, ForgotPhase.Guess, ForgotPhase.Draw, ForgotPhase.Guess,
-                ForgotPhase.Countdown, ForgotPhase.Answer, ForgotPhase.Code, ForgotPhase.Outro
+                ForgotPhase.Hook, ForgotPhase.Guess, ForgotPhase.Draw, ForgotPhase.Guess,
+                ForgotPhase.Countdown, ForgotPhase.Code, ForgotPhase.Outro
             ),
             events.map { it.phase }
         )
@@ -52,12 +53,18 @@ class ForgotTest {
     }
 
     @Test
-    fun drawingBuildsUpAcrossTheGuessesToTheWhole() {
+    fun drawingIsBegunOnTheFirstFrameAndBuildsUpToTheWhole() {
         val events = ForgotTimeline.build(script(guesses = 3)) { _, _ -> 500L }
+        val hook = events.first()
+        // never an empty board: a few strokes are on it from the start, and the hook draws it on to the first stop
+        assertTrue(hook.drawFrom > 0f)
+        assertTrue(hook.drawTo > hook.drawFrom)
         val draws = events.filter { it.phase == ForgotPhase.Draw }
-        assertEquals(0f, draws.first().drawFrom, 0f)
-        assertEquals(1f, draws.last().drawTo, 0f)
-        draws.zipWithNext().forEach { (a, b) -> assertEquals(a.drawTo, b.drawFrom, 0f) }
+        assertEquals(1f, events.filter { it.phase == ForgotPhase.Guess }.last().drawTo, 0f)
+        // one stretch of drawing between each pair of guesses, each starting where the last guess stopped
+        assertEquals(2, draws.size)
+        assertEquals(hook.drawTo, events.filter { it.phase == ForgotPhase.Guess }.first().drawTo, 0f)
+        draws.zip(events.filter { it.phase == ForgotPhase.Guess }.dropLast(1)).forEach { (draw, before) -> assertEquals(before.drawTo, draw.drawFrom, 0f) }
     }
 
     @Test
@@ -65,8 +72,11 @@ class ForgotTest {
         val events = ForgotTimeline.build(script(guesses = 3).copy(guessAt = listOf(0.2f, 0.6f, 1f))) { _, _ -> 500L }
         assertEquals(listOf(0.2f, 0.6f, 1f), events.filter { it.phase == ForgotPhase.Guess }.map { it.drawTo })
         val draws = events.filter { it.phase == ForgotPhase.Draw }
-        assertEquals(listOf(0f, 0.2f, 0.6f), draws.map { it.drawFrom })
-        assertEquals(listOf(0.2f, 0.6f, 1f), draws.map { it.drawTo })
+        assertEquals(listOf(0.2f, 0.6f), draws.map { it.drawFrom })
+        assertEquals(listOf(0.6f, 1f), draws.map { it.drawTo })
+        // the hook draws it from the first frame (a few strokes) to the first stop
+        assertEquals(0.08f, events.first().drawFrom, 0f)
+        assertEquals(0.2f, events.first().drawTo, 0f)
     }
 
     @Test
@@ -86,6 +96,20 @@ class ForgotTest {
     }
 
     @Test
+    fun aStopMovedByTheBarStaysBetweenItsNeighbours() {
+        val stops = listOf(0.3f, 0.6f, 1f)
+        assertEquals(listOf(0.3f, 0.45f, 1f), ForgotTimeline.moveStop(stops, 1, 0.45f))
+        // dragged past the next one or back before the one before: held a hundredth short of it
+        assertEquals(0.99f, ForgotTimeline.moveStop(stops, 1, 0.995f)[1], 1e-6f)
+        assertEquals(0.31f, ForgotTimeline.moveStop(stops, 1, 0.1f)[1], 1e-6f)
+        // the first may not go before the start, the last not past the whole
+        assertEquals(ForgotTimeline.MIN_STOP, ForgotTimeline.moveStop(stops, 0, -3f)[0], 0f)
+        assertEquals(1f, ForgotTimeline.moveStop(stops, 2, 7f)[2], 0f)
+        // an index that is not there changes nothing
+        assertEquals(stops, ForgotTimeline.moveStop(stops, 5, 0.5f))
+    }
+
+    @Test
     fun theScriptReadsItsStopsToTheNumberOfGuesses() {
         assertEquals(listOf(0.2f, 0.5f, 1f), script(guesses = 3).copy(guessAt = listOf(0.2f, 0.5f, 1f)).stops)
         // fewer guesses than stops set: the extra ones are not used
@@ -100,9 +124,32 @@ class ForgotTest {
         assertTrue(prompt.contains("Görsel 3: çizimin %100'i"))
         assertTrue(prompt.contains("Görsel 4: bitmiş çizim"))
         assertTrue(prompt.contains("tam 3 tahmin"))
+        assertTrue(prompt.contains("EN FAZLA ${ForgotCopy.GUESS_WORDS} kelime"))
+        assertTrue(prompt.contains("EN FAZLA ${ForgotCopy.HOOK_WORDS} kelime"))
+        assertFalse(prompt.contains("reaction"))
         assertTrue(prompt.contains("\"şemsiye\" kelimesi"))
         assertFalse(prompt.contains("@@PICTURES@@"))
         assertTrue(prompt.contains("neutral, thinking"))
+    }
+
+    @Test
+    fun theStockVideoWithItsEndCardRunsUnderTwentySeconds() {
+        val stock = script(guesses = ForgotCopy.DEFAULT_GUESSES).copy(
+            hook = line(ForgotCopy.HOOK), guesses = ForgotCopy.placeholderGuesses().take(ForgotCopy.DEFAULT_GUESSES),
+            codeLine = line(ForgotCopy.CODE_WORD), outro = line(ForgotCopy.OUTRO)
+        )
+        // voices at the pace the preview assumes, and the how-to video that plays in the end card (6.3 s)
+        val events = ForgotTimeline.build(stock, howtoMs = 6_300L) { _, l -> StudioCopy.estimateMs(l.text) }
+        val total = ForgotTimeline.totalMs(events)
+        assertTrue("took $total ms", total <= 20_000L)
+        // and it was around 30 s before the cuts
+        assertTrue("took $total ms", total >= 12_000L)
+    }
+
+    @Test
+    fun twoGuessesIsTheDefault() {
+        assertEquals(2, ForgotCopy.DEFAULT_GUESSES)
+        assertEquals(listOf(0.5f, 1f), ForgotTimeline.stopsFor(ForgotCopy.DEFAULT_GUESSES, emptyList()))
     }
 
     @Test
@@ -138,7 +185,6 @@ class ForgotTest {
     fun theAssistantsLinesAreReadAndTheLeakingOnesDropped() {
         val text = """```json
             {"guesses":[{"emotion":"thinking","line":"Mantar mı bu?"},{"emotion":"excited","line":"Şemsiye bu!"},{"emotion":"confident","line":"Denizanası!"}],
-             "reaction":{"emotion":"laughing","line":"Ben de öyle sanmıştım!"},
              "hook":{"emotion":"shocked","line":"Çizen şemsiye dedi"},
              "outro":{"emotion":"wave","line":"Yarın görüşürüz, karalak.com"},
              "caption":"Sen bilebilir misin?","hashtags":"#karalak #çizim"}```"""
@@ -146,7 +192,6 @@ class ForgotTest {
         assertNotNull(w)
         assertEquals(listOf("Mantar mı bu?", "Denizanası!"), w!!.guesses.map { it.text })
         assertEquals(MascotEmotion.Thinking, w.guesses.first().emotion)
-        assertEquals("Ben de öyle sanmıştım!", w.reaction?.text)
         // the hook said the word: dropped, the stock one stays
         assertNull(w.hook)
         assertEquals("Yarın görüşürüz, karalak.com", w.outro?.text)
@@ -162,7 +207,7 @@ class ForgotTest {
 
     @Test
     fun noGuessesIsNotAnAnswer() {
-        assertNull(ForgotCopy.parse("""{"reaction":{"line":"x"}}""", "kedi"))
+        assertNull(ForgotCopy.parse("""{"hook":{"line":"x"}}""", "kedi"))
         assertNull(ForgotCopy.parse("not json", "kedi"))
     }
 
@@ -182,8 +227,9 @@ class ForgotTest {
     @Test
     fun defaultLinesNameTheModes() {
         assertTrue(ForgotCopy.codeLineFor(ForgotMode.Word).contains("cevap"))
-        assertTrue(ForgotCopy.codeLineFor(ForgotMode.Shown).contains("kodun"))
-        assertTrue(ForgotCopy.REACTION.isNotBlank())
+        assertTrue(ForgotCopy.codeLineFor(ForgotMode.Shown).contains("Ayarlar"))
+        // the reaction and the code are one line
+        assertTrue(ForgotCopy.codeLineFor(ForgotMode.Word).startsWith("Bilemedin mi?"))
     }
 
     @Test
