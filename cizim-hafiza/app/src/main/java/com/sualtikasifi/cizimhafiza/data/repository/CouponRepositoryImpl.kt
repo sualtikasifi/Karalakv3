@@ -52,6 +52,12 @@ class CouponRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun find(code: String): Result<Coupon?> = runCatching {
+        requireUid()
+        val snapshot = coupons.document(code).get().await()
+        if (snapshot.exists()) snapshot.toCoupon() else null
+    }
+
     override suspend fun create(coupon: Coupon): Result<Unit> = runCatching {
         requireUid()
         coupons.document(coupon.code).set(

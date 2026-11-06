@@ -48,6 +48,15 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemorySam
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemoryScript
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemorySource
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.memory.MemoryWordStat
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotCopy
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotDirector
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotRenderer
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotReward
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotScript
+import com.sualtikasifi.cizimhafiza.domain.model.Coupon
+import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
+import com.sualtikasifi.cizimhafiza.domain.repository.CouponRepository
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipAudio
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipFrames
@@ -102,6 +111,7 @@ import javax.inject.Inject
 enum class StudioFormat(val title: String, val blurb: String) {
     Guess("Karalak Bilir mi?", "Karalak çizimleri canlı izleyip tahmin ediyor"),
     Memory("Hafıza Tuzağı", "Çizenlerin çoğu kendi çizimini tanıyamadı"),
+    Forgot("Çizen Bile Bilemedi", "Çizenin bile tanıyamadığı çizim; doğru cevap kupon kodu"),
     RealLife("Gerçek Olsaydı", "Çizimler gerçek hayata dönüşüyor")
 }
 
@@ -153,7 +163,30 @@ sealed interface LineRef {
     data object MemoryParadox : LineRef
     data object MemoryOutro : LineRef
     data class MemoryPickLine(val pick: Int) : LineRef
+    data object ForgotHook : LineRef
+    data class ForgotGuess(val index: Int) : LineRef
+    data object ForgotReaction : LineRef
+    data object ForgotCode : LineRef
+    data object ForgotOutro : LineRef
 }
+
+/** "Çizen Bile Bilemedi": the chosen drawing, what its drawer wrote, how the code is given, what it gives, and the script. */
+data class ForgotUi(
+    val drawingId: Long? = null,
+    /** What the drawer wrote when they could not recognise it; typed by hand when the phone did not keep it. */
+    val drawerAnswer: String = "",
+    val script: ForgotScript? = null,
+    val mode: ForgotMode = ForgotMode.Word,
+    val reward: ForgotReward = ForgotReward.Gold,
+    val maxUses: Int = 100,
+    val hours: Int = 48,
+    /** The code written out on the end card in [ForgotMode.Shown]; a fresh one on demand. */
+    val shownCode: String = CouponCodes.generate(),
+    val writing: Boolean = false,
+    val writeError: String? = null,
+    val couponBusy: Boolean = false,
+    val couponStatus: String? = null
+)
 
 /** "Hafıza Tuzağı": the archive's numbers, the chosen word, its kept drawings, the picks and the script. */
 data class MemoryUi(
@@ -284,6 +317,7 @@ data class StudioState(
     val renderError: String? = null,
     val message: String? = null,
     val memory: MemoryUi = MemoryUi(),
+    val forgot: ForgotUi = ForgotUi(),
     val real: RealUi = RealUi()
 ) {
     /** The language the videos are written and spoken in. */
@@ -296,6 +330,7 @@ data class StudioState(
     val ready: Boolean get() = !rendering && when (format) {
         StudioFormat.Guess -> script != null
         StudioFormat.Memory -> memory.script?.picks?.isNotEmpty() == true
+        StudioFormat.Forgot -> forgot.script != null
         StudioFormat.RealLife -> real.project?.shown?.isNotEmpty() == true
     }
 }
@@ -325,7 +360,8 @@ class StudioViewModel @Inject constructor(
     private val auth: AuthRepository,
     private val wordDao: WordDao,
     private val moderation: ModerationRepository,
-    private val archive: MemoryArchive
+    private val archive: MemoryArchive,
+    private val couponRepository: CouponRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(StudioState())
     val state: StateFlow<StudioState> = _state.asStateFlow()
@@ -613,6 +649,18 @@ class StudioViewModel @Inject constructor(
 
     private fun updateLine(ref: LineRef, change: (SpokenLine) -> SpokenLine) {
         _state.update { s ->
+            if (ref is LineRef.ForgotHook || ref is LineRef.ForgotGuess || ref is LineRef.ForgotReaction || ref is LineRef.ForgotCode || ref is LineRef.ForgotOutro) {
+                val fs = s.forgot.script ?: return@update s
+                val next = when (ref) {
+                    LineRef.ForgotHook -> fs.copy(hook = change(fs.hook))
+                    is LineRef.ForgotGuess -> fs.copy(guesses = fs.guesses.mapIndexed { i, l -> if (i == ref.index) change(l) else l })
+                    LineRef.ForgotReaction -> fs.copy(reaction = change(fs.reaction))
+                    LineRef.ForgotCode -> fs.copy(codeLine = change(fs.codeLine))
+                    LineRef.ForgotOutro -> fs.copy(outro = change(fs.outro))
+                    else -> fs
+                }
+                return@update s.copy(forgot = s.forgot.copy(script = next), video = null)
+            }
             if (ref is LineRef.MemoryHook || ref is LineRef.MemoryParadox || ref is LineRef.MemoryOutro || ref is LineRef.MemoryPickLine) {
                 val ms = s.memory.script ?: return@update s
                 val nextMemory = when (ref) {
@@ -769,6 +817,140 @@ class StudioViewModel @Inject constructor(
         }
     }
 
+
+    // ---- Çizen Bile Bilemedi
+
+    private fun updateForgot(change: (ForgotUi) -> ForgotUi) = _state.update { it.copy(forgot = change(it.forgot)) }
+
+    /** The script for [d] with the panel's choices; the lines of [previous] are kept (the code line follows the mode). */
+    private fun buildForgot(d: StudioDrawing, ui: ForgotUi, previous: ForgotScript?): ForgotScript {
+        val other = ForgotCopy.codeLineFor(if (ui.mode == ForgotMode.Word) ForgotMode.Shown else ForgotMode.Word)
+        val answer = ui.drawerAnswer.trim().ifBlank { "…" }
+        return ForgotScript(
+            drawingId = d.id, word = d.word, drawerAnswer = ui.drawerAnswer.trim(),
+            hook = previous?.hook ?: SpokenLine(ForgotCopy.HOOK, MascotEmotion.Shocked),
+            guesses = previous?.guesses ?: ForgotCopy.placeholderGuesses(),
+            reaction = previous?.reaction ?: SpokenLine(ForgotCopy.reactionText(answer), MascotEmotion.Laughing),
+            codeLine = previous?.codeLine?.takeIf { it.text != other } ?: SpokenLine(ForgotCopy.codeLineFor(ui.mode), MascotEmotion.Point),
+            outro = previous?.outro ?: SpokenLine(ForgotCopy.OUTRO, MascotEmotion.Wave),
+            mode = ui.mode,
+            reward = ForgotCopy.rewardLabel(ui.reward.gold, ui.reward.xp, ui.reward.chests),
+            code = if (ui.mode == ForgotMode.Word) ForgotCopy.wordCode(d.word).orEmpty() else ui.shownCode,
+            percent = previous?.percent ?: ForgotCopy.randomPercent(),
+            showPercent = previous?.showPercent ?: false
+        )
+    }
+
+    /** Takes a drawing (one this phone kept; only they carry what the drawer wrote) and makes a first script around it. */
+    fun selectForgot(d: StudioDrawing) {
+        _state.update { s ->
+            val ui = s.forgot.copy(drawingId = d.id, drawerAnswer = d.answer.trim(), writeError = null, couponStatus = null)
+            s.copy(forgot = ui.copy(script = buildForgot(d, ui, null)), video = null, previewMs = 0L, renderError = null)
+        }
+        refreshPreview()
+    }
+
+    /** Applies a change to the panel's choices and rebuilds the script around them, keeping its lines. */
+    private fun rebuildForgot(change: (ForgotUi) -> ForgotUi) {
+        _state.update { s ->
+            val ui = change(s.forgot).copy(couponStatus = null)
+            val d = s.drawings.find { it.id == ui.drawingId }
+            s.copy(forgot = ui.copy(script = if (d != null && ui.script != null) buildForgot(d, ui, ui.script) else ui.script), video = null)
+        }
+        refreshPreview()
+    }
+
+    fun setForgotMode(mode: ForgotMode) = rebuildForgot { it.copy(mode = mode) }
+    fun setForgotReward(reward: ForgotReward) = rebuildForgot { it.copy(reward = reward) }
+    fun setForgotUses(n: Int) = updateForgot { it.copy(maxUses = n, couponStatus = null) }
+    fun setForgotHours(h: Int) = updateForgot { it.copy(hours = h, couponStatus = null) }
+    fun newForgotCode() = rebuildForgot { it.copy(shownCode = CouponCodes.generate()) }
+
+    /** The drawer's answer is edited: the stock reaction line follows it, one the person or the assistant wrote stays. */
+    fun setForgotAnswer(text: String) {
+        _state.update { s ->
+            val old = s.forgot
+            val script = old.script
+            val stock = script != null && script.reaction.text == ForgotCopy.reactionText(old.drawerAnswer.trim().ifBlank { "…" })
+            val ui = old.copy(
+                drawerAnswer = text,
+                script = script?.copy(
+                    drawerAnswer = text.trim(),
+                    reaction = if (stock) script.reaction.copy(text = ForgotCopy.reactionText(text.trim().ifBlank { "…" })) else script.reaction
+                )
+            )
+            s.copy(forgot = ui, video = null)
+        }
+        refreshPreview()
+    }
+
+    fun setForgotShowPercent(on: Boolean) = editForgotScript { it.copy(showPercent = on) }
+    fun stepForgotPercent(delta: Int) = editForgotScript { it.copy(percent = (it.percent + delta).coerceIn(1, 99)) }
+
+    private fun editForgotScript(change: (ForgotScript) -> ForgotScript) {
+        _state.update { s ->
+            val sc = s.forgot.script ?: return@update s
+            s.copy(forgot = s.forgot.copy(script = change(sc)), video = null)
+        }
+        refreshPreview()
+    }
+
+    /** Lets the assistant look at the drawing and write Karalak's guesses, reaction, hook and closing, and the post text. */
+    fun writeForgot() {
+        val s = _state.value
+        val d = s.drawings.find { it.id == s.forgot.drawingId } ?: return
+        if (s.forgot.writing) return
+        val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
+        if (key.isBlank()) { updateForgot { it.copy(writeError = "Önce Asistan ayarlarından OpenRouter anahtarını gir.") }; return }
+        val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
+        updateForgot { it.copy(writing = true, writeError = null) }
+        viewModelScope.launch {
+            ForgotDirector(OpenRouterClient(key), model, _state.value.lang).write(d.copy(answer = s.forgot.drawerAnswer.trim().ifBlank { "…" })).onSuccess { w ->
+                _state.update { st ->
+                    val cur = st.forgot.script ?: return@update st.copy(forgot = st.forgot.copy(writing = false))
+                    val c = w.lines
+                    st.copy(
+                        forgot = st.forgot.copy(
+                            writing = false,
+                            script = cur.copy(hook = c.hook ?: cur.hook, guesses = c.guesses, reaction = c.reaction ?: cur.reaction, outro = c.outro ?: cur.outro)
+                        ),
+                        caption = c.caption.ifBlank { st.caption }, hashtags = c.hashtags.ifBlank { st.hashtags },
+                        aiCost = w.costUsd, video = null
+                    )
+                }
+                refreshPreview()
+            }.onFailure { e -> updateForgot { it.copy(writing = false, writeError = e.message ?: "Yazılamadı") } }
+        }
+    }
+
+    /** Creates the video's kupon kodu in Firestore, never over an existing code (its use count would start again). */
+    fun createForgotCoupon() {
+        val ui = _state.value.forgot
+        val script = ui.script ?: return
+        if (ui.couponBusy) return
+        val code = CouponCodes.normalize(script.code)
+        if (code == null) {
+            updateForgot { it.copy(couponStatus = "Bu kelime kod olamaz: 4–24 harf olmalı. “Kod ekranda”yı dene.") }
+            return
+        }
+        updateForgot { it.copy(couponBusy = true, couponStatus = null) }
+        viewModelScope.launch {
+            val status = couponRepository.find(code).fold(
+                onSuccess = { existing ->
+                    if (existing != null) "$code zaten var (${existing.usedCount}/${existing.maxUses} kullanıldı). Başka kelime ya da yeni kod seç."
+                    else {
+                        val coupon = Coupon(code, ui.reward.gold, ui.reward.xp, ui.reward.chests, ui.maxUses, 0, System.currentTimeMillis() + ui.hours * 3_600_000L)
+                        couponRepository.create(coupon).fold(
+                            onSuccess = { "Kupon hazır: $code · ilk ${ui.maxUses} kişi · ${ui.hours} saat · ${script.reward}" },
+                            onFailure = { e -> "Kupon oluşturulamadı: ${e.message}" }
+                        )
+                    }
+                },
+                onFailure = { e -> "Kupon kontrol edilemedi: ${e.message}" }
+            )
+            updateForgot { it.copy(couponBusy = false, couponStatus = status) }
+        }
+    }
 
     // ---- Gerçek Olsaydı
 
@@ -1965,6 +2147,11 @@ class StudioViewModel @Inject constructor(
                 val mosaic = s.memory.samples.filter { !it.correct && it.id !in pickedIds } + s.memory.samples.filter { !it.correct && it.id in pickedIds }
                 MemoryRenderer(assetsOrLoad(), sp, script, s.memory.samples.associateBy { it.id }, mosaic.take(9), voice, wordTimes)
             }
+            StudioFormat.Forgot -> {
+                val script = s.forgot.script ?: return null
+                val drawing = s.drawings.find { it.id == script.drawingId } ?: return null
+                ForgotRenderer(assetsOrLoad(), sp, script, drawing, voice, wordTimes)
+            }
             StudioFormat.RealLife -> null
         }
     }
@@ -1973,6 +2160,7 @@ class StudioViewModel @Inject constructor(
     private fun linesFor(s: StudioState): List<SpokenLine>? = when (s.format) {
         StudioFormat.Guess -> s.script?.lines()
         StudioFormat.Memory -> s.memory.script?.lines()
+        StudioFormat.Forgot -> s.forgot.script?.lines()
         // the video has no voice, no subtitles: nothing to say
         StudioFormat.RealLife -> emptyList()
     }

@@ -10,6 +10,9 @@ interface CouponRepository {
      */
     suspend fun redeem(rawCode: String): RedeemResult
 
+    /** The code as it stands (with how often it has been used), or null when there is none: to not replace one by mistake. */
+    suspend fun find(code: String): Result<Coupon?>
+
     /** Developer panel only (the rules allow nobody else): creates or replaces a code. */
     suspend fun create(coupon: Coupon): Result<Unit>
 

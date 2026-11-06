@@ -1,5 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotReward
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -206,6 +208,7 @@ fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
         when (st.format) {
             StudioFormat.Guess -> { guessSections(st, viewModel); sharedSections(st, viewModel, context) }
             StudioFormat.Memory -> { memorySections(st, viewModel); sharedSections(st, viewModel, context) }
+            StudioFormat.Forgot -> { forgotSections(st, viewModel); sharedSections(st, viewModel, context) }
             StudioFormat.RealLife -> realSections(st, viewModel, context)
         }
     }
@@ -415,6 +418,145 @@ private fun LazyListScope.memorySections(st: StudioState, vm: StudioViewModel) {
                 Text("Kapanış", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
                 LineEditor(script.outro, { vm.editLine(LineRef.MemoryOutro, it) }, { vm.editEmotion(LineRef.MemoryOutro, it) }) { vm.listen(script.outro) }
             }
+        }
+    }
+}
+
+/** "Çizen Bile Bilemedi": a drawing its own drawer could not recognise, how the code is given, and Karalak's lines. */
+private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
+    val f = st.forgot
+    // 1. the drawing: this phone's own, the ones the drawer got wrong first (only these carry what the drawer wrote)
+    item { Step("1", "Çizim", if (f.drawingId != null) "seçili" else "birini seç") }
+    item {
+        Text(
+            "Kendi çizimini tanıyamadığın turlardan biri. Çizenin yazdığı cevap telefonda kayıtlıysa gelir; yoksa aşağıya elle yaz.",
+            style = Console.Small
+        )
+    }
+    val pool = st.drawings.sortedBy { it.correct }
+    when {
+        st.loading -> item { Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Console.Accent) } }
+        pool.isEmpty() -> item { ConsoleCard(Modifier.fillMaxWidth()) { Text("Bu telefonda kayıtlı çizim yok. Birkaç tur oyna, sonra buraya dön.", style = Console.Small) } }
+        else -> pool.take(90).chunked(3).forEach { row ->
+            item(key = "fg-" + row.first().id) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    row.forEach { d -> Thumb(d, if (f.drawingId == d.id) 0 else -1, Modifier.weight(1f)) { vm.selectForgot(d) } }
+                    repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
+    }
+    val script = f.script ?: return
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Text("Doğru kelime: ${script.word.uppercase(Locale("tr"))}", style = Console.Subtitle)
+            Spacer(Modifier.height(6.dp))
+            Text("Çizenin yazdığı", style = Console.Label)
+            Field(null, f.drawerAnswer, vm::setForgotAnswer)
+            if (f.drawerAnswer.isBlank()) Text("Boş kalırsa videoda “…” görünür; komik bir cevap yazmak videoyu güçlendirir.", style = Console.Small)
+        }
+    }
+
+    // 2. the code
+    item { Step("2", "Kupon kodu") }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Segmented(
+                options = ForgotMode.entries.map { it.name to it.title },
+                selected = f.mode.name,
+                onSelect = { vm.setForgotMode(ForgotMode.valueOf(it)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                if (f.mode == ForgotMode.Word) "Kod, doğru cevabın kendisi. Videoda yalnızca harf sayısı kadar boş kutu görünür; bilen girer, bilmeyen yorumlardan öğrenir."
+                else "Kod bitiş kartında yazılır.",
+                style = Console.Small, modifier = Modifier.padding(top = 6.dp)
+            )
+            Text(
+                if (script.code.isBlank()) "Bu kelime kod olamaz (4–24 harf): “Kod ekranda”yı seç." else "Kod: ${script.code}",
+                style = Console.Subtitle.copy(color = if (script.code.isBlank()) Console.Critical else Console.Ink), modifier = Modifier.padding(top = 6.dp)
+            )
+            if (f.mode == ForgotMode.Shown) {
+                ActionButton(Icons.Filled.Refresh, "Yeni kod", Console.Surface, Console.Ink, Modifier.padding(top = 6.dp)) { vm.newForgotCode() }
+            }
+            Text("Ödül", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
+            Segmented(
+                options = ForgotReward.entries.map { it.name to it.title },
+                selected = f.reward.name,
+                onSelect = { vm.setForgotReward(ForgotReward.valueOf(it)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text("Kaç kişi kullanabilsin", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
+            Segmented(
+                options = listOf(50, 100, 250, 1000).map { it.toString() to it.toString() },
+                selected = f.maxUses.toString(),
+                onSelect = { vm.setForgotUses(it.toInt()) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text("Kaç saat geçerli", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
+            Segmented(
+                options = listOf(24, 48, 72).map { it.toString() to "$it sa" },
+                selected = f.hours.toString(),
+                onSelect = { vm.setForgotHours(it.toInt()) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(10.dp))
+            DarkButton(
+                text = if (f.couponBusy) "Oluşturuluyor…" else "Kuponu oluştur",
+                busy = f.couponBusy,
+                enabled = !f.couponBusy && script.code.isNotBlank()
+            ) { vm.createForgotCoupon() }
+            Text("Videoyu paylaşmadan önce kuponu oluştur. Aynı kod varsa üzerine yazılmaz.", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
+            f.couponStatus?.let { Text(it, style = Console.Small.copy(color = if (it.startsWith("Kupon hazır")) Console.Ink else Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
+        }
+    }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("“%${script.percent} tanıyamadı” göster", style = Console.Subtitle)
+                    Text("Elle girilen bir değer: gerçek ölçüm değil. Yayında gerçeğe yakın tut.", style = Console.Small)
+                }
+                Switch(checked = script.showPercent, onCheckedChange = vm::setForgotShowPercent, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
+            }
+            if (script.showPercent) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+                    StepButton("−") { vm.stepForgotPercent(-1) }
+                    Text("%${script.percent}", style = Console.Subtitle, modifier = Modifier.padding(horizontal = 16.dp))
+                    StepButton("+") { vm.stepForgotPercent(1) }
+                }
+            }
+        }
+    }
+
+    // 3. Karalak's lines
+    item { Step("3", "Karalak'ın senaryosu") }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            DarkButton(
+                text = if (f.writing) "Karalak yazıyor…" else "Karalak çizime baksın",
+                busy = f.writing,
+                enabled = !f.writing
+            ) { vm.writeForgot() }
+            Text("Çizime bakıp yanlış ama komik tahminler yazar; doğru kelimeyi söyleyen cümleler atılır.", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
+            st.aiCost?.let { Text("Bu yazımın maliyeti: " + OpenRouterClient.usd(it), style = Console.Small) }
+            f.writeError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
+        }
+    }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Text("Açılış", style = Console.Label)
+            LineEditor(script.hook, { vm.editLine(LineRef.ForgotHook, it) }, { vm.editEmotion(LineRef.ForgotHook, it) }) { vm.listen(script.hook) }
+            script.guesses.forEachIndexed { i, l ->
+                Text("Tahmin ${i + 1}", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+                LineEditor(l, { vm.editLine(LineRef.ForgotGuess(i), it) }, { vm.editEmotion(LineRef.ForgotGuess(i), it) }) { vm.listen(l) }
+            }
+            Text("Çizenin cevabına tepki", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+            LineEditor(script.reaction, { vm.editLine(LineRef.ForgotReaction, it) }, { vm.editEmotion(LineRef.ForgotReaction, it) }) { vm.listen(script.reaction) }
+            Text("Kod anı", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+            LineEditor(script.codeLine, { vm.editLine(LineRef.ForgotCode, it) }, { vm.editEmotion(LineRef.ForgotCode, it) }) { vm.listen(script.codeLine) }
+            Text("Kapanış", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+            LineEditor(script.outro, { vm.editLine(LineRef.ForgotOutro, it) }, { vm.editEmotion(LineRef.ForgotOutro, it) }) { vm.listen(script.outro) }
         }
     }
 }
@@ -1536,6 +1678,7 @@ private fun PreviewCard(st: StudioState, vm: StudioViewModel) {
                 when (st.format) {
                     StudioFormat.Guess -> "Önizleme için en az bir çizim seç."
                     StudioFormat.RealLife -> "Önizleme için çizim seç ve Gemini videosunu yükle."
+                    StudioFormat.Forgot -> "Önizleme için kendi çizimini tanıyamadığın bir çizim seç."
                     else -> "Önizleme için bir kelime seç."
                 },
                 style = Console.Small
