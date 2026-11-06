@@ -96,6 +96,20 @@ class ForgotTest {
     }
 
     @Test
+    fun aStopMovedByTheBarStaysBetweenItsNeighbours() {
+        val stops = listOf(0.3f, 0.6f, 1f)
+        assertEquals(listOf(0.3f, 0.45f, 1f), ForgotTimeline.moveStop(stops, 1, 0.45f))
+        // dragged past the next one or back before the one before: held a hundredth short of it
+        assertEquals(0.99f, ForgotTimeline.moveStop(stops, 1, 0.995f)[1], 1e-6f)
+        assertEquals(0.31f, ForgotTimeline.moveStop(stops, 1, 0.1f)[1], 1e-6f)
+        // the first may not go before the start, the last not past the whole
+        assertEquals(ForgotTimeline.MIN_STOP, ForgotTimeline.moveStop(stops, 0, -3f)[0], 0f)
+        assertEquals(1f, ForgotTimeline.moveStop(stops, 2, 7f)[2], 0f)
+        // an index that is not there changes nothing
+        assertEquals(stops, ForgotTimeline.moveStop(stops, 5, 0.5f))
+    }
+
+    @Test
     fun theScriptReadsItsStopsToTheNumberOfGuesses() {
         assertEquals(listOf(0.2f, 0.5f, 1f), script(guesses = 3).copy(guessAt = listOf(0.2f, 0.5f, 1f)).stops)
         // fewer guesses than stops set: the extra ones are not used

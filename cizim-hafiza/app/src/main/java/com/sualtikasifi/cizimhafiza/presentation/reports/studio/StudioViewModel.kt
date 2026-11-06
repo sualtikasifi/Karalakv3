@@ -463,14 +463,15 @@ class StudioViewModel @Inject constructor(
         sc.copy(guesses = List(count) { sc.guesses.getOrNull(it) ?: stock[it] }, guessAt = ForgotTimeline.stopsFor(count, emptyList()))
     }
 
-    /** Moves where guess [index] stops the drawing by [deltaPercent] points, between its neighbours' stops. */
-    fun stepForgotStop(index: Int, deltaPercent: Int) = editForgotScript { sc ->
-        val stops = sc.stops.toMutableList()
-        if (index !in stops.indices) return@editForgotScript sc
-        val low = if (index == 0) ForgotTimeline.MIN_STOP else stops[index - 1] + 0.01f
-        val high = if (index == stops.lastIndex) 1f else stops[index + 1] - 0.01f
-        stops[index] = (stops[index] + deltaPercent / 100f).coerceIn(low, high.coerceAtLeast(low))
-        sc.copy(guessAt = stops)
+    /** Sets where guess [index] stops the drawing (0 to 1), held between its neighbours' stops: what the panel's bar drags. */
+    fun setForgotStop(index: Int, share: Float) = editForgotScript { sc ->
+        sc.copy(guessAt = ForgotTimeline.moveStop(sc.stops, index, share))
+    }
+
+    /** Moves where guess [index] stops the drawing by [deltaPercent] points, for the fine nudge beside the bar. */
+    fun stepForgotStop(index: Int, deltaPercent: Int) {
+        val now = _state.value.forgot.script?.stops?.getOrNull(index) ?: return
+        setForgotStop(index, now + deltaPercent / 100f)
     }
 
     fun setForgotShowPercent(on: Boolean) = editForgotScript { it.copy(showPercent = on) }

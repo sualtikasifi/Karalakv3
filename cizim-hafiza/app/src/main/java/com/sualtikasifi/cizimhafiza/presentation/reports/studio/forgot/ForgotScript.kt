@@ -153,6 +153,14 @@ object ForgotTimeline {
         }
     }
 
+    /** [stops] with guess [index] moved to [wanted], held between the stops on either side of it (a hundredth apart) and the paper's ends. */
+    fun moveStop(stops: List<Float>, index: Int, wanted: Float): List<Float> {
+        if (index !in stops.indices) return stops
+        val low = if (index == 0) MIN_STOP else stops[index - 1] + 0.01f
+        val high = if (index == stops.lastIndex) 1f else stops[index + 1] - 0.01f
+        return stops.toMutableList().also { it[index] = wanted.coerceIn(low, high.coerceAtLeast(low)) }
+    }
+
     fun at(events: List<ForgotEvent>, t: Long): ForgotEvent = events.firstOrNull { t < it.endMs } ?: events.last()
 
     fun totalMs(events: List<ForgotEvent>): Long = events.lastOrNull()?.endMs ?: 0L

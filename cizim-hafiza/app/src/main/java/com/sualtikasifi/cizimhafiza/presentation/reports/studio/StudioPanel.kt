@@ -19,6 +19,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -347,11 +349,12 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
             )
             script.guesses.forEachIndexed { i, l ->
                 Text("Tahmin ${i + 1}", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-                    StepButton("−") { vm.stepForgotStop(i, -1) }
-                    Text("çizimin %${ForgotCopy.percent(script.stops[i])}'inde", style = Console.Subtitle, modifier = Modifier.padding(horizontal = 12.dp))
-                    StepButton("+") { vm.stepForgotStop(i, 1) }
-                }
+                StopScrubber(
+                    strokes = st.drawings.find { it.id == script.drawingId }?.strokes.orEmpty(),
+                    share = script.stops[i],
+                    onChange = { vm.setForgotStop(i, it) },
+                    onNudge = { vm.stepForgotStop(i, it) }
+                )
                 LineEditor(l, { vm.editLine(LineRef.ForgotGuess(i), it) }, { vm.editEmotion(LineRef.ForgotGuess(i), it) }) { vm.listen(l) }
             }
             Text("Tepki ve kod anı (tek cümle)", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
@@ -364,6 +367,44 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
 
 /** The digits of what was typed in a number field as a number (nothing typed: 0), at most eight of them. */
 private fun String.digitsToInt(): Int = filter { it.isDigit() }.take(8).toIntOrNull() ?: 0
+
+/**
+ * Where a guess stops the drawing, picked by looking: the drawing as it is at [share] sits on the left, and dragging the bar
+ * grows or shrinks it, so the scene Karalak reacts to is chosen from the picture, never from a number. − and + nudge it a
+ * hundredth for the last bit.
+ */
+@Composable
+private fun StopScrubber(strokes: List<com.sualtikasifi.cizimhafiza.domain.model.DrawingStroke>, share: Float, onChange: (Float) -> Unit, onNudge: (Int) -> Unit) {
+    // one picture per hundredth, made again only when the share moves to another
+    val step = (share * 100f).let { kotlin.math.round(it).toInt() }
+    val picture = remember(strokes, step) {
+        if (strokes.isEmpty()) null
+        else runCatching {
+            val png = com.sualtikasifi.cizimhafiza.presentation.reports.studio.StrokeReplay.png(strokes, step / 100f, 288)
+            android.graphics.BitmapFactory.decodeByteArray(png, 0, png.size)?.asImageBitmap()
+        }.getOrNull()
+    }
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Box(Modifier.size(132.dp).clip(RoundedCornerShape(12.dp)).background(Color.White).border(1.dp, Console.Border, RoundedCornerShape(12.dp))) {
+            picture?.let { Image(it, contentDescription = "Çizimin bu andaki hâli", contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize()) }
+        }
+        Column(Modifier.weight(1f).padding(start = 12.dp)) {
+            Text("Çubuğu sürükle: soldaki çizim, Karalak'ın tahmin ettiği an", style = Console.Small)
+            Slider(
+                value = share,
+                onValueChange = onChange,
+                valueRange = ForgotTimeline.MIN_STOP..1f,
+                colors = SliderDefaults.colors(thumbColor = Console.Accent, activeTrackColor = Console.Accent),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                StepButton("−") { onNudge(-1) }
+                Text("%$step", style = Console.Label, modifier = Modifier.padding(horizontal = 12.dp))
+                StepButton("+") { onNudge(1) }
+            }
+        }
+    }
+}
 
 /** The date and time the code stops working, shown as one button: a tap picks the date, then the time (device time zone). */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
