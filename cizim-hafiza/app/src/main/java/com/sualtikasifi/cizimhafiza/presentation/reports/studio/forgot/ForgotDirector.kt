@@ -21,28 +21,20 @@ class ForgotDirector(private val client: OpenRouterClient, private val model: St
 
     class Written(val lines: ForgotCopy.Written, val costUsd: Double?)
 
-    suspend fun write(drawing: StudioDrawing, looks: Int = 3): Result<Written> = runCatching {
-        val image = withContext(Dispatchers.Default) { StrokeReplay.png(drawing.strokes, 1f, 512) }
-        val n = looks.coerceIn(1, ForgotTimeline.MAX_GUESSES)
-        val prompt = """
-            Sana bir oyuncunun çizimini gösteriyorum. Çizilmesi istenen kelime: "${drawing.word}".
-            Çizen kişi bir süre sonra kendi çizimini hatırlayamadı.
-
-            Video: Karalak çizimi canlı izliyor ve tahmin ediyor; izleyici de aynı anda tahmin edecek. Doğru cevap bir kupon kodu, o yüzden hiçbir cümlede "${drawing.word}" kelimesi (ya da kökü) geçmemeli.
-
-            1) "guesses": Karalak'ın çizim oluşurken söylediği $n tahmin. Her biri en fazla 8 kelime, çizimde gerçekten görünen bir şeye bakarak komik ve yanlış (ama makul) tahminler, sonuncusu en kendinden emini. Çizenle asla dalga geçme.
-            2) "reaction": geri sayım bittikten sonra Karalak'ın tepkisi, en fazla 10 kelime; izleyiciye "bildin mi?" diye takılsın, çizimdeki bir şeye değinebilir.
-            3) "hook": videonun ilk cümlesi; "çizen kişi bile bilemedi" fikrini söylesin ve izleyiciyi tahmine çağırsın, en fazla 12 kelime.
-            4) "outro": kapanış, yarın daha zorunun geleceğini söylesin, en fazla 14 kelime, "karalak.com" geçsin.
-            5) "caption": TikTok/Reels açıklaması (1–2 cümle, izleyiciye soruyla bitsin, doğru kelime geçmesin) ve "hashtags": 5–6 Türkçe ağırlıklı etiket.
-
-            Yalnızca şu JSON'u yaz:
-            {"guesses":[{"emotion":"…","line":"…"}],"reaction":{"emotion":"…","line":"…"},"hook":{"emotion":"…","line":"…"},"outro":{"emotion":"…","line":"…"},"caption":"…","hashtags":"…"}
-            emotion yalnızca şunlardan biri: ${MascotEmotion.entries.joinToString(", ") { it.key }}.
-        """.trimIndent()
+    /**
+     * Shows the assistant the drawing as it looks at each of [stops] (shares of it drawn), then whole, and has the lines
+     * written; each guess comes from its own picture. Model: whatever [client] is told to use (Sonnet 5.5 through OpenRouter).
+     */
+    suspend fun write(drawing: StudioDrawing, stops: List<Float>): Result<Written> = runCatching {
+        val n = stops.size.coerceIn(1, ForgotTimeline.MAX_GUESSES)
+        val shares = ForgotTimeline.stopsFor(n, stops)
+        val images = withContext(Dispatchers.Default) {
+            shares.map { StrokeReplay.png(drawing.strokes, it, 512) } + StrokeReplay.png(drawing.strokes, 1f, 512)
+        }
+        val prompt = ForgotCopy.guessPrompt(drawing.word, shares, MascotEmotion.entries.joinToString(", ") { it.key })
         val system = KaralakVoice.persona(JOB, lang)
         val answer = Backoff.retrying {
-            client.generate(system, prompt + KaralakVoice.promptNote(lang, "JSON anahtarları ve emotion değerleri"), model, webSearch = false, images = listOf(image), json = true, temperature = 0.9, maxTokens = 1200)
+            client.generate(system, prompt + KaralakVoice.promptNote(lang, "JSON anahtarları ve emotion değerleri"), model, webSearch = false, images = images, json = true, temperature = 0.9, maxTokens = 1200)
         }.getOrThrow()
         val parsed = ForgotCopy.parse(answer.text, drawing.word) ?: error("Cümleler okunamadı; tekrar dene.")
         fun SpokenLine?.fit(words: Int) = this?.copy(text = LineRules.fit(text, words))

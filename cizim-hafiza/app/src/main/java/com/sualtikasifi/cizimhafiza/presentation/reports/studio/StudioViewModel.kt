@@ -34,6 +34,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceSpec
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotSprites
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotCopy
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotTimeline
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotDirector
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotRenderer
@@ -416,6 +417,7 @@ class StudioViewModel @Inject constructor(
             drawingId = d.id, word = d.word,
             hook = previous?.hook ?: SpokenLine(ForgotCopy.HOOK, MascotEmotion.Shocked),
             guesses = previous?.guesses ?: ForgotCopy.placeholderGuesses(),
+            guessAt = previous?.guessAt ?: ForgotTimeline.stopsFor(ForgotCopy.placeholderGuesses().size, emptyList()),
             reaction = previous?.reaction ?: SpokenLine(ForgotCopy.REACTION, MascotEmotion.Laughing),
             codeLine = previous?.codeLine?.takeIf { it.text != other } ?: SpokenLine(ForgotCopy.codeLineFor(ui.mode), MascotEmotion.Point),
             outro = previous?.outro ?: SpokenLine(ForgotCopy.OUTRO, MascotEmotion.Wave),
@@ -457,6 +459,23 @@ class StudioViewModel @Inject constructor(
     fun setForgotExpiry(millis: Long) = updateForgot { it.copy(expiresAtMillis = millis, couponStatus = null) }
     fun newForgotCode() = rebuildForgot { it.copy(shownCode = CouponCodes.generate()) }
 
+    /** How many guesses Karalak makes (1 to 3); the stops are spread evenly again, and the lines already there stay. */
+    fun setForgotGuessCount(n: Int) = editForgotScript { sc ->
+        val count = n.coerceIn(1, ForgotTimeline.MAX_GUESSES)
+        val stock = ForgotCopy.placeholderGuesses()
+        sc.copy(guesses = List(count) { sc.guesses.getOrNull(it) ?: stock[it] }, guessAt = ForgotTimeline.stopsFor(count, emptyList()))
+    }
+
+    /** Moves where guess [index] stops the drawing by [deltaPercent] points, between its neighbours' stops. */
+    fun stepForgotStop(index: Int, deltaPercent: Int) = editForgotScript { sc ->
+        val stops = sc.stops.toMutableList()
+        if (index !in stops.indices) return@editForgotScript sc
+        val low = if (index == 0) ForgotTimeline.MIN_STOP else stops[index - 1] + 0.01f
+        val high = if (index == stops.lastIndex) 1f else stops[index + 1] - 0.01f
+        stops[index] = (stops[index] + deltaPercent / 100f).coerceIn(low, high.coerceAtLeast(low))
+        sc.copy(guessAt = stops)
+    }
+
     fun setForgotShowPercent(on: Boolean) = editForgotScript { it.copy(showPercent = on) }
     fun stepForgotPercent(delta: Int) = editForgotScript { it.copy(percent = (it.percent + delta).coerceIn(1, 99)) }
 
@@ -478,14 +497,19 @@ class StudioViewModel @Inject constructor(
         val model = analysisModel()
         updateForgot { it.copy(writing = true, writeError = null) }
         viewModelScope.launch {
-            ForgotDirector(OpenRouterClient(key), model, _state.value.lang).write(d).onSuccess { w ->
+            ForgotDirector(OpenRouterClient(key), model, _state.value.lang).write(d, s.forgot.script?.stops.orEmpty()).onSuccess { w ->
                 _state.update { st ->
                     val cur = st.forgot.script ?: return@update st.copy(forgot = st.forgot.copy(writing = false))
                     val c = w.lines
                     st.copy(
                         forgot = st.forgot.copy(
                             writing = false,
-                            script = cur.copy(hook = c.hook ?: cur.hook, guesses = c.guesses, reaction = c.reaction ?: cur.reaction, outro = c.outro ?: cur.outro)
+                            script = cur.copy(
+                                hook = c.hook ?: cur.hook,
+                                // one line per stop, the assistant's where it wrote one, else what was there
+                                guesses = List(cur.guesses.size) { k -> c.guesses.getOrNull(k) ?: cur.guesses[k] },
+                                reaction = c.reaction ?: cur.reaction, outro = c.outro ?: cur.outro
+                            )
                         ),
                         caption = c.caption.ifBlank { st.caption }, hashtags = c.hashtags.ifBlank { st.hashtags },
                         aiCost = w.costUsd, video = null

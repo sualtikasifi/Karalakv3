@@ -35,6 +35,11 @@ data class ForgotScript(
     val hook: SpokenLine,
     /** What Karalak thinks while the drawing builds up, one line per look (at most [ForgotTimeline.MAX_GUESSES]). */
     val guesses: List<SpokenLine>,
+    /**
+     * How much of the drawing is on the paper at each guess (0 to 1), set by hand, one per guess; what is missing is
+     * spread evenly (see [ForgotTimeline.stopsFor]). The assistant writes each guess from the drawing as far as this.
+     */
+    val guessAt: List<Float> = emptyList(),
     /** Its reaction once the countdown is over, over the whole drawing. */
     val reaction: SpokenLine,
     val codeLine: SpokenLine,
@@ -47,6 +52,9 @@ data class ForgotScript(
     val percent: Int = 70,
     val showPercent: Boolean = false
 ) {
+    /** Where each guess stops the drawing, ready to use: one per guess, in order, none past the whole. */
+    val stops: List<Float> get() = ForgotTimeline.stopsFor(guesses.size, guessAt)
+
     /** Every spoken line in order: the voice is recorded and laid out in this order. */
     fun lines(): List<SpokenLine> = buildList {
         add(hook)
@@ -88,6 +96,8 @@ data class ForgotEvent(
 
 object ForgotTimeline {
     const val MAX_GUESSES = 3
+    /** The earliest a guess may come: a few strokes in. */
+    const val MIN_STOP = 0.05f
     const val COUNTDOWN_MS = 2_400L
     private const val HOOK_MIN = 3_000L
     private const val DRAW_MS = 1_000L
@@ -113,9 +123,10 @@ object ForgotTimeline {
         // the finished drawing stands on the paper while the hook is said, then it is drawn again, Karalak guessing
         speak(ForgotPhase.Hook, -1, script.hook, HOOK_MIN, 400, 1f, 1f)
         val guesses = script.guesses.take(MAX_GUESSES)
+        val stops = stopsFor(guesses.size, script.guessAt)
         var shown = 0f
         guesses.forEachIndexed { k, line ->
-            val upTo = (k + 1f) / guesses.size
+            val upTo = stops[k]
             out += ForgotEvent(ForgotPhase.Draw, k, t, DRAW_MS, drawFrom = shown, drawTo = upTo)
             t += DRAW_MS
             shown = upTo
@@ -128,6 +139,18 @@ object ForgotTimeline {
         val cardMin = if (howtoMs > 0) howtoMs.coerceAtMost(RealTimeline.HOWTO_MAX) + RealTimeline.END_VIDEO_LEAD + RealTimeline.END_VIDEO_TAIL else 0L
         speak(ForgotPhase.Outro, -1, script.outro, cardMin, OUTRO_HOLD, 1f, 1f)
         return out
+    }
+
+    /**
+     * Where each of [count] guesses stops the drawing: the [set] shares the person gave, else spread evenly (a third, two
+     * thirds, the whole); never before [MIN_STOP] or past the whole, and never earlier than the guess before it.
+     */
+    fun stopsFor(count: Int, set: List<Float>): List<Float> {
+        var floor = MIN_STOP
+        return List(count.coerceAtLeast(0)) { k ->
+            val wanted = set.getOrNull(k) ?: ((k + 1f) / count)
+            wanted.coerceIn(floor, 1f).also { floor = it }
+        }
     }
 
     fun at(events: List<ForgotEvent>, t: Long): ForgotEvent = events.firstOrNull { t < it.endMs } ?: events.last()
@@ -195,6 +218,35 @@ object ForgotCopy {
 
     /** When a new code stops working unless the person picks another time: two days from now. */
     fun defaultExpiry(now: Long = System.currentTimeMillis()): Long = now + 48L * 3_600_000L
+
+    /** A share of the drawing as the panel and the assistant say it: 0.35 → 35. */
+    fun percent(share: Float): Int = kotlin.math.round(share * 100f).toInt()
+
+    /**
+     * What the assistant is told: one picture per guess, the drawing as far as that guess stops it, then the whole drawing.
+     * Each guess is written from its own picture only, so it fits what is on the paper at that moment.
+     */
+    fun guessPrompt(word: String, stops: List<Float>, moods: String): String {
+        val n = stops.size
+        val pictures = stops.mapIndexed { i, share -> "Görsel ${i + 1}: çizimin %${percent(share)}'i çizilmiş." }.joinToString("\n") + "\nGörsel ${n + 1}: bitmiş çizim."
+        return """
+            Sana bir oyuncunun çizimini adım adım gösteriyorum. Çizilmesi istenen kelime: "$word". Çizen kişi bir süre sonra kendi çizimini hatırlayamadı.
+
+            @@PICTURES@@
+
+            Video: Karalak çizimi canlı izliyor ve tahmin ediyor; izleyici de aynı anda tahmin edecek. Doğru cevap bir kupon kodu, o yüzden hiçbir cümlede "$word" kelimesi (ya da kökü) geçmemeli.
+
+            1) "guesses": tam $n tahmin, Görsel 1'den Görsel $n'e sırayla. Her tahmini YALNIZCA kendi görseline bakarak yaz: Karalak o anda yalnızca o kadarını görüyor, sonrasını bilmiyor. Her biri en fazla 8 kelime, o görselde gerçekten görünen bir şeye bakan komik ve yanlış (ama makul) bir tahmin olsun; ilk tahminler daha belirsiz, sonuncusu en kendinden emini. Çizenle asla dalga geçme.
+            2) "reaction": geri sayım bittikten sonra Karalak'ın tepkisi (Görsel ${n + 1}'e bakarak), en fazla 10 kelime; izleyiciye "bildin mi?" diye takılsın.
+            3) "hook": videonun ilk cümlesi; "çizen kişi bile bilemedi" fikrini söylesin ve izleyiciyi tahmine çağırsın, en fazla 12 kelime.
+            4) "outro": kapanış, yarın daha zorunun geleceğini söylesin, en fazla 14 kelime, "karalak.com" geçsin.
+            5) "caption": TikTok/Reels açıklaması (1–2 cümle, izleyiciye soruyla bitsin, doğru kelime geçmesin) ve "hashtags": 5–6 Türkçe ağırlıklı etiket.
+
+            Yalnızca şu JSON'u yaz:
+            {"guesses":[{"emotion":"…","line":"…"}],"reaction":{"emotion":"…","line":"…"},"hook":{"emotion":"…","line":"…"},"outro":{"emotion":"…","line":"…"},"caption":"…","hashtags":"…"}
+            emotion yalnızca şunlardan biri: $moods.
+        """.trimIndent().replace("@@PICTURES@@", pictures)
+    }
 
     /** A first percentage when the person has none to enter: any value from 55 to 90, in steps of 1. */
     fun randomPercent(random: kotlin.random.Random = kotlin.random.Random): Int = 55 + random.nextInt(36)

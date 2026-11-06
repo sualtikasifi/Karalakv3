@@ -61,6 +61,51 @@ class ForgotTest {
     }
 
     @Test
+    fun guessesStopWhereTheyWereToldTo() {
+        val events = ForgotTimeline.build(script(guesses = 3).copy(guessAt = listOf(0.2f, 0.6f, 1f))) { _, _ -> 500L }
+        assertEquals(listOf(0.2f, 0.6f, 1f), events.filter { it.phase == ForgotPhase.Guess }.map { it.drawTo })
+        val draws = events.filter { it.phase == ForgotPhase.Draw }
+        assertEquals(listOf(0f, 0.2f, 0.6f), draws.map { it.drawFrom })
+        assertEquals(listOf(0.2f, 0.6f, 1f), draws.map { it.drawTo })
+    }
+
+    @Test
+    fun stopsAreSpreadEvenlyWhereNoneWasSet() {
+        assertEquals(listOf(1f), ForgotTimeline.stopsFor(1, emptyList()))
+        assertEquals(listOf(0.5f, 1f), ForgotTimeline.stopsFor(2, emptyList()))
+        // one set by hand, the rest even
+        assertEquals(listOf(0.1f, 2f / 3f, 1f), ForgotTimeline.stopsFor(3, listOf(0.1f)))
+        assertTrue(ForgotTimeline.stopsFor(0, listOf(0.5f)).isEmpty())
+    }
+
+    @Test
+    fun stopsNeverGoBackwardsOrOffThePaper() {
+        // a later stop that was set before an earlier one is lifted to it; the ones past the whole or before the start are held in
+        assertEquals(listOf(0.6f, 0.6f, 1f), ForgotTimeline.stopsFor(3, listOf(0.6f, 0.3f, 2f)))
+        assertEquals(listOf(ForgotTimeline.MIN_STOP, 1f), ForgotTimeline.stopsFor(2, listOf(-1f, 5f)))
+    }
+
+    @Test
+    fun theScriptReadsItsStopsToTheNumberOfGuesses() {
+        assertEquals(listOf(0.2f, 0.5f, 1f), script(guesses = 3).copy(guessAt = listOf(0.2f, 0.5f, 1f)).stops)
+        // fewer guesses than stops set: the extra ones are not used
+        assertEquals(listOf(0.2f), script(guesses = 1).copy(guessAt = listOf(0.2f, 0.5f, 1f)).stops)
+    }
+
+    @Test
+    fun theAssistantIsToldEachGuessSDrawingAndNotToSayTheWord() {
+        val prompt = ForgotCopy.guessPrompt("şemsiye", listOf(0.3f, 0.65f, 1f), "neutral, thinking")
+        assertTrue(prompt.contains("Görsel 1: çizimin %30'i"))
+        assertTrue(prompt.contains("Görsel 2: çizimin %65'i"))
+        assertTrue(prompt.contains("Görsel 3: çizimin %100'i"))
+        assertTrue(prompt.contains("Görsel 4: bitmiş çizim"))
+        assertTrue(prompt.contains("tam 3 tahmin"))
+        assertTrue(prompt.contains("\"şemsiye\" kelimesi"))
+        assertFalse(prompt.contains("@@PICTURES@@"))
+        assertTrue(prompt.contains("neutral, thinking"))
+    }
+
+    @Test
     fun aLongVoiceStretchesItsStretchOfTheVideo() {
         val short = ForgotTimeline.build(script()) { _, _ -> 200L }
         val long = ForgotTimeline.build(script()) { _, _ -> 6_000L }

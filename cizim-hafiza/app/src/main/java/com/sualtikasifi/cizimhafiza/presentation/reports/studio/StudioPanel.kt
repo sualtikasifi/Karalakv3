@@ -2,6 +2,8 @@ package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotChest
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotCopy
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotTimeline
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -324,7 +326,7 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
                 busy = f.writing,
                 enabled = !f.writing
             ) { vm.writeForgot() }
-            Text("Çizime bakıp yanlış ama komik tahminler yazar; doğru kelimeyi söyleyen cümleler atılır. Model: ${st.analysisModel} (OpenRouter; Ayarlar sekmesinden değişir).", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
+            Text("Her tahmini, çizimin senin seçtiğin andaki hâline bakarak yazar; doğru kelimeyi söyleyen cümleler atılır. Model: ${st.analysisModel} (OpenRouter; Ayarlar sekmesinden değişir).", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
             st.aiCost?.let { Text("Bu yazımın maliyeti: " + OpenRouterClient.usd(it), style = Console.Small) }
             f.writeError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
         }
@@ -333,8 +335,20 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Açılış", style = Console.Label)
             LineEditor(script.hook, { vm.editLine(LineRef.ForgotHook, it) }, { vm.editEmotion(LineRef.ForgotHook, it) }) { vm.listen(script.hook) }
+            Text("Kaç tahmin", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+            Segmented(
+                options = (1..ForgotTimeline.MAX_GUESSES).map { it.toString() to it.toString() },
+                selected = script.guesses.size.toString(),
+                onSelect = { vm.setForgotGuessCount(it.toInt()) },
+                modifier = Modifier.fillMaxWidth()
+            )
             script.guesses.forEachIndexed { i, l ->
                 Text("Tahmin ${i + 1}", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
+                    StepButton("−") { vm.stepForgotStop(i, -1) }
+                    Text("çizimin %${ForgotCopy.percent(script.stops[i])}'inde", style = Console.Subtitle, modifier = Modifier.padding(horizontal = 12.dp))
+                    StepButton("+") { vm.stepForgotStop(i, 1) }
+                }
                 LineEditor(l, { vm.editLine(LineRef.ForgotGuess(i), it) }, { vm.editEmotion(LineRef.ForgotGuess(i), it) }) { vm.listen(l) }
             }
             Text("Geri sayımdan sonra Karalak'ın tepkisi", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
