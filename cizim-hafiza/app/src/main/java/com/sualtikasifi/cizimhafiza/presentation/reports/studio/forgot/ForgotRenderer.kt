@@ -29,11 +29,11 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /**
- * Draws "Çizen Bile Bilemedi" in 1080×1920: Karalak and the title with what the code gives at the top, its words as
- * subtitles that come in as they are said, and one drawing on a sheet of paper below. The drawing is shown, drawn
- * again while Karalak guesses, a countdown asks the viewer to guess too, Karalak reacts, and the kupon
- * kodu comes up: as empty boxes (the answer itself) or written out. Everything a viewer must read sits clear of the
- * band TikTok and Reels cover.
+ * Draws "Çizen Bile Bilemedi" in 1080×2400 on the game-styled template (forgot_template): the title in the banner at the
+ * top, one drawing on the big board in the middle, Karalak in the square at the bottom left and, in the speech bubble beside
+ * it, his words as subtitles that come in as they are said. The drawing is shown, drawn again while Karalak guesses, a
+ * countdown asks the viewer to guess too, Karalak reacts, and the kupon kodu comes up on the board: as empty boxes (the
+ * answer itself) or written out. The closing is the game's end card with the phone.
  */
 class ForgotRenderer(
     private val assets: StudioAssets,
@@ -72,30 +72,46 @@ class ForgotRenderer(
     /** The end card with the phone, when there is a how-to video to play in it; otherwise the closing keeps its own plain card. */
     private val phoneCard = if (howto != null && howtoMs > 0) assets.picture(R.drawable.real_end_card_phone) else null
 
-    private val mascotTile = RectF(40f, 150f, 400f, 510f)
-    private val titleBox = RectF(430f, 150f, 1040f, 510f)
-    private val card = RectF(130f, 720f, 950f, 1400f)
+    /** The template picture, 841 × 1870; the places below are its panels' insides, measured on it and scaled to the video. */
+    private val template = assets.picture(R.drawable.forgot_template)
+
+    /** The title banner (its pencil sits at the right end: the words keep to [bannerText]). */
+    private val bannerText = RectF(200f, 318f, 835f, 452f)
+
+    /** The big board: the drawing, the countdown and the code. */
+    private val board = RectF(87f, 629f, 989f, 1490f)
+
+    /** The square Karalak stands in, and the speech bubble beside it (its tail is on the left: the words keep to [bubbleText]). */
+    private val tile = RectF(65f, 1628f, 390f, 1933f)
+    private val bubbleText = RectF(480f, 1685f, 950f, 1870f)
 
     override fun draw(canvas: Canvas, t: Long) {
         canvas.drawColor(C.CREAM)
         val e = ForgotTimeline.at(events, t)
-        if (e.phase == ForgotPhase.Outro && phoneCard != null) {
-            drawPhoneEnd(canvas, phoneCard, e, t)
-            return
-        }
-        // the video is 9:20, taller than the 9:16 everything below is laid out for: it sits in the middle, cream above and below
-        canvas.save()
-        canvas.translate(0f, TOP_PAD)
         val spoken = e.line?.let { l -> voice?.get(e.lineIndex)?.let { it.size * 1000L / FPS } ?: StudioCopy.estimateMs(l.text) } ?: 0L
         val speaking = e.line != null && t - e.startMs < spoken
         val level = level(e, t, speaking)
-
-        drawMascotTile(canvas, e, speaking, level, t)
-        drawTitle(canvas, e, t)
-        e.line?.let { l ->
-            if (e.phase != ForgotPhase.Outro) {
-                text.reveal(canvas, l.text, startsOf(e.lineIndex, l.text, spoken), t - e.startMs, 540f, 615f, 980, 50f, 2, assets.display, Lettering.plain(C.INK))
+        if (e.phase == ForgotPhase.Outro) {
+            if (phoneCard != null) {
+                drawPhoneEnd(canvas, phoneCard, e, t)
+            } else {
+                // no how-to video to play: the closing keeps its own plain card, laid out for 1080 × 1920 and centred
+                canvas.save()
+                canvas.translate(0f, TOP_PAD)
+                drawEndCard(canvas, e, t, speaking, level)
+                canvas.restore()
             }
+            return
+        }
+        template?.let { canvas.drawBitmap(it, null, RectF(0f, 0f, W.toFloat(), H.toFloat()), fill) }
+
+        drawBanner(canvas)
+        drawMascotTile(canvas, e, speaking, level, t)
+        e.line?.let { l ->
+            text.reveal(
+                canvas, l.text, startsOf(e.lineIndex, l.text, spoken), t - e.startMs, bubbleText.centerX(), bubbleText.centerY(),
+                bubbleText.width().toInt(), 46f, 3, assets.display, Lettering.plain(C.INK), balanced = true
+            )
         }
         when (e.phase) {
             ForgotPhase.Hook -> drawDrawing(canvas, 1f, 1f, t - e.startMs)
@@ -106,18 +122,11 @@ class ForgotRenderer(
             ForgotPhase.Code -> drawCode(canvas, e, t)
             ForgotPhase.Outro -> Unit
         }
-        if (e.phase != ForgotPhase.Outro) {
-            text.draw(canvas, "karalak.com · Google Play: Karalak", 540f, 1640f, 900, 32f, 1, assets.body, C.MUTED)
-        } else {
-            drawEndCard(canvas, e, t, speaking, level)
-        }
-        canvas.restore()
-        if (e.phase != ForgotPhase.Outro) {
-            fill.color = C.CARD_EDGE
-            canvas.drawRect(0f, H - 10f, W.toFloat(), H.toFloat(), fill)
-            fill.color = C.ORANGE
-            canvas.drawRect(0f, H - 10f, W * (t.toFloat() / totalMs).coerceIn(0f, 1f), H.toFloat(), fill)
-        }
+        if (e.phase != ForgotPhase.Code && e.phase != ForgotPhase.Countdown) drawChip(canvas, e)
+        fill.color = C.CARD_EDGE
+        canvas.drawRect(0f, H - 10f, W.toFloat(), H.toFloat(), fill)
+        fill.color = C.ORANGE
+        canvas.drawRect(0f, H - 10f, W * (t.toFloat() / totalMs).coerceIn(0f, 1f), H.toFloat(), fill)
     }
 
     /**
@@ -181,20 +190,22 @@ class ForgotRenderer(
         return (0.55f + 0.45f * sin(local / 55.0).toFloat()).coerceIn(0f, 1f) * if ((local / 260) % 4 == 3L) 0.2f else 1f
     }
 
-    // ---- top: Karalak and the title
+    // ---- the banner and Karalak's square
+
+    private fun drawBanner(canvas: Canvas) {
+        text.draw(canvas, "ÇİZEN BİLE BİLEMEDİ", bannerText.centerX(), bannerText.centerY(), bannerText.width().toInt(), 74f, 1, assets.display, C.ORANGE_DARK)
+    }
 
     private fun drawMascotTile(canvas: Canvas, e: ForgotEvent, speaking: Boolean, level: Float, t: Long) {
-        fill.color = C.SHADOW
-        canvas.drawRoundRect(RectF(mascotTile.left, mascotTile.top + 10f, mascotTile.right, mascotTile.bottom + 10f), 40f, 40f, fill)
-        fill.color = 0xFFFFE8CC.toInt()
-        canvas.drawRoundRect(mascotTile, 40f, 40f, fill)
-        line.color = if (speaking) C.ORANGE else C.CARD_EDGE
-        line.strokeWidth = if (speaking) 9f else 4f
-        canvas.drawRoundRect(mascotTile, 40f, 40f, line)
+        if (speaking) {
+            line.color = C.ORANGE
+            line.strokeWidth = 9f
+            canvas.drawRoundRect(tile, 44f, 44f, line)
+        }
         canvas.save()
-        canvas.clipRect(mascotTile.left + 4f, mascotTile.top + 4f, mascotTile.right - 4f, mascotTile.bottom - 4f)
+        canvas.clipRect(tile.left + 4f, tile.top + 4f, tile.right - 4f, tile.bottom - 4f)
         val emotion = e.line?.emotion ?: if (e.phase == ForgotPhase.Countdown) MascotEmotion.Suspicious else MascotEmotion.Thinking
-        drawMascot(canvas, RectF(mascotTile.left + 16f, mascotTile.top + 30f, mascotTile.right - 16f, mascotTile.bottom), emotion, speaking, level, t)
+        drawMascot(canvas, RectF(tile.left + 10f, tile.top + 24f, tile.right - 10f, tile.bottom), emotion, speaking, level, t)
         canvas.restore()
     }
 
@@ -218,109 +229,94 @@ class ForgotRenderer(
         canvas.restore()
     }
 
-    /** The title, always the same, and under it what the code gives (or, once the answer has landed, the share who missed it). */
-    private fun drawTitle(canvas: Canvas, e: ForgotEvent, t: Long) {
-        val cx = titleBox.centerX()
-        val w = titleBox.width().toInt()
-        text.draw(canvas, "ÇİZEN BİLE BİLEMEDİ", cx, titleBox.top + 120f, w, 80f, 2, assets.display, C.ORANGE_DARK, spacing = 0.92f, balanced = true)
+    /** What the code gives (or, once Karalak has reacted and a share is set, how many missed it), a small chip on the board's top edge. */
+    private fun drawChip(canvas: Canvas, e: ForgotEvent) {
         val chip = when {
-            script.showPercent && e.phase >= ForgotPhase.Answer && e.phase != ForgotPhase.Outro -> "%${script.percent} kendi çizimini tanıyamadı"
+            script.showPercent && e.phase == ForgotPhase.Answer -> "%${script.percent} kendi çizimini tanıyamadı"
             script.reward.isNotBlank() -> "Ödül: ${script.reward}"
-            else -> ""
+            else -> return
         }
-        if (chip.isNotEmpty()) {
-            val p = text.paint(32f, assets.body, C.INK)
-            val cw = min(p.measureText(chip) + 56f, titleBox.width())
-            val box = RectF(cx - cw / 2f, titleBox.top + 250f, cx + cw / 2f, titleBox.top + 312f)
-            fill.color = C.CREAM_DEEP
-            canvas.drawRoundRect(box, 31f, 31f, fill)
-            text.draw(canvas, chip, box.centerX(), box.centerY(), (cw - 28f).toInt(), 32f, 1, assets.body, C.INK)
-        }
+        val p = text.paint(34f, assets.body, C.INK)
+        val cw = min(p.measureText(chip) + 64f, board.width() - 60f)
+        val box = RectF(board.centerX() - cw / 2f, board.top + 22f, board.centerX() + cw / 2f, board.top + 86f)
+        fill.color = C.CREAM_DEEP
+        canvas.drawRoundRect(box, 32f, 32f, fill)
+        text.draw(canvas, chip, box.centerX(), box.centerY(), (cw - 32f).toInt(), 34f, 1, assets.body, C.INK)
     }
 
-    // ---- the card in the middle
+    // ---- the board in the middle
 
-    private fun paper(canvas: Canvas, r: RectF = card) {
-        fill.color = C.SHADOW
-        canvas.drawRoundRect(RectF(r.left, r.top + 12f, r.right, r.bottom + 12f), 44f, 44f, fill)
-        fill.color = C.CARD
-        canvas.drawRoundRect(r, 44f, 44f, fill)
-        line.color = C.CARD_EDGE; line.strokeWidth = 4f
-        canvas.drawRoundRect(r, 44f, 44f, line)
-    }
-
-    /** The drawing on the paper, [fraction] of it drawn; [bobMs] > 0 gives a slow push-in while it stands. */
-    private fun drawDrawing(canvas: Canvas, fraction: Float, alpha: Float, bobMs: Long, box: RectF = RectF(card.left, card.top + 40f, card.right, card.bottom - 40f)) {
-        paper(canvas)
+    /** The drawing on the board, [fraction] of it drawn; [bobMs] > 0 gives a slow push-in while it stands. */
+    private fun drawDrawing(canvas: Canvas, fraction: Float, alpha: Float, bobMs: Long) {
+        val box = RectF(board.left + 30f, board.top + 100f, board.right - 30f, board.bottom - 30f)
         val zoom = 1f + 0.02f * min(1f, bobMs / 3_000f)
         canvas.save()
-        canvas.scale(zoom, zoom, card.centerX(), card.centerY())
+        canvas.scale(zoom, zoom, box.centerX(), box.centerY())
         ink.alpha = (alpha * 255).toInt()
         replay.draw(canvas, box, fraction, ink)
         ink.alpha = 255
         canvas.restore()
     }
 
-    /** "Sen ne görüyorsun?" and 3 · 2 · 1 over the paper, the drawing pale behind it. */
+    /** "Sen ne görüyorsun?" and 3 · 2 · 1 over the board, the drawing pale behind it. */
     private fun drawCountdown(canvas: Canvas, e: ForgotEvent, t: Long) {
         drawDrawing(canvas, 1f, 1f, 0L)
         val local = t - e.startMs
         fill.color = C.CARD
-        fill.alpha = 205
-        canvas.drawRoundRect(card, 44f, 44f, fill)
+        fill.alpha = 215
+        canvas.drawRoundRect(RectF(board.left + 8f, board.top + 8f, board.right - 8f, board.bottom - 8f), 52f, 52f, fill)
         fill.alpha = 255
         val step = (local * 3 / ForgotTimeline.COUNTDOWN_MS).toInt().coerceIn(0, 2)
         val within = ((local * 3f / ForgotTimeline.COUNTDOWN_MS) - step).coerceIn(0f, 1f)
         val pop = Ease.backOut(min(1f, within * 3f))
-        text.draw(canvas, "Sen ne görüyorsun?", card.centerX(), card.top + 100f, 700, 56f, 2, assets.display, C.INK)
-        val cx = card.centerX()
-        val cy = card.centerY() + 40f
+        text.draw(canvas, "Sen ne görüyorsun?", board.centerX(), board.top + 140f, 760, 64f, 2, assets.display, C.INK)
+        val cx = board.centerX()
+        val cy = board.centerY() + 70f
         canvas.save()
         canvas.scale(pop, pop, cx, cy)
         fill.color = C.ORANGE
-        canvas.drawCircle(cx, cy, 170f, fill)
-        text.draw(canvas, "${3 - step}", cx, cy, 240, 240f, 1, assets.display, C.WHITE)
+        canvas.drawCircle(cx, cy, 190f, fill)
+        text.draw(canvas, "${3 - step}", cx, cy, 260, 260f, 1, assets.display, C.WHITE)
         canvas.restore()
     }
 
-    /** The whole drawing again on the paper while Karalak reacts. */
+    /** The whole drawing again on the board while Karalak reacts. */
     private fun drawAnswer(canvas: Canvas) = drawDrawing(canvas, 1f, 1f, 0L)
 
     /**
-     * The kupon kodu on the paper. In [ForgotMode.Word] it is empty boxes, one per letter (the answer is the code, the
+     * The kupon kodu on the board. In [ForgotMode.Word] it is empty boxes, one per letter (the answer is the code, the
      * letter count is the only hint); in [ForgotMode.Shown] the letters drop in one by one.
      */
     private fun drawCode(canvas: Canvas, e: ForgotEvent, t: Long) {
-        paper(canvas)
         val a = Ease.out(min(1f, e.progress(t) * 4f))
         val word = script.mode == ForgotMode.Word
-        text.draw(canvas, "KUPON KODU", card.centerX(), card.top + 100f, 700, 64f, 1, assets.display, C.ORANGE_DARK, alpha = a)
+        text.draw(canvas, "KUPON KODU", board.centerX(), board.top + 130f, 760, 72f, 1, assets.display, C.ORANGE_DARK, alpha = a)
         text.draw(
             canvas, if (word) "Doğru cevap = kod" else "Ayarlar → Kupon kodu",
-            card.centerX(), card.top + 180f, 700, 40f, 1, assets.body, C.MUTED, alpha = a
+            board.centerX(), board.top + 225f, 760, 44f, 1, assets.body, C.MUTED, alpha = a
         )
         val code = script.code
         val local = t - e.startMs
         val shown = if (word) 0 else (code.length * Ease.out(min(1f, (local - 250f).coerceAtLeast(0f) / 900f))).toInt().coerceAtMost(code.length)
-        drawBoxes(canvas, code, shown, word, card.centerY() + 20f, a)
+        drawBoxes(canvas, code, shown, word, board.centerY() + 30f, a)
         if (script.reward.isNotBlank()) {
-            text.draw(canvas, "Ödül: ${script.reward}", card.centerX(), card.bottom - 110f, 720, 46f, 1, assets.display, C.INK, alpha = a)
+            text.draw(canvas, "Ödül: ${script.reward}", board.centerX(), board.bottom - 150f, 780, 52f, 1, assets.display, C.INK, alpha = a)
         }
-        if (word) text.draw(canvas, "Bilemedin mi? Yorumlara bak.", card.centerX(), card.bottom - 50f, 720, 34f, 1, assets.body, C.MUTED, alpha = a)
+        if (word) text.draw(canvas, "Bilemedin mi? Yorumlara bak.", board.centerX(), board.bottom - 75f, 780, 38f, 1, assets.body, C.MUTED, alpha = a)
     }
 
     /** The code as one box a character (a dash stays a dash), in rows of at most [ROW] boxes. */
     private fun drawBoxes(canvas: Canvas, code: String, shown: Int, hidden: Boolean, cy: Float, alpha: Float) {
         if (code.isEmpty()) return
         val rows = code.chunked(ROW)
-        val cell = min(86f, (card.width() - 80f) / ROW - 8f).coerceAtLeast(40f)
+        val cell = min(92f, (board.width() - 100f) / ROW - 8f).coerceAtLeast(40f)
         val gap = 8f
         var index = 0
         rows.forEachIndexed { r, row ->
             val rowW = row.length * (cell + gap) - gap
             val top = cy - (rows.size * (cell + 24f)) / 2f + r * (cell + 24f)
             row.forEachIndexed { i, ch ->
-                val x = card.centerX() - rowW / 2f + i * (cell + gap)
+                val x = board.centerX() - rowW / 2f + i * (cell + gap)
                 val box = RectF(x, top, x + cell, top + cell * 1.2f)
                 val on = index < shown
                 fill.color = if (on) 0xFFFFE8CC.toInt() else C.CREAM_DEEP
