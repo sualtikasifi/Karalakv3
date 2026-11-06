@@ -41,9 +41,14 @@ object CouponCodes {
     // No 0/O/1/I/L: a code is read off a post or a message and typed by hand.
     private const val ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 
-    /** Upper-cased, spaces dropped; null when it cannot possibly be a code (wrong length or characters). */
+    /**
+     * Upper-cased, spaces dropped, Turkish letters folded to plain ones ("şemsiye" → SEMSIYE, so a code that is a word
+     * can be typed either way); null when it cannot possibly be a code (wrong length or characters).
+     */
     fun normalize(raw: String): String? {
-        val code = raw.trim().uppercase().replace(" ", "")
+        val code = raw.trim().uppercase()
+            .replace('Ç', 'C').replace('Ğ', 'G').replace('İ', 'I').replace('Ö', 'O').replace('Ş', 'S').replace('Ü', 'U')
+            .replace(" ", "")
         if (code.length !in MIN_LENGTH..MAX_LENGTH) return null
         if (!code.all { it in 'A'..'Z' || it in '0'..'9' || it == '-' }) return null
         return code
