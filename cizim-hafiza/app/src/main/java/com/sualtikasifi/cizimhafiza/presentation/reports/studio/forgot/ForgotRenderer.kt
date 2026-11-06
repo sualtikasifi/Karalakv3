@@ -75,15 +75,23 @@ class ForgotRenderer(
     /** The template picture, 841 × 1870; the places below are its panels' insides, measured on it and scaled to the video. */
     private val template = assets.picture(R.drawable.forgot_template)
 
-    /** The title banner (its pencil sits at the right end: the words keep to [bannerText]). */
-    private val bannerText = RectF(200f, 318f, 835f, 452f)
+    /**
+     * The title banner's free inside, measured on the template (its pencil and blue line take the right end, so the empty
+     * part is centred left of the pill's middle): centre (515.5, 384.5), 633 wide.
+     */
+    private val bannerText = RectF(199f, 318f, 832f, 451f)
 
     /** The big board: the drawing, the countdown and the code. */
     private val board = RectF(87f, 629f, 989f, 1490f)
 
-    /** The square Karalak stands in, and the speech bubble beside it (its tail is on the left: the words keep to [bubbleText]). */
+    /** The square Karalak stands in (centre 227.9, 1780.1). */
     private val tile = RectF(65f, 1628f, 390f, 1933f)
-    private val bubbleText = RectF(480f, 1685f, 950f, 1870f)
+
+    /**
+     * The speech bubble's oval, measured on the template without its tail: centre (718.5, 1776.3), 572 × 293. The words keep to
+     * the rectangle that fits inside that oval (82% of its width, 57% of its height) and are centred on it.
+     */
+    private val bubbleText = RectF(484f, 1692f, 953f, 1860f)
 
     override fun draw(canvas: Canvas, t: Long) {
         canvas.drawColor(C.CREAM)
@@ -110,7 +118,7 @@ class ForgotRenderer(
         e.line?.let { l ->
             text.reveal(
                 canvas, l.text, startsOf(e.lineIndex, l.text, spoken), t - e.startMs, bubbleText.centerX(), bubbleText.centerY(),
-                bubbleText.width().toInt(), 46f, 3, assets.display, Lettering.plain(C.INK), balanced = true
+                bubbleText.width().toInt(), subtitleSize(l.text), 3, assets.display, Lettering.plain(C.INK), balanced = true, ink = true
             )
         }
         when (e.phase) {
@@ -193,7 +201,7 @@ class ForgotRenderer(
     // ---- the banner and Karalak's square
 
     private fun drawBanner(canvas: Canvas) {
-        text.draw(canvas, "ÇİZEN BİLE BİLEMEDİ", bannerText.centerX(), bannerText.centerY(), bannerText.width().toInt(), 74f, 1, assets.display, C.ORANGE_DARK)
+        text.draw(canvas, "ÇİZEN BİLE BİLEMEDİ", bannerText.centerX(), bannerText.centerY(), bannerText.width().toInt(), 74f, 1, assets.display, C.ORANGE_DARK, ink = true)
     }
 
     private fun drawMascotTile(canvas: Canvas, e: ForgotEvent, speaking: Boolean, level: Float, t: Long) {
@@ -205,7 +213,7 @@ class ForgotRenderer(
         canvas.save()
         canvas.clipRect(tile.left + 4f, tile.top + 4f, tile.right - 4f, tile.bottom - 4f)
         val emotion = e.line?.emotion ?: if (e.phase == ForgotPhase.Countdown) MascotEmotion.Suspicious else MascotEmotion.Thinking
-        drawMascot(canvas, RectF(tile.left + 10f, tile.top + 24f, tile.right - 10f, tile.bottom), emotion, speaking, level, t)
+        drawMascot(canvas, RectF(tile.left + 14f, tile.top + 14f, tile.right - 14f, tile.bottom - 14f), emotion, speaking, level, t)
         canvas.restore()
     }
 
@@ -221,10 +229,11 @@ class ForgotRenderer(
         val w = bmp.width * scale
         val h = bmp.height * scale
         val bob = if (speaking) level * (if (sprite == null) 14f else 5f) else 0f
-        val dst = RectF(box.centerX() - w / 2f, box.bottom - h - bob, box.centerX() + w / 2f, box.bottom - bob)
+        // centred in the box both ways (it is the square's middle that is Karalak's, not its floor)
+        val dst = RectF(box.centerX() - w / 2f, box.centerY() - h / 2f - bob, box.centerX() + w / 2f, box.centerY() + h / 2f - bob)
         val breathe = 1f + 0.012f * sin(t / 520.0).toFloat()
         canvas.save()
-        canvas.scale(breathe, breathe, dst.centerX(), dst.bottom)
+        canvas.scale(breathe, breathe, dst.centerX(), dst.centerY())
         canvas.drawBitmap(bmp, null, dst, fill)
         canvas.restore()
     }
@@ -241,7 +250,7 @@ class ForgotRenderer(
         val box = RectF(board.centerX() - cw / 2f, board.top + 22f, board.centerX() + cw / 2f, board.top + 86f)
         fill.color = C.CREAM_DEEP
         canvas.drawRoundRect(box, 32f, 32f, fill)
-        text.draw(canvas, chip, box.centerX(), box.centerY(), (cw - 32f).toInt(), 34f, 1, assets.body, C.INK)
+        text.draw(canvas, chip, box.centerX(), box.centerY(), (cw - 32f).toInt(), 34f, 1, assets.body, C.INK, ink = true)
     }
 
     // ---- the board in the middle
@@ -258,7 +267,23 @@ class ForgotRenderer(
         canvas.restore()
     }
 
-    /** "Sen ne görüyorsun?" and 3 · 2 · 1 over the board, the drawing pale behind it. */
+    /** The letters' height of [text] as it is drawn with ink centering (see [TextPainter.measureInk]). */
+    private fun inkHeight(line: String, width: Int, size: Float, maxLines: Int, face: android.graphics.Typeface) =
+        text.measureInk(line, width, size, maxLines, face, C.INK).second
+
+    /** The biggest subtitle size (50 down to 30) whose letters fit the oval's rectangle, [SUBTITLE_LINES] lines at most. */
+    private fun subtitleSize(line: String): Float = subtitleSizes.getOrPut(line) {
+        var size = 50f
+        while (size > 30f) {
+            val (w, h) = text.measureInk(line, bubbleText.width().toInt(), size, SUBTITLE_LINES, assets.display, C.INK, balanced = true)
+            if (w <= bubbleText.width() && h <= bubbleText.height()) break
+            size -= 2f
+        }
+        size
+    }
+    private val subtitleSizes = HashMap<String, Float>()
+
+    /** "Sen ne görüyorsun?" and 3 · 2 · 1 over the board, the drawing pale behind it; the two together are centred on the board. */
     private fun drawCountdown(canvas: Canvas, e: ForgotEvent, t: Long) {
         drawDrawing(canvas, 1f, 1f, 0L)
         val local = t - e.startMs
@@ -269,14 +294,19 @@ class ForgotRenderer(
         val step = (local * 3 / ForgotTimeline.COUNTDOWN_MS).toInt().coerceIn(0, 2)
         val within = ((local * 3f / ForgotTimeline.COUNTDOWN_MS) - step).coerceIn(0f, 1f)
         val pop = Ease.backOut(min(1f, within * 3f))
-        text.draw(canvas, "Sen ne görüyorsun?", board.centerX(), board.top + 140f, 760, 64f, 2, assets.display, C.INK)
+        val question = "Sen ne görüyorsun?"
+        val questionH = inkHeight(question, 760, 64f, 2, assets.display)
+        val radius = 190f
+        val gap = 70f
+        val top = board.centerY() - (questionH + gap + 2f * radius) / 2f
+        text.draw(canvas, question, board.centerX(), top + questionH / 2f, 760, 64f, 2, assets.display, C.INK, ink = true)
         val cx = board.centerX()
-        val cy = board.centerY() + 70f
+        val cy = top + questionH + gap + radius
         canvas.save()
         canvas.scale(pop, pop, cx, cy)
         fill.color = C.ORANGE
-        canvas.drawCircle(cx, cy, 190f, fill)
-        text.draw(canvas, "${3 - step}", cx, cy, 260, 260f, 1, assets.display, C.WHITE)
+        canvas.drawCircle(cx, cy, radius, fill)
+        text.draw(canvas, "${3 - step}", cx, cy, 260, 260f, 1, assets.display, C.WHITE, ink = true)
         canvas.restore()
     }
 
@@ -285,39 +315,58 @@ class ForgotRenderer(
 
     /**
      * The kupon kodu on the board. In [ForgotMode.Word] it is empty boxes, one per letter (the answer is the code, the
-     * letter count is the only hint); in [ForgotMode.Shown] the letters drop in one by one.
+     * letter count is the only hint); in [ForgotMode.Shown] the letters drop in one by one. Title, hint, boxes, reward and
+     * footnote are stacked and the stack is centred on the board.
      */
     private fun drawCode(canvas: Canvas, e: ForgotEvent, t: Long) {
         val a = Ease.out(min(1f, e.progress(t) * 4f))
         val word = script.mode == ForgotMode.Word
-        text.draw(canvas, "KUPON KODU", board.centerX(), board.top + 130f, 760, 72f, 1, assets.display, C.ORANGE_DARK, alpha = a)
-        text.draw(
-            canvas, if (word) "Doğru cevap = kod" else "Ayarlar → Kupon kodu",
-            board.centerX(), board.top + 225f, 760, 44f, 1, assets.body, C.MUTED, alpha = a
-        )
+        val title = "KUPON KODU"
+        val hint = if (word) "Doğru cevap = kod" else "Ayarlar → Kupon kodu"
+        val reward = script.reward.takeIf { it.isNotBlank() }?.let { "Ödül: $it" }
+        val foot = if (word) "Bilemedin mi? Yorumlara bak." else null
         val code = script.code
+        val rows = code.chunked(ROW).size
+        val cell = min(92f, (board.width() - 100f) / ROW - 8f).coerceAtLeast(40f)
+        val boxesH = if (code.isEmpty()) 0f else rows * cell * 1.2f + (rows - 1) * BOX_ROW_GAP
+
+        val titleH = inkHeight(title, 760, 72f, 1, assets.display)
+        val hintH = inkHeight(hint, 760, 44f, 1, assets.body)
+        val rewardH = reward?.let { inkHeight(it, 780, 52f, 1, assets.display) } ?: 0f
+        val footH = foot?.let { inkHeight(it, 780, 38f, 1, assets.body) } ?: 0f
+        val gapHint = 34f
+        val gapBoxes = 80f
+        val gapReward = if (reward != null) 80f else 0f
+        val gapFoot = if (foot != null) 36f else 0f
+        val total = titleH + gapHint + hintH + gapBoxes + boxesH + gapReward + rewardH + gapFoot + footH
+        var y = board.centerY() - total / 2f
+
+        text.draw(canvas, title, board.centerX(), y + titleH / 2f, 760, 72f, 1, assets.display, C.ORANGE_DARK, alpha = a, ink = true)
+        y += titleH + gapHint
+        text.draw(canvas, hint, board.centerX(), y + hintH / 2f, 760, 44f, 1, assets.body, C.MUTED, alpha = a, ink = true)
+        y += hintH + gapBoxes
         val local = t - e.startMs
         val shown = if (word) 0 else (code.length * Ease.out(min(1f, (local - 250f).coerceAtLeast(0f) / 900f))).toInt().coerceAtMost(code.length)
-        drawBoxes(canvas, code, shown, word, board.centerY() + 30f, a)
-        if (script.reward.isNotBlank()) {
-            text.draw(canvas, "Ödül: ${script.reward}", board.centerX(), board.bottom - 150f, 780, 52f, 1, assets.display, C.INK, alpha = a)
+        drawBoxes(canvas, code, shown, word, y, cell, a)
+        y += boxesH + gapReward
+        if (reward != null) {
+            text.draw(canvas, reward, board.centerX(), y + rewardH / 2f, 780, 52f, 1, assets.display, C.INK, alpha = a, ink = true)
+            y += rewardH + gapFoot
         }
-        if (word) text.draw(canvas, "Bilemedin mi? Yorumlara bak.", board.centerX(), board.bottom - 75f, 780, 38f, 1, assets.body, C.MUTED, alpha = a)
+        if (foot != null) text.draw(canvas, foot, board.centerX(), y + footH / 2f, 780, 38f, 1, assets.body, C.MUTED, alpha = a, ink = true)
     }
 
-    /** The code as one box a character (a dash stays a dash), in rows of at most [ROW] boxes. */
-    private fun drawBoxes(canvas: Canvas, code: String, shown: Int, hidden: Boolean, cy: Float, alpha: Float) {
+    /** The code as one box a character, in rows of at most [ROW] boxes, the block starting at [top]; each letter centred in its box. */
+    private fun drawBoxes(canvas: Canvas, code: String, shown: Int, hidden: Boolean, top: Float, cell: Float, alpha: Float) {
         if (code.isEmpty()) return
-        val rows = code.chunked(ROW)
-        val cell = min(92f, (board.width() - 100f) / ROW - 8f).coerceAtLeast(40f)
         val gap = 8f
         var index = 0
-        rows.forEachIndexed { r, row ->
+        code.chunked(ROW).forEachIndexed { r, row ->
             val rowW = row.length * (cell + gap) - gap
-            val top = cy - (rows.size * (cell + 24f)) / 2f + r * (cell + 24f)
+            val boxTop = top + r * (cell * 1.2f + BOX_ROW_GAP)
             row.forEachIndexed { i, ch ->
                 val x = board.centerX() - rowW / 2f + i * (cell + gap)
-                val box = RectF(x, top, x + cell, top + cell * 1.2f)
+                val box = RectF(x, boxTop, x + cell, boxTop + cell * 1.2f)
                 val on = index < shown
                 fill.color = if (on) 0xFFFFE8CC.toInt() else C.CREAM_DEEP
                 fill.alpha = (255 * alpha).toInt()
@@ -326,7 +375,7 @@ class ForgotRenderer(
                 line.color = if (on) C.ORANGE else C.CARD_EDGE
                 line.strokeWidth = if (on) 5f else 3f
                 canvas.drawRoundRect(box, 16f, 16f, line)
-                if (on && !hidden) text.draw(canvas, ch.toString(), box.centerX(), box.centerY(), cell.toInt(), cell * 0.8f, 1, assets.display, C.INK)
+                if (on && !hidden) text.draw(canvas, ch.toString(), box.centerX(), box.centerY(), cell.toInt(), cell * 0.8f, 1, assets.display, C.INK, ink = true)
                 index++
             }
         }
@@ -368,5 +417,7 @@ class ForgotRenderer(
         private const val END_OPEN = 560L
         const val FPS = 30
         private const val ROW = 10
+        private const val BOX_ROW_GAP = 24f
+        private const val SUBTITLE_LINES = 3
     }
 }
