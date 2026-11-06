@@ -8,6 +8,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.text.Layout
@@ -208,13 +209,55 @@ class TextPainter {
      */
     fun draw(
         canvas: Canvas, text: String, cx: Float, cy: Float, width: Int, size: Float, maxLines: Int, face: Typeface, color: Int,
-        alpha: Float = 1f, align: Layout.Alignment = Layout.Alignment.ALIGN_CENTER, spacing: Float = 1.02f, balanced: Boolean = false
+        alpha: Float = 1f, align: Layout.Alignment = Layout.Alignment.ALIGN_CENTER, spacing: Float = 1.02f, balanced: Boolean = false,
+        ink: Boolean = false
     ): Float {
         if (text.isBlank() || alpha <= 0f) return 0f
         val key = "$text|$width|$size|$maxLines|${face.hashCode()}|$color|$align|$spacing|$balanced"
         val layout = cache.getOrPut(key) { build(text, width, size, maxLines, face, color, align, spacing, balanced) }
-        drawLayout(canvas, layout, cx, cy, width, alpha)
+        drawLayout(canvas, layout, cx, cy, width, alpha, ink)
         return layout.height.toFloat()
+    }
+
+    /**
+     * How wide and tall the letters themselves are once [draw] has laid [text] out: their ink, not the line boxes (which are
+     * taller than the letters, more so in Baloo, whose lines leave room for the dots and tails of Turkish letters).
+     */
+    fun measureInk(
+        text: String, width: Int, size: Float, maxLines: Int, face: Typeface, color: Int,
+        align: Layout.Alignment = Layout.Alignment.ALIGN_CENTER, spacing: Float = 1.02f, balanced: Boolean = false
+    ): Pair<Float, Float> {
+        if (text.isBlank()) return 0f to 0f
+        val key = "$text|$width|$size|$maxLines|${face.hashCode()}|$color|$align|$spacing|$balanced"
+        val layout = cache.getOrPut(key) { build(text, width, size, maxLines, face, color, align, spacing, balanced) }
+        val box = inkOf(layout)
+        return (box.right - box.left) to (box.bottom - box.top)
+    }
+
+    /** The box the letters of a laid-out block really cover, in the layout's own coordinates (left, top, right, bottom). */
+    private class InkBox(val left: Float, val top: Float, val right: Float, val bottom: Float)
+
+    private fun inkOf(layout: StaticLayout): InkBox {
+        var left = Float.MAX_VALUE
+        var right = -Float.MAX_VALUE
+        var top = Float.MAX_VALUE
+        var bottom = -Float.MAX_VALUE
+        val rect = Rect()
+        val text = layout.text
+        for (i in 0 until layout.lineCount) {
+            val line = text.subSequence(layout.getLineStart(i), layout.getLineEnd(i)).toString().trimEnd()
+            if (line.isEmpty()) continue
+            layout.paint.getTextBounds(line, 0, line.length, rect)
+            val base = layout.getLineBaseline(i).toFloat()
+            val origin = layout.getLineLeft(i)
+            top = min(top, base + rect.top)
+            bottom = max(bottom, base + rect.bottom)
+            left = min(left, origin + rect.left)
+            right = max(right, origin + rect.right)
+        }
+        // nothing with ink (spaces only): the layout's own box
+        if (top > bottom) return InkBox(0f, 0f, layout.width.toFloat(), layout.height.toFloat())
+        return InkBox(left, top, right, bottom)
     }
 
     /** How wide its longest line and how tall [draw] would lay [text] out, without drawing it (to fit a box behind it). */
@@ -236,7 +279,8 @@ class TextPainter {
      */
     fun reveal(
         canvas: Canvas, text: String, starts: LongArray, elapsedMs: Long, cx: Float, cy: Float, width: Int, size: Float, maxLines: Int,
-        face: Typeface, lettering: Lettering, alpha: Float = 1f, spacing: Float = 1.02f, balanced: Boolean = false
+        face: Typeface, lettering: Lettering, alpha: Float = 1f, spacing: Float = 1.02f, balanced: Boolean = false,
+        ink: Boolean = false
     ) {
         if (text.isBlank() || alpha <= 0f || starts.size != text.length) return
         val span = SpannableString(text)
@@ -251,8 +295,12 @@ class TextPainter {
         val layout = build(span, width, size, maxLines, face, lettering.fill, Layout.Alignment.ALIGN_CENTER, spacing, balanced)
         val p = layout.paint
         val a = alpha.coerceIn(0f, 1f)
+        // the whole line is laid out from the first frame, so its ink box (and the shift it gives) never jumps as letters come in
+        val box = if (ink) inkOf(layout) else null
+        val dx = box?.let { layout.width / 2f - (it.left + it.right) / 2f } ?: 0f
+        val dy = box?.let { layout.height / 2f - (it.top + it.bottom) / 2f } ?: 0f
         canvas.save()
-        canvas.translate(cx - width / 2f, cy - layout.height / 2f)
+        canvas.translate(cx - width / 2f + dx, cy - layout.height / 2f + dy)
         p.strokeJoin = Paint.Join.ROUND
         if (lettering.shadow != null && lettering.shadowBlur > 0f) {
             p.style = Paint.Style.FILL_AND_STROKE
@@ -279,10 +327,14 @@ class TextPainter {
         canvas.restore()
     }
 
-    private fun drawLayout(canvas: Canvas, layout: StaticLayout, cx: Float, cy: Float, width: Int, alpha: Float) {
+    private fun drawLayout(canvas: Canvas, layout: StaticLayout, cx: Float, cy: Float, width: Int, alpha: Float, ink: Boolean = false) {
         layout.paint.alpha = (alpha.coerceIn(0f, 1f) * 255).toInt()
         canvas.save()
-        canvas.translate(cx - width / 2f, cy - layout.height / 2f)
+        // [ink]: the letters, not the line boxes, are what is centred on ([cx], [cy])
+        val box = if (ink) inkOf(layout) else null
+        val dx = box?.let { layout.width / 2f - (it.left + it.right) / 2f } ?: 0f
+        val dy = box?.let { layout.height / 2f - (it.top + it.bottom) / 2f } ?: 0f
+        canvas.translate(cx - width / 2f + dx, cy - layout.height / 2f + dy)
         layout.draw(canvas)
         canvas.restore()
         layout.paint.alpha = 255

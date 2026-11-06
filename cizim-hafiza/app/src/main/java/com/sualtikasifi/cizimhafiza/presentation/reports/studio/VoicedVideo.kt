@@ -29,3 +29,6 @@ interface VoicedVideo {
     val height: Int get() = 1920
     fun draw(canvas: Canvas, t: Long)
 }
+
+/** The frame rate every studio video is made at. */
+const val STUDIO_FPS = 30

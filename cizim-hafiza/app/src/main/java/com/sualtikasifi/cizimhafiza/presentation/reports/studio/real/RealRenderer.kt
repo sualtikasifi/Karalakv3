@@ -16,6 +16,7 @@ import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.ClipSound
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Ease
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.EndCardPhone
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Lettering
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StrokeReplay
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioAssets
@@ -456,7 +457,7 @@ class RealRenderer(
      */
     private fun drawPhoneCard(canvas: Canvas, card: Bitmap, local: Long) {
         canvas.drawColor(C.CREAM)
-        val screen = RectF(PHONE_LEFT - 3f, PHONE_TOP - 3f, PHONE_RIGHT + 3f, PHONE_BOTTOM + 3f)
+        val screen = EndCardPhone.screen()
         val at = (local - RealTimeline.END_VIDEO_LEAD).coerceIn(0L, (howtoMs - 1L).coerceAtLeast(0L))
         val frame = howto?.frameAt(at)
         plain.color = C.INK
@@ -901,11 +902,6 @@ class RealRenderer(
         private const val END_OPEN = 560L
         private const val END_SETTLE = 800L
         private const val END_ZOOM = 0.03f
-        /** Where the phone's screen is on the end card with the phone (real_end_card_phone, 1080 x 2400), in its pixels. */
-        private const val PHONE_LEFT = 64f
-        private const val PHONE_TOP = 710f
-        private const val PHONE_RIGHT = 625f
-        private const val PHONE_BOTTOM = 1912f
         /** An end card picture within this share of the frame's shape fills the frame. */
         private const val END_COVER_SLACK = 0.25f
 

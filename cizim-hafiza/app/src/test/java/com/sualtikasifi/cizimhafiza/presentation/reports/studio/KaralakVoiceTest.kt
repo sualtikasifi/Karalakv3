@@ -4,14 +4,12 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.ElevenLabs
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Reveal
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.SpeechTiming
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceModel
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.GuessCopy
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -123,31 +121,5 @@ class KaralakVoiceTest {
         assertEquals(Backoff.ATTEMPTS, down)
         assertEquals(3000L, Backoff.waitMs(1, Busy(429, 3000)))
         assertEquals(3000L, Backoff.waitMs(2, Busy(500)))
-    }
-
-    @Test
-    fun otherOpeningsAndClosingsAreReadWithoutRepeats() {
-        val frame = GuessCopy.parseFrame(
-            """{"intro":{"emotion":"confident","line":"Merhaba ben Karalak"},"reactions":[{"emotion":"excited","line":"Bildim!"}],
-               "outro":{"emotion":"wave","line":"Gel çiz"},
-               "intro_alts":["Selam!","Merhaba ben Karalak","Hazır mısın?",{"emotion":"point","line":"Bana meydan oku"}],
-               "outro_alts":["Yarın görüşürüz","x"],"caption":"c","hashtags":"#a"}""", 1
-        )!!
-        assertEquals(listOf("Selam!", "Hazır mısın?", "Bana meydan oku"), frame.introAlts.map { it.text })
-        assertEquals(frame.intro.emotion, frame.introAlts[0].emotion)
-        assertEquals(MascotEmotion.of("point"), frame.introAlts[2].emotion)
-        assertEquals(2, frame.outroAlts.size)
-        val bare = GuessCopy.parseFrame("""{"intro":{"line":"A"},"reactions":[{"line":"B"}],"outro":{"line":"C"}}""", 1)
-        assertNotNull(bare)
-        assertTrue(bare!!.introAlts.isEmpty())
-    }
-
-    @Test
-    fun longLinesAreFoundAndCut() {
-        val long = (1..16).joinToString(" ") { "kelime$it" }
-        val frame = GuessCopy.parseFrame("""{"intro":{"line":"$long"},"reactions":[{"line":"B"}],"outro":{"line":"C"}}""", 1)!!
-        assertEquals(1, GuessCopy.longFrame(frame).size)
-        assertEquals(LineRules.INTRO_WORDS, LineRules.words(GuessCopy.fitFrame(frame).intro.text))
-        assertEquals(LineRules.STAGE_WORDS, LineRules.words(GuessCopy.fitLooks(listOf(SpokenLine(long, MascotEmotion.Thinking)))[0].text))
     }
 }

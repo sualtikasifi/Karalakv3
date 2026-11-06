@@ -3,7 +3,7 @@ package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.ElevenLabs
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceModel
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.VoiceSpec
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.guess.SpokenLine
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
