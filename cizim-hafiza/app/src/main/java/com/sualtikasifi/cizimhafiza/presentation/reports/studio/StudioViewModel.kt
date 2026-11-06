@@ -154,7 +154,9 @@ data class ForgotUi(
     val writing: Boolean = false,
     val writeError: String? = null,
     val couponBusy: Boolean = false,
-    val couponStatus: String? = null
+    val couponStatus: String? = null,
+    /** How many of the phone's drawings the list shows: [FORGOT_PAGE] at first, that many more each time "Daha fazla" is pressed. */
+    val shown: Int = FORGOT_PAGE
 )
 
 /** "Gerçek Olsaydı": the pool's latest drawings, and the project (the chosen drawings of different words) on this phone. */
@@ -266,6 +268,9 @@ data class StudioState(
         StudioFormat.RealLife -> real.project?.shown?.isNotEmpty() == true
     }
 }
+
+/** The drawing list of "Çizen Bile Bilemedi" grows by this many at a time (three rows of three). */
+const val FORGOT_PAGE = 9
 
 private const val DEFAULT_TAGS = "#çizimoyunu #karalak #yapayzeka #oyunönerisi #çizim"
 
@@ -434,6 +439,9 @@ class StudioViewModel @Inject constructor(
         }
         refreshPreview()
     }
+
+    /** Shows the next [FORGOT_PAGE] drawings in the list. */
+    fun showMoreForgot() = updateForgot { it.copy(shown = it.shown + FORGOT_PAGE) }
 
     fun setForgotMode(mode: ForgotMode) = rebuildForgot { it.copy(mode = mode) }
     fun setForgotReward(reward: ForgotReward) = rebuildForgot { it.copy(reward = reward) }

@@ -225,13 +225,18 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
     when {
         st.loading -> item { Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Console.Accent) } }
         pool.isEmpty() -> item { ConsoleCard(Modifier.fillMaxWidth()) { Text("Bu telefonda kayıtlı çizim yok. Birkaç tur oyna, sonra buraya dön.", style = Console.Small) } }
-        else -> pool.take(90).chunked(3).forEach { row ->
+        else -> pool.take(f.shown).chunked(3).forEach { row ->
             item(key = "fg-" + row.first().id) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     row.forEach { d -> Thumb(d, if (f.drawingId == d.id) 0 else -1, Modifier.weight(1f)) { vm.selectForgot(d) } }
                     repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
+        }
+    }
+    if (pool.size > f.shown) {
+        item(key = "fg-more") {
+            ActionButton(Icons.Filled.Refresh, "Daha fazla çizim göster (${pool.size - f.shown} kaldı)", Console.Surface, Console.Ink, Modifier.fillMaxWidth()) { vm.showMoreForgot() }
         }
     }
     val script = f.script ?: return
