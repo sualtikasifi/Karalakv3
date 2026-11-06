@@ -213,6 +213,9 @@ fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
     }
 }
 
+/** Viewers drop off past this length (seconds): the panel warns when a "Çizen Bile Bilemedi" video runs over it. */
+private const val FORGOT_TARGET_SECONDS = 20
+
 /** "Çizen Bile Bilemedi": a drawing its own drawer could not recognise, how the code is given, and Karalak's lines. */
 private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
     val f = st.forgot
@@ -351,9 +354,7 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
                 }
                 LineEditor(l, { vm.editLine(LineRef.ForgotGuess(i), it) }, { vm.editEmotion(LineRef.ForgotGuess(i), it) }) { vm.listen(l) }
             }
-            Text("Geri sayımdan sonra Karalak'ın tepkisi", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
-            LineEditor(script.reaction, { vm.editLine(LineRef.ForgotReaction, it) }, { vm.editEmotion(LineRef.ForgotReaction, it) }) { vm.listen(script.reaction) }
-            Text("Kod anı", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+            Text("Tepki ve kod anı (tek cümle)", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
             LineEditor(script.codeLine, { vm.editLine(LineRef.ForgotCode, it) }, { vm.editEmotion(LineRef.ForgotCode, it) }) { vm.listen(script.codeLine) }
             Text("Kapanış", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
             LineEditor(script.outro, { vm.editLine(LineRef.ForgotOutro, it) }, { vm.editEmotion(LineRef.ForgotOutro, it) }) { vm.listen(script.outro) }
@@ -1529,10 +1530,18 @@ private fun PreviewCard(st: StudioState, vm: StudioViewModel) {
                     colors = SliderDefaults.colors(thumbColor = Console.Accent, activeTrackColor = Console.Accent),
                     modifier = Modifier.fillMaxWidth()
                 )
+                val seconds = ((st.totalMs + 999) / 1000).toInt()
+                // viewers drop off past ~20 s: "Çizen Bile Bilemedi" says so as soon as the video runs over
+                val tooLong = st.format == StudioFormat.Forgot && seconds > FORGOT_TARGET_SECONDS
                 Text(
-                    if (st.format == StudioFormat.RealLife) "≈ ${(st.totalMs + 999) / 1000} sn · kanca, video (üstünde Karalak kartı), kapanış, tanıtım ve bitiş görseli."
-                    else "Sesli videoda süreler sesin gerçek uzunluğuna göre ayarlanır.",
-                    style = Console.Small, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
+                    when {
+                        st.format == StudioFormat.RealLife -> "≈ $seconds sn · kanca, video (üstünde Karalak kartı), kapanış, tanıtım ve bitiş görseli."
+                        st.format == StudioFormat.Forgot && tooLong -> "≈ $seconds sn · $FORGOT_TARGET_SECONDS saniyeyi geçti, izlenme oranı düşebilir. Tahmin sayısını ya da cümleleri kısalt. Sesli videoda süre sesin uzunluğuna göre ayarlanır."
+                        st.format == StudioFormat.Forgot -> "≈ $seconds sn · hedef 15–$FORGOT_TARGET_SECONDS sn. Sesli videoda süre sesin uzunluğuna göre ayarlanır."
+                        else -> "Sesli videoda süreler sesin gerçek uzunluğuna göre ayarlanır."
+                    },
+                    style = if (tooLong) Console.Small.copy(color = Console.Critical) else Console.Small,
+                    textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
                 )
             }
         }

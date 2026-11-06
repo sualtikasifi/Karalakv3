@@ -14,7 +14,7 @@ import kotlinx.coroutines.withContext
 
 /**
  * Has the assistant look at one drawing and write Karalak's part: what it thinks while the drawing builds up (wrong, but
- * funny, and never the right word), its reaction to what the drawer wrote, a hook and a closing, and the post text.
+ * funny, and never the right word), a hook and a closing, and the post text.
  * The right word is told to it only so it can stay away from it; a line that says it anyway is dropped (see [ForgotCopy.leaks]).
  */
 class ForgotDirector(private val client: OpenRouterClient, private val model: String, private val lang: StudioLang = StudioLang.Tr) {
@@ -40,8 +40,8 @@ class ForgotDirector(private val client: OpenRouterClient, private val model: St
         fun SpokenLine?.fit(words: Int) = this?.copy(text = LineRules.fit(text, words))
         Written(
             ForgotCopy.Written(
-                parsed.guesses.take(n).map { it.copy(text = LineRules.fit(it.text, LineRules.STAGE_WORDS)) },
-                parsed.reaction.fit(LineRules.REACTION_WORDS), parsed.hook.fit(LineRules.INTRO_WORDS), parsed.outro.fit(LineRules.OUTRO_WORDS),
+                parsed.guesses.take(n).map { it.copy(text = LineRules.fit(it.text, ForgotCopy.GUESS_WORDS)) },
+                parsed.hook.fit(ForgotCopy.HOOK_WORDS), parsed.outro.fit(LineRules.OUTRO_WORDS),
                 parsed.caption, parsed.hashtags
             ),
             answer.costUsd

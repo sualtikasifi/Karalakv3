@@ -122,15 +122,14 @@ class ForgotRenderer(
             )
         }
         when (e.phase) {
-            ForgotPhase.Hook -> drawDrawing(canvas, 1f, 1f, t - e.startMs)
+            ForgotPhase.Hook -> drawDrawing(canvas, e.drawFrom + (e.drawTo - e.drawFrom) * Ease.inOut(e.progress(t)), 1f, 0L)
             ForgotPhase.Draw -> drawDrawing(canvas, e.drawFrom + (e.drawTo - e.drawFrom) * Ease.inOut(e.progress(t)), 1f, 0L)
             ForgotPhase.Guess -> drawDrawing(canvas, e.drawTo, 1f, 0L)
             ForgotPhase.Countdown -> drawCountdown(canvas, e, t)
-            ForgotPhase.Answer -> drawAnswer(canvas)
             ForgotPhase.Code -> drawCode(canvas, e, t)
             ForgotPhase.Outro -> Unit
         }
-        if (e.phase != ForgotPhase.Code && e.phase != ForgotPhase.Countdown) drawChip(canvas, e)
+        if (e.phase != ForgotPhase.Code && e.phase != ForgotPhase.Countdown) drawChip(canvas)
         fill.color = C.CARD_EDGE
         canvas.drawRect(0f, H - 10f, W.toFloat(), H.toFloat(), fill)
         fill.color = C.ORANGE
@@ -238,13 +237,9 @@ class ForgotRenderer(
         canvas.restore()
     }
 
-    /** What the code gives (or, once Karalak has reacted and a share is set, how many missed it), a small chip on the board's top edge. */
-    private fun drawChip(canvas: Canvas, e: ForgotEvent) {
-        val chip = when {
-            script.showPercent && e.phase == ForgotPhase.Answer -> "%${script.percent} kendi çizimini tanıyamadı"
-            script.reward.isNotBlank() -> "Ödül: ${script.reward}"
-            else -> return
-        }
+    /** What the code gives, a small chip on the board's top edge while the drawing is drawn. */
+    private fun drawChip(canvas: Canvas) {
+        val chip = script.reward.takeIf { it.isNotBlank() }?.let { "Ödül: $it" } ?: return
         val p = text.paint(34f, assets.body, C.INK)
         val cw = min(p.measureText(chip) + 64f, board.width() - 60f)
         val box = RectF(board.centerX() - cw / 2f, board.top + 22f, board.centerX() + cw / 2f, board.top + 86f)
@@ -310,9 +305,6 @@ class ForgotRenderer(
         canvas.restore()
     }
 
-    /** The whole drawing again on the board while Karalak reacts. */
-    private fun drawAnswer(canvas: Canvas) = drawDrawing(canvas, 1f, 1f, 0L)
-
     /**
      * The kupon kodu on the board. In [ForgotMode.Word] it is empty boxes, one per letter (the answer is the code, the
      * letter count is the only hint); in [ForgotMode.Shown] the letters drop in one by one. Title, hint, boxes, reward and
@@ -324,7 +316,8 @@ class ForgotRenderer(
         val title = "KUPON KODU"
         val hint = if (word) "Doğru cevap = kod" else "Ayarlar → Kupon kodu"
         val reward = script.reward.takeIf { it.isNotBlank() }?.let { "Ödül: $it" }
-        val foot = if (word) "Bilemedin mi? Yorumlara bak." else null
+        val foot = if (word) "Yorumlara da bakabilirsin." else null
+        val share = if (script.showPercent) "%${script.percent} kendi çizimini tanıyamadı" else null
         val code = script.code
         val rows = code.chunked(ROW).size
         val cell = min(92f, (board.width() - 100f) / ROW - 8f).coerceAtLeast(40f)
@@ -332,19 +325,26 @@ class ForgotRenderer(
 
         val titleH = inkHeight(title, 760, 72f, 1, assets.display)
         val hintH = inkHeight(hint, 760, 44f, 1, assets.body)
+        val shareH = share?.let { inkHeight(it, 780, 40f, 1, assets.body) } ?: 0f
+        val gapShare = if (share != null) 24f else 0f
         val rewardH = reward?.let { inkHeight(it, 780, 52f, 1, assets.display) } ?: 0f
         val footH = foot?.let { inkHeight(it, 780, 38f, 1, assets.body) } ?: 0f
         val gapHint = 34f
         val gapBoxes = 80f
         val gapReward = if (reward != null) 80f else 0f
         val gapFoot = if (foot != null) 36f else 0f
-        val total = titleH + gapHint + hintH + gapBoxes + boxesH + gapReward + rewardH + gapFoot + footH
+        val total = titleH + gapHint + hintH + gapShare + shareH + gapBoxes + boxesH + gapReward + rewardH + gapFoot + footH
         var y = board.centerY() - total / 2f
 
         text.draw(canvas, title, board.centerX(), y + titleH / 2f, 760, 72f, 1, assets.display, C.ORANGE_DARK, alpha = a, ink = true)
         y += titleH + gapHint
         text.draw(canvas, hint, board.centerX(), y + hintH / 2f, 760, 44f, 1, assets.body, C.MUTED, alpha = a, ink = true)
-        y += hintH + gapBoxes
+        y += hintH + gapShare
+        if (share != null) {
+            text.draw(canvas, share, board.centerX(), y + shareH / 2f, 780, 40f, 1, assets.body, C.INK, alpha = a, ink = true)
+            y += shareH
+        }
+        y += gapBoxes
         val local = t - e.startMs
         val shown = if (word) 0 else (code.length * Ease.out(min(1f, (local - 250f).coerceAtLeast(0f) / 900f))).toInt().coerceAtMost(code.length)
         drawBoxes(canvas, code, shown, word, y, cell, a)
