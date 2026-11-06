@@ -31,11 +31,10 @@ enum class ForgotMode(val title: String) {
 data class ForgotScript(
     val drawingId: Long,
     val word: String,
-    val drawerAnswer: String,
     val hook: SpokenLine,
     /** What Karalak thinks while the drawing builds up, one line per look (at most [ForgotTimeline.MAX_GUESSES]). */
     val guesses: List<SpokenLine>,
-    /** Its reaction to what the drawer wrote. */
+    /** Its reaction once the countdown is over, over the whole drawing. */
     val reaction: SpokenLine,
     val codeLine: SpokenLine,
     val outro: SpokenLine,
@@ -57,13 +56,15 @@ data class ForgotScript(
     }
 }
 
-/** What a video's kupon kodu gives: the presets the panel offers, each turned into a [com.sualtikasifi.cizimhafiza.domain.model.Coupon] (chests open on the spot). */
-enum class ForgotReward(val title: String, val gold: Int = 0, val xp: Int = 0, val chests: Map<ChestTier, Int> = emptyMap()) {
-    Silver("Çırak", chests = mapOf(ChestTier.SILVER to 1)),
-    Gold("Sanatçı", chests = mapOf(ChestTier.GOLD to 1)),
-    Rare("Sürpriz", chests = mapOf(ChestTier.RARE to 1)),
-    Coins("500 altın", gold = 500),
-    Xp("300 XP", xp = 300)
+/** Which chest the code gives besides the gold and XP set by hand (none, or one of a tier; chests open on the spot). */
+enum class ForgotChest(val title: String, val tier: ChestTier?) {
+    None("Yok", null),
+    Silver("Çırak", ChestTier.SILVER),
+    Gold("Sanatçı", ChestTier.GOLD),
+    Rare("Sürpriz", ChestTier.RARE);
+
+    /** The chests as a coupon holds them. */
+    val chests: Map<ChestTier, Int> get() = tier?.let { mapOf(it to 1) } ?: emptyMap()
 }
 
 enum class ForgotPhase { Hook, Draw, Guess, Countdown, Answer, Code, Outro }
@@ -131,10 +132,9 @@ object ForgotTimeline {
 object ForgotCopy {
     const val HOOK = "Bunu çizen kişi bile ne olduğunu bilemedi. Sen bilebilir misin?"
     const val OUTRO = "Yarın daha zoru geliyor. Sen de karalak.com'da çiz!"
+    const val REACTION = "Zor muydu? Çizen de bilemedi!"
     const val CODE_WORD = "Doğru cevap senin kodun. Bilen kasayı alır!"
     const val CODE_SHOWN = "İşte kodun. Uygulamada Ayarlar'dan gir!"
-
-    fun reactionText(drawerAnswer: String) = "Çizen “${drawerAnswer.trim()}” yazmış. Ben de öyle sanmıştım!"
 
     fun codeLineFor(mode: ForgotMode) = if (mode == ForgotMode.Word) CODE_WORD else CODE_SHOWN
 
@@ -186,6 +186,9 @@ object ForgotCopy {
         fun clean(key: String) = o[key]?.jsonPrimitive?.contentOrNull?.trim().orEmpty().takeIf { !leaks(it, word) }.orEmpty()
         return Written(guesses.take(ForgotTimeline.MAX_GUESSES), line(o["reaction"]), line(o["hook"]), line(o["outro"]), clean("caption"), clean("hashtags"))
     }
+
+    /** When a new code stops working unless the person picks another time: two days from now. */
+    fun defaultExpiry(now: Long = System.currentTimeMillis()): Long = now + 48L * 3_600_000L
 
     /** A first percentage when the person has none to enter: any value from 55 to 90, in steps of 1. */
     fun randomPercent(random: kotlin.random.Random = kotlin.random.Random): Int = 55 + random.nextInt(36)

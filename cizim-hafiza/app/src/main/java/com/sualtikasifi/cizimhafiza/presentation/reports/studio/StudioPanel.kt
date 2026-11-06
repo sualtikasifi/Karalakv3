@@ -1,7 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotReward
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotChest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
@@ -213,11 +214,11 @@ fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
 /** "Çizen Bile Bilemedi": a drawing its own drawer could not recognise, how the code is given, and Karalak's lines. */
 private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
     val f = st.forgot
-    // 1. the drawing: this phone's own, the ones the drawer got wrong first (only these carry what the drawer wrote)
+    // 1. the drawing: this phone's own, the ones its drawer got wrong first
     item { Step("1", "Çizim", if (f.drawingId != null) "seçili" else "birini seç") }
     item {
         Text(
-            "Kendi çizimini tanıyamadığın turlardan biri. Çizenin yazdığı cevap telefonda kayıtlıysa gelir; yoksa aşağıya elle yaz.",
+            "Bu telefonda kayıtlı çizimlerden biri; kendi çizimini tanıyamadığın turlar başta.",
             style = Console.Small
         )
     }
@@ -243,10 +244,6 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Doğru kelime: ${script.word.uppercase(Locale("tr"))}", style = Console.Subtitle)
-            Spacer(Modifier.height(6.dp))
-            Text("Çizenin yazdığı", style = Console.Label)
-            Field(null, f.drawerAnswer, vm::setForgotAnswer)
-            if (f.drawerAnswer.isBlank()) Text("Boş kalırsa videoda “…” görünür; komik bir cevap yazmak videoyu güçlendirir.", style = Console.Small)
         }
     }
 
@@ -273,26 +270,22 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
                 ActionButton(Icons.Filled.Refresh, "Yeni kod", Console.Surface, Console.Ink, Modifier.padding(top = 6.dp)) { vm.newForgotCode() }
             }
             Text("Ödül", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
+            Field("Altın miktarı", if (f.gold == 0) "" else f.gold.toString(), { vm.setForgotGold(it.digitsToInt()) }, numeric = true)
+            Field("XP miktarı", if (f.xp == 0) "" else f.xp.toString(), { vm.setForgotXp(it.digitsToInt()) }, numeric = true)
+            Text("Kasa (anında açılır)", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
             Segmented(
-                options = ForgotReward.entries.map { it.name to it.title },
-                selected = f.reward.name,
-                onSelect = { vm.setForgotReward(ForgotReward.valueOf(it)) },
+                options = ForgotChest.entries.map { it.name to it.title },
+                selected = f.chest.name,
+                onSelect = { vm.setForgotChest(ForgotChest.valueOf(it)) },
                 modifier = Modifier.fillMaxWidth()
             )
-            Text("Kaç kişi kullanabilsin", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
-            Segmented(
-                options = listOf(50, 100, 250, 1000).map { it.toString() to it.toString() },
-                selected = f.maxUses.toString(),
-                onSelect = { vm.setForgotUses(it.toInt()) },
-                modifier = Modifier.fillMaxWidth()
+            Text(
+                if (script.reward.isBlank()) "Ödül boş: altın, XP ya da kasa gir." else "Ödül: ${script.reward}",
+                style = Console.Small.copy(color = if (script.reward.isBlank()) Console.Critical else Console.InkMuted), modifier = Modifier.padding(top = 4.dp)
             )
-            Text("Kaç saat geçerli", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
-            Segmented(
-                options = listOf(24, 48, 72).map { it.toString() to "$it sa" },
-                selected = f.hours.toString(),
-                onSelect = { vm.setForgotHours(it.toInt()) },
-                modifier = Modifier.fillMaxWidth()
-            )
+            Field("Kaç kişi kullanabilsin", if (f.maxUses == 0) "" else f.maxUses.toString(), { vm.setForgotUses(it.digitsToInt()) }, numeric = true)
+            Text("Ne zamana kadar geçerli", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
+            ExpiryPicker(f.expiresAtMillis, vm::setForgotExpiry)
             Spacer(Modifier.height(10.dp))
             DarkButton(
                 text = if (f.couponBusy) "Oluşturuluyor…" else "Kuponu oluştur",
@@ -344,13 +337,60 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
                 Text("Tahmin ${i + 1}", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
                 LineEditor(l, { vm.editLine(LineRef.ForgotGuess(i), it) }, { vm.editEmotion(LineRef.ForgotGuess(i), it) }) { vm.listen(l) }
             }
-            Text("Çizenin cevabına tepki", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+            Text("Geri sayımdan sonra Karalak'ın tepkisi", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
             LineEditor(script.reaction, { vm.editLine(LineRef.ForgotReaction, it) }, { vm.editEmotion(LineRef.ForgotReaction, it) }) { vm.listen(script.reaction) }
             Text("Kod anı", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
             LineEditor(script.codeLine, { vm.editLine(LineRef.ForgotCode, it) }, { vm.editEmotion(LineRef.ForgotCode, it) }) { vm.listen(script.codeLine) }
             Text("Kapanış", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
             LineEditor(script.outro, { vm.editLine(LineRef.ForgotOutro, it) }, { vm.editEmotion(LineRef.ForgotOutro, it) }) { vm.listen(script.outro) }
         }
+    }
+}
+
+/** The digits of what was typed in a number field as a number (nothing typed: 0), at most eight of them. */
+private fun String.digitsToInt(): Int = filter { it.isDigit() }.take(8).toIntOrNull() ?: 0
+
+/** The date and time the code stops working, shown as one button: a tap picks the date, then the time (device time zone). */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun ExpiryPicker(millis: Long, onPick: (Long) -> Unit) {
+    val zone = java.time.ZoneId.systemDefault()
+    val current = java.time.Instant.ofEpochMilli(millis).atZone(zone)
+    var step by remember { mutableStateOf(0) }
+    var date by remember { mutableStateOf(current.toLocalDate()) }
+    val label = java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").format(current)
+    ActionButton(Icons.Filled.Event, label, Console.Surface, Console.Ink, Modifier.fillMaxWidth()) {
+        date = current.toLocalDate()
+        step = 1
+    }
+    if (step == 1) {
+        val state = androidx.compose.material3.rememberDatePickerState(
+            initialSelectedDateMillis = date.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+        )
+        androidx.compose.material3.DatePickerDialog(
+            onDismissRequest = { step = 0 },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let { date = java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).toLocalDate() }
+                    step = 2
+                }) { Text("İleri: saat") }
+            },
+            dismissButton = { TextButton(onClick = { step = 0 }) { Text("Vazgeç") } }
+        ) { androidx.compose.material3.DatePicker(state = state) }
+    }
+    if (step == 2) {
+        val time = androidx.compose.material3.rememberTimePickerState(initialHour = current.hour, initialMinute = current.minute, is24Hour = true)
+        AlertDialog(
+            onDismissRequest = { step = 0 },
+            confirmButton = {
+                TextButton(onClick = {
+                    onPick(date.atTime(time.hour, time.minute).atZone(zone).toInstant().toEpochMilli())
+                    step = 0
+                }) { Text("Tamam") }
+            },
+            dismissButton = { TextButton(onClick = { step = 1 }) { Text("Geri") } },
+            text = { androidx.compose.material3.TimePicker(state = time) }
+        )
     }
 }
 
@@ -1788,8 +1828,9 @@ private fun BigButton(text: String, enabled: Boolean, onClick: () -> Unit) =
     ConsoleButton(text, onClick, Modifier.fillMaxWidth(), enabled = enabled, icon = Icons.Filled.Movie, height = 50.dp)
 
 @Composable
-private fun Field(label: String?, value: String, onChange: (String) -> Unit, lines: Int = 1, secret: Boolean = false) =
+private fun Field(label: String?, value: String, onChange: (String) -> Unit, lines: Int = 1, secret: Boolean = false, numeric: Boolean = false) =
     ConsoleTextField(
+        keyboardOptions = if (numeric) androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number) else androidx.compose.foundation.text.KeyboardOptions.Default,
         value = value,
         onValueChange = onChange,
         label = label,

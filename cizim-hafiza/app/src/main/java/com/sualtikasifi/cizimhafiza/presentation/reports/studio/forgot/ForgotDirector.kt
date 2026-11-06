@@ -26,12 +26,12 @@ class ForgotDirector(private val client: OpenRouterClient, private val model: St
         val n = looks.coerceIn(1, ForgotTimeline.MAX_GUESSES)
         val prompt = """
             Sana bir oyuncunun çizimini gösteriyorum. Çizilmesi istenen kelime: "${drawing.word}".
-            Çizen kişi bir süre sonra kendi çizimini hatırlamaya çalıştı ve "${drawing.answer}" yazdı; yanlıştı.
+            Çizen kişi bir süre sonra kendi çizimini hatırlayamadı.
 
             Video: Karalak çizimi canlı izliyor ve tahmin ediyor; izleyici de aynı anda tahmin edecek. Doğru cevap bir kupon kodu, o yüzden hiçbir cümlede "${drawing.word}" kelimesi (ya da kökü) geçmemeli.
 
             1) "guesses": Karalak'ın çizim oluşurken söylediği $n tahmin. Her biri en fazla 8 kelime, çizimde gerçekten görünen bir şeye bakarak komik ve yanlış (ama makul) tahminler, sonuncusu en kendinden emini. Çizenle asla dalga geçme.
-            2) "reaction": çizenin yazdığı "${drawing.answer}" cevabına Karalak'ın tepkisi, en fazla 10 kelime, çizenin cevabı geçebilir.
+            2) "reaction": geri sayım bittikten sonra Karalak'ın tepkisi, en fazla 10 kelime; izleyiciye "bildin mi?" diye takılsın, çizimdeki bir şeye değinebilir.
             3) "hook": videonun ilk cümlesi; "çizen kişi bile bilemedi" fikrini söylesin ve izleyiciyi tahmine çağırsın, en fazla 12 kelime.
             4) "outro": kapanış, yarın daha zorunun geleceğini söylesin, en fazla 14 kelime, "karalak.com" geçsin.
             5) "caption": TikTok/Reels açıklaması (1–2 cümle, izleyiciye soruyla bitsin, doğru kelime geçmesin) ve "hashtags": 5–6 Türkçe ağırlıklı etiket.

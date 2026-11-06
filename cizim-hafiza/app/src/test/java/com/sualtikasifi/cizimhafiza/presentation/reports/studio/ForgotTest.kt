@@ -2,6 +2,7 @@ package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 
 import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
 import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotChest
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotPhase
@@ -20,7 +21,7 @@ class ForgotTest {
     private fun line(t: String) = SpokenLine(t, MascotEmotion.Neutral)
 
     private fun script(guesses: Int = 3, mode: ForgotMode = ForgotMode.Word) = ForgotScript(
-        drawingId = 1, word = "şemsiye", drawerAnswer = "denizanası",
+        drawingId = 1, word = "şemsiye",
         hook = line("hook"), guesses = List(guesses) { line("tahmin $it") }, reaction = line("tepki"),
         codeLine = line("kod"), outro = line("bitiş"), mode = mode, reward = "Sanatçı Kasası", code = "SEMSIYE"
     )
@@ -136,6 +137,24 @@ class ForgotTest {
     fun defaultLinesNameTheModes() {
         assertTrue(ForgotCopy.codeLineFor(ForgotMode.Word).contains("cevap"))
         assertTrue(ForgotCopy.codeLineFor(ForgotMode.Shown).contains("kodun"))
-        assertTrue(ForgotCopy.reactionText(" denizanası ").contains("“denizanası”"))
+        assertTrue(ForgotCopy.REACTION.isNotBlank())
+    }
+
+    @Test
+    fun aChestIsNoneOrOneOfATier() {
+        assertTrue(ForgotChest.None.chests.isEmpty())
+        assertEquals(mapOf(ChestTier.GOLD to 1), ForgotChest.Gold.chests)
+        assertEquals(ChestTier.RARE, ForgotChest.Rare.tier)
+    }
+
+    @Test
+    fun theHandSetRewardReadsWithoutAChest() {
+        assertEquals("1250 altın + 40 XP", ForgotCopy.rewardLabel(1250, 40, ForgotChest.None.chests))
+        assertEquals("Sürpriz Kasası + 40 XP", ForgotCopy.rewardLabel(0, 40, ForgotChest.Rare.chests))
+    }
+
+    @Test
+    fun aNewCodeStopsWorkingTwoDaysOut() {
+        assertEquals(1_000L + 48L * 3_600_000L, ForgotCopy.defaultExpiry(1_000L))
     }
 }

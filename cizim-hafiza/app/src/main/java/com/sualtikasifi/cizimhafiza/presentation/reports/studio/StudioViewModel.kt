@@ -37,7 +37,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotCop
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotDirector
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotRenderer
-import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotReward
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotChest
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotScript
 import com.sualtikasifi.cizimhafiza.domain.model.Coupon
 import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
@@ -142,13 +142,15 @@ sealed interface LineRef {
 /** "Çizen Bile Bilemedi": the chosen drawing, what its drawer wrote, how the code is given, what it gives, and the script. */
 data class ForgotUi(
     val drawingId: Long? = null,
-    /** What the drawer wrote when they could not recognise it; typed by hand when the phone did not keep it. */
-    val drawerAnswer: String = "",
     val script: ForgotScript? = null,
     val mode: ForgotMode = ForgotMode.Word,
-    val reward: ForgotReward = ForgotReward.Gold,
+    /** What the code gives, all set by hand: gold, XP and one chest (or none). */
+    val chest: ForgotChest = ForgotChest.Gold,
+    val gold: Int = 0,
+    val xp: Int = 0,
+    /** How many accounts may use the code, and the date and time it stops working (device time zone). */
     val maxUses: Int = 100,
-    val hours: Int = 48,
+    val expiresAtMillis: Long = ForgotCopy.defaultExpiry(),
     /** The code written out on the end card in [ForgotMode.Shown]; a fresh one on demand. */
     val shownCode: String = CouponCodes.generate(),
     val writing: Boolean = false,
@@ -268,6 +270,9 @@ data class StudioState(
         StudioFormat.RealLife -> real.project?.shown?.isNotEmpty() == true
     }
 }
+
+/** The most accounts one code may be given to. */
+private const val MAX_COUPON_USES = 1_000_000
 
 /** The drawing list of "Çizen Bile Bilemedi" grows by this many at a time (three rows of three). */
 const val FORGOT_PAGE = 9
@@ -405,26 +410,25 @@ class StudioViewModel @Inject constructor(
     /** The script for [d] with the panel's choices; the lines of [previous] are kept (the code line follows the mode). */
     private fun buildForgot(d: StudioDrawing, ui: ForgotUi, previous: ForgotScript?): ForgotScript {
         val other = ForgotCopy.codeLineFor(if (ui.mode == ForgotMode.Word) ForgotMode.Shown else ForgotMode.Word)
-        val answer = ui.drawerAnswer.trim().ifBlank { "…" }
         return ForgotScript(
-            drawingId = d.id, word = d.word, drawerAnswer = ui.drawerAnswer.trim(),
+            drawingId = d.id, word = d.word,
             hook = previous?.hook ?: SpokenLine(ForgotCopy.HOOK, MascotEmotion.Shocked),
             guesses = previous?.guesses ?: ForgotCopy.placeholderGuesses(),
-            reaction = previous?.reaction ?: SpokenLine(ForgotCopy.reactionText(answer), MascotEmotion.Laughing),
+            reaction = previous?.reaction ?: SpokenLine(ForgotCopy.REACTION, MascotEmotion.Laughing),
             codeLine = previous?.codeLine?.takeIf { it.text != other } ?: SpokenLine(ForgotCopy.codeLineFor(ui.mode), MascotEmotion.Point),
             outro = previous?.outro ?: SpokenLine(ForgotCopy.OUTRO, MascotEmotion.Wave),
             mode = ui.mode,
-            reward = ForgotCopy.rewardLabel(ui.reward.gold, ui.reward.xp, ui.reward.chests),
+            reward = ForgotCopy.rewardLabel(ui.gold, ui.xp, ui.chest.chests),
             code = if (ui.mode == ForgotMode.Word) ForgotCopy.wordCode(d.word).orEmpty() else ui.shownCode,
             percent = previous?.percent ?: ForgotCopy.randomPercent(),
             showPercent = previous?.showPercent ?: false
         )
     }
 
-    /** Takes a drawing (one this phone kept; only they carry what the drawer wrote) and makes a first script around it. */
+    /** Takes one of this phone's drawings and makes a first script around it. */
     fun selectForgot(d: StudioDrawing) {
         _state.update { s ->
-            val ui = s.forgot.copy(drawingId = d.id, drawerAnswer = d.answer.trim(), writeError = null, couponStatus = null)
+            val ui = s.forgot.copy(drawingId = d.id, writeError = null, couponStatus = null)
             s.copy(forgot = ui.copy(script = buildForgot(d, ui, null)), video = null, previewMs = 0L, renderError = null)
         }
         refreshPreview()
@@ -444,28 +448,12 @@ class StudioViewModel @Inject constructor(
     fun showMoreForgot() = updateForgot { it.copy(shown = it.shown + FORGOT_PAGE) }
 
     fun setForgotMode(mode: ForgotMode) = rebuildForgot { it.copy(mode = mode) }
-    fun setForgotReward(reward: ForgotReward) = rebuildForgot { it.copy(reward = reward) }
-    fun setForgotUses(n: Int) = updateForgot { it.copy(maxUses = n, couponStatus = null) }
-    fun setForgotHours(h: Int) = updateForgot { it.copy(hours = h, couponStatus = null) }
+    fun setForgotChest(chest: ForgotChest) = rebuildForgot { it.copy(chest = chest) }
+    fun setForgotGold(n: Int) = rebuildForgot { it.copy(gold = n.coerceIn(0, CouponCodes.MAX_GOLD)) }
+    fun setForgotXp(n: Int) = rebuildForgot { it.copy(xp = n.coerceIn(0, CouponCodes.MAX_XP)) }
+    fun setForgotUses(n: Int) = updateForgot { it.copy(maxUses = n.coerceIn(0, MAX_COUPON_USES), couponStatus = null) }
+    fun setForgotExpiry(millis: Long) = updateForgot { it.copy(expiresAtMillis = millis, couponStatus = null) }
     fun newForgotCode() = rebuildForgot { it.copy(shownCode = CouponCodes.generate()) }
-
-    /** The drawer's answer is edited: the stock reaction line follows it, one the person or the assistant wrote stays. */
-    fun setForgotAnswer(text: String) {
-        _state.update { s ->
-            val old = s.forgot
-            val script = old.script
-            val stock = script != null && script.reaction.text == ForgotCopy.reactionText(old.drawerAnswer.trim().ifBlank { "…" })
-            val ui = old.copy(
-                drawerAnswer = text,
-                script = script?.copy(
-                    drawerAnswer = text.trim(),
-                    reaction = if (stock) script.reaction.copy(text = ForgotCopy.reactionText(text.trim().ifBlank { "…" })) else script.reaction
-                )
-            )
-            s.copy(forgot = ui, video = null)
-        }
-        refreshPreview()
-    }
 
     fun setForgotShowPercent(on: Boolean) = editForgotScript { it.copy(showPercent = on) }
     fun stepForgotPercent(delta: Int) = editForgotScript { it.copy(percent = (it.percent + delta).coerceIn(1, 99)) }
@@ -488,7 +476,7 @@ class StudioViewModel @Inject constructor(
         val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
         updateForgot { it.copy(writing = true, writeError = null) }
         viewModelScope.launch {
-            ForgotDirector(OpenRouterClient(key), model, _state.value.lang).write(d.copy(answer = s.forgot.drawerAnswer.trim().ifBlank { "…" })).onSuccess { w ->
+            ForgotDirector(OpenRouterClient(key), model, _state.value.lang).write(d).onSuccess { w ->
                 _state.update { st ->
                     val cur = st.forgot.script ?: return@update st.copy(forgot = st.forgot.copy(writing = false))
                     val c = w.lines
@@ -516,15 +504,22 @@ class StudioViewModel @Inject constructor(
             updateForgot { it.copy(couponStatus = "Bu kelime kod olamaz: 4–24 harf olmalı. “Kod ekranda”yı dene.") }
             return
         }
+        val problem = when {
+            script.reward.isBlank() -> "Ödül boş: altın, XP ya da kasa seç."
+            ui.maxUses < 1 -> "En az 1 kişi kullanabilmeli."
+            ui.expiresAtMillis <= System.currentTimeMillis() -> "Bitiş zamanı geçmişte kalmış."
+            else -> null
+        }
+        if (problem != null) { updateForgot { it.copy(couponStatus = problem) }; return }
         updateForgot { it.copy(couponBusy = true, couponStatus = null) }
         viewModelScope.launch {
             val status = couponRepository.find(code).fold(
                 onSuccess = { existing ->
                     if (existing != null) "$code zaten var (${existing.usedCount}/${existing.maxUses} kullanıldı). Başka kelime ya da yeni kod seç."
                     else {
-                        val coupon = Coupon(code, ui.reward.gold, ui.reward.xp, ui.reward.chests, ui.maxUses, 0, System.currentTimeMillis() + ui.hours * 3_600_000L)
+                        val coupon = Coupon(code, ui.gold, ui.xp, ui.chest.chests, ui.maxUses, 0, ui.expiresAtMillis)
                         couponRepository.create(coupon).fold(
-                            onSuccess = { "Kupon hazır: $code · ilk ${ui.maxUses} kişi · ${ui.hours} saat · ${script.reward}" },
+                            onSuccess = { "Kupon hazır: $code · ilk ${ui.maxUses} kişi · ${SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("tr")).format(Date(ui.expiresAtMillis))}'e kadar · ${script.reward}" },
                             onFailure = { e -> "Kupon oluşturulamadı: ${e.message}" }
                         )
                     }

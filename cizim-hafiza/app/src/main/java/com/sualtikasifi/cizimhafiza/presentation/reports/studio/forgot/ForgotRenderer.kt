@@ -17,14 +17,13 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmo
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotSprites
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MouthState
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.mouthFor
-import java.util.Locale
 import kotlin.math.min
 import kotlin.math.sin
 
 /**
  * Draws "Çizen Bile Bilemedi" in 1080×1920: Karalak and the title with what the code gives at the top, its words as
  * subtitles that come in as they are said, and one drawing on a sheet of paper below. The drawing is shown, drawn
- * again while Karalak guesses, a countdown asks the viewer to guess too, the drawer's wrong answer lands, and the kupon
+ * again while Karalak guesses, a countdown asks the viewer to guess too, Karalak reacts, and the kupon
  * kodu comes up: as empty boxes (the answer itself) or written out. Everything a viewer must read sits clear of the
  * band TikTok and Reels cover.
  */
@@ -76,7 +75,7 @@ class ForgotRenderer(
             ForgotPhase.Draw -> drawDrawing(canvas, e.drawFrom + (e.drawTo - e.drawFrom) * Ease.inOut(e.progress(t)), 1f, 0L)
             ForgotPhase.Guess -> drawDrawing(canvas, e.drawTo, 1f, 0L)
             ForgotPhase.Countdown -> drawCountdown(canvas, e, t)
-            ForgotPhase.Answer -> drawAnswer(canvas, e, t)
+            ForgotPhase.Answer -> drawAnswer(canvas)
             ForgotPhase.Code -> drawCode(canvas, e, t)
             ForgotPhase.Outro -> Unit
         }
@@ -204,27 +203,8 @@ class ForgotRenderer(
         canvas.restore()
     }
 
-    /** The drawing smaller, and what the drawer wrote on a note under it. */
-    private fun drawAnswer(canvas: Canvas, e: ForgotEvent, t: Long) {
-        drawDrawing(canvas, 1f, 1f, 0L, RectF(card.left + 40f, card.top + 30f, card.right - 40f, card.bottom - 270f))
-        val local = t - e.startMs
-        val pop = Ease.backOut(min(1f, (local - 300f).coerceAtLeast(0f) / 380f))
-        if (pop <= 0f) return
-        val note = RectF(card.left + 50f, card.bottom - 250f, card.right - 50f, card.bottom - 40f)
-        canvas.save()
-        canvas.scale(pop, pop, note.centerX(), note.centerY())
-        canvas.rotate(-1.6f, note.centerX(), note.centerY())
-        fill.color = 0xFFFFF3C4.toInt()
-        canvas.drawRoundRect(note, 28f, 28f, fill)
-        line.color = 0xFFE9CF7A.toInt(); line.strokeWidth = 4f
-        canvas.drawRoundRect(note, 28f, 28f, line)
-        text.draw(canvas, "Çizen şunu yazdı:", note.centerX(), note.top + 44f, (note.width() - 60f).toInt(), 34f, 1, assets.body, C.MUTED)
-        text.draw(canvas, script.drawerAnswer.uppercase(TR), note.centerX(), note.top + 130f, (note.width() - 150f).toInt(), 78f, 1, assets.display, C.BAD)
-        fill.color = C.BAD
-        canvas.drawCircle(note.right - 52f, note.top + 52f, 30f, fill)
-        text.draw(canvas, "✗", note.right - 52f, note.top + 52f, 50, 36f, 1, assets.display, C.WHITE)
-        canvas.restore()
-    }
+    /** The whole drawing again on the paper while Karalak reacts. */
+    private fun drawAnswer(canvas: Canvas) = drawDrawing(canvas, 1f, 1f, 0L)
 
     /**
      * The kupon kodu on the paper. In [ForgotMode.Word] it is empty boxes, one per letter (the answer is the code, the
@@ -307,6 +287,5 @@ class ForgotRenderer(
         const val H = 1920
         const val FPS = 30
         private const val ROW = 10
-        private val TR = Locale("tr")
     }
 }
