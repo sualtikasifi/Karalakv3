@@ -1,8 +1,16 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot
 
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.Rect
 import android.graphics.RectF
+import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.EndCardPhone
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipFrames
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealTimeline
+import kotlin.math.hypot
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Ease
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.Lettering
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StrokeReplay
@@ -33,11 +41,16 @@ class ForgotRenderer(
     private val script: ForgotScript,
     private val drawing: StudioDrawing,
     private val voice: Map<Int, FloatArray>?,
-    private val wordTimes: Map<Int, List<LongRange>>? = null
+    private val wordTimes: Map<Int, List<LongRange>>? = null,
+    /** The video of how the game is played, shown without its sound inside the phone on the end card; [howtoMs] long (0: none). */
+    private val howto: ClipFrames? = null,
+    private val howtoMs: Long = 0L
 ) : VoicedVideo {
-    val events: List<ForgotEvent> = ForgotTimeline.build(script) { i, l ->
+    val events: List<ForgotEvent> = ForgotTimeline.build(script, howtoMs) { i, l ->
         voice?.get(i)?.let { it.size * 1000L / FPS } ?: StudioCopy.estimateMs(l.text)
     }
+    override val width: Int get() = W
+    override val height: Int get() = H
     override val totalMs: Long = ForgotTimeline.totalMs(events)
     override val voiceStarts: List<Pair<Int, Long>> = events.filter { it.line != null }.map { it.lineIndex to it.startMs }
 
@@ -51,6 +64,13 @@ class ForgotRenderer(
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val ink = StrokeReplay.inkPaint()
     private val replay = StrokeReplay(drawing.strokes)
+    private val src = Rect()
+    private val plain = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = C.WHITE }
+    private val circle = Path()
+
+    /** The end card with the phone, when there is a how-to video to play in it; otherwise the closing keeps its own plain card. */
+    private val phoneCard = if (howto != null && howtoMs > 0) assets.picture(R.drawable.real_end_card_phone) else null
 
     private val mascotTile = RectF(40f, 150f, 400f, 510f)
     private val titleBox = RectF(430f, 150f, 1040f, 510f)
@@ -59,6 +79,13 @@ class ForgotRenderer(
     override fun draw(canvas: Canvas, t: Long) {
         canvas.drawColor(C.CREAM)
         val e = ForgotTimeline.at(events, t)
+        if (e.phase == ForgotPhase.Outro && phoneCard != null) {
+            drawPhoneEnd(canvas, phoneCard, e, t)
+            return
+        }
+        // the video is 9:20, taller than the 9:16 everything below is laid out for: it sits in the middle, cream above and below
+        canvas.save()
+        canvas.translate(0f, TOP_PAD)
         val spoken = e.line?.let { l -> voice?.get(e.lineIndex)?.let { it.size * 1000L / FPS } ?: StudioCopy.estimateMs(l.text) } ?: 0L
         val speaking = e.line != null && t - e.startMs < spoken
         val level = level(e, t, speaking)
@@ -81,13 +108,66 @@ class ForgotRenderer(
         }
         if (e.phase != ForgotPhase.Outro) {
             text.draw(canvas, "karalak.com · Google Play: Karalak", 540f, 1640f, 900, 32f, 1, assets.body, C.MUTED)
+        } else {
+            drawEndCard(canvas, e, t, speaking, level)
+        }
+        canvas.restore()
+        if (e.phase != ForgotPhase.Outro) {
             fill.color = C.CARD_EDGE
             canvas.drawRect(0f, H - 10f, W.toFloat(), H.toFloat(), fill)
             fill.color = C.ORANGE
             canvas.drawRect(0f, H - 10f, W * (t.toFloat() / totalMs).coerceIn(0f, 1f), H.toFloat(), fill)
-        } else {
-            drawEndCard(canvas, e, t, speaking, level)
         }
+    }
+
+    /**
+     * The closing on the game's end card: it opens out of the last frame in a growing circle, the how-to video plays in the
+     * phone's screen once the card has opened and holds its last frame, and Karalak's closing line is only said (no subtitle,
+     * the card has its own words).
+     */
+    private fun drawPhoneEnd(canvas: Canvas, card: Bitmap, e: ForgotEvent, t: Long) {
+        val local = t - e.startMs
+        val open = Ease.out((local.toFloat() / END_OPEN).coerceIn(0f, 1f))
+        // what the circle opens over: the frame before it
+        if (open < 1f && e.startMs > 0) draw(canvas, e.startMs - 1)
+        val cx = W / 2f
+        val cy = H / 2f
+        val r = open * hypot(cx, cy)
+        circle.reset()
+        circle.addCircle(cx, cy, r, Path.Direction.CW)
+        canvas.save()
+        canvas.clipPath(circle)
+        canvas.drawColor(C.CREAM)
+        val screen = EndCardPhone.screen()
+        val at = (local - RealTimeline.END_VIDEO_LEAD).coerceIn(0L, (howtoMs - 1L).coerceAtLeast(0L))
+        val frame = howto?.frameAt(at)
+        plain.color = C.INK
+        canvas.drawRect(screen, plain)
+        if (frame != null && !frame.isRecycled) {
+            canvas.save()
+            canvas.clipRect(screen)
+            cover(canvas, frame, screen)
+            canvas.restore()
+        }
+        canvas.drawBitmap(card, null, RectF(0f, 0f, W.toFloat(), H.toFloat()), fill)
+        canvas.restore()
+        edge.strokeWidth = 10f * (1f - open)
+        if (edge.strokeWidth > 0.5f) canvas.drawCircle(cx, cy, r, edge)
+    }
+
+    /** Fills [dst] with [bmp], cropped to its shape. */
+    private fun cover(canvas: Canvas, bmp: Bitmap, dst: RectF) {
+        val aspect = dst.width() / dst.height()
+        var sw = bmp.width.toFloat()
+        var sh = sw / aspect
+        if (sh > bmp.height) {
+            sh = bmp.height.toFloat()
+            sw = sh * aspect
+        }
+        val sx = (bmp.width - sw) / 2f
+        val sy = (bmp.height - sh) / 2f
+        src.set(sx.toInt(), sy.toInt(), (sx + sw).toInt(), (sy + sh).toInt())
+        canvas.drawBitmap(bmp, src, dst, fill)
     }
 
     private fun level(e: ForgotEvent, t: Long, speaking: Boolean): Float {
@@ -284,7 +364,12 @@ class ForgotRenderer(
 
     companion object {
         const val W = 1080
-        const val H = 1920
+        /** 9:20, the proportions of a phone's full screen, like "Gerçek Olsaydı". */
+        const val H = 2400
+        /** What everything but the end card is laid out on: 1080 × 1920, centred in the frame. */
+        private const val CONTENT_H = 1920
+        private const val TOP_PAD = (H - CONTENT_H) / 2f
+        private const val END_OPEN = 560L
         const val FPS = 30
         private const val ROW = 10
     }

@@ -180,7 +180,7 @@ fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(if (st.format == StudioFormat.RealLife) "Karalak'lı dikey videolar · 1080×2400 · sesli" else "Karalak'lı dikey videolar · 1080×1920 · sesli", style = Console.Label, modifier = Modifier.weight(1f))
+                Text("Karalak'lı dikey videolar · 1080×2400 · sesli", style = Console.Label, modifier = Modifier.weight(1f))
             }
         }
         item {
@@ -324,7 +324,7 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
                 busy = f.writing,
                 enabled = !f.writing
             ) { vm.writeForgot() }
-            Text("Çizime bakıp yanlış ama komik tahminler yazar; doğru kelimeyi söyleyen cümleler atılır.", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
+            Text("Çizime bakıp yanlış ama komik tahminler yazar; doğru kelimeyi söyleyen cümleler atılır. Model: ${st.analysisModel} (OpenRouter; Ayarlar sekmesinden değişir).", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
             st.aiCost?.let { Text("Bu yazımın maliyeti: " + OpenRouterClient.usd(it), style = Console.Small) }
             f.writeError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
         }
@@ -1501,7 +1501,7 @@ private fun PreviewCard(st: StudioState, vm: StudioViewModel) {
                 style = Console.Small
             )
         } else {
-            val ratio = if (st.format == StudioFormat.RealLife) 9f / 20f else 9f / 16f
+            val ratio = 9f / 20f
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 val img = st.preview
                 if (img != null) Image(img, contentDescription = "Önizleme", contentScale = ContentScale.Fit, modifier = Modifier.width(220.dp).aspectRatio(ratio).clip(RoundedCornerShape(12.dp)))

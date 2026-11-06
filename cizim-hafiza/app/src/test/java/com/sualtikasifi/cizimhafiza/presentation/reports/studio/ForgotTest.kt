@@ -10,6 +10,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotScr
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotTimeline
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealTimeline
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -151,6 +152,22 @@ class ForgotTest {
     fun theHandSetRewardReadsWithoutAChest() {
         assertEquals("40 XP + 1250 altın", ForgotCopy.rewardLabel(1250, 40, ForgotChest.None.chests))
         assertEquals("Sürpriz Kasası + 40 XP", ForgotCopy.rewardLabel(0, 40, ForgotChest.Rare.chests))
+    }
+
+    @Test
+    fun theClosingStaysUntilTheHowToVideoHasPlayedInTheEndCard() {
+        val plain = ForgotTimeline.build(script()) { _, _ -> 500L }
+        val withCard = ForgotTimeline.build(script(), howtoMs = 8_000L) { _, _ -> 500L }
+        assertEquals(plain.dropLast(1).map { it.endMs }, withCard.dropLast(1).map { it.endMs })
+        assertTrue(withCard.last().durationMs >= 8_000L + RealTimeline.END_VIDEO_LEAD + RealTimeline.END_VIDEO_TAIL)
+        assertTrue(withCard.last().durationMs > plain.last().durationMs)
+    }
+
+    @Test
+    fun aHowToVideoLongerThanTheLimitIsCutAtIt() {
+        val limit = RealTimeline.HOWTO_MAX + RealTimeline.END_VIDEO_LEAD + RealTimeline.END_VIDEO_TAIL
+        val long = ForgotTimeline.build(script(), howtoMs = 60_000L) { _, _ -> 500L }
+        assertEquals(limit, long.last().durationMs)
     }
 
     @Test

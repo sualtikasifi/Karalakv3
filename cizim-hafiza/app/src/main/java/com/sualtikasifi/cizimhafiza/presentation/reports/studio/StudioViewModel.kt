@@ -359,6 +359,8 @@ class StudioViewModel @Inject constructor(
 
     fun setFormat(f: StudioFormat) {
         _state.update { it.copy(format = f, video = null, renderError = null, previewMs = 0L) }
+        // Karalak speaks here with the voice "Gerçek Olsaydı" uses (the settings are shared): ElevenLabs, its last chosen voice
+        if (f == StudioFormat.Forgot && _state.value.eleven.keySet && _state.value.voiceEngine != VoiceEngine.ElevenLabs) setVoiceEngine(VoiceEngine.ElevenLabs)
         if (f == StudioFormat.RealLife && _state.value.real.recent.isEmpty()) refreshRecent()
         refreshPreview()
     }
@@ -473,7 +475,7 @@ class StudioViewModel @Inject constructor(
         if (s.forgot.writing) return
         val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
         if (key.isBlank()) { updateForgot { it.copy(writeError = "Önce Asistan ayarlarından OpenRouter anahtarını gir.") }; return }
-        val model = prefs().getString(AssistantViewModel.MODEL, OpenRouterClient.DEFAULT_MODEL).orEmpty().ifBlank { OpenRouterClient.DEFAULT_MODEL }
+        val model = analysisModel()
         updateForgot { it.copy(writing = true, writeError = null) }
         viewModelScope.launch {
             ForgotDirector(OpenRouterClient(key), model, _state.value.lang).write(d).onSuccess { w ->
@@ -1700,7 +1702,12 @@ class StudioViewModel @Inject constructor(
             StudioFormat.Forgot -> {
                 val script = s.forgot.script ?: return null
                 val drawing = s.drawings.find { it.id == script.drawingId } ?: return null
-                ForgotRenderer(assetsOrLoad(), sp, script, drawing, voice, wordTimes)
+                // the closing is the same end card with the phone as "Gerçek Olsaydı"'s, the how-to video playing in it
+                val howtoFile = s.real.howto?.takeIf { s.real.howtoMs > 0 }
+                ForgotRenderer(
+                    assetsOrLoad(), sp, script, drawing, voice, wordTimes,
+                    howto = howtoFile?.let(howtoSource), howtoMs = if (howtoFile != null) s.real.howtoMs else 0L
+                )
             }
             StudioFormat.RealLife -> null
         }

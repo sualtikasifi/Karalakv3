@@ -5,6 +5,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.SpokenLine
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealTimeline
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
@@ -95,7 +96,11 @@ object ForgotTimeline {
     private const val CODE_MIN = 3_600L
     private const val OUTRO_HOLD = 1_800L
 
-    fun build(script: ForgotScript, durationOf: (index: Int, line: SpokenLine) -> Long): List<ForgotEvent> {
+    /**
+     * [howtoMs] > 0: the closing is the end card with the phone, and it stays until the how-to video has played in it
+     * (see [RealTimeline.END_VIDEO_LEAD]) and a moment more, however short Karalak's line is.
+     */
+    fun build(script: ForgotScript, howtoMs: Long = 0L, durationOf: (index: Int, line: SpokenLine) -> Long): List<ForgotEvent> {
         val out = mutableListOf<ForgotEvent>()
         var t = 0L
         var index = 0
@@ -120,7 +125,8 @@ object ForgotTimeline {
         t += COUNTDOWN_MS
         speak(ForgotPhase.Answer, -1, script.reaction, ANSWER_MIN, 500, 1f, 1f)
         speak(ForgotPhase.Code, -1, script.codeLine, CODE_MIN, 500, 1f, 1f)
-        speak(ForgotPhase.Outro, -1, script.outro, 0, OUTRO_HOLD, 1f, 1f)
+        val cardMin = if (howtoMs > 0) howtoMs.coerceAtMost(RealTimeline.HOWTO_MAX) + RealTimeline.END_VIDEO_LEAD + RealTimeline.END_VIDEO_TAIL else 0L
+        speak(ForgotPhase.Outro, -1, script.outro, cardMin, OUTRO_HOLD, 1f, 1f)
         return out
     }
 
