@@ -24,29 +24,27 @@ enum class ForgotStyle(
     val titleShown: String,
     val explainWord: String,
     val explainShown: String,
-    /** Above the prize pill on the code screen. */
-    val rewardLabel: String?,
     val howTo: String,
     val hintWord: String,
     /** The assistant's voice for this set. */
     val tone: String
 ) {
-    // nothing here names what the code gives (it may be gold, XP or a chest): the prize is written by the board's "Ödül:" and the pill
+    // nothing here names what the code gives (it may be gold, XP or a chest): the prize is written only by the board's "Ödül:" frame
     Game(
         "Oyun dili", "GİZLİ KOD", "ÖDÜL KODU",
-        "Kod, çizilen şeyin adı", "Kodu uygulamaya gir", "Kodu çözene",
+        "Kod, çizilen şeyin adı", "Kodu uygulamaya gir",
         "Ayarlar › Kupon kodu › Kullan", "Takıldıysan yorumlara bak",
         "oyun dili: kod, şifre, görev, meydan okuma gibi sözcükler; enerjik ve meydan okuyan. Ödülün ne olduğunu (kasa, altın, XP) sen söyleme, ekranda yazıyor"
     ),
     Warm(
         "Sıcak dil", "Cevabı bil, ödülü al", "Hediye kodun hazır",
-        "Kod, az önce çizilen şeyin adı", "Kodu uygulamaya yaz", "Bilene hediye",
+        "Kod, az önce çizilen şeyin adı", "Kodu uygulamaya yaz",
         "Ayarlar'a gir, kodu yaz, Kullan'a bas", "Bilemedin mi? İpucu yorumlarda",
         "samimi ve sıcak: hediye veren, yanında duran bir arkadaş gibi; yarışmacı değil davetkâr. Ödülün ne olduğunu sen söyleme, ekranda yazıyor"
     ),
     Deal(
         "Fırsat dili", "Hediye kodun", "Hediye kodun",
-        "Kod, çizilen şeyin adı", "Kodu uygulamaya gir", "Kodla gelen ödül",
+        "Kod, çizilen şeyin adı", "Kodu uygulamaya gir",
         "Ayarlar › Kupon kodu › Kullan", "İpucu yorumlarda",
         "net ve fırsat vurgulu: kısa, süreli ve sınırlı olduğunu hissettiren ama abartısız, bağıran değil. Ödülün ne olduğunu sen söyleme, ekranda yazıyor"
     );

@@ -131,11 +131,9 @@ class ForgotRenderer(
             ForgotPhase.Code -> drawCode(canvas, e, t)
             ForgotPhase.Outro -> Unit
         }
-        if (e.phase != ForgotPhase.Code) {
-            // the word's blanks over the board from the very first frame, the prize under it
-            drawLetterSlots(canvas, board.centerX(), board.width() - 100f)
-            drawRewardFrame(canvas)
-        }
+        // the prize frame stands on the board's lower edge all through; the word's blanks only while the drawing is shown
+        if (e.phase != ForgotPhase.Code) drawLetterSlots(canvas, board.centerX(), board.width() - 100f)
+        drawRewardFrame(canvas)
         fill.color = C.CARD_EDGE
         canvas.drawRect(0f, H - 10f, W.toFloat(), H.toFloat(), fill)
         fill.color = C.ORANGE
@@ -363,8 +361,6 @@ class ForgotRenderer(
         val style = script.style
         val title = style.codeTitle(word)
         val explain = style.explain(word)
-        val label = style.rewardLabel
-        val reward = script.reward.takeIf { it.isNotBlank() }
         val limit = ForgotCopy.limitText(script.uses, script.expiresAtMillis, style).takeIf { it.isNotBlank() }
         val howTo = style.howTo
         val hint = if (word) style.hintWord else null
@@ -373,27 +369,24 @@ class ForgotRenderer(
         val rows = if (code.isEmpty()) 0 else (code.length + per - 1) / per
         val cell0 = min(96f, (board.width() - 100f) / per - 8f).coerceAtLeast(40f)
         val boxes0 = if (code.isEmpty()) 0f else rows * cell0 * 1.2f + (rows - 1) * BOX_ROW_GAP
-        val padV0 = 24f
         val hTitle = inkHeight(title, 800, 68f, 1, assets.display)
         val hExplain = inkHeight(explain, 820, 42f, 1, assets.body)
-        val hLabel = if (reward != null && label != null) inkHeight(label, 800, 32f, 1, assets.body) else 0f
-        val hReward = reward?.let { inkHeight(it, 780, 60f, 1, assets.display) } ?: 0f
-        val pill0 = if (reward != null) hReward + 2f * padV0 else 0f
         val hLimit = limit?.let { inkHeight(it, 820, 42f, 1, assets.display) } ?: 0f
         val hHow = inkHeight(howTo, 820, 40f, 1, assets.body)
         val hHint = hint?.let { inkHeight(it, 820, 36f, 1, assets.body) } ?: 0f
         val gaps = floatArrayOf(
-            26f, 48f, 54f,                                   // title | explain | boxes | reward label
-            if (reward != null && label != null) 14f else 0f, // label | pill
-            if (limit != null) 40f else 0f,                  // pill | limit
-            34f,                                             // limit | how-to
+            26f, 48f,                                        // title | explain | boxes
+            54f,                                             // boxes | limit (or how-to)
+            if (limit != null) 34f else 0f,                  // limit | how-to
             if (hint != null) 14f else 0f                    // how-to | hint
         )
-        val total = hTitle + hExplain + boxes0 + hLabel + pill0 + hLimit + hHow + hHint + gaps.sum()
-        // the whole stack shrinks together when it is taller than the board allows
-        val k = min(1f, (board.height() - 130f) / total)
+        val total = hTitle + hExplain + boxes0 + hLimit + hHow + hHint + gaps.sum()
+        // the whole stack shrinks together when it is taller than the room the prize frame leaves it (it stands on the lower edge)
+        val roomTop = board.top + 30f
+        val roomBottom = board.bottom - CODE_FRAME_ROOM
+        val k = min(1f, (roomBottom - roomTop) / total)
 
-        var y = board.centerY() - total * k / 2f
+        var y = (roomTop + roomBottom) / 2f - total * k / 2f
         fun put(txt: String, h: Float, size: Float, width: Int, face: android.graphics.Typeface, color: Int) {
             text.draw(canvas, txt, cx, y + h * k / 2f, width, size * k, 1, face, color, alpha = a, ink = true)
             y += h * k
@@ -406,37 +399,13 @@ class ForgotRenderer(
         val shown = if (word) 0 else (code.length * Ease.out(min(1f, (local - 250f).coerceAtLeast(0f) / 900f))).toInt().coerceAtMost(code.length)
         drawBoxes(canvas, code, shown, word, y, cell0 * k, BOX_ROW_GAP * k, a)
         y += boxes0 * k + gaps[2] * k
-        if (reward != null) {
-            if (label != null) {
-                put(label, hLabel, 32f, 800, assets.body, C.MUTED)
-                y += gaps[3] * k
-            }
-            // the prize is the biggest thing on the screen: on a pill of its own
-            val padV = padV0 * k
-            val pillH = hReward * k + 2f * padV
-            val textW = text.measureInk(reward, 780, 60f * k, 1, assets.display, C.INK).first
-            val pillW = min(board.width() - 80f, textW + 90f * k)
-            val pill = RectF(cx - pillW / 2f, y, cx + pillW / 2f, y + pillH)
-            fill.color = C.CREAM_DEEP
-            fill.alpha = (255 * a).toInt()
-            canvas.drawRoundRect(pill, pillH / 2f, pillH / 2f, fill)
-            fill.alpha = 255
-            line.color = C.ORANGE
-            line.strokeWidth = 5f
-            line.alpha = (255 * a).toInt()
-            canvas.drawRoundRect(pill, pillH / 2f, pillH / 2f, this.line)
-            line.alpha = 255
-            text.draw(canvas, reward, cx, pill.centerY(), (pillW - 40f).toInt(), 60f * k, 1, assets.display, C.INK, alpha = a, ink = true)
-            y += pillH
-        }
         if (limit != null) {
-            y += gaps[4] * k
             put(limit, hLimit, 42f, 820, assets.display, C.ORANGE_DARK)
+            y += gaps[3] * k
         }
-        y += gaps[5] * k
         put(howTo, hHow, 40f, 820, assets.body, C.INK)
         if (hint != null) {
-            y += gaps[6] * k
+            y += gaps[4] * k
             put(hint, hHint, 36f, 820, assets.body, C.MUTED)
         }
     }
@@ -506,6 +475,8 @@ class ForgotRenderer(
         /** The prize frame: its width, and how far below the board's lower edge the middle of its purple field lies. */
         private const val REWARD_W = 580f
         private const val REWARD_DROP = 10f
+        /** What the code screen keeps free above the board's lower edge for the prize frame's coins. */
+        private const val CODE_FRAME_ROOM = 150f
         /** The frame's purple field as shares of the picture (left, top, right, bottom), measured on the picture. */
         private const val FIELD_L = 0.1231f
         private const val FIELD_T = 0.4457f
