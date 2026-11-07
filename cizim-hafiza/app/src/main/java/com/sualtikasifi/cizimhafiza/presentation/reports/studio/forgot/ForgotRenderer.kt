@@ -74,6 +74,7 @@ class ForgotRenderer(
 
     /** The template picture, 841 × 1870; the places below are its panels' insides, measured on it and scaled to the video. */
     private val template = assets.picture(R.drawable.forgot_template)
+    private val rewardFrame = assets.picture(R.drawable.reward_frame)
 
     /**
      * The title banner's free inside, measured on the template (its pencil and blue line take the right end, so the empty
@@ -133,7 +134,7 @@ class ForgotRenderer(
         if (e.phase != ForgotPhase.Code) {
             // the word's blanks over the board from the very first frame, the prize under it
             drawLetterSlots(canvas, board.centerX(), board.width() - 100f)
-            drawRewardPill(canvas, board.bottom - 118f, 82f, 44f)
+            drawRewardFrame(canvas)
         }
         fill.color = C.CARD_EDGE
         canvas.drawRect(0f, H - 10f, W.toFloat(), H.toFloat(), fill)
@@ -285,23 +286,44 @@ class ForgotRenderer(
         line.strokeCap = Paint.Cap.BUTT
     }
 
-    /** "Ödül: 500 altın" on a pill centred on the board, [top] to [top] + [height]; nothing when the code gives nothing. */
-    private fun drawRewardPill(canvas: Canvas, top: Float, height: Float, size: Float) {
+    /**
+     * "Ödül: 500 altın" in the painted gold frame (reward_frame), at the board's bottom: the frame is [REWARD_W] wide and rests
+     * on the board's lower edge; the words are centred on the middle of its purple field, the dots over the Ö not counted.
+     * Nothing is drawn when the code gives nothing.
+     */
+    private fun drawRewardFrame(canvas: Canvas) {
+        val frame = rewardFrame ?: return
         val reward = script.reward.takeIf { it.isNotBlank() } ?: return
+        val w = REWARD_W
+        val h = w * frame.height / frame.width
+        val left = board.centerX() - w / 2f
+        val top = board.bottom - REWARD_LIFT - h
+        canvas.drawBitmap(frame, null, RectF(left, top, left + w, top + h), fill)
+        // the purple field, as shares of the picture (measured on it)
+        val field = RectF(left + w * FIELD_L, top + h * FIELD_T, left + w * FIELD_R, top + h * FIELD_B)
         val label = "${ForgotCopy.REWARD_LABEL} $reward"
-        val p = text.paint(size, assets.display, C.INK)
-        val cw = min(p.measureText(label) + 90f, board.width() - 60f)
-        val pill = RectF(board.centerX() - cw / 2f, top, board.centerX() + cw / 2f, top + height)
-        fill.color = C.CREAM_DEEP
-        canvas.drawRoundRect(pill, height / 2f, height / 2f, fill)
-        text.draw(canvas, label, pill.centerX(), pill.centerY(), (cw - 40f).toInt(), size, 1, assets.display, C.INK, ink = true)
+        val room = (field.width() - 56f).toInt()
+        // one line while it stays readable (34 or more); a long prize (chest + XP + gold) goes on two lines instead of shrinking
+        var size = 46f
+        while (size > 34f && text.measureInk(label, 1000, size, 1, assets.display, C.WHITE).first > room) size -= 1f
+        val two = text.measureInk(label, 1000, size, 1, assets.display, C.WHITE).first > room
+        val lines = if (two) 2 else 1
+        val width = if (two) room else 1000
+        if (two) {
+            size = 38f
+            while (size > 22f && text.measureInk(label, width, size, 2, assets.display, C.WHITE, balanced = true).let { it.first > room || it.second > field.height() - 18f }) size -= 1f
+        }
+        val full = text.measureInk(label, width, size, lines, assets.display, C.WHITE, balanced = two).second
+        val body = text.measureInk(label.replace('Ö', 'O'), width, size, lines, assets.display, C.WHITE, balanced = two).second
+        text.draw(canvas, label, field.centerX(), field.centerY() - (full - body) / 2f, width, size, lines, assets.display, C.WHITE, balanced = two, ink = true)
     }
 
     // ---- the board in the middle
 
     /** The drawing on the board, [fraction] of it drawn; [bobMs] > 0 gives a slow push-in while it stands. */
     private fun drawDrawing(canvas: Canvas, fraction: Float, alpha: Float, bobMs: Long) {
-        val box = RectF(board.left + 30f, board.top + 100f, board.right - 30f, board.bottom - 130f)
+        // room under the drawing for the prize frame (when there is a prize)
+        val box = RectF(board.left + 30f, board.top + 100f, board.right - 30f, board.bottom - if (script.reward.isNotBlank() && rewardFrame != null) REWARD_RESERVE else 130f)
         val zoom = 1f + 0.02f * min(1f, bobMs / 3_000f)
         canvas.save()
         canvas.scale(zoom, zoom, box.centerX(), box.centerY())
@@ -481,6 +503,15 @@ class ForgotRenderer(
         const val FPS = 30
         private const val BOX_ROW_GAP = 24f
         private const val BANNER_SIZE = 74f
+        /** The prize frame: its width, how far it stands above the board's lower edge, the room the drawing leaves for it. */
+        private const val REWARD_W = 580f
+        private const val REWARD_LIFT = 22f
+        private const val REWARD_RESERVE = 232f
+        /** The frame's purple field as shares of the picture (left, top, right, bottom), measured on the picture. */
+        private const val FIELD_L = 0.1231f
+        private const val FIELD_T = 0.4457f
+        private const val FIELD_R = 0.8748f
+        private const val FIELD_B = 0.8403f
         /** A layout width wider than the title ever is, so the title is measured and drawn on one line at the size chosen. */
         private const val BANNER_MEASURE_W = 1000
         private const val SUBTITLE_LINES = 3
