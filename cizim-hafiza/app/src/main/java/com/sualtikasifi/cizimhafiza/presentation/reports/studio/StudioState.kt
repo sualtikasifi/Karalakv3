@@ -161,6 +161,11 @@ data class ForgotUi(
     val shownCode: String = CouponCodes.generate(),
     val writing: Boolean = false,
     val writeError: String? = null,
+    /** The opening line alone being rewritten ("yenile"), why it failed, how many were asked for (they take turns between kinds), and the ones already tried. */
+    val hookWriting: Boolean = false,
+    val hookError: String? = null,
+    val hookTurn: Int = 0,
+    val hookTried: List<String> = emptyList(),
     val couponBusy: Boolean = false,
     val couponStatus: String? = null,
     /** How many of the phone's drawings the list shows: [FORGOT_PAGE] at first, that many more each time "Daha fazla" is pressed. */

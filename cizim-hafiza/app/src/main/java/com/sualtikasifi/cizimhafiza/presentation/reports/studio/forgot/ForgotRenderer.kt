@@ -543,9 +543,8 @@ class ForgotRenderer(
         fill.color = C.ORANGE
         val cta = RectF(140f, 1170f, 940f, 1300f)
         canvas.drawRoundRect(cta, 65f, 65f, fill)
-        text.draw(canvas, "karalak.com · kurulumsuz oyna", cta.centerX(), cta.centerY(), 760, 46f, 1, assets.display, C.WHITE)
-        text.draw(canvas, "Android: Google Play'de \"Karalak\"", 540f, 1370f, 900, 38f, 1, assets.body, C.INK)
-        text.draw(canvas, "Kodu Ayarlar → Kupon kodu'na yaz", 540f, 1440f, 900, 34f, 1, assets.body, C.MUTED)
+        text.draw(canvas, "Google Play'de Karalak'ı indir", cta.centerX(), cta.centerY(), 760, 46f, 1, assets.display, C.WHITE)
+        text.draw(canvas, "Kodu uygulamada Ayarlar → Kupon kodu'na yaz", 540f, 1380f, 900, 36f, 1, assets.body, C.INK)
         canvas.restore()
     }
 

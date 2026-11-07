@@ -238,7 +238,7 @@ object ForgotCopy {
     const val TITLE = "ÖDÜLLÜ KARALAK DÜELLOSU"
     const val TITLE_BODY = "ODULLU KARALAK DUELLOSU"
     const val HOOK = "Çizen bile bilemedi. Sen bilir misin?"
-    const val OUTRO = "Yarın daha zoru geliyor. Sen de karalak.com'da çiz!"
+    const val OUTRO = "Yarın daha zoru geliyor. Karalak'ı Google Play'den indir, sen de çiz!"
     const val ASK = "Sen ne görüyorsun?"
     const val CODE_WORD = "Bilemedin mi? Doğru cevap senin kodun!"
     const val CODE_SHOWN = "Bilemedin mi? Kodu Ayarlar'dan gir!"
@@ -251,6 +251,60 @@ object ForgotCopy {
     const val CODE_WORDS = 9
 
     fun codeLineFor(mode: ForgotMode) = if (mode == ForgotMode.Word) CODE_WORD else CODE_SHOWN
+
+    /**
+     * The two kinds of hook the video opens with, taking turns (and on every "yenile"): a challenge that sets the viewer against
+     * the drawing ("ben bilirim"), and the crowd that got it wrong ("çoğu yanlış bildi", never with a number made up).
+     */
+    enum class HookKind(val title: String, val how: String, val examples: List<String>) {
+        Challenge(
+            "Meydan okuma",
+            "izleyiciye doğrudan \"sen\" diye seslen ve bilebileceğine kendini inandır: bunu çözmek kolay görünsün ama çözülmesin, gurur dokunsun.",
+            listOf("Çizenin kendisi bile bilemedi. Sen bilirsin belki?", "Herkes yanlış bildi. Sen bilir misin?", "Bunu bilen çıkmadı. İlk sen ol.")
+        ),
+        Crowd(
+            "Çoğu yanlış bildi",
+            "başkalarının yanıldığını söyle (ama HİÇBİR sayı, yüzde ya da kişi sayısı uydurma) ve izleyiciyi \"ben farklı olurum\" demeye it.",
+            listOf("Bunu görenlerin çoğu yanlış bildi.", "Bu çizimde herkes aynı yere takıldı.", "Bakınca kolay sanıyorlar. Sonra yanılıyorlar.")
+        );
+
+        /** The kind for the [turn]-th hook: they alternate. */
+        companion object { fun forTurn(turn: Int): HookKind = entries[Math.floorMod(turn, entries.size)] }
+    }
+
+    /** What every hook must keep to, whatever its kind. */
+    private fun hookRules(kind: HookKind): String = """
+        KANCA KURALLARI (ilk 2 saniyede izleyiciyi durdurmalı ve "ben bilirim" dedirtmeli):
+        - Tür: ${kind.title}. ${kind.how}
+        - Örnekler (kopyalama, aynı havada yeni bir cümle kur): ${kind.examples.joinToString(" / ") { "\"$it\"" }}
+        - Emir ya da soruyla başla; en fazla $HOOK_WORDS kelime, tek nefeste söylenecek kadar kısa.
+        - Selamlama, tanıtım ya da "Bugün size…" gibi girişler YASAK. Cevabı ya da cevaba dair ipucu verme. Çizenle alay etme.
+        - Ödülün adını söyleme (kod ekranında zaten yazıyor).
+    """.trimIndent()
+
+    /**
+     * Just the hook, for the "yenile" button: a new one of [kind], different from the [avoid]ed ones (those already tried).
+     * Answer: `{"hook":{"emotion":"…","line":"…"}}`.
+     */
+    fun hookPrompt(word: String, kind: HookKind, moods: String, avoid: List<String>): String = """
+        Videonun açılış cümlesini (kanca) yaz. Çizilmesi istenen kelime: "$word"; hiçbir cümlede bu kelime ya da kökü geçmesin.
+        Çizim şu an çiziliyor ve ekranda görünüyor; Karalak bu cümleyi videonun ilk saniyesinde söylüyor.
+
+        ${hookRules(kind)}
+        ${if (avoid.isEmpty()) "" else "Bunlardan FARKLI olsun, hiçbirine benzemesin: " + avoid.joinToString(" / ") { "\"$it\"" }}
+
+        Yalnızca şu JSON'u yaz: {"hook":{"emotion":"…","line":"…"}}
+        emotion yalnızca şunlardan biri: $moods.
+    """.trimIndent()
+
+    /** The hook out of an answer to [hookPrompt]; null when it is missing or gives the [word] away. */
+    fun parseHook(text: String, word: String): SpokenLine? {
+        val o = StudioCopy.objectIn(text) ?: return null
+        val h = o["hook"] as? JsonObject ?: return null
+        val l = (h["line"] ?: h["text"])?.jsonPrimitive?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        if (leaks(l, word)) return null
+        return SpokenLine(l, MascotEmotion.of(h["emotion"]?.jsonPrimitive?.contentOrNull))
+    }
 
     /** The code a [word] is worth in [ForgotMode.Word]: the word itself, Turkish letters folded; null when it cannot be one (too short or long). */
     fun wordCode(word: String): String? = CouponCodes.normalize(word)
@@ -353,7 +407,7 @@ object ForgotCopy {
      * every spoken moment and how long it lasts, and what it must keep in mind (the mode, the reward, the word it may not say).
      * It works its plan out first, then writes each line for its own moment.
      */
-    fun directorPrompt(word: String, stops: List<Float>, moods: String, mode: ForgotMode, reward: String, limit: String, style: ForgotStyle = ForgotStyle.Game): String {
+    fun directorPrompt(word: String, stops: List<Float>, moods: String, mode: ForgotMode, reward: String, limit: String, style: ForgotStyle = ForgotStyle.Game, hookKind: HookKind = HookKind.Challenge): String {
         val n = stops.size
         val pictures = stops.mapIndexed { i, share -> "Görsel ${i + 1}: çizimin %${percent(share)}'i çizilmiş." }.joinToString("\n") + "\nGörsel ${n + 1}: bitmiş çizim."
         val guessScenes = stops.mapIndexed { i, share ->
@@ -376,10 +430,21 @@ object ForgotCopy {
             $guessScenes
             ${n + 2}. SORU (geri sayım 3-2-1, ≈1,5 sn): çizim tamamlandı, ekranda geri sayım var. Karalak izleyiciye soruyor (EN FAZLA ${ASK_WORDS} kelime).
             ${n + 3}. KOD ANI (≈3 sn): $codeScene (EN FAZLA ${CODE_WORDS} kelime)
-            ${n + 4}. KAPANIŞ: oyunun tanıtım kartı, Karalak yarın daha zorunun geleceğini söylüyor (en fazla 14 kelime, "karalak.com" geçsin).
+            ${n + 4}. KAPANIŞ: kapanış kartı. Karalak yarın daha zorunun geleceğini söyleyip izleyiciyi MOBİL UYGULAMAYA yönlendiriyor: Google Play'den "Karalak"ı indirmesini söylesin (en fazla 14 kelime). Oyun mobil uygulamada oynanıyor; web sitesi, "karalak.com", "kurulumsuz", "link" gibi sözler ASLA geçmesin.
             $rewardLine
 
+            ${hookRules(hookKind)}
+
             ÖNCE "plan" alanında düşün (en fazla 4 kısa cümle): her görselde ne görünüyor, Karalak onu nasıl yanlış ama makul yorumlar, izleyici o anda ne hissetmeli? SONRA her cümleyi kendi anı için yaz:
+            SESLENDİRME İLKELERİ (cümleler sesli okunacak; kulağa doğal gelmeli, yazıda iyi durması yetmez):
+            - Konuşma dilinde, kısa, ritimli yaz; noktalama nefes yeridir. Resmî dil, yazı dili, "Merhaba arkadaşlar", "Evet", "Peki" gibi dolgu girişler yok.
+            - Her cümle farklı bir kalıpla kurulsun: soru, ünlem, itiraf, inatla savunma, kendi kendine yorum. Aynı kalıpla iki cümle başlamasın ("Hmm," ve "Bence" ile başlama, "Bu ne olabilir?" deme).
+            - Somut ol: "bir şeye benziyor" gibi boş cümle yerine görselde gördüğün ŞEKLE bağla ("Bu çizgi bir kuyruk mu, yoksa ip mi?").
+            - Karalak'ın kişiliği duyulsun: kendinden emin, muzip, heyecanlı; yanılınca utanıp hemen toparlanır. Her cümlede küçük bir duygu hareketi olsun (şaşkınlık, iddia, sevinç).
+            - Kötü: "Bu bir hayvan olabilir." İyi: "Bunlar kulak, eminim, kulak!" (Yalnızca tarz örneği; kopyalama.)
+            - Soru cümlesi son tahmine bağlansın ve izleyiciyi "ben bilirim" demeye itsin ("Sence de öyle mi?", "Yanılıyor muyum?" gibi, kopyalama).
+            - Kod anı cümlesi merak ve hızlı kazanma duygusu versin; ödülü ya da yazıyı tekrar etmesin.
+            - Kapanış kısa, sıcak ve davetkâr olsun, mobil uygulamaya götürsün; "Google Play" ve "Karalak" kelimeleri geçsin.
             - Tahminleri YALNIZCA kendi görseline bakarak yaz: Karalak o anda yalnızca o kadarını görüyor, sonrasını bilmiyor. Görselde gerçekten görünen bir şeye bakan komik, yanlış ama makul tahminler olsun; ilk tahmin belirsiz, sonuncusu en kendinden emin. Tahminler birbirini izlesin: sonraki, öncekinden çıkarım yapsın ya da onu inatla savunsun; aynı şeyi tekrarlama.
             - Soru, son tahminle bağlantılı olsun ve izleyiciyi yorum yazmaya itsin ("Sen ne görüyorsun?" gibi).
             - Çizenle ve izleyiciyle asla dalga geçme.
@@ -387,7 +452,7 @@ object ForgotCopy {
             - Bütün cümleler kısa ve konuşma diliyle olsun; video 20 saniyenin altında kalmalı.
             - Kod ekranında zaten yazan bilgiyi (ödül, son tarih, nereye girileceği) cümlede TEKRARLAMA; cümle yazının üstüne duygu katsın.
 
-            "caption": TikTok/Reels açıklaması (1–2 cümle, izleyiciye soruyla bitsin, doğru kelime geçmesin); "hashtags": 5–6 Türkçe ağırlıklı etiket.
+            "caption": TikTok/Reels açıklaması (1–2 cümle, izleyiciye soruyla bitsin, doğru kelime geçmesin; web sitesi ya da "karalak.com" yazma, uygulamayı Google Play'den indirmeye yönlendir); "hashtags": 5–6 Türkçe ağırlıklı etiket.
 
             Yalnızca şu JSON'u yaz:
             {"plan":"…","hook":{"emotion":"…","line":"…"},"guesses":[{"emotion":"…","line":"…"}],"ask":{"emotion":"…","line":"…"},"code_line":{"emotion":"…","line":"…"},"outro":{"emotion":"…","line":"…"},"caption":"…","hashtags":"…"}

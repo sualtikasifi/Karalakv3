@@ -391,4 +391,47 @@ class ForgotTest {
         assertFalse(script(mode = ForgotMode.Word).showFirstLetter)
         assertTrue(script(mode = ForgotMode.Word).copy(showFirstLetter = true).showFirstLetter)
     }
+
+    @Test
+    fun hooksTakeTurnsBetweenTheTwoKinds() {
+        val kinds = (0..3).map { ForgotCopy.HookKind.forTurn(it) }
+        assertEquals(listOf(ForgotCopy.HookKind.Challenge, ForgotCopy.HookKind.Crowd, ForgotCopy.HookKind.Challenge, ForgotCopy.HookKind.Crowd), kinds)
+        assertEquals(ForgotCopy.HookKind.Crowd, ForgotCopy.HookKind.forTurn(-1))
+    }
+
+    @Test
+    fun theHookPromptNamesTheKindAvoidsEarlierOnesAndInventsNoNumbers() {
+        val p = ForgotCopy.hookPrompt("kedi", ForgotCopy.HookKind.Crowd, "happy", listOf("Bunu görenlerin çoğu yanlış bildi."))
+        assertTrue(p.contains("Çoğu yanlış bildi"))
+        assertTrue(p.contains("FARKLI"))
+        assertTrue(p.contains("Bunu görenlerin çoğu yanlış bildi."))
+        assertTrue(p.contains("sayı"))
+        assertFalse(ForgotCopy.hookPrompt("kedi", ForgotCopy.HookKind.Challenge, "happy", emptyList()).contains("FARKLI"))
+    }
+
+    @Test
+    fun theDirectorPromptCarriesTheHookRules() {
+        val p = ForgotCopy.directorPrompt("kedi", listOf(0.4f, 0.7f), "happy", ForgotMode.Word, "100 altın", "", ForgotStyle.Game, ForgotCopy.HookKind.Challenge)
+        assertTrue(p.contains("KANCA KURALLARI"))
+        assertTrue(p.contains("Meydan okuma"))
+    }
+
+    @Test
+    fun aRewrittenHookThatSaysTheWordIsRefused() {
+        val ok = """{"hook":{"emotion":"happy","line":"Bunu bilen çıkmadı. İlk sen ol."}}"""
+        assertEquals("Bunu bilen çıkmadı. İlk sen ol.", ForgotCopy.parseHook(ok, "kedi")?.text)
+        assertNull(ForgotCopy.parseHook("""{"hook":{"emotion":"happy","line":"Bu bir kedi!"}}""", "kedi"))
+        assertNull(ForgotCopy.parseHook("not json", "kedi"))
+    }
+
+    @Test
+    fun theClosingSendsPeopleToTheMobileAppNotTheWebsite() {
+        assertFalse(ForgotCopy.OUTRO.contains("karalak.com"))
+        assertTrue(ForgotCopy.OUTRO.contains("Google Play"))
+        assertTrue(com.sualtikasifi.cizimhafiza.presentation.reports.studio.LineRules.words(ForgotCopy.OUTRO) <= com.sualtikasifi.cizimhafiza.presentation.reports.studio.LineRules.OUTRO_WORDS)
+        val p = ForgotCopy.directorPrompt("kedi", listOf(0.4f), "happy", ForgotMode.Word, "100 altın", "")
+        assertTrue(p.contains("MOBİL UYGULAMA"))
+        assertTrue(p.contains("SESLENDİRME İLKELERİ"))
+        assertFalse(p.contains("\"karalak.com\" geçsin"))
+    }
 }
