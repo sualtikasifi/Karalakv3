@@ -90,4 +90,103 @@ class PanelAdminTest {
         assertEquals(120, AdminAuditText.target("y".repeat(500)).length)
         assertEquals("a", AdminAuditText.detail("  a  "))
     }
+
+    // ---- the economy audit line and its undo
+
+    @Test
+    fun theEconomyLineShowsOldAndNewValues() {
+        val labels = mapOf("adGoldAmount" to "Reklam altını")
+        val line = EconomyChange.detail(labels, mapOf("adGoldAmount" to "5", "other" to "10"), linkedMapOf("adGoldAmount" to 8L, "other" to 12L))
+        assertEquals("Reklam altını: 5→8; other: 10→12", line)
+    }
+
+    @Test
+    fun theUndoHoldsTheValuesAsTheyWere() {
+        val back = EconomyChange.undoOf(mapOf("a" to "5", "b" to "", "c" to "x"), mapOf("a" to 8L, "b" to 3L, "c" to 1L))
+        assertEquals(mapOf("a" to 5L), back)
+    }
+
+    // ---- the passcode gate
+
+    @Test
+    fun fiveWrongCodesAreForgivenThenTheWaitDoubles() {
+        assertEquals(0L, GatePolicy.waitAfter(4))
+        assertEquals(30_000L, GatePolicy.waitAfter(5))
+        assertEquals(60_000L, GatePolicy.waitAfter(6))
+        assertEquals(120_000L, GatePolicy.waitAfter(7))
+        assertEquals(GatePolicy.MAX_WAIT_MS, GatePolicy.waitAfter(40))
+    }
+
+    @Test
+    fun theGateRemembersWrongCodesAndForgetsThemOnARightOne() {
+        var now = 1_000_000L
+        val prefs = MemoryPrefs()
+        val gate = GateLockout(prefs) { now }
+        repeat(4) { assertEquals(0L, gate.recordWrong()) }
+        assertEquals(0L, gate.remainingMillis())
+        assertEquals(30_000L, gate.recordWrong())
+        assertEquals(30_000L, gate.remainingMillis())
+        now += 10_000
+        assertEquals(20_000L, gate.remainingMillis())
+        // a new GateLockout over the same preferences (the screen was left and opened again) still knows
+        assertEquals(20_000L, GateLockout(prefs) { now }.remainingMillis())
+        now += 25_000
+        assertEquals(0L, gate.remainingMillis())
+        // the next wrong code after the wait is the sixth in a row: a minute
+        assertEquals(60_000L, gate.recordWrong())
+        gate.recordRight()
+        assertEquals(0, gate.fails())
+        assertEquals(0L, gate.remainingMillis())
+    }
+
+    @Test
+    fun aClockSetBackCannotStretchTheWaitPastTheLongestOne() {
+        var now = 5_000_000L
+        val gate = GateLockout(MemoryPrefs()) { now }
+        repeat(5) { gate.recordWrong() }
+        now = 0L
+        assertTrue(gate.remainingMillis() <= GatePolicy.MAX_WAIT_MS)
+    }
+
+    @Test
+    fun waitsAreSaidInSecondsAndMinutes() {
+        assertEquals("1 sn", gateWaitText(1))
+        assertEquals("45 sn", gateWaitText(44_001))
+        assertEquals("1 dk", gateWaitText(60_000))
+        assertEquals("3 dk 20 sn", gateWaitText(200_000))
+    }
+}
+
+/** SharedPreferences in memory, enough for the gate's own two numbers. */
+private class MemoryPrefs : android.content.SharedPreferences {
+    private val map = HashMap<String, Any?>()
+    override fun getAll(): MutableMap<String, *> = map
+    override fun getString(key: String?, defValue: String?) = map[key] as? String ?: defValue
+    override fun getStringSet(key: String?, defValues: MutableSet<String>?) = defValues
+    override fun getInt(key: String?, defValue: Int) = map[key] as? Int ?: defValue
+    override fun getLong(key: String?, defValue: Long) = map[key] as? Long ?: defValue
+    override fun getFloat(key: String?, defValue: Float) = map[key] as? Float ?: defValue
+    override fun getBoolean(key: String?, defValue: Boolean) = map[key] as? Boolean ?: defValue
+    override fun contains(key: String?) = map.containsKey(key)
+    override fun registerOnSharedPreferenceChangeListener(l: android.content.SharedPreferences.OnSharedPreferenceChangeListener?) = Unit
+    override fun unregisterOnSharedPreferenceChangeListener(l: android.content.SharedPreferences.OnSharedPreferenceChangeListener?) = Unit
+    override fun edit(): android.content.SharedPreferences.Editor = object : android.content.SharedPreferences.Editor {
+        private val pending = HashMap<String, Any?>()
+        private val removed = HashSet<String>()
+        private var clear = false
+        override fun putString(key: String, value: String?) = apply { pending[key] = value }
+        override fun putStringSet(key: String, values: MutableSet<String>?) = apply { pending[key] = values }
+        override fun putInt(key: String, value: Int) = apply { pending[key] = value }
+        override fun putLong(key: String, value: Long) = apply { pending[key] = value }
+        override fun putFloat(key: String, value: Float) = apply { pending[key] = value }
+        override fun putBoolean(key: String, value: Boolean) = apply { pending[key] = value }
+        override fun remove(key: String) = apply { removed += key }
+        override fun clear() = apply { clear = true }
+        override fun commit(): Boolean { apply(); return true }
+        override fun apply() {
+            if (clear) map.clear()
+            removed.forEach { map.remove(it) }
+            map.putAll(pending)
+        }
+    }
 }

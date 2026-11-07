@@ -152,4 +152,7 @@ interface ModerationRepository {
 
     /** Throws a report out as unfounded — nothing happens to the drawer. */
     suspend fun dismissReport(reportId: String): Result<Unit>
+
+    /** Throws several reports out as unfounded in one go (the panel's multi-select); nothing happens to the drawers. */
+    suspend fun dismissReports(reportIds: List<String>): Result<Unit>
 }

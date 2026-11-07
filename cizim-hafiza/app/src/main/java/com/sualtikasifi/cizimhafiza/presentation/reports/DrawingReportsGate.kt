@@ -103,17 +103,32 @@ fun DrawingReportsGate(onBack: () -> Unit, onBotNames: () -> Unit = {}) {
     var wrong by remember { mutableStateOf(false) }
     var attempts by remember { mutableIntStateOf(0) }
     val haptics = LocalHapticFeedback.current
+    // wrong codes are remembered across visits: after a few in a row the gate shuts for a while, longer each time
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val lockout = remember { GateLockout(context.getSharedPreferences(GateLockout.PREFS, android.content.Context.MODE_PRIVATE)) }
+    var waitMs by remember { mutableStateOf(lockout.remainingMillis()) }
+    LaunchedEffect(waitMs > 0) {
+        while (waitMs > 0) {
+            kotlinx.coroutines.delay(500)
+            waitMs = lockout.remainingMillis()
+        }
+    }
+    val locked = waitMs > 0
     val shake = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
-    val submit: () -> Unit = {
+    val submit: () -> Unit = submit@{
+        if (lockout.remainingMillis() > 0) return@submit
         if (REPORTS_ACCESS_CODE.isNotEmpty() && entered == REPORTS_ACCESS_CODE) {
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+            lockout.recordRight()
             unlocked = true
         } else {
             haptics.performHapticFeedback(HapticFeedbackType.Reject)
             wrong = true
             attempts++
             entered = ""
+            lockout.recordWrong()
+            waitMs = lockout.remainingMillis()
             scope.launch {
                 shake.snapTo(0f)
                 // a damped side-to-side: big, smaller, smaller, still
@@ -122,7 +137,7 @@ fun DrawingReportsGate(onBack: () -> Unit, onBotNames: () -> Unit = {}) {
         }
     }
     val press: (Char) -> Unit = { c ->
-        if (entered.length < MAX_CODE_INPUT_LENGTH) {
+        if (!locked && entered.length < MAX_CODE_INPUT_LENGTH) {
             haptics.performHapticFeedback(HapticFeedbackType.KeyboardTap)
             entered += c
             wrong = false
@@ -157,9 +172,10 @@ fun DrawingReportsGate(onBack: () -> Unit, onBotNames: () -> Unit = {}) {
                     modifier = Modifier.offset { IntOffset(shake.value.dp.roundToPx(), 0) }
                 )
                 Box(Modifier.height(30.dp), contentAlignment = Alignment.Center) {
-                    androidx.compose.animation.AnimatedVisibility(visible = wrong, enter = fadeIn(), exit = fadeOut()) {
+                    androidx.compose.animation.AnimatedVisibility(visible = wrong || locked, enter = fadeIn(), exit = fadeOut()) {
                         Text(
-                            stringResource(R.string.reports_gate_wrong) + if (attempts > 1) " · $attempts" else "",
+                            if (locked) "Çok fazla yanlış deneme · ${gateWaitText(waitMs)} sonra tekrar dene"
+                            else stringResource(R.string.reports_gate_wrong) + if (attempts > 1) " · $attempts" else "",
                             style = Console.Label.copy(color = Color(0xFFFF8A80), fontWeight = FontWeight.SemiBold)
                         )
                     }
@@ -179,7 +195,7 @@ fun DrawingReportsGate(onBack: () -> Unit, onBotNames: () -> Unit = {}) {
                 ConsoleButton(
                     text = stringResource(R.string.reports_gate_enter),
                     onClick = submit,
-                    enabled = REPORTS_ACCESS_CODE.isNotEmpty() && entered.isNotEmpty(),
+                    enabled = REPORTS_ACCESS_CODE.isNotEmpty() && entered.isNotEmpty() && !locked,
                     icon = Icons.Filled.LockOpen,
                     height = 50.dp,
                     onDark = true,
@@ -285,4 +301,10 @@ private fun Key(onClick: () -> Unit, glass: Boolean = true, content: @Composable
             .clickable(interaction, ripple(color = Color.White), onClick = onClick),
         contentAlignment = Alignment.Center
     ) { content() }
+}
+
+/** "45 sn" or "3 dk 20 sn": what is left of a wait, rounded up to the second. */
+internal fun gateWaitText(millis: Long): String {
+    val seconds = ((millis + 999) / 1000).coerceAtLeast(1)
+    return if (seconds < 60) "$seconds sn" else "${seconds / 60} dk" + if (seconds % 60 > 0) " ${seconds % 60} sn" else ""
 }

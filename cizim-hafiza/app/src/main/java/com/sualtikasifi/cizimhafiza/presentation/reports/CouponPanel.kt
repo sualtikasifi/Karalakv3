@@ -118,10 +118,8 @@ class CouponAdminViewModel @Inject constructor(
     fun close(code: String) {
         viewModelScope.launch {
             runCatching {
-                firestore.collection("coupons").document(code)
-                    .update("expiresAt", 1L).await()
+                admin.audited("coupon-close", code, "süre şimdi bitirildi") { b -> b.update(firestore.collection("coupons").document(code), "expiresAt", 1L) }
             }.onSuccess {
-                admin.audit("coupon-close", code, "")
                 _state.update { it.copy(message = "$code kapatıldı.") }
                 refresh()
             }.onFailure { _state.update { it.copy(message = "Kapatılamadı (internet ya da yetki).") } }

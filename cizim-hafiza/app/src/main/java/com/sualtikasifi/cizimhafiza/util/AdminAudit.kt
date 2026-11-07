@@ -4,6 +4,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Transaction
 import com.google.firebase.firestore.WriteBatch
+import kotlinx.coroutines.tasks.await
 
 /**
  * The developer panel's audit log (`adminAudit`), written so it cannot be lost: the entry is added to the very batch (or
@@ -30,6 +31,20 @@ object AdminAudit {
     /** Adds the line to [batch]: it commits or fails together with the change already in it. */
     fun add(firestore: FirebaseFirestore, batch: WriteBatch, by: String?, action: String, target: String, detail: String) {
         batch.set(firestore.collection(COLLECTION).document(), entry(by, action, target, detail))
+    }
+
+    /**
+     * Makes one change and its audit line as a single batch: [writes] puts the change into the batch, the line is added, and
+     * both are committed together. Throws when the batch is refused, so the caller sees a failure, never half of one.
+     */
+    suspend fun commit(
+        firestore: FirebaseFirestore, by: String?, action: String, target: String, detail: String,
+        writes: (WriteBatch) -> Unit
+    ) {
+        val batch = firestore.batch()
+        writes(batch)
+        add(firestore, batch, by, action, target, detail)
+        batch.commit().await()
     }
 
     /** Adds the line to [tx], same reasoning as [add]. */

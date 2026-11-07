@@ -4,6 +4,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.WriteBatch
 import com.sualtikasifi.cizimhafiza.domain.model.Moderation
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -60,19 +61,28 @@ class PlayerAdmin @Inject constructor(
     }
 
     suspend fun dismissReports(group: PlayerReportGroup): Result<Unit> = runCatching {
-        val batch = firestore.batch()
-        group.reportIds.forEach { batch.delete(firestore.collection("playerReports").document(it)) }
-        batch.commit().await()
-        audit("report-dismiss", group.uid, "${group.count} rapor kapatıldı")
+        audited("report-dismiss", group.uid, "${group.count} rapor kapatıldı") { batch ->
+            group.reportIds.forEach { batch.delete(firestore.collection("playerReports").document(it)) }
+        }
+    }
+
+    /**
+     * One change and its audit-log line as a single write: both land or neither does. The panels use this for everything
+     * they change, so an action nobody recorded can no longer happen (a line written afterwards, on its own, could fail alone).
+     */
+    suspend fun audited(action: String, target: String, detail: String, writes: (WriteBatch) -> Unit) {
+        AdminAudit.commit(firestore, auth.currentUser?.email, action, target, detail, writes)
     }
 
     /** Puts a neutral name on the account, so a reported name stops showing in the league and in rooms. */
     suspend fun resetName(uid: String, oldName: String): Result<String> = runCatching {
         val fresh = "Oyuncu" + (1000..9999).random()
-        firestore.collection("users").document(uid).update(
-            mapOf("nickname" to fresh, "username" to fresh, "nameResetAt" to System.currentTimeMillis())
-        ).await()
-        audit("name-reset", uid, "\"$oldName\" -> \"$fresh\"")
+        audited("name-reset", uid, "\"$oldName\" -> \"$fresh\"") { batch ->
+            batch.update(
+                firestore.collection("users").document(uid),
+                mapOf("nickname" to fresh, "username" to fresh, "nameResetAt" to System.currentTimeMillis())
+            )
+        }
         fresh
     }
 
@@ -92,8 +102,8 @@ class PlayerAdmin @Inject constructor(
             )
         )
         batch.set(strikes, mapOf("count" to strike.toLong(), "updatedAt" to now))
+        AdminAudit.add(firestore, batch, auth.currentUser?.email, "lock", uid, "ceza $strike, ${(until - now) / 3_600_000} saat")
         batch.commit().await()
-        audit("lock", uid, "ceza $strike, ${(until - now) / 3_600_000} saat")
         until
     }
 
@@ -116,8 +126,8 @@ class PlayerAdmin @Inject constructor(
         }
         if (running.isNotEmpty()) {
             batch.set(strikes, mapOf("count" to (previous - running.size).coerceAtLeast(0).toLong(), "updatedAt" to now))
+            AdminAudit.add(firestore, batch, auth.currentUser?.email, "unlock", uid, "${running.size} kilit kaldırıldı")
             batch.commit().await()
-            audit("unlock", uid, "${running.size} kilit kaldırıldı")
         }
         running.size
     }
@@ -125,13 +135,15 @@ class PlayerAdmin @Inject constructor(
     /** Asks the cron script to drop gold and/or XP into the player's pending rewards (their app claims it on start). */
     suspend fun grant(uid: String, gold: Int, xp: Int, note: String): Result<Unit> = runCatching {
         require(gold in 0..MAX_GRANT && xp in 0..MAX_GRANT && gold + xp > 0) { "Miktar geçersiz" }
-        firestore.collection("adminCommands").add(
-            mapOf(
-                "type" to "grant", "uid" to uid, "gold" to gold.toLong(), "xp" to xp.toLong(),
-                "note" to note.take(60), "by" to (auth.currentUser?.email ?: ""), "createdAt" to FieldValue.serverTimestamp()
+        audited("grant", uid, "altın $gold, XP $xp: ${note.take(60)}") { batch ->
+            batch.set(
+                firestore.collection("adminCommands").document(),
+                mapOf(
+                    "type" to "grant", "uid" to uid, "gold" to gold.toLong(), "xp" to xp.toLong(),
+                    "note" to note.take(60), "by" to (auth.currentUser?.email ?: ""), "createdAt" to FieldValue.serverTimestamp()
+                )
             )
-        ).await()
-        audit("grant", uid, "altın $gold, XP $xp: ${note.take(60)}")
+        }
     }
 
     /** Finds players by name, friend code or uid. Several come back when a name is shared. */
@@ -172,18 +184,6 @@ class PlayerAdmin @Inject constructor(
             lockedUntilMillis = locked,
             reports = reports
         )
-    }
-
-    /** One line in the audit log; failing to write it never fails the action it describes. */
-    suspend fun audit(action: String, target: String, detail: String) {
-        runCatching {
-            firestore.collection("adminAudit").add(
-                mapOf(
-                    "action" to action, "target" to target, "detail" to detail.take(200),
-                    "by" to (auth.currentUser?.email ?: ""), "at" to FieldValue.serverTimestamp()
-                )
-            ).await()
-        }
     }
 
     private companion object {

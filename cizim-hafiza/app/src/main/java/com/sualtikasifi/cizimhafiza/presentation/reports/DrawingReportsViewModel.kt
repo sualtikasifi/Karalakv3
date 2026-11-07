@@ -194,6 +194,11 @@ class DrawingReportsViewModel @Inject constructor(
         loadQueueTotal()
     }
 
+    /** Looks at who this phone is signed in as again (after signing in elsewhere, or the e-mail address was verified). */
+    fun recheckIdentity() {
+        _uiState.value = _uiState.value.copy(identity = moderationRepository.identity())
+    }
+
     /** Counts the whole queue (one aggregate read), for the badge. */
     private fun loadQueueTotal() {
         viewModelScope.launch {

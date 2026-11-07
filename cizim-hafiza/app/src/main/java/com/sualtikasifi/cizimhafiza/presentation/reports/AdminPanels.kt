@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Refresh
@@ -108,8 +109,21 @@ data class EconomyAdminState(
     val serverValues: Map<String, String> = emptyMap(),
     val loaded: Boolean = false,
     val busy: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    /** What the last save changed, as the values it replaced (key to number): written back by "geri al". Null when there is nothing to undo. */
+    val undo: Map<String, Long>? = null
 )
+
+/** What an economy save changes, as the audit line and the undo need it. */
+object EconomyChange {
+    /** "Doğru kelime başı altın: 10→15; Reklam altını: 5→8", the label (or the key) first; the numbers as they were and are. */
+    fun detail(labels: Map<String, String>, before: Map<String, String>, after: Map<String, Long>): String =
+        after.entries.joinToString("; ") { (key, now) -> "${labels[key] ?: key}: ${before[key].orEmpty().ifEmpty { "?" }}→$now" }
+
+    /** The values a save replaces, as numbers, so the same fields can be written back. Fields whose old value is not a number are left out. */
+    fun undoOf(before: Map<String, String>, after: Map<String, Long>): Map<String, Long> =
+        after.keys.mapNotNull { key -> before[key]?.toLongOrNull()?.let { key to it } }.toMap()
+}
 
 @HiltViewModel
 class EconomyAdminViewModel @Inject constructor(
@@ -140,10 +154,29 @@ class EconomyAdminViewModel @Inject constructor(
         edit(key, f.default.toString())
     }
 
+    /** Writes the values the last save replaced back (audited as its own line), and forgets the undo. */
+    fun revert() {
+        val s = _state.value
+        val back = s.undo ?: return
+        if (s.busy) return
+        _state.update { it.copy(busy = true, message = null) }
+        viewModelScope.launch {
+            runCatching {
+                admin.audited("economy-undo", "config/economy", EconomyChange.detail(ECONOMY_LABELS, s.serverValues, back)) { b ->
+                    b.set(firestore.document("config/economy"), back, SetOptions.merge())
+                }
+            }.onSuccess {
+                economyConfigRepository.refreshNow()
+                val shown = back.mapValues { it.value.toString() }
+                _state.update { it.copy(busy = false, values = it.values + shown, serverValues = it.serverValues + shown, undo = null, message = "Son değişiklik geri alındı.") }
+            }.onFailure { _state.update { it.copy(busy = false, message = "Yazılamadı (internet ya da yetki).") } }
+        }
+    }
+
     fun save() {
         val s = _state.value
         if (s.busy) return
-        val changed = mutableMapOf<String, Any>()
+        val changed = mutableMapOf<String, Long>()
         for (f in EconomyConfig.fields) {
             val text = s.values[f.key].orEmpty()
             val v = text.toIntOrNull()
@@ -159,12 +192,15 @@ class EconomyAdminViewModel @Inject constructor(
         }
         _state.update { it.copy(busy = true, message = null) }
         viewModelScope.launch {
-            // merge: the same document carries minVersionCode, which must stay as it is
-            runCatching { firestore.document("config/economy").set(changed, SetOptions.merge()).await() }
+            // merge: the same document carries minVersionCode, which must stay as it is; the audit line (old → new) goes in the same batch
+            val detail = EconomyChange.detail(ECONOMY_LABELS, s.serverValues, changed)
+            val undo = EconomyChange.undoOf(s.serverValues, changed)
+            runCatching {
+                admin.audited("economy", "config/economy", detail) { b -> b.set(firestore.document("config/economy"), changed, SetOptions.merge()) }
+            }
                 .onSuccess {
-                    admin.audit("economy", "config/economy", changed.entries.joinToString { "${it.key}=${it.value}" })
                     economyConfigRepository.refreshNow()
-                    _state.update { it.copy(busy = false, serverValues = it.values, message = "Kaydedildi (${changed.size} alan). Telefonlara yarım saat içinde ulaşır.") }
+                    _state.update { it.copy(busy = false, serverValues = it.values, undo = undo.takeIf { u -> u.isNotEmpty() }, message = "Kaydedildi (${changed.size} alan). Telefonlara yarım saat içinde ulaşır.") }
                 }
                 .onFailure { _state.update { it.copy(busy = false, message = "Yazılamadı (internet ya da yetki).") } }
         }
@@ -206,6 +242,12 @@ internal fun EconomyPanel(viewModel: EconomyAdminViewModel = hiltViewModel()) {
                 }
             }
             state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
+            if (state.undo != null) {
+                ConsoleButton(
+                    "Son değişikliği geri al", viewModel::revert, Modifier.fillMaxWidth(), enabled = !state.busy,
+                    icon = Icons.Filled.Undo, style = ConsoleButtonStyle.Secondary
+                )
+            }
         }
         SaveBar(
             text = if (changed > 0) "Kaydet · $changed değişiklik" else "Kaydet",
@@ -280,9 +322,12 @@ class AnnounceViewModel @Inject constructor(
                 "untilMillis" to if (days > 0) now + days * 86_400_000L else 0L,
                 "texts" to texts
             )
-            runCatching { firestore.document("config/announcement").set(doc).await() }
+            runCatching {
+                admin.audited(if (active) "announce" else "announce-off", "config/announcement", texts["tr"]?.get("title").orEmpty()) { b ->
+                    b.set(firestore.document("config/announcement"), doc)
+                }
+            }
                 .onSuccess {
-                    admin.audit(if (active) "announce" else "announce-off", "config/announcement", texts["tr"]?.get("title").orEmpty())
                     _state.update { it.copy(busy = false, active = active, message = if (active) "Yayında. Telefonlara yarım saat içinde ulaşır." else "Duyuru kapatıldı.") }
                 }
                 .onFailure { _state.update { it.copy(busy = false, message = "Yazılamadı (internet ya da yetki).") } }
@@ -385,14 +430,16 @@ class PushViewModel @Inject constructor(
         _state.update { it.copy(busy = true, message = null) }
         viewModelScope.launch {
             runCatching {
-                firestore.collection("adminCommands").add(
-                    mapOf(
-                        "type" to "broadcast", "title" to s.title.trim().take(60), "body" to s.body.trim().take(200),
-                        "by" to (auth.currentUser?.email ?: ""), "createdAt" to FieldValue.serverTimestamp()
+                admin.audited("broadcast", "news", s.title.trim()) { b ->
+                    b.set(
+                        firestore.collection("adminCommands").document(),
+                        mapOf(
+                            "type" to "broadcast", "title" to s.title.trim().take(60), "body" to s.body.trim().take(200),
+                            "by" to (auth.currentUser?.email ?: ""), "createdAt" to FieldValue.serverTimestamp()
+                        )
                     )
-                ).await()
+                }
             }.onSuccess {
-                admin.audit("broadcast", "news", s.title.trim())
                 _state.update { PushState(message = "Sıraya alındı. Zamanlanmış iş her saat başı çalışır; gönderilince aşağıda “gönderildi” yazar.") }
                 loadRecent()
             }.onFailure { _state.update { it.copy(busy = false, message = "Yazılamadı (internet ya da yetki).") } }
@@ -691,14 +738,16 @@ class XpPlanViewModel @Inject constructor(
         _state.update { it.copy(busy = true, message = null) }
         viewModelScope.launch {
             runCatching {
-                firestore.collection("xpEventPlans").add(
-                    mapOf(
-                        "startAtMillis" to start, "durationHours" to s.durationHours.toLong(), "multiplier" to s.multiplier,
-                        "label" to s.label.trim().take(32), "createdAt" to System.currentTimeMillis()
+                admin.audited("xp-plan", "config/xpEvent", "${s.multiplier}x, ${s.durationHours} saat, ${stamp(start)}") { b ->
+                    b.set(
+                        firestore.collection("xpEventPlans").document(),
+                        mapOf(
+                            "startAtMillis" to start, "durationHours" to s.durationHours.toLong(), "multiplier" to s.multiplier,
+                            "label" to s.label.trim().take(32), "createdAt" to System.currentTimeMillis()
+                        )
                     )
-                ).await()
+                }
             }.onSuccess {
-                admin.audit("xp-plan", "config/xpEvent", "${s.multiplier}x, ${s.durationHours} saat, ${stamp(start)}")
                 _state.update { it.copy(busy = false, message = "Planlandı: ${stamp(start)} (en geç bir saat gecikmeyle başlar).") }
                 load()
             }.onFailure { _state.update { it.copy(busy = false, message = "Yazılamadı (internet ya da yetki).") } }
@@ -707,8 +756,9 @@ class XpPlanViewModel @Inject constructor(
 
     fun cancel(plan: XpPlanRow) {
         viewModelScope.launch {
-            runCatching { firestore.collection("xpEventPlans").document(plan.id).delete().await() }
-                .onSuccess { admin.audit("xp-plan-cancel", plan.id, stamp(plan.startAtMillis)); load() }
+            runCatching {
+                admin.audited("xp-plan-cancel", plan.id, stamp(plan.startAtMillis)) { b -> b.delete(firestore.collection("xpEventPlans").document(plan.id)) }
+            }.onSuccess { load() }
         }
     }
 }

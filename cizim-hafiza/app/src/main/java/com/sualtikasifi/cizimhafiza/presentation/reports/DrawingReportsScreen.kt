@@ -113,6 +113,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.domain.model.ReviewerIdentity
 import com.sualtikasifi.cizimhafiza.domain.model.BugReportCategory
 import com.sualtikasifi.cizimhafiza.domain.model.BugReportEntry
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingReportReason
@@ -191,6 +192,10 @@ fun DrawingReportsScreen(
     // A special day tapped on the dashboard, waiting for the assistant to plan it.
     var pendingPlan by remember { mutableStateOf<com.sualtikasifi.cizimhafiza.presentation.reports.console.SpecialDay?>(null) }
     var identityShown by remember { mutableStateOf(false) }
+    // A phone not signed in as the reviewer cannot change or read most of what the panel shows (the rules refuse), so its
+    // buttons would only fail one by one: it gets a clear card instead, with a way past it in case the check is what is wrong.
+    var tryAnyway by rememberSaveable { mutableStateOf(false) }
+    val unauthorized = uiState.identity?.isReviewer == false && !tryAnyway
     // The system back key and the arrow at the top are one and the same: inside a tool they go up to the tool list,
     // and from anywhere else they ask before leaving, because leaving locks the panel again and the passcode has to
     // be typed anew.
@@ -271,7 +276,11 @@ fun DrawingReportsScreen(
                         modifier = Modifier.weight(1f).fillMaxWidth()
                     ) { at ->
                         Box(Modifier.fillMaxSize().padding(start = Console.Gutter, end = Console.Gutter, top = 14.dp)) {
-                            PlaceContent(
+                            if (unauthorized) UnauthorizedCard(
+                                identity = uiState.identity,
+                                onRecheck = viewModel::recheckIdentity,
+                                onTryAnyway = { tryAnyway = true }
+                            ) else PlaceContent(
                                 at = at,
                                 uiState = uiState,
                                 viewModel = viewModel,
@@ -367,6 +376,28 @@ fun DrawingReportsScreen(
                 )
             }
         }
+    }
+}
+
+/**
+ * Shown in place of the panel's content while this phone is not signed in as the reviewer: what the rules will refuse is not
+ * offered as buttons. "Yine de dene" opens the panel anyway (the check here mirrors the rules but is only a mirror).
+ */
+@Composable
+private fun UnauthorizedCard(identity: ReviewerIdentity?, onRecheck: () -> Unit, onTryAnyway: () -> Unit) {
+    Centered {
+        ConsoleEmpty(
+            icon = Icons.Filled.Lock,
+            title = "Bu hesap yetkisiz",
+            body = "Panel, geliştirici hesabıyla giriş yapmış bir telefonda çalışır; bu hesapta okuma ve yazma işlemleri sunucu tarafından reddedilir. " +
+                "Hesap: ${identity?.email ?: "e-posta yok"} · ${identity?.uid?.take(8) ?: "uid yok"}",
+            action = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    ConsoleButton("Tekrar kontrol et", onRecheck, icon = Icons.Filled.Refresh)
+                    ConsoleButton("Yine de dene", onTryAnyway, style = ConsoleButtonStyle.Secondary)
+                }
+            }
+        )
     }
 }
 
