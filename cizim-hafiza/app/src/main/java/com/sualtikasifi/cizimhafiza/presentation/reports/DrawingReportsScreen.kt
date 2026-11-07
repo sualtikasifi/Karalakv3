@@ -622,22 +622,55 @@ private fun RunLists(
                         modifier = Modifier.animateItem()
                     )
                 }
-                ReportsTab.Feedback -> items(uiState.feedback, key = { it.report.id }) { entry ->
-                    FeedbackRow(
-                        entry,
-                        onMarkSeen = { viewModel.markSeen(entry.report.id) },
-                        onDelete = { onDeleteFeedback(entry.report.id) },
-                        modifier = Modifier.animateItem()
-                    )
+                ReportsTab.Feedback -> {
+                    item(key = "bulk-feedback") {
+                        if (uiState.feedbackSelection.isEmpty()) Text("Birden fazlasını seçmek için bir karta uzun bas.", style = Console.Small)
+                        else BulkBar(
+                            count = uiState.feedbackSelection.size, total = uiState.feedback.size,
+                            onSelectAll = viewModel::selectAllFeedback, onClear = viewModel::clearFeedbackSelection,
+                            onMarkSeen = viewModel::markSelectedFeedbackSeen,
+                            dangerLabel = "Sil",
+                            confirmMessage = "Seçilen ${uiState.feedbackSelection.size} geri bildirim kalıcı olarak silinecek. Bu geri alınamaz.",
+                            onDanger = viewModel::deleteSelectedFeedback
+                        )
+                    }
+                    items(uiState.feedback, key = { it.report.id }) { entry ->
+                        FeedbackRow(
+                            entry,
+                            onMarkSeen = { viewModel.markSeen(entry.report.id) },
+                            onDelete = { onDeleteFeedback(entry.report.id) },
+                            selected = entry.report.id in uiState.feedbackSelection,
+                            selecting = uiState.feedbackSelection.isNotEmpty(),
+                            onToggle = { viewModel.toggleFeedbackSelect(entry.report.id) },
+                            modifier = Modifier.animateItem()
+                        )
+                    }
                 }
-                ReportsTab.Reports -> items(uiState.reports, key = { it.report.id }) { entry ->
-                    ReportRow(
-                        entry,
-                        busy = uiState.decidingReportId != null,
-                        onDismiss = { viewModel.dismissReport(entry) },
-                        onUphold = { onUphold(entry) },
-                        modifier = Modifier.animateItem()
-                    )
+                ReportsTab.Reports -> {
+                    item(key = "bulk-reports") {
+                        if (uiState.reportSelection.isEmpty()) Text("Birden fazlasını seçmek için bir karta uzun bas.", style = Console.Small)
+                        else BulkBar(
+                            count = uiState.reportSelection.size, total = uiState.reports.size,
+                            onSelectAll = viewModel::selectAllReports, onClear = viewModel::clearReportSelection,
+                            onMarkSeen = null,
+                            dangerLabel = "Haksız say",
+                            confirmMessage = "Seçilen ${uiState.reportSelection.size} şikayet haksız sayılacak ve silinecek; çizenlere hiçbir şey olmaz. Ceza vermek için şikayetleri tek tek aç.",
+                            onDanger = viewModel::dismissSelectedReports,
+                            busy = uiState.decidingReportId != null
+                        )
+                    }
+                    items(uiState.reports, key = { it.report.id }) { entry ->
+                        ReportRow(
+                            entry,
+                            busy = uiState.decidingReportId != null,
+                            onDismiss = { viewModel.dismissReport(entry) },
+                            onUphold = { onUphold(entry) },
+                            selected = entry.report.id in uiState.reportSelection,
+                            selecting = uiState.reportSelection.isNotEmpty(),
+                            onToggle = { viewModel.toggleReportSelect(entry.report.id) },
+                            modifier = Modifier.animateItem()
+                        )
+                    }
                 }
                 ReportsTab.Detector -> items(uiState.refusals, key = { it.event.id }) { RefusalRow(it, Modifier.animateItem()) }
                 ReportsTab.DailyChallenge -> items(uiState.dailyChallengeQueue, key = { it.id }) { pending ->
@@ -675,6 +708,39 @@ private fun RunLists(
                 }
             }
         }
+    }
+}
+
+/**
+ * The bar over a list while several rows are picked: how many, pick all, drop the pick, and the one thing that can be done to
+ * all of them. What deletes asks first.
+ */
+@Composable
+private fun BulkBar(
+    count: Int, total: Int, onSelectAll: () -> Unit, onClear: () -> Unit, onMarkSeen: (() -> Unit)?,
+    dangerLabel: String, confirmMessage: String, onDanger: () -> Unit, busy: Boolean = false
+) {
+    var confirm by remember { mutableStateOf(false) }
+    ConsoleCard(Modifier.fillMaxWidth(), padding = 10.dp) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("$count seçili", style = Console.Subtitle, modifier = Modifier.weight(1f))
+            if (count < total) ConsoleButton("Tümünü seç", onSelectAll, height = 32.dp, style = ConsoleButtonStyle.Tonal)
+            Spacer(Modifier.width(6.dp))
+            com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleIconButton(Icons.Filled.Close, "Seçimi bırak", onClear, size = 32.dp)
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            onMarkSeen?.let { ConsoleButton("Görüldü", it, Modifier.weight(1f), icon = Icons.Filled.Check, height = 36.dp, style = ConsoleButtonStyle.Secondary) }
+            ConsoleButton(dangerLabel, { confirm = true }, Modifier.weight(1f), enabled = !busy, height = 36.dp, style = ConsoleButtonStyle.DangerSoft)
+        }
+    }
+    if (confirm) {
+        ConfirmDeleteDialog(
+            title = "$count kayıt için “$dangerLabel”?",
+            message = confirmMessage,
+            onDismiss = { confirm = false },
+            onConfirm = { confirm = false; onDanger() }
+        )
     }
 }
 
@@ -996,8 +1062,14 @@ private fun DrawingThumb(strokes: List<List<com.sualtikasifi.cizimhafiza.domain.
 }
 
 @Composable
-private fun ReportRow(entry: ReportedDrawing, busy: Boolean, onDismiss: () -> Unit, onUphold: () -> Unit, modifier: Modifier = Modifier) {
-    ConsoleCard(modifier = modifier.fillMaxWidth(), padding = 12.dp) {
+private fun ReportRow(
+    entry: ReportedDrawing, busy: Boolean, onDismiss: () -> Unit, onUphold: () -> Unit,
+    selected: Boolean, selecting: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier
+) {
+    ConsoleCard(
+        modifier = modifier.fillMaxWidth(), padding = 12.dp,
+        onClick = if (selecting) onToggle else null, onLongClick = onToggle, selected = selected
+    ) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             DrawingThumb(entry.strokes, Modifier.width(88.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -1419,9 +1491,15 @@ private const val RENAME_MAX_LENGTH = 40
  * any report raises, and asking them back means a round trip through somebody who has already moved on.
  */
 @Composable
-private fun FeedbackRow(entry: BugReportEntry, onMarkSeen: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+private fun FeedbackRow(
+    entry: BugReportEntry, onMarkSeen: () -> Unit, onDelete: () -> Unit,
+    selected: Boolean, selecting: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier
+) {
     val suggestion = entry.report.category == BugReportCategory.SUGGESTION
-    ConsoleCard(modifier = modifier.fillMaxWidth(), padding = 12.dp) {
+    ConsoleCard(
+        modifier = modifier.fillMaxWidth(), padding = 12.dp,
+        onClick = if (selecting) onToggle else null, onLongClick = onToggle, selected = selected
+    ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Tag(
                 stringResource(if (suggestion) R.string.reports_feedback_suggestion else R.string.reports_feedback_complaint),

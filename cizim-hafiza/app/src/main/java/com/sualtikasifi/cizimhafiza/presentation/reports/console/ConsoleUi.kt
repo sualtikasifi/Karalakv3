@@ -10,6 +10,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -155,25 +156,34 @@ fun Modifier.pressScale(interaction: MutableInteractionSource, pressedScale: Flo
     return this.graphicsLayer { scaleX = scale; scaleY = scale }
 }
 
-/** A white card with a hairline border: the one container every console panel uses. */
+/**
+ * A white card with a hairline border: the one container every console panel uses. A long press ([onLongClick]) is how a list
+ * starts picking several rows; [selected] draws the picked ones with an accent border and tint.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun ConsoleCard(
     modifier: Modifier = Modifier,
     padding: Dp = 14.dp,
     onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
+    selected: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(Console.CardCorner)
     val interaction = remember { MutableInteractionSource() }
     Surface(
         modifier = modifier.then(
-            if (onClick != null) {
-                Modifier.pressScale(interaction, 0.985f).clip(shape).clickable(interaction, ripple(color = Console.Accent), onClick = onClick)
+            if (onClick != null || onLongClick != null) {
+                Modifier.pressScale(interaction, 0.985f).clip(shape).combinedClickable(
+                    interactionSource = interaction, indication = ripple(color = Console.Accent),
+                    onClick = onClick ?: {}, onLongClick = onLongClick
+                )
             } else Modifier
         ),
         shape = shape,
-        color = Console.Surface,
-        border = BorderStroke(1.dp, Console.Border)
+        color = if (selected) Console.AccentSoft else Console.Surface,
+        border = if (selected) BorderStroke(2.dp, Console.Accent) else BorderStroke(1.dp, Console.Border)
     ) {
         Column(modifier = Modifier.padding(padding), content = content)
     }

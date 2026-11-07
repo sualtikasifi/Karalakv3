@@ -732,7 +732,8 @@ service cloud.firestore {
       // out the first-save ceiling as often as wanted. Account deletion
       // removes it on the server (functions/src/maintenance.ts).
       match /backup/{docId} {
-        allow read: if signedIn() && request.auth.uid == uid;
+        // The reviewer reads it too: the developer panel's player card shows the balance and when it was last saved.
+        allow read: if signedIn() && (request.auth.uid == uid || reviewer());
         allow create, update: if signedIn() && request.auth.uid == uid && plausibleBackup();
         allow delete: if false;
       }
@@ -1112,9 +1113,17 @@ service cloud.firestore {
     // process-admin-commands runs it and stamps `doneAt`. Reviewer only.
     match /adminCommands/{id} {
       allow read, delete: if reviewer();
+      // A push can also carry its texts in other languages, an audience, a time to wait for and whether the Turkish text goes to
+      // everyone else; "test" is one push to one device (the reviewer's own) before it goes to all.
       allow create: if reviewer()
-                    && request.resource.data.keys().hasOnly(['type', 'uid', 'gold', 'xp', 'note', 'title', 'body', 'by', 'createdAt'])
-                    && request.resource.data.type in ['grant', 'broadcast']
+                    && request.resource.data.keys().hasOnly(['type', 'uid', 'gold', 'xp', 'note', 'title', 'body', 'by', 'createdAt',
+                                                             'texts', 'audience', 'fallback', 'sendAtMillis'])
+                    && request.resource.data.type in ['grant', 'broadcast', 'test']
+                    && (!('audience' in request.resource.data) || request.resource.data.audience in ['all', 'lapsed'])
+                    && (!('fallback' in request.resource.data) || request.resource.data.fallback is bool)
+                    && (!('sendAtMillis' in request.resource.data) || request.resource.data.sendAtMillis is int)
+                    && (!('texts' in request.resource.data)
+                        || (request.resource.data.texts is map && request.resource.data.texts.size() <= 4))
                     && request.resource.data.createdAt == request.time;
       allow update: if false;
     }

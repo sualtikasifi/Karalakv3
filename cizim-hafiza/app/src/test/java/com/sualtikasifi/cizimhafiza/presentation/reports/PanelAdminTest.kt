@@ -6,6 +6,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.Coupon
 import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
 import com.sualtikasifi.cizimhafiza.domain.model.CouponExistsException
 import com.sualtikasifi.cizimhafiza.util.AdminAuditText
+import com.sualtikasifi.cizimhafiza.util.PlayerSearch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -154,6 +155,78 @@ class PanelAdminTest {
         assertEquals("45 sn", gateWaitText(44_001))
         assertEquals("1 dk", gateWaitText(60_000))
         assertEquals("3 dk 20 sn", gateWaitText(200_000))
+    }
+
+    // ---- the push form
+
+    @Test
+    fun aPushNeedsTheTurkishTextAndHalfAWrittenLanguageIsRefused() {
+        assertNotNull(PushForm.problem("", "x", emptyMap()))
+        assertNotNull(PushForm.problem("x", "", emptyMap()))
+        assertNull(PushForm.problem("Merhaba", "Yeni etkinlik", emptyMap()))
+        assertNotNull(PushForm.problem("Merhaba", "Yeni etkinlik", mapOf("en" to PushText("Hello", ""))))
+        assertNull(PushForm.problem("Merhaba", "Yeni etkinlik", mapOf("en" to PushText("Hello", "New event"), "pt" to PushText())))
+    }
+
+    @Test
+    fun theCommandHoldsOnlyWhatDiffersFromEveryoneNow() {
+        val plain = PushForm.command(" Merhaba ", "Metin", emptyMap(), PushAudience.All, true, 0L, "a@b.c")
+        assertEquals(setOf("type", "title", "body", "by"), plain.keys)
+        assertEquals("Merhaba", plain["title"])
+        val rich = PushForm.command(
+            "Merhaba", "Metin", mapOf("en" to PushText("Hello", "Text"), "es" to PushText()), PushAudience.Lapsed, false, 5_000L, "a@b.c"
+        )
+        assertEquals(setOf("type", "title", "body", "by", "texts", "audience", "sendAtMillis"), rich.keys)
+        assertEquals("lapsed", rich["audience"])
+        assertEquals(5_000L, rich["sendAtMillis"])
+        assertEquals(setOf("en"), (rich["texts"] as Map<*, *>).keys)
+        // the fallback is written only when it is off and means something (everyone, with other languages)
+        val noFallback = PushForm.command("a", "b", mapOf("en" to PushText("x", "y")), PushAudience.All, false, 0L, "")
+        assertEquals(false, noFallback["fallback"])
+        assertNull(PushForm.command("a", "b", mapOf("en" to PushText("x", "y")), PushAudience.Lapsed, false, 0L, "")["fallback"])
+    }
+
+    @Test
+    fun theSendTimeIsNowOrAFutureMoment() {
+        val now = 1_700_000_000_000L
+        assertEquals(0L, PushForm.sendAt(PushWhen.Now, now))
+        assertEquals(now + 3_600_000L, PushForm.sendAt(PushWhen.InOneHour, now))
+        assertEquals(now + 3 * 3_600_000L, PushForm.sendAt(PushWhen.InThreeHours, now))
+        val tomorrow = PushForm.sendAt(PushWhen.TomorrowMorning, now)
+        assertTrue(tomorrow > now && tomorrow - now <= 48 * 3_600_000L)
+        // ten in the morning in Istanbul
+        val hour = java.time.Instant.ofEpochMilli(tomorrow).atZone(java.time.ZoneId.of("Europe/Istanbul")).hour
+        assertEquals(10, hour)
+    }
+
+    @Test
+    fun theSummaryNamesWhoInWhichLanguagesAndWhen() {
+        val extra = mapOf("en" to PushText("a", "b"))
+        assertEquals("herkes · tr+en · hemen", PushForm.summary(PushAudience.All, extra, true, PushWhen.Now))
+        assertTrue(PushForm.summary(PushAudience.All, extra, false, PushWhen.InOneHour).contains("metinsiz dillere gitmez"))
+        assertEquals(listOf("tr", "en"), PushForm.languages(extra))
+    }
+
+    // ---- the player search
+
+    @Test
+    fun aNameIsLookedForFromItsBeginningInSeveralSpellings() {
+        assertEquals(listOf("ahm", "Ahm"), PlayerSearch.nicknamePrefixes("ahm"))
+        assertEquals(listOf("Ahm"), PlayerSearch.nicknamePrefixes("Ahm").let { it.filter { p -> p == "Ahm" } })
+        // Turkish i: the capital of "ismet" is İsmet, not Ismet
+        assertTrue(PlayerSearch.nicknamePrefixes("ismet").contains("İsmet"))
+        // one letter is too little to search by
+        assertTrue(PlayerSearch.nicknamePrefixes("a").isEmpty())
+        assertEquals("ahm\uf8ff", PlayerSearch.upperBound("ahm"))
+    }
+
+    @Test
+    fun friendCodesAndUidsAreToldApart() {
+        assertTrue(PlayerSearch.isFriendCode("123456"))
+        assertTrue(!PlayerSearch.isFriendCode("12345"))
+        assertTrue(!PlayerSearch.isFriendCode("12345a"))
+        assertTrue(PlayerSearch.looksLikeUid("abcdefghijklmnopqrstuvwxyz12"))
+        assertTrue(!PlayerSearch.looksLikeUid("ahmet yılmaz"))
     }
 }
 

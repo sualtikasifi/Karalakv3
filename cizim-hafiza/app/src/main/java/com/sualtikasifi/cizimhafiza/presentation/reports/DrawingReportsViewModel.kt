@@ -126,9 +126,13 @@ data class DrawingReportsUiState(
     val feedbackFailed: Boolean = false,
     /** How many feedback reports there are in all, null until counted. */
     val feedbackTotal: Long? = null,
+    /** The reports picked for a bulk action (a long press starts picking). */
+    val feedbackSelection: Set<String> = emptySet(),
     val reports: List<ReportedDrawing> = emptyList(),
     /** The report whose verdict is being written right now (buttons off meanwhile). */
     val decidingReportId: String? = null,
+    /** The drawing reports picked for a bulk "haksız" (a long press starts picking). */
+    val reportSelection: Set<String> = emptySet(),
     val refusals: List<RefusedRound> = emptyList(),
     val evidenceLoading: Boolean = false,
     val evidenceLoaded: Boolean = false,
@@ -397,8 +401,69 @@ class DrawingReportsViewModel @Inject constructor(
         val s0 = _uiState.value
         _uiState.value = s0.copy(
             feedback = s0.feedback.filterNot { it.report.id in ids },
-            feedbackTotal = s0.feedbackTotal?.minus(ids.size)?.coerceAtLeast(0L)
+            feedbackTotal = s0.feedbackTotal?.minus(ids.size)?.coerceAtLeast(0L),
+            feedbackSelection = s0.feedbackSelection - ids
         )
+    }
+
+    // ---- picking several feedback reports
+
+    fun toggleFeedbackSelect(id: String) {
+        val sel = _uiState.value.feedbackSelection
+        _uiState.value = _uiState.value.copy(feedbackSelection = if (id in sel) sel - id else sel + id)
+    }
+    fun selectAllFeedback() { _uiState.value = _uiState.value.copy(feedbackSelection = _uiState.value.feedback.map { it.report.id }.toSet()) }
+    fun clearFeedbackSelection() { _uiState.value = _uiState.value.copy(feedbackSelection = emptySet()) }
+
+    /** Marks every picked report seen in one write. */
+    fun markSelectedFeedbackSeen() {
+        val ids = _uiState.value.feedbackSelection
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            bugReportRepository.markSeenMany(ids.toList())
+                .onSuccess { markSeenLocally(ids); clearFeedbackSelection() }
+                .onFailure { e -> failDecision(e) }
+        }
+    }
+
+    /** Deletes every picked report (the screen asks first), audited in the same write. */
+    fun deleteSelectedFeedback() {
+        val ids = _uiState.value.feedbackSelection
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            bugReportRepository.deleteReportsAudited(ids.toList())
+                .onSuccess { removeFeedbackLocally(ids) }
+                .onFailure { e -> failDecision(e) }
+        }
+    }
+
+    // ---- picking several drawing reports
+
+    fun toggleReportSelect(id: String) {
+        val sel = _uiState.value.reportSelection
+        _uiState.value = _uiState.value.copy(reportSelection = if (id in sel) sel - id else sel + id)
+    }
+    fun selectAllReports() { _uiState.value = _uiState.value.copy(reportSelection = _uiState.value.reports.map { it.report.id }.toSet()) }
+    fun clearReportSelection() { _uiState.value = _uiState.value.copy(reportSelection = emptySet()) }
+
+    /**
+     * Throws every picked report out as unfounded in one write. Only this, never "uphold": punishing a drawer is decided one
+     * report at a time, looking at the drawing.
+     */
+    fun dismissSelectedReports() {
+        val ids = _uiState.value.reportSelection
+        if (ids.isEmpty() || _uiState.value.decidingReportId != null) return
+        _uiState.value = _uiState.value.copy(decidingReportId = "bulk", decisionFailed = false, decisionError = null)
+        viewModelScope.launch {
+            moderationRepository.dismissReports(ids.toList())
+                .onSuccess {
+                    val s0 = _uiState.value
+                    _uiState.value = s0.copy(reports = s0.reports.filterNot { it.report.id in ids }, reportSelection = emptySet(), decidingReportId = null)
+                }
+                .onFailure { e ->
+                    _uiState.value = _uiState.value.copy(decidingReportId = null, decisionFailed = true, decisionError = e.describe())
+                }
+        }
     }
 
     /** Clears EVERY feedback report there is, in pages of 400, not only the ones the panel has loaded. */
@@ -610,7 +675,11 @@ class DrawingReportsViewModel @Inject constructor(
                         (it.report.reportedUid == entry.report.reportedUid && it.report.word == entry.report.word &&
                             it.report.runId == entry.report.runId && upheld)
                 }.map { it.report.id }.toSet()
-                _uiState.value.copy(reports = _uiState.value.reports.filterNot { it.report.id in gone }, decidingReportId = null)
+                _uiState.value.copy(
+                    reports = _uiState.value.reports.filterNot { it.report.id in gone },
+                    reportSelection = _uiState.value.reportSelection - gone,
+                    decidingReportId = null
+                )
             }
         }
     }
