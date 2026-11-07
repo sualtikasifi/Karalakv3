@@ -355,10 +355,13 @@ class ForgotTest {
     }
 
     @Test
-    fun everyStyleHasItsOwnWordsAndOnlyTheGameOneLeavesTheRewardLabelOut() {
+    fun everyStyleHasItsOwnWordsAndNoneNamesAPrizeKind() {
         assertEquals(3, ForgotStyle.entries.map { it.titleWord + it.explainWord }.toSet().size)
-        assertNull(ForgotStyle.Game.rewardLabel)
-        assertNotNull(ForgotStyle.Warm.rewardLabel)
+        // the code may give gold, XP or a chest: no wording may assume which
+        ForgotStyle.entries.forEach { st ->
+            val all = listOfNotNull(st.titleWord, st.titleShown, st.explainWord, st.explainShown, st.rewardLabel, st.howTo, st.hintWord).joinToString(" ").lowercase(java.util.Locale("tr"))
+            assertFalse(st.title, all.contains("kasa"))
+        }
         assertTrue(ForgotStyle.Warm.tone in ForgotCopy.directorPrompt("kedi", listOf(1f), "m", ForgotMode.Word, "", "", ForgotStyle.Warm))
     }
 }
