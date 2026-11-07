@@ -268,7 +268,11 @@ data class StudioState(
     val renderError: String? = null,
     val message: String? = null,
     val forgot: ForgotUi = ForgotUi(),
-    val real: RealUi = RealUi()
+    val real: RealUi = RealUi(),
+    /** The log of videos made on this phone, newest first (see [PublishLog]). */
+    val publishLog: List<PublishEntry> = emptyList(),
+    /** What making videos costs, as OpenRouter and ElevenLabs report it. */
+    val spend: SpendUi = SpendUi()
 ) {
     /** The language the videos are written and spoken in. */
     val lang: StudioLang get() = eleven.lang

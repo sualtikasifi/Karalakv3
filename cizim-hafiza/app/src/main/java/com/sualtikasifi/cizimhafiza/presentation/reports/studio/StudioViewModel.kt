@@ -141,6 +141,7 @@ class StudioViewModel @Inject constructor(
         loadMascot()
         loadReal()
         loadVoiceSettings()
+        loadPublishLog()
         _state.update { it.copy(analysisModel = analysisModel()) }
     }
 
@@ -417,6 +418,8 @@ class StudioViewModel @Inject constructor(
             result.onSuccess {
                 // a finished Çizen Bile Bilemedi video hands the next one the next wording (unless one is picked by hand)
                 if (s.format == StudioFormat.Forgot) prefs().edit().putInt(FORGOT_TURN, prefs().getInt(FORGOT_TURN, 0) + 1).apply()
+                // the log of made videos: which day went out with which code
+                recordMadeVideo(s)
                 _state.update { it.copy(rendering = false, video = out, progress = 1f, renderStage = "") }
             }
                 .onFailure { e ->

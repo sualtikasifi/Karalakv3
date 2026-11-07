@@ -205,6 +205,7 @@ internal fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, 
     previewItems(st, vm)
     renderItems(st, vm)
     resultItems(st, vm, context)
+    trackingItems(st, vm)
 }
 
 /** The preview's step and card, for the formats that show it as a section of their own. */
