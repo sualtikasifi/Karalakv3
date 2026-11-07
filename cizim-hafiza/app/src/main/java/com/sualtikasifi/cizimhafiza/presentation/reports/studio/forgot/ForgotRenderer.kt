@@ -239,7 +239,7 @@ class ForgotRenderer(
 
     /** What the code gives, a small chip on the board's top edge while the drawing is drawn. */
     private fun drawChip(canvas: Canvas) {
-        val chip = script.reward.takeIf { it.isNotBlank() }?.let { "Bilene ödül: $it" } ?: return
+        val chip = script.reward.takeIf { it.isNotBlank() }?.let { "${script.style.chipPrefix} $it" } ?: return
         drawChipText(canvas, chip, null)
     }
 
@@ -298,7 +298,7 @@ class ForgotRenderer(
         val pop = Ease.backOut(min(1f, within * 3f))
         val radius = 66f
         val chipRoom = board.width() - 60f - 2f * radius - 40f
-        val chip = if (script.showPercent) "Çizenlerin %${script.percent}'i bile bilemedi" else script.reward.takeIf { it.isNotBlank() }?.let { "Bilene ödül: $it" }
+        val chip = if (script.showPercent) "Çizenlerin %${script.percent}'i bile bilemedi" else script.reward.takeIf { it.isNotBlank() }?.let { "${script.style.chipPrefix} $it" }
         chip?.let { drawChipText(canvas, it, chipRoom) }
         val cx = board.right - 36f - radius
         val cy = board.top + 22f + radius
@@ -308,7 +308,7 @@ class ForgotRenderer(
         canvas.drawCircle(cx, cy, radius, fill)
         text.draw(canvas, "${3 - step}", cx, cy, 120, 96f, 1, assets.display, C.WHITE, ink = true)
         canvas.restore()
-        val caption = "Cevabını yorumlara yaz"
+        val caption = script.style.countdownCaption
         val p = text.paint(48f, assets.display, C.ORANGE_DARK)
         val cw = min(p.measureText(caption) + 90f, board.width() - 60f)
         val pill = RectF(board.centerX() - cw / 2f, board.bottom - 118f, board.centerX() + cw / 2f, board.bottom - 36f)
@@ -328,13 +328,14 @@ class ForgotRenderer(
         val word = script.mode == ForgotMode.Word
         val cx = board.centerX()
         val code = script.code
-        val title = "KUPON KODU"
-        val explain = if (word) "Çizilen şeyin adı, kodun kendisi" else "Aşağıdaki kodu uygulamaya gir"
-        val label = "KAZANACAĞIN ÖDÜL"
+        val style = script.style
+        val title = style.codeTitle(word)
+        val explain = style.explain(word)
+        val label = style.rewardLabel
         val reward = script.reward.takeIf { it.isNotBlank() }
-        val limit = ForgotCopy.limitText(script.uses, script.expiresAtMillis).takeIf { it.isNotBlank() }
-        val howTo = "Ayarlar'da Kupon kodu bölümüne yaz"
-        val hint = if (word) "Bilemezsen ipucu yorumlarda" else null
+        val limit = ForgotCopy.limitText(script.uses, script.expiresAtMillis, style).takeIf { it.isNotBlank() }
+        val howTo = style.howTo
+        val hint = if (word) style.hintWord else null
 
         val per = ForgotCopy.rowSize(code.length)
         val rows = if (code.isEmpty()) 0 else (code.length + per - 1) / per
@@ -343,7 +344,7 @@ class ForgotRenderer(
         val padV0 = 24f
         val hTitle = inkHeight(title, 800, 68f, 1, assets.display)
         val hExplain = inkHeight(explain, 820, 42f, 1, assets.body)
-        val hLabel = if (reward != null) inkHeight(label, 800, 32f, 1, assets.body) else 0f
+        val hLabel = if (reward != null && label != null) inkHeight(label, 800, 32f, 1, assets.body) else 0f
         val hReward = reward?.let { inkHeight(it, 780, 60f, 1, assets.display) } ?: 0f
         val pill0 = if (reward != null) hReward + 2f * padV0 else 0f
         val hLimit = limit?.let { inkHeight(it, 820, 42f, 1, assets.display) } ?: 0f
@@ -351,7 +352,7 @@ class ForgotRenderer(
         val hHint = hint?.let { inkHeight(it, 820, 36f, 1, assets.body) } ?: 0f
         val gaps = floatArrayOf(
             26f, 48f, 54f,                                   // title | explain | boxes | reward label
-            if (reward != null) 14f else 0f,                 // label | pill
+            if (reward != null && label != null) 14f else 0f, // label | pill
             if (limit != null) 40f else 0f,                  // pill | limit
             34f,                                             // limit | how-to
             if (hint != null) 14f else 0f                    // how-to | hint
@@ -374,8 +375,10 @@ class ForgotRenderer(
         drawBoxes(canvas, code, shown, word, y, cell0 * k, BOX_ROW_GAP * k, a)
         y += boxes0 * k + gaps[2] * k
         if (reward != null) {
-            put(label, hLabel, 32f, 800, assets.body, C.MUTED)
-            y += gaps[3] * k
+            if (label != null) {
+                put(label, hLabel, 32f, 800, assets.body, C.MUTED)
+                y += gaps[3] * k
+            }
             // the prize is the biggest thing on the screen: on a pill of its own
             val padV = padV0 * k
             val pillH = hReward * k + 2f * padV

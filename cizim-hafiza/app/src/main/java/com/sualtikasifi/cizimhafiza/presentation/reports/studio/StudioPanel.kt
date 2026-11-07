@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotStyle
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotChest
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotPhase
@@ -278,6 +279,18 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
             if (f.mode == ForgotMode.Shown) {
                 ActionButton(Icons.Filled.Refresh, "Yeni kod", Console.Surface, Console.Ink, Modifier.padding(top = 6.dp)) { vm.newForgotCode() }
             }
+            Text("Yazı dili", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
+            Segmented(
+                options = listOf("Auto" to "Dönüşümlü") + ForgotStyle.entries.map { it.name to it.title },
+                selected = f.styleChoice?.name ?: "Auto",
+                onSelect = { vm.setForgotStyle(if (it == "Auto") null else ForgotStyle.valueOf(it)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                (if (f.styleChoice == null) "Bu video: ${script.style.title} (her video bitince sıradaki dile geçer). " else "") +
+                    "Ekran yazıları ve Karalak'ın üslubu bu dile göre değişir; metinleri yeniden yazdırınca üslup uygulanır.",
+                style = Console.Small, modifier = Modifier.padding(top = 6.dp)
+            )
             Text("Ödül", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
             Field("Altın miktarı", if (f.gold == 0) "" else f.gold.toString(), { vm.setForgotGold(it.digitsToInt()) }, numeric = true)
             Field("XP miktarı", if (f.xp == 0) "" else f.xp.toString(), { vm.setForgotXp(it.digitsToInt()) }, numeric = true)

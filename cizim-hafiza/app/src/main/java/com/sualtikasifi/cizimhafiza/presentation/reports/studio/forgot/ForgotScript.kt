@@ -14,6 +14,55 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.util.Locale
 import kotlin.math.max
 
+/**
+ * The wording of the on-screen texts (and the tone the assistant writes in): three sets that are used in turn from one
+ * video to the next, so the feed does not read like the same ad every time.
+ */
+enum class ForgotStyle(
+    val title: String,
+    /** Before the prize in the chip at the top of the board: "Kasa kilitli: 40 XP". */
+    val chipPrefix: String,
+    /** What the viewer does while 3 · 2 · 1 counts. */
+    val countdownCaption: String,
+    val titleWord: String,
+    val titleShown: String,
+    val explainWord: String,
+    val explainShown: String,
+    /** Above the prize pill on the code screen. */
+    val rewardLabel: String?,
+    val howTo: String,
+    val hintWord: String,
+    /** The assistant's voice for this set. */
+    val tone: String
+) {
+    Game(
+        "Oyun dili", "Kasa kilitli:", "Kilidi aç: cevabını yaz", "ANAHTAR KELİME", "KASA ŞİFRESİ",
+        "Doğru tahmin, kasanın şifresi", "Bu kod, kasanın şifresi", null,
+        "Ayarlar › Kupon kodu › Kullan", "Takıldıysan yorumlara bak",
+        "oyun dili: kilit, kasa, şifre, anahtar gibi sözcükler; enerjik ve meydan okuyan"
+    ),
+    Warm(
+        "Sıcak dil", "Bilirsen bu senin:", "Sen de bilebilirsin, yaz", "Bu kasa senin olabilir", "Bu kasa senin olabilir",
+        "Şifre, az önce çizilen şey", "Kodu uygulamaya yaz", "Açtığın kasa",
+        "Ayarlar'a gir, kodu yaz, Kullan'a bas", "Bilemedin mi? İpucu yorumlarda",
+        "samimi ve sıcak: hediye veren, yanında duran bir arkadaş gibi; yarışmacı değil davetkâr"
+    ),
+    Deal(
+        "Fırsat dili", "Hediyen hazır:", "Kaçırma, cevabını yaz", "Hediye kodun", "Hediye kodun",
+        "Kod, çizilen şeyin adı", "Kodu uygulamaya gir", "İçinden çıkan",
+        "Ayarlar › Kupon kodu › Kullan", "İpucu yorumlarda",
+        "net ve fırsat vurgulu: kısa, süreli ve sınırlı olduğunu hissettiren ama abartısız, bağıran değil"
+    );
+
+    fun codeTitle(word: Boolean) = if (word) titleWord else titleShown
+    fun explain(word: Boolean) = if (word) explainWord else explainShown
+
+    companion object {
+        /** The set for the [turn]th video, the sets taking it in turns. */
+        fun forTurn(turn: Int): ForgotStyle = entries[Math.floorMod(turn, entries.size)]
+    }
+}
+
 /** How the video hands out its kupon kodu. */
 enum class ForgotMode(val title: String) {
     /** The code is the drawing's right answer, never said in the video: whoever knows the word (or reads the comments) has it. */
@@ -55,7 +104,9 @@ data class ForgotScript(
     val showPercent: Boolean = false,
     /** How many accounts may use the code and when it stops working (0: not set), as the coupon will hold them; shown on the code screen. */
     val uses: Int = 0,
-    val expiresAtMillis: Long = 0L
+    val expiresAtMillis: Long = 0L,
+    /** Which wording the on-screen texts use. */
+    val style: ForgotStyle = ForgotStyle.Game
 ) {
     /** Where each guess stops the drawing, ready to use: one per guess, in order, none past the whole. */
     val stops: List<Float> get() = ForgotTimeline.stopsFor(guesses.size, guessAt)
@@ -261,15 +312,21 @@ object ForgotCopy {
         return (length + rows - 1) / rows
     }
 
-    /** "İlk 100 kişi · Son: 8 Kasım 21:00": how many may use the code and until when, as the code screen says it (empty when neither is set). */
-    fun limitText(uses: Int, expiresAtMillis: Long, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String {
-        val parts = mutableListOf<String>()
-        if (uses > 0) parts += "İlk $uses kişi"
-        if (expiresAtMillis > 0) {
-            val when_ = java.time.format.DateTimeFormatter.ofPattern("d MMMM HH:mm", Locale("tr")).withZone(zone).format(java.time.Instant.ofEpochMilli(expiresAtMillis))
-            parts += "Son: $when_"
+    /**
+     * How many may use the code and until when, as the code screen says it in [style]'s words (empty when neither is set):
+     * "Sadece 100 kişi · Son: 8 Kasım 21:00", "100 kişi açabilir · Son: …", "Son fırsat · 8 Kasım 21:00 · İlk 100 kişi".
+     */
+    fun limitText(uses: Int, expiresAtMillis: Long, style: ForgotStyle = ForgotStyle.Game, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String {
+        val who = if (uses <= 0) null else when (style) {
+            ForgotStyle.Game -> "Sadece $uses kişi"
+            ForgotStyle.Warm -> "$uses kişi açabilir"
+            ForgotStyle.Deal -> "İlk $uses kişi"
         }
-        return parts.joinToString(" · ")
+        val until = if (expiresAtMillis <= 0) null else {
+            val at = java.time.format.DateTimeFormatter.ofPattern("d MMMM HH:mm", Locale("tr")).withZone(zone).format(java.time.Instant.ofEpochMilli(expiresAtMillis))
+            if (style == ForgotStyle.Deal) "Son fırsat · $at" else "Son: $at"
+        }
+        return listOfNotNull(if (style == ForgotStyle.Deal) until else who, if (style == ForgotStyle.Deal) who else until).joinToString(" · ")
     }
 
     /**
@@ -277,7 +334,7 @@ object ForgotCopy {
      * every spoken moment and how long it lasts, and what it must keep in mind (the mode, the reward, the word it may not say).
      * It works its plan out first, then writes each line for its own moment.
      */
-    fun directorPrompt(word: String, stops: List<Float>, moods: String, mode: ForgotMode, reward: String, limit: String): String {
+    fun directorPrompt(word: String, stops: List<Float>, moods: String, mode: ForgotMode, reward: String, limit: String, style: ForgotStyle = ForgotStyle.Game): String {
         val n = stops.size
         val pictures = stops.mapIndexed { i, share -> "Görsel ${i + 1}: çizimin %${percent(share)}'i çizilmiş." }.joinToString("\n") + "\nGörsel ${n + 1}: bitmiş çizim."
         val guessScenes = stops.mapIndexed { i, share ->
@@ -307,6 +364,7 @@ object ForgotCopy {
             - Tahminleri YALNIZCA kendi görseline bakarak yaz: Karalak o anda yalnızca o kadarını görüyor, sonrasını bilmiyor. Görselde gerçekten görünen bir şeye bakan komik, yanlış ama makul tahminler olsun; ilk tahmin belirsiz, sonuncusu en kendinden emin. Tahminler birbirini izlesin: sonraki, öncekinden çıkarım yapsın ya da onu inatla savunsun; aynı şeyi tekrarlama.
             - Soru, son tahminle bağlantılı olsun ve izleyiciyi yorum yazmaya itsin ("Sen ne görüyorsun?" gibi).
             - Çizenle ve izleyiciyle asla dalga geçme.
+            - Üslup: ${style.tone}. Ekranda şu sözler zaten yazıyor, bunlara uyumlu ol ama tekrar etme: "${style.countdownCaption}".
             - Bütün cümleler kısa ve konuşma diliyle olsun; video 20 saniyenin altında kalmalı.
             - Kod ekranında zaten yazan bilgiyi (ödül, son tarih, nereye girileceği) cümlede TEKRARLAMA; cümle yazının üstüne duygu katsın.
 

@@ -5,6 +5,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotChest
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotStyle
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotPhase
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotScript
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotTimeline
@@ -118,7 +119,7 @@ class ForgotTest {
 
     @Test
     fun theAssistantIsToldEachGuessSDrawingAndTheScenesAndNotToSayTheWord() {
-        val prompt = ForgotCopy.directorPrompt("şemsiye", listOf(0.3f, 0.65f, 1f), "neutral, thinking", ForgotMode.Word, "Sanatçı Kasası", "İlk 100 kişi · Son: 8 Kasım 21:00")
+        val prompt = ForgotCopy.directorPrompt("şemsiye", listOf(0.3f, 0.65f, 1f), "neutral, thinking", ForgotMode.Word, "Sanatçı Kasası", "Sadece 100 kişi · Son: 8 Kasım 21:00")
         assertTrue(prompt.contains("Görsel 1: çizimin %30'i"))
         assertTrue(prompt.contains("Görsel 2: çizimin %65'i"))
         assertTrue(prompt.contains("Görsel 3: çizimin %100'i"))
@@ -144,7 +145,7 @@ class ForgotTest {
         assertTrue(prompt.contains("neutral, thinking"))
         // what the screen already says is not to be said again
         assertTrue(prompt.contains("Sanatçı Kasası"))
-        assertTrue(prompt.contains("İlk 100 kişi"))
+        assertTrue(prompt.contains("Sadece 100 kişi"))
         assertTrue(prompt.contains("TEKRARLAMA"))
     }
 
@@ -181,12 +182,12 @@ class ForgotTest {
     fun theLimitIsSaidTheWayTheCodeScreenShowsIt() {
         // 8 Kasım 2026 21:00 UTC
         val at = java.time.ZonedDateTime.of(2026, 11, 8, 21, 0, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
-        assertEquals("İlk 100 kişi · Son: 8 Kasım 21:00", ForgotCopy.limitText(100, at, java.time.ZoneOffset.UTC))
-        assertEquals("İlk 1 kişi", ForgotCopy.limitText(1, 0L, java.time.ZoneOffset.UTC))
-        assertEquals("Son: 8 Kasım 21:00", ForgotCopy.limitText(0, at, java.time.ZoneOffset.UTC))
+        assertEquals("Sadece 100 kişi · Son: 8 Kasım 21:00", ForgotCopy.limitText(100, at, zone = java.time.ZoneOffset.UTC))
+        assertEquals("Sadece 1 kişi", ForgotCopy.limitText(1, 0L, zone = java.time.ZoneOffset.UTC))
+        assertEquals("Son: 8 Kasım 21:00", ForgotCopy.limitText(0, at, zone = java.time.ZoneOffset.UTC))
         assertEquals("", ForgotCopy.limitText(0, 0L))
         // the device's own time zone moves the hour, not the day count
-        assertEquals("Son: 9 Kasım 00:00", ForgotCopy.limitText(0, at, java.time.ZoneOffset.ofHours(3)))
+        assertEquals("Son: 9 Kasım 00:00", ForgotCopy.limitText(0, at, zone = java.time.ZoneOffset.ofHours(3)))
     }
 
     @Test
@@ -336,5 +337,29 @@ class ForgotTest {
     @Test
     fun aNewCodeStopsWorkingTwoDaysOut() {
         assertEquals(1_000L + 48L * 3_600_000L, ForgotCopy.defaultExpiry(1_000L))
+    }
+
+    @Test
+    fun theThreeWordingsTakeTurns() {
+        assertEquals(listOf(ForgotStyle.Game, ForgotStyle.Warm, ForgotStyle.Deal, ForgotStyle.Game), (0..3).map { ForgotStyle.forTurn(it) })
+        assertEquals(ForgotStyle.Deal, ForgotStyle.forTurn(-1))
+    }
+
+    @Test
+    fun theLimitFollowsTheStyle() {
+        val at = java.time.ZonedDateTime.of(2026, 11, 8, 21, 0, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+        val utc = java.time.ZoneOffset.UTC
+        assertEquals("100 kişi açabilir · Son: 8 Kasım 21:00", ForgotCopy.limitText(100, at, ForgotStyle.Warm, utc))
+        assertEquals("Son fırsat · 8 Kasım 21:00 · İlk 100 kişi", ForgotCopy.limitText(100, at, ForgotStyle.Deal, utc))
+        assertEquals("Son fırsat · 8 Kasım 21:00", ForgotCopy.limitText(0, at, ForgotStyle.Deal, utc))
+    }
+
+    @Test
+    fun everyStyleHasItsOwnWordsAndOnlyTheGameOneLeavesTheRewardLabelOut() {
+        assertEquals(3, ForgotStyle.entries.map { it.countdownCaption }.toSet().size)
+        assertEquals(3, ForgotStyle.entries.map { it.chipPrefix }.toSet().size)
+        assertNull(ForgotStyle.Game.rewardLabel)
+        assertNotNull(ForgotStyle.Warm.rewardLabel)
+        assertTrue(ForgotStyle.Warm.tone in ForgotCopy.directorPrompt("kedi", listOf(1f), "m", ForgotMode.Word, "", "", ForgotStyle.Warm))
     }
 }

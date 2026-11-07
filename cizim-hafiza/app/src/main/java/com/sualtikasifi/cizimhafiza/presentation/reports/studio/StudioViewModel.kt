@@ -38,6 +38,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotTim
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotDirector
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotRenderer
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotStyle
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotChest
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotScript
 import com.sualtikasifi.cizimhafiza.domain.model.Coupon
@@ -159,7 +160,9 @@ data class ForgotUi(
     val couponBusy: Boolean = false,
     val couponStatus: String? = null,
     /** How many of the phone's drawings the list shows: [FORGOT_PAGE] at first, that many more each time "Daha fazla" is pressed. */
-    val shown: Int = FORGOT_PAGE
+    val shown: Int = FORGOT_PAGE,
+    /** The wording of the on-screen texts: one picked by hand, or null to let the three take turns from video to video. */
+    val styleChoice: ForgotStyle? = null
 )
 
 /** "Gerçek Olsaydı": the pool's latest drawings, and the project (the chosen drawings of different words) on this phone. */
@@ -411,6 +414,9 @@ class StudioViewModel @Inject constructor(
     private fun updateForgot(change: (ForgotUi) -> ForgotUi) = _state.update { it.copy(forgot = change(it.forgot)) }
 
     /** The script for [d] with the panel's choices; the lines of [previous] are kept (the code line follows the mode). */
+    /** The wording the next video uses: the one picked by hand, else the next in the turn (the turn moves on after each video is made). */
+    private fun styleFor(ui: ForgotUi): ForgotStyle = ui.styleChoice ?: ForgotStyle.forTurn(prefs().getInt(FORGOT_TURN, 0))
+
     private fun buildForgot(d: StudioDrawing, ui: ForgotUi, previous: ForgotScript?): ForgotScript {
         val other = ForgotCopy.codeLineFor(if (ui.mode == ForgotMode.Word) ForgotMode.Shown else ForgotMode.Word)
         return ForgotScript(
@@ -427,7 +433,8 @@ class StudioViewModel @Inject constructor(
             percent = previous?.percent ?: ForgotCopy.randomPercent(),
             showPercent = previous?.showPercent ?: false,
             uses = ui.maxUses,
-            expiresAtMillis = ui.expiresAtMillis
+            expiresAtMillis = ui.expiresAtMillis,
+            style = styleFor(ui)
         )
     }
 
@@ -458,6 +465,8 @@ class StudioViewModel @Inject constructor(
         rebuildForgot { it.copy(mode = mode) }
         editForgotScript { it.copy(codeLine = SpokenLine(ForgotCopy.codeLineFor(mode), MascotEmotion.Point)) }
     }
+    /** Picks the wording by hand, or (null) lets the three take turns. */
+    fun setForgotStyle(style: ForgotStyle?) = rebuildForgot { it.copy(styleChoice = style) }
     fun setForgotChest(chest: ForgotChest) = rebuildForgot { it.copy(chest = chest) }
     fun setForgotGold(n: Int) = rebuildForgot { it.copy(gold = n.coerceIn(0, CouponCodes.MAX_GOLD)) }
     fun setForgotXp(n: Int) = rebuildForgot { it.copy(xp = n.coerceIn(0, CouponCodes.MAX_XP)) }
@@ -503,11 +512,12 @@ class StudioViewModel @Inject constructor(
         val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
         if (key.isBlank()) { updateForgot { it.copy(writeError = "Önce Asistan ayarlarından OpenRouter anahtarını gir.") }; return }
         val model = analysisModel()
+        val style = s.forgot.script?.style ?: styleFor(s.forgot)
         updateForgot { it.copy(writing = true, writeError = null) }
         viewModelScope.launch {
             ForgotDirector(OpenRouterClient(key), model, _state.value.lang).write(
                 d, s.forgot.script?.stops.orEmpty(), s.forgot.mode, s.forgot.script?.reward.orEmpty(),
-                ForgotCopy.limitText(s.forgot.maxUses, s.forgot.expiresAtMillis)
+                ForgotCopy.limitText(s.forgot.maxUses, s.forgot.expiresAtMillis, style), style
             ).onSuccess { w ->
                 _state.update { st ->
                     val cur = st.forgot.script ?: return@update st.copy(forgot = st.forgot.copy(writing = false))
@@ -1855,7 +1865,11 @@ class StudioViewModel @Inject constructor(
                     renderHowto?.close()
                 }
             }
-            result.onSuccess { _state.update { it.copy(rendering = false, video = out, progress = 1f, renderStage = "") } }
+            result.onSuccess {
+                // a finished Çizen Bile Bilemedi video hands the next one the next wording (unless one is picked by hand)
+                if (s.format == StudioFormat.Forgot) prefs().edit().putInt(FORGOT_TURN, prefs().getInt(FORGOT_TURN, 0) + 1).apply()
+                _state.update { it.copy(rendering = false, video = out, progress = 1f, renderStage = "") }
+            }
                 .onFailure { e ->
                     val cancelled = e is kotlin.coroutines.cancellation.CancellationException
                     _state.update { it.copy(rendering = false, renderStage = "", renderError = if (cancelled) null else (e.message ?: e::class.simpleName)) }
@@ -1922,6 +1936,7 @@ class StudioViewModel @Inject constructor(
         const val STUDIO_LANG = "studio_lang"
         const val VOICE_ENGINE = "studio_voice_engine"
         const val CARD_SCALE = "studio_real_card_scale"
+        private const val FORGOT_TURN = "studio_forgot_style_turn"
         const val CARD_X = "studio_real_card_x"
         const val CARD_Y = "studio_real_card_y"
         const val POST_SAME_MS = 30 * 60_000L

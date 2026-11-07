@@ -26,13 +26,13 @@ class ForgotDirector(private val client: OpenRouterClient, private val model: St
      * Shows the assistant the drawing as it looks at each of [stops] (shares of it drawn), then whole, and has the lines
      * written; each guess comes from its own picture. Model: whatever [client] is told to use (Sonnet 5.5 through OpenRouter).
      */
-    suspend fun write(drawing: StudioDrawing, stops: List<Float>, mode: ForgotMode, reward: String, limit: String): Result<Written> = runCatching {
+    suspend fun write(drawing: StudioDrawing, stops: List<Float>, mode: ForgotMode, reward: String, limit: String, style: ForgotStyle = ForgotStyle.Game): Result<Written> = runCatching {
         val n = stops.size.coerceIn(1, ForgotTimeline.MAX_GUESSES)
         val shares = ForgotTimeline.stopsFor(n, stops)
         val images = withContext(Dispatchers.Default) {
             shares.map { StrokeReplay.png(drawing.strokes, it, 512) } + StrokeReplay.png(drawing.strokes, 1f, 512)
         }
-        val prompt = ForgotCopy.directorPrompt(drawing.word, shares, MascotEmotion.entries.joinToString(", ") { it.key }, mode, reward, limit)
+        val prompt = ForgotCopy.directorPrompt(drawing.word, shares, MascotEmotion.entries.joinToString(", ") { it.key }, mode, reward, limit, style)
         val system = KaralakVoice.persona(JOB, lang)
         val answer = Backoff.retrying {
             client.generate(system, prompt + KaralakVoice.promptNote(lang, "JSON anahtarları ve emotion değerleri"), model, webSearch = false, images = images, json = true, temperature = 0.9, maxTokens = 1800)
