@@ -356,7 +356,7 @@ class ForgotTest {
 
     @Test
     fun everyStyleHasItsOwnWordsAndOnlyTheGameOneLeavesTheRewardLabelOut() {
-        assertEquals(3, ForgotStyle.entries.map { it.countdownCaption }.toSet().size)
+        assertEquals(3, ForgotStyle.entries.map { it.titleWord + it.explainWord }.toSet().size)
         assertNull(ForgotStyle.Game.rewardLabel)
         assertNotNull(ForgotStyle.Warm.rewardLabel)
         assertTrue(ForgotStyle.Warm.tone in ForgotCopy.directorPrompt("kedi", listOf(1f), "m", ForgotMode.Word, "", "", ForgotStyle.Warm))

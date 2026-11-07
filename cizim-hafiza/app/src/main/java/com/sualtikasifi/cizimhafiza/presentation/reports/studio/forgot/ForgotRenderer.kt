@@ -125,11 +125,12 @@ class ForgotRenderer(
             ForgotPhase.Hook -> drawDrawing(canvas, e.drawFrom + (e.drawTo - e.drawFrom) * Ease.inOut(e.progress(t)), 1f, 0L)
             ForgotPhase.Draw -> drawDrawing(canvas, e.drawFrom + (e.drawTo - e.drawFrom) * Ease.inOut(e.progress(t)), 1f, 0L)
             ForgotPhase.Guess -> drawDrawing(canvas, e.drawTo, 1f, 0L)
-            ForgotPhase.Countdown -> drawCountdown(canvas, e, t)
+            // the question over the finished drawing: nothing but Karalak asking, the blanks and the prize stay
+            ForgotPhase.Countdown -> drawDrawing(canvas, 1f, 1f, 0L)
             ForgotPhase.Code -> drawCode(canvas, e, t)
             ForgotPhase.Outro -> Unit
         }
-        if (e.phase == ForgotPhase.Hook || e.phase == ForgotPhase.Draw || e.phase == ForgotPhase.Guess) {
+        if (e.phase != ForgotPhase.Code) {
             // the word's blanks over the board from the very first frame, the prize under it
             drawLetterSlots(canvas, board.centerX(), board.width() - 100f)
             drawRewardPill(canvas, board.bottom - 118f, 82f, 44f)
@@ -325,50 +326,6 @@ class ForgotRenderer(
         size
     }
     private val subtitleSizes = HashMap<String, Float>()
-
-    /**
-     * 3 · 2 · 1 while the whole drawing stays in plain view (the viewer has to guess from it): the counter is a badge in the
-     * board's top right corner, the share who missed it (or the prize) a chip at the top left, and what to do with the
-     * guess, "Cevabını yorumlara yaz", sits at the bottom. The question itself is Karalak's, said and subtitled.
-     */
-    private fun drawCountdown(canvas: Canvas, e: ForgotEvent, t: Long) {
-        drawDrawing(canvas, 1f, 1f, 0L)
-        val local = t - e.startMs
-        // the countdown lasts as long as the question takes: three even counts across it
-        val step = (local * 3 / e.durationMs).toInt().coerceIn(0, 2)
-        val within = ((local * 3f / e.durationMs) - step).coerceIn(0f, 1f)
-        val pop = Ease.backOut(min(1f, within * 3f))
-        val radius = 66f
-        val room = board.width() - 60f - 2f * radius - 40f
-        // the blanks sit left of the badge, the prize and (if wanted) the share who missed it stack above the caption
-        drawLetterSlots(canvas, board.left + 30f + room / 2f, room)
-        if (script.showPercent) {
-            val chip = "Çizenlerin %${script.percent}'i bile bilemedi"
-            val p = text.paint(36f, assets.body, C.INK)
-            val cw = min(p.measureText(chip) + 64f, board.width() - 60f)
-            val box = RectF(board.centerX() - cw / 2f, board.bottom - 194f, board.centerX() + cw / 2f, board.bottom - 134f)
-            fill.color = C.CREAM_DEEP
-            canvas.drawRoundRect(box, 30f, 30f, fill)
-            text.draw(canvas, chip, box.centerX(), box.centerY(), (cw - 32f).toInt(), 36f, 1, assets.body, C.INK, ink = true)
-        } else {
-            drawRewardPill(canvas, board.bottom - 194f, 62f, 36f)
-        }
-        val cx = board.right - 36f - radius
-        val cy = board.top + 22f + radius
-        canvas.save()
-        canvas.scale(pop, pop, cx, cy)
-        fill.color = C.ORANGE
-        canvas.drawCircle(cx, cy, radius, fill)
-        text.draw(canvas, "${3 - step}", cx, cy, 120, 96f, 1, assets.display, C.WHITE, ink = true)
-        canvas.restore()
-        val caption = script.style.countdownCaption
-        val p = text.paint(48f, assets.display, C.ORANGE_DARK)
-        val cw = min(p.measureText(caption) + 90f, board.width() - 60f)
-        val pill = RectF(board.centerX() - cw / 2f, board.bottom - 118f, board.centerX() + cw / 2f, board.bottom - 36f)
-        fill.color = C.CREAM_DEEP
-        canvas.drawRoundRect(pill, 41f, 41f, fill)
-        text.draw(canvas, caption, pill.centerX(), pill.centerY(), (cw - 40f).toInt(), 48f, 1, assets.display, C.ORANGE_DARK, ink = true)
-    }
 
     /**
      * The code screen on the board, top to bottom: what it is, the code (empty boxes, one per letter, when the answer is

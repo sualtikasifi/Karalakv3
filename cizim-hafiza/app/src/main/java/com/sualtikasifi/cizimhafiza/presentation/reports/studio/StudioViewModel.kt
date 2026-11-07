@@ -493,8 +493,6 @@ class StudioViewModel @Inject constructor(
         setForgotStop(index, now + deltaPercent / 100f)
     }
 
-    fun setForgotShowPercent(on: Boolean) = editForgotScript { it.copy(showPercent = on) }
-    fun stepForgotPercent(delta: Int) = editForgotScript { it.copy(percent = (it.percent + delta).coerceIn(1, 99)) }
 
     private fun editForgotScript(change: (ForgotScript) -> ForgotScript) {
         _state.update { s ->

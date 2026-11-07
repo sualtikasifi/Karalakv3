@@ -20,8 +20,6 @@ import kotlin.math.max
  */
 enum class ForgotStyle(
     val title: String,
-    /** What the viewer does while 3 · 2 · 1 counts. */
-    val countdownCaption: String,
     val titleWord: String,
     val titleShown: String,
     val explainWord: String,
@@ -34,19 +32,19 @@ enum class ForgotStyle(
     val tone: String
 ) {
     Game(
-        "Oyun dili", "Kilidi aç: cevabını yaz", "ANAHTAR KELİME", "KASA ŞİFRESİ",
+        "Oyun dili", "ANAHTAR KELİME", "KASA ŞİFRESİ",
         "Doğru tahmin, kasanın şifresi", "Bu kod, kasanın şifresi", null,
         "Ayarlar › Kupon kodu › Kullan", "Takıldıysan yorumlara bak",
         "oyun dili: kilit, kasa, şifre, anahtar gibi sözcükler; enerjik ve meydan okuyan"
     ),
     Warm(
-        "Sıcak dil", "Sen de bilebilirsin, yaz", "Bu kasa senin olabilir", "Bu kasa senin olabilir",
+        "Sıcak dil", "Bu kasa senin olabilir", "Bu kasa senin olabilir",
         "Şifre, az önce çizilen şey", "Kodu uygulamaya yaz", "Açtığın kasa",
         "Ayarlar'a gir, kodu yaz, Kullan'a bas", "Bilemedin mi? İpucu yorumlarda",
         "samimi ve sıcak: hediye veren, yanında duran bir arkadaş gibi; yarışmacı değil davetkâr"
     ),
     Deal(
-        "Fırsat dili", "Kaçırma, cevabını yaz", "Hediye kodun", "Hediye kodun",
+        "Fırsat dili", "Hediye kodun", "Hediye kodun",
         "Kod, çizilen şeyin adı", "Kodu uygulamaya gir", "İçinden çıkan",
         "Ayarlar › Kupon kodu › Kullan", "İpucu yorumlarda",
         "net ve fırsat vurgulu: kısa, süreli ve sınırlı olduğunu hissettiren ama abartısız, bağıran değil"
@@ -368,7 +366,7 @@ object ForgotCopy {
             - Tahminleri YALNIZCA kendi görseline bakarak yaz: Karalak o anda yalnızca o kadarını görüyor, sonrasını bilmiyor. Görselde gerçekten görünen bir şeye bakan komik, yanlış ama makul tahminler olsun; ilk tahmin belirsiz, sonuncusu en kendinden emin. Tahminler birbirini izlesin: sonraki, öncekinden çıkarım yapsın ya da onu inatla savunsun; aynı şeyi tekrarlama.
             - Soru, son tahminle bağlantılı olsun ve izleyiciyi yorum yazmaya itsin ("Sen ne görüyorsun?" gibi).
             - Çizenle ve izleyiciyle asla dalga geçme.
-            - Üslup: ${style.tone}. Ekranda şu sözler zaten yazıyor, bunlara uyumlu ol ama tekrar etme: "${style.countdownCaption}".
+            - Üslup: ${style.tone}.
             - Bütün cümleler kısa ve konuşma diliyle olsun; video 20 saniyenin altında kalmalı.
             - Kod ekranında zaten yazan bilgiyi (ödül, son tarih, nereye girileceği) cümlede TEKRARLAMA; cümle yazının üstüne duygu katsın.
 
