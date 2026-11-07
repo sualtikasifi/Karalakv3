@@ -33,6 +33,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -132,6 +134,16 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
             )
             if (f.mode == ForgotMode.Shown) {
                 ActionButton(Icons.Filled.Refresh, "Yeni kod", Console.Surface, Console.Ink, Modifier.padding(top = 6.dp)) { vm.newForgotCode() }
+            }
+            if (f.mode == ForgotMode.Word) {
+                // a hint for the viewer: the code's first letter in its first box
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text("İlk harfi göster", style = Console.Subtitle)
+                        Text("Kodun ilk harfi ilk kutuda görünür; kelimeyi bulmayı kolaylaştırır.", style = Console.Small)
+                    }
+                    Switch(checked = script.showFirstLetter, onCheckedChange = vm::setForgotFirstLetter, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
+                }
             }
             Text("Yazı dili", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
             Segmented(

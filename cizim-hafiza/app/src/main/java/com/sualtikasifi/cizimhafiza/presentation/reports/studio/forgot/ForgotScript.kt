@@ -24,7 +24,8 @@ enum class ForgotStyle(
     val titleShown: String,
     val explainWord: String,
     val explainShown: String,
-    val howTo: String,
+    /** Where to type the code, as the three steps the code screen numbers: "Ayarlar › Kupon kodu › Kullan". */
+    val steps: List<String>,
     val hintWord: String,
     /** The assistant's voice for this set. */
     val tone: String
@@ -33,19 +34,19 @@ enum class ForgotStyle(
     Game(
         "Oyun dili", "GİZLİ KOD", "ÖDÜL KODU",
         "Kod, çizilen şeyin adı", "Kodu uygulamaya gir",
-        "Ayarlar › Kupon kodu › Kullan", "Takıldıysan yorumlara bak",
+        listOf("Ayarlar", "Kupon kodu", "Kullan"), "Takıldıysan yorumlara bak",
         "oyun dili: kod, şifre, görev, meydan okuma gibi sözcükler; enerjik ve meydan okuyan. Ödülün ne olduğunu (kasa, altın, XP) sen söyleme, ekranda yazıyor"
     ),
     Warm(
         "Sıcak dil", "Cevabı bil, ödülü al", "Hediye kodun hazır",
         "Kod, az önce çizilen şeyin adı", "Kodu uygulamaya yaz",
-        "Ayarlar'a gir, kodu yaz, Kullan'a bas", "Bilemedin mi? İpucu yorumlarda",
+        listOf("Ayarlar'a gir", "Kodu yaz", "Kullan'a bas"), "Bilemedin mi? İpucu yorumlarda",
         "samimi ve sıcak: hediye veren, yanında duran bir arkadaş gibi; yarışmacı değil davetkâr. Ödülün ne olduğunu sen söyleme, ekranda yazıyor"
     ),
     Deal(
         "Fırsat dili", "Hediye kodun", "Hediye kodun",
         "Kod, çizilen şeyin adı", "Kodu uygulamaya gir",
-        "Ayarlar › Kupon kodu › Kullan", "İpucu yorumlarda",
+        listOf("Ayarlar", "Kupon kodu", "Kullan"), "İpucu yorumlarda",
         "net ve fırsat vurgulu: kısa, süreli ve sınırlı olduğunu hissettiren ama abartısız, bağıran değil. Ödülün ne olduğunu sen söyleme, ekranda yazıyor"
     );
 
@@ -104,6 +105,8 @@ data class ForgotScript(
     /** Hand-entered share of players who could not recognise their own drawing of this word; shown when [showPercent]. */
     val percent: Int = 70,
     val showPercent: Boolean = false,
+    /** In [ForgotMode.Word]: whether the code's first letter is shown in its first box (a hint for the viewer). */
+    val showFirstLetter: Boolean = false,
     /** How many accounts may use the code and when it stops working (0: not set), as the coupon will hold them; shown on the code screen. */
     val uses: Int = 0,
     val expiresAtMillis: Long = 0L,
@@ -324,7 +327,13 @@ object ForgotCopy {
      * How many may use the code and until when, as the code screen says it in [style]'s words (empty when neither is set):
      * "Sadece 100 kişi · Son: 8 Kasım 21:00", "100 kişi açabilir · Son: …", "Son fırsat · 8 Kasım 21:00 · İlk 100 kişi".
      */
-    fun limitText(uses: Int, expiresAtMillis: Long, style: ForgotStyle = ForgotStyle.Game, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String {
+    fun limitText(uses: Int, expiresAtMillis: Long, style: ForgotStyle = ForgotStyle.Game, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String =
+        limitChips(uses, expiresAtMillis, style, zone).joinToString(" · ") { it.text }
+
+    /** The two things [limitText] says, one chip each on the code screen: how many may use the code, and until when. */
+    data class LimitChip(val isWho: Boolean, val text: String)
+
+    fun limitChips(uses: Int, expiresAtMillis: Long, style: ForgotStyle = ForgotStyle.Game, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): List<LimitChip> {
         val who = if (uses <= 0) null else when (style) {
             ForgotStyle.Game -> "Sadece $uses kişi"
             ForgotStyle.Warm -> "$uses kişi açabilir"
@@ -334,7 +343,9 @@ object ForgotCopy {
             val at = java.time.format.DateTimeFormatter.ofPattern("d MMMM HH:mm", Locale("tr")).withZone(zone).format(java.time.Instant.ofEpochMilli(expiresAtMillis))
             if (style == ForgotStyle.Deal) "Son fırsat · $at" else "Son: $at"
         }
-        return listOfNotNull(if (style == ForgotStyle.Deal) until else who, if (style == ForgotStyle.Deal) who else until).joinToString(" · ")
+        val chips = listOfNotNull(who?.let { LimitChip(true, it) }, until?.let { LimitChip(false, it) })
+        // the "Fırsat" wording leads with the deadline
+        return if (style == ForgotStyle.Deal) chips.reversed() else chips
     }
 
     /**

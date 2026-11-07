@@ -124,6 +124,7 @@ internal fun StudioViewModel.buildForgot(d: StudioDrawing, ui: ForgotUi, previou
         showPercent = previous?.showPercent ?: false,
         uses = ui.maxUses,
         expiresAtMillis = ui.expiresAtMillis,
+        showFirstLetter = previous?.showFirstLetter ?: false,
         style = styleFor(ui)
     )
 }
@@ -163,6 +164,9 @@ fun StudioViewModel.setForgotMode(mode: ForgotMode) {
 }
 /** Picks the wording by hand, or (null) lets the three take turns. */
 fun StudioViewModel.setForgotStyle(style: ForgotStyle?) = rebuildForgot { it.copy(styleChoice = style) }
+/** Shows (or hides) the code's first letter in its first box, a hint for the viewer when the answer is the code. */
+fun StudioViewModel.setForgotFirstLetter(on: Boolean) = editForgotScript { it.copy(showFirstLetter = on) }
+
 fun StudioViewModel.setForgotChest(chest: ForgotChest) = rebuildForgot { it.copy(chest = chest) }
 fun StudioViewModel.setForgotGold(n: Int) = rebuildForgot { it.copy(gold = n.coerceIn(0, CouponCodes.MAX_GOLD)) }
 fun StudioViewModel.setForgotXp(n: Int) = rebuildForgot { it.copy(xp = n.coerceIn(0, CouponCodes.MAX_XP)) }

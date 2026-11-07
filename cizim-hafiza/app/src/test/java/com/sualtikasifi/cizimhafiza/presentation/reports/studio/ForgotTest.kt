@@ -359,9 +359,36 @@ class ForgotTest {
         assertEquals(3, ForgotStyle.entries.map { it.titleWord + it.explainWord }.toSet().size)
         // the code may give gold, XP or a chest: no wording may assume which
         ForgotStyle.entries.forEach { st ->
-            val all = listOfNotNull(st.titleWord, st.titleShown, st.explainWord, st.explainShown, st.howTo, st.hintWord).joinToString(" ").lowercase(java.util.Locale("tr"))
+            val all = listOfNotNull(st.titleWord, st.titleShown, st.explainWord, st.explainShown, st.steps.joinToString(" "), st.hintWord).joinToString(" ").lowercase(java.util.Locale("tr"))
             assertFalse(st.title, all.contains("kasa"))
         }
         assertTrue(ForgotStyle.Warm.tone in ForgotCopy.directorPrompt("kedi", listOf(1f), "m", ForgotMode.Word, "", "", ForgotStyle.Warm))
+    }
+
+    @Test
+    fun theLimitComesAsTwoChipsInTheStylesOrder() {
+        val at = java.time.ZonedDateTime.of(2026, 11, 8, 21, 0, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+        val utc = java.time.ZoneOffset.UTC
+        val game = ForgotCopy.limitChips(100, at, ForgotStyle.Game, utc)
+        assertEquals(listOf(true, false), game.map { it.isWho })
+        assertEquals(listOf("Sadece 100 kişi", "Son: 8 Kasım 21:00"), game.map { it.text })
+        // the deal wording leads with the deadline
+        val deal = ForgotCopy.limitChips(100, at, ForgotStyle.Deal, utc)
+        assertEquals(listOf(false, true), deal.map { it.isWho })
+        // one chip when only one thing is set, none when neither
+        assertEquals(1, ForgotCopy.limitChips(5, 0L, ForgotStyle.Warm, utc).size)
+        assertTrue(ForgotCopy.limitChips(0, 0L, ForgotStyle.Warm, utc).isEmpty())
+    }
+
+    @Test
+    fun everyStyleNumbersThreeStepsForTypingTheCode() {
+        ForgotStyle.entries.forEach { assertEquals(it.title, 3, it.steps.size) }
+        assertEquals(listOf("Ayarlar", "Kupon kodu", "Kullan"), ForgotStyle.Game.steps)
+    }
+
+    @Test
+    fun theFirstLetterHintIsOffUntilAskedFor() {
+        assertFalse(script(mode = ForgotMode.Word).showFirstLetter)
+        assertTrue(script(mode = ForgotMode.Word).copy(showFirstLetter = true).showFirstLetter)
     }
 }
