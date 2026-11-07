@@ -125,11 +125,16 @@ class ForgotRenderer(
             ForgotPhase.Hook -> drawDrawing(canvas, e.drawFrom + (e.drawTo - e.drawFrom) * Ease.inOut(e.progress(t)), 1f, 0L)
             ForgotPhase.Draw -> drawDrawing(canvas, e.drawFrom + (e.drawTo - e.drawFrom) * Ease.inOut(e.progress(t)), 1f, 0L)
             ForgotPhase.Guess -> drawDrawing(canvas, e.drawTo, 1f, 0L)
-            ForgotPhase.Countdown -> drawCountdown(canvas, e, t)
+            // the question over the finished drawing: nothing but Karalak asking, the blanks and the prize stay
+            ForgotPhase.Countdown -> drawDrawing(canvas, 1f, 1f, 0L)
             ForgotPhase.Code -> drawCode(canvas, e, t)
             ForgotPhase.Outro -> Unit
         }
-        if (e.phase != ForgotPhase.Code && e.phase != ForgotPhase.Countdown) drawChip(canvas)
+        if (e.phase != ForgotPhase.Code) {
+            // the word's blanks over the board from the very first frame, the prize under it
+            drawLetterSlots(canvas, board.centerX(), board.width() - 100f)
+            drawRewardPill(canvas, board.bottom - 118f, 82f, 44f)
+        }
         fill.color = C.CARD_EDGE
         canvas.drawRect(0f, H - 10f, W.toFloat(), H.toFloat(), fill)
         fill.color = C.ORANGE
@@ -199,8 +204,24 @@ class ForgotRenderer(
 
     // ---- the banner and Karalak's square
 
+    /**
+     * The title, centred in the banner's opening on its letters (their ink, as large as fits [bannerText]'s width, 74 at most).
+     * The dots over Ö and Ü are no part of what the eye centres, so the capitals' body is centred vertically and the dots stand above it.
+     */
     private fun drawBanner(canvas: Canvas) {
-        text.draw(canvas, "ÇİZEN BİLE BİLEMEDİ", bannerText.centerX(), bannerText.centerY(), bannerText.width().toInt(), 74f, 1, assets.display, C.ORANGE_DARK, ink = true)
+        val (size, cy) = bannerFit
+        text.draw(canvas, ForgotCopy.TITLE, bannerText.centerX(), cy, BANNER_MEASURE_W, size, 1, assets.display, C.ORANGE_DARK, ink = true)
+    }
+
+    /** The title's size and the centre line it is drawn on, worked out once: the same for every frame. */
+    private val bannerFit: Pair<Float, Float> by lazy {
+        val title = ForgotCopy.TITLE
+        var size = BANNER_SIZE
+        while (size > 20f && text.measureInk(title, BANNER_MEASURE_W, size, 1, assets.display, C.ORANGE_DARK).first > bannerText.width()) size -= 0.5f
+        val full = text.measureInk(title, BANNER_MEASURE_W, size, 1, assets.display, C.ORANGE_DARK).second
+        val body = text.measureInk(ForgotCopy.TITLE_BODY, BANNER_MEASURE_W, size, 1, assets.display, C.ORANGE_DARK).second
+        // the ink box is centred by [draw]; moving it up by half the dots' height puts the capitals' body on the centre
+        size to (bannerText.centerY() - (full - body) / 2f)
     }
 
     private fun drawMascotTile(canvas: Canvas, e: ForgotEvent, speaking: Boolean, level: Float, t: Long) {
@@ -237,21 +258,43 @@ class ForgotRenderer(
         canvas.restore()
     }
 
-    /** What the code gives, a small chip on the board's top edge while the drawing is drawn. */
-    private fun drawChip(canvas: Canvas) {
-        val chip = script.reward.takeIf { it.isNotBlank() }?.let { "${script.style.chipPrefix} $it" } ?: return
-        drawChipText(canvas, chip, null)
+    /**
+     * One line per letter of the drawing's word, as many as it has (words apart by a wider gap): the viewer sees how long the
+     * answer is from the first frame. Centred on [cx] in [width]; the lines shrink together when the word is too long for it.
+     */
+    private fun drawLetterSlots(canvas: Canvas, cx: Float, width: Float) {
+        val letters = script.word.trim()
+        if (letters.none { !it.isWhitespace() }) return
+        val gap = 12f
+        val wordGap = 40f
+        val n = letters.count { !it.isWhitespace() }
+        val gaps = letters.zipWithNext().count { (a, b) -> !a.isWhitespace() && !b.isWhitespace() } * gap + letters.count { it.isWhitespace() } * wordGap
+        val w = ((width - gaps) / n).coerceIn(14f, 56f)
+        val total = n * w + gaps
+        val y = board.top + 54f
+        var x = cx - total / 2f
+        line.color = C.MUTED
+        line.strokeWidth = 9f
+        line.strokeCap = Paint.Cap.ROUND
+        letters.forEachIndexed { i, ch ->
+            if (ch.isWhitespace()) { x += wordGap; return@forEachIndexed }
+            canvas.drawLine(x, y, x + w, y, line)
+            x += w
+            if (i + 1 < letters.length && !letters[i + 1].isWhitespace()) x += gap
+        }
+        line.strokeCap = Paint.Cap.BUTT
     }
 
-    /** A chip on the board's top edge with [chip] in it: centred, or from the left edge when [maxWidth] says there is something on the right. */
-    private fun drawChipText(canvas: Canvas, chip: String, maxWidth: Float?) {
-        val p = text.paint(34f, assets.body, C.INK)
-        val cw = min(p.measureText(chip) + 64f, maxWidth ?: (board.width() - 60f))
-        val left = if (maxWidth != null) board.left + 30f else board.centerX() - cw / 2f
-        val box = RectF(left, board.top + 22f, left + cw, board.top + 86f)
+    /** "Ödül: 500 altın" on a pill centred on the board, [top] to [top] + [height]; nothing when the code gives nothing. */
+    private fun drawRewardPill(canvas: Canvas, top: Float, height: Float, size: Float) {
+        val reward = script.reward.takeIf { it.isNotBlank() } ?: return
+        val label = "${ForgotCopy.REWARD_LABEL} $reward"
+        val p = text.paint(size, assets.display, C.INK)
+        val cw = min(p.measureText(label) + 90f, board.width() - 60f)
+        val pill = RectF(board.centerX() - cw / 2f, top, board.centerX() + cw / 2f, top + height)
         fill.color = C.CREAM_DEEP
-        canvas.drawRoundRect(box, 32f, 32f, fill)
-        text.draw(canvas, chip, box.centerX(), box.centerY(), (cw - 32f).toInt(), 34f, 1, assets.body, C.INK, ink = true)
+        canvas.drawRoundRect(pill, height / 2f, height / 2f, fill)
+        text.draw(canvas, label, pill.centerX(), pill.centerY(), (cw - 40f).toInt(), size, 1, assets.display, C.INK, ink = true)
     }
 
     // ---- the board in the middle
@@ -283,39 +326,6 @@ class ForgotRenderer(
         size
     }
     private val subtitleSizes = HashMap<String, Float>()
-
-    /**
-     * 3 · 2 · 1 while the whole drawing stays in plain view (the viewer has to guess from it): the counter is a badge in the
-     * board's top right corner, the share who missed it (or the prize) a chip at the top left, and what to do with the
-     * guess, "Cevabını yorumlara yaz", sits at the bottom. The question itself is Karalak's, said and subtitled.
-     */
-    private fun drawCountdown(canvas: Canvas, e: ForgotEvent, t: Long) {
-        drawDrawing(canvas, 1f, 1f, 0L)
-        val local = t - e.startMs
-        // the countdown lasts as long as the question takes: three even counts across it
-        val step = (local * 3 / e.durationMs).toInt().coerceIn(0, 2)
-        val within = ((local * 3f / e.durationMs) - step).coerceIn(0f, 1f)
-        val pop = Ease.backOut(min(1f, within * 3f))
-        val radius = 66f
-        val chipRoom = board.width() - 60f - 2f * radius - 40f
-        val chip = if (script.showPercent) "Çizenlerin %${script.percent}'i bile bilemedi" else script.reward.takeIf { it.isNotBlank() }?.let { "${script.style.chipPrefix} $it" }
-        chip?.let { drawChipText(canvas, it, chipRoom) }
-        val cx = board.right - 36f - radius
-        val cy = board.top + 22f + radius
-        canvas.save()
-        canvas.scale(pop, pop, cx, cy)
-        fill.color = C.ORANGE
-        canvas.drawCircle(cx, cy, radius, fill)
-        text.draw(canvas, "${3 - step}", cx, cy, 120, 96f, 1, assets.display, C.WHITE, ink = true)
-        canvas.restore()
-        val caption = script.style.countdownCaption
-        val p = text.paint(48f, assets.display, C.ORANGE_DARK)
-        val cw = min(p.measureText(caption) + 90f, board.width() - 60f)
-        val pill = RectF(board.centerX() - cw / 2f, board.bottom - 118f, board.centerX() + cw / 2f, board.bottom - 36f)
-        fill.color = C.CREAM_DEEP
-        canvas.drawRoundRect(pill, 41f, 41f, fill)
-        text.draw(canvas, caption, pill.centerX(), pill.centerY(), (cw - 40f).toInt(), 48f, 1, assets.display, C.ORANGE_DARK, ink = true)
-    }
 
     /**
      * The code screen on the board, top to bottom: what it is, the code (empty boxes, one per letter, when the answer is
@@ -470,6 +480,9 @@ class ForgotRenderer(
         private const val END_OPEN = 560L
         const val FPS = 30
         private const val BOX_ROW_GAP = 24f
+        private const val BANNER_SIZE = 74f
+        /** A layout width wider than the title ever is, so the title is measured and drawn on one line at the size chosen. */
+        private const val BANNER_MEASURE_W = 1000
         private const val SUBTITLE_LINES = 3
     }
 }

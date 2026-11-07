@@ -318,25 +318,6 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
             f.couponStatus?.let { Text(it, style = Console.Small.copy(color = if (it.startsWith("Kupon hazır")) Console.Ink else Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
         }
     }
-    item {
-        ConsoleCard(Modifier.fillMaxWidth()) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("“%${script.percent} tanıyamadı” göster", style = Console.Subtitle)
-                    Text("Elle girilen bir değer: gerçek ölçüm değil. Yayında gerçeğe yakın tut.", style = Console.Small)
-                }
-                Switch(checked = script.showPercent, onCheckedChange = vm::setForgotShowPercent, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
-            }
-            if (script.showPercent) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                    StepButton("−") { vm.stepForgotPercent(-1) }
-                    Text("%${script.percent}", style = Console.Subtitle, modifier = Modifier.padding(horizontal = 16.dp))
-                    StepButton("+") { vm.stepForgotPercent(1) }
-                }
-            }
-        }
-    }
-
     // 3. Karalak's lines
     item { Step("3", "Karalak'ın senaryosu") }
     item {

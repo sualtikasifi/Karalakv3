@@ -20,10 +20,6 @@ import kotlin.math.max
  */
 enum class ForgotStyle(
     val title: String,
-    /** Before the prize in the chip at the top of the board: "Kasa kilitli: 40 XP". */
-    val chipPrefix: String,
-    /** What the viewer does while 3 · 2 · 1 counts. */
-    val countdownCaption: String,
     val titleWord: String,
     val titleShown: String,
     val explainWord: String,
@@ -35,23 +31,24 @@ enum class ForgotStyle(
     /** The assistant's voice for this set. */
     val tone: String
 ) {
+    // nothing here names what the code gives (it may be gold, XP or a chest): the prize is written by the board's "Ödül:" and the pill
     Game(
-        "Oyun dili", "Kasa kilitli:", "Kilidi aç: cevabını yaz", "ANAHTAR KELİME", "KASA ŞİFRESİ",
-        "Doğru tahmin, kasanın şifresi", "Bu kod, kasanın şifresi", null,
+        "Oyun dili", "GİZLİ KOD", "ÖDÜL KODU",
+        "Kod, çizilen şeyin adı", "Kodu uygulamaya gir", "Kodu çözene",
         "Ayarlar › Kupon kodu › Kullan", "Takıldıysan yorumlara bak",
-        "oyun dili: kilit, kasa, şifre, anahtar gibi sözcükler; enerjik ve meydan okuyan"
+        "oyun dili: kod, şifre, görev, meydan okuma gibi sözcükler; enerjik ve meydan okuyan. Ödülün ne olduğunu (kasa, altın, XP) sen söyleme, ekranda yazıyor"
     ),
     Warm(
-        "Sıcak dil", "Bilirsen bu senin:", "Sen de bilebilirsin, yaz", "Bu kasa senin olabilir", "Bu kasa senin olabilir",
-        "Şifre, az önce çizilen şey", "Kodu uygulamaya yaz", "Açtığın kasa",
+        "Sıcak dil", "Cevabı bil, ödülü al", "Hediye kodun hazır",
+        "Kod, az önce çizilen şeyin adı", "Kodu uygulamaya yaz", "Bilene hediye",
         "Ayarlar'a gir, kodu yaz, Kullan'a bas", "Bilemedin mi? İpucu yorumlarda",
-        "samimi ve sıcak: hediye veren, yanında duran bir arkadaş gibi; yarışmacı değil davetkâr"
+        "samimi ve sıcak: hediye veren, yanında duran bir arkadaş gibi; yarışmacı değil davetkâr. Ödülün ne olduğunu sen söyleme, ekranda yazıyor"
     ),
     Deal(
-        "Fırsat dili", "Hediyen hazır:", "Kaçırma, cevabını yaz", "Hediye kodun", "Hediye kodun",
-        "Kod, çizilen şeyin adı", "Kodu uygulamaya gir", "İçinden çıkan",
+        "Fırsat dili", "Hediye kodun", "Hediye kodun",
+        "Kod, çizilen şeyin adı", "Kodu uygulamaya gir", "Kodla gelen ödül",
         "Ayarlar › Kupon kodu › Kullan", "İpucu yorumlarda",
-        "net ve fırsat vurgulu: kısa, süreli ve sınırlı olduğunu hissettiren ama abartısız, bağıran değil"
+        "net ve fırsat vurgulu: kısa, süreli ve sınırlı olduğunu hissettiren ama abartısız, bağıran değil. Ödülün ne olduğunu sen söyleme, ekranda yazıyor"
     );
 
     fun codeTitle(word: Boolean) = if (word) titleWord else titleShown
@@ -226,6 +223,12 @@ object ForgotTimeline {
 }
 
 object ForgotCopy {
+    /** Before the prize on the board: "Ödül: 500 altın" or "Ödül: Çırak Kasası". */
+    const val REWARD_LABEL = "Ödül:"
+    /** The format's name, as the banner shows it (capitals), and the same without the dots over Ö and Ü (for measuring the capitals' body). */
+    const val NAME = "Ödüllü Karalak Düellosu"
+    const val TITLE = "ÖDÜLLÜ KARALAK DÜELLOSU"
+    const val TITLE_BODY = "ODULLU KARALAK DUELLOSU"
     const val HOOK = "Çizen bile bilemedi. Sen bilir misin?"
     const val OUTRO = "Yarın daha zoru geliyor. Sen de karalak.com'da çiz!"
     const val ASK = "Sen ne görüyorsun?"
@@ -364,7 +367,7 @@ object ForgotCopy {
             - Tahminleri YALNIZCA kendi görseline bakarak yaz: Karalak o anda yalnızca o kadarını görüyor, sonrasını bilmiyor. Görselde gerçekten görünen bir şeye bakan komik, yanlış ama makul tahminler olsun; ilk tahmin belirsiz, sonuncusu en kendinden emin. Tahminler birbirini izlesin: sonraki, öncekinden çıkarım yapsın ya da onu inatla savunsun; aynı şeyi tekrarlama.
             - Soru, son tahminle bağlantılı olsun ve izleyiciyi yorum yazmaya itsin ("Sen ne görüyorsun?" gibi).
             - Çizenle ve izleyiciyle asla dalga geçme.
-            - Üslup: ${style.tone}. Ekranda şu sözler zaten yazıyor, bunlara uyumlu ol ama tekrar etme: "${style.countdownCaption}".
+            - Üslup: ${style.tone}.
             - Bütün cümleler kısa ve konuşma diliyle olsun; video 20 saniyenin altında kalmalı.
             - Kod ekranında zaten yazan bilgiyi (ödül, son tarih, nereye girileceği) cümlede TEKRARLAMA; cümle yazının üstüne duygu katsın.
 

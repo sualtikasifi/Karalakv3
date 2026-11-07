@@ -96,7 +96,7 @@ import javax.inject.Inject
 
 /** The studio's video formats. */
 enum class StudioFormat(val title: String, val blurb: String) {
-    Forgot("Çizen Bile Bilemedi", "Çizenin bile tanıyamadığı çizim; doğru cevap kupon kodu"),
+    Forgot("Ödüllü Karalak Düellosu", "Çizenin bile tanıyamadığı çizim; doğru cevap kupon kodu"),
     RealLife("Gerçek Olsaydı", "Çizimler gerçek hayata dönüşüyor")
 }
 
@@ -493,8 +493,6 @@ class StudioViewModel @Inject constructor(
         setForgotStop(index, now + deltaPercent / 100f)
     }
 
-    fun setForgotShowPercent(on: Boolean) = editForgotScript { it.copy(showPercent = on) }
-    fun stepForgotPercent(delta: Int) = editForgotScript { it.copy(percent = (it.percent + delta).coerceIn(1, 99)) }
 
     private fun editForgotScript(change: (ForgotScript) -> ForgotScript) {
         _state.update { s ->

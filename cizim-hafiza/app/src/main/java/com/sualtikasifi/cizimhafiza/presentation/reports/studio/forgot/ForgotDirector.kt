@@ -50,6 +50,6 @@ class ForgotDirector(private val client: OpenRouterClient, private val model: St
     }
 
     private companion object {
-        const val JOB = "Şimdi \"Çizen Bile Bilemedi\" adlı kısa bir sosyal medya videosu için cümle yazıyorsun; cümleler sesli okunacak."
+        const val JOB = "Şimdi \"Ödüllü Karalak Düellosu\" adlı kısa bir sosyal medya videosu için cümle yazıyorsun; cümleler sesli okunacak."
     }
 }
