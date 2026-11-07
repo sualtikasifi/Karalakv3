@@ -20,8 +20,6 @@ import kotlin.math.max
  */
 enum class ForgotStyle(
     val title: String,
-    /** Before the prize in the chip at the top of the board: "Kasa kilitli: 40 XP". */
-    val chipPrefix: String,
     /** What the viewer does while 3 · 2 · 1 counts. */
     val countdownCaption: String,
     val titleWord: String,
@@ -36,19 +34,19 @@ enum class ForgotStyle(
     val tone: String
 ) {
     Game(
-        "Oyun dili", "Kasa kilitli:", "Kilidi aç: cevabını yaz", "ANAHTAR KELİME", "KASA ŞİFRESİ",
+        "Oyun dili", "Kilidi aç: cevabını yaz", "ANAHTAR KELİME", "KASA ŞİFRESİ",
         "Doğru tahmin, kasanın şifresi", "Bu kod, kasanın şifresi", null,
         "Ayarlar › Kupon kodu › Kullan", "Takıldıysan yorumlara bak",
         "oyun dili: kilit, kasa, şifre, anahtar gibi sözcükler; enerjik ve meydan okuyan"
     ),
     Warm(
-        "Sıcak dil", "Bilirsen bu senin:", "Sen de bilebilirsin, yaz", "Bu kasa senin olabilir", "Bu kasa senin olabilir",
+        "Sıcak dil", "Sen de bilebilirsin, yaz", "Bu kasa senin olabilir", "Bu kasa senin olabilir",
         "Şifre, az önce çizilen şey", "Kodu uygulamaya yaz", "Açtığın kasa",
         "Ayarlar'a gir, kodu yaz, Kullan'a bas", "Bilemedin mi? İpucu yorumlarda",
         "samimi ve sıcak: hediye veren, yanında duran bir arkadaş gibi; yarışmacı değil davetkâr"
     ),
     Deal(
-        "Fırsat dili", "Hediyen hazır:", "Kaçırma, cevabını yaz", "Hediye kodun", "Hediye kodun",
+        "Fırsat dili", "Kaçırma, cevabını yaz", "Hediye kodun", "Hediye kodun",
         "Kod, çizilen şeyin adı", "Kodu uygulamaya gir", "İçinden çıkan",
         "Ayarlar › Kupon kodu › Kullan", "İpucu yorumlarda",
         "net ve fırsat vurgulu: kısa, süreli ve sınırlı olduğunu hissettiren ama abartısız, bağıran değil"
@@ -226,6 +224,8 @@ object ForgotTimeline {
 }
 
 object ForgotCopy {
+    /** Before the prize on the board: "Ödül: 500 altın" or "Ödül: Çırak Kasası". */
+    const val REWARD_LABEL = "Ödül:"
     /** The format's name, as the banner shows it (capitals), and the same without the dots over Ö and Ü (for measuring the capitals' body). */
     const val NAME = "Ödüllü Karalak Düellosu"
     const val TITLE = "ÖDÜLLÜ KARALAK DÜELLOSU"

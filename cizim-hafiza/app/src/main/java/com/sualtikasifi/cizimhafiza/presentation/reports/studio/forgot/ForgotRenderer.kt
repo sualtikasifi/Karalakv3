@@ -129,7 +129,11 @@ class ForgotRenderer(
             ForgotPhase.Code -> drawCode(canvas, e, t)
             ForgotPhase.Outro -> Unit
         }
-        if (e.phase != ForgotPhase.Code && e.phase != ForgotPhase.Countdown) drawChip(canvas)
+        if (e.phase == ForgotPhase.Hook || e.phase == ForgotPhase.Draw || e.phase == ForgotPhase.Guess) {
+            // the word's blanks over the board from the very first frame, the prize under it
+            drawLetterSlots(canvas, board.centerX(), board.width() - 100f)
+            drawRewardPill(canvas, board.bottom - 118f, 82f, 44f)
+        }
         fill.color = C.CARD_EDGE
         canvas.drawRect(0f, H - 10f, W.toFloat(), H.toFloat(), fill)
         fill.color = C.ORANGE
@@ -253,21 +257,43 @@ class ForgotRenderer(
         canvas.restore()
     }
 
-    /** What the code gives, a small chip on the board's top edge while the drawing is drawn. */
-    private fun drawChip(canvas: Canvas) {
-        val chip = script.reward.takeIf { it.isNotBlank() }?.let { "${script.style.chipPrefix} $it" } ?: return
-        drawChipText(canvas, chip, null)
+    /**
+     * One line per letter of the drawing's word, as many as it has (words apart by a wider gap): the viewer sees how long the
+     * answer is from the first frame. Centred on [cx] in [width]; the lines shrink together when the word is too long for it.
+     */
+    private fun drawLetterSlots(canvas: Canvas, cx: Float, width: Float) {
+        val letters = script.word.trim()
+        if (letters.none { !it.isWhitespace() }) return
+        val gap = 12f
+        val wordGap = 40f
+        val n = letters.count { !it.isWhitespace() }
+        val gaps = letters.zipWithNext().count { (a, b) -> !a.isWhitespace() && !b.isWhitespace() } * gap + letters.count { it.isWhitespace() } * wordGap
+        val w = ((width - gaps) / n).coerceIn(14f, 56f)
+        val total = n * w + gaps
+        val y = board.top + 54f
+        var x = cx - total / 2f
+        line.color = C.MUTED
+        line.strokeWidth = 9f
+        line.strokeCap = Paint.Cap.ROUND
+        letters.forEachIndexed { i, ch ->
+            if (ch.isWhitespace()) { x += wordGap; return@forEachIndexed }
+            canvas.drawLine(x, y, x + w, y, line)
+            x += w
+            if (i + 1 < letters.length && !letters[i + 1].isWhitespace()) x += gap
+        }
+        line.strokeCap = Paint.Cap.BUTT
     }
 
-    /** A chip on the board's top edge with [chip] in it: centred, or from the left edge when [maxWidth] says there is something on the right. */
-    private fun drawChipText(canvas: Canvas, chip: String, maxWidth: Float?) {
-        val p = text.paint(34f, assets.body, C.INK)
-        val cw = min(p.measureText(chip) + 64f, maxWidth ?: (board.width() - 60f))
-        val left = if (maxWidth != null) board.left + 30f else board.centerX() - cw / 2f
-        val box = RectF(left, board.top + 22f, left + cw, board.top + 86f)
+    /** "Ödül: 500 altın" on a pill centred on the board, [top] to [top] + [height]; nothing when the code gives nothing. */
+    private fun drawRewardPill(canvas: Canvas, top: Float, height: Float, size: Float) {
+        val reward = script.reward.takeIf { it.isNotBlank() } ?: return
+        val label = "${ForgotCopy.REWARD_LABEL} $reward"
+        val p = text.paint(size, assets.display, C.INK)
+        val cw = min(p.measureText(label) + 90f, board.width() - 60f)
+        val pill = RectF(board.centerX() - cw / 2f, top, board.centerX() + cw / 2f, top + height)
         fill.color = C.CREAM_DEEP
-        canvas.drawRoundRect(box, 32f, 32f, fill)
-        text.draw(canvas, chip, box.centerX(), box.centerY(), (cw - 32f).toInt(), 34f, 1, assets.body, C.INK, ink = true)
+        canvas.drawRoundRect(pill, height / 2f, height / 2f, fill)
+        text.draw(canvas, label, pill.centerX(), pill.centerY(), (cw - 40f).toInt(), size, 1, assets.display, C.INK, ink = true)
     }
 
     // ---- the board in the middle
@@ -313,9 +339,20 @@ class ForgotRenderer(
         val within = ((local * 3f / e.durationMs) - step).coerceIn(0f, 1f)
         val pop = Ease.backOut(min(1f, within * 3f))
         val radius = 66f
-        val chipRoom = board.width() - 60f - 2f * radius - 40f
-        val chip = if (script.showPercent) "Çizenlerin %${script.percent}'i bile bilemedi" else script.reward.takeIf { it.isNotBlank() }?.let { "${script.style.chipPrefix} $it" }
-        chip?.let { drawChipText(canvas, it, chipRoom) }
+        val room = board.width() - 60f - 2f * radius - 40f
+        // the blanks sit left of the badge, the prize and (if wanted) the share who missed it stack above the caption
+        drawLetterSlots(canvas, board.left + 30f + room / 2f, room)
+        if (script.showPercent) {
+            val chip = "Çizenlerin %${script.percent}'i bile bilemedi"
+            val p = text.paint(36f, assets.body, C.INK)
+            val cw = min(p.measureText(chip) + 64f, board.width() - 60f)
+            val box = RectF(board.centerX() - cw / 2f, board.bottom - 194f, board.centerX() + cw / 2f, board.bottom - 134f)
+            fill.color = C.CREAM_DEEP
+            canvas.drawRoundRect(box, 30f, 30f, fill)
+            text.draw(canvas, chip, box.centerX(), box.centerY(), (cw - 32f).toInt(), 36f, 1, assets.body, C.INK, ink = true)
+        } else {
+            drawRewardPill(canvas, board.bottom - 194f, 62f, 36f)
+        }
         val cx = board.right - 36f - radius
         val cy = board.top + 22f + radius
         canvas.save()
