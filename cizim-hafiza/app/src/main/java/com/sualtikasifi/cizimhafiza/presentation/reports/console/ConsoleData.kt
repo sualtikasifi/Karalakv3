@@ -7,6 +7,8 @@ import com.sualtikasifi.cizimhafiza.util.AdminStats
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -52,6 +54,12 @@ data class DaySeries(
     fun label(i: Int): String = shortDay(days[i])
 
     fun sumOf(range: IntRange, f: (Int) -> Long): Long = range.filter { it in days.indices }.sumOf(f)
+
+    /** The newest [n] days, every list cut the same way (lists a day has no value for stay as short as they were). */
+    fun last(n: Int): DaySeries = if (n >= size) this else DaySeries(
+        days = days.takeLast(n), players = players.takeLast(n), counts = counts.takeLast(n),
+        newPlayers = newPlayers.takeLast(n), d1Return = d1Return.takeLast(n), d7Return = d7Return.takeLast(n)
+    )
 
     companion object {
         private val LABEL = DateTimeFormatter.ofPattern("d MMM", Locale("tr"))
@@ -139,3 +147,46 @@ private const val MAX_DEVICE_REVENUE_MICROS = 20_000_000L
 suspend fun countOf(firestore: FirebaseFirestore, collection: String): Long? = runCatching {
     firestore.collection(collection).count().get(AggregateSource.SERVER).await().count
 }.getOrNull()
+
+/**
+ * The statistics read once for the whole panel. The Pano, the İstatistik tab and the assistant each used to read the same
+ * fourteen days on their own, and the costly part (today's rows, one per device, plus the player count) was paid three times
+ * every time the panel was opened. Here one read serves all of them for [ttlMs], and a request for fewer days is cut from it.
+ * A new UTC day, or [force] (the refresh buttons), always reads again.
+ */
+class DaySeriesCache(
+    private val ttlMs: Long = 10 * 60_000L,
+    private val clock: () -> Long = System::currentTimeMillis,
+    private val today: () -> String = { LocalDate.now(ZoneOffset.UTC).toString() }
+) {
+    private var series: DaySeries? = null
+    private var readAt = 0L
+    private var readOn = ""
+    private val lock = Mutex()
+
+    /** The newest [days] days; [load] is called with how many to read when the kept copy is stale, too short, or [force] is set. */
+    suspend fun get(days: Int, force: Boolean = false, load: suspend (Int) -> DaySeries): DaySeries = lock.withLock {
+        val kept = series
+        val fresh = kept != null && !force && clock() - readAt < ttlMs && readOn == today() && kept.size >= days
+        if (fresh) return@withLock kept!!.last(days)
+        // Always at least a month: the days before today are one small summary document each, so asking for more of them is
+        // cheap, and the longer copy then serves the 7-, 14- and 30-day views alike.
+        val read = load(maxOf(days, MIN_READ_DAYS))
+        series = read
+        readAt = clock()
+        readOn = today()
+        read.last(days)
+    }
+
+    companion object {
+        const val MIN_READ_DAYS = 30
+    }
+}
+
+/** The one copy of the statistics the Pano, İstatistik and the assistant share. */
+object SharedDaySeries {
+    private val cache = DaySeriesCache()
+
+    suspend fun get(firestore: FirebaseFirestore, days: Int, force: Boolean = false): DaySeries =
+        cache.get(days, force) { loadDaySeries(firestore, it) }
+}

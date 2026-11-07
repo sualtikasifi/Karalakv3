@@ -157,8 +157,10 @@ class PlayerAdmin @Inject constructor(
             firestore.collection("penalties").whereEqualTo("uid", uid).get().await().documents
                 .maxOfOrNull { it.getLong("lockedUntil") ?: 0L } ?: 0L
         }.getOrDefault(0L).takeIf { it > now } ?: 0L
+        // a count query: one read however many reports there are (it used to download them all to count them)
         val reports = runCatching {
-            firestore.collection("playerReports").whereEqualTo("reportedUid", uid).get().await().size()
+            firestore.collection("playerReports").whereEqualTo("reportedUid", uid)
+                .count().get(com.google.firebase.firestore.AggregateSource.SERVER).await().count.toInt()
         }.getOrDefault(0)
         return PlayerInfo(
             uid = uid,

@@ -166,7 +166,9 @@ class AssistantViewModel @Inject constructor(
         val list = _state.value.history.filterNot { it.at == s.at }
         writeHistory(list); _state.value = _state.value.copy(history = list)
     }
-    fun refreshContext() { liveContext = null }
+    /** Reads the live figures again on the next run, past the shared copy of the statistics. */
+    fun refreshContext() { liveContext = null; forceSeries = true }
+    private var forceSeries = false
 
     private suspend fun buildLiveContext(): String {
         val sb = StringBuilder()
@@ -174,7 +176,7 @@ class AssistantViewModel @Inject constructor(
         sb.append("## Bugün\n").append(today).append(" (").append(today.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, Locale("tr"))).append(")\n")
         sb.append("Yaklaşan özel günler: ")
         sb.append(SpecialDays.upcoming(today, 90).joinToString("; ") { "${it.name} ${it.date} (${it.daysLeft(today)} gün)" }).append("\n")
-        runCatching { loadDaySeries(firestore, 14) }.getOrNull()?.let { s ->
+        runCatching { SharedDaySeries.get(firestore, 14, force = forceSeries.also { forceSeries = false }) }.getOrNull()?.let { s ->
             sb.append("\n## Son 14 günün canlı verisi (UTC gün)\n")
             sb.append("gün | aktif oyuncu | açılış | biten oyun | ödüllü reklam istek/izlenen\n")
             s.days.indices.forEach { i ->

@@ -64,6 +64,9 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleTextFiel
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButton
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleChip
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -128,9 +131,15 @@ class CouponAdminViewModel @Inject constructor(
     fun showRedeemers(code: String) {
         viewModelScope.launch {
             runCatching {
-                firestore.collection("coupons").document(code).collection("redemptions").limit(60).get().await().documents.map { d ->
-                    runCatching { firestore.collection("users").document(d.id).get().await().getString("nickname") }.getOrNull()
-                        ?.takeIf { it.isNotBlank() } ?: d.id.take(8)
+                val docs = firestore.collection("coupons").document(code).collection("redemptions").limit(60).get().await().documents
+                // all the names at once instead of one after another: sixty round trips in a row took a minute
+                coroutineScope {
+                    docs.map { d ->
+                        async {
+                            runCatching { firestore.collection("users").document(d.id).get().await().getString("nickname") }.getOrNull()
+                                ?.takeIf { it.isNotBlank() } ?: d.id.take(8)
+                        }
+                    }.awaitAll()
                 }
             }.onSuccess { names -> _state.update { it.copy(redeemers = code to names) } }
                 .onFailure { _state.update { it.copy(message = "Liste yüklenemedi.") } }

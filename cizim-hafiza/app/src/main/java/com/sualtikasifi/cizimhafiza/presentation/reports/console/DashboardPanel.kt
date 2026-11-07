@@ -72,7 +72,7 @@ fun DashboardPanel(
                     modifier = Modifier.weight(1f)
                 )
                 if (st.loading) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = Console.Accent)
-                else ConsoleIconButton(Icons.Filled.Refresh, "Yenile", viewModel::load, size = 32.dp)
+                else ConsoleIconButton(Icons.Filled.Refresh, "Yenile", viewModel::refresh, size = 32.dp)
             }
         }
         if (st.loading && s == null) {
