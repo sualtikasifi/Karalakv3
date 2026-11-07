@@ -238,7 +238,7 @@ object ForgotCopy {
     const val TITLE = "ÖDÜLLÜ KARALAK DÜELLOSU"
     const val TITLE_BODY = "ODULLU KARALAK DUELLOSU"
     const val HOOK = "Çizen bile bilemedi. Sen bilir misin?"
-    const val OUTRO = "Yarın daha zoru geliyor. Sen de karalak.com'da çiz!"
+    const val OUTRO = "Yarın daha zoru geliyor. Karalak'ı Google Play'den indir, sen de çiz!"
     const val ASK = "Sen ne görüyorsun?"
     const val CODE_WORD = "Bilemedin mi? Doğru cevap senin kodun!"
     const val CODE_SHOWN = "Bilemedin mi? Kodu Ayarlar'dan gir!"
@@ -430,12 +430,21 @@ object ForgotCopy {
             $guessScenes
             ${n + 2}. SORU (geri sayım 3-2-1, ≈1,5 sn): çizim tamamlandı, ekranda geri sayım var. Karalak izleyiciye soruyor (EN FAZLA ${ASK_WORDS} kelime).
             ${n + 3}. KOD ANI (≈3 sn): $codeScene (EN FAZLA ${CODE_WORDS} kelime)
-            ${n + 4}. KAPANIŞ: oyunun tanıtım kartı, Karalak yarın daha zorunun geleceğini söylüyor (en fazla 14 kelime, "karalak.com" geçsin).
+            ${n + 4}. KAPANIŞ: kapanış kartı. Karalak yarın daha zorunun geleceğini söyleyip izleyiciyi MOBİL UYGULAMAYA yönlendiriyor: Google Play'den "Karalak"ı indirmesini söylesin (en fazla 14 kelime). Oyun mobil uygulamada oynanıyor; web sitesi, "karalak.com", "kurulumsuz", "link" gibi sözler ASLA geçmesin.
             $rewardLine
 
             ${hookRules(hookKind)}
 
             ÖNCE "plan" alanında düşün (en fazla 4 kısa cümle): her görselde ne görünüyor, Karalak onu nasıl yanlış ama makul yorumlar, izleyici o anda ne hissetmeli? SONRA her cümleyi kendi anı için yaz:
+            SESLENDİRME İLKELERİ (cümleler sesli okunacak; kulağa doğal gelmeli, yazıda iyi durması yetmez):
+            - Konuşma dilinde, kısa, ritimli yaz; noktalama nefes yeridir. Resmî dil, yazı dili, "Merhaba arkadaşlar", "Evet", "Peki" gibi dolgu girişler yok.
+            - Her cümle farklı bir kalıpla kurulsun: soru, ünlem, itiraf, inatla savunma, kendi kendine yorum. Aynı kalıpla iki cümle başlamasın ("Hmm," ve "Bence" ile başlama, "Bu ne olabilir?" deme).
+            - Somut ol: "bir şeye benziyor" gibi boş cümle yerine görselde gördüğün ŞEKLE bağla ("Bu çizgi bir kuyruk mu, yoksa ip mi?").
+            - Karalak'ın kişiliği duyulsun: kendinden emin, muzip, heyecanlı; yanılınca utanıp hemen toparlanır. Her cümlede küçük bir duygu hareketi olsun (şaşkınlık, iddia, sevinç).
+            - Kötü: "Bu bir hayvan olabilir." İyi: "Bunlar kulak, eminim, kulak!" (Yalnızca tarz örneği; kopyalama.)
+            - Soru cümlesi son tahmine bağlansın ve izleyiciyi "ben bilirim" demeye itsin ("Sence de öyle mi?", "Yanılıyor muyum?" gibi, kopyalama).
+            - Kod anı cümlesi merak ve hızlı kazanma duygusu versin; ödülü ya da yazıyı tekrar etmesin.
+            - Kapanış kısa, sıcak ve davetkâr olsun, mobil uygulamaya götürsün; "Google Play" ve "Karalak" kelimeleri geçsin.
             - Tahminleri YALNIZCA kendi görseline bakarak yaz: Karalak o anda yalnızca o kadarını görüyor, sonrasını bilmiyor. Görselde gerçekten görünen bir şeye bakan komik, yanlış ama makul tahminler olsun; ilk tahmin belirsiz, sonuncusu en kendinden emin. Tahminler birbirini izlesin: sonraki, öncekinden çıkarım yapsın ya da onu inatla savunsun; aynı şeyi tekrarlama.
             - Soru, son tahminle bağlantılı olsun ve izleyiciyi yorum yazmaya itsin ("Sen ne görüyorsun?" gibi).
             - Çizenle ve izleyiciyle asla dalga geçme.
@@ -443,7 +452,7 @@ object ForgotCopy {
             - Bütün cümleler kısa ve konuşma diliyle olsun; video 20 saniyenin altında kalmalı.
             - Kod ekranında zaten yazan bilgiyi (ödül, son tarih, nereye girileceği) cümlede TEKRARLAMA; cümle yazının üstüne duygu katsın.
 
-            "caption": TikTok/Reels açıklaması (1–2 cümle, izleyiciye soruyla bitsin, doğru kelime geçmesin); "hashtags": 5–6 Türkçe ağırlıklı etiket.
+            "caption": TikTok/Reels açıklaması (1–2 cümle, izleyiciye soruyla bitsin, doğru kelime geçmesin; web sitesi ya da "karalak.com" yazma, uygulamayı Google Play'den indirmeye yönlendir); "hashtags": 5–6 Türkçe ağırlıklı etiket.
 
             Yalnızca şu JSON'u yaz:
             {"plan":"…","hook":{"emotion":"…","line":"…"},"guesses":[{"emotion":"…","line":"…"}],"ask":{"emotion":"…","line":"…"},"code_line":{"emotion":"…","line":"…"},"outro":{"emotion":"…","line":"…"},"caption":"…","hashtags":"…"}
