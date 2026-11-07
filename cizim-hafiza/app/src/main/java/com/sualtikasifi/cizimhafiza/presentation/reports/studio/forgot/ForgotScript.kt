@@ -226,6 +226,10 @@ object ForgotTimeline {
 }
 
 object ForgotCopy {
+    /** The format's name, as the banner shows it (capitals), and the same without the dots over Ö and Ü (for measuring the capitals' body). */
+    const val NAME = "Ödüllü Karalak Düellosu"
+    const val TITLE = "ÖDÜLLÜ KARALAK DÜELLOSU"
+    const val TITLE_BODY = "ODULLU KARALAK DUELLOSU"
     const val HOOK = "Çizen bile bilemedi. Sen bilir misin?"
     const val OUTRO = "Yarın daha zoru geliyor. Sen de karalak.com'da çiz!"
     const val ASK = "Sen ne görüyorsun?"

@@ -199,8 +199,24 @@ class ForgotRenderer(
 
     // ---- the banner and Karalak's square
 
+    /**
+     * The title, centred in the banner's opening on its letters (their ink, as large as fits [bannerText]'s width, 74 at most).
+     * The dots over Ö and Ü are no part of what the eye centres, so the capitals' body is centred vertically and the dots stand above it.
+     */
     private fun drawBanner(canvas: Canvas) {
-        text.draw(canvas, "ÇİZEN BİLE BİLEMEDİ", bannerText.centerX(), bannerText.centerY(), bannerText.width().toInt(), 74f, 1, assets.display, C.ORANGE_DARK, ink = true)
+        val (size, cy) = bannerFit
+        text.draw(canvas, ForgotCopy.TITLE, bannerText.centerX(), cy, BANNER_MEASURE_W, size, 1, assets.display, C.ORANGE_DARK, ink = true)
+    }
+
+    /** The title's size and the centre line it is drawn on, worked out once: the same for every frame. */
+    private val bannerFit: Pair<Float, Float> by lazy {
+        val title = ForgotCopy.TITLE
+        var size = BANNER_SIZE
+        while (size > 20f && text.measureInk(title, BANNER_MEASURE_W, size, 1, assets.display, C.ORANGE_DARK).first > bannerText.width()) size -= 0.5f
+        val full = text.measureInk(title, BANNER_MEASURE_W, size, 1, assets.display, C.ORANGE_DARK).second
+        val body = text.measureInk(ForgotCopy.TITLE_BODY, BANNER_MEASURE_W, size, 1, assets.display, C.ORANGE_DARK).second
+        // the ink box is centred by [draw]; moving it up by half the dots' height puts the capitals' body on the centre
+        size to (bannerText.centerY() - (full - body) / 2f)
     }
 
     private fun drawMascotTile(canvas: Canvas, e: ForgotEvent, speaking: Boolean, level: Float, t: Long) {
@@ -470,6 +486,9 @@ class ForgotRenderer(
         private const val END_OPEN = 560L
         const val FPS = 30
         private const val BOX_ROW_GAP = 24f
+        private const val BANNER_SIZE = 74f
+        /** A layout width wider than the title ever is, so the title is measured and drawn on one line at the size chosen. */
+        private const val BANNER_MEASURE_W = 1000
         private const val SUBTITLE_LINES = 3
     }
 }

@@ -96,7 +96,7 @@ import javax.inject.Inject
 
 /** The studio's video formats. */
 enum class StudioFormat(val title: String, val blurb: String) {
-    Forgot("Çizen Bile Bilemedi", "Çizenin bile tanıyamadığı çizim; doğru cevap kupon kodu"),
+    Forgot("Ödüllü Karalak Düellosu", "Çizenin bile tanıyamadığı çizim; doğru cevap kupon kodu"),
     RealLife("Gerçek Olsaydı", "Çizimler gerçek hayata dönüşüyor")
 }
 
