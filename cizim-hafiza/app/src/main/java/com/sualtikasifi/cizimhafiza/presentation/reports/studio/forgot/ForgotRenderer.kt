@@ -287,7 +287,7 @@ class ForgotRenderer(
     }
 
     /**
-     * "Ödül: 500 altın" in the painted gold frame (reward_frame), at the board's bottom: the frame is [REWARD_W] wide and rests
+     * "Ödül: 500 altın" in the painted gold frame (reward_frame), at the board's bottom: the frame is [REWARD_W] wide and sits
      * on the board's lower edge; the words are centred on the middle of its purple field, the dots over the Ö not counted.
      * Nothing is drawn when the code gives nothing.
      */
@@ -297,7 +297,8 @@ class ForgotRenderer(
         val w = REWARD_W
         val h = w * frame.height / frame.width
         val left = board.centerX() - w / 2f
-        val top = board.bottom - REWARD_LIFT - h
+        // it straddles the board's lower edge (the purple field a little below it), so it takes next to nothing of the drawing's room
+        val top = board.bottom + REWARD_DROP - h * (FIELD_T + FIELD_B) / 2f
         canvas.drawBitmap(frame, null, RectF(left, top, left + w, top + h), fill)
         // the purple field, as shares of the picture (measured on it)
         val field = RectF(left + w * FIELD_L, top + h * FIELD_T, left + w * FIELD_R, top + h * FIELD_B)
@@ -322,8 +323,7 @@ class ForgotRenderer(
 
     /** The drawing on the board, [fraction] of it drawn; [bobMs] > 0 gives a slow push-in while it stands. */
     private fun drawDrawing(canvas: Canvas, fraction: Float, alpha: Float, bobMs: Long) {
-        // room under the drawing for the prize frame (when there is a prize)
-        val box = RectF(board.left + 30f, board.top + 100f, board.right - 30f, board.bottom - if (script.reward.isNotBlank() && rewardFrame != null) REWARD_RESERVE else 130f)
+        val box = RectF(board.left + 30f, board.top + 100f, board.right - 30f, board.bottom - 130f)
         val zoom = 1f + 0.02f * min(1f, bobMs / 3_000f)
         canvas.save()
         canvas.scale(zoom, zoom, box.centerX(), box.centerY())
@@ -503,10 +503,9 @@ class ForgotRenderer(
         const val FPS = 30
         private const val BOX_ROW_GAP = 24f
         private const val BANNER_SIZE = 74f
-        /** The prize frame: its width, how far it stands above the board's lower edge, the room the drawing leaves for it. */
+        /** The prize frame: its width, and how far below the board's lower edge the middle of its purple field lies. */
         private const val REWARD_W = 580f
-        private const val REWARD_LIFT = 22f
-        private const val REWARD_RESERVE = 232f
+        private const val REWARD_DROP = 10f
         /** The frame's purple field as shares of the picture (left, top, right, bottom), measured on the picture. */
         private const val FIELD_L = 0.1231f
         private const val FIELD_T = 0.4457f
