@@ -277,6 +277,8 @@ dependencies {
     implementation(libs.androidx.media3.ui)
 
     testImplementation(libs.junit)
+    // the panel's view models run on viewModelScope: the tests swap the main dispatcher
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.room.testing)
