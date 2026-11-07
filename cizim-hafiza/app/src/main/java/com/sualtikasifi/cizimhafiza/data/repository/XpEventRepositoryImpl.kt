@@ -3,6 +3,7 @@ package com.sualtikasifi.cizimhafiza.data.repository
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sualtikasifi.cizimhafiza.domain.repository.XpEvent
 import com.sualtikasifi.cizimhafiza.domain.repository.XpEventRepository
+import com.sualtikasifi.cizimhafiza.util.AdminAudit
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -16,7 +17,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class XpEventRepositoryImpl @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val auth: com.google.firebase.auth.FirebaseAuth
 ) : XpEventRepository {
 
     private val eventDoc get() = firestore.document("config/xpEvent")
@@ -80,21 +82,31 @@ class XpEventRepositoryImpl @Inject constructor(
     }
 
     override suspend fun startEvent(multiplier: Double, durationMillis: Long, label: String?): Result<Unit> = runCatching {
-        eventDoc.set(
-            mapOf(
-                "active" to true,
-                "multiplier" to multiplier,
-                "startedAtMillis" to System.currentTimeMillis(),
-                "endsAtMillis" to (System.currentTimeMillis() + durationMillis),
-                "label" to label
+        val now = System.currentTimeMillis()
+        // the event and its audit line in one batch: an event nobody recorded cannot start
+        AdminAudit.commit(
+            firestore, auth.currentUser?.email, "xp-start", "config/xpEvent",
+            "x$multiplier, ${durationMillis / 3_600_000} saat" + (label?.takeIf { it.isNotBlank() }?.let { ", $it" } ?: "")
+        ) { batch ->
+            batch.set(
+                eventDoc,
+                mapOf(
+                    "active" to true,
+                    "multiplier" to multiplier,
+                    "startedAtMillis" to now,
+                    "endsAtMillis" to (now + durationMillis),
+                    "label" to label
+                )
             )
-        ).await()
+        }
         cached = null
         Unit
     }
 
     override suspend fun stopEvent(): Result<Unit> = runCatching {
-        eventDoc.set(mapOf("active" to false)).await()
+        AdminAudit.commit(firestore, auth.currentUser?.email, "xp-stop", "config/xpEvent", "etkinlik erken bitirildi") { batch ->
+            batch.set(eventDoc, mapOf("active" to false))
+        }
         cached = null
         Unit
     }

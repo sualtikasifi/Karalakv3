@@ -57,7 +57,7 @@ fun StatsPanel(viewModel: StatsViewModel = hiltViewModel()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Gün sınırı UTC (Türkiye saatiyle 03:00)", style = Console.Label, modifier = Modifier.weight(1f))
                 if (state.loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Console.Accent)
-                else com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleIconButton(Icons.Filled.Refresh, "Yenile", viewModel::load, size = 32.dp)
+                else com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleIconButton(Icons.Filled.Refresh, "Yenile", viewModel::refresh, size = 32.dp)
             }
             Spacer(Modifier.height(8.dp))
             Segmented(

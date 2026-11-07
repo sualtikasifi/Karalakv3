@@ -58,11 +58,15 @@ import androidx.lifecycle.viewModelScope
 import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
 import com.sualtikasifi.cizimhafiza.domain.model.Coupon
 import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
+import com.sualtikasifi.cizimhafiza.domain.model.CouponExistsException
 import com.sualtikasifi.cizimhafiza.domain.repository.CouponRepository
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleTextField
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButton
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleChip
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -89,8 +93,13 @@ data class CouponAdminState(
     val lastCreated: List<String> = emptyList(),
     val recent: List<Coupon> = emptyList(),
     /** Who redeemed one code (nicknames), after "Kullananlar" was tapped. */
-    val redeemers: Pair<String, List<String>>? = null
+    val redeemers: Redeemers? = null,
+    /** A label for the code (which video it is for); empty for none. */
+    val source: String = ""
 )
+
+/** The users of one code: their names, and how many of them were new players (null when that could not be told). */
+data class Redeemers(val code: String, val names: List<String>, val newPlayers: Int?)
 
 @HiltViewModel
 class CouponAdminViewModel @Inject constructor(
@@ -114,10 +123,8 @@ class CouponAdminViewModel @Inject constructor(
     fun close(code: String) {
         viewModelScope.launch {
             runCatching {
-                firestore.collection("coupons").document(code)
-                    .update("expiresAt", 1L).await()
+                admin.audited("coupon-close", code, "süre şimdi bitirildi") { b -> b.update(firestore.collection("coupons").document(code), "expiresAt", 1L) }
             }.onSuccess {
-                admin.audit("coupon-close", code, "")
                 _state.update { it.copy(message = "$code kapatıldı.") }
                 refresh()
             }.onFailure { _state.update { it.copy(message = "Kapatılamadı (internet ya da yetki).") } }
@@ -127,13 +134,41 @@ class CouponAdminViewModel @Inject constructor(
     fun showRedeemers(code: String) {
         viewModelScope.launch {
             runCatching {
-                firestore.collection("coupons").document(code).collection("redemptions").limit(60).get().await().documents.map { d ->
-                    runCatching { firestore.collection("users").document(d.id).get().await().getString("nickname") }.getOrNull()
-                        ?.takeIf { it.isNotBlank() } ?: d.id.take(8)
+                val docs = firestore.collection("coupons").document(code).collection("redemptions").limit(60).get().await().documents
+                // all the names at once instead of one after another: sixty round trips in a row took a minute
+                val names = coroutineScope {
+                    docs.map { d ->
+                        async {
+                            runCatching { firestore.collection("users").document(d.id).get().await().getString("nickname") }.getOrNull()
+                                ?.takeIf { it.isNotBlank() } ?: d.id.take(8)
+                        }
+                    }.awaitAll()
                 }
-            }.onSuccess { names -> _state.update { it.copy(redeemers = code to names) } }
+                val created = _state.value.recent.firstOrNull { it.code == code }?.createdAtMillis ?: 0L
+                Redeemers(code, names, newPlayersAmong(docs.map { it.id }.toSet(), created))
+            }.onSuccess { r -> _state.update { it.copy(redeemers = r) } }
                 .onFailure { _state.update { it.copy(message = "Liste yüklenemedi.") } }
         }
+    }
+
+    /**
+     * How many of the users were new players, from the nightly roll-up's list of each day's new players (adminSummaryUids) for
+     * the days since the code was made; null when no such day has been rolled up yet. Today is never in it.
+     */
+    private suspend fun newPlayersAmong(uids: Set<String>, createdAtMillis: Long): Int? {
+        val days = CouponStats.days(createdAtMillis, System.currentTimeMillis())
+        if (days.isEmpty() || uids.isEmpty()) return null
+        val lists = coroutineScope {
+            days.map { day ->
+                async {
+                    runCatching { firestore.collection("adminSummaryUids").document(day).get().await() }.getOrNull()
+                        ?.takeIf { it.exists() && it.get("newUids") != null }
+                        ?.let { doc -> (doc.get("newUids") as? List<*>).orEmpty().mapNotNull { it as? String } }
+                }
+            }.awaitAll()
+        }
+        if (lists.all { it == null }) return null
+        return CouponStats.newAmong(uids, lists.filterNotNull().flatten().toSet())
     }
 
     fun hideRedeemers() = _state.update { it.copy(redeemers = null) }
@@ -145,40 +180,45 @@ class CouponAdminViewModel @Inject constructor(
         val xp = s.xp.toIntOrNull() ?: 0
         val maxUses = if (s.separateCodes > 0) 1 else (s.maxUses.toIntOrNull() ?: 0)
         val days = s.days.toIntOrNull() ?: 0
-        val problem = when {
-            gold !in 0..CouponCodes.MAX_GOLD || xp !in 0..CouponCodes.MAX_XP -> "Altın ve XP 0 ile ${CouponCodes.MAX_GOLD} arasında olmalı."
-            s.chests.values.sum() > CouponCodes.MAX_CHESTS -> "En fazla ${CouponCodes.MAX_CHESTS} kasa verilebilir (her biri sırayla açılır)."
-            gold == 0 && xp == 0 && s.chests.values.sum() == 0 -> "En az bir ödül seç."
-            maxUses < 1 -> "Kullanım hakkı en az 1 olmalı."
-            s.separateCodes == 0 && s.customCode.isNotBlank() && CouponCodes.normalize(s.customCode) == null ->
-                "Kod 4-24 karakter olmalı, sadece harf, rakam ve tire."
-            else -> null
-        }
+        val problem = CouponForm.problem(gold, xp, s.chests.values.sum(), maxUses, s.separateCodes, s.customCode)
         if (problem != null) {
             _state.update { it.copy(message = problem) }
             return
         }
-        val expires = if (days > 0) System.currentTimeMillis() + days * 24L * 60 * 60 * 1000 else 0L
+        val expires = CouponForm.expiresAt(days, System.currentTimeMillis())
         _state.update { it.copy(busy = true, message = null, lastCreated = emptyList()) }
         viewModelScope.launch {
-            val count = s.separateCodes.coerceAtLeast(1)
-            val codes = if (s.separateCodes == 0 && s.customCode.isNotBlank()) {
-                listOf(CouponCodes.normalize(s.customCode)!!)
-            } else {
-                List(count) { CouponCodes.generate() }.distinct()
-            }
+            val custom = s.separateCodes == 0 && s.customCode.isNotBlank()
+            val count = if (custom) 1 else s.separateCodes.coerceAtLeast(1)
             val done = mutableListOf<String>()
             var failed = false
-            for (code in codes) {
-                couponRepository.create(Coupon(code, gold, xp, s.chests.filterValues { it > 0 }, maxUses, 0, expires))
-                    .onSuccess { done += code }
-                    .onFailure { failed = true }
+            var taken: String? = null
+            repeat(count) {
+                var code = if (custom) CouponCodes.normalize(s.customCode)!! else CouponCodes.generate()
+                var attempts = 1
+                while (true) {
+                    val result = couponRepository.create(Coupon(code, gold, xp, s.chests.filterValues { it > 0 }, maxUses, 0, expires, source = s.source.trim()))
+                    if (result.isSuccess) { done += code; break }
+                    val error = result.exceptionOrNull()
+                    if (error is CouponExistsException && !custom && attempts < CouponForm.MAX_NAME_ATTEMPTS) {
+                        // a drawn name that is already in use: draw another, never touch the existing code
+                        code = CouponCodes.generate()
+                        attempts++
+                        continue
+                    }
+                    if (error is CouponExistsException && custom) taken = code else failed = true
+                    break
+                }
             }
             _state.update {
                 it.copy(
                     busy = false,
                     lastCreated = done,
-                    message = if (failed) "Bazı kodlar oluşturulamadı (internet ya da yetki)." else "${done.size} kod oluşturuldu."
+                    message = when {
+                        taken != null -> CouponForm.takenMessage(taken!!)
+                        failed -> "Bazı kodlar oluşturulamadı (internet ya da yetki)."
+                        else -> "${done.size} kod oluşturuldu."
+                    }
                 )
             }
             refresh()
@@ -272,6 +312,13 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+            Spacer(Modifier.height(10.dp))
+            ConsoleTextField(
+                value = state.source,
+                onValueChange = { v -> viewModel.update { copy(source = v.take(60)) } },
+                label = "Hangi video için (isteğe bağlı)", placeholder = "ör. Düello · 7 Kas",
+                modifier = Modifier.fillMaxWidth()
+            )
             Spacer(Modifier.height(14.dp))
             ConsoleButton(text = "Kodu oluştur", onClick = viewModel::create, enabled = !state.busy, loading = state.busy, icon = Icons.Filled.ConfirmationNumber, modifier = Modifier.fillMaxWidth())
         }
@@ -289,6 +336,22 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                 }
                 Spacer(Modifier.height(8.dp))
                 state.lastCreated.forEach { code -> CodeChip(code) { copyToClipboard(context, code) } }
+            }
+        }
+        val bySource = CouponStats.bySource(state.recent)
+        if (bySource.isNotEmpty()) {
+            SectionHeader("Videolara göre kullanım", subtitle = "Son kodlardan: hangi videonun kodu kaç kişiye kullandırdı")
+            ConsoleCard(Modifier.fillMaxWidth(), padding = 4.dp) {
+                bySource.forEachIndexed { i, row ->
+                    if (i > 0) Box(Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(1.dp).background(Console.Grid))
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(row.source, style = Console.Subtitle, maxLines = 1)
+                            Text("${row.codes} kod · ${row.used}/${row.capacity} kullanım", style = Console.Small)
+                        }
+                        Tag("${row.used} kişi", fg = Console.AccentInk, bg = Console.AccentSoft)
+                    }
+                }
             }
         }
         if (state.recent.isNotEmpty()) {
@@ -322,14 +385,19 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                             }
                         }
                         Text("$reward · $until", style = Console.Small)
+                        if (c.source.isNotBlank()) Text(c.source, style = Console.Small.copy(color = Console.AccentInk), maxLines = 1)
                         Spacer(Modifier.height(6.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             UsageBar(c.usedCount, c.maxUses, Modifier.weight(1f))
                             Spacer(Modifier.width(8.dp))
                             Text("${c.usedCount}/${c.maxUses}", style = Console.Label)
                         }
-                        if (c.usedCount > 0 || (!closed && !full)) {
+                        if (c.usedCount > 0 || (!closed && !full) || closed || full) {
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 6.dp)) {
+                                // a code that is over: the line to paste under the video, one tap
+                                CouponStats.closingComment(c, System.currentTimeMillis())?.let { line ->
+                                    ConsoleButton("Yorum metni", { copyToClipboard(context, line, "Yorum metni kopyalandı") }, height = 30.dp, style = ConsoleButtonStyle.Tonal)
+                                }
                                 if (c.usedCount > 0) {
                                     ConsoleButton("Kullananlar (${c.usedCount})", { viewModel.showRedeemers(c.code) }, height = 30.dp, style = ConsoleButtonStyle.Secondary)
                                 }
@@ -338,9 +406,10 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                                 }
                             }
                         }
-                        state.redeemers?.takeIf { it.first == c.code }?.let { (_, names) ->
+                        state.redeemers?.takeIf { it.code == c.code }?.let { r ->
                             Text(
-                                names.joinToString(", ").ifEmpty { "-" },
+                                r.names.joinToString(", ").ifEmpty { "-" } +
+                                    (r.newPlayers?.let { "\n$it yeni oyuncu (gece özetine göre, bugün hariç)" } ?: ""),
                                 style = Console.Small.copy(color = Console.Ink),
                                 modifier = Modifier
                                     .padding(top = 6.dp)

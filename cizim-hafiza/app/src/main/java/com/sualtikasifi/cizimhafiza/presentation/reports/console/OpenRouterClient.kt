@@ -242,6 +242,8 @@ class OpenRouterClient(private val apiKey: String) {
          */
         const val ANALYSIS_MODEL = "anthropic/claude-sonnet-5.5"
         const val ANALYSIS_MODEL_PREF = "studio_analysis_model"
+        /** The model that writes the scene flow and the voiced lines of "Ödüllü Karalak Düellosu" (fast and cheap, sees the drawing). */
+        const val FORGOT_MODEL = "google/gemini-3.1-flash-lite"
         /** Tried in order when the chosen model fails (OpenRouter model list, October 2026). */
         val FALLBACK_MODELS = listOf("google/gemini-3.1-flash-lite", "google/gemini-3.5-flash-lite", "google/gemini-3.8-flash")
 

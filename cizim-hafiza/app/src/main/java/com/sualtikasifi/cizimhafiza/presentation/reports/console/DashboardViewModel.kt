@@ -35,15 +35,19 @@ class DashboardViewModel @Inject constructor(
 
     init { load() }
 
-    fun load() {
+    /** The refresh button: reads everything again, past the shared copy of the statistics. */
+    fun refresh() = load(force = true)
+
+    fun load(force: Boolean = false) {
         if (_state.value.loading) return
         _state.value = _state.value.copy(loading = true, failed = false)
         viewModelScope.launch {
-            val series = async { runCatching { loadDaySeries(firestore, 14) }.getOrNull() }
+            val series = async { runCatching { SharedDaySeries.get(firestore, 14, force) }.getOrNull() }
             val queue = async { countOf(firestore, "pendingRuns") }
             val daily = async { countOf(firestore, "pendingDailyChallenges") }
             val reports = async { countOf(firestore, "drawingReports") }
-            val feedback = async { bugReports.allReports(40).getOrNull()?.count { !it.report.isSeen } }
+            // one count query (all, minus the seen ones), not forty reports read to count them
+            val feedback = async { bugReports.unseenCount().getOrNull()?.toInt() }
             val s = series.await()
             _state.value = _state.value.copy(
                 loading = false,

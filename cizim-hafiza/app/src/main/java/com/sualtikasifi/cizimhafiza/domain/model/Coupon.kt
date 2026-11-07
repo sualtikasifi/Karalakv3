@@ -15,11 +15,18 @@ data class Coupon(
     val chests: Map<ChestTier, Int> = emptyMap(),
     val maxUses: Int = 1,
     val usedCount: Int = 0,
-    val expiresAtMillis: Long = 0L
+    val expiresAtMillis: Long = 0L,
+    /** Which video (or other campaign) the code was made for, as a short label; empty for none. Only the developer panel reads it. */
+    val source: String = "",
+    /** When it was made (0 for codes older than this field being read). */
+    val createdAtMillis: Long = 0L
 ) {
     val chestCount: Int get() = chests.values.sum()
     val hasReward: Boolean get() = gold > 0 || xp > 0 || chestCount > 0
 }
+
+/** A code with this name already exists: creating never replaces one, its use count and reward would be lost. */
+class CouponExistsException(val code: String) : Exception("coupon-exists:$code")
 
 sealed interface RedeemResult {
     data class Success(val coupon: Coupon) : RedeemResult

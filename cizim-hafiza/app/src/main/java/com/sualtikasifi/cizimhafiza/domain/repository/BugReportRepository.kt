@@ -43,4 +43,21 @@ interface BugReportRepository {
      * non-reviewer to deleting only their own uid's documents.
      */
     suspend fun deleteReports(reportIds: List<String>): Result<Unit>
+
+    // --- the developer panel's own operations: reviewer only, and the deletions go into the audit log in the same write ---
+
+    /** How many reports there are in all (one count query). */
+    suspend fun reportCount(): Result<Long>
+
+    /** How many of them the reviewer has not marked seen yet (two count queries: all, minus the seen ones). */
+    suspend fun unseenCount(): Result<Long>
+
+    /** Marks several reports seen in one write. */
+    suspend fun markSeenMany(reportIds: List<String>): Result<Unit>
+
+    /** The reviewer deleting reports from the panel's inbox; the audit-log line is written in the same batch. */
+    suspend fun deleteReportsAudited(reportIds: List<String>): Result<Unit>
+
+    /** Deletes every report there is, not just the ones the panel has loaded; returns how many went. */
+    suspend fun deleteAllReports(): Result<Int>
 }

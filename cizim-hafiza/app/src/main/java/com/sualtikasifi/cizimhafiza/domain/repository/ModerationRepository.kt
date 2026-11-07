@@ -27,6 +27,9 @@ interface ModerationRepository {
      */
     suspend fun pendingRuns(limit: Int, after: Long? = null): Result<RunPage>
 
+    /** How many rounds are waiting in the queue in all (one count query, not the pages read so far): the figure on the panel's badge. */
+    suspend fun pendingRunCount(): Result<Long>
+
     /**
      * What is already in the live pool, newest first.
      *
@@ -149,4 +152,7 @@ interface ModerationRepository {
 
     /** Throws a report out as unfounded — nothing happens to the drawer. */
     suspend fun dismissReport(reportId: String): Result<Unit>
+
+    /** Throws several reports out as unfounded in one go (the panel's multi-select); nothing happens to the drawers. */
+    suspend fun dismissReports(reportIds: List<String>): Result<Unit>
 }

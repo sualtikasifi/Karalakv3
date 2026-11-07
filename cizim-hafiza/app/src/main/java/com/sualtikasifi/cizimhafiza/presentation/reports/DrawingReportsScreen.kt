@@ -113,6 +113,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.R
+import com.sualtikasifi.cizimhafiza.domain.model.ReviewerIdentity
 import com.sualtikasifi.cizimhafiza.domain.model.BugReportCategory
 import com.sualtikasifi.cizimhafiza.domain.model.BugReportEntry
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingReportReason
@@ -191,6 +192,10 @@ fun DrawingReportsScreen(
     // A special day tapped on the dashboard, waiting for the assistant to plan it.
     var pendingPlan by remember { mutableStateOf<com.sualtikasifi.cizimhafiza.presentation.reports.console.SpecialDay?>(null) }
     var identityShown by remember { mutableStateOf(false) }
+    // A phone not signed in as the reviewer cannot change or read most of what the panel shows (the rules refuse), so its
+    // buttons would only fail one by one: it gets a clear card instead, with a way past it in case the check is what is wrong.
+    var tryAnyway by rememberSaveable { mutableStateOf(false) }
+    val unauthorized = uiState.identity?.isReviewer == false && !tryAnyway
     // The system back key and the arrow at the top are one and the same: inside a tool they go up to the tool list,
     // and from anywhere else they ask before leaving, because leaving locks the panel again and the passcode has to
     // be typed anew.
@@ -271,7 +276,11 @@ fun DrawingReportsScreen(
                         modifier = Modifier.weight(1f).fillMaxWidth()
                     ) { at ->
                         Box(Modifier.fillMaxSize().padding(start = Console.Gutter, end = Console.Gutter, top = 14.dp)) {
-                            PlaceContent(
+                            if (unauthorized) UnauthorizedCard(
+                                identity = uiState.identity,
+                                onRecheck = viewModel::recheckIdentity,
+                                onTryAnyway = { tryAnyway = true }
+                            ) else PlaceContent(
                                 at = at,
                                 uiState = uiState,
                                 viewModel = viewModel,
@@ -290,7 +299,7 @@ fun DrawingReportsScreen(
                 AnimatedVisibility(visible = !imeOpen, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
                     ConsoleNav(
                         tab = uiState.tab,
-                        queueBadge = uiState.queue.runs.size,
+                        queueBadge = (uiState.queueTotal ?: uiState.queue.runs.size.toLong()).toInt(),
                         onSelect = { t -> if (t == ReportsTab.Queue) queueListMode = false; viewModel.selectTab(t) }
                     )
                 }
@@ -333,7 +342,8 @@ fun DrawingReportsScreen(
             if (deleteAllFeedbackRequested) {
                 ConfirmDeleteDialog(
                     title = stringResource(R.string.reports_feedback_delete_confirm_title),
-                    message = stringResource(R.string.reports_feedback_delete_all_confirm_message),
+                    // not "every report in this list": it clears the whole inbox, the ones not loaded yet too
+                    message = "Gelen kutusundaki ${uiState.feedbackTotal ?: uiState.feedback.size.toLong()} kaydın hepsi (ekrana yüklenmemiş olanlar dahil) kalıcı olarak silinecek. Bu geri alınamaz.",
                     onDismiss = { deleteAllFeedbackRequested = false },
                     onConfirm = {
                         viewModel.deleteAllFeedback()
@@ -366,6 +376,28 @@ fun DrawingReportsScreen(
                 )
             }
         }
+    }
+}
+
+/**
+ * Shown in place of the panel's content while this phone is not signed in as the reviewer: what the rules will refuse is not
+ * offered as buttons. "Yine de dene" opens the panel anyway (the check here mirrors the rules but is only a mirror).
+ */
+@Composable
+private fun UnauthorizedCard(identity: ReviewerIdentity?, onRecheck: () -> Unit, onTryAnyway: () -> Unit) {
+    Centered {
+        ConsoleEmpty(
+            icon = Icons.Filled.Lock,
+            title = "Bu hesap yetkisiz",
+            body = "Panel, geliştirici hesabıyla giriş yapmış bir telefonda çalışır; bu hesapta okuma ve yazma işlemleri sunucu tarafından reddedilir. " +
+                "Hesap: ${identity?.email ?: "e-posta yok"} · ${identity?.uid?.take(8) ?: "uid yok"}",
+            action = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    ConsoleButton("Tekrar kontrol et", onRecheck, icon = Icons.Filled.Refresh)
+                    ConsoleButton("Yine de dene", onTryAnyway, style = ConsoleButtonStyle.Secondary)
+                }
+            }
+        )
     }
 }
 
@@ -431,7 +463,7 @@ private fun PlaceContent(
             onOpen = { viewModel.selectTab(it) },
             onQueueList = { onQueueList(true); viewModel.selectTab(ReportsTab.Queue) },
             onBotNames = onBotNames,
-            queueCount = uiState.queue.runs.size
+            queueCount = (uiState.queueTotal ?: uiState.queue.runs.size.toLong()).toInt()
         )
 
         tab == ReportsTab.Queue && !at.queueList -> com.sualtikasifi.cizimhafiza.presentation.reports.console.SwipeQueue(
@@ -514,7 +546,9 @@ private fun RunLists(
         ReportsTab.Queue, ReportsTab.Pool -> list?.failed == true && rowCount == 0
         ReportsTab.Feedback -> uiState.feedbackFailed
         ReportsTab.DailyChallenge -> uiState.dailyChallengeFailed
-        else -> uiState.evidenceFailed
+        ReportsTab.Reports -> uiState.reportsFailed && rowCount == 0
+        ReportsTab.Detector -> uiState.detectorFailed && rowCount == 0
+        else -> false
     }
     when {
         firstLoad -> ConsoleSkeleton(rows = 4, rowHeight = if (tab == ReportsTab.Feedback) 84.dp else 132.dp)
@@ -558,6 +592,10 @@ private fun RunLists(
             verticalArrangement = Arrangement.spacedBy(Console.Gap),
             contentPadding = PaddingValues(bottom = 20.dp)
         ) {
+            // a refresh that failed keeps the old list on screen, and says that it is the old one
+            if ((tab == ReportsTab.Reports && uiState.reportsFailed) || (tab == ReportsTab.Detector && uiState.detectorFailed)) {
+                item(key = "stale") { ConsoleNotice("Liste yenilenemedi; son okunan hâli gösteriliyor.", kind = NoticeKind.Warning) }
+            }
             when (tab) {
                 ReportsTab.Queue -> items(uiState.queue.runs, key = { it.id }) { run ->
                     PendingRunRow(
@@ -584,22 +622,55 @@ private fun RunLists(
                         modifier = Modifier.animateItem()
                     )
                 }
-                ReportsTab.Feedback -> items(uiState.feedback, key = { it.report.id }) { entry ->
-                    FeedbackRow(
-                        entry,
-                        onMarkSeen = { viewModel.markSeen(entry.report.id) },
-                        onDelete = { onDeleteFeedback(entry.report.id) },
-                        modifier = Modifier.animateItem()
-                    )
+                ReportsTab.Feedback -> {
+                    item(key = "bulk-feedback") {
+                        if (uiState.feedbackSelection.isEmpty()) Text("Birden fazlasını seçmek için bir karta uzun bas.", style = Console.Small)
+                        else BulkBar(
+                            count = uiState.feedbackSelection.size, total = uiState.feedback.size,
+                            onSelectAll = viewModel::selectAllFeedback, onClear = viewModel::clearFeedbackSelection,
+                            onMarkSeen = viewModel::markSelectedFeedbackSeen,
+                            dangerLabel = "Sil",
+                            confirmMessage = "Seçilen ${uiState.feedbackSelection.size} geri bildirim kalıcı olarak silinecek. Bu geri alınamaz.",
+                            onDanger = viewModel::deleteSelectedFeedback
+                        )
+                    }
+                    items(uiState.feedback, key = { it.report.id }) { entry ->
+                        FeedbackRow(
+                            entry,
+                            onMarkSeen = { viewModel.markSeen(entry.report.id) },
+                            onDelete = { onDeleteFeedback(entry.report.id) },
+                            selected = entry.report.id in uiState.feedbackSelection,
+                            selecting = uiState.feedbackSelection.isNotEmpty(),
+                            onToggle = { viewModel.toggleFeedbackSelect(entry.report.id) },
+                            modifier = Modifier.animateItem()
+                        )
+                    }
                 }
-                ReportsTab.Reports -> items(uiState.reports, key = { it.report.id }) { entry ->
-                    ReportRow(
-                        entry,
-                        busy = uiState.decidingReportId != null,
-                        onDismiss = { viewModel.dismissReport(entry) },
-                        onUphold = { onUphold(entry) },
-                        modifier = Modifier.animateItem()
-                    )
+                ReportsTab.Reports -> {
+                    item(key = "bulk-reports") {
+                        if (uiState.reportSelection.isEmpty()) Text("Birden fazlasını seçmek için bir karta uzun bas.", style = Console.Small)
+                        else BulkBar(
+                            count = uiState.reportSelection.size, total = uiState.reports.size,
+                            onSelectAll = viewModel::selectAllReports, onClear = viewModel::clearReportSelection,
+                            onMarkSeen = null,
+                            dangerLabel = "Haksız say",
+                            confirmMessage = "Seçilen ${uiState.reportSelection.size} şikayet haksız sayılacak ve silinecek; çizenlere hiçbir şey olmaz. Ceza vermek için şikayetleri tek tek aç.",
+                            onDanger = viewModel::dismissSelectedReports,
+                            busy = uiState.decidingReportId != null
+                        )
+                    }
+                    items(uiState.reports, key = { it.report.id }) { entry ->
+                        ReportRow(
+                            entry,
+                            busy = uiState.decidingReportId != null,
+                            onDismiss = { viewModel.dismissReport(entry) },
+                            onUphold = { onUphold(entry) },
+                            selected = entry.report.id in uiState.reportSelection,
+                            selecting = uiState.reportSelection.isNotEmpty(),
+                            onToggle = { viewModel.toggleReportSelect(entry.report.id) },
+                            modifier = Modifier.animateItem()
+                        )
+                    }
                 }
                 ReportsTab.Detector -> items(uiState.refusals, key = { it.event.id }) { RefusalRow(it, Modifier.animateItem()) }
                 ReportsTab.DailyChallenge -> items(uiState.dailyChallengeQueue, key = { it.id }) { pending ->
@@ -637,6 +708,39 @@ private fun RunLists(
                 }
             }
         }
+    }
+}
+
+/**
+ * The bar over a list while several rows are picked: how many, pick all, drop the pick, and the one thing that can be done to
+ * all of them. What deletes asks first.
+ */
+@Composable
+private fun BulkBar(
+    count: Int, total: Int, onSelectAll: () -> Unit, onClear: () -> Unit, onMarkSeen: (() -> Unit)?,
+    dangerLabel: String, confirmMessage: String, onDanger: () -> Unit, busy: Boolean = false
+) {
+    var confirm by remember { mutableStateOf(false) }
+    ConsoleCard(Modifier.fillMaxWidth(), padding = 10.dp) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("$count seçili", style = Console.Subtitle, modifier = Modifier.weight(1f))
+            if (count < total) ConsoleButton("Tümünü seç", onSelectAll, height = 32.dp, style = ConsoleButtonStyle.Tonal)
+            Spacer(Modifier.width(6.dp))
+            com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleIconButton(Icons.Filled.Close, "Seçimi bırak", onClear, size = 32.dp)
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            onMarkSeen?.let { ConsoleButton("Görüldü", it, Modifier.weight(1f), icon = Icons.Filled.Check, height = 36.dp, style = ConsoleButtonStyle.Secondary) }
+            ConsoleButton(dangerLabel, { confirm = true }, Modifier.weight(1f), enabled = !busy, height = 36.dp, style = ConsoleButtonStyle.DangerSoft)
+        }
+    }
+    if (confirm) {
+        ConfirmDeleteDialog(
+            title = "$count kayıt için “$dangerLabel”?",
+            message = confirmMessage,
+            onDismiss = { confirm = false },
+            onConfirm = { confirm = false; onDanger() }
+        )
     }
 }
 
@@ -958,8 +1062,14 @@ private fun DrawingThumb(strokes: List<List<com.sualtikasifi.cizimhafiza.domain.
 }
 
 @Composable
-private fun ReportRow(entry: ReportedDrawing, busy: Boolean, onDismiss: () -> Unit, onUphold: () -> Unit, modifier: Modifier = Modifier) {
-    ConsoleCard(modifier = modifier.fillMaxWidth(), padding = 12.dp) {
+private fun ReportRow(
+    entry: ReportedDrawing, busy: Boolean, onDismiss: () -> Unit, onUphold: () -> Unit,
+    selected: Boolean, selecting: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier
+) {
+    ConsoleCard(
+        modifier = modifier.fillMaxWidth(), padding = 12.dp,
+        onClick = if (selecting) onToggle else null, onLongClick = onToggle, selected = selected
+    ) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             DrawingThumb(entry.strokes, Modifier.width(88.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -1381,9 +1491,15 @@ private const val RENAME_MAX_LENGTH = 40
  * any report raises, and asking them back means a round trip through somebody who has already moved on.
  */
 @Composable
-private fun FeedbackRow(entry: BugReportEntry, onMarkSeen: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+private fun FeedbackRow(
+    entry: BugReportEntry, onMarkSeen: () -> Unit, onDelete: () -> Unit,
+    selected: Boolean, selecting: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier
+) {
     val suggestion = entry.report.category == BugReportCategory.SUGGESTION
-    ConsoleCard(modifier = modifier.fillMaxWidth(), padding = 12.dp) {
+    ConsoleCard(
+        modifier = modifier.fillMaxWidth(), padding = 12.dp,
+        onClick = if (selecting) onToggle else null, onLongClick = onToggle, selected = selected
+    ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Tag(
                 stringResource(if (suggestion) R.string.reports_feedback_suggestion else R.string.reports_feedback_complaint),

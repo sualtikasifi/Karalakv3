@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.DaySeries
-import com.sualtikasifi.cizimhafiza.presentation.reports.console.loadDaySeries
+import com.sualtikasifi.cizimhafiza.presentation.reports.console.SharedDaySeries
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -53,11 +53,14 @@ class StatsViewModel @Inject constructor(
         load()
     }
 
-    fun load() {
+    /** The refresh button: reads the statistics again, past the shared copy. */
+    fun refresh() = load(force = true)
+
+    fun load(force: Boolean = false) {
         val days = _state.value.days
         _state.value = _state.value.copy(loading = true, failed = false)
         viewModelScope.launch {
-            runCatching { loadDaySeries(firestore, days) }
+            runCatching { SharedDaySeries.get(firestore, days, force) }
                 .onSuccess { s ->
                     _state.value = StatsUiState(days = days, loaded = true, series = s, placements = placements(s))
                 }
