@@ -31,23 +31,24 @@ enum class ForgotStyle(
     /** The assistant's voice for this set. */
     val tone: String
 ) {
+    // nothing here names what the code gives (it may be gold, XP or a chest): the prize is written by the board's "Ödül:" and the pill
     Game(
-        "Oyun dili", "ANAHTAR KELİME", "KASA ŞİFRESİ",
-        "Doğru tahmin, kasanın şifresi", "Bu kod, kasanın şifresi", null,
+        "Oyun dili", "GİZLİ KOD", "ÖDÜL KODU",
+        "Kod, çizilen şeyin adı", "Kodu uygulamaya gir", "Kodu çözene",
         "Ayarlar › Kupon kodu › Kullan", "Takıldıysan yorumlara bak",
-        "oyun dili: kilit, kasa, şifre, anahtar gibi sözcükler; enerjik ve meydan okuyan"
+        "oyun dili: kod, şifre, görev, meydan okuma gibi sözcükler; enerjik ve meydan okuyan. Ödülün ne olduğunu (kasa, altın, XP) sen söyleme, ekranda yazıyor"
     ),
     Warm(
-        "Sıcak dil", "Bu kasa senin olabilir", "Bu kasa senin olabilir",
-        "Şifre, az önce çizilen şey", "Kodu uygulamaya yaz", "Açtığın kasa",
+        "Sıcak dil", "Cevabı bil, ödülü al", "Hediye kodun hazır",
+        "Kod, az önce çizilen şeyin adı", "Kodu uygulamaya yaz", "Bilene hediye",
         "Ayarlar'a gir, kodu yaz, Kullan'a bas", "Bilemedin mi? İpucu yorumlarda",
-        "samimi ve sıcak: hediye veren, yanında duran bir arkadaş gibi; yarışmacı değil davetkâr"
+        "samimi ve sıcak: hediye veren, yanında duran bir arkadaş gibi; yarışmacı değil davetkâr. Ödülün ne olduğunu sen söyleme, ekranda yazıyor"
     ),
     Deal(
         "Fırsat dili", "Hediye kodun", "Hediye kodun",
-        "Kod, çizilen şeyin adı", "Kodu uygulamaya gir", "İçinden çıkan",
+        "Kod, çizilen şeyin adı", "Kodu uygulamaya gir", "Kodla gelen ödül",
         "Ayarlar › Kupon kodu › Kullan", "İpucu yorumlarda",
-        "net ve fırsat vurgulu: kısa, süreli ve sınırlı olduğunu hissettiren ama abartısız, bağıran değil"
+        "net ve fırsat vurgulu: kısa, süreli ve sınırlı olduğunu hissettiren ama abartısız, bağıran değil. Ödülün ne olduğunu sen söyleme, ekranda yazıyor"
     );
 
     fun codeTitle(word: Boolean) = if (word) titleWord else titleShown
