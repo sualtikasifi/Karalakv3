@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotSource
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotStyle
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotChest
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotCopy
@@ -224,17 +225,34 @@ private const val FORGOT_TARGET_SECONDS = 20
 /** "Çizen Bile Bilemedi": a drawing its own drawer could not recognise, how the code is given, and Karalak's lines. */
 private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
     val f = st.forgot
-    // 1. the drawing: this phone's own, the ones its drawer got wrong first
+    // 1. the drawing: this phone's own, or the pool's; the ones its drawer got wrong first
     item { Step("1", "Çizim", if (f.drawingId != null) "seçili" else "birini seç") }
     item {
+        Segmented(
+            options = ForgotSource.entries.map { it.name to it.title },
+            selected = f.source.name,
+            onSelect = { vm.setForgotSource(ForgotSource.valueOf(it)) },
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+    item {
         Text(
-            "Bu telefonda kayıtlı çizimlerden biri; kendi çizimini tanıyamadığın turlar başta.",
+            if (f.source == ForgotSource.Phone) "Bu telefonda kayıtlı çizimlerden biri; kendi çizimini tanıyamadığın turlar başta."
+            else "Havuzdaki oyuncu turlarından biri; çizeni tanıyamayanlar başta. Çizenlerin adı videoda görünmez.",
             style = Console.Small
         )
     }
-    val pool = st.drawings.sortedBy { it.correct }
+    val fromPool = f.source == ForgotSource.Pool
+    val pool = if (fromPool) st.real.recent.map { it.toStudio() }.sortedBy { it.correct } else st.drawings.sortedBy { it.correct }
     when {
-        st.loading -> item { Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Console.Accent) } }
+        fromPool && st.real.loadingRecent && pool.isEmpty() -> item { Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Console.Accent) } }
+        fromPool && pool.isEmpty() -> item {
+            ConsoleCard(Modifier.fillMaxWidth()) {
+                Text(st.real.recentError ?: "Havuzda çizim bulunamadı.", style = Console.Small)
+                ActionButton(Icons.Filled.Refresh, "Yeniden oku", Console.Surface, Console.Ink, Modifier.padding(top = 6.dp)) { vm.refreshRecent() }
+            }
+        }
+        st.loading && !fromPool -> item { Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Console.Accent) } }
         pool.isEmpty() -> item { ConsoleCard(Modifier.fillMaxWidth()) { Text("Bu telefonda kayıtlı çizim yok. Birkaç tur oyna, sonra buraya dön.", style = Console.Small) } }
         else -> pool.take(f.shown).chunked(3).forEach { row ->
             item(key = "fg-" + row.first().id) {
@@ -347,7 +365,7 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
             script.guesses.forEachIndexed { i, l ->
                 Text("Tahmin ${i + 1}", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
                 StopScrubber(
-                    strokes = st.drawings.find { it.id == script.drawingId }?.strokes.orEmpty(),
+                    strokes = st.forgotDrawing(script.drawingId)?.strokes.orEmpty(),
                     share = script.stops[i],
                     onChange = { vm.setForgotStop(i, it) },
                     onNudge = { vm.stepForgotStop(i, it) }

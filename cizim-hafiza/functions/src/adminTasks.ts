@@ -259,7 +259,9 @@ export async function rollupDay(db: admin.firestore.Firestore, day: string): Pro
   let newPlayers = 0;
   for (const uid of today) if (!seenBefore.has(uid)) newPlayers++;
 
-  await db.doc(`adminSummaryUids/${day}`).set({ uids: [...today].slice(0, 20000) });
+  // who was active that day, and who of them was new (the panel's coupon card counts a code's new players from the second list)
+  const newUids = [...today].filter((uid) => !seenBefore.has(uid));
+  await db.doc(`adminSummaryUids/${day}`).set({ uids: [...today].slice(0, 20000), newUids: newUids.slice(0, 20000) });
   const summary: DaySummary = {
     day,
     players: today.size,

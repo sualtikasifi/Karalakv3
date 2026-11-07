@@ -58,6 +58,13 @@ enum class ForgotStyle(
     }
 }
 
+/** Where the Düello's drawing comes from. */
+enum class ForgotSource(val title: String) {
+    Phone("Telefonum"),
+    /** The players' rounds in the reviewed pool: the ones whose drawer did not recognise them come first. */
+    Pool("Havuz")
+}
+
 /** How the video hands out its kupon kodu. */
 enum class ForgotMode(val title: String) {
     /** The code is the drawing's right answer, never said in the video: whoever knows the word (or reads the comments) has it. */

@@ -79,7 +79,7 @@ class CouponRepositoryImpl @Inject constructor(
                     "usedCount" to 0L,
                     "expiresAt" to coupon.expiresAtMillis,
                     "createdAt" to System.currentTimeMillis()
-                )
+                ) + (if (coupon.source.isNotBlank()) mapOf("source" to coupon.source.trim().take(60)) else emptyMap())
             )
             AdminAudit.add(firestore, tx, by, "coupon-create", coupon.code, couponSummary(coupon))
         }.await()
@@ -105,7 +105,9 @@ class CouponRepositoryImpl @Inject constructor(
         },
         maxUses = (getLong("maxUses") ?: 1L).toInt(),
         usedCount = (getLong("usedCount") ?: 0L).toInt(),
-        expiresAtMillis = getLong("expiresAt") ?: 0L
+        expiresAtMillis = getLong("expiresAt") ?: 0L,
+        source = getString("source").orEmpty(),
+        createdAtMillis = getLong("createdAt") ?: 0L
     )
 }
 
@@ -119,5 +121,5 @@ internal fun couponSummary(c: Coupon): String {
         c.chests[ChestTier.RARE]?.let { "$it Sürpriz kasa" }
     ).joinToString(" + ").ifEmpty { "ödülsüz" }
     val until = if (c.expiresAtMillis > 0) java.time.Instant.ofEpochMilli(c.expiresAtMillis).toString().take(16).replace('T', ' ') + " UTC" else "süresiz"
-    return "$reward · ${c.maxUses} kişi · $until"
+    return "$reward · ${c.maxUses} kişi · $until" + if (c.source.isNotBlank()) " · ${c.source}" else ""
 }

@@ -1142,6 +1142,12 @@ service cloud.firestore {
       allow read: if reviewer();
       allow write: if false;
     }
+    // Who was active on each day, and who was new (written by the nightly roll-up): the panel's coupon card counts how many of a
+    // code's users were new players from it.
+    match /adminSummaryUids/{day} {
+      allow read: if reviewer();
+      allow write: if false;
+    }
     match /adminJobs/{name} {
       allow read: if reviewer();
       allow write: if false;

@@ -93,8 +93,13 @@ data class CouponAdminState(
     val lastCreated: List<String> = emptyList(),
     val recent: List<Coupon> = emptyList(),
     /** Who redeemed one code (nicknames), after "Kullananlar" was tapped. */
-    val redeemers: Pair<String, List<String>>? = null
+    val redeemers: Redeemers? = null,
+    /** A label for the code (which video it is for); empty for none. */
+    val source: String = ""
 )
+
+/** The users of one code: their names, and how many of them were new players (null when that could not be told). */
+data class Redeemers(val code: String, val names: List<String>, val newPlayers: Int?)
 
 @HiltViewModel
 class CouponAdminViewModel @Inject constructor(
@@ -131,7 +136,7 @@ class CouponAdminViewModel @Inject constructor(
             runCatching {
                 val docs = firestore.collection("coupons").document(code).collection("redemptions").limit(60).get().await().documents
                 // all the names at once instead of one after another: sixty round trips in a row took a minute
-                coroutineScope {
+                val names = coroutineScope {
                     docs.map { d ->
                         async {
                             runCatching { firestore.collection("users").document(d.id).get().await().getString("nickname") }.getOrNull()
@@ -139,9 +144,31 @@ class CouponAdminViewModel @Inject constructor(
                         }
                     }.awaitAll()
                 }
-            }.onSuccess { names -> _state.update { it.copy(redeemers = code to names) } }
+                val created = _state.value.recent.firstOrNull { it.code == code }?.createdAtMillis ?: 0L
+                Redeemers(code, names, newPlayersAmong(docs.map { it.id }.toSet(), created))
+            }.onSuccess { r -> _state.update { it.copy(redeemers = r) } }
                 .onFailure { _state.update { it.copy(message = "Liste yüklenemedi.") } }
         }
+    }
+
+    /**
+     * How many of the users were new players, from the nightly roll-up's list of each day's new players (adminSummaryUids) for
+     * the days since the code was made; null when no such day has been rolled up yet. Today is never in it.
+     */
+    private suspend fun newPlayersAmong(uids: Set<String>, createdAtMillis: Long): Int? {
+        val days = CouponStats.days(createdAtMillis, System.currentTimeMillis())
+        if (days.isEmpty() || uids.isEmpty()) return null
+        val lists = coroutineScope {
+            days.map { day ->
+                async {
+                    runCatching { firestore.collection("adminSummaryUids").document(day).get().await() }.getOrNull()
+                        ?.takeIf { it.exists() && it.get("newUids") != null }
+                        ?.let { doc -> (doc.get("newUids") as? List<*>).orEmpty().mapNotNull { it as? String } }
+                }
+            }.awaitAll()
+        }
+        if (lists.all { it == null }) return null
+        return CouponStats.newAmong(uids, lists.filterNotNull().flatten().toSet())
     }
 
     fun hideRedeemers() = _state.update { it.copy(redeemers = null) }
@@ -170,7 +197,7 @@ class CouponAdminViewModel @Inject constructor(
                 var code = if (custom) CouponCodes.normalize(s.customCode)!! else CouponCodes.generate()
                 var attempts = 1
                 while (true) {
-                    val result = couponRepository.create(Coupon(code, gold, xp, s.chests.filterValues { it > 0 }, maxUses, 0, expires))
+                    val result = couponRepository.create(Coupon(code, gold, xp, s.chests.filterValues { it > 0 }, maxUses, 0, expires, source = s.source.trim()))
                     if (result.isSuccess) { done += code; break }
                     val error = result.exceptionOrNull()
                     if (error is CouponExistsException && !custom && attempts < CouponForm.MAX_NAME_ATTEMPTS) {
@@ -285,6 +312,13 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+            Spacer(Modifier.height(10.dp))
+            ConsoleTextField(
+                value = state.source,
+                onValueChange = { v -> viewModel.update { copy(source = v.take(60)) } },
+                label = "Hangi video için (isteğe bağlı)", placeholder = "ör. Düello · 7 Kas",
+                modifier = Modifier.fillMaxWidth()
+            )
             Spacer(Modifier.height(14.dp))
             ConsoleButton(text = "Kodu oluştur", onClick = viewModel::create, enabled = !state.busy, loading = state.busy, icon = Icons.Filled.ConfirmationNumber, modifier = Modifier.fillMaxWidth())
         }
@@ -302,6 +336,22 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                 }
                 Spacer(Modifier.height(8.dp))
                 state.lastCreated.forEach { code -> CodeChip(code) { copyToClipboard(context, code) } }
+            }
+        }
+        val bySource = CouponStats.bySource(state.recent)
+        if (bySource.isNotEmpty()) {
+            SectionHeader("Videolara göre kullanım", subtitle = "Son kodlardan: hangi videonun kodu kaç kişiye kullandırdı")
+            ConsoleCard(Modifier.fillMaxWidth(), padding = 4.dp) {
+                bySource.forEachIndexed { i, row ->
+                    if (i > 0) Box(Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(1.dp).background(Console.Grid))
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(row.source, style = Console.Subtitle, maxLines = 1)
+                            Text("${row.codes} kod · ${row.used}/${row.capacity} kullanım", style = Console.Small)
+                        }
+                        Tag("${row.used} kişi", fg = Console.AccentInk, bg = Console.AccentSoft)
+                    }
+                }
             }
         }
         if (state.recent.isNotEmpty()) {
@@ -335,14 +385,19 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                             }
                         }
                         Text("$reward · $until", style = Console.Small)
+                        if (c.source.isNotBlank()) Text(c.source, style = Console.Small.copy(color = Console.AccentInk), maxLines = 1)
                         Spacer(Modifier.height(6.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             UsageBar(c.usedCount, c.maxUses, Modifier.weight(1f))
                             Spacer(Modifier.width(8.dp))
                             Text("${c.usedCount}/${c.maxUses}", style = Console.Label)
                         }
-                        if (c.usedCount > 0 || (!closed && !full)) {
+                        if (c.usedCount > 0 || (!closed && !full) || closed || full) {
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 6.dp)) {
+                                // a code that is over: the line to paste under the video, one tap
+                                CouponStats.closingComment(c, System.currentTimeMillis())?.let { line ->
+                                    ConsoleButton("Yorum metni", { copyToClipboard(context, line, "Yorum metni kopyalandı") }, height = 30.dp, style = ConsoleButtonStyle.Tonal)
+                                }
                                 if (c.usedCount > 0) {
                                     ConsoleButton("Kullananlar (${c.usedCount})", { viewModel.showRedeemers(c.code) }, height = 30.dp, style = ConsoleButtonStyle.Secondary)
                                 }
@@ -351,9 +406,10 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                                 }
                             }
                         }
-                        state.redeemers?.takeIf { it.first == c.code }?.let { (_, names) ->
+                        state.redeemers?.takeIf { it.code == c.code }?.let { r ->
                             Text(
-                                names.joinToString(", ").ifEmpty { "-" },
+                                r.names.joinToString(", ").ifEmpty { "-" } +
+                                    (r.newPlayers?.let { "\n$it yeni oyuncu (gece özetine göre, bugün hariç)" } ?: ""),
                                 style = Console.Small.copy(color = Console.Ink),
                                 modifier = Modifier
                                     .padding(top = 6.dp)

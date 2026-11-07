@@ -38,6 +38,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotTim
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotDirector
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotRenderer
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotSource
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotStyle
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotChest
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotScript
@@ -145,6 +146,8 @@ sealed interface LineRef {
 /** "Çizen Bile Bilemedi": the chosen drawing, what its drawer wrote, how the code is given, what it gives, and the script. */
 data class ForgotUi(
     val drawingId: Long? = null,
+    /** Where the drawing is picked from: this phone's own, or the pool of the players' (the same one "Gerçek Olsaydı" reads). */
+    val source: ForgotSource = ForgotSource.Phone,
     val script: ForgotScript? = null,
     val mode: ForgotMode = ForgotMode.Word,
     /** What the code gives, all set by hand: gold, XP and one chest (or none). */
@@ -274,6 +277,13 @@ data class StudioState(
         StudioFormat.Forgot -> forgot.script != null
         StudioFormat.RealLife -> real.project?.shown?.isNotEmpty() == true
     }
+
+    /**
+     * The drawing a Düello script was made from: one of this phone's own (a row number), or one of the pool's (a negative id,
+     * see [RecentDrawing.studioId]); null when it is in neither any more.
+     */
+    fun forgotDrawing(id: Long?): StudioDrawing? =
+        if (id == null) null else drawings.find { it.id == id } ?: real.recent.firstOrNull { it.studioId == id }?.toStudio()
 }
 
 /** The most accounts one code may be given to. */
@@ -452,7 +462,7 @@ class StudioViewModel @Inject constructor(
     private fun rebuildForgot(change: (ForgotUi) -> ForgotUi) {
         _state.update { s ->
             val ui = change(s.forgot).copy(couponStatus = null)
-            val d = s.drawings.find { it.id == ui.drawingId }
+            val d = s.forgotDrawing(ui.drawingId)
             s.copy(forgot = ui.copy(script = if (d != null && ui.script != null) buildForgot(d, ui, ui.script) else ui.script), video = null)
         }
         refreshPreview()
@@ -460,6 +470,12 @@ class StudioViewModel @Inject constructor(
 
     /** Shows the next [FORGOT_PAGE] drawings in the list. */
     fun showMoreForgot() = updateForgot { it.copy(shown = it.shown + FORGOT_PAGE) }
+
+    /** Switches between this phone's drawings and the pool's; the pool is read the first time it is asked for (one read of the latest rounds). */
+    fun setForgotSource(source: ForgotSource) {
+        updateForgot { it.copy(source = source, shown = FORGOT_PAGE) }
+        if (source == ForgotSource.Pool && _state.value.real.recent.isEmpty()) refreshRecent()
+    }
 
     /** Switches how the code is given; the code line was written for the other way, so it goes back to the stock one for this. */
     fun setForgotMode(mode: ForgotMode) {
@@ -506,7 +522,7 @@ class StudioViewModel @Inject constructor(
     /** Lets the assistant look at the drawing and write Karalak's guesses, hook and closing, and the post text. */
     fun writeForgot() {
         val s = _state.value
-        val d = s.drawings.find { it.id == s.forgot.drawingId } ?: return
+        val d = s.forgotDrawing(s.forgot.drawingId) ?: return
         if (s.forgot.writing) return
         val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
         if (key.isBlank()) { updateForgot { it.copy(writeError = "Önce Asistan ayarlarından OpenRouter anahtarını gir.") }; return }
@@ -564,7 +580,9 @@ class StudioViewModel @Inject constructor(
                 onSuccess = { existing ->
                     if (existing != null) "$code zaten var (${existing.usedCount}/${existing.maxUses} kullanıldı). Başka kelime ya da yeni kod seç."
                     else {
-                        val coupon = Coupon(code, ui.gold, ui.xp, ui.chest.chests, ui.maxUses, 0, ui.expiresAtMillis)
+                        // labelled with the video it is for, so the panel's coupon tab can tell how well each video's code did
+                        val label = "Düello · ${SimpleDateFormat("d MMM", Locale("tr")).format(Date())} · ${script.style.title}"
+                        val coupon = Coupon(code, ui.gold, ui.xp, ui.chest.chests, ui.maxUses, 0, ui.expiresAtMillis, source = label)
                         couponRepository.create(coupon).fold(
                             onSuccess = { "Kupon hazır: $code · ilk ${ui.maxUses} kişi · ${SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("tr")).format(Date(ui.expiresAtMillis))}'e kadar · ${script.reward}" },
                             // the name was taken between the check and the write: the repository refuses to replace it
@@ -776,7 +794,7 @@ class StudioViewModel @Inject constructor(
                             if (out.size < RECENT_MAX && item.strokes.isNotEmpty() && item.word.isNotBlank()) {
                                 val word = item.word.trim()
                                 val seconds = runCatching { wordDao.findByText(word) }.getOrNull()?.let { GameConstants.drawingDurationSeconds(it.difficulty) } ?: 0
-                                out += RecentDrawing("${run.id}#$i", word, seconds, player?.nickname.orEmpty(), player?.level ?: run.level, player?.frameId.orEmpty(), item.strokes)
+                                out += RecentDrawing("${run.id}#$i", word, seconds, player?.nickname.orEmpty(), player?.level ?: run.level, player?.frameId.orEmpty(), item.strokes, correct = item.isCorrect)
                             }
                         }
                     }
@@ -1747,7 +1765,7 @@ class StudioViewModel @Inject constructor(
         return when (s.format) {
             StudioFormat.Forgot -> {
                 val script = s.forgot.script ?: return null
-                val drawing = s.drawings.find { it.id == script.drawingId } ?: return null
+                val drawing = s.forgotDrawing(script.drawingId) ?: return null
                 // the closing is the same end card with the phone as "Gerçek Olsaydı"'s, the how-to video playing in it
                 val howtoFile = s.real.howto?.takeIf { s.real.howtoMs > 0 }
                 ForgotRenderer(

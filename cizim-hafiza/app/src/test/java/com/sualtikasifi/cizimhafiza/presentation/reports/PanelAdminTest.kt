@@ -228,6 +228,80 @@ class PanelAdminTest {
         assertTrue(PlayerSearch.looksLikeUid("abcdefghijklmnopqrstuvwxyz12"))
         assertTrue(!PlayerSearch.looksLikeUid("ahmet yılmaz"))
     }
+
+    // ---- coupons by video
+
+    private fun instant(iso: String) = java.time.Instant.parse(iso).toEpochMilli()
+
+    @Test
+    fun theDaysOfACodeRunFromItsDayToToday() {
+        val created = instant("2026-11-05T10:00:00Z")
+        val now = instant("2026-11-07T09:00:00Z")
+        assertEquals(listOf("2026-11-05", "2026-11-06", "2026-11-07"), CouponStats.days(created, now))
+        assertEquals(listOf("2026-11-06", "2026-11-07"), CouponStats.days(created, now, max = 2))
+        assertTrue(CouponStats.days(0L, now).isEmpty())
+        assertTrue(CouponStats.days(now, created).isEmpty())
+    }
+
+    @Test
+    fun newPlayersAreCountedAmongTheUsers() {
+        assertEquals(2, CouponStats.newAmong(setOf("a", "b", "c"), setOf("a", "c", "z")))
+        assertEquals(0, CouponStats.newAmong(emptySet(), setOf("a")))
+    }
+
+    @Test
+    fun theCodesAreAddedUpPerVideoMostUsedFirst() {
+        val coupons = listOf(
+            Coupon("A1", gold = 1, maxUses = 10, usedCount = 4, source = "Düello · 7 Kas"),
+            Coupon("A2", gold = 1, maxUses = 10, usedCount = 3, source = "Düello · 7 Kas"),
+            Coupon("B1", gold = 1, maxUses = 5, usedCount = 5, source = "Düello · 5 Kas"),
+            Coupon("C1", gold = 1, maxUses = 5, usedCount = 2)
+        )
+        val rows = CouponStats.bySource(coupons)
+        assertEquals(listOf("Düello · 7 Kas", "Düello · 5 Kas"), rows.map { it.source })
+        assertEquals(CouponStats.SourceRow("Düello · 7 Kas", 2, 7, 20), rows.first())
+    }
+
+    @Test
+    fun aCodeThatIsOverHasALineToPasteAndAnOpenOneHasNone() {
+        val now = 10_000L
+        assertNull(CouponStats.closingComment(Coupon("OPEN", gold = 1, maxUses = 10, usedCount = 3), now))
+        val full = CouponStats.closingComment(Coupon("FULL", gold = 1, maxUses = 10, usedCount = 10), now)!!
+        assertTrue(full, full.contains("FULL") && full.contains("ilk 10 kişi"))
+        val over = CouponStats.closingComment(Coupon("OLD", gold = 1, maxUses = 10, usedCount = 4, expiresAtMillis = 5_000L), now)!!
+        assertTrue(over, over.contains("OLD") && over.contains("4/10"))
+    }
+
+    // ---- the pool as the Düello's source
+
+    private fun recent(id: String, correct: Boolean = true) = com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RecentDrawing(
+        id, " şemsiye ", 40, "Ali", 5, "", listOf(listOf(com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint(0f, 0f))), correct
+    )
+
+    @Test
+    fun aPoolDrawingGetsAStableNegativeIdSoItNeverMeetsARowOfThisPhone() {
+        val a = recent("run1#2")
+        assertTrue(a.studioId < 0)
+        assertEquals(a.studioId, recent("run1#2").studioId)
+        assertTrue(a.studioId != recent("run1#3").studioId)
+        val d = a.toStudio()
+        assertEquals("şemsiye", d.word)
+        assertEquals(a.studioId, d.id)
+    }
+
+    @Test
+    fun theDuelloFindsItsDrawingAmongThisPhonesOwnAndThePools() {
+        val own = com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioDrawing(7L, "kedi", "", emptyList(), false)
+        val pool = recent("run9#0", correct = false)
+        val state = com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioState(
+            drawings = listOf(own),
+            real = com.sualtikasifi.cizimhafiza.presentation.reports.studio.RealUi(recent = listOf(pool))
+        )
+        assertEquals("kedi", state.forgotDrawing(7L)?.word)
+        assertEquals("şemsiye", state.forgotDrawing(pool.studioId)?.word)
+        assertNull(state.forgotDrawing(99L))
+        assertNull(state.forgotDrawing(null))
+    }
 }
 
 /** SharedPreferences in memory, enough for the gate's own two numbers. */
