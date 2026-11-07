@@ -327,7 +327,7 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
                 busy = f.writing,
                 enabled = !f.writing
             ) { vm.writeForgot() }
-            Text("Her tahmini, çizimin senin seçtiğin andaki hâline bakarak yazar; doğru kelimeyi söyleyen cümleler atılır. Model: ${st.analysisModel} (OpenRouter; Ayarlar sekmesinden değişir).", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
+            Text("Her tahmini, çizimin senin seçtiğin andaki hâline bakarak yazar; doğru kelimeyi söyleyen cümleler atılır. Model: ${com.sualtikasifi.cizimhafiza.presentation.reports.console.OpenRouterClient.FORGOT_MODEL} (OpenRouter).", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
             st.aiCost?.let { Text("Bu yazımın maliyeti: " + OpenRouterClient.usd(it), style = Console.Small) }
             f.writeError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
         }

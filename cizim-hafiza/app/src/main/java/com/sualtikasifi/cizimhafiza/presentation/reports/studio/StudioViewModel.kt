@@ -509,7 +509,7 @@ class StudioViewModel @Inject constructor(
         if (s.forgot.writing) return
         val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
         if (key.isBlank()) { updateForgot { it.copy(writeError = "Önce Asistan ayarlarından OpenRouter anahtarını gir.") }; return }
-        val model = analysisModel()
+        val model = OpenRouterClient.FORGOT_MODEL
         val style = s.forgot.script?.style ?: styleFor(s.forgot)
         updateForgot { it.copy(writing = true, writeError = null) }
         viewModelScope.launch {
