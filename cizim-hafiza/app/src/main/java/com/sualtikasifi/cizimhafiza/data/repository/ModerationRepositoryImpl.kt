@@ -12,6 +12,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.ResultItem
 import com.sualtikasifi.cizimhafiza.domain.model.ReviewerIdentity
 import com.sualtikasifi.cizimhafiza.domain.model.RunPage
 import com.sualtikasifi.cizimhafiza.domain.repository.ModerationRepository
+import com.sualtikasifi.cizimhafiza.util.AdminAudit
 import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -48,10 +49,20 @@ class ModerationRepositoryImpl @Inject constructor(
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    /** The reviewer's address, for the audit line that goes into every decision's own batch (see [AdminAudit]). */
+    private val by: String? get() = auth.currentUser?.email
+
+    private fun audit(batch: com.google.firebase.firestore.WriteBatch, action: String, target: String, detail: String) =
+        AdminAudit.add(firestore, batch, by, action, target, detail)
+
     override suspend fun pendingRuns(limit: Int, after: Long?): Result<RunPage> = runCatching {
         // Oldest first: the queue is a backlog, and the round that has waited
         // longest is the one keeping somebody out of the pool.
         read(pendingRuns, pendingRunItems, limit, Query.Direction.ASCENDING, after)
+    }
+
+    override suspend fun pendingRunCount(): Result<Long> = runCatching {
+        pendingRuns.count().get(com.google.firebase.firestore.AggregateSource.SERVER).await().count
     }
 
     override suspend fun poolRuns(limit: Int, after: Long?): Result<RunPage> = runCatching {
@@ -140,6 +151,7 @@ class ModerationRepositoryImpl @Inject constructor(
         batch.set(ghostRunItems.document(runId), itemsData)
         batch.delete(pendingRuns.document(runId))
         batch.delete(pendingRunItems.document(runId))
+        audit(batch, "run-approve", runId, "oyuncu ${data["nickname"].toString().take(24)}, havuza alındı")
         // The author's strike count is deliberately left alone. An approval
         // says this round was fine, not that the earlier offences did not
         // happen — clearing it would let somebody alternate a cheated round
@@ -153,9 +165,12 @@ class ModerationRepositoryImpl @Inject constructor(
             require(trimmed.isNotEmpty()) { "A run cannot be renamed to nothing" }
             // A single-field update, not a rewrite of the document: the score,
             // the words and the timestamp are what the round IS, and a rename
-            // is not allowed to disturb any of them.
+            // is not allowed to disturb any of them. The audit line travels in the same batch.
             val collection = if (inPool) ghostRuns else pendingRuns
-            collection.document(runId).update("nickname", trimmed).await()
+            val batch = firestore.batch()
+            batch.update(collection.document(runId), "nickname", trimmed)
+            audit(batch, "run-rename", runId, "yeni ad: $trimmed (${if (inPool) "havuz" else "kuyruk"})")
+            batch.commit().await()
         }
 
     override suspend fun sendBackToQueue(runId: String): Result<Unit> = runCatching {
@@ -172,6 +187,7 @@ class ModerationRepositoryImpl @Inject constructor(
         batch.set(pendingRunItems.document(runId), itemsData)
         batch.delete(ghostRuns.document(runId))
         batch.delete(ghostRunItems.document(runId))
+        audit(batch, "run-sendback", runId, "havuzdan kuyruğa geri alındı")
         batch.commit().await()
     }
 
@@ -179,6 +195,7 @@ class ModerationRepositoryImpl @Inject constructor(
         val batch = firestore.batch()
         batch.delete(pendingRuns.document(runId))
         batch.delete(pendingRunItems.document(runId))
+        audit(batch, "run-dismiss", runId, "cezasız kuyruktan çıkarıldı")
         batch.commit().await()
     }
 
@@ -227,6 +244,7 @@ class ModerationRepositoryImpl @Inject constructor(
                 "updatedAt" to System.currentTimeMillis()
             )
         )
+        audit(batch, "run-reject", runId, "oyuncu ${uid.take(8)}, ceza $strike, $xpToRevoke XP + $goldToRevoke altın geri alındı" + if (lockedUntil > 0L) ", kilit" else "")
         batch.commit().await()
     }
 
@@ -309,8 +327,10 @@ class ModerationRepositoryImpl @Inject constructor(
     }
 
     override suspend fun approveDailyChallenge(id: String): Result<Unit> = runCatching {
-        pendingDailyChallenges.document(id).delete().await()
-        Unit
+        val batch = firestore.batch()
+        batch.delete(pendingDailyChallenges.document(id))
+        audit(batch, "daily-approve", id, "günlük deneme onaylandı")
+        batch.commit().await()
     }
 
     override suspend fun rejectDailyChallenge(id: String, xpToRevoke: Int, goldToRevoke: Int): Result<Unit> = runCatching {
@@ -336,6 +356,7 @@ class ModerationRepositoryImpl @Inject constructor(
                 "createdAt" to System.currentTimeMillis()
             )
         )
+        audit(batch, "daily-reject", id, "oyuncu ${uid.take(8)}, $xpToRevoke XP + $goldToRevoke altın geri alındı, seri bozuldu")
         batch.commit().await()
     }
 
@@ -372,12 +393,20 @@ class ModerationRepositoryImpl @Inject constructor(
             )
         )
         batch.set(strikes.document(uid), mapOf("count" to strike.toLong(), "updatedAt" to System.currentTimeMillis()))
+        audit(batch, "report-uphold", report.id, "oyuncu ${uid.take(8)}, ${report.word}, ${report.reason.name}, ceza $strike")
         batch.commit().await()
     }
 
-    override suspend fun dismissReport(reportId: String): Result<Unit> = runCatching {
-        firestore.collection("drawingReports").document(reportId).delete().await()
-        Unit
+    override suspend fun dismissReport(reportId: String): Result<Unit> = dismissReports(listOf(reportId))
+
+    override suspend fun dismissReports(reportIds: List<String>): Result<Unit> = runCatching {
+        // the reports leave and the audit line is written in the same batch (at most 400 at a time)
+        reportIds.distinct().chunked(400).forEach { chunk ->
+            val batch = firestore.batch()
+            chunk.forEach { batch.delete(firestore.collection("drawingReports").document(it)) }
+            audit(batch, "report-dismiss-drawing", chunk.first(), if (chunk.size == 1) "şikayet haksız bulundu" else "${chunk.size} şikayet haksız bulundu")
+            batch.commit().await()
+        }
     }
 
     override suspend fun activeLocks(): Result<List<com.sualtikasifi.cizimhafiza.domain.model.ActiveLock>> = runCatching {
@@ -415,6 +444,7 @@ class ModerationRepositoryImpl @Inject constructor(
         val batch = firestore.batch()
         batch.update(penalties.document(lock.penaltyId), update)
         batch.set(strikes.document(lock.uid), mapOf("count" to (previous - 1).coerceAtLeast(0).toLong(), "updatedAt" to now))
+        audit(batch, "lock-cancel", lock.uid, "ceza ${lock.strike} iptal edildi")
         batch.commit().await()
     }
 }

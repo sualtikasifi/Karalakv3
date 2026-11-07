@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.filled.Today
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -72,11 +73,24 @@ fun DashboardPanel(
                     modifier = Modifier.weight(1f)
                 )
                 if (st.loading) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = Console.Accent)
-                else ConsoleIconButton(Icons.Filled.Refresh, "Yenile", viewModel::load, size = 32.dp)
+                else ConsoleIconButton(Icons.Filled.Refresh, "Yenile", viewModel::refresh, size = 32.dp)
             }
         }
         if (st.loading && s == null) {
             item { ConsoleSkeleton(rows = 2, rowHeight = 88.dp) }
+        }
+        // what needs a look today, red ones first; a tap goes to the place that fixes it
+        val alerts = DashboardAlerts.compute(s, st.pendingQueue, st.openReports, st.jobs, System.currentTimeMillis())
+        alerts.forEach { a ->
+            item(key = "alert-" + a.title) {
+                AlertCard(a) {
+                    when (a.target) {
+                        "queue" -> onOpenQueue()
+                        "stats" -> onOpenStats()
+                        else -> onOpenTool(a.target)
+                    }
+                }
+            }
         }
         if (st.failed && s == null) {
             item {
@@ -189,6 +203,30 @@ fun DashboardPanel(
                 }
             }
         }
+    }
+}
+
+/** One warning on the front page: a tinted card with what is wrong, a tap away from where it is dealt with. */
+@Composable
+private fun AlertCard(alert: DashAlert, onClick: () -> Unit) {
+    val critical = alert.level == AlertLevel.Critical
+    val fg = if (critical) Console.Critical else Console.WarningText
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Console.CardCorner))
+            .background(if (critical) Console.CriticalSoft else Console.WarningSoft)
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Filled.Warning, contentDescription = null, tint = fg, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(alert.title, style = Console.Subtitle.copy(color = fg))
+            Text(alert.body, style = Console.Small.copy(color = Console.Ink))
+        }
+        Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = fg)
     }
 }
 

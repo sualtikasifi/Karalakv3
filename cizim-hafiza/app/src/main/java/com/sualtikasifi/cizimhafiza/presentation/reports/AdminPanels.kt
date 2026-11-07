@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Refresh
@@ -81,6 +82,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
+import androidx.compose.foundation.layout.FlowRow
 import java.util.Locale
 import javax.inject.Inject
 
@@ -108,8 +110,21 @@ data class EconomyAdminState(
     val serverValues: Map<String, String> = emptyMap(),
     val loaded: Boolean = false,
     val busy: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    /** What the last save changed, as the values it replaced (key to number): written back by "geri al". Null when there is nothing to undo. */
+    val undo: Map<String, Long>? = null
 )
+
+/** What an economy save changes, as the audit line and the undo need it. */
+object EconomyChange {
+    /** "Doğru kelime başı altın: 10→15; Reklam altını: 5→8", the label (or the key) first; the numbers as they were and are. */
+    fun detail(labels: Map<String, String>, before: Map<String, String>, after: Map<String, Long>): String =
+        after.entries.joinToString("; ") { (key, now) -> "${labels[key] ?: key}: ${before[key].orEmpty().ifEmpty { "?" }}→$now" }
+
+    /** The values a save replaces, as numbers, so the same fields can be written back. Fields whose old value is not a number are left out. */
+    fun undoOf(before: Map<String, String>, after: Map<String, Long>): Map<String, Long> =
+        after.keys.mapNotNull { key -> before[key]?.toLongOrNull()?.let { key to it } }.toMap()
+}
 
 @HiltViewModel
 class EconomyAdminViewModel @Inject constructor(
@@ -140,10 +155,29 @@ class EconomyAdminViewModel @Inject constructor(
         edit(key, f.default.toString())
     }
 
+    /** Writes the values the last save replaced back (audited as its own line), and forgets the undo. */
+    fun revert() {
+        val s = _state.value
+        val back = s.undo ?: return
+        if (s.busy) return
+        _state.update { it.copy(busy = true, message = null) }
+        viewModelScope.launch {
+            runCatching {
+                admin.audited("economy-undo", "config/economy", EconomyChange.detail(ECONOMY_LABELS, s.serverValues, back)) { b ->
+                    b.set(firestore.document("config/economy"), back, SetOptions.merge())
+                }
+            }.onSuccess {
+                economyConfigRepository.refreshNow()
+                val shown = back.mapValues { it.value.toString() }
+                _state.update { it.copy(busy = false, values = it.values + shown, serverValues = it.serverValues + shown, undo = null, message = "Son değişiklik geri alındı.") }
+            }.onFailure { _state.update { it.copy(busy = false, message = "Yazılamadı (internet ya da yetki).") } }
+        }
+    }
+
     fun save() {
         val s = _state.value
         if (s.busy) return
-        val changed = mutableMapOf<String, Any>()
+        val changed = mutableMapOf<String, Long>()
         for (f in EconomyConfig.fields) {
             val text = s.values[f.key].orEmpty()
             val v = text.toIntOrNull()
@@ -159,12 +193,15 @@ class EconomyAdminViewModel @Inject constructor(
         }
         _state.update { it.copy(busy = true, message = null) }
         viewModelScope.launch {
-            // merge: the same document carries minVersionCode, which must stay as it is
-            runCatching { firestore.document("config/economy").set(changed, SetOptions.merge()).await() }
+            // merge: the same document carries minVersionCode, which must stay as it is; the audit line (old → new) goes in the same batch
+            val detail = EconomyChange.detail(ECONOMY_LABELS, s.serverValues, changed)
+            val undo = EconomyChange.undoOf(s.serverValues, changed)
+            runCatching {
+                admin.audited("economy", "config/economy", detail) { b -> b.set(firestore.document("config/economy"), changed, SetOptions.merge()) }
+            }
                 .onSuccess {
-                    admin.audit("economy", "config/economy", changed.entries.joinToString { "${it.key}=${it.value}" })
                     economyConfigRepository.refreshNow()
-                    _state.update { it.copy(busy = false, serverValues = it.values, message = "Kaydedildi (${changed.size} alan). Telefonlara yarım saat içinde ulaşır.") }
+                    _state.update { it.copy(busy = false, serverValues = it.values, undo = undo.takeIf { u -> u.isNotEmpty() }, message = "Kaydedildi (${changed.size} alan). Telefonlara yarım saat içinde ulaşır.") }
                 }
                 .onFailure { _state.update { it.copy(busy = false, message = "Yazılamadı (internet ya da yetki).") } }
         }
@@ -206,6 +243,12 @@ internal fun EconomyPanel(viewModel: EconomyAdminViewModel = hiltViewModel()) {
                 }
             }
             state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
+            if (state.undo != null) {
+                ConsoleButton(
+                    "Son değişikliği geri al", viewModel::revert, Modifier.fillMaxWidth(), enabled = !state.busy,
+                    icon = Icons.Filled.Undo, style = ConsoleButtonStyle.Secondary
+                )
+            }
         }
         SaveBar(
             text = if (changed > 0) "Kaydet · $changed değişiklik" else "Kaydet",
@@ -280,9 +323,12 @@ class AnnounceViewModel @Inject constructor(
                 "untilMillis" to if (days > 0) now + days * 86_400_000L else 0L,
                 "texts" to texts
             )
-            runCatching { firestore.document("config/announcement").set(doc).await() }
+            runCatching {
+                admin.audited(if (active) "announce" else "announce-off", "config/announcement", texts["tr"]?.get("title").orEmpty()) { b ->
+                    b.set(firestore.document("config/announcement"), doc)
+                }
+            }
                 .onSuccess {
-                    admin.audit(if (active) "announce" else "announce-off", "config/announcement", texts["tr"]?.get("title").orEmpty())
                     _state.update { it.copy(busy = false, active = active, message = if (active) "Yayında. Telefonlara yarım saat içinde ulaşır." else "Duyuru kapatıldı.") }
                 }
                 .onFailure { _state.update { it.copy(busy = false, message = "Yazılamadı (internet ya da yetki).") } }
@@ -349,12 +395,24 @@ internal fun AnnouncePanel(viewModel: AnnounceViewModel = hiltViewModel()) {
 // ---------------------------------------------------------------- push
 
 data class PushState(
+    /** The Turkish text, which is also what a device gets when its language has none of its own. */
     val title: String = "",
     val body: String = "",
+    /** The texts in the other languages (en, pt, es); one with only half written is refused. */
+    val extra: Map<String, PushText> = emptyMap(),
+    /** Which language the two fields are showing: "tr" or one of [PushForm.EXTRA_LANGS]. */
+    val lang: String = "tr",
+    val audience: PushAudience = PushAudience.All,
+    /** For everyone: whether languages without a text of their own (and older app versions) get the Turkish one. */
+    val fallback: Boolean = true,
+    val whenSend: PushWhen = PushWhen.Now,
     val busy: Boolean = false,
     val message: String? = null,
     val recent: List<String> = emptyList()
-)
+) {
+    /** The title and text being edited, whichever language that is. */
+    val shown: PushText get() = if (lang == "tr") PushText(title, body) else extra[lang] ?: PushText()
+}
 
 @HiltViewModel
 class PushViewModel @Inject constructor(
@@ -367,83 +425,209 @@ class PushViewModel @Inject constructor(
 
     fun edit(block: PushState.() -> PushState) = _state.update { it.block().copy(message = null) }
 
+    /** Types into the language being edited. */
+    fun type(title: String? = null, body: String? = null) = edit {
+        if (lang == "tr") copy(title = title ?: this.title, body = body ?: this.body)
+        else {
+            val now = extra[lang] ?: PushText()
+            copy(extra = extra + (lang to PushText(title ?: now.title, body ?: now.body)))
+        }
+    }
+
     fun loadRecent() {
         viewModelScope.launch {
             runCatching {
-                firestore.collection("adminCommands").whereEqualTo("type", "broadcast").limit(10).get().await().documents
-                    .sortedByDescending { it.getTimestamp("createdAt")?.toDate()?.time ?: 0L }
-                    .map { d ->
-                        val at = d.getTimestamp("createdAt")?.toDate()?.time ?: 0L
-                        val done = d.getTimestamp("doneAt") != null
-                        "${stamp(at)} · ${d.getString("title").orEmpty()} · " + if (done) "gönderildi" else "sırada"
+                val now = System.currentTimeMillis()
+                recentBroadcasts(firestore).map { d ->
+                    val at = d.getTimestamp("createdAt")?.toDate()?.time ?: 0L
+                    val due = d.getLong("sendAtMillis") ?: 0L
+                    val status = when {
+                        d.getTimestamp("doneAt") != null -> "gönderildi"
+                        due > now -> "planlı"
+                        else -> "sırada"
                     }
+                    val when_ = if (due > 0L) " · ${stamp(due)}'te" else ""
+                    "${stamp(at)} · ${d.getString("title").orEmpty()}$when_ · $status"
+                }
             }.onSuccess { r -> _state.update { it.copy(recent = r) } }
         }
     }
 
     fun send() {
         val s = _state.value
-        if (s.busy || s.title.isBlank() || s.body.isBlank()) return
+        if (s.busy) return
+        val problem = PushForm.problem(s.title, s.body, s.extra)
+        if (problem != null) { _state.update { it.copy(message = problem) }; return }
+        _state.update { it.copy(busy = true, message = null) }
+        val dueAt = PushForm.sendAt(s.whenSend, System.currentTimeMillis())
+        viewModelScope.launch {
+            runCatching {
+                val command = PushForm.command(s.title, s.body, s.extra, s.audience, s.fallback, dueAt, auth.currentUser?.email.orEmpty())
+                admin.audited("broadcast", "news", "${s.title.trim()} · ${PushForm.summary(s.audience, s.extra, s.fallback, s.whenSend)}") { b ->
+                    b.set(firestore.collection("adminCommands").document(), command + ("createdAt" to FieldValue.serverTimestamp()))
+                }
+            }.onSuccess {
+                _state.update {
+                    PushState(message = "Sıraya alındı. Zamanlanmış iş her saat başı çalışır" +
+                        (if (dueAt > 0L) " ve ${stamp(dueAt)}'ten sonraki ilk çalışmada gönderir" else "") +
+                        "; gönderilince aşağıda “gönderildi” yazar.")
+                }
+                loadRecent()
+            }.onFailure { _state.update { it.copy(busy = false, message = "Yazılamadı (internet ya da yetki).") } }
+        }
+    }
+
+    /** One push to this phone alone, in the language being edited, before the real one goes to everybody. */
+    fun sendTest() {
+        val s = _state.value
+        if (s.busy) return
+        val text = s.shown.takeIf { it.filled } ?: PushText(s.title, s.body)
+        val uid = auth.currentUser?.uid
+        if (!text.filled || uid == null) { _state.update { it.copy(message = "Test için başlık ve metin gerekli.") }; return }
         _state.update { it.copy(busy = true, message = null) }
         viewModelScope.launch {
             runCatching {
-                firestore.collection("adminCommands").add(
-                    mapOf(
-                        "type" to "broadcast", "title" to s.title.trim().take(60), "body" to s.body.trim().take(200),
-                        "by" to (auth.currentUser?.email ?: ""), "createdAt" to FieldValue.serverTimestamp()
+                admin.audited("broadcast-test", uid.take(8), text.title.trim()) { b ->
+                    b.set(
+                        firestore.collection("adminCommands").document(),
+                        mapOf(
+                            "type" to "test", "uid" to uid, "title" to text.title.trim().take(PushForm.MAX_TITLE),
+                            "body" to text.body.trim().take(PushForm.MAX_BODY), "by" to (auth.currentUser?.email ?: ""),
+                            "createdAt" to FieldValue.serverTimestamp()
+                        )
                     )
-                ).await()
+                }
             }.onSuccess {
-                admin.audit("broadcast", "news", s.title.trim())
-                _state.update { PushState(message = "Sıraya alındı. Zamanlanmış iş her saat başı çalışır; gönderilince aşağıda “gönderildi” yazar.") }
-                loadRecent()
+                _state.update {
+                    it.copy(
+                        busy = false,
+                        message = "Test sıraya alındı: bu telefona bir sonraki saatlik çalışmada (en geç yaklaşık bir saat) gelir. " +
+                            "Hemen görmek için GitHub'da “League scheduled tasks” işini process-admin-commands ile elle çalıştır."
+                    )
+                }
             }.onFailure { _state.update { it.copy(busy = false, message = "Yazılamadı (internet ya da yetki).") } }
         }
     }
 }
 
-/** "Bildirim gönder": one push to everyone who has notifications on (the hourly job sends it). */
+/**
+ * The ten newest broadcasts, newest first, by the server's own ordering. The first query needs the composite index on
+ * (type, createdAt) from firestore.indexes.json; until that index has been built (just after a deploy) the second one
+ * reads the newest commands of any kind and picks the broadcasts out here, so the list is never the wrong ten.
+ */
+internal suspend fun recentBroadcasts(firestore: FirebaseFirestore): List<com.google.firebase.firestore.DocumentSnapshot> = try {
+    firestore.collection("adminCommands").whereEqualTo("type", "broadcast")
+        .orderBy("createdAt", Query.Direction.DESCENDING).limit(10).get().await().documents
+} catch (e: Exception) {
+    firestore.collection("adminCommands").orderBy("createdAt", Query.Direction.DESCENDING).limit(60).get().await().documents
+        .filter { it.getString("type") == "broadcast" }.take(10)
+}
+
+/** "Bildirim gönder": one push to the players who have notifications on, in their languages, now or later (the hourly job sends it). */
 @Composable
 internal fun PushPanel(viewModel: PushViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     var confirm by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { viewModel.loadRecent() }
+    val problem = PushForm.problem(state.title, state.body, state.extra)
     Column(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(Console.Gap)
     ) {
-        ConsoleNotice("Bildirimi açık olan 13 yaş ve üstü tüm oyunculara gider. Metin tek dilde gider (çevrilmez); kısa ve net tut.", kind = NoticeKind.Warning)
+        ConsoleNotice(
+            "Bildirimi açık olan 13 yaş ve üstü oyunculara gider. Türkçe metin her zaman gerekir; öbür dillere ayrı metin yazarsan her cihaz kendi dilinde okur. " +
+                "Dil ve “girmeyenler” seçimi uygulamanın yeni sürümünü ister: eski sürümler yalnızca “Herkes” gönderimini (Türkçe metinle) alır.",
+            kind = NoticeKind.Warning
+        )
         ConsoleSection("Yeni bildirim") {
+            // the language being written
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                (listOf("tr" to "Türkçe") + PushForm.EXTRA_LANGS).forEach { (code, name) ->
+                    val filled = code == "tr" && state.title.isNotBlank() && state.body.isNotBlank() || state.extra[code]?.filled == true
+                    ConsoleChip(
+                        label = name + if (filled) " ✓" else "",
+                        selected = state.lang == code,
+                        onClick = { viewModel.edit { copy(lang = code) } }
+                    )
+                }
+            }
+            Spacer(Modifier.height(10.dp))
             ConsoleTextField(
-                value = state.title, onValueChange = { v -> viewModel.edit { copy(title = v.take(60)) } },
-                label = "Başlık", supporting = "${state.title.length}/60", modifier = Modifier.fillMaxWidth()
+                value = state.shown.title, onValueChange = { v -> viewModel.type(title = v.take(PushForm.MAX_TITLE)) },
+                label = "Başlık", supporting = "${state.shown.title.length}/${PushForm.MAX_TITLE}", modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(10.dp))
             ConsoleTextField(
-                value = state.body, onValueChange = { v -> viewModel.edit { copy(body = v.take(200)) } },
-                label = "Metin", singleLine = false, minLines = 3, supporting = "${state.body.length}/200", modifier = Modifier.fillMaxWidth()
+                value = state.shown.body, onValueChange = { v -> viewModel.type(body = v.take(PushForm.MAX_BODY)) },
+                label = "Metin", singleLine = false, minLines = 3, supporting = "${state.shown.body.length}/${PushForm.MAX_BODY}", modifier = Modifier.fillMaxWidth()
             )
-            if (state.title.isNotBlank() || state.body.isNotBlank()) {
+            if (state.shown.title.isNotBlank() || state.shown.body.isNotBlank()) {
                 Spacer(Modifier.height(12.dp))
                 Overline("Telefonda böyle görünür")
                 Spacer(Modifier.height(6.dp))
-                PushPreview(state.title, state.body)
+                PushPreview(state.shown.title, state.shown.body)
             }
             Spacer(Modifier.height(14.dp))
-            ConsoleButton(
-                "Herkese gönder", { confirm = true }, Modifier.fillMaxWidth(),
-                enabled = !state.busy && state.title.isNotBlank() && state.body.isNotBlank(), loading = state.busy, icon = Icons.AutoMirrored.Filled.Send
-            )
+            Overline("Kime")
+            Spacer(Modifier.height(6.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                PushAudience.entries.forEach { a ->
+                    ConsoleChip(label = a.label, selected = state.audience == a, onClick = { viewModel.edit { copy(audience = a) } })
+                }
+            }
+            if (state.audience == PushAudience.All && PushForm.languages(state.extra).size > 1) {
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Metni olmayan dillere Türkçe gitsin", style = Console.Small.copy(color = Console.Ink), modifier = Modifier.weight(1f))
+                    androidx.compose.material3.Switch(
+                        checked = state.fallback, onCheckedChange = { v -> viewModel.edit { copy(fallback = v) } },
+                        colors = androidx.compose.material3.SwitchDefaults.colors(checkedTrackColor = Console.Accent)
+                    )
+                }
+            }
+            if (state.audience == PushAudience.Lapsed) {
+                Text("Yalnızca metni yazılmış dillerdeki cihazlara gider; yeni sürümde olmayan cihazlar bu seçimde dışarıda kalır.", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
+            }
+            Spacer(Modifier.height(12.dp))
+            Overline("Ne zaman")
+            Spacer(Modifier.height(6.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                PushWhen.entries.forEach { w ->
+                    ConsoleChip(label = w.label, selected = state.whenSend == w, onClick = { viewModel.edit { copy(whenSend = w) } })
+                }
+            }
+            if (state.whenSend != PushWhen.Now) {
+                Text("Saatlik iş çalıştığında zamanı gelmişse gider; en fazla bir saat gecikebilir.", style = Console.Small, modifier = Modifier.padding(top = 6.dp))
+            }
+            problem?.takeIf { state.title.isNotBlank() || state.body.isNotBlank() || state.extra.isNotEmpty() }?.let {
+                Spacer(Modifier.height(10.dp))
+                ConsoleNotice(it, kind = NoticeKind.Error)
+            }
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                ConsoleSecondaryButton(
+                    "Kendime test gönder", viewModel::sendTest, Modifier.weight(1f),
+                    enabled = !state.busy && state.shown.filled || !state.busy && state.title.isNotBlank() && state.body.isNotBlank()
+                )
+                ConsoleButton(
+                    if (state.whenSend == PushWhen.Now) "Gönder" else "Planla", { confirm = true }, Modifier.weight(1f),
+                    enabled = !state.busy && problem == null, loading = state.busy, icon = Icons.AutoMirrored.Filled.Send
+                )
+            }
         }
         state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
         if (state.recent.isNotEmpty()) {
             ConsoleSection("Son gönderilenler") {
                 state.recent.forEachIndexed { i, line ->
                     if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Console.Grid))
-                    val sent = line.endsWith("gönderildi")
+                    val status = line.substringAfterLast(" · ")
                     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(line.substringBeforeLast(" · "), style = Console.Small.copy(color = Console.Ink), modifier = Modifier.weight(1f), maxLines = 2)
-                        Tag(if (sent) "gönderildi" else "sırada", fg = if (sent) Console.GoodText else Console.WarningText, bg = if (sent) Console.GoodSoft else Console.WarningSoft)
+                        Tag(
+                            status,
+                            fg = if (status == "gönderildi") Console.GoodText else Console.WarningText,
+                            bg = if (status == "gönderildi") Console.GoodSoft else Console.WarningSoft
+                        )
                     }
                 }
             }
@@ -452,9 +636,9 @@ internal fun PushPanel(viewModel: PushViewModel = hiltViewModel()) {
     if (confirm) {
         AlertDialog(
             onDismissRequest = { confirm = false },
-            title = { Text("Herkese gönderilsin mi?") },
-            text = { Text("“${state.title}”\n${state.body}") },
-            confirmButton = { TextButton(onClick = { confirm = false; viewModel.send() }) { Text("Gönder") } },
+            title = { Text(if (state.whenSend == PushWhen.Now) "Gönderilsin mi?" else "Planlansın mı?") },
+            text = { Text("“${state.title}”\n${state.body}\n\n${PushForm.summary(state.audience, state.extra, state.fallback, state.whenSend)}") },
+            confirmButton = { TextButton(onClick = { confirm = false; viewModel.send() }) { Text(if (state.whenSend == PushWhen.Now) "Gönder" else "Planla") } },
             dismissButton = { TextButton(onClick = { confirm = false }) { Text("Vazgeç") } }
         )
     }
@@ -481,7 +665,7 @@ private fun PushPreview(title: String, body: String) {
 
 // ---------------------------------------------------------------- background jobs
 
-private val JOBS = listOf(
+internal val JOBS = listOf(
     "build-global-leaderboard" to "Küresel lig özeti (saatlik)",
     "process-admin-commands" to "Panel komutları: telafi, bildirim, planlı XP (saatlik)",
     "rollup-stats" to "Günlük istatistik özeti (gece)",
@@ -517,9 +701,13 @@ class JobsViewModel @Inject constructor(private val firestore: FirebaseFirestore
                 )
             }
             val deletions = runCatching { firestore.collection("deletionRequests").count().get(AggregateSource.SERVER).await().count }.getOrNull()
+            // A command the cron has not run has no doneAt at all, so it cannot be matched by a query: waiting = all - done.
+            // Two count queries, so the figure is right however many old commands there are (it used to read 200 documents).
             val commands = runCatching {
-                // a command the cron has not run has no doneAt at all, so it cannot be matched by a query
-                firestore.collection("adminCommands").limit(200).get().await().documents.count { it.get("doneAt") == null }.toLong()
+                val all = firestore.collection("adminCommands").count().get(AggregateSource.SERVER).await().count
+                val done = firestore.collection("adminCommands").whereGreaterThan("doneAt", com.google.firebase.Timestamp(0, 0))
+                    .count().get(AggregateSource.SERVER).await().count
+                (all - done).coerceAtLeast(0)
             }.getOrNull()
             _state.value = JobsState(rows, deletions, commands, loaded = true)
         }
@@ -649,7 +837,8 @@ class XpPlanViewModel @Inject constructor(
     fun load() {
         viewModelScope.launch {
             runCatching {
-                firestore.collection("xpEventPlans").limit(50).get().await().documents.map { d ->
+                // the newest 50 by start time (an unordered limit would drop plans at random once there are more), shown oldest first
+                firestore.collection("xpEventPlans").orderBy("startAtMillis", Query.Direction.DESCENDING).limit(50).get().await().documents.map { d ->
                     XpPlanRow(
                         d.id, d.getLong("startAtMillis") ?: 0L, (d.getLong("durationHours") ?: 0L).toInt(),
                         d.getDouble("multiplier") ?: 2.0, d.getString("label").orEmpty(), d.getLong("startedAt") != null
@@ -675,14 +864,16 @@ class XpPlanViewModel @Inject constructor(
         _state.update { it.copy(busy = true, message = null) }
         viewModelScope.launch {
             runCatching {
-                firestore.collection("xpEventPlans").add(
-                    mapOf(
-                        "startAtMillis" to start, "durationHours" to s.durationHours.toLong(), "multiplier" to s.multiplier,
-                        "label" to s.label.trim().take(32), "createdAt" to System.currentTimeMillis()
+                admin.audited("xp-plan", "config/xpEvent", "${s.multiplier}x, ${s.durationHours} saat, ${stamp(start)}") { b ->
+                    b.set(
+                        firestore.collection("xpEventPlans").document(),
+                        mapOf(
+                            "startAtMillis" to start, "durationHours" to s.durationHours.toLong(), "multiplier" to s.multiplier,
+                            "label" to s.label.trim().take(32), "createdAt" to System.currentTimeMillis()
+                        )
                     )
-                ).await()
+                }
             }.onSuccess {
-                admin.audit("xp-plan", "config/xpEvent", "${s.multiplier}x, ${s.durationHours} saat, ${stamp(start)}")
                 _state.update { it.copy(busy = false, message = "Planlandı: ${stamp(start)} (en geç bir saat gecikmeyle başlar).") }
                 load()
             }.onFailure { _state.update { it.copy(busy = false, message = "Yazılamadı (internet ya da yetki).") } }
@@ -691,8 +882,9 @@ class XpPlanViewModel @Inject constructor(
 
     fun cancel(plan: XpPlanRow) {
         viewModelScope.launch {
-            runCatching { firestore.collection("xpEventPlans").document(plan.id).delete().await() }
-                .onSuccess { admin.audit("xp-plan-cancel", plan.id, stamp(plan.startAtMillis)); load() }
+            runCatching {
+                admin.audited("xp-plan-cancel", plan.id, stamp(plan.startAtMillis)) { b -> b.delete(firestore.collection("xpEventPlans").document(plan.id)) }
+            }.onSuccess { load() }
         }
     }
 }

@@ -24,7 +24,7 @@ class ForgotDirector(private val client: OpenRouterClient, private val model: St
 
     /**
      * Shows the assistant the drawing as it looks at each of [stops] (shares of it drawn), then whole, and has the lines
-     * written; each guess comes from its own picture. Model: whatever [client] is told to use (Sonnet 5.5 through OpenRouter).
+     * written; each guess comes from its own picture. Model: whatever [client] is told to use (Gemini 3.1 Flash Lite through OpenRouter, see OpenRouterClient.FORGOT_MODEL).
      */
     suspend fun write(drawing: StudioDrawing, stops: List<Float>, mode: ForgotMode, reward: String, limit: String, style: ForgotStyle = ForgotStyle.Game): Result<Written> = runCatching {
         val n = stops.size.coerceIn(1, ForgotTimeline.MAX_GUESSES)

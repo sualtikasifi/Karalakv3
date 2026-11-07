@@ -46,8 +46,19 @@ data class RecentDrawing(
     val nickname: String,
     val level: Int,
     val frameId: String,
-    val strokes: List<List<DrawingPoint>>
-)
+    val strokes: List<List<DrawingPoint>>,
+    /** Whether its drawer recognised it afterwards (false: "çizen bile bilemedi", what the Düello wants); true for lists saved before this was kept. */
+    val correct: Boolean = true
+) {
+    /**
+     * An id for the Düello, which keeps its choice as a number: this phone's own drawings have positive row numbers, so a pool
+     * drawing gets a negative one made from its text id (the same drawing always the same number).
+     */
+    val studioId: Long get() = -((id.hashCode().toLong() and 0x7fffffffL) + 1L)
+
+    /** The drawing as the studio's other screens take it; the pool's drawers are never named in a video. */
+    fun toStudio() = com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioDrawing(studioId, word.trim(), "", strokes, correct)
+}
 
 /** One idea for the video: the joke in one sentence, and the scene (a beat sheet) that plays it. */
 @Serializable

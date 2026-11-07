@@ -443,7 +443,7 @@ fun humanize(message: String): String {
 fun noticeKindOf(message: String): NoticeKind {
     val m = message.lowercase(java.util.Locale("tr"))
     return when {
-        listOf("yazılamadı", "okunamadı", "yüklenemedi", "alınamadı", "aranamadı", "hata", "başarısız", "olmadı", "gönderilemedi", "yetki", "olmalı", "bulunamadı", "permission", "denied").any { it in m } -> NoticeKind.Error
+        listOf("yazılamadı", "okunamadı", "yüklenemedi", "alınamadı", "aranamadı", "hata", "başarısız", "olmadı", "gönderilemedi", "yetki", "olmalı", "zaten var", "bulunamadı", "permission", "denied").any { it in m } -> NoticeKind.Error
         listOf("kaydedildi", "gönderildi", "yayınlandı", "oluşturuldu", "tamam", "silindi", "açıldı", "kapatıldı", "başladı", "planlandı", "uygulandı", "kilitlendi", "sıfırlandı").any { it in m } -> NoticeKind.Success
         else -> NoticeKind.Info
     }

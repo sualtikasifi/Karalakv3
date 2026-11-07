@@ -2,6 +2,7 @@ package com.sualtikasifi.cizimhafiza.data.repository
 
 import android.os.Build
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.AggregateSource
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.Source
@@ -10,6 +11,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.BugReport
 import com.sualtikasifi.cizimhafiza.domain.model.BugReportCategory
 import com.sualtikasifi.cizimhafiza.domain.model.BugReportEntry
 import com.sualtikasifi.cizimhafiza.domain.repository.BugReportRepository
+import com.sualtikasifi.cizimhafiza.util.AdminAudit
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
@@ -153,7 +155,59 @@ class BugReportRepositoryImpl @Inject constructor(
         batch.commit().await()
     }
 
+    private val reports get() = firestore.collection("bugReports")
+
+    override suspend fun reportCount(): Result<Long> = runCatching {
+        reports.count().get(AggregateSource.SERVER).await().count
+    }
+
+    override suspend fun unseenCount(): Result<Long> = runCatching {
+        // an unseen report has no seenAtMillis at all, so it cannot be matched directly: all, minus those that have one
+        val all = reports.count().get(AggregateSource.SERVER).await().count
+        val seen = reports.whereGreaterThan("seenAtMillis", 0L).count().get(AggregateSource.SERVER).await().count
+        (all - seen).coerceAtLeast(0L)
+    }
+
+    override suspend fun markSeenMany(reportIds: List<String>): Result<Unit> = runCatching {
+        val now = System.currentTimeMillis()
+        // at most 500 writes to a batch
+        reportIds.distinct().chunked(BATCH).forEach { chunk ->
+            val batch = firestore.batch()
+            chunk.forEach { batch.update(reports.document(it), "seenAtMillis", now) }
+            batch.commit().await()
+        }
+    }
+
+    override suspend fun deleteReportsAudited(reportIds: List<String>): Result<Unit> = runCatching {
+        val by = auth.currentUser?.email
+        reportIds.distinct().chunked(BATCH).forEach { chunk ->
+            val batch = firestore.batch()
+            chunk.forEach { batch.delete(reports.document(it)) }
+            AdminAudit.add(firestore, batch, by, "feedback-delete", "bugReports", "${chunk.size} kayıt silindi")
+            batch.commit().await()
+        }
+    }
+
+    override suspend fun deleteAllReports(): Result<Int> = runCatching {
+        val by = auth.currentUser?.email
+        var total = 0
+        while (true) {
+            val docs = reports.limit(BATCH.toLong()).get().await().documents
+            if (docs.isEmpty()) break
+            val batch = firestore.batch()
+            docs.forEach { batch.delete(it.reference) }
+            AdminAudit.add(firestore, batch, by, "feedback-delete-all", "bugReports", "${docs.size} kayıt silindi")
+            batch.commit().await()
+            total += docs.size
+            if (docs.size < BATCH) break
+        }
+        total
+    }
+
     private companion object {
+        /** A batch holds 500 writes at most; the audit line takes one. */
+        const val BATCH = 400
+
         /** Matches the cap enforced in firestore.rules' bugReports create rule. */
         const val MAX_DESCRIPTION_LENGTH = 2000
         const val MAX_REPORTS_SHOWN = 20L

@@ -56,6 +56,8 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButton
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSurface
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleSecondaryButton
 import com.sualtikasifi.cizimhafiza.util.PlayerAdmin
+import com.sualtikasifi.cizimhafiza.util.CouponUse
+import com.sualtikasifi.cizimhafiza.util.PlayerDetails
 import com.sualtikasifi.cizimhafiza.util.PlayerInfo
 import com.sualtikasifi.cizimhafiza.util.PlayerReportGroup
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -184,7 +186,14 @@ data class PlayersState(
     val message: String? = null,
     val gold: String = "",
     val xp: String = "",
-    val note: String = ""
+    val note: String = "",
+    /** The account whose card is open (the only one, or the one tapped), and what was read about it. */
+    val selected: String? = null,
+    val details: Map<String, PlayerDetails> = emptyMap(),
+    val loadingDetails: Boolean = false,
+    /** Coupons an account redeemed, read only when asked for. */
+    val couponUses: Map<String, List<CouponUse>> = emptyMap(),
+    val loadingCoupons: Boolean = false
 )
 
 @HiltViewModel
@@ -200,33 +209,69 @@ class PlayersViewModel @Inject constructor(private val admin: PlayerAdmin) : Vie
         _state.update { it.copy(busy = true, message = null) }
         viewModelScope.launch {
             admin.find(q)
-                .onSuccess { r -> _state.update { it.copy(busy = false, results = r, searched = true) } }
+                .onSuccess { r ->
+                    _state.update { it.copy(busy = false, results = r, searched = true, selected = null, details = emptyMap(), couponUses = emptyMap()) }
+                    // one hit opens its card at once; several are a list to choose from
+                    if (r.size == 1) open(r.first().uid)
+                }
                 .onFailure { e -> _state.update { it.copy(busy = false, message = e.message ?: "Aranamadı.") } }
         }
     }
 
-    private fun act(done: String, block: suspend () -> Result<*>) {
+    /** Opens (or closes, when it is already open) one account's card, reading its record the first time. */
+    fun open(uid: String) {
+        if (_state.value.selected == uid) {
+            _state.update { it.copy(selected = null) }
+            return
+        }
+        _state.update { it.copy(selected = uid) }
+        if (uid !in _state.value.details) loadDetails(uid)
+    }
+
+    private fun loadDetails(uid: String) {
+        _state.update { it.copy(loadingDetails = true) }
+        viewModelScope.launch {
+            val d = admin.details(uid)
+            _state.update { it.copy(loadingDetails = false, details = it.details + (uid to d)) }
+        }
+    }
+
+    fun loadCoupons(uid: String) {
+        if (_state.value.loadingCoupons) return
+        _state.update { it.copy(loadingCoupons = true) }
+        viewModelScope.launch {
+            admin.couponUses(uid)
+                .onSuccess { list -> _state.update { it.copy(loadingCoupons = false, couponUses = it.couponUses + (uid to list)) } }
+                .onFailure { e -> _state.update { it.copy(loadingCoupons = false, message = "Kuponlar okunamadı: ${e.message}") } }
+        }
+    }
+
+    private fun act(uid: String, done: String, block: suspend () -> Result<*>) {
         if (_state.value.busy) return
         _state.update { it.copy(busy = true, message = null) }
         viewModelScope.launch {
             val r = block()
             _state.update { it.copy(busy = false, message = if (r.isSuccess) done else "Olmadı: ${r.exceptionOrNull()?.message}") }
-            if (r.isSuccess) admin.find(_state.value.query).onSuccess { list -> _state.update { it.copy(results = list) } }
+            if (r.isSuccess) {
+                // the record and the name may have changed: read both again
+                admin.find(_state.value.query).onSuccess { list -> _state.update { it.copy(results = list) } }
+                loadDetails(uid)
+            }
         }
     }
 
-    fun resetName(p: PlayerInfo) = act("Ad sıfırlandı.") { admin.resetName(p.uid, p.nickname) }
-    fun lock(p: PlayerInfo) = act("Oyuncu kilitlendi.") { admin.lock(p.uid) }
-    fun unlock(p: PlayerInfo) = act("Kilitler kaldırıldı.") { admin.unlock(p.uid) }
+    fun resetName(p: PlayerInfo) = act(p.uid, "Ad sıfırlandı.") { admin.resetName(p.uid, p.nickname) }
+    fun lock(p: PlayerInfo) = act(p.uid, "Oyuncu kilitlendi.") { admin.lock(p.uid) }
+    fun unlock(p: PlayerInfo) = act(p.uid, "Kilitler kaldırıldı.") { admin.unlock(p.uid) }
     fun grant(p: PlayerInfo) {
         val s = _state.value
-        act("Telafi sıraya alındı: oyuncunun uygulaması bir sonraki açılışında (en geç birkaç saat içinde) alır.") {
+        act(p.uid, "Telafi sıraya alındı: oyuncunun uygulaması bir sonraki açılışında (en geç birkaç saat içinde) alır.") {
             admin.grant(p.uid, s.gold.toIntOrNull() ?: 0, s.xp.toIntOrNull() ?: 0, s.note.ifBlank { "telafi" })
         }
     }
 }
 
-/** "Oyuncu ara": find an account by name, friend code or uid, see its record, and act on it. */
+/** "Oyuncu ara": find accounts by the start of a name, friend code or uid, open one to see its record, and act on it. */
 @Composable
 internal fun PlayersPanel(viewModel: PlayersViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
@@ -238,7 +283,7 @@ internal fun PlayersPanel(viewModel: PlayersViewModel = hiltViewModel()) {
             ConsoleTextField(
                 value = state.query,
                 onValueChange = { v -> viewModel.edit { copy(query = v) } },
-                placeholder = "Ad, arkadaş kodu ya da kullanıcı kimliği",
+                placeholder = "Adın başı, arkadaş kodu ya da kullanıcı kimliği",
                 leading = { Icon(Icons.Filled.Search, contentDescription = null, tint = Console.InkMuted, modifier = Modifier.size(18.dp)) },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { if (state.query.isNotBlank()) viewModel.search() }),
@@ -248,74 +293,119 @@ internal fun PlayersPanel(viewModel: PlayersViewModel = hiltViewModel()) {
         }
         state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
         if (!state.searched && state.results.isEmpty()) {
-            ConsoleEmpty(Icons.Filled.Search, "Bir oyuncu ara", body = "Profilini, cezalarını ve raporlarını gör; adını sıfırla, kilitle ya da telafi gönder.")
+            ConsoleEmpty(Icons.Filled.Search, "Bir oyuncu ara", body = "Adın ilk harflerini yaz (büyük küçük harf fark etmez); profilini, cezalarını ve bakiyesini gör, adını sıfırla, kilitle ya da telafi gönder.")
         } else if (state.searched && state.results.isEmpty()) {
-            ConsoleEmpty(Icons.Filled.PersonOff, "Böyle bir oyuncu bulunamadı", body = "Yazımı kontrol et ya da arkadaş kodunu dene.")
+            ConsoleEmpty(Icons.Filled.PersonOff, "Böyle bir oyuncu bulunamadı", body = "Adın ilk harflerini dene ya da arkadaş kodunu yaz.")
         }
-        val now = System.currentTimeMillis()
+        if (state.results.size > 1) Text("${state.results.size} oyuncu · açmak için dokun", style = Console.Small)
         state.results.forEach { p ->
-            val locked = p.lockedUntilMillis > now
-            ConsoleCard(Modifier.fillMaxWidth(), padding = 12.dp) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Avatar(p.nickname.ifBlank { p.uid }, 42.dp)
-                    Spacer(Modifier.width(10.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(p.nickname.ifBlank { "(adsız)" }, style = Console.Title, maxLines = 1)
-                        Text("Kod ${p.friendCode.ifBlank { "-" }}", style = Console.Small)
-                    }
-                    if (locked) Tag("Kilitli", fg = Console.Critical, bg = Console.CriticalSoft)
-                }
-                Spacer(Modifier.height(10.dp))
-                // the record, as four figures side by side
-                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(Console.ControlCorner)).background(Console.SurfaceAlt).padding(vertical = 8.dp)) {
-                    Figure("Seviye", p.level.toString(), Modifier.weight(1f))
-                    Figure("Bu ay XP", Console.compact(p.periodXp.toDouble()), Modifier.weight(1f))
-                    Figure("Ceza", p.strikes.toString(), Modifier.weight(1f), alert = p.strikes > 0)
-                    Figure("Rapor", p.reports.toString(), Modifier.weight(1f), alert = p.reports > 0)
-                }
-                if (locked) {
-                    Spacer(Modifier.height(8.dp))
-                    ConsoleNotice("${clock(p.lockedUntilMillis)} tarihine kadar kilitli", kind = NoticeKind.Error)
-                }
-                Spacer(Modifier.height(6.dp))
-                Text(p.uid, style = Console.Small.copy(color = Console.InkMuted, fontFamily = FontFamily.Monospace, fontSize = 11.sp))
-                Spacer(Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    ConsoleSecondaryButton("Adı sıfırla", { viewModel.resetName(p) }, Modifier.weight(1f), enabled = !state.busy, height = 38.dp)
-                    if (locked) {
-                        ConsoleButton("Kilidi aç", { viewModel.unlock(p) }, Modifier.weight(1f), enabled = !state.busy, height = 38.dp, style = ConsoleButtonStyle.Tonal)
-                    } else {
-                        ConsoleButton("Kilitle", { viewModel.lock(p) }, Modifier.weight(1f), enabled = !state.busy, height = 38.dp, style = ConsoleButtonStyle.DangerSoft)
-                    }
-                }
-                Spacer(Modifier.height(12.dp))
-                Box(Modifier.fillMaxWidth().height(1.dp).background(Console.Grid))
-                Spacer(Modifier.height(10.dp))
-                Overline("Telafi gönder")
-                Spacer(Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    ConsoleTextField(
-                        value = state.gold, onValueChange = { v -> viewModel.edit { copy(gold = v.filter(Char::isDigit).take(6)) } },
-                        placeholder = "Altın", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
-                    )
-                    ConsoleTextField(
-                        value = state.xp, onValueChange = { v -> viewModel.edit { copy(xp = v.filter(Char::isDigit).take(6)) } },
-                        placeholder = "XP", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
-                    )
-                }
-                Spacer(Modifier.height(8.dp))
-                ConsoleTextField(
-                    value = state.note, onValueChange = { v -> viewModel.edit { copy(note = v.take(60)) } },
-                    placeholder = "Not (denetim kaydına yazılır)", modifier = Modifier.fillMaxWidth()
+            PlayerCard(p, state, viewModel)
+        }
+    }
+}
+
+@Composable
+private fun PlayerCard(p: PlayerInfo, state: PlayersState, viewModel: PlayersViewModel) {
+    val open = state.selected == p.uid
+    val d = state.details[p.uid]
+    val now = System.currentTimeMillis()
+    val locked = (d?.lockedUntilMillis ?: 0L) > now
+    ConsoleCard(Modifier.fillMaxWidth(), padding = 12.dp, onClick = { viewModel.open(p.uid) }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Avatar(p.nickname.ifBlank { p.uid }, 42.dp)
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(p.nickname.ifBlank { "(adsız)" }, style = Console.Title, maxLines = 1)
+                Text("Kod ${p.friendCode.ifBlank { "-" }} · seviye ${p.level}", style = Console.Small)
+            }
+            if (locked) Tag("Kilitli", fg = Console.Critical, bg = Console.CriticalSoft)
+        }
+        if (!open) return@ConsoleCard
+        Spacer(Modifier.height(10.dp))
+        if (d == null) {
+            ConsoleSkeleton(rows = 1, rowHeight = 56.dp)
+            return@ConsoleCard
+        }
+        // the record, as figures side by side
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(Console.ControlCorner)).background(Console.SurfaceAlt).padding(vertical = 8.dp)) {
+            Figure("Seviye", p.level.toString(), Modifier.weight(1f))
+            Figure("Toplam XP", Console.compact((d.lifetimeXp ?: p.totalXp).toDouble()), Modifier.weight(1f))
+            Figure("Ceza", d.strikes.toString(), Modifier.weight(1f), alert = d.strikes > 0)
+            Figure("Rapor", d.reports.toString(), Modifier.weight(1f), alert = d.reports > 0)
+        }
+        Spacer(Modifier.height(6.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(Console.ControlCorner)).background(Console.SurfaceAlt).padding(vertical = 8.dp)) {
+            Figure("Altın", d.goldBalance?.let { Console.compact(it.toDouble()) } ?: "—", Modifier.weight(1f))
+            Figure("Bu ay XP", Console.compact(p.periodXp.toDouble()), Modifier.weight(1f))
+            Figure("Havuzda tur", d.poolRuns?.toString() ?: "—", Modifier.weight(1f))
+            Figure("Kuyrukta tur", d.queueRuns?.toString() ?: "—", Modifier.weight(1f), alert = (d.queueRuns ?: 0L) > 0)
+        }
+        d.lastSavedMillis?.let { Text("Son bulut kaydı: ${clock(it)} (oyuncunun son görülme zamanına en yakın iz)", style = Console.Small, modifier = Modifier.padding(top = 6.dp)) }
+        if (locked) {
+            Spacer(Modifier.height(8.dp))
+            ConsoleNotice("${clock(d.lockedUntilMillis)} tarihine kadar kilitli", kind = NoticeKind.Error)
+        }
+        if (d.penalties.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            Overline("Ceza geçmişi")
+            d.penalties.forEach { pen ->
+                val parts = listOfNotNull(
+                    "${pen.strike}. ceza".takeIf { pen.strike > 0 },
+                    pen.xpRevoked.takeIf { it > 0 }?.let { "$it XP" },
+                    pen.goldRevoked.takeIf { it > 0 }?.let { "$it altın" },
+                    pen.lockedUntilMillis.takeIf { it > 0 }?.let { "kilit ${clock(it)}'e kadar" },
+                    "iptal edildi".takeIf { pen.canceled }
                 )
-                Spacer(Modifier.height(10.dp))
-                ConsoleButton(
-                    "Telafiyi gönder", { viewModel.grant(p) }, Modifier.fillMaxWidth(),
-                    enabled = !state.busy && ((state.gold.toIntOrNull() ?: 0) + (state.xp.toIntOrNull() ?: 0)) > 0,
-                    icon = Icons.Filled.Redeem, height = 40.dp
-                )
+                Text("${clock(pen.createdAtMillis)} · ${parts.joinToString(", ").ifEmpty { "ceza" }}", style = Console.Small.copy(color = Console.Ink), modifier = Modifier.padding(top = 3.dp))
             }
         }
+        Spacer(Modifier.height(6.dp))
+        Text(p.uid, style = Console.Small.copy(color = Console.InkMuted, fontFamily = FontFamily.Monospace, fontSize = 11.sp))
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            ConsoleSecondaryButton("Adı sıfırla", { viewModel.resetName(p) }, Modifier.weight(1f), enabled = !state.busy, height = 38.dp)
+            if (locked) {
+                ConsoleButton("Kilidi aç", { viewModel.unlock(p) }, Modifier.weight(1f), enabled = !state.busy, height = 38.dp, style = ConsoleButtonStyle.Tonal)
+            } else {
+                ConsoleButton("Kilitle", { viewModel.lock(p) }, Modifier.weight(1f), enabled = !state.busy, height = 38.dp, style = ConsoleButtonStyle.DangerSoft)
+            }
+        }
+        // the coupons it redeemed: read only when asked for (one read for each of the newest codes)
+        Spacer(Modifier.height(10.dp))
+        val uses = state.couponUses[p.uid]
+        if (uses == null) {
+            ConsoleSecondaryButton("Kupon kullanımlarını göster", { viewModel.loadCoupons(p.uid) }, Modifier.fillMaxWidth(), enabled = !state.loadingCoupons, height = 36.dp)
+        } else {
+            Overline("Kullandığı kuponlar (son ${25} koddan)")
+            if (uses.isEmpty()) Text("Hiçbirini kullanmamış.", style = Console.Small, modifier = Modifier.padding(top = 3.dp))
+            uses.forEach { u -> Text("${u.code} · ${clock(u.redeemedAtMillis)}", style = Console.Small.copy(color = Console.Ink, fontFamily = FontFamily.Monospace), modifier = Modifier.padding(top = 3.dp)) }
+        }
+        Spacer(Modifier.height(12.dp))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Console.Grid))
+        Spacer(Modifier.height(10.dp))
+        Overline("Telafi gönder")
+        Spacer(Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            ConsoleTextField(
+                value = state.gold, onValueChange = { v -> viewModel.edit { copy(gold = v.filter(Char::isDigit).take(6)) } },
+                placeholder = "Altın", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
+            )
+            ConsoleTextField(
+                value = state.xp, onValueChange = { v -> viewModel.edit { copy(xp = v.filter(Char::isDigit).take(6)) } },
+                placeholder = "XP", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        ConsoleTextField(
+            value = state.note, onValueChange = { v -> viewModel.edit { copy(note = v.take(60)) } },
+            placeholder = "Not (denetim kaydına yazılır)", modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(10.dp))
+        ConsoleButton(
+            "Telafiyi gönder", { viewModel.grant(p) }, Modifier.fillMaxWidth(),
+            enabled = !state.busy && ((state.gold.toIntOrNull() ?: 0) + (state.xp.toIntOrNull() ?: 0)) > 0,
+            icon = Icons.Filled.Redeem, height = 40.dp
+        )
     }
 }
 

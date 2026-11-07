@@ -284,6 +284,94 @@ await check("a player cannot set the announcement", assertFails(setDoc(doc(db("n
 await check("the reviewer plans an XP event", assertSucceeds(setDoc(doc(reviewer(), "xpEventPlans", "p1"), { startAtMillis: 1, durationHours: 24, multiplier: 2 })));
 await check("a player cannot plan an XP event", assertFails(setDoc(doc(db("nm2"), "xpEventPlans", "p2"), { startAtMillis: 1, durationHours: 24, multiplier: 10 })));
 
+// The panel's coupons, the push command's new fields, an audit line that travels with its change, and what the panel reads.
+const redeem = (uid, code, used) => {
+  const d = db(uid);
+  const b = writeBatch(d);
+  b.set(doc(d, "coupons", code, "redemptions", uid), { redeemedAt: 5 });
+  b.update(doc(d, "coupons", code), { usedCount: used });
+  return b.commit();
+};
+const couponData = (extra = {}) => ({ gold: 100, xp: 0, chestSilver: 0, chestGold: 0, chestRare: 0, maxUses: 2, usedCount: 0, expiresAt: 0, createdAt: 1, ...extra });
+await seed(["coupons", "OPEN1234"], couponData());
+await seed(["coupons", "OLD12345"], couponData({ expiresAt: 1 }));
+await check("a player redeems an open code", assertSucceeds(redeem("cp1", "OPEN1234", 1)));
+await check("the same player cannot redeem it twice", assertFails(redeem("cp1", "OPEN1234", 2)));
+await check("another player takes the last use", assertSucceeds(redeem("cp2", "OPEN1234", 2)));
+await check("a code that is used up refuses the next player", assertFails(redeem("cp3", "OPEN1234", 3)));
+await check("an expired code refuses a redemption", assertFails(redeem("cp4", "OLD12345", 1)));
+await check("a player cannot make a code", assertFails(setDoc(doc(db("cp5"), "coupons", "FREE9999"), couponData({ gold: 99999 }))));
+await check("a player cannot close a code", assertFails(updateDoc(doc(db("cp5"), "coupons", "OPEN1234"), { expiresAt: 1 })));
+await check("the reviewer makes a code", assertSucceeds(setDoc(doc(reviewer(), "coupons", "NEW12345"), couponData({ source: "Düello · 7 Kas" }))));
+await check("the reviewer lists the codes", assertSucceeds(getDocs(collection(reviewer(), "coupons"))));
+await check("a player cannot list the codes", assertFails(getDocs(collection(db("cp5"), "coupons"))));
+
+// a change and its audit line are one batch: both land, or neither
+const auditLine = (extra = {}) => ({ action: "coupon-close", target: "NEW12345", detail: "x", by: "r", at: serverTimestamp(), ...extra });
+const closeWithAudit = (line) => {
+  const d = reviewer();
+  const b = writeBatch(d);
+  b.update(doc(d, "coupons", "NEW12345"), { expiresAt: 1 });
+  b.set(doc(collection(d, "adminAudit")), line);
+  return b.commit();
+};
+await check("a change goes through with its audit line in the same batch", assertSucceeds(closeWithAudit(auditLine())));
+await seed(["coupons", "KEEP1234"], couponData());
+await check("a change is refused whole when its audit line is wrong", (async () => {
+  const d = reviewer();
+  const b = writeBatch(d);
+  b.update(doc(d, "coupons", "KEEP1234"), { expiresAt: 1 });
+  b.set(doc(collection(d, "adminAudit")), auditLine({ secret: "x" }));
+  await assertFails(b.commit());
+  let left;
+  await env.withSecurityRulesDisabled(async (c) => { left = await getDoc(doc(c.firestore(), "coupons", "KEEP1234")); });
+  if (left.data().expiresAt !== 0) throw new Error("the change was applied without its audit line");
+})());
+await check("a player cannot write an audit line", assertFails(setDoc(doc(collection(db("cp5"), "adminAudit")), auditLine())));
+await check("an audit line needs the server's time", assertFails(setDoc(doc(collection(reviewer(), "adminAudit")), auditLine({ at: 5 }))));
+
+// the push command: texts per language, an audience, a time to wait for, a test to one device
+const push = (extra = {}) => ({ type: "broadcast", title: "Merhaba", body: "Yeni etkinlik", by: "r", createdAt: serverTimestamp(), ...extra });
+await check("the reviewer queues a push with texts, audience, fallback and a time", assertSucceeds(setDoc(doc(reviewer(), "adminCommands", "p1"), push({
+  texts: { en: { title: "Hello", body: "New event" } }, audience: "lapsed", fallback: false, sendAtMillis: 123,
+}))));
+await check("the reviewer queues a test to one device", assertSucceeds(setDoc(doc(reviewer(), "adminCommands", "p2"), push({ type: "test", uid: "rev" }))));
+await check("an audience outside the two is refused", assertFails(setDoc(doc(reviewer(), "adminCommands", "p3"), push({ audience: "everyone" }))));
+await check("a push cannot carry a key the job does not know", assertFails(setDoc(doc(reviewer(), "adminCommands", "p4"), push({ target: "all" }))));
+await check("a push cannot carry more than four languages", assertFails(setDoc(doc(reviewer(), "adminCommands", "p5"), push({ texts: { a: {}, b: {}, c: {}, d: {}, e: {} } }))));
+await check("the time to wait for is a number", assertFails(setDoc(doc(reviewer(), "adminCommands", "p6"), push({ sendAtMillis: "tomorrow" }))));
+await check("the fallback is a yes or no", assertFails(setDoc(doc(reviewer(), "adminCommands", "p7"), push({ fallback: "yes" }))));
+await check("a player cannot queue a push", assertFails(setDoc(doc(db("cp5"), "adminCommands", "p8"), push())));
+
+// the assistant's saved answers, the roll-up's lists of players, a player's cloud save, feedback
+const answer = (extra = {}) => ({ title: "Etkinlik planı", text: "metin", at: 1700000000000, model: "google/x", ...extra });
+await check("the reviewer saves an answer", assertSucceeds(setDoc(doc(reviewer(), "adminAssistantHistory", "1700000000000"), answer())));
+await check("a saved answer cannot carry other keys", assertFails(setDoc(doc(reviewer(), "adminAssistantHistory", "2"), answer({ secret: "x" }))));
+await check("a saved answer has a size limit", assertFails(setDoc(doc(reviewer(), "adminAssistantHistory", "3"), answer({ text: "x".repeat(30001) }))));
+await check("a player cannot read the saved answers", assertFails(getDoc(doc(db("cp5"), "adminAssistantHistory", "1700000000000"))));
+await check("the reviewer reads the saved answers back", assertSucceeds(getDocs(collection(reviewer(), "adminAssistantHistory"))));
+await check("the reviewer removes a saved answer", assertSucceeds(deleteDoc(doc(reviewer(), "adminAssistantHistory", "1700000000000"))));
+await seed(["adminSummaryUids", "2026-10-27"], { uids: ["a"], newUids: ["a"] });
+await check("the reviewer reads who was new on a day", assertSucceeds(getDoc(doc(reviewer(), "adminSummaryUids", "2026-10-27"))));
+await check("a player cannot read who was active", assertFails(getDoc(doc(db("cp5"), "adminSummaryUids", "2026-10-27"))));
+await check("nobody writes the lists of players from the app", assertFails(setDoc(doc(reviewer(), "adminSummaryUids", "2026-10-28"), { uids: [], newUids: [] })));
+await check("the reviewer reads another player's cloud save (the player card)", assertSucceeds(getDoc(doc(reviewer(), "users", "g", "backup", "state"))));
+await check("another player cannot read someone's cloud save", assertFails(getDoc(doc(db("g2"), "users", "g", "backup", "state"))));
+await check("the owner still reads their own cloud save", assertSucceeds(getDoc(doc(db("g"), "users", "g", "backup", "state"))));
+await check("the reviewer cannot write someone's cloud save", assertFails(setDoc(doc(reviewer(), "users", "g", "backup", "state"), { goldBalance: 9, lifetimeXp: 9, sealedAt: serverTimestamp() })));
+await seed(["bugReports", "bg1"], { uid: "bu1", category: "COMPLAINT", description: "d", submittedAt: 1 });
+await seed(["bugReports", "bg2"], { uid: "bu1", category: "COMPLAINT", description: "d", submittedAt: 2 });
+await check("the reviewer marks a report seen", assertSucceeds(updateDoc(doc(reviewer(), "bugReports", "bg1"), { seenAtMillis: 5 })));
+await check("the reviewer deletes reports together with the audit line", (async () => {
+  const d = reviewer();
+  const b = writeBatch(d);
+  b.delete(doc(d, "bugReports", "bg1"));
+  b.delete(doc(d, "bugReports", "bg2"));
+  b.set(doc(collection(d, "adminAudit")), auditLine({ action: "feedback-delete", target: "bugReports" }));
+  await assertSucceeds(b.commit());
+})());
+await check("a player cannot mark a report seen", assertFails(updateDoc(doc(db("bu2"), "bugReports", "bg3"), { seenAtMillis: 5 })));
+
 await env.cleanup();
 console.log(failures ? `\n${failures} FAILED` : "\nall passed");
 process.exit(failures ? 1 : 0);

@@ -73,12 +73,14 @@ class RunesDevViewModel @Inject constructor(
         _prompt.value = _prompt.value.copy(on = on, snoozeDays = snoozeDays, busy = true, message = null)
         viewModelScope.launch {
             runCatching {
-                firestore.document("config/runes").set(
-                    mapOf("firstRunePrompt" to on, "promptSnoozeDays" to snoozeDays.toLong()),
-                    com.google.firebase.firestore.SetOptions.merge()
-                ).await()
+                admin.audited("rune-prompt", "config/runes", "firstRunePrompt=$on, promptSnoozeDays=$snoozeDays") { b ->
+                    b.set(
+                        firestore.document("config/runes"),
+                        mapOf("firstRunePrompt" to on, "promptSnoozeDays" to snoozeDays.toLong()),
+                        com.google.firebase.firestore.SetOptions.merge()
+                    )
+                }
             }.onSuccess {
-                admin.audit("rune-prompt", "config/runes", "firstRunePrompt=$on, promptSnoozeDays=$snoozeDays")
                 runeConfigRepository.refreshNow()
                 _prompt.value = _prompt.value.copy(busy = false, message = "Kaydedildi. Telefonlara birkaç saat içinde ulaşır.")
             }.onFailure {

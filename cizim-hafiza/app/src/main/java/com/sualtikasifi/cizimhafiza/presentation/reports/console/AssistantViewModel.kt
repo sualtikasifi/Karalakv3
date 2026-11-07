@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.addJsonObject
@@ -91,6 +92,47 @@ class AssistantViewModel @Inject constructor(
             showSettings = key.isBlank()
         )
         refreshUsage()
+        syncHistory()
+    }
+
+    private val historyDocs get() = firestore.collection("adminAssistantHistory")
+
+    /**
+     * Brings the saved answers together with the copy in Firestore: the ones only the phone has go up, the ones only Firestore
+     * has (made on another phone) come down. Quiet when it cannot be done (no internet, not the reviewer): the phone's own
+     * copy is what shows then, and the next visit tries again.
+     */
+    private fun syncHistory() {
+        viewModelScope.launch {
+            runCatching {
+                val remote = historyDocs.orderBy("at", com.google.firebase.firestore.Query.Direction.DESCENDING).limit(AssistantHistory.MAX.toLong())
+                    .get().await().documents.mapNotNull { d -> d.data?.let(AssistantHistory::fromDoc) }
+                val local = _state.value.history
+                val up = AssistantHistory.onlyLocal(local, remote)
+                if (up.isNotEmpty()) {
+                    val batch = firestore.batch()
+                    up.forEach { batch.set(historyDocs.document(AssistantHistory.docId(it)), AssistantHistory.toDoc(it)) }
+                    batch.commit().await()
+                }
+                val merged = AssistantHistory.merge(local, remote)
+                if (merged != local) {
+                    writeHistory(merged)
+                    _state.value = _state.value.copy(history = merged)
+                }
+            }
+        }
+    }
+
+    /** Sends a new answer up and takes the ones that fell off the end of the list out of Firestore (best effort). */
+    private fun pushHistory(added: SavedAnswer, before: List<SavedAnswer>) {
+        viewModelScope.launch {
+            runCatching {
+                val batch = firestore.batch()
+                batch.set(historyDocs.document(AssistantHistory.docId(added)), AssistantHistory.toDoc(added))
+                AssistantHistory.dropped(before + added).forEach { batch.delete(historyDocs.document(AssistantHistory.docId(it))) }
+                batch.commit().await()
+            }
+        }
     }
 
     /** Reads the key's spend for the day and the month (shown in the header and the settings card). */
@@ -148,8 +190,11 @@ class AssistantViewModel @Inject constructor(
             val (title, prompt) = promptFor(_state.value)
             val result = OpenRouterClient(key).generate(SYSTEM, ctx + "\n\n" + prompt, _state.value.model, _state.value.webSearch)
             result.onSuccess { a ->
-                val saved = (listOf(SavedAnswer(title, a.text, System.currentTimeMillis(), a.model, a.costUsd)) + _state.value.history).take(30)
+                val entry = SavedAnswer(title, a.text, System.currentTimeMillis(), a.model, a.costUsd)
+                val before = _state.value.history
+                val saved = (listOf(entry) + before).take(AssistantHistory.MAX)
                 writeHistory(saved)
+                pushHistory(entry, before)
                 _state.value = _state.value.copy(running = false, answer = a, answerTitle = title, history = saved)
             }.onFailure { e ->
                 _state.value = _state.value.copy(running = false, error = e.message ?: e::class.simpleName)
@@ -165,8 +210,12 @@ class AssistantViewModel @Inject constructor(
     fun deleteSaved(s: SavedAnswer) {
         val list = _state.value.history.filterNot { it.at == s.at }
         writeHistory(list); _state.value = _state.value.copy(history = list)
+        // and from Firestore, so it does not come back from there (best effort)
+        viewModelScope.launch { runCatching { historyDocs.document(AssistantHistory.docId(s)).delete().await() } }
     }
-    fun refreshContext() { liveContext = null }
+    /** Reads the live figures again on the next run, past the shared copy of the statistics. */
+    fun refreshContext() { liveContext = null; forceSeries = true }
+    private var forceSeries = false
 
     private suspend fun buildLiveContext(): String {
         val sb = StringBuilder()
@@ -174,7 +223,7 @@ class AssistantViewModel @Inject constructor(
         sb.append("## Bugün\n").append(today).append(" (").append(today.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, Locale("tr"))).append(")\n")
         sb.append("Yaklaşan özel günler: ")
         sb.append(SpecialDays.upcoming(today, 90).joinToString("; ") { "${it.name} ${it.date} (${it.daysLeft(today)} gün)" }).append("\n")
-        runCatching { loadDaySeries(firestore, 14) }.getOrNull()?.let { s ->
+        runCatching { SharedDaySeries.get(firestore, 14, force = forceSeries.also { forceSeries = false }) }.getOrNull()?.let { s ->
             sb.append("\n## Son 14 günün canlı verisi (UTC gün)\n")
             sb.append("gün | aktif oyuncu | açılış | biten oyun | ödüllü reklam istek/izlenen\n")
             s.days.indices.forEach { i ->

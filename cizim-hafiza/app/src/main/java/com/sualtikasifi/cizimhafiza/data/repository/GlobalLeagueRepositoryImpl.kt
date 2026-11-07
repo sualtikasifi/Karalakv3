@@ -10,6 +10,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.LeagueTable
 import com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriodResult
 import com.sualtikasifi.cizimhafiza.domain.model.LeagueWinner
 import com.sualtikasifi.cizimhafiza.domain.repository.GlobalLeagueRepository
+import com.sualtikasifi.cizimhafiza.util.AdminAudit
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -63,7 +64,9 @@ class GlobalLeagueRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setWeekReward(rewardId: String?): Result<Unit> = runCatching {
-        configDoc.set(mapOf("rewardId" to rewardId), SetOptions.merge()).await()
+        AdminAudit.commit(firestore, auth.currentUser?.email, "league-prize", "leaderboards/config", "ödül: ${rewardId ?: "yok"}") { batch ->
+            batch.set(configDoc, mapOf("rewardId" to rewardId), SetOptions.merge())
+        }
         // The published snapshot still carries the OLD reward until the next
         // rebuild, so drop the cache rather than letting the panel show a
         // change it just made as not having happened.
