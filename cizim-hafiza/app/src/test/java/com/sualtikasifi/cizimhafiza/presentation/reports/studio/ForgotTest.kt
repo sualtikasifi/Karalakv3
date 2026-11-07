@@ -5,6 +5,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotChest
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotStyle
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotPhase
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotScript
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotTimeline
@@ -24,14 +25,14 @@ class ForgotTest {
     private fun script(guesses: Int = 3, mode: ForgotMode = ForgotMode.Word) = ForgotScript(
         drawingId = 1, word = "şemsiye",
         hook = line("hook"), guesses = List(guesses) { line("tahmin $it") },
-        codeLine = line("kod"), outro = line("bitiş"), mode = mode, reward = "Sanatçı Kasası", code = "SEMSIYE"
+        askLine = line("soru"), codeLine = line("kod"), outro = line("bitiş"), mode = mode, reward = "Sanatçı Kasası", code = "SEMSIYE"
     )
 
     @Test
     fun linesAreInSpeakingOrderAndCapped() {
-        assertEquals(listOf("hook", "tahmin 0", "tahmin 1", "tahmin 2", "kod", "bitiş"), script().lines().map { it.text })
+        assertEquals(listOf("hook", "tahmin 0", "tahmin 1", "tahmin 2", "soru", "kod", "bitiş"), script().lines().map { it.text })
         // more looks than the video has room for are left out
-        assertEquals(1 + ForgotTimeline.MAX_GUESSES + 2, script(guesses = 7).lines().size)
+        assertEquals(1 + ForgotTimeline.MAX_GUESSES + 3, script(guesses = 7).lines().size)
     }
 
     @Test
@@ -117,26 +118,92 @@ class ForgotTest {
     }
 
     @Test
-    fun theAssistantIsToldEachGuessSDrawingAndNotToSayTheWord() {
-        val prompt = ForgotCopy.guessPrompt("şemsiye", listOf(0.3f, 0.65f, 1f), "neutral, thinking")
+    fun theAssistantIsToldEachGuessSDrawingAndTheScenesAndNotToSayTheWord() {
+        val prompt = ForgotCopy.directorPrompt("şemsiye", listOf(0.3f, 0.65f, 1f), "neutral, thinking", ForgotMode.Word, "Sanatçı Kasası", "Sadece 100 kişi · Son: 8 Kasım 21:00")
         assertTrue(prompt.contains("Görsel 1: çizimin %30'i"))
         assertTrue(prompt.contains("Görsel 2: çizimin %65'i"))
         assertTrue(prompt.contains("Görsel 3: çizimin %100'i"))
         assertTrue(prompt.contains("Görsel 4: bitmiş çizim"))
-        assertTrue(prompt.contains("tam 3 tahmin"))
+        // the scene order, each with what is on screen at that moment
+        assertTrue(prompt.contains("1. AÇILIŞ"))
+        assertTrue(prompt.contains("TAHMİN 1 (Görsel 1): ekranda çizim %30"))
+        assertTrue(prompt.contains("TAHMİN 3 (Görsel 3): ekranda çizim %100"))
+        assertTrue(prompt.contains("5. SORU (geri sayım 3-2-1"))
+        assertTrue(prompt.contains("6. KOD ANI"))
+        assertTrue(prompt.contains("7. KAPANIŞ"))
+        // it works out a plan first, and writes the two new lines
+        assertTrue(prompt.contains("\"plan\""))
+        assertTrue(prompt.contains("\"ask\""))
+        assertTrue(prompt.contains("\"code_line\""))
+        assertTrue(prompt.contains("tam 3 eleman"))
         assertTrue(prompt.contains("EN FAZLA ${ForgotCopy.GUESS_WORDS} kelime"))
         assertTrue(prompt.contains("EN FAZLA ${ForgotCopy.HOOK_WORDS} kelime"))
-        assertFalse(prompt.contains("reaction"))
+        assertTrue(prompt.contains("EN FAZLA ${ForgotCopy.ASK_WORDS} kelime"))
+        assertTrue(prompt.contains("EN FAZLA ${ForgotCopy.CODE_WORDS} kelime"))
         assertTrue(prompt.contains("\"şemsiye\" kelimesi"))
         assertFalse(prompt.contains("@@PICTURES@@"))
         assertTrue(prompt.contains("neutral, thinking"))
+        // what the screen already says is not to be said again
+        assertTrue(prompt.contains("Sanatçı Kasası"))
+        assertTrue(prompt.contains("Sadece 100 kişi"))
+        assertTrue(prompt.contains("TEKRARLAMA"))
+    }
+
+    @Test
+    fun theSceneForTheCodeFollowsTheMode() {
+        val word = ForgotCopy.directorPrompt("kedi", listOf(1f), "m", ForgotMode.Word, "", "")
+        val shown = ForgotCopy.directorPrompt("kedi", listOf(1f), "m", ForgotMode.Shown, "", "")
+        assertTrue(word.contains("BOŞ kutuları"))
+        assertFalse(word.contains("Ayarlar'dan girmelerini"))
+        assertTrue(shown.contains("Ayarlar'dan girmelerini"))
+        assertFalse(shown.contains("BOŞ kutuları"))
+        // no reward set: nothing is said about one
+        assertFalse(word.contains("Bu videonun ödülü"))
+    }
+
+    @Test
+    fun codeBoxesGoInEvenRowsNeverALoneOne() {
+        // a code written out (KRLK-7H3QM2, 11) fits one row; a word of any usual length too
+        assertEquals(11, ForgotCopy.rowSize(11))
+        assertEquals(12, ForgotCopy.rowSize(12))
+        // past one row the rows are as even as they can be
+        assertEquals(7, ForgotCopy.rowSize(13))
+        assertEquals(12, ForgotCopy.rowSize(24))
+        for (len in 1..24) {
+            val per = ForgotCopy.rowSize(len)
+            val rows = (len + per - 1) / per
+            assertTrue("$len: $per", per <= ForgotCopy.CODE_ROW)
+            val last = len - (rows - 1) * per
+            assertTrue("$len gives a last row of $last", rows == 1 || last >= per - 1)
+        }
+    }
+
+    @Test
+    fun theLimitIsSaidTheWayTheCodeScreenShowsIt() {
+        // 8 Kasım 2026 21:00 UTC
+        val at = java.time.ZonedDateTime.of(2026, 11, 8, 21, 0, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+        assertEquals("Sadece 100 kişi · Son: 8 Kasım 21:00", ForgotCopy.limitText(100, at, zone = java.time.ZoneOffset.UTC))
+        assertEquals("Sadece 1 kişi", ForgotCopy.limitText(1, 0L, zone = java.time.ZoneOffset.UTC))
+        assertEquals("Son: 8 Kasım 21:00", ForgotCopy.limitText(0, at, zone = java.time.ZoneOffset.UTC))
+        assertEquals("", ForgotCopy.limitText(0, 0L))
+        // the device's own time zone moves the hour, not the day count
+        assertEquals("Son: 9 Kasım 00:00", ForgotCopy.limitText(0, at, zone = java.time.ZoneOffset.ofHours(3)))
+    }
+
+    @Test
+    fun theCountdownIsSpokenAndLastsAsLongAsTheQuestion() {
+        val short = ForgotTimeline.build(script()) { _, _ -> 200L }.first { it.phase == ForgotPhase.Countdown }
+        assertEquals("soru", short.line?.text)
+        assertEquals(ForgotTimeline.COUNTDOWN_MS, short.durationMs)
+        val long = ForgotTimeline.build(script()) { _, l -> if (l.text == "soru") 3_000L else 200L }.first { it.phase == ForgotPhase.Countdown }
+        assertTrue(long.durationMs >= 3_000L)
     }
 
     @Test
     fun theStockVideoWithItsEndCardRunsUnderTwentySeconds() {
         val stock = script(guesses = ForgotCopy.DEFAULT_GUESSES).copy(
             hook = line(ForgotCopy.HOOK), guesses = ForgotCopy.placeholderGuesses().take(ForgotCopy.DEFAULT_GUESSES),
-            codeLine = line(ForgotCopy.CODE_WORD), outro = line(ForgotCopy.OUTRO)
+            askLine = line(ForgotCopy.ASK), codeLine = line(ForgotCopy.CODE_WORD), outro = line(ForgotCopy.OUTRO)
         )
         // voices at the pace the preview assumes, and the how-to video that plays in the end card (6.3 s)
         val events = ForgotTimeline.build(stock, howtoMs = 6_300L) { _, l -> StudioCopy.estimateMs(l.text) }
@@ -185,7 +252,10 @@ class ForgotTest {
     fun theAssistantsLinesAreReadAndTheLeakingOnesDropped() {
         val text = """```json
             {"guesses":[{"emotion":"thinking","line":"Mantar mı bu?"},{"emotion":"excited","line":"Şemsiye bu!"},{"emotion":"confident","line":"Denizanası!"}],
+             "plan":"Görsel 1'de kemerli bir şey var, mantar sanır.",
              "hook":{"emotion":"shocked","line":"Çizen şemsiye dedi"},
+             "ask":{"emotion":"suspicious","line":"Sen ne görüyorsun?"},
+             "code_line":{"emotion":"point","line":"Şemsiye mi dedin? Kod sende!"},
              "outro":{"emotion":"wave","line":"Yarın görüşürüz, karalak.com"},
              "caption":"Sen bilebilir misin?","hashtags":"#karalak #çizim"}```"""
         val w = ForgotCopy.parse(text, "şemsiye")
@@ -194,6 +264,9 @@ class ForgotTest {
         assertEquals(MascotEmotion.Thinking, w.guesses.first().emotion)
         // the hook said the word: dropped, the stock one stays
         assertNull(w.hook)
+        assertEquals("Sen ne görüyorsun?", w.ask?.text)
+        // the code line said the word too: dropped as well
+        assertNull(w.codeLine)
         assertEquals("Yarın görüşürüz, karalak.com", w.outro?.text)
         assertEquals("Sen bilebilir misin?", w.caption)
     }
@@ -264,5 +337,29 @@ class ForgotTest {
     @Test
     fun aNewCodeStopsWorkingTwoDaysOut() {
         assertEquals(1_000L + 48L * 3_600_000L, ForgotCopy.defaultExpiry(1_000L))
+    }
+
+    @Test
+    fun theThreeWordingsTakeTurns() {
+        assertEquals(listOf(ForgotStyle.Game, ForgotStyle.Warm, ForgotStyle.Deal, ForgotStyle.Game), (0..3).map { ForgotStyle.forTurn(it) })
+        assertEquals(ForgotStyle.Deal, ForgotStyle.forTurn(-1))
+    }
+
+    @Test
+    fun theLimitFollowsTheStyle() {
+        val at = java.time.ZonedDateTime.of(2026, 11, 8, 21, 0, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+        val utc = java.time.ZoneOffset.UTC
+        assertEquals("100 kişi açabilir · Son: 8 Kasım 21:00", ForgotCopy.limitText(100, at, ForgotStyle.Warm, utc))
+        assertEquals("Son fırsat · 8 Kasım 21:00 · İlk 100 kişi", ForgotCopy.limitText(100, at, ForgotStyle.Deal, utc))
+        assertEquals("Son fırsat · 8 Kasım 21:00", ForgotCopy.limitText(0, at, ForgotStyle.Deal, utc))
+    }
+
+    @Test
+    fun everyStyleHasItsOwnWordsAndOnlyTheGameOneLeavesTheRewardLabelOut() {
+        assertEquals(3, ForgotStyle.entries.map { it.countdownCaption }.toSet().size)
+        assertEquals(3, ForgotStyle.entries.map { it.chipPrefix }.toSet().size)
+        assertNull(ForgotStyle.Game.rewardLabel)
+        assertNotNull(ForgotStyle.Warm.rewardLabel)
+        assertTrue(ForgotStyle.Warm.tone in ForgotCopy.directorPrompt("kedi", listOf(1f), "m", ForgotMode.Word, "", "", ForgotStyle.Warm))
     }
 }

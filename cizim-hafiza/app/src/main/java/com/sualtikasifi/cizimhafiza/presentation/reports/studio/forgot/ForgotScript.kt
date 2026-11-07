@@ -11,7 +11,57 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.util.Locale
 import kotlin.math.max
+
+/**
+ * The wording of the on-screen texts (and the tone the assistant writes in): three sets that are used in turn from one
+ * video to the next, so the feed does not read like the same ad every time.
+ */
+enum class ForgotStyle(
+    val title: String,
+    /** Before the prize in the chip at the top of the board: "Kasa kilitli: 40 XP". */
+    val chipPrefix: String,
+    /** What the viewer does while 3 · 2 · 1 counts. */
+    val countdownCaption: String,
+    val titleWord: String,
+    val titleShown: String,
+    val explainWord: String,
+    val explainShown: String,
+    /** Above the prize pill on the code screen. */
+    val rewardLabel: String?,
+    val howTo: String,
+    val hintWord: String,
+    /** The assistant's voice for this set. */
+    val tone: String
+) {
+    Game(
+        "Oyun dili", "Kasa kilitli:", "Kilidi aç: cevabını yaz", "ANAHTAR KELİME", "KASA ŞİFRESİ",
+        "Doğru tahmin, kasanın şifresi", "Bu kod, kasanın şifresi", null,
+        "Ayarlar › Kupon kodu › Kullan", "Takıldıysan yorumlara bak",
+        "oyun dili: kilit, kasa, şifre, anahtar gibi sözcükler; enerjik ve meydan okuyan"
+    ),
+    Warm(
+        "Sıcak dil", "Bilirsen bu senin:", "Sen de bilebilirsin, yaz", "Bu kasa senin olabilir", "Bu kasa senin olabilir",
+        "Şifre, az önce çizilen şey", "Kodu uygulamaya yaz", "Açtığın kasa",
+        "Ayarlar'a gir, kodu yaz, Kullan'a bas", "Bilemedin mi? İpucu yorumlarda",
+        "samimi ve sıcak: hediye veren, yanında duran bir arkadaş gibi; yarışmacı değil davetkâr"
+    ),
+    Deal(
+        "Fırsat dili", "Hediyen hazır:", "Kaçırma, cevabını yaz", "Hediye kodun", "Hediye kodun",
+        "Kod, çizilen şeyin adı", "Kodu uygulamaya gir", "İçinden çıkan",
+        "Ayarlar › Kupon kodu › Kullan", "İpucu yorumlarda",
+        "net ve fırsat vurgulu: kısa, süreli ve sınırlı olduğunu hissettiren ama abartısız, bağıran değil"
+    );
+
+    fun codeTitle(word: Boolean) = if (word) titleWord else titleShown
+    fun explain(word: Boolean) = if (word) explainWord else explainShown
+
+    companion object {
+        /** The set for the [turn]th video, the sets taking it in turns. */
+        fun forTurn(turn: Int): ForgotStyle = entries[Math.floorMod(turn, entries.size)]
+    }
+}
 
 /** How the video hands out its kupon kodu. */
 enum class ForgotMode(val title: String) {
@@ -40,6 +90,9 @@ data class ForgotScript(
      * spread evenly (see [ForgotTimeline.stopsFor]). The assistant writes each guess from the drawing as far as this.
      */
     val guessAt: List<Float> = emptyList(),
+    /** Said over the countdown, to the viewer: the question that makes the 3 · 2 · 1 mean something. */
+    val askLine: SpokenLine,
+    /** Karalak's reaction and the code, one line, said as the code comes up. */
     val codeLine: SpokenLine,
     val outro: SpokenLine,
     val mode: ForgotMode = ForgotMode.Word,
@@ -48,7 +101,12 @@ data class ForgotScript(
     val code: String = "",
     /** Hand-entered share of players who could not recognise their own drawing of this word; shown when [showPercent]. */
     val percent: Int = 70,
-    val showPercent: Boolean = false
+    val showPercent: Boolean = false,
+    /** How many accounts may use the code and when it stops working (0: not set), as the coupon will hold them; shown on the code screen. */
+    val uses: Int = 0,
+    val expiresAtMillis: Long = 0L,
+    /** Which wording the on-screen texts use. */
+    val style: ForgotStyle = ForgotStyle.Game
 ) {
     /** Where each guess stops the drawing, ready to use: one per guess, in order, none past the whole. */
     val stops: List<Float> get() = ForgotTimeline.stopsFor(guesses.size, guessAt)
@@ -57,6 +115,7 @@ data class ForgotScript(
     fun lines(): List<SpokenLine> = buildList {
         add(hook)
         addAll(guesses.take(ForgotTimeline.MAX_GUESSES))
+        add(askLine)
         add(codeLine)
         add(outro)
     }
@@ -132,8 +191,8 @@ object ForgotTimeline {
             }
             speak(ForgotPhase.Guess, k, line, GUESS_MIN, 200, upTo, upTo)
         }
-        out += ForgotEvent(ForgotPhase.Countdown, -1, t, COUNTDOWN_MS)
-        t += COUNTDOWN_MS
+        // the countdown is a question put to the viewer, out loud; it lasts as long as the question takes, 1.5 s at the least
+        speak(ForgotPhase.Countdown, -1, script.askLine, COUNTDOWN_MS, 150, 1f, 1f)
         // Karalak's reaction and the code are one line, said as the code comes up
         speak(ForgotPhase.Code, -1, script.codeLine, CODE_MIN, 400, 1f, 1f)
         val cardMin = if (howtoMs > 0) howtoMs.coerceAtMost(RealTimeline.HOWTO_MAX) + RealTimeline.END_VIDEO_LEAD + RealTimeline.END_VIDEO_TAIL else 0L
@@ -169,6 +228,7 @@ object ForgotTimeline {
 object ForgotCopy {
     const val HOOK = "Çizen bile bilemedi. Sen bilir misin?"
     const val OUTRO = "Yarın daha zoru geliyor. Sen de karalak.com'da çiz!"
+    const val ASK = "Sen ne görüyorsun?"
     const val CODE_WORD = "Bilemedin mi? Doğru cevap senin kodun!"
     const val CODE_SHOWN = "Bilemedin mi? Kodu Ayarlar'dan gir!"
 
@@ -176,6 +236,7 @@ object ForgotCopy {
     const val DEFAULT_GUESSES = 2
     const val GUESS_WORDS = 5
     const val HOOK_WORDS = 8
+    const val ASK_WORDS = 4
     const val CODE_WORDS = 9
 
     fun codeLineFor(mode: ForgotMode) = if (mode == ForgotMode.Word) CODE_WORD else CODE_SHOWN
@@ -208,9 +269,12 @@ object ForgotCopy {
         return " $t ".contains(" $w ") || t.split(' ').any { it.length >= 4 && w.length >= 4 && (it == w || it.startsWith(w) || w.startsWith(it)) }
     }
 
-    /** The assistant's lines: `{"guesses":[{"emotion","line"}…],"hook":{…},"outro":{…},"caption":"…","hashtags":"…"}`. */
+    /**
+     * The assistant's lines: `{"plan":"…","hook":{…},"guesses":[{"emotion","line"}…],"ask":{…},"code_line":{…},"outro":{…},
+     * "caption":"…","hashtags":"…"}`. The plan is its own working-out and is not kept.
+     */
     data class Written(
-        val guesses: List<SpokenLine>, val hook: SpokenLine?, val outro: SpokenLine?,
+        val guesses: List<SpokenLine>, val hook: SpokenLine?, val ask: SpokenLine?, val codeLine: SpokenLine?, val outro: SpokenLine?,
         val caption: String, val hashtags: String
     )
 
@@ -226,7 +290,10 @@ object ForgotCopy {
         val guesses = runCatching { o["guesses"]!!.jsonArray.mapNotNull { line(it) } }.getOrNull().orEmpty()
         if (guesses.isEmpty()) return null
         fun clean(key: String) = o[key]?.jsonPrimitive?.contentOrNull?.trim().orEmpty().takeIf { !leaks(it, word) }.orEmpty()
-        return Written(guesses.take(ForgotTimeline.MAX_GUESSES), line(o["hook"]), line(o["outro"]), clean("caption"), clean("hashtags"))
+        return Written(
+            guesses.take(ForgotTimeline.MAX_GUESSES), line(o["hook"]), line(o["ask"]), line(o["code_line"]), line(o["outro"]),
+            clean("caption"), clean("hashtags")
+        )
     }
 
     /** When a new code stops working unless the person picks another time: two days from now. */
@@ -235,29 +302,77 @@ object ForgotCopy {
     /** A share of the drawing as the panel and the assistant say it: 0.35 → 35. */
     fun percent(share: Float): Int = kotlin.math.round(share * 100f).toInt()
 
+    /** How many boxes the code screen puts in a row at most. */
+    const val CODE_ROW = 12
+
+    /** How many boxes go in a row: one row up to [CODE_ROW], else the same in every row (11 letters are 11, 13 are 7 and 6), never a lone one. */
+    fun rowSize(length: Int): Int {
+        if (length <= 0) return CODE_ROW
+        val rows = (length + CODE_ROW - 1) / CODE_ROW
+        return (length + rows - 1) / rows
+    }
+
     /**
-     * What the assistant is told: one picture per guess, the drawing as far as that guess stops it, then the whole drawing.
-     * Each guess is written from its own picture only, so it fits what is on the paper at that moment.
+     * How many may use the code and until when, as the code screen says it in [style]'s words (empty when neither is set):
+     * "Sadece 100 kişi · Son: 8 Kasım 21:00", "100 kişi açabilir · Son: …", "Son fırsat · 8 Kasım 21:00 · İlk 100 kişi".
      */
-    fun guessPrompt(word: String, stops: List<Float>, moods: String): String {
+    fun limitText(uses: Int, expiresAtMillis: Long, style: ForgotStyle = ForgotStyle.Game, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String {
+        val who = if (uses <= 0) null else when (style) {
+            ForgotStyle.Game -> "Sadece $uses kişi"
+            ForgotStyle.Warm -> "$uses kişi açabilir"
+            ForgotStyle.Deal -> "İlk $uses kişi"
+        }
+        val until = if (expiresAtMillis <= 0) null else {
+            val at = java.time.format.DateTimeFormatter.ofPattern("d MMMM HH:mm", Locale("tr")).withZone(zone).format(java.time.Instant.ofEpochMilli(expiresAtMillis))
+            if (style == ForgotStyle.Deal) "Son fırsat · $at" else "Son: $at"
+        }
+        return listOfNotNull(if (style == ForgotStyle.Deal) until else who, if (style == ForgotStyle.Deal) who else until).joinToString(" · ")
+    }
+
+    /**
+     * What the assistant is told: the drawing as it looks at each guess, the video's scene order with what is on screen at
+     * every spoken moment and how long it lasts, and what it must keep in mind (the mode, the reward, the word it may not say).
+     * It works its plan out first, then writes each line for its own moment.
+     */
+    fun directorPrompt(word: String, stops: List<Float>, moods: String, mode: ForgotMode, reward: String, limit: String, style: ForgotStyle = ForgotStyle.Game): String {
         val n = stops.size
         val pictures = stops.mapIndexed { i, share -> "Görsel ${i + 1}: çizimin %${percent(share)}'i çizilmiş." }.joinToString("\n") + "\nGörsel ${n + 1}: bitmiş çizim."
+        val guessScenes = stops.mapIndexed { i, share ->
+            val before = if (i == 0) "" else " Çizim kaldığı yerden devam etti."
+            "${i + 2}. TAHMİN ${i + 1} (Görsel ${i + 1}): ekranda çizim %${percent(share)} çizilmiş durumda.$before Karalak o anda gördüğüne bakarak tahmin ediyor (≈2 sn, EN FAZLA $GUESS_WORDS kelime)."
+        }.joinToString("\n")
+        val codeScene = if (mode == ForgotMode.Word) {
+            "tahtada kupon kodunun BOŞ kutuları (harf sayısı kadar), ödül${if (limit.isNotBlank()) " ve \"$limit\"" else ""} ile \"nereye girilir\" bilgisi yazıyor. Kod, çizilen şeyin adının kendisi: bilen girer, bilmeyen yorumlara bakar. Karalak tek cümleyle hem bilemeyenle ilgili bir tepki veriyor hem de kodun çizilen şeyin adı olduğunu sezdiriyor (cevabı VERMEDEN)."
+        } else {
+            "tahtada kupon kodu yazılı olarak beliriyor, ödül${if (limit.isNotBlank()) " ve \"$limit\"" else ""} ile \"nereye girilir\" bilgisi yazıyor. Karalak tek cümleyle hem bir tepki veriyor hem de kodu uygulamada Ayarlar'dan girmelerini söylüyor."
+        }
+        val rewardLine = if (reward.isNotBlank()) "Bu videonun ödülü: $reward. Kod cümlesi bu ödüle heyecan katabilir (adını söylemek zorunda değil)." else ""
         return """
-            Sana bir oyuncunun çizimini adım adım gösteriyorum. Çizilmesi istenen kelime: "$word". Çizen kişi bir süre sonra kendi çizimini hatırlayamadı.
+            Sana bir oyuncunun çizimini adım adım gösteriyorum. Çizilmesi istenen kelime: "$word". Çizen kişi bir süre sonra kendi çizimini hatırlayamadı. Doğru cevap bir kupon kodu: hiçbir cümlede ya da açıklamada "$word" kelimesi (ya da kökü) geçmemeli.
 
             @@PICTURES@@
 
-            Video: Karalak çizimi canlı izliyor ve tahmin ediyor; izleyici de aynı anda tahmin edecek. Doğru cevap bir kupon kodu, o yüzden hiçbir cümlede "$word" kelimesi (ya da kökü) geçmemeli.
+            VİDEONUN SAHNE AKIŞI. Karalak'ın sesi bu sırayla, bu anlarda duyulur; her cümle O ANDA ekranda görünenle tutarlı olmalı:
+            1. AÇILIŞ (0 sn): çizim çizilmeye başlıyor, ilk tahmine kadar çiziliyor. Karalak kancayı söylüyor (≈2,5 sn, EN FAZLA ${HOOK_WORDS} kelime).
+            $guessScenes
+            ${n + 2}. SORU (geri sayım 3-2-1, ≈1,5 sn): çizim tamamlandı, ekranda geri sayım var. Karalak izleyiciye soruyor (EN FAZLA ${ASK_WORDS} kelime).
+            ${n + 3}. KOD ANI (≈3 sn): $codeScene (EN FAZLA ${CODE_WORDS} kelime)
+            ${n + 4}. KAPANIŞ: oyunun tanıtım kartı, Karalak yarın daha zorunun geleceğini söylüyor (en fazla 14 kelime, "karalak.com" geçsin).
+            $rewardLine
 
-            Video 20 saniyenin altında olmalı: bütün cümleler kısa ve konuşma diliyle olsun.
-            1) "guesses": tam $n tahmin, Görsel 1'den Görsel $n'e sırayla. Her tahmini YALNIZCA kendi görseline bakarak yaz: Karalak o anda yalnızca o kadarını görüyor, sonrasını bilmiyor. Her biri EN FAZLA ${GUESS_WORDS} kelime (ör. "Mantar mı bu?"), o görselde gerçekten görünen bir şeye bakan komik ve yanlış (ama makul) bir tahmin olsun; ilk tahminler daha belirsiz, sonuncusu en kendinden emini. Çizenle asla dalga geçme.
-            2) "hook": videonun ilk cümlesi; "çizen kişi bile bilemedi" fikrini söylesin ve izleyiciyi tahmine çağırsın, EN FAZLA ${HOOK_WORDS} kelime.
-            3) "outro": kapanış, yarın daha zorunun geleceğini söylesin, en fazla 14 kelime, "karalak.com" geçsin.
-            4) "caption": TikTok/Reels açıklaması (1–2 cümle, izleyiciye soruyla bitsin, doğru kelime geçmesin) ve "hashtags": 5–6 Türkçe ağırlıklı etiket.
+            ÖNCE "plan" alanında düşün (en fazla 4 kısa cümle): her görselde ne görünüyor, Karalak onu nasıl yanlış ama makul yorumlar, izleyici o anda ne hissetmeli? SONRA her cümleyi kendi anı için yaz:
+            - Tahminleri YALNIZCA kendi görseline bakarak yaz: Karalak o anda yalnızca o kadarını görüyor, sonrasını bilmiyor. Görselde gerçekten görünen bir şeye bakan komik, yanlış ama makul tahminler olsun; ilk tahmin belirsiz, sonuncusu en kendinden emin. Tahminler birbirini izlesin: sonraki, öncekinden çıkarım yapsın ya da onu inatla savunsun; aynı şeyi tekrarlama.
+            - Soru, son tahminle bağlantılı olsun ve izleyiciyi yorum yazmaya itsin ("Sen ne görüyorsun?" gibi).
+            - Çizenle ve izleyiciyle asla dalga geçme.
+            - Üslup: ${style.tone}. Ekranda şu sözler zaten yazıyor, bunlara uyumlu ol ama tekrar etme: "${style.countdownCaption}".
+            - Bütün cümleler kısa ve konuşma diliyle olsun; video 20 saniyenin altında kalmalı.
+            - Kod ekranında zaten yazan bilgiyi (ödül, son tarih, nereye girileceği) cümlede TEKRARLAMA; cümle yazının üstüne duygu katsın.
+
+            "caption": TikTok/Reels açıklaması (1–2 cümle, izleyiciye soruyla bitsin, doğru kelime geçmesin); "hashtags": 5–6 Türkçe ağırlıklı etiket.
 
             Yalnızca şu JSON'u yaz:
-            {"guesses":[{"emotion":"…","line":"…"}],"hook":{"emotion":"…","line":"…"},"outro":{"emotion":"…","line":"…"},"caption":"…","hashtags":"…"}
-            emotion yalnızca şunlardan biri: $moods.
+            {"plan":"…","hook":{"emotion":"…","line":"…"},"guesses":[{"emotion":"…","line":"…"}],"ask":{"emotion":"…","line":"…"},"code_line":{"emotion":"…","line":"…"},"outro":{"emotion":"…","line":"…"},"caption":"…","hashtags":"…"}
+            emotion yalnızca şunlardan biri: $moods. "guesses" tam $n eleman içermeli.
         """.trimIndent().replace("@@PICTURES@@", pictures)
     }
 
