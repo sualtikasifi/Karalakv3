@@ -1142,6 +1142,18 @@ service cloud.firestore {
       allow read: if reviewer();
       allow write: if false;
     }
+    // The developer panel assistant's saved answers (kept so a new phone has them): the reviewer's own, nobody else's.
+    match /adminAssistantHistory/{id} {
+      allow read, delete: if reviewer();
+      allow create, update: if reviewer()
+                            && request.resource.data.keys().hasOnly(['title', 'text', 'at', 'model', 'costUsd'])
+                            && request.resource.data.title is string && request.resource.data.title.size() <= 200
+                            && request.resource.data.text is string && request.resource.data.text.size() <= 30000
+                            && request.resource.data.at is int
+                            && (!('model' in request.resource.data) || request.resource.data.model is string)
+                            && (!('costUsd' in request.resource.data) || request.resource.data.costUsd is number);
+    }
+
     // Who was active on each day, and who was new (written by the nightly roll-up): the panel's coupon card counts how many of a
     // code's users were new players from it.
     match /adminSummaryUids/{day} {

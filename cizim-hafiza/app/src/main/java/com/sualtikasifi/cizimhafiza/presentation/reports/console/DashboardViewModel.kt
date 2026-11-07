@@ -6,6 +6,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.sualtikasifi.cizimhafiza.domain.repository.BugReportRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
+import com.sualtikasifi.cizimhafiza.presentation.reports.JOBS
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +24,8 @@ data class DashboardState(
     val pendingDaily: Long? = null,
     val openReports: Long? = null,
     val unseenFeedback: Int? = null,
+    /** How the scheduled jobs last ran (adminJobs); empty until read. */
+    val jobs: List<JobHealth> = emptyList(),
     val special: List<SpecialDay> = SpecialDays.upcoming()
 )
 
@@ -48,6 +53,20 @@ class DashboardViewModel @Inject constructor(
             val reports = async { countOf(firestore, "drawingReports") }
             // one count query (all, minus the seen ones), not forty reports read to count them
             val feedback = async { bugReports.unseenCount().getOrNull()?.toInt() }
+            // seven small documents: which scheduled job failed or stopped, for the warnings at the top
+            val jobs = async {
+                JOBS.map { (name, label) ->
+                    async {
+                        val d = runCatching { firestore.collection("adminJobs").document(name).get().await() }.getOrNull()?.takeIf { it.exists() }
+                        d?.let {
+                            JobHealth(
+                                label, it.getTimestamp("lastRunAt")?.toDate()?.time ?: 0L, it.getBoolean("ok"),
+                                it.getString("error").orEmpty(), DashboardAlerts.maxAgeFor(name)
+                            )
+                        }
+                    }
+                }.awaitAll().filterNotNull()
+            }
             val s = series.await()
             _state.value = _state.value.copy(
                 loading = false,
@@ -58,6 +77,7 @@ class DashboardViewModel @Inject constructor(
                 pendingDaily = daily.await(),
                 openReports = reports.await(),
                 unseenFeedback = feedback.await(),
+                jobs = jobs.await(),
                 special = SpecialDays.upcoming()
             )
         }

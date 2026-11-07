@@ -665,7 +665,7 @@ private fun PushPreview(title: String, body: String) {
 
 // ---------------------------------------------------------------- background jobs
 
-private val JOBS = listOf(
+internal val JOBS = listOf(
     "build-global-leaderboard" to "Küresel lig özeti (saatlik)",
     "process-admin-commands" to "Panel komutları: telafi, bildirim, planlı XP (saatlik)",
     "rollup-stats" to "Günlük istatistik özeti (gece)",

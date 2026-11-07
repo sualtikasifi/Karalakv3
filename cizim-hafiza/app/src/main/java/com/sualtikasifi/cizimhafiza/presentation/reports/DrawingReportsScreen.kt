@@ -446,6 +446,7 @@ private fun PlaceContent(
                     when (key) {
                         "daily" -> ReportsTab.DailyChallenge
                         "reports" -> ReportsTab.Reports
+                        "jobs" -> ReportsTab.Jobs
                         else -> ReportsTab.Feedback
                     }
                 )
