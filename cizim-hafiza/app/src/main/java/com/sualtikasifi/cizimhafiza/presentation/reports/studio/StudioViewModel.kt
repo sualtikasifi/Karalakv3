@@ -135,6 +135,7 @@ data class ElevenUi(
 sealed interface LineRef {
     data object ForgotHook : LineRef
     data class ForgotGuess(val index: Int) : LineRef
+    data object ForgotAsk : LineRef
     data object ForgotCode : LineRef
     data object ForgotOutro : LineRef
 }
@@ -388,11 +389,12 @@ class StudioViewModel @Inject constructor(
 
     private fun updateLine(ref: LineRef, change: (SpokenLine) -> SpokenLine) {
         _state.update { s ->
-            if (ref is LineRef.ForgotHook || ref is LineRef.ForgotGuess || ref is LineRef.ForgotCode || ref is LineRef.ForgotOutro) {
+            if (ref is LineRef.ForgotHook || ref is LineRef.ForgotGuess || ref is LineRef.ForgotAsk || ref is LineRef.ForgotCode || ref is LineRef.ForgotOutro) {
                 val fs = s.forgot.script ?: return@update s
                 val next = when (ref) {
                     LineRef.ForgotHook -> fs.copy(hook = change(fs.hook))
                     is LineRef.ForgotGuess -> fs.copy(guesses = fs.guesses.mapIndexed { i, l -> if (i == ref.index) change(l) else l })
+                    LineRef.ForgotAsk -> fs.copy(askLine = change(fs.askLine))
                     LineRef.ForgotCode -> fs.copy(codeLine = change(fs.codeLine))
                     LineRef.ForgotOutro -> fs.copy(outro = change(fs.outro))
                     else -> fs
@@ -416,13 +418,16 @@ class StudioViewModel @Inject constructor(
             hook = previous?.hook ?: SpokenLine(ForgotCopy.HOOK, MascotEmotion.Shocked),
             guesses = previous?.guesses ?: ForgotCopy.placeholderGuesses().take(ForgotCopy.DEFAULT_GUESSES),
             guessAt = previous?.guessAt ?: ForgotTimeline.stopsFor(ForgotCopy.DEFAULT_GUESSES, emptyList()),
+            askLine = previous?.askLine ?: SpokenLine(ForgotCopy.ASK, MascotEmotion.Suspicious),
             codeLine = previous?.codeLine?.takeIf { it.text != other } ?: SpokenLine(ForgotCopy.codeLineFor(ui.mode), MascotEmotion.Point),
             outro = previous?.outro ?: SpokenLine(ForgotCopy.OUTRO, MascotEmotion.Wave),
             mode = ui.mode,
             reward = ForgotCopy.rewardLabel(ui.gold, ui.xp, ui.chest.chests),
             code = if (ui.mode == ForgotMode.Word) ForgotCopy.wordCode(d.word).orEmpty() else ui.shownCode,
             percent = previous?.percent ?: ForgotCopy.randomPercent(),
-            showPercent = previous?.showPercent ?: false
+            showPercent = previous?.showPercent ?: false,
+            uses = ui.maxUses,
+            expiresAtMillis = ui.expiresAtMillis
         )
     }
 
@@ -448,12 +453,17 @@ class StudioViewModel @Inject constructor(
     /** Shows the next [FORGOT_PAGE] drawings in the list. */
     fun showMoreForgot() = updateForgot { it.copy(shown = it.shown + FORGOT_PAGE) }
 
-    fun setForgotMode(mode: ForgotMode) = rebuildForgot { it.copy(mode = mode) }
+    /** Switches how the code is given; the code line was written for the other way, so it goes back to the stock one for this. */
+    fun setForgotMode(mode: ForgotMode) {
+        rebuildForgot { it.copy(mode = mode) }
+        editForgotScript { it.copy(codeLine = SpokenLine(ForgotCopy.codeLineFor(mode), MascotEmotion.Point)) }
+    }
     fun setForgotChest(chest: ForgotChest) = rebuildForgot { it.copy(chest = chest) }
     fun setForgotGold(n: Int) = rebuildForgot { it.copy(gold = n.coerceIn(0, CouponCodes.MAX_GOLD)) }
     fun setForgotXp(n: Int) = rebuildForgot { it.copy(xp = n.coerceIn(0, CouponCodes.MAX_XP)) }
-    fun setForgotUses(n: Int) = updateForgot { it.copy(maxUses = n.coerceIn(0, MAX_COUPON_USES), couponStatus = null) }
-    fun setForgotExpiry(millis: Long) = updateForgot { it.copy(expiresAtMillis = millis, couponStatus = null) }
+    // the video says how many may use the code and until when, so the script follows these two
+    fun setForgotUses(n: Int) = rebuildForgot { it.copy(maxUses = n.coerceIn(0, MAX_COUPON_USES)) }
+    fun setForgotExpiry(millis: Long) = rebuildForgot { it.copy(expiresAtMillis = millis) }
     fun newForgotCode() = rebuildForgot { it.copy(shownCode = CouponCodes.generate()) }
 
     /** How many guesses Karalak makes (1 to 3); the stops are spread evenly again, and the lines already there stay. */
@@ -495,7 +505,10 @@ class StudioViewModel @Inject constructor(
         val model = analysisModel()
         updateForgot { it.copy(writing = true, writeError = null) }
         viewModelScope.launch {
-            ForgotDirector(OpenRouterClient(key), model, _state.value.lang).write(d, s.forgot.script?.stops.orEmpty()).onSuccess { w ->
+            ForgotDirector(OpenRouterClient(key), model, _state.value.lang).write(
+                d, s.forgot.script?.stops.orEmpty(), s.forgot.mode, s.forgot.script?.reward.orEmpty(),
+                ForgotCopy.limitText(s.forgot.maxUses, s.forgot.expiresAtMillis)
+            ).onSuccess { w ->
                 _state.update { st ->
                     val cur = st.forgot.script ?: return@update st.copy(forgot = st.forgot.copy(writing = false))
                     val c = w.lines
@@ -506,6 +519,7 @@ class StudioViewModel @Inject constructor(
                                 hook = c.hook ?: cur.hook,
                                 // one line per stop, the assistant's where it wrote one, else what was there
                                 guesses = List(cur.guesses.size) { k -> c.guesses.getOrNull(k) ?: cur.guesses[k] },
+                                askLine = c.ask ?: cur.askLine, codeLine = c.codeLine ?: cur.codeLine,
                                 outro = c.outro ?: cur.outro
                             )
                         ),

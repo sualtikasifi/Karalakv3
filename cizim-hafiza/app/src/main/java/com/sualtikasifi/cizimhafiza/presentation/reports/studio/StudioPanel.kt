@@ -3,6 +3,8 @@ package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotChest
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotCopy
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotPhase
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotScript
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotTimeline
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -266,7 +268,7 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
             )
             Text(
                 if (f.mode == ForgotMode.Word) "Kod, doğru cevabın kendisi. Videoda yalnızca harf sayısı kadar boş kutu görünür; bilen girer, bilmeyen yorumlardan öğrenir."
-                else "Kod bitiş kartında yazılır.",
+                else "Kod bitiş kartında yazılır. Modu değiştirince kod cümlesi o moda göre sıfırlanır.",
                 style = Console.Small, modifier = Modifier.padding(top = 6.dp)
             )
             Text(
@@ -336,6 +338,7 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
             f.writeError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
         }
     }
+    item { ForgotCueSheet(script, st.real.howtoMs) }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Açılış", style = Console.Label)
@@ -357,6 +360,8 @@ private fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
                 )
                 LineEditor(l, { vm.editLine(LineRef.ForgotGuess(i), it) }, { vm.editEmotion(LineRef.ForgotGuess(i), it) }) { vm.listen(l) }
             }
+            Text("Geri sayımda izleyiciye soru", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
+            LineEditor(script.askLine, { vm.editLine(LineRef.ForgotAsk, it) }, { vm.editEmotion(LineRef.ForgotAsk, it) }) { vm.listen(script.askLine) }
             Text("Tepki ve kod anı (tek cümle)", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
             LineEditor(script.codeLine, { vm.editLine(LineRef.ForgotCode, it) }, { vm.editEmotion(LineRef.ForgotCode, it) }) { vm.listen(script.codeLine) }
             Text("Kapanış", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
@@ -403,6 +408,39 @@ private fun StopScrubber(strokes: List<com.sualtikasifi.cizimhafiza.domain.model
                 StepButton("+") { onNudge(1) }
             }
         }
+    }
+}
+
+/**
+ * The video as it will be said, moment by moment: when each spoken line starts, what is on screen then and what Karalak says.
+ * The same timeline the video is made from (voices at the pace the preview assumes, the real ones when the video is made),
+ * so it answers "which line plays when" at a glance.
+ */
+@Composable
+private fun ForgotCueSheet(script: ForgotScript, howtoMs: Long) {
+    val events = remember(script, howtoMs) { ForgotTimeline.build(script, howtoMs) { _, l -> StudioCopy.estimateMs(l.text) } }
+    ConsoleCard(Modifier.fillMaxWidth()) {
+        Text("Sahne akışı ve seslendirme", style = Console.Subtitle)
+        Text("Hangi cümle, videonun hangi anında, ekranda ne varken söylenir. Süreler tahmin; gerçek ses uzunluğuna göre ayarlanır.", style = Console.Small)
+        events.filter { it.line != null }.forEach { e ->
+            val label = when (e.phase) {
+                ForgotPhase.Hook -> "Açılış · çizim çizilmeye başlıyor"
+                ForgotPhase.Guess -> "Tahmin ${e.look + 1} · çizimin %${ForgotCopy.percent(e.drawTo)}'i çizilmiş"
+                ForgotPhase.Countdown -> "Geri sayım 3-2-1 · izleyiciye soru"
+                ForgotPhase.Code -> "Kod ekranı · ödül ve nereye girileceği yazıyor"
+                ForgotPhase.Outro -> "Bitiş kartı · nasıl oynanır videosu"
+                else -> ""
+            }
+            Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                Text(String.format(Locale("tr"), "%.1f sn", e.startMs / 1000f), style = Console.Label, modifier = Modifier.width(62.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(label, style = Console.Small)
+                    Text("“${e.line?.text.orEmpty()}”", style = Console.Subtitle)
+                }
+            }
+        }
+        val total = ((events.lastOrNull()?.endMs ?: 0L) + 999) / 1000
+        Text("≈ $total sn", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
     }
 }
 

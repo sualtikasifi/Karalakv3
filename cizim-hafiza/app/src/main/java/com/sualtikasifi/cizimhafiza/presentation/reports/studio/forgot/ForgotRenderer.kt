@@ -239,10 +239,16 @@ class ForgotRenderer(
 
     /** What the code gives, a small chip on the board's top edge while the drawing is drawn. */
     private fun drawChip(canvas: Canvas) {
-        val chip = script.reward.takeIf { it.isNotBlank() }?.let { "Ödül: $it" } ?: return
+        val chip = script.reward.takeIf { it.isNotBlank() }?.let { "Bilene ödül: $it" } ?: return
+        drawChipText(canvas, chip, null)
+    }
+
+    /** A chip on the board's top edge with [chip] in it: centred, or from the left edge when [maxWidth] says there is something on the right. */
+    private fun drawChipText(canvas: Canvas, chip: String, maxWidth: Float?) {
         val p = text.paint(34f, assets.body, C.INK)
-        val cw = min(p.measureText(chip) + 64f, board.width() - 60f)
-        val box = RectF(board.centerX() - cw / 2f, board.top + 22f, board.centerX() + cw / 2f, board.top + 86f)
+        val cw = min(p.measureText(chip) + 64f, maxWidth ?: (board.width() - 60f))
+        val left = if (maxWidth != null) board.left + 30f else board.centerX() - cw / 2f
+        val box = RectF(left, board.top + 22f, left + cw, board.top + 86f)
         fill.color = C.CREAM_DEEP
         canvas.drawRoundRect(box, 32f, 32f, fill)
         text.draw(canvas, chip, box.centerX(), box.centerY(), (cw - 32f).toInt(), 34f, 1, assets.body, C.INK, ink = true)
@@ -252,7 +258,7 @@ class ForgotRenderer(
 
     /** The drawing on the board, [fraction] of it drawn; [bobMs] > 0 gives a slow push-in while it stands. */
     private fun drawDrawing(canvas: Canvas, fraction: Float, alpha: Float, bobMs: Long) {
-        val box = RectF(board.left + 30f, board.top + 100f, board.right - 30f, board.bottom - 30f)
+        val box = RectF(board.left + 30f, board.top + 100f, board.right - 30f, board.bottom - 130f)
         val zoom = 1f + 0.02f * min(1f, bobMs / 3_000f)
         canvas.save()
         canvas.scale(zoom, zoom, box.centerX(), box.centerY())
@@ -278,92 +284,136 @@ class ForgotRenderer(
     }
     private val subtitleSizes = HashMap<String, Float>()
 
-    /** "Sen ne görüyorsun?" and 3 · 2 · 1 over the board, the drawing pale behind it; the two together are centred on the board. */
+    /**
+     * 3 · 2 · 1 while the whole drawing stays in plain view (the viewer has to guess from it): the counter is a badge in the
+     * board's top right corner, the share who missed it (or the prize) a chip at the top left, and what to do with the
+     * guess, "Cevabını yorumlara yaz", sits at the bottom. The question itself is Karalak's, said and subtitled.
+     */
     private fun drawCountdown(canvas: Canvas, e: ForgotEvent, t: Long) {
         drawDrawing(canvas, 1f, 1f, 0L)
         val local = t - e.startMs
-        fill.color = C.CARD
-        fill.alpha = 215
-        canvas.drawRoundRect(RectF(board.left + 8f, board.top + 8f, board.right - 8f, board.bottom - 8f), 52f, 52f, fill)
-        fill.alpha = 255
-        val step = (local * 3 / ForgotTimeline.COUNTDOWN_MS).toInt().coerceIn(0, 2)
-        val within = ((local * 3f / ForgotTimeline.COUNTDOWN_MS) - step).coerceIn(0f, 1f)
+        // the countdown lasts as long as the question takes: three even counts across it
+        val step = (local * 3 / e.durationMs).toInt().coerceIn(0, 2)
+        val within = ((local * 3f / e.durationMs) - step).coerceIn(0f, 1f)
         val pop = Ease.backOut(min(1f, within * 3f))
-        val question = "Sen ne görüyorsun?"
-        val questionH = inkHeight(question, 760, 64f, 2, assets.display)
-        val radius = 190f
-        val gap = 70f
-        val top = board.centerY() - (questionH + gap + 2f * radius) / 2f
-        text.draw(canvas, question, board.centerX(), top + questionH / 2f, 760, 64f, 2, assets.display, C.INK, ink = true)
-        val cx = board.centerX()
-        val cy = top + questionH + gap + radius
+        val radius = 66f
+        val chipRoom = board.width() - 60f - 2f * radius - 40f
+        val chip = if (script.showPercent) "Çizenlerin %${script.percent}'i bile bilemedi" else script.reward.takeIf { it.isNotBlank() }?.let { "Bilene ödül: $it" }
+        chip?.let { drawChipText(canvas, it, chipRoom) }
+        val cx = board.right - 36f - radius
+        val cy = board.top + 22f + radius
         canvas.save()
         canvas.scale(pop, pop, cx, cy)
         fill.color = C.ORANGE
         canvas.drawCircle(cx, cy, radius, fill)
-        text.draw(canvas, "${3 - step}", cx, cy, 260, 260f, 1, assets.display, C.WHITE, ink = true)
+        text.draw(canvas, "${3 - step}", cx, cy, 120, 96f, 1, assets.display, C.WHITE, ink = true)
         canvas.restore()
+        val caption = "Cevabını yorumlara yaz"
+        val p = text.paint(48f, assets.display, C.ORANGE_DARK)
+        val cw = min(p.measureText(caption) + 90f, board.width() - 60f)
+        val pill = RectF(board.centerX() - cw / 2f, board.bottom - 118f, board.centerX() + cw / 2f, board.bottom - 36f)
+        fill.color = C.CREAM_DEEP
+        canvas.drawRoundRect(pill, 41f, 41f, fill)
+        text.draw(canvas, caption, pill.centerX(), pill.centerY(), (cw - 40f).toInt(), 48f, 1, assets.display, C.ORANGE_DARK, ink = true)
     }
 
     /**
-     * The kupon kodu on the board. In [ForgotMode.Word] it is empty boxes, one per letter (the answer is the code, the
-     * letter count is the only hint); in [ForgotMode.Shown] the letters drop in one by one. Title, hint, boxes, reward and
-     * footnote are stacked and the stack is centred on the board.
+     * The code screen on the board, top to bottom: what it is, the code (empty boxes, one per letter, when the answer is
+     * the code; the letters dropping in when it is written out), what it wins as the biggest thing on it, how many may use it
+     * and until when, and where to type it. Everything is stacked and the stack is centred; it shrinks as a whole when it
+     * would not fit.
      */
     private fun drawCode(canvas: Canvas, e: ForgotEvent, t: Long) {
         val a = Ease.out(min(1f, e.progress(t) * 4f))
         val word = script.mode == ForgotMode.Word
-        val title = "KUPON KODU"
-        val hint = if (word) "Doğru cevap = kod" else "Ayarlar → Kupon kodu"
-        val reward = script.reward.takeIf { it.isNotBlank() }?.let { "Ödül: $it" }
-        val foot = if (word) "Yorumlara da bakabilirsin." else null
-        val share = if (script.showPercent) "%${script.percent} kendi çizimini tanıyamadı" else null
+        val cx = board.centerX()
         val code = script.code
-        val rows = code.chunked(ROW).size
-        val cell = min(92f, (board.width() - 100f) / ROW - 8f).coerceAtLeast(40f)
-        val boxesH = if (code.isEmpty()) 0f else rows * cell * 1.2f + (rows - 1) * BOX_ROW_GAP
+        val title = "KUPON KODU"
+        val explain = if (word) "Çizilen şeyin adı, kodun kendisi" else "Aşağıdaki kodu uygulamaya gir"
+        val label = "KAZANACAĞIN ÖDÜL"
+        val reward = script.reward.takeIf { it.isNotBlank() }
+        val limit = ForgotCopy.limitText(script.uses, script.expiresAtMillis).takeIf { it.isNotBlank() }
+        val howTo = "Ayarlar'da Kupon kodu bölümüne yaz"
+        val hint = if (word) "Bilemezsen ipucu yorumlarda" else null
 
-        val titleH = inkHeight(title, 760, 72f, 1, assets.display)
-        val hintH = inkHeight(hint, 760, 44f, 1, assets.body)
-        val shareH = share?.let { inkHeight(it, 780, 40f, 1, assets.body) } ?: 0f
-        val gapShare = if (share != null) 24f else 0f
-        val rewardH = reward?.let { inkHeight(it, 780, 52f, 1, assets.display) } ?: 0f
-        val footH = foot?.let { inkHeight(it, 780, 38f, 1, assets.body) } ?: 0f
-        val gapHint = 34f
-        val gapBoxes = 80f
-        val gapReward = if (reward != null) 80f else 0f
-        val gapFoot = if (foot != null) 36f else 0f
-        val total = titleH + gapHint + hintH + gapShare + shareH + gapBoxes + boxesH + gapReward + rewardH + gapFoot + footH
-        var y = board.centerY() - total / 2f
+        val per = ForgotCopy.rowSize(code.length)
+        val rows = if (code.isEmpty()) 0 else (code.length + per - 1) / per
+        val cell0 = min(96f, (board.width() - 100f) / per - 8f).coerceAtLeast(40f)
+        val boxes0 = if (code.isEmpty()) 0f else rows * cell0 * 1.2f + (rows - 1) * BOX_ROW_GAP
+        val padV0 = 24f
+        val hTitle = inkHeight(title, 800, 68f, 1, assets.display)
+        val hExplain = inkHeight(explain, 820, 42f, 1, assets.body)
+        val hLabel = if (reward != null) inkHeight(label, 800, 32f, 1, assets.body) else 0f
+        val hReward = reward?.let { inkHeight(it, 780, 60f, 1, assets.display) } ?: 0f
+        val pill0 = if (reward != null) hReward + 2f * padV0 else 0f
+        val hLimit = limit?.let { inkHeight(it, 820, 42f, 1, assets.display) } ?: 0f
+        val hHow = inkHeight(howTo, 820, 40f, 1, assets.body)
+        val hHint = hint?.let { inkHeight(it, 820, 36f, 1, assets.body) } ?: 0f
+        val gaps = floatArrayOf(
+            26f, 48f, 54f,                                   // title | explain | boxes | reward label
+            if (reward != null) 14f else 0f,                 // label | pill
+            if (limit != null) 40f else 0f,                  // pill | limit
+            34f,                                             // limit | how-to
+            if (hint != null) 14f else 0f                    // how-to | hint
+        )
+        val total = hTitle + hExplain + boxes0 + hLabel + pill0 + hLimit + hHow + hHint + gaps.sum()
+        // the whole stack shrinks together when it is taller than the board allows
+        val k = min(1f, (board.height() - 130f) / total)
 
-        text.draw(canvas, title, board.centerX(), y + titleH / 2f, 760, 72f, 1, assets.display, C.ORANGE_DARK, alpha = a, ink = true)
-        y += titleH + gapHint
-        text.draw(canvas, hint, board.centerX(), y + hintH / 2f, 760, 44f, 1, assets.body, C.MUTED, alpha = a, ink = true)
-        y += hintH + gapShare
-        if (share != null) {
-            text.draw(canvas, share, board.centerX(), y + shareH / 2f, 780, 40f, 1, assets.body, C.INK, alpha = a, ink = true)
-            y += shareH
+        var y = board.centerY() - total * k / 2f
+        fun put(txt: String, h: Float, size: Float, width: Int, face: android.graphics.Typeface, color: Int) {
+            text.draw(canvas, txt, cx, y + h * k / 2f, width, size * k, 1, face, color, alpha = a, ink = true)
+            y += h * k
         }
-        y += gapBoxes
+        put(title, hTitle, 68f, 800, assets.display, C.ORANGE_DARK)
+        y += gaps[0] * k
+        put(explain, hExplain, 42f, 820, assets.body, C.MUTED)
+        y += gaps[1] * k
         val local = t - e.startMs
         val shown = if (word) 0 else (code.length * Ease.out(min(1f, (local - 250f).coerceAtLeast(0f) / 900f))).toInt().coerceAtMost(code.length)
-        drawBoxes(canvas, code, shown, word, y, cell, a)
-        y += boxesH + gapReward
+        drawBoxes(canvas, code, shown, word, y, cell0 * k, BOX_ROW_GAP * k, a)
+        y += boxes0 * k + gaps[2] * k
         if (reward != null) {
-            text.draw(canvas, reward, board.centerX(), y + rewardH / 2f, 780, 52f, 1, assets.display, C.INK, alpha = a, ink = true)
-            y += rewardH + gapFoot
+            put(label, hLabel, 32f, 800, assets.body, C.MUTED)
+            y += gaps[3] * k
+            // the prize is the biggest thing on the screen: on a pill of its own
+            val padV = padV0 * k
+            val pillH = hReward * k + 2f * padV
+            val textW = text.measureInk(reward, 780, 60f * k, 1, assets.display, C.INK).first
+            val pillW = min(board.width() - 80f, textW + 90f * k)
+            val pill = RectF(cx - pillW / 2f, y, cx + pillW / 2f, y + pillH)
+            fill.color = C.CREAM_DEEP
+            fill.alpha = (255 * a).toInt()
+            canvas.drawRoundRect(pill, pillH / 2f, pillH / 2f, fill)
+            fill.alpha = 255
+            line.color = C.ORANGE
+            line.strokeWidth = 5f
+            line.alpha = (255 * a).toInt()
+            canvas.drawRoundRect(pill, pillH / 2f, pillH / 2f, this.line)
+            line.alpha = 255
+            text.draw(canvas, reward, cx, pill.centerY(), (pillW - 40f).toInt(), 60f * k, 1, assets.display, C.INK, alpha = a, ink = true)
+            y += pillH
         }
-        if (foot != null) text.draw(canvas, foot, board.centerX(), y + footH / 2f, 780, 38f, 1, assets.body, C.MUTED, alpha = a, ink = true)
+        if (limit != null) {
+            y += gaps[4] * k
+            put(limit, hLimit, 42f, 820, assets.display, C.ORANGE_DARK)
+        }
+        y += gaps[5] * k
+        put(howTo, hHow, 40f, 820, assets.body, C.INK)
+        if (hint != null) {
+            y += gaps[6] * k
+            put(hint, hHint, 36f, 820, assets.body, C.MUTED)
+        }
     }
 
-    /** The code as one box a character, in rows of at most [ROW] boxes, the block starting at [top]; each letter centred in its box. */
-    private fun drawBoxes(canvas: Canvas, code: String, shown: Int, hidden: Boolean, top: Float, cell: Float, alpha: Float) {
+    /** The code as one box a character, in rows of [ForgotCopy.rowSize] boxes, the block starting at [top]; each letter centred in its box. */
+    private fun drawBoxes(canvas: Canvas, code: String, shown: Int, hidden: Boolean, top: Float, cell: Float, rowGap: Float, alpha: Float) {
         if (code.isEmpty()) return
         val gap = 8f
         var index = 0
-        code.chunked(ROW).forEachIndexed { r, row ->
+        code.chunked(ForgotCopy.rowSize(code.length)).forEachIndexed { r, row ->
             val rowW = row.length * (cell + gap) - gap
-            val boxTop = top + r * (cell * 1.2f + BOX_ROW_GAP)
+            val boxTop = top + r * (cell * 1.2f + rowGap)
             row.forEachIndexed { i, ch ->
                 val x = board.centerX() - rowW / 2f + i * (cell + gap)
                 val box = RectF(x, boxTop, x + cell, boxTop + cell * 1.2f)
@@ -416,7 +466,6 @@ class ForgotRenderer(
         private const val TOP_PAD = (H - CONTENT_H) / 2f
         private const val END_OPEN = 560L
         const val FPS = 30
-        private const val ROW = 10
         private const val BOX_ROW_GAP = 24f
         private const val SUBTITLE_LINES = 3
     }
