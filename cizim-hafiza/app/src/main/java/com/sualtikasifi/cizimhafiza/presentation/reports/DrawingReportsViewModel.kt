@@ -100,6 +100,8 @@ data class DrawingReportsUiState(
     // round sitting unreviewed is a round nobody can be matched against.
     val tab: ReportsTab = ReportsTab.Dashboard,
     val queue: RunList = RunList(),
+    /** How many rounds wait in the queue in all (the badge's figure; [queue] only holds the pages read so far); null until counted. */
+    val queueTotal: Long? = null,
     val pool: RunList = RunList(),
     /** The row a decision is currently running for — its buttons go quiet. */
     val decidingId: String? = null,
@@ -122,13 +124,17 @@ data class DrawingReportsUiState(
     val feedbackLoading: Boolean = false,
     val feedbackLoaded: Boolean = false,
     val feedbackFailed: Boolean = false,
+    /** How many feedback reports there are in all, null until counted. */
+    val feedbackTotal: Long? = null,
     val reports: List<ReportedDrawing> = emptyList(),
     /** The report whose verdict is being written right now (buttons off meanwhile). */
     val decidingReportId: String? = null,
     val refusals: List<RefusedRound> = emptyList(),
     val evidenceLoading: Boolean = false,
     val evidenceLoaded: Boolean = false,
-    val evidenceFailed: Boolean = false,
+    /** Which of the two lists could not be read: a failed read must show as a failure, never as an empty list. */
+    val reportsFailed: Boolean = false,
+    val detectorFailed: Boolean = false,
     /** The cosmetic currently set as this month's league prize, if any. */
     val weekRewardId: String? = null,
     val leagueLoading: Boolean = false,
@@ -185,7 +191,18 @@ class DrawingReportsViewModel @Inject constructor(
     init {
         _uiState.value = _uiState.value.copy(identity = moderationRepository.identity())
         loadMore(ReportsTab.Queue)
+        loadQueueTotal()
     }
+
+    /** Counts the whole queue (one aggregate read), for the badge. */
+    private fun loadQueueTotal() {
+        viewModelScope.launch {
+            moderationRepository.pendingRunCount().onSuccess { n -> _uiState.value = _uiState.value.copy(queueTotal = n) }
+        }
+    }
+
+    /** The badge's figure after a decision moved a round into or out of the queue list, [delta] being +1, 0 or -1. */
+    private fun DrawingReportsUiState.queueTotalAfter(delta: Int): Long? = queueTotal?.plus(delta)?.coerceAtLeast(0L)
 
     fun selectTab(tab: ReportsTab) {
         _uiState.value = _uiState.value.copy(tab = tab, decisionFailed = false)
@@ -290,6 +307,7 @@ class DrawingReportsViewModel @Inject constructor(
             ReportsTab.Queue -> {
                 _uiState.value = _uiState.value.copy(queue = RunList())
                 loadMore(tab)
+                loadQueueTotal()
             }
             ReportsTab.Pool -> {
                 _uiState.value = _uiState.value.copy(pool = RunList())
@@ -342,44 +360,54 @@ class DrawingReportsViewModel @Inject constructor(
      * Marks one report seen from the panel. Updated in place rather than by
      * re-running [loadFeedback]: a full reload would cost another
      * [FEEDBACK_SHOWN]-document read for a change to a single field the
-     * panel already knows.
+     * panel already knows. A refused write raises the banner, never nothing.
      */
     fun markSeen(reportId: String) {
         viewModelScope.launch {
-            bugReportRepository.markSeen(reportId).onSuccess {
-                _uiState.value = _uiState.value.copy(
-                    feedback = _uiState.value.feedback.map { entry ->
-                        if (entry.report.id == reportId) {
-                            entry.copy(report = entry.report.copy(seenAtMillis = System.currentTimeMillis()))
-                        } else {
-                            entry
-                        }
-                    }
-                )
-            }
+            bugReportRepository.markSeen(reportId)
+                .onSuccess { markSeenLocally(setOf(reportId)) }
+                .onFailure { e -> failDecision(e) }
         }
     }
 
-    /** Removes one report from the panel's inbox — updated in place, same reasoning as [markSeen]. */
+    private fun markSeenLocally(ids: Set<String>) {
+        val now = System.currentTimeMillis()
+        _uiState.value = _uiState.value.copy(
+            feedback = _uiState.value.feedback.map { entry ->
+                if (entry.report.id in ids) entry.copy(report = entry.report.copy(seenAtMillis = now)) else entry
+            }
+        )
+    }
+
+    /** Removes one report from the panel's inbox: updated in place (same reasoning as [markSeen]), audited, and a refusal is shown. */
     fun deleteReport(reportId: String) {
         viewModelScope.launch {
-            bugReportRepository.deleteReports(listOf(reportId)).onSuccess {
-                _uiState.value = _uiState.value.copy(
-                    feedback = _uiState.value.feedback.filterNot { it.report.id == reportId }
-                )
-            }
+            bugReportRepository.deleteReportsAudited(listOf(reportId))
+                .onSuccess { removeFeedbackLocally(setOf(reportId)) }
+                .onFailure { e -> failDecision(e) }
         }
     }
 
-    /** Clears every report currently loaded in the panel — a full history reset, not just the visible page. */
+    private fun removeFeedbackLocally(ids: Set<String>) {
+        val s0 = _uiState.value
+        _uiState.value = s0.copy(
+            feedback = s0.feedback.filterNot { it.report.id in ids },
+            feedbackTotal = s0.feedbackTotal?.minus(ids.size)?.coerceAtLeast(0L)
+        )
+    }
+
+    /** Clears EVERY feedback report there is, in pages of 400, not only the ones the panel has loaded. */
     fun deleteAllFeedback() {
-        val ids = _uiState.value.feedback.map { it.report.id }
-        if (ids.isEmpty()) return
         viewModelScope.launch {
-            bugReportRepository.deleteReports(ids).onSuccess {
-                _uiState.value = _uiState.value.copy(feedback = emptyList())
-            }
+            bugReportRepository.deleteAllReports()
+                .onSuccess { _uiState.value = _uiState.value.copy(feedback = emptyList(), feedbackTotal = 0L) }
+                .onFailure { e -> failDecision(e) }
         }
+    }
+
+    /** Shows a refused write on the banner above the lists. */
+    private fun failDecision(e: Throwable) {
+        _uiState.value = _uiState.value.copy(decisionFailed = true, decisionError = e.describe())
     }
 
     private fun loadFeedback() {
@@ -387,8 +415,10 @@ class DrawingReportsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(feedbackLoading = true)
         viewModelScope.launch {
             val result = bugReportRepository.allReports(FEEDBACK_SHOWN)
+            val total = bugReportRepository.reportCount().getOrNull()
             _uiState.value = _uiState.value.copy(
                 feedback = result.getOrNull().orEmpty(),
+                feedbackTotal = total ?: result.getOrNull()?.size?.toLong(),
                 feedbackLoading = false,
                 feedbackLoaded = true,
                 feedbackFailed = result.isFailure
@@ -405,12 +435,15 @@ class DrawingReportsViewModel @Inject constructor(
             // would only mean two waits to see one picture.
             val reports = drawingReportRepository.recentReports(REPORTS_SHOWN)
             val refusals = detectorEventRepository.recentEvents(REPORTS_SHOWN)
-            _uiState.value = _uiState.value.copy(
-                reports = reports.getOrNull().orEmpty().map { it.withDrawing() },
-                refusals = refusals.getOrNull().orEmpty().map { it.withDrawing() },
+            val before = _uiState.value
+            _uiState.value = before.copy(
+                // a list that could not be read keeps what it showed before, and says so; it never turns into "nothing here"
+                reports = reports.getOrNull()?.map { it.withDrawing() } ?: before.reports,
+                refusals = refusals.getOrNull()?.map { it.withDrawing() } ?: before.refusals,
                 evidenceLoading = false,
                 evidenceLoaded = true,
-                evidenceFailed = reports.isFailure && refusals.isFailure
+                reportsFailed = reports.isFailure,
+                detectorFailed = refusals.isFailure
             )
         }
     }
@@ -472,6 +505,7 @@ class DrawingReportsViewModel @Inject constructor(
                     )
                 } else {
                     state.copy(
+                        queueTotal = state.queueTotalAfter(if (state.queue.runs.any { it.id == run.id }) -1 else 0),
                         queue = state.queue.copy(runs = state.queue.runs.filterNot { it.id == run.id }),
                         pool = if (action == SwipeAction.Approve && state.pool.runs.none { it.id == run.id } && !state.pool.neverLoaded) {
                             state.pool.copy(runs = listOf(run) + state.pool.runs)
@@ -660,8 +694,12 @@ class DrawingReportsViewModel @Inject constructor(
                 if (list.runs.any { it.id == run.id }) list
                 else list.copy(runs = listOf(run) + list.runs)
             }
+            val queueAfter = if (keepsRun && !movesToPool) with(without(state.queue)) else without(state.queue)
+            // the badge follows the round into or out of the queue (the list holds only the pages read so far)
+            val delta = (if (queueAfter.runs.any { it.id == run.id }) 1 else 0) - (if (state.queue.runs.any { it.id == run.id }) 1 else 0)
             _uiState.value = state.copy(
-                queue = if (keepsRun && !movesToPool) with(without(state.queue)) else without(state.queue),
+                queue = queueAfter,
+                queueTotal = state.queueTotalAfter(delta),
                 pool = if (keepsRun && movesToPool) with(without(state.pool)) else without(state.pool),
                 decidingId = null
             )

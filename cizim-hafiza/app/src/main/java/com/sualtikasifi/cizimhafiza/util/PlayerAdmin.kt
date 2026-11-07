@@ -41,7 +41,9 @@ class PlayerAdmin @Inject constructor(
     private val auth: FirebaseAuth
 ) {
     suspend fun reports(): Result<List<PlayerReportGroup>> = runCatching {
-        firestore.collection("playerReports").limit(MAX_REPORTS).get().await().documents
+        // the newest MAX_REPORTS: an unordered limit would leave out whichever ones happened to come last
+        firestore.collection("playerReports").orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .limit(MAX_REPORTS).get().await().documents
             .groupBy { it.getString("reportedUid").orEmpty() }
             .filterKeys { it.isNotEmpty() }
             .map { (uid, docs) ->

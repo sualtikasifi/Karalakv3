@@ -54,6 +54,10 @@ class ModerationRepositoryImpl @Inject constructor(
         read(pendingRuns, pendingRunItems, limit, Query.Direction.ASCENDING, after)
     }
 
+    override suspend fun pendingRunCount(): Result<Long> = runCatching {
+        pendingRuns.count().get(com.google.firebase.firestore.AggregateSource.SERVER).await().count
+    }
+
     override suspend fun poolRuns(limit: Int, after: Long?): Result<RunPage> = runCatching {
         // Newest first: the pool is not a backlog, so what is worth seeing is
         // what most recently got in.

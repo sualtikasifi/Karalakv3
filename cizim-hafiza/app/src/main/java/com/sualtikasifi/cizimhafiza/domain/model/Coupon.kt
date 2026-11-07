@@ -21,6 +21,9 @@ data class Coupon(
     val hasReward: Boolean get() = gold > 0 || xp > 0 || chestCount > 0
 }
 
+/** A code with this name already exists: creating never replaces one, its use count and reward would be lost. */
+class CouponExistsException(val code: String) : Exception("coupon-exists:$code")
+
 sealed interface RedeemResult {
     data class Success(val coupon: Coupon) : RedeemResult
     data object Invalid : RedeemResult

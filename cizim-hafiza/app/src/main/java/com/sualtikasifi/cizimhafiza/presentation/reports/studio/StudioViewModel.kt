@@ -43,6 +43,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotChe
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotScript
 import com.sualtikasifi.cizimhafiza.domain.model.Coupon
 import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
+import com.sualtikasifi.cizimhafiza.domain.model.CouponExistsException
 import com.sualtikasifi.cizimhafiza.domain.repository.CouponRepository
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.ClipAudio
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout
@@ -566,7 +567,8 @@ class StudioViewModel @Inject constructor(
                         val coupon = Coupon(code, ui.gold, ui.xp, ui.chest.chests, ui.maxUses, 0, ui.expiresAtMillis)
                         couponRepository.create(coupon).fold(
                             onSuccess = { "Kupon hazır: $code · ilk ${ui.maxUses} kişi · ${SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("tr")).format(Date(ui.expiresAtMillis))}'e kadar · ${script.reward}" },
-                            onFailure = { e -> "Kupon oluşturulamadı: ${e.message}" }
+                            // the name was taken between the check and the write: the repository refuses to replace it
+                            onFailure = { e -> if (e is CouponExistsException) "$code zaten var. Başka kelime ya da yeni kod seç." else "Kupon oluşturulamadı: ${e.message}" }
                         )
                     }
                 },

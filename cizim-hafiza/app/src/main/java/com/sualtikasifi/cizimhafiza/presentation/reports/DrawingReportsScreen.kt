@@ -290,7 +290,7 @@ fun DrawingReportsScreen(
                 AnimatedVisibility(visible = !imeOpen, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
                     ConsoleNav(
                         tab = uiState.tab,
-                        queueBadge = uiState.queue.runs.size,
+                        queueBadge = (uiState.queueTotal ?: uiState.queue.runs.size.toLong()).toInt(),
                         onSelect = { t -> if (t == ReportsTab.Queue) queueListMode = false; viewModel.selectTab(t) }
                     )
                 }
@@ -333,7 +333,8 @@ fun DrawingReportsScreen(
             if (deleteAllFeedbackRequested) {
                 ConfirmDeleteDialog(
                     title = stringResource(R.string.reports_feedback_delete_confirm_title),
-                    message = stringResource(R.string.reports_feedback_delete_all_confirm_message),
+                    // not "every report in this list": it clears the whole inbox, the ones not loaded yet too
+                    message = "Gelen kutusundaki ${uiState.feedbackTotal ?: uiState.feedback.size.toLong()} kaydın hepsi (ekrana yüklenmemiş olanlar dahil) kalıcı olarak silinecek. Bu geri alınamaz.",
                     onDismiss = { deleteAllFeedbackRequested = false },
                     onConfirm = {
                         viewModel.deleteAllFeedback()
@@ -431,7 +432,7 @@ private fun PlaceContent(
             onOpen = { viewModel.selectTab(it) },
             onQueueList = { onQueueList(true); viewModel.selectTab(ReportsTab.Queue) },
             onBotNames = onBotNames,
-            queueCount = uiState.queue.runs.size
+            queueCount = (uiState.queueTotal ?: uiState.queue.runs.size.toLong()).toInt()
         )
 
         tab == ReportsTab.Queue && !at.queueList -> com.sualtikasifi.cizimhafiza.presentation.reports.console.SwipeQueue(
@@ -514,7 +515,9 @@ private fun RunLists(
         ReportsTab.Queue, ReportsTab.Pool -> list?.failed == true && rowCount == 0
         ReportsTab.Feedback -> uiState.feedbackFailed
         ReportsTab.DailyChallenge -> uiState.dailyChallengeFailed
-        else -> uiState.evidenceFailed
+        ReportsTab.Reports -> uiState.reportsFailed && rowCount == 0
+        ReportsTab.Detector -> uiState.detectorFailed && rowCount == 0
+        else -> false
     }
     when {
         firstLoad -> ConsoleSkeleton(rows = 4, rowHeight = if (tab == ReportsTab.Feedback) 84.dp else 132.dp)
@@ -558,6 +561,10 @@ private fun RunLists(
             verticalArrangement = Arrangement.spacedBy(Console.Gap),
             contentPadding = PaddingValues(bottom = 20.dp)
         ) {
+            // a refresh that failed keeps the old list on screen, and says that it is the old one
+            if ((tab == ReportsTab.Reports && uiState.reportsFailed) || (tab == ReportsTab.Detector && uiState.detectorFailed)) {
+                item(key = "stale") { ConsoleNotice("Liste yenilenemedi; son okunan hâli gösteriliyor.", kind = NoticeKind.Warning) }
+            }
             when (tab) {
                 ReportsTab.Queue -> items(uiState.queue.runs, key = { it.id }) { run ->
                     PendingRunRow(

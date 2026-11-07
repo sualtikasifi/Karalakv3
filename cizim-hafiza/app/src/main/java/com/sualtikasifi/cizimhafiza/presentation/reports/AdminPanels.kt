@@ -370,13 +370,11 @@ class PushViewModel @Inject constructor(
     fun loadRecent() {
         viewModelScope.launch {
             runCatching {
-                firestore.collection("adminCommands").whereEqualTo("type", "broadcast").limit(10).get().await().documents
-                    .sortedByDescending { it.getTimestamp("createdAt")?.toDate()?.time ?: 0L }
-                    .map { d ->
-                        val at = d.getTimestamp("createdAt")?.toDate()?.time ?: 0L
-                        val done = d.getTimestamp("doneAt") != null
-                        "${stamp(at)} · ${d.getString("title").orEmpty()} · " + if (done) "gönderildi" else "sırada"
-                    }
+                recentBroadcasts(firestore).map { d ->
+                    val at = d.getTimestamp("createdAt")?.toDate()?.time ?: 0L
+                    val done = d.getTimestamp("doneAt") != null
+                    "${stamp(at)} · ${d.getString("title").orEmpty()} · " + if (done) "gönderildi" else "sırada"
+                }
             }.onSuccess { r -> _state.update { it.copy(recent = r) } }
         }
     }
@@ -400,6 +398,19 @@ class PushViewModel @Inject constructor(
             }.onFailure { _state.update { it.copy(busy = false, message = "Yazılamadı (internet ya da yetki).") } }
         }
     }
+}
+
+/**
+ * The ten newest broadcasts, newest first, by the server's own ordering. The first query needs the composite index on
+ * (type, createdAt) from firestore.indexes.json; until that index has been built (just after a deploy) the second one
+ * reads the newest commands of any kind and picks the broadcasts out here, so the list is never the wrong ten.
+ */
+internal suspend fun recentBroadcasts(firestore: FirebaseFirestore): List<com.google.firebase.firestore.DocumentSnapshot> = try {
+    firestore.collection("adminCommands").whereEqualTo("type", "broadcast")
+        .orderBy("createdAt", Query.Direction.DESCENDING).limit(10).get().await().documents
+} catch (e: Exception) {
+    firestore.collection("adminCommands").orderBy("createdAt", Query.Direction.DESCENDING).limit(60).get().await().documents
+        .filter { it.getString("type") == "broadcast" }.take(10)
 }
 
 /** "Bildirim gönder": one push to everyone who has notifications on (the hourly job sends it). */
@@ -517,9 +528,13 @@ class JobsViewModel @Inject constructor(private val firestore: FirebaseFirestore
                 )
             }
             val deletions = runCatching { firestore.collection("deletionRequests").count().get(AggregateSource.SERVER).await().count }.getOrNull()
+            // A command the cron has not run has no doneAt at all, so it cannot be matched by a query: waiting = all - done.
+            // Two count queries, so the figure is right however many old commands there are (it used to read 200 documents).
             val commands = runCatching {
-                // a command the cron has not run has no doneAt at all, so it cannot be matched by a query
-                firestore.collection("adminCommands").limit(200).get().await().documents.count { it.get("doneAt") == null }.toLong()
+                val all = firestore.collection("adminCommands").count().get(AggregateSource.SERVER).await().count
+                val done = firestore.collection("adminCommands").whereGreaterThan("doneAt", com.google.firebase.Timestamp(0, 0))
+                    .count().get(AggregateSource.SERVER).await().count
+                (all - done).coerceAtLeast(0)
             }.getOrNull()
             _state.value = JobsState(rows, deletions, commands, loaded = true)
         }
@@ -649,7 +664,8 @@ class XpPlanViewModel @Inject constructor(
     fun load() {
         viewModelScope.launch {
             runCatching {
-                firestore.collection("xpEventPlans").limit(50).get().await().documents.map { d ->
+                // the newest 50 by start time (an unordered limit would drop plans at random once there are more), shown oldest first
+                firestore.collection("xpEventPlans").orderBy("startAtMillis", Query.Direction.DESCENDING).limit(50).get().await().documents.map { d ->
                     XpPlanRow(
                         d.id, d.getLong("startAtMillis") ?: 0L, (d.getLong("durationHours") ?: 0L).toInt(),
                         d.getDouble("multiplier") ?: 2.0, d.getString("label").orEmpty(), d.getLong("startedAt") != null

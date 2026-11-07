@@ -46,8 +46,10 @@ export async function runProcessAdminCommands(): Promise<void> {
   const db = admin.firestore();
   let done = 0;
 
-  const commands = await db.collection("adminCommands").limit(200).get();
-  for (const doc of commands.docs) {
+  // The newest 200, handled oldest first: an unordered limit would stop reaching new commands once 200 old, finished ones
+  // piled up (a command that is not done has no doneAt at all, so a query cannot pick the waiting ones out).
+  const commands = await db.collection("adminCommands").orderBy("createdAt", "desc").limit(200).get();
+  for (const doc of [...commands.docs].reverse()) {
     if (doc.get("doneAt")) continue;
     const type = doc.get("type");
     try {
@@ -89,9 +91,10 @@ export async function runProcessAdminCommands(): Promise<void> {
 
   // XP events planned ahead: switch one on when its time has come (the app's own xpEvent document, same shape).
   const now = Date.now();
-  const plans = await db.collection("xpEventPlans").limit(100).get();
+  const plans = await db.collection("xpEventPlans").orderBy("startAtMillis", "desc").limit(100).get();
   let started = 0;
-  for (const plan of plans.docs) {
+  // oldest start first, so when two are due at once the later one is the one left switched on
+  for (const plan of [...plans.docs].reverse()) {
     if (plan.get("startedAt")) continue;
     const startAt = Number(plan.get("startAtMillis") ?? 0);
     const hours = Math.min(Math.max(Number(plan.get("durationHours") ?? 0), 1), 168);

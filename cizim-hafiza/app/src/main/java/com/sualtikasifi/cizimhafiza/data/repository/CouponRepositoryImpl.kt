@@ -6,6 +6,8 @@ import com.google.firebase.firestore.Query
 import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
 import com.sualtikasifi.cizimhafiza.domain.model.Coupon
 import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
+import com.sualtikasifi.cizimhafiza.domain.model.CouponExistsException
+import com.sualtikasifi.cizimhafiza.util.AdminAudit
 import com.sualtikasifi.cizimhafiza.domain.model.RedeemResult
 import com.sualtikasifi.cizimhafiza.domain.repository.CouponRepository
 import kotlinx.coroutines.tasks.await
@@ -60,19 +62,28 @@ class CouponRepositoryImpl @Inject constructor(
 
     override suspend fun create(coupon: Coupon): Result<Unit> = runCatching {
         requireUid()
-        coupons.document(coupon.code).set(
-            mapOf(
-                "gold" to coupon.gold.toLong(),
-                "xp" to coupon.xp.toLong(),
-                "chestSilver" to (coupon.chests[ChestTier.SILVER] ?: 0).toLong(),
-                "chestGold" to (coupon.chests[ChestTier.GOLD] ?: 0).toLong(),
-                "chestRare" to (coupon.chests[ChestTier.RARE] ?: 0).toLong(),
-                "maxUses" to coupon.maxUses.toLong(),
-                "usedCount" to 0L,
-                "expiresAt" to coupon.expiresAtMillis,
-                "createdAt" to System.currentTimeMillis()
+        val ref = coupons.document(coupon.code)
+        val by = auth.currentUser?.email
+        firestore.runTransaction { tx ->
+            // inside the transaction, so two creations of the same name cannot both pass the check
+            if (tx.get(ref).exists()) throw CouponExistsException(coupon.code)
+            tx.set(
+                ref,
+                mapOf(
+                    "gold" to coupon.gold.toLong(),
+                    "xp" to coupon.xp.toLong(),
+                    "chestSilver" to (coupon.chests[ChestTier.SILVER] ?: 0).toLong(),
+                    "chestGold" to (coupon.chests[ChestTier.GOLD] ?: 0).toLong(),
+                    "chestRare" to (coupon.chests[ChestTier.RARE] ?: 0).toLong(),
+                    "maxUses" to coupon.maxUses.toLong(),
+                    "usedCount" to 0L,
+                    "expiresAt" to coupon.expiresAtMillis,
+                    "createdAt" to System.currentTimeMillis()
+                )
             )
-        ).await()
+            AdminAudit.add(firestore, tx, by, "coupon-create", coupon.code, couponSummary(coupon))
+        }.await()
+        Unit
     }
 
     override suspend fun recent(limit: Int): Result<List<Coupon>> = runCatching {
@@ -96,4 +107,17 @@ class CouponRepositoryImpl @Inject constructor(
         usedCount = (getLong("usedCount") ?: 0L).toInt(),
         expiresAtMillis = getLong("expiresAt") ?: 0L
     )
+}
+
+/** One line for the audit log: what a code gives, how many may use it and until when. */
+internal fun couponSummary(c: Coupon): String {
+    val reward = listOfNotNull(
+        c.gold.takeIf { it > 0 }?.let { "$it altın" },
+        c.xp.takeIf { it > 0 }?.let { "$it XP" },
+        c.chests[ChestTier.SILVER]?.let { "$it Çırak kasa" },
+        c.chests[ChestTier.GOLD]?.let { "$it Sanatçı kasa" },
+        c.chests[ChestTier.RARE]?.let { "$it Sürpriz kasa" }
+    ).joinToString(" + ").ifEmpty { "ödülsüz" }
+    val until = if (c.expiresAtMillis > 0) java.time.Instant.ofEpochMilli(c.expiresAtMillis).toString().take(16).replace('T', ' ') + " UTC" else "süresiz"
+    return "$reward · ${c.maxUses} kişi · $until"
 }

@@ -58,6 +58,7 @@ import androidx.lifecycle.viewModelScope
 import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
 import com.sualtikasifi.cizimhafiza.domain.model.Coupon
 import com.sualtikasifi.cizimhafiza.domain.model.CouponCodes
+import com.sualtikasifi.cizimhafiza.domain.model.CouponExistsException
 import com.sualtikasifi.cizimhafiza.domain.repository.CouponRepository
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleTextField
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.ConsoleButton
@@ -145,40 +146,45 @@ class CouponAdminViewModel @Inject constructor(
         val xp = s.xp.toIntOrNull() ?: 0
         val maxUses = if (s.separateCodes > 0) 1 else (s.maxUses.toIntOrNull() ?: 0)
         val days = s.days.toIntOrNull() ?: 0
-        val problem = when {
-            gold !in 0..CouponCodes.MAX_GOLD || xp !in 0..CouponCodes.MAX_XP -> "Altın ve XP 0 ile ${CouponCodes.MAX_GOLD} arasında olmalı."
-            s.chests.values.sum() > CouponCodes.MAX_CHESTS -> "En fazla ${CouponCodes.MAX_CHESTS} kasa verilebilir (her biri sırayla açılır)."
-            gold == 0 && xp == 0 && s.chests.values.sum() == 0 -> "En az bir ödül seç."
-            maxUses < 1 -> "Kullanım hakkı en az 1 olmalı."
-            s.separateCodes == 0 && s.customCode.isNotBlank() && CouponCodes.normalize(s.customCode) == null ->
-                "Kod 4-24 karakter olmalı, sadece harf, rakam ve tire."
-            else -> null
-        }
+        val problem = CouponForm.problem(gold, xp, s.chests.values.sum(), maxUses, s.separateCodes, s.customCode)
         if (problem != null) {
             _state.update { it.copy(message = problem) }
             return
         }
-        val expires = if (days > 0) System.currentTimeMillis() + days * 24L * 60 * 60 * 1000 else 0L
+        val expires = CouponForm.expiresAt(days, System.currentTimeMillis())
         _state.update { it.copy(busy = true, message = null, lastCreated = emptyList()) }
         viewModelScope.launch {
-            val count = s.separateCodes.coerceAtLeast(1)
-            val codes = if (s.separateCodes == 0 && s.customCode.isNotBlank()) {
-                listOf(CouponCodes.normalize(s.customCode)!!)
-            } else {
-                List(count) { CouponCodes.generate() }.distinct()
-            }
+            val custom = s.separateCodes == 0 && s.customCode.isNotBlank()
+            val count = if (custom) 1 else s.separateCodes.coerceAtLeast(1)
             val done = mutableListOf<String>()
             var failed = false
-            for (code in codes) {
-                couponRepository.create(Coupon(code, gold, xp, s.chests.filterValues { it > 0 }, maxUses, 0, expires))
-                    .onSuccess { done += code }
-                    .onFailure { failed = true }
+            var taken: String? = null
+            repeat(count) {
+                var code = if (custom) CouponCodes.normalize(s.customCode)!! else CouponCodes.generate()
+                var attempts = 1
+                while (true) {
+                    val result = couponRepository.create(Coupon(code, gold, xp, s.chests.filterValues { it > 0 }, maxUses, 0, expires))
+                    if (result.isSuccess) { done += code; break }
+                    val error = result.exceptionOrNull()
+                    if (error is CouponExistsException && !custom && attempts < CouponForm.MAX_NAME_ATTEMPTS) {
+                        // a drawn name that is already in use: draw another, never touch the existing code
+                        code = CouponCodes.generate()
+                        attempts++
+                        continue
+                    }
+                    if (error is CouponExistsException && custom) taken = code else failed = true
+                    break
+                }
             }
             _state.update {
                 it.copy(
                     busy = false,
                     lastCreated = done,
-                    message = if (failed) "Bazı kodlar oluşturulamadı (internet ya da yetki)." else "${done.size} kod oluşturuldu."
+                    message = when {
+                        taken != null -> CouponForm.takenMessage(taken!!)
+                        failed -> "Bazı kodlar oluşturulamadı (internet ya da yetki)."
+                        else -> "${done.size} kod oluşturuldu."
+                    }
                 )
             }
             refresh()
