@@ -201,7 +201,17 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
     item { ForgotCueSheet(script, st.real.howtoMs) }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
-            Text("Açılış", style = Console.Label)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Açılış (kanca)", style = Console.Label, modifier = Modifier.weight(1f))
+                ActionButton(
+                    Icons.Filled.Refresh, if (f.hookWriting) "Yazıyor…" else "Yenile", Console.Surface, Console.Ink, Modifier
+                ) { if (!f.hookWriting && !f.writing) vm.rewriteForgotHook() }
+            }
+            Text(
+                "Sıradaki tür: ${ForgotCopy.HookKind.forTurn(f.hookTurn).title}. Yenile yalnızca açılış cümlesini değiştirir; öncekilerden farklı yazar.",
+                style = Console.Small, modifier = Modifier.padding(bottom = 4.dp)
+            )
+            f.hookError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(bottom = 4.dp)) }
             LineEditor(script.hook, { vm.editLine(LineRef.ForgotHook, it) }, { vm.editEmotion(LineRef.ForgotHook, it) }) { vm.listen(script.hook) }
             Text("Kaç tahmin", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
             Segmented(

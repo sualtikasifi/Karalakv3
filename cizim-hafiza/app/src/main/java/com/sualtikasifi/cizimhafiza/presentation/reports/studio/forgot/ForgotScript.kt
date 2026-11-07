@@ -252,6 +252,60 @@ object ForgotCopy {
 
     fun codeLineFor(mode: ForgotMode) = if (mode == ForgotMode.Word) CODE_WORD else CODE_SHOWN
 
+    /**
+     * The two kinds of hook the video opens with, taking turns (and on every "yenile"): a challenge that sets the viewer against
+     * the drawing ("ben bilirim"), and the crowd that got it wrong ("çoğu yanlış bildi", never with a number made up).
+     */
+    enum class HookKind(val title: String, val how: String, val examples: List<String>) {
+        Challenge(
+            "Meydan okuma",
+            "izleyiciye doğrudan \"sen\" diye seslen ve bilebileceğine kendini inandır: bunu çözmek kolay görünsün ama çözülmesin, gurur dokunsun.",
+            listOf("Çizenin kendisi bile bilemedi. Sen bilirsin belki?", "Herkes yanlış bildi. Sen bilir misin?", "Bunu bilen çıkmadı. İlk sen ol.")
+        ),
+        Crowd(
+            "Çoğu yanlış bildi",
+            "başkalarının yanıldığını söyle (ama HİÇBİR sayı, yüzde ya da kişi sayısı uydurma) ve izleyiciyi \"ben farklı olurum\" demeye it.",
+            listOf("Bunu görenlerin çoğu yanlış bildi.", "Bu çizimde herkes aynı yere takıldı.", "Bakınca kolay sanıyorlar. Sonra yanılıyorlar.")
+        );
+
+        /** The kind for the [turn]-th hook: they alternate. */
+        companion object { fun forTurn(turn: Int): HookKind = entries[Math.floorMod(turn, entries.size)] }
+    }
+
+    /** What every hook must keep to, whatever its kind. */
+    private fun hookRules(kind: HookKind): String = """
+        KANCA KURALLARI (ilk 2 saniyede izleyiciyi durdurmalı ve "ben bilirim" dedirtmeli):
+        - Tür: ${kind.title}. ${kind.how}
+        - Örnekler (kopyalama, aynı havada yeni bir cümle kur): ${kind.examples.joinToString(" / ") { "\"$it\"" }}
+        - Emir ya da soruyla başla; en fazla $HOOK_WORDS kelime, tek nefeste söylenecek kadar kısa.
+        - Selamlama, tanıtım ya da "Bugün size…" gibi girişler YASAK. Cevabı ya da cevaba dair ipucu verme. Çizenle alay etme.
+        - Ödülün adını söyleme (kod ekranında zaten yazıyor).
+    """.trimIndent()
+
+    /**
+     * Just the hook, for the "yenile" button: a new one of [kind], different from the [avoid]ed ones (those already tried).
+     * Answer: `{"hook":{"emotion":"…","line":"…"}}`.
+     */
+    fun hookPrompt(word: String, kind: HookKind, moods: String, avoid: List<String>): String = """
+        Videonun açılış cümlesini (kanca) yaz. Çizilmesi istenen kelime: "$word"; hiçbir cümlede bu kelime ya da kökü geçmesin.
+        Çizim şu an çiziliyor ve ekranda görünüyor; Karalak bu cümleyi videonun ilk saniyesinde söylüyor.
+
+        ${hookRules(kind)}
+        ${if (avoid.isEmpty()) "" else "Bunlardan FARKLI olsun, hiçbirine benzemesin: " + avoid.joinToString(" / ") { "\"$it\"" }}
+
+        Yalnızca şu JSON'u yaz: {"hook":{"emotion":"…","line":"…"}}
+        emotion yalnızca şunlardan biri: $moods.
+    """.trimIndent()
+
+    /** The hook out of an answer to [hookPrompt]; null when it is missing or gives the [word] away. */
+    fun parseHook(text: String, word: String): SpokenLine? {
+        val o = StudioCopy.objectIn(text) ?: return null
+        val h = o["hook"] as? JsonObject ?: return null
+        val l = (h["line"] ?: h["text"])?.jsonPrimitive?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        if (leaks(l, word)) return null
+        return SpokenLine(l, MascotEmotion.of(h["emotion"]?.jsonPrimitive?.contentOrNull))
+    }
+
     /** The code a [word] is worth in [ForgotMode.Word]: the word itself, Turkish letters folded; null when it cannot be one (too short or long). */
     fun wordCode(word: String): String? = CouponCodes.normalize(word)
 
@@ -353,7 +407,7 @@ object ForgotCopy {
      * every spoken moment and how long it lasts, and what it must keep in mind (the mode, the reward, the word it may not say).
      * It works its plan out first, then writes each line for its own moment.
      */
-    fun directorPrompt(word: String, stops: List<Float>, moods: String, mode: ForgotMode, reward: String, limit: String, style: ForgotStyle = ForgotStyle.Game): String {
+    fun directorPrompt(word: String, stops: List<Float>, moods: String, mode: ForgotMode, reward: String, limit: String, style: ForgotStyle = ForgotStyle.Game, hookKind: HookKind = HookKind.Challenge): String {
         val n = stops.size
         val pictures = stops.mapIndexed { i, share -> "Görsel ${i + 1}: çizimin %${percent(share)}'i çizilmiş." }.joinToString("\n") + "\nGörsel ${n + 1}: bitmiş çizim."
         val guessScenes = stops.mapIndexed { i, share ->
@@ -378,6 +432,8 @@ object ForgotCopy {
             ${n + 3}. KOD ANI (≈3 sn): $codeScene (EN FAZLA ${CODE_WORDS} kelime)
             ${n + 4}. KAPANIŞ: oyunun tanıtım kartı, Karalak yarın daha zorunun geleceğini söylüyor (en fazla 14 kelime, "karalak.com" geçsin).
             $rewardLine
+
+            ${hookRules(hookKind)}
 
             ÖNCE "plan" alanında düşün (en fazla 4 kısa cümle): her görselde ne görünüyor, Karalak onu nasıl yanlış ama makul yorumlar, izleyici o anda ne hissetmeli? SONRA her cümleyi kendi anı için yaz:
             - Tahminleri YALNIZCA kendi görseline bakarak yaz: Karalak o anda yalnızca o kadarını görüyor, sonrasını bilmiyor. Görselde gerçekten görünen bir şeye bakan komik, yanlış ama makul tahminler olsun; ilk tahmin belirsiz, sonuncusu en kendinden emin. Tahminler birbirini izlesin: sonraki, öncekinden çıkarım yapsın ya da onu inatla savunsun; aynı şeyi tekrarlama.

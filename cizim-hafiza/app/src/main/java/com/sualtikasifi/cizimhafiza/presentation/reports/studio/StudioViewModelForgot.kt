@@ -215,7 +215,8 @@ fun StudioViewModel.writeForgot() {
     viewModelScope.launch {
         ForgotDirector(OpenRouterClient(key), model, _state.value.lang).write(
             d, s.forgot.script?.stops.orEmpty(), s.forgot.mode, s.forgot.script?.reward.orEmpty(),
-            ForgotCopy.limitText(s.forgot.maxUses, s.forgot.expiresAtMillis, style), style
+            ForgotCopy.limitText(s.forgot.maxUses, s.forgot.expiresAtMillis, style), style,
+            ForgotCopy.HookKind.forTurn(s.forgot.hookTurn)
         ).onSuccess { w ->
             _state.update { st ->
                 val cur = st.forgot.script ?: return@update st.copy(forgot = st.forgot.copy(writing = false))
@@ -223,6 +224,8 @@ fun StudioViewModel.writeForgot() {
                 st.copy(
                     forgot = st.forgot.copy(
                         writing = false,
+                        hookTurn = st.forgot.hookTurn + 1,
+                        hookTried = (st.forgot.hookTried + listOfNotNull(c.hook?.text)).takeLast(HOOK_MEMORY),
                         script = cur.copy(
                             hook = c.hook ?: cur.hook,
                             // one line per stop, the assistant's where it wrote one, else what was there
@@ -237,6 +240,42 @@ fun StudioViewModel.writeForgot() {
             }
             refreshPreview()
         }.onFailure { e -> updateForgot { it.copy(writing = false, writeError = e.message ?: "Yazılamadı") } }
+    }
+}
+
+/** How many earlier hooks the "yenile" button tells the assistant to stay away from. */
+private const val HOOK_MEMORY = 6
+
+/**
+ * The "yenile" button beside the opening line: asks for a new hook only (the rest of the script stays), of the other kind than
+ * the last one, and different from the ones already tried. The line that was there joins the tried ones.
+ */
+fun StudioViewModel.rewriteForgotHook() {
+    val s = _state.value
+    val d = s.forgotDrawing(s.forgot.drawingId) ?: return
+    val script = s.forgot.script ?: return
+    if (s.forgot.hookWriting || s.forgot.writing) return
+    val key = com.sualtikasifi.cizimhafiza.util.SecretStore.get(prefs(), AssistantViewModel.KEY)
+    if (key.isBlank()) { updateForgot { it.copy(hookError = "Önce Asistan ayarlarından OpenRouter anahtarını gir.") }; return }
+    val kind = ForgotCopy.HookKind.forTurn(s.forgot.hookTurn)
+    val avoid = (s.forgot.hookTried + script.hook.text).distinct().takeLast(HOOK_MEMORY)
+    updateForgot { it.copy(hookWriting = true, hookError = null) }
+    viewModelScope.launch {
+        ForgotDirector(OpenRouterClient(key), OpenRouterClient.FORGOT_MODEL, _state.value.lang).writeHook(d.word, kind, avoid)
+            .onSuccess { (hook, cost) ->
+                _state.update { st ->
+                    val cur = st.forgot.script ?: return@update st.copy(forgot = st.forgot.copy(hookWriting = false))
+                    st.copy(
+                        forgot = st.forgot.copy(
+                            hookWriting = false, hookTurn = st.forgot.hookTurn + 1,
+                            hookTried = (avoid + hook.text).takeLast(HOOK_MEMORY), script = cur.copy(hook = hook)
+                        ),
+                        aiCost = (st.aiCost ?: 0.0) + (cost ?: 0.0), video = null
+                    )
+                }
+                refreshPreview()
+            }
+            .onFailure { e -> updateForgot { it.copy(hookWriting = false, hookError = e.message ?: "Yazılamadı") } }
     }
 }
 
