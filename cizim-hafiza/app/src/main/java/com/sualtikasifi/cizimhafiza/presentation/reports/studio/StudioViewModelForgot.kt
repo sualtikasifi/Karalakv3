@@ -221,7 +221,7 @@ fun StudioViewModel.writeForgot() {
     viewModelScope.launch {
         ForgotDirector(OpenRouterClient(key), model, _state.value.lang).write(
             d, s.forgot.script?.stops.orEmpty(), s.forgot.mode, s.forgot.script?.reward.orEmpty(),
-            ForgotCopy.limitText(s.forgot.maxUses, s.forgot.expiresAtMillis, style), style,
+            ForgotCopy.limitText(s.forgot.maxUses), style,
             ForgotCopy.HookKind.forTurn(s.forgot.hookTurn), ForgotCopy.OutroAngle.forTurn(s.forgot.hookTurn)
         ).onSuccess { w ->
             _state.update { st ->
@@ -247,6 +247,25 @@ fun StudioViewModel.writeForgot() {
             refreshPreview()
         }.onFailure { e -> updateForgot { it.copy(writing = false, writeError = e.message ?: "Yazılamadı") } }
     }
+}
+
+/** The app's music under the video (null: none); kept on this phone. A different track is heard first with ▶, never started by the choice. */
+fun StudioViewModel.setForgotMusic(name: String?) {
+    prefs().edit().apply { if (name == null) remove(StudioViewModel.FORGOT_MUSIC) else putString(StudioViewModel.FORGOT_MUSIC, name) }.apply()
+    _state.update { it.copy(forgot = it.forgot.copy(music = name), video = null) }
+}
+
+fun StudioViewModel.setForgotMusicVolume(volume: Float) {
+    val v = volume.coerceIn(0f, RealMix.MAX_VOLUME)
+    prefs().edit().putFloat(StudioViewModel.FORGOT_MUSIC_VOLUME, v).apply()
+    _state.update { it.copy(forgot = it.forgot.copy(musicVolume = v), video = null) }
+}
+
+/** Takes back the music and its volume this phone kept, unless the track is gone (one of the person's own that was removed). */
+internal fun StudioViewModel.restoreForgotMusic(custom: List<String>) {
+    val p = prefs()
+    val name = p.getString(StudioViewModel.FORGOT_MUSIC, null)?.takeIf { n -> RealMusic.TRACKS.any { it.first == n } || n in custom }
+    updateForgot { it.copy(music = name, musicVolume = p.getFloat(StudioViewModel.FORGOT_MUSIC_VOLUME, RealMix.DEFAULT_VOLUME).coerceIn(0f, RealMix.MAX_VOLUME)) }
 }
 
 /** How many earlier hooks the "yenile" button tells the assistant to stay away from. */

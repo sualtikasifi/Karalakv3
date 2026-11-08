@@ -197,26 +197,31 @@ internal fun PromoCard(r: RealUi, vm: StudioViewModel) {
  * it steps back on its own, a little under the clip, and it fades out at the end.
  */
 @Composable
-internal fun MusicCard(reveal: RealReveal?, musicOn: Boolean, playing: String?, custom: List<String>, vm: StudioViewModel) {
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { vm.addMusic(it) } }
+internal fun MusicCard(
+    chosen: String?, volume: Float, enabled: Boolean, musicOn: Boolean?, playing: String?, custom: List<String>, vm: StudioViewModel,
+    onPick: (String?) -> Unit, onVolume: (Float) -> Unit, onAdd: (android.net.Uri) -> Unit, underClip: Boolean = true
+) {
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(onAdd) }
     ConsoleCard(Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("Müziği videoya göm", style = Console.Subtitle)
-                Text(
-                    if (musicOn) "Açıkken müzik videoya karışır." else "Kapalı: video müziksiz çıkar, dosya adı “_muziksiz” biter. Trend sesi TikTok/Instagram'da sen eklersin; kanca, kapanış ve klibin kendi sesi kalır.",
-                    style = Console.Small
-                )
+        // the switch is "Gerçek Olsaydı"'s; the other video has the track's own "Müzik yok"
+        if (musicOn != null) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Müziği videoya göm", style = Console.Subtitle)
+                    Text(
+                        if (musicOn) "Açıkken müzik videoya karışır." else "Kapalı: video müziksiz çıkar, dosya adı “_muziksiz” biter. Trend sesi TikTok/Instagram'da sen eklersin; kanca, kapanış ve klibin kendi sesi kalır.",
+                        style = Console.Small
+                    )
+                }
+                Switch(checked = musicOn, onCheckedChange = vm::setMusicOn, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
             }
-            Switch(checked = musicOn, onCheckedChange = vm::setMusicOn, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
+            Spacer(Modifier.height(6.dp))
         }
-        Spacer(Modifier.height(6.dp))
         Text(
-            "Uygulamanın müziklerinden biri videonun altında çalar. Karalak konuşurken kısılır, klip boyunca biraz alçalır, sonda yavaşça biter. " +
+            "Uygulamanın müziklerinden biri videonun altında çalar. Karalak konuşurken kısılır, " + (if (underClip) "klip boyunca biraz alçalır, " else "") + "sonda yavaşça biter. " +
                 "▶ ile önce dinleyebilirsin.",
             style = Console.Small
         )
-        val chosen = reveal?.music
         val options = listOf<String?>(null) + RealMusic.TRACKS.map { it.first } + custom
         options.chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 6.dp)) {
@@ -226,7 +231,7 @@ internal fun MusicCard(reveal: RealReveal?, musicOn: Boolean, playing: String?, 
                         shape = RoundedCornerShape(10.dp),
                         color = if (on) Console.AccentSoft else Console.Surface,
                         border = BorderStroke(if (on) 1.5.dp else 1.dp, if (on) Console.Accent else Console.Border),
-                        modifier = Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(10.dp)).clickable(enabled = reveal != null) { vm.setMusic(name) }
+                        modifier = Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(10.dp)).clickable(enabled = enabled) { onPick(name) }
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp)) {
                             Text(name?.let { RealMusic.label(it) } ?: "Müzik yok", style = Console.Subtitle, modifier = Modifier.weight(1f))
@@ -250,8 +255,8 @@ internal fun MusicCard(reveal: RealReveal?, musicOn: Boolean, playing: String?, 
             picker.launch(arrayOf("audio/*"))
         }
         Text("Telefondaki bir müzik dosyası (en fazla 25 MB) uygulamaya kopyalanır ve bir kez eklemen yeter; listede kalır. Telifli şarkı sosyal medyada sesi kapatılmasına yol açabilir.", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
-        if (reveal != null && chosen != null) {
-            LabeledSlider("Müzik sesi", reveal.musicVolume, 0f..RealMix.MAX_VOLUME) { vm.setMusicVolume(it) }
+        if (enabled && chosen != null) {
+            LabeledSlider("Müzik sesi", volume, 0f..RealMix.MAX_VOLUME) { onVolume(it) }
         }
     }
 }

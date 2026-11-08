@@ -302,7 +302,8 @@ class StudioViewModel @Inject constructor(
                 val howtoFile = s.real.howto?.takeIf { s.real.howtoMs > 0 }
                 ForgotRenderer(
                     assetsOrLoad(), sp, script, drawing, voice, wordTimes,
-                    howto = howtoFile?.let(howtoSource), howtoMs = if (howtoFile != null) s.real.howtoMs else 0L
+                    howto = howtoFile?.let(howtoSource), howtoMs = if (howtoFile != null) s.real.howtoMs else 0L,
+                    musicFile = s.forgot.music?.let { RealMusic.target(context, it) }, musicVolume = s.forgot.musicVolume
                 )
             }
             StudioFormat.RealLife -> null
@@ -379,6 +380,7 @@ class StudioViewModel @Inject constructor(
                         if (s.voiceOn) placed += renderer.voiceStarts.mapNotNull { (index, start) -> voices[index]?.let { Placed(it, start) } }
                         // the background music is copied out of the app the first time it is used
                         if (s.format == StudioFormat.RealLife && s.real.musicOn) s.real.project?.featured?.music?.let { runCatching { RealMusic.ensure(context, it) } }
+                        if (s.format == StudioFormat.Forgot) s.forgot.music?.let { runCatching { RealMusic.ensure(context, it) } }
                         renderer.sounds.forEach { snd ->
                             runCatching { ClipAudio.decode(snd.file, snd.durationMs) }.getOrNull()?.let { pcm ->
                                 val at = PcmOps.resample(pcm, RATE).let { if (snd.voice) PcmOps.softEnd(it) else it }
@@ -497,6 +499,8 @@ class StudioViewModel @Inject constructor(
         const val STEP = "studio_real_step"
         const val VOICE_STEP = "studio_real_voice_step"
         const val MUSIC_ON = "studio_real_music_on"
+        const val FORGOT_MUSIC = "studio_forgot_music"
+        const val FORGOT_MUSIC_VOLUME = "studio_forgot_music_volume"
         const val HOWTO_ON = "studio_real_howto_on"
         const val PLATFORM = "studio_real_platform"
         /** No line of Karalak's runs this long; a longer decode means something went wrong. */

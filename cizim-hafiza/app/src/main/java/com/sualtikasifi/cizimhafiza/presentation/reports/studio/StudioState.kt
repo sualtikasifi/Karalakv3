@@ -161,6 +161,9 @@ data class ForgotUi(
     val shownCode: String = CouponCodes.generate(),
     val writing: Boolean = false,
     val writeError: String? = null,
+    /** The app's music under the video (a [RealMusic] track's name; null: none) and how loud it is before it steps back under Karalak's voice. Kept on this phone. */
+    val music: String? = null,
+    val musicVolume: Float = com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix.DEFAULT_VOLUME,
     /** The opening line alone being rewritten ("yenile"), why it failed, how many were asked for (they take turns between kinds), and the ones already tried. */
     val hookWriting: Boolean = false,
     val hookError: String? = null,

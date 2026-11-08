@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -511,7 +512,12 @@ internal fun LazyListScope.stepVoices(st: StudioState, vm: StudioViewModel, f: R
             }
         }
         4 -> {
-            item { MusicCard(f, r.musicOn, r.musicPlaying, r.customMusic, vm) }
+            item {
+                MusicCard(
+                    f?.music, f?.musicVolume ?: RealMix.DEFAULT_VOLUME, f != null, r.musicOn, r.musicPlaying, r.customMusic, vm,
+                    onPick = vm::setMusic, onVolume = vm::setMusicVolume, onAdd = { vm.addMusic(it) }
+                )
+            }
         }
         else -> {
             item { EndingCard(r, vm) }

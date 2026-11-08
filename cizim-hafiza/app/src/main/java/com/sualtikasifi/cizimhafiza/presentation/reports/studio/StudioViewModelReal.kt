@@ -166,6 +166,7 @@ internal fun StudioViewModel.loadReal() {
         val platform = SocialPlatform.of(prefs.getString(PLATFORM, null))
         val tab = runCatching { RealTab.valueOf(prefs.getString(TAB, null).orEmpty()) }.getOrDefault(RealTab.Prepare)
         updateReal { it.copy(tab = tab, step = prefs.getInt(STEP, 1).coerceIn(1, 7), voiceStep = prefs.getInt(VOICE_STEP, 1).coerceIn(1, 5), project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media }), ending = ending, musicOn = prefs.getBoolean(MUSIC_ON, true), platform = platform, customMusic = RealMusic.custom(context)) }
+        restoreForgotMusic(RealMusic.custom(context))
         p?.let { loadRealMedia(it) }
         loadPromo()
         loadHowto(prefs.getBoolean(HOWTO_ON, true))

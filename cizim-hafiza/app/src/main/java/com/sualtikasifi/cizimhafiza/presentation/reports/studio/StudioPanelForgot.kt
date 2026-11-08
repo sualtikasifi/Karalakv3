@@ -191,6 +191,7 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
             )
             Field("Kaç kişi kullanabilsin", if (f.maxUses == 0) "" else f.maxUses.toString(), { vm.setForgotUses(it.digitsToInt()) }, numeric = true)
             Text("Ne zamana kadar geçerli", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
+            Text("Bu tarih videoda yazmaz (video günlerce izlenir); yalnızca kuponun bitişidir, süre dolunca uygulama kodu kabul etmez.", style = Console.Small)
             ExpiryPicker(f.expiresAtMillis, vm::setForgotExpiry)
             Spacer(Modifier.height(10.dp))
             DarkButton(
@@ -255,6 +256,15 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
             Text("Kapanış", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
             LineEditor(script.outro, { vm.editLine(LineRef.ForgotOutro, it) }, { vm.editEmotion(LineRef.ForgotOutro, it) }) { vm.listen(script.outro) }
         }
+    }
+    // 4. the music: the same tracks and the same mix as "Gerçek Olsaydı", stepping back while Karalak speaks
+    item { Step("4", "Müzik") }
+    item {
+        MusicCard(
+            f.music, f.musicVolume, true, null, st.real.musicPlaying, st.real.customMusic, vm,
+            onPick = vm::setForgotMusic, onVolume = vm::setForgotMusicVolume, onAdd = { uri -> vm.addMusic(uri) { vm.setForgotMusic(it) } },
+            underClip = false
+        )
     }
 }
 
