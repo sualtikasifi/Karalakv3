@@ -367,11 +367,12 @@ class ForgotRenderer(
     private val subtitleSizes = HashMap<String, Float>()
 
     /**
-     * The code screen on the board, top to bottom: what it is, the code (empty boxes, one per letter, when the answer is the
-     * code, the first one showing its letter when that is wanted; the letters dropping in when it is written out), how many
-     * may use it and until when as two chips, and where to type it as three numbered steps. The prize is the gold frame on
-     * the board's lower edge, drawn with every scene. Everything is stacked and the stack is centred in the room the frame
-     * leaves; it shrinks as a whole when it would not fit.
+     * The code screen on the board, top to bottom: what it is (the title and the line under it), the code (empty boxes, one
+     * per letter, when the answer is the code, the first one showing its letter when that is wanted; the letters dropping in
+     * when it is written out), how many may win it as one chip, where to type it ("Karalak uygulamasında" and three numbered
+     * steps), and two closing lines that ask for the comment, the like and the share. No date: the video is watched for days.
+     * The prize is the gold frame on the board's lower edge, drawn with every scene. Everything is stacked and the stack is
+     * centred in the room the frame leaves; it shrinks as a whole when it would not fit.
      */
     private fun drawCode(canvas: Canvas, e: ForgotEvent, t: Long) {
         val a = Ease.out(min(1f, e.progress(t) * 4f))
@@ -381,57 +382,75 @@ class ForgotRenderer(
         val style = script.style
         val title = style.codeTitle(word)
         val explain = style.explain(word)
-        val chips = ForgotCopy.limitChips(script.uses, script.expiresAtMillis, style)
-        val hint = if (word) style.hintWord else null
+        val chips = ForgotCopy.limitChips(script.uses)
+        val cta = style.cta
+        val appLine = ForgotCopy.APP_LINE
 
         val per = ForgotCopy.rowSize(code.length)
         val rows = if (code.isEmpty()) 0 else (code.length + per - 1) / per
-        val cell0 = min(96f, (board.width() - 100f) / per - 8f).coerceAtLeast(40f)
+        val cell0 = min(CELL_MAX, (board.width() - 100f) / per - 8f).coerceAtLeast(40f)
         val boxes0 = if (code.isEmpty()) 0f else rows * cell0 * 1.2f + (rows - 1) * BOX_ROW_GAP
-        val hTitle = inkHeight(title, 800, 68f, 1, assets.display)
-        val hExplain = inkHeight(explain, 820, 42f, 1, assets.body)
+        // every line is shrunk to its width first, so one long wording never breaks into two lines
+        val sTitle = fitSize(title, LINE_W, 76f, assets.display)
+        val sExplain = fitSize(explain, LINE_W, 46f, assets.body)
+        val sApp = fitSize(appLine, LINE_W, 36f, assets.body)
+        val sCta1 = cta.getOrNull(0)?.let { fitSize(it, LINE_W, 48f, assets.display) } ?: 0f
+        val sCta2 = cta.getOrNull(1)?.let { fitSize(it, LINE_W, 40f, assets.body) } ?: 0f
+        val hTitle = inkHeight(title, LINE_W, sTitle, 1, assets.display)
+        val hExplain = inkHeight(explain, LINE_W, sExplain, 1, assets.body)
         val hChips = if (chips.isEmpty()) 0f else CHIP_H
-        val hHint = hint?.let { inkHeight(it, 820, 36f, 1, assets.body) } ?: 0f
-        val gaps = floatArrayOf(
-            26f, 48f,                                        // title | explain | boxes
-            54f,                                             // boxes | chips (or steps)
-            if (chips.isNotEmpty()) 30f else 0f,             // chips | steps
-            if (hint != null) 26f else 0f                    // steps | hint
-        )
-        val total = hTitle + hExplain + boxes0 + hChips + STEP_D + hHint + gaps.sum()
+        val hApp = inkHeight(appLine, LINE_W, sApp, 1, assets.body)
+        val hCta1 = cta.getOrNull(0)?.let { inkHeight(it, LINE_W, sCta1, 1, assets.display) } ?: 0f
+        val hCta2 = cta.getOrNull(1)?.let { inkHeight(it, LINE_W, sCta2, 1, assets.body) } ?: 0f
+        val gTitle = 20f
+        val gExplain = 40f
+        val gBoxes = 44f
+        val gChips = if (chips.isNotEmpty()) 34f else 0f
+        val gApp = 14f
+        val gSteps = if (hCta1 > 0f) 44f else 0f
+        val gCta = if (hCta2 > 0f) 12f else 0f
+        val total = hTitle + gTitle + hExplain + gExplain + boxes0 + gBoxes + hChips + gChips + hApp + gApp + STEP_D + gSteps + hCta1 + gCta + hCta2
         // the whole stack shrinks together when it is taller than the room the prize frame leaves it (it stands on the lower edge)
         val roomTop = board.top + 30f
         val roomBottom = board.bottom - CODE_FRAME_ROOM
         val k = min(1f, (roomBottom - roomTop) / total)
 
         var y = (roomTop + roomBottom) / 2f - total * k / 2f
-        fun put(txt: String, h: Float, size: Float, width: Int, face: android.graphics.Typeface, color: Int) {
-            text.draw(canvas, txt, cx, y + h * k / 2f, width, size * k, 1, face, color, alpha = a, ink = true)
+        fun put(txt: String, h: Float, size: Float, face: android.graphics.Typeface, color: Int) {
+            text.draw(canvas, txt, cx, y + h * k / 2f, LINE_W, size * k, 1, face, color, alpha = a, ink = true)
             y += h * k
         }
-        put(title, hTitle, 68f, 800, assets.display, C.ORANGE_DARK)
-        y += gaps[0] * k
-        put(explain, hExplain, 42f, 820, assets.body, C.MUTED)
-        y += gaps[1] * k
+        put(title, hTitle, sTitle, assets.display, C.ORANGE_DARK)
+        y += gTitle * k
+        put(explain, hExplain, sExplain, assets.body, C.MUTED)
+        y += gExplain * k
         val local = t - e.startMs
         val shown = if (word) 0 else (code.length * Ease.out(min(1f, (local - 250f).coerceAtLeast(0f) / 900f))).toInt().coerceAtMost(code.length)
         drawBoxes(canvas, code, shown, word, script.showFirstLetter, y, cell0 * k, BOX_ROW_GAP * k, a)
-        y += boxes0 * k + gaps[2] * k
+        y += (boxes0 + gBoxes) * k
         if (chips.isNotEmpty()) {
             drawLimitChips(canvas, chips, y, k, a)
-            y += hChips * k + gaps[3] * k
+            y += (hChips + gChips) * k
         }
+        put(appLine, hApp, sApp, assets.body, C.MUTED)
+        y += gApp * k
         drawSteps(canvas, style.steps, y, k, a)
-        y += STEP_D * k
-        if (hint != null) {
-            y += gaps[4] * k
-            put(hint, hHint, 36f, 820, assets.body, C.MUTED)
-        }
+        y += (STEP_D + gSteps) * k
+        cta.getOrNull(0)?.let { put(it, hCta1, sCta1, assets.display, C.ORANGE_DARK) }
+        y += gCta * k
+        cta.getOrNull(1)?.let { put(it, hCta2, sCta2, assets.body, C.INK) }
     }
 
+    /** The biggest size up to [size] at which [text] fits [width] on one line (not under 60% of [size]); remembered. */
+    private fun fitSize(line: String, width: Int, size: Float, face: android.graphics.Typeface): Float = fitSizes.getOrPut("$line|$width|$size|${face.hashCode()}") {
+        var s = size
+        while (s > size * 0.6f && text.measureInk(line, 4000, s, 1, face, C.INK).first > width) s -= 2f
+        s
+    }
+    private val fitSizes = HashMap<String, Float>()
+
     /**
-     * "Sadece 100 kişi" and "8 Kasım 21:00'e kadar" as two chips side by side, each with a small picture (a person, a clock),
-     * centred as a row; the row shrinks to the board's width when the words are long. [top] is where the row starts, [k] the
+     * "İlk 100 kişi kazanır!" as a chip with a small picture of a person, centred as a row; the row shrinks to the board's width when the words are long. [top] is where the row starts, [k] the
      * code screen's own shrink.
      */
     private fun drawLimitChips(canvas: Canvas, chips: List<ForgotCopy.LimitChip>, top: Float, k: Float, alpha: Float) {
@@ -452,7 +471,7 @@ class ForgotRenderer(
             fill.alpha = (255 * alpha).toInt()
             canvas.drawRoundRect(RectF(x, cy - h / 2f, x + w, cy + h / 2f), h / 2f, h / 2f, fill)
             val ix = x + (22f + 15f) * sc
-            if (c.isWho) drawPerson(canvas, ix, cy, sc, alpha) else drawClock(canvas, ix, cy, sc, alpha)
+            drawPerson(canvas, ix, cy, sc, alpha)
             val tw = textW(c, sc)
             text.draw(canvas, c.text, x + (22f + 30f + 12f) * sc + tw / 2f, cy, (tw + 40f).toInt(), CHIP_TEXT * sc, 1, assets.display, C.INK, alpha = alpha, ink = true)
             x += w + gap * sc
@@ -467,19 +486,6 @@ class ForgotRenderer(
         canvas.drawCircle(cx, cy - 8f * sc, 7.5f * sc, fill)
         canvas.drawArc(RectF(cx - 13f * sc, cy + 1f * sc, cx + 13f * sc, cy + 27f * sc), 180f, 180f, true, fill)
         fill.alpha = 255
-    }
-
-    /** A clock face with its two hands, [sc] times its natural size, centred on ([cx], [cy]). */
-    private fun drawClock(canvas: Canvas, cx: Float, cy: Float, sc: Float, alpha: Float) {
-        line.color = C.ORANGE_DARK
-        line.strokeWidth = 4f * sc
-        line.strokeCap = Paint.Cap.ROUND
-        line.alpha = (255 * alpha).toInt()
-        canvas.drawCircle(cx, cy, 14f * sc, line)
-        canvas.drawLine(cx, cy, cx, cy - 8.5f * sc, line)
-        canvas.drawLine(cx, cy, cx + 6f * sc, cy + 2.5f * sc, line)
-        line.strokeCap = Paint.Cap.BUTT
-        line.alpha = 255
     }
 
     /**
@@ -504,7 +510,7 @@ class ForgotRenderer(
             fill.alpha = (255 * alpha).toInt()
             canvas.drawCircle(x + d / 2f, cy, d / 2f, fill)
             fill.alpha = 255
-            text.draw(canvas, "${i + 1}", x + d / 2f, cy, d.toInt(), 28f * sc, 1, assets.display, C.WHITE, alpha = alpha, ink = true)
+            text.draw(canvas, "${i + 1}", x + d / 2f, cy, d.toInt(), 32f * sc, 1, assets.display, C.WHITE, alpha = alpha, ink = true)
             val lw = labelW(label, sc)
             text.draw(canvas, label, x + d + 12f * sc + lw / 2f, cy, (lw + 40f).toInt(), STEP_TEXT * sc, 1, assets.body, C.INK, alpha = alpha, ink = true)
             x += width(label, sc)
@@ -585,10 +591,13 @@ class ForgotRenderer(
         private const val REWARD_W = 580f
         private const val REWARD_DROP = 10f
         /** The code screen's chips (height, text size) and numbered steps (circle, text size). */
-        private const val CHIP_H = 70f
-        private const val CHIP_TEXT = 36f
-        private const val STEP_D = 44f
-        private const val STEP_TEXT = 36f
+        private const val CELL_MAX = 112f
+        /** The width every line of the code screen is fitted to. */
+        private const val LINE_W = 840
+        private const val CHIP_H = 84f
+        private const val CHIP_TEXT = 44f
+        private const val STEP_D = 52f
+        private const val STEP_TEXT = 40f
         /** What the code screen keeps free above the board's lower edge for the prize frame's coins. */
         private const val CODE_FRAME_ROOM = 150f
         /** The frame's purple field as shares of the picture (left, top, right, bottom), measured on the picture. */

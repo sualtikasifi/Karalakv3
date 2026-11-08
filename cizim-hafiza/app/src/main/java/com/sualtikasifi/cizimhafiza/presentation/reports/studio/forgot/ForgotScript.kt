@@ -26,27 +26,31 @@ enum class ForgotStyle(
     val explainShown: String,
     /** Where to type the code, as the three steps the code screen numbers: "Ayarlar › Kupon kodu › Kullan". */
     val steps: List<String>,
-    val hintWord: String,
+    /** The two closing lines of the code screen that ask for the comment, the like and the share (the video's reach is what they are for). */
+    val cta: List<String>,
     /** The assistant's voice for this set. */
     val tone: String
 ) {
     // nothing here names what the code gives (it may be gold, XP or a chest): the prize is written only by the board's "Ödül:" frame
     Game(
-        "Oyun dili", "GİZLİ KOD", "ÖDÜL KODU",
-        "Kod, çizilen şeyin adı", "Kodu uygulamaya gir",
-        listOf("Ayarlar", "Kupon kodu", "Kullan"), "Takıldıysan yorumlara bak",
+        "Oyun dili", "CEVABI BİLEN KAZANIR", "KODU KAP, ÖDÜLÜ AL",
+        "Çizilen kelime, kodun kendisi!", "Kodu uygulamaya yaz, ödülü al!",
+        listOf("Ayarlar", "Kupon kodu", "Kullan"),
+        listOf("Tahminini yorumlara yaz!", "Bilen arkadaşına gönder, beğenmeyi unutma."),
         "oyun dili: kod, şifre, görev, meydan okuma gibi sözcükler; enerjik ve meydan okuyan. Ödülün ne olduğunu (kasa, altın, XP) sen söyleme, ekranda yazıyor"
     ),
     Warm(
-        "Sıcak dil", "Cevabı bil, ödülü al", "Hediye kodun hazır",
-        "Kod, az önce çizilen şeyin adı", "Kodu uygulamaya yaz",
-        listOf("Ayarlar'a gir", "Kodu yaz", "Kullan'a bas"), "Bilemedin mi? İpucu yorumlarda",
+        "Sıcak dil", "CEVABI BİLEN KAZANIR", "KODU KAP, ÖDÜLÜ AL",
+        "Çizilen kelime, kodun kendisi!", "Kodu uygulamaya yaz, ödülü al!",
+        listOf("Ayarlar'a gir", "Kodu yaz", "Kullan'a bas"),
+        listOf("Yorumlara yaz, kim bilecek?", "Arkadaşını etiketle, birlikte kapın."),
         "samimi ve sıcak: hediye veren, yanında duran bir arkadaş gibi; yarışmacı değil davetkâr. Ödülün ne olduğunu sen söyleme, ekranda yazıyor"
     ),
     Deal(
-        "Fırsat dili", "Hediye kodun", "Hediye kodun",
-        "Kod, çizilen şeyin adı", "Kodu uygulamaya gir",
-        listOf("Ayarlar", "Kupon kodu", "Kullan"), "İpucu yorumlarda",
+        "Fırsat dili", "CEVABI BİLEN KAZANIR", "KODU KAP, ÖDÜLÜ AL",
+        "Çizilen kelime, kodun kendisi!", "Kodu uygulamaya yaz, ödülü al!",
+        listOf("Ayarlar", "Kupon kodu", "Kullan"),
+        listOf("Tahminini yorumlara yaz!", "Arkadaşını etiketle, birlikte kapın."),
         "net ve fırsat vurgulu: kısa, süreli ve sınırlı olduğunu hissettiren ama abartısız, bağıran değil. Ödülün ne olduğunu sen söyleme, ekranda yazıyor"
     );
 
@@ -407,29 +411,19 @@ object ForgotCopy {
     }
 
     /**
-     * How many may use the code and until when, as the code screen says it in [style]'s words (empty when neither is set):
-     * "Sadece 100 kişi · Son: 8 Kasım 21:00", "100 kişi açabilir · Son: …", "Son fırsat · 8 Kasım 21:00 · İlk 100 kişi".
+     * What the code screen says about the limit: "İlk 100 kişi kazanır!" (empty when no number is set). Never a deadline: the
+     * video is made once and watched for days, so a date or "X saat kaldı" would be wrong for most who see it; the code's own
+     * end is kept by the coupon.
      */
-    fun limitText(uses: Int, expiresAtMillis: Long, style: ForgotStyle = ForgotStyle.Game, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String =
-        limitChips(uses, expiresAtMillis, style, zone).joinToString(" · ") { it.text }
+    fun limitText(uses: Int): String = limitChips(uses).joinToString(" · ") { it.text }
 
-    /** The two things [limitText] says, one chip each on the code screen: how many may use the code, and until when. */
+    /** The one chip [limitText] says, with the picture of a person. */
     data class LimitChip(val isWho: Boolean, val text: String)
 
-    fun limitChips(uses: Int, expiresAtMillis: Long, style: ForgotStyle = ForgotStyle.Game, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): List<LimitChip> {
-        val who = if (uses <= 0) null else when (style) {
-            ForgotStyle.Game -> "Sadece $uses kişi"
-            ForgotStyle.Warm -> "$uses kişi açabilir"
-            ForgotStyle.Deal -> "İlk $uses kişi"
-        }
-        val until = if (expiresAtMillis <= 0) null else {
-            val at = java.time.format.DateTimeFormatter.ofPattern("d MMMM HH:mm", Locale("tr")).withZone(zone).format(java.time.Instant.ofEpochMilli(expiresAtMillis))
-            if (style == ForgotStyle.Deal) "Son fırsat · $at" else "Son: $at"
-        }
-        val chips = listOfNotNull(who?.let { LimitChip(true, it) }, until?.let { LimitChip(false, it) })
-        // the "Fırsat" wording leads with the deadline
-        return if (style == ForgotStyle.Deal) chips.reversed() else chips
-    }
+    fun limitChips(uses: Int): List<LimitChip> = if (uses <= 0) emptyList() else listOf(LimitChip(true, "İlk $uses kişi kazanır!"))
+
+    /** The line over the steps on the code screen: where the code is typed. */
+    const val APP_LINE = "Karalak uygulamasında"
 
     /**
      * What the assistant is told: the drawing as it looks at each guess, the video's scene order with what is on screen at
@@ -472,7 +466,7 @@ object ForgotCopy {
             - Karalak'ın kişiliği duyulsun: kendinden emin, muzip, heyecanlı; yanılınca utanıp hemen toparlanır. Her cümlede küçük bir duygu hareketi olsun (şaşkınlık, iddia, sevinç).
             - Kötü: "Bu bir hayvan olabilir." İyi: "Bunlar kulak, eminim, kulak!" (Yalnızca tarz örneği; kopyalama.)
             - Soru cümlesi son tahmine bağlansın ve izleyiciyi "ben bilirim" demeye itsin ("Sence de öyle mi?", "Yanılıyor muyum?" gibi, kopyalama).
-            - Kod anı cümlesi merak ve hızlı kazanma duygusu versin; ödülü ya da yazıyı tekrar etmesin.
+            - Kod anı cümlesi merak ve hızlı kazanma duygusu versin; ödülü ya da yazıyı tekrar etmesin. Ekranda ayrıca "tahminini yorumlara yaz" ve "arkadaşına gönder" yazıyor; cümle bunları aynen söylemesin ama izleyiciyi yorum yazmaya, beğenmeye ya da arkadaşına göndermeye hafifçe itebilir.
             - Kapanış tanıtım gibi okunsun: 1) oyunun ne olduğu, 2) heyecan, 3) indirme daveti. Her videoda FARKLI sözcüklerle ve farklı cümle sırasıyla yaz; bu örnekten tarz al, kopyalama: "Saniyeler içinde art arda kelimeleri çiz, sonra ne çizdiğini hatırla! Kulağa basit geliyor ama çevrimiçi insanlara karşı ve zamana karşısın! Sen de Karalak'ı indir, heyecana katıl!"
             - Tahminleri YALNIZCA kendi görseline bakarak yaz: Karalak o anda yalnızca o kadarını görüyor, sonrasını bilmiyor. Görselde gerçekten görünen bir şeye bakan komik, yanlış ama makul tahminler olsun; ilk tahmin belirsiz, sonuncusu en kendinden emin. Tahminler birbirini izlesin: sonraki, öncekinden çıkarım yapsın ya da onu inatla savunsun; aynı şeyi tekrarlama.
             - Soru, son tahminle bağlantılı olsun ve izleyiciyi yorum yazmaya itsin ("Sen ne görüyorsun?" gibi).

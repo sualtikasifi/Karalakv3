@@ -191,6 +191,7 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
             )
             Field("Kaç kişi kullanabilsin", if (f.maxUses == 0) "" else f.maxUses.toString(), { vm.setForgotUses(it.digitsToInt()) }, numeric = true)
             Text("Ne zamana kadar geçerli", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
+            Text("Bu tarih videoda yazmaz (video günlerce izlenir); yalnızca kuponun bitişidir, süre dolunca uygulama kodu kabul etmez.", style = Console.Small)
             ExpiryPicker(f.expiresAtMillis, vm::setForgotExpiry)
             Spacer(Modifier.height(10.dp))
             DarkButton(

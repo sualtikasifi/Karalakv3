@@ -119,7 +119,7 @@ class ForgotTest {
 
     @Test
     fun theAssistantIsToldEachGuessSDrawingAndTheScenesAndNotToSayTheWord() {
-        val prompt = ForgotCopy.directorPrompt("şemsiye", listOf(0.3f, 0.65f, 1f), "neutral, thinking", ForgotMode.Word, "Sanatçı Kasası", "Sadece 100 kişi · Son: 8 Kasım 21:00")
+        val prompt = ForgotCopy.directorPrompt("şemsiye", listOf(0.3f, 0.65f, 1f), "neutral, thinking", ForgotMode.Word, "Sanatçı Kasası", "İlk 100 kişi kazanır!")
         assertTrue(prompt.contains("Görsel 1: çizimin %30'i"))
         assertTrue(prompt.contains("Görsel 2: çizimin %65'i"))
         assertTrue(prompt.contains("Görsel 3: çizimin %100'i"))
@@ -145,7 +145,7 @@ class ForgotTest {
         assertTrue(prompt.contains("neutral, thinking"))
         // what the screen already says is not to be said again
         assertTrue(prompt.contains("Sanatçı Kasası"))
-        assertTrue(prompt.contains("Sadece 100 kişi"))
+        assertTrue(prompt.contains("İlk 100 kişi kazanır!"))
         assertTrue(prompt.contains("TEKRARLAMA"))
     }
 
@@ -179,15 +179,13 @@ class ForgotTest {
     }
 
     @Test
-    fun theLimitIsSaidTheWayTheCodeScreenShowsIt() {
-        // 8 Kasım 2026 21:00 UTC
-        val at = java.time.ZonedDateTime.of(2026, 11, 8, 21, 0, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
-        assertEquals("Sadece 100 kişi · Son: 8 Kasım 21:00", ForgotCopy.limitText(100, at, zone = java.time.ZoneOffset.UTC))
-        assertEquals("Sadece 1 kişi", ForgotCopy.limitText(1, 0L, zone = java.time.ZoneOffset.UTC))
-        assertEquals("Son: 8 Kasım 21:00", ForgotCopy.limitText(0, at, zone = java.time.ZoneOffset.UTC))
-        assertEquals("", ForgotCopy.limitText(0, 0L))
-        // the device's own time zone moves the hour, not the day count
-        assertEquals("Son: 9 Kasım 00:00", ForgotCopy.limitText(0, at, zone = java.time.ZoneOffset.ofHours(3)))
+    fun theLimitSaysHowManyMayWinAndNeverADeadline() {
+        assertEquals("İlk 100 kişi kazanır!", ForgotCopy.limitText(100))
+        assertEquals("İlk 1 kişi kazanır!", ForgotCopy.limitText(1))
+        // no number: nothing is said (and no date or "kaldı" ever: the video is watched for days)
+        assertEquals("", ForgotCopy.limitText(0))
+        assertEquals(listOf(true), ForgotCopy.limitChips(10).map { it.isWho })
+        assertTrue(ForgotCopy.limitChips(0).isEmpty())
     }
 
     @Test
@@ -347,38 +345,28 @@ class ForgotTest {
     }
 
     @Test
-    fun theLimitFollowsTheStyle() {
-        val at = java.time.ZonedDateTime.of(2026, 11, 8, 21, 0, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
-        val utc = java.time.ZoneOffset.UTC
-        assertEquals("100 kişi açabilir · Son: 8 Kasım 21:00", ForgotCopy.limitText(100, at, ForgotStyle.Warm, utc))
-        assertEquals("Son fırsat · 8 Kasım 21:00 · İlk 100 kişi", ForgotCopy.limitText(100, at, ForgotStyle.Deal, utc))
-        assertEquals("Son fırsat · 8 Kasım 21:00", ForgotCopy.limitText(0, at, ForgotStyle.Deal, utc))
-    }
-
-    @Test
     fun everyStyleHasItsOwnWordsAndNoneNamesAPrizeKind() {
-        assertEquals(3, ForgotStyle.entries.map { it.titleWord + it.explainWord }.toSet().size)
+        assertEquals(3, ForgotStyle.entries.map { it.cta }.toSet().size)
         // the code may give gold, XP or a chest: no wording may assume which
         ForgotStyle.entries.forEach { st ->
-            val all = listOfNotNull(st.titleWord, st.titleShown, st.explainWord, st.explainShown, st.steps.joinToString(" "), st.hintWord).joinToString(" ").lowercase(java.util.Locale("tr"))
+            val all = listOfNotNull(st.titleWord, st.titleShown, st.explainWord, st.explainShown, st.steps.joinToString(" "), st.cta.joinToString(" ")).joinToString(" ").lowercase(java.util.Locale("tr"))
             assertFalse(st.title, all.contains("kasa"))
         }
         assertTrue(ForgotStyle.Warm.tone in ForgotCopy.directorPrompt("kedi", listOf(1f), "m", ForgotMode.Word, "", "", ForgotStyle.Warm))
     }
 
     @Test
-    fun theLimitComesAsTwoChipsInTheStylesOrder() {
-        val at = java.time.ZonedDateTime.of(2026, 11, 8, 21, 0, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
-        val utc = java.time.ZoneOffset.UTC
-        val game = ForgotCopy.limitChips(100, at, ForgotStyle.Game, utc)
-        assertEquals(listOf(true, false), game.map { it.isWho })
-        assertEquals(listOf("Sadece 100 kişi", "Son: 8 Kasım 21:00"), game.map { it.text })
-        // the deal wording leads with the deadline
-        val deal = ForgotCopy.limitChips(100, at, ForgotStyle.Deal, utc)
-        assertEquals(listOf(false, true), deal.map { it.isWho })
-        // one chip when only one thing is set, none when neither
-        assertEquals(1, ForgotCopy.limitChips(5, 0L, ForgotStyle.Warm, utc).size)
-        assertTrue(ForgotCopy.limitChips(0, 0L, ForgotStyle.Warm, utc).isEmpty())
+    fun theCodeScreenAsksForTheCommentTheLikeAndTheShare() {
+        ForgotStyle.entries.forEach { st ->
+            assertEquals(st.title, 2, st.cta.size)
+            val all = st.cta.joinToString(" ").lowercase(java.util.Locale("tr"))
+            assertTrue(st.title, all.contains("yorum"))
+            assertTrue(st.title, all.contains("arkadaş"))
+            // the title is the same promise in every wording, and no date anywhere on the screen
+            assertEquals("CEVABI BİLEN KAZANIR", st.titleWord)
+            assertEquals("Çizilen kelime, kodun kendisi!", st.explainWord)
+        }
+        assertEquals("Karalak uygulamasında", ForgotCopy.APP_LINE)
     }
 
     @Test
