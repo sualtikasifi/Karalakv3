@@ -434,4 +434,13 @@ class ForgotTest {
         assertTrue(p.contains("SESLENDİRME İLKELERİ"))
         assertFalse(p.contains("\"karalak.com\" geçsin"))
     }
+
+    @Test
+    fun theLetterLinesKnowTheirLettersAndWhichOnesAreWrittenOn() {
+        val sc = script(mode = ForgotMode.Word).copy(word = "ışık lamba")
+        // spaces are not lines; the Turkish dotless ı stays dotless in capitals
+        assertEquals("IŞIKLAMBA".toList(), sc.slotLetters)
+        assertTrue(sc.revealed.isEmpty())
+        assertEquals(setOf(0, 3), sc.copy(revealed = setOf(0, 3)).revealed)
+    }
 }

@@ -11,6 +11,9 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotTim
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -143,6 +146,21 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
                         Text("Kodun ilk harfi ilk kutuda görünür; kelimeyi bulmayı kolaylaştırır.", style = Console.Small)
                     }
                     Switch(checked = script.showFirstLetter, onCheckedChange = vm::setForgotFirstLetter, colors = SwitchDefaults.colors(checkedTrackColor = Console.Accent))
+                }
+            }
+            // the letter lines at the top of the board: tap one to write its letter on it in the video
+            Text("Harf çizgileri", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
+            Text("Videodaki çizgilerden birine dokununca o harf çizginin üstüne yazılır; tekrar dokununca silinir.", style = Console.Small)
+            Row(Modifier.padding(top = 6.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                script.slotLetters.forEachIndexed { i, ch ->
+                    val on = i in script.revealed
+                    Box(
+                        Modifier.size(34.dp).clip(RoundedCornerShape(8.dp))
+                            .background(if (on) Console.Accent else Console.Surface)
+                            .border(1.dp, if (on) Console.Accent else Console.InkMuted, RoundedCornerShape(8.dp))
+                            .clickable { vm.toggleForgotLetter(i) },
+                        contentAlignment = Alignment.Center
+                    ) { Text(ch.toString(), style = Console.Subtitle.copy(color = if (on) Color.White else Console.InkMuted)) }
                 }
             }
             Text("Yazı dili", style = Console.Label, modifier = Modifier.padding(top = 10.dp))

@@ -107,12 +107,17 @@ data class ForgotScript(
     val showPercent: Boolean = false,
     /** In [ForgotMode.Word]: whether the code's first letter is shown in its first box (a hint for the viewer). */
     val showFirstLetter: Boolean = false,
+    /** Which of the word's letter lines (counted from 0, spaces not counted) have their letter written on them in the video, picked by hand. */
+    val revealed: Set<Int> = emptySet(),
     /** How many accounts may use the code and when it stops working (0: not set), as the coupon will hold them; shown on the code screen. */
     val uses: Int = 0,
     val expiresAtMillis: Long = 0L,
     /** Which wording the on-screen texts use. */
     val style: ForgotStyle = ForgotStyle.Game
 ) {
+    /** The word's letters in the order of its lines (spaces left out), as the lines show them: capitals, Turkish dotted/dotless i kept. */
+    val slotLetters: List<Char> get() = word.trim().filter { !it.isWhitespace() }.uppercase(Locale("tr")).toList()
+
     /** Where each guess stops the drawing, ready to use: one per guess, in order, none past the whole. */
     val stops: List<Float> get() = ForgotTimeline.stopsFor(guesses.size, guessAt)
 

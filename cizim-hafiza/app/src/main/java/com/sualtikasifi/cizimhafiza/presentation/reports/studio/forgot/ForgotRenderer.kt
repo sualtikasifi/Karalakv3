@@ -270,14 +270,22 @@ class ForgotRenderer(
         val gaps = letters.zipWithNext().count { (a, b) -> !a.isWhitespace() && !b.isWhitespace() } * gap + letters.count { it.isWhitespace() } * wordGap
         val w = ((width - gaps) / n).coerceIn(14f, 56f)
         val total = n * w + gaps
-        val y = board.top + 54f
+        val y = board.top + SLOT_Y
         var x = cx - total / 2f
-        line.color = C.MUTED
-        line.strokeWidth = 9f
-        line.strokeCap = Paint.Cap.ROUND
+        val slotLetters = script.slotLetters
+        var slot = 0
         letters.forEachIndexed { i, ch ->
             if (ch.isWhitespace()) { x += wordGap; return@forEachIndexed }
+            line.color = C.MUTED
+            line.strokeWidth = 9f
+            line.strokeCap = Paint.Cap.ROUND
             canvas.drawLine(x, y, x + w, y, line)
+            // a line the maker picked has its letter on it
+            if (slot in script.revealed) {
+                val size = (w * 1.5f).coerceIn(34f, 74f)
+                text.draw(canvas, slotLetters[slot].toString(), x + w / 2f, y - size * 0.55f, (w * 1.6f).toInt(), size, 1, assets.display, C.INK, ink = true)
+            }
+            slot++
             x += w
             if (i + 1 < letters.length && !letters[i + 1].isWhitespace()) x += gap
         }
@@ -321,7 +329,7 @@ class ForgotRenderer(
 
     /** The drawing on the board, [fraction] of it drawn; [bobMs] > 0 gives a slow push-in while it stands. */
     private fun drawDrawing(canvas: Canvas, fraction: Float, alpha: Float, bobMs: Long) {
-        val box = RectF(board.left + 30f, board.top + 100f, board.right - 30f, board.bottom - 130f)
+        val box = RectF(board.left + 30f, board.top + DRAWING_TOP, board.right - 30f, board.bottom - 130f)
         val zoom = 1f + 0.02f * min(1f, bobMs / 3_000f)
         canvas.save()
         canvas.scale(zoom, zoom, box.centerX(), box.centerY())
@@ -558,6 +566,9 @@ class ForgotRenderer(
         private const val END_OPEN = 560L
         const val FPS = 30
         private const val BOX_ROW_GAP = 24f
+        /** The word's letter lines lie this far below the board's top (room above them for a letter), and the drawing starts below them. */
+        private const val SLOT_Y = 150f
+        private const val DRAWING_TOP = 175f
         private const val BANNER_SIZE = 74f
         /** The prize frame: its width, and how far below the board's lower edge the middle of its purple field lies. */
         private const val REWARD_W = 580f
