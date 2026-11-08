@@ -200,7 +200,7 @@ class ForgotTest {
     }
 
     @Test
-    fun theStockVideoWithItsEndCardRunsUnderTwentySeconds() {
+    fun theStockVideoWithItsEndCardRunsUnderTwentyTwoSeconds() {
         val stock = script(guesses = ForgotCopy.DEFAULT_GUESSES).copy(
             hook = line(ForgotCopy.HOOK), guesses = ForgotCopy.placeholderGuesses().take(ForgotCopy.DEFAULT_GUESSES),
             askLine = line(ForgotCopy.ASK), codeLine = line(ForgotCopy.CODE_WORD), outro = line(ForgotCopy.OUTRO)
@@ -208,7 +208,8 @@ class ForgotTest {
         // voices at the pace the preview assumes, and the how-to video that plays in the end card (6.3 s)
         val events = ForgotTimeline.build(stock, howtoMs = 6_300L) { _, l -> StudioCopy.estimateMs(l.text) }
         val total = ForgotTimeline.totalMs(events)
-        assertTrue("took $total ms", total <= 20_000L)
+        // the closing introduces the game now, so it is a few seconds longer than the old one-line closing
+        assertTrue("took $total ms", total <= 22_000L)
         // and it was around 30 s before the cuts
         assertTrue("took $total ms", total >= 12_000L)
     }
@@ -427,11 +428,35 @@ class ForgotTest {
     @Test
     fun theClosingSendsPeopleToTheMobileAppNotTheWebsite() {
         assertFalse(ForgotCopy.OUTRO.contains("karalak.com"))
-        assertTrue(ForgotCopy.OUTRO.contains("Google Play"))
-        assertTrue(com.sualtikasifi.cizimhafiza.presentation.reports.studio.LineRules.words(ForgotCopy.OUTRO) <= com.sualtikasifi.cizimhafiza.presentation.reports.studio.LineRules.OUTRO_WORDS)
+        assertTrue(ForgotCopy.OUTRO.contains("Karalak'ı indir"))
+        assertTrue(com.sualtikasifi.cizimhafiza.presentation.reports.studio.LineRules.words(ForgotCopy.OUTRO) <= ForgotCopy.OUTRO_WORDS)
         val p = ForgotCopy.directorPrompt("kedi", listOf(0.4f), "happy", ForgotMode.Word, "100 altın", "")
-        assertTrue(p.contains("MOBİL UYGULAMA"))
+        assertTrue(p.contains("OYUNU TANITIYOR"))
         assertTrue(p.contains("SESLENDİRME İLKELERİ"))
         assertFalse(p.contains("\"karalak.com\" geçsin"))
+    }
+
+    @Test
+    fun theLetterLinesKnowTheirLettersAndWhichOnesAreWrittenOn() {
+        val sc = script(mode = ForgotMode.Word).copy(word = "ışık lamba")
+        // spaces are not lines; the Turkish dotless ı stays dotless in capitals
+        assertEquals("IŞIKLAMBA".toList(), sc.slotLetters)
+        assertTrue(sc.revealed.isEmpty())
+        assertEquals(setOf(0, 3), sc.copy(revealed = setOf(0, 3)).revealed)
+    }
+
+    @Test
+    fun theClosingIntroducesTheGameAndTakesTurnsBetweenAngles() {
+        assertFalse(ForgotCopy.OUTRO.contains("Yarın"))
+        val prompts = ForgotCopy.OutroAngle.entries.map {
+            ForgotCopy.directorPrompt("kedi", listOf(0.4f), "happy", ForgotMode.Word, "100 altın", "", ForgotStyle.Game, ForgotCopy.HookKind.Challenge, it)
+        }
+        assertEquals(ForgotCopy.OutroAngle.entries.size, prompts.distinct().size)
+        prompts.forEach {
+            assertTrue(it.contains("OYUNU TANITIYOR"))
+            assertTrue(it.contains("\"Yarın\""))
+            assertFalse(it.contains("yarın daha zorunun"))
+        }
+        assertEquals(ForgotCopy.OutroAngle.forTurn(0), ForgotCopy.OutroAngle.forTurn(ForgotCopy.OutroAngle.entries.size))
     }
 }

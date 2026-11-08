@@ -125,6 +125,7 @@ internal fun StudioViewModel.buildForgot(d: StudioDrawing, ui: ForgotUi, previou
         uses = ui.maxUses,
         expiresAtMillis = ui.expiresAtMillis,
         showFirstLetter = previous?.showFirstLetter ?: false,
+        revealed = previous?.takeIf { it.word == d.word }?.revealed.orEmpty(),
         style = styleFor(ui)
     )
 }
@@ -166,6 +167,11 @@ fun StudioViewModel.setForgotMode(mode: ForgotMode) {
 fun StudioViewModel.setForgotStyle(style: ForgotStyle?) = rebuildForgot { it.copy(styleChoice = style) }
 /** Shows (or hides) the code's first letter in its first box, a hint for the viewer when the answer is the code. */
 fun StudioViewModel.setForgotFirstLetter(on: Boolean) = editForgotScript { it.copy(showFirstLetter = on) }
+
+/** Writes the letter on one of the word's lines in the video (or takes it off again), whenever the maker wants. */
+fun StudioViewModel.toggleForgotLetter(slot: Int) = editForgotScript { sc ->
+    if (slot !in sc.slotLetters.indices) sc else sc.copy(revealed = if (slot in sc.revealed) sc.revealed - slot else sc.revealed + slot)
+}
 
 fun StudioViewModel.setForgotChest(chest: ForgotChest) = rebuildForgot { it.copy(chest = chest) }
 fun StudioViewModel.setForgotGold(n: Int) = rebuildForgot { it.copy(gold = n.coerceIn(0, CouponCodes.MAX_GOLD)) }
@@ -216,7 +222,7 @@ fun StudioViewModel.writeForgot() {
         ForgotDirector(OpenRouterClient(key), model, _state.value.lang).write(
             d, s.forgot.script?.stops.orEmpty(), s.forgot.mode, s.forgot.script?.reward.orEmpty(),
             ForgotCopy.limitText(s.forgot.maxUses, s.forgot.expiresAtMillis, style), style,
-            ForgotCopy.HookKind.forTurn(s.forgot.hookTurn)
+            ForgotCopy.HookKind.forTurn(s.forgot.hookTurn), ForgotCopy.OutroAngle.forTurn(s.forgot.hookTurn)
         ).onSuccess { w ->
             _state.update { st ->
                 val cur = st.forgot.script ?: return@update st.copy(forgot = st.forgot.copy(writing = false))
