@@ -222,7 +222,7 @@ fun StudioViewModel.writeForgot() {
         ForgotDirector(OpenRouterClient(key), model, _state.value.lang).write(
             d, s.forgot.script?.stops.orEmpty(), s.forgot.mode, s.forgot.script?.reward.orEmpty(),
             ForgotCopy.limitText(s.forgot.maxUses, s.forgot.expiresAtMillis, style), style,
-            ForgotCopy.HookKind.forTurn(s.forgot.hookTurn)
+            ForgotCopy.HookKind.forTurn(s.forgot.hookTurn), ForgotCopy.OutroAngle.forTurn(s.forgot.hookTurn)
         ).onSuccess { w ->
             _state.update { st ->
                 val cur = st.forgot.script ?: return@update st.copy(forgot = st.forgot.copy(writing = false))

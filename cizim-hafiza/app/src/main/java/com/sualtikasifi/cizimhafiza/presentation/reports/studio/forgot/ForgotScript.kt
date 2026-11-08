@@ -243,7 +243,7 @@ object ForgotCopy {
     const val TITLE = "ÖDÜLLÜ KARALAK DÜELLOSU"
     const val TITLE_BODY = "ODULLU KARALAK DUELLOSU"
     const val HOOK = "Çizen bile bilemedi. Sen bilir misin?"
-    const val OUTRO = "Yarın daha zoru geliyor. Karalak'ı Google Play'den indir, sen de çiz!"
+    const val OUTRO = "Saniyeler içinde art arda çiz, sonra hatırla! Çevrimiçi rakiplerle zamana karşı yarışırsın. Karalak'ı indir, katıl!"
     const val ASK = "Sen ne görüyorsun?"
     const val CODE_WORD = "Bilemedin mi? Doğru cevap senin kodun!"
     const val CODE_SHOWN = "Bilemedin mi? Kodu Ayarlar'dan gir!"
@@ -254,6 +254,8 @@ object ForgotCopy {
     const val HOOK_WORDS = 8
     const val ASK_WORDS = 4
     const val CODE_WORDS = 9
+    /** The closing introduces the app and asks for the download, so it is longer than the other lines (about eight seconds spoken). */
+    const val OUTRO_WORDS = 24
 
     fun codeLineFor(mode: ForgotMode) = if (mode == ForgotMode.Word) CODE_WORD else CODE_SHOWN
 
@@ -275,6 +277,19 @@ object ForgotCopy {
 
         /** The kind for the [turn]-th hook: they alternate. */
         companion object { fun forTurn(turn: Int): HookKind = entries[Math.floorMod(turn, entries.size)] }
+    }
+
+    /**
+     * What the closing leans on, taking turns from video to video so the closings do not all sound alike. Every one of them
+     * explains the game and asks for the download; the angle is only what it opens with.
+     */
+    enum class OutroAngle(val lean: String) {
+        Speed("hız: saniyeler içinde art arda kelime çizmek, saatin işlemesi"),
+        Rivals("rekabet: çevrimiçi gerçek oyunculara karşı yarışmak, kimin daha iyi hatırladığı"),
+        Memory("hafıza: çizip sonra ne çizdiğini hatırlamaya çalışmanın göründüğünden zor ve komik olması"),
+        Fun("eğlence: kendi çizimini tanıyamamanın komedisi, arkadaşlarla ve yabancılarla kapışmak");
+
+        companion object { fun forTurn(turn: Int): OutroAngle = entries[Math.floorMod(turn, entries.size)] }
     }
 
     /** What every hook must keep to, whatever its kind. */
@@ -412,7 +427,7 @@ object ForgotCopy {
      * every spoken moment and how long it lasts, and what it must keep in mind (the mode, the reward, the word it may not say).
      * It works its plan out first, then writes each line for its own moment.
      */
-    fun directorPrompt(word: String, stops: List<Float>, moods: String, mode: ForgotMode, reward: String, limit: String, style: ForgotStyle = ForgotStyle.Game, hookKind: HookKind = HookKind.Challenge): String {
+    fun directorPrompt(word: String, stops: List<Float>, moods: String, mode: ForgotMode, reward: String, limit: String, style: ForgotStyle = ForgotStyle.Game, hookKind: HookKind = HookKind.Challenge, outroAngle: OutroAngle = OutroAngle.Speed): String {
         val n = stops.size
         val pictures = stops.mapIndexed { i, share -> "Görsel ${i + 1}: çizimin %${percent(share)}'i çizilmiş." }.joinToString("\n") + "\nGörsel ${n + 1}: bitmiş çizim."
         val guessScenes = stops.mapIndexed { i, share ->
@@ -435,7 +450,7 @@ object ForgotCopy {
             $guessScenes
             ${n + 2}. SORU (geri sayım 3-2-1, ≈1,5 sn): çizim tamamlandı, ekranda geri sayım var. Karalak izleyiciye soruyor (EN FAZLA ${ASK_WORDS} kelime).
             ${n + 3}. KOD ANI (≈3 sn): $codeScene (EN FAZLA ${CODE_WORDS} kelime)
-            ${n + 4}. KAPANIŞ: kapanış kartı. Karalak yarın daha zorunun geleceğini söyleyip izleyiciyi MOBİL UYGULAMAYA yönlendiriyor: Google Play'den "Karalak"ı indirmesini söylesin (en fazla 14 kelime). Oyun mobil uygulamada oynanıyor; web sitesi, "karalak.com", "kurulumsuz", "link" gibi sözler ASLA geçmesin.
+            ${n + 4}. KAPANIŞ (≈8 sn): kapanış kartı. Karalak OYUNU TANITIYOR ve indirmeye çağırıyor: ne yapıldığını anlatıyor (saniyeler içinde art arda kelimeleri çiz, sonra ne çizdiğini hatırla), neden heyecanlı olduğunu söylüyor (çevrimiçi gerçek oyunculara karşı, zamana karşı) ve Karalak uygulamasını indirmeye çağırıyor. EN FAZLA $OUTRO_WORDS kelime, 2-3 kısa cümle. Bu videoda şuna yaslan: ${outroAngle.lean}. "Yarın", "yeni çizim geliyor", "daha zoru" gibi sözler YASAK. Web sitesi, "karalak.com", "kurulumsuz", "link" ASLA geçmesin: oyun mobil uygulamada oynanıyor, "Karalak uygulaması" ya da "Google Play" de.
             $rewardLine
 
             ${hookRules(hookKind)}
@@ -449,12 +464,12 @@ object ForgotCopy {
             - Kötü: "Bu bir hayvan olabilir." İyi: "Bunlar kulak, eminim, kulak!" (Yalnızca tarz örneği; kopyalama.)
             - Soru cümlesi son tahmine bağlansın ve izleyiciyi "ben bilirim" demeye itsin ("Sence de öyle mi?", "Yanılıyor muyum?" gibi, kopyalama).
             - Kod anı cümlesi merak ve hızlı kazanma duygusu versin; ödülü ya da yazıyı tekrar etmesin.
-            - Kapanış kısa, sıcak ve davetkâr olsun, mobil uygulamaya götürsün; "Google Play" ve "Karalak" kelimeleri geçsin.
+            - Kapanış tanıtım gibi okunsun: 1) oyunun ne olduğu, 2) heyecan, 3) indirme daveti. Her videoda FARKLI sözcüklerle ve farklı cümle sırasıyla yaz; bu örnekten tarz al, kopyalama: "Saniyeler içinde art arda kelimeleri çiz, sonra ne çizdiğini hatırla! Kulağa basit geliyor ama çevrimiçi insanlara karşı ve zamana karşısın! Sen de Karalak'ı indir, heyecana katıl!"
             - Tahminleri YALNIZCA kendi görseline bakarak yaz: Karalak o anda yalnızca o kadarını görüyor, sonrasını bilmiyor. Görselde gerçekten görünen bir şeye bakan komik, yanlış ama makul tahminler olsun; ilk tahmin belirsiz, sonuncusu en kendinden emin. Tahminler birbirini izlesin: sonraki, öncekinden çıkarım yapsın ya da onu inatla savunsun; aynı şeyi tekrarlama.
             - Soru, son tahminle bağlantılı olsun ve izleyiciyi yorum yazmaya itsin ("Sen ne görüyorsun?" gibi).
             - Çizenle ve izleyiciyle asla dalga geçme.
             - Üslup: ${style.tone}.
-            - Bütün cümleler kısa ve konuşma diliyle olsun; video 20 saniyenin altında kalmalı.
+            - Bütün cümleler kısa ve konuşma diliyle olsun; kapanış hariç video 20 saniyenin altında kalmalı.
             - Kod ekranında zaten yazan bilgiyi (ödül, son tarih, nereye girileceği) cümlede TEKRARLAMA; cümle yazının üstüne duygu katsın.
 
             "caption": TikTok/Reels açıklaması (1–2 cümle, izleyiciye soruyla bitsin, doğru kelime geçmesin; web sitesi ya da "karalak.com" yazma, uygulamayı Google Play'den indirmeye yönlendir); "hashtags": 5–6 Türkçe ağırlıklı etiket.

@@ -543,7 +543,7 @@ class ForgotRenderer(
         canvas.save()
         canvas.translate(0f, (1f - a) * 60f)
         drawMascot(canvas, RectF(240f, 170f, 840f, 820f), e.line?.emotion ?: MascotEmotion.Point, speaking, level, t)
-        text.draw(canvas, "Yarın daha zoru geliyor", 540f, 900f, 960, 76f, 1, assets.display, C.INK)
+        text.draw(canvas, "Sen de katıl!", 540f, 900f, 960, 76f, 1, assets.display, C.INK)
         e.line?.let { l ->
             val spoken = voice?.get(e.lineIndex)?.let { it.size * 1000L / FPS } ?: StudioCopy.estimateMs(l.text)
             text.reveal(canvas, l.text, startsOf(e.lineIndex, l.text, spoken), t - e.startMs, 540f, 1040f, 960, 48f, 2, assets.display, Lettering.plain(C.ORANGE_DARK))

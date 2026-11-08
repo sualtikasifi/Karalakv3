@@ -28,14 +28,15 @@ class ForgotDirector(private val client: OpenRouterClient, private val model: St
      */
     suspend fun write(
         drawing: StudioDrawing, stops: List<Float>, mode: ForgotMode, reward: String, limit: String, style: ForgotStyle = ForgotStyle.Game,
-        hookKind: ForgotCopy.HookKind = ForgotCopy.HookKind.Challenge
+        hookKind: ForgotCopy.HookKind = ForgotCopy.HookKind.Challenge,
+        outroAngle: ForgotCopy.OutroAngle = ForgotCopy.OutroAngle.Speed
     ): Result<Written> = runCatching {
         val n = stops.size.coerceIn(1, ForgotTimeline.MAX_GUESSES)
         val shares = ForgotTimeline.stopsFor(n, stops)
         val images = withContext(Dispatchers.Default) {
             shares.map { StrokeReplay.png(drawing.strokes, it, 512) } + StrokeReplay.png(drawing.strokes, 1f, 512)
         }
-        val prompt = ForgotCopy.directorPrompt(drawing.word, shares, MascotEmotion.entries.joinToString(", ") { it.key }, mode, reward, limit, style, hookKind)
+        val prompt = ForgotCopy.directorPrompt(drawing.word, shares, MascotEmotion.entries.joinToString(", ") { it.key }, mode, reward, limit, style, hookKind, outroAngle)
         val system = KaralakVoice.persona(JOB, lang)
         val answer = Backoff.retrying {
             client.generate(system, prompt + KaralakVoice.promptNote(lang, "JSON anahtarları ve emotion değerleri"), model, webSearch = false, images = images, json = true, temperature = 0.9, maxTokens = 1800)
@@ -45,7 +46,7 @@ class ForgotDirector(private val client: OpenRouterClient, private val model: St
         Written(
             ForgotCopy.Written(
                 parsed.guesses.take(n).map { it.copy(text = LineRules.fit(it.text, ForgotCopy.GUESS_WORDS)) },
-                parsed.hook.fit(ForgotCopy.HOOK_WORDS), parsed.ask.fit(ForgotCopy.ASK_WORDS), parsed.codeLine.fit(ForgotCopy.CODE_WORDS), parsed.outro.fit(LineRules.OUTRO_WORDS),
+                parsed.hook.fit(ForgotCopy.HOOK_WORDS), parsed.ask.fit(ForgotCopy.ASK_WORDS), parsed.codeLine.fit(ForgotCopy.CODE_WORDS), parsed.outro.fit(ForgotCopy.OUTRO_WORDS),
                 parsed.caption, parsed.hashtags
             ),
             answer.costUsd
