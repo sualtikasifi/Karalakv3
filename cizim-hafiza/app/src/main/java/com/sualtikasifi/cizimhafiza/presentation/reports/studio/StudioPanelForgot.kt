@@ -256,6 +256,15 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
             LineEditor(script.outro, { vm.editLine(LineRef.ForgotOutro, it) }, { vm.editEmotion(LineRef.ForgotOutro, it) }) { vm.listen(script.outro) }
         }
     }
+    // 4. the music: the same tracks and the same mix as "Gerçek Olsaydı", stepping back while Karalak speaks
+    item { Step("4", "Müzik") }
+    item {
+        MusicCard(
+            f.music, f.musicVolume, true, null, st.real.musicPlaying, st.real.customMusic, vm,
+            onPick = vm::setForgotMusic, onVolume = vm::setForgotMusicVolume, onAdd = { uri -> vm.addMusic(uri) { vm.setForgotMusic(it) } },
+            underClip = false
+        )
+    }
 }
 
 /** The digits of what was typed in a number field as a number (nothing typed: 0), at most eight of them. */

@@ -175,6 +175,15 @@ object ForgotTimeline {
     private const val OUTRO_HOLD = 1_800L
 
     /**
+     * Where Karalak is heard in the video, from the start of each spoken line for as long as it is said ([spokenMs] gives a
+     * line's voice length by its index, null when that line has no voice): the music steps back under these.
+     */
+    fun voiceRanges(events: List<ForgotEvent>, spokenMs: (Int) -> Long?): List<LongRange> =
+        events.mapNotNull { e ->
+            if (e.line == null) null else spokenMs(e.lineIndex)?.takeIf { it > 0 }?.let { e.startMs..e.startMs + it }
+        }
+
+    /**
      * [howtoMs] > 0: the closing is the end card with the phone, and it stays until the how-to video has played in it
      * (see [RealTimeline.END_VIDEO_LEAD]) and a moment more, however short Karalak's line is.
      */

@@ -21,6 +21,8 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.TextPainter
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.VoicedVideo
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.Reveal
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioCopy
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.ClipSound
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotSprites
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MouthState
@@ -44,7 +46,10 @@ class ForgotRenderer(
     private val wordTimes: Map<Int, List<LongRange>>? = null,
     /** The video of how the game is played, shown without its sound inside the phone on the end card; [howtoMs] long (0: none). */
     private val howto: ClipFrames? = null,
-    private val howtoMs: Long = 0L
+    private val howtoMs: Long = 0L,
+    /** The app's music under the whole video (null: none), at [musicVolume] before it steps back under Karalak's voice. */
+    musicFile: java.io.File? = null,
+    musicVolume: Float = 0f
 ) : VoicedVideo {
     val events: List<ForgotEvent> = ForgotTimeline.build(script, howtoMs) { i, l ->
         voice?.get(i)?.let { it.size * 1000L / FPS } ?: StudioCopy.estimateMs(l.text)
@@ -53,6 +58,12 @@ class ForgotRenderer(
     override val height: Int get() = H
     override val totalMs: Long = ForgotTimeline.totalMs(events)
     override val voiceStarts: List<Pair<Int, Long>> = events.filter { it.line != null }.map { it.lineIndex to it.startMs }
+
+    /** The music, when there is one: under the whole video, stepping back while Karalak is voiced (the same mix as "Gerçek Olsaydı"), fading out at the end. */
+    override val sounds: List<ClipSound> = if (musicFile == null || musicVolume <= 0f) emptyList() else {
+        val voices = ForgotTimeline.voiceRanges(events) { i -> voice?.get(i)?.let { it.size * 1000L / FPS } }
+        listOf(ClipSound(musicFile, 0L, totalMs, musicVolume.coerceAtMost(RealMix.MAX_VOLUME), shape = { ms -> RealMix.gainAt(ms, totalMs, voices, null) }))
+    }
 
     private val text = TextPainter()
     private val revealStarts = HashMap<Int, LongArray>()

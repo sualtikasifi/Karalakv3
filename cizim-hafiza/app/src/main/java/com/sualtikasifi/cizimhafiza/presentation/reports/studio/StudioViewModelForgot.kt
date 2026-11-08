@@ -249,6 +249,25 @@ fun StudioViewModel.writeForgot() {
     }
 }
 
+/** The app's music under the video (null: none); kept on this phone. A different track is heard first with ▶, never started by the choice. */
+fun StudioViewModel.setForgotMusic(name: String?) {
+    prefs().edit().apply { if (name == null) remove(StudioViewModel.FORGOT_MUSIC) else putString(StudioViewModel.FORGOT_MUSIC, name) }.apply()
+    _state.update { it.copy(forgot = it.forgot.copy(music = name), video = null) }
+}
+
+fun StudioViewModel.setForgotMusicVolume(volume: Float) {
+    val v = volume.coerceIn(0f, RealMix.MAX_VOLUME)
+    prefs().edit().putFloat(StudioViewModel.FORGOT_MUSIC_VOLUME, v).apply()
+    _state.update { it.copy(forgot = it.forgot.copy(musicVolume = v), video = null) }
+}
+
+/** Takes back the music and its volume this phone kept, unless the track is gone (one of the person's own that was removed). */
+internal fun StudioViewModel.restoreForgotMusic(custom: List<String>) {
+    val p = prefs()
+    val name = p.getString(StudioViewModel.FORGOT_MUSIC, null)?.takeIf { n -> RealMusic.TRACKS.any { it.first == n } || n in custom }
+    updateForgot { it.copy(music = name, musicVolume = p.getFloat(StudioViewModel.FORGOT_MUSIC_VOLUME, RealMix.DEFAULT_VOLUME).coerceIn(0f, RealMix.MAX_VOLUME)) }
+}
+
 /** How many earlier hooks the "yenile" button tells the assistant to stay away from. */
 private const val HOOK_MEMORY = 6
 

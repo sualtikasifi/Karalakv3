@@ -459,4 +459,19 @@ class ForgotTest {
         }
         assertEquals(ForgotCopy.OutroAngle.forTurn(0), ForgotCopy.OutroAngle.forTurn(ForgotCopy.OutroAngle.entries.size))
     }
+
+    @Test
+    fun theMusicStepsBackOnlyWhereKaralakIsVoiced() {
+        val events = ForgotTimeline.build(script(guesses = 2), howtoMs = 6_300L) { _, l -> StudioCopy.estimateMs(l.text) }
+        val all = ForgotTimeline.voiceRanges(events) { 1_000L }
+        // one range per spoken line, each starting where the line starts and a second long
+        assertEquals(events.count { it.line != null }, all.size)
+        assertTrue(all.all { it.last - it.first == 1_000L })
+        // a line with no voice leaves no range (voice off: the music is not ducked at all)
+        assertTrue(ForgotTimeline.voiceRanges(events) { null }.isEmpty())
+        // the shared mix: quieter inside a range than away from all of them
+        val inside = com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix.gainAt(all[1].first + 500, 60_000L, all, null)
+        val away = com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix.gainAt(30_000L, 60_000L, all, null)
+        assertTrue("$inside vs $away", inside < away)
+    }
 }

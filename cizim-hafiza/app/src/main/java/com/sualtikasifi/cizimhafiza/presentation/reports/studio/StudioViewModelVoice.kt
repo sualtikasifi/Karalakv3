@@ -340,13 +340,13 @@ fun StudioViewModel.importEndVoices(uri: Uri) {
 }
 
 /** A music file from the phone, added to the tracks to choose from; it is copied into the app and kept. */
-fun StudioViewModel.addMusic(uri: Uri) {
+fun StudioViewModel.addMusic(uri: Uri, onAdded: (String) -> Unit = { setMusic(it) }) {
     viewModelScope.launch {
         val r = withContext(Dispatchers.IO) { runCatching { RealMusic.import(context, uri) } }
         r.onSuccess { name ->
             updateReal { it.copy(customMusic = RealMusic.custom(context)) }
             // a track that was just added is meant to be used, and heard
-            setMusic(name)
+            onAdded(name)
             _state.update { it.copy(message = "Müzik eklendi: ${RealMusic.label(name)}") }
         }.onFailure { e -> _state.update { it.copy(message = "Müzik eklenemedi: ${e.message}") } }
     }
@@ -358,6 +358,7 @@ fun StudioViewModel.removeMusic(name: String) {
         if (_state.value.real.musicPlaying == name) stopPlaying()
         withContext(Dispatchers.IO) { runCatching { RealMusic.remove(context, name) } }
         if (_state.value.real.project?.featured?.music == name) setMusic(null)
+        if (_state.value.forgot.music == name) setForgotMusic(null)
         updateReal { it.copy(customMusic = RealMusic.custom(context)) }
     }
 }
