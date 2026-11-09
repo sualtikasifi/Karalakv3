@@ -161,6 +161,15 @@ data class ForgotUi(
     val shownCode: String = CouponCodes.generate(),
     val writing: Boolean = false,
     val writeError: String? = null,
+    /** The draft this work is saved as (see ForgotDraft), the drawing it holds (kept whole, so it is found even when the lists have changed), and whether it is "Tamamlandı". */
+    val draftId: Long? = null,
+    val draftDrawing: StudioDrawing? = null,
+    val done: Boolean = false,
+    /** The finished video kept with the draft, and the script it was made from. */
+    val draftVideo: String? = null,
+    val draftVideoFingerprint: Int = 0,
+    /** How many finished videos' lines the assistant is shown as examples. */
+    val learned: Int = 0,
     /** The app's music under the video (a [RealMusic] track's name; null: none) and how loud it is before it steps back under Karalak's voice. Kept on this phone. */
     val music: String? = null,
     val musicVolume: Float = com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix.DEFAULT_VOLUME,
@@ -280,7 +289,9 @@ data class StudioState(
     /** The log of videos made on this phone, newest first (see [PublishLog]). */
     val publishLog: List<PublishEntry> = emptyList(),
     /** What making videos costs, as OpenRouter and ElevenLabs report it. */
-    val spend: SpendUi = SpendUi()
+    val spend: SpendUi = SpendUi(),
+    /** Counts up each time a draft is opened from the log, so the panel scrolls back to the top. */
+    val openedDraft: Int = 0
 ) {
     /** The language the videos are written and spoken in. */
     val lang: StudioLang get() = eleven.lang
@@ -295,7 +306,8 @@ data class StudioState(
      * see [RecentDrawing.studioId]); null when it is in neither any more.
      */
     fun forgotDrawing(id: Long?): StudioDrawing? =
-        if (id == null) null else drawings.find { it.id == id } ?: real.recent.firstOrNull { it.studioId == id }?.toStudio()
+        if (id == null) null
+        else drawings.find { it.id == id } ?: real.recent.firstOrNull { it.studioId == id }?.toStudio() ?: forgot.draftDrawing?.takeIf { it.id == id }
 }
 
 /** The most accounts one code may be given to. */

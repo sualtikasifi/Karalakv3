@@ -132,10 +132,18 @@ internal fun StudioViewModel.buildForgot(d: StudioDrawing, ui: ForgotUi, previou
 
 /** Takes one of this phone's drawings and makes a first script around it. */
 fun StudioViewModel.selectForgot(d: StudioDrawing) {
+    val before = _state.value.forgot
+    // choosing the drawing the open, unfinished draft is already about goes on with that draft instead of starting another
+    val reuse = before.draftId?.takeIf { before.script?.drawingId == d.id && !before.done && before.draftVideo == null }
+    val id = reuse ?: System.currentTimeMillis()
     _state.update { s ->
-        val ui = s.forgot.copy(drawingId = d.id, writeError = null, couponStatus = null)
+        val ui = s.forgot.copy(
+            drawingId = d.id, writeError = null, couponStatus = null,
+            draftId = id, draftDrawing = d, done = false, draftVideo = null, draftVideoFingerprint = 0
+        )
         s.copy(forgot = ui.copy(script = buildForgot(d, ui, null)), video = null, previewMs = 0L, renderError = null)
     }
+    _state.value.forgot.script?.let { sc -> if (reuse == null) beginDraftEntry(id, sc) }
     refreshPreview()
 }
 
@@ -219,10 +227,12 @@ fun StudioViewModel.writeForgot() {
     val style = s.forgot.script?.style ?: styleFor(s.forgot)
     updateForgot { it.copy(writing = true, writeError = null) }
     viewModelScope.launch {
+        // the lines of the videos marked "Tamamlandı" ride along as examples of the voice wanted
+        val examples = learnedExamples(d.word)
         ForgotDirector(OpenRouterClient(key), model, _state.value.lang).write(
             d, s.forgot.script?.stops.orEmpty(), s.forgot.mode, s.forgot.script?.reward.orEmpty(),
             ForgotCopy.limitText(s.forgot.maxUses), style,
-            ForgotCopy.HookKind.forTurn(s.forgot.hookTurn), ForgotCopy.OutroAngle.forTurn(s.forgot.hookTurn)
+            ForgotCopy.HookKind.forTurn(s.forgot.hookTurn), ForgotCopy.OutroAngle.forTurn(s.forgot.hookTurn), examples
         ).onSuccess { w ->
             _state.update { st ->
                 val cur = st.forgot.script ?: return@update st.copy(forgot = st.forgot.copy(writing = false))
@@ -286,7 +296,7 @@ fun StudioViewModel.rewriteForgotHook() {
     val avoid = (s.forgot.hookTried + script.hook.text).distinct().takeLast(HOOK_MEMORY)
     updateForgot { it.copy(hookWriting = true, hookError = null) }
     viewModelScope.launch {
-        ForgotDirector(OpenRouterClient(key), OpenRouterClient.FORGOT_MODEL, _state.value.lang).writeHook(d.word, kind, avoid)
+        ForgotDirector(OpenRouterClient(key), OpenRouterClient.FORGOT_MODEL, _state.value.lang).writeHook(d.word, kind, avoid, learnedExamples(d.word))
             .onSuccess { (hook, cost) ->
                 _state.update { st ->
                     val cur = st.forgot.script ?: return@update st.copy(forgot = st.forgot.copy(hookWriting = false))

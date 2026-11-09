@@ -99,7 +99,7 @@ private fun PublishLogCard(log: List<PublishEntry>, vm: StudioViewModel) {
         }
         log.take(SHOWN).forEachIndexed { i, e ->
             if (i > 0) Box(Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(1.dp).background(Console.Grid))
-            Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().clickable { vm.openLogEntry(e) }.padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(e.label.ifBlank { "—" }, style = Console.Subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
@@ -114,17 +114,34 @@ private fun PublishLogCard(log: List<PublishEntry>, vm: StudioViewModel) {
                         )
                     }
                 }
-                Tag(
-                    if (e.published) "yayında · ${day(e.publishedAt)}" else "bekliyor",
-                    fg = if (e.published) Console.GoodText else Console.WarningText,
-                    bg = if (e.published) Console.GoodSoft else Console.WarningSoft,
-                    modifier = Modifier.clickable { vm.togglePublished(e.id) }
-                )
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (e.draft) {
+                        // no video yet: the line is a draft that opens where it was left
+                        Tag("taslak · devam et", fg = Console.AccentInk, bg = Console.AccentSoft)
+                    } else {
+                        Tag(
+                            if (e.published) "yayında · ${day(e.publishedAt)}" else "bekliyor",
+                            fg = if (e.published) Console.GoodText else Console.WarningText,
+                            bg = if (e.published) Console.GoodSoft else Console.WarningSoft,
+                            modifier = Modifier.clickable { vm.togglePublished(e.id) }
+                        )
+                        Tag(
+                            if (e.done) "tamamlandı" else "tamamla",
+                            fg = if (e.done) Console.GoodText else Console.InkMuted,
+                            bg = if (e.done) Console.GoodSoft else Console.Grid,
+                            modifier = Modifier.clickable { vm.toggleDone(e.id) }
+                        )
+                    }
+                }
                 ConsoleIconButton(Icons.Filled.Delete, "Günlükten sil", { vm.deletePublishEntry(e.id) }, size = 32.dp, tint = Console.Critical)
             }
         }
         if (log.size > SHOWN) Text("+${log.size - SHOWN} eski kayıt", style = Console.Small, modifier = Modifier.padding(10.dp))
-        Text("Bekliyor / yayında etiketine dokunarak durumu değiştir.", style = Console.Small.copy(color = Console.InkMuted), modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
+        Text(
+            "Satıra dokununca kaldığın yerden devam edersin (video bittiyse son hâlini görürsün). Bekliyor / yayında ve tamamla etiketlerine dokunarak durumu değiştir. " +
+                "Tamamlandı olan Düello videolarının cümleleri, yapay zekaya örnek olarak gösterilir.",
+            style = Console.Small.copy(color = Console.InkMuted), modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+        )
     }
 }
 

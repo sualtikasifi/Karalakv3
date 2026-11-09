@@ -29,14 +29,15 @@ class ForgotDirector(private val client: OpenRouterClient, private val model: St
     suspend fun write(
         drawing: StudioDrawing, stops: List<Float>, mode: ForgotMode, reward: String, limit: String, style: ForgotStyle = ForgotStyle.Game,
         hookKind: ForgotCopy.HookKind = ForgotCopy.HookKind.Challenge,
-        outroAngle: ForgotCopy.OutroAngle = ForgotCopy.OutroAngle.Speed
+        outroAngle: ForgotCopy.OutroAngle = ForgotCopy.OutroAngle.Speed,
+        examples: ForgotExamples = ForgotExamples.NONE
     ): Result<Written> = runCatching {
         val n = stops.size.coerceIn(1, ForgotTimeline.MAX_GUESSES)
         val shares = ForgotTimeline.stopsFor(n, stops)
         val images = withContext(Dispatchers.Default) {
             shares.map { StrokeReplay.png(drawing.strokes, it, 512) } + StrokeReplay.png(drawing.strokes, 1f, 512)
         }
-        val prompt = ForgotCopy.directorPrompt(drawing.word, shares, MascotEmotion.entries.joinToString(", ") { it.key }, mode, reward, limit, style, hookKind, outroAngle)
+        val prompt = ForgotCopy.directorPrompt(drawing.word, shares, MascotEmotion.entries.joinToString(", ") { it.key }, mode, reward, limit, style, hookKind, outroAngle, examples)
         val system = KaralakVoice.persona(JOB, lang)
         val answer = Backoff.retrying {
             client.generate(system, prompt + KaralakVoice.promptNote(lang, "JSON anahtarları ve emotion değerleri"), model, webSearch = false, images = images, json = true, temperature = 0.9, maxTokens = 1800)
@@ -57,8 +58,8 @@ class ForgotDirector(private val client: OpenRouterClient, private val model: St
      * Only a new hook (the "yenile" button): text alone, no pictures, so it costs next to nothing. Never the same as the
      * [avoid]ed ones; temperature is high on purpose.
      */
-    suspend fun writeHook(word: String, kind: ForgotCopy.HookKind, avoid: List<String>): Result<Pair<SpokenLine, Double?>> = runCatching {
-        val prompt = ForgotCopy.hookPrompt(word, kind, MascotEmotion.entries.joinToString(", ") { it.key }, avoid)
+    suspend fun writeHook(word: String, kind: ForgotCopy.HookKind, avoid: List<String>, examples: ForgotExamples = ForgotExamples.NONE): Result<Pair<SpokenLine, Double?>> = runCatching {
+        val prompt = ForgotCopy.hookPrompt(word, kind, MascotEmotion.entries.joinToString(", ") { it.key }, avoid, examples)
         val answer = Backoff.retrying {
             client.generate(KaralakVoice.persona(JOB, lang), prompt + KaralakVoice.promptNote(lang, "JSON anahtarları ve emotion değerleri"), model, webSearch = false, json = true, temperature = 1.0, maxTokens = 300)
         }.getOrThrow()

@@ -18,10 +18,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Refresh
@@ -102,7 +104,11 @@ fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
         )
     }
 
+    val listState = rememberLazyListState()
+    // a draft opened from the log shows from its top
+    LaunchedEffect(st.openedDraft) { if (st.openedDraft > 0) listState.animateScrollToItem(0) }
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(bottom = 28.dp)
@@ -324,6 +330,17 @@ internal fun LazyListScope.resultItems(st: StudioState, vm: StudioViewModel, con
                     }
                     ActionButton(Icons.Filled.Download, "Galeriye", Console.Surface, Console.Ink, Modifier.weight(1f)) { vm.saveToGallery() }
                     ActionButton(Icons.Filled.ContentCopy, "Metin", Console.Surface, Console.Ink, Modifier.weight(1f)) { copy(context, postText(st.caption, st.hashtags, platform, st.lang)) }
+                }
+                if (!real && st.forgot.draftId != null) {
+                    ActionButton(
+                        Icons.Filled.CheckCircle, if (st.forgot.done) "Tamamlandı · kaldır" else "Tamamlandı olarak işaretle",
+                        if (st.forgot.done) Console.GoodSoft else Console.Surface, if (st.forgot.done) Console.GoodText else Console.Ink,
+                        Modifier.fillMaxWidth().padding(top = 8.dp)
+                    ) { vm.toggleDoneForOpenDraft() }
+                    Text(
+                        if (st.forgot.done) "Bu videonun cümleleri örnek olarak kullanılıyor." else "Tamamlananların cümleleri, yapay zeka yeni cümle yazarken örnek olarak gösterilir.",
+                        style = Console.Small, modifier = Modifier.padding(bottom = 4.dp)
+                    )
                 }
                 Field("Açıklama", st.caption, vm::setCaption, lines = 3)
                 Field("Etiketler", st.hashtags, vm::setHashtags, lines = 2)

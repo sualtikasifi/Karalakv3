@@ -86,6 +86,7 @@ enum class ForgotMode(val title: String) {
  * [code] is what the viewer types in the app (see [CouponCodes]): in [ForgotMode.Word] the answer itself, so it is
  * never put on screen as letters, only as empty boxes; in [ForgotMode.Shown] a code written out in full.
  */
+@kotlinx.serialization.Serializable
 data class ForgotScript(
     val drawingId: Long,
     val word: String,
@@ -315,15 +316,28 @@ object ForgotCopy {
         - Ödülün adını söyleme (kod ekranında zaten yazıyor).
     """.trimIndent()
 
+    /** The examples section of the prompts: finished videos' lines to take the voice from, never to copy; empty when there are none. */
+    fun examplesBlock(ex: ForgotExamples): String {
+        if (ex.isEmpty) return ""
+        fun row(title: String, lines: List<String>) = if (lines.isEmpty()) null else "- $title: " + lines.joinToString(" / ") { "\"$it\"" }
+        val rows = listOfNotNull(
+            row("Kanca", ex.hooks), row("Tahmin", ex.guesses), row("Soru", ex.asks), row("Kod anı", ex.codes), row("Kapanış", ex.outros)
+        )
+        return "ÖNCEKİ TAMAMLANAN VİDEOLARDAN ÖRNEKLER (yayına hazırlanan, gerektiğinde elle düzeltilen cümleler; beğenilen tarz bu). " +
+            "Bu cümlelerin ritmini, mizahını ve kişiliğini örnek al; AYNI cümleleri ya da birebir kalıpları TEKRARLAMA, yeni ve farklı cümleler kur:\n" +
+            rows.joinToString("\n")
+    }
+
     /**
      * Just the hook, for the "yenile" button: a new one of [kind], different from the [avoid]ed ones (those already tried).
      * Answer: `{"hook":{"emotion":"…","line":"…"}}`.
      */
-    fun hookPrompt(word: String, kind: HookKind, moods: String, avoid: List<String>): String = """
+    fun hookPrompt(word: String, kind: HookKind, moods: String, avoid: List<String>, examples: ForgotExamples = ForgotExamples.NONE): String = """
         Videonun açılış cümlesini (kanca) yaz. Çizilmesi istenen kelime: "$word"; hiçbir cümlede bu kelime ya da kökü geçmesin.
         Çizim şu an çiziliyor ve ekranda görünüyor; Karalak bu cümleyi videonun ilk saniyesinde söylüyor.
 
         ${hookRules(kind)}
+        ${examplesBlock(ForgotExamples(hooks = examples.hooks))}
         ${if (avoid.isEmpty()) "" else "Bunlardan FARKLI olsun, hiçbirine benzemesin: " + avoid.joinToString(" / ") { "\"$it\"" }}
 
         Yalnızca şu JSON'u yaz: {"hook":{"emotion":"…","line":"…"}}
@@ -430,7 +444,7 @@ object ForgotCopy {
      * every spoken moment and how long it lasts, and what it must keep in mind (the mode, the reward, the word it may not say).
      * It works its plan out first, then writes each line for its own moment.
      */
-    fun directorPrompt(word: String, stops: List<Float>, moods: String, mode: ForgotMode, reward: String, limit: String, style: ForgotStyle = ForgotStyle.Game, hookKind: HookKind = HookKind.Challenge, outroAngle: OutroAngle = OutroAngle.Speed): String {
+    fun directorPrompt(word: String, stops: List<Float>, moods: String, mode: ForgotMode, reward: String, limit: String, style: ForgotStyle = ForgotStyle.Game, hookKind: HookKind = HookKind.Challenge, outroAngle: OutroAngle = OutroAngle.Speed, examples: ForgotExamples = ForgotExamples.NONE): String {
         val n = stops.size
         val pictures = stops.mapIndexed { i, share -> "Görsel ${i + 1}: çizimin %${percent(share)}'i çizilmiş." }.joinToString("\n") + "\nGörsel ${n + 1}: bitmiş çizim."
         val guessScenes = stops.mapIndexed { i, share ->
@@ -457,6 +471,8 @@ object ForgotCopy {
             $rewardLine
 
             ${hookRules(hookKind)}
+
+            ${examplesBlock(examples)}
 
             ÖNCE "plan" alanında düşün (en fazla 4 kısa cümle): her görselde ne görünüyor, Karalak onu nasıl yanlış ama makul yorumlar, izleyici o anda ne hissetmeli? SONRA her cümleyi kendi anı için yaz:
             SESLENDİRME İLKELERİ (cümleler sesli okunacak; kulağa doğal gelmeli, yazıda iyi durması yetmez):
