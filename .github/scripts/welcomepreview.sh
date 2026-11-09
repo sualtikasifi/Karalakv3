@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The tutorial's welcome screen on a brand-new install, in Turkish: at rest, and with a finger held on "Hadi başlayalım"
-# (the whole button, leaves and all, should cave in). Run through .github/workflows/smoke-test.yml with script=welcomepreview.sh.
+# (the whole button, leaves and all, should cave in), then the first drawing screen of the tutorial. Run through .github/workflows/smoke-test.yml with script=welcomepreview.sh.
 set -u
 
 PKG=com.sualtikasifi.cizimhafiza
@@ -25,3 +25,6 @@ sleep 0.9
 shot pressed
 wait
 shot after
+# the finger is up: the tutorial has begun, and its first word is on the screen with the painted "Sonraki Kelime" button
+sleep 4
+shot draw1

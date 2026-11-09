@@ -196,10 +196,10 @@ class TutorialViewModel @Inject constructor(
         }
     }
 
-    /** Untimed first word only — the "Sonraki Kelime" button. */
-    fun advanceUntimedDrawing() {
+    /** The "Sonraki Kelime" button: on the first word (no clock) and the second (finishes it early); the last word has no next one. */
+    fun advanceDrawing() {
         val current = _phase.value as? GamePhase.Drawing ?: return
-        if (!current.isUntimed) return
+        if (current.wordNumber >= current.totalWords) return
         finishDrawingTurn()
     }
 
