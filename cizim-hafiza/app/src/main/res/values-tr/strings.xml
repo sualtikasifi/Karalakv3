@@ -393,7 +393,7 @@
 
     <!-- Tutorial -->
     <string name="tutorial_intro_title">Karalak\'a hoş geldin!</string>
-    <string name="tutorial_intro_body">Kısa bir deneme yapalım. Sana 3 kelime vereceğim, sen çizeceksin. Sonra çizimlerini sana geri göstereceğim, sen de ne olduğunu hatırlayacaksın. Hepsi bu!</string>
+    <string name="tutorial_intro_body">Başlamadan önce küçük bir ısınma yapalım mı? 3 kelimeyi çizmeni isteyeceğim, sonra çizimlerine birlikte bakıp neyi çizdiğini hatırlamaya çalışacağız.</string>
     <string name="tutorial_intro_button">Hadi başlayalım</string>
     <string name="tutorial_generic_button">Anladım</string>
     <string name="tutorial_timed_title">Şimdi süre var! ⏱️</string>

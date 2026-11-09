@@ -14,6 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -40,6 +42,15 @@ import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenArt
 private const val ArtW = 841f
 private const val ArtH = 1870f
 private val Ink = Color(0xFF3B2314)
+
+// The button group (the orange pill and its leaves) in the picture's art units, and where the pill's own middle lies in it.
+private const val BtnL = 82.5f
+private const val BtnT = 1151.2f
+private const val BtnR = 760.8f
+private const val BtnB = 1327.9f
+private const val PillMidX = 412.5f
+private const val BtnPivotX = (PillMidX - BtnL) / (BtnR - BtnL)
+private const val BtnPivotY = (1238f - BtnT) / (BtnB - BtnT)
 
 /**
  * The first screen of the tutorial: "Karalak'a hoş geldin!". The painted workshop fills the screen from the very first
@@ -89,22 +100,32 @@ internal fun WelcomeScene(onStart: () -> Unit, onSkip: () -> Unit) {
             modifier = box(104f, 934f, 738f, 1130f).springIn(index = 1, stepMs = 70, fromY = 20)
         )
 
-        // "Hadi başlayalım": the orange button.
-        val startSink = rememberSink(0.94f)
+        // "Hadi başlayalım": the orange button WITH its leaves. The whole group is a picture of its own (tutorial_welcome_button,
+        // cut out of the painted scene, which has that spot cleaned), so pressing it caves the button in together with its
+        // leaves and its label, over a dark hollow of the same shape.
+        val startSink = rememberSink(0.93f)
         Box(
-            box(125f, 1170f, 700f, 1306f)
-                .then(sunk(startSink, 125f, 1170f, 700f, 1306f, 66f))
+            box(BtnL, BtnT, BtnR, BtnB)
                 .clickable(interactionSource = startSink.source, indication = null, onClick = onStart)
                 .a11yButton(stringResource(R.string.tutorial_intro_button))
         ) {
-            Box(Modifier.fillMaxSize().sinkWith(startSink, 0.5f, 0.5f), contentAlignment = Alignment.Center) {
-                LetteredText(
-                    text = stringResource(R.string.tutorial_intro_button),
-                    size = fs(60f),
-                    outline = Color(0xFF8A3A00),
-                    modifier = Modifier.requiredSize(unit * 390f, unit * 82f),
-                    minScale = 0.5f
-                )
+            val group = cachedPainterResource(R.drawable.tutorial_welcome_button)
+            Image(
+                group, contentDescription = null, contentScale = ContentScale.FillBounds, colorFilter = ColorFilter.tint(Color.Black),
+                modifier = Modifier.fillMaxSize().graphicsLayer { alpha = ((1f - startSink.scale.value) / 0.07f).coerceIn(0f, 1f) * 0.32f }
+            )
+            Box(Modifier.fillMaxSize().sinkWith(startSink, BtnPivotX, BtnPivotY)) {
+                Image(group, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    LetteredText(
+                        text = stringResource(R.string.tutorial_intro_button),
+                        size = fs(60f),
+                        outline = Color(0xFF8A3A00),
+                        // the pill's middle is a little left of the group's (the leaves are not the same on both sides)
+                        modifier = Modifier.offset(x = unit * (PillMidX - (BtnL + BtnR) / 2f)).requiredSize(unit * 390f, unit * 82f),
+                        minScale = 0.5f
+                    )
+                }
             }
         }
 

@@ -388,7 +388,7 @@
 
     <!-- Tutorial -->
     <string name="tutorial_intro_title">Bem-vindo ao Karalak!</string>
-    <string name="tutorial_intro_body">Vamos fazer um teste rápido. Vou te dar 3 palavras para desenhar. Depois vou te mostrar seus desenhos e você lembra o que eram. É só isso!</string>
+    <string name="tutorial_intro_body">Que tal um pequeno aquecimento antes de começar? Vou pedir que você desenhe 3 palavras e depois vamos olhar seus desenhos juntos para tentar lembrar o que você desenhou.</string>
     <string name="tutorial_intro_button">Vamos lá</string>
     <string name="tutorial_generic_button">Entendi</string>
     <string name="tutorial_timed_title">Agora tem tempo! ⏱️</string>
