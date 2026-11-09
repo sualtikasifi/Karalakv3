@@ -1,6 +1,6 @@
 name: Release bundle
 
-# Manual only. Builds the signed Play Store bundle (.aab) with the real AdMob
+# Manual only. Builds the signed release APK (and, on request, the Play Store bundle .aab) with the real AdMob
 # IDs, bumping versionCode/versionName first, and REFUSES to build if any
 # ingredient is missing (a release without the real ad IDs shows no ads and
 # earns nothing — see the guard at the bottom of app/build.gradle.kts).
@@ -27,7 +27,11 @@ on:
         type: boolean
         default: true
       build_apk:
-        description: "Also build a signed release APK to install straight onto a phone (uninstall the Play version first: the signatures differ)"
+        description: "Build a signed release APK to install straight onto a phone (uninstall the Play version first: the signatures differ)"
+        type: boolean
+        default: true
+      build_aab:
+        description: "Also build the Play Store bundle (.aab); only needed for uploading to Play"
         type: boolean
         default: false
 
@@ -111,6 +115,7 @@ jobs:
         run: ./gradlew :app:testDebugUnitTest --console=plain
 
       - name: Build release bundle (refuses without real ad IDs)
+        if: ${{ inputs.build_aab }}
         run: ./gradlew :app:bundleRelease -PrequireRealAds --console=plain
 
       - name: Build release APK
@@ -127,6 +132,7 @@ jobs:
           retention-days: 30
 
       - name: Upload bundle
+        if: ${{ inputs.build_aab }}
         uses: actions/upload-artifact@v4
         with:
           name: karalak-release-aab
