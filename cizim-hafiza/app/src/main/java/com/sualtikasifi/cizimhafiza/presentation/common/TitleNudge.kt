@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -214,7 +215,7 @@ fun TitleNudgeOverlay() {
     val key = picked?.takeIf { it in keys } ?: keys.firstOrNull()
     val clipboard = LocalClipboardManager.current
     var copied by remember { mutableStateOf(false) }
-    Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp), contentAlignment = Alignment.BottomCenter) {
+    Box(Modifier.fillMaxSize().navigationBarsPadding().padding(12.dp), contentAlignment = Alignment.BottomCenter) {
         Column(
             Modifier.clip(RoundedCornerShape(16.dp)).background(Color(0xEE1E1E24)).padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

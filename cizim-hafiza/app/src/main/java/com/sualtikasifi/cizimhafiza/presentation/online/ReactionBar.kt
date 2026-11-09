@@ -757,6 +757,8 @@ private fun ChatHistoryDialog(
                     }
                 }
             }
+            // The dialog is its own window, above the app's: the title-tuning box (developer panel) must live in it too.
+            com.sualtikasifi.cizimhafiza.presentation.common.TitleNudgeOverlay()
         }
     }
 }
