@@ -1,6 +1,29 @@
 package com.sualtikasifi.cizimhafiza.presentation.runes
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.ScrollState
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,9 +67,9 @@ data class RuneAbilityState(
 )
 
 private val Ink = Color(0xFF3A2416)
-private val LabelColor = Color(0xFFB0641E)
+private val LabelColor = Color(0xFF9A5418)
 private val Faded = Color(0xFF9A8670)
-private val BarColor = Color(0xFFE2C48E)
+private val Good = Color(0xFF2E7D32)
 
 /** The stat effects in the order the window lists them, with the label of each. */
 private val statRows: List<Pair<RuneEffect, Int>> = listOf(
@@ -75,50 +98,112 @@ private val reductions = setOf(RuneEffect.DISC, RuneEffect.CTIME, RuneEffect.ADC
 @Composable
 fun RuneStatusDialog(levels: Map<String, Int>, playerLevel: Int, abilities: RuneAbilityState, onDismiss: () -> Unit) {
     val numbers = NumberFormat.getIntegerInstance()
+    // A slow golden breath around the window and a soft spring on the way in: the frame feels alive without moving anything
+    // the player has to read.
+    val breath by rememberInfiniteTransition(label = "runeStatusGlow").animateFloat(
+        initialValue = 0.28f, targetValue = 0.62f,
+        animationSpec = infiniteRepeatable(tween(2300, easing = LinearEasing), RepeatMode.Reverse), label = "glow"
+    )
+    val enter = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { enter.animateTo(1f, spring(dampingRatio = 0.62f, stiffness = 340f)) }
     Dialog(onDismissRequest = onDismiss) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp)
+                .graphicsLayer {
+                    val e = enter.value
+                    scaleX = 0.88f + 0.12f * e
+                    scaleY = 0.88f + 0.12f * e
+                    alpha = (e * 3f).coerceIn(0f, 1f)
+                }
+                .drawBehind {
+                    val r = 34.dp.toPx()
+                    val spread = 11.dp.toPx() * (0.6f + breath)
+                    drawRoundRect(
+                        brush = Brush.radialGradient(
+                            0f to Color(0xFFFFC94A).copy(alpha = breath),
+                            1f to Color.Transparent,
+                            center = Offset(size.width / 2f, size.height / 2f),
+                            radius = maxOf(size.width, size.height) * 0.62f
+                        ),
+                        topLeft = Offset(-spread, -spread),
+                        size = androidx.compose.ui.geometry.Size(size.width + spread * 2, size.height + spread * 2),
+                        cornerRadius = CornerRadius(r + spread)
+                    )
+                }
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .sliced(R.drawable.rune_ui_card, srcCorner = 58, dstCorner = 26.dp)
-                .padding(horizontal = 22.dp, vertical = 20.dp),
+                .padding(horizontal = 24.dp, vertical = 22.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LetteredText(text = stringResource(R.string.rune_status_title), size = 26.sp)
-            Spacer(Modifier.size(10.dp))
+            LetteredText(text = stringResource(R.string.rune_status_title), size = 32.sp, title = true)
+            Spacer(Modifier.size(6.dp))
+            // A thin gold rule under the title, fading out at both ends.
+            Box(
+                Modifier.fillMaxWidth(0.7f).height(2.dp)
+                    .background(Brush.horizontalGradient(listOf(Color.Transparent, Color(0xFFD9A441), Color.Transparent)))
+            )
+            Spacer(Modifier.size(8.dp))
+            val scroll = rememberScrollState()
             Column(
-                modifier = Modifier.fillMaxWidth().heightIn(max = 470.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 470.dp)
+                    .fadeEdges(scroll)
+                    .verticalScroll(scroll),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 val runes = RuneTree.all.filter { it.id != RuneTree.ROOT_ID }
                 SectionBar(stringResource(R.string.rune_status_general))
-                StatusRow(stringResource(R.string.rune_status_player_level), playerLevel.toString())
+                var row = 0
+                StatusRow(stringResource(R.string.rune_status_player_level), playerLevel.toString(), striped = row++ % 2 == 0)
                 StatusRow(
                     stringResource(R.string.rune_status_rune_levels),
-                    "${runes.sumOf { RuneTree.levelOf(levels, it.id) }} / ${runes.sumOf { it.maxLevel }}"
+                    "${runes.sumOf { RuneTree.levelOf(levels, it.id) }} / ${runes.sumOf { it.maxLevel }}",
+                    striped = row++ % 2 == 0,
+                    progress = runes.sumOf { RuneTree.levelOf(levels, it.id) }.toFloat() / runes.sumOf { it.maxLevel }.coerceAtLeast(1)
                 )
                 StatusRow(
                     stringResource(R.string.rune_status_spent),
-                    numbers.format(runes.sumOf { r -> (0 until RuneTree.levelOf(levels, r.id)).sumOf { RuneGates.price(r, it) ?: 0 } })
+                    numbers.format(runes.sumOf { r -> (0 until RuneTree.levelOf(levels, r.id)).sumOf { RuneGates.price(r, it) ?: 0 } }),
+                    striped = row++ % 2 == 0
                 )
                 (1..4).filter { ring -> RuneTree.all.any { it.ring == ring } }.forEach { ring ->
                     val label = if (ring == 4) stringResource(R.string.rune_status_ring_legend) else stringResource(R.string.rune_status_ring, ring)
                     if (RuneTree.ringOpen(levels, ring, playerLevel)) {
-                        StatusRow(label, stringResource(R.string.rune_status_percent, (RuneTree.ringProgress(levels, ring) * 100).toInt()))
+                        val p = RuneTree.ringProgress(levels, ring)
+                        StatusRow(label, stringResource(R.string.rune_status_percent, (p * 100).toInt()), striped = row++ % 2 == 0, progress = p)
                     } else {
-                        StatusRow(label, stringResource(R.string.rune_status_ring_locked, RuneGates.levelFor(ring)), dim = true)
+                        StatusRow(label, stringResource(R.string.rune_status_ring_locked, RuneGates.levelFor(ring)), dim = true, striped = row++ % 2 == 0)
                     }
                 }
 
                 SectionBar(stringResource(R.string.rune_status_bonuses))
+                row = 0
                 statRows.forEach { (effect, labelRes) ->
                     val now = RuneEffects.total(levels, effect)
                     val top = RuneEffects.capOf(effect) ?: RuneTree.all.filter { it.effect == effect }.sumOf { it.maxLevel * it.perLevel }
-                    StatusRow(stringResource(labelRes), statText(effect, now), extra = "/ " + statText(effect, top), dim = now == 0)
+                    StatusRow(
+                        stringResource(labelRes), statText(effect, now), extra = "/ " + statText(effect, top), dim = now == 0,
+                        striped = row++ % 2 == 0, progress = if (top > 0) now.toFloat() / top else 0f
+                    )
                 }
 
                 SectionBar(stringResource(R.string.rune_status_abilities))
+                row = 0
                 runes.filter { it.effect.unit == RuneUnit.FLAG && it.effect != RuneEffect.STYLE }.forEach { rune ->
                     val owned = RuneTree.levelOf(levels, rune.id) >= 1
+                    val ready = when (rune.effect) {
+                        RuneEffect.INSTANT -> abilities.instantReady
+                        RuneEffect.BEST -> abilities.bestFriendReady
+                        RuneEffect.INSURE -> abilities.insuranceReady
+                        RuneEffect.RESERVE -> abilities.reserveWaiting
+                        else -> true
+                    }
                     val state = when {
                         !owned -> R.string.rune_status_locked
                         rune.effect == RuneEffect.INSTANT -> if (abilities.instantReady) R.string.rune_status_ready_today else R.string.rune_status_used_today
@@ -127,25 +212,48 @@ fun RuneStatusDialog(levels: Map<String, Int>, playerLevel: Int, abilities: Rune
                         rune.effect == RuneEffect.RESERVE -> if (abilities.reserveWaiting) R.string.rune_status_reserve_full else R.string.rune_status_reserve_empty
                         else -> R.string.rune_status_on
                     }
-                    StatusRow(stringResource(rune.nameRes), stringResource(state), dim = !owned)
+                    StatusRow(
+                        stringResource(rune.nameRes), stringResource(state), dim = !owned, striped = row++ % 2 == 0,
+                        valueColor = if (owned && ready) Good else null
+                    )
                 }
 
                 // The collection of rune rewards: only shown while some rune gives one.
                 val style = runes.filter { it.effect == RuneEffect.STYLE }
                 if (style.isNotEmpty()) {
                     SectionBar(stringResource(R.string.rune_status_collection))
-                    StatusRow(stringResource(R.string.rune_status_rewards), "${style.count { RuneTree.levelOf(levels, it.id) >= 1 }} / ${style.size}")
+                    row = 0
+                    StatusRow(stringResource(R.string.rune_status_rewards), "${style.count { RuneTree.levelOf(levels, it.id) >= 1 }} / ${style.size}", striped = row++ % 2 == 0)
                     style.forEach { rune ->
                         val owned = RuneTree.levelOf(levels, rune.id) >= 1
-                        StatusRow(stringResource(rune.nameRes), stringResource(if (owned) R.string.rune_status_owned else R.string.rune_status_locked), dim = !owned)
+                        StatusRow(
+                            stringResource(rune.nameRes), stringResource(if (owned) R.string.rune_status_owned else R.string.rune_status_locked),
+                            dim = !owned, striped = row++ % 2 == 0, valueColor = if (owned) Good else null
+                        )
                     }
                 }
             }
             Spacer(Modifier.size(14.dp))
             PrimaryButton(text = stringResource(R.string.close), onClick = onDismiss, modifier = Modifier.fillMaxWidth(), height = 50.dp)
         }
+        }
     }
 }
+
+/** Lets the list melt into the parchment at its top and bottom edge when there is more to scroll, instead of cutting a line in half. */
+private fun Modifier.fadeEdges(scroll: ScrollState): Modifier = this
+    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        val fade = 16.dp.toPx()
+        if (scroll.value > 0) drawRect(
+            Brush.verticalGradient(listOf(Color.Transparent, Color.Black), startY = 0f, endY = fade), size = androidx.compose.ui.geometry.Size(size.width, fade), blendMode = BlendMode.DstIn
+        )
+        if (scroll.value < scroll.maxValue) drawRect(
+            Brush.verticalGradient(listOf(Color.Black, Color.Transparent), startY = size.height - fade, endY = size.height),
+            topLeft = Offset(0f, size.height - fade), size = androidx.compose.ui.geometry.Size(size.width, fade), blendMode = BlendMode.DstIn
+        )
+    }
 
 @Composable
 private fun statText(effect: RuneEffect, value: Int): String = when {
@@ -154,10 +262,10 @@ private fun statText(effect: RuneEffect, value: Int): String = when {
     else -> stringResource(R.string.rune_tile_pct, value)
 }
 
-/** A section title on a darker band, like the class bar of a game's status sheet. */
+/** A section title on a gold band, like the class bar of a game's status sheet. */
 @Composable
 private fun SectionBar(text: String) {
-    Spacer(Modifier.size(6.dp))
+    Spacer(Modifier.size(8.dp))
     Text(
         text = text,
         fontFamily = DisplayFont,
@@ -165,41 +273,66 @@ private fun SectionBar(text: String) {
         fontSize = 16.sp,
         color = Ink,
         textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(BarColor).padding(vertical = 5.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(Brush.verticalGradient(listOf(Color(0xFFEBCB8B), Color(0xFFDDB46C))))
+            .padding(vertical = 6.dp)
     )
-    Spacer(Modifier.size(2.dp))
+    Spacer(Modifier.size(3.dp))
 }
 
-/** One line of the sheet: the label on the left in the warm colour, the value on the right, an optional faded top after it. */
+/**
+ * One line of the sheet: the label on the left in the warm colour, the value on the right, an optional faded top after it.
+ * Every other line sits on a faint band so the eye can follow it across; [progress] draws a thin bar under the label.
+ */
 @Composable
-private fun StatusRow(label: String, value: String, extra: String? = null, dim: Boolean = false) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = label,
-            fontFamily = DisplayFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
-            color = if (dim) Faded else LabelColor,
-            maxLines = 1,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = value,
-            fontFamily = DisplayFont,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 14.sp,
-            color = if (dim) Faded else Ink,
-            maxLines = 1
-        )
-        if (extra != null) {
+private fun StatusRow(
+    label: String, value: String, extra: String? = null, dim: Boolean = false,
+    striped: Boolean = false, progress: Float? = null, valueColor: Color? = null
+) {
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+            .background(if (striped) Color(0x1F8A5A1E) else Color.Transparent)
+            .padding(horizontal = 8.dp, vertical = 5.dp)
+    ) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = " $extra",
+                text = label,
                 fontFamily = DisplayFont,
                 fontWeight = FontWeight.Bold,
-                fontSize = 12.sp,
-                color = Faded,
+                fontSize = 15.sp,
+                color = if (dim) Faded else LabelColor,
+                maxLines = 1,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = value,
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 15.sp,
+                color = valueColor ?: if (dim) Faded else Ink,
                 maxLines = 1
             )
+            if (extra != null) {
+                Text(
+                    text = " $extra",
+                    fontFamily = DisplayFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = Faded,
+                    maxLines = 1
+                )
+            }
+        }
+        if (progress != null) {
+            Spacer(Modifier.size(3.dp))
+            Box(Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(Color(0x33523112))) {
+                Box(
+                    Modifier.fillMaxHeight().fillMaxWidth(progress.coerceIn(0f, 1f))
+                        .background(Brush.horizontalGradient(listOf(Color(0xFFE8A33A), Color(0xFFF2C14E))))
+                )
+            }
         }
     }
 }
