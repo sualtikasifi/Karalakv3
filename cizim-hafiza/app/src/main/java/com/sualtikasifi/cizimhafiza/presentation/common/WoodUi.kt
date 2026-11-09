@@ -1,5 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.common
 
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -136,6 +138,15 @@ fun LetteredText(
         // Titles can be dropped by TitleLift ems so the letters themselves, not their line box, are centred (0 for now:
         // each sign's box is placed by measuring its picture instead).
         val lift = if (title) (size.value * scale * TitleLift).dp else 0.dp
+        // Hand-tuned position of this title (see TitleNudge): hundredths of the title's size, right and down.
+        val nudgeContext = LocalContext.current
+        if (title) {
+            TitleNudge.load(nudgeContext)
+            if (TitleNudge.enabled) DisposableEffect(text) { TitleNudge.show(text); onDispose { TitleNudge.hide(text) } }
+        }
+        val (nudgeX, nudgeY) = if (title) TitleNudge.offsetOf(text) else (0 to 0)
+        val nx = (size.value * scale * nudgeX / 100f).dp
+        val ny = (size.value * scale * nudgeY / 100f).dp
         // Page titles (and any title-sized lettering) also get a wide, soft shadow underneath, so a title laid on a
         // painted sign reads as part of the picture instead of as text put on afterwards. Titles are sized from the
         // screen width, so on a narrow phone they can come out small; their shadow keeps a floor so it still shows.
@@ -150,7 +161,7 @@ fun LetteredText(
                 ),
                 maxLines = maxLines,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                modifier = Modifier.offset(y = lift + (d * 0.07f).dp)
+                modifier = Modifier.offset(x = nx, y = lift + ny + (d * 0.07f).dp)
             )
         }
         if (outline != null) {
@@ -163,12 +174,12 @@ fun LetteredText(
                 ),
                 maxLines = maxLines,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                modifier = Modifier.offset(y = lift)
+                modifier = Modifier.offset(x = nx, y = lift + ny)
             )
         }
         Text(
             text,
-            modifier = Modifier.offset(y = lift),
+            modifier = Modifier.offset(x = nx, y = lift + ny),
             style = base.copy(
                 color = fill,
                 shadow = if (outline == null) androidx.compose.ui.graphics.Shadow(Color(0x66A04000), androidx.compose.ui.geometry.Offset(0f, with(density) { 1.5.dp.toPx() }), with(density) { 2.dp.toPx() }) else null

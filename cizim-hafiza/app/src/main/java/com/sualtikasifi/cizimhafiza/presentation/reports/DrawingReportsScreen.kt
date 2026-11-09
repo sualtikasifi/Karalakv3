@@ -496,6 +496,7 @@ private fun PlaceContent(
         tab == ReportsTab.Coupons -> CouponPanel()
         tab == ReportsTab.Locks -> LocksPanel()
         tab == ReportsTab.Runes -> RunesDevPanel()
+        tab == ReportsTab.TitleNudge -> TitleNudgePanel()
         tab == ReportsTab.Update -> UpdatePanel()
         tab == ReportsTab.PlayerReports -> PlayerReportsPanel()
         tab == ReportsTab.Players -> PlayersPanel()
@@ -1335,6 +1336,7 @@ private val TOOLS = listOf(
     ToolSpec("coupons", ReportsTab.Coupons, Icons.Filled.ConfirmationNumber, "Kuponlar", "Altın / XP / kasa kodları", ToolGroup.Live),
     ToolSpec("economy", ReportsTab.Economy, Icons.Filled.Tune, "Ekonomi", "Altın ve ödül ayarları", ToolGroup.Game),
     ToolSpec("runes", ReportsTab.Runes, Icons.Filled.Diamond, "Rünler", "Rün ayarları", ToolGroup.Game),
+    ToolSpec("titleNudge", ReportsTab.TitleNudge, Icons.Filled.Tune, "Başlık ayarı", "Sayfa başlıklarını elle ortala", ToolGroup.System),
     ToolSpec("update", ReportsTab.Update, Icons.Filled.SystemUpdate, "Güncelleme", "Eski sürümlerde oyunu kilitle", ToolGroup.System),
     ToolSpec("jobs", ReportsTab.Jobs, Icons.Filled.Schedule, "Arka plan işleri", "Zamanlanmış işlerin durumu", ToolGroup.System),
     ToolSpec("audit", ReportsTab.Audit, Icons.Filled.History, "Denetim kaydı", "Panelde yapılan işlemler", ToolGroup.System)
