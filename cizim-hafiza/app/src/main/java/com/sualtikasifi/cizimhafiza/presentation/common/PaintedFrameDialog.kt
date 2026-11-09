@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -47,7 +48,7 @@ private val ButtonRect = floatArrayOf(178f, 1378f, 795f, 1516f)
 
 /**
  * A window in the painted vine-and-parchment frame that has its button built in: a title and a scrolling body are
- * written on the parchment (so they follow the language) and [buttonText] on the painted button, which caves in
+ * written on the parchment (so they follow the language, the body shrinking to show whole) and [buttonText] on the painted button, which caves in
  * under the finger.
  */
 @Composable
@@ -100,17 +101,21 @@ fun PaintedFrameDialog(
                     minScale = 0.6f,
                     modifier = Modifier.offset(u * TitleRect[0], u * TitleRect[1]).size(u * (TitleRect[2] - TitleRect[0]), u * (TitleRect[3] - TitleRect[1]))
                 )
-                Column(
+                // The body is shrunk until all of it shows on the parchment (down to half size); only a text longer than that
+                // still scrolls, so nothing is ever cut off.
+                BoxWithConstraints(
                     modifier = Modifier
                         .offset(u * BodyRect[0], u * BodyRect[1])
                         .size(u * (BodyRect[2] - BodyRect[0]), u * (BodyRect[3] - BodyRect[1]))
-                        .verticalScroll(rememberScrollState())
                 ) {
-                    Text(
-                        text = body,
-                        style = DescriptionStyle(fs(44f), fs(60f)),
-                        modifier = Modifier.fillMaxWidth().padding(vertical = u * 6f)
-                    )
+                    val bodyStyle = DescriptionStyle(fs(42f), fs(56f))
+                    val bodyScale = rememberFitScale(body, bodyStyle, Int.MAX_VALUE, 0.5f)
+                    Column(
+                        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(text = body, style = bodyStyle.scaledBy(bodyScale), modifier = Modifier.fillMaxWidth())
+                    }
                 }
                 val (x0, y0, x1, y1) = ButtonRect
                 Box(

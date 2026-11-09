@@ -104,6 +104,10 @@ import com.sualtikasifi.cizimhafiza.presentation.theme.TimerWarning
 import com.sualtikasifi.cizimhafiza.util.capitalizeForWordLanguage
 import com.sualtikasifi.cizimhafiza.util.GameConstants
 
+/** The painted "Sonraki Kelime" / "Çizimi Bitir" buttons (btn_next_word_tr, btn_finish_drawing_tr): width over height, and where their right end sits in the art's units. */
+private const val NextWordArtRatio = 800f / 287f
+private const val NextWordArtRight = 800f
+
 @Composable
 fun DrawingScreen(
     state: GamePhase.Drawing,
@@ -122,8 +126,15 @@ fun DrawingScreen(
     adUnavailable: Boolean = false,
     onAdUnavailableShown: () -> Unit = {},
     /** The player's chosen cosmetic pen (see domain.model.PenSkin); defaults keep the tutorial's call site unchanged. */
-    penSkin: PenSkin = PenSkin.DEFAULT
+    penSkin: PenSkin = PenSkin.DEFAULT,
+    /** Whether the "Sonraki Kelime" button shows: by default only without a clock; the tutorial also shows it on its timed second word. */
+    nextWordButton: Boolean? = null,
+    /** The tutorial's last word: the same button, but it ends the drawing ("Çizimi Bitir") and goes on to the answers. */
+    lastWord: Boolean = false
 ) {
+    val showNextWord = nextWordButton ?: state.isUntimed
+    // The painted "Sonraki Kelime" button has its Turkish words in the picture; other languages keep the pill with live words.
+    val nextWordArt = showNextWord && androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language == "tr"
     val wordLanguage = currentWordLanguage()
     val backDescription = stringResource(R.string.cd_back)
     val timerColor = if (state.isWarning) TimerWarning else MaterialTheme.colorScheme.primary
@@ -365,31 +376,33 @@ fun DrawingScreen(
             contentAlignment = Alignment.CenterEnd,
             modifier = Modifier.offset(a(520f), fromBottom(1428f)).size(a(278f), a(104f))
         ) {
-            if (state.isUntimed) {
-                // The painted orange pill, its words centred on it; it caves in under the finger like the other painted buttons.
-                val nextSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.9f)
-                val nextFontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        // 252 wide, nudged 6 left of the slot's end: centred between the bin button and the tray's edge.
-                        .offset(x = -a(6f))
-                        .size(a(252f), a(70f))
-                        .graphicsLayer { scaleX = nextSink.scale.value; scaleY = nextSink.scale.value }
-                        .clickable(interactionSource = nextSink.source, indication = null, onClick = onNextWord)
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.btn_next_word),
-                        contentDescription = null,
-                        contentScale = ContentScale.FillBounds,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
-                        text = stringResource(R.string.next_word),
-                        size = (a(36f).value / nextFontScale).sp,
-                        outline = Color(0xFF8A3A00),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = a(34f))
-                    )
+            if (showNextWord) {
+                if (!nextWordArt) {
+                    // The painted orange pill, its words centred on it; it caves in under the finger like the other painted buttons.
+                    val nextSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.9f)
+                    val nextFontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            // 252 wide, nudged 6 left of the slot's end: centred between the bin button and the tray's edge.
+                            .offset(x = -a(6f))
+                            .size(a(252f), a(70f))
+                            .graphicsLayer { scaleX = nextSink.scale.value; scaleY = nextSink.scale.value }
+                            .clickable(interactionSource = nextSink.source, indication = null, onClick = onNextWord)
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.btn_next_word),
+                            contentDescription = null,
+                            contentScale = ContentScale.FillBounds,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                            text = stringResource(if (lastWord) R.string.finish_drawing else R.string.next_word),
+                            size = (a(36f).value / nextFontScale).sp,
+                            outline = Color(0xFF8A3A00),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = a(34f))
+                        )
+                    }
                 }
             } else if (!state.hintUsed && GameConstants.ADMOB_ENABLED) {
                 // One rewarded-ad "+time" hint per whole match, not per word — separate budget from the guessing
@@ -415,6 +428,21 @@ fun DrawingScreen(
                         .pressable(enabled = !hintRequested, pressedScale = 0.92f, onClick = hintTap)
                 )
             }
+        }
+        if (nextWordArt) {
+            // The picture button: as tall as the tool buttons beside it (same top, same bottom), its right end where the pill's was.
+            val nextSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.92f)
+            val nextW = toolSize * NextWordArtRatio
+            Image(
+                painter = painterResource(if (lastWord) R.drawable.btn_finish_drawing_tr else R.drawable.btn_next_word_tr),
+                contentDescription = stringResource(if (lastWord) R.string.finish_drawing else R.string.next_word),
+                contentScale = ContentScale.FillBounds,
+                modifier = Modifier
+                    .offset(a(NextWordArtRight) - nextW, toolTop)
+                    .size(nextW, toolSize)
+                    .graphicsLayer { scaleX = nextSink.scale.value; scaleY = nextSink.scale.value }
+                    .clickable(interactionSource = nextSink.source, indication = null, onClick = onNextWord)
+            )
         }
         if (flying) {
             TimeJokerFlight(from = pillCenter, to = ringCenter, flight = flight.value, landed = landed.value)

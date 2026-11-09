@@ -196,10 +196,9 @@ class TutorialViewModel @Inject constructor(
         }
     }
 
-    /** Untimed first word only — the "Sonraki Kelime" button. */
-    fun advanceUntimedDrawing() {
-        val current = _phase.value as? GamePhase.Drawing ?: return
-        if (!current.isUntimed) return
+    /** The "Sonraki Kelime" button on the first word (no clock) and the second (finishes it early), and "Çizimi Bitir" on the last, which goes on to the answers. */
+    fun advanceDrawing() {
+        if (_phase.value !is GamePhase.Drawing) return
         finishDrawingTurn()
     }
 
@@ -342,11 +341,11 @@ class TutorialViewModel @Inject constructor(
 
     private companion object {
         // Word 2 (the one this coach card introduces) is short on purpose —
-        // just enough to notice the countdown exists.
-        const val TUTORIAL_TIMED_DRAW_SECONDS = 12
+        // just enough to notice the countdown exists. 3 s shorter than it was (12).
+        const val TUTORIAL_TIMED_DRAW_SECONDS = 9
 
-        // Final word's own duration.
-        const val TUTORIAL_DRAW_SECONDS = 10
+        // Final word's own duration (3 s shorter than it was: 10).
+        const val TUTORIAL_DRAW_SECONDS = 7
 
         // Guessing-phase countdown, per word.
         const val TUTORIAL_GUESS_SECONDS = 10

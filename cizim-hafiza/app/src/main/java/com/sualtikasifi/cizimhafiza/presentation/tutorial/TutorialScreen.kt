@@ -89,7 +89,11 @@ fun TutorialScreen(
                 onClearCanvas = viewModel::onClearCanvas,
                 onEraseStroke = viewModel::onEraseStroke,
                 onUndoLastStroke = viewModel::onUndoLastStroke,
-                onNextWord = viewModel::advanceUntimedDrawing,
+                onNextWord = viewModel::advanceDrawing,
+                // "Sonraki Kelime" on the first two words (the second is timed, but can be finished early) and "Çizimi Bitir" on the last,
+                // which goes on to the answers (after the coaching card that explains them)
+                nextWordButton = true,
+                lastWord = current.wordNumber >= current.totalWords,
                 // Leaving mid-tutorial just marks it done and drops the
                 // player at the main menu — no exit-confirm dialog needed
                 // since there's no real progress to lose.

@@ -27,6 +27,7 @@ on:
           - runepreview.sh
           - consentlang.sh
           - firstrun.sh
+          - welcomepreview.sh
           - titles_preview.sh
           - updatepreview.sh
           - chestpreview.sh
