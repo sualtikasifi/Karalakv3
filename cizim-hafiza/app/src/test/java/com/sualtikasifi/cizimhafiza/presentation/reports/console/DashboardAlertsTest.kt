@@ -74,6 +74,19 @@ class DashboardAlertsTest {
     }
 
     @Test
+    fun severalFailedJobsGiveAlertsWithTheSameTitle() {
+        // the Pano keys its cards by position, not title: this is the case that crashed the list when the title was the key
+        val now = 100L * 3_600_000L
+        val jobs = listOf(
+            JobHealth("Bir", now - 1_000L, false, "x", DashboardAlerts.maxAgeFor("rollup-stats")),
+            JobHealth("İki", now - 1_000L, false, "y", DashboardAlerts.maxAgeFor("rollup-stats"))
+        )
+        val a = DashboardAlerts.compute(null, null, null, jobs, now)
+        assertEquals(2, a.size)
+        assertEquals(1, a.map { it.title }.distinct().size)
+    }
+
+    @Test
     fun theDropIsAShareOfTheBaselineAndNeverNegative() {
         assertEquals(0.4, DashboardAlerts.drop(60.0, 100.0), 1e-9)
         assertEquals(0.0, DashboardAlerts.drop(150.0, 100.0), 1e-9)

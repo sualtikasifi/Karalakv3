@@ -81,8 +81,9 @@ fun DashboardPanel(
         }
         // what needs a look today, red ones first; a tap goes to the place that fixes it
         val alerts = DashboardAlerts.compute(s, st.pendingQueue, st.openReports, st.jobs, System.currentTimeMillis())
-        alerts.forEach { a ->
-            item(key = "alert-" + a.title) {
+        // keyed by position: two jobs that failed give two alerts with the same title, and a repeated key crashes the list
+        alerts.forEachIndexed { i, a ->
+            item(key = "alert-$i") {
                 AlertCard(a) {
                     when (a.target) {
                         "queue" -> onOpenQueue()
