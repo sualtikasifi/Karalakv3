@@ -16,7 +16,7 @@ internal fun StudioViewModel.loadPublishLog() {
     _state.update { it.copy(publishLog = PublishLog.decode(prefs().getString(PUBLISH_LOG, null))) }
 }
 
-private fun StudioViewModel.changeLog(change: (List<PublishEntry>) -> List<PublishEntry>) {
+internal fun StudioViewModel.changeLog(change: (List<PublishEntry>) -> List<PublishEntry>) {
     val next = change(_state.value.publishLog)
     prefs().edit().putString(PUBLISH_LOG, PublishLog.encode(next)).apply()
     _state.update { it.copy(publishLog = next) }
@@ -37,13 +37,21 @@ internal fun StudioViewModel.recordMadeVideo(s: StudioState) {
             PublishEntry(id = now, format = "Gerçek Olsaydı", label = words.ifBlank { "çizimler" }, madeAt = now)
         }
     } ?: return
-    changeLog { PublishLog.record(it, entry) }
+    val draftId = if (s.format == StudioFormat.Forgot) s.forgot.draftId else null
+    if (draftId != null) {
+        // the draft's own line becomes the made video's (keeping its id); a draft with no line gets one
+        changeLog { list -> PublishLog.finish(list, draftId, entry.detail, entry.code, entry.reward, now) ?: PublishLog.record(list, entry.copy(draftId = draftId)) }
+    } else changeLog { PublishLog.record(it, entry) }
 }
 
 /** Marks a line posted (or takes it back). */
 fun StudioViewModel.togglePublished(id: Long) = changeLog { PublishLog.toggle(it, id, System.currentTimeMillis()) }
 
-fun StudioViewModel.deletePublishEntry(id: Long) = changeLog { PublishLog.remove(it, id) }
+fun StudioViewModel.deletePublishEntry(id: Long) {
+    val e = _state.value.publishLog.firstOrNull { it.id == id }
+    changeLog { PublishLog.remove(it, id) }
+    if (e != null && e.draftId != 0L) dropDraft(e.draftId)
+}
 
 /** Reads what the studio has cost from OpenRouter (the key's spend) and ElevenLabs (this month's credits); each only where its key is set. */
 fun StudioViewModel.refreshSpend() {

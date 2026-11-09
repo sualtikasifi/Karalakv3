@@ -37,6 +37,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotCop
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotTimeline
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotDirector
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotMode
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotDraftStore
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotRenderer
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotSource
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotStyle
@@ -129,6 +130,8 @@ class StudioViewModel @Inject constructor(
     internal val voiceBank = VoiceBank(context)
     internal val json = Json { ignoreUnknownKeys = true }
     internal val realStore = RealStore(context)
+    /** The Düello drafts and their finished videos, kept on this phone. */
+    internal val draftStore = ForgotDraftStore(File(context.filesDir, "studio_forgot"))
     internal var realSaveJob: Job? = null
     /** Imported clips by file name, opened for quick preview frames. */
     internal val previewClips = ConcurrentHashMap<String, ClipFrames>()
@@ -142,6 +145,9 @@ class StudioViewModel @Inject constructor(
         loadReal()
         loadVoiceSettings()
         loadPublishLog()
+        startDraftAutosave()
+        restoreLastDraft()
+        refreshLearned()
         _state.update { it.copy(analysisModel = analysisModel()) }
     }
 
@@ -422,6 +428,7 @@ class StudioViewModel @Inject constructor(
                 if (s.format == StudioFormat.Forgot) prefs().edit().putInt(FORGOT_TURN, prefs().getInt(FORGOT_TURN, 0) + 1).apply()
                 // the log of made videos: which day went out with which code
                 recordMadeVideo(s)
+                keepDraftVideo(s, out)
                 _state.update { it.copy(rendering = false, video = out, progress = 1f, renderStage = "") }
             }
                 .onFailure { e ->

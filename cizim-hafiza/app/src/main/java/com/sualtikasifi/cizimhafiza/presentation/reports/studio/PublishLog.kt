@@ -18,7 +18,13 @@ data class PublishEntry(
     val reward: String = "",
     val madeAt: Long,
     val published: Boolean = false,
-    val publishedAt: Long = 0L
+    val publishedAt: Long = 0L,
+    /** The Düello draft this line is (0: none, an older line or a Gerçek Olsaydı one); tapping the line opens it. */
+    val draftId: Long = 0L,
+    /** Still being worked on: no video has been made from it yet. */
+    val draft: Boolean = false,
+    /** "Tamamlandı": the video is finished, and its lines teach the assistant (see ForgotLearning). */
+    val done: Boolean = false
 )
 
 /** The log of made videos kept on this phone: which day went out with which code, and which are still waiting. */
@@ -40,6 +46,27 @@ object PublishLog {
         val rest = if (same == null) list else list.filterNot { it.id == same.id }
         return (listOf(if (same == null) entry else entry.copy(id = same.id)) + rest).take(MAX)
     }
+
+    /** A new draft's line at the top (an earlier line of the same draft is replaced). */
+    fun addDraft(list: List<PublishEntry>, entry: PublishEntry): List<PublishEntry> =
+        (listOf(entry) + list.filterNot { it.draftId != 0L && it.draftId == entry.draftId }).take(MAX)
+
+    /** What the draft's line says about it as the work goes on (the same list when nothing changed). */
+    fun touchDraft(list: List<PublishEntry>, draftId: Long, label: String, detail: String, code: String, reward: String): List<PublishEntry> {
+        val e = list.firstOrNull { it.draftId == draftId } ?: return list
+        if (e.label == label && e.detail == detail && e.code == code && e.reward == reward) return list
+        return list.map { if (it.draftId == draftId) it.copy(label = label, detail = detail, code = code, reward = reward) else it }
+    }
+
+    /** The draft's video was made: its line stops being a draft and takes the time of the video (keeping its id). Null when there is no such line. */
+    fun finish(list: List<PublishEntry>, draftId: Long, detail: String, code: String, reward: String, now: Long): List<PublishEntry>? {
+        if (list.none { it.draftId == draftId }) return null
+        return list.map { if (it.draftId == draftId) it.copy(draft = false, madeAt = now, detail = detail, code = code, reward = reward) else it }
+    }
+
+    /** "Tamamlandı" on or off for one line; a draft (no video yet) cannot be finished. */
+    fun toggleDone(list: List<PublishEntry>, id: Long): List<PublishEntry> =
+        list.map { if (it.id == id && !it.draft) it.copy(done = !it.done) else it }
 
     /** Turns "posted" on or off for one line; posting stamps the time, taking it back clears it. */
     fun toggle(list: List<PublishEntry>, id: Long, now: Long): List<PublishEntry> =
