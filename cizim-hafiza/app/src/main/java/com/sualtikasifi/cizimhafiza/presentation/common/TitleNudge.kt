@@ -142,15 +142,15 @@ object TitleNudge {
         "Get ready for" to (0 to -18),
         "¡Prepárate para" to (0 to -18),
         "Prepare-se para" to (0 to -18),
-        "Lobi" to (0 to -8),
-        "Lobby" to (0 to -8),
-        "Sala de Espera" to (0 to -8),
+        "Lobi" to (0 to -9),
+        "Lobby" to (0 to -9),
+        "Sala de Espera" to (0 to -9),
         "hazırlan" to (0 to -30),
         "guessing!" to (0 to -30),
         "adivinar!" to (0 to -30),
         "adivinhar!" to (0 to -30),
-        "Sohbet" to (0 to -15),
-        "Chat" to (0 to -15)
+        "Sohbet" to (0 to -23),
+        "Chat" to (0 to -23)
     )
 
     private const val PREFS = "title_nudge"
