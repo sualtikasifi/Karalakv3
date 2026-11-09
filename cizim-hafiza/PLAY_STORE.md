@@ -260,6 +260,7 @@ Oyun / Kelime Oyunu
 | Kişisel bilgiler | **E-posta adresi** | İsteğe bağlı — Google ile giriş | Uygulama işlevselliği, Hesap yönetimi |
 | Kişisel bilgiler | **Kullanıcı kimlikleri** (Firebase uid, takma ad, arkadaş kodu, web kullanıcı adı) | Zorunlu | Uygulama işlevselliği, Hesap yönetimi |
 | Kişisel bilgiler | **Diğer bilgiler** (doğum tarihi, Google hesabına) | İsteğe bağlı — Google ile giriş | Uygulama işlevselliği, Hesap yönetimi |
+| Konum | **Yaklaşık konum** (IP adresinden türetilen ülke/şehir — Firebase Analytics ve AdMob; GPS/konum izni yok) | Zorunlu (13 altında Analytics kapalı) | Analiz, Reklam, Dolandırıcılık önleme |
 | Fotoğraflar ve videolar | — (toplanmıyor; Google profil fotoğrafının yalnızca adresi saklanıyor) | — | — |
 | Uygulama etkinliği | **Uygulama etkileşimleri** (Analytics olayları) | Zorunlu (AB'de onaya bağlı) | Analiz |
 | Uygulama etkinliği | **Kullanıcı tarafından oluşturulan diğer içerik** (çizimler, tahminler, emoji tepkileri, şikâyetler, hata bildirimi metni) | Zorunlu | Uygulama işlevselliği, Dolandırıcılık önleme/güvenlik |
@@ -269,14 +270,14 @@ Oyun / Kelime Oyunu
 | Cihaz veya diğer kimlikler | **Cihaz veya diğer kimlikler** (Firebase kurulum kimliği, FCM jetonu, App Check) | Zorunlu | Uygulama işlevselliği, Analiz, Dolandırıcılık önleme |
 | Cihaz veya diğer kimlikler | **Reklam kimliği** (AdMob) | Zorunlu (13 yaş altında kullanılmaz) | Reklam, Dolandırıcılık önleme |
 
-Reklam kimliği ve AdMob'un işlediği cihaz verileri hariç hiçbir veri **paylaşılmıyor**. Yapay zekâ
+Google'ın AdMob açıklama sayfasına göre (developers.google.com/admob/android/privacy/play-data-disclosure) AdMob SDK'sı IP adresini (yaklaşık konum), kullanıcı etkileşimlerini, tanılama bilgisini ve cihaz kimliklerini toplar **ve paylaşır** — bu yüzden formda **Yaklaşık konum, Uygulama etkileşimleri, Tanılama ve Cihaz kimlikleri** için "Paylaşılıyor: Evet" (Google'a, Reklam / Analiz / Dolandırıcılık önleme amacıyla) işaretlenir. Bunun dışında hiçbir veri **paylaşılmıyor**. Yapay zekâ
 hizmet sağlayıcılarına (OpenRouter, ElevenLabs) yalnızca kimliksiz çizim ve kelime, bizim adımıza
 işlenmek üzere gidiyor — Play tanımına göre "paylaşım" değil, hizmet sağlayıcı. Doğum tarihi
 Google ile giriş yapılmadıkça yalnızca cihazda kalıyor; giriş yapılınca hesaba kaydediliyor
 (`AccountAgeSync`, `users/{uid}/private/age`; oyuncu 18 olana kadar kurallarla kilitli).
 Hepsi silinebilir.
 
-**Toplanmayanlar — "Hayır":** konum (kesin/yaklaşık), kişiler, takvim, SMS/çağrı, fotoğraf/video,
+**Toplanmayanlar — "Hayır":** kesin konum (GPS; yaklaşık konum yukarıda var), kişiler, takvim, SMS/çağrı, fotoğraf/video,
 ses, dosya, sağlık, finans, arama/web geçmişi, satın alma geçmişi.
 
 ## Reklamlar (kodla birebir)
