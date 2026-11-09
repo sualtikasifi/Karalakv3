@@ -49,7 +49,12 @@ import androidx.compose.ui.unit.sp
  */
 object TitleNudge {
     /** dx, dy in hundredths of the title size; positive is right / down. Filled in from the hand-tuned values. */
-    private val DEFAULTS: Map<String, Pair<Int, Int>> = mapOf()
+    private val DEFAULTS: Map<String, Pair<Int, Int>> = mapOf(
+        // The Ayarlar sign, in each language the screen is written in.
+        "Ayarlar" to (-25 to -18),
+        "Settings" to (-25 to -18),
+        "Ajustes" to (-25 to -18)
+    )
 
     private const val PREFS = "title_nudge"
     private const val ON = "__on"
