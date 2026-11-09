@@ -12,7 +12,8 @@ on:
 
 jobs:
   ios:
-    runs-on: ubuntu-latest
+    # Pinned: "latest" moved to Ubuntu 26.04, where Playwright's browser packages (libicu74, libvpx9, libx264-164 ...) do not exist.
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: cizim-hafiza/web-tests
