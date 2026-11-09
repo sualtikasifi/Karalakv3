@@ -137,10 +137,17 @@ object TitleNudge {
         "Recent Challenges" to (0 to -14),
         "Desafíos Recientes" to (0 to -14),
         "Desafios Recentes" to (0 to -14),
-        "Tahmin aşamasına" to (0 to -13),
-        "Get ready for" to (0 to -13),
-        "¡Prepárate para" to (0 to -13),
-        "Prepare-se para" to (0 to -13)
+        "Tahmin aşamasına" to (0 to -18),
+        "Get ready for" to (0 to -18),
+        "¡Prepárate para" to (0 to -18),
+        "Prepare-se para" to (0 to -18),
+        "Lobi" to (0 to -8),
+        "Lobby" to (0 to -8),
+        "Sala de Espera" to (0 to -8),
+        "hazırlan" to (0 to -30),
+        "guessing!" to (0 to -30),
+        "adivinar!" to (0 to -30),
+        "adivinhar!" to (0 to -30)
     )
 
     private const val PREFS = "title_nudge"
