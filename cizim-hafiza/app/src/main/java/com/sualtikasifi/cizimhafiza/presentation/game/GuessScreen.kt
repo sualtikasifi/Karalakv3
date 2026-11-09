@@ -209,15 +209,11 @@ fun GuessScreen(
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
-    LaunchedEffect(state.guessNumber, jokerSpotlight != null) {
-        if (jokerSpotlight != null) {
-            // The tutorial lesson: no keyboard, so the joker button is the only thing there is to do.
-            focusManager.clearFocus(force = true)
-            keyboardController?.hide()
-        } else {
-            focusRequester.requestFocus()
-            keyboardController?.show()
-        }
+    // The tutorial's joker lessons keep the keyboard up like any other guess: closing it for each lesson and opening it again
+    // after made the keyboard (and the whole scene with it) jump up and down.
+    LaunchedEffect(state.guessNumber) {
+        focusRequester.requestFocus()
+        keyboardController?.show()
     }
 
     // The XP earned so far this round: each answered word's award, counted once.
@@ -258,23 +254,15 @@ fun GuessScreen(
                 prefs.edit().putInt("ime_px", settled).apply()
             }
         }
-        val lesson = jokerSpotlight != null
         // Space is kept for the keyboard while it is up or about to come up (the answer field asks for it at once).
         // If it stays away (closed by the player, a hardware keyboard), the scene grows into that space instead of
         // leaving an empty strip of desk, and eases back when the keyboard returns.
-        // The tutorial's joker lessons keep the keyboard away on purpose (the joker button is the only thing to do), so
-        // there nothing is reserved from the first frame: the scene used to open at "keyboard up" size with an empty
-        // strip under it and only grow into the whole screen a second later.
-        var keyboardExpected by remember { mutableStateOf(!lesson) }
+        var keyboardExpected by remember { mutableStateOf(true) }
         // Once the keyboard has been up, closing it gives the space back at once — on the very first frame of its
         // slide down, not after it is gone, so the desk under it is hardly ever seen; the wait below is only for the
         // very start, while the answer field is still asking for the keyboard for the first time.
         var keyboardWasUp by remember { mutableStateOf(false) }
-        LaunchedEffect(lesson) {
-            if (lesson) {
-                keyboardExpected = false
-                return@LaunchedEffect
-            }
+        LaunchedEffect(Unit) {
             val firstWait = launch {
                 kotlinx.coroutines.delay(1_200)
                 if (!keyboardWasUp) keyboardExpected = false
@@ -294,9 +282,9 @@ fun GuessScreen(
             }
         }
         // A keyboard that has settled open always gets its space (the safety net for the slide-down guess above).
-        LaunchedEffect(imeNow, lesson) {
+        LaunchedEffect(imeNow) {
             kotlinx.coroutines.delay(350)
-            if (!lesson && imeNow > with(density) { 120.dp.roundToPx() }) {
+            if (imeNow > with(density) { 120.dp.roundToPx() }) {
                 keyboardWasUp = true
                 keyboardExpected = true
             }
