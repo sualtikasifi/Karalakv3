@@ -104,7 +104,7 @@ import com.sualtikasifi.cizimhafiza.presentation.theme.TimerWarning
 import com.sualtikasifi.cizimhafiza.util.capitalizeForWordLanguage
 import com.sualtikasifi.cizimhafiza.util.GameConstants
 
-/** The painted "Sonraki Kelime" button (btn_next_word_tr): width over height, and where its right end sits in the art's units. */
+/** The painted "Sonraki Kelime" / "Çizimi Bitir" buttons (btn_next_word_tr, btn_finish_drawing_tr): width over height, and where their right end sits in the art's units. */
 private const val NextWordArtRatio = 800f / 287f
 private const val NextWordArtRight = 800f
 
@@ -128,7 +128,9 @@ fun DrawingScreen(
     /** The player's chosen cosmetic pen (see domain.model.PenSkin); defaults keep the tutorial's call site unchanged. */
     penSkin: PenSkin = PenSkin.DEFAULT,
     /** Whether the "Sonraki Kelime" button shows: by default only without a clock; the tutorial also shows it on its timed second word. */
-    nextWordButton: Boolean? = null
+    nextWordButton: Boolean? = null,
+    /** The tutorial's last word: the same button, but it ends the drawing ("Çizimi Bitir") and goes on to the answers. */
+    lastWord: Boolean = false
 ) {
     val showNextWord = nextWordButton ?: state.isUntimed
     // The painted "Sonraki Kelime" button has its Turkish words in the picture; other languages keep the pill with live words.
@@ -395,7 +397,7 @@ fun DrawingScreen(
                             modifier = Modifier.fillMaxSize()
                         )
                         com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
-                            text = stringResource(R.string.next_word),
+                            text = stringResource(if (lastWord) R.string.finish_drawing else R.string.next_word),
                             size = (a(36f).value / nextFontScale).sp,
                             outline = Color(0xFF8A3A00),
                             modifier = Modifier.fillMaxWidth().padding(horizontal = a(34f))
@@ -432,8 +434,8 @@ fun DrawingScreen(
             val nextSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.92f)
             val nextW = toolSize * NextWordArtRatio
             Image(
-                painter = painterResource(R.drawable.btn_next_word_tr),
-                contentDescription = stringResource(R.string.next_word),
+                painter = painterResource(if (lastWord) R.drawable.btn_finish_drawing_tr else R.drawable.btn_next_word_tr),
+                contentDescription = stringResource(if (lastWord) R.string.finish_drawing else R.string.next_word),
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier
                     .offset(a(NextWordArtRight) - nextW, toolTop)

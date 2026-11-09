@@ -28,3 +28,7 @@ shot after
 # the finger is up: the tutorial has begun, and its first word is on the screen with the painted "Sonraki Kelime" button
 sleep 4
 shot draw1
+# word 1: "Sonraki Kelime"; word 2 (timed): the same button ends it early; word 3: "Çizimi Bitir", which goes on to the answers' coaching card
+adb shell input tap 886 1591
+sleep 3
+shot coach2

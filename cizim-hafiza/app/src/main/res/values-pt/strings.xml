@@ -238,6 +238,7 @@
     <!-- Drawing screen -->
     <string name="clear_canvas">Limpar</string>
     <string name="next_word">Próxima Palavra</string>
+    <string name="finish_drawing">Terminar desenho</string>
     <string name="tool_pen">Lápis</string>
     <string name="tool_eraser">Borracha</string>
     <string name="tool_undo">Desfazer último traço</string>

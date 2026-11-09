@@ -243,6 +243,7 @@
     <!-- Drawing screen -->
     <string name="clear_canvas">Temizle</string>
     <string name="next_word">Sonraki Kelime</string>
+    <string name="finish_drawing">Çizimi Bitir</string>
     <string name="tool_pen">Kalem</string>
     <string name="tool_eraser">Silgi</string>
     <string name="tool_undo">Son hamleyi geri al</string>

@@ -196,10 +196,9 @@ class TutorialViewModel @Inject constructor(
         }
     }
 
-    /** The "Sonraki Kelime" button: on the first word (no clock) and the second (finishes it early); the last word has no next one. */
+    /** The "Sonraki Kelime" button on the first word (no clock) and the second (finishes it early), and "Çizimi Bitir" on the last, which goes on to the answers. */
     fun advanceDrawing() {
-        val current = _phase.value as? GamePhase.Drawing ?: return
-        if (current.wordNumber >= current.totalWords) return
+        if (_phase.value !is GamePhase.Drawing) return
         finishDrawingTurn()
     }
 

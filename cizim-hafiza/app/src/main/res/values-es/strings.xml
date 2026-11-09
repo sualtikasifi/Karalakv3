@@ -238,6 +238,7 @@
     <!-- Drawing screen -->
     <string name="clear_canvas">Borrar todo</string>
     <string name="next_word">Siguiente Palabra</string>
+    <string name="finish_drawing">Terminar dibujo</string>
     <string name="tool_pen">Lápiz</string>
     <string name="tool_eraser">Borrador</string>
     <string name="tool_undo">Deshacer último trazo</string>
