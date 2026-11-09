@@ -148,7 +148,9 @@ object TitleNudge {
         "hazırlan" to (0 to -30),
         "guessing!" to (0 to -30),
         "adivinar!" to (0 to -30),
-        "adivinhar!" to (0 to -30)
+        "adivinhar!" to (0 to -30),
+        "Sohbet" to (0 to -15),
+        "Chat" to (0 to -15)
     )
 
     private const val PREFS = "title_nudge"
