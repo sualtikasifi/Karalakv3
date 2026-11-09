@@ -92,6 +92,20 @@ import androidx.compose.ui.unit.IntSize
 import kotlin.math.roundToInt
 
 private const val ArtW = 841f
+/** (left, top) of a card or tile in the picture's units -> (its strip's top in home_tile_fill, the strip's width to height in pixels). */
+private val TileFills = listOf(
+        Triple(34f to 538f, 0f, 251 to 277),
+        Triple(616f to 538f, 277f, 247 to 277),
+        Triple(30f to 776f, 554f, 331 to 303),
+        Triple(294f to 776f, 857f, 331 to 303),
+        Triple(558f to 776f, 1160f, 331 to 303),
+        Triple(30f to 1018f, 1463f, 331 to 239),
+        Triple(294f to 1018f, 1702f, 331 to 239),
+        Triple(558f to 1018f, 1941f, 331 to 239),
+        Triple(30f to 1210f, 2180f, 331 to 241),
+        Triple(294f to 1210f, 2421f, 331 to 241),
+        Triple(558f to 1210f, 2662f, 331 to 241)
+)
 private const val ArtH = 1870f
 private val HomeInk = Color(0xFF2B1A10)
 /** Secondary lettering on the parchment: dark enough to read on the painted grain (the old #6B5446 washed out). */
@@ -233,8 +247,16 @@ internal fun PaintedHome(
         }
         val pixelsPerArtX = (sceneBitmap?.width ?: 1) / ArtW
         val pixelsPerArtY = (sceneBitmap?.height ?: 1) / ArtH
-        fun sunk(sink: SinkState, x0: Float, y0: Float, x1: Float, y1: Float, cornerArt: Float): Modifier =
-            Modifier.sunkenArt(sink, sceneBitmap, x0 * pixelsPerArtX, y0 * pixelsPerArtY, (x1 - x0) * pixelsPerArtX, (y1 - y0) * pixelsPerArtY, (cornerArt * us).dp)
+        // The plain floor behind each card and tile (one strip each, stacked): a pressed one dips onto it, with no
+        // darkened copy and no drawn shadow around it.
+        val tileFill = remember { runCatching { com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(sceneContext.resources, R.drawable.home_tile_fill) }.getOrNull() }
+        fun sunk(sink: SinkState, x0: Float, y0: Float, x1: Float, y1: Float, cornerArt: Float): Modifier {
+            val slot = TileFills.firstOrNull { it.first.first == x0 && it.first.second == y0 }
+            return if (slot != null && tileFill != null) Modifier.sunkenArt(
+                sink, sceneBitmap, x0 * pixelsPerArtX, y0 * pixelsPerArtY, (x1 - x0) * pixelsPerArtX, (y1 - y0) * pixelsPerArtY, (cornerArt * us).dp,
+                socket = tileFill, socketTop = slot.second, socketSize = androidx.compose.ui.unit.IntSize(slot.third.first, slot.third.second)
+            ) else Modifier.sunkenArt(sink, sceneBitmap, x0 * pixelsPerArtX, y0 * pixelsPerArtY, (x1 - x0) * pixelsPerArtX, (y1 - y0) * pixelsPerArtY, (cornerArt * us).dp)
+        }
         /** A live piece (label, pill, number) laid in [x0]..[y1] over an area whose centre is ([cx],[cy]) dips with it. */
         fun follow(sink: SinkState, cx: Float, cy: Float, x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
             Modifier.sinkWith(sink, (cx - x0) / (x1 - x0), (cy - y0) / (y1 - y0))
@@ -635,10 +657,45 @@ internal fun Modifier.sunkenArt(
     sink: SinkState,
     scene: ImageBitmap?,
     srcLeft: Float, srcTop: Float, srcW: Float, srcH: Float,
-    corner: Dp
+    corner: Dp,
+    /**
+     * A clean picture of what lies BEHIND the tile (the plain wood), [socketTop] down the strip, [srcW] x [srcH] pixels.
+     * With it the tile dips onto that wood, with no darkened copy of itself and no drawn shadow around it; without it the
+     * older darkened-socket look is used.
+     */
+    socket: ImageBitmap? = null,
+    socketTop: Float = 0f,
+    socketSize: IntSize? = null
 ): Modifier = drawWithContent {
     val k = sink.scale.value
-    if (scene != null && k < 0.9995f) {
+    if (scene != null && socket != null && k < 0.9995f) {
+        val r = corner.toPx()
+        val depthFrac = ((1f - k) / 0.03f).coerceIn(0f, 1f)
+        val shapePath = Path().apply { addRoundRect(RoundRect(0f, 0f, size.width, size.height, CornerRadius(r))) }
+        clipPath(shapePath) {
+            drawImage(
+                socket,
+                srcOffset = IntOffset(0, socketTop.roundToInt()),
+                srcSize = socketSize ?: IntSize(srcW.roundToInt(), srcH.roundToInt()),
+                dstOffset = IntOffset.Zero,
+                dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+                alpha = depthFrac,
+                filterQuality = FilterQuality.Low
+            )
+        }
+        scale(k, k, pivot = center) {
+            clipPath(shapePath) {
+                drawImage(
+                    scene,
+                    srcOffset = IntOffset(srcLeft.roundToInt(), srcTop.roundToInt()),
+                    srcSize = IntSize(srcW.roundToInt(), srcH.roundToInt()),
+                    dstOffset = IntOffset.Zero,
+                    dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+                    filterQuality = FilterQuality.Low
+                )
+            }
+        }
+    } else if (scene != null && k < 0.9995f) {
         val r = corner.toPx()
         // 0 at rest .. 1 at full depth, so every layer below fades in with the dip instead of popping.
         val depthFrac = ((1f - k) / 0.08f).coerceIn(0f, 1f)

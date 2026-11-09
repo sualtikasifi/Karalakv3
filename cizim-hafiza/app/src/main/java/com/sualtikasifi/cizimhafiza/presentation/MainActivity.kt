@@ -183,6 +183,8 @@ class MainActivity : AppCompatActivity() {
                     // Last, so it is above everything: an install older than the lowest allowed version gets the update
                     // card and cannot reach the game (see UpdateGate; nothing is shown for anyone else).
                     com.sualtikasifi.cizimhafiza.presentation.common.ForcedUpdateHost()
+                    // Developer panel > Başlık ayarı: arrows for hand-placing page titles; nothing while the mode is off.
+                    com.sualtikasifi.cizimhafiza.presentation.common.TitleNudgeOverlay()
                     LaunchedEffect(brandSplashVisible) {
                         com.sualtikasifi.cizimhafiza.presentation.splash.SplashHandOff.brandSplashDone.value = !brandSplashVisible
                     }

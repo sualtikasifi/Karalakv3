@@ -14,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -102,7 +101,7 @@ internal fun WelcomeScene(onStart: () -> Unit, onSkip: () -> Unit) {
 
         // "Hadi başlayalım": the orange button WITH its leaves. The whole group is a picture of its own (tutorial_welcome_button,
         // cut out of the painted scene, which has that spot cleaned), so pressing it caves the button in together with its
-        // leaves and its label, over a dark hollow of the same shape.
+        // leaves and its label (nothing is left behind it to cave in over: the scene has that spot cleaned, so no hollow or shadow).
         val startSink = rememberSink(0.93f)
         Box(
             box(BtnL, BtnT, BtnR, BtnB)
@@ -110,10 +109,6 @@ internal fun WelcomeScene(onStart: () -> Unit, onSkip: () -> Unit) {
                 .a11yButton(stringResource(R.string.tutorial_intro_button))
         ) {
             val group = cachedPainterResource(R.drawable.tutorial_welcome_button)
-            Image(
-                group, contentDescription = null, contentScale = ContentScale.FillBounds, colorFilter = ColorFilter.tint(Color.Black),
-                modifier = Modifier.fillMaxSize().graphicsLayer { alpha = ((1f - startSink.scale.value) / 0.07f).coerceIn(0f, 1f) * 0.32f }
-            )
             Box(Modifier.fillMaxSize().sinkWith(startSink, BtnPivotX, BtnPivotY)) {
                 Image(group, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
