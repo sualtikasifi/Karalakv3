@@ -150,7 +150,7 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
             }
             // the letter lines at the top of the board: tap one to write its letter on it in the video
             Text("Harf çizgileri", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
-            Text("Videodaki çizgilerden birine dokununca o harf çizginin üstüne yazılır; tekrar dokununca silinir.", style = Console.Small)
+            Text("Dokunduğun harf videoda hem tahtanın üstündeki çizginin üstüne yazılır hem de kod ekranındaki aynı sıradaki kutuda görünür (bilen alır modunda); tekrar dokununca silinir.", style = Console.Small)
             Row(Modifier.padding(top = 6.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 script.slotLetters.forEachIndexed { i, ch ->
                     val on = i in script.revealed

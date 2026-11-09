@@ -175,6 +175,8 @@ object ForgotTimeline {
     private const val DRAW_MS = 600L
     private const val GUESS_MIN = 1_100L
     private const val CODE_MIN = 2_600L
+    /** The drawing is taken back, stroke by stroke, over this long when the code scene begins; the code comes up after it. */
+    const val ERASE_MS = 700L
     /** The drawing is already begun on the first frame (a few strokes), so the video's cover is never an empty board. */
     private const val HOOK_FROM = 0.08f
     private const val OUTRO_HOLD = 1_800L
@@ -218,7 +220,7 @@ object ForgotTimeline {
         // the countdown is a question put to the viewer, out loud; it lasts as long as the question takes, 1.5 s at the least
         speak(ForgotPhase.Countdown, -1, script.askLine, COUNTDOWN_MS, 150, 1f, 1f)
         // Karalak's reaction and the code are one line, said as the code comes up
-        speak(ForgotPhase.Code, -1, script.codeLine, CODE_MIN, 400, 1f, 1f)
+        speak(ForgotPhase.Code, -1, script.codeLine, CODE_MIN + ERASE_MS, 400 + ERASE_MS, 1f, 1f)
         val cardMin = if (howtoMs > 0) howtoMs.coerceAtMost(RealTimeline.HOWTO_MAX) + RealTimeline.END_VIDEO_LEAD + RealTimeline.END_VIDEO_TAIL else 0L
         speak(ForgotPhase.Outro, -1, script.outro, cardMin, OUTRO_HOLD, 1f, 1f)
         return out

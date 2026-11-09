@@ -139,11 +139,16 @@ class ForgotRenderer(
             ForgotPhase.Guess -> drawDrawing(canvas, e.drawTo, 1f, 0L)
             // the question over the finished drawing: nothing but Karalak asking, the blanks and the prize stay
             ForgotPhase.Countdown -> drawDrawing(canvas, 1f, 1f, 0L)
-            ForgotPhase.Code -> drawCode(canvas, e, t)
+            // the drawing is taken back stroke by stroke (drawn in reverse), and then the code comes up on the clear board
+            ForgotPhase.Code -> {
+                val local = t - e.startMs
+                if (local < ForgotTimeline.ERASE_MS) drawDrawing(canvas, 1f - Ease.inOut(local.toFloat() / ForgotTimeline.ERASE_MS), 1f, 0L)
+                else drawCode(canvas, e, t)
+            }
             ForgotPhase.Outro -> Unit
         }
         // the prize frame stands on the board's lower edge all through; the word's blanks only while the drawing is shown
-        if (e.phase != ForgotPhase.Code) drawLetterSlots(canvas, board.centerX(), board.width() - 100f)
+        if (e.phase != ForgotPhase.Code || t - e.startMs < ForgotTimeline.ERASE_MS) drawLetterSlots(canvas, board.centerX(), board.width() - 100f)
         drawRewardFrame(canvas)
         fill.color = C.CARD_EDGE
         canvas.drawRect(0f, H - 10f, W.toFloat(), H.toFloat(), fill)
@@ -375,7 +380,9 @@ class ForgotRenderer(
      * centred in the room the frame leaves; it shrinks as a whole when it would not fit.
      */
     private fun drawCode(canvas: Canvas, e: ForgotEvent, t: Long) {
-        val a = Ease.out(min(1f, e.progress(t) * 4f))
+        // the code comes up once the drawing has been taken back (ForgotTimeline.ERASE_MS from the scene's start)
+        val local = t - e.startMs - ForgotTimeline.ERASE_MS
+        val a = Ease.out(min(1f, local.coerceAtLeast(0L) / CODE_FADE_MS))
         val word = script.mode == ForgotMode.Word
         val cx = board.centerX()
         val code = script.code
@@ -424,9 +431,8 @@ class ForgotRenderer(
         y += gTitle * k
         put(explain, hExplain, sExplain, assets.body, C.MUTED)
         y += gExplain * k
-        val local = t - e.startMs
         val shown = if (word) 0 else (code.length * Ease.out(min(1f, (local - 250f).coerceAtLeast(0f) / 900f))).toInt().coerceAtMost(code.length)
-        drawBoxes(canvas, code, shown, word, script.showFirstLetter, y, cell0 * k, BOX_ROW_GAP * k, a)
+        drawBoxes(canvas, code, shown, word, script.showFirstLetter, script.revealed, y, cell0 * k, BOX_ROW_GAP * k, a)
         y += (boxes0 + gBoxes) * k
         if (chips.isNotEmpty()) {
             drawLimitChips(canvas, chips, y, k, a)
@@ -522,7 +528,7 @@ class ForgotRenderer(
     }
 
     /** The code as one box a character, in rows of [ForgotCopy.rowSize] boxes, the block starting at [top]; each letter centred in its box. */
-    private fun drawBoxes(canvas: Canvas, code: String, shown: Int, hidden: Boolean, firstLetter: Boolean, top: Float, cell: Float, rowGap: Float, alpha: Float) {
+    private fun drawBoxes(canvas: Canvas, code: String, shown: Int, hidden: Boolean, firstLetter: Boolean, revealed: Set<Int>, top: Float, cell: Float, rowGap: Float, alpha: Float) {
         if (code.isEmpty()) return
         val gap = 8f
         var index = 0
@@ -532,8 +538,8 @@ class ForgotRenderer(
             row.forEachIndexed { i, ch ->
                 val x = board.centerX() - rowW / 2f + i * (cell + gap)
                 val box = RectF(x, boxTop, x + cell, boxTop + cell * 1.2f)
-                // in the answer-is-the-code mode the first box may show its letter, as a hint
-                val hint = hidden && firstLetter && index == 0
+                // in the answer-is-the-code mode a box may show its letter, as a hint: the first one when that is wanted, and the ones picked among the letter lines
+                val hint = hidden && ((firstLetter && index == 0) || index in revealed)
                 val on = index < shown || hint
                 fill.color = if (on) 0xFFFFE8CC.toInt() else C.CREAM_DEEP
                 fill.alpha = (255 * alpha).toInt()
@@ -592,6 +598,8 @@ class ForgotRenderer(
         private const val REWARD_DROP = 10f
         /** The code screen's chips (height, text size) and numbered steps (circle, text size). */
         private const val CELL_MAX = 112f
+        /** How long the code screen takes to fade in once the drawing is gone. */
+        private const val CODE_FADE_MS = 400f
         /** The width every line of the code screen is fitted to. */
         private const val LINE_W = 840
         private const val CHIP_H = 84f

@@ -462,4 +462,22 @@ class ForgotTest {
         val away = com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealMix.gainAt(30_000L, 60_000L, all, null)
         assertTrue("$inside vs $away", inside < away)
     }
+
+    @Test
+    fun theCodeSceneBeginsWithTheDrawingBeingTakenBack() {
+        val events = ForgotTimeline.build(script(guesses = 2), howtoMs = 6_300L) { _, _ -> 1_000L }
+        val code = events.first { it.phase == com.sualtikasifi.cizimhafiza.presentation.reports.studio.forgot.ForgotPhase.Code }
+        // the drawing goes back stroke by stroke first, then the code has its time: the scene is longer by that much
+        assertTrue(code.durationMs >= ForgotTimeline.ERASE_MS + 2_000L)
+        assertTrue(ForgotTimeline.ERASE_MS in 300L..1_200L)
+    }
+
+    @Test
+    fun theLettersPickedAmongTheLinesAreTheOnesTheCodeBoxesShow() {
+        // line i of the word and box i of the code are the same letter, the box in the code's own (folded) letters
+        val sc = script(mode = ForgotMode.Word).copy(revealed = setOf(0, 3))
+        assertEquals("ŞEMSİYE".toList(), sc.slotLetters)
+        assertEquals("SEMSIYE", sc.code)
+        assertEquals(listOf('S', 'S'), sc.revealed.sorted().map { sc.code[it] })
+    }
 }
