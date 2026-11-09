@@ -635,10 +635,44 @@ internal fun Modifier.sunkenArt(
     sink: SinkState,
     scene: ImageBitmap?,
     srcLeft: Float, srcTop: Float, srcW: Float, srcH: Float,
-    corner: Dp
+    corner: Dp,
+    /**
+     * A clean picture of what lies BEHIND the tile (the plain wood), [socketTop] down the strip, [srcW] x [srcH] pixels.
+     * With it the tile dips onto that wood, with no darkened copy of itself and no drawn shadow around it; without it the
+     * older darkened-socket look is used.
+     */
+    socket: ImageBitmap? = null,
+    socketTop: Float = 0f
 ): Modifier = drawWithContent {
     val k = sink.scale.value
-    if (scene != null && k < 0.9995f) {
+    if (scene != null && socket != null && k < 0.9995f) {
+        val r = corner.toPx()
+        val depthFrac = ((1f - k) / 0.03f).coerceIn(0f, 1f)
+        val shapePath = Path().apply { addRoundRect(RoundRect(0f, 0f, size.width, size.height, CornerRadius(r))) }
+        clipPath(shapePath) {
+            drawImage(
+                socket,
+                srcOffset = IntOffset(0, socketTop.roundToInt()),
+                srcSize = IntSize(srcW.roundToInt(), srcH.roundToInt()),
+                dstOffset = IntOffset.Zero,
+                dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+                alpha = depthFrac,
+                filterQuality = FilterQuality.Low
+            )
+        }
+        scale(k, k, pivot = center) {
+            clipPath(shapePath) {
+                drawImage(
+                    scene,
+                    srcOffset = IntOffset(srcLeft.roundToInt(), srcTop.roundToInt()),
+                    srcSize = IntSize(srcW.roundToInt(), srcH.roundToInt()),
+                    dstOffset = IntOffset.Zero,
+                    dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+                    filterQuality = FilterQuality.Low
+                )
+            }
+        }
+    } else if (scene != null && k < 0.9995f) {
         val r = corner.toPx()
         // 0 at rest .. 1 at full depth, so every layer below fades in with the dip instead of popping.
         val depthFrac = ((1f - k) / 0.08f).coerceIn(0f, 1f)

@@ -74,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import kotlin.math.roundToInt
 import com.sualtikasifi.cizimhafiza.BuildConfig
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.SupportedLanguage
@@ -148,8 +149,16 @@ fun SettingsScreen(
         val pxX = (sceneBitmap?.width ?: 1) / ArtW
         val pxY = (sceneBitmap?.height ?: 1) / ArtH
         // A painted area that caves in under the finger (see sunkenArt).
-        fun sunk(sink: com.sualtikasifi.cizimhafiza.presentation.mainmenu.SinkState, x0: Float, y0: Float, x1: Float, y1: Float, cornerArt: Float): Modifier =
-            Modifier.sunkenArt(sink, sceneBitmap, x0 * pxX, y0 * pxY, (x1 - x0) * pxX, (y1 - y0) * pxY, (cornerArt * us).dp)
+        // The plain wood behind the five rows (one strip each, stacked), so a pressed row dips onto wood instead of a shadow.
+        val rowFill = remember { runCatching { BackdropCache.get(context.resources, R.drawable.settings_row_fill) }.getOrNull() }
+        fun sunk(
+            sink: com.sualtikasifi.cizimhafiza.presentation.mainmenu.SinkState, x0: Float, y0: Float, x1: Float, y1: Float, cornerArt: Float,
+            fillRow: Int = -1
+        ): Modifier =
+            if (fillRow >= 0 && rowFill != null) Modifier.sunkenArt(
+                sink, sceneBitmap, 67f, (y0 + y1) / 2f * pxY - 60.4f, 948f, 121f, (cornerArt * us).dp,
+                socket = rowFill, socketTop = fillRow * 121f
+            ) else Modifier.sunkenArt(sink, sceneBitmap, x0 * pxX, y0 * pxY, (x1 - x0) * pxX, (y1 - y0) * pxY, (cornerArt * us).dp)
 
         if (offX > 1.dp || offY > 1.dp) {
             Image(scene, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(20.dp))
@@ -493,7 +502,7 @@ fun SettingsScreen(
             val sink = rememberSink(0.95f)
             Box(
                 box(52f, cy - 47f, 790f, cy + 47f)
-                    .then(sunk(sink, 52f, cy - 47f, 790f, cy + 47f, 40f))
+                    .then(sunk(sink, 52f, cy - 47f, 790f, cy + 47f, 40f, fillRow = ((cy - 1237f) / 110f).roundToInt()))
                     .then(extra)
                     .clickable(interactionSource = sink.source, indication = null, onClick = onClick)
                     .a11yButton(label)
