@@ -322,7 +322,7 @@ var (doğum tarihi: gün, ay, yıl; hiçbir tarih önceden seçili değil). 13 y
   zekâ — canlı eşleşme gelince de çocuklara kapalı kalacak; arama ekranı bunu söylüyor;
 - aylık lig açık; Google ile giriş yaparsa üretilmiş takma adla, fotoğrafsız sıralanır (seçilmiş ad ve
   Google adı/fotoğrafı yayımlanmaz); web'de sıralanmaz;
-- çizim yüklenmez, Analytics kapalı, reklamlar çocuklara yönelik ve kişiselleştirilmemiş;
+- çizim yüklenmez, Analytics ve Crashlytics (çökme raporu) kapalı, reklamlar çocuklara yönelik ve kişiselleştirilmemiş;
 - Google ile girişte doğum tarihi hesaba kaydedilir ve hesap hangi cihazda açılırsa o tarih geçerli olur.
 
 Formdaki "Uygulamanız çocuklara hitap ediyor mu" sorusunda bu yaş ekranı ve davranışı açıklanmalı.
