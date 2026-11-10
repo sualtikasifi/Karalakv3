@@ -1,5 +1,7 @@
 # Play Store Mağaza Metni ve Yayın Notları
 
+> **Güncel mağaza metinleri** (başlık, kısa ve tam açıklama; TR/EN/ES/PT) `store-assets/listing/listing_*.txt` dosyalarında. Aşağıdaki eski metinlerin yerine onlar kullanılır.
+
 ## Uygulama başlığı
 Karalak — Çiz, Hatırla, Yarış
 
@@ -218,9 +220,9 @@ Más de mil palabras en 9 categorías. En español, inglés, portugués y turco.
 Oyun / Kelime Oyunu
 
 ## Grafik varlıkları
-- Uygulama simgesi: `store-assets/play_store_icon_512.png` — 512×512, düz PNG
-  (alfa kanalı yok), mevcut adaptive icon'un (foreground + `launcher_background`)
-  dışa aktarılmış hâli. Play Console'a doğrudan yüklenebilir.
+- Uygulama simgesi: `store-assets/play_store_icon_512.png` — 512×512 PNG, uygulamanın şimdiki
+  ikonu (taçlı köpek madalyonu, `launcher_background` turuncusu üstünde, madalyon tuvalin ~%88'i). Web
+  oyununun `hosting/oyna/icons/icon-512.png` dosyasından üretildi. Play Console'a doğrudan yüklenebilir.
 - Öne çıkan grafik: `store-assets/play_store_feature_graphic_1024x500.png` —
   1024×500, marka renkleri (krem arka plan, turuncu vurgu) ve gerçek logo
   kullanılarak hazırlandı. Play Console'a doğrudan yüklenebilir.
@@ -260,6 +262,7 @@ Oyun / Kelime Oyunu
 | Kişisel bilgiler | **E-posta adresi** | İsteğe bağlı — Google ile giriş | Uygulama işlevselliği, Hesap yönetimi |
 | Kişisel bilgiler | **Kullanıcı kimlikleri** (Firebase uid, takma ad, arkadaş kodu, web kullanıcı adı) | Zorunlu | Uygulama işlevselliği, Hesap yönetimi |
 | Kişisel bilgiler | **Diğer bilgiler** (doğum tarihi, Google hesabına) | İsteğe bağlı — Google ile giriş | Uygulama işlevselliği, Hesap yönetimi |
+| Konum | **Yaklaşık konum** (IP adresinden türetilen ülke/şehir — Firebase Analytics ve AdMob; GPS/konum izni yok) | Zorunlu (13 altında Analytics kapalı) | Analiz, Reklam, Dolandırıcılık önleme |
 | Fotoğraflar ve videolar | — (toplanmıyor; Google profil fotoğrafının yalnızca adresi saklanıyor) | — | — |
 | Uygulama etkinliği | **Uygulama etkileşimleri** (Analytics olayları) | Zorunlu (AB'de onaya bağlı) | Analiz |
 | Uygulama etkinliği | **Kullanıcı tarafından oluşturulan diğer içerik** (çizimler, tahminler, emoji tepkileri, şikâyetler, hata bildirimi metni) | Zorunlu | Uygulama işlevselliği, Dolandırıcılık önleme/güvenlik |
@@ -269,14 +272,14 @@ Oyun / Kelime Oyunu
 | Cihaz veya diğer kimlikler | **Cihaz veya diğer kimlikler** (Firebase kurulum kimliği, FCM jetonu, App Check) | Zorunlu | Uygulama işlevselliği, Analiz, Dolandırıcılık önleme |
 | Cihaz veya diğer kimlikler | **Reklam kimliği** (AdMob) | Zorunlu (13 yaş altında kullanılmaz) | Reklam, Dolandırıcılık önleme |
 
-Reklam kimliği ve AdMob'un işlediği cihaz verileri hariç hiçbir veri **paylaşılmıyor**. Yapay zekâ
+Google'ın AdMob açıklama sayfasına göre (developers.google.com/admob/android/privacy/play-data-disclosure) AdMob SDK'sı IP adresini (yaklaşık konum), kullanıcı etkileşimlerini, tanılama bilgisini ve cihaz kimliklerini toplar **ve paylaşır** — bu yüzden formda **Yaklaşık konum, Uygulama etkileşimleri, Tanılama ve Cihaz kimlikleri** için "Paylaşılıyor: Evet" (Google'a, Reklam / Analiz / Dolandırıcılık önleme amacıyla) işaretlenir. Bunun dışında hiçbir veri **paylaşılmıyor**. Yapay zekâ
 hizmet sağlayıcılarına (OpenRouter, ElevenLabs) yalnızca kimliksiz çizim ve kelime, bizim adımıza
 işlenmek üzere gidiyor — Play tanımına göre "paylaşım" değil, hizmet sağlayıcı. Doğum tarihi
 Google ile giriş yapılmadıkça yalnızca cihazda kalıyor; giriş yapılınca hesaba kaydediliyor
 (`AccountAgeSync`, `users/{uid}/private/age`; oyuncu 18 olana kadar kurallarla kilitli).
 Hepsi silinebilir.
 
-**Toplanmayanlar — "Hayır":** konum (kesin/yaklaşık), kişiler, takvim, SMS/çağrı, fotoğraf/video,
+**Toplanmayanlar — "Hayır":** kesin konum (GPS; yaklaşık konum yukarıda var), kişiler, takvim, SMS/çağrı, fotoğraf/video,
 ses, dosya, sağlık, finans, arama/web geçmişi, satın alma geçmişi.
 
 ## Reklamlar (kodla birebir)
@@ -322,7 +325,7 @@ var (doğum tarihi: gün, ay, yıl; hiçbir tarih önceden seçili değil). 13 y
   zekâ — canlı eşleşme gelince de çocuklara kapalı kalacak; arama ekranı bunu söylüyor;
 - aylık lig açık; Google ile giriş yaparsa üretilmiş takma adla, fotoğrafsız sıralanır (seçilmiş ad ve
   Google adı/fotoğrafı yayımlanmaz); web'de sıralanmaz;
-- çizim yüklenmez, Analytics kapalı, reklamlar çocuklara yönelik ve kişiselleştirilmemiş;
+- çizim yüklenmez, Analytics ve Crashlytics (çökme raporu) kapalı, reklamlar çocuklara yönelik ve kişiselleştirilmemiş;
 - Google ile girişte doğum tarihi hesaba kaydedilir ve hesap hangi cihazda açılırsa o tarih geçerli olur.
 
 Formdaki "Uygulamanız çocuklara hitap ediyor mu" sorusunda bu yaş ekranı ve davranışı açıklanmalı.

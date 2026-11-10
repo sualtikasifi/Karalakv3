@@ -70,4 +70,22 @@ object BotPhotos {
 
     /** The drawable for league bot [name], or null when it is not one of them. */
     fun drawableFor(name: String): Int? = assigned[name]
+
+    /** Every picture there is, for the reviewer's picker (developer panel). */
+    val all: List<Int> get() = MEN + WOMEN + NEUTRAL
+
+    /** The stable key a chosen picture is stored under (its resource name). */
+    fun keyOf(context: android.content.Context, res: Int): String = context.resources.getResourceEntryName(res)
+
+    /** The picture stored under [key], or null when there is none (a stale key, or null). */
+    fun drawableForKey(context: android.content.Context, key: String?): Int? =
+        if (key.isNullOrBlank()) null else all.firstOrNull { keyOf(context, it) == key }
+}
+
+/** The face of a recorded round's author: the picture the reviewer chose for it, or else the one its name picks. */
+@androidx.compose.runtime.Composable
+fun opponentPhoto(photoKey: String?, nickname: String): AvatarPhoto {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val chosen = androidx.compose.runtime.remember(photoKey) { BotPhotos.drawableForKey(context, photoKey) }
+    return if (chosen != null) AvatarPhoto.Res(chosen) else AvatarPhoto.Persona(nickname)
 }

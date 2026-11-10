@@ -47,6 +47,22 @@ service cloud.firestore {
              && request.auth.token.email_verified == true;
     }
 
+    // How a recorded round is presented to the players it is matched against: its name, its level (and the level
+    // band the matching query filters on, which must follow the level), its ring and its picture (a bundled picture's
+    // key). Reviewer-only, and nothing else about a round may change: the score, the words and the timestamp are what
+    // the round IS. Used by both the queue (pendingRuns) and the live pool (ghostRuns).
+    function runIdentityEdit() {
+      let after = request.resource.data;
+      let changed = after.diff(resource.data).affectedKeys();
+      return changed.hasOnly(['nickname', 'level', 'levelBand', 'frameId', 'photoKey'])
+             && after.nickname is string && after.nickname.size() > 0 && after.nickname.size() <= 40
+             && (!changed.hasAny(['level', 'levelBand'])
+                 || (after.level is int && after.level >= 1 && after.level <= 100
+                     && after.levelBand == math.floor((after.level - 1) / 10)))
+             && (!changed.hasAny(['frameId']) || (after.frameId is string && after.frameId.size() > 0 && after.frameId.size() <= 64))
+             && (!('photoKey' in after) || (after.photoKey is string && after.photoKey.size() <= 40));
+    }
+
     // The permanent shared practice room driven by BotRoomEngine.kt. The bot
     // has no Firebase Auth identity of its own, so whichever real device is
     // in the room writes its moves on its behalf.
@@ -370,16 +386,11 @@ service cloud.firestore {
                     || reviewer())
                     && (!('nickname' in request.resource.data)
                         || (request.resource.data.nickname is string && request.resource.data.nickname.size() <= 40));
-      // One field, one writer. The reviewer may change the name a round is
-      // presented under and nothing else — while the pool is seeded largely
+      // The reviewer may change how a round is presented (name, level, ring, picture — see runIdentityEdit) and nothing else — while the pool is seeded largely
       // by one person's own play, every opponent otherwise carries the same
       // two or three names. The score, the words and the timestamp are what
       // the round IS and stay frozen.
-      allow update: if reviewer()
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nickname'])
-                    && request.resource.data.nickname is string
-                    && request.resource.data.nickname.size() > 0
-                    && request.resource.data.nickname.size() <= 40;
+      allow update: if reviewer() && runIdentityEdit();
       // The author may withdraw their own round (deleting the account takes these with it).
       allow delete: if reviewer() || (signedIn() && resource.data.uid == request.auth.uid);
     }
@@ -425,11 +436,7 @@ service cloud.firestore {
       // else's opponent from here on, so editing THAT after the fact would
       // let a player raise the bar (or lower it) for everyone matched
       // against them.
-      allow update: if reviewer()
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nickname'])
-                    && request.resource.data.nickname is string
-                    && request.resource.data.nickname.size() > 0
-                    && request.resource.data.nickname.size() <= 40;
+      allow update: if reviewer() && runIdentityEdit();
 
       // Deleting your own is what the per-player cap prunes with, and it is
       // also how account deletion takes these with it. The reviewer may also

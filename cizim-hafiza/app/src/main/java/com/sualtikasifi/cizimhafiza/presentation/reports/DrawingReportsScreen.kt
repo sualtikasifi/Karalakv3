@@ -1,5 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports
 
+import androidx.compose.foundation.border
+import androidx.compose.ui.text.style.TextAlign
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -306,7 +308,10 @@ fun DrawingReportsScreen(
             }
 
             uiState.renaming?.let { run ->
-                RenameDialog(run = run, onDismiss = viewModel::cancelRename, onConfirm = { viewModel.rename(run, it) })
+                EditRunDialog(
+                    run = run, onDismiss = viewModel::cancelRename,
+                    onConfirm = { name, level, frame, photo -> viewModel.editIdentity(run, name, level, frame, photo) }
+                )
             }
 
             previewItem?.let { item -> DrawingPreviewDialog(item = item, onDismiss = { previewItem = null }) }
@@ -1177,7 +1182,23 @@ private fun PendingRunRow(
 private fun ThumbGrid(items: List<ResultItem>, onPreview: (ResultItem) -> Unit) {
     items.chunked(QUEUE_THUMBS_PER_ROW).forEach { row ->
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            row.forEach { item -> DrawingThumb(item.strokes, Modifier.weight(1f)) { onPreview(item) } }
+            row.forEach { item ->
+                // The round's own verdict on each drawing: a green tick and frame when its author remembered the
+                // word, a red cross and frame when not, with the word underneath.
+                val tint = if (item.isCorrect) Color(0xFF2E7D32) else Color(0xFFC62828)
+                Column(Modifier.weight(1f)) {
+                    Box {
+                        DrawingThumb(item.strokes, Modifier.fillMaxWidth().border(2.dp, tint, RoundedCornerShape(8.dp))) { onPreview(item) }
+                        Box(
+                            Modifier.align(Alignment.TopEnd).padding(3.dp).size(16.dp).clip(CircleShape).background(tint),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(if (item.isCorrect) Icons.Filled.Check else Icons.Filled.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(11.dp))
+                        }
+                    }
+                    Text(item.word, style = Console.Small, maxLines = 1, overflow = TextOverflow.Ellipsis, color = tint, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                }
+            }
             repeat(QUEUE_THUMBS_PER_ROW - row.size) { Spacer(modifier = Modifier.weight(1f)) }
         }
     }
@@ -1449,33 +1470,90 @@ private fun Stagger(index: Int, modifier: Modifier = Modifier, content: @Composa
 }
 
 /**
- * Renames one run's author.
+ * Edits how one recorded round is presented to the players it is matched against: the name, the level, the ring and the
+ * picture. The drawings, the score and the words are what the round IS and cannot be touched here.
  *
- * Opens on the current name rather than empty: the common edit is a small change to something already there, and an
- * empty box would make every rename a retype.
+ * Opens on what the round carries now, so the common edit is a small change rather than a retype. The picture picker only
+ * offers the bundled pictures (BotPhotos); "Otomatik" leaves the choice to the name, as before.
  */
 @Composable
-private fun RenameDialog(
+private fun EditRunDialog(
     run: PendingRun,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (name: String, level: Int, frameId: String, photoKey: String?) -> Unit
 ) {
+    val context = LocalContext.current
     var name by remember(run.id) { mutableStateOf(run.nickname) }
+    var levelText by remember(run.id) { mutableStateOf(run.level.toString()) }
+    var frame by remember(run.id) { mutableStateOf(com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame.resolve(run.frameId, run.level).name) }
+    var photoKey by remember(run.id) { mutableStateOf(run.photoKey) }
+    val level = levelText.toIntOrNull()?.coerceIn(1, com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.MAX_LEVEL)
+    // Only rings this level has earned: a higher one would simply not be drawn (AvatarFrame.resolve).
+    val frames = com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame.unlockedFor(level ?: run.level)
+    val chosenFrame = frames.firstOrNull { it.name == frame } ?: com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame.DEFAULT
+    val photos = remember { com.sualtikasifi.cizimhafiza.presentation.common.BotPhotos.all }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.reports_rename)) },
+        title = { Text("Turu düzenle") },
         text = {
-            ConsoleTextField(
-                value = name,
-                onValueChange = { name = it.take(RENAME_MAX_LENGTH) },
-                label = stringResource(R.string.reports_rename_label),
-                singleLine = true
-            )
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                ConsoleTextField(
+                    value = name, onValueChange = { name = it.take(RENAME_MAX_LENGTH) },
+                    label = stringResource(R.string.reports_rename_label), singleLine = true
+                )
+                ConsoleTextField(
+                    value = levelText, onValueChange = { levelText = it.filter(Char::isDigit).take(3) },
+                    label = "Seviye (1–${com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.MAX_LEVEL})", singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                )
+                Text("Çerçeve", style = Console.Small)
+                androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(frames.size) { i ->
+                        val f = frames[i]
+                        Box(
+                            Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (f == chosenFrame) Console.AccentSoft else Color.Transparent)
+                                .clickable { frame = f.name }
+                                .padding(4.dp)
+                        ) {
+                            com.sualtikasifi.cizimhafiza.presentation.common.LevelAvatar(level = level ?: run.level, frame = f, size = 52.dp)
+                        }
+                    }
+                }
+                Text("Profil resmi", style = Console.Small)
+                Box(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                        .background(if (photoKey == null) Console.AccentSoft else Color.Transparent)
+                        .clickable { photoKey = null }.padding(8.dp)
+                ) { Text("Otomatik (ismine göre)", style = Console.Body) }
+                androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+                    columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(5),
+                    modifier = Modifier.fillMaxWidth().height(210.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(photos.size) { i ->
+                        val res = photos[i]
+                        val key = remember(res) { com.sualtikasifi.cizimhafiza.presentation.common.BotPhotos.keyOf(context, res) }
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(res),
+                            contentDescription = null,
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            modifier = Modifier
+                                .aspectRatio(1f)
+                                .clip(CircleShape)
+                                .border(if (photoKey == key) 3.dp else 0.dp, Console.Accent, CircleShape)
+                                .clickable { photoKey = key }
+                        )
+                    }
+                }
+            }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(name) },
-                enabled = name.isNotBlank() && name.trim() != run.nickname
+                onClick = { onConfirm(name, level ?: run.level, chosenFrame.name, photoKey) },
+                enabled = name.isNotBlank() && level != null
             ) { Text(stringResource(R.string.reports_rename_save)) }
         },
         dismissButton = {

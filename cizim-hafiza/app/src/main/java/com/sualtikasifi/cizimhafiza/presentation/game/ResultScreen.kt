@@ -603,7 +603,7 @@ private fun GhostVersusCard(
                 level = ghost.level,
                 frame = AvatarFrame.resolve(ghost.frameId, ghost.level),
                 size = u * 84f,
-                photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(ghost.nickname)
+                photo = com.sualtikasifi.cizimhafiza.presentation.common.opponentPhoto(ghost.photoKey, ghost.nickname)
             )
         },
         u = u

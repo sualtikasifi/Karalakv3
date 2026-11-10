@@ -61,6 +61,7 @@ class DrawingReportsViewModelTest {
         override suspend fun poolRuns(limit: Int, after: Long?) = Result.success(RunPage(emptyList(), null, true))
         override suspend fun approve(runId: String) = result("approve $runId")
         override suspend fun rename(runId: String, nickname: String, inPool: Boolean) = result("rename $runId")
+        override suspend fun updateIdentity(runId: String, nickname: String, level: Int, frameId: String, photoKey: String?, inPool: Boolean) = result("identity $runId")
         override suspend fun sendBackToQueue(runId: String) = result("sendBack $runId")
         override suspend fun dismiss(runId: String) = result("dismiss $runId")
         override suspend fun reject(runId: String, xpToRevoke: Int, goldToRevoke: Int) = result("reject $runId $xpToRevoke $goldToRevoke")

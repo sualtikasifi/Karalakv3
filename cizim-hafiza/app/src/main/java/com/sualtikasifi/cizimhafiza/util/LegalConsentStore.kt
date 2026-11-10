@@ -104,9 +104,14 @@ class LegalConsentStore @Inject constructor(@ApplicationContext private val cont
         _childMode.value = isChild(date)
     }
 
-    /** Analytics is off for a child; on otherwise (Consent Mode still decides what it may store, see ConsentManager). */
+    /**
+     * Analytics and crash reporting are off for a child; on otherwise (Consent Mode still decides what Analytics may
+     * store, see ConsentManager). Crash reports carry an installation id, so a child's phone sends none.
+     */
     fun applyAnalyticsCollection() {
-        runCatching { FirebaseAnalytics.getInstance(context).setAnalyticsCollectionEnabled(!_childMode.value) }
+        val collect = !_childMode.value
+        runCatching { FirebaseAnalytics.getInstance(context).setAnalyticsCollectionEnabled(collect) }
+        runCatching { com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(collect) }
     }
 
     private fun isChild(date: BirthDate): Boolean = ageOf(date)?.let { it < MIN_AGE } ?: false

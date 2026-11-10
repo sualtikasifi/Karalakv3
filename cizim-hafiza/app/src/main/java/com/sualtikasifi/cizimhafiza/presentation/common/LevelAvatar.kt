@@ -526,6 +526,9 @@ sealed interface AvatarPhoto {
 
     /** A stand-in picture for a league filler row, picked deterministically from [seed] (its name): mascot, Google-style default, initial, or an emoji scene. */
     data class Persona(val seed: String) : AvatarPhoto
+
+    /** A bundled picture chosen by the reviewer for a recorded round (BotPhotos). */
+    data class Res(val res: Int) : AvatarPhoto
 }
 
 /**
@@ -551,6 +554,12 @@ fun AvatarPhotoFace(photo: AvatarPhoto, modifier: Modifier = Modifier) {
         when (photo) {
             AvatarPhoto.Dino -> dino()
             is AvatarPhoto.Persona -> PersonaFace(photo.seed, dino)
+            is AvatarPhoto.Res -> Image(
+                painter = painterResource(id = photo.res),
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
             is AvatarPhoto.Url -> coil3.compose.SubcomposeAsyncImage(
                 model = photo.url,
                 contentDescription = null,

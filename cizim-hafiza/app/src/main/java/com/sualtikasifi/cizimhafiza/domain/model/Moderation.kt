@@ -23,7 +23,10 @@ data class PendingRun(
     val xpEarned: Int,
     /** The gold the round paid — taken back with the XP when it is rejected (0 for a round filed before this was recorded). */
     val goldEarned: Int = 0,
-    val createdAtMillis: Long
+    val createdAtMillis: Long,
+    /** The ring and the chosen picture the round is presented with (see ModerationRepository.updateIdentity). */
+    val frameId: String = "",
+    val photoKey: String? = null
 )
 
 /**

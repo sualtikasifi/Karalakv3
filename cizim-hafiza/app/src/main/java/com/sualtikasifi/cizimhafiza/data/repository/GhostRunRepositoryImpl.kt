@@ -474,7 +474,8 @@ class GhostRunRepositoryImpl @Inject constructor(
             wordIds = wordIds,
             totalScore = getLong("totalScore")?.toInt() ?: 0,
             correctCount = getLong("correctCount")?.toInt() ?: 0,
-            fastestCorrectMs = getLong("fastestCorrectMs")
+            fastestCorrectMs = getLong("fastestCorrectMs"),
+            photoKey = getString("photoKey")
         )
     }
 

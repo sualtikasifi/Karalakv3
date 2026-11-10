@@ -396,7 +396,7 @@ internal fun FoundScene(opponent: GhostRun, me: QuickMatchPlayerSnapshot, onStar
             // XP for that level: a true lower bound, never a guess above it.
             lifetimeXp = PlayerLevel.totalXpForLevel(opponent.level),
             // The same face the result screen gives this opponent (see ResultScreen's versus card).
-            photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Persona(opponent.nickname)
+            photo = com.sualtikasifi.cizimhafiza.presentation.common.opponentPhoto(opponent.photoKey, opponent.nickname)
         )
 
         // ---- The countdown: the words above the groove, the yellow bar growing along it ----------------------------------

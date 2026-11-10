@@ -56,6 +56,15 @@ interface ModerationRepository {
     suspend fun rename(runId: String, nickname: String, inPool: Boolean): Result<Unit>
 
     /**
+     * Changes everything a round is presented under: the name, the level (and with it the level band the matching
+     * query filters on), the ring, and the picture ([photoKey] is a BotPhotos key; null goes back to the picture the
+     * name picks). The drawings, the score and the words are left alone.
+     */
+    suspend fun updateIdentity(
+        runId: String, nickname: String, level: Int, frameId: String, photoKey: String?, inPool: Boolean
+    ): Result<Unit>
+
+    /**
      * Pulls a round back out of the pool and into the queue.
      *
      * The undo for [approve], and the way rounds that reached the pool before

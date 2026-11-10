@@ -633,6 +633,38 @@ class DrawingReportsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Rewrites how a round is presented — name, level, ring, picture — in whichever list it is showing in. The level's
+     * band moves with it (see ModerationRepository.updateIdentity). Like [rename], the row is updated in place.
+     */
+    fun editIdentity(run: PendingRun, nickname: String, level: Int, frameId: String, photoKey: String?) {
+        val trimmed = nickname.trim()
+        if (trimmed.isEmpty()) return
+        val lvl = level.coerceIn(1, com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.MAX_LEVEL)
+        val inPool = _uiState.value.pool.runs.any { it.id == run.id }
+        _uiState.value = _uiState.value.copy(renaming = null, decidingId = run.id)
+        viewModelScope.launch {
+            val result = moderationRepository.updateIdentity(run.id, trimmed, lvl, frameId, photoKey, inPool)
+            val state = _uiState.value
+            if (result.isFailure) {
+                _uiState.value = state.copy(
+                    decidingId = null,
+                    decisionFailed = true,
+                    decisionError = result.exceptionOrNull()?.describe()
+                )
+                return@launch
+            }
+            val edited = { list: RunList ->
+                list.copy(
+                    runs = list.runs.map {
+                        if (it.id == run.id) it.copy(nickname = trimmed, level = lvl, frameId = frameId, photoKey = photoKey) else it
+                    }
+                )
+            }
+            _uiState.value = state.copy(queue = edited(state.queue), pool = edited(state.pool), decidingId = null)
+        }
+    }
+
     private fun loadDailyChallengeQueue() {
         if (_uiState.value.dailyChallengeLoading) return
         _uiState.value = _uiState.value.copy(dailyChallengeLoading = true)
