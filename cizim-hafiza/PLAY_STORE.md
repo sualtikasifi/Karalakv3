@@ -1,5 +1,7 @@
 # Play Store Mağaza Metni ve Yayın Notları
 
+> **Güncel mağaza metinleri** (başlık, kısa ve tam açıklama; TR/EN/ES/PT) `store-assets/listing/listing_*.txt` dosyalarında. Aşağıdaki eski metinlerin yerine onlar kullanılır.
+
 ## Uygulama başlığı
 Karalak — Çiz, Hatırla, Yarış
 
