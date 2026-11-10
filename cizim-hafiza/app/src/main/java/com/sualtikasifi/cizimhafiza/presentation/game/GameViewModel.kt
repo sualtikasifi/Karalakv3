@@ -1243,7 +1243,8 @@ class GameViewModel @Inject constructor(
                     level = it.level,
                     frameId = it.frameId,
                     opponentScore = it.totalScore,
-                    opponentCorrectCount = it.correctCount
+                    opponentCorrectCount = it.correctCount,
+                    photoKey = it.photoKey
                 )
             },
             xpEarned = roundXpEarned,

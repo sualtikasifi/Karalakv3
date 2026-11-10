@@ -158,7 +158,8 @@ data class GhostMatchSummary(
     val level: Int,
     val frameId: String,
     val opponentScore: Int,
-    val opponentCorrectCount: Int
+    val opponentCorrectCount: Int,
+    val photoKey: String? = null
 )
 
 /**

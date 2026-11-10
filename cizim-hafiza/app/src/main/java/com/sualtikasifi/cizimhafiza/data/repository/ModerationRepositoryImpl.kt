@@ -1,5 +1,7 @@
 package com.sualtikasifi.cizimhafiza.data.repository
 
+import com.sualtikasifi.cizimhafiza.domain.model.GhostRuns
+import com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
@@ -119,7 +121,9 @@ class ModerationRepositoryImpl @Inject constructor(
                 correctCount = (doc.getLong("correctCount") ?: 0L).toInt(),
                 xpEarned = (doc.getLong("xpEarned") ?: 0L).toInt(),
                 goldEarned = (doc.getLong("goldEarned") ?: 0L).toInt(),
-                createdAtMillis = doc.getLong("createdAt") ?: 0L
+                createdAtMillis = doc.getLong("createdAt") ?: 0L,
+                frameId = doc.getString("frameId").orEmpty(),
+                photoKey = doc.getString("photoKey")
             )
         }
 
@@ -172,6 +176,30 @@ class ModerationRepositoryImpl @Inject constructor(
             audit(batch, "run-rename", runId, "yeni ad: $trimmed (${if (inPool) "havuz" else "kuyruk"})")
             batch.commit().await()
         }
+
+    override suspend fun updateIdentity(
+        runId: String, nickname: String, level: Int, frameId: String, photoKey: String?, inPool: Boolean
+    ): Result<Unit> = runCatching {
+        val trimmed = nickname.trim()
+        require(trimmed.isNotEmpty()) { "A run cannot be renamed to nothing" }
+        val lvl = level.coerceIn(1, PlayerLevel.MAX_LEVEL)
+        val collection = if (inPool) ghostRuns else pendingRuns
+        val batch = firestore.batch()
+        // levelBand moves with the level: it is what the matching query filters on, so a round left in its old band
+        // would keep being offered to the wrong players.
+        batch.update(
+            collection.document(runId),
+            mapOf(
+                "nickname" to trimmed,
+                "level" to lvl.toLong(),
+                "levelBand" to GhostRuns.levelBandFor(lvl).toLong(),
+                "frameId" to frameId,
+                "photoKey" to (photoKey ?: com.google.firebase.firestore.FieldValue.delete())
+            )
+        )
+        audit(batch, "run-identity", runId, "ad: $trimmed · sv $lvl · ${if (inPool) "havuz" else "kuyruk"}")
+        batch.commit().await()
+    }
 
     override suspend fun sendBackToQueue(runId: String): Result<Unit> = runCatching {
         val runDoc = ghostRuns.document(runId).get().await()

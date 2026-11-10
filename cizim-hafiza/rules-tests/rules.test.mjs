@@ -89,6 +89,14 @@ await check("the reviewer reads the queue", assertSucceeds(getDocs(collection(re
 await check("the author withdraws their own round", assertSucceeds(deleteDoc(doc(db("u1"), "pendingRuns", "r2"))));
 await check("a player cannot put a round in the live pool", assertFails(setDoc(doc(db("u1"), "ghostRuns", "g1"), { uid: "u1", nickname: "a" })));
 await check("the reviewer can", assertSucceeds(setDoc(doc(reviewer(), "ghostRuns", "g1"), { uid: "u1", nickname: "a" })));
+await seed(["ghostRuns", "g2"], { uid: "u1", nickname: "a", level: 79, levelBand: 7, frameId: "DEFAULT", totalScore: 90 });
+await check("the reviewer renames and re-levels a pool round together with its band", assertSucceeds(updateDoc(doc(reviewer(), "ghostRuns", "g2"), { nickname: "Ece", level: 23, levelBand: 2, frameId: "DEFAULT", photoKey: "bot_photo_a01" })));
+await check("a level change that leaves the band behind is refused", assertFails(updateDoc(doc(reviewer(), "ghostRuns", "g2"), { level: 55 })));
+await check("a level above the top is refused", assertFails(updateDoc(doc(reviewer(), "ghostRuns", "g2"), { level: 101, levelBand: 10 })));
+await check("the score of a pool round cannot be changed", assertFails(updateDoc(doc(reviewer(), "ghostRuns", "g2"), { totalScore: 999 })));
+await check("a player cannot re-level a pool round", assertFails(updateDoc(doc(db("u1"), "ghostRuns", "g2"), { level: 10, levelBand: 0 })));
+await seed(["pendingRuns", "q1"], { uid: "u1", nickname: "a", level: 79, levelBand: 7, frameId: "DEFAULT", totalScore: 90 });
+await check("the reviewer edits a queued round before approving it", assertSucceeds(updateDoc(doc(reviewer(), "pendingRuns", "q1"), { nickname: "Kaan", level: 41, levelBand: 4 })));
 await seed(["pendingDailyChallenges", "d1"], { uid: "u1", itemsJson: "[]" });
 await check("a stranger cannot read a daily attempt", assertFails(getDoc(doc(db("u2"), "pendingDailyChallenges", "d1"))));
 await seed(["detectorEvents", "e1"], { uid: "u1", sampleStrokesJson: "[]" });

@@ -46,7 +46,9 @@ data class GhostRun(
     val wordIds: List<Int>,
     val totalScore: Int,
     val correctCount: Int,
-    val fastestCorrectMs: Long?
+    val fastestCorrectMs: Long?,
+    /** A chosen profile picture (a BotPhotos key), set by the reviewer; null = the picture the nickname picks by itself. */
+    val photoKey: String? = null
 )
 
 /**
