@@ -1,5 +1,5 @@
 # Başlık
-Karalak: Çiz, Hatırla, Yarış
+Karalak: Çizim Hafıza Oyunu
 
 # Kısa açıklama
 Çiz, çizdiğini hatırla, yarış! Günlük görev, aylık lig, arkadaşlarla oyun.

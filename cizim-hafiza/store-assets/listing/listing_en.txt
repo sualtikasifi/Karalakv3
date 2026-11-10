@@ -1,5 +1,5 @@
 # Başlık
-Karalak: Draw, Recall, Compete
+Karalak: Drawing Memory Game
 
 # Kısa açıklama
 Draw it, then remember it! Daily challenge, monthly league, play with friends.

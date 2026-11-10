@@ -1,5 +1,5 @@
 # Başlık
-Karalak: Desenhe e Lembre
+Karalak: Desenho e Memória
 
 # Kısa açıklama
 Desenhe e depois lembre! Desafio diário, liga mensal e jogos com amigos.

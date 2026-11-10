@@ -1,5 +1,5 @@
 # Başlık
-Karalak: Dibuja y Recuerda
+Karalak: Dibujo y Memoria
 
 # Kısa açıklama
 ¡Dibuja y luego recuerda! Desafío diario, liga mensual y partidas con amigos.
