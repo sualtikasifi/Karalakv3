@@ -44,7 +44,7 @@ import com.sualtikasifi.cizimhafiza.presentation.navigation.Screen
 import com.sualtikasifi.cizimhafiza.util.AnswerMatcher
 import com.sualtikasifi.cizimhafiza.util.DailyChallengeRepository
 import com.sualtikasifi.cizimhafiza.util.GameConstants
-import com.sualtikasifi.cizimhafiza.util.PausableTicker
+import com.sualtikasifi.cizimhafiza.util.Countdown
 import com.sualtikasifi.cizimhafiza.util.PostMatchPrompts
 import com.sualtikasifi.cizimhafiza.util.SettingsRepository
 import com.sualtikasifi.cizimhafiza.util.SoundManager
@@ -98,7 +98,9 @@ private data class ActiveMatchSnapshot(
     val revealedHintLetter: String?,
     val drawingHintUsedThisMatch: Boolean,
     val currentGuessTotal: Int,
-    val currentDrawingTotal: Int
+    val currentDrawingTotal: Int,
+    /** Wall-clock time the running countdown ends, so a killed app comes back to a clock that kept running; 0 = none stored. */
+    val deadlineWallMillis: Long = 0L
 )
 
 /**
@@ -334,13 +336,44 @@ class GameViewModel @Inject constructor(
     private var timerJob: Job? = null
 
     /**
-     * Drives every countdown in this ViewModel, and stops them while the app
-     * is backgrounded — see [PausableTicker]. Single-player only: the online
-     * ViewModel deliberately keeps ticking, since real opponents are waiting
-     * and pausing would hand anyone who backgrounds the app free thinking
-     * time.
+     * The time that ran on while the player was away, handed from one countdown to the next.
+     *
+     * Every countdown here runs on a DEADLINE ([Countdown]): it does not stop in the background, on a locked screen or
+     * when the app is closed. If the player comes back after a countdown has already ended, that word is counted as
+     * timed out, and the time they were gone is taken off the next phases too (a word timed out 30 s ago does not give
+     * the next word a fresh 20 s).
      */
-    private val ticker = PausableTicker()
+    private var carryOverMs = 0L
+
+    /** Wall-clock time the running countdown ends; written into every recovery checkpoint (see [ActiveMatchSnapshot.deadlineWallMillis]). */
+    private var deadlineWallMillis = 0L
+
+    /**
+     * Runs one countdown of [startMs] on the monotonic clock, calling [onSecond] each time the shown second changes, and
+     * returns when the time is up. [startMs] may be zero or negative (the time was already used up while away).
+     */
+    private suspend fun runDeadline(startMs: Long, onSecond: (Int) -> Unit) {
+        val endAt = SystemClock.elapsedRealtime() + startMs
+        var shown = Int.MAX_VALUE
+        while (true) {
+            val msLeft = endAt - SystemClock.elapsedRealtime()
+            if (msLeft <= 0) break
+            val left = Countdown.secondsLeft(msLeft)
+            if (left != shown) {
+                shown = left
+                onSecond(left)
+            }
+            delay(Countdown.nextCheckMs(msLeft))
+        }
+        carryOverMs = Countdown.carryFor(SystemClock.elapsedRealtime() - endAt)
+    }
+
+    /** Takes the pending away-time off a countdown of [startSeconds]; the carry is spent by it. */
+    private fun takeStartMs(startSeconds: Int): Long {
+        val ms = Countdown.startMs(startSeconds, carryOverMs)
+        carryOverMs = 0L
+        return ms
+    }
 
     private val recoveryJson = Json { ignoreUnknownKeys = true }
 
@@ -448,6 +481,13 @@ class GameViewModel @Inject constructor(
         currentGuessTotal = snapshot.currentGuessTotal
         currentDrawingTotal = snapshot.currentDrawingTotal
 
+        // The clock kept running while the app was gone: read what is left of the countdown off the wall clock. A
+        // checkpoint written before deadlines were stored has nothing to read, and restarts the full time as before.
+        val remainingMs = Countdown.remainingFromCheckpoint(snapshot.deadlineWallMillis, System.currentTimeMillis())
+        val resumeSeconds: Int? = remainingMs?.let { Countdown.secondsLeft(it) }
+        // Already over while away: the countdown ends at once and the time gone is taken off the phases after it.
+        if (remainingMs != null && remainingMs <= 0L) carryOverMs = Countdown.carryFor(-remainingMs)
+
         val word = words.getOrNull(drawingIndex)
         when (snapshot.stage) {
             RecoveryStage.DRAWING -> {
@@ -464,19 +504,24 @@ class GameViewModel @Inject constructor(
                         isUntimed = true
                     )
                 } else {
-                    val startSecondsLeft = currentDrawingTotal.takeIf { it > 0 }
+                    val startSecondsLeft = resumeSeconds
+                        ?: currentDrawingTotal.takeIf { it > 0 }
                         ?: GameConstants.drawingDurationSeconds(word.difficulty)
                     runDrawingCountdown(word, startSecondsLeft = startSecondsLeft)
                 }
             }
-            RecoveryStage.BREAK -> runBreak()
+            RecoveryStage.BREAK -> runBreakFor(resumeSeconds)
             RecoveryStage.GUESSING -> {
                 if (guessPos !in guessOrder.indices) {
                     viewModelScope.launch { finishGame() }
                     return
                 }
-                guessShownAtMillis = SystemClock.elapsedRealtime()
-                val startSecondsLeft = currentGuessTotal.takeIf { it > 0 } ?: GameConstants.GUESS_DURATION_SECONDS
+                val startSecondsLeft = resumeSeconds
+                    ?: currentGuessTotal.takeIf { it > 0 }
+                    ?: GameConstants.GUESS_DURATION_SECONDS
+                // The speed bonus is measured from when the word was first shown, so the time already gone counts.
+                val total = currentGuessTotal.takeIf { it > 0 } ?: GameConstants.GUESS_DURATION_SECONDS
+                guessShownAtMillis = SystemClock.elapsedRealtime() - (total - startSecondsLeft).coerceAtLeast(0) * 1000L
                 runGuessCountdown(startSecondsLeft = startSecondsLeft)
             }
         }
@@ -495,7 +540,8 @@ class GameViewModel @Inject constructor(
             revealedHintLetter = revealedHintLetter,
             drawingHintUsedThisMatch = drawingHintUsedThisMatch,
             currentGuessTotal = currentGuessTotal,
-            currentDrawingTotal = currentDrawingTotal
+            currentDrawingTotal = currentDrawingTotal,
+            deadlineWallMillis = deadlineWallMillis
         )
         savedStateHandle[RECOVERY_KEY] = recoveryJson.encodeToString(GameRecovery(active = snapshot))
     }
@@ -507,20 +553,6 @@ class GameViewModel @Inject constructor(
     private fun clearRecoverySnapshot() {
         savedStateHandle.remove<String>(RECOVERY_KEY)
     }
-
-    /**
-     * Called from the Screen's lifecycle observer — see GameScreen.
-     *
-     * A Hızlı Eşleş round is NOT paused: it is played "against" someone, so
-     * its clock has to keep running in the background just like the other
-     * player's would — otherwise leaving the app becomes free thinking time.
-     * Offline and daily rounds have nobody to be fair to, so they still pause.
-     */
-    fun onEnterBackground() {
-        if (!isQuickMatch) ticker.pause()
-    }
-
-    fun onEnterForeground() = ticker.resume()
 
     /**
      * Loads this session's word list. Level-map sessions and free-play
@@ -577,6 +609,8 @@ class GameViewModel @Inject constructor(
     }
 
     private fun startSession() {
+        carryOverMs = 0L
+        deadlineWallMillis = 0L
         viewModelScope.launch {
             words = runCatching { loadWords() }.getOrDefault(emptyList())
             if (words.isEmpty()) {
@@ -664,6 +698,7 @@ class GameViewModel @Inject constructor(
                 strokes = currentStrokes.toList(),
                 isUntimed = true
             )
+            deadlineWallMillis = 0L // between countdowns (or untimed): nothing to resume against
             saveActiveSnapshot(RecoveryStage.DRAWING)
             return
         }
@@ -681,7 +716,6 @@ class GameViewModel @Inject constructor(
      */
     private fun runDrawingCountdown(word: Word, startSecondsLeft: Int) {
         timerJob?.cancel()
-        saveActiveSnapshot(RecoveryStage.DRAWING)
         // Sum of every remaining word's OWN drawing time (not this word's
         // break/guess phases, and not later words' break/guess either) —
         // the header clock counts down to when the last drawing finishes,
@@ -691,8 +725,11 @@ class GameViewModel @Inject constructor(
         // through automatically without adjusting this sum separately.
         val laterWordsSeconds = words.drop(drawingIndex + 1).sumOf { GameConstants.drawingDurationSeconds(it.difficulty) }
 
+        val startMs = takeStartMs(startSecondsLeft)
+        deadlineWallMillis = System.currentTimeMillis() + startMs
+        saveActiveSnapshot(RecoveryStage.DRAWING)
         timerJob = viewModelScope.launch {
-            for (secondsLeft in startSecondsLeft downTo 1) {
+            runDeadline(startMs) { secondsLeft ->
                 val isWarning = secondsLeft <= GameConstants.WARNING_THRESHOLD_SECONDS
                 if (isWarning && secondsLeft == GameConstants.WARNING_THRESHOLD_SECONDS) {
                     vibratorHelper.vibrateCountdownWarning()
@@ -710,7 +747,6 @@ class GameViewModel @Inject constructor(
                     hintUsed = drawingHintUsedThisMatch,
                     jokerTimeUsed = timeJokerUsedThisWord
                 )
-                ticker.awaitTick()
             }
             finishDrawingTurn(word)
         }
@@ -775,14 +811,17 @@ class GameViewModel @Inject constructor(
 
     // --- Break phase ---
 
-    private fun runBreak() {
+    private fun runBreak() = runBreakFor(null)
+
+    private fun runBreakFor(resumeSeconds: Int?) {
         timerJob?.cancel()
+        val total = GameConstants.BREAK_DURATION_SECONDS
+        val startMs = takeStartMs(resumeSeconds ?: total)
+        deadlineWallMillis = System.currentTimeMillis() + startMs
         saveActiveSnapshot(RecoveryStage.BREAK)
         timerJob = viewModelScope.launch {
-            val total = GameConstants.BREAK_DURATION_SECONDS
-            for (secondsLeft in total downTo 1) {
+            runDeadline(startMs) { secondsLeft ->
                 _phase.value = GamePhase.Break(secondsLeft = secondsLeft, totalSeconds = total)
-                ticker.awaitTick()
             }
             startGuessPhase()
         }
@@ -830,6 +869,7 @@ class GameViewModel @Inject constructor(
         revealedLetterCount = null
         revealedLetterGroups = null
         currentGuessTotal = GameConstants.GUESS_DURATION_SECONDS
+        deadlineWallMillis = 0L // between countdowns (or untimed): nothing to resume against
         saveActiveSnapshot(RecoveryStage.GUESSING)
         _phase.value = current.copy(skipSavedSeconds = current.secondsLeft)
         soundManager.playCountdownTick()
@@ -848,10 +888,12 @@ class GameViewModel @Inject constructor(
      */
     private fun runGuessCountdown(startSecondsLeft: Int) {
         timerJob?.cancel()
-        saveActiveSnapshot(RecoveryStage.GUESSING)
         val result = results[guessOrder[guessPos]]
+        val startMs = takeStartMs(startSecondsLeft)
+        deadlineWallMillis = System.currentTimeMillis() + startMs
+        saveActiveSnapshot(RecoveryStage.GUESSING)
         timerJob = viewModelScope.launch {
-            for (secondsLeft in startSecondsLeft downTo 1) {
+            runDeadline(startMs) { secondsLeft ->
                 val isWarning = secondsLeft <= GameConstants.WARNING_THRESHOLD_SECONDS
                 if (isWarning && secondsLeft == GameConstants.WARNING_THRESHOLD_SECONDS) {
                     vibratorHelper.vibrateCountdownWarning()
@@ -872,7 +914,6 @@ class GameViewModel @Inject constructor(
                     isRevisit = isRevisitNow(),
                     canSkip = canSkipNow()
                 )
-                ticker.awaitTick()
             }
             submitGuess("") // time's up — counts the same as tapping "Atla"
         }
@@ -993,6 +1034,7 @@ class GameViewModel @Inject constructor(
         revealedLetterCount = null
         revealedLetterGroups = null
         currentGuessTotal = GameConstants.GUESS_DURATION_SECONDS
+        deadlineWallMillis = 0L // between countdowns (or untimed): nothing to resume against
         saveActiveSnapshot(RecoveryStage.GUESSING)
 
         _phase.value = current.copy(
