@@ -2,7 +2,7 @@
 Karalak: Çizim Hafıza Oyunu
 
 # Kısa açıklama
-Çiz, çizdiğini hatırla, yarış! Günlük görev, aylık lig, arkadaşlarla oyun.
+Çiz, hafızanı test et, arkadaşlarınla yarış! Eğlenceli çizim hafıza oyunu!
 
 # Tam açıklama
 Karalak'ta önce çizersin, sonra ne çizdiğini hatırlamaya çalışırsın. Çizmek kolay. Hatırlamak ise sandığından çok daha eğlenceli!

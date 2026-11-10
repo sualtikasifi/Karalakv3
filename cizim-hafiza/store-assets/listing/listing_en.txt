@@ -2,7 +2,7 @@
 Karalak: Drawing Memory Game
 
 # Kısa açıklama
-Draw it, then remember it! Daily challenge, monthly league, play with friends.
+Draw, test your memory, race your friends! A fun drawing memory game!
 
 # Tam açıklama
 In Karalak you draw first, then try to remember what you drew. Drawing is the easy half. Remembering is where the fun begins!

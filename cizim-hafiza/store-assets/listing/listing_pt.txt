@@ -2,7 +2,7 @@
 Karalak: Desenho e Memória
 
 # Kısa açıklama
-Desenhe e depois lembre! Desafio diário, liga mensal e jogos com amigos.
+Desenhe, teste sua memória e dispute com amigos! Jogo de desenho e memória!
 
 # Tam açıklama
 No Karalak você primeiro desenha e depois tenta lembrar o que desenhou. Desenhar é a parte fácil. Lembrar é onde a diversão começa!
