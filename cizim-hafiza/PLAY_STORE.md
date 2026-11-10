@@ -218,9 +218,9 @@ Más de mil palabras en 9 categorías. En español, inglés, portugués y turco.
 Oyun / Kelime Oyunu
 
 ## Grafik varlıkları
-- Uygulama simgesi: `store-assets/play_store_icon_512.png` — 512×512, düz PNG
-  (alfa kanalı yok), mevcut adaptive icon'un (foreground + `launcher_background`)
-  dışa aktarılmış hâli. Play Console'a doğrudan yüklenebilir.
+- Uygulama simgesi: `store-assets/play_store_icon_512.png` — 512×512 PNG, uygulamanın şimdiki
+  ikonu (taçlı köpek madalyonu, `launcher_background` turuncusu üstünde, madalyon tuvalin ~%88'i). Web
+  oyununun `hosting/oyna/icons/icon-512.png` dosyasından üretildi. Play Console'a doğrudan yüklenebilir.
 - Öne çıkan grafik: `store-assets/play_store_feature_graphic_1024x500.png` —
   1024×500, marka renkleri (krem arka plan, turuncu vurgu) ve gerçek logo
   kullanılarak hazırlandı. Play Console'a doğrudan yüklenebilir.
