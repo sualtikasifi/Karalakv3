@@ -52,7 +52,7 @@ export function renderAchievements(c) {
   const earned = all.filter((s) => s.done && s.claimed && !justClaimed.has(s.a.id));
   const progress = all.filter((s) => !s.done).sort((p, q) => frac(q.a, P) - frac(p.a, P));
   const unlocked = all.filter((s) => s.done).length, f = unlocked / list.length, waiting = all.filter((s) => s.claimable).length;
-  list$.append(el("div", "ac-head", `<div class="ac-trophy">🏆</div><div class="ac-ht"><b>${unlocked} / ${list.length}</b><small>${x.count}</small>${waiting ? `<em>${x.waiting(waiting)}</em>` : ""}</div><div class="ac-pct">%${Math.floor(f * 100)}</div><div class="ac-bar"><i style="width:${f * 100}%"></i></div>`));
+  list$.append(el("div", "ac-head", `<div class="ac-ht"><b>${unlocked} / ${list.length}</b><small>${x.count}</small>${waiting ? `<em>${x.waiting(waiting)}</em>` : ""}</div><div class="ac-bar"><i style="width:${Math.max(4, f * 100)}%"></i><span>%${Math.floor(f * 100)}</span></div>`));
   const section = (title, n, accent, action, onAction) => {
     const h = el("div", "ac-sec" + (accent ? " acc" : ""), `<span class="st">${title}<b>${n}</b></span>`);
     if (action) { const b = el("button", "ac-all", `<span>${action}</span>`); b.onclick = onAction; h.append(b); }

@@ -274,58 +274,40 @@ private fun AchievementProgressHeader(unlockedCount: Int, total: Int, waiting: I
         edge = 34.dp,
         modifier = modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 30.dp, vertical = 20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .background(Color(0xFFFFE9B0), CircleShape)
-                        .border(2.dp, Color(0xFFE0A030), CircleShape)
-                ) {
-                    Text(text = "\uD83C\uDFC6", style = PaintedStyle(fontSize = 22.sp, textAlign = TextAlign.Center))
-                }
-                Spacer(modifier = Modifier.size(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.achievements_progress_count_format, unlockedCount, total),
-                        style = PaintedStyle(color = InkBrown, fontSize = 24.sp),
-                        maxLines = 1
-                    )
-                    Text(
-                        text = stringResource(R.string.achievements_progress_caption),
-                        style = PaintedStyle(color = DescriptionInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
-                        maxLines = 1
-                    )
-                    if (waiting > 0) Text(
-                        text = stringResource(R.string.achievements_waiting_format, waiting),
-                        style = PaintedStyle(color = Color(0xFFB8740A), fontSize = 13.sp),
-                        maxLines = 1
-                    )
-                }
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .background(Brush.verticalGradient(listOf(Color(0xFFFFA64D), ButtonOrange)), PillShape)
-                        .border(1.5.dp, Color(0xFFB04A0E), PillShape)
-                        .padding(horizontal = 12.dp, vertical = 4.dp)
-                ) {
-                    LetteredText(stringResource(R.string.achievements_progress_percent, (fraction * 100).toInt()), 16.sp)
-                }
-            }
+        // No trophy badge: the painted panel has its own splashes at both ends, so the text sits centred between them.
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(start = 40.dp, end = 40.dp, top = 22.dp, bottom = 22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(R.string.achievements_progress_count_format, unlockedCount, total),
+                style = PaintedStyle(color = InkBrown, fontSize = 30.sp, textAlign = TextAlign.Center),
+                maxLines = 1
+            )
+            Text(
+                text = stringResource(R.string.achievements_progress_caption),
+                style = PaintedStyle(color = DescriptionInk, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
+                maxLines = 1
+            )
+            if (waiting > 0) Text(
+                text = stringResource(R.string.achievements_waiting_format, waiting),
+                style = PaintedStyle(color = Color(0xFFB8740A), fontSize = 14.sp, textAlign = TextAlign.Center),
+                maxLines = 1
+            )
             Spacer(modifier = Modifier.height(10.dp))
+            // The bar carries the percentage inside it.
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(12.dp)
-                    .background(Color(0xFFE2CDAA), PillShape)
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxWidth().height(22.dp).background(Color(0xFFE2CDAA), PillShape).border(1.5.dp, Color(0xFFB9976A), PillShape)
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(fraction.coerceIn(0f, 1f))
-                        .height(12.dp)
+                        .align(Alignment.CenterStart)
+                        .fillMaxWidth(fraction.coerceIn(0.04f, 1f))
+                        .height(22.dp)
                         .background(Brush.verticalGradient(listOf(Color(0xFFFFD04D), Color(0xFFF5A300))), PillShape)
                 )
+                LetteredText(stringResource(R.string.achievements_progress_percent, (fraction * 100).toInt()), 13.sp, outline = Color(0xFF8A4A00))
             }
         }
     }
