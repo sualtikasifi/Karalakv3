@@ -129,6 +129,13 @@ internal fun ElevenSettings(st: StudioState, vm: StudioViewModel) {
     Field("Ses ID (Voice Design ile yaptığın sesin ID'si)", e.voiceId, vm::setElevenVoice)
     e.status?.let { Text(it, style = Console.Small, modifier = Modifier.padding(top = 4.dp)) }
 
+    ElevenVoicing(st, vm)
+}
+
+/** The one place a whole script is sent to ElevenLabs, and only on a tap: how many lines are voiced, and the button for the rest. */
+@Composable
+internal fun ElevenVoicing(st: StudioState, vm: StudioViewModel) {
+    val e = st.eleven
     // the only place a whole script is sent to ElevenLabs, and only on a tap
     if (e.ready + e.missing > 0) {
         Text("Seslendirme: ${e.ready} cümle hazır · ${e.missing} eksik", style = Console.Subtitle, modifier = Modifier.padding(top = 10.dp))

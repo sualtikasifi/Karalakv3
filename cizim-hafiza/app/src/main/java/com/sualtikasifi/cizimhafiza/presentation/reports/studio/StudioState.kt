@@ -183,7 +183,9 @@ data class ForgotUi(
     /** How many of the phone's drawings the list shows: [FORGOT_PAGE] at first, that many more each time "Daha fazla" is pressed. */
     val shown: Int = FORGOT_PAGE,
     /** The wording of the on-screen texts: one picked by hand, or null to let the three take turns from video to video. */
-    val styleChoice: ForgotStyle? = null
+    val styleChoice: ForgotStyle? = null,
+    /** Which of the nine screens of the Düello is open (1..[FORGOT_STEPS]); kept on this phone. */
+    val step: Int = 1
 )
 
 /** "Gerçek Olsaydı": the pool's latest drawings, and the project (the chosen drawings of different words) on this phone. */
@@ -251,12 +253,24 @@ data class RealUi(
 
 enum class RealTab { Prepare, Library, Settings }
 
+/** What the studio shows: the video being made, step by step, or one of the pages beside it. */
+enum class StudioPage { Make, Library, Log, Settings }
+
+/** The number of screens of the Düello and of "Gerçek Olsaydı" (see StudioPanel). */
+const val FORGOT_STEPS = 9
+const val REAL_STEPS = 16
+/** The screens of "Gerçek Olsaydı" with the lines to voice (hook, narrator, closing, music, end line), and its preview. */
+const val REAL_FIRST_VOICE_STEP = 10
+const val REAL_PREVIEW_STEP = 15
+
 enum class ShareTarget { ChatGpt, Gemini }
 
 class RealShare(val file: File, val prompt: String, val target: ShareTarget = ShareTarget.ChatGpt)
 
 data class StudioState(
     val format: StudioFormat = StudioFormat.RealLife,
+    /** Which page is open: the steps of the video, the library, the log of made videos, or the settings. */
+    val page: StudioPage = StudioPage.Make,
     val loading: Boolean = true,
     /** This phone's own drawings. */
     val drawings: List<StudioDrawing> = emptyList(),

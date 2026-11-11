@@ -99,7 +99,7 @@ fun StudioViewModel.openForgotDraft(id: Long, announce: Boolean = true) {
         prefs().edit().putLong(LAST_DRAFT, id).apply()
         _state.update { s ->
             s.copy(
-                format = StudioFormat.Forgot, caption = d.caption, hashtags = d.hashtags, video = video, renderError = null, previewMs = 0L,
+                format = StudioFormat.Forgot, page = if (announce) StudioPage.Make else s.page, caption = d.caption, hashtags = d.hashtags, video = video, renderError = null, previewMs = 0L,
                 openedDraft = if (announce) s.openedDraft + 1 else s.openedDraft,
                 forgot = s.forgot.copy(
                     drawingId = d.drawingId, draftDrawing = d.drawing(), draftId = d.id, script = d.script, done = d.done,
@@ -108,7 +108,9 @@ fun StudioViewModel.openForgotDraft(id: Long, announce: Boolean = true) {
                     gold = d.gold, xp = d.xp, maxUses = d.maxUses, expiresAtMillis = d.expiresAtMillis, shownCode = d.shownCode.ifBlank { s.forgot.shownCode },
                     styleChoice = d.styleChoice?.let { n -> runCatching { ForgotStyle.valueOf(n) }.getOrNull() },
                     music = d.music, musicVolume = d.musicVolume, draftVideo = d.video, draftVideoFingerprint = d.videoFingerprint,
-                    writeError = null, couponStatus = null
+                    writeError = null, couponStatus = null,
+                    // a draft opened from the log goes to the lines (the drawing, the code and the reward are already set)
+                    step = if (announce) 4 else s.forgot.step
                 )
             )
         }
@@ -128,7 +130,7 @@ fun StudioViewModel.openLogEntry(e: PublishEntry) {
         e.draftId != 0L -> openForgotDraft(e.draftId)
         e.format == "Gerçek Olsaydı" -> {
             setFormat(StudioFormat.RealLife)
-            _state.update { it.copy(openedDraft = it.openedDraft + 1, message = "Gerçek Olsaydı projesi kayıtlı; kaldığın yerden devam edebilirsin.") }
+            _state.update { it.copy(page = StudioPage.Make, openedDraft = it.openedDraft + 1, message = "Gerçek Olsaydı projesi kayıtlı; kaldığın yerden devam edebilirsin.") }
         }
         else -> _state.update { it.copy(message = "Bu eski kaydın taslağı tutulmamış.") }
     }

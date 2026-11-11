@@ -102,6 +102,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.ENDING
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.TAB
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.STEP
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.FLOW_STEP
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.VOICE_STEP
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.MUSIC_ON
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.HOWTO_ON
@@ -165,7 +166,7 @@ internal fun StudioViewModel.loadReal() {
         val ending = runCatching { RealEnding.valueOf(prefs.getString(ENDING, null).orEmpty()) }.getOrDefault(RealEnding.Card)
         val platform = SocialPlatform.of(prefs.getString(PLATFORM, null))
         val tab = runCatching { RealTab.valueOf(prefs.getString(TAB, null).orEmpty()) }.getOrDefault(RealTab.Prepare)
-        updateReal { it.copy(tab = tab, step = prefs.getInt(STEP, 1).coerceIn(1, 7), voiceStep = prefs.getInt(VOICE_STEP, 1).coerceIn(1, 5), project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media }), ending = ending, musicOn = prefs.getBoolean(MUSIC_ON, true), platform = platform, customMusic = RealMusic.custom(context)) }
+        updateReal { it.copy(tab = tab, step = prefs.getInt(FLOW_STEP, 1).coerceIn(1, REAL_STEPS), voiceStep = prefs.getInt(VOICE_STEP, 1).coerceIn(1, 5), project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media }), ending = ending, musicOn = prefs.getBoolean(MUSIC_ON, true), platform = platform, customMusic = RealMusic.custom(context)) }
         restoreForgotMusic(RealMusic.custom(context))
         p?.let { loadRealMedia(it) }
         loadPromo()
@@ -186,19 +187,30 @@ internal suspend fun StudioViewModel.loadHowto(on: Boolean) {
     refreshPreview()
 }
 
-/** Which part of the panel is open: the steps, the library or the settings. Kept on this phone. */
+/** Which page of the studio is open: the steps, the library or the settings. Kept on this phone. */
 fun StudioViewModel.setRealTab(tab: RealTab) {
     prefs().edit().putString(TAB, tab.name).apply()
     updateReal { it.copy(tab = tab) }
+    setPage(when (tab) { RealTab.Prepare -> StudioPage.Make; RealTab.Library -> StudioPage.Library; RealTab.Settings -> StudioPage.Settings })
 }
 
-/** Goes to one of the seven steps. Kept on this phone, so the work is picked up where it was left. */
+/** Opens one of the studio's pages (the video's steps, the library, the log, the settings). */
+fun StudioViewModel.setPage(page: StudioPage) {
+    _state.update { it.copy(page = page) }
+}
+
+/** Goes to one of the [REAL_STEPS] screens. Kept on this phone, so the work is picked up where it was left. */
 fun StudioViewModel.setRealStep(step: Int) {
-    val n = step.coerceIn(1, 7)
-    prefs().edit().putInt(STEP, n).apply()
+    val n = step.coerceIn(1, REAL_STEPS)
+    prefs().edit().putInt(FLOW_STEP, n).apply()
     updateReal { it.copy(step = n) }
-    // the preview follows the step: the voice being set, the clip with the card on it, the start
-    when (n) { 5 -> previewVoiceStep(_state.value.real.voiceStep); 6 -> previewLine(RealLine.Narration); 7 -> setPreviewTime(0L); else -> Unit }
+    // the preview follows the screen: the voice being set, the clip with the card on it, the start
+    when (n) {
+        in REAL_FIRST_VOICE_STEP until REAL_FIRST_VOICE_STEP + 5 -> setVoiceStep(n - REAL_FIRST_VOICE_STEP + 1)
+        9 -> previewLine(RealLine.Narration)
+        REAL_PREVIEW_STEP -> setPreviewTime(0L)
+        else -> Unit
+    }
 }
 
 /** Goes to one of the five voice steps (hook, narrator, closing, music, the line over the end card). */
@@ -891,9 +903,10 @@ fun StudioViewModel.libraryMakeVideo() {
     val items = r.librarySelected.mapNotNull { id -> r.library.find { it.id == id } }.filter { it.hasClip }
     if (items.isEmpty()) { _state.update { it.copy(message = "Önce videosu olan kayıtları seç") }; return }
     val project = RealProject(drawings = items.map { it.drawing }, reveals = items.map { it.reveal })
-    updateReal { it.copy(project = project, librarySelected = emptyList(), libraryShown = false, tab = RealTab.Prepare, step = 7) }
-    prefs().edit().putString(TAB, RealTab.Prepare.name).putInt(STEP, 7).apply()
-    _state.update { it.copy(video = null, previewMs = 0L, message = if (items.size == 1) "Hazır; aşağıdan videoyu oluştur" else "${items.size} kayıt alındı; video en üsttekiyle yapılır (Başa al ile değiştir)") }
+    updateReal { it.copy(project = project, librarySelected = emptyList(), libraryShown = false, tab = RealTab.Prepare, step = REAL_PREVIEW_STEP) }
+    prefs().edit().putString(TAB, RealTab.Prepare.name).putInt(FLOW_STEP, REAL_PREVIEW_STEP).apply()
+    setPage(StudioPage.Make)
+    _state.update { it.copy(video = null, previewMs = 0L, message = if (items.size == 1) "Hazır; önizleyip videoyu oluştur" else "${items.size} kayıt alındı; video en üsttekiyle yapılır (Başa al ile değiştir)") }
     viewModelScope.launch { withContext(Dispatchers.IO) { runCatching { realStore.save(project) } } }
     loadRealMedia(project)
     refreshPreview()

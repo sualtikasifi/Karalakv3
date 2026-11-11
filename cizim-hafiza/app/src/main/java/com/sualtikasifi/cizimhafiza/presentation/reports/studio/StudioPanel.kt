@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,9 +62,9 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.ElevenLabs
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.mascot.MascotEmotion
 
 /**
- * The video studio screen. Each format runs top to bottom — choose the drawings, let Karalak write
- * its lines, adjust any of them — and then the shared steps: the voice, a look at any moment of
- * the video, making it, sharing it.
+ * The video studio screen. A video is made screen by screen (see [StepFlow]): each screen holds one job, with "Geri" and "İleri"
+ * fixed at the bottom, so nothing has to be scrolled to. Beside the steps are the library, the log of made videos and the
+ * settings (the model, Karalak's voice, the poses), which are set once and left.
  */
 @Composable
 fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
@@ -104,63 +103,106 @@ fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
         )
     }
 
-    val listState = rememberLazyListState()
-    // a draft opened from the log shows from its top
-    LaunchedEffect(st.openedDraft) { if (st.openedDraft > 0) listState.animateScrollToItem(0) }
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(bottom = 28.dp)
-    ) {
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Karalak'lı dikey videolar · 1080×2400 · sesli", style = Console.Label, modifier = Modifier.weight(1f))
+    Column(Modifier.fillMaxSize()) {
+        // the format and the page on top; what each is made of is below, one screen at a time
+        Segmented(
+            options = StudioFormat.entries.map { it.name to it.title },
+            selected = st.format.name,
+            onSelect = { viewModel.setFormat(StudioFormat.valueOf(it)) },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(8.dp))
+        val pages = buildList {
+            add(StudioPage.Make.name to "Video")
+            if (st.format == StudioFormat.RealLife) add(StudioPage.Library.name to "Kütüphane (${st.real.library.size})")
+            add(StudioPage.Log.name to "Geçmiş")
+            add(StudioPage.Settings.name to "Ayarlar")
+        }
+        // the library belongs to "Gerçek Olsaydı": on the other format its page falls back to the video
+        val page = if (st.page == StudioPage.Library && st.format != StudioFormat.RealLife) StudioPage.Make else st.page
+        Segmented(
+            options = pages,
+            selected = page.name,
+            onSelect = { viewModel.setPage(StudioPage.valueOf(it)) },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(10.dp))
+        when (page) {
+            StudioPage.Make -> when (st.format) {
+                StudioFormat.Forgot -> StepFlow(forgotFlow(st, viewModel, context), st.forgot.step - 1, { viewModel.setForgotStep(it + 1) })
+                StudioFormat.RealLife -> StepFlow(realFlow(st, viewModel, context), st.real.step - 1, { viewModel.setRealStep(it + 1) })
             }
-        }
-        item {
-            Segmented(
-                options = StudioFormat.entries.map { it.name to it.title },
-                selected = st.format.name,
-                onSelect = { viewModel.setFormat(StudioFormat.valueOf(it)) },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-        item {
-            Column {
-                Text("Video dili · ${st.lang.named}", style = Console.Label)
-                Text("Karalak'ın söylediği cümleler, ses ve gönderi metni bu dilde yazılır. Ekrandaki sabit yazılar şimdilik Türkçe.", style = Console.Small)
-                Spacer(Modifier.height(6.dp))
-                Segmented(
-                    options = StudioLang.entries.map { it.name to it.label },
-                    selected = st.lang.name,
-                    onSelect = { viewModel.setLang(StudioLang.valueOf(it)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
+            StudioPage.Library -> PageList { libraryTab(st, viewModel) }
+            StudioPage.Log -> PageList { trackingItems(st, viewModel) }
+            StudioPage.Settings -> PageList {
+                languageItems(st, viewModel)
+                settingsTab(st, viewModel)
+                mascotItems(st, viewModel)
             }
-        }
-        when (st.format) {
-            StudioFormat.Forgot -> { forgotSections(st, viewModel); sharedSections(st, viewModel, context) }
-            StudioFormat.RealLife -> realSections(st, viewModel, context)
         }
     }
 }
 
-/** Voice, mascot artwork, preview, making the video and the result: the same for every format. */
-internal fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, context: Context) {
-    val real = st.format == StudioFormat.RealLife
-    // "Gerçek Olsaydı": only the hook is ever said aloud, and only in ElevenLabs; its settings are here
-    if (real) item { Step("♪", "Karalak'ın sesi (ElevenLabs)") }
-    if (real) item {
-        ConsoleCard(Modifier.fillMaxWidth()) {
-            Text("Kancalar bu sesle seslendirilir. Ayarı değiştirirsen kanca yeniden seslendirilir; videoya eklenmiş ses değişmez.", style = Console.Small)
-            ElevenSettings(st, vm)
-            st.voiceError?.let { Text(it, style = Console.Small.copy(color = Console.Critical)) }
+/** A page beside the steps (library, log, settings): an ordinary list that scrolls. */
+@Composable
+private fun PageList(content: LazyListScope.() -> Unit) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 28.dp),
+        content = content
+    )
+}
+
+/** The language of the videos: what the assistant writes in and what the voice speaks. Chosen at the first step of each video. */
+internal fun LazyListScope.languageItems(st: StudioState, vm: StudioViewModel) {
+    item {
+        Column {
+            Text("Video dili · ${st.lang.named}", style = Console.Label)
+            Text("Karalak'ın söylediği cümleler, ses ve gönderi metni bu dilde yazılır. Ekrandaki sabit yazılar şimdilik Türkçe.", style = Console.Small)
+            Spacer(Modifier.height(6.dp))
+            Segmented(
+                options = StudioLang.entries.map { it.name to it.label },
+                selected = st.lang.name,
+                onSelect = { vm.setLang(StudioLang.valueOf(it)) },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
-    // 4. voice (the "Gerçek Olsaydı" video says only its hook: see above)
-    if (!real) item { Step("♪", "Ses") }
-    if (!real) item {
+}
+
+/**
+ * "Ödüllü Karalak Düellosu" screen by screen: 1 drawing · 2 how the code is given · 3 reward and coupon · 4 hook ·
+ * 5 guesses · 6 closing · 7 voice and music · 8 preview · 9 make and share.
+ */
+internal fun forgotFlow(st: StudioState, vm: StudioViewModel, context: Context): List<FlowStep> {
+    val f = st.forgot
+    val script = f.script
+    val chosen = script != null
+    val steps = listOf<FlowStep>(
+        FlowStep("Çizim", "Çizimi seç", chosen, if (chosen) null else "Devam etmek için bir çizim seç.", blocksNext = !chosen) {
+            languageItems(st, vm)
+            forgotStepDrawing(st, vm)
+        },
+        FlowStep("Kod", "Kod nasıl verilsin?", script?.code?.isNotBlank() == true) { forgotStepCode(st, vm) },
+        FlowStep("Ödül", "Ödül ve kupon", f.couponStatus?.startsWith("Kupon hazır") == true) { forgotStepReward(st, vm) },
+        FlowStep("Kanca", "Karalak yazsın: açılış cümlesi", script?.hook?.text?.isNotBlank() == true) { forgotStepHook(st, vm) },
+        FlowStep("Tahminler", "Tahminler", script != null && script.guesses.isNotEmpty()) { forgotStepGuesses(st, vm) },
+        FlowStep("Kapanış", "Soru, tepki ve kapanış", script?.outro?.text?.isNotBlank() == true) { forgotStepClosing(st, vm) },
+        FlowStep("Ses", "Ses ve müzik", st.voiceOn && f.music != null) { forgotStepSound(st, vm) },
+        FlowStep("Önizleme", "Önizle", false) { item { PreviewCard(st, vm) } },
+        FlowStep("Üret", "Videoyu oluştur ve paylaş", st.video != null) {
+            renderItems(st, vm)
+            resultItems(st, vm, context)
+        }
+    )
+    check(steps.size == FORGOT_STEPS) { "the Düello has $FORGOT_STEPS screens" }
+    return steps
+}
+
+/** Whether Karalak speaks, with which engine, and what is still to be voiced (the Düello's voice screen). */
+internal fun LazyListScope.voiceItems(st: StudioState, vm: StudioViewModel) {
+    item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -177,8 +219,11 @@ internal fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, 
                     onSelect = { vm.setVoiceEngine(VoiceEngine.valueOf(it)) },
                     modifier = Modifier.fillMaxWidth()
                 )
-                if (st.voiceEngine == VoiceEngine.ElevenLabs) ElevenSettings(st, vm)
-                else {
+                if (st.voiceEngine == VoiceEngine.ElevenLabs) {
+                    // what is still to be voiced stays here; the key, the model and the voice are in the settings
+                    ElevenVoicing(st, vm)
+                    SmallLink("Ses ayarları (anahtar, model, ses)") { vm.setPage(StudioPage.Settings) }
+                } else {
                     LabeledSlider("Ses inceliği", st.voicePitch, 0.8f..1.7f) { vm.setVoice(it, st.voiceRate) }
                     LabeledSlider("Konuşma hızı", st.voiceRate, 0.8f..1.4f) { vm.setVoice(st.voicePitch, it) }
                 }
@@ -189,10 +234,12 @@ internal fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, 
             st.voiceError?.let { Text(it, style = Console.Small.copy(color = Console.Critical)) }
         }
     }
+}
 
-    // 5. mascot artwork
-    if (!real) item { Step("☺", "Karalak'ın pozları") }
-    if (!real) item {
+/** Karalak's poses for the Düello: how many are loaded, and a button to read them again. */
+internal fun LazyListScope.mascotItems(st: StudioState, vm: StudioViewModel) {
+    item { Step("☺", "Karalak'ın pozları (Düello)") }
+    item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -207,11 +254,6 @@ internal fun LazyListScope.sharedSections(st: StudioState, vm: StudioViewModel, 
             }
         }
     }
-
-    previewItems(st, vm)
-    renderItems(st, vm)
-    resultItems(st, vm, context)
-    trackingItems(st, vm)
 }
 
 /** The preview's step and card, for the formats that show it as a section of their own. */
