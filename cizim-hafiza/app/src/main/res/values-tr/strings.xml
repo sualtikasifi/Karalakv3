@@ -812,7 +812,7 @@
     <string name="duel_rematch_action">Geri Meydan Oku</string>
     <string name="duel_challenge_sent">%1$s kişisine meydan okuma olarak gönderildi!</string>
     <string name="duel_create_title">Meydan Oku</string>
-    <string name="duel_create_opponent">%1$s ile düello</string>
+    <string name="duel_create_opponent">%1$s ile Düello</string>
     <string name="duel_create_explainer">Şimdi normal bir tur oyna — çizimlerin bittiğinde otomatik olarak %1$s kişisine bir meydan okuma olarak gönderilecek. O, uygulamayı bir sonraki açtığında aynı kelimelerle kendi çizimlerini yapıp tahmin edecek; sonuçlarınız karşılaştırılacak.</string>
     <string name="duel_create_start">Turu Başlat</string>
     <string name="duel_list_title">Düellolar</string>
@@ -1828,5 +1828,5 @@
 
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_page_title">Bil Bakalım</string>
-    <string name="duel_create_streak_hint">🔥 Her gün bir düello tamamlanırsa arkadaş seriniz büyür.</string>
+    <string name="duel_create_streak_hint">Her gün bir düello tamamlanırsa arkadaş seriniz büyür.</string>
 </resources>

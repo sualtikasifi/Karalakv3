@@ -1815,5 +1815,5 @@
 
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_page_title">Guess It</string>
-    <string name="duel_create_streak_hint">🔥 Finish a duel together every day and your friend streak grows.</string>
+    <string name="duel_create_streak_hint">Finish a duel together every day and your friend streak grows.</string>
 </resources>

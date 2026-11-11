@@ -1816,5 +1816,5 @@
 
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_page_title">Adivinha</string>
-    <string name="duel_create_streak_hint">🔥 Completem um duelo por dia e a sequência de amigos cresce.</string>
+    <string name="duel_create_streak_hint">Completem um duelo por dia e a sequência de amigos cresce.</string>
 </resources>

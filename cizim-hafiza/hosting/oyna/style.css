@@ -1159,3 +1159,20 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #age-gate .ag-acc a{color:#b5510f;font-weight:700}
 #age-gate .pill{width:100%;height:calc(var(--u)*110)}
 #age-gate .pill.dis{opacity:.5}
+
+/* The challenge page (duel.js openCreateDuel): the painted scene with the texts laid over it, in the picture's own units (--k = one unit) */
+.dc-scene{position:absolute;inset:0;z-index:60;overflow:hidden;background:#2a1233}
+.dc-board{position:absolute;top:0}.dc-bg{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.dc-board>button,.dc-t,.dc-counts{position:absolute;box-sizing:border-box}
+.dc-back,.dc-go{background:none;border:0;padding:0}.dc-go:active,.dc-back:active{opacity:.85}
+.dc-t{display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;line-height:1.14;pointer-events:none;overflow:hidden}
+.dc-t.body{color:#5a2815;font-weight:700}
+.dc-t.clip span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.dc-t.lt{color:#fff;-webkit-text-stroke:calc(var(--k)*9) #5a2815;paint-order:stroke fill;white-space:nowrap}
+.dc-t.lt.pu{-webkit-text-stroke-color:#3c1568;-webkit-text-stroke-width:calc(var(--k)*7)}.dc-t.lt.go{-webkit-text-stroke-color:#8a3a00}
+.dc-counts{display:flex;gap:calc(var(--k)*16)}
+.dc-counts button{position:relative;flex:1;border-radius:calc(var(--k)*28);background:linear-gradient(#fffaee,#f6e3be);border:calc(var(--k)*4) solid #c9a36b;color:#2b1a4a;font-weight:800;box-shadow:0 calc(var(--k)*6) calc(var(--k)*10) #0004;transition:transform .1s}
+.dc-counts button:active{transform:scale(.94)}
+.dc-counts button.on{background:linear-gradient(#ffb347,#f47721);border-color:#b04a0e;color:#fff;-webkit-text-stroke:calc(var(--k)*8) #8a3a00;paint-order:stroke fill}
+.dc-counts button span{font-size:inherit}
+.dc-counts button i{position:absolute;right:calc(var(--k)*-8);top:calc(var(--k)*-14);width:calc(var(--k)*40);height:calc(var(--k)*40);border-radius:50%;background:#f47721;border:calc(var(--k)*3) solid #fff;color:#fff;-webkit-text-stroke:0;font-style:normal;display:flex;align-items:center;justify-content:center;font-size:calc(var(--k)*24)}
