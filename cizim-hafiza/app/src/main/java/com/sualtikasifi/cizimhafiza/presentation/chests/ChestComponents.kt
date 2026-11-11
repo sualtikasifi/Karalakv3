@@ -352,8 +352,11 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                 fun fs(art: Float) = (art * u.value / fontScale0).sp
                 fun Modifier.at(x: Float, y: Float, w: Float, h: Float) = this.offset(u * x, u * y).size(u * w, u * h)
                 val compact = extras.isEmpty()
-                val heroY = if (compact) 1000f else 915f
-                val amountY = if (compact) 1235f else 1110f
+                // Gold alone fills the board with a bigger chest and plaque; with extras they move up to leave the cards their row.
+                val heroY = if (compact) 1010f else 900f
+                val heroSize = if (compact) 380f else 270f
+                val amountY = if (compact) 1375f else 1112f
+                val plaqueH = if (compact) 170f else 132f
 
                 // Behind everything, full-screen: the light, the rays and the loot still falling from the video.
                 Canvas(Modifier.fillMaxSize().graphicsLayer { alpha = fadeIn.value }) {
@@ -407,36 +410,63 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                             scaleX = ribbon.value.coerceAtLeast(0f); alpha = ribbon.value.coerceIn(0f, 1f)
                         }
                     )
-                    // The gold: an overflowing chest with sparkles round it, then the amount counting up.
+                    // The gold: an overflowing chest on a turning disc of light with sparkles round it...
                     Box(
-                        Modifier.at(310f, heroY - 175f, 460f, 350f).graphicsLayer {
+                        Modifier.at(540f - heroSize, heroY - heroSize * 0.78f, heroSize * 2f, heroSize * 1.56f).graphicsLayer {
                             val s = hero.value.coerceAtLeast(0f); scaleX = s; scaleY = s
                         },
                         contentAlignment = Alignment.Center
                     ) {
-                        Image(painterResource(R.drawable.rune_n_chest_gold), null, modifier = Modifier.size(u * 290f))
+                        Canvas(Modifier.fillMaxSize()) { drawHeroGlow(heroSize * 0.74f * u.toPx(), -rayAngle * 2f) }
+                        Image(painterResource(R.drawable.rune_n_chest_gold), null, modifier = Modifier.size(u * heroSize))
                         Canvas(Modifier.fillMaxSize()) { drawSparkles(twinkle, u.toPx()) }
                     }
-                    Row(
-                        Modifier.at(0f, amountY - 70f, BOARD_W, 140f).graphicsLayer { alpha = hero.value.coerceIn(0f, 1f) },
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                    // ...and what it paid, on a plaque of its own: the coin, the amount counting up, and what it is on a tag.
+                    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+                    val plaqueW = if (compact) 620f else 520f
+                    val plaqueShape = androidx.compose.foundation.shape.RoundedCornerShape(50)
+                    Box(
+                        Modifier.at((BOARD_W - plaqueW) / 2f, amountY - plaqueH / 2f, plaqueW, plaqueH + 34f).graphicsLayer {
+                            alpha = hero.value.coerceIn(0f, 1f)
+                            val s = 0.9f + 0.1f * hero.value.coerceIn(0f, 1.2f); scaleX = s; scaleY = s
+                        }
                     ) {
-                        Image(painterResource(R.drawable.icon_gold_coin), null, modifier = Modifier.size(u * 100f))
-                        Spacer(Modifier.width(u * 10f))
-                        val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
-                        val format = remember(locale) { java.text.NumberFormat.getIntegerInstance(locale) }
-                        RewardLettering(
-                            text = "+" + format.format(count.value.toInt()),
-                            size = fs(120f),
-                            top = Color(0xFFFFF6AA), bottom = Color(0xFFFFA514), outline = Color(0xFF5A2805)
-                        )
+                        Row(
+                            Modifier
+                                .fillMaxWidth().height(u * plaqueH)
+                                .shadow(u * 12f, plaqueShape, ambientColor = Color(0xFF6E3C0A), spotColor = Color(0xFF6E3C0A))
+                                .background(Brush.verticalGradient(listOf(Color(0xFFFFF7D6), Color(0xFFFFD877))), plaqueShape)
+                                .border(u * 6f, Color(0xFF784610), plaqueShape)
+                                .padding(u * 9f)
+                                .border(u * 4f, Color(0xFFFFF8D8), plaqueShape)
+                                .padding(start = u * 10f, end = u * 34f),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Image(painterResource(R.drawable.icon_gold_coin), null, modifier = Modifier.size(u * (plaqueH - 44f)))
+                            Spacer(Modifier.width(u * 14f))
+                            val format = remember(locale) { java.text.NumberFormat.getIntegerInstance(locale) }
+                            RewardLettering(
+                                text = "+" + format.format(count.value.toInt()),
+                                size = fs(plaqueH * 0.62f),
+                                top = Color(0xFFFFFDF0), bottom = Color(0xFFFFE9A8), outline = Color(0xFF5A2805),
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                        }
+                        // the tag hangs off the plaque's lower edge, like the count tags of the cards below
+                        Box(
+                            Modifier.align(Alignment.BottomCenter)
+                                .size(u * 190f, u * 60f)
+                                .background(Color(0xFFFF781E), plaqueShape)
+                                .border(u * 5f, Color(0xFF6E2800), plaqueShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            RewardLettering(
+                                stringResource(R.string.chests_reward_gold_label).uppercase(locale), fs(34f),
+                                Color.White, Color(0xFFFFEBC8), Color(0xFF6E2800), Modifier.fillMaxSize(0.84f)
+                            )
+                        }
                     }
-                    Text(
-                        text = stringResource(R.string.chests_reward_gold_label).uppercase(androidx.compose.ui.platform.LocalConfiguration.current.locales[0]),
-                        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color(0xFF965A14), fontSize = fs(40f), textAlign = TextAlign.Center),
-                        modifier = Modifier.at(0f, amountY + 52f, BOARD_W, 56f).graphicsLayer { alpha = hero.value.coerceIn(0f, 1f) }
-                    )
                     if (!compact) {
                         Canvas(Modifier.at(220f, 1232f, 640f, 20f).graphicsLayer { alpha = board.value.coerceIn(0f, 1f) }) {
                             drawLine(
@@ -748,6 +778,26 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSparkles(t: Flo
         drawSparkle(c, r * unit * (0.7f + 0.3f * a), Color.White.copy(alpha = a))
         drawSparkle(c, r * unit * 0.5f * (0.7f + 0.3f * a), Color(0xFFFFE68C).copy(alpha = a))
     }
+}
+
+/** The light the chest sits on: a soft golden disc, a brighter core and short rays turning slowly behind it. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawHeroGlow(radius: Float, angle: Float) {
+    val c = center
+    drawCircle(Brush.radialGradient(listOf(Color(0xCCFFE28A), Color(0x66FFD25A), Color.Transparent), c, radius * 1.25f), radius * 1.25f, c)
+    withTransform({ rotate(angle, c) }) {
+        for (i in 0 until 12) {
+            val ang = i * 30f * (PI.toFloat() / 180f)
+            val half = PI.toFloat() / 30f
+            val path = Path().apply {
+                moveTo(c.x, c.y)
+                lineTo(c.x + cos(ang - half) * radius * 1.3f, c.y + sin(ang - half) * radius * 1.3f)
+                lineTo(c.x + cos(ang + half) * radius * 1.3f, c.y + sin(ang + half) * radius * 1.3f)
+                close()
+            }
+            drawPath(path, Brush.radialGradient(listOf(Color(0x99FFFFFF), Color(0x55FFE9A0), Color.Transparent), c, radius * 1.3f))
+        }
+    }
+    drawCircle(Brush.radialGradient(listOf(Color(0xE6FFFBE0), Color(0x00FFF3B0)), c, radius * 0.7f), radius * 0.7f, c)
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSparkle(c: Offset, r: Float, color: Color) {
