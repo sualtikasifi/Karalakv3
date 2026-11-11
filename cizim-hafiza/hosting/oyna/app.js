@@ -1102,7 +1102,7 @@ $("ak-back").onclick = () => show("settings");
 $("rp-back").onclick = () => show("settings");
 const _oldSettings = () => {
   const mk = (code, label) => { const b = document.createElement("button"); b.className = "chip" + (lang === code ? " on" : ""); b.textContent = label; b.onclick = () => { lang = code; applyLang(); $("dialog").classList.add("hidden"); $("dlg-no").style.display = ""; $("dlg-extra").replaceChildren(); }; return b; };
-  msg(t().langTitle, [mk("tr", "Türkçe"), mk("en", "English"), mk("pt", "Português"), mk("es", "Español")]);
+  msg(t().langTitle, [mk("tr", "Türkçe"), mk("en", "English"), mk("pt", "Português (Brasil)"), mk("es", "Español")]);
 };
 loadStoreData().then(refreshHome).catch(() => {});
 // A name only this account owns (same collection the app uses), claimed once the network is reachable.

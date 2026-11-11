@@ -459,7 +459,7 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_turkish">Türkçe</string>
     <string name="settings_language_english">English</string>
-    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_portuguese">Português (Brasil)</string>
     <string name="settings_language_spanish">Español</string>
 
     <!-- Daily engagement notification pools (util/NotificationMessages.kt).
