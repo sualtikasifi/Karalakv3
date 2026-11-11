@@ -100,6 +100,16 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="karalak.com" android:pathPrefix="/f/" />
                 <data android:scheme="https" android:host="karalak.com" android:pathPrefix="/d/" />
+                <data android:scheme="https" android:host="karalak.com" android:pathPrefix="/b/" />
+            </intent-filter>
+
+            <!-- "Bil Bakalım" links, e.g. karalak://guess/AbCdEf1234: opens the friend's drawing to guess
+                 (the https form is the App Link above; this is what the web page hands over with on Android). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="karalak" android:host="guess" />
             </intent-filter>
         </activity>
 

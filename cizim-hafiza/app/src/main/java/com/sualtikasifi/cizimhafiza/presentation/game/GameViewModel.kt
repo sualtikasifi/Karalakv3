@@ -126,6 +126,7 @@ class GameViewModel @Inject constructor(
     private val levelProgressRepository: LevelProgressRepository,
     private val dailyChallengeRepository: DailyChallengeRepository,
     private val duelRepository: DuelRepository,
+    private val friendStreakRepository: com.sualtikasifi.cizimhafiza.domain.repository.FriendStreakRepository,
     private val moderationRepository: com.sualtikasifi.cizimhafiza.domain.repository.ModerationRepository,
     private val ghostRunRepository: GhostRunRepository,
     private val drawingReportRepository: DrawingReportRepository,
@@ -1181,11 +1182,15 @@ class GameViewModel @Inject constructor(
         // device is allowed to make on a duel it didn't create.
         duelToComplete?.let { duel ->
             duelRepository.recordReceivedResult(duel, totalScore, correctCount)
-            duelRepository.submitDuelResult(
+            val submitted = duelRepository.submitDuelResult(
                 duelId = duel.id,
                 opponentScore = totalScore,
                 opponentCorrectCount = correctCount
             )
+            // A duel of ten words or more, played to the end, counts as today's day of the pair's friend streak.
+            if (submitted.isSuccess && duel.wordIds.size >= com.sualtikasifi.cizimhafiza.domain.model.FriendStreaks.MIN_WORDS) {
+                friendStreakRepository.recordDuel(duel.challengerUid)
+            }
         }
 
         val quickMatchWon = ghost != null && totalScore > ghost.totalScore

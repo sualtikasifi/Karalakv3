@@ -1736,4 +1736,76 @@
     <string name="rune_tour_open">Ver as runas</string>
     <string name="tour_runes_title">Runas do Karalak</string>
     <string name="tour_runes_body">Transforme seu ouro em poderes permanentes! As runas dão bônus em todas as partidas: mais ouro a cada palavra certa, baús mais ricos, descontos na loja e muito mais. Toque na placa Runas na tela inicial ou no cachorro; as runas que você pode comprar brilham.</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="guess_share_text">Que desenho é este? Adivinhe! 🎨\n%1$s</string>
+    <string name="guess_gone">Este link não funciona mais. Pode ter expirado ou sido apagado.</string>
+    <string name="guess_offline">Não foi possível carregar o desenho. Verifique sua conexão.</string>
+    <string name="guess_child">Este recurso está desativado nesta conta.</string>
+    <string name="guess_own">Você enviou este desenho. Continue compartilhando o link para os amigos adivinharem!</string>
+    <string name="guess_retry">Tentar de novo</string>
+    <string name="guess_someone">Um amigo</string>
+    <string name="guess_title">%1$s desenhou algo</string>
+    <string name="guess_subtitle">Assista e adivinhe em 3 tentativas!</string>
+    <string name="guess_replay">Assistir de novo</string>
+    <string name="guess_placeholder">O que você acha que é?</string>
+    <string name="guess_submit">Adivinhar</string>
+    <string name="guess_give_up">Pular</string>
+    <string name="guess_solved">Você acertou! 🎉</string>
+    <string name="guess_solved_first">De primeira!</string>
+    <string name="guess_solved_tries">Acertou na tentativa %1$d</string>
+    <string name="guess_failed">Dessa vez não 😅</string>
+    <string name="guess_answer">Resposta: %1$s</string>
+    <string name="guess_your_turn_hint">Sua vez: desenhe a mesma palavra e envie para o seu amigo.</string>
+    <string name="guess_your_turn">Sua vez!</string>
+    <string name="guess_draw_title">Desenhe %1$s!</string>
+    <string name="guess_draw_seconds">%1$d s</string>
+    <string name="guess_undo">Desfazer</string>
+    <string name="guess_done">Pronto</string>
+    <string name="guess_shared_title">Pronto!</string>
+    <string name="guess_shared_sub">Seu desenho já está a caminho, com o link.</string>
+    <string name="guess_share_again">Enviar de novo</string>
+    <string name="guess_limit">Você criou muitos links hoje, tente de novo amanhã.</string>
+    <string name="guess_share_failed">Não foi possível criar o link. Tente de novo.</string>
+    <string name="guess_ask_friend">Perguntar a um amigo (link)</string>
+    <string name="guess_link_creating">Preparando o link…</string>
+    <string name="guess_inbox_title">Tentaram os seus desenhos!</string>
+    <string name="guess_inbox_solved">%1$s acertou (tentativa %2$d)</string>
+    <string name="guess_inbox_failed">%1$s não acertou</string>
+    <string name="guess_inbox_reward">+%1$d de ouro</string>
+    <string name="guess_inbox_ok">Ótimo!</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="frame_name_friendship">Moldura da Amizade</string>
+    <string name="cosmetic_locked_friend">Ganha com uma sequência de amigos</string>
+    <string name="fstreak_badge">%1$d dias</string>
+    <string name="fstreak_row_done">Feito hoje</string>
+    <string name="fstreak_row_risk">Envie um duelo hoje</string>
+    <string name="fstreak_row_broken">Sequência quebrada!</string>
+    <string name="fstreak_row_rescue">Salvar</string>
+    <string name="fstreak_reminder_title">Sua sequência está acabando!</string>
+    <string name="fstreak_reminder_body">Sua sequência de %2$d dias com %1$s termina hoje. Mantenha com um duelo de 10 palavras.</string>
+    <string name="fstreak_reminder_action">Enviar duelo</string>
+    <string name="fstreak_reminder_later">Depois</string>
+    <string name="fstreak_broken_title">Sua sequência com %1$s quebrou!</string>
+    <string name="fstreak_broken_body">Sua sequência de %2$d dias perdeu um dia. Assista a um anúncio e ela continua para os dois, como se o duelo de ontem tivesse acontecido.</string>
+    <string name="fstreak_broken_action">Ver anúncio e salvar</string>
+    <string name="fstreak_broken_dismiss">Deixar</string>
+    <string name="fstreak_rescued_title">%1$s salvou a sua sequência!</string>
+    <string name="fstreak_rescued_body">Sua sequência de %2$d dias continua. Não esqueça o duelo de hoje.</string>
+    <string name="fstreak_rescued_ok">Ótimo!</string>
+    <string name="fstreak_done_toast">Sequência salva!</string>
+    <string name="fstreak_reward_title">%2$d dias com %1$s!</string>
+    <string name="fstreak_reward_body">Vocês duelam juntos há %2$d dias. Há um prêmio para os dois:</string>
+    <string name="fstreak_reward_claim">Receber prêmio</string>
+    <string name="fstreak_reward_gold">+%1$d de ouro</string>
+    <string name="fstreak_reward_jokers">3 coringas (1 de cada)</string>
+    <string name="fstreak_reward_frame">🖼 %1$s</string>
+    <string name="fstreak_reward_pen">✏️ %1$s</string>
+    <string name="fstreak_ad_failed">O anúncio não carregou agora, tente de novo em instantes.</string>
+    <string name="fstreak_next_prize">Próximo prêmio: %1$d dias</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="guess_report">Denunciar</string>
+    <string name="guess_reported">Obrigado, vamos analisar.</string>
 </resources>

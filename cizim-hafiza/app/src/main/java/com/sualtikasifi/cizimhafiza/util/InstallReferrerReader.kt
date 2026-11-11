@@ -22,6 +22,15 @@ object InstallReferrerReader {
         code.takeIf { it.length == 6 && it.all(Char::isLetterOrDigit) }
     }.getOrNull()
 
+    /** The "Bil Bakalım" link id from the install link (karalak.com/b/ID on a phone that still had to install the app), or null. */
+    suspend fun guessLinkId(context: Context): String? = runCatching {
+        val raw = readReferrer(context) ?: return@runCatching null
+        val id = raw.split('&').firstNotNullOfOrNull { part ->
+            part.split('=', limit = 2).takeIf { it.size == 2 && it[0] == "karalak_guess" }?.get(1)
+        } ?: return@runCatching null
+        id.takeIf { GuessCodec.isValidId(it) }
+    }.getOrNull()
+
     private suspend fun readReferrer(context: Context): String? = suspendCancellableCoroutine { cont ->
         val client = InstallReferrerClient.newBuilder(context.applicationContext).build()
         client.startConnection(object : InstallReferrerStateListener {

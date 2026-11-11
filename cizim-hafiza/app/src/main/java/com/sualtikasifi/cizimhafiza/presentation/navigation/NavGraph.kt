@@ -399,6 +399,19 @@ fun CizimHafizaNavGraph(
             }
         }
 
+        // A friend's drawing sent as a link. Open to everyone but a player who may be under 13 (the screen says so itself);
+        // it needs the network, so with none it offers a retry rather than a gate.
+        composable(
+            route = Screen.GuessLink,
+            arguments = listOf(navArgument(Screen.ArgGuessLinkId) { type = NavType.StringType }),
+            deepLinks = listOf(
+                navDeepLink { uriPattern = Screen.GuessDeepLinkPattern },
+                navDeepLink { uriPattern = Screen.GuessWebLinkPattern }
+            )
+        ) {
+            com.sualtikasifi.cizimhafiza.presentation.guess.GuessLinkScreen(onBack = { navController.popBackStack() })
+        }
+
         composable(
             route = Screen.CreateDuel,
             arguments = listOf(

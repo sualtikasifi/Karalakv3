@@ -15,6 +15,10 @@ import com.sualtikasifi.cizimhafiza.data.repository.ModerationRepositoryImpl
 import com.sualtikasifi.cizimhafiza.data.repository.PenaltyRepositoryImpl
 import com.sualtikasifi.cizimhafiza.data.repository.DifficultyReviewRepositoryImpl
 import com.sualtikasifi.cizimhafiza.data.repository.DuelRepositoryImpl
+import com.sualtikasifi.cizimhafiza.data.repository.FriendStreakRepositoryImpl
+import com.sualtikasifi.cizimhafiza.data.repository.GuessRepositoryImpl
+import com.sualtikasifi.cizimhafiza.domain.repository.FriendStreakRepository
+import com.sualtikasifi.cizimhafiza.domain.repository.GuessRepository
 import com.sualtikasifi.cizimhafiza.data.repository.GhostRunRepositoryImpl
 import com.sualtikasifi.cizimhafiza.data.repository.FriendRepositoryImpl
 import com.sualtikasifi.cizimhafiza.data.repository.GlobalLeagueRepositoryImpl
@@ -137,6 +141,14 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindDuelRepository(impl: DuelRepositoryImpl): DuelRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGuessRepository(impl: GuessRepositoryImpl): GuessRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFriendStreakRepository(impl: FriendStreakRepositoryImpl): FriendStreakRepository
 
     @Binds
     @Singleton

@@ -380,6 +380,97 @@ await check("the reviewer deletes reports together with the audit line", (async 
 })());
 await check("a player cannot mark a report seen", assertFails(updateDoc(doc(db("bu2"), "bugReports", "bg3"), { seenAtMillis: 5 })));
 
+// ---- "Bil Bakalım" links and what came of them
+{
+  const HASH = "a".repeat(64), now = Date.now();
+  const link = (owner, extra = {}) => ({ ownerUid: owner, ownerName: "Ayşe", lang: "tr", salt: "s3cr3tsalt", hash: HASH, pattern: "4 3", first: "K", strokesJson: '[[{"x":1,"y":2}]]', seconds: 7, createdAt: now, expiresAt: now + 30 * 864e5, ...extra });
+  const L = "AbCdEf1234";
+  await check("a link is created by its owner", assertSucceeds(setDoc(doc(db("go"), "guessLinks", L), link("go"))));
+  await check("a link cannot be created in somebody else's name", assertFails(setDoc(doc(db("evil"), "guessLinks", "AbCdEf1235"), link("go"))));
+  await check("a link id has to be ten letters and digits", assertFails(setDoc(doc(db("go"), "guessLinks", "short"), link("go"))));
+  await check("a link cannot carry the word in clear", assertFails(setDoc(doc(db("go"), "guessLinks", "AbCdEf1236"), { ...link("go"), word: "kara kedi" })));
+  await check("a link cannot be kept for a year", assertFails(setDoc(doc(db("go"), "guessLinks", "AbCdEf1237"), link("go", { expiresAt: now + 365 * 864e5 }))));
+  await check("a link cannot hold a huge drawing", assertFails(setDoc(doc(db("go"), "guessLinks", "AbCdEf1238"), link("go", { strokesJson: "x".repeat(200000) }))));
+  await check("a link cannot have a hash of the wrong size", assertFails(setDoc(doc(db("go"), "guessLinks", "AbCdEf1239"), link("go", { hash: "abc" }))));
+  await check("anyone signed in opens a link by its id", assertSucceeds(getDoc(doc(guest("visitor"), "guessLinks", L))));
+  await check("a signed-out visitor cannot open it", assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), "guessLinks", L))));
+  await check("nobody lists everybody's links", assertFails(getDocs(collection(guest("visitor"), "guessLinks"))));
+  await check("the owner lists their own links", assertSucceeds(getDocs(query(collection(db("go"), "guessLinks"), where("ownerUid", "==", "go")))));
+  await check("a link is never edited", assertFails(updateDoc(doc(db("go"), "guessLinks", L), { seconds: 1 })));
+  await seed(["guessLinks", "OldLink0001"], link("go", { createdAt: now - 40 * 864e5, expiresAt: now - 10 * 864e5 }));
+  await check("an expired link is gone for visitors", assertFails(getDoc(doc(guest("visitor"), "guessLinks", "OldLink0001"))));
+  await check("only the owner deletes a link", assertFails(deleteDoc(doc(db("evil"), "guessLinks", L))));
+
+  const entry = (from, extra = {}) => ({ linkId: L, fromUid: from, fromName: "Mehmet", solved: true, attempts: 2, at: now, ...extra });
+  await check("a visitor leaves the result in the owner's inbox", assertSucceeds(setDoc(doc(guest("visitor"), "users", "go", "guessInbox", L + "_visitor"), entry("visitor"))));
+  await check("a visitor leaves only one result per link", assertFails(setDoc(doc(guest("visitor"), "users", "go", "guessInbox", L + "_visitor"), entry("visitor", { attempts: 1 }))));
+  await check("a result must be named after the link and the visitor", assertFails(setDoc(doc(guest("v2"), "users", "go", "guessInbox", "whatever"), entry("v2"))));
+  await check("a result cannot be left in the name of another visitor", assertFails(setDoc(doc(guest("v2"), "users", "go", "guessInbox", L + "_v3"), entry("v3"))));
+  await check("a result for a link the owner does not own is refused", assertFails(setDoc(doc(guest("v2"), "users", "other", "guessInbox", L + "_v2"), entry("v2"))));
+  await check("a result cannot claim more than three tries", assertFails(setDoc(doc(guest("v2"), "users", "go", "guessInbox", L + "_v2"), entry("v2", { attempts: 9 }))));
+  await check("the owner cannot send results to themselves", assertFails(setDoc(doc(db("go"), "users", "go", "guessInbox", L + "_go"), entry("go"))));
+  await seed(["users", "go", "blockedUsers", "pest"], { at: 1 });
+  await check("a blocked visitor leaves nothing", assertFails(setDoc(doc(guest("pest"), "users", "go", "guessInbox", L + "_pest"), entry("pest"))));
+  await check("the owner reads their inbox", assertSucceeds(getDocs(collection(db("go"), "users", "go", "guessInbox"))));
+  await check("nobody else reads it", assertFails(getDocs(collection(db("evil"), "users", "go", "guessInbox"))));
+  await check("the owner clears an entry", assertSucceeds(deleteDoc(doc(db("go"), "users", "go", "guessInbox", L + "_visitor"))));
+  await check("the owner deletes their link", assertSucceeds(deleteDoc(doc(db("go"), "guessLinks", L))));
+}
+
+// ---- friend streaks
+{
+  const today = Math.floor((Date.now() + 3 * 3600e3) / 864e5);
+  const A = "sa", B = "sb", P = "sa_sb";
+  await seed(["users", A, "friends", B], { nickname: "B", addedAt: 1 });
+  await seed(["users", B, "friends", A], { nickname: "A", addedAt: 1 });
+  const base = { uids: [A, B], count: 1, best: 1, run: 1, lastDay: today, pendingDay: -1, repairs: 0, updatedAt: 1 };
+  await check("friends start a streak", assertSucceeds(setDoc(doc(db(A), "friendStreaks", P), base)));
+  await check("a stranger cannot start one between others", assertFails(setDoc(doc(db("zz"), "friendStreaks", "sc_sd"), { ...base, uids: ["sc", "sd"] })));
+  await seed(["users", "sc", "friends", "sd"], { nickname: "D", addedAt: 1 });
+  await check("both must have each other as friends", assertFails(setDoc(doc(db("sc"), "friendStreaks", "sc_sd"), { ...base, uids: ["sc", "sd"] })));
+  await check("a pair id must be the sorted uids", assertFails(setDoc(doc(db(B), "friendStreaks", "sb_sa"), { ...base, uids: [B, A] })));
+  await check("a streak cannot start already long", assertFails(setDoc(doc(db(A), "friendStreaks", "sa_sb2"), { ...base, count: 50, best: 50 })));
+  await check("the pair reads it", assertSucceeds(getDoc(doc(db(B), "friendStreaks", P))));
+  await check("a stranger cannot read it", assertFails(getDoc(doc(db("zz"), "friendStreaks", P))));
+  await check("a player lists their streaks", assertSucceeds(getDocs(query(collection(db(A), "friendStreaks"), where("uids", "array-contains", A)))));
+  await check("a player cannot list somebody else's", assertFails(getDocs(query(collection(db("zz"), "friendStreaks"), where("uids", "array-contains", A)))));
+  await check("the same day is not counted twice", assertFails(updateDoc(doc(db(B), "friendStreaks", P), { count: 2, best: 2, updatedAt: 2 })));
+
+  // yesterday's streak carries on today
+  await seed(["friendStreaks", P], { ...base, count: 5, best: 5, lastDay: today - 1 });
+  await check("an alive streak grows by one", assertSucceeds(updateDoc(doc(db(B), "friendStreaks", P), { count: 6, best: 6, lastDay: today, updatedAt: 2 })));
+  await seed(["friendStreaks", P], { ...base, count: 5, best: 5, lastDay: today - 1 });
+  await check("a streak cannot jump by two", assertFails(updateDoc(doc(db(B), "friendStreaks", P), { count: 7, best: 7, lastDay: today, updatedAt: 2 })));
+  await check("a streak cannot be written into the future", assertFails(updateDoc(doc(db(B), "friendStreaks", P), { count: 6, best: 6, lastDay: today + 1, updatedAt: 2 })));
+  await check("a stranger cannot touch it", assertFails(updateDoc(doc(db("zz"), "friendStreaks", P), { count: 6, best: 6, lastDay: today, updatedAt: 2 })));
+  await check("the pair cannot be changed", assertFails(updateDoc(doc(db(B), "friendStreaks", P), { uids: [B, "zz"], count: 6, best: 6, lastDay: today, updatedAt: 2 })));
+
+  // missed one day: mended once, by either of them
+  await seed(["friendStreaks", P], { ...base, count: 9, best: 9, lastDay: today - 2 });
+  await check("a broken streak cannot grow without mending", assertFails(updateDoc(doc(db(B), "friendStreaks", P), { count: 10, best: 10, lastDay: today, updatedAt: 2 })));
+  await check("a mend must name who watched the ad", assertFails(updateDoc(doc(db(B), "friendStreaks", P), { lastDay: today - 1, repairs: 1, updatedAt: 2 })));
+  await check("a friend mends the streak (the missed day is covered)", assertSucceeds(updateDoc(doc(db(B), "friendStreaks", P), { lastDay: today - 1, repairs: 1, repairedBy: B, updatedAt: 2 })));
+  await check("and the next duel carries it on", assertSucceeds(updateDoc(doc(db(A), "friendStreaks", P), { count: 10, best: 10, lastDay: today, updatedAt: 3 })));
+  await seed(["friendStreaks", P], { ...base, count: 9, best: 9, lastDay: today - 2 });
+  await check("a mend and a duel played meanwhile count together", assertSucceeds(updateDoc(doc(db(A), "friendStreaks", P), { count: 10, best: 10, lastDay: today, pendingDay: -1, repairs: 1, repairedBy: A, updatedAt: 3 })));
+  await seed(["friendStreaks", P], { ...base, count: 9, best: 9, lastDay: today - 1 });
+  await check("an alive streak cannot be 'mended' for free", assertFails(updateDoc(doc(db(A), "friendStreaks", P), { repairs: 1, repairedBy: A, updatedAt: 3 })));
+  await seed(["friendStreaks", P], { ...base, count: 9, best: 9, lastDay: today - 2 });
+  await check("a duel played while mendable is kept for the mend", assertSucceeds(updateDoc(doc(db(A), "friendStreaks", P), { pendingDay: today, updatedAt: 3 })));
+
+  // missed longer: starts again as a new run
+  await seed(["friendStreaks", P], { ...base, count: 9, best: 9, lastDay: today - 5 });
+  await check("a lost streak starts again at one, as a new run", assertSucceeds(updateDoc(doc(db(A), "friendStreaks", P), { count: 1, lastDay: today, run: 2, pendingDay: -1, updatedAt: 3 })));
+  await seed(["friendStreaks", P], { ...base, count: 1, best: 1, lastDay: today - 4 });
+  await check("a lost streak of one starts again at two when a duel was kept", assertSucceeds(updateDoc(doc(db(A), "friendStreaks", P), { count: 2, best: 2, lastDay: today, run: 2, pendingDay: -1, updatedAt: 3 })));
+  await seed(["friendStreaks", P], { ...base, count: 1, best: 1, lastDay: today - 4 });
+  await check("a new run cannot open higher than two", assertFails(updateDoc(doc(db(A), "friendStreaks", P), { count: 3, best: 3, lastDay: today, run: 2, updatedAt: 3 })));
+  await check("a lost streak cannot grow as the same run", assertFails(updateDoc(doc(db(A), "friendStreaks", P), { count: 2, best: 2, lastDay: today, updatedAt: 3 })));
+  await seed(["friendStreaks", P], { ...base, count: 9, best: 9, lastDay: today - 1 });
+  await check("an alive streak cannot be reset", assertFails(updateDoc(doc(db(A), "friendStreaks", P), { count: 1, lastDay: today, run: 2, updatedAt: 3 })));
+  await check("either of them ends it with the friendship", assertSucceeds(deleteDoc(doc(db(B), "friendStreaks", P))));
+}
+
 await env.cleanup();
 console.log(failures ? `\n${failures} FAILED` : "\nall passed");
 process.exit(failures ? 1 : 0);

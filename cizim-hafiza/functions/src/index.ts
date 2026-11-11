@@ -179,6 +179,16 @@ export async function runCleanupAbandonedRooms(): Promise<void> {
   }
 
   logger.info(`Cleanup: removed ${deleted} abandoned room(s) of ${rooms.size}`);
+
+  // The same daily pass tidies two more things that only ever grow: "Bil Bakalım" links past their expiry (the app
+  // deletes its own when it opens, this catches the phones that never open it again), and friend streaks nobody has
+  // played for two months (lastDay is a Türkiye epoch day, see FriendStreaks.kt).
+  const links = await db.collection("guessLinks").where("expiresAt", "<", Date.now()).limit(400).get();
+  for (const link of links.docs) await link.ref.delete();
+  const today = Math.floor((Date.now() + 3 * 3600 * 1000) / 86400000);
+  const streaks = await db.collection("friendStreaks").where("lastDay", "<", today - 60).limit(400).get();
+  for (const streak of streaks.docs) await streak.ref.delete();
+  logger.info(`Cleanup: removed ${links.size} expired guess link(s) and ${streaks.size} dormant friend streak(s)`);
 }
 
 // Not currently deployed — see functions/DEPLOY.md. Cloud Functions require

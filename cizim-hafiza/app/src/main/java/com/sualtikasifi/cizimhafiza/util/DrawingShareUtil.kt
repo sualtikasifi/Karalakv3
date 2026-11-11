@@ -61,13 +61,15 @@ object DrawingShareUtil {
         shareBitmap(context, bitmap, "karalak_sonuc")
     }
 
-    private fun shareBitmap(context: Context, bitmap: Bitmap, fileNamePrefix: String) {
+    private fun shareBitmap(context: Context, bitmap: Bitmap, fileNamePrefix: String, text: String? = null) {
         val file = writeToCache(context, bitmap, fileNamePrefix)
         val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.fileprovider", file)
 
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "image/png"
             putExtra(Intent.EXTRA_STREAM, uri)
+            // The picture and the "Bil Bakalım" link travel together: messengers show the text as the picture's caption.
+            if (text != null) putExtra(Intent.EXTRA_TEXT, text)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(Intent.createChooser(shareIntent, null))
@@ -83,6 +85,18 @@ object DrawingShareUtil {
         drawStrokes(canvas, strokes, ShareTemplate.drawingRect, paddingRatio = 0.04f)
         ShareTemplate.drawWordAndCaption(context, canvas, ShareTemplate.maskedWord(word, language))
         shareBitmap(context, bitmap, "karalak")
+    }
+
+    /** The same card as [shareDrawingOnTemplate] (its word masked), with [text] (the guess link and its invitation) as the caption. */
+    fun shareDrawingWithLink(context: Context, word: String, strokes: List<DrawingStroke>, text: String) {
+        val language = WordSeeder.currentLanguage(context)
+        val template = ShareTemplate.load(context)
+        val bitmap = template.copy(Bitmap.Config.ARGB_8888, true)
+        template.recycle()
+        val canvas = Canvas(bitmap)
+        drawStrokes(canvas, strokes, ShareTemplate.drawingRect, paddingRatio = 0.04f)
+        ShareTemplate.drawWordAndCaption(context, canvas, ShareTemplate.maskedWord(word, language))
+        shareBitmap(context, bitmap, "karalak_bil", text)
     }
 
     private fun renderSingleCard(word: String, strokes: List<DrawingStroke>, language: String): Bitmap {

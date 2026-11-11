@@ -38,6 +38,7 @@ import javax.inject.Singleton
 class ReferralRewardClaimer @Inject constructor(
     private val friendRepository: FriendRepository,
     private val settingsRepository: SettingsRepository,
+    private val guessStore: GuessStore,
     @ApplicationContext private val context: Context
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -91,6 +92,8 @@ class ReferralRewardClaimer @Inject constructor(
     private suspend fun attributeInstallInvite() {
         if (!settingsRepository.installReferrerHandled) {
             settingsRepository.pendingInviterCode = InstallReferrerReader.friendCode(context)
+            // A "Bil Bakalım" link the app was installed from: the first screen opens on that drawing (see MainActivity).
+            guessStore.pendingLinkId = InstallReferrerReader.guessLinkId(context)
             settingsRepository.installReferrerHandled = true
         }
         val code = settingsRepository.pendingInviterCode ?: return

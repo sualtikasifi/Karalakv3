@@ -418,6 +418,14 @@ private fun FriendsMessage(info: UiText?, error: UiText?, scene: Scene) {
 
 @Composable
 private fun FriendsPanel(uiState: FriendsUiState, viewModel: FriendsViewModel, scene: Scene, onDuel: (String, String) -> Unit) {
+    // The friend streaks: a flame and the days next to each friend, and a way to mend a broken one with an ad.
+    val streakViewModel: FriendStreakViewModel = hiltViewModel()
+    val allStreaks by streakViewModel.streaks.collectAsState()
+    val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay().toInt()
+    val streakViews = remember(allStreaks, today) {
+        allStreaks.associate { it.friendUid to com.sualtikasifi.cizimhafiza.domain.model.FriendStreaks.view(it, today) }
+    }
+    val activity = LocalContext.current as? android.app.Activity
     val nothing = uiState.friends.isEmpty() && uiState.friendRequests.isEmpty() && uiState.blockedUsers.isEmpty()
     if (nothing) {
         val text = stringResource(R.string.friends_empty)
@@ -498,7 +506,9 @@ private fun FriendsPanel(uiState: FriendsUiState, viewModel: FriendsViewModel, s
                 onInvite = { viewModel.inviteFriend(friend) },
                 onRemove = { viewModel.confirmRemoveFriend(friend) },
                 onBlock = { viewModel.confirmBlockFriend(friend) },
-                onDuel = { onDuel(friend.uid, friend.nickname) }
+                onDuel = { onDuel(friend.uid, friend.nickname) },
+                streak = streakViews[friend.uid]?.takeIf { it.status != com.sualtikasifi.cizimhafiza.domain.model.StreakStatus.Lost },
+                onRescueStreak = { v -> activity?.let { streakViewModel.rescue(it, friend.uid, v.streak.pairId) } }
             )
           }
         }
@@ -562,6 +572,29 @@ private fun OrangePill(text: String, onClick: () -> Unit) {
     ) { LetteredText(text, 13.sp) }
 }
 
+/**
+ * The friend streak next to a friend's name: "🔥 5" in orange once today's duel is played, "⏳ 5" while it is still to be played,
+ * and a pill to mend it with an ad when it broke yesterday ("💔 5 · Kurtar").
+ */
+@Composable
+private fun StreakChip(view: com.sualtikasifi.cizimhafiza.domain.model.StreakView, onRescue: () -> Unit) {
+    val status = view.status
+    if (status == com.sualtikasifi.cizimhafiza.domain.model.StreakStatus.Broken) {
+        if (com.sualtikasifi.cizimhafiza.util.GameConstants.ADMOB_ENABLED) {
+            OrangePill("💔 ${view.count} · " + stringResource(R.string.fstreak_row_rescue), com.sualtikasifi.cizimhafiza.presentation.common.adOnly(onRescue))
+        } else {
+            Text("💔 ${view.count}", style = PaintedStyle(color = InkBrown, fontSize = 14.sp))
+        }
+        return
+    }
+    val done = status == com.sualtikasifi.cizimhafiza.domain.model.StreakStatus.Done
+    Text(
+        text = (if (done) "🔥 " else "⏳ ") + view.count,
+        style = PaintedStyle(color = if (done) ButtonOrange else InkBrown, fontSize = 15.sp),
+        maxLines = 1
+    )
+}
+
 @Composable
 private fun FriendRow(
     friend: Friend,
@@ -570,11 +603,14 @@ private fun FriendRow(
     onInvite: () -> Unit,
     onRemove: () -> Unit,
     onBlock: () -> Unit,
-    onDuel: () -> Unit
+    onDuel: () -> Unit,
+    streak: com.sualtikasifi.cizimhafiza.domain.model.StreakView? = null,
+    onRescueStreak: (com.sualtikasifi.cizimhafiza.domain.model.StreakView) -> Unit = {}
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     ListRow {
         RowName(friend.nickname, Modifier.weight(1f))
+        if (streak != null) StreakChip(streak, onRescue = { onRescueStreak(streak) })
         if (inviting || busy) {
             CircularProgressIndicator(modifier = Modifier.size(22.dp).padding(end = 6.dp), color = ButtonOrange, strokeWidth = 2.5.dp)
         } else {

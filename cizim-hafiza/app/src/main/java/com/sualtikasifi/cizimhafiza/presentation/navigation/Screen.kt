@@ -186,6 +186,13 @@ object Screen {
     const val InviteDeepLinkPattern = "karalak://join/{roomCode}"
     /** The same room invite as a web link (karalak.com/d/482913): an Android App Link. */
     const val InviteWebLinkPattern = "https://karalak.com/d/{roomCode}"
+
+    // --- "Bil Bakalım": a friend's drawing sent as a link (karalak://guess/ID, https://karalak.com/b/ID) ---
+    const val ArgGuessLinkId = "linkId"
+    const val GuessLink = "guess/{linkId}"
+    const val GuessDeepLinkPattern = "karalak://guess/{linkId}"
+    const val GuessWebLinkPattern = "https://karalak.com/b/{linkId}"
+    fun guessRoute(linkId: String): String = "guess/$linkId"
     private const val OnlineWaitingRoomRoute = "online_waiting_room/{roomCode}"
     const val OnlineWaitingRoom = OnlineWaitingRoomRoute
     private const val OnlineGameRoute = "online_game/{roomCode}"

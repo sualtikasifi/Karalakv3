@@ -76,6 +76,8 @@ enum class PenSkin(
     val storePrice: Int = 0,
     /** Found only on the rune map (RuneRewards): owned like a store item, but never sold in the store or dropped by a chest. */
     val isRuneReward: Boolean = false,
+    /** Won only by a friend streak (FriendStreakRewards): owned like a store item, never sold, never dropped by a chest. */
+    val isFriendReward: Boolean = false,
     /** Extra paint on the stroke (glow, sparkles) — drawn by PenBrush's drawPenStroke, so opponents see it too. */
     val effect: PenEffect = PenEffect.NONE,
     /**
@@ -145,7 +147,7 @@ enum class PenSkin(
     val isStoreItem: Boolean get() = storePrice > 0
 
     /** On sale in the store (a rune reward has a price only for the rune's pay-back, see SettingsRepository.buyRune). */
-    val isSoldInStore: Boolean get() = isStoreItem && !isRuneReward && !retired
+    val isSoldInStore: Boolean get() = isStoreItem && !isRuneReward && !isFriendReward && !retired
 
     companion object {
         val DEFAULT = CLASSIC

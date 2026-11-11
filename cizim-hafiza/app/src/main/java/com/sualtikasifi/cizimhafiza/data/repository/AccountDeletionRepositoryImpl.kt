@@ -121,6 +121,17 @@ class AccountDeletionRepositoryImpl @Inject constructor(
                 }
             }
         }
+        // The "Bil Bakalım" links this account sent and the friend streaks it kept.
+        runCatching {
+            firestore.collection("guessLinks").whereEqualTo("ownerUid", uid).get().await().documents.forEach { doc ->
+                runCatching { doc.reference.delete().await() }
+            }
+        }
+        runCatching {
+            firestore.collection("friendStreaks").whereArrayContains("uids", uid).get().await().documents.forEach { doc ->
+                runCatching { doc.reference.delete().await() }
+            }
+        }
         listOf("challengerUid", "opponentUid").forEach { field ->
             runCatching {
                 firestore.collection("duels").whereEqualTo(field, uid).get().await().documents.forEach { doc ->
@@ -137,7 +148,7 @@ class AccountDeletionRepositoryImpl @Inject constructor(
 
         /** Everything under users/{uid} a client may delete. The cloud save (backup) is the server run's. */
         val USER_SUBCOLLECTIONS = listOf(
-            "friends", "friendRequests", "invites", "blockedUsers", "inviteCooldowns", "private"
+            "friends", "friendRequests", "invites", "blockedUsers", "inviteCooldowns", "guessInbox", "private"
         )
 
         /** Every preference file the app writes. A new one belongs here too. */
@@ -147,6 +158,8 @@ class AccountDeletionRepositoryImpl @Inject constructor(
             "ad_manager_prefs",
             "karalak_daily_challenge",
             "duel_history",
+            "guess_links",
+            "friend_streaks",
             "friend_request_limit",
             "guess_layout",
             "one_time_flags",
