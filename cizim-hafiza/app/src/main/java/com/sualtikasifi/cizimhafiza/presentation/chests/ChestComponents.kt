@@ -476,16 +476,17 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                             )
                             drawSparkle(Offset(size.width / 2f, size.height / 2f), 15f * u.toPx(), Color(0xFFE6AA3C))
                         }
-                        val tile = if (extras.size > 3) 168f else 190f
-                        val gap = 28f
+                        // The paper inside the frame is only about 700 units wide (the vines take the rest), so four cards are smaller
+                        val tile = when { extras.size > 3 -> 138f; extras.size == 3 -> 172f; else -> 190f }
+                        val gap = if (extras.size > 3) 22f else 28f
                         val x0 = (BOARD_W - extras.size * tile - (extras.size - 1) * gap) / 2f
                         extras.forEachIndexed { i, extra ->
                             val x = x0 + i * (tile + gap)
                             val t = cards.getOrNull(i)?.value ?: 1f
-                            Box(Modifier.at(x, 1272f, tile, tile + 72f).graphicsLayer {
+                            Box(Modifier.at(x, 1262f, tile, tile + 72f).graphicsLayer {
                                 val s = t.coerceAtLeast(0f); scaleX = s; scaleY = s; alpha = t.coerceIn(0f, 1f)
                             }) {
-                                RewardCard(extra = extra, u = u, tile = tile, fs = ::fs)
+                                RewardCard(extra = extra, u = u, tile = tile, labelRoom = gap - 4f, fs = ::fs)
                             }
                         }
                     }
@@ -630,7 +631,7 @@ private fun TierRibbon(
 
 /** One extra as a card: the art on a cream-to-gold tile, its count on an orange tag, its name under it. */
 @Composable
-private fun RewardCard(extra: RewardExtra, u: Dp, tile: Float, fs: (Float) -> androidx.compose.ui.unit.TextUnit) {
+private fun RewardCard(extra: RewardExtra, u: Dp, tile: Float, labelRoom: Float, fs: (Float) -> androidx.compose.ui.unit.TextUnit) {
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(u * 36f)
     Box(Modifier.fillMaxSize()) {
         Box(
@@ -652,7 +653,7 @@ private fun RewardCard(extra: RewardExtra, u: Dp, tile: Float, fs: (Float) -> an
         val tagW = tile * 0.56f; val tagH = tile * 0.30f
         Box(
             Modifier
-                .offset(u * (tile - tagW + 16f), u * (tile - tagH + 14f))
+                .offset(u * (tile - tagW + 8f), u * (tile - tagH + 12f))
                 .size(u * tagW, u * tagH)
                 .background(Color(0xFFFF781E), androidx.compose.foundation.shape.RoundedCornerShape(50))
                 .border(u * 5f, Color(0xFF6E2800), androidx.compose.foundation.shape.RoundedCornerShape(50)),
@@ -671,7 +672,7 @@ private fun RewardCard(extra: RewardExtra, u: Dp, tile: Float, fs: (Float) -> an
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             // requiredWidth: the parent only allows the tile's own width, and a plain width() would be cut down to it, which left the
             // label 25 units off to the left of the tile it names.
-            modifier = Modifier.offset(x = u * -25f, y = u * (tile + 16f)).requiredWidth(u * (tile + 50f))
+            modifier = Modifier.offset(x = u * -(labelRoom / 2f), y = u * (tile + 16f)).requiredWidth(u * (tile + labelRoom))
         )
     }
 }

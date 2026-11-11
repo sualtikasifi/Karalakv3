@@ -17,6 +17,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.ui.draw.drawWithContent
@@ -96,7 +97,6 @@ import kotlinx.coroutines.delay
 
 private const val ArtW = 1080f
 private const val ArtH = 2401f
-private val CardDrawables = intArrayOf(R.drawable.ach_card_1, R.drawable.ach_card_2, R.drawable.ach_card_3, R.drawable.ach_card_4)
 
 /**
  * The badge catalog on the painted trophy-room scene: a hanging sign for the title, a progress panel and a grid of
@@ -117,6 +117,18 @@ fun AchievementsScreen(
     val unlockedCount = achievements.count { it.unlocked }
     // Tapping a chip explains what it takes to earn it.
     var selectedAchievement by remember { mutableStateOf<AchievementUiItem?>(null) }
+    // A reward just collected stays in the top section for a moment so its celebration can play, then drops to the shelf.
+    var justClaimed by remember { mutableStateOf(emptySet<String>()) }
+    LaunchedEffect(justClaimed) {
+        if (justClaimed.isNotEmpty()) {
+            delay(1_500)
+            justClaimed = emptySet()
+        }
+    }
+    val toCollect = achievements.filter { it.unlocked && (!it.claimed || it.achievement.name in justClaimed) }
+    val earned = achievements.filter { it.unlocked && it.claimed && it.achievement.name !in justClaimed }
+    // Closest to done first: the next badge within reach is always the first one in the list.
+    val inProgress = achievements.filter { !it.unlocked }.sortedByDescending { it.fraction }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val density = LocalDensity.current
@@ -150,23 +162,57 @@ fun AchievementsScreen(
                         blendMode = BlendMode.DstIn
                     )
                 },
-            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp)
         ) {
-            item {
-                AchievementProgressHeader(unlockedCount = unlockedCount, total = achievements.size)
+            item(key = "header") {
+                AchievementProgressHeader(unlockedCount = unlockedCount, total = achievements.size, waiting = toCollect.size)
             }
-            itemsIndexed(achievements.chunked(3)) { rowIndex, row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = if (listIntro && rowIndex < 8) Modifier.springIn(index = rowIndex, stepMs = 60) else Modifier) {
-                    row.forEachIndexed { col, item ->
-                        AchievementChip(
-                            item = item,
-                            variant = (rowIndex * 3 + col + rowIndex) % CardDrawables.size,
-                            onClick = { if (item.unlocked && !item.claimed) viewModel.claim(item.achievement) else selectedAchievement = item },
-                            modifier = Modifier.weight(1f)
-                        )
+            if (toCollect.isNotEmpty()) {
+                item(key = "h_claim") {
+                    SectionHeader(
+                        title = stringResource(R.string.achievements_section_claim), count = toCollect.size, accent = true,
+                        action = if (toCollect.count { !it.claimed } > 1) stringResource(R.string.achievements_claim_all) else null,
+                        onAction = {
+                            justClaimed = justClaimed + toCollect.filter { !it.claimed }.map { it.achievement.name }
+                            viewModel.claimAll(toCollect.filter { !it.claimed }.map { it.achievement })
+                        },
+                        modifier = Modifier.animateItem()
+                    )
+                }
+                items(toCollect, key = { "c_" + it.achievement.name }) { item ->
+                    AchievementRow(
+                        item = item, celebrating = item.claimed,
+                        onClick = {
+                            if (!item.claimed) {
+                                justClaimed = justClaimed + item.achievement.name
+                                viewModel.claim(item.achievement)
+                            }
+                        },
+                        modifier = Modifier.animateItem()
+                    )
+                }
+            }
+            if (inProgress.isNotEmpty()) {
+                item(key = "h_progress") {
+                    SectionHeader(title = stringResource(R.string.achievements_section_progress), count = inProgress.size, modifier = Modifier.animateItem())
+                }
+                items(inProgress, key = { "p_" + it.achievement.name }) { item ->
+                    AchievementRow(item = item, celebrating = false, onClick = { selectedAchievement = item }, modifier = Modifier.animateItem())
+                }
+            }
+            if (earned.isNotEmpty()) {
+                item(key = "h_done") {
+                    SectionHeader(title = stringResource(R.string.achievements_section_done), count = earned.size, modifier = Modifier.animateItem())
+                }
+                // The trophy shelf: every collected badge as a gold medal, four to a row.
+                itemsIndexed(earned.chunked(4), key = { i, _ -> "e_$i" }) { _, row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        row.forEach { item ->
+                            MedalCell(item = item, onClick = { selectedAchievement = item }, modifier = Modifier.weight(1f))
+                        }
+                        repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
                     }
-                    repeat(3 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
                 }
             }
         }
@@ -220,7 +266,7 @@ fun AchievementsScreen(
 
 /** The catalog's summary: trophy, how many are open, the percentage and a progress bar, on a painted panel. */
 @Composable
-private fun AchievementProgressHeader(unlockedCount: Int, total: Int, modifier: Modifier = Modifier) {
+private fun AchievementProgressHeader(unlockedCount: Int, total: Int, waiting: Int, modifier: Modifier = Modifier) {
     val fraction = if (total > 0) unlockedCount.toFloat() / total else 0f
     NinePatch(
         res = R.drawable.ach_panel,
@@ -228,53 +274,40 @@ private fun AchievementProgressHeader(unlockedCount: Int, total: Int, modifier: 
         edge = 34.dp,
         modifier = modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 30.dp, vertical = 20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .background(Color(0xFFFFE9B0), CircleShape)
-                        .border(2.dp, Color(0xFFE0A030), CircleShape)
-                ) {
-                    Text(text = "\uD83C\uDFC6", style = PaintedStyle(fontSize = 22.sp, textAlign = TextAlign.Center))
-                }
-                Spacer(modifier = Modifier.size(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.achievements_progress_count_format, unlockedCount, total),
-                        style = PaintedStyle(color = InkBrown, fontSize = 24.sp),
-                        maxLines = 1
-                    )
-                    Text(
-                        text = stringResource(R.string.achievements_progress_caption),
-                        style = PaintedStyle(color = DescriptionInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
-                        maxLines = 1
-                    )
-                }
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .background(Brush.verticalGradient(listOf(Color(0xFFFFA64D), ButtonOrange)), PillShape)
-                        .border(1.5.dp, Color(0xFFB04A0E), PillShape)
-                        .padding(horizontal = 12.dp, vertical = 4.dp)
-                ) {
-                    LetteredText(stringResource(R.string.achievements_progress_percent, (fraction * 100).toInt()), 16.sp)
-                }
-            }
+        // No trophy badge: the painted panel has its own splashes at both ends, so the text sits centred between them.
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(start = 40.dp, end = 40.dp, top = 38.dp, bottom = 26.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(R.string.achievements_progress_count_format, unlockedCount, total),
+                style = PaintedStyle(color = InkBrown, fontSize = 30.sp, textAlign = TextAlign.Center),
+                maxLines = 1
+            )
+            Text(
+                text = stringResource(R.string.achievements_progress_caption),
+                style = PaintedStyle(color = DescriptionInk, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
+                maxLines = 1
+            )
+            if (waiting > 0) Text(
+                text = stringResource(R.string.achievements_waiting_format, waiting),
+                style = PaintedStyle(color = Color(0xFFB8740A), fontSize = 14.sp, textAlign = TextAlign.Center),
+                maxLines = 1
+            )
             Spacer(modifier = Modifier.height(10.dp))
+            // The bar carries the percentage inside it.
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(12.dp)
-                    .background(Color(0xFFE2CDAA), PillShape)
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxWidth().height(22.dp).background(Color(0xFFE2CDAA), PillShape).border(1.5.dp, Color(0xFFB9976A), PillShape)
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(fraction.coerceIn(0f, 1f))
-                        .height(12.dp)
+                        .align(Alignment.CenterStart)
+                        .fillMaxWidth(fraction.coerceIn(0.04f, 1f))
+                        .height(22.dp)
                         .background(Brush.verticalGradient(listOf(Color(0xFFFFD04D), Color(0xFFF5A300))), PillShape)
                 )
+                LetteredText(stringResource(R.string.achievements_progress_percent, (fraction * 100).toInt()), 13.sp, outline = Color(0xFF8A4A00))
             }
         }
     }
@@ -425,160 +458,212 @@ private fun rewardColor(achievement: Achievement): Color = when (achievement.rew
     AchievementRewardType.XP -> MaterialTheme.colorScheme.primary
 }
 
+private val RowCream = Color(0xFFFFF8E8)
+private val RowCreamDeep = Color(0xFFFBE9C2)
+private val EdgeBrown = Color(0xFF9C6A38)
+private val GoldTop = Color(0xFFFFE27A)
+private val GoldBottom = Color(0xFFF2A91B)
+private val GoldEdge = Color(0xFFA9680A)
+private val MedalGreen = Color(0xFF2EA043)
+
+private val AchievementUiItem.fraction: Float
+    get() = (currentValue.toFloat() / achievement.target.coerceAtLeast(1)).coerceIn(0f, 1f)
+
+/** A section's title on a small cream plank: the name, how many badges it holds, and optionally one action. */
 @Composable
-private fun AchievementChip(
+private fun SectionHeader(
+    title: String,
+    count: Int,
+    modifier: Modifier = Modifier,
+    accent: Boolean = false,
+    action: String? = null,
+    onAction: () -> Unit = {}
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .shadow(3.dp, PillShape)
+                .background(if (accent) Brush.verticalGradient(listOf(GoldTop, GoldBottom)) else Brush.verticalGradient(listOf(RowCream, RowCreamDeep)), PillShape)
+                .border(2.dp, if (accent) GoldEdge else EdgeBrown, PillShape)
+                .padding(start = 16.dp, end = 6.dp, top = 5.dp, bottom = 5.dp)
+        ) {
+            Text(title, style = PaintedStyle(color = if (accent) Color(0xFF5A2D00) else InkBrown, fontSize = 17.sp), maxLines = 1)
+            Spacer(Modifier.width(8.dp))
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.defaultMinSize(minWidth = 28.dp, minHeight = 24.dp)
+                    .background(if (accent) Color(0xFF5A2D00) else EdgeBrown, PillShape)
+                    .padding(horizontal = 8.dp)
+            ) {
+                Text("$count", style = PaintedStyle(color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center), maxLines = 1)
+            }
+        }
+        Spacer(Modifier.weight(1f))
+        if (action != null) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .height(36.dp)
+                    .shadow(3.dp, PillShape)
+                    .background(Brush.verticalGradient(listOf(Color(0xFFFFA64D), ButtonOrange)), PillShape)
+                    .border(1.5.dp, Color(0xFFB04A0E), PillShape)
+                    .pressable(pressedScale = 0.94f, onClick = onAction)
+                    .padding(horizontal = 16.dp)
+            ) {
+                LetteredText(action, 15.sp, outline = Color(0xFF8A3A00))
+            }
+        }
+    }
+}
+
+/** The badge's round medallion: gold with a rim once earned, a quiet grey disc while it is still out of reach. */
+@Composable
+private fun Medallion(item: AchievementUiItem, size: androidx.compose.ui.unit.Dp, ring: Float = 0f) {
+    val earned = item.unlocked
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(size)
+            .shadow(if (earned) 4.dp else 1.dp, CircleShape)
+            .background(
+                if (earned) Brush.verticalGradient(listOf(GoldTop, GoldBottom)) else Brush.verticalGradient(listOf(Color(0xFFEDE3D2), Color(0xFFD8CBB4))),
+                CircleShape
+            )
+            .border(if (earned) 2.5.dp else 1.5.dp, if (earned) GoldEdge else Color(0xFFB8A88C), CircleShape)
+            .padding(size * 0.1f)
+            .background(if (earned) Color(0xFFFFF3C2) else Color(0xFFF6EFE2), CircleShape)
+            .border(1.dp, if (earned) Color(0xFFFFFFFF) else Color(0x33FFFFFF), CircleShape)
+    ) {
+        Text(
+            text = item.achievement.emoji,
+            style = PaintedStyle(fontSize = (size.value * 0.46f).sp, textAlign = TextAlign.Center),
+            modifier = Modifier.alpha(if (earned) 1f else 0.5f).graphicsLayer { scaleX = 1f + ring * 0.06f; scaleY = 1f + ring * 0.06f }
+        )
+    }
+}
+
+/**
+ * One badge as a full-width row: the medallion, its name and a progress bar with the numbers, and its reward. An earned
+ * but uncollected badge glows gold and offers "Ödülü topla" in place of the reward; [celebrating] plays the collect burst.
+ */
+@Composable
+private fun AchievementRow(
     item: AchievementUiItem,
-    variant: Int,
+    celebrating: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val claimable = item.unlocked && !item.claimed
-
-    // Earned-but-uncollected chips breathe (border, fill, size) until tapped —
-    // the one thing on this page that should draw the eye among 101 tiles.
-    val transition = rememberInfiniteTransition(label = "claimPulse")
-    val pulseAnim by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(650, easing = LinearEasing), RepeatMode.Reverse),
-        label = "claimPulseValue"
+    val transition = rememberInfiniteTransition(label = "rowGlow")
+    val glowAnim by transition.animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(900, easing = androidx.compose.animation.core.FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "rowGlowValue"
     )
-    val pulse = if (claimable) pulseAnim else 0f
-
-    // One-shot celebration the moment a chip flips from claimable to claimed:
-    // a small bounce plus the reward floating up and fading.
+    val glow = if (claimable) glowAnim else 0f
+    val shape = RoundedCornerShape(22.dp)
     val burst = remember(item.achievement.name) { Animatable(0f) }
-    var wasClaimable by remember(item.achievement.name) { mutableStateOf(claimable) }
-    LaunchedEffect(claimable) {
-        if (wasClaimable && !claimable && item.claimed) {
+    LaunchedEffect(celebrating) {
+        if (celebrating) {
             burst.snapTo(0f)
             burst.animateTo(1f, tween(1400, easing = LinearEasing))
-            burst.snapTo(0f)
         }
-        wasClaimable = claimable
     }
-    // Quick pop up, then a settling wobble — not a single lazy bump.
-    // The chip itself stays put while collecting (no scale wobble): its size changing under the
-    // player's finger read as the tile "changing shape". The effects are the flash, ring and pill.
-    val bounce = 0f
-
-    val tint = when {
-        item.claimed -> ColorFilter.tint(Color(0xFFA9DE9A), BlendMode.Modulate)
-        claimable -> ColorFilter.tint(Color(0xFFFFD84D).copy(alpha = 0.55f * pulse), BlendMode.SrcAtop)
-        !item.unlocked -> ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0.55f) })
-        else -> null
-    }
-
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        NinePatch(
-            res = CardDrawables[variant],
-            slicePx = 120,
-            edge = 26.dp,
-            tint = tint,
+    Box(modifier = modifier.fillMaxWidth()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(128.dp)
-                .graphicsLayer {
-                    val sc = 1f + 0.035f * pulse + bounce
-                    scaleX = sc
-                    scaleY = sc
-                }
-                .pressable(pressedScale = 0.95f, onClick = onClick)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 13.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Text(
-                    text = item.achievement.emoji,
-                    style = PaintedStyle(fontSize = 26.sp, textAlign = TextAlign.Center),
-                    modifier = Modifier.alpha(if (item.unlocked) 1f else 0.6f)
+                .shadow(if (claimable) (4 + 6 * glow).dp else 3.dp, shape, ambientColor = Color(0xFF6E3C0A), spotColor = Color(0xFF6E3C0A))
+                .background(
+                    if (claimable) Brush.verticalGradient(listOf(Color(0xFFFFF4C9), Color(0xFFFFE08A))) else Brush.verticalGradient(listOf(RowCream, RowCreamDeep)),
+                    shape
                 )
+                .border(if (claimable) 3.dp else 2.dp, if (claimable) lerp(GoldEdge, GoldBottom, glow) else EdgeBrown, shape)
+                .pressable(pressedScale = 0.97f, onClick = onClick)
+                .padding(start = 10.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)
+        ) {
+            Medallion(item, 56.dp, ring = glow)
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text(
                     text = stringResource(item.achievement.titleRes),
-                    style = PaintedStyle(color = InkBrown, fontSize = 12.sp, textAlign = TextAlign.Center, lineHeight = 13.sp),
-                    maxLines = 2,
-                    modifier = Modifier.fillMaxWidth()
+                    style = PaintedStyle(color = InkBrown, fontSize = 16.sp, lineHeight = 17.sp),
+                    maxLines = 2
                 )
-                // Status line: how close (locked), a call to action (earned), or a check (collected).
-                when {
-                    !item.unlocked -> Text(
-                        text = stringResource(
-                            R.string.achievement_progress_format,
-                            item.currentValue.coerceAtMost(item.achievement.target),
-                            item.achievement.target
-                        ),
-                        style = PaintedStyle(color = DescriptionInk, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
+                if (item.unlocked) {
+                    Text(
+                        text = stringResource(if (item.claimed) R.string.achievement_claimed_label else R.string.achievement_unlocked_label),
+                        style = PaintedStyle(color = if (item.claimed) Color(0xFF14602A) else Color(0xFFB8740A), fontSize = 13.sp),
                         maxLines = 1
                     )
-                    claimable -> Text(
-                        text = stringResource(R.string.achievement_claim_button),
-                        style = PaintedStyle(color = Color(0xFFB8740A), fontSize = 12.sp, textAlign = TextAlign.Center),
-                        maxLines = 1
-                    )
-                    else -> Text(
-                        text = stringResource(R.string.achievement_claimed_label),
-                        style = PaintedStyle(color = Color(0xFF14602A), fontSize = 11.sp, textAlign = TextAlign.Center),
-                        maxLines = 1
-                    )
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier.weight(1f).height(10.dp).background(Color(0xFFE2CDAA), PillShape)
+                        ) {
+                            Box(
+                                Modifier.fillMaxWidth(item.fraction.coerceAtLeast(0.04f)).height(10.dp)
+                                    .background(Brush.verticalGradient(listOf(Color(0xFFFFD04D), Color(0xFFF5A300))), PillShape)
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.achievement_progress_format, item.currentValue.coerceAtMost(item.achievement.target), item.achievement.target),
+                            style = PaintedStyle(color = DescriptionInk, fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
+                            maxLines = 1
+                        )
+                    }
                 }
-                RewardPill(item.achievement)
             }
+            Spacer(Modifier.width(10.dp))
+            if (claimable) CollectButton() else if (item.unlocked) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(30.dp).background(Brush.verticalGradient(listOf(Color(0xFF5FD068), MedalGreen)), CircleShape).border(1.5.dp, Color.White, CircleShape)
+                ) {
+                    androidx.compose.material3.Icon(Icons.Filled.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                }
+            } else RewardChip(item.achievement)
         }
-        if (item.claimed) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 4.dp, end = 4.dp)
-                    .size(22.dp)
-                    .shadow(2.dp, CircleShape)
-                    .background(Brush.verticalGradient(listOf(Color(0xFF5FD068), Color(0xFF2EA043))), CircleShape)
-                    .border(1.5.dp, Color.White, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                androidx.compose.material3.Icon(
-                    androidx.compose.material.icons.Icons.Filled.Check,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(14.dp)
-                )
-            }
-        }
-        if (burst.value > 0f) {
+        if (celebrating && burst.value > 0f) {
             val p = burst.value
-            val rewardTint = rewardColor(item.achievement)
-            ClaimBurstEffects(progress = p, ringColor = rewardTint, modifier = Modifier.matchParentSize())
-            // The reward rides up on a dark pill with a small overshoot, holds,
-            // then fades — big enough to actually read on a phone.
-            val rise = (1f - (1f - (p * 1.25f).coerceAtMost(1f)).let { it * it * it })
+            ClaimBurstEffects(progress = p, ringColor = rewardColor(item.achievement), modifier = Modifier.matchParentSize())
+            val rise = 1f - (1f - (p * 1.25f).coerceAtMost(1f)).let { it * it * it }
             Text(
                 text = "+" + rewardText(item.achievement).trimStart('+'),
-                // Plain, unscaled text kept inside the chip's own width — a glow or a scale-up here
-                // used to be cut off at the sides by the text's own bounds.
-                style = MaterialTheme.typography.titleSmall.copy(
-                    shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.25f), androidx.compose.ui.geometry.Offset(0f, 2f), 2f)
-                ),
+                style = MaterialTheme.typography.titleMedium.copy(shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.3f), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)),
                 fontWeight = FontWeight.ExtraBold,
-                color = rewardTint,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                softWrap = false,
+                color = rewardColor(item.achievement),
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .offset(y = (-30 * rise).dp)
-                    // Fades out smoothly over the back two thirds of the animation
-                    // instead of holding and then vanishing.
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 14.dp)
+                    .offset(y = (-22 * rise).dp)
                     .alpha(1f - androidx.compose.animation.core.FastOutSlowInEasing.transform(((p - 0.3f) / 0.7f).coerceIn(0f, 1f)))
             )
         }
     }
 }
 
+@Composable
+private fun CollectButton() {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .height(38.dp)
+            .shadow(3.dp, PillShape)
+            .background(Brush.verticalGradient(listOf(Color(0xFFFFA64D), ButtonOrange)), PillShape)
+            .border(1.5.dp, Color(0xFFB04A0E), PillShape)
+            .padding(horizontal = 14.dp)
+    ) {
+        LetteredText(stringResource(R.string.achievement_claim_button), 14.sp, outline = Color(0xFF8A3A00))
+    }
+}
+
 /** What a badge pays: blue for XP, orange for gold. */
 @Composable
-private fun RewardPill(achievement: Achievement) {
+private fun RewardChip(achievement: Achievement) {
     val gold = achievement.rewardType == AchievementRewardType.GOLD
     val top = if (gold) Color(0xFFFFA64D) else Color(0xFF4CB3FF)
     val bottom = if (gold) ButtonOrange else Color(0xFF1B7FE0)
@@ -586,12 +671,35 @@ private fun RewardPill(achievement: Achievement) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .height(20.dp)
+            .height(28.dp)
             .background(Brush.verticalGradient(listOf(top, bottom)), PillShape)
-            .border(1.2.dp, edge, PillShape)
-            .padding(horizontal = 8.dp)
+            .border(1.5.dp, edge, PillShape)
+            .padding(horizontal = 11.dp)
     ) {
-        LetteredText(rewardText(achievement), 11.sp, outline = edge)
+        LetteredText(rewardText(achievement), 13.sp, outline = edge)
+    }
+}
+
+/** An earned, collected badge on the trophy shelf: a gold medal and its name beneath. */
+@Composable
+private fun MedalCell(item: AchievementUiItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+            .background(Brush.verticalGradient(listOf(RowCream, RowCreamDeep)), RoundedCornerShape(18.dp))
+            .border(2.dp, EdgeBrown, RoundedCornerShape(18.dp))
+            .pressable(pressedScale = 0.94f, onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 8.dp)
+    ) {
+        Medallion(item, 52.dp)
+        Spacer(Modifier.height(5.dp))
+        Text(
+            text = stringResource(item.achievement.titleRes),
+            style = PaintedStyle(color = InkBrown, fontSize = 11.sp, lineHeight = 12.sp, textAlign = TextAlign.Center),
+            maxLines = 2,
+            minLines = 2,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
