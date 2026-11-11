@@ -194,13 +194,13 @@ function openingScene(c, rw) {
       <div class="rb-amt" style="${at((1080 - plaqueW) / 2, amountY - plaqueH / 2, plaqueW, plaqueH + 34)}"><div class="pl" style="height:${k(plaqueH)}"><img src="img/icon_gold_coin.webp" alt="" style="width:${k(plaqueH - 44)};height:${k(plaqueH - 44)}">${lt("+0", plaqueH * 0.62, "#FFFDF0", "#FFE9A8", "#5A2805", "rb-gold")}</div>
         <div class="rb-lbl">${lt(S("chests_reward_gold_label").toLocaleUpperCase(c.lang()), 34, "#ffffff", "#FFEBC8", "#6E2800")}</div></div>`;
     if (!compact) {
-      const tile = extras.length > 3 ? 168 : 190, gap = 28, x0 = (1080 - extras.length * tile - (extras.length - 1) * gap) / 2;
+      const tile = extras.length > 3 ? 138 : extras.length === 3 ? 172 : 190, gap = extras.length > 3 ? 22 : 28, x0 = (1080 - extras.length * tile - (extras.length - 1) * gap) / 2;
       html += `<div class="rb-div" style="${at(220, 1232, 640, 20)}"><i class="rb-spk on"></i></div>`;
       extras.forEach((e, i) => {
         const art = e.pen ? penSvg(e.pen.colors) : `<img src="img/${JOKER_ART[e.t]}.webp" alt="">`, name = e.pen ? e.pen[c.lang()] : S(JOKER_SHORT[e.t]), tw = tile * 0.56, th = tile * 0.30;
-        html += `<div class="rb-card" style="${at(x0 + i * (tile + gap), 1272, tile, tile + 72)};animation-delay:${cardAt(i)}ms"><div class="tl" style="width:${k(tile)};height:${k(tile)}">${art}</div>
-          <div class="tag" style="left:${k(tile - tw + 16)};top:${k(tile - th + 14)};width:${k(tw)};height:${k(th)}">${lt("×" + (e.n || 1), th * 0.72, "#ffffff", "#FFEBC8", "#6E2800")}</div>
-          <div class="nm" style="top:${k(tile + 16)};font-size:${k(tile * 0.18)}">${esc(name)}</div></div>`;
+        html += `<div class="rb-card" style="${at(x0 + i * (tile + gap), 1262, tile, tile + 72)};animation-delay:${cardAt(i)}ms"><div class="tl" style="width:${k(tile)};height:${k(tile)}">${art}</div>
+          <div class="tag" style="left:${k(tile - tw + 8)};top:${k(tile - th + 12)};width:${k(tw)};height:${k(th)}">${lt("×" + (e.n || 1), th * 0.72, "#ffffff", "#FFEBC8", "#6E2800")}</div>
+          <div class="nm" style="top:${k(tile + 16)};left:${k(-(gap - 4) / 2)};right:${k(-(gap - 4) / 2)};font-size:${k(tile * 0.18)}">${esc(name)}</div></div>`;
       });
     }
     html += `<div class="rb-btn" style="${at(210, 1712, 660, 275)};animation-delay:${btnAt}ms"><img src="img/rp_pill_orange.webp" alt="">${lt(S("chests_reward_button"), 78, "#ffffff", "#FFEBC8", "#823200")}</div>`;
