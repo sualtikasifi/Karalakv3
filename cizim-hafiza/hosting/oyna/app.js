@@ -869,14 +869,18 @@ function answer(text) {
   showFeedback(w); setTimeout(() => { hideFeedback(); idx++; if (current === "guess") nextGuess(); }, 1200);
 }
 // GuessFeedbackOverlay: the badge over the drawing — a tick or a cross, the XP it paid, and the right word after a miss — for 1.2 s
-const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#1e8a3a" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const CROSS = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="#c0392b" stroke-width="3.2" stroke-linecap="round"/></svg>';
+const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CROSS = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/></svg>';
 function showFeedback(w) {
   let f = $("g-fb"); if (!f) { f = document.createElement("div"); f.id = "g-fb"; $("g-canvas").append(f); }
-  f.innerHTML = `<div class="${w.correct ? "ok" : "no"}"><div class="card"><div class="ic">${w.correct ? CHECK : CROSS}</div>${w.xp > 0 ? `<div class="xp">${S("xp_gained_format", w.xp)}</div>` : ""}${w.correct ? "" : `<div class="ans">${S("correct_answer_was", w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1))}</div>`}</div></div>`;
+  const word = w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1);
+  // a slim strip at the top of the drawing (mark, word, XP chip) and a frame in the same colour: the drawing itself stays in view
+  f.className = w.correct ? "ok" : "no";
+  f.innerHTML = `<div class="card"><div class="ic">${w.correct ? CHECK : CROSS}</div><div class="ans"></div>${w.correct && w.xp > 0 ? `<div class="xp">${S("xp_gained_format", w.xp)}</div>` : ""}</div>`;
+  f.querySelector(".ans").textContent = w.correct ? word : S("correct_answer_was", word);
   $("guess").classList.add("fb"); // the field is left alone (no blur, no read-only, no disabled): any of those closes the keyboard, and it does not come back by itself
 }
-function hideFeedback() { $("guess").classList.remove("fb"); const f = $("g-fb"); if (f) f.replaceChildren(); }
+function hideFeedback() { $("guess").classList.remove("fb"); const f = $("g-fb"); if (f) { f.replaceChildren(); f.className = ""; } }
 function flash(ok) { const f = $("g-flash"); f.textContent = ok ? "✅" : "❌"; f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); }
 // pressing a button must not take the focus from the answer field, or the keyboard drops (and comes back with the next word)
 // iOS Safari still moves the focus on mouse events after a prevented pointerdown, so mousedown is stopped too (not touchstart: that would cancel the tap), and a focus that lands anyway goes back to the field

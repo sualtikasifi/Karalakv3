@@ -466,7 +466,7 @@ fun GuessScreen(
                     feedback = state.feedback,
                     guessNumber = state.guessNumber,
                     wordLanguage = wordLanguage,
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier
                 )
 
                 if (state.isRevisit) {
@@ -888,10 +888,10 @@ private fun LetterBlanks(groups: List<Int>, firstLetter: String?, modifier: Modi
 }
 
 /**
- * The correct/wrong badge shown over the drawing once an answer lands.
- * Extracted into its own composable purely so [AnimatedVisibility] resolves
- * against no implicit receiver — called inline inside the canvas Box it
- * would bind to the enclosing Column's scoped overload instead.
+ * What an answer gets: a slim result strip that slides down from the top of the drawing, and a thin frame in the same
+ * colour around the canvas. The strip holds a small mark that draws itself (tick or cross), the word, and for a right
+ * answer the XP it paid on a gold chip. Nothing sits on the middle of the drawing, so it stays in view the whole time.
+ * Extracted into its own composable so [AnimatedVisibility] resolves against no implicit receiver.
  */
 @Composable
 private fun GuessFeedbackOverlay(
@@ -901,166 +901,88 @@ private fun GuessFeedbackOverlay(
     wordLanguage: String,
     modifier: Modifier = Modifier
 ) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = scaleIn(
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow
-            )
-        ) + fadeIn(tween(150)),
-        modifier = modifier
-    ) {
-        if (feedback != null) {
-            val shakeOffset = remember(guessNumber) { Animatable(0f) }
-            LaunchedEffect(feedback) {
-                if (!feedback.isCorrect) {
-                    shakeOffset.animateTo(
-                        targetValue = 0f,
-                        animationSpec = keyframes {
-                            durationMillis = 400
-                            0f at 0
-                            -16f at 50
-                            16f at 100
-                            -12f at 150
-                            12f at 200
-                            -6f at 250
-                            6f at 300
-                            0f at 400
-                        }
-                    )
+    val accent = if (feedback?.isCorrect == true) Color(0xFF22A552) else Color(0xFFD9483B)
+    Box(modifier = modifier.fillMaxSize()) {
+        // the frame: there at once, gone with the strip
+        AnimatedVisibility(visible = visible, enter = fadeIn(tween(120)), exit = androidx.compose.animation.fadeOut(tween(160)), modifier = Modifier.matchParentSize()) {
+            Box(Modifier.fillMaxSize().border(3.dp, accent.copy(alpha = 0.85f), RoundedCornerShape(14.dp)))
+        }
+        AnimatedVisibility(
+            visible = visible,
+            enter = androidx.compose.animation.slideInVertically(spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMediumLow)) { -it } + fadeIn(tween(120)),
+            exit = androidx.compose.animation.fadeOut(tween(160)),
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp, start = 14.dp, end = 14.dp)
+        ) {
+            if (feedback != null) {
+                val shake = remember(guessNumber) { Animatable(0f) }
+                val mark = remember(guessNumber) { Animatable(0f) }
+                LaunchedEffect(feedback) {
+                    launch { delay(120); mark.animateTo(1f, tween(280, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
+                    if (!feedback.isCorrect) shake.animateTo(0f, keyframes {
+                        durationMillis = 360
+                        0f at 0; -10f at 60; 10f at 120; -6f at 190; 6f at 260; 0f at 360
+                    })
                 }
-            }
-            if (feedback.isCorrect) {
-                CorrectBadge(xp = feedback.xpAwarded)
-                return@AnimatedVisibility
-            }
-            Column(
-                modifier = Modifier
-                    .offset { androidx.compose.ui.unit.IntOffset(shakeOffset.value.dp.roundToPx(), 0) }
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f), MaterialTheme.shapes.large)
-                    .padding(horizontal = 20.dp, vertical = 14.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .size(60.dp)
-                        .background(
-                            if (feedback.isCorrect) AppTheme.tokens.successContainer else MaterialTheme.colorScheme.errorContainer,
-                            CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
+                        .offset { androidx.compose.ui.unit.IntOffset(shake.value.dp.roundToPx(), 0) }
+                        .shadow(6.dp, RoundedCornerShape(50))
+                        .background(Color(0xFFFFFAF0), RoundedCornerShape(50))
+                        .border(2.dp, accent, RoundedCornerShape(50))
+                        .padding(start = 6.dp, end = if (feedback.isCorrect && feedback.xpAwarded > 0) 6.dp else 16.dp, top = 6.dp, bottom = 6.dp)
                 ) {
-                    Icon(
-                        imageVector = if (feedback.isCorrect) Icons.Filled.Check else Icons.Filled.Close,
-                        contentDescription = null,
-                        tint = if (feedback.isCorrect) AppTheme.tokens.success else MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(34.dp)
-                    )
-                }
-                // The whole point of granting XP live (see GameViewModel/
-                // OnlineGameViewModel.submitGuess) is that the player sees it
-                // land on THIS word, not just the level badge ticking up in
-                // their peripheral vision. Absent for the daily challenge,
-                // which pays its own reward at the end instead (xpAwarded is
-                // 0 there) — see GuessFeedback's doc.
-                if (feedback.xpAwarded > 0) {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    ResultMark(correct = feedback.isCorrect, progress = mark.value, color = accent)
+                    Spacer(Modifier.width(10.dp))
+                    val word = feedback.correctAnswer.capitalizeForWordLanguage(wordLanguage)
                     Text(
-                        text = stringResource(R.string.xp_gained_format, feedback.xpAwarded),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = AppTheme.tokens.gold,
-                        fontWeight = FontWeight.Bold
+                        text = if (feedback.isCorrect) word else stringResource(R.string.correct_answer_was, word),
+                        style = PaintedStyle(color = Color(0xFF3B2414), fontSize = 17.sp),
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
-                }
-                if (!feedback.isCorrect) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = stringResource(
-                            R.string.correct_answer_was,
-                            feedback.correctAnswer.capitalizeForWordLanguage(wordLanguage)
-                        ),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
+                    // Absent for the daily challenge, which pays its own reward at the end (xpAwarded is 0 there).
+                    if (feedback.isCorrect && feedback.xpAwarded > 0) {
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = stringResource(R.string.xp_gained_format, feedback.xpAwarded),
+                            style = PaintedStyle(color = Color(0xFF6B3D00), fontSize = 14.sp),
+                            maxLines = 1,
+                            modifier = Modifier
+                                .background(Brush.verticalGradient(listOf(Color(0xFFFFE27A), Color(0xFFFFC53D))), RoundedCornerShape(50))
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-/**
- * The badge for a right answer: a glossy green disc with a thick white rim that pops in, a white check that draws itself
- * stroke by stroke, a ring and a burst of sparkles flying out of it, and the XP in the game's own lettering below.
- * Only drawn for a correct answer; the wrong one keeps its card (see [GuessFeedbackOverlay]).
- */
+/** The strip's mark: a flat disc in the answer's colour with a white tick or cross that draws itself as [progress] goes 0..1. */
 @Composable
-private fun CorrectBadge(xp: Int) {
-    val pop = remember { Animatable(0.3f) }
-    val check = remember { Animatable(0f) }
-    val burst = remember { Animatable(0f) }
-    val xpIn = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        launch { pop.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)) }
-        launch { delay(140); check.animateTo(1f, tween(360, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
-        launch { burst.animateTo(1f, tween(700, easing = androidx.compose.animation.core.LinearOutSlowInEasing)) }
-        launch { delay(300); xpIn.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy)) }
-    }
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        androidx.compose.foundation.Canvas(modifier = Modifier.size(92.dp)) {
-            val c = center
-            val r = size.minDimension * 0.30f
-            val b = burst.value
-            // a ring that opens out of the disc and fades
-            drawCircle(
-                color = Color(0xFF4FD97D).copy(alpha = ((1f - b) * 0.6f).coerceIn(0f, 1f)),
-                radius = r * (1f + 0.6f * b), center = c,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(width = r * 0.24f * (1f - b) + 1f)
-            )
-            // sparkles flying outwards, gold and white by turns
-            for (i in 0 until 6) {
-                val ang = (i * 60.0 + 20.0) * Math.PI / 180.0
-                val dist = r * (1.1f + 0.6f * b)
-                val dot = r * 0.07f * (1f - b * 0.8f)
-                val col = if (i % 2 == 0) Color(0xFFFFD43B) else Color.White
-                drawCircle(col.copy(alpha = (1f - b * b).coerceIn(0f, 1f)), dot.coerceAtLeast(0.5f), Offset(c.x + (kotlin.math.cos(ang) * dist).toFloat(), c.y + (kotlin.math.sin(ang) * dist).toFloat()))
-            }
-            scale(pop.value, c) {
-                // drop shadow, white rim, the glossy green disc
-                drawCircle(Color(0x55000000), r * 1.04f, Offset(c.x, c.y + r * 0.10f))
-                drawCircle(Color.White, r * 1.04f, c)
-                drawCircle(
-                    Brush.radialGradient(listOf(Color(0xFF7BEA9C), Color(0xFF2DBB5B), Color(0xFF168A3E)), center = Offset(c.x - r * 0.25f, c.y - r * 0.35f), radius = r * 1.5f),
-                    r * 0.90f, c
-                )
-                // a soft highlight on the upper half
-                drawOval(Color.White.copy(alpha = 0.28f), Offset(c.x - r * 0.62f, c.y - r * 0.82f), androidx.compose.ui.geometry.Size(r * 1.24f, r * 0.62f))
-                // the check, drawn as far as [check] says
-                val path = Path().apply {
-                    moveTo(c.x - r * 0.42f, c.y + r * 0.04f)
-                    lineTo(c.x - r * 0.11f, c.y + r * 0.34f)
-                    lineTo(c.x + r * 0.44f, c.y - r * 0.30f)
-                }
-                val measure = PathMeasure().apply { setPath(path, false) }
-                val part = Path()
-                measure.getSegment(0f, measure.length * check.value, part, true)
-                val w = r * 0.27f
-                withTransform({ translate(0f, r * 0.07f) }) { drawPath(part, Color(0x66063D1B), style = androidx.compose.ui.graphics.drawscope.Stroke(w, cap = StrokeCap.Round, join = StrokeJoin.Round)) }
-                drawPath(part, Color.White, style = androidx.compose.ui.graphics.drawscope.Stroke(w, cap = StrokeCap.Round, join = StrokeJoin.Round))
-            }
-        }
-        if (xp > 0) {
-            LetteredText(
-                text = stringResource(R.string.xp_gained_format, xp),
-                size = 19.sp,
-                fill = Color(0xFFFFD43B),
-                outline = Color(0xFF7A3F00),
-                modifier = Modifier.graphicsLayer {
-                    scaleX = xpIn.value; scaleY = xpIn.value
-                    alpha = xpIn.value.coerceIn(0f, 1f)
-                }
-            )
+private fun ResultMark(correct: Boolean, progress: Float, color: Color) {
+    androidx.compose.foundation.Canvas(modifier = Modifier.size(30.dp)) {
+        val c = center
+        val r = size.minDimension / 2f
+        drawCircle(color, r, c)
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(r * 0.26f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+        // one line for the tick, two for the cross, drawn one after the other
+        val lines: List<List<Offset>> = if (correct) listOf(
+            listOf(Offset(c.x - r * 0.44f, c.y + r * 0.02f), Offset(c.x - r * 0.12f, c.y + r * 0.34f), Offset(c.x + r * 0.46f, c.y - r * 0.30f))
+        ) else listOf(
+            listOf(Offset(c.x - r * 0.34f, c.y - r * 0.34f), Offset(c.x + r * 0.34f, c.y + r * 0.34f)),
+            listOf(Offset(c.x + r * 0.34f, c.y - r * 0.34f), Offset(c.x - r * 0.34f, c.y + r * 0.34f))
+        )
+        lines.forEachIndexed { i, pts ->
+            val share = (progress * lines.size - i).coerceIn(0f, 1f)
+            if (share <= 0f) return@forEachIndexed
+            val path = Path().apply { moveTo(pts[0].x, pts[0].y); pts.drop(1).forEach { lineTo(it.x, it.y) } }
+            val measure = PathMeasure().apply { setPath(path, false) }
+            val part = Path()
+            measure.getSegment(0f, measure.length * share, part, true)
+            drawPath(part, Color.White, style = stroke)
         }
     }
 }
