@@ -586,10 +586,16 @@ private fun AchievementRow(
         ) {
             Medallion(item, 56.dp, ring = glow)
             Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = stringResource(item.achievement.titleRes),
                     style = PaintedStyle(color = InkBrown, fontSize = 16.sp, lineHeight = 17.sp),
+                    maxLines = 2
+                )
+                // How to earn it, right under the name: nobody should have to open a badge to find out.
+                Text(
+                    text = stringResource(item.achievement.descriptionRes),
+                    style = PaintedStyle(color = DescriptionInk, fontSize = 12.sp, lineHeight = 13.sp, fontWeight = FontWeight.SemiBold),
                     maxLines = 2
                 )
                 if (item.unlocked) {
