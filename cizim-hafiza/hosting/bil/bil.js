@@ -1,8 +1,8 @@
 // "Bil Bakalım" on the web (karalak.com/b/ID): a friend's drawing, watched being drawn and guessed in three tries, then "sıra sende".
 //
-// Who may play here: iPhones, iPads and computers. An Android phone is NOT let play in the browser, on purpose: the game's
-// income is the ads inside the app, so an Android visitor gets the app (it opens straight on this drawing) or the Play Store
-// (the link rides along as the install referrer, so the app opens on the drawing after the install).
+// Who may play here: iPhones and iPads only. Everybody else is NOT let play in the browser, on purpose: the game's income is
+// the ads inside the app, so an Android visitor gets the app (it opens straight on this drawing) or the Play Store (the link
+// rides along as the install referrer, so the app opens on the drawing after the install), and a computer gets the Play Store.
 //
 // The answer is never in the link. The page checks a guess by hashing it (GuessCodec.kt does the same on the phone) and, when
 // the round is over, finds the word by hashing the language's word list.
@@ -71,6 +71,7 @@ const view = $("view");
 const m = location.pathname.match(/^\/b\/([A-Za-z0-9]{10})\/?$/);
 const linkId = m ? m[1] : "";
 const android = /Android/i.test(navigator.userAgent) || navigator.userAgentData?.platform === "Android";
+const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -78,20 +79,21 @@ const show = (...nodes) => view.replaceChildren(...nodes);
 const button = (cls, text, fn) => { const b = h("button", "btn " + cls, esc(text)); b.type = "button"; b.onclick = fn; return b; };
 const safe = (fn) => { try { return fn(); } catch { return null; } };
 
-// ---- Android: the app, not the browser --------------------------------------------------------------------------------
-if (android) {
+// ---- everybody but iOS: the app, not the browser --------------------------------------------------------------------------------
+if (!ios) {
   const store = `https://play.google.com/store/apps/details?id=${PKG}${linkId ? "&referrer=" + encodeURIComponent("karalak_guess=" + linkId) : ""}`;
   $("title").textContent = x.aTitle;
   const open = h("a", "btn primary", esc(x.aOpen));
   const play = h("a", "btn second", esc(x.aStore));
   play.href = store;
-  if (linkId) {
+  if (linkId && android) {
     // karalak://guess/ID; if the app is not installed the browser falls back to the Play Store with the link as referrer
     const intent = `intent://guess/${linkId}#Intent;scheme=karalak;package=${PKG};S.browser_fallback_url=${encodeURIComponent(store)};end`;
     open.href = intent;
     setTimeout(() => { location.href = intent; }, 300);
   } else open.href = store;
-  show(h("p", "sub", esc(x.aText)), open, play);
+  // a computer has no app to open: only the store
+  show(h("p", "sub", esc(x.aText)), ...(android ? [open, play] : [play]));
 } else {
   start().catch(() => fail(x.offline, true));
 }

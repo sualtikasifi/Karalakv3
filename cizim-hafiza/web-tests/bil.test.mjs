@@ -1,5 +1,5 @@
 // "Bil Bakalım" on the web (hosting/bil): an iPhone watches a friend's drawing, guesses it, draws the same word and gets a link of
-// its own; an Android phone is NOT let play in the browser and is handed to the app. Firebase is the in-memory fake the other
+// its own; an Android phone or a computer is NOT let play in the browser and is handed to the app or the store. Firebase is the in-memory fake the other
 // web tests use, seeded with a link whose hash is computed here the way the app computes it (GuessCodec.kt).
 import { webkit, chromium, devices } from "playwright";
 import http from "node:http";
@@ -95,6 +95,18 @@ const store = (page) => page.evaluate(() => window.__store);
     if (await page.$(".paper, canvas")) fail("Android: the drawing is playable in the browser");
     if (await page.$('input[type=text]')) fail("Android: a guess box is offered in the browser");
   } catch (e) { fail(`Android flow: ${e.message.split("\n")[0]}`); }
+  await browser.close();
+}
+
+// ---- a computer does not play in the browser either: the store only
+{
+  const { browser, page } = await open(chromium, { viewport: { width: 1000, height: 800 }, locale: "tr-TR" }, `/b/${ID}`);
+  try {
+    await page.waitForSelector("a.btn", { timeout: 6000 });
+    const hrefs = await page.$$eval("a.btn", (a) => a.map((x) => x.getAttribute("href")));
+    if (hrefs.length !== 1 || !hrefs[0].includes("play.google.com")) fail(`desktop: expected only the store link, got ${JSON.stringify(hrefs)}`);
+    if (await page.$(".paper, canvas, input[type=text]")) fail("desktop: the drawing is playable in the browser");
+  } catch (e) { fail(`desktop flow: ${e.message.split("\n")[0]}`); }
   await browser.close();
 }
 
