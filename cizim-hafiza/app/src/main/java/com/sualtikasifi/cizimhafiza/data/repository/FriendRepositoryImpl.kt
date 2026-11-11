@@ -361,6 +361,11 @@ class FriendRepositoryImpl @Inject constructor(
         batch.delete(users.document(uid).collection("friends").document(friendUid))
         batch.delete(users.document(friendUid).collection("friends").document(uid))
         batch.commit().await()
+        // The pair's friend streak goes with the friendship (its own call: a pair that never had one has nothing to delete,
+        // and the rules refuse a delete of a missing document).
+        runCatching {
+            firestore.collection("friendStreaks").document(com.sualtikasifi.cizimhafiza.domain.model.FriendStreaks.pairId(uid, friendUid)).delete().await()
+        }
     }
 
     override suspend fun prepareFriendMigration(): FriendMigration {

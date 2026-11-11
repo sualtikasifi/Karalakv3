@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import com.sualtikasifi.cizimhafiza.presentation.common.previewSwipe
@@ -78,6 +79,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.material.icons.filled.Image
@@ -160,6 +162,10 @@ fun ResultScreen(
     var shareChoiceFor by remember { mutableStateOf<ResultItem?>(null) }
     var videoPreparing by remember { mutableStateOf(false) }
     val shareScope = androidx.compose.runtime.rememberCoroutineScope()
+    // "Bil Bakalım": the drawing as a link a friend opens to watch it drawn and guess it (hidden for a player who may be under 13).
+    val guessShare: com.sualtikasifi.cizimhafiza.presentation.guess.GuessShareViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    val guessChild by guessShare.childMode.collectAsState()
+    var guessLinkBusy by remember { mutableStateOf(false) }
     var reportItem by remember { mutableStateOf<ResultItem?>(null) }
     // Local, not derived from `state`: the phase itself only ever decides
     // whether a prompt is ELIGIBLE to show (once, per PostMatchPrompts) —
@@ -505,6 +511,32 @@ fun ResultScreen(
                             },
                             modifier = Modifier.fillMaxWidth()
                         )
+                        if (!guessChild) {
+                            SecondaryButton(
+                                text = stringResource(if (guessLinkBusy) R.string.guess_link_creating else R.string.guess_ask_friend),
+                                icon = Icons.Filled.Link,
+                                enabled = !guessLinkBusy,
+                                onClick = {
+                                    guessLinkBusy = true
+                                    shareScope.launch {
+                                        guessShare.create(item.word, item.strokes, wordLanguage)
+                                            .onSuccess { id ->
+                                                com.sualtikasifi.cizimhafiza.util.GuessShareUtil.share(context, id, item.word, item.strokes)
+                                                shareChoiceFor = null
+                                            }
+                                            .onFailure { e ->
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    if (e is com.sualtikasifi.cizimhafiza.domain.repository.GuessRepository.LimitReachedException) R.string.guess_limit else R.string.guess_share_failed,
+                                                    android.widget.Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        guessLinkBusy = false
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                         SecondaryButton(
                             text = stringResource(R.string.share_as_video),
                             icon = Icons.Filled.Videocam,

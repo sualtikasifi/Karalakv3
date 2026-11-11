@@ -114,7 +114,7 @@ class PenSkinTest {
                 // Premium store pens.
                 "AURUM", "PRISM", "EMBER", "STORM", "COSMOS", "SPECTER", "LION",
                 // Rune-map reward.
-                "AURORA"
+                "AURORA", "FRIENDSHIP"
             ),
             PenSkin.entries.map { it.name }
         )

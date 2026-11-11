@@ -2,6 +2,7 @@
 import { firebaseConfig, firebaseReady, appCheckSiteKey } from "./config.js";
 import { parseGhostId, ghostOutcome } from "./ghost.js";
 import { nameAllowed } from "./namefilter.js";
+import { normalize as foldWord } from "./matcher.js";
 
 const V = "10.14.1";
 const CDN = `https://www.gstatic.com/firebasejs/${V}`;
@@ -534,4 +535,49 @@ export async function reportPlayer(reportedUid, nickname, reason, context) {
 export async function sendFriendRequestTo(uid, name, myNick) {
   const { fs, db, auth } = await init();
   await fs.setDoc(fs.doc(db, "users", uid, "friendRequests", auth.currentUser.uid), { fromNickname: myNick, sentAt: Date.now(), fromUid: auth.currentUser.uid });
+}
+
+// ---- "Bil Bakalım" links (GuessRepositoryImpl.kt, hosting/bil): a drawing sent as a link, guessed by whoever opens it.
+// The word is never stored, only a salted SHA-256 of its folded spelling (GuessCodec.kt computes the same string).
+const GUESS_ALPHABET = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const guessRandom = (n) => { const a = crypto.getRandomValues(new Uint32Array(n)); return Array.from(a, (v) => GUESS_ALPHABET[v % GUESS_ALPHABET.length]).join(""); };
+async function sha256Hex(text) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(d), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+/** The salted hash of a word, exactly as GuessCodec.hash writes it. */
+export const guessHash = (salt, word) => sha256Hex(`${salt}:${foldWord(word)}`);
+
+/** The link, or null when it does not exist or has expired (the rules refuse an expired one as permission-denied). */
+export async function getGuessLink(id) {
+  const { fs, db } = await init();
+  try {
+    const d = await fs.getDoc(fs.doc(db, "guessLinks", id));
+    if (!d.exists()) return null;
+    const x = d.data();
+    if (!x.expiresAt || x.expiresAt <= Date.now()) return null;
+    return { id, ownerUid: x.ownerUid, ownerName: x.ownerName || "", lang: x.lang || "tr", salt: x.salt, hash: x.hash, pattern: x.pattern || "", first: x.first || "", strokesJson: x.strokesJson || "", seconds: x.seconds || 0 };
+  } catch (e) { if (e.code === "permission-denied") return null; throw e; }
+}
+
+/** Leaves the outcome in the owner's inbox: one entry per person per link, a second attempt is refused by the rules and ignored. */
+export async function sendGuessResult(link, solved, attempts, myName) {
+  const { fs, db, auth } = await init(), me = auth.currentUser.uid;
+  if (me === link.ownerUid) return;
+  try {
+    await fs.setDoc(fs.doc(db, "users", link.ownerUid, "guessInbox", `${link.id}_${me}`), { linkId: link.id, fromUid: me, fromName: String(myName || "?").slice(0, 40), solved: !!solved, attempts: Math.min(3, Math.max(1, attempts)), at: Date.now() });
+  } catch (e) { if (e.code !== "permission-denied") throw e; }
+}
+
+/** Turns a drawing into a link of this visitor's own ("sıra sende"); returns its id. [strokesJson] is GuessCodec's compact form. */
+export async function createGuessLink({ word, lang, strokesJson, seconds, ownerName }) {
+  const { fs, db, auth } = await init();
+  const id = guessRandom(10), salt = guessRandom(12), now = Date.now();
+  const folded = foldWord(word).split(" ").filter(Boolean);
+  await fs.setDoc(fs.doc(db, "guessLinks", id), {
+    ownerUid: auth.currentUser.uid, ownerName: String(ownerName || "").slice(0, 40), lang, salt,
+    hash: await guessHash(salt, word), pattern: folded.map((w) => w.length).join(" "), first: word.trim().slice(0, 1).toLocaleUpperCase(lang),
+    strokesJson, seconds: Math.min(120, Math.max(0, seconds | 0)), createdAt: now, expiresAt: now + 30 * 864e5,
+  });
+  return id;
 }

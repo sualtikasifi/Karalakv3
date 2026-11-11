@@ -1735,4 +1735,77 @@
     <string name="rune_tour_open">See the runes</string>
     <string name="tour_runes_title">Karalak Runes</string>
     <string name="tour_runes_body">Turn your gold into permanent powers! Runes give bonuses in every game: more gold for every right word, richer chests, store discounts and more. Tap the Runes sign on the home screen, or the dog; the runes you can buy glow.</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="guess_share_text">What is this drawing? Guess it! 🎨\n%1$s</string>
+    <string name="guess_gone">This link no longer works. It may have expired or been deleted.</string>
+    <string name="guess_offline">The drawing could not be loaded. Check your connection.</string>
+    <string name="guess_child">This feature is turned off for this account.</string>
+    <string name="guess_own">You sent this drawing. Keep sharing the link so your friends can guess it!</string>
+    <string name="guess_retry">Try again</string>
+    <string name="guess_someone">A friend</string>
+    <string name="guess_title">%1$s drew something</string>
+    <string name="guess_subtitle">Watch it and guess in 3 tries!</string>
+    <string name="guess_replay">Watch again</string>
+    <string name="guess_placeholder">What do you think it is?</string>
+    <string name="guess_submit">Guess</string>
+    <string name="guess_give_up">Skip</string>
+    <string name="guess_solved">You got it! 🎉</string>
+    <string name="guess_solved_first">First try!</string>
+    <string name="guess_solved_tries">Guessed on try %1$d</string>
+    <string name="guess_failed">Not this time 😅</string>
+    <string name="guess_answer">Answer: %1$s</string>
+    <string name="guess_your_turn_hint">Your turn: draw the same word and send it to your friend.</string>
+    <string name="guess_your_turn">Your turn!</string>
+    <string name="guess_draw_title">Draw %1$s!</string>
+    <string name="guess_draw_seconds">%1$d s</string>
+    <string name="guess_undo">Undo</string>
+    <string name="guess_done">Done</string>
+    <string name="guess_shared_title">Ready!</string>
+    <string name="guess_shared_sub">Your drawing is on its way, link and all.</string>
+    <string name="guess_share_again">Send again</string>
+    <string name="guess_limit">You made a lot of links today, try again tomorrow.</string>
+    <string name="guess_share_failed">The link could not be created. Try again.</string>
+    <string name="guess_ask_friend">Ask a friend (link)</string>
+    <string name="guess_link_creating">Preparing the link…</string>
+    <string name="guess_inbox_title">They tried your drawings!</string>
+    <string name="guess_inbox_solved">%1$s guessed it (try %2$d)</string>
+    <string name="guess_inbox_failed">%1$s could not guess it</string>
+    <string name="guess_inbox_reward">+%1$d gold</string>
+    <string name="guess_inbox_ok">Great!</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="frame_name_friendship">Friendship Frame</string>
+    <string name="pen_friendship">Friendship Pen</string>
+    <string name="cosmetic_locked_friend">Won with a friend streak</string>
+    <string name="fstreak_badge">%1$d days</string>
+    <string name="fstreak_row_done">Done today</string>
+    <string name="fstreak_row_risk">Send a duel today</string>
+    <string name="fstreak_row_broken">Streak broken!</string>
+    <string name="fstreak_row_rescue">Save it</string>
+    <string name="fstreak_reminder_title">Your streak is about to end!</string>
+    <string name="fstreak_reminder_body">Your %2$d-day streak with %1$s ends today. Keep it going with a 10-word duel.</string>
+    <string name="fstreak_reminder_action">Send a duel</string>
+    <string name="fstreak_reminder_later">Later</string>
+    <string name="fstreak_broken_title">Your streak with %1$s broke!</string>
+    <string name="fstreak_broken_body">Your %2$d-day streak missed a day. Watch an ad and it carries on for both of you, as if yesterday\'s duel had been played.</string>
+    <string name="fstreak_broken_action">Watch an ad and save it</string>
+    <string name="fstreak_broken_dismiss">Let it go</string>
+    <string name="fstreak_rescued_title">%1$s saved your streak!</string>
+    <string name="fstreak_rescued_body">Your %2$d-day streak lives on. Don\'t forget today\'s duel.</string>
+    <string name="fstreak_rescued_ok">Great!</string>
+    <string name="fstreak_done_toast">Streak saved!</string>
+    <string name="fstreak_reward_title">%2$d days with %1$s!</string>
+    <string name="fstreak_reward_body">You have been dueling together for %2$d days. There is a prize for both of you:</string>
+    <string name="fstreak_reward_claim">Claim prize</string>
+    <string name="fstreak_reward_gold">+%1$d gold</string>
+    <string name="fstreak_reward_jokers">3 jokers (1 of each)</string>
+    <string name="fstreak_reward_frame">🖼 %1$s</string>
+    <string name="fstreak_reward_pen">✏️ %1$s</string>
+    <string name="fstreak_ad_failed">The ad could not load right now, try again in a moment.</string>
+    <string name="fstreak_next_prize">Next prize: %1$d days</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="guess_report">Report</string>
+    <string name="guess_reported">Thank you, we will look into it.</string>
 </resources>

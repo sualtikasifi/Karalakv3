@@ -76,6 +76,8 @@ enum class PenSkin(
     val storePrice: Int = 0,
     /** Found only on the rune map (RuneRewards): owned like a store item, but never sold in the store or dropped by a chest. */
     val isRuneReward: Boolean = false,
+    /** Won only by a friend streak (FriendStreakRewards): owned like a store item, never sold, never dropped by a chest. */
+    val isFriendReward: Boolean = false,
     /** Extra paint on the stroke (glow, sparkles) — drawn by PenBrush's drawPenStroke, so opponents see it too. */
     val effect: PenEffect = PenEffect.NONE,
     /**
@@ -137,7 +139,10 @@ enum class PenSkin(
     LION(R.string.pen_lion, listOf(0xFFFFC857, 0xFFFF9A2E, 0xFFE0492B, 0xFFFFC857), 0, storePrice = 180000, effect = PenEffect.ROYAL),
 
     // --- Rune-map reward (st_5): found only on the rune map, never sold. Replaces the plain Night pen as that rune's gift. ---
-    AURORA(R.string.pen_aurora, listOf(0xFF1FD6A0, 0xFF22B8E0, 0xFF5B6CF0, 0xFFA66BFF), 0, storePrice = 12500, isRuneReward = true, effect = PenEffect.AURORA);
+    AURORA(R.string.pen_aurora, listOf(0xFF1FD6A0, 0xFF22B8E0, 0xFF5B6CF0, 0xFFA66BFF), 0, storePrice = 12500, isRuneReward = true, effect = PenEffect.AURORA),
+
+    // --- Friend-streak prize (100 days together, see FriendStreakRewards): never sold. ---
+    FRIENDSHIP(R.string.pen_friendship, listOf(0xFFFF7BAC, 0xFFFFC857, 0xFF7CE7FF, 0xFFFF7BAC), 0, storePrice = 9000, isFriendReward = true, effect = PenEffect.GLINT);
 
     /** True when the stroke should be painted as a gradient rather than a flat colour. */
     val isGradient: Boolean get() = colors.size > 1
@@ -145,7 +150,7 @@ enum class PenSkin(
     val isStoreItem: Boolean get() = storePrice > 0
 
     /** On sale in the store (a rune reward has a price only for the rune's pay-back, see SettingsRepository.buyRune). */
-    val isSoldInStore: Boolean get() = isStoreItem && !isRuneReward && !retired
+    val isSoldInStore: Boolean get() = isStoreItem && !isRuneReward && !isFriendReward && !retired
 
     companion object {
         val DEFAULT = CLASSIC

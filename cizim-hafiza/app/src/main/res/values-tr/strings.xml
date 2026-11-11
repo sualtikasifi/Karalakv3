@@ -1748,4 +1748,77 @@
     <string name="rune_tour_open">Rünlere bak</string>
     <string name="tour_runes_title">Karalak Rünleri</string>
     <string name="tour_runes_body">Altınlarını kalıcı güçlere çevir! Rünler her oyunda geçerli bonuslar verir: doğru kelime başına daha çok altın, daha zengin sandıklar, mağazada indirim ve fazlası. Ana ekrandaki Rünler tabelasına ya da köpeğe dokun; alabileceğin rünler parlar.</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="guess_share_text">Bu çizim ne? Bil bakalım! 🎨\n%1$s</string>
+    <string name="guess_gone">Bu bağlantı artık geçerli değil. Süresi dolmuş ya da silinmiş olabilir.</string>
+    <string name="guess_offline">Çizim yüklenemedi. İnternet bağlantını kontrol et.</string>
+    <string name="guess_child">Bu özellik bu hesapta kapalı.</string>
+    <string name="guess_own">Bu çizimi sen gönderdin. Arkadaşların bilsin diye bağlantıyı paylaşmaya devam et!</string>
+    <string name="guess_retry">Tekrar dene</string>
+    <string name="guess_someone">Bir arkadaşın</string>
+    <string name="guess_title">%1$s bir şey çizdi</string>
+    <string name="guess_subtitle">İzle ve 3 denemede bil!</string>
+    <string name="guess_replay">Tekrar izle</string>
+    <string name="guess_placeholder">Sence ne çizildi?</string>
+    <string name="guess_submit">Tahmin et</string>
+    <string name="guess_give_up">Pas geç</string>
+    <string name="guess_solved">Bildin! 🎉</string>
+    <string name="guess_solved_first">İlk denemede!</string>
+    <string name="guess_solved_tries">%1$d. denemede bildin</string>
+    <string name="guess_failed">Bilemedin 😅</string>
+    <string name="guess_answer">Cevap: %1$s</string>
+    <string name="guess_your_turn_hint">Şimdi sıra sende: aynı kelimeyi çiz ve arkadaşına gönder.</string>
+    <string name="guess_your_turn">Sıra sende!</string>
+    <string name="guess_draw_title">%1$s çiz!</string>
+    <string name="guess_draw_seconds">%1$d sn</string>
+    <string name="guess_undo">Geri al</string>
+    <string name="guess_done">Bitti</string>
+    <string name="guess_shared_title">Hazır!</string>
+    <string name="guess_shared_sub">Çizimin bağlantıyla yola çıktı.</string>
+    <string name="guess_share_again">Tekrar gönder</string>
+    <string name="guess_limit">Bugün çok fazla bağlantı oluşturdun, yarın tekrar dene.</string>
+    <string name="guess_share_failed">Bağlantı oluşturulamadı. Tekrar dene.</string>
+    <string name="guess_ask_friend">Arkadaşına sor (bağlantı)</string>
+    <string name="guess_link_creating">Bağlantı hazırlanıyor…</string>
+    <string name="guess_inbox_title">Çizimlerini denediler!</string>
+    <string name="guess_inbox_solved">%1$s bildi (%2$d. denemede)</string>
+    <string name="guess_inbox_failed">%1$s bilemedi</string>
+    <string name="guess_inbox_reward">+%1$d altın</string>
+    <string name="guess_inbox_ok">Harika!</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="frame_name_friendship">Dostluk Çerçevesi</string>
+    <string name="pen_friendship">Dostluk Kalemi</string>
+    <string name="cosmetic_locked_friend">Arkadaş serisiyle açılır</string>
+    <string name="fstreak_badge">%1$d gün</string>
+    <string name="fstreak_row_done">Bugün tamam</string>
+    <string name="fstreak_row_risk">Bugün düello at</string>
+    <string name="fstreak_row_broken">Seri koptu!</string>
+    <string name="fstreak_row_rescue">Kurtar</string>
+    <string name="fstreak_reminder_title">Serin bitmek üzere!</string>
+    <string name="fstreak_reminder_body">%1$s ile %2$d günlük serin bugün biter. 10 kelimelik bir düelloyla sürdür.</string>
+    <string name="fstreak_reminder_action">Düello at</string>
+    <string name="fstreak_reminder_later">Sonra</string>
+    <string name="fstreak_broken_title">%1$s ile serin koptu!</string>
+    <string name="fstreak_broken_body">%2$d günlük serin bir gün kaçtı. Reklam izlersen ikinizin serisi de kaldığı yerden devam eder; dün düelloyu kaçırmış sayılmazsınız.</string>
+    <string name="fstreak_broken_action">Reklam izle ve kurtar</string>
+    <string name="fstreak_broken_dismiss">Vazgeç</string>
+    <string name="fstreak_rescued_title">%1$s serini kurtardı!</string>
+    <string name="fstreak_rescued_body">%2$d günlük serin devam ediyor. Bugün de bir düello atmayı unutma.</string>
+    <string name="fstreak_rescued_ok">Harika!</string>
+    <string name="fstreak_done_toast">Seri kurtarıldı!</string>
+    <string name="fstreak_reward_title">%1$s ile %2$d gün!</string>
+    <string name="fstreak_reward_body">Birlikte %2$d gündür düello yapıyorsunuz. İkinize de bir ödül var:</string>
+    <string name="fstreak_reward_claim">Ödülü al</string>
+    <string name="fstreak_reward_gold">+%1$d altın</string>
+    <string name="fstreak_reward_jokers">3 joker (her türden 1)</string>
+    <string name="fstreak_reward_frame">🖼 %1$s</string>
+    <string name="fstreak_reward_pen">✏️ %1$s</string>
+    <string name="fstreak_ad_failed">Reklam şu an yüklenemedi, biraz sonra tekrar dene.</string>
+    <string name="fstreak_next_prize">Sonraki ödül: %1$d gün</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="guess_report">Bildir</string>
+    <string name="guess_reported">Teşekkürler, inceleyeceğiz.</string>
 </resources>

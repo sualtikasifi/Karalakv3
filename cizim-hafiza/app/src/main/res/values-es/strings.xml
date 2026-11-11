@@ -1736,4 +1736,77 @@
     <string name="rune_tour_open">Ver las runas</string>
     <string name="tour_runes_title">Runas de Karalak</string>
     <string name="tour_runes_body">¡Convierte tu oro en poderes permanentes! Las runas dan bonus en cada partida: más oro por cada palabra acertada, cofres más ricos, descuentos en la tienda y más. Toca el letrero Runas en la pantalla de inicio o el perro; las runas que puedes comprar brillan.</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="guess_share_text">¿Qué dibujo es este? ¡Adivina! 🎨\n%1$s</string>
+    <string name="guess_gone">Este enlace ya no funciona. Puede haber caducado o haberse borrado.</string>
+    <string name="guess_offline">No se pudo cargar el dibujo. Revisa tu conexión.</string>
+    <string name="guess_child">Esta función está desactivada en esta cuenta.</string>
+    <string name="guess_own">Enviaste este dibujo. ¡Sigue compartiendo el enlace para que tus amigos lo adivinen!</string>
+    <string name="guess_retry">Reintentar</string>
+    <string name="guess_someone">Un amigo</string>
+    <string name="guess_title">%1$s dibujó algo</string>
+    <string name="guess_subtitle">¡Míralo y adivina en 3 intentos!</string>
+    <string name="guess_replay">Ver otra vez</string>
+    <string name="guess_placeholder">¿Qué crees que es?</string>
+    <string name="guess_submit">Adivinar</string>
+    <string name="guess_give_up">Pasar</string>
+    <string name="guess_solved">¡Lo adivinaste! 🎉</string>
+    <string name="guess_solved_first">¡A la primera!</string>
+    <string name="guess_solved_tries">Acertaste en el intento %1$d</string>
+    <string name="guess_failed">Esta vez no 😅</string>
+    <string name="guess_answer">Respuesta: %1$s</string>
+    <string name="guess_your_turn_hint">Te toca: dibuja la misma palabra y envíasela a tu amigo.</string>
+    <string name="guess_your_turn">¡Te toca!</string>
+    <string name="guess_draw_title">¡Dibuja %1$s!</string>
+    <string name="guess_draw_seconds">%1$d s</string>
+    <string name="guess_undo">Deshacer</string>
+    <string name="guess_done">Listo</string>
+    <string name="guess_shared_title">¡Listo!</string>
+    <string name="guess_shared_sub">Tu dibujo va en camino, enlace incluido.</string>
+    <string name="guess_share_again">Enviar de nuevo</string>
+    <string name="guess_limit">Hoy creaste muchos enlaces, vuelve a intentarlo mañana.</string>
+    <string name="guess_share_failed">No se pudo crear el enlace. Inténtalo de nuevo.</string>
+    <string name="guess_ask_friend">Preguntar a un amigo (enlace)</string>
+    <string name="guess_link_creating">Preparando el enlace…</string>
+    <string name="guess_inbox_title">¡Probaron tus dibujos!</string>
+    <string name="guess_inbox_solved">%1$s lo adivinó (intento %2$d)</string>
+    <string name="guess_inbox_failed">%1$s no lo adivinó</string>
+    <string name="guess_inbox_reward">+%1$d de oro</string>
+    <string name="guess_inbox_ok">¡Genial!</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="frame_name_friendship">Marco de la Amistad</string>
+    <string name="pen_friendship">Lápiz de la Amistad</string>
+    <string name="cosmetic_locked_friend">Se gana con una racha de amigos</string>
+    <string name="fstreak_badge">%1$d días</string>
+    <string name="fstreak_row_done">Hecho hoy</string>
+    <string name="fstreak_row_risk">Envía un duelo hoy</string>
+    <string name="fstreak_row_broken">¡Racha rota!</string>
+    <string name="fstreak_row_rescue">Salvarla</string>
+    <string name="fstreak_reminder_title">¡Tu racha está a punto de acabar!</string>
+    <string name="fstreak_reminder_body">Tu racha de %2$d días con %1$s termina hoy. Mantenla con un duelo de 10 palabras.</string>
+    <string name="fstreak_reminder_action">Enviar duelo</string>
+    <string name="fstreak_reminder_later">Luego</string>
+    <string name="fstreak_broken_title">¡Se rompió tu racha con %1$s!</string>
+    <string name="fstreak_broken_body">Tu racha de %2$d días perdió un día. Mira un anuncio y sigue para los dos, como si ayer hubieran jugado el duelo.</string>
+    <string name="fstreak_broken_action">Ver anuncio y salvarla</string>
+    <string name="fstreak_broken_dismiss">Dejarla</string>
+    <string name="fstreak_rescued_title">¡%1$s salvó tu racha!</string>
+    <string name="fstreak_rescued_body">Tu racha de %2$d días sigue. No olvides el duelo de hoy.</string>
+    <string name="fstreak_rescued_ok">¡Genial!</string>
+    <string name="fstreak_done_toast">¡Racha salvada!</string>
+    <string name="fstreak_reward_title">¡%2$d días con %1$s!</string>
+    <string name="fstreak_reward_body">Llevan %2$d días duelando juntos. Hay un premio para los dos:</string>
+    <string name="fstreak_reward_claim">Reclamar premio</string>
+    <string name="fstreak_reward_gold">+%1$d de oro</string>
+    <string name="fstreak_reward_jokers">3 comodines (1 de cada)</string>
+    <string name="fstreak_reward_frame">🖼 %1$s</string>
+    <string name="fstreak_reward_pen">✏️ %1$s</string>
+    <string name="fstreak_ad_failed">El anuncio no cargó ahora, inténtalo en un momento.</string>
+    <string name="fstreak_next_prize">Próximo premio: %1$d días</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="guess_report">Reportar</string>
+    <string name="guess_reported">Gracias, lo revisaremos.</string>
 </resources>

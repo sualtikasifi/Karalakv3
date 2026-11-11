@@ -880,7 +880,7 @@ internal fun PenPickerSheet(items: List<PenSkinUiItem>, onSelect: (PenSkin) -> U
                         // "Kullanılabilir" in a warm yellow for one the player can wear.
                         Text(
                             text = if (item.unlocked) stringResource(R.string.pen_available)
-                            else when { item.skin.isRuneReward -> stringResource(R.string.cosmetic_locked_rune); item.skin.isStoreItem -> stringResource(R.string.store_in_store); item.skin.isLeagueReward -> stringResource(R.string.cosmetic_locked_league); else -> stringResource(R.string.avatar_frame_locked_level, item.skin.unlockLevel) },
+                            else when { item.skin.isRuneReward -> stringResource(R.string.cosmetic_locked_rune); item.skin.isFriendReward -> stringResource(R.string.cosmetic_locked_friend); item.skin.isStoreItem -> stringResource(R.string.store_in_store); item.skin.isLeagueReward -> stringResource(R.string.cosmetic_locked_league); else -> stringResource(R.string.avatar_frame_locked_level, item.skin.unlockLevel) },
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = if (item.unlocked) FontWeight.Bold else null,
                             color = if (item.unlocked) Color(0xFFD99A00) else MaterialTheme.colorScheme.onSurfaceVariant,

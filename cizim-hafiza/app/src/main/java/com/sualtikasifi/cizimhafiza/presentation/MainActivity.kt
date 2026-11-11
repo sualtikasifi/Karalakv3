@@ -57,6 +57,7 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var autoBackupPublisher: dagger.Lazy<AutoBackupPublisher>
     @Inject lateinit var networkMonitor: com.sualtikasifi.cizimhafiza.util.NetworkMonitor
     @Inject lateinit var legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore
+    @Inject lateinit var guessStore: com.sualtikasifi.cizimhafiza.util.GuessStore
 
     private var navController: NavHostController? = null
 
@@ -169,6 +170,22 @@ class MainActivity : AppCompatActivity() {
                         onNavControllerReady = { navController = it },
                         tutorialCompleted = tutorialCompleted
                     )
+                    // A new player who installed from a friend's "Bil Bakalım" link lands on that drawing. The Play Store's
+                    // install referrer is read a moment after the first launch (ReferralRewardClaimer), and the player first
+                    // goes through the tutorial and the terms, so the link is waited for (cheaply) until all that is done.
+                    // A launch with nothing pending ends the wait at once.
+                    if (appReady) LaunchedEffect(Unit) {
+                        repeat(900) {
+                            val id = guessStore.pendingLinkId
+                            if (id == null && settingsRepository.installReferrerHandled) return@LaunchedEffect
+                            if (id != null && settingsRepository.tutorialCompleted && !legalConsentStore.needsPrompt) {
+                                guessStore.pendingLinkId = null
+                                navController?.navigate(com.sualtikasifi.cizimhafiza.presentation.navigation.Screen.guessRoute(id))
+                                return@LaunchedEffect
+                            }
+                            kotlinx.coroutines.delay(1_000)
+                        }
+                    }
                     com.sualtikasifi.cizimhafiza.presentation.common.XpFlyOverlay()
                     com.sualtikasifi.cizimhafiza.presentation.common.UsernameFinalizeHost()
                     // Year of birth and the terms of use, once, right after the tutorial (see LegalConsentStore).

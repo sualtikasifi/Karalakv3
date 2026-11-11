@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Karalak – Bil Bakalım</title>
+<meta name="description" content="Bir arkadaşın sana bir çizim gönderdi. İzle, bil, sonra sıra sende!">
+<meta name="theme-color" content="#7a3a10">
+<meta name="color-scheme" content="only light">
+<meta name="robots" content="noindex">
+<meta property="og:title" content="Karalak – Bil Bakalım">
+<meta property="og:description" content="Bir arkadaşın sana bir çizim gönderdi. İzle, bil, sonra sıra sende!">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Karalak">
+<meta property="og:image" content="https://karalak.com/oyna/img/og_share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="192x192" href="/oyna/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/oyna/icons/icon-180.png">
+<style>
+  @font-face{font-family:Baloo;src:url(/oyna/fonts/baloo2_extrabold.woff2) format("woff2");font-weight:800;font-display:swap}
+  @font-face{font-family:Baloo;src:url(/oyna/fonts/baloo2_bold.woff2) format("woff2");font-weight:600;font-display:swap}
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{min-height:100vh;min-height:100dvh;font-family:Baloo,system-ui,sans-serif;color:#3b2314;background:#5a2a0c url(/oyna/img/bg_home_scene.webp) center/cover fixed;display:flex;align-items:flex-start;justify-content:center;padding:44px 16px 28px}
+  body::before{content:"";position:fixed;inset:0;background:linear-gradient(rgba(40,18,4,.35),rgba(40,18,4,.6));z-index:-1}
+  .card{width:100%;max-width:440px;text-align:center;background:#fff6e2;border:4px solid #e0b878;border-radius:36px;padding:0 20px 24px;box-shadow:0 14px 40px rgba(0,0,0,.45);position:relative}
+  .hero{width:120px;height:auto;margin-top:-44px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.35))}
+  h1{margin:2px 0 2px;font-size:34px;line-height:1.05;font-weight:800;color:#f26a1b;-webkit-text-stroke:2px #8a3a00;paint-order:stroke fill;text-shadow:0 3px 0 #8a3a00}
+  .sub{margin:0 0 12px;font-size:18px;font-weight:600;color:#7a5a40}
+  .paper{position:relative;width:100%;aspect-ratio:1;background:#fff;border:3px solid #e0b878;border-radius:24px;overflow:hidden;touch-action:none}
+  .paper canvas{width:100%;height:100%;display:block}
+  .dots{display:flex;gap:8px;justify-content:center;margin:12px 0 2px}
+  .dots i{width:12px;height:12px;border-radius:50%;background:#f26a1b}
+  .dots i.x{background:#d23b2a}
+  .hint{margin:6px 0 0;font-size:26px;font-weight:800;letter-spacing:.12em;color:#3b2314;min-height:1.2em}
+  .wrong{margin:2px 0 0;font-size:16px;font-weight:600;color:#d23b2a;min-height:1.2em}
+  input[type=text]{width:100%;margin:8px 0 0;padding:12px 16px;font:inherit;font-size:22px;font-weight:600;text-align:center;color:#3b2314;background:#fff;border:3px solid #e9801d;border-radius:999px;outline:none}
+  input[type=text]:disabled{opacity:.55}
+  .name{display:flex;gap:8px;align-items:center;justify-content:center;margin:0 0 10px;font-size:16px;font-weight:600;color:#7a5a40}
+  .name input{width:170px;margin:0;padding:6px 12px;font-size:17px}
+  button.btn,a.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:54px;margin:10px 0 0;padding:8px 18px;border-radius:999px;font-family:inherit;font-size:21px;font-weight:800;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  button.btn:active,a.btn:active{transform:scale(.97)}
+  button.btn:disabled{opacity:.5;cursor:default}
+  .primary{background:linear-gradient(#ff9a3c,#f26a1b);color:#fff;border:3px solid #c4500f;box-shadow:0 5px 0 #a8420c;text-shadow:0 2px 0 rgba(120,50,0,.6)}
+  .second{background:#fff;color:#c4500f;border:3px solid #e9801d;box-shadow:0 5px 0 #e0b878}
+  .link{background:none;border:0;color:#7a5a40;font:inherit;font-size:15px;font-weight:600;text-decoration:underline;margin-top:12px;cursor:pointer}
+  .big{margin:6px 0 2px;font-size:30px;font-weight:800;color:#f26a1b}
+  .word{margin:0 0 8px;font-size:22px;font-weight:700}
+  .timer{position:absolute;top:8px;right:12px;font-size:28px;font-weight:800;color:#d23b2a}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  .box{margin:12px 0 0;padding:10px 12px;background:#fff;border:3px dashed #e9801d;border-radius:18px;font-size:16px;font-weight:600;word-break:break-all}
+  .small{margin:14px 0 0;font-size:14px;font-weight:600;color:#8a6a50}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<main class="card" id="card" aria-live="polite">
+  <img class="hero" src="/oyna/img/dog_head.webp" alt="">
+  <h1 id="title">Bil Bakalım</h1>
+  <div id="view"><p class="sub">…</p></div>
+</main>
+<noscript><p style="color:#fff;text-align:center">JavaScript gerekli.</p></noscript>
+<script type="module" src="/bil/bil.js"></script>
+</body>
+</html>

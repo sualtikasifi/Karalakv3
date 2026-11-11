@@ -93,6 +93,10 @@ export async function deleteAccountData(db: FirebaseFirestore.Firestore, uid: st
   for (const collection of ["pendingDailyChallenges", "bugReports", "detectorEvents", "penalties"]) {
     await deleteAll(db.collection(collection).where("uid", "==", uid));
   }
+  // "Bil Bakalım" links the account sent, and the friend streaks it kept (the results people left in its inbox are
+  // under users/{uid} and go with the profile).
+  await deleteAll(db.collection("guessLinks").where("ownerUid", "==", uid));
+  await deleteAll(db.collection("friendStreaks").where("uids", "array-contains", uid));
   for (const [collection, field] of [
     ["drawingReports", "reporterUid"], ["drawingReports", "reportedUid"],
     ["playerReports", "reporterUid"], ["playerReports", "reportedUid"],

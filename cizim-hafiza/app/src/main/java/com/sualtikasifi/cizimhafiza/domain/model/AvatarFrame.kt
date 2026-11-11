@@ -63,6 +63,8 @@ enum class AvatarFrame(
     val storePrice: Int = 0,
     /** Found only on the rune map (see PenSkin.isRuneReward). */
     val isRuneReward: Boolean = false,
+    /** Won only by a friend streak (FriendStreakRewards): owned like a store item, never sold, never dropped by a chest. */
+    val isFriendReward: Boolean = false,
     /** How the frame moves (see [FrameMotion]); still by default. */
     val motion: FrameMotion = FrameMotion.NONE,
     /**
@@ -115,7 +117,10 @@ enum class AvatarFrame(
     CRYSTAL_WINGS(R.drawable.level_frame_crystal_wings, 0.465f, -0.001f, -0.0283f, 0, storePrice = 32000),
     VOID_FLAME(R.drawable.level_frame_void_flame, 0.437f, 0.0066f, -0.0157f, 0, storePrice = 50000, motion = FrameMotion.VOID),
     ANGEL_HALO(R.drawable.level_frame_angel_halo, 0.446f, -0.0018f, -0.0322f, 0, storePrice = 80000, motion = FrameMotion.ANGEL),
-    LION_KING(R.drawable.level_frame_lion_king, 0.428f, -0.0013f, 0.0208f, 0, storePrice = 140000, motion = FrameMotion.LION);
+    LION_KING(R.drawable.level_frame_lion_king, 0.428f, -0.0013f, 0.0208f, 0, storePrice = 140000, motion = FrameMotion.LION),
+
+    // --- Friend-streak prize (30 days together, see FriendStreakRewards): never sold. The picture is a stand-in until its own artwork is drawn. ---
+    FRIENDSHIP(R.drawable.level_frame_friendship, 0.537f, 0.001f, -0.0205f, 0, storePrice = 9000, isFriendReward = true);
 
     // Monthly league prize frames (LEAGUE_CHAMPION_<year>_<month>) were
     // removed — the first batch of artwork did not clean up against the
@@ -129,7 +134,7 @@ enum class AvatarFrame(
     val isStoreItem: Boolean get() = storePrice > 0
 
     /** On sale in the store (see PenSkin.isSoldInStore). */
-    val isSoldInStore: Boolean get() = isStoreItem && !isRuneReward && !retired
+    val isSoldInStore: Boolean get() = isStoreItem && !isRuneReward && !isFriendReward && !retired
 
     companion object {
         /** What every new install starts with, and what [resolve] falls back to. */

@@ -423,15 +423,20 @@ fun MainMenuScreen(
             )
         }
 
-        val quietForRunes = openingClear && !featureTourOpen && !rescueOnScreen && !ratingPrompt && freeChestReward == null &&
+        // The social windows (what came of the "Bil Bakalım" links, the friend streaks) wait for the same quiet as the rune
+        // offer, and the offer and the notification question wait for them.
+        var socialShowing by remember { mutableStateOf(false) }
+        val quietBase = openingClear && !featureTourOpen && !rescueOnScreen && !ratingPrompt && freeChestReward == null &&
             loginPopup == null && loginChests.isEmpty() && !exitPromptOpen && !announcementOnScreen &&
             !framePickerOpen && !penPickerOpen && !rankLadderOpen
+        val quietForRunes = quietBase && !socialShowing
         LaunchedEffect(quietForRunes) { homeQuiet = quietForRunes }
+        SocialHomeWindows(quiet = quietBase, activity = activity, onOpenFriends = onFriends, onShowing = { socialShowing = it })
 
         NotificationPermissionWhenQuiet(
             quiet = openingClear && !featureTourOpen && !rescueOnScreen && !ratingPrompt && freeChestReward == null &&
                 loginPopup == null && loginChests.isEmpty() && !gamePlayed && !exitPromptOpen && !announcementOnScreen &&
-                !framePickerOpen && !penPickerOpen && !rankLadderOpen,
+                !framePickerOpen && !penPickerOpen && !rankLadderOpen && !socialShowing,
             asked = viewModel.notificationPermissionAsked,
             onAsked = viewModel::markNotificationPermissionAsked,
             onResult = viewModel::onNotificationPermissionResult
@@ -610,6 +615,8 @@ private fun AvatarFrameSwatch(item: AvatarFrameUiItem, onClick: () -> Unit) {
                     Text(
                         text = if (item.frame.isRuneReward) {
                             stringResource(R.string.cosmetic_locked_rune)
+                        } else if (item.frame.isFriendReward) {
+                            stringResource(R.string.cosmetic_locked_friend)
                         } else if (item.frame.isStoreItem) {
                             stringResource(R.string.store_in_store)
                         } else if (item.frame.isLeagueReward) {
