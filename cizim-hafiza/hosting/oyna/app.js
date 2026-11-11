@@ -592,7 +592,7 @@ async function startLevel(w, l) {
 const tutWords = () => [1, 2, 3].map((i) => S(`tutorial_word_${i}`));
 // TutorialViewModel.kt, ported: word 1 untimed, word 2 on a 12 s clock, word 3 on 10 s; guesses on 10 s with the two jokers taught one by one
 // (the clock stands still until the joker is used); coaching cards between the turns; practice jokers that never touch the real stock.
-const TUT = { drawSeconds: [0, 12, 10], guessSeconds: 10, stockStart: 3 };
+const TUT = { drawSeconds: [0, 9, 7], guessSeconds: 10, stockStart: 3 };
 let tutStock = { FIRST_LETTER: 3, LETTER_COUNT: 3 }, tutSeen = {}, tutSpot = null;
 const jokerN = (k) => (kind === "tutorial" ? tutStock[k] || 0 : P.jokers[k] || 0);
 const jokerSpend = (k) => { if (kind === "tutorial") tutStock[k]--; else { P.jokers[k]--; saveP(); } };
@@ -660,6 +660,26 @@ async function startQuick() {
   showFound(quickOpp, () => begin(picked));
 }
 function msgNoOpp() { show("home"); msg(t().noOpp + inLang({ tr: ". Bir süre sonra tekrar dene ya da çevrimdışı oyna.", en: ". Try again in a bit or play offline.", pt: ". Tente de novo daqui a pouco ou jogue offline.", es: ". Inténtalo en un rato o juega sin conexión." })); }
+// Countdowns run on a DEADLINE, as in the app (util/Countdown.kt): the clock keeps running while the tab is hidden or the phone is
+// locked, and what is left is read off the clock, never counted in ticks. A countdown that ended AWAY_MS or more late hands that
+// time to the next one (a word that timed out 30 s ago does not give the next word a fresh 20 s).
+const AWAY_MS = 2000;
+let carryMs = 0;
+const secondsLeft = (ms) => (ms <= 0 ? 0 : Math.ceil(ms / 1000));
+const takeStartMs = (seconds) => { const ms = seconds * 1000 - carryMs; carryMs = 0; return ms; };
+function runDeadline(startMs, onSecond, onDone) {
+  let end = performance.now() + startMs, shown = Infinity, timer = 0, dead = false;
+  const step = () => {
+    if (dead) return;
+    const ms = end - performance.now();
+    if (ms <= 0) { dead = true; const late = -ms; carryMs = late >= AWAY_MS ? late : 0; onDone(); return; }
+    const left = secondsLeft(ms);
+    if (left !== shown) { shown = left; onSecond(left); }
+    timer = setTimeout(step, Math.min(1000, Math.max(20, ((ms - 1) % 1000) + 1)));
+  };
+  if (startMs <= 0) timer = setTimeout(step, 0); else step(); // already used up while away: finish after the caller has stored the handle
+  return { stop() { dead = true; clearTimeout(timer); }, extend(ms) { end += ms; }, left() { return secondsLeft(end - performance.now()); } };
+}
 let foundTimer = null;
 function showFound(opp, go) {
   const x = t(); show("found"); $("f-title").src = lang === "tr" ? "img/mf_title.webp" : "img/mf_title_" + (lang === "pt" || lang === "es" ? lang : "en") + ".webp";
@@ -675,9 +695,8 @@ function showFound(opp, go) {
   card("f-cl", P.nick, myLv, P.frame, P.xp); card("f-cr", opp.nickname || "?", opp.level || 1, highestFrameFor(opp.level || 1), xpFor(opp.level || 1));
   $("f-vs").classList.remove("pop"); setTimeout(() => $("f-vs").classList.add("pop"), 350);
   const fill = $("f-fill"); fill.style.transition = "none"; fill.style.width = "3%"; void fill.offsetWidth; fill.style.transition = ""; fill.style.width = "100%";
-  let left = 5; const tick = () => { $("f-pt").textContent = x.startIn(left); };
-  tick(); clearInterval(foundTimer);
-  foundTimer = setInterval(() => { left--; if (left <= 0) { clearInterval(foundTimer); if (current === "found") go(); } else tick(); }, 1000);
+  if (foundTimer) foundTimer.stop();
+  foundTimer = runDeadline(5000, (left) => { $("f-pt").textContent = x.startIn(left); }, () => { if (current === "found") go(); });
 }
 function highestFrameFor(lv) { try { const L = frameListSafe().filter((f) => f.level > 0 && !f.league && f.level <= lv); return (L.pop() || { id: "SCRIBBLER" }).id; } catch { return "SCRIBBLER"; } }
 async function start(k = "quick") {
@@ -718,7 +737,7 @@ async function begin(picked) {
   idx = 0; tool = "pen"; score = 0; nextDraw();
 }
 function nextDraw() {
-  clearInterval(dTimer);
+  if (dTimer) dTimer.stop();
   if (idx >= round.length) {
     idx = 0; answered = 0; locked = false; gOrder = kind === "tutorial" ? round.map((_, i) => i) : shuffledIdx(round.length);
     if (kind === "tutorial") return coachCard("tutorial_guess_title", "tutorial_guess_body", "tutorial_generic_button", nextGuess);
@@ -742,20 +761,19 @@ function nextDraw() {
   $("d-word").textContent = w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1);
   const wl = w.text.length; $("d-word").style.fontSize = Math.max(40, Math.min(70, 425 * 0.97 / (wl * 0.5))) * u + "px";
   $("d-line").style.animation = "none"; void $("d-line").offsetWidth; $("d-line").style.animation = "";
-  let total = tut ? TUT.drawSeconds[idx] : (DRAW_SECONDS[w.difficulty] ?? 7); let left = total, usedTime = false;
+  let total = tut ? TUT.drawSeconds[idx] : (DRAW_SECONDS[w.difficulty] ?? 7); const startMs = relaxed || untimed ? 0 : takeStartMs(total); let left = Math.min(total, secondsLeft(startMs)), usedTime = false;
   const arc = $("d-arc"); arc.style.transition = "none"; setRing($("d-ring"), arc, $("d-time"), left, total); void arc.getBoundingClientRect(); arc.style.transition = "";
   paintProg(left);
   tool = "pen"; refreshTools(); paintLive();
   const tj = $("d-timej"), refreshTj = () => { const n = P.jokers.EXTRA_TIME || 0; $("d-timej-n").textContent = n; $("d-timej-t").textContent = S("drawing_time_joker"); tj.classList.toggle("dis", usedTime || n <= 0); tj.style.display = relaxed || tut ? "none" : ""; };
   refreshTj();
-  tj.onclick = () => { if (usedTime || (P.jokers.EXTRA_TIME || 0) <= 0) return; usedTime = true; P.jokers.EXTRA_TIME--; saveP(); left += 10; total += 10; setRing($("d-ring"), arc, $("d-time"), left, total); sfx.buy(); sparkFlight(tj, $("d-ring"), "+10"); refreshTj(); };
-  if (!relaxed && !untimed) dTimer = setInterval(() => {
-    left--; setRing($("d-ring"), arc, $("d-time"), left, total); paintProg(Math.max(0, left));
+  tj.onclick = () => { if (usedTime || (P.jokers.EXTRA_TIME || 0) <= 0) return; usedTime = true; P.jokers.EXTRA_TIME--; saveP(); if (dTimer) dTimer.extend(10000); left += 10; total += 10; setRing($("d-ring"), arc, $("d-time"), left, total); sfx.buy(); sparkFlight(tj, $("d-ring"), "+10"); refreshTj(); };
+  if (!relaxed && !untimed) dTimer = runDeadline(startMs, (l) => {
+    left = l; setRing($("d-ring"), arc, $("d-time"), left, total); paintProg(left);
     if (left > 0 && left <= 3) sfx.tick();
-    if (left <= 0) finishDraw();
-  }, 1000);
+  }, () => { left = 0; setRing($("d-ring"), arc, $("d-time"), 0, total); paintProg(0); finishDraw(); });
 }
-function finishDraw() { clearInterval(dTimer); idx++; nextDraw(); }
+function finishDraw() { if (dTimer) dTimer.stop(); idx++; nextDraw(); }
 $("d-next").onclick = finishDraw;
 
 // The guess order is shuffled after the drawing (GameViewModel.startGuessPhase): `idx` is a position in gOrder, the drawings stay in
@@ -794,7 +812,7 @@ $("jt-skip").onclick = () => {
   const w = gw(); if (!w || locked || tutSpot || kind === "tutorial" || w.skipped || idx >= gOrder.length - 1) return;
   w.skipped = true; w.resume = gLeft; gOrder.push(gOrder[idx]); idx++;
   // like the app: "⏱ N s saved" pops over the drawing for a moment, the clock stops, then the next word comes
-  clearInterval(gTimer); clearInterval(bonusTimer); locked = true; sfx.tick && sfx.tick();
+  if (gTimer) gTimer.stop(); clearInterval(bonusTimer); locked = true; sfx.tick && sfx.tick();
   const chip = $("g-skipchip"); chip.textContent = S("guess_skip_saved", w.resume); chip.classList.remove("go"); void chip.offsetWidth; chip.classList.add("go");
   setTimeout(() => { chip.classList.remove("go"); if (locked && current === "guess") nextGuess(); }, 1100);
 };
@@ -805,7 +823,7 @@ function endSpot() {
   go();
 }
 function nextGuess() {
-  clearInterval(gTimer); clearInterval(bonusTimer); locked = false;
+  if (gTimer) gTimer.stop(); clearInterval(bonusTimer); locked = false;
   if (idx >= gOrder.length) return finish();
   if (kind === "tutorial" && idx === 2 && !tutSeen.free) { tutSeen.free = true; return coachCard("tutorial_joker_free_title", "tutorial_joker_free_body", "tutorial_generic_button", nextGuess); }
   const w = gw();
@@ -827,7 +845,7 @@ function nextGuess() {
   const runClock = () => {
     shownAt = performance.now() - (total - left) * 1000; // a skipped word comes back with the time it had left; its speed bonus still counts from the first look
     clearInterval(bonusTimer); paintBonus(); bonusTimer = setInterval(paintBonus, 250);
-    gTimer = setInterval(() => { left--; gLeft = left; setRing($("g-ring"), arc, $("g-time"), left, total); if (left > 0 && left <= 3) sfx.tick(); if (left <= 0) answer(""); }, 1000);
+    gTimer = runDeadline(takeStartMs(0) + left * 1000, (l) => { left = l; gLeft = l; setRing($("g-ring"), arc, $("g-time"), l, total); if (l > 0 && l <= 3) sfx.tick(); }, () => { gLeft = 0; setRing($("g-ring"), arc, $("g-time"), 0, total); answer(""); });
     $("g-input").focus({ preventScroll: true });
   };
   const lesson = tut && idx < 2 ? (idx === 0 ? ["FIRST_LETTER", "jt-first", "tutorial_joker_first_title", "tutorial_joker_first_body"] : ["LETTER_COUNT", "jt-count", "tutorial_joker_count_title", "tutorial_joker_count_body"]) : null;
@@ -840,7 +858,7 @@ function nextGuess() {
 }
 function answer(text) {
   if (locked || !gw()) return; locked = true; lockedVal = $("g-input").value;
-  clearInterval(gTimer); clearInterval(bonusTimer);
+  if (gTimer) gTimer.stop(); clearInterval(bonusTimer);
   const w = gw();
   w.guess = text; w.ms = Math.round(performance.now() - shownAt); w.correct = isCorrect(text, w.text);
   w.points = w.correct ? POINTS + (w.ms < SPEED_MS ? SPEED_BONUS : 0) : 0;
@@ -971,7 +989,7 @@ function forfeitDaily() {
 }
 function confirmLeave() {
   const quickMatch = kind === "quick" && !!quickOpp, pen = eco.QUICK_MATCH_ABANDON_PENALTY_XP, daily = kind === "daily", online = kind === "online";
-  const go = () => { clearInterval(dTimer); clearInterval(gTimer); if (daily) forfeitDaily(); if (quickMatch) { eco.revokeXp(P, pen); saveP(); refreshHome(); } if (online) leaveLobby(ctx); else show("home"); };
+  const go = () => { if (dTimer) dTimer.stop(); if (gTimer) gTimer.stop(); if (daily) forfeitDaily(); if (quickMatch) { eco.revokeXp(P, pen); saveP(); refreshHome(); } if (online) leaveLobby(ctx); else show("home"); };
   exitDialog($("stage"), {
     title: quickMatch ? S("quick_match_abandon_title") : daily ? S("daily_exit_title") : S("exit_game_title"),
     message: quickMatch ? S("quick_match_abandon_message", pen) : daily ? S("daily_exit_message_short") : online ? S("exit_online_message") : S("exit_game_message"),
