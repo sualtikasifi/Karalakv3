@@ -353,7 +353,7 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                 fun Modifier.at(x: Float, y: Float, w: Float, h: Float) = this.offset(u * x, u * y).size(u * w, u * h)
                 val compact = extras.isEmpty()
                 // Gold alone fills the board with a bigger chest and plaque; with extras they move up to leave the cards their row.
-                val heroY = if (compact) 1010f else 900f
+                val heroY = if (compact) 1030f else 900f
                 val heroSize = if (compact) 380f else 270f
                 val amountY = if (compact) 1375f else 1112f
                 val plaqueH = if (compact) 170f else 132f
@@ -771,7 +771,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawFallingLoot(loo
 
 /** Four-point glints round the gold chest, each fading in and out on its own beat. */
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSparkles(t: Float, unit: Float) {
-    val spots = listOf(Triple(0.13f, 0.18f, 24f), Triple(0.88f, 0.27f, 20f), Triple(0.80f, 0.82f, 14f), Triple(0.17f, 0.76f, 16f), Triple(0.54f, 0.04f, 18f))
+    val spots = listOf(Triple(0.13f, 0.18f, 24f), Triple(0.88f, 0.27f, 20f), Triple(0.80f, 0.82f, 14f), Triple(0.17f, 0.76f, 16f), Triple(0.70f, 0.26f, 18f))
     spots.forEachIndexed { i, (fx, fy, r) ->
         val a = (0.5f + 0.5f * sin((t + i * 0.21f) * 2f * PI.toFloat())).coerceIn(0f, 1f)
         val c = Offset(size.width * fx, size.height * fy)
