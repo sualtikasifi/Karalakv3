@@ -276,7 +276,7 @@ private fun AchievementProgressHeader(unlockedCount: Int, total: Int, waiting: I
     ) {
         // No trophy badge: the painted panel has its own splashes at both ends, so the text sits centred between them.
         Column(
-            modifier = Modifier.fillMaxWidth().padding(start = 40.dp, end = 40.dp, top = 22.dp, bottom = 22.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 40.dp, end = 40.dp, top = 38.dp, bottom = 26.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
