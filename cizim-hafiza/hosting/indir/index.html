@@ -132,9 +132,9 @@
     setTimeout(function () { location.href = intent; }, 300);
   }
   // an iPhone has no app: the browser game is the main button there
-  // the browser game is for iPhones and iPads only: everybody else gets the store, the painted "play in the browser" button included
+  // the browser game is for iPhones and iPads only: everybody else gets the store only
   var iosDevice = ios || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  if (!iosDevice) { $("web").style.display = "none"; var pw = document.querySelector(".pg a.web"); if (pw) pw.href = store; }
+  if (!iosDevice) { $("web").style.display = "none"; var pw = document.querySelector(".pg a.web"); if (pw) { pw.removeAttribute("href"); pw.style.pointerEvents = "none"; } } // the painted button says iOS: it does nothing elsewhere
   if (ios) { $("store").className = "btn second"; $("web").className = "btn primary"; $("store").parentNode.insertBefore($("web"), $("store")); }
 })();
 </script>
