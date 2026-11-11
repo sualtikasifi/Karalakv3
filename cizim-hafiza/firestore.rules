@@ -328,9 +328,32 @@ service cloud.firestore {
 
       allow get: if signedIn() && resource.data.expiresAt > request.time.toMillis();
       allow list: if signedIn() && resource.data.ownerUid == request.auth.uid;
-      allow create: if signedIn() && linkId.matches('[A-Za-z0-9]{10}') && validLink();
+      // A link is only made together with its line in the owner's daily quota (guessQuota below, the same batch), so a
+      // script cannot fill the database with links: twenty a day per account, counted by the server's clock.
+      allow create: if signedIn() && linkId.matches('[A-Za-z0-9]{10}') && validLink()
+                    && getAfter(/databases/$(database)/documents/guessQuota/$(request.auth.uid)).data.last == linkId;
       allow update: if false;
       allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // How many "Bil Bakalım" links an account made today (Türkiye day): { day, count, last }. Written only in the same batch
+    // as the link it names (last), one step at a time: the count goes up by one within a day and starts again at one on a
+    // new day, never past twenty. Nobody else reads it.
+    match /guessQuota/{uid} {
+      function quotaDay() {
+        return math.floor((request.time.toMillis() + 10800000) / 86400000);
+      }
+
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+                            && request.resource.data.keys().hasOnly(['day', 'count', 'last'])
+                            && request.resource.data.day == quotaDay()
+                            && request.resource.data.count is int && request.resource.data.count >= 1 && request.resource.data.count <= 20
+                            && request.resource.data.count == ((resource != null && resource.data.day == quotaDay()) ? resource.data.count + 1 : 1)
+                            && request.resource.data.last is string && request.resource.data.last.matches('[A-Za-z0-9]{10}')
+                            && !exists(/databases/$(database)/documents/guessLinks/$(request.resource.data.last))
+                            && existsAfter(/databases/$(database)/documents/guessLinks/$(request.resource.data.last))
+                            && getAfter(/databases/$(database)/documents/guessLinks/$(request.resource.data.last)).data.ownerUid == uid;
     }
 
     // ---- friend streaks (see data/repository/FriendStreakRepositoryImpl.kt) ---------------------------------------

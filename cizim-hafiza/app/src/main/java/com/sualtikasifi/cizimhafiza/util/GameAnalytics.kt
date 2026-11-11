@@ -57,4 +57,30 @@ class GameAnalytics @Inject constructor(@ApplicationContext private val context:
         putLong("guided", if (guided) 1L else 0L)
         putLong("player_level", playerLevel.toLong())
     }
+
+    // ---- "Bil Bakalım" links and friend streaks: the funnel from a shared drawing to a new player who keeps coming back
+
+    /** A drawing was turned into a link: from the result screen ("result") or as the answer to a friend's link ("turn"). */
+    fun guessLinkCreated(source: String) = log("guess_link_created") { putString("source", source) }
+
+    /** A friend's link was opened in the app. */
+    fun guessLinkOpened() = log("guess_link_opened") {}
+
+    /** The round on a friend's link ended: guessed or not, after how many tries. */
+    fun guessFinished(solved: Boolean, attempts: Int) = log("guess_finished") {
+        putString("solved", solved.toString())
+        putInt("attempts", attempts)
+    }
+
+    /** "Sıra sende" was taken up: the same word is being drawn to send on. */
+    fun guessTurnStarted() = log("guess_turn_started") {}
+
+    /** A finished duel was counted for the pair's friend streak. */
+    fun friendStreakDuel() = log("fstreak_duel") {}
+
+    /** A broken friend streak was mended with an ad. */
+    fun friendStreakRescued() = log("fstreak_rescued") {}
+
+    /** A friend-streak milestone prize was taken. */
+    fun friendStreakReward(milestone: Int) = log("fstreak_reward") { putInt("milestone", milestone) }
 }

@@ -1807,4 +1807,8 @@
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_report">Report</string>
     <string name="guess_reported">Thank you, we will look into it.</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="guess_page_title">Guess It</string>
+    <string name="duel_create_streak_hint">🔥 Finish a duel together every day and your friend streak grows.</string>
 </resources>

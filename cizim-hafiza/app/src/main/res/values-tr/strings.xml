@@ -1820,4 +1820,8 @@
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_report">Bildir</string>
     <string name="guess_reported">Teşekkürler, inceleyeceğiz.</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="guess_page_title">Bil Bakalım</string>
+    <string name="duel_create_streak_hint">🔥 Her gün bir düello tamamlanırsa arkadaş seriniz büyür.</string>
 </resources>

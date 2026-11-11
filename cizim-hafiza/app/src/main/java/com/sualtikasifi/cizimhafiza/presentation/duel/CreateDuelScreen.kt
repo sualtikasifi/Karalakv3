@@ -24,7 +24,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.presentation.common.IconWell
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPage
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
+import com.sualtikasifi.cizimhafiza.presentation.theme.AppTheme
 import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
 import com.sualtikasifi.cizimhafiza.presentation.common.ScreenTopActions
 import com.sualtikasifi.cizimhafiza.presentation.common.TopActionsClearance
@@ -51,43 +53,38 @@ fun CreateDuelScreen(
 ) {
     var selectedCount by remember { mutableIntStateOf(GameConstants.WORD_COUNT_OPTIONS.first()) }
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .screenBackground()
-                .padding(padding)
-                .padding(horizontal = 20.dp, vertical = 12.dp)
-        ) {
-            // Clears the floating back button (see ScreenTopActions).
-            Spacer(modifier = Modifier.height(TopActionsClearance))
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                RaisedCard(corner = 22.dp, modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        IconWell(icon = Icons.Filled.SportsMma)
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Text(
-                            text = stringResource(R.string.duel_create_opponent, opponentName),
-                            style = MaterialTheme.typography.titleMedium,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = stringResource(R.string.duel_create_explainer, opponentName),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
+    // The game's painted page; the choice sits on cream cards so it reads on the wood wall.
+    PaintedPage(title = stringResource(R.string.duel_create_title), onBack = onBack) {
+        RaisedCard(corner = 22.dp, face = AppTheme.tokens.cardWarm, modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                IconWell(icon = Icons.Filled.SportsMma)
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.duel_create_opponent, opponentName),
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.duel_create_explainer, opponentName),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.duel_create_streak_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+        RaisedCard(corner = 22.dp, face = AppTheme.tokens.cardWarm, modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = stringResource(R.string.select_word_count),
                     style = MaterialTheme.typography.titleMedium,
@@ -107,15 +104,12 @@ fun CreateDuelScreen(
                         )
                     }
                 }
+                PrimaryButton(
+                    text = stringResource(R.string.duel_create_start),
+                    onClick = { onChallengeStarted(selectedCount) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 14.dp)
+                )
             }
-
-            PrimaryButton(
-                text = stringResource(R.string.duel_create_start),
-                onClick = { onChallengeStarted(selectedCount) },
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
-            )
-        }
-        ScreenTopActions(onBack = onBack, modifier = Modifier.align(Alignment.TopStart))
         }
     }
 }

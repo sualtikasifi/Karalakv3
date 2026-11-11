@@ -447,13 +447,13 @@ const TITLE_TR = document.title;
 function applyLang() {
   const x = t();
   document.documentElement.lang = lang; setLang(lang);
-  document.title = lang === "tr" ? TITLE_TR : inLang({ en: "Karalak – Draw, remember, race! Play free in your browser", pt: "Karalak – Desenhe, lembre, dispute! Jogue grátis no navegador", es: "Karalak – ¡Dibuja, recuerda, compite! Juega gratis en tu navegador" });
+  document.title = lang === "tr" ? TITLE_TR : inLang({ en: "Karalak – Draw, remember, race!", pt: "Karalak – Desenhe, lembre, dispute!", es: "Karalak – ¡Dibuja, recuerda, compite!" });
   // the page's description in the language shown (the static one in index.html is Turkish, for the plain-HTML crawlers)
   document.querySelector('meta[name="description"]')?.setAttribute("content", inLang({
-    tr: "Karalak: arkadaşlarınla çizim ve hafıza oyunu. Kelimeyi çiz, rakibinin çizimini hatırla, tahmin et ve ligde yüksel. Tarayıcıda ücretsiz oyna ya da Android'e indir.",
-    en: "Karalak: a drawing and memory game to play with friends. Draw the word, remember the drawings, guess and climb the league. Play free in your browser or get it on Android.",
-    pt: "Karalak: um jogo de desenho e memória para jogar com amigos. Desenhe a palavra, lembre dos desenhos, adivinhe e suba na liga. Jogue grátis no navegador ou baixe no Android.",
-    es: "Karalak: un juego de dibujo y memoria para jugar con amigos. Dibuja la palabra, recuerda los dibujos, adivina y sube en la liga. Juega gratis en tu navegador o descárgalo en Android." }));
+    tr: "Karalak: arkadaşlarınla çizim ve hafıza oyunu. Kelimeyi çiz, rakibinin çizimini hatırla, tahmin et ve ligde yüksel. Android'de Google Play'den indir, iPhone'da tarayıcıda oyna.",
+    en: "Karalak: a drawing and memory game to play with friends. Draw the word, remember the drawings, guess and climb the league. Get it on Google Play for Android, or play in the browser on iPhone.",
+    pt: "Karalak: um jogo de desenho e memória para jogar com amigos. Desenhe a palavra, lembre dos desenhos, adivinhe e suba na liga. Baixe na Google Play para Android ou jogue no navegador do iPhone.",
+    es: "Karalak: un juego de dibujo y memoria para jugar con amigos. Dibuja la palabra, recuerda los dibujos, adivina y sube en la liga. Descárgalo en Google Play para Android o juega en el navegador del iPhone." }));
   $("d-next-t").textContent = x.next; $("g-ok-t").textContent = S("submit_guess");
   $("w-title").textContent = x.wTitle; $("w-body").textContent = x.wBody; $("w-go-t").textContent = x.wGo; $("w-skip").textContent = x.wSkip;
   $("s-text").textContent = x.searching; $("s-sub").textContent = x.searchSub; $("again-t").textContent = x.again;
@@ -934,7 +934,7 @@ async function finish() {
   if (kind === "duel" && duelRun) {
     const run = duelRun;
     if (run.mode === "new") { net.createDuel({ opponentUid: run.opp.uid, opponentName: run.opp.name, items: me.items, challengerScore: score, challengerCorrectCount: n, wordIds: me.wordIds, myName: P.nick }).catch(() => {}); duelNote = S("duel_challenge_sent", run.opp.name); }
-    else { opp = { nickname: run.duel.challengerName, totalScore: run.duel.challengerScore, level: 1 }; items = run.duel.items; duelReceived(run.duel, score, n); net.submitDuelResult(run.duel.id, score, n).catch(() => {}); duelRematch = () => ctx.openDuel({ uid: run.duel.challengerUid, name: run.duel.challengerName }); }
+    else { opp = { nickname: run.duel.challengerName, totalScore: run.duel.challengerScore, level: 1 }; items = run.duel.items; duelReceived(run.duel, score, n); net.submitDuelResult(run.duel.id, score, n).then(() => { if (run.duel.items.length >= 10) return net.recordFriendDuel(run.duel.challengerUid); }).catch(() => {}); duelRematch = () => ctx.openDuel({ uid: run.duel.challengerUid, name: run.duel.challengerName }); }
   }
   await minWait;
   clearTimeout(waitScene);

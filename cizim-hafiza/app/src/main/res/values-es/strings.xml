@@ -1808,4 +1808,8 @@
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_report">Reportar</string>
     <string name="guess_reported">Gracias, lo revisaremos.</string>
+
+    <!-- Bil Bakalım / Arkadaş serisi -->
+    <string name="guess_page_title">Adivina</string>
+    <string name="duel_create_streak_hint">🔥 Si completan un duelo cada día, su racha de amigos crece.</string>
 </resources>

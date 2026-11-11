@@ -51,6 +51,7 @@ import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingStroke
 import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
 import com.sualtikasifi.cizimhafiza.presentation.common.DrawableCanvas
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPage
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
 import com.sualtikasifi.cizimhafiza.presentation.common.RaisedCard
 import com.sualtikasifi.cizimhafiza.presentation.common.ReplayStrokeCanvas
@@ -85,24 +86,26 @@ fun GuessLinkScreen(
         }
     }
 
+    androidx.activity.compose.BackHandler(onBack = leave)
+
     // The share sheet opens by itself once, the moment the new link exists.
     LaunchedEffect(state.newLinkId) {
         val id = state.newLinkId ?: return@LaunchedEffect
         GuessShareUtil.share(context, id, state.word.orEmpty(), state.live)
     }
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
-        Box(modifier = Modifier.fillMaxSize()) {
+    // The game's painted page (wood wall, hanging sign, painted back arrow), with the round on a cream card so it reads on
+    // the wall. While a drawing is being made the page does not scroll: a vertical stroke must not drag the page with it.
+    PaintedPage(
+        title = stringResource(R.string.guess_page_title),
+        onBack = leave,
+        bodyScroll = state.phase != GuessPhase.Drawing
+    ) {
+        RaisedCard(corner = 24.dp, face = AppTheme.tokens.cardWarm, modifier = Modifier.fillMaxWidth()) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .screenBackground()
-                    .padding(padding)
-                    .padding(horizontal = 20.dp)
-                    .verticalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(Modifier.height(TopActionsClearance))
                 when (state.phase) {
                     GuessPhase.Loading -> Box(Modifier.fillMaxWidth().height(280.dp), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
@@ -115,17 +118,16 @@ fun GuessLinkScreen(
                         state.newLinkId?.let { GuessShareUtil.share(context, it, state.word.orEmpty(), state.live) }
                     }, onClose = leave)
                 }
-                Spacer(Modifier.height(28.dp))
             }
-            ScreenTopActions(onBack = leave, modifier = Modifier.align(Alignment.TopStart))
         }
+        Spacer(Modifier.height(16.dp))
     }
 }
 
 @Composable
 private fun Unavailable(problem: GuessProblem, onRetry: () -> Unit, onBack: () -> Unit) {
-    RaisedCard(corner = 22.dp, modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
-        Column(Modifier.fillMaxWidth().padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    run {
+        Column(Modifier.fillMaxWidth().padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text("🕵️", fontSize = 44.sp)
             Spacer(Modifier.height(10.dp))
             Text(

@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -83,6 +84,11 @@ class FriendsViewModel @Inject constructor(
     ) { incoming, sent ->
         incoming.size + sent.count { it.status == DuelStatus.COMPLETE && !it.seenByChallenger }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    /** Friends this player has sent a duel to that is still waiting to be played: today's streak day is in their hands. */
+    val waitingOnFriends: StateFlow<Set<String>> = duelRepository.observeSentDuels().catch { emit(emptyList()) }
+        .map { sent -> sent.filter { it.status == DuelStatus.AWAITING_OPPONENT }.map { it.opponentUid }.toSet() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     // Pre-filled when opened via a referral invite link
     // (karalak://friend/482913); empty for a plain in-app "Arkadaşlar" tap.
