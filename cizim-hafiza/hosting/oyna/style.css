@@ -222,7 +222,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #ak-sign{display:block}
 .txt.sm{font-size:calc(var(--u)*27);font-weight:600;color:#7a5a40}.txt.sm2{font-size:calc(var(--u)*27);font-weight:600;color:#3b5a2a;line-height:1.1}
 #ak-name{font-size:calc(var(--u)*48)}
-.txt.badge{color:#fff;font-size:calc(var(--u)*26)}.txt.badge span{background:linear-gradient(90deg,#5b9bf0,#3a6fd8);border-radius:99px;padding:calc(var(--u)*4) calc(var(--u)*20);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.txt.badge{color:#fff;font-size:calc(var(--u)*26)}.txt.badge span{display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(90deg,#5b9bf0,#3a6fd8);border-radius:calc(var(--u)*34);padding:calc(var(--u)*4) calc(var(--u)*24);white-space:nowrap;max-width:100%;height:100%;box-sizing:border-box;line-height:1.1}.txt.badge span b{font-weight:800}.txt.badge span em{font-style:normal;font-size:calc(var(--u)*24);font-weight:700;opacity:.95;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .txt.badge.guest span{background:linear-gradient(90deg,#c8a878,#a88850)}
 #ak-bar{border-radius:99px;background:#3a2a22;overflow:hidden;display:flex;align-items:center;justify-content:center}
 #ak-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#ffd25a,#f2a100);border-radius:99px}
@@ -1025,7 +1025,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #rp-title{font-size:calc(var(--u)*50)}
 /* account: the strip's bold line sits above the small one (and shows whole), the stat captions stay clear of the card's bottom edge */
 #ak-strip{flex-direction:column;line-height:1.15}#ak-strip b{white-space:nowrap;font-size:calc(var(--u)*30)}#ak-strip small{font-size:calc(var(--u)*24)}
-.ak-stat{padding-bottom:calc(var(--u)*18)}#ak-strip b,#ak-strip small{width:100%;display:block}
+.ak-stat{padding-bottom:calc(var(--u)*18)}#ak-strip b,#ak-strip small{width:100%;display:block;text-align:center}
 /* tutorial cards: centred in the browser window (not in the painted stage), with a bigger button label */
 #tut-spot.coach{position:fixed}
 #tut-go{height:calc(var(--u)*132)}#tut-go span,#tut-spot.coach #tut-go span{font-size:calc(var(--u)*54)}

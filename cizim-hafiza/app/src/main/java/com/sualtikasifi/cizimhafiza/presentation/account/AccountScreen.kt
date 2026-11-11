@@ -188,44 +188,51 @@ fun AccountScreen(
                 photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(linked?.photoUrl)
             )
         }
+        // The texts sit centred in the column to the right of the avatar.
         FitText(
             text = name,
-            style = PaintedStyle(color = PageInk, fontSize = fs(48f), textAlign = TextAlign.Start),
+            style = PaintedStyle(color = PageInk, fontSize = fs(48f), textAlign = TextAlign.Center),
             maxLines = 1,
             minScale = 0.55f,
-            contentAlignment = Alignment.CenterStart,
-            modifier = box(268f, 540f, 770f, 600f)
+            modifier = box(256f, 534f, 786f, 594f)
         )
-        Box(box(268f, 604f, 770f, 648f), contentAlignment = Alignment.CenterStart) {
+        Box(box(256f, 596f, 786f, 640f), contentAlignment = Alignment.Center) {
             RankLevelLabel(level = uiState.level, bullet = false)
         }
-        // Who the profile belongs to: a green pill with a tick for a linked Google account, a plain one for a guest.
-        Row(
-            box(268f, 654f, 774f, 712f)
-                .clip(CircleShape)
+        // Who the profile belongs to: a green pill with a tick for a linked Google account, a plain one for a guest. A linked
+        // pill has two lines, so a long address has the whole width of its own line: it shrinks, and when that is not
+        // enough the middle of the part before the @ is cut, never the domain.
+        Column(
+            box(268f, 648f, 774f, 718f)
+                .clip(RoundedCornerShape(50))
                 .background(if (linked != null) Color(0xFFDDEEDD) else Color(0xFFEFE3CF))
-                .padding(horizontal = (18f * us).dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy((10f * us).dp)
+                .padding(horizontal = (20f * us).dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = if (linked != null) Icons.Filled.Check else Icons.Filled.Person,
-                contentDescription = null,
-                tint = if (linked != null) AppTheme.tokens.success else Color(0xFF8A6A50),
-                modifier = Modifier.size((30f * us).dp)
-            )
-            FitText(
-                text = if (linked != null) {
-                    listOfNotNull(stringResource(R.string.account_google_linked), linked.email).joinToString(" · ")
-                } else {
-                    stringResource(R.string.account_guest_badge)
-                },
-                style = PaintedStyle(color = PageInk, fontSize = fs(27f), textAlign = TextAlign.Start),
-                maxLines = 1,
-                minScale = 0.6f,
-                contentAlignment = Alignment.CenterStart,
-                modifier = Modifier.weight(1f)
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((8f * us).dp)) {
+                Icon(
+                    imageVector = if (linked != null) Icons.Filled.Check else Icons.Filled.Person,
+                    contentDescription = null,
+                    tint = if (linked != null) AppTheme.tokens.success else Color(0xFF8A6A50),
+                    modifier = Modifier.size((28f * us).dp)
+                )
+                Text(
+                    text = if (linked != null) stringResource(R.string.account_google_linked) else stringResource(R.string.account_guest_badge),
+                    style = PaintedStyle(color = PageInk, fontSize = fs(26f), textAlign = TextAlign.Center),
+                    maxLines = 1
+                )
+            }
+            val email = linked?.email
+            if (!email.isNullOrBlank()) {
+                FitText(
+                    text = shortenEmail(email, 30),
+                    style = PaintedStyle(color = Color(0xFF5A4030), fontSize = fs(24f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+                    maxLines = 1,
+                    minScale = 0.7f,
+                    modifier = Modifier.fillMaxWidth().height(unit * 30f)
+                )
+            }
         }
         // The XP bar.
         Box(
@@ -250,10 +257,10 @@ fun AccountScreen(
                 text = if (progress.isMaxLevel) stringResource(R.string.account_xp_max)
                 else stringResource(R.string.account_xp_progress, progress.xpIntoLevel, progress.xpForThisLevel),
                 style = PaintedStyle(
-                    color = Color.White, fontSize = fs(26f), fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Start
+                    color = Color.White, fontSize = fs(26f), fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center
                 ).copy(shadow = androidx.compose.ui.graphics.Shadow(Color(0xCC3A1A08), androidx.compose.ui.geometry.Offset(0f, 2f), 4f)),
                 maxLines = 1,
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = (16f * us).dp).offset(y = -(2.5f * us).dp)
+                modifier = Modifier.align(Alignment.Center).offset(y = -(2.5f * us).dp)
             )
         }
 
@@ -269,14 +276,14 @@ fun AccountScreen(
                 style = PaintedStyle(color = PageInk, fontSize = fs(46f), textAlign = TextAlign.Center),
                 maxLines = 1,
                 minScale = 0.5f,
-                modifier = box(x + 24f, 922f, x + 228f, 974f)
+                modifier = box(x + 24f, 914f, x + 228f, 966f)
             )
             FitText(
                 text = label,
                 style = PaintedStyle(color = PageInk, fontSize = fs(25f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
                 maxLines = 1,
                 minScale = 0.55f,
-                modifier = box(x + 16f, 970f, x + 236f, 1002f)
+                modifier = box(x + 16f, 954f, x + 236f, 986f)
             )
         }
 
@@ -284,10 +291,9 @@ fun AccountScreen(
         // (The picture's own sync disc at the strip's left has been painted out of bg_account, so nothing sits behind the heading.)
         FitText(
             text = stringResource(R.string.account_section_account),
-            style = PaintedStyle(color = PageInk, fontSize = fs(44f), textAlign = TextAlign.Start),
+            style = PaintedStyle(color = PageInk, fontSize = fs(44f), textAlign = TextAlign.Center),
             maxLines = 1,
             minScale = 0.55f,
-            contentAlignment = Alignment.CenterStart,
             modifier = box(100f, 1066f, 740f, 1134f)
         )
         val backedUp = uiState.lastBackupAtMillis != null
@@ -320,23 +326,28 @@ fun AccountScreen(
             uiState.isGoogleSignInConfigured -> { strip1 = stringResource(R.string.account_guest_hint); strip2 = null }
             else -> { strip1 = stringResource(R.string.account_not_configured_message); strip2 = null }
         }
-        FitText(
-            text = strip1,
-            style = PaintedStyle(color = PageInk, fontSize = fs(31f), textAlign = TextAlign.Start),
-            maxLines = if (strip2 == null) 2 else 1,
-            minScale = 0.55f,
-            contentAlignment = Alignment.CenterStart,
-            modifier = if (strip2 == null) box(166f, 1158f, 742f, 1222f) else box(166f, 1158f, 742f, 1198f)
-        )
-        if (strip2 != null) {
+        // The strip's texts are one block, centred in it (the painted tick's disc is 1160..1220, so the strip is centred on 1190).
+        Column(
+            box(166f, 1148f, 742f, 1232f),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             FitText(
-                text = strip2,
-                style = PaintedStyle(color = Color(0xFF7A5A40), fontSize = fs(25f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
-                maxLines = 1,
+                text = strip1,
+                style = PaintedStyle(color = PageInk, fontSize = fs(31f), textAlign = TextAlign.Center),
+                maxLines = if (strip2 == null) 2 else 1,
                 minScale = 0.55f,
-                contentAlignment = Alignment.CenterStart,
-                modifier = box(166f, 1196f, 742f, 1228f)
+                modifier = Modifier.fillMaxWidth().height(unit * (if (strip2 == null) 70f else 40f))
             )
+            if (strip2 != null) {
+                FitText(
+                    text = strip2,
+                    style = PaintedStyle(color = Color(0xFF7A5A40), fontSize = fs(25f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
+                    maxLines = 1,
+                    minScale = 0.55f,
+                    modifier = Modifier.fillMaxWidth().height(unit * 32f)
+                )
+            }
         }
 
         // ---- Sign out / sign in --------------------------------------------------------------------------------
@@ -481,6 +492,19 @@ fun AccountScreen(
 private const val ArtW = 841f
 private const val ArtH = 1870f
 private val PageInk = Color(0xFF3B2314)
+
+/**
+ * [email] cut to about [max] characters without touching the domain: "very.long.address.here@gmail.com" becomes
+ * "very.long.addr…@gmail.com". An address that already fits is returned as it is.
+ */
+internal fun shortenEmail(email: String, max: Int): String {
+    if (email.length <= max) return email
+    val at = email.lastIndexOf('@')
+    if (at <= 0) return email.take(max - 1) + "…"
+    val domain = email.substring(at)
+    val keep = (max - domain.length - 1).coerceAtLeast(6)
+    return if (at <= keep) email else email.take(keep) + "…" + domain
+}
 
 /**
  * "bugün 14:32" for a backup from today, "dün 14:32" for yesterday, the
