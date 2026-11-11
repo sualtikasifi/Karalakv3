@@ -63,11 +63,14 @@ import java.util.Locale
 /** Viewers drop off past this length (seconds): the panel warns when a "Çizen Bile Bilemedi" video runs over it. */
 internal const val FORGOT_TARGET_SECONDS = 20
 
-/** "Çizen Bile Bilemedi": a drawing its own drawer could not recognise, how the code is given, and Karalak's lines. */
-internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) {
+/** Shown on a step that needs the drawing, until one is chosen. */
+private fun LazyListScope.needDrawing() {
+    item { ConsoleCard(Modifier.fillMaxWidth()) { Text("Önce 1. adımda bir çizim seç.", style = Console.Small) } }
+}
+
+/** Step 1: the drawing: this phone's own, or the pool's; the ones its drawer got wrong first. */
+internal fun LazyListScope.forgotStepDrawing(st: StudioState, vm: StudioViewModel) {
     val f = st.forgot
-    // 1. the drawing: this phone's own, or the pool's; the ones its drawer got wrong first
-    item { Step("1", "Çizim", if (f.drawingId != null) "seçili" else "birini seç") }
     item {
         Segmented(
             options = ForgotSource.entries.map { it.name to it.title },
@@ -116,8 +119,12 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
         }
     }
 
-    // 2. the code
-    item { Step("2", "Kupon kodu") }
+}
+
+/** Step 2: how the code is given (the answer itself, or a code on the end card), the letter lines and the wording of the texts. */
+internal fun LazyListScope.forgotStepCode(st: StudioState, vm: StudioViewModel) {
+    val f = st.forgot
+    val script = f.script ?: run { needDrawing(); return }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Segmented(
@@ -175,6 +182,16 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
                     "Ekran yazıları ve Karalak'ın üslubu bu dile göre değişir; metinleri yeniden yazdırınca üslup uygulanır.",
                 style = Console.Small, modifier = Modifier.padding(top = 6.dp)
             )
+        }
+    }
+}
+
+/** Step 3: what the code gives, how many may use it, until when, and making the coupon. */
+internal fun LazyListScope.forgotStepReward(st: StudioState, vm: StudioViewModel) {
+    val f = st.forgot
+    val script = f.script ?: run { needDrawing(); return }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Ödül", style = Console.Label, modifier = Modifier.padding(top = 10.dp))
             Field("Altın miktarı", if (f.gold == 0) "" else f.gold.toString(), { vm.setForgotGold(it.digitsToInt()) }, numeric = true)
             Field("XP miktarı", if (f.xp == 0) "" else f.xp.toString(), { vm.setForgotXp(it.digitsToInt()) }, numeric = true)
@@ -203,8 +220,12 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
             f.couponStatus?.let { Text(it, style = Console.Small.copy(color = if (it.startsWith("Kupon hazır")) Console.Ink else Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
         }
     }
-    // 3. Karalak's lines
-    item { Step("3", "Karalak'ın senaryosu") }
+}
+
+/** Step 4: Karalak looks at the drawing and writes the lines; the opening line (the hook) is read and changed here. */
+internal fun LazyListScope.forgotStepHook(st: StudioState, vm: StudioViewModel) {
+    val f = st.forgot
+    val script = f.script ?: run { needDrawing(); return }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             DarkButton(
@@ -222,7 +243,6 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
             f.writeError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
         }
     }
-    item { ForgotCueSheet(script, st.real.howtoMs) }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -237,6 +257,15 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
             )
             f.hookError?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(bottom = 4.dp)) }
             LineEditor(script.hook, { vm.editLine(LineRef.ForgotHook, it) }, { vm.editEmotion(LineRef.ForgotHook, it) }) { vm.listen(script.hook) }
+        }
+    }
+}
+
+/** Step 5: how many guesses Karalak makes, where the drawing stops for each, and what it says. */
+internal fun LazyListScope.forgotStepGuesses(st: StudioState, vm: StudioViewModel) {
+    val script = st.forgot.script ?: run { needDrawing(); return }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Kaç tahmin", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
             Segmented(
                 options = (1..ForgotTimeline.MAX_GUESSES).map { it.toString() to it.toString() },
@@ -254,6 +283,15 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
                 )
                 LineEditor(l, { vm.editLine(LineRef.ForgotGuess(i), it) }, { vm.editEmotion(LineRef.ForgotGuess(i), it) }) { vm.listen(l) }
             }
+        }
+    }
+}
+
+/** Step 6: the question over the countdown, the reaction at the code, the closing, and the whole script at a glance. */
+internal fun LazyListScope.forgotStepClosing(st: StudioState, vm: StudioViewModel) {
+    val script = st.forgot.script ?: run { needDrawing(); return }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Geri sayımda izleyiciye soru", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
             LineEditor(script.askLine, { vm.editLine(LineRef.ForgotAsk, it) }, { vm.editEmotion(LineRef.ForgotAsk, it) }) { vm.listen(script.askLine) }
             Text("Tepki ve kod anı (tek cümle)", style = Console.Label, modifier = Modifier.padding(top = 8.dp))
@@ -262,8 +300,13 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
             LineEditor(script.outro, { vm.editLine(LineRef.ForgotOutro, it) }, { vm.editEmotion(LineRef.ForgotOutro, it) }) { vm.listen(script.outro) }
         }
     }
-    // 4. the music: the same tracks and the same mix as "Gerçek Olsaydı", stepping back while Karalak speaks
-    item { Step("4", "Müzik") }
+    item { ForgotCueSheet(script, st.real.howtoMs) }
+}
+
+/** Step 7: whether Karalak speaks and how, and the music under the video. */
+internal fun LazyListScope.forgotStepSound(st: StudioState, vm: StudioViewModel) {
+    val f = st.forgot
+    voiceItems(st, vm)
     item {
         MusicCard(
             f.music, f.musicVolume, true, null, st.real.musicPlaying, st.real.customMusic, vm,
@@ -272,6 +315,7 @@ internal fun LazyListScope.forgotSections(st: StudioState, vm: StudioViewModel) 
         )
     }
 }
+
 
 /** The digits of what was typed in a number field as a number (nothing typed: 0), at most eight of them. */
 internal fun String.digitsToInt(): Int = filter { it.isDigit() }.take(8).toIntOrNull() ?: 0

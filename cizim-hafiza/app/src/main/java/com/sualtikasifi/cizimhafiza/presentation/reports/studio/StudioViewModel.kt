@@ -148,7 +148,7 @@ class StudioViewModel @Inject constructor(
         startDraftAutosave()
         restoreLastDraft()
         refreshLearned()
-        _state.update { it.copy(analysisModel = analysisModel()) }
+        _state.update { it.copy(analysisModel = analysisModel(), forgot = it.forgot.copy(step = prefs().getInt(FORGOT_STEP, 1).coerceIn(1, FORGOT_STEPS))) }
     }
 
     // ---- loading
@@ -504,6 +504,9 @@ class StudioViewModel @Inject constructor(
         const val ENDING = "studio_real_ending"
         const val TAB = "studio_real_tab"
         const val STEP = "studio_real_step"
+        /** The 16-screen flow's own key: the old seven-step number must not be read as a screen of the new one. */
+        const val FLOW_STEP = "studio_real_flow_step"
+        const val FORGOT_STEP = "studio_forgot_step"
         const val VOICE_STEP = "studio_real_voice_step"
         const val MUSIC_ON = "studio_real_music_on"
         const val FORGOT_MUSIC = "studio_forgot_music"

@@ -68,35 +68,8 @@ import java.util.Locale
 // "Gerçek Olsaydı" screens of the studio panel: the steps of the wizard, the library and the settings tab.
 
 /** "Gerçek Olsaydı": the latest drawings of players who allowed it, three of them, each turned real with ChatGPT and Gemini. */
-/** The seven steps of "Gerçek Olsaydı", in the order the work goes (see [WizardStepInfo]). */
-internal class WizardStepInfo(val title: String, val short: String)
-
-internal val WIZARD_STEPS = listOf(
-    WizardStepInfo("Çizimi seç", "Çizim"),
-    WizardStepInfo("Görsel istemini hazırla", "İstem"),
-    WizardStepInfo("Gerçeğe dönüştür ve oyuncuyu ayarla", "Görsel"),
-    WizardStepInfo("Görseli yükle, senaryoyu seç, Gemini'ye gönder", "Senaryo"),
-    WizardStepInfo("Seslendirmeler ve müzik", "Ses"),
-    WizardStepInfo("Videoyu yükle, kartı yerleştir", "Video"),
-    WizardStepInfo("Önizle ve oluştur", "Bitir")
-)
-
+/** The names of the five screens of lines and music (see [voiceStepItems]). */
 internal val VOICE_STEPS = listOf("Kanca", "Anlatıcı", "Kapanış", "Müzik", "Bitiş sesi")
-
-/** Whether step [n] (1..7) has what it is for: only for the marks on the stepper, the steps themselves can be visited in any order. */
-internal fun stepDone(n: Int, st: StudioState): Boolean {
-    val p = st.real.project
-    val f = p?.opening
-    return when (n) {
-        1 -> p != null && p.reveals.isNotEmpty()
-        2 -> f != null && f.describe.isNotBlank()
-        3 -> f?.image != null
-        4 -> f != null && f.image != null && f.motion.isNotBlank()
-        5 -> f != null && f.hook.text.isNotBlank()
-        6 -> f?.clip != null
-        else -> st.video != null
-    }
-}
 
 internal fun voiceDone(n: Int, f: RealReveal?): Boolean = when (n) {
     1 -> f?.hook?.voice != null
@@ -106,21 +79,65 @@ internal fun voiceDone(n: Int, f: RealReveal?): Boolean = when (n) {
     else -> f?.endLine?.voice != null
 }
 
-internal fun LazyListScope.realSections(st: StudioState, vm: StudioViewModel, context: Context) {
+/** A step that needs the drawing, until one is chosen. */
+private fun LazyListScope.needDrawing() {
+    item { ConsoleCard(Modifier.fillMaxWidth()) { Text("Önce 1. adımda bir çizim seç.", style = Console.Small) } }
+}
+
+/**
+ * "Gerçek Olsaydı" screen by screen (the numbers are the ones [setRealStep] and [REAL_FIRST_VOICE_STEP] speak of):
+ * 1 drawing · 2 recipe · 3 ChatGPT · 4 player · 5 picture · 6 scene · 7 Gemini · 8 clip · 9 card · 10 hook · 11 narrator ·
+ * 12 closing · 13 music · 14 end · 15 preview · 16 make and share.
+ */
+internal fun realFlow(st: StudioState, vm: StudioViewModel, context: Context): List<FlowStep> {
     val r = st.real
-    item {
-        Segmented(
-            options = listOf(RealTab.Prepare.name to "Video hazırla", RealTab.Library.name to "Kütüphane (${r.library.size})", RealTab.Settings.name to "Ayarlar"),
-            selected = r.tab.name,
-            onSelect = { vm.setRealTab(RealTab.valueOf(it)) },
-            modifier = Modifier.fillMaxWidth()
-        )
+    val p = r.project
+    val hasDrawing = p != null && p.reveals.isNotEmpty()
+    val f = p?.opening
+    /** A screen of the drawing the video is made of; with several drawings kept, the one the video is made of is picked on top. */
+    fun forDrawing(block: LazyListScope.(RealReveal, RealProject) -> Unit): LazyListScope.() -> Unit = {
+        if (f == null || p == null) needDrawing()
+        else {
+            if (p.reveals.size > 1) item(key = "wz-switch") {
+                Column {
+                    Text("Bu videonun çizimi", style = Console.Label)
+                    Segmented(
+                        options = p.reveals.map { rv -> rv.sampleId to (p.drawing(rv.sampleId)?.word?.ifBlank { null } ?: "çizim") },
+                        selected = f.sampleId,
+                        onSelect = { vm.moveRevealFirst(it) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+            this.block(f, p)
+        }
     }
-    when (r.tab) {
-        RealTab.Library -> libraryTab(st, vm)
-        RealTab.Settings -> settingsTab(st, vm)
-        RealTab.Prepare -> wizard(st, vm, context)
-    }
+    val steps = listOf(
+        FlowStep("Çizim", "Çizimi seç", hasDrawing, if (hasDrawing) null else "Devam etmek için bir çizim seç.", blocksNext = !hasDrawing) {
+            languageItems(st, vm)
+            stepChoose(st, vm)
+        },
+        FlowStep("Tarif", "Asistan çizimi tarif etsin", f?.describe?.isNotBlank() == true, content = forDrawing { rv, _ -> stepPrompt(st, vm, rv, context) }),
+        FlowStep("ChatGPT", "Görsel için ChatGPT'ye gönder", f?.image != null, content = forDrawing { rv, _ -> stepChatGpt(vm, rv, context) }),
+        FlowStep("Oyuncu", "Kartta görünen oyuncu", p != null && f != null && p.drawing(f.sampleId)?.nickname?.isNotBlank() == true, content = forDrawing { rv, pr -> stepPlayer(st, vm, rv, pr) }),
+        FlowStep("Görsel", "ChatGPT görselini yükle", f?.image != null, content = forDrawing { rv, _ -> stepUpload(st, vm, rv) }),
+        FlowStep("Sahne", "Video senaryosunu seç", f?.motion?.isNotBlank() == true, content = forDrawing { rv, _ -> stepScene(st, vm, rv) }),
+        FlowStep("Gemini", "Gemini'ye gönder", f?.clip != null, content = forDrawing { rv, _ -> stepGemini(vm, rv, context) }),
+        FlowStep("Klip", "Gemini videosunu yükle", f?.clip != null, content = forDrawing { rv, _ -> stepClip(st, vm, rv) }),
+        FlowStep("Kart", "Karalak kartını yerleştir", f?.clip != null, content = forDrawing { _, _ -> stepCard(st, vm) }),
+        FlowStep("Kanca", "Kanca cümlesi", voiceDone(1, f), content = forDrawing { rv, pr -> voiceStepItems(st, vm, rv, pr, 1) }),
+        FlowStep("Anlatıcı", "Anlatıcı cümlesi", voiceDone(2, f), content = forDrawing { rv, pr -> voiceStepItems(st, vm, rv, pr, 2) }),
+        FlowStep("Kapanış", "Kapanış cümlesi", voiceDone(3, f), content = forDrawing { rv, pr -> voiceStepItems(st, vm, rv, pr, 3) }),
+        FlowStep("Müzik", "Müzik", voiceDone(4, f), content = forDrawing { rv, pr -> voiceStepItems(st, vm, rv, pr, 4) }),
+        FlowStep("Bitiş", "Bitiş kartı ve sesi", voiceDone(5, f), content = forDrawing { rv, pr -> voiceStepItems(st, vm, rv, pr, 5) }),
+        FlowStep("Önizleme", "Önizle", false) { item { PreviewCard(st, vm) } },
+        FlowStep("Üret", "Videoyu oluştur ve paylaş", st.video != null) {
+            renderItems(st, vm)
+            resultItems(st, vm, context)
+        }
+    )
+    check(steps.size == REAL_STEPS) { "Gerçek Olsaydı has $REAL_STEPS screens" }
+    return steps
 }
 
 /** The finished pieces kept on this phone, to watch or to make into a new video. */
@@ -178,86 +195,6 @@ internal fun LazyListScope.settingsTab(st: StudioState, vm: StudioViewModel) {
             ElevenSettings(st, vm)
             st.voiceError?.let { Text(it, style = Console.Small.copy(color = Console.Critical)) }
         }
-    }
-}
-
-/** The seven steps, one at a time: the stepper on top, the step's own content, then back and forward. */
-internal fun LazyListScope.wizard(st: StudioState, vm: StudioViewModel, context: Context) {
-    val r = st.real
-    val p = r.project
-    val hasDrawing = p != null && p.reveals.isNotEmpty()
-    val step = if (hasDrawing) r.step.coerceIn(1, 7) else 1
-    // the drawing being worked on: the first with a clip, or the first chosen while none has one yet
-    val f = p?.opening
-    item(key = "wz-head") {
-        Column {
-            Row(Modifier.fillMaxWidth()) {
-                WIZARD_STEPS.forEachIndexed { i, info ->
-                    val n = i + 1
-                    val enabled = hasDrawing || n == 1
-                    Column(
-                        Modifier.weight(1f).clickable(enabled = enabled) { vm.setRealStep(n) },
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        val current = n == step
-                        val done = stepDone(n, st)
-                        Box(
-                            Modifier.size(30.dp).clip(CircleShape).background(if (current) Console.Accent else if (done) Console.GoodSoft else Console.Grid),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (done && !current) Icon(Icons.Filled.Check, contentDescription = null, tint = Console.Good, modifier = Modifier.size(16.dp))
-                            else Text("$n", style = Console.Label.copy(color = if (current) Color.White else if (enabled) Console.Ink else Console.InkSecondary))
-                        }
-                        Text(info.short, style = Console.Small.copy(color = if (current) Console.Accent else Console.InkSecondary), maxLines = 1)
-                    }
-                }
-            }
-            Text("Adım $step/7 · ${WIZARD_STEPS[step - 1].title}", style = Console.Subtitle, modifier = Modifier.padding(top = 8.dp))
-        }
-    }
-    // the drawing the video is made of, when several are kept
-    if (step >= 2 && p != null && p.reveals.size > 1 && f != null) item(key = "wz-switch") {
-        Column {
-            Text("Bu videonun çizimi", style = Console.Label)
-            Segmented(
-                options = p.reveals.map { rv -> rv.sampleId to (p.drawing(rv.sampleId)?.word?.ifBlank { null } ?: "çizim") },
-                selected = f.sampleId,
-                onSelect = { vm.moveRevealFirst(it) },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-    }
-    when (step) {
-        1 -> stepChoose(st, vm)
-        2 -> if (f != null && p != null) stepPrompt(st, vm, f, context)
-        3 -> if (f != null && p != null) stepImage(st, vm, f, p, context)
-        4 -> if (f != null && p != null) stepScenario(st, vm, f, context)
-        5 -> if (f != null && p != null) stepVoices(st, vm, f, p)
-        6 -> if (f != null) stepVideo(st, vm, f)
-        else -> stepFinish(st, vm, context)
-    }
-    // back and forward: the voices step has five of its own steps inside
-    item(key = "wz-nav") {
-        val voices = step == 5
-        val vs = r.voiceStep.coerceIn(1, 5)
-        val back = when { step == 1 -> null; voices && vs > 1 -> VOICE_STEPS[vs - 2]; else -> WIZARD_STEPS[step - 2].short }
-        val next = when {
-            step == 7 -> null
-            voices && vs < 5 -> VOICE_STEPS[vs]
-            else -> WIZARD_STEPS[step].short
-        }
-        val canNext = step != 1 || hasDrawing
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
-            if (back != null) ActionButton(Icons.AutoMirrored.Filled.ArrowBack, back, Console.Surface, Console.Ink, Modifier.weight(1f)) {
-                if (voices && vs > 1) vm.setVoiceStep(vs - 1) else vm.setRealStep(step - 1)
-            }
-            if (next != null) Box(Modifier.weight(1.4f)) {
-                DarkButton(text = next, busy = false, enabled = canNext) {
-                    if (voices && vs < 5) vm.setVoiceStep(vs + 1) else vm.setRealStep(step + 1)
-                }
-            }
-        }
-        if (step == 1 && !hasDrawing) Text("Devam etmek için bir çizim seç.", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
     }
 }
 
@@ -337,9 +274,8 @@ internal fun LazyListScope.stepPrompt(st: StudioState, vm: StudioViewModel, f: R
     }
 }
 
-/** Step 3: the doodle goes to ChatGPT; while it makes the picture, the player on the card is set up. */
-internal fun LazyListScope.stepImage(st: StudioState, vm: StudioViewModel, f: RealReveal, p: RealProject, context: Context) {
-    val r = st.real
+/** Screen 3: the doodle goes to ChatGPT with the picture prompt. */
+internal fun LazyListScope.stepChatGpt(vm: StudioViewModel, f: RealReveal, context: Context) {
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text(
@@ -354,6 +290,11 @@ internal fun LazyListScope.stepImage(st: StudioState, vm: StudioViewModel, f: Re
             if (f.describe.isBlank()) Text("İstem boş görünüyorsa önce 2. adımda asistana hazırlat.", style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 6.dp))
         }
     }
+}
+
+/** Screen 4: the player shown on the card: name, level, frame, photo and the time the drawing took (set up while ChatGPT makes the picture). */
+internal fun LazyListScope.stepPlayer(st: StudioState, vm: StudioViewModel, f: RealReveal, p: RealProject) {
+    val r = st.real
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Kartta görünen oyuncu", style = Console.Subtitle)
@@ -361,11 +302,10 @@ internal fun LazyListScope.stepImage(st: StudioState, vm: StudioViewModel, f: Re
             PlayerEditor(p.drawing(f.sampleId), vm, r.busy != null)
         }
     }
-    item { Text("Görsel hazır olunca ileri geç ve yükle.", style = Console.Small) }
 }
 
-/** Step 4: the picture comes in, the scene is chosen from ideas written by looking at it, and the video prompt goes to Gemini. */
-internal fun LazyListScope.stepScenario(st: StudioState, vm: StudioViewModel, f: RealReveal, context: Context) {
+/** Screen 5: the picture ChatGPT made comes in. */
+internal fun LazyListScope.stepUpload(st: StudioState, vm: StudioViewModel, f: RealReveal) {
     val r = st.real
     val anyBusy = r.busy != null
     item {
@@ -389,6 +329,12 @@ internal fun LazyListScope.stepScenario(st: StudioState, vm: StudioViewModel, f:
             }
         }
     }
+}
+
+/** Screen 6: three scenes written by looking at the picture; one is chosen (or written by hand). */
+internal fun LazyListScope.stepScene(st: StudioState, vm: StudioViewModel, f: RealReveal) {
+    val r = st.real
+    val anyBusy = r.busy != null
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Video senaryosu", style = Console.Label)
@@ -411,6 +357,10 @@ internal fun LazyListScope.stepScenario(st: StudioState, vm: StudioViewModel, f:
             Field("Seçilen senaryo (istersen düzenle ya da kendin yaz)", f.motion, { vm.setRevealMotion(f.sampleId, it) }, lines = 7)
         }
     }
+}
+
+/** Screen 7: the picture and the video prompt go to Gemini together. */
+internal fun LazyListScope.stepGemini(vm: StudioViewModel, f: RealReveal, context: Context) {
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Gemini'ye gönder", style = Console.Label)
@@ -434,35 +384,14 @@ internal fun LazyListScope.stepScenario(st: StudioState, vm: StudioViewModel, f:
     }
 }
 
-/** Step 5: Karalak's voice and the music, one at a time: the hook, the narrator, the closing, the music, the line over the end card. */
-internal fun LazyListScope.stepVoices(st: StudioState, vm: StudioViewModel, f: RealReveal, p: RealProject) {
+/** Screens 10 to 14: one of Karalak's lines or the music, [vs] being the hook, the narrator, the closing, the music or the line over the end card. */
+internal fun LazyListScope.voiceStepItems(st: StudioState, vm: StudioViewModel, f: RealReveal, p: RealProject, vs: Int) {
     val r = st.real
-    val vs = r.voiceStep.coerceIn(1, 5)
-    item(key = "wz-voices") {
-        Column {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(VOICE_STEPS.size) { i ->
-                    val n = i + 1
-                    val done = voiceDone(n, f)
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = if (n == vs) Console.Accent else if (done) Console.GoodSoft else Console.Grid,
-                        modifier = Modifier.clickable { vm.setVoiceStep(n) }
-                    ) {
-                        Text(
-                            (if (done && n != vs) "✓ " else "") + VOICE_STEPS[i],
-                            style = Console.Small.copy(color = if (n == vs) Color.White else Console.Ink),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                    }
-                }
-            }
-            if (vs != 4 && !st.eleven.keySet) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                    Text("Seslendirmek için ElevenLabs anahtarı gerekir.", style = Console.Small.copy(color = Console.Critical), modifier = Modifier.weight(1f))
-                    SmallLink("Ayarlar'a git") { vm.setRealTab(RealTab.Settings) }
-                }
-            }
+    // Seslendirmek için ElevenLabs anahtarı gerekir: where it is set
+    if (vs != 4 && !st.eleven.keySet) item(key = "wz-key") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Seslendirmek için ElevenLabs anahtarı gerekir.", style = Console.Small.copy(color = Console.Critical), modifier = Modifier.weight(1f))
+            SmallLink("Ayarlar'a git") { vm.setRealTab(RealTab.Settings) }
         }
     }
     when (vs) {
@@ -534,8 +463,8 @@ internal fun LazyListScope.stepVoices(st: StudioState, vm: StudioViewModel, f: R
     }
 }
 
-/** Step 6: the Gemini video comes in (cut where it is still right) and the card is placed, with a live preview. */
-internal fun LazyListScope.stepVideo(st: StudioState, vm: StudioViewModel, f: RealReveal) {
+/** Screen 8: the Gemini video comes in, cut where it is still right. */
+internal fun LazyListScope.stepClip(st: StudioState, vm: StudioViewModel, f: RealReveal) {
     val r = st.real
     val anyBusy = r.busy != null
     item {
@@ -561,6 +490,11 @@ internal fun LazyListScope.stepVideo(st: StudioState, vm: StudioViewModel, f: Re
             }
         }
     }
+}
+
+/** Screen 9: the Karalak card is placed on the clip, with a live preview. */
+internal fun LazyListScope.stepCard(st: StudioState, vm: StudioViewModel) {
+    val r = st.real
     item { PreviewCard(st, vm) }
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
@@ -574,9 +508,3 @@ internal fun LazyListScope.stepVideo(st: StudioState, vm: StudioViewModel, f: Re
     }
 }
 
-/** Step 7: watch it, make it, then share. */
-internal fun LazyListScope.stepFinish(st: StudioState, vm: StudioViewModel, context: Context) {
-    item { PreviewCard(st, vm) }
-    renderItems(st, vm)
-    resultItems(st, vm, context)
-}

@@ -95,6 +95,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.FORGOT_STEP
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.FORGOT_TURN
 
 // The "Ödüllü Karalak Düellosu" half of the studio, as extensions of [StudioViewModel] (which keeps the state they work on).
@@ -158,6 +159,15 @@ internal fun StudioViewModel.rebuildForgot(change: (ForgotUi) -> ForgotUi) {
 }
 
 /** Shows the next [FORGOT_PAGE] drawings in the list. */
+/** Goes to one of the [FORGOT_STEPS] screens of the Düello. Kept on this phone. */
+fun StudioViewModel.setForgotStep(step: Int) {
+    val n = step.coerceIn(1, FORGOT_STEPS)
+    prefs().edit().putInt(FORGOT_STEP, n).apply()
+    updateForgot { it.copy(step = n) }
+    // the preview follows the screen: the last two show the video
+    if (n >= 8) setPreviewTime(0L)
+}
+
 fun StudioViewModel.showMoreForgot() = updateForgot { it.copy(shown = it.shown + FORGOT_PAGE) }
 
 /** Switches between this phone's drawings and the pool's; the pool is read the first time it is asked for (one read of the latest rounds). */
