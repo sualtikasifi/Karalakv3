@@ -119,8 +119,8 @@ enum class AvatarFrame(
     ANGEL_HALO(R.drawable.level_frame_angel_halo, 0.446f, -0.0018f, -0.0322f, 0, storePrice = 80000, motion = FrameMotion.ANGEL),
     LION_KING(R.drawable.level_frame_lion_king, 0.428f, -0.0013f, 0.0208f, 0, storePrice = 140000, motion = FrameMotion.LION),
 
-    // --- Friend-streak prize (30 days together, see FriendStreakRewards): never sold. The picture is a stand-in until its own artwork is drawn. ---
-    FRIENDSHIP(R.drawable.level_frame_friendship, 0.537f, 0.001f, -0.0205f, 0, storePrice = 9000, isFriendReward = true);
+    // --- Friend-streak prize (30 days together, see FriendStreakRewards): never sold. Measured off its own artwork (hole 0.6 of the badge). ---
+    FRIENDSHIP(R.drawable.level_frame_friendship, 0.6f, -0.0036f, -0.0116f, 0, storePrice = 9000, isFriendReward = true);
 
     // Monthly league prize frames (LEAGUE_CHAMPION_<year>_<month>) were
     // removed — the first batch of artwork did not clean up against the
