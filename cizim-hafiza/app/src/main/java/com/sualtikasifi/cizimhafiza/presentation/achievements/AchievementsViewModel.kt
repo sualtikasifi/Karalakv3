@@ -105,6 +105,11 @@ class AchievementsViewModel @Inject constructor(
      * AchievementDao.claim's atomic "AND claimed = 0", so a double-tap (or
      * this being called twice for any other reason) cannot pay twice.
      */
+    /** Collects every earned reward at once ("Hepsini topla"); each goes through [claim]'s own guard, so none can pay twice. */
+    fun claimAll(list: List<Achievement>) {
+        list.forEach { claim(it) }
+    }
+
     fun claim(achievement: Achievement) {
         viewModelScope.launch {
             if (achievementDao.claim(achievement.name) == 1) {
