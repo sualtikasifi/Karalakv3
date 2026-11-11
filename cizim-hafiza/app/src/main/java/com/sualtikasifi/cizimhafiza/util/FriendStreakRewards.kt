@@ -18,7 +18,7 @@ sealed interface StreakReward {
 
 /**
  * The prizes of the friend streak, one per milestone (see FriendStreaks.MILESTONES). Each friend takes theirs on their
- * own phone, once per streak run. The frame and the pen are only ever won this way (see AvatarFrame.isFriendReward).
+ * own phone, once per streak run. The frame is only ever won this way (see AvatarFrame.isFriendReward); a friendship pen (StreakReward.Pen) is planned for later.
  */
 object FriendStreakRewards {
     fun rewardFor(milestone: Int): StreakReward = when (milestone) {
@@ -27,7 +27,7 @@ object FriendStreakRewards {
         14 -> StreakReward.Jokers
         30 -> StreakReward.Frame(AvatarFrame.FRIENDSHIP)
         50 -> StreakReward.Gold(500)
-        100 -> StreakReward.Pen(PenSkin.FRIENDSHIP)
+        100 -> StreakReward.Gold(1000)
         else -> StreakReward.Gold(25)
     }
 

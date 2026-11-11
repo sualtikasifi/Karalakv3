@@ -1777,7 +1777,6 @@
 
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="frame_name_friendship">Marco de la Amistad</string>
-    <string name="pen_friendship">Lápiz de la Amistad</string>
     <string name="cosmetic_locked_friend">Se gana con una racha de amigos</string>
     <string name="fstreak_badge">%1$d días</string>
     <string name="fstreak_row_done">Hecho hoy</string>

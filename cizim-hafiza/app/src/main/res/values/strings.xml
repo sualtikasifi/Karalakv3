@@ -1776,7 +1776,6 @@
 
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="frame_name_friendship">Friendship Frame</string>
-    <string name="pen_friendship">Friendship Pen</string>
     <string name="cosmetic_locked_friend">Won with a friend streak</string>
     <string name="fstreak_badge">%1$d days</string>
     <string name="fstreak_row_done">Done today</string>

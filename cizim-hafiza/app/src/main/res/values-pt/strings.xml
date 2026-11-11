@@ -1777,7 +1777,6 @@
 
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="frame_name_friendship">Moldura da Amizade</string>
-    <string name="pen_friendship">Caneta da Amizade</string>
     <string name="cosmetic_locked_friend">Ganha com uma sequência de amigos</string>
     <string name="fstreak_badge">%1$d dias</string>
     <string name="fstreak_row_done">Feito hoje</string>

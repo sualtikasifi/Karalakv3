@@ -1789,7 +1789,6 @@
 
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="frame_name_friendship">Dostluk Çerçevesi</string>
-    <string name="pen_friendship">Dostluk Kalemi</string>
     <string name="cosmetic_locked_friend">Arkadaş serisiyle açılır</string>
     <string name="fstreak_badge">%1$d gün</string>
     <string name="fstreak_row_done">Bugün tamam</string>
