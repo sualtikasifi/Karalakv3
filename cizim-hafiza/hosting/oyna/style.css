@@ -644,11 +644,16 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .rb-t{position:absolute;left:15%;top:63.2%;width:70%;height:19.9%;display:flex;align-items:center;justify-content:center}
 .rb-rib{animation:rbUnroll .45s cubic-bezier(.3,1.4,.5,1) both}.rb-rib svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .rb-rt{position:absolute;left:14.9%;right:14.9%;top:6.45%;height:71%;display:flex;align-items:center;justify-content:center;gap:calc(var(--k)*4)}.rb-rt>img{height:52%}.rb-rt>img.off{opacity:.3}.rb-rt>img:nth-child(3){margin-right:calc(var(--k)*8)}
-.rb-hero{display:flex;align-items:center;justify-content:center;animation:rbPop .55s cubic-bezier(.3,1.6,.5,1) both}.rb-hero>img{width:63%}
-.rb-hero::before{content:"";position:absolute;inset:-6% -2%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,220,110,.6),rgba(255,220,110,0));z-index:-1}
+.rb-hero{display:flex;align-items:center;justify-content:center;animation:rbPop .55s cubic-bezier(.3,1.6,.5,1) both}.rb-hero>img{width:50%;position:relative}
+.rb-hero::before{content:"";position:absolute;left:50%;top:50%;width:92%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,rgba(255,251,224,.9),rgba(255,226,138,.75) 38%,rgba(255,210,90,.4) 62%,rgba(255,210,90,0))}
+.rb-rays{position:absolute;left:50%;top:50%;width:96%;aspect-ratio:1;margin:-48% 0 0 -48%;border-radius:50%;background:repeating-conic-gradient(rgba(255,255,255,.6) 0 12deg,rgba(255,255,255,0) 12deg 30deg);-webkit-mask:radial-gradient(closest-side,#000,rgba(0,0,0,.5) 55%,transparent);mask:radial-gradient(closest-side,#000,rgba(0,0,0,.5) 55%,transparent);animation:rbSpin 9s linear infinite reverse}
+@keyframes rbSpin{to{transform:rotate(360deg)}}
 .rb-spk{position:absolute;transform:translate(-50%,-50%);background:#fff;clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);animation:rbTwinkle 1.6s ease-in-out infinite}
-.rb-amt{display:flex;align-items:center;justify-content:center;gap:calc(var(--k)*10);animation:rbFade .3s both}.rb-amt img{width:calc(var(--k)*100);height:calc(var(--k)*100)}
-.rb-lbl{display:flex;align-items:center;justify-content:center;font-weight:800;font-size:calc(var(--k)*40);color:#965A14;animation:rbFade .3s both}
+.rb-amt{animation:rbFade .3s both}
+.rb-amt .pl{position:relative;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:calc(var(--k)*14);padding:0 calc(var(--k)*50) 0 calc(var(--k)*26);border-radius:999px;background:linear-gradient(#FFF7D6,#FFD877);border:calc(var(--k)*6) solid #784610;box-shadow:0 calc(var(--k)*10) calc(var(--k)*20) rgba(110,60,10,.35)}
+.rb-amt .pl::after{content:"";position:absolute;inset:calc(var(--k)*3);border:calc(var(--k)*4) solid #FFF8D8;border-radius:999px;pointer-events:none}
+.rb-amt .pl img{flex:none}
+.rb-lbl{position:absolute;left:50%;bottom:0;transform:translateX(-50%);box-sizing:border-box;width:calc(var(--k)*190);height:calc(var(--k)*60);border-radius:999px;background:#FF781E;border:calc(var(--k)*5) solid #6E2800;display:flex;align-items:center;justify-content:center}
 .rb-div{border-top:calc(var(--k)*4) dashed #CDA064;top:auto;animation:rbFade .3s .3s both}.rb-div .rb-spk{left:50%;top:0;width:calc(var(--k)*30);height:calc(var(--k)*30);background:#E6AA3C;animation:none}
 .rb-card{animation:rbPop .45s cubic-bezier(.3,1.6,.5,1) both}.rb-card>*{position:absolute;box-sizing:border-box}
 .rb-card .tl{left:0;top:0;border-radius:calc(var(--k)*36);background:linear-gradient(#FFF5CD,#FFD778);border:calc(var(--k)*6) solid #784610;box-shadow:0 calc(var(--k)*10) calc(var(--k)*18) rgba(110,60,10,.35);display:flex;align-items:center;justify-content:center}
@@ -658,7 +663,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .rb-card .nm{left:calc(var(--k)*-25);right:calc(var(--k)*-25);text-align:center;font-weight:800;color:#78410F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rb-btn{display:flex;align-items:center;justify-content:center;cursor:pointer;padding-bottom:calc(var(--k)*8);animation:rbBtn .3s both}.rb-btn>img{position:absolute;inset:0;width:100%;height:100%}
 .rb-btn:active{transform:scale(.94)}
-.rb.now *{animation-delay:0s!important;animation-duration:.01s!important}.rb.now .rb-spk{animation:rbTwinkle 1.6s ease-in-out infinite!important}
+.rb.now *{animation-delay:0s!important;animation-duration:.01s!important}.rb.now .rb-spk{animation:rbTwinkle 1.6s ease-in-out infinite!important}.rb.now .rb-rays{animation:rbSpin 9s linear infinite reverse!important}
 @keyframes rbDrop{from{transform:translateY(-110%) rotate(-7deg);opacity:0}}@keyframes rbOpen{from{transform:scale(.86);opacity:0}}@keyframes rbUnroll{from{transform:scaleX(0);opacity:0}}
 @keyframes rbPop{from{transform:scale(0);opacity:0}}@keyframes rbFade{from{opacity:0}}@keyframes rbBtn{from{transform:scale(.8);opacity:0}}
 @keyframes rbTwinkle{0%,100%{opacity:.15;transform:translate(-50%,-50%) scale(.7)}50%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
@@ -889,13 +894,15 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 /* screens fade in (GameScreen's phase change) */
 .screen.on{animation:scrin .28s ease-out}@keyframes scrin{from{opacity:0}to{opacity:1}}
 /* answer feedback over the drawing (GuessFeedbackOverlay) */
-#g-fb{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3}
-#g-fb .card{background:#fffaf0eb;border-radius:calc(var(--u)*40);padding:calc(var(--u)*28) calc(var(--u)*40);display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*10);animation:fbin .35s cubic-bezier(.3,1.5,.5,1),var(--shake,none);box-shadow:0 calc(var(--u)*8) calc(var(--u)*24) #0004}
-#g-fb .ic{width:calc(var(--u)*130);height:calc(var(--u)*130);border-radius:50%;display:flex;align-items:center;justify-content:center}#g-fb .ic svg{width:60%;height:60%}
-#g-fb .ok .ic{background:#d6f5df}#g-fb .no .ic{background:#fbdcd8}
-#g-fb .xp{font-size:calc(var(--u)*42);font-weight:800;color:#c77a00}#g-fb .ans{font-size:calc(var(--u)*42);font-weight:700;color:#5a3a20;text-align:center}
-#g-fb .no .card{animation:fbin .35s cubic-bezier(.3,1.5,.5,1),shk .4s}
-@keyframes fbin{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}@keyframes shk{0%{translate:0}12%{translate:-16px}25%{translate:16px}37%{translate:-12px}50%{translate:12px}62%{translate:-6px}75%{translate:6px}100%{translate:0}}
+#g-fb{position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;pointer-events:none;z-index:3;border-radius:calc(var(--u)*16);padding:calc(var(--u)*22) calc(var(--u)*26)}
+#g-fb.ok{--fb:#22a552;box-shadow:inset 0 0 0 calc(var(--u)*6) #22a552d9}#g-fb.no{--fb:#d9483b;box-shadow:inset 0 0 0 calc(var(--u)*6) #d9483bd9}
+#g-fb .card{max-width:100%;background:#fffaf0;border:calc(var(--u)*4) solid var(--fb);border-radius:999px;padding:calc(var(--u)*11);display:flex;align-items:center;gap:calc(var(--u)*18);animation:fbin .32s cubic-bezier(.3,1.3,.5,1);box-shadow:0 calc(var(--u)*6) calc(var(--u)*18) #0003}
+#g-fb .ic{flex:none;width:calc(var(--u)*56);height:calc(var(--u)*56);border-radius:50%;background:var(--fb);display:flex;align-items:center;justify-content:center}#g-fb .ic svg{width:66%;height:66%}
+#g-fb .ic path{stroke-dasharray:40;stroke-dashoffset:40;animation:fbmark .28s .12s ease-out forwards}
+#g-fb .ans{min-width:0;font-size:calc(var(--u)*34);font-weight:800;color:#3b2414;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#g-fb .card>.ans:last-child{padding-right:calc(var(--u)*20)}
+#g-fb .xp{flex:none;font-size:calc(var(--u)*28);font-weight:800;color:#6b3d00;background:linear-gradient(#ffe27a,#ffc53d);border-radius:999px;padding:calc(var(--u)*9) calc(var(--u)*20);white-space:nowrap}
+#g-fb.no .card{animation:fbin .32s cubic-bezier(.3,1.3,.5,1),shk .36s}
+@keyframes fbin{from{transform:translateY(-120%);opacity:0}to{transform:none;opacity:1}}@keyframes fbmark{to{stroke-dashoffset:0}}@keyframes shk{0%{translate:0}17%{translate:-10px}33%{translate:10px}53%{translate:-6px}72%{translate:6px}100%{translate:0}}
 #guess.fb button,#guess.fb input{pointer-events:none}
 
 /* browser account form (account.js) */

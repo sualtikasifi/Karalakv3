@@ -104,7 +104,8 @@ class FriendStreakViewModel @Inject constructor(
     private val store: FriendStreakStore,
     private val settingsRepository: SettingsRepository,
     private val adManager: AdManager,
-    private val legalConsentStore: LegalConsentStore
+    private val legalConsentStore: LegalConsentStore,
+    private val analytics: com.sualtikasifi.cizimhafiza.util.GameAnalytics
 ) : ViewModel() {
 
     /** Bumped whenever the phone's own memory (claimed, reminded, seen) changes, so the window moves on. */
@@ -160,6 +161,7 @@ class FriendStreakViewModel @Inject constructor(
         if (!store.isClaimed(prompt.pairId, prompt.run, prompt.milestone)) {
             FriendStreakRewards.apply(settingsRepository, prompt.reward)
             store.markClaimed(prompt.pairId, prompt.run, prompt.milestone)
+            analytics.friendStreakReward(prompt.milestone)
         }
         memoryVersion.value++
     }
@@ -175,6 +177,7 @@ class FriendStreakViewModel @Inject constructor(
             when (outcome) {
                 RewardedOutcome.EARNED -> viewModelScope.launch {
                     repository.repair(friendUid).onSuccess {
+                        analytics.friendStreakRescued()
                         store.markRepairsSeen(pairId, (streaks.value.firstOrNull { it.pairId == pairId }?.repairs ?: 0) + 1)
                         Toast.makeText(context, R.string.fstreak_done_toast, Toast.LENGTH_SHORT).show()
                         memoryVersion.value++

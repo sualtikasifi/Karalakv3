@@ -426,6 +426,7 @@ private fun FriendsPanel(uiState: FriendsUiState, viewModel: FriendsViewModel, s
         allStreaks.associate { it.friendUid to com.sualtikasifi.cizimhafiza.domain.model.FriendStreaks.view(it, today) }
     }
     val activity = LocalContext.current as? android.app.Activity
+    val waitingOn by viewModel.waitingOnFriends.collectAsState()
     val nothing = uiState.friends.isEmpty() && uiState.friendRequests.isEmpty() && uiState.blockedUsers.isEmpty()
     if (nothing) {
         val text = stringResource(R.string.friends_empty)
@@ -508,7 +509,8 @@ private fun FriendsPanel(uiState: FriendsUiState, viewModel: FriendsViewModel, s
                 onBlock = { viewModel.confirmBlockFriend(friend) },
                 onDuel = { onDuel(friend.uid, friend.nickname) },
                 streak = streakViews[friend.uid]?.takeIf { it.status != com.sualtikasifi.cizimhafiza.domain.model.StreakStatus.Lost },
-                onRescueStreak = { v -> activity?.let { streakViewModel.rescue(it, friend.uid, v.streak.pairId) } }
+                onRescueStreak = { v -> activity?.let { streakViewModel.rescue(it, friend.uid, v.streak.pairId) } },
+                streakWaitingOnFriend = friend.uid in waitingOn
             )
           }
         }
@@ -573,11 +575,12 @@ private fun OrangePill(text: String, onClick: () -> Unit) {
 }
 
 /**
- * The friend streak next to a friend's name: "🔥 5" in orange once today's duel is played, "⏳ 5" while it is still to be played,
+ * The friend streak next to a friend's name: "🔥 5" in orange once today's duel is played, "⏳ 5" while it is still to be played
+ * ("📨 5" when this player's duel is already sent and it is the friend's turn),
  * and a pill to mend it with an ad when it broke yesterday ("💔 5 · Kurtar").
  */
 @Composable
-private fun StreakChip(view: com.sualtikasifi.cizimhafiza.domain.model.StreakView, onRescue: () -> Unit) {
+private fun StreakChip(view: com.sualtikasifi.cizimhafiza.domain.model.StreakView, waitingOnFriend: Boolean, onRescue: () -> Unit) {
     val status = view.status
     if (status == com.sualtikasifi.cizimhafiza.domain.model.StreakStatus.Broken) {
         if (com.sualtikasifi.cizimhafiza.util.GameConstants.ADMOB_ENABLED) {
@@ -589,7 +592,8 @@ private fun StreakChip(view: com.sualtikasifi.cizimhafiza.domain.model.StreakVie
     }
     val done = status == com.sualtikasifi.cizimhafiza.domain.model.StreakStatus.Done
     Text(
-        text = (if (done) "🔥 " else "⏳ ") + view.count,
+        // 📨: the duel is sent and waits for the friend; ⏳: nobody has played today yet
+        text = (if (done) "🔥 " else if (waitingOnFriend) "📨 " else "⏳ ") + view.count,
         style = PaintedStyle(color = if (done) ButtonOrange else InkBrown, fontSize = 15.sp),
         maxLines = 1
     )
@@ -605,12 +609,14 @@ private fun FriendRow(
     onBlock: () -> Unit,
     onDuel: () -> Unit,
     streak: com.sualtikasifi.cizimhafiza.domain.model.StreakView? = null,
-    onRescueStreak: (com.sualtikasifi.cizimhafiza.domain.model.StreakView) -> Unit = {}
+    onRescueStreak: (com.sualtikasifi.cizimhafiza.domain.model.StreakView) -> Unit = {},
+    /** This player's duel to the friend is still waiting: today's day of the streak is the friend's to play. */
+    streakWaitingOnFriend: Boolean = false
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     ListRow {
         RowName(friend.nickname, Modifier.weight(1f))
-        if (streak != null) StreakChip(streak, onRescue = { onRescueStreak(streak) })
+        if (streak != null) StreakChip(streak, streakWaitingOnFriend, onRescue = { onRescueStreak(streak) })
         if (inviting || busy) {
             CircularProgressIndicator(modifier = Modifier.size(22.dp).padding(end = 6.dp), color = ButtonOrange, strokeWidth = 2.5.dp)
         } else {

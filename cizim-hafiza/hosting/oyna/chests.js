@@ -176,7 +176,8 @@ function openingScene(c, rw) {
   function rewardUi() {
     const A = T.accent, light = lerpC(A, "#ffffff", 0.25), dark = lerpC(A, "#000000", 0.22);
     const extras = [...Object.entries(rw.jokers).filter(([, n]) => n > 0).sort(([a], [b]) => JOKER_ORDER.indexOf(a) - JOKER_ORDER.indexOf(b)).map(([t, n]) => ({ t, n })), ...(rw.pen ? [{ pen: rw.pen }] : [])];
-    const compact = !extras.length, heroY = compact ? 1000 : 915, amountY = compact ? 1235 : 1110;
+    // gold alone fills the board with a bigger chest and plaque; with extras they move up to leave the cards their row (as in the app)
+    const compact = !extras.length, heroY = compact ? 1030 : 900, heroSize = compact ? 380 : 270, amountY = compact ? 1375 : 1112, plaqueH = compact ? 170 : 132, plaqueW = compact ? 620 : 520;
     const at = (x, y, w, h) => `left:${x / 10.8}%;top:${y / 20}%;width:${w / 10.8}%;height:${h / 20}%`;
     const k = (n) => `calc(var(--k)*${n})`;
     const board = el("div", "rb");
@@ -189,9 +190,9 @@ function openingScene(c, rw) {
     let html = `<img class="rb-frame" style="${at(60, 510, 960, 1180)}" src="img/tut_frame_mid.webp" alt="">
       <div class="rb-sign" style="${at(90, 20, 900, 563)}"><img src="img/rs_head_plain.webp" alt=""><div class="rb-t">${lt(title, 92, "#FFFAD7", "#FFC032", "#552305")}</div></div>
       <div class="rb-rib" style="${at(191, 666, 698, 124)}">${ribbonSvg(light, dark)}<div class="rb-rt">${[0, 1, 2].map((i) => `<img src="img/mf_star.webp" alt=""${i < T.stars ? "" : ' class="off"'}>`).join("")}${lt(S(T.label), 46, "#ffffff", "#FFF0DC", lerpC(dark, "#000000", 0.5))}</div></div>
-      <div class="rb-hero" style="${at(310, heroY - 175, 460, 350)}"><img src="img/rune_n_chest_gold.webp" alt="">${[[0.13, 0.18, 24], [0.88, 0.27, 20], [0.80, 0.82, 14], [0.17, 0.76, 16], [0.54, 0.04, 18]].map(([x, y, r], i) => `<i class="rb-spk" style="left:${x * 100}%;top:${y * 100}%;width:${k(r * 2)};height:${k(r * 2)};animation-delay:${i * 0.34}s"></i>`).join("")}</div>
-      <div class="rb-amt" style="${at(0, amountY - 70, 1080, 140)}"><img src="img/icon_gold_coin.webp" alt="">${lt("+0", 120, "#FFF6AA", "#FFA514", "#5A2805", "rb-gold")}</div>
-      <div class="rb-lbl" style="${at(0, amountY + 52, 1080, 56)}">${S("chests_reward_gold_label").toLocaleUpperCase(c.lang())}</div>`;
+      <div class="rb-hero" style="${at(540 - heroSize, heroY - heroSize * 0.78, heroSize * 2, heroSize * 1.56)}"><i class="rb-rays"></i><img src="img/rune_n_chest_gold.webp" alt="">${[[0.13, 0.18, 24], [0.88, 0.27, 20], [0.80, 0.82, 14], [0.17, 0.76, 16], [0.70, 0.26, 18]].map(([x, y, r], i) => `<i class="rb-spk" style="left:${x * 100}%;top:${y * 100}%;width:${k(r * 2)};height:${k(r * 2)};animation-delay:${i * 0.34}s"></i>`).join("")}</div>
+      <div class="rb-amt" style="${at((1080 - plaqueW) / 2, amountY - plaqueH / 2, plaqueW, plaqueH + 34)}"><div class="pl" style="height:${k(plaqueH)}"><img src="img/icon_gold_coin.webp" alt="" style="width:${k(plaqueH - 44)};height:${k(plaqueH - 44)}">${lt("+0", plaqueH * 0.62, "#FFFDF0", "#FFE9A8", "#5A2805", "rb-gold")}</div>
+        <div class="rb-lbl">${lt(S("chests_reward_gold_label").toLocaleUpperCase(c.lang()), 34, "#ffffff", "#FFEBC8", "#6E2800")}</div></div>`;
     if (!compact) {
       const tile = extras.length > 3 ? 168 : 190, gap = 28, x0 = (1080 - extras.length * tile - (extras.length - 1) * gap) / 2;
       html += `<div class="rb-div" style="${at(220, 1232, 640, 20)}"><i class="rb-spk on"></i></div>`;
@@ -207,7 +208,7 @@ function openingScene(c, rw) {
     board.querySelector(".rb-sign").style.animationDelay = delays.sign + "ms";
     board.querySelector(".rb-frame").style.animationDelay = delays.frame + "ms";
     board.querySelector(".rb-rib").style.animationDelay = delays.rib + "ms";
-    board.querySelector(".rb-hero").style.animationDelay = board.querySelector(".rb-amt").style.animationDelay = board.querySelector(".rb-lbl").style.animationDelay = delays.hero + "ms";
+    board.querySelector(".rb-hero").style.animationDelay = board.querySelector(".rb-amt").style.animationDelay = delays.hero + "ms";
     const fitAllLt = () => board.querySelectorAll(".lt").forEach(fitLt);
     requestAnimationFrame(fitAllLt); document.fonts && document.fonts.ready.then(fitAllLt);
     c.sfx && c.sfx.over && c.sfx.over();

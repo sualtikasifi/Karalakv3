@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Karalak – Çiz, hatırla, yarış</title>
-<meta name="description" content="Karalak: arkadaşlarınla çizim ve hafıza oyunu. Google Play'den indir ya da tarayıcıda hemen oyna.">
+<meta name="description" content="Karalak: arkadaşlarınla çizim ve hafıza oyunu. Android'de Google Play'den indir, iPhone'da tarayıcıda oyna.">
 <meta name="theme-color" content="#7a3a10">
 <meta name="color-scheme" content="only light">
 <meta name="format-detection" content="telephone=no">
 <meta property="og:title" content="Karalak – Çiz, hatırla, yarış">
-<meta property="og:description" content="Arkadaşlarınla çizim ve hafıza oyunu. Hemen indir ya da tarayıcıda oyna!">
+<meta property="og:description" content="Arkadaşlarınla çizim ve hafıza oyunu. Android'de Google Play'den indir, iPhone'da tarayıcıda oyna!">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Karalak">
 <meta property="og:image" content="https://karalak.com/oyna/img/og_share.jpg">
@@ -21,7 +21,7 @@
 <meta property="og:locale:alternate" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Karalak – Çiz, hatırla, yarış">
-<meta name="twitter:description" content="Arkadaşlarınla çizim ve hafıza oyunu. Hemen indir ya da tarayıcıda oyna!">
+<meta name="twitter:description" content="Arkadaşlarınla çizim ve hafıza oyunu. Android'de Google Play'den indir, iPhone'da tarayıcıda oyna!">
 <meta name="twitter:image" content="https://karalak.com/oyna/img/og_share.jpg">
 <link rel="canonical" href="https://karalak.com/indir">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -84,7 +84,7 @@
 <div class="pg">
   <div class="stage">
     <a class="play" id="pg-play" href="#" aria-label="Google Play'den indir"></a>
-    <a class="web" href="/" aria-label="Tarayıcıda hemen oyna"></a>
+    <a class="web" href="/" aria-label="Tarayıcıda hemen oyna (iOS)"></a>
     <a class="inv" id="pg-inv" href="#"><small id="pg-invl"></small><b id="pg-code"></b><i id="pg-open">Karalak'ta aç</i></a>
   </div>
 </div>
@@ -95,7 +95,7 @@
   <div class="invite" id="invite"><small id="invl"></small><b id="code"></b></div>
   <a class="btn primary hidden" id="open" href="#"><span id="open-t">Karalak'ta aç</span></a>
   <a class="btn primary" id="store" href="#"><svg viewBox="0 0 24 24"><path fill="#fff" d="M4 2.6v18.8c0 .5.5.8.9.6l16-9.4c.4-.2.4-.8 0-1L4.9 2c-.4-.2-.9.1-.9.6z"/></svg><span id="store-t">Google Play'den indir</span></a>
-  <a class="btn second" id="web" href="/"><span id="web-t">Tarayıcıda hemen oyna</span></a>
+  <a class="btn second" id="web" href="/"><span id="web-t">Tarayıcıda hemen oyna (iOS)</span></a>
   <p class="foot" id="foot"></p>
 </main>
 <script>
@@ -103,10 +103,10 @@
   var pkg = "com.sualtikasifi.cizimhafiza", $ = function (i) { return document.getElementById(i); };
   var code2 = (navigator.language || "tr").slice(0, 2).toLowerCase(), lang = /^(tr|pt|es)$/.test(code2) ? code2 : "en", tr = lang === "tr";
   var L = {
-    tr: { tag: "Çiz, hatırla, yarış!", room: "Odaya katılmak için oda kodu:", friend: "Arkadaş kodu:", title: "Karalak daveti", open: "Karalak'ta aç", store: "Google Play'den indir", web: "Tarayıcıda hemen oyna", foot: "Ücretsiz. Telefonda ve tarayıcıda.", room2: "Oda kodu", friend2: "Arkadaş kodu", page: "" },
-    en: { tag: "Draw, remember, race!", room: "Room code to join:", friend: "Friend code:", title: "Karalak invite", open: "Open in Karalak", store: "Get it on Google Play", web: "Play in your browser", foot: "Free. On your phone and in your browser.", room2: "Room code", friend2: "Friend code", page: "Karalak – Draw, remember, race" },
-    pt: { tag: "Desenhe, lembre, dispute!", room: "Código da sala para entrar:", friend: "Código de amigo:", title: "Convite do Karalak", open: "Abrir no Karalak", store: "Baixar na Google Play", web: "Jogar no navegador", foot: "Grátis. No celular e no navegador.", room2: "Código da sala", friend2: "Código de amigo", page: "Karalak – Desenhe, lembre, dispute" },
-    es: { tag: "¡Dibuja, recuerda, compite!", room: "Código de sala para unirte:", friend: "Código de amigo:", title: "Invitación de Karalak", open: "Abrir en Karalak", store: "Descargar en Google Play", web: "Jugar en el navegador", foot: "Gratis. En tu teléfono y en el navegador.", room2: "Código de sala", friend2: "Código de amigo", page: "Karalak – Dibuja, recuerda, compite" }
+    tr: { tag: "Çiz, hatırla, yarış!", room: "Odaya katılmak için oda kodu:", friend: "Arkadaş kodu:", title: "Karalak daveti", open: "Karalak'ta aç", store: "Google Play'den indir", web: "Tarayıcıda hemen oyna (iOS)", foot: "Ücretsiz. Telefonda ve tarayıcıda.", room2: "Oda kodu", friend2: "Arkadaş kodu", page: "" },
+    en: { tag: "Draw, remember, race!", room: "Room code to join:", friend: "Friend code:", title: "Karalak invite", open: "Open in Karalak", store: "Get it on Google Play", web: "Play in your browser (iOS)", foot: "Free. On your phone and in your browser.", room2: "Room code", friend2: "Friend code", page: "Karalak – Draw, remember, race" },
+    pt: { tag: "Desenhe, lembre, dispute!", room: "Código da sala para entrar:", friend: "Código de amigo:", title: "Convite do Karalak", open: "Abrir no Karalak", store: "Baixar na Google Play", web: "Jogar no navegador (iOS)", foot: "Grátis. No celular e no navegador.", room2: "Código da sala", friend2: "Código de amigo", page: "Karalak – Desenhe, lembre, dispute" },
+    es: { tag: "¡Dibuja, recuerda, compite!", room: "Código de sala para unirte:", friend: "Código de amigo:", title: "Invitación de Karalak", open: "Abrir en Karalak", store: "Descargar en Google Play", web: "Jugar en el navegador (iOS)", foot: "Gratis. En tu teléfono y en el navegador.", room2: "Código de sala", friend2: "Código de amigo", page: "Karalak – Dibuja, recuerda, compite" }
   }[lang];
   document.documentElement.lang = lang;
   $("tag").textContent = L.tag; $("store-t").textContent = L.store; $("web-t").textContent = L.web; $("open-t").textContent = L.open; $("foot").textContent = L.foot;

@@ -8,6 +8,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.GuessLink
 import com.sualtikasifi.cizimhafiza.domain.repository.GuessRepository
 import com.sualtikasifi.cizimhafiza.util.GuessCodec
 import com.sualtikasifi.cizimhafiza.util.GuessStore
+import com.sualtikasifi.cizimhafiza.util.TurkeyTime
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
@@ -38,7 +39,16 @@ class GuessRepositoryImpl @Inject constructor(
             val id = GuessCodec.newId()
             val salt = GuessCodec.newSalt()
             val now = System.currentTimeMillis()
-            links.document(id).set(
+            // The link and its line in the day's quota go in one batch: the rules refuse either without the other, which is what
+            // holds the twenty-a-day limit on the server (the phone's own count above only saves the round trip).
+            val quotaRef = firestore.collection("guessQuota").document(uid)
+            val today = TurkeyTime.today().toEpochDay()
+            val quota = runCatching { quotaRef.get().await() }.getOrNull()
+            val used = if (quota != null && quota.exists() && quota.getLong("day") == today) (quota.getLong("count") ?: 0L) else 0L
+            if (used >= GuessStore.MAX_LINKS_PER_DAY) throw GuessRepository.LimitReachedException()
+            val batch = firestore.batch()
+            batch.set(
+                links.document(id),
                 mapOf(
                     "ownerUid" to uid,
                     "ownerName" to ownerName.take(40),
@@ -52,7 +62,9 @@ class GuessRepositoryImpl @Inject constructor(
                     "createdAt" to now,
                     "expiresAt" to now + GuessCodec.LINK_LIFETIME_MILLIS
                 )
-            ).await()
+            )
+            batch.set(quotaRef, mapOf("day" to today, "count" to used + 1, "last" to id))
+            batch.commit().await()
             store.recordLinkCreated()
             id
         }

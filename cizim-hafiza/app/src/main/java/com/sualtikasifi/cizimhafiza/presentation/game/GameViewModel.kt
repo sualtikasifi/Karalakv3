@@ -127,6 +127,7 @@ class GameViewModel @Inject constructor(
     private val dailyChallengeRepository: DailyChallengeRepository,
     private val duelRepository: DuelRepository,
     private val friendStreakRepository: com.sualtikasifi.cizimhafiza.domain.repository.FriendStreakRepository,
+    private val gameAnalytics: com.sualtikasifi.cizimhafiza.util.GameAnalytics,
     private val moderationRepository: com.sualtikasifi.cizimhafiza.domain.repository.ModerationRepository,
     private val ghostRunRepository: GhostRunRepository,
     private val drawingReportRepository: DrawingReportRepository,
@@ -1189,7 +1190,7 @@ class GameViewModel @Inject constructor(
             )
             // A duel of ten words or more, played to the end, counts as today's day of the pair's friend streak.
             if (submitted.isSuccess && duel.wordIds.size >= com.sualtikasifi.cizimhafiza.domain.model.FriendStreaks.MIN_WORDS) {
-                friendStreakRepository.recordDuel(duel.challengerUid)
+                friendStreakRepository.recordDuel(duel.challengerUid).onSuccess { gameAnalytics.friendStreakDuel() }
             }
         }
 

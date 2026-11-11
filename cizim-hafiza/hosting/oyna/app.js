@@ -447,13 +447,13 @@ const TITLE_TR = document.title;
 function applyLang() {
   const x = t();
   document.documentElement.lang = lang; setLang(lang);
-  document.title = lang === "tr" ? TITLE_TR : inLang({ en: "Karalak – Draw, remember, race! Play free in your browser", pt: "Karalak – Desenhe, lembre, dispute! Jogue grátis no navegador", es: "Karalak – ¡Dibuja, recuerda, compite! Juega gratis en tu navegador" });
+  document.title = lang === "tr" ? TITLE_TR : inLang({ en: "Karalak – Draw, remember, race!", pt: "Karalak – Desenhe, lembre, dispute!", es: "Karalak – ¡Dibuja, recuerda, compite!" });
   // the page's description in the language shown (the static one in index.html is Turkish, for the plain-HTML crawlers)
   document.querySelector('meta[name="description"]')?.setAttribute("content", inLang({
-    tr: "Karalak: arkadaşlarınla çizim ve hafıza oyunu. Kelimeyi çiz, rakibinin çizimini hatırla, tahmin et ve ligde yüksel. Tarayıcıda ücretsiz oyna ya da Android'e indir.",
-    en: "Karalak: a drawing and memory game to play with friends. Draw the word, remember the drawings, guess and climb the league. Play free in your browser or get it on Android.",
-    pt: "Karalak: um jogo de desenho e memória para jogar com amigos. Desenhe a palavra, lembre dos desenhos, adivinhe e suba na liga. Jogue grátis no navegador ou baixe no Android.",
-    es: "Karalak: un juego de dibujo y memoria para jugar con amigos. Dibuja la palabra, recuerda los dibujos, adivina y sube en la liga. Juega gratis en tu navegador o descárgalo en Android." }));
+    tr: "Karalak: arkadaşlarınla çizim ve hafıza oyunu. Kelimeyi çiz, rakibinin çizimini hatırla, tahmin et ve ligde yüksel. Android'de Google Play'den indir, iPhone'da tarayıcıda oyna.",
+    en: "Karalak: a drawing and memory game to play with friends. Draw the word, remember the drawings, guess and climb the league. Get it on Google Play for Android, or play in the browser on iPhone.",
+    pt: "Karalak: um jogo de desenho e memória para jogar com amigos. Desenhe a palavra, lembre dos desenhos, adivinhe e suba na liga. Baixe na Google Play para Android ou jogue no navegador do iPhone.",
+    es: "Karalak: un juego de dibujo y memoria para jugar con amigos. Dibuja la palabra, recuerda los dibujos, adivina y sube en la liga. Descárgalo en Google Play para Android o juega en el navegador del iPhone." }));
   $("d-next-t").textContent = x.next; $("g-ok-t").textContent = S("submit_guess");
   $("w-title").textContent = x.wTitle; $("w-body").textContent = x.wBody; $("w-go-t").textContent = x.wGo; $("w-skip").textContent = x.wSkip;
   $("s-text").textContent = x.searching; $("s-sub").textContent = x.searchSub; $("again-t").textContent = x.again;
@@ -592,7 +592,7 @@ async function startLevel(w, l) {
 const tutWords = () => [1, 2, 3].map((i) => S(`tutorial_word_${i}`));
 // TutorialViewModel.kt, ported: word 1 untimed, word 2 on a 12 s clock, word 3 on 10 s; guesses on 10 s with the two jokers taught one by one
 // (the clock stands still until the joker is used); coaching cards between the turns; practice jokers that never touch the real stock.
-const TUT = { drawSeconds: [0, 12, 10], guessSeconds: 10, stockStart: 3 };
+const TUT = { drawSeconds: [0, 9, 7], guessSeconds: 10, stockStart: 3 };
 let tutStock = { FIRST_LETTER: 3, LETTER_COUNT: 3 }, tutSeen = {}, tutSpot = null;
 const jokerN = (k) => (kind === "tutorial" ? tutStock[k] || 0 : P.jokers[k] || 0);
 const jokerSpend = (k) => { if (kind === "tutorial") tutStock[k]--; else { P.jokers[k]--; saveP(); } };
@@ -660,6 +660,26 @@ async function startQuick() {
   showFound(quickOpp, () => begin(picked));
 }
 function msgNoOpp() { show("home"); msg(t().noOpp + inLang({ tr: ". Bir süre sonra tekrar dene ya da çevrimdışı oyna.", en: ". Try again in a bit or play offline.", pt: ". Tente de novo daqui a pouco ou jogue offline.", es: ". Inténtalo en un rato o juega sin conexión." })); }
+// Countdowns run on a DEADLINE, as in the app (util/Countdown.kt): the clock keeps running while the tab is hidden or the phone is
+// locked, and what is left is read off the clock, never counted in ticks. A countdown that ended AWAY_MS or more late hands that
+// time to the next one (a word that timed out 30 s ago does not give the next word a fresh 20 s).
+const AWAY_MS = 2000;
+let carryMs = 0;
+const secondsLeft = (ms) => (ms <= 0 ? 0 : Math.ceil(ms / 1000));
+const takeStartMs = (seconds) => { const ms = seconds * 1000 - carryMs; carryMs = 0; return ms; };
+function runDeadline(startMs, onSecond, onDone) {
+  let end = performance.now() + startMs, shown = Infinity, timer = 0, dead = false;
+  const step = () => {
+    if (dead) return;
+    const ms = end - performance.now();
+    if (ms <= 0) { dead = true; const late = -ms; carryMs = late >= AWAY_MS ? late : 0; onDone(); return; }
+    const left = secondsLeft(ms);
+    if (left !== shown) { shown = left; onSecond(left); }
+    timer = setTimeout(step, Math.min(1000, Math.max(20, ((ms - 1) % 1000) + 1)));
+  };
+  if (startMs <= 0) timer = setTimeout(step, 0); else step(); // already used up while away: finish after the caller has stored the handle
+  return { stop() { dead = true; clearTimeout(timer); }, extend(ms) { end += ms; }, left() { return secondsLeft(end - performance.now()); } };
+}
 let foundTimer = null;
 function showFound(opp, go) {
   const x = t(); show("found"); $("f-title").src = lang === "tr" ? "img/mf_title.webp" : "img/mf_title_" + (lang === "pt" || lang === "es" ? lang : "en") + ".webp";
@@ -675,9 +695,8 @@ function showFound(opp, go) {
   card("f-cl", P.nick, myLv, P.frame, P.xp); card("f-cr", opp.nickname || "?", opp.level || 1, highestFrameFor(opp.level || 1), xpFor(opp.level || 1));
   $("f-vs").classList.remove("pop"); setTimeout(() => $("f-vs").classList.add("pop"), 350);
   const fill = $("f-fill"); fill.style.transition = "none"; fill.style.width = "3%"; void fill.offsetWidth; fill.style.transition = ""; fill.style.width = "100%";
-  let left = 5; const tick = () => { $("f-pt").textContent = x.startIn(left); };
-  tick(); clearInterval(foundTimer);
-  foundTimer = setInterval(() => { left--; if (left <= 0) { clearInterval(foundTimer); if (current === "found") go(); } else tick(); }, 1000);
+  if (foundTimer) foundTimer.stop();
+  foundTimer = runDeadline(5000, (left) => { $("f-pt").textContent = x.startIn(left); }, () => { if (current === "found") go(); });
 }
 function highestFrameFor(lv) { try { const L = frameListSafe().filter((f) => f.level > 0 && !f.league && f.level <= lv); return (L.pop() || { id: "SCRIBBLER" }).id; } catch { return "SCRIBBLER"; } }
 async function start(k = "quick") {
@@ -718,7 +737,7 @@ async function begin(picked) {
   idx = 0; tool = "pen"; score = 0; nextDraw();
 }
 function nextDraw() {
-  clearInterval(dTimer);
+  if (dTimer) dTimer.stop();
   if (idx >= round.length) {
     idx = 0; answered = 0; locked = false; gOrder = kind === "tutorial" ? round.map((_, i) => i) : shuffledIdx(round.length);
     if (kind === "tutorial") return coachCard("tutorial_guess_title", "tutorial_guess_body", "tutorial_generic_button", nextGuess);
@@ -742,20 +761,19 @@ function nextDraw() {
   $("d-word").textContent = w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1);
   const wl = w.text.length; $("d-word").style.fontSize = Math.max(40, Math.min(70, 425 * 0.97 / (wl * 0.5))) * u + "px";
   $("d-line").style.animation = "none"; void $("d-line").offsetWidth; $("d-line").style.animation = "";
-  let total = tut ? TUT.drawSeconds[idx] : (DRAW_SECONDS[w.difficulty] ?? 7); let left = total, usedTime = false;
+  let total = tut ? TUT.drawSeconds[idx] : (DRAW_SECONDS[w.difficulty] ?? 7); const startMs = relaxed || untimed ? 0 : takeStartMs(total); let left = Math.min(total, secondsLeft(startMs)), usedTime = false;
   const arc = $("d-arc"); arc.style.transition = "none"; setRing($("d-ring"), arc, $("d-time"), left, total); void arc.getBoundingClientRect(); arc.style.transition = "";
   paintProg(left);
   tool = "pen"; refreshTools(); paintLive();
   const tj = $("d-timej"), refreshTj = () => { const n = P.jokers.EXTRA_TIME || 0; $("d-timej-n").textContent = n; $("d-timej-t").textContent = S("drawing_time_joker"); tj.classList.toggle("dis", usedTime || n <= 0); tj.style.display = relaxed || tut ? "none" : ""; };
   refreshTj();
-  tj.onclick = () => { if (usedTime || (P.jokers.EXTRA_TIME || 0) <= 0) return; usedTime = true; P.jokers.EXTRA_TIME--; saveP(); left += 10; total += 10; setRing($("d-ring"), arc, $("d-time"), left, total); sfx.buy(); sparkFlight(tj, $("d-ring"), "+10"); refreshTj(); };
-  if (!relaxed && !untimed) dTimer = setInterval(() => {
-    left--; setRing($("d-ring"), arc, $("d-time"), left, total); paintProg(Math.max(0, left));
+  tj.onclick = () => { if (usedTime || (P.jokers.EXTRA_TIME || 0) <= 0) return; usedTime = true; P.jokers.EXTRA_TIME--; saveP(); if (dTimer) dTimer.extend(10000); left += 10; total += 10; setRing($("d-ring"), arc, $("d-time"), left, total); sfx.buy(); sparkFlight(tj, $("d-ring"), "+10"); refreshTj(); };
+  if (!relaxed && !untimed) dTimer = runDeadline(startMs, (l) => {
+    left = l; setRing($("d-ring"), arc, $("d-time"), left, total); paintProg(left);
     if (left > 0 && left <= 3) sfx.tick();
-    if (left <= 0) finishDraw();
-  }, 1000);
+  }, () => { left = 0; setRing($("d-ring"), arc, $("d-time"), 0, total); paintProg(0); finishDraw(); });
 }
-function finishDraw() { clearInterval(dTimer); idx++; nextDraw(); }
+function finishDraw() { if (dTimer) dTimer.stop(); idx++; nextDraw(); }
 $("d-next").onclick = finishDraw;
 
 // The guess order is shuffled after the drawing (GameViewModel.startGuessPhase): `idx` is a position in gOrder, the drawings stay in
@@ -794,7 +812,7 @@ $("jt-skip").onclick = () => {
   const w = gw(); if (!w || locked || tutSpot || kind === "tutorial" || w.skipped || idx >= gOrder.length - 1) return;
   w.skipped = true; w.resume = gLeft; gOrder.push(gOrder[idx]); idx++;
   // like the app: "⏱ N s saved" pops over the drawing for a moment, the clock stops, then the next word comes
-  clearInterval(gTimer); clearInterval(bonusTimer); locked = true; sfx.tick && sfx.tick();
+  if (gTimer) gTimer.stop(); clearInterval(bonusTimer); locked = true; sfx.tick && sfx.tick();
   const chip = $("g-skipchip"); chip.textContent = S("guess_skip_saved", w.resume); chip.classList.remove("go"); void chip.offsetWidth; chip.classList.add("go");
   setTimeout(() => { chip.classList.remove("go"); if (locked && current === "guess") nextGuess(); }, 1100);
 };
@@ -805,7 +823,7 @@ function endSpot() {
   go();
 }
 function nextGuess() {
-  clearInterval(gTimer); clearInterval(bonusTimer); locked = false;
+  if (gTimer) gTimer.stop(); clearInterval(bonusTimer); locked = false;
   if (idx >= gOrder.length) return finish();
   if (kind === "tutorial" && idx === 2 && !tutSeen.free) { tutSeen.free = true; return coachCard("tutorial_joker_free_title", "tutorial_joker_free_body", "tutorial_generic_button", nextGuess); }
   const w = gw();
@@ -827,7 +845,7 @@ function nextGuess() {
   const runClock = () => {
     shownAt = performance.now() - (total - left) * 1000; // a skipped word comes back with the time it had left; its speed bonus still counts from the first look
     clearInterval(bonusTimer); paintBonus(); bonusTimer = setInterval(paintBonus, 250);
-    gTimer = setInterval(() => { left--; gLeft = left; setRing($("g-ring"), arc, $("g-time"), left, total); if (left > 0 && left <= 3) sfx.tick(); if (left <= 0) answer(""); }, 1000);
+    gTimer = runDeadline(takeStartMs(0) + left * 1000, (l) => { left = l; gLeft = l; setRing($("g-ring"), arc, $("g-time"), l, total); if (l > 0 && l <= 3) sfx.tick(); }, () => { gLeft = 0; setRing($("g-ring"), arc, $("g-time"), 0, total); answer(""); });
     $("g-input").focus({ preventScroll: true });
   };
   const lesson = tut && idx < 2 ? (idx === 0 ? ["FIRST_LETTER", "jt-first", "tutorial_joker_first_title", "tutorial_joker_first_body"] : ["LETTER_COUNT", "jt-count", "tutorial_joker_count_title", "tutorial_joker_count_body"]) : null;
@@ -840,7 +858,7 @@ function nextGuess() {
 }
 function answer(text) {
   if (locked || !gw()) return; locked = true; lockedVal = $("g-input").value;
-  clearInterval(gTimer); clearInterval(bonusTimer);
+  if (gTimer) gTimer.stop(); clearInterval(bonusTimer);
   const w = gw();
   w.guess = text; w.ms = Math.round(performance.now() - shownAt); w.correct = isCorrect(text, w.text);
   w.points = w.correct ? POINTS + (w.ms < SPEED_MS ? SPEED_BONUS : 0) : 0;
@@ -851,14 +869,18 @@ function answer(text) {
   showFeedback(w); setTimeout(() => { hideFeedback(); idx++; if (current === "guess") nextGuess(); }, 1200);
 }
 // GuessFeedbackOverlay: the badge over the drawing — a tick or a cross, the XP it paid, and the right word after a miss — for 1.2 s
-const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#1e8a3a" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const CROSS = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="#c0392b" stroke-width="3.2" stroke-linecap="round"/></svg>';
+const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CROSS = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/></svg>';
 function showFeedback(w) {
   let f = $("g-fb"); if (!f) { f = document.createElement("div"); f.id = "g-fb"; $("g-canvas").append(f); }
-  f.innerHTML = `<div class="${w.correct ? "ok" : "no"}"><div class="card"><div class="ic">${w.correct ? CHECK : CROSS}</div>${w.xp > 0 ? `<div class="xp">${S("xp_gained_format", w.xp)}</div>` : ""}${w.correct ? "" : `<div class="ans">${S("correct_answer_was", w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1))}</div>`}</div></div>`;
+  const word = w.text.charAt(0).toLocaleUpperCase(lang) + w.text.slice(1);
+  // a slim strip at the top of the drawing (mark, word, XP chip) and a frame in the same colour: the drawing itself stays in view
+  f.className = w.correct ? "ok" : "no";
+  f.innerHTML = `<div class="card"><div class="ic">${w.correct ? CHECK : CROSS}</div><div class="ans"></div>${w.correct && w.xp > 0 ? `<div class="xp">${S("xp_gained_format", w.xp)}</div>` : ""}</div>`;
+  f.querySelector(".ans").textContent = w.correct ? word : S("correct_answer_was", word);
   $("guess").classList.add("fb"); // the field is left alone (no blur, no read-only, no disabled): any of those closes the keyboard, and it does not come back by itself
 }
-function hideFeedback() { $("guess").classList.remove("fb"); const f = $("g-fb"); if (f) f.replaceChildren(); }
+function hideFeedback() { $("guess").classList.remove("fb"); const f = $("g-fb"); if (f) { f.replaceChildren(); f.className = ""; } }
 function flash(ok) { const f = $("g-flash"); f.textContent = ok ? "✅" : "❌"; f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); }
 // pressing a button must not take the focus from the answer field, or the keyboard drops (and comes back with the next word)
 // iOS Safari still moves the focus on mouse events after a prevented pointerdown, so mousedown is stopped too (not touchstart: that would cancel the tap), and a focus that lands anyway goes back to the field
@@ -934,7 +956,7 @@ async function finish() {
   if (kind === "duel" && duelRun) {
     const run = duelRun;
     if (run.mode === "new") { net.createDuel({ opponentUid: run.opp.uid, opponentName: run.opp.name, items: me.items, challengerScore: score, challengerCorrectCount: n, wordIds: me.wordIds, myName: P.nick }).catch(() => {}); duelNote = S("duel_challenge_sent", run.opp.name); }
-    else { opp = { nickname: run.duel.challengerName, totalScore: run.duel.challengerScore, level: 1 }; items = run.duel.items; duelReceived(run.duel, score, n); net.submitDuelResult(run.duel.id, score, n).catch(() => {}); duelRematch = () => ctx.openDuel({ uid: run.duel.challengerUid, name: run.duel.challengerName }); }
+    else { opp = { nickname: run.duel.challengerName, totalScore: run.duel.challengerScore, level: 1 }; items = run.duel.items; duelReceived(run.duel, score, n); net.submitDuelResult(run.duel.id, score, n).then(() => { if (run.duel.items.length >= 10) return net.recordFriendDuel(run.duel.challengerUid); }).catch(() => {}); duelRematch = () => ctx.openDuel({ uid: run.duel.challengerUid, name: run.duel.challengerName }); }
   }
   await minWait;
   clearTimeout(waitScene);
@@ -971,7 +993,7 @@ function forfeitDaily() {
 }
 function confirmLeave() {
   const quickMatch = kind === "quick" && !!quickOpp, pen = eco.QUICK_MATCH_ABANDON_PENALTY_XP, daily = kind === "daily", online = kind === "online";
-  const go = () => { clearInterval(dTimer); clearInterval(gTimer); if (daily) forfeitDaily(); if (quickMatch) { eco.revokeXp(P, pen); saveP(); refreshHome(); } if (online) leaveLobby(ctx); else show("home"); };
+  const go = () => { if (dTimer) dTimer.stop(); if (gTimer) gTimer.stop(); if (daily) forfeitDaily(); if (quickMatch) { eco.revokeXp(P, pen); saveP(); refreshHome(); } if (online) leaveLobby(ctx); else show("home"); };
   exitDialog($("stage"), {
     title: quickMatch ? S("quick_match_abandon_title") : daily ? S("daily_exit_title") : S("exit_game_title"),
     message: quickMatch ? S("quick_match_abandon_message", pen) : daily ? S("daily_exit_message_short") : online ? S("exit_online_message") : S("exit_game_message"),

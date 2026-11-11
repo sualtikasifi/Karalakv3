@@ -304,8 +304,8 @@ function drawing(link, original, words, solved, tries, word) {
       const id = await net.createGuessLink({ word, lang: link.lang, strokesJson: encode(strokes), seconds: Math.round((Date.now() - t0) / 1000), ownerName: myName() });
       countLink();
       shared(id, strokes);
-    } catch {
-      alert(x.failedLink);
+    } catch (e) {
+      alert(e && e.code === "guess-limit" ? x.limit : x.failedLink);
       back();
     }
   }

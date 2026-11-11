@@ -81,7 +81,8 @@ class GuessLinkViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val legalConsentStore: LegalConsentStore,
     private val adManager: AdManager,
-    private val playerReporter: com.sualtikasifi.cizimhafiza.util.PlayerReporter
+    private val playerReporter: com.sualtikasifi.cizimhafiza.util.PlayerReporter,
+    private val analytics: com.sualtikasifi.cizimhafiza.util.GameAnalytics
 ) : ViewModel() {
 
     private val linkId: String = savedStateHandle.get<String>("linkId").orEmpty()
@@ -118,6 +119,7 @@ class GuessLinkViewModel @Inject constructor(
                 else -> {
                     candidates = withContext(Dispatchers.Default) { wordsOf(link.lang) }
                     _state.value = GuessUiState(phase = GuessPhase.Guessing, link = link)
+                    analytics.guessLinkOpened()
                 }
             }
         }
@@ -163,6 +165,7 @@ class GuessLinkViewModel @Inject constructor(
         _state.update {
             it.copy(phase = if (solved) GuessPhase.Solved else GuessPhase.Failed, solved = solved, attempts = attempts, word = word, missed = false)
         }
+        analytics.guessFinished(solved, attempts)
         viewModelScope.launch {
             repository.sendResult(link, solved, attempts, settingsRepository.nicknameOrDefault)
         }
@@ -189,6 +192,7 @@ class GuessLinkViewModel @Inject constructor(
         if (_state.value.word == null) return
         _state.update { it.copy(phase = GuessPhase.Drawing, live = emptyList(), secondsLeft = DRAW_SECONDS, busy = false, newLinkId = null) }
         drawStartedAt = System.currentTimeMillis()
+        analytics.guessTurnStarted()
         timer?.cancel()
         timer = viewModelScope.launch {
             repeat(DRAW_SECONDS) {
@@ -228,6 +232,7 @@ class GuessLinkViewModel @Inject constructor(
                 ownerName = settingsRepository.nicknameOrDefault
             )
             result.onSuccess { id ->
+                analytics.guessLinkCreated("turn")
                 _state.update { it.copy(phase = GuessPhase.Shared, busy = false, newLinkId = id, shareFailed = false) }
             }.onFailure { e ->
                 _state.update {

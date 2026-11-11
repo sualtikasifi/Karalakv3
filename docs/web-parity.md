@@ -51,6 +51,11 @@ Yukarıdaki "Sırada" listesindeki her şey yapıldı (Lig, mağaza, harita, dü
 - Metinler: `scripts/gen_web_strings.js` artık `result_strings.json`, `chat_strings.json`, `store_strings.json` dosyalarını da Android'den üretiyor; web'deki elle yazılmış metin tabloları `useAppTexts(...)` ile Android anahtarlarına bağlandı. CI'daki "Web texts match the app" adımı üretilen dosyalar elle değişirse kırmızı yanar.
 - Tekil/çoğul: Android'de `_one` anahtarları (`lock_duration_*_one`, `chest_duration_hours_one`, `rune_tile_cnt_one`) eklendi; web aynı anahtarları kullanıyor.
 
+## Kasım 2026 eşitleme turu
+- Süre durmaz (#316): çizim, tahmin ve "Eşleşme bulundu" sayaçları artık saat sayacı değil son-an saatiyle (`runDeadline`, `Countdown.kt`'nin karşılığı) çalışıyor; sekme arka plana alınsa ya da telefon kilitlense de süre akıyor. 2 sn'den fazla geç dönülürse kelime zaman aşımı sayılır ve geçen süre sonraki aşamadan düşülür (`carryMs`). +10 sn jokeri son-anı uzatır; atlanan kelime kalan süresiyle döner.
+- Eğitim (#313): 2. ve 3. çizim 9 ve 7 sn.
+- Bilerek farklı: Google hesabı/doğum tarihi, Yenilikler turu, bildirim izni, reklam ve mağaza düğmeleri, geliştirici paneli ve video stüdyosu web'de yok; boyalı pencere çerçeveleri, basma animasyonları ve yeni doğru-cevap rozeti salt görsel olduğundan web'in mevcut tasarımıyla kaldı.
+
 ## Web sitesi (karalak.com)
 - Arama ve paylaşım: açıklama, `canonical`, Open Graph + Twitter kartı (`oyna/img/og_share.jpg`, 1200x630), `VideoGame` yapılandırılmış verisi, İngilizce ziyaretçiye İngilizce sekme başlığı; `/indir` aynı paylaşım görselini kullanıyor.
 - `robots.txt` (yalnız `/studio/` kapalı; davet linkleri önizleme için açık) ve `sitemap.xml` (`/`, `/indir`).

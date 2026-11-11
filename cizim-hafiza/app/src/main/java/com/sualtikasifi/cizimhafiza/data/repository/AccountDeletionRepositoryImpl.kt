@@ -121,7 +121,8 @@ class AccountDeletionRepositoryImpl @Inject constructor(
                 }
             }
         }
-        // The "Bil Bakalım" links this account sent and the friend streaks it kept.
+        // The "Bil Bakalım" links this account sent (and its daily count of them) and the friend streaks it kept.
+        runCatching { firestore.collection("guessQuota").document(uid).delete().await() }
         runCatching {
             firestore.collection("guessLinks").whereEqualTo("ownerUid", uid).get().await().documents.forEach { doc ->
                 runCatching { doc.reference.delete().await() }

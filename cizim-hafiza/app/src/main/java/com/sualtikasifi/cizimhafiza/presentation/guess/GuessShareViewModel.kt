@@ -18,6 +18,7 @@ import javax.inject.Inject
 class GuessShareViewModel @Inject constructor(
     private val repository: GuessRepository,
     private val settingsRepository: SettingsRepository,
+    private val analytics: com.sualtikasifi.cizimhafiza.util.GameAnalytics,
     legalConsentStore: LegalConsentStore
 ) : ViewModel() {
 
@@ -31,5 +32,5 @@ class GuessShareViewModel @Inject constructor(
             seconds = 0,
             lang = GuessCodec.langFor(language),
             ownerName = settingsRepository.nicknameOrDefault
-        )
+        ).onSuccess { analytics.guessLinkCreated("result") }
 }

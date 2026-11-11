@@ -574,10 +574,41 @@ export async function createGuessLink({ word, lang, strokesJson, seconds, ownerN
   const { fs, db, auth } = await init();
   const id = guessRandom(10), salt = guessRandom(12), now = Date.now();
   const folded = foldWord(word).split(" ").filter(Boolean);
-  await fs.setDoc(fs.doc(db, "guessLinks", id), {
+  // the link and its line in the day's quota in one batch: the rules refuse either without the other (twenty a day per account)
+  const me = auth.currentUser.uid, quotaRef = fs.doc(db, "guessQuota", me), day = Math.floor((now + 3 * 3600e3) / 864e5);
+  const q = await fs.getDoc(quotaRef).catch(() => null), used = q && q.exists() && q.data().day === day ? q.data().count || 0 : 0;
+  if (used >= 20) { const e = new Error("limit"); e.code = "guess-limit"; throw e; }
+  const batch = fs.writeBatch(db);
+  batch.set(fs.doc(db, "guessLinks", id), {
     ownerUid: auth.currentUser.uid, ownerName: String(ownerName || "").slice(0, 40), lang, salt,
     hash: await guessHash(salt, word), pattern: folded.map((w) => w.length).join(" "), first: word.trim().slice(0, 1).toLocaleUpperCase(lang),
     strokesJson, seconds: Math.min(120, Math.max(0, seconds | 0)), createdAt: now, expiresAt: now + 30 * 864e5,
   });
+  batch.set(quotaRef, { day, count: used + 1, last: id });
+  await batch.commit();
   return id;
+}
+
+// ---- friend streaks (FriendStreaks.kt / FriendStreakRepositoryImpl.kt): a duel of ten words or more played to the end counts as
+// today's day of the pair. The same transitions as the app writes and firestore.rules allows; days are Türkiye days (UTC+3).
+export const turkeyDay = (ms = Date.now()) => Math.floor((ms + 3 * 3600e3) / 864e5);
+/** What a finished duel does to the pair's streak document [s] (null: none yet); null when nothing is to be written. */
+export function streakAfterDuel(s, me, friend, today, now) {
+  const uids = me < friend ? [me, friend] : [friend, me];
+  const doc = (count, best, run, lastDay, pendingDay, repairs, repairedBy) => ({ uids, count, best: Math.max(best, count), run, lastDay, pendingDay, repairs, ...(repairedBy ? { repairedBy } : {}), updatedAt: now });
+  if (!s) return doc(1, 1, 1, today, -1, 0, null);
+  if (s.lastDay >= today) return null;
+  if (s.lastDay === today - 1) return doc(s.count + 1, s.best, s.run, today, -1, s.repairs, s.repairedBy);
+  if (s.lastDay === today - 2) return s.pendingDay === today ? null : doc(s.count, s.best, s.run, s.lastDay, today, s.repairs, s.repairedBy);
+  return doc(s.pendingDay === today - 1 ? 2 : 1, s.best, s.run + 1, today, -1, s.repairs, s.repairedBy);
+}
+export async function recordFriendDuel(friendUid) {
+  const { fs, db, auth } = await init(), me = auth.currentUser.uid;
+  const ref = fs.doc(db, "friendStreaks", me < friendUid ? `${me}_${friendUid}` : `${friendUid}_${me}`);
+  await fs.runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref), x = snap.exists() ? snap.data() : null;
+    const cur = x && { count: x.count || 0, best: x.best || 0, run: x.run || 1, lastDay: x.lastDay ?? -1e9, pendingDay: x.pendingDay ?? -1, repairs: x.repairs || 0, repairedBy: x.repairedBy || null };
+    const next = streakAfterDuel(cur, me, friendUid, turkeyDay(), Date.now());
+    if (next) tx.set(ref, next);
+  });
 }
