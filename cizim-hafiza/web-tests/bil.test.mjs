@@ -14,6 +14,8 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(new URL(req.url, "http://x").pathname);
   if (/^\/b\//.test(p)) p = "/bil/index.html"; // firebase.json's rewrite
+  if (p === "/") p = "/oyna/index.html"; // the game lives at the root (firebase.json rewrites it)
+  if (p === "/indir" || p === "/indir/") p = "/indir/index.html"; // firebase.json rewrites /indir
   const f = path.join(root, p);
   if (!f.startsWith(root) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(res);
@@ -107,6 +109,16 @@ const store = (page) => page.evaluate(() => window.__store);
     if (hrefs.length !== 1 || !hrefs[0].includes("play.google.com")) fail(`desktop: expected only the store link, got ${JSON.stringify(hrefs)}`);
     if (await page.$(".paper, canvas, input[type=text]")) fail("desktop: the drawing is playable in the browser");
   } catch (e) { fail(`desktop flow: ${e.message.split("\n")[0]}`); }
+  await browser.close();
+}
+
+// ---- the browser game itself (opened at the root, where firebase.json serves it) is iOS only: an Android phone ends on the download page
+{
+  const ua = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
+  const { browser, page } = await open(chromium, { userAgent: ua, viewport: { width: 400, height: 800 } }, "/");
+  try {
+    await page.waitForURL(/\/indir\/?/, { timeout: 8000 });
+  } catch { fail(`Android: the game at the root did not send the phone to the download page (ended on ${page.url()})`); }
   await browser.close();
 }
 
