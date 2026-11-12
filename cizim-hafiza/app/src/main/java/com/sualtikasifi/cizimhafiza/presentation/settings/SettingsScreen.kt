@@ -90,6 +90,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenArt
+import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenFace
 import com.sualtikasifi.cizimhafiza.util.AppReviewLauncher
 
 // bg_settings is this size; every control is laid over its painted frame by the frame's own coordinates.
@@ -149,15 +150,13 @@ fun SettingsScreen(
         val pxX = (sceneBitmap?.width ?: 1) / ArtW
         val pxY = (sceneBitmap?.height ?: 1) / ArtH
         // A painted area that caves in under the finger (see sunkenArt).
-        // The plain wood behind the five rows (one strip each, stacked), so a pressed row dips onto wood instead of a shadow.
-        val rowFill = remember { runCatching { BackdropCache.get(context.resources, R.drawable.settings_row_fill) }.getOrNull() }
         fun sunk(
             sink: com.sualtikasifi.cizimhafiza.presentation.mainmenu.SinkState, x0: Float, y0: Float, x1: Float, y1: Float, cornerArt: Float,
             fillRow: Int = -1
         ): Modifier =
-            if (fillRow >= 0 && rowFill != null) Modifier.sunkenArt(
-                sink, sceneBitmap, 67f, (y0 + y1) / 2f * pxY - 60.4f, 948f, 121f, (cornerArt * us).dp,
-                socket = rowFill, socketTop = fillRow * 121f
+            // The five rows: the face sinks inside its own frame (the frame stays put).
+            if (fillRow >= 0) Modifier.sunkenFace(
+                sink, sceneBitmap, x0 * pxX, y0 * pxY, (x1 - x0) * pxX, (y1 - y0) * pxY, (7f * us).dp, (34f * us).dp
             ) else Modifier.sunkenArt(sink, sceneBitmap, x0 * pxX, y0 * pxY, (x1 - x0) * pxX, (y1 - y0) * pxY, (cornerArt * us).dp)
 
         if (offX > 1.dp || offY > 1.dp) {

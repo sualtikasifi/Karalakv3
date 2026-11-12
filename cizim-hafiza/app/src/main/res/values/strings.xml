@@ -1455,7 +1455,7 @@
     <string name="store_daily_joker_action">Watch an ad, get it free</string>
     <string name="store_daily_joker_claimed">Your free joker was added!</string>
     <string name="store_daily_joker_unavailable">No ad available right now, try again shortly.</string>
-    <string name="store_pen_try">Try 1 game</string>
+    <string name="store_pen_try">Watch an ad, try 1 game</string>
     <string name="store_pen_trial_next">Next game</string>
     <string name="store_pen_trial_armed">You will draw your next game with this pen!</string>
     <string name="xp_event_default_name">XP Event</string>

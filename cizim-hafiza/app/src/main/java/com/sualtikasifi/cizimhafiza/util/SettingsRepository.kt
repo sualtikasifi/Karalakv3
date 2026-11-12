@@ -56,7 +56,9 @@ class SettingsRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val ledger: EconomyLedger,
     private val runes: RuneStore,
-    private val chests: ChestStore
+    private val chests: ChestStore,
+    private val penTrial: PenTrialStore,
+    private val xpBoost: XpBoostStore
 ) {
 
     // Gameplay writes (gold, chests, purchases, runes) are ONE edit each, applied asynchronously: a single apply() lands
@@ -838,6 +840,9 @@ class SettingsRepository @Inject constructor(
         ledger.publish(0, emptyMap(), emptySet())
         chests.publishAccount(List(ChestSlots.SLOT_COUNT) { null })
         runes.publishCleared()
+        // Rewards earned through ads belong to the account that watched them (a tried pen, a running double-XP).
+        penTrial.clear()
+        xpBoost.clear()
     }
 
     /**
@@ -1005,6 +1010,8 @@ class SettingsRepository @Inject constructor(
         chests.publishAccount(chestSlots)
         // The account's runes come back through restoreRuneLevels, merged into an empty map — not into the last account's.
         runes.publishCleared()
+        penTrial.clear()
+        xpBoost.clear()
     }
 
     fun setNotificationsEnabled(enabled: Boolean) {
