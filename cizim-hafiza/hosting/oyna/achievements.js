@@ -65,7 +65,7 @@ export function renderAchievements(c) {
     const mid = done ? `<small class="${claimed ? "gr" : "cl"}">${claimed ? x.claimed : x.unlocked}</small>`
       : `<div class="pb"><div class="bar"><i style="width:${Math.max(4, frac(a, P) * 100)}%"></i></div><small>${fm(Math.min(v, a.t), L)}/${fm(a.t, L)}</small></div>`;
     const side = claimable ? `<span class="cb">${x.claim}</span>` : done ? '<i class="ck">✓</i>' : reward(a);
-    r.innerHTML = `${medal(a, done)}<div class="mid"><b>${a[L][0]}</b>${mid}</div>${side}${celebrating ? `<span class="fly ${a.gold ? "g" : ""}">+${a.gold ? fm(rewardOf(a), L) + " " + (L === "tr" ? "altın" : L === "en" ? "gold" : L === "pt" ? "ouro" : "oro") : fm(rewardOf(a), L) + " XP"}</span>` : ""}`;
+    r.innerHTML = `${medal(a, done)}<div class="mid"><b>${a[L][0]}</b><span class="ds">${a[L][1]}</span>${mid}</div>${side}${celebrating ? `<span class="fly ${a.gold ? "g" : ""}">+${a.gold ? fm(rewardOf(a), L) + " " + (L === "tr" ? "altın" : L === "en" ? "gold" : L === "pt" ? "ouro" : "oro") : fm(rewardOf(a), L) + " XP"}</span>` : ""}`;
     r.onclick = () => claimable ? claimOne(c, a) : detail(c, a, done, claimed, v);
     list$.append(r);
   };

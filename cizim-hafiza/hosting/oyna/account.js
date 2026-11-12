@@ -33,10 +33,10 @@ export function layoutAccount(c) {
   const { place, $ } = c;
   place($("ak-back"), 20, 40, 110, 106); place($("ak-sign"), 130, 132, 580, 387); place($("ak-title"), 219, 343, 420, 113);
   place($("ak-avatar"), 92, 545, 150, 150);
-  place($("ak-name"), 268, 540, 502, 60); place($("ak-lvl"), 268, 604, 502, 44); place($("ak-badge"), 268, 654, 506, 58);
+  place($("ak-name"), 256, 534, 530, 60); place($("ak-lvl"), 256, 596, 530, 44); place($("ak-badge"), 268, 648, 506, 72);
   place($("ak-bar"), 92, 726, 644, 36);
   [24, 294, 566].forEach((x, i) => place($("ak-s" + i), x + 8, 905, 220, 120));
-  place($("ak-sec"), 166, 1066, 574, 68); place($("ak-strip"), 166, 1150, 576, 82);
+  place($("ak-sec"), 100, 1066, 640, 68); place($("ak-strip"), 166, 1148, 576, 84);
   place($("ak-form"), 110, 1262, 620, 330);
   place($("ak-out"), 120, 1304, 600, 132);
   place($("ak-del"), 120, 1460, 600, 76); place($("ak-msg"), 60, linkedNow ? 1560 : 1620, 720, 80);
@@ -57,6 +57,9 @@ const errText = (x, e) => {
   return S("account_sign_in_failed");
 };
 /** Paints from what is known right now (the last sign-in state), so the screen is never blank while the Firebase SDK is still loading. */
+/** A long name or address cut to about max characters without losing its end (the part after an @, or its last letters). */
+const shorten = (t, max) => { if (t.length <= max) return t; const at = t.lastIndexOf("@"); if (at > 0) { const dom = t.slice(at), keep = Math.max(6, max - dom.length - 1); return at <= keep ? t : t.slice(0, keep) + "…" + dom; } return t.slice(0, max - 1) + "…"; };
+
 function paint(c) {
   const { $, P, lang } = c, x = T[lang()];
   const linked = who && !who.anon;
@@ -66,7 +69,10 @@ function paint(c) {
   $("ak-name").textContent = P.nick;
   const lv = c.levelOf(P.xp);
   $("ak-lvl").innerHTML = rankLevelHtml(lv.level);
-  $("ak-badge").className = "txt left badge" + (linked ? "" : " guest"); { const b = document.createElement("span"); b.textContent = linked ? [x.linked, who.userName].filter(Boolean).join(" · ") : x.guest; $("ak-badge").replaceChildren(b); }
+  $("ak-badge").className = "txt badge" + (linked ? "" : " guest");
+  // a linked account's pill has two lines, so a long user name has a whole line of its own: it is cut in the middle, never at its start
+  { const b = document.createElement("span"); const top = document.createElement("b"); top.textContent = linked ? "✓ " + x.linked : x.guest; b.append(top);
+    if (linked && who.userName) { const n = document.createElement("em"); n.textContent = shorten(who.userName, 24); b.append(n); } $("ak-badge").replaceChildren(b); }
   $("ak-fill").style.width = lv.frac * 100 + "%"; $("ak-barl").textContent = lv.max ? x.max : x.progress(lv.into, lv.span);
   const stats = [[fmtNum(P.xp), x.xp], [fmtNum(P.stats.games), x.games], [fmtNum(P.stats.best), x.streak]];
   stats.forEach(([v, l], i) => { const s = $("ak-s" + i); s.children[0].textContent = v; s.children[1].textContent = l; });

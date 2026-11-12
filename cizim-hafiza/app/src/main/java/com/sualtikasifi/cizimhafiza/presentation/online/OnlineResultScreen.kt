@@ -121,11 +121,15 @@ fun OnlineResultScreen(
     var signInPromptDismissed by remember { mutableStateOf(false) }
     var chestWonDismissed by remember { mutableStateOf(false) }
 
-    // The interstitial is asked for once, the moment the finished comparison is actually showing.
+    // The interstitial comes as the player LEAVES for the home screen, after they have seen the comparison: not when it appears (the
+    // exciting moment), and never on the way to a rematch or the waiting room (one player's ad would hold the whole room).
     val resultIsShowing = others.isNotEmpty() && others.all { it.finished }
-    LaunchedEffect(resultIsShowing) {
-        if (resultIsShowing) {
-            (context as? Activity)?.let { viewModel.showInterstitial(it) }
+    var leaving by remember { mutableStateOf(false) }
+    val leaveForHome: () -> Unit = {
+        if (!leaving) {
+            leaving = true
+            val act = context as? Activity
+            if (resultIsShowing && act != null) viewModel.showInterstitial(act) { onMainMenu() } else onMainMenu()
         }
     }
     LaunchedEffect(uiState.navigateToRematchRoomCode) {
@@ -350,7 +354,7 @@ fun OnlineResultScreen(
                 modifier = Modifier.fillMaxWidth().padding(start = u * 40f, end = u * 40f, top = u * 8f, bottom = u * 36f),
                 horizontalArrangement = Arrangement.spacedBy(u * 14f)
             ) {
-                ArtButton(res = R.drawable.rs_btn_claim, u = u, iconRoom = 0f, onClick = onMainMenu, modifier = Modifier.weight(1f)) {
+                ArtButton(res = R.drawable.rs_btn_claim, u = u, iconRoom = 0f, onClick = leaveForHome, modifier = Modifier.weight(1f)) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         LetteredText(stringResource(R.string.main_menu), fs(38f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f)
                     }
@@ -375,7 +379,7 @@ fun OnlineResultScreen(
         }
         // Over the page, not in it: stays in the corner however far the page scrolls.
         ResultBackButton(
-            onBack = onMainMenu,
+            onBack = leaveForHome,
             modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().springIn(index = 0, fromY = -40)
         )
     }
@@ -430,7 +434,19 @@ fun OnlineResultScreen(
     }
     if (uiState.chestLost) {
         var chestLostDismissed by remember { mutableStateOf(false) }
-        if (!chestLostDismissed) com.sualtikasifi.cizimhafiza.presentation.common.ChestLostDialog(onDismiss = { chestLostDismissed = true })
+        var lostChestReward by remember { mutableStateOf<com.sualtikasifi.cizimhafiza.domain.model.ChestReward?>(null) }
+        val lostOffer = remember(uiState.chestLostTier) {
+            val tier = uiState.chestLostTier
+            val act = context as? Activity
+            if (tier != null && act != null && viewModel.canOfferLostChestAd()) tier to act else null
+        }
+        if (!chestLostDismissed) com.sualtikasifi.cizimhafiza.presentation.common.ChestLostDialog(
+            onDismiss = { chestLostDismissed = true },
+            onWatchAd = lostOffer?.let { (tier, act) -> { viewModel.openLostChestWithAd(act, tier) { reward -> if (reward != null) { lostChestReward = reward; chestLostDismissed = true } } } }
+        )
+        lostChestReward?.let { reward ->
+            com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog(reward = reward, onDismiss = { lostChestReward = null })
+        }
     }
     uiState.chestWon?.let { chest ->
         if (!chestWonDismissed) {

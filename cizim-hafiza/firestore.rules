@@ -660,6 +660,12 @@ service cloud.firestore {
       allow write: if reviewer();
     }
 
+    // Which ad placements are switched off, and the interstitial limits (see AdRemoteConfig): signed-in read, reviewer write.
+    match /config/ads {
+      allow read: if signedIn();
+      allow write: if reviewer();
+    }
+
     // ---- the public profile and the league ---------------------------------
     //
     // The league month a score belongs to, as both apps stamp it (LeaguePeriod.periodIdFor): year * 12 + month - 1, on

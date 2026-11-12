@@ -57,6 +57,7 @@ data class OnlineResultUiState(
     /** Non-null exactly once, right after a 1st-place finish that found a free chest slot. */
     val chestWon: Chest? = null,
     val chestLost: Boolean = false,
+    val chestLostTier: com.sualtikasifi.cizimhafiza.domain.model.ChestTier? = null,
     /** What this round paid out, shown once the standings are in: per-word XP + the match bonus, and gold. */
     val xpEarned: Int = 0,
     val goldEarned: Int = 0,
@@ -127,6 +128,7 @@ class OnlineResultViewModel @Inject constructor(
     private val requestedUids = mutableSetOf<String>()
 
     init {
+        adManager.warmUp() // an interstitial on the way out, and a rewarded ad for a lost chest, should already be in memory
         // Only the bot room (130246, see BotRoomEngine) has anything to drive; any other room is ignored, so a
         // friends' room does not listen to the shared bot room. Released in onCleared.
         botRoomEngine.acquire(roomCode)
@@ -285,6 +287,7 @@ class OnlineResultViewModel @Inject constructor(
                             showRatingPrompt = false,
                             chestWon = chestWon,
                             chestLost = chestLost,
+                            chestLostTier = chestAward?.lostTier,
                             xpEarned = roundXp + matchXp,
                             goldEarned = gold,
                             runeBonusGold = breakdown.runeBonus
@@ -298,6 +301,17 @@ class OnlineResultViewModel @Inject constructor(
     /** Called once when the finished-round comparison is actually showing — see AdManager's placement doc. */
     fun showInterstitial(activity: Activity, onDismissed: () -> Unit = {}) {
         adManager.maybeShowInterstitial(activity, onDismissed, placement = "interstitial_result_online")
+    }
+
+
+    /** Whether the lost chest can be opened with an ad right now (the placement is on and an ad is loaded). */
+    fun canOfferLostChestAd(): Boolean = adManager.placementEnabled("chest_lost_open") && adManager.rewardedReady()
+
+    /** Watches a rewarded ad and, if it is earned, opens the chest that found no free slot on the spot; [onReward] gets its loot, or null. */
+    fun openLostChestWithAd(activity: android.app.Activity, tier: com.sualtikasifi.cizimhafiza.domain.model.ChestTier, onReward: (com.sualtikasifi.cizimhafiza.domain.model.ChestReward?) -> Unit) {
+        adManager.maybeShowRewarded(activity, "chest_lost_open") { outcome ->
+            onReward(if (outcome == com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.EARNED) settingsRepository.openChestNow(tier) else null)
+        }
     }
 
     fun selectPlayer(uid: String) {

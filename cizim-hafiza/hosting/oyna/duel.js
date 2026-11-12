@@ -94,14 +94,44 @@ export function renderDuels(c) {
   root.append(card("c", S("duel_list_sent_title"), snt));
 }
 
-/** CreateDuelScreen: how many words, then the normal round starts. */
+/**
+ * CreateDuelScreen: how many words, then the normal round starts. One painted scene (img/duel_create_bg: the arena, the sign, two
+ * paper cards and a button, all left empty) with the texts and the count choice laid over it in the picture's own 841 x 1870 units,
+ * exactly as CreateDuelScreen.kt does.
+ */
 export function openCreateDuel(c, opp) {
   const COUNTS = [10, 20, 30, 40, 50]; let count = 10;
-  const body = el("div", "dn-body");
+  const host = c.$("stage"), ov = el("div", "dc-scene"), board = el("div", "dc-board");
+  ov.append(board); host.append(ov);
+  const at = (x, y, w, h) => `left:calc(var(--k)*${x});top:calc(var(--k)*${y});width:calc(var(--k)*${w});height:calc(var(--k)*${h})`;
+  const txt = (cls, x, y, w, h, fs, html) => `<div class="dc-t ${cls}" data-fs="${fs}" style="${at(x, y, w, h)}"><span>${html}</span></div>`;
+  const close = () => { removeEventListener("resize", fit); ov.remove(); };
   const paint = () => {
-    body.innerHTML = `<div class="dn-hero"><div class="dn-ic">🥊</div><b>${S("duel_create_opponent", esc(opp.name))}</b><p>${S("duel_create_explainer", esc(opp.name))}</p></div><div class="dn-q">${S("select_word_count")}</div><div class="dn-c">${COUNTS.map((n) => `<button class="${n === count ? "on" : ""}" data-n="${n}">${n}</button>`).join("")}</div>`;
-    body.querySelectorAll("[data-n]").forEach((b) => (b.onclick = () => { count = +b.dataset.n; paint(); }));
+    board.innerHTML = `<img class="dc-bg" src="img/duel_create_bg.webp" alt="">
+      <button class="dc-back" style="${at(10, 14, 120, 110)}" aria-label="${S("close")}"></button>
+      ${txt("lt", 128, 352, 372, 96, 66, S("duel_create_title"))}
+      ${txt("lt pu", 190, 596, 462, 76, 50, S("duel_create_opponent", esc(opp.name)))}
+      ${txt("body", 78, 694, 685, 246, 30, S("duel_create_explainer", esc(opp.name)))}
+      ${txt("body", 236, 974, 522, 94, 29, S("duel_create_streak_hint"))}
+      ${txt("lt pu", 168, 1192, 506, 68, 38, S("select_word_count"))}
+      <div class="dc-counts" style="${at(50, 1290, 741, 108)}">${COUNTS.map((n) => `<button class="${n === count ? "on" : ""}" data-n="${n}" data-fs="56"><span>${n}</span>${n === count ? "<i>✓</i>" : ""}</button>`).join("")}</div>
+      <button class="dc-go" style="${at(45, 1470, 750, 152)}" aria-label="${S("duel_create_start")}"></button>
+      ${txt("lt go", 268, 1503, 380, 88, 62, S("duel_create_start"))}`;
+    board.querySelector(".dc-back").onclick = close;
+    board.querySelector(".dc-go").onclick = () => { close(); c.startDuelChallenge(opp, count); };
+    board.querySelectorAll("[data-n]").forEach((b) => (b.onclick = () => { count = +b.dataset.n; paint(); }));
+    fit();
   };
-  paint();
-  const ov = appWindow(c.$("stage"), { title: S("duel_create_title"), body, footer: primary(S("duel_create_start"), () => { ov.close(); c.startDuelChallenge(opp, count); }), cls: "dn-win" });
+  // The scene covers the screen like a background-size:cover picture, top-aligned (the same rule as the app's Crop + TopCenter).
+  const fit = () => {
+    const R = ov.getBoundingClientRect(), k = Math.max(R.width / 841, R.height / 1870);
+    board.style.setProperty("--k", k + "px"); board.style.width = 841 * k + "px"; board.style.height = 1870 * k + "px"; board.style.left = (R.width - 841 * k) / 2 + "px";
+    // a text that does not fit its box (a long name, another language) shrinks until it does
+    board.querySelectorAll("[data-fs]").forEach((e) => {
+      const t = e.querySelector("span") || e; let f = +e.dataset.fs * k; const min = f * 0.55; e.style.fontSize = f + "px";
+      while ((t.scrollHeight > e.clientHeight + 1 || t.scrollWidth > e.clientWidth + 1) && f > min) { f *= 0.94; e.style.fontSize = f + "px"; }
+      if (t.scrollWidth > e.clientWidth + 1 && e.classList.contains("lt")) e.classList.add("clip"); // still too long at the smallest size: cut with an ellipsis
+    });
+  };
+  addEventListener("resize", fit); paint(); document.fonts && document.fonts.ready.then(fit);
 }

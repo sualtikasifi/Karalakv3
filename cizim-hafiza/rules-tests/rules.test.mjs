@@ -287,6 +287,9 @@ await check("the reviewer reads a roll-up", assertSucceeds(getDoc(doc(reviewer()
 await check("a player cannot read a roll-up", assertFails(getDoc(doc(db("nm2"), "adminSummary", "2026-10-27"))));
 await check("nobody writes a roll-up from the app", assertFails(setDoc(doc(reviewer(), "adminSummary", "2026-10-28"), { day: "2026-10-28", players: 1, final: true })));
 await check("the reviewer sets the announcement", assertSucceeds(setDoc(doc(reviewer(), "config", "announcement"), { active: true, id: "1", texts: { tr: { title: "a", body: "b" } } })));
+await check("the reviewer switches an ad placement off", assertSucceeds(setDoc(doc(reviewer(), "config", "ads"), { off: ["result_xp_x2"], interstitialPerHour: 4 })));
+await check("a player reads the ad switches", assertSucceeds(getDoc(doc(db("nm2"), "config", "ads"))));
+await check("a player cannot change the ad switches", assertFails(setDoc(doc(db("nm2"), "config", "ads"), { off: [] })));
 await check("a player reads the announcement", assertSucceeds(getDoc(doc(db("nm2"), "config", "announcement"))));
 await check("a player cannot set the announcement", assertFails(setDoc(doc(db("nm2"), "config", "announcement"), { active: true })));
 await check("the reviewer plans an XP event", assertSucceeds(setDoc(doc(reviewer(), "xpEventPlans", "p1"), { startAtMillis: 1, durationHours: 24, multiplier: 2 })));

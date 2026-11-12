@@ -153,6 +153,13 @@ fun MainMenuScreen(
     val hasUnseenAchievement by viewModel.hasUnseenAchievement.collectAsState()
     val accountNotLinked by viewModel.accountNotLinked.collectAsState()
     val xpEvent by viewModel.xpEvent.collectAsState()
+    // The 30-minute double-XP chip: re-read every second (its countdown, and whether an ad has come loaded).
+    val xpBoostUi by androidx.compose.runtime.produceState(XpBoostUi.None) {
+        while (true) {
+            value = viewModel.xpBoostUi()
+            kotlinx.coroutines.delay(1_000)
+        }
+    }
     val adGoldNextAt by viewModel.adGoldNextAtMillis.collectAsState()
     val adChestNextAt by viewModel.adChestNextAtMillis.collectAsState()
     val freeChestReward by viewModel.freeChestReward.collectAsState()
@@ -259,6 +266,8 @@ fun MainMenuScreen(
             pen = selectedPen,
             gold = gold,
             xpEvent = xpEvent,
+            xpBoost = xpBoostUi,
+            onXpBoost = { activity?.let(viewModel::watchAdForXpBoost) },
             dailyState = dailyState,
             adGoldNextAt = adGoldNextAt,
             adChestNextAt = adChestNextAt,
@@ -332,6 +341,7 @@ fun MainMenuScreen(
                             StreakToast.Rescued -> R.string.streak_rescue_done
                             StreakToast.AdGoldEarned -> R.string.home_ad_gold_earned
                             StreakToast.AdUnavailable -> R.string.home_ad_unavailable
+                            StreakToast.XpBoostOn -> R.string.home_xp_boost_on
                         }
                     ),
                     container = MaterialTheme.colorScheme.surface,

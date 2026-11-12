@@ -26,7 +26,7 @@ const PRIV = "/gizlilik"; // the privacy policy (hosting/gizlilik), which links 
 const RATE = "https://play.google.com/store/apps/details?id=com.sualtikasifi.cizimhafiza";
 
 /** Supported languages: add a line here (and its strings) when a new one ships, as in SupportedLanguage.kt. */
-export const LANGS = [{ code: "en", label: "English", flag: "🇺🇸" }, { code: "tr", label: "Türkçe", flag: "🇹🇷" }, { code: "pt", label: "Português", flag: "🇧🇷" }, { code: "es", label: "Español", flag: "🇪🇸" }];
+export const LANGS = [{ code: "en", label: "English", flag: "🇺🇸" }, { code: "tr", label: "Türkçe", flag: "🇹🇷" }, { code: "pt", label: "Português (Brasil)", flag: "🇧🇷" }, { code: "es", label: "Español", flag: "🇪🇸" }];
 /** The app's language menu: a small list that drops under the row, the current language first, the rest in alphabetical order of their own names. */
 function openLangMenu(c) {
   const row = c.$("se-lang"), cur = c.lang(), stage = c.$("stage");

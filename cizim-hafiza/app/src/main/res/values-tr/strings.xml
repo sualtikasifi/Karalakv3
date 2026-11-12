@@ -467,7 +467,7 @@
     <string name="settings_language">Dil</string>
     <string name="settings_language_turkish">Türkçe</string>
     <string name="settings_language_english">English</string>
-    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_portuguese">Português (Brasil)</string>
     <string name="settings_language_spanish">Español</string>
 
     <!-- Daily engagement notification pools (util/NotificationMessages.kt).
@@ -812,7 +812,7 @@
     <string name="duel_rematch_action">Geri Meydan Oku</string>
     <string name="duel_challenge_sent">%1$s kişisine meydan okuma olarak gönderildi!</string>
     <string name="duel_create_title">Meydan Oku</string>
-    <string name="duel_create_opponent">%1$s ile düello</string>
+    <string name="duel_create_opponent">%1$s ile Düello</string>
     <string name="duel_create_explainer">Şimdi normal bir tur oyna — çizimlerin bittiğinde otomatik olarak %1$s kişisine bir meydan okuma olarak gönderilecek. O, uygulamayı bir sonraki açtığında aynı kelimelerle kendi çizimlerini yapıp tahmin edecek; sonuçlarınız karşılaştırılacak.</string>
     <string name="duel_create_start">Turu Başlat</string>
     <string name="duel_list_title">Düellolar</string>
@@ -1203,6 +1203,7 @@
 
     <!-- Kasalar — yalnızca KAZANILAN Arkadaşınla Yarış maçından kazanılır. -->
     <string name="chest_tier_silver">Çırak Kasası</string>
+    <string name="result_consolation_chest">Reklam izle, bir Çırak Kasası kazan</string>
     <string name="chest_tier_gold">Sanatçı Kasası</string>
     <string name="chest_tier_rare">Sürpriz Kasası</string>
     <string name="chest_won_title">Bir kasa kazandın!</string>
@@ -1217,6 +1218,9 @@
     <string name="chests_reward_gold">+%1$d Altın</string>
     <string name="chests_reward_gold_label">Altın</string>
     <string name="chests_reward_button">Harika!</string>
+    <string name="chest_double_ad">Reklam izle: altın ×2</string>
+    <string name="chest_double_done">Altın ikiye katlandı!</string>
+    <string name="chest_lost_watch">Reklam izle, hemen aç</string>
     <string name="home_xp_format">%1$d / %2$d XP</string>
     <string name="home_level_format">Sv. %1$d</string>
     <string name="home_pen_label">Kalemim</string>
@@ -1293,6 +1297,9 @@
     <string name="home_ad_watch">Reklam izle</string>
     <string name="home_ad_gold_earned">+500 altın kazandın!</string>
     <string name="home_ad_unavailable">Reklam şu an yüklenemedi, biraz sonra tekrar dene.</string>
+    <string name="home_xp_boost_offer">30 dk ×2 XP</string>
+    <string name="home_xp_boost_active_format">×2 XP · %1$s</string>
+    <string name="home_xp_boost_on">30 dakika çift XP başladı!</string>
     <string name="chest_home_start">Kasayı Aç</string>
     <string name="daily_challenge_ready_short">%1$d kelime · aynı kelimeler</string>
     <string name="daily_challenge_words_short">%1$d kelime</string>
@@ -1461,6 +1468,9 @@
     <string name="store_daily_joker_action">Reklam izle, ücretsiz al</string>
     <string name="store_daily_joker_claimed">Ücretsiz jokerin eklendi!</string>
     <string name="store_daily_joker_unavailable">Şu an reklam yok, biraz sonra tekrar dene.</string>
+    <string name="store_pen_try">1 oyun dene</string>
+    <string name="store_pen_trial_next">Sonraki oyunda</string>
+    <string name="store_pen_trial_armed">Bir sonraki oyununda bu kalemle çizeceksin!</string>
     <string name="xp_event_default_name">XP Etkinliği</string>
     <string name="xp_event_banner_sub">Şimdi her XP %1$s kazandırıyor</string>
     <string name="xp_event_banner_sub_percent">Şimdi her XP %1$s fazla kazandırıyor</string>
@@ -1828,5 +1838,5 @@
 
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_page_title">Bil Bakalım</string>
-    <string name="duel_create_streak_hint">🔥 Her gün bir düello tamamlanırsa arkadaş seriniz büyür.</string>
+    <string name="duel_create_streak_hint">Her gün bir düello tamamlanırsa arkadaş seriniz büyür.</string>
 </resources>

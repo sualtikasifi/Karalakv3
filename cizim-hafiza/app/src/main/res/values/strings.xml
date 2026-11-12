@@ -459,7 +459,7 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_turkish">Türkçe</string>
     <string name="settings_language_english">English</string>
-    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_portuguese">Português (Brasil)</string>
     <string name="settings_language_spanish">Español</string>
 
     <!-- Daily engagement notification pools (util/NotificationMessages.kt).
@@ -1190,6 +1190,7 @@
 
     <!-- Chests (kasalar) — earned only from a WON Race a Friend match. -->
     <string name="chest_tier_silver">Apprentice Chest</string>
+    <string name="result_consolation_chest">Watch an ad, win an Apprentice Chest</string>
     <string name="chest_tier_gold">Artist Chest</string>
     <string name="chest_tier_rare">Surprise Chest</string>
     <string name="chest_won_title">You won a chest!</string>
@@ -1204,6 +1205,9 @@
     <string name="chests_reward_gold">+%1$d Gold</string>
     <string name="chests_reward_gold_label">Gold</string>
     <string name="chests_reward_button">Great!</string>
+    <string name="chest_double_ad">Watch ad: gold ×2</string>
+    <string name="chest_double_done">Gold doubled!</string>
+    <string name="chest_lost_watch">Watch an ad and open it now</string>
     <string name="home_xp_format">%1$d / %2$d XP</string>
     <string name="home_level_format">Lv. %1$d</string>
     <string name="home_pen_label">Pen</string>
@@ -1280,6 +1284,9 @@
     <string name="home_ad_watch">Watch ad</string>
     <string name="home_ad_gold_earned">You earned 500 gold!</string>
     <string name="home_ad_unavailable">The ad could not load right now, try again in a moment.</string>
+    <string name="home_xp_boost_offer">30 min 2x XP</string>
+    <string name="home_xp_boost_active_format">2x XP · %1$s</string>
+    <string name="home_xp_boost_on">30 minutes of double XP started!</string>
     <string name="chest_home_start">Open chest</string>
     <string name="daily_challenge_ready_short">%1$d words · same for all</string>
     <string name="daily_challenge_words_short">%1$d words</string>
@@ -1448,6 +1455,9 @@
     <string name="store_daily_joker_action">Watch an ad, get it free</string>
     <string name="store_daily_joker_claimed">Your free joker was added!</string>
     <string name="store_daily_joker_unavailable">No ad available right now, try again shortly.</string>
+    <string name="store_pen_try">Try 1 game</string>
+    <string name="store_pen_trial_next">Next game</string>
+    <string name="store_pen_trial_armed">You will draw your next game with this pen!</string>
     <string name="xp_event_default_name">XP Event</string>
     <string name="xp_event_banner_sub">Every XP counts %1$s right now</string>
     <string name="xp_event_banner_sub_percent">Every XP pays %1$s more right now</string>
@@ -1815,5 +1825,5 @@
 
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_page_title">Guess It</string>
-    <string name="duel_create_streak_hint">🔥 Finish a duel together every day and your friend streak grows.</string>
+    <string name="duel_create_streak_hint">Finish a duel together every day and your friend streak grows.</string>
 </resources>

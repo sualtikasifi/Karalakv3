@@ -136,6 +136,8 @@ class GameViewModel @Inject constructor(
     private val vibratorHelper: VibratorHelper,
     private val soundManager: SoundManager,
     private val adManager: AdManager,
+    private val xpBoost: com.sualtikasifi.cizimhafiza.util.XpBoostStore,
+    private val penTrial: com.sualtikasifi.cizimhafiza.util.PenTrialStore,
     private val wordPoolSynchronizer: WordPoolSynchronizer,
     private val xpEventRepository: XpEventRepository,
     private val avatarPhotoResolver: com.sualtikasifi.cizimhafiza.util.AvatarPhotoResolver,
@@ -293,8 +295,12 @@ class GameViewModel @Inject constructor(
      */
     val selectedPen: StateFlow<PenSkin> = combine(
         settingsRepository.selectedPenSkinId,
-        settingsRepository.lifetimeXp
-    ) { selectedId, xp -> PenSkin.resolve(selectedId, LevelProgressState.forXp(xp).level) }
+        settingsRepository.lifetimeXp,
+        penTrial.armed
+    ) { selectedId, xp, trial ->
+        // A pen tried through a rewarded ad (store) is this game's pen, until the game ends (see finishing below).
+        PenSkin.entries.firstOrNull { it.name == trial } ?: PenSkin.resolve(selectedId, LevelProgressState.forXp(xp).level)
+    }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -1156,6 +1162,7 @@ class GameViewModel @Inject constructor(
 
         val fastest = results.filter { it.isCorrect }.minOfOrNull { it.responseTimeMs }
         val resultItems = results.map { ResultItem(it.word.text, it.isCorrect, it.strokes, selectedPen.value.name) }
+        penTrial.consume() // a pen tried through an ad was for this one game
 
         // On top of the normal session save/XP/streak above — a duel
         // challenge is still a full, real round for the player who played
@@ -1311,7 +1318,11 @@ class GameViewModel @Inject constructor(
             // The rating ask waits for the main menu after the third game — see MainMenuViewModel.checkRatingPrompt.
             showRatingPrompt = false,
             chestWon = chestWon,
-            chestLost = quickMatchWon && chestWon == null
+            chestLost = quickMatchWon && chestWon == null,
+            xpBoosted = xpBoost.multiplierNow() > 1.0,
+            consolationOffer = ghost != null && totalScore < ghost.totalScore && settingsRepository.consolationChestAvailable() &&
+                adManager.placementEnabled("chest_consolation") && adManager.rewardedReady(),
+            chestLostTier = chestAward?.lostTier
         )
         _phase.value = resultPhase
         // Only now, once there is finally something to compare them with:
@@ -1399,6 +1410,24 @@ class GameViewModel @Inject constructor(
             forceMinGapMillis = if (isDaily) 0L else LEVEL_AD_MIN_GAP_MILLIS,
             placement = if (isDaily) "interstitial_daily" else if (evenLevel) "interstitial_level" else "interstitial_result_solo"
         )
+    }
+
+
+    /** The lost match's consolation: a rewarded ad earns one Çırak chest in a free slot; [onChest] gets it, or null. */
+    fun claimConsolationChest(activity: android.app.Activity, onChest: (com.sualtikasifi.cizimhafiza.domain.model.Chest?) -> Unit) {
+        adManager.maybeShowRewarded(activity, "chest_consolation") { outcome ->
+            onChest(if (outcome == com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.EARNED) settingsRepository.awardConsolationChest() else null)
+        }
+    }
+
+    /** Whether the lost chest can be opened with an ad right now (the placement is on and an ad is loaded). */
+    fun canOfferLostChestAd(): Boolean = adManager.placementEnabled("chest_lost_open") && adManager.rewardedReady()
+
+    /** Watches a rewarded ad and, if it is earned, opens the chest that found no free slot on the spot; [onReward] gets its loot, or null. */
+    fun openLostChestWithAd(activity: android.app.Activity, tier: com.sualtikasifi.cizimhafiza.domain.model.ChestTier, onReward: (com.sualtikasifi.cizimhafiza.domain.model.ChestReward?) -> Unit) {
+        adManager.maybeShowRewarded(activity, "chest_lost_open") { outcome ->
+            onReward(if (outcome == com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.EARNED) settingsRepository.openChestNow(tier) else null)
+        }
     }
 
     /**

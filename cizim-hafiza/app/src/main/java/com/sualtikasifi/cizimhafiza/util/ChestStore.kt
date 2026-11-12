@@ -100,6 +100,33 @@ class ChestStore @Inject constructor(
      * would have handed out, which is what makes leaving chests unopened cost something. Returns the chest only if a
      * slot was free; with the Yedek Yuva rune a chest that found no slot waits in the reserve slot instead.
      */
+    // --- The consolation chest: a lost Hızlı Eşleş, a rewarded ad, one Çırak (silver) chest, at most twice a day ---
+
+    fun hasFreeSlot(): Boolean = _chestSlots.value.any { it == null }
+
+    fun consolationOffersLeft(today: Long): Int =
+        ChestConsolation.offersLeft(prefs.getLong(KEY_CONSOLATION_DAY, -1L), prefs.getInt(KEY_CONSOLATION_COUNT, 0), today)
+
+    /** Puts a silver chest in the first free slot for the earned ad (null when none is free); does not move the win cycle. */
+    fun awardConsolation(today: Long): Chest? = synchronized(ledger) {
+        if (consolationOffersLeft(today) <= 0) return null
+        val slots = _chestSlots.value
+        val freeIndex = slots.indexOfFirst { it == null }
+        if (freeIndex < 0) return null
+        val chest = Chest(id = UUID.randomUUID().toString(), tier = ChestTier.SILVER)
+        val count = if (prefs.getLong(KEY_CONSOLATION_DAY, -1L) == today) prefs.getInt(KEY_CONSOLATION_COUNT, 0) + 1 else 1
+        saveSlots(slots.toMutableList().apply { this[freeIndex] = chest }) {
+            putLong(KEY_CONSOLATION_DAY, today)
+            putInt(KEY_CONSOLATION_COUNT, count)
+        }
+        chest
+    }
+
+    /** The tier of the chest that last found every slot full (and no reserve), until [takeLostTier] reads it: what an ad could still open. */
+    @Volatile private var lostTier: ChestTier? = null
+
+    fun takeLostTier(): ChestTier? = lostTier.also { lostTier = null }
+
     fun awardChestForWin(): Chest? = synchronized(ledger) {
         val seed = cycleSeed
         val index = prefs.getInt(SettingsRepository.KEY_CHEST_CYCLE_INDEX, 0)
@@ -112,7 +139,7 @@ class ChestStore @Inject constructor(
                 putInt(SettingsRepository.KEY_CHEST_CYCLE_INDEX, index + 1)
                 if (reserve) putString(SettingsRepository.KEY_CHEST_RESERVE, Json.encodeToString(chest))
             }
-            if (reserve) _chestReserve.value = chest
+            if (reserve) _chestReserve.value = chest else lostTier = chest.tier
             return null
         }
         saveSlots(slots.toMutableList().apply { this[freeIndex] = chest }) {
@@ -233,3 +260,13 @@ class ChestStore @Inject constructor(
         _chestReserve.value = loadReserve()
     }
 }
+
+/** The daily limit of the consolation chest, pure so it can be tested. */
+object ChestConsolation {
+    const val MAX_PER_DAY = 2
+    fun offersLeft(storedDay: Long, storedCount: Int, today: Long): Int =
+        if (storedDay != today) MAX_PER_DAY else (MAX_PER_DAY - storedCount).coerceAtLeast(0)
+}
+
+private const val KEY_CONSOLATION_DAY = "chest_consolation_day"
+private const val KEY_CONSOLATION_COUNT = "chest_consolation_count"

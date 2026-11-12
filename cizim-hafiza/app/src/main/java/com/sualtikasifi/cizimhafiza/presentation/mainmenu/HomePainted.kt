@@ -143,6 +143,8 @@ internal fun PaintedHome(
     pen: PenSkin,
     gold: Int,
     xpEvent: com.sualtikasifi.cizimhafiza.domain.repository.XpEvent?,
+    xpBoost: XpBoostUi,
+    onXpBoost: () -> Unit,
     dailyState: com.sualtikasifi.cizimhafiza.util.DailyChallengeState,
     adGoldNextAt: Long,
     adChestNextAt: Long,
@@ -421,6 +423,38 @@ internal fun PaintedHome(
                 label = stringResource(R.string.home_xp_format, shownProgress.xpIntoLevel, shownProgress.xpForThisLevel),
                 modifier = Modifier.fillMaxSize()
             )
+        }
+
+        // 30 minutes of double XP for a rewarded ad: a small chip under the XP bar (the only free strip there). While it runs it is the
+        // countdown; otherwise the offer, pulsing a little. Never a pop-up.
+        if (xpBoost.activeUntil > 0L || xpBoost.offerable) {
+            val running = xpBoost.activeUntil > 0L
+            val left = if (running) ((xpBoost.activeUntil - System.currentTimeMillis()) / 1000).coerceAtLeast(0) else 0
+            Row(
+                box(222f, 496f, if (running) 520f else 560f, 536f)
+                    .then(if (running) Modifier else Modifier.breathing(0.04f, 1400))
+                    .background(
+                        Brush.verticalGradient(if (running) listOf(Color(0xFFFFE566), Color(0xFFFFB300)) else listOf(Color(0xFFFFF3D6), Color(0xFFFFD98A))),
+                        RoundedCornerShape(50)
+                    )
+                    .border(2.dp, if (running) Color(0xFFB36B00) else Color(0xFFE08A1B), RoundedCornerShape(50))
+                    .then(if (running) Modifier else Modifier.clickable(interactionSource = noRipple, indication = null, onClick = onXpBoost))
+                    .padding(horizontal = (6f * us).dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (!running) {
+                    Box(Modifier.size((26f * us).dp).background(Color(0xFFF58A1F), CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size((20f * us).dp))
+                    }
+                }
+                FitText(
+                    text = if (running) stringResource(R.string.home_xp_boost_active_format, "%d:%02d".format(left / 60, left % 60))
+                    else stringResource(R.string.home_xp_boost_offer),
+                    style = PaintedStyle(color = if (running) Color(0xFF5A2E00) else HomeInk, fontSize = fs(AdPillText), textAlign = TextAlign.Center),
+                    minScale = 0.6f,
+                    modifier = Modifier.weight(1f).padding(horizontal = (6f * us).dp)
+                )
+            }
         }
 
         androidx.compose.runtime.key(xpGain) { if (xpGain != 0) GainFloat("${if (xpGain > 0) "+" else "-"}${NumberFormat.getIntegerInstance().format(kotlin.math.abs(xpGain))} XP", fs(30f), box(540f, 396f, 780f, 450f), loss = xpGain < 0) }

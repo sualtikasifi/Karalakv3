@@ -460,7 +460,7 @@
     <string name="settings_language">Idioma</string>
     <string name="settings_language_turkish">Türkçe</string>
     <string name="settings_language_english">English</string>
-    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_portuguese">Português (Brasil)</string>
     <string name="settings_language_spanish">Español</string>
 
     <!-- Daily engagement notification pools (util/NotificationMessages.kt).
@@ -1191,6 +1191,7 @@
 
     <!-- Chests (kasalar) — earned only from a WON Race a Friend match. -->
     <string name="chest_tier_silver">Cofre de Aprendiz</string>
+    <string name="result_consolation_chest">Ver anuncio y ganar un Cofre de Aprendiz</string>
     <string name="chest_tier_gold">Cofre de Artista</string>
     <string name="chest_tier_rare">Cofre Sorpresa</string>
     <string name="chest_won_title">¡Ganaste un cofre!</string>
@@ -1205,6 +1206,9 @@
     <string name="chests_reward_gold">+%1$d de Oro</string>
     <string name="chests_reward_gold_label">Oro</string>
     <string name="chests_reward_button">¡Genial!</string>
+    <string name="chest_double_ad">Ver anuncio: oro ×2</string>
+    <string name="chest_double_done">¡Oro duplicado!</string>
+    <string name="chest_lost_watch">Ver anuncio y abrir ya</string>
     <string name="home_xp_format">%1$d / %2$d XP</string>
     <string name="home_level_format">Nv. %1$d</string>
     <string name="home_pen_label">Lápiz</string>
@@ -1281,6 +1285,9 @@
     <string name="home_ad_watch">Ver anuncio</string>
     <string name="home_ad_gold_earned">¡Ganaste 500 de oro!</string>
     <string name="home_ad_unavailable">El anuncio no cargó ahora, inténtalo en un momento.</string>
+    <string name="home_xp_boost_offer">30 min XP ×2</string>
+    <string name="home_xp_boost_active_format">XP ×2 · %1$s</string>
+    <string name="home_xp_boost_on">¡Empezaron 30 minutos de XP doble!</string>
     <string name="chest_home_start">Abrir cofre</string>
     <string name="daily_challenge_ready_short">%1$d palabras · iguales para todos</string>
     <string name="daily_challenge_words_short">%1$d palabras</string>
@@ -1449,6 +1456,9 @@
     <string name="store_daily_joker_action">Mira un anuncio y llévatelo gratis</string>
     <string name="store_daily_joker_claimed">¡Se agregó tu comodín gratis!</string>
     <string name="store_daily_joker_unavailable">No hay anuncios disponibles ahora, inténtalo en un rato.</string>
+    <string name="store_pen_try">Probar 1 juego</string>
+    <string name="store_pen_trial_next">Próximo juego</string>
+    <string name="store_pen_trial_armed">¡Dibujarás tu próximo juego con este lápiz!</string>
     <string name="xp_event_default_name">Evento de XP</string>
     <string name="xp_event_banner_sub">Todo el XP vale %1$s ahora</string>
     <string name="xp_event_banner_sub_percent">Todo el XP da %1$s más ahora</string>
@@ -1816,5 +1826,5 @@
 
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_page_title">Adivina</string>
-    <string name="duel_create_streak_hint">🔥 Si completan un duelo cada día, su racha de amigos crece.</string>
+    <string name="duel_create_streak_hint">Si completan un duelo cada día, su racha de amigos crece.</string>
 </resources>

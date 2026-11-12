@@ -22,7 +22,8 @@ import javax.inject.Inject
 class StoreViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val authRepository: com.sualtikasifi.cizimhafiza.domain.repository.AuthRepository,
-    private val adManager: com.sualtikasifi.cizimhafiza.ads.AdManager
+    private val adManager: com.sualtikasifi.cizimhafiza.ads.AdManager,
+    private val penTrial: com.sualtikasifi.cizimhafiza.util.PenTrialStore
 ) : ViewModel() {
 
     val gold: StateFlow<Int> = settingsRepository.goldBalance
@@ -72,6 +73,29 @@ class StoreViewModel @Inject constructor(
                     if (settingsRepository.claimDailyJoker() != null) {
                         onNotice(com.sualtikasifi.cizimhafiza.R.string.store_daily_joker_claimed, false)
                     }
+                }
+                com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.SKIPPED -> Unit
+                else -> onNotice(com.sualtikasifi.cizimhafiza.R.string.store_daily_joker_unavailable, true)
+            }
+        }
+    }
+
+    /** The pen armed for the next game (shown as "next game" on its card), or null. */
+    val trialPen: StateFlow<String?> = penTrial.armed
+
+    /** The "try for one game" button of an unowned pen: only while today still has a trial for it, the placement is on and an ad is loaded. */
+    fun canTryPen(skin: PenSkin): Boolean = penTrialAdReady() && penTrial.canTry(skin.name)
+
+    /** Whether any "try a pen" button may be drawn right now: the placement is on, an ad is loaded, and no trial is waiting for its game. */
+    fun penTrialAdReady(): Boolean = adManager.placementEnabled("pen_trial") && adManager.rewardedReady() && penTrial.armed.value == null
+
+    fun tryPen(activity: android.app.Activity, skin: PenSkin, onNotice: (Int, Boolean) -> Unit) {
+        if (!penTrial.canTry(skin.name)) return
+        adManager.maybeShowRewarded(activity, "pen_trial") { outcome ->
+            when (outcome) {
+                com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.EARNED -> {
+                    penTrial.arm(skin.name)
+                    onNotice(com.sualtikasifi.cizimhafiza.R.string.store_pen_trial_armed, false)
                 }
                 com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.SKIPPED -> Unit
                 else -> onNotice(com.sualtikasifi.cizimhafiza.R.string.store_daily_joker_unavailable, true)

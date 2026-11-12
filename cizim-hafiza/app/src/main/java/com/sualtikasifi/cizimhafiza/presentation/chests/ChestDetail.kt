@@ -134,7 +134,11 @@ fun ChestDetailHost(selectedId: String?, onDismiss: () -> Unit, viewModel: Chest
     }
 
     lastReward?.let { reward ->
-        ChestOpeningDialog(reward = reward, onDismiss = viewModel::consumeLastReward)
+        // Offered once per opening, and only when an ad is already loaded (decided as the board comes up, not while it is open).
+        val offer = remember(reward) {
+            if (activity != null && viewModel.canOfferDouble(reward)) ChestDoubleOffer { done -> viewModel.doubleGold(activity, reward, done) } else null
+        }
+        ChestOpeningDialog(reward = reward, onDismiss = { viewModel.consumeLastReward(); activity?.let(viewModel::afterChestBoard) }, doubleOffer = offer)
     }
 }
 

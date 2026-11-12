@@ -18,7 +18,8 @@ import javax.inject.Singleton
 @Singleton
 class XpEventRepositoryImpl @Inject constructor(
     private val firestore: FirebaseFirestore,
-    private val auth: com.google.firebase.auth.FirebaseAuth
+    private val auth: com.google.firebase.auth.FirebaseAuth,
+    private val xpBoost: com.sualtikasifi.cizimhafiza.util.XpBoostStore
 ) : XpEventRepository {
 
     private val eventDoc get() = firestore.document("config/xpEvent")
@@ -61,9 +62,11 @@ class XpEventRepositoryImpl @Inject constructor(
     override suspend fun currentMultiplier(): Double {
         // The live listener knows the instant an event starts or stops; the
         // 5-minute cache below is only the fallback before it has reported.
-        val event = (if (liveReady) _live.value else current().getOrNull()) ?: return 1.0
+        // The player's own 30-minute boost (a rewarded ad) counts like an event, and the larger of the two applies: they do not stack.
+        val boost = xpBoost.multiplierNow()
+        val event = (if (liveReady) _live.value else current().getOrNull()) ?: return boost
         val stillRunning = event.active && System.currentTimeMillis() < event.endsAtMillis
-        return if (stillRunning) event.multiplier else 1.0
+        return maxOf(boost, if (stillRunning) event.multiplier else 1.0)
     }
 
     override suspend fun current(): Result<XpEvent?> {
