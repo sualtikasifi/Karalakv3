@@ -281,9 +281,9 @@ private fun AchievementProgressHeader(unlockedCount: Int, total: Int, waiting: I
             // Palette and trophy at the two ends, a laurel branch on each side of the count.
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Image(painterResource(R.drawable.ach_hero_palette), null, Modifier.height(56.dp))
+                    Image(painterResource(R.drawable.ach_hero_palette), null, Modifier.height(56.dp), filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
                 }
-                Image(painterResource(R.drawable.ach_laurel_l), null, Modifier.height(64.dp))
+                Image(painterResource(R.drawable.ach_laurel_l), null, Modifier.height(64.dp), filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 6.dp)) {
                     Text(
                         text = stringResource(R.string.achievements_progress_count_format, unlockedCount, total),
@@ -301,9 +301,9 @@ private fun AchievementProgressHeader(unlockedCount: Int, total: Int, waiting: I
                         maxLines = 1
                     )
                 }
-                Image(painterResource(R.drawable.ach_laurel_r), null, Modifier.height(64.dp))
+                Image(painterResource(R.drawable.ach_laurel_r), null, Modifier.height(64.dp), filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Image(painterResource(R.drawable.ach_hero_trophy), null, Modifier.height(56.dp))
+                    Image(painterResource(R.drawable.ach_hero_trophy), null, Modifier.height(56.dp), filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
