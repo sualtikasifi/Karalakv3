@@ -1204,6 +1204,9 @@
     <string name="chests_reward_gold">+%1$d Gold</string>
     <string name="chests_reward_gold_label">Gold</string>
     <string name="chests_reward_button">Great!</string>
+    <string name="chest_double_ad">Watch ad: gold ×2</string>
+    <string name="chest_double_done">Gold doubled!</string>
+    <string name="chest_lost_watch">Watch an ad and open it now</string>
     <string name="home_xp_format">%1$d / %2$d XP</string>
     <string name="home_level_format">Lv. %1$d</string>
     <string name="home_pen_label">Pen</string>

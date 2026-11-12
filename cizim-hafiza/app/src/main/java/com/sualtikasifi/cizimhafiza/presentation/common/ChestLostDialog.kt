@@ -17,7 +17,11 @@ import com.sualtikasifi.cizimhafiza.R
 
 /** Shown when a win earned a chest but all four slots were full — so the player is told, not silently robbed. */
 @Composable
-fun ChestLostDialog(onDismiss: () -> Unit) {
+/**
+ * [onWatchAd], when given, adds the choice "watch an ad and open it now": the chest that found no free slot is opened on the spot instead
+ * of being lost. The dialog was going to be shown anyway, so it costs the player no extra interruption.
+ */
+fun ChestLostDialog(onDismiss: () -> Unit, onWatchAd: (() -> Unit)? = null) {
     AppWindowDialog(title = stringResource(R.string.chest_lost_title), onDismiss = onDismiss) {
         Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(text = "📦", style = MaterialTheme.typography.displayMedium)
@@ -27,7 +31,12 @@ fun ChestLostDialog(onDismiss: () -> Unit) {
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(4.dp))
-            PrimaryButton(text = stringResource(R.string.chest_won_button), onClick = onDismiss, modifier = Modifier.fillMaxWidth())
+            if (onWatchAd != null) {
+                PrimaryButton(text = stringResource(R.string.chest_lost_watch), onClick = onWatchAd, modifier = Modifier.fillMaxWidth())
+                androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
+            } else {
+                PrimaryButton(text = stringResource(R.string.chest_won_button), onClick = onDismiss, modifier = Modifier.fillMaxWidth())
+            }
         }
     }
 }

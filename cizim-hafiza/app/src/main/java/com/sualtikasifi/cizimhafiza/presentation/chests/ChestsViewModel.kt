@@ -43,6 +43,7 @@ class ChestsViewModel @Inject constructor(
     val lastReward: StateFlow<ChestReward?> = _lastReward.asStateFlow()
 
     init {
+        adManager.warmUp() // so a rewarded ad is already in memory when a chest opens and offers to double its gold
         viewModelScope.launch {
             while (true) {
                 _nowMillis.value = System.currentTimeMillis()
@@ -58,6 +59,21 @@ class ChestsViewModel @Inject constructor(
     fun open(chestId: String) {
         settingsRepository.openChestIfReady(chestId)?.let { _lastReward.value = it }
     }
+
+    /**
+     * A chest opened from its slot may be doubled: [onResult] says whether the rewarded ad was earned, in which case the chest's
+     * gold is paid once more. Joker and pen drops are not doubled. Whether to offer it at all is [canOfferDouble].
+     */
+    fun doubleGold(activity: android.app.Activity, reward: com.sualtikasifi.cizimhafiza.domain.model.ChestReward, onResult: (Boolean) -> Unit) {
+        adManager.maybeShowRewarded(activity, DOUBLE_PLACEMENT) { outcome ->
+            val earned = outcome == com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.EARNED
+            if (earned) settingsRepository.earnGold(reward.gold)
+            onResult(earned)
+        }
+    }
+
+    fun canOfferDouble(reward: com.sualtikasifi.cizimhafiza.domain.model.ChestReward): Boolean =
+        reward.gold > 0 && adManager.placementEnabled(DOUBLE_PLACEMENT) && adManager.rewardedReady()
 
     fun consumeLastReward() {
         _lastReward.value = null
@@ -103,5 +119,9 @@ class ChestsViewModel @Inject constructor(
                 else -> onNotice(com.sualtikasifi.cizimhafiza.R.string.chest_speedup_unavailable)
             }
         }
+    }
+
+    private companion object {
+        const val DOUBLE_PLACEMENT = "chest_double"
     }
 }

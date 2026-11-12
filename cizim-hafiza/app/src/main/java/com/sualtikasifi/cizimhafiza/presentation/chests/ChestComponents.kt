@@ -234,8 +234,15 @@ private fun ChestTier.openVideoTailMs(): Long = 150L
  * animation is presentation only, so backing out of the app mid-way can
  * never lose it.
  */
+/**
+ * "Reklam izle: altın ×2" on the reward board: [watch] shows the rewarded ad and reports whether it was earned (the caller pays
+ * the extra gold). Null offer = no button. Only a chest opened from its slot gets one; a coupon's, a login's or the free chest
+ * does not (those are already gifts or already behind an ad).
+ */
+class ChestDoubleOffer(val watch: (onResult: (earned: Boolean) -> Unit) -> Unit)
+
 @Composable
-fun ChestOpeningDialog(reward: ChestReward, onDismiss: () -> Unit) {
+fun ChestOpeningDialog(reward: ChestReward, onDismiss: () -> Unit, doubleOffer: ChestDoubleOffer? = null) {
     Dialog(
         onDismissRequest = {},
         properties = DialogProperties(
@@ -245,12 +252,12 @@ fun ChestOpeningDialog(reward: ChestReward, onDismiss: () -> Unit) {
             decorFitsSystemWindows = false
         )
     ) {
-        ChestOpeningScene(reward = reward, onDismiss = onDismiss)
+        ChestOpeningScene(reward = reward, onDismiss = onDismiss, doubleOffer = doubleOffer)
     }
 }
 
 @Composable
-private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
+private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit, doubleOffer: ChestDoubleOffer?) {
     val tier = reward.tier
     val accent = tier.accent()
     val light = tier.glow()
@@ -273,6 +280,8 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
     val button = remember { Animatable(0f) }
     // 0 = the opening video is playing, 1 = it just ended and the board is coming in, 2 = settled, "Harika!" is live.
     var stage by remember { mutableIntStateOf(0) }
+    // The gold-doubling offer: 0 = offered, 1 = the ad is on screen, 2 = doubled, 3 = not offered (no offer, no gold, or no ad ready).
+    var doubleState by remember { mutableIntStateOf(if (doubleOffer != null && reward.gold > 0) 0 else 3) }
     val haptic = LocalHapticFeedback.current
     val sound = com.sualtikasifi.cizimhafiza.presentation.common.rememberSoundManager()
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -490,6 +499,30 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                             }
                         }
                     }
+                    // The offer to double the gold, on the paper under the prizes: a small second choice, never the main button.
+                    if (doubleState != 3 && stage == 2) {
+                        DoubleGoldPill(
+                            state = doubleState,
+                            u = u,
+                            fs = ::fs,
+                            onClick = {
+                                if (doubleState == 0 && doubleOffer != null) {
+                                    doubleState = 1
+                                    doubleOffer.watch { earned ->
+                                        if (earned) {
+                                            doubleState = 2
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            sound.playCoinShower()
+                                            scope.launch { count.animateTo(reward.gold * 2f, tween(900, easing = FastOutSlowInEasing)) }
+                                        } else {
+                                            doubleState = 0
+                                        }
+                                    }
+                                }
+                            },
+                            modifier = Modifier.at((BOARD_W - 560f) / 2f, 1528f, 560f, 86f)
+                        )
+                    }
                     // "Harika!" on the leafy orange button, once everything is in.
                     Box(
                         Modifier.at(210f, 1712f, 660f, 275f)
@@ -511,6 +544,42 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit) {
                     }
                 }
             }
+        }
+    }
+}
+
+/** The small orange "Reklam izle: altın ×2" pill; a green tick once it has paid. */
+@Composable
+private fun DoubleGoldPill(state: Int, u: Dp, fs: (Float) -> androidx.compose.ui.unit.TextUnit, onClick: () -> Unit, modifier: Modifier) {
+    val done = state == 2
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
+    Row(
+        modifier = modifier
+            .shadow(u * 8f, shape, ambientColor = Color(0xFF6E3C0A), spotColor = Color(0xFF6E3C0A))
+            .background(
+                if (done) Brush.verticalGradient(listOf(Color(0xFF6FD97A), Color(0xFF2FA248)))
+                else Brush.verticalGradient(listOf(Color(0xFFFFB347), Color(0xFFF47721))),
+                shape
+            )
+            .border(u * 5f, if (done) Color(0xFF14602A) else Color(0xFFA9460A), shape)
+            .then(if (state == 0) Modifier.pressable(pressedScale = 0.95f, onClick = onClick) else Modifier),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (state == 1) {
+            androidx.compose.material3.CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp, modifier = Modifier.size(u * 40f))
+        } else {
+            Text(
+                text = if (done) "✓" else "▶",
+                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color.White, fontSize = fs(40f), textAlign = TextAlign.Center)
+            )
+            Spacer(Modifier.width(u * 14f))
+            RewardLettering(
+                text = stringResource(if (done) R.string.chest_double_done else R.string.chest_double_ad),
+                size = fs(36f),
+                top = Color.White, bottom = Color(0xFFFFEBC8), outline = if (done) Color(0xFF0E4A20) else Color(0xFF823200),
+                modifier = Modifier.weight(1f, fill = false).fillMaxHeight(0.8f)
+            )
         }
     }
 }

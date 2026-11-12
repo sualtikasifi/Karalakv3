@@ -1311,7 +1311,8 @@ class GameViewModel @Inject constructor(
             // The rating ask waits for the main menu after the third game — see MainMenuViewModel.checkRatingPrompt.
             showRatingPrompt = false,
             chestWon = chestWon,
-            chestLost = quickMatchWon && chestWon == null
+            chestLost = quickMatchWon && chestWon == null,
+            chestLostTier = chestAward?.lostTier
         )
         _phase.value = resultPhase
         // Only now, once there is finally something to compare them with:
@@ -1399,6 +1400,17 @@ class GameViewModel @Inject constructor(
             forceMinGapMillis = if (isDaily) 0L else LEVEL_AD_MIN_GAP_MILLIS,
             placement = if (isDaily) "interstitial_daily" else if (evenLevel) "interstitial_level" else "interstitial_result_solo"
         )
+    }
+
+
+    /** Whether the lost chest can be opened with an ad right now (the placement is on and an ad is loaded). */
+    fun canOfferLostChestAd(): Boolean = adManager.placementEnabled("chest_lost_open") && adManager.rewardedReady()
+
+    /** Watches a rewarded ad and, if it is earned, opens the chest that found no free slot on the spot; [onReward] gets its loot, or null. */
+    fun openLostChestWithAd(activity: android.app.Activity, tier: com.sualtikasifi.cizimhafiza.domain.model.ChestTier, onReward: (com.sualtikasifi.cizimhafiza.domain.model.ChestReward?) -> Unit) {
+        adManager.maybeShowRewarded(activity, "chest_lost_open") { outcome ->
+            onReward(if (outcome == com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.EARNED) settingsRepository.openChestNow(tier) else null)
+        }
     }
 
     /**

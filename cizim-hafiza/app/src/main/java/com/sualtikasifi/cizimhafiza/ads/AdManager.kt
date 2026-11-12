@@ -421,6 +421,13 @@ class AdManager @Inject constructor(
     /** Whether a placement may be offered at all (config/ads): a rewarded button for a switched-off placement is simply not drawn. */
     fun placementEnabled(placement: String): Boolean = GameConstants.ADMOB_ENABLED && !remote.isOff(placement)
 
+    /** A rewarded ad is loaded and fresh, so a button that offers one can be drawn: an offer that then makes the player wait is worse than none. */
+    fun rewardedReady(): Boolean {
+        if (!GameConstants.ADMOB_ENABLED) return false
+        dropStale()
+        return cachedRewarded != null
+    }
+
     /** A rewarded ad is on screen: it starts the quiet that keeps an interstitial from following it. */
     private fun recordRewardedShown() {
         val now = System.currentTimeMillis()

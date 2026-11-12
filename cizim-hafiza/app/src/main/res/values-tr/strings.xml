@@ -1217,6 +1217,9 @@
     <string name="chests_reward_gold">+%1$d Altın</string>
     <string name="chests_reward_gold_label">Altın</string>
     <string name="chests_reward_button">Harika!</string>
+    <string name="chest_double_ad">Reklam izle: altın ×2</string>
+    <string name="chest_double_done">Altın ikiye katlandı!</string>
+    <string name="chest_lost_watch">Reklam izle, hemen aç</string>
     <string name="home_xp_format">%1$d / %2$d XP</string>
     <string name="home_level_format">Sv. %1$d</string>
     <string name="home_pen_label">Kalemim</string>

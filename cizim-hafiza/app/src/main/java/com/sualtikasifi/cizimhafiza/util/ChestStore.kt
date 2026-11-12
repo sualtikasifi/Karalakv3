@@ -100,6 +100,11 @@ class ChestStore @Inject constructor(
      * would have handed out, which is what makes leaving chests unopened cost something. Returns the chest only if a
      * slot was free; with the Yedek Yuva rune a chest that found no slot waits in the reserve slot instead.
      */
+    /** The tier of the chest that last found every slot full (and no reserve), until [takeLostTier] reads it: what an ad could still open. */
+    @Volatile private var lostTier: ChestTier? = null
+
+    fun takeLostTier(): ChestTier? = lostTier.also { lostTier = null }
+
     fun awardChestForWin(): Chest? = synchronized(ledger) {
         val seed = cycleSeed
         val index = prefs.getInt(SettingsRepository.KEY_CHEST_CYCLE_INDEX, 0)
@@ -112,7 +117,7 @@ class ChestStore @Inject constructor(
                 putInt(SettingsRepository.KEY_CHEST_CYCLE_INDEX, index + 1)
                 if (reserve) putString(SettingsRepository.KEY_CHEST_RESERVE, Json.encodeToString(chest))
             }
-            if (reserve) _chestReserve.value = chest
+            if (reserve) _chestReserve.value = chest else lostTier = chest.tier
             return null
         }
         saveSlots(slots.toMutableList().apply { this[freeIndex] = chest }) {

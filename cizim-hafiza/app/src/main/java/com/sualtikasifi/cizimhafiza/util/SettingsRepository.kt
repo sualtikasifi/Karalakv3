@@ -433,10 +433,13 @@ class SettingsRepository @Inject constructor(
     val chestCycleIndexForBackup: Int get() = chests.chestCycleIndexForBackup
 
     /** A won match's chest award: [chest] is null when every slot was full, in which case nothing drops. */
-    data class ChestAward(val chest: Chest?, val instantReward: ChestReward?)
+    data class ChestAward(val chest: Chest?, val instantReward: ChestReward?, val lostTier: ChestTier? = null)
 
     fun awardChestForWin(): Chest? = chests.awardChestForWin()
-    fun awardChestForWinOrPay(): ChestAward = ChestAward(chests.awardChestForWin(), null)
+    fun awardChestForWinOrPay(): ChestAward {
+        val chest = chests.awardChestForWin()
+        return ChestAward(chest, null, if (chest == null) chests.takeLostTier() else null)
+    }
 
     /** Opens a chest of [tier] on the spot (a coupon's chest): its reward is paid at once and no slot is needed. */
     fun openChestNow(tier: ChestTier): ChestReward = chests.payOutright(tier)

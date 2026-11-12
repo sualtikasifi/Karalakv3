@@ -7,6 +7,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.ChestReward
 import com.sualtikasifi.cizimhafiza.domain.model.ChestTier
 import com.sualtikasifi.cizimhafiza.domain.model.JokerType
 import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
+import com.sualtikasifi.cizimhafiza.presentation.chests.ChestDoubleOffer
 import com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog
 import com.sualtikasifi.cizimhafiza.presentation.theme.CizimHafizaTheme
 
@@ -32,6 +33,8 @@ class ChestRewardPreviewActivity : ComponentActivity() {
             )
             else -> ChestReward(tier, gold = 802, jokers = mapOf(JokerType.LETTER_COUNT to 1))
         }
-        setContent { CizimHafizaTheme { ChestOpeningDialog(reward = reward, onDismiss = { finish() }) } }
+        // double=1: the "watch an ad: gold x2" offer, answered as if the ad had been earned (after a short wait).
+        val offer = if (intent.getStringExtra("double") == "1") ChestDoubleOffer { done -> window.decorView.postDelayed({ done(true) }, 800) } else null
+        setContent { CizimHafizaTheme { ChestOpeningDialog(reward = reward, onDismiss = { finish() }, doubleOffer = offer) } }
     }
 }

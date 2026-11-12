@@ -127,6 +127,8 @@ sealed interface GamePhase {
         val chestWon: com.sualtikasifi.cizimhafiza.domain.model.Chest? = null,
         /** The win earned a chest but every slot was full, so it was lost. */
         val chestLost: Boolean = false,
+        /** With [chestLost]: the tier of the chest that found no free slot, which a rewarded ad can still open. */
+        val chestLostTier: com.sualtikasifi.cizimhafiza.domain.model.ChestTier? = null,
         /**
          * True once the rewarded-ad "double this round's XP" button has
          * already been used. Checkpointed alongside the rest of this phase

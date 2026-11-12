@@ -133,6 +133,8 @@ import com.sualtikasifi.cizimhafiza.util.GameConstants
 @Composable
 fun ResultScreen(
     state: GamePhase.Result,
+    /** "Watch an ad and open it now" for a chest that found no free slot; null when there is nothing to offer. */
+    onWatchLostChestAd: ((onReward: (com.sualtikasifi.cizimhafiza.domain.model.ChestReward?) -> Unit) -> Unit)? = null,
     onPlayAgain: () -> Unit,
     onMainMenu: () -> Unit,
     onLevelNextAction: (() -> Unit)? = null,
@@ -590,7 +592,14 @@ fun ResultScreen(
     }
     if (state.chestLost) {
         var chestLostDismissed by remember { mutableStateOf(false) }
-        if (!chestLostDismissed) com.sualtikasifi.cizimhafiza.presentation.common.ChestLostDialog(onDismiss = { chestLostDismissed = true })
+        var lostChestReward by remember { mutableStateOf<com.sualtikasifi.cizimhafiza.domain.model.ChestReward?>(null) }
+        if (!chestLostDismissed) com.sualtikasifi.cizimhafiza.presentation.common.ChestLostDialog(
+            onDismiss = { chestLostDismissed = true },
+            onWatchAd = onWatchLostChestAd?.let { watch -> { watch { reward -> if (reward != null) { lostChestReward = reward; chestLostDismissed = true } } } }
+        )
+        lostChestReward?.let { reward ->
+            com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog(reward = reward, onDismiss = { lostChestReward = null })
+        }
     }
     state.chestWon?.let { chest ->
         var chestWonDismissed by remember { mutableStateOf(false) }

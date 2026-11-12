@@ -164,6 +164,11 @@ fun GameScreen(
 
             is GamePhase.Result -> ResultScreen(
                 state = current,
+                onWatchLostChestAd = remember(current.chestLostTier) {
+                    val tier = current.chestLostTier
+                    val act = context as? Activity
+                    if (tier != null && act != null && viewModel.canOfferLostChestAd()) { cb: (com.sualtikasifi.cizimhafiza.domain.model.ChestReward?) -> Unit -> viewModel.openLostChestWithAd(act, tier, cb) } else null
+                },
                 onPlayAgain = viewModel::restart,
                 onMainMenu = onMainMenu,
                 onLevelNextAction = onLevelNextAction,
