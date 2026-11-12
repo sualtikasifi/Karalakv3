@@ -275,14 +275,14 @@ private fun AchievementProgressHeader(unlockedCount: Int, total: Int, waiting: I
         modifier = modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(start = 26.dp, end = 26.dp, top = 30.dp, bottom = 26.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 34.dp, end = 34.dp, top = 40.dp, bottom = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Palette and trophy at the two ends, a laurel branch on each side of the count.
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Image(painterResource(R.drawable.ach_hero_palette), null, Modifier.height(76.dp))
+                Image(painterResource(R.drawable.ach_hero_palette), null, Modifier.height(60.dp))
                 Spacer(Modifier.weight(0.25f))
-                Image(painterResource(R.drawable.ach_laurel_l), null, Modifier.height(54.dp))
+                Image(painterResource(R.drawable.ach_laurel_l), null, Modifier.height(44.dp))
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.achievements_progress_count_format, unlockedCount, total),
@@ -300,9 +300,9 @@ private fun AchievementProgressHeader(unlockedCount: Int, total: Int, waiting: I
                         maxLines = 1
                     )
                 }
-                Image(painterResource(R.drawable.ach_laurel_r), null, Modifier.height(54.dp))
+                Image(painterResource(R.drawable.ach_laurel_r), null, Modifier.height(44.dp))
                 Spacer(Modifier.weight(0.25f))
-                Image(painterResource(R.drawable.ach_hero_trophy), null, Modifier.height(76.dp))
+                Image(painterResource(R.drawable.ach_hero_trophy), null, Modifier.height(60.dp))
             }
             Spacer(modifier = Modifier.height(10.dp))
             // The bar carries the percentage inside it.
