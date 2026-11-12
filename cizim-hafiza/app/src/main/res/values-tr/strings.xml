@@ -1297,8 +1297,8 @@
     <string name="home_ad_watch">Reklam izle</string>
     <string name="home_ad_gold_earned">+500 altın kazandın!</string>
     <string name="home_ad_unavailable">Reklam şu an yüklenemedi, biraz sonra tekrar dene.</string>
-    <string name="home_xp_boost_offer">30 dk ×2 XP</string>
-    <string name="home_xp_boost_active_format">×2 XP · %1$s</string>
+    <string name="home_xp_boost_offer">×2 XP</string>
+    <string name="home_xp_boost_active_format">×2 · %1$s</string>
     <string name="home_xp_boost_on">30 dakika çift XP başladı!</string>
     <string name="chest_home_start">Kasayı Aç</string>
     <string name="daily_challenge_ready_short">%1$d kelime · aynı kelimeler</string>

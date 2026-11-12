@@ -1285,8 +1285,8 @@
     <string name="home_ad_watch">Ver anúncio</string>
     <string name="home_ad_gold_earned">Você ganhou 500 de ouro!</string>
     <string name="home_ad_unavailable">O anúncio não carregou agora, tente de novo em instantes.</string>
-    <string name="home_xp_boost_offer">30 min XP ×2</string>
-    <string name="home_xp_boost_active_format">XP ×2 · %1$s</string>
+    <string name="home_xp_boost_offer">×2 XP</string>
+    <string name="home_xp_boost_active_format">×2 · %1$s</string>
     <string name="home_xp_boost_on">30 minutos de XP em dobro começaram!</string>
     <string name="chest_home_start">Abrir baú</string>
     <string name="daily_challenge_ready_short">%1$d palavras · iguais para todos</string>
