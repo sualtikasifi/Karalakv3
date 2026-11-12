@@ -49,6 +49,7 @@ PY
 }
 
 shot home_ready 10
+shot home_boost 6
 shot home_saving
 shot tour_runes
 shot funnel

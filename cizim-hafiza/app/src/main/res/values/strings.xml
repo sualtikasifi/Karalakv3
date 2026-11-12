@@ -1283,6 +1283,9 @@
     <string name="home_ad_watch">Watch ad</string>
     <string name="home_ad_gold_earned">You earned 500 gold!</string>
     <string name="home_ad_unavailable">The ad could not load right now, try again in a moment.</string>
+    <string name="home_xp_boost_offer">30 min 2x XP</string>
+    <string name="home_xp_boost_active_format">2x XP · %1$s</string>
+    <string name="home_xp_boost_on">30 minutes of double XP started!</string>
     <string name="chest_home_start">Open chest</string>
     <string name="daily_challenge_ready_short">%1$d words · same for all</string>
     <string name="daily_challenge_words_short">%1$d words</string>

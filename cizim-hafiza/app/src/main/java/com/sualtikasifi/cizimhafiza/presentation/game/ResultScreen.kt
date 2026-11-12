@@ -355,7 +355,7 @@ fun ResultScreen(
 
                 // Always ends on the home screen. The XP is already banked: "Ödülü Al" just leaves
                 // (and says how much it is), "x2" watches an ad, pays the round a second time, then leaves.
-                val canDouble = onDoubleXp != null && state.xpEarned > 0 && GameConstants.ADMOB_ENABLED && !xpDoubled
+                val canDouble = onDoubleXp != null && state.xpEarned > 0 && GameConstants.ADMOB_ENABLED && !xpDoubled && !state.xpBoosted
                 Row(horizontalArrangement = Arrangement.spacedBy(u * 14f), modifier = Modifier.fillMaxWidth()) {
                     // A round that earned nothing has nothing to double: no "x2 · 0 XP" button at all, the claim button
                     // takes the row.

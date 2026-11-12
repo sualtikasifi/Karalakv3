@@ -136,6 +136,7 @@ class GameViewModel @Inject constructor(
     private val vibratorHelper: VibratorHelper,
     private val soundManager: SoundManager,
     private val adManager: AdManager,
+    private val xpBoost: com.sualtikasifi.cizimhafiza.util.XpBoostStore,
     private val wordPoolSynchronizer: WordPoolSynchronizer,
     private val xpEventRepository: XpEventRepository,
     private val avatarPhotoResolver: com.sualtikasifi.cizimhafiza.util.AvatarPhotoResolver,
@@ -1312,6 +1313,7 @@ class GameViewModel @Inject constructor(
             showRatingPrompt = false,
             chestWon = chestWon,
             chestLost = quickMatchWon && chestWon == null,
+            xpBoosted = xpBoost.multiplierNow() > 1.0,
             chestLostTier = chestAward?.lostTier
         )
         _phase.value = resultPhase

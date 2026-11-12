@@ -54,7 +54,12 @@ private fun AvatarFrame.isUnlockedBy(level: Int, earnedRewardIds: Set<String>, o
     if (isLeagueReward) LeagueReward.Frame(this).id in earnedRewardIds else level >= unlockLevel
 
 /** What a finished rewarded streak action should confirm on screen. */
-enum class StreakToast { Rescued, AdGoldEarned, AdUnavailable }
+enum class StreakToast { Rescued, AdGoldEarned, AdUnavailable, XpBoostOn }
+
+/** The home chip for the 30-minute double XP: [activeUntil] while it runs, or [offerable] when the ad can be offered now. */
+data class XpBoostUi(val activeUntil: Long = 0L, val offerable: Boolean = false) {
+    companion object { val None = XpBoostUi() }
+}
 
 @HiltViewModel
 class MainMenuViewModel @Inject constructor(
@@ -73,7 +78,8 @@ class MainMenuViewModel @Inject constructor(
     private val serverClock: com.sualtikasifi.cizimhafiza.domain.repository.ServerClock,
     legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore,
     private val announcementRepository: com.sualtikasifi.cizimhafiza.data.repository.AnnouncementRepository,
-    private val runeFunnel: com.sualtikasifi.cizimhafiza.util.RuneFunnel
+    private val runeFunnel: com.sualtikasifi.cizimhafiza.util.RuneFunnel,
+    private val xpBoost: com.sualtikasifi.cizimhafiza.util.XpBoostStore
 ) : ViewModel() {
 
     /** A notice from the developer panel, shown once per notice (see AnnouncementRepository). */
@@ -295,6 +301,30 @@ class MainMenuViewModel @Inject constructor(
         adManager.maybeShowRewarded(activity, "home_gold") { outcome ->
             when (outcome) {
                 RewardedOutcome.EARNED -> if (settingsRepository.claimAdGold()) _streakToast.value = StreakToast.AdGoldEarned
+                RewardedOutcome.SKIPPED -> Unit
+                else -> _streakToast.value = StreakToast.AdUnavailable
+            }
+        }
+    }
+
+    /**
+     * What the home chip shows right now. While a boost runs: when it ends. Otherwise the offer, only if today still has one left, no
+     * event already gives 2x, the placement is on in config/ads and an ad is loaded (an offer that makes the player wait is worse
+     * than none). Called about once a second by the screen.
+     */
+    fun xpBoostUi(): XpBoostUi {
+        val now = System.currentTimeMillis()
+        if (xpBoost.multiplierNow(now) > 1.0) return XpBoostUi(activeUntil = xpBoost.until.value)
+        val eventDoubles = (xpEvent.value?.multiplier ?: 1.0) >= 2.0
+        val offerable = !eventDoubles && xpBoost.offersLeft() > 0 && adManager.placementEnabled("xp_boost") && adManager.rewardedReady()
+        return XpBoostUi(offerable = offerable)
+    }
+
+    fun watchAdForXpBoost(activity: Activity) {
+        if (xpBoost.multiplierNow() > 1.0 || xpBoost.offersLeft() <= 0) return
+        adManager.maybeShowRewarded(activity, "xp_boost") { outcome ->
+            when (outcome) {
+                RewardedOutcome.EARNED -> { xpBoost.grant(); _streakToast.value = StreakToast.XpBoostOn }
                 RewardedOutcome.SKIPPED -> Unit
                 else -> _streakToast.value = StreakToast.AdUnavailable
             }
