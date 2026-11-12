@@ -31,7 +31,8 @@ import javax.inject.Singleton
 class AdManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val adminStats: dagger.Lazy<com.sualtikasifi.cizimhafiza.util.AdminStats>,
-    private val legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore
+    private val legalConsentStore: com.sualtikasifi.cizimhafiza.util.LegalConsentStore,
+    private val remote: AdRemoteConfig
 ) {
 
     private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -165,6 +166,7 @@ class AdManager @Inject constructor(
      * is replaced before it can fail to show.
      */
     fun warmUp() {
+        remote.refresh()
         if (!GameConstants.ADMOB_ENABLED || !initialized) return
         dropStale()
         preloadInterstitial()
@@ -254,6 +256,7 @@ class AdManager @Inject constructor(
             onDismissed()
             return
         }
+        val resultsSeen = countResultSeen()
         if (force && forceMinGapMillis > 0L) {
             val sinceLast = System.currentTimeMillis() - prefs.getLong(KEY_LAST_AD_AT, 0L)
             if (sinceLast < forceMinGapMillis) {
@@ -277,6 +280,14 @@ class AdManager @Inject constructor(
                 onDismissed()
                 return
             }
+        }
+
+        // The one door: new-player grace, the gap between any two full-screen ads, the quiet after a rewarded one, the hourly
+        // cap, and the switch in config/ads (see AdGate / AdRemoteConfig).
+        if (!gateAllows(placement, resultsSeen)) {
+            warmUp()
+            onDismissed()
+            return
         }
 
         dropStale()
@@ -376,9 +387,44 @@ class AdManager @Inject constructor(
     /** Only an ad that actually reached the screen starts the gap — a failed one must not cost the player their next chance. */
     private fun recordInterstitialShown(placement: String) {
         logAdEvent("ad_interstitial_shown", placement)
+        val now = System.currentTimeMillis()
         prefs.edit()
-            .putLong(KEY_LAST_AD_AT, System.currentTimeMillis())
+            .putLong(KEY_LAST_AD_AT, now)
+            .putLong(KEY_LAST_FULLSCREEN_AT, now)
+            .putString(KEY_RECENT_INTERSTITIALS, AdGate.keepRecent(recentInterstitials() + now, now).joinToString(","))
             .apply()
+    }
+
+    /** Counts this finished game; an install that already had games before this counter existed is not treated as new. */
+    private fun countResultSeen(): Int {
+        var seen = prefs.getInt(KEY_RESULTS_SEEN, -1)
+        if (seen < 0) seen = if (prefs.contains(KEY_TOTAL_GAMES) || prefs.contains(KEY_LAST_AD_AT)) AdGate.DEFAULT_NEW_PLAYER_RESULTS else 0
+        seen++
+        prefs.edit().putInt(KEY_RESULTS_SEEN, seen).apply()
+        return seen
+    }
+
+    private fun recentInterstitials(): List<Long> =
+        prefs.getString(KEY_RECENT_INTERSTITIALS, "").orEmpty().split(',').mapNotNull { it.toLongOrNull() }
+
+    private fun gateAllows(placement: String, resultsSeen: Int): Boolean {
+        if (remote.isOff(placement)) return false
+        val state = AdGate.State(
+            resultsSeen = resultsSeen,
+            lastFullscreenAt = prefs.getLong(KEY_LAST_FULLSCREEN_AT, 0L),
+            lastRewardedAt = prefs.getLong(KEY_LAST_REWARDED_AT, 0L),
+            recentInterstitials = recentInterstitials()
+        )
+        return AdGate.allows(state, remote.gateLimits(), System.currentTimeMillis())
+    }
+
+    /** Whether a placement may be offered at all (config/ads): a rewarded button for a switched-off placement is simply not drawn. */
+    fun placementEnabled(placement: String): Boolean = GameConstants.ADMOB_ENABLED && !remote.isOff(placement)
+
+    /** A rewarded ad is on screen: it starts the quiet that keeps an interstitial from following it. */
+    private fun recordRewardedShown() {
+        val now = System.currentTimeMillis()
+        prefs.edit().putLong(KEY_LAST_FULLSCREEN_AT, now).putLong(KEY_LAST_REWARDED_AT, now).apply()
     }
 
     /**
@@ -475,6 +521,8 @@ class AdManager @Inject constructor(
             // fired first, so skipping early correctly resolves as no reward.
             var earned = false
             ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdShowedFullScreenContent() = recordRewardedShown()
+
                 override fun onAdDismissedFullScreenContent() =
                     settle(if (earned) RewardedOutcome.EARNED else RewardedOutcome.SKIPPED)
 
@@ -533,6 +581,10 @@ class AdManager @Inject constructor(
         const val PREFS_NAME = "ad_manager_prefs"
         const val KEY_TOTAL_GAMES = "total_finished_games"
         const val KEY_LAST_AD_AT = "last_interstitial_at"
+        const val KEY_LAST_FULLSCREEN_AT = "last_fullscreen_at"
+        const val KEY_LAST_REWARDED_AT = "last_rewarded_at"
+        const val KEY_RECENT_INTERSTITIALS = "recent_interstitials"
+        const val KEY_RESULTS_SEEN = "results_seen"
 
         /** How long a result screen waits for an interstitial that was not preloaded before going on without one. */
         const val ON_DEMAND_INTERSTITIAL_TIMEOUT_MILLIS = 3_500L
