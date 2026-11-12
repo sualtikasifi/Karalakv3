@@ -21,6 +21,10 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.DuelCreatePreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the Guess It notice page on its own (see GuessNoticePreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.GuessNoticePreviewActivity"
+            android:exported="true" />
         <!-- Debug builds only: the chest window on its own (see ChestPreviewActivity). -->
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.ChestPreviewActivity"

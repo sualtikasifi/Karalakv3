@@ -1756,7 +1756,11 @@
     <string name="guess_gone">This link no longer works. It may have expired or been deleted.</string>
     <string name="guess_offline">The drawing could not be loaded. Check your connection.</string>
     <string name="guess_child">This feature is turned off for this account.</string>
-    <string name="guess_own">You sent this drawing. Keep sharing the link so your friends can guess it!</string>
+    <string name="guess_own_title">You sent this drawing!</string>
+    <string name="guess_own_body">Keep sharing the link so your friends can guess it!</string>
+    <string name="guess_gone_title">Link not working</string>
+    <string name="guess_offline_title">No connection</string>
+    <string name="guess_child_title">Turned off</string>
     <string name="guess_retry">Try again</string>
     <string name="guess_someone">A friend</string>
     <string name="guess_title">%1$s drew something</string>

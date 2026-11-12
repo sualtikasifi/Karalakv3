@@ -1757,7 +1757,11 @@
     <string name="guess_gone">Este link não funciona mais. Pode ter expirado ou sido apagado.</string>
     <string name="guess_offline">Não foi possível carregar o desenho. Verifique sua conexão.</string>
     <string name="guess_child">Este recurso está desativado nesta conta.</string>
-    <string name="guess_own">Você enviou este desenho. Continue compartilhando o link para os amigos adivinharem!</string>
+    <string name="guess_own_title">Você enviou este desenho!</string>
+    <string name="guess_own_body">Continue compartilhando o link para os amigos adivinharem!</string>
+    <string name="guess_gone_title">Link inválido</string>
+    <string name="guess_offline_title">Sem conexão</string>
+    <string name="guess_child_title">Desativado</string>
     <string name="guess_retry">Tentar de novo</string>
     <string name="guess_someone">Um amigo</string>
     <string name="guess_title">%1$s desenhou algo</string>

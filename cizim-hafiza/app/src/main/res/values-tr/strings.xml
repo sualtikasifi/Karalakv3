@@ -1769,7 +1769,11 @@
     <string name="guess_gone">Bu bağlantı artık geçerli değil. Süresi dolmuş ya da silinmiş olabilir.</string>
     <string name="guess_offline">Çizim yüklenemedi. İnternet bağlantını kontrol et.</string>
     <string name="guess_child">Bu özellik bu hesapta kapalı.</string>
-    <string name="guess_own">Bu çizimi sen gönderdin. Arkadaşların bilsin diye bağlantıyı paylaşmaya devam et!</string>
+    <string name="guess_own_title">Bu çizimi sen gönderdin!</string>
+    <string name="guess_own_body">Arkadaşların bilsin diye bağlantıyı paylaşmaya devam et!</string>
+    <string name="guess_gone_title">Bağlantı geçersiz</string>
+    <string name="guess_offline_title">Bağlantı yok</string>
+    <string name="guess_child_title">Şu an kapalı</string>
     <string name="guess_retry">Tekrar dene</string>
     <string name="guess_someone">Bir arkadaşın</string>
     <string name="guess_title">%1$s bir şey çizdi</string>

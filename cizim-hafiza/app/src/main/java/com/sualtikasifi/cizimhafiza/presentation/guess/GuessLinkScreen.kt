@@ -94,6 +94,17 @@ fun GuessLinkScreen(
         GuessShareUtil.share(context, id, state.word.orEmpty(), state.live)
     }
 
+    // Nothing to guess (own drawing, dead link, offline, turned off): the painted notice scene, not the card page.
+    if (state.phase == GuessPhase.Unavailable) {
+        GuessNoticeScreen(
+            problem = state.problem ?: GuessProblem.NotFound,
+            onRetry = viewModel::load,
+            onClose = onBack,
+            onBack = onBack
+        )
+        return
+    }
+
     // The game's painted page (wood wall, hanging sign, painted back arrow), with the round on a cream card so it reads on
     // the wall. While a drawing is being made the page does not scroll: a vertical stroke must not drag the page with it.
     PaintedPage(
@@ -110,7 +121,7 @@ fun GuessLinkScreen(
                     GuessPhase.Loading -> Box(Modifier.fillMaxWidth().height(280.dp), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
-                    GuessPhase.Unavailable -> Unavailable(state.problem ?: GuessProblem.NotFound, onRetry = viewModel::load, onBack = onBack)
+                    GuessPhase.Unavailable -> Unit
                     GuessPhase.Guessing -> Guessing(state, viewModel)
                     GuessPhase.Solved, GuessPhase.Failed -> Verdict(state, viewModel, onClose = leave)
                     GuessPhase.Drawing -> Drawing(state, viewModel)
@@ -121,34 +132,6 @@ fun GuessLinkScreen(
             }
         }
         Spacer(Modifier.height(16.dp))
-    }
-}
-
-@Composable
-private fun Unavailable(problem: GuessProblem, onRetry: () -> Unit, onBack: () -> Unit) {
-    run {
-        Column(Modifier.fillMaxWidth().padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("🕵️", fontSize = 44.sp)
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = stringResource(
-                    when (problem) {
-                        GuessProblem.NotFound -> R.string.guess_gone
-                        GuessProblem.Offline -> R.string.guess_offline
-                        GuessProblem.Child -> R.string.guess_child
-                        GuessProblem.Own -> R.string.guess_own
-                    }
-                ),
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.height(16.dp))
-            if (problem == GuessProblem.Offline) {
-                PrimaryButton(text = stringResource(R.string.guess_retry), onClick = onRetry, modifier = Modifier.fillMaxWidth())
-            } else {
-                PrimaryButton(text = stringResource(R.string.close), onClick = onBack, modifier = Modifier.fillMaxWidth())
-            }
-        }
     }
 }
 
