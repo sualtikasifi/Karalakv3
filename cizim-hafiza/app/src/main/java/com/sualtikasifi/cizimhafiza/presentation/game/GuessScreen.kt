@@ -888,7 +888,8 @@ private fun LetterBlanks(groups: List<Int>, firstLetter: String?, modifier: Modi
 }
 
 /**
- * What an answer gets: a slim result strip that slides down from the top of the drawing, and a thin frame in the same
+ * What an answer gets: a slim result strip that slides up from the bottom of the drawing (the top is where the letter-count joker's
+ * blanks are drawn, and the two must never overlap), and a thin frame in the same
  * colour around the canvas. The strip holds a small mark that draws itself (tick or cross), the word, and for a right
  * answer the XP it paid on a gold chip. Nothing sits on the middle of the drawing, so it stays in view the whole time.
  * Extracted into its own composable so [AnimatedVisibility] resolves against no implicit receiver.
@@ -909,9 +910,9 @@ private fun GuessFeedbackOverlay(
         }
         AnimatedVisibility(
             visible = visible,
-            enter = androidx.compose.animation.slideInVertically(spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMediumLow)) { -it } + fadeIn(tween(120)),
+            enter = androidx.compose.animation.slideInVertically(spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMediumLow)) { it } + fadeIn(tween(120)),
             exit = androidx.compose.animation.fadeOut(tween(160)),
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp, start = 14.dp, end = 14.dp)
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp, start = 14.dp, end = 14.dp)
         ) {
             if (feedback != null) {
                 val shake = remember(guessNumber) { Animatable(0f) }
