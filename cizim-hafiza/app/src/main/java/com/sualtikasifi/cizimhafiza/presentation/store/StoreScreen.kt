@@ -126,6 +126,14 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
     var tabOpenedAt by remember { androidx.compose.runtime.mutableLongStateOf(System.currentTimeMillis()) }
     val selectTab = { next: Int -> if (next != tab) { tabDirection = if (next > tab) 1 else -1; tab = next; tabOpenedAt = System.currentTimeMillis() } }
     val dailyJoker by viewModel.dailyJoker.collectAsState()
+    val trialPen by viewModel.trialPen.collectAsState()
+    // Whether a rewarded ad is loaded right now, looked at every couple of seconds: the "try this pen" buttons are only drawn when one is.
+    val tryReady by androidx.compose.runtime.produceState(false) {
+        while (true) {
+            value = viewModel.penTrialAdReady()
+            kotlinx.coroutines.delay(2_000)
+        }
+    }
     val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
     var pending by remember { mutableStateOf<Pending?>(null) }
     // The joker just bought, while its celebration plays.
@@ -213,7 +221,14 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                             canAfford = gold >= skin.storePrice,
                             onBuy = { pending = Pending.PenItem(skin) },
                             onEquip = { viewModel.equipPen(skin) },
-                            onCannotAfford = { showToast(R.string.store_not_enough, isError = true) }
+                            onCannotAfford = { showToast(R.string.store_not_enough, isError = true) },
+                            trial = when {
+                                id in owned -> PenTrial.None
+                                trialPen == skin.name -> PenTrial.Armed
+                                tryReady && viewModel.canTryPen(skin) -> PenTrial.Offer
+                                else -> PenTrial.None
+                            },
+                            onTry = { activity?.let { act -> viewModel.tryPen(act, skin) { res, isError -> showToast(res, isError) } } }
                         ) }
                     }
                 } else if (tab == 0) {
@@ -785,7 +800,9 @@ private fun PenCard(
     canAfford: Boolean,
     onBuy: () -> Unit,
     onEquip: () -> Unit,
-    onCannotAfford: () -> Unit
+    onCannotAfford: () -> Unit,
+    trial: PenTrial = PenTrial.None,
+    onTry: () -> Unit = {}
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(860f / 540f)) {
         val w = maxWidth
@@ -811,16 +828,38 @@ private fun PenCard(
                 )
             }
         }
-        // One wide button: buy (price) or wear. There is no trying a pen before buying it.
-        val m = Modifier.offset(w * 0.45f, h * 0.665f).size(w * 0.46f, h * 0.235f)
+        // One wide button: buy (price) or wear. An unowned pen may also be tried for one game through a rewarded ad: then the price
+        // button is narrower, and the trial pill sits left of it on the clear part of the card (the pen is on its far left).
+        val m = if (trial != PenTrial.None && !owned) Modifier.offset(w * 0.64f, h * 0.665f).size(w * 0.27f, h * 0.235f)
+        else Modifier.offset(w * 0.45f, h * 0.665f).size(w * 0.46f, h * 0.235f)
         when {
             owned -> OwnedPill(equipped, onEquip, m)
             else -> PaintedPill(R.drawable.st_pill_orange, m, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
                 CoinPrice(skin.storePrice, size = 14.sp, coin = 18.dp)
             }
         }
+        if (!owned && trial != PenTrial.None) {
+            val tm = Modifier.offset(w * 0.30f, h * 0.665f).size(w * 0.32f, h * 0.235f)
+            PaintedPill(if (trial == PenTrial.Armed) R.drawable.st_pill_green else R.drawable.st_pill_orange, tm, onClick = if (trial == PenTrial.Offer) onTry else null) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(
+                        text = if (trial == PenTrial.Armed) "✓" else "▶",
+                        fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Color.White, style = PillTextShadow
+                    )
+                    com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                        text = stringResource(if (trial == PenTrial.Armed) R.string.store_pen_trial_next else R.string.store_pen_try),
+                        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color.White, fontSize = 11.sp, textAlign = TextAlign.Center, shadow = PillTextShadow.shadow),
+                        maxLines = 2, minScale = 0.7f,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                }
+            }
+        }
     }
 }
+
+/** The "try this pen for one game" state of a pen card: not offered, offered (a rewarded ad), or armed for the next game. */
+private enum class PenTrial { None, Offer, Armed }
 
 /** One avatar ring on the shelf: the live ring picture on the painted card, its name, and the buy / wear button. */
 @Composable

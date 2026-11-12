@@ -1455,6 +1455,9 @@
     <string name="store_daily_joker_action">Mira un anuncio y llévatelo gratis</string>
     <string name="store_daily_joker_claimed">¡Se agregó tu comodín gratis!</string>
     <string name="store_daily_joker_unavailable">No hay anuncios disponibles ahora, inténtalo en un rato.</string>
+    <string name="store_pen_try">Probar 1 juego</string>
+    <string name="store_pen_trial_next">Próximo juego</string>
+    <string name="store_pen_trial_armed">¡Dibujarás tu próximo juego con este lápiz!</string>
     <string name="xp_event_default_name">Evento de XP</string>
     <string name="xp_event_banner_sub">Todo el XP vale %1$s ahora</string>
     <string name="xp_event_banner_sub_percent">Todo el XP da %1$s más ahora</string>

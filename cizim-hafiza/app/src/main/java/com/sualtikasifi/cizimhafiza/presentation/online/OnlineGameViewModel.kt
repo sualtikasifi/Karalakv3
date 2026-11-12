@@ -116,6 +116,7 @@ class OnlineGameViewModel @Inject constructor(
     private val vibratorHelper: VibratorHelper,
     private val soundManager: SoundManager,
     private val adManager: AdManager,
+    private val penTrial: com.sualtikasifi.cizimhafiza.util.PenTrialStore,
     private val settingsRepository: SettingsRepository,
     private val ghostRunRepository: GhostRunRepository,
     private val xpEventRepository: XpEventRepository,
@@ -210,8 +211,12 @@ class OnlineGameViewModel @Inject constructor(
      */
     val selectedPen: StateFlow<PenSkin> = combine(
         settingsRepository.selectedPenSkinId,
-        settingsRepository.lifetimeXp
-    ) { selectedId, xp -> PenSkin.resolve(selectedId, LevelProgressState.forXp(xp).level) }
+        settingsRepository.lifetimeXp,
+        penTrial.armed
+    ) { selectedId, xp, trial ->
+        // A pen tried through a rewarded ad (store) is this game's pen, until the game ends (see finishing below).
+        PenSkin.entries.firstOrNull { it.name == trial } ?: PenSkin.resolve(selectedId, LevelProgressState.forXp(xp).level)
+    }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -773,6 +778,7 @@ class OnlineGameViewModel @Inject constructor(
         val correctCount = results.count { it.isCorrect }
         val wrongCount = results.count { !it.isCorrect }
         val items = results.map { ResultItem(it.word.text, it.isCorrect, it.strokes, selectedPen.value.name) }
+        penTrial.consume() // a pen tried through an ad was for this one game
 
         settingsRepository.lastOnlineRoundXp = roundXpEarned
 

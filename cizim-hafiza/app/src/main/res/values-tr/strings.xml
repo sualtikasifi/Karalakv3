@@ -1467,6 +1467,9 @@
     <string name="store_daily_joker_action">Reklam izle, ücretsiz al</string>
     <string name="store_daily_joker_claimed">Ücretsiz jokerin eklendi!</string>
     <string name="store_daily_joker_unavailable">Şu an reklam yok, biraz sonra tekrar dene.</string>
+    <string name="store_pen_try">1 oyun dene</string>
+    <string name="store_pen_trial_next">Sonraki oyunda</string>
+    <string name="store_pen_trial_armed">Bir sonraki oyununda bu kalemle çizeceksin!</string>
     <string name="xp_event_default_name">XP Etkinliği</string>
     <string name="xp_event_banner_sub">Şimdi her XP %1$s kazandırıyor</string>
     <string name="xp_event_banner_sub_percent">Şimdi her XP %1$s fazla kazandırıyor</string>
