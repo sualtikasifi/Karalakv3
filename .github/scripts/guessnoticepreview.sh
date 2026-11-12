@@ -17,10 +17,12 @@ for problem in Own NotFound Offline Child; do
   sleep 3
   adb exec-out screencap -p > "$OUT/guessnotice_${problem}.png"
 done
-for case in "0 " "1 Kedi" "2 Kedi"; do
+for case in "0 -" "1 Kedi" "2 Kedi"; do
   set -- $case
   adb shell am force-stop "$PKG"
-  adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.GuessAnswerPreviewActivity" --ei attempts "$1" --es typed "${2:-}"
+  extra=""
+  [ "$2" != "-" ] && extra="--es typed $2"
+  adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.GuessAnswerPreviewActivity" --ei attempts "$1" $extra
   sleep 3
   adb exec-out screencap -p > "$OUT/guessanswer_$1.png"
 done

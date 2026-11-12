@@ -21,6 +21,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -85,7 +90,16 @@ internal fun GuessAnswerScreen(
         fun fs(art: Float) = (art * u.value / fontScale).sp
         fun Modifier.art(x: Float, y: Float, w: Float, h: Float) = offset(offX + u * x, u * y).size(u * w, u * h)
 
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        val scroll = rememberScrollState()
+        var positioned by remember { mutableStateOf(false) }
+        // A phone shorter than the picture starts scrolled just far enough to show the bottom pill (only the top lights are lost).
+        LaunchedEffect(scroll.maxValue) {
+            if (!positioned && scroll.maxValue > 0) {
+                scroll.scrollTo((1775f * sc - with(density) { maxHeight.toPx() }).toInt().coerceIn(0, scroll.maxValue))
+                positioned = true
+            }
+        }
+        Column(Modifier.fillMaxSize().verticalScroll(scroll)) {
             Box(Modifier.fillMaxWidth().height(u * ArtH)) {
                 Image(
                     painter = painterResource(R.drawable.guess_answer_bg),
@@ -114,23 +128,23 @@ internal fun GuessAnswerScreen(
                     minScale = 0.45f
                 )
                 if (state.attempts > 0) {
-                    Column(Modifier.art(190f, 427f, 490f, 70f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(Modifier.art(190f, 422f, 490f, 80f), horizontalAlignment = Alignment.CenterHorizontally) {
                         if (state.hint.isNotEmpty()) {
                             NoticeText(
                                 text = state.hint,
-                                size = fs(40f),
+                                size = fs(34f),
                                 color = InkBrown,
                                 maxLines = 1,
-                                modifier = Modifier.fillMaxWidth().height(u * if (state.wrong.isNotEmpty()) 42f else 70f)
+                                modifier = Modifier.fillMaxWidth().height(u * if (state.wrong.isNotEmpty()) 46f else 80f)
                             )
                         }
                         if (state.wrong.isNotEmpty()) {
                             NoticeText(
                                 text = state.wrong.joinToString("  ·  "),
-                                size = fs(27f),
+                                size = fs(25f),
                                 color = Color(0xFFB3261E),
                                 maxLines = 1,
-                                modifier = Modifier.fillMaxWidth().height(u * if (state.hint.isNotEmpty()) 28f else 70f)
+                                modifier = Modifier.fillMaxWidth().height(u * if (state.hint.isNotEmpty()) 32f else 80f)
                             )
                         }
                     }
@@ -157,7 +171,7 @@ internal fun GuessAnswerScreen(
                     val left = i < GuessCodec.MAX_ATTEMPTS - state.attempts
                     Box(
                         Modifier
-                            .art(378f + 44f * (i - 1) - 17f + 0f, 1012f - 17f, 34f, 34f)
+                            .art(378f + 44f * i - 17f, 1012f - 17f, 34f, 34f)
                             .background(if (left) Brush.verticalGradient(listOf(Color(0xFFFFA24D), DotOn)) else SolidColor(DotOff), CircleShape)
                             .border(u * 2f, if (left) Color(0xFFD9600F) else Color(0xFFE6C48A), CircleShape)
                     )
