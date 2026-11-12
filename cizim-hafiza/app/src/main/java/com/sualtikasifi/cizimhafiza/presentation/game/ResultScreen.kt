@@ -393,7 +393,7 @@ fun ResultScreen(
                 consolationChest?.let { chest ->
                     com.sualtikasifi.cizimhafiza.presentation.common.ChestWonDialog(chest = chest, onDismiss = { consolationChest = null })
                 }
-                val canDouble = onDoubleXp != null && state.xpEarned > 0 && GameConstants.ADMOB_ENABLED && !xpDoubled && !state.xpBoosted
+                val canDouble = onDoubleXp != null && state.xpEarned > 0 && GameConstants.ADMOB_ENABLED && !xpDoubled
                 Row(horizontalArrangement = Arrangement.spacedBy(u * 14f), modifier = Modifier.fillMaxWidth()) {
                     // A round that earned nothing has nothing to double: no "x2 · 0 XP" button at all, the claim button
                     // takes the row.
