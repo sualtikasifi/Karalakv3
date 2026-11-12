@@ -129,6 +129,8 @@ sealed interface GamePhase {
         val chestLost: Boolean = false,
         /** The round was played inside the player's 30-minute double-XP boost: the "x2" ad on this screen would make it 4x, so it is not offered. */
         val xpBoosted: Boolean = false,
+        /** A lost Hızlı Eşleş that may still earn a Çırak chest through a rewarded ad (a free slot, today's limit, an ad loaded). */
+        val consolationOffer: Boolean = false,
         /** With [chestLost]: the tier of the chest that found no free slot, which a rewarded ad can still open. */
         val chestLostTier: com.sualtikasifi.cizimhafiza.domain.model.ChestTier? = null,
         /**

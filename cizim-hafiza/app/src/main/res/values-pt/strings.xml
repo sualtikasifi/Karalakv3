@@ -1191,6 +1191,7 @@
 
     <!-- Chests (kasalar) — earned only from a WON Race a Friend match. -->
     <string name="chest_tier_silver">Baú do Aprendiz</string>
+    <string name="result_consolation_chest">Ver anúncio e ganhar um Baú do Aprendiz</string>
     <string name="chest_tier_gold">Baú do Artista</string>
     <string name="chest_tier_rare">Baú Surpresa</string>
     <string name="chest_won_title">Você ganhou um baú!</string>

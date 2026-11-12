@@ -436,6 +436,10 @@ class SettingsRepository @Inject constructor(
     data class ChestAward(val chest: Chest?, val instantReward: ChestReward?, val lostTier: ChestTier? = null)
 
     fun awardChestForWin(): Chest? = chests.awardChestForWin()
+
+    /** The consolation chest of a lost Hızlı Eşleş (a rewarded ad): see ChestStore. */
+    fun consolationChestAvailable(): Boolean = chests.hasFreeSlot() && chests.consolationOffersLeft(TurkeyTime.today().toEpochDay()) > 0
+    fun awardConsolationChest(): Chest? = chests.awardConsolation(TurkeyTime.today().toEpochDay())
     fun awardChestForWinOrPay(): ChestAward {
         val chest = chests.awardChestForWin()
         return ChestAward(chest, null, if (chest == null) chests.takeLostTier() else null)

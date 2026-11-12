@@ -164,6 +164,7 @@ fun GameScreen(
 
             is GamePhase.Result -> ResultScreen(
                 state = current,
+                onClaimConsolation = if (current.consolationOffer) { cb: (com.sualtikasifi.cizimhafiza.domain.model.Chest?) -> Unit -> (context as? Activity)?.let { viewModel.claimConsolationChest(it, cb) } } else null,
                 onWatchLostChestAd = remember(current.chestLostTier) {
                     val tier = current.chestLostTier
                     val act = context as? Activity

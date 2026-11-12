@@ -1320,6 +1320,8 @@ class GameViewModel @Inject constructor(
             chestWon = chestWon,
             chestLost = quickMatchWon && chestWon == null,
             xpBoosted = xpBoost.multiplierNow() > 1.0,
+            consolationOffer = ghost != null && totalScore < ghost.totalScore && settingsRepository.consolationChestAvailable() &&
+                adManager.placementEnabled("chest_consolation") && adManager.rewardedReady(),
             chestLostTier = chestAward?.lostTier
         )
         _phase.value = resultPhase
@@ -1410,6 +1412,13 @@ class GameViewModel @Inject constructor(
         )
     }
 
+
+    /** The lost match's consolation: a rewarded ad earns one Çırak chest in a free slot; [onChest] gets it, or null. */
+    fun claimConsolationChest(activity: android.app.Activity, onChest: (com.sualtikasifi.cizimhafiza.domain.model.Chest?) -> Unit) {
+        adManager.maybeShowRewarded(activity, "chest_consolation") { outcome ->
+            onChest(if (outcome == com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.EARNED) settingsRepository.awardConsolationChest() else null)
+        }
+    }
 
     /** Whether the lost chest can be opened with an ad right now (the placement is on and an ad is loaded). */
     fun canOfferLostChestAd(): Boolean = adManager.placementEnabled("chest_lost_open") && adManager.rewardedReady()

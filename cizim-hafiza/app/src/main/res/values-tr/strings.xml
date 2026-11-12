@@ -1203,6 +1203,7 @@
 
     <!-- Kasalar — yalnızca KAZANILAN Arkadaşınla Yarış maçından kazanılır. -->
     <string name="chest_tier_silver">Çırak Kasası</string>
+    <string name="result_consolation_chest">Reklam izle, bir Çırak Kasası kazan</string>
     <string name="chest_tier_gold">Sanatçı Kasası</string>
     <string name="chest_tier_rare">Sürpriz Kasası</string>
     <string name="chest_won_title">Bir kasa kazandın!</string>

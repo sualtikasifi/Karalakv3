@@ -1190,6 +1190,7 @@
 
     <!-- Chests (kasalar) — earned only from a WON Race a Friend match. -->
     <string name="chest_tier_silver">Apprentice Chest</string>
+    <string name="result_consolation_chest">Watch an ad, win an Apprentice Chest</string>
     <string name="chest_tier_gold">Artist Chest</string>
     <string name="chest_tier_rare">Surprise Chest</string>
     <string name="chest_won_title">You won a chest!</string>

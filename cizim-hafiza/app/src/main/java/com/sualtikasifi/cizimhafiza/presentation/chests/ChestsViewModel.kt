@@ -75,6 +75,9 @@ class ChestsViewModel @Inject constructor(
     fun canOfferDouble(reward: com.sualtikasifi.cizimhafiza.domain.model.ChestReward): Boolean =
         reward.gold > 0 && adManager.placementEnabled(DOUBLE_PLACEMENT) && adManager.rewardedReady()
 
+    /** The chest board was closed with "Harika!": every 2nd opening an interstitial may follow (the player has what they came for). */
+    fun afterChestBoard(activity: android.app.Activity) = adManager.maybeShowAtBreak(activity, "interstitial_chest", everyN = 2)
+
     fun consumeLastReward() {
         _lastReward.value = null
     }

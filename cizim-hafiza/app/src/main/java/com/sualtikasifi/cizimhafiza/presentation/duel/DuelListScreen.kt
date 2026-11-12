@@ -163,7 +163,8 @@ fun DuelListScreen(
     }
 
     resultDuel?.let { recent ->
-        DuelResultDialog(recent = recent, onDismiss = { resultDuel = null })
+        val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
+        DuelResultDialog(recent = recent, onDismiss = { resultDuel = null; activity?.let(viewModel::afterResultClosed) })
     }
 }
 

@@ -138,7 +138,7 @@ fun ChestDetailHost(selectedId: String?, onDismiss: () -> Unit, viewModel: Chest
         val offer = remember(reward) {
             if (activity != null && viewModel.canOfferDouble(reward)) ChestDoubleOffer { done -> viewModel.doubleGold(activity, reward, done) } else null
         }
-        ChestOpeningDialog(reward = reward, onDismiss = viewModel::consumeLastReward, doubleOffer = offer)
+        ChestOpeningDialog(reward = reward, onDismiss = { viewModel.consumeLastReward(); activity?.let(viewModel::afterChestBoard) }, doubleOffer = offer)
     }
 }
 

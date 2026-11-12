@@ -66,8 +66,15 @@ data class DuelListUiState(
 class DuelListViewModel @Inject constructor(
     private val duelRepository: DuelRepository,
     private val friendRepository: FriendRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val adManager: com.sualtikasifi.cizimhafiza.ads.AdManager
 ) : ViewModel() {
+
+    init { adManager.warmUp() }
+
+    /** A finished duel's result was closed: every 2nd time an interstitial may follow (same gate as every other). */
+    fun afterResultClosed(activity: android.app.Activity) = adManager.maybeShowAtBreak(activity, "interstitial_duel_result", everyN = 2)
+
 
     val myUid: String? get() = duelRepository.currentUid
 

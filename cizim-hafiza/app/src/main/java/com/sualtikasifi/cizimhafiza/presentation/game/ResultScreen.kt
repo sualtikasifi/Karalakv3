@@ -53,6 +53,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
@@ -135,6 +136,8 @@ fun ResultScreen(
     state: GamePhase.Result,
     /** "Watch an ad and open it now" for a chest that found no free slot; null when there is nothing to offer. */
     onWatchLostChestAd: ((onReward: (com.sualtikasifi.cizimhafiza.domain.model.ChestReward?) -> Unit) -> Unit)? = null,
+    /** "Watch an ad, win a Çırak chest" after a lost quick match; null when it is not on offer. */
+    onClaimConsolation: ((onChest: (com.sualtikasifi.cizimhafiza.domain.model.Chest?) -> Unit) -> Unit)? = null,
     onPlayAgain: () -> Unit,
     onMainMenu: () -> Unit,
     onLevelNextAction: (() -> Unit)? = null,
@@ -355,6 +358,41 @@ fun ResultScreen(
 
                 // Always ends on the home screen. The XP is already banked: "Ödülü Al" just leaves
                 // (and says how much it is), "x2" watches an ad, pays the round a second time, then leaves.
+                // A lost quick match may still earn a chest: one quiet line above the buttons, not a window.
+                var consolationState by remember { androidx.compose.runtime.mutableIntStateOf(0) } // 0 offered, 1 ad on screen, 2 taken
+                var consolationChest by remember { mutableStateOf<com.sualtikasifi.cizimhafiza.domain.model.Chest?>(null) }
+                if (onClaimConsolation != null && consolationState != 2) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFF3D6), Color(0xFFFFD98A))))
+                            .border(2.dp, Color(0xFFE08A1B), RoundedCornerShape(50))
+                            .clickable(enabled = consolationState == 0) {
+                                consolationState = 1
+                                onClaimConsolation { chest ->
+                                    if (chest != null) { consolationChest = chest; consolationState = 2 } else consolationState = 0
+                                }
+                            }
+                            .padding(horizontal = 12.dp)
+                    ) {
+                        Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = Color(0xFFF58A1F), modifier = Modifier.size(22.dp))
+                        Spacer(Modifier.width(8.dp))
+                        FitText(
+                            text = stringResource(R.string.result_consolation_chest),
+                            style = PaintedStyle(color = Color(0xFF5A321F), fontSize = 15.sp, textAlign = TextAlign.Center),
+                            maxLines = 1, minScale = 0.6f,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+                consolationChest?.let { chest ->
+                    com.sualtikasifi.cizimhafiza.presentation.common.ChestWonDialog(chest = chest, onDismiss = { consolationChest = null })
+                }
                 val canDouble = onDoubleXp != null && state.xpEarned > 0 && GameConstants.ADMOB_ENABLED && !xpDoubled && !state.xpBoosted
                 Row(horizontalArrangement = Arrangement.spacedBy(u * 14f), modifier = Modifier.fillMaxWidth()) {
                     // A round that earned nothing has nothing to double: no "x2 · 0 XP" button at all, the claim button

@@ -290,6 +290,11 @@ class AdManager @Inject constructor(
             return
         }
 
+        showInterstitialNow(activity, placement, onDismissed)
+    }
+
+    /** Shows the preloaded interstitial (or, for a moment, loads one) now: every check has already passed. */
+    private fun showInterstitialNow(activity: Activity, placement: String, onDismissed: () -> Unit) {
         dropStale()
         val preloaded = cachedInterstitial
         if (preloaded != null) {
@@ -360,6 +365,27 @@ class AdManager @Inject constructor(
                 }
             }
         )
+    }
+
+    /**
+     * An interstitial at a natural pause that is not a finished game (a chest opened, a finished duel's result closed): only every
+     * [everyN]th time, and through the same gate as every other interstitial (gap, quiet after a rewarded ad, hourly cap, new-player
+     * grace, the switch in config/ads). The player has just pressed a button, so this is never an ad that appears by itself.
+     */
+    fun maybeShowAtBreak(activity: Activity, placement: String, everyN: Int, onDismissed: () -> Unit = {}) {
+        if (!GameConstants.ADMOB_ENABLED) {
+            onDismissed()
+            return
+        }
+        val key = "break_count_$placement"
+        val count = prefs.getInt(key, 0) + 1
+        prefs.edit().putInt(key, count).apply()
+        if (count % everyN != 0 || !gateAllows(placement, prefs.getInt(KEY_RESULTS_SEEN, 0))) {
+            warmUp()
+            onDismissed()
+            return
+        }
+        showInterstitialNow(activity, placement, onDismissed)
     }
 
     /**
