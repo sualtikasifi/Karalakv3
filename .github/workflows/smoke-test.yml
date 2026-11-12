@@ -33,6 +33,7 @@ on:
           - chestpreview.sh
           - chestrewardpreview.sh
           - duelcreatepreview.sh
+          - settingspress.sh
           - tourpreview.sh
           - accountpreview.sh
           - friendspreview.sh

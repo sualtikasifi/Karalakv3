@@ -769,6 +769,53 @@ internal fun Modifier.sunkenArt(
     drawContent()
 }
 
+/**
+ * A painted button whose FACE sinks into its own frame: the frame (its outer border, [inset] wide) stays exactly where it is, the
+ * face inside it shrinks, and the gap it leaves is a flat warm shadow, so it reads as a button pushed in, never as a smaller
+ * button with a copy of itself behind it. The picture's pixels are drawn again from [scene]; [srcLeft]..[srcH] is the whole
+ * button's rectangle in the picture's own pixels.
+ */
+internal fun Modifier.sunkenFace(
+    sink: SinkState,
+    scene: ImageBitmap?,
+    srcLeft: Float, srcTop: Float, srcW: Float, srcH: Float,
+    inset: Dp,
+    corner: Dp
+): Modifier = drawWithContent {
+    val k = sink.scale.value
+    if (scene != null && k < 0.9995f) {
+        val ins = inset.toPx()
+        val w = size.width - 2 * ins
+        val h = size.height - 2 * ins
+        val sx = srcW / size.width
+        val sy = srcH / size.height
+        val srcOffset = IntOffset((srcLeft + ins * sx).roundToInt(), (srcTop + ins * sy).roundToInt())
+        val srcSize = IntSize((w * sx).roundToInt(), (h * sy).roundToInt())
+        val depth = ((1f - k) / 0.03f).coerceIn(0f, 1f)
+        val face = Path().apply { addRoundRect(RoundRect(ins, ins, ins + w, ins + h, CornerRadius(corner.toPx()))) }
+        // the well the face sank into: flat, warm, a little darker at its top edge
+        clipPath(face) {
+            drawRect(
+                Brush.verticalGradient(listOf(Color(0xFFB98650).copy(alpha = depth), Color(0xFFD9AE7B).copy(alpha = depth))),
+                topLeft = Offset(ins, ins), size = Size(w, h)
+            )
+        }
+        scale(k, k, pivot = center) {
+            clipPath(face) {
+                drawImage(
+                    scene,
+                    srcOffset = srcOffset,
+                    srcSize = srcSize,
+                    dstOffset = IntOffset(ins.roundToInt(), ins.roundToInt()),
+                    dstSize = IntSize(w.roundToInt(), h.roundToInt()),
+                    filterQuality = FilterQuality.Low
+                )
+            }
+        }
+    }
+    drawContent()
+}
+
 /** Makes a live piece laid over a painted area (its label, its pill) dip together with it, about the area's centre. */
 internal fun Modifier.sinkWith(sink: SinkState, pivotX: Float, pivotY: Float): Modifier = graphicsLayer {
     val k = sink.scale.value
