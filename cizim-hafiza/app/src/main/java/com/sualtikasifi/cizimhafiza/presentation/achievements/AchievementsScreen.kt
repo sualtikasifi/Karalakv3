@@ -274,26 +274,36 @@ private fun AchievementProgressHeader(unlockedCount: Int, total: Int, waiting: I
         edge = 34.dp,
         modifier = modifier.fillMaxWidth()
     ) {
-        // No trophy badge: the painted panel has its own splashes at both ends, so the text sits centred between them.
         Column(
-            modifier = Modifier.fillMaxWidth().padding(start = 40.dp, end = 40.dp, top = 38.dp, bottom = 26.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 26.dp, end = 26.dp, top = 30.dp, bottom = 26.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = stringResource(R.string.achievements_progress_count_format, unlockedCount, total),
-                style = PaintedStyle(color = InkBrown, fontSize = 30.sp, textAlign = TextAlign.Center),
-                maxLines = 1
-            )
-            Text(
-                text = stringResource(R.string.achievements_progress_caption),
-                style = PaintedStyle(color = DescriptionInk, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
-                maxLines = 1
-            )
-            if (waiting > 0) Text(
-                text = stringResource(R.string.achievements_waiting_format, waiting),
-                style = PaintedStyle(color = Color(0xFFB8740A), fontSize = 14.sp, textAlign = TextAlign.Center),
-                maxLines = 1
-            )
+            // Palette and trophy at the two ends, a laurel branch on each side of the count.
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Image(painterResource(R.drawable.ach_hero_palette), null, Modifier.height(76.dp))
+                Spacer(Modifier.weight(0.25f))
+                Image(painterResource(R.drawable.ach_laurel_l), null, Modifier.height(54.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.achievements_progress_count_format, unlockedCount, total),
+                        style = PaintedStyle(color = InkBrown, fontSize = 30.sp, textAlign = TextAlign.Center),
+                        maxLines = 1
+                    )
+                    Text(
+                        text = stringResource(R.string.achievements_progress_caption),
+                        style = PaintedStyle(color = DescriptionInk, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
+                        maxLines = 1
+                    )
+                    if (waiting > 0) Text(
+                        text = stringResource(R.string.achievements_waiting_format, waiting),
+                        style = PaintedStyle(color = Color(0xFFB8740A), fontSize = 14.sp, textAlign = TextAlign.Center),
+                        maxLines = 1
+                    )
+                }
+                Image(painterResource(R.drawable.ach_laurel_r), null, Modifier.height(54.dp))
+                Spacer(Modifier.weight(0.25f))
+                Image(painterResource(R.drawable.ach_hero_trophy), null, Modifier.height(76.dp))
+            }
             Spacer(modifier = Modifier.height(10.dp))
             // The bar carries the percentage inside it.
             Box(
