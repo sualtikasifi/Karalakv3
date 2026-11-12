@@ -1774,6 +1774,8 @@
     <string name="guess_gone_title">Bağlantı geçersiz</string>
     <string name="guess_offline_title">Bağlantı yok</string>
     <string name="guess_child_title">Şu an kapalı</string>
+    <string name="guess_promo_1">Sen de çiz, tahmin et, arkadaşlarınla yarış!</string>
+    <string name="guess_promo_2">Hemen dene, eğlenceye katıl!</string>
     <string name="guess_retry">Tekrar dene</string>
     <string name="guess_someone">Bir arkadaşın</string>
     <string name="guess_title">%1$s bir şey çizdi</string>

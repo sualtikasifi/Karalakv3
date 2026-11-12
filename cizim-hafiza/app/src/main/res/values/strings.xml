@@ -1761,6 +1761,8 @@
     <string name="guess_gone_title">Link not working</string>
     <string name="guess_offline_title">No connection</string>
     <string name="guess_child_title">Turned off</string>
+    <string name="guess_promo_1">Draw too, guess, and race your friends!</string>
+    <string name="guess_promo_2">Try it now, join the fun!</string>
     <string name="guess_retry">Try again</string>
     <string name="guess_someone">A friend</string>
     <string name="guess_title">%1$s drew something</string>

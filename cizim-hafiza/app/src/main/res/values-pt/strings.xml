@@ -1762,6 +1762,8 @@
     <string name="guess_gone_title">Link inválido</string>
     <string name="guess_offline_title">Sem conexão</string>
     <string name="guess_child_title">Desativado</string>
+    <string name="guess_promo_1">Desenhe também, adivinhe e dispute com seus amigos!</string>
+    <string name="guess_promo_2">Experimente já e entre na diversão!</string>
     <string name="guess_retry">Tentar de novo</string>
     <string name="guess_someone">Um amigo</string>
     <string name="guess_title">%1$s desenhou algo</string>

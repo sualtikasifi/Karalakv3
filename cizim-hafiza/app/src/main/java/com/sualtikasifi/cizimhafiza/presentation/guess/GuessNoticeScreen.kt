@@ -128,7 +128,7 @@ internal fun GuessNoticeScreen(
 
 /** Body lettering on the paper: centred, and shrunk (never cut, never wrapped past its box) to fit whatever language it is in. */
 @Composable
-private fun NoticeText(
+internal fun NoticeText(
     text: String,
     size: androidx.compose.ui.unit.TextUnit,
     color: Color,
