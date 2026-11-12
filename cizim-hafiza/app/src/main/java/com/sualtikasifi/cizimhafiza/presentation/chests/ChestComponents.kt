@@ -520,7 +520,7 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit, double
                                     }
                                 }
                             },
-                            modifier = Modifier.at((BOARD_W - 560f) / 2f, 1528f, 560f, 86f)
+                            modifier = Modifier.at((BOARD_W - 540f) / 2f, 1522f, 540f, 72f)
                         )
                     }
                     // "Harika!" on the leafy orange button, once everything is in.

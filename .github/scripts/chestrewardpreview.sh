@@ -23,7 +23,7 @@ for combo in silver:none:0 gold:one:0 rare:many:0 gold:one:1 rare:many:1; do
   adb exec-out screencap -p > "$OUT/reward_${tier}_${extras}_d${dbl}_1entrance.png"
   sleep 5
   adb exec-out screencap -p > "$OUT/reward_${tier}_${extras}_d${dbl}_2settled.png"
-  if [ "$dbl" = "1" ]; then adb shell input tap 540 1771; sleep 3; adb exec-out screencap -p > "$OUT/reward_${tier}_${extras}_d${dbl}_3doubled.png"; fi
+  if [ "$dbl" = "1" ]; then adb shell input tap 540 1760; sleep 3; adb exec-out screencap -p > "$OUT/reward_${tier}_${extras}_d${dbl}_3doubled.png"; fi
 done
 adb logcat -d | grep -E "FATAL|AndroidRuntime" | head -40 > "$OUT/crash.txt" || true
 ls -la "$OUT"
