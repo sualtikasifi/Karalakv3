@@ -54,6 +54,13 @@ class PenTrialStore @Inject constructor(@ApplicationContext context: Context) {
         _armed.value = pen
     }
 
+    /** A different account took over this phone: the previous one's armed pen and tried-today list are not the next one's. */
+    @Synchronized
+    fun clear() {
+        prefs.edit().clear().apply()
+        _armed.value = null
+    }
+
     /** The game that used it is over: the pen goes back to the player's own. */
     @Synchronized
     fun consume() {

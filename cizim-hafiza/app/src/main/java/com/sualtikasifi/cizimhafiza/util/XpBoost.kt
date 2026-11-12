@@ -50,6 +50,13 @@ class XpBoostStore @Inject constructor(@ApplicationContext context: Context) {
         _until.value = end
     }
 
+    /** A different account took over this phone: a boost the previous one earned must not run for the next one. */
+    @Synchronized
+    fun clear() {
+        prefs.edit().clear().apply()
+        _until.value = 0L
+    }
+
     private companion object {
         const val KEY_UNTIL = "until"
         const val KEY_DAY = "day"

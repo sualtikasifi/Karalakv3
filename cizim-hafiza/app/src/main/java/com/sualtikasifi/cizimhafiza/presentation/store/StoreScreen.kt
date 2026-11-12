@@ -221,14 +221,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                             canAfford = gold >= skin.storePrice,
                             onBuy = { pending = Pending.PenItem(skin) },
                             onEquip = { viewModel.equipPen(skin) },
-                            onCannotAfford = { showToast(R.string.store_not_enough, isError = true) },
-                            trial = when {
-                                id in owned -> PenTrial.None
-                                trialPen == skin.name -> PenTrial.Armed
-                                tryReady && viewModel.canTryPen(skin) -> PenTrial.Offer
-                                else -> PenTrial.None
-                            },
-                            onTry = { activity?.let { act -> viewModel.tryPen(act, skin) { res, isError -> showToast(res, isError) } } }
+                            onCannotAfford = { showToast(R.string.store_not_enough, isError = true) }
                         ) }
                     }
                 } else if (tab == 0) {
@@ -379,6 +372,14 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             name = name,
             price = price,
             gold = gold,
+            // A pen: instead of "Vazgeç" (the window closes with its X), try it for one game by watching an ad.
+            altCancel = if (item is Pending.PenItem) when {
+                trialPen == item.skin.name -> AltCancel(stringResource(R.string.store_pen_trial_next), armed = true) {}
+                tryReady && viewModel.canTryPen(item.skin) -> AltCancel(stringResource(R.string.store_pen_try), armed = false) {
+                    activity?.let { act -> viewModel.tryPen(act, item.skin) { res, isError -> showToast(res, isError); if (!isError) pending = null } }
+                }
+                else -> null
+            } else null,
             preview = { u ->
                 when (item) {
                     // The painted card fills the whole preview slot.
@@ -800,9 +801,7 @@ private fun PenCard(
     canAfford: Boolean,
     onBuy: () -> Unit,
     onEquip: () -> Unit,
-    onCannotAfford: () -> Unit,
-    trial: PenTrial = PenTrial.None,
-    onTry: () -> Unit = {}
+    onCannotAfford: () -> Unit
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(860f / 540f)) {
         val w = maxWidth
@@ -828,38 +827,16 @@ private fun PenCard(
                 )
             }
         }
-        // One wide button: buy (price) or wear. An unowned pen may also be tried for one game through a rewarded ad: then the price
-        // button is narrower, and the trial pill sits left of it on the clear part of the card (the pen is on its far left).
-        val m = if (trial != PenTrial.None && !owned) Modifier.offset(w * 0.64f, h * 0.665f).size(w * 0.27f, h * 0.235f)
-        else Modifier.offset(w * 0.45f, h * 0.665f).size(w * 0.46f, h * 0.235f)
+        // One wide button: buy (price) or wear. Trying a pen for one game through a rewarded ad is offered in the purchase window.
+        val m = Modifier.offset(w * 0.45f, h * 0.665f).size(w * 0.46f, h * 0.235f)
         when {
             owned -> OwnedPill(equipped, onEquip, m)
             else -> PaintedPill(R.drawable.st_pill_orange, m, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
                 CoinPrice(skin.storePrice, size = 14.sp, coin = 18.dp)
             }
         }
-        if (!owned && trial != PenTrial.None) {
-            val tm = Modifier.offset(w * 0.30f, h * 0.665f).size(w * 0.32f, h * 0.235f)
-            PaintedPill(if (trial == PenTrial.Armed) R.drawable.st_pill_green else R.drawable.st_pill_orange, tm, onClick = if (trial == PenTrial.Offer) onTry else null) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(
-                        text = if (trial == PenTrial.Armed) "✓" else "▶",
-                        fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Color.White, style = PillTextShadow
-                    )
-                    com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                        text = stringResource(if (trial == PenTrial.Armed) R.string.store_pen_trial_next else R.string.store_pen_try),
-                        style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color.White, fontSize = 11.sp, textAlign = TextAlign.Center, shadow = PillTextShadow.shadow),
-                        maxLines = 2, minScale = 0.7f,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                }
-            }
-        }
     }
 }
-
-/** The "try this pen for one game" state of a pen card: not offered, offered (a rewarded ad), or armed for the next game. */
-private enum class PenTrial { None, Offer, Armed }
 
 /** One avatar ring on the shelf: the live ring picture on the painted card, its name, and the buy / wear button. */
 @Composable
@@ -1136,6 +1113,8 @@ private fun PaintedPurchaseDialog(
     gold: Int,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    /** Takes the place of the painted "Vazgeç" button (the window still closes with its X and by a tap outside). */
+    altCancel: AltCancel? = null,
     content: @Composable androidx.compose.foundation.layout.BoxScope.(u: androidx.compose.ui.unit.Dp, fs: (Float) -> androidx.compose.ui.unit.TextUnit) -> Unit = { _, _ -> }
 ) {
     val canAfford = gold >= price
@@ -1226,13 +1205,51 @@ private fun PaintedPurchaseDialog(
                     )
                 }
                 PaintedButton(spec.close, 78f, true, onDismiss)
-                PaintedButton(spec.cancel, 76f, true, onDismiss)
+                if (altCancel == null) PaintedButton(spec.cancel, 76f, true, onDismiss) else {
+                    // The painted "Vazgeç" is covered whole by a live button of the same footprint (a little larger, for the picture's edge).
+                    val (x0, y0, x1, y1) = spec.cancel
+                    val shape = RoundedCornerShape(u * 80f)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .offset(u * (x0 - 8f), u * (y0 - 8f))
+                            .size(u * (x1 - x0 + 16f), u * (y1 - y0 + 16f))
+                            .clip(shape)
+                            .background(
+                                androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    if (altCancel.armed) listOf(Color(0xFF6FD97A), Color(0xFF2FA248)) else listOf(Color(0xFFFFFFFF), Color(0xFFFFE9C9))
+                                )
+                            )
+                            .border(u * 9f, if (altCancel.armed) Color(0xFF14602A) else Color(0xFFE23B2A), shape)
+                            .then(if (altCancel.armed) Modifier else Modifier.clickable(onClick = altCancel.onClick))
+                            .padding(horizontal = u * 28f)
+                    ) {
+                        Text(
+                            text = if (altCancel.armed) "✓" else "▶",
+                            style = androidx.compose.ui.text.TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(58f), color = if (altCancel.armed) Color.White else Color(0xFFE23B2A))
+                        )
+                        Spacer(Modifier.width(u * 16f))
+                        com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                            text = altCancel.label,
+                            style = androidx.compose.ui.text.TextStyle(
+                                fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(52f),
+                                color = if (altCancel.armed) Color.White else Color(0xFFC23A1E), textAlign = TextAlign.Center, lineHeight = fs(56f)
+                            ),
+                            maxLines = 2, minScale = 0.55f,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
                 // Always the normal colour and always pressable: when the gold is short, onConfirm answers with the "not enough gold" warning
                 PaintedButton(spec.confirm, 76f, true, onConfirm)
             }
         }
     }
 }
+
+/** What replaces "Vazgeç" in a pen's purchase window: [label] on a live button, or [armed] (already waiting for the next game). */
+private class AltCancel(val label: String, val armed: Boolean, val onClick: () -> Unit)
 
 /** The joker purchase window: one painted picture per joker, with a "×N" badge when several are bought. */
 @Composable
@@ -1281,11 +1298,12 @@ private fun CosmeticPurchaseDialog(
     name: String,
     price: Int,
     gold: Int,
+    altCancel: AltCancel? = null,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     preview: @Composable (u: androidx.compose.ui.unit.Dp) -> Unit
 ) {
-    PaintedPurchaseDialog(R.drawable.buy_frame, FrameBuySpec, price, gold, onConfirm, onDismiss) { u, fs ->
+    PaintedPurchaseDialog(R.drawable.buy_frame, FrameBuySpec, price, gold, onConfirm, onDismiss, altCancel) { u, fs ->
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.offset(u * 150f, u * 330f).size(u * 790f, u * 400f)

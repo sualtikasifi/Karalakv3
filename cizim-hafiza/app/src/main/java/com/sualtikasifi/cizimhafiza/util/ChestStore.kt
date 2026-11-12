@@ -243,6 +243,9 @@ class ChestStore @Inject constructor(
         remove(SettingsRepository.KEY_CHEST_RESERVE)
         remove(SettingsRepository.KEY_CHEST_CYCLE_SEED)
         putInt(SettingsRepository.KEY_CHEST_CYCLE_INDEX, 0)
+        // The consolation chests taken today are this account's count, not the phone's.
+        remove(KEY_CONSOLATION_DAY)
+        remove(KEY_CONSOLATION_COUNT)
     }
 
     /** An account's chests (and the place in its tier cycle) put on [this] editor during a restore. */
