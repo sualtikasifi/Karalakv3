@@ -1456,7 +1456,7 @@
     <string name="store_daily_joker_action">Veja um anúncio e ganhe grátis</string>
     <string name="store_daily_joker_claimed">Seu curinga grátis foi adicionado!</string>
     <string name="store_daily_joker_unavailable">Nenhum anúncio disponível agora, tente daqui a pouco.</string>
-    <string name="store_pen_try">Ver anúncio, testar 1 jogo</string>
+    <string name="store_pen_try">Ver anúncio\nTestar 1 jogo</string>
     <string name="store_pen_trial_next">Próximo jogo</string>
     <string name="store_pen_trial_armed">Você vai desenhar o próximo jogo com este lápis!</string>
     <string name="xp_event_default_name">Evento de XP</string>
