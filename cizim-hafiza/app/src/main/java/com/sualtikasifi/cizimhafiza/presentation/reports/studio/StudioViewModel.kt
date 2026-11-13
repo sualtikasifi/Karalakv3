@@ -388,7 +388,7 @@ class StudioViewModel @Inject constructor(
                         if (s.format == StudioFormat.RealLife && s.real.musicOn) s.real.project?.featured?.music?.let { runCatching { RealMusic.ensure(context, it) } }
                         if (s.format == StudioFormat.Forgot) s.forgot.music?.let { runCatching { RealMusic.ensure(context, it) } }
                         renderer.sounds.forEach { snd ->
-                            runCatching { ClipAudio.decode(snd.file, snd.durationMs) }.getOrNull()?.let { pcm ->
+                            runCatching { ClipAudio.decode(snd.file, snd.durationMs, snd.fromMs) }.getOrNull()?.let { pcm ->
                                 val at = PcmOps.resample(pcm, RATE).let { if (snd.voice) PcmOps.softEnd(it) else it }
                                 placed += Placed(snd.shape?.let { PcmOps.shaped(at, it) } ?: at, snd.startMs, snd.gain)
                             }

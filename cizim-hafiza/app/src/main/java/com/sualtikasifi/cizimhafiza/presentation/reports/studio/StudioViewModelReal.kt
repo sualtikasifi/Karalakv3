@@ -810,16 +810,21 @@ fun StudioViewModel.importImage(sampleId: String, uri: Uri) {
 }
 
 /**
- * How much of the clip is used, by hand: a video model keeps the odd shape for the first seconds and then drifts back
- * to an ordinary one, so the clip can be cut where it is still right. The video's end then holds its last frame.
+ * Which part of the clip is used, by hand: a video model keeps the odd shape for a few seconds and then drifts back to an
+ * ordinary one, and sometimes the first moments are wrong too, so the clip can be cut at both ends. [startSec] and
+ * [endSec] are seconds into the file; the part between them (at most [RealTimeline.CLIP_MAX], at least
+ * [RealTimeline.CLIP_MIN]) is used. The video's end then holds its last frame.
  */
-fun StudioViewModel.setClipSeconds(sampleId: String, seconds: Double) {
+fun StudioViewModel.setClipRange(sampleId: String, startSec: Double, endSec: Double) {
     val r = _state.value.real.project?.reveals?.firstOrNull { it.sampleId == sampleId } ?: return
     val file = r.clip?.let { realStore.file(it) } ?: return
     viewModelScope.launch {
-        val full = withContext(Dispatchers.IO) { RealImages.clipMs(file) }
-        val ms = (seconds * 1000).toLong().coerceIn(RealTimeline.CLIP_MIN, maxOf(RealTimeline.CLIP_MIN, minOf(full, RealTimeline.CLIP_MAX)))
-        updateProject { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) it.copy(clipMs = ms) else it }) }
+        val full = r.clipFullMs.takeIf { it > 0 } ?: withContext(Dispatchers.IO) { RealImages.clipMs(file) }
+        if (full <= 0L) return@launch
+        val start = (startSec * 1000).toLong().coerceIn(0L, maxOf(0L, full - RealTimeline.CLIP_MIN))
+        val end = (endSec * 1000).toLong().coerceIn(start + RealTimeline.CLIP_MIN, maxOf(start + RealTimeline.CLIP_MIN, full))
+        val ms = (end - start).coerceAtMost(RealTimeline.CLIP_MAX)
+        updateProject { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) it.copy(clipStartMs = start, clipMs = ms, clipFullMs = full) else it }) }
     }
 }
 
@@ -840,7 +845,7 @@ fun StudioViewModel.importClip(sampleId: String, uri: Uri) {
         result.onSuccess { (name, ms) ->
             updateProject(saveNow = true) { p ->
                 p.copy(reveals = p.reveals.map {
-                    if (it.sampleId == sampleId) it.copy(clip = name, clipMs = ms.coerceAtMost(RealTimeline.CLIP_MAX)) else it
+                    if (it.sampleId == sampleId) it.copy(clip = name, clipStartMs = 0L, clipMs = ms.coerceAtMost(RealTimeline.CLIP_MAX), clipFullMs = ms) else it
                 })
             }
             pruneRealMedia()
@@ -854,7 +859,7 @@ fun StudioViewModel.removeImage(sampleId: String) {
 }
 
 fun StudioViewModel.removeClip(sampleId: String) {
-    updateProject(saveNow = true) { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) it.copy(clip = null, clipMs = 0L) else it }) }
+    updateProject(saveNow = true) { p -> p.copy(reveals = p.reveals.map { if (it.sampleId == sampleId) it.copy(clip = null, clipMs = 0L, clipStartMs = 0L, clipFullMs = 0L) else it }) }
     pruneRealMedia()
 }
 

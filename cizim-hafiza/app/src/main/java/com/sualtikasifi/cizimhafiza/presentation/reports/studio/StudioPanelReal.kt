@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -479,15 +480,7 @@ internal fun LazyListScope.stepClip(st: StudioState, vm: StudioViewModel, f: Rea
                 if (f.clip != null) ActionButton(Icons.Filled.Delete, "Kaldır", Console.Surface, Console.Critical, Modifier.weight(1f)) { vm.removeClip(f.sampleId) }
             }
             if (r.busy == f.sampleId) CircularProgressIndicator(Modifier.size(18.dp).padding(top = 6.dp), color = Console.Accent, strokeWidth = 2.dp)
-            if (f.clip != null) {
-                // the part of the clip that is used: where the odd shape starts to drift back to an ordinary one, cut it there
-                var clipText by remember(f.sampleId, f.clip) { mutableStateOf(String.format(Locale("tr"), "%.1f", f.clipMs / 1000.0)) }
-                Field("Klibin kullanılacak kısmı, saniye (sonu bozuluyorsa kısalt)", clipText, { raw ->
-                    val t = raw.filter { it.isDigit() || it == ',' || it == '.' }.take(4)
-                    clipText = t
-                    t.replace(',', '.').toDoubleOrNull()?.takeIf { it >= 1.0 }?.let { vm.setClipSeconds(f.sampleId, it) }
-                })
-            }
+            if (f.clip != null) ClipCutter(f, vm)
         }
     }
 }
@@ -508,3 +501,49 @@ internal fun LazyListScope.stepCard(st: StudioState, vm: StudioViewModel) {
     }
 }
 
+
+/** The cut: where the used part of the clip begins and ends (seconds into the file), with a bar that shows it. */
+@androidx.compose.runtime.Composable
+private fun ClipCutter(f: RealReveal, vm: StudioViewModel) {
+    val full = maxOf(f.clipFullMs, f.clipStartMs + f.clipMs)
+    fun sec(ms: Long) = String.format(Locale("tr"), "%.1f", ms / 1000.0)
+    var startText by remember(f.sampleId, f.clip, f.clipStartMs) { mutableStateOf(sec(f.clipStartMs)) }
+    var endText by remember(f.sampleId, f.clip, f.clipStartMs, f.clipMs) { mutableStateOf(sec(f.clipStartMs + f.clipMs)) }
+    fun parse(t: String) = t.replace(',', '.').toDoubleOrNull()
+    fun apply(start: String, end: String) {
+        val s = parse(start) ?: return
+        val e = parse(end) ?: return
+        if (e - s >= 1.0) vm.setClipRange(f.sampleId, s, e)
+    }
+    Text(
+        "Kullanılacak kısım: ${sec(f.clipStartMs)} – ${sec(f.clipStartMs + f.clipMs)} sn (${sec(f.clipMs)} sn) · videonun tamamı ${sec(full)} sn",
+        style = Console.Small, modifier = Modifier.padding(top = 10.dp)
+    )
+    if (full > 0) {
+        val before = f.clipStartMs.toFloat().coerceAtLeast(0f)
+        val used = f.clipMs.toFloat().coerceAtLeast(1f)
+        val after = (full - f.clipStartMs - f.clipMs).toFloat().coerceAtLeast(0f)
+        Row(Modifier.fillMaxWidth().padding(top = 6.dp).height(10.dp).clip(RoundedCornerShape(5.dp)).background(Console.Surface)) {
+            if (before > 0f) Spacer(Modifier.weight(before))
+            Box(Modifier.weight(used).fillMaxHeight().background(Console.Accent, RoundedCornerShape(5.dp)))
+            if (after > 0f) Spacer(Modifier.weight(after))
+        }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(Modifier.weight(1f)) {
+            Field("Başlangıç (sn): baştan kırp", startText, { raw ->
+                val t = raw.filter { it.isDigit() || it == ',' || it == '.' }.take(5)
+                startText = t
+                apply(t, endText)
+            })
+        }
+        Box(Modifier.weight(1f)) {
+            Field("Bitiş (sn): sondan kırp", endText, { raw ->
+                val t = raw.filter { it.isDigit() || it == ',' || it == '.' }.take(5)
+                endText = t
+                apply(startText, t)
+            })
+        }
+    }
+    Text("En az 1 sn, en çok ${RealTimeline.CLIP_MAX / 1000} sn kullanılır.", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
+}
