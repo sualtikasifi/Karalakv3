@@ -94,6 +94,31 @@ fun GuessLinkScreen(
         GuessShareUtil.share(context, id, state.word.orEmpty(), state.live)
     }
 
+    // Nothing to guess (own drawing, dead link, offline, turned off): the painted notice scene, not the card page.
+    if (state.phase == GuessPhase.Unavailable) {
+        GuessNoticeScreen(
+            problem = state.problem ?: GuessProblem.NotFound,
+            onRetry = viewModel::load,
+            onClose = onBack,
+            onBack = onBack
+        )
+        return
+    }
+
+    // Watching and guessing: the painted answer scene, not the card page.
+    if (state.phase == GuessPhase.Guessing) {
+        GuessAnswerScreen(
+            state = state,
+            onReplay = viewModel::replay,
+            onReplayFinished = viewModel::onReplayFinished,
+            onInput = viewModel::onInput,
+            onSubmit = viewModel::submitGuess,
+            onGiveUp = viewModel::giveUp,
+            onBack = leave
+        )
+        return
+    }
+
     // The game's painted page (wood wall, hanging sign, painted back arrow), with the round on a cream card so it reads on
     // the wall. While a drawing is being made the page does not scroll: a vertical stroke must not drag the page with it.
     PaintedPage(
@@ -110,8 +135,8 @@ fun GuessLinkScreen(
                     GuessPhase.Loading -> Box(Modifier.fillMaxWidth().height(280.dp), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
-                    GuessPhase.Unavailable -> Unavailable(state.problem ?: GuessProblem.NotFound, onRetry = viewModel::load, onBack = onBack)
-                    GuessPhase.Guessing -> Guessing(state, viewModel)
+                    GuessPhase.Unavailable -> Unit
+                    GuessPhase.Guessing -> Unit
                     GuessPhase.Solved, GuessPhase.Failed -> Verdict(state, viewModel, onClose = leave)
                     GuessPhase.Drawing -> Drawing(state, viewModel)
                     GuessPhase.Shared -> Shared(state, onShare = {
@@ -121,34 +146,6 @@ fun GuessLinkScreen(
             }
         }
         Spacer(Modifier.height(16.dp))
-    }
-}
-
-@Composable
-private fun Unavailable(problem: GuessProblem, onRetry: () -> Unit, onBack: () -> Unit) {
-    run {
-        Column(Modifier.fillMaxWidth().padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("🕵️", fontSize = 44.sp)
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = stringResource(
-                    when (problem) {
-                        GuessProblem.NotFound -> R.string.guess_gone
-                        GuessProblem.Offline -> R.string.guess_offline
-                        GuessProblem.Child -> R.string.guess_child
-                        GuessProblem.Own -> R.string.guess_own
-                    }
-                ),
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.height(16.dp))
-            if (problem == GuessProblem.Offline) {
-                PrimaryButton(text = stringResource(R.string.guess_retry), onClick = onRetry, modifier = Modifier.fillMaxWidth())
-            } else {
-                PrimaryButton(text = stringResource(R.string.close), onClick = onBack, modifier = Modifier.fillMaxWidth())
-            }
-        }
     }
 }
 
@@ -173,72 +170,6 @@ private fun Header(text: String, sub: String? = null) {
         Text(sub, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
     }
     Spacer(Modifier.height(14.dp))
-}
-
-@Composable
-private fun Guessing(state: GuessUiState, vm: GuessLinkViewModel) {
-    val link = state.link ?: return
-    val who = link.ownerName.ifBlank { stringResource(R.string.guess_someone) }
-    Header(stringResource(R.string.guess_title, who), stringResource(R.string.guess_subtitle))
-    PaperCard {
-        ReplayStrokeCanvas(
-            strokes = link.strokes,
-            modifier = Modifier.fillMaxSize(),
-            playToken = state.playToken,
-            onFinished = vm::onReplayFinished
-        )
-    }
-    Spacer(Modifier.height(10.dp))
-    // tries left, as dots
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        repeat(GuessCodec.MAX_ATTEMPTS) { i ->
-            Box(
-                Modifier.size(12.dp).clip(CircleShape).background(if (i < state.attempts) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
-            )
-        }
-    }
-    if (state.hint.isNotEmpty()) {
-        Spacer(Modifier.height(8.dp))
-        Text(state.hint, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp, textAlign = TextAlign.Center)
-    }
-    if (state.wrong.isNotEmpty()) {
-        Spacer(Modifier.height(4.dp))
-        Text(
-            state.wrong.joinToString("  ·  "),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center
-        )
-    }
-    Spacer(Modifier.height(10.dp))
-    TextButton(onClick = vm::replay) {
-        Icon(Icons.Filled.Replay)
-        Text(stringResource(R.string.guess_replay))
-    }
-    AppTextField(
-        value = state.input,
-        onValueChange = vm::onInput,
-        enabled = state.replayDone,
-        placeholder = stringResource(R.string.guess_placeholder),
-        centered = true,
-        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { vm.submitGuess() }),
-        modifier = Modifier.fillMaxWidth()
-    )
-    Spacer(Modifier.height(10.dp))
-    PrimaryButton(
-        text = stringResource(R.string.guess_submit),
-        onClick = vm::submitGuess,
-        enabled = state.replayDone && state.input.isNotBlank(),
-        modifier = Modifier.fillMaxWidth()
-    )
-    Spacer(Modifier.height(8.dp))
-    SecondaryButton(
-        text = stringResource(R.string.guess_give_up),
-        onClick = vm::giveUp,
-        enabled = state.replayDone,
-        modifier = Modifier.fillMaxWidth()
-    )
 }
 
 @Composable

@@ -927,7 +927,7 @@
     <string name="achievement_words_100000_title">100,000 Words</string>
     <string name="achievement_words_100000_desc">Drew 100,000 words in total</string>
     <string name="achievements_progress_count_format">%1$d / %2$d</string>
-    <string name="achievements_progress_caption">achievements unlocked</string>
+    <string name="achievements_progress_caption">achievements\nunlocked</string>
     <string name="achievements_progress_percent">%1$d%%</string>
     <string name="achievements_section_claim">Ready to collect</string>
     <string name="achievements_section_progress">In progress</string>
@@ -1284,8 +1284,8 @@
     <string name="home_ad_watch">Watch ad</string>
     <string name="home_ad_gold_earned">You earned 500 gold!</string>
     <string name="home_ad_unavailable">The ad could not load right now, try again in a moment.</string>
-    <string name="home_xp_boost_offer">30 min 2x XP</string>
-    <string name="home_xp_boost_active_format">2x XP · %1$s</string>
+    <string name="home_xp_boost_offer">×2 XP</string>
+    <string name="home_xp_boost_active_format">×2 · %1$s</string>
     <string name="home_xp_boost_on">30 minutes of double XP started!</string>
     <string name="chest_home_start">Open chest</string>
     <string name="daily_challenge_ready_short">%1$d words · same for all</string>
@@ -1455,7 +1455,7 @@
     <string name="store_daily_joker_action">Watch an ad, get it free</string>
     <string name="store_daily_joker_claimed">Your free joker was added!</string>
     <string name="store_daily_joker_unavailable">No ad available right now, try again shortly.</string>
-    <string name="store_pen_try">Watch an ad, try 1 game</string>
+    <string name="store_pen_try">Watch an ad\nTry 1 game</string>
     <string name="store_pen_trial_next">Next game</string>
     <string name="store_pen_trial_armed">You will draw your next game with this pen!</string>
     <string name="xp_event_default_name">XP Event</string>
@@ -1756,7 +1756,13 @@
     <string name="guess_gone">This link no longer works. It may have expired or been deleted.</string>
     <string name="guess_offline">The drawing could not be loaded. Check your connection.</string>
     <string name="guess_child">This feature is turned off for this account.</string>
-    <string name="guess_own">You sent this drawing. Keep sharing the link so your friends can guess it!</string>
+    <string name="guess_own_title">You sent this drawing!</string>
+    <string name="guess_own_body">Keep sharing the link so your friends can guess it!</string>
+    <string name="guess_gone_title">Link not working</string>
+    <string name="guess_offline_title">No connection</string>
+    <string name="guess_child_title">Turned off</string>
+    <string name="guess_promo_1">Draw too, guess, and race your friends!</string>
+    <string name="guess_promo_2">Try it now, join the fun!</string>
     <string name="guess_retry">Try again</string>
     <string name="guess_someone">A friend</string>
     <string name="guess_title">%1$s drew something</string>

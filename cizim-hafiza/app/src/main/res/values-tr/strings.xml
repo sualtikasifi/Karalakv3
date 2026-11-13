@@ -941,7 +941,7 @@
     <string name="achievement_words_100000_title">100.000 Kelime</string>
     <string name="achievement_words_100000_desc">Toplam 100.000 kelime çizdin</string>
     <string name="achievements_progress_count_format">%1$d / %2$d</string>
-    <string name="achievements_progress_caption">başarım açıldı</string>
+    <string name="achievements_progress_caption">başarım\naçıldı</string>
     <string name="achievements_progress_percent">%%%1$d</string>
     <string name="achievements_section_claim">Ödülünü topla</string>
     <string name="achievements_section_progress">Devam edenler</string>
@@ -1297,8 +1297,8 @@
     <string name="home_ad_watch">Reklam izle</string>
     <string name="home_ad_gold_earned">+500 altın kazandın!</string>
     <string name="home_ad_unavailable">Reklam şu an yüklenemedi, biraz sonra tekrar dene.</string>
-    <string name="home_xp_boost_offer">30 dk ×2 XP</string>
-    <string name="home_xp_boost_active_format">×2 XP · %1$s</string>
+    <string name="home_xp_boost_offer">×2 XP</string>
+    <string name="home_xp_boost_active_format">×2 · %1$s</string>
     <string name="home_xp_boost_on">30 dakika çift XP başladı!</string>
     <string name="chest_home_start">Kasayı Aç</string>
     <string name="daily_challenge_ready_short">%1$d kelime · aynı kelimeler</string>
@@ -1468,7 +1468,7 @@
     <string name="store_daily_joker_action">Reklam izle, ücretsiz al</string>
     <string name="store_daily_joker_claimed">Ücretsiz jokerin eklendi!</string>
     <string name="store_daily_joker_unavailable">Şu an reklam yok, biraz sonra tekrar dene.</string>
-    <string name="store_pen_try">Reklam izle, 1 oyun dene</string>
+    <string name="store_pen_try">Reklam izle\n1 oyun dene</string>
     <string name="store_pen_trial_next">Sonraki oyunda</string>
     <string name="store_pen_trial_armed">Bir sonraki oyununda bu kalemle çizeceksin!</string>
     <string name="xp_event_default_name">XP Etkinliği</string>
@@ -1769,7 +1769,13 @@
     <string name="guess_gone">Bu bağlantı artık geçerli değil. Süresi dolmuş ya da silinmiş olabilir.</string>
     <string name="guess_offline">Çizim yüklenemedi. İnternet bağlantını kontrol et.</string>
     <string name="guess_child">Bu özellik bu hesapta kapalı.</string>
-    <string name="guess_own">Bu çizimi sen gönderdin. Arkadaşların bilsin diye bağlantıyı paylaşmaya devam et!</string>
+    <string name="guess_own_title">Bu çizimi sen gönderdin!</string>
+    <string name="guess_own_body">Arkadaşların bilsin diye bağlantıyı paylaşmaya devam et!</string>
+    <string name="guess_gone_title">Bağlantı geçersiz</string>
+    <string name="guess_offline_title">Bağlantı yok</string>
+    <string name="guess_child_title">Şu an kapalı</string>
+    <string name="guess_promo_1">Sen de çiz, tahmin et, arkadaşlarınla yarış!</string>
+    <string name="guess_promo_2">Hemen dene, eğlenceye katıl!</string>
     <string name="guess_retry">Tekrar dene</string>
     <string name="guess_someone">Bir arkadaşın</string>
     <string name="guess_title">%1$s bir şey çizdi</string>

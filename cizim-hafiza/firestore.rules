@@ -214,9 +214,17 @@ service cloud.firestore {
         // only ever write your own result doc — except the bot's, which is
         // written on its behalf in the bot room.
         allow read: if signedIn() && (isMember() || reviewer());
-        allow write: if signedIn()
+        // Only a player of this room writes into it (their own drawings, or the bot's in the practice room), and only
+        // the one field the game reads. Before, any signed-in account could leave documents of any shape and size
+        // under any room whose six-digit code it guessed.
+        allow create, update: if signedIn()
+                     && isMember()
                      && (request.auth.uid == uid || (botRoom(roomCode) && uid == botUid()))
-                     && (!('itemsJson' in request.resource.data) || request.resource.data.itemsJson is string);
+                     && request.resource.data.keys().hasOnly(['itemsJson'])
+                     && request.resource.data.itemsJson is string
+                     && request.resource.data.itemsJson.size() < 900000;
+        allow delete: if signedIn() && isMember()
+                      && (request.auth.uid == uid || (botRoom(roomCode) && uid == botUid()));
       }
 
       match /reactions/{reactionId} {
@@ -259,6 +267,10 @@ service cloud.firestore {
                     && request.resource.data.opponentUid is string
                     && request.resource.data.opponentUid != request.auth.uid
                     && !exists(/databases/$(database)/documents/users/$(request.resource.data.opponentUid)/blockedUsers/$(request.auth.uid))
+                    // A challenge carries drawings and a name to the other player's screen, so it may only go to someone
+                    // who has the sender in their friends list (the same condition as a match invite). Before, any
+                    // account could send drawings to any uid it found on the league table.
+                    && exists(/databases/$(database)/documents/users/$(request.resource.data.opponentUid)/friends/$(request.auth.uid))
                     && request.resource.data.status == 'AWAITING_OPPONENT'
                     && request.resource.data.opponentScore == null
                     && request.resource.data.get('challengerName', '') is string && request.resource.data.get('challengerName', '').size() <= 40

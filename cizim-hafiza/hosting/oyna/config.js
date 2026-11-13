@@ -10,5 +10,5 @@ export const firebaseConfig = {
 // App Check for the web (reCAPTCHA Enterprise site key, also public): Firebase console -> App Check -> Karalak Web -> reCAPTCHA
 // Enterprise, with karalak.com as the key's domain. Empty = App Check off on the web. Fill this in BEFORE enforcing App Check for
 // Firestore, or the web game stops reaching the database.
-export const appCheckSiteKey = "";
+export const appCheckSiteKey = "6Lf21B0uAAAAAOspATiv3XDwTHLaUMsiMr3_uDhF";
 export const firebaseReady = () => !!(firebaseConfig.apiKey && firebaseConfig.appId);

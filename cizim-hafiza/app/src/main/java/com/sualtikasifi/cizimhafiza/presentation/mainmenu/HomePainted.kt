@@ -372,7 +372,7 @@ internal fun PaintedHome(
                 Icon(Icons.Filled.Create, contentDescription = null, tint = Color.White, modifier = Modifier.size((22f * us).dp))
             }
         }
-        Box(box(224f, 357f, 780f, 399f), contentAlignment = Alignment.CenterStart) {
+        Box(box(224f, 357f, 474f, 399f), contentAlignment = Alignment.CenterStart) {
             // The level sits on the SAME BASELINE as the name (they are two sizes, so aligning their bottoms or centres
             // leaves the smaller one visibly floating).
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -425,13 +425,14 @@ internal fun PaintedHome(
             )
         }
 
-        // 30 minutes of double XP for a rewarded ad: a small chip under the XP bar (the only free strip there). While it runs it is the
-        // countdown; otherwise the offer, pulsing a little. Never a pop-up.
+        // 30 minutes of double XP for a rewarded ad: a small chip INSIDE the profile card, on the name row between the level and
+        // the painted crown (there is no free strip under the card: its frame is right there). While it runs it is the countdown;
+        // otherwise the offer, pulsing a little. Never a pop-up.
         if (xpBoost.activeUntil > 0L || xpBoost.offerable) {
             val running = xpBoost.activeUntil > 0L
             val left = if (running) ((xpBoost.activeUntil - System.currentTimeMillis()) / 1000).coerceAtLeast(0) else 0
             Row(
-                box(222f, 496f, if (running) 520f else 560f, 536f)
+                box(486f, 358f, 618f, 398f)
                     .then(if (running) Modifier else Modifier.breathing(0.04f, 1400))
                     .background(
                         Brush.verticalGradient(if (running) listOf(Color(0xFFFFE566), Color(0xFFFFB300)) else listOf(Color(0xFFFFF3D6), Color(0xFFFFD98A))),

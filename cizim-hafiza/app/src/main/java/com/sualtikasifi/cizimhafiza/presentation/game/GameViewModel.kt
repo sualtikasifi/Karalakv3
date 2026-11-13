@@ -136,7 +136,6 @@ class GameViewModel @Inject constructor(
     private val vibratorHelper: VibratorHelper,
     private val soundManager: SoundManager,
     private val adManager: AdManager,
-    private val xpBoost: com.sualtikasifi.cizimhafiza.util.XpBoostStore,
     private val penTrial: com.sualtikasifi.cizimhafiza.util.PenTrialStore,
     private val wordPoolSynchronizer: WordPoolSynchronizer,
     private val xpEventRepository: XpEventRepository,
@@ -1319,7 +1318,6 @@ class GameViewModel @Inject constructor(
             showRatingPrompt = false,
             chestWon = chestWon,
             chestLost = quickMatchWon && chestWon == null,
-            xpBoosted = xpBoost.multiplierNow() > 1.0,
             consolationOffer = ghost != null && totalScore < ghost.totalScore && settingsRepository.consolationChestAvailable() &&
                 adManager.placementEnabled("chest_consolation") && adManager.rewardedReady(),
             chestLostTier = chestAward?.lostTier

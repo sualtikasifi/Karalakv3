@@ -928,7 +928,7 @@
     <string name="achievement_words_100000_title">100.000 Palavras</string>
     <string name="achievement_words_100000_desc">Desenhou 100.000 palavras no total</string>
     <string name="achievements_progress_count_format">%1$d / %2$d</string>
-    <string name="achievements_progress_caption">conquistas desbloqueadas</string>
+    <string name="achievements_progress_caption">conquistas\ndesbloqueadas</string>
     <string name="achievements_progress_percent">%1$d%%</string>
     <string name="achievements_section_claim">Prontas para resgatar</string>
     <string name="achievements_section_progress">Em andamento</string>
@@ -1285,8 +1285,8 @@
     <string name="home_ad_watch">Ver anúncio</string>
     <string name="home_ad_gold_earned">Você ganhou 500 de ouro!</string>
     <string name="home_ad_unavailable">O anúncio não carregou agora, tente de novo em instantes.</string>
-    <string name="home_xp_boost_offer">30 min XP ×2</string>
-    <string name="home_xp_boost_active_format">XP ×2 · %1$s</string>
+    <string name="home_xp_boost_offer">×2 XP</string>
+    <string name="home_xp_boost_active_format">×2 · %1$s</string>
     <string name="home_xp_boost_on">30 minutos de XP em dobro começaram!</string>
     <string name="chest_home_start">Abrir baú</string>
     <string name="daily_challenge_ready_short">%1$d palavras · iguais para todos</string>
@@ -1456,7 +1456,7 @@
     <string name="store_daily_joker_action">Veja um anúncio e ganhe grátis</string>
     <string name="store_daily_joker_claimed">Seu curinga grátis foi adicionado!</string>
     <string name="store_daily_joker_unavailable">Nenhum anúncio disponível agora, tente daqui a pouco.</string>
-    <string name="store_pen_try">Ver anúncio, testar 1 jogo</string>
+    <string name="store_pen_try">Ver anúncio\nTestar 1 jogo</string>
     <string name="store_pen_trial_next">Próximo jogo</string>
     <string name="store_pen_trial_armed">Você vai desenhar o próximo jogo com este lápis!</string>
     <string name="xp_event_default_name">Evento de XP</string>
@@ -1757,7 +1757,13 @@
     <string name="guess_gone">Este link não funciona mais. Pode ter expirado ou sido apagado.</string>
     <string name="guess_offline">Não foi possível carregar o desenho. Verifique sua conexão.</string>
     <string name="guess_child">Este recurso está desativado nesta conta.</string>
-    <string name="guess_own">Você enviou este desenho. Continue compartilhando o link para os amigos adivinharem!</string>
+    <string name="guess_own_title">Você enviou este desenho!</string>
+    <string name="guess_own_body">Continue compartilhando o link para os amigos adivinharem!</string>
+    <string name="guess_gone_title">Link inválido</string>
+    <string name="guess_offline_title">Sem conexão</string>
+    <string name="guess_child_title">Desativado</string>
+    <string name="guess_promo_1">Desenhe também, adivinhe e dispute com seus amigos!</string>
+    <string name="guess_promo_2">Experimente já e entre na diversão!</string>
     <string name="guess_retry">Tentar de novo</string>
     <string name="guess_someone">Um amigo</string>
     <string name="guess_title">%1$s desenhou algo</string>
