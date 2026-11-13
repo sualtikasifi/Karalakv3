@@ -220,8 +220,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                             equipped = id in owned && selectedPen == skin.name,
                             canAfford = gold >= skin.storePrice,
                             onBuy = { pending = Pending.PenItem(skin) },
-                            onEquip = { viewModel.equipPen(skin) },
-                            onCannotAfford = { showToast(R.string.store_not_enough, isError = true) }
+                            onEquip = { viewModel.equipPen(skin) }
                         ) }
                     }
                 } else if (tab == 0) {
@@ -800,8 +799,7 @@ private fun PenCard(
     equipped: Boolean,
     canAfford: Boolean,
     onBuy: () -> Unit,
-    onEquip: () -> Unit,
-    onCannotAfford: () -> Unit
+    onEquip: () -> Unit
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(860f / 540f)) {
         val w = maxWidth
@@ -831,7 +829,9 @@ private fun PenCard(
         val m = Modifier.offset(w * 0.45f, h * 0.665f).size(w * 0.46f, h * 0.235f)
         when {
             owned -> OwnedPill(equipped, onEquip, m)
-            else -> PaintedPill(R.drawable.st_pill_orange, m, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
+            // Always opens the purchase window, even with too little gold: the window is also where the pen is tried for a game
+            // (by an ad); there, "Satın Al" answers with the missing gold.
+            else -> PaintedPill(R.drawable.st_pill_orange, m, onClick = onBuy) {
                 CoinPrice(skin.storePrice, size = 14.sp, coin = 18.dp)
             }
         }
@@ -1118,6 +1118,12 @@ private fun PaintedPurchaseDialog(
     content: @Composable androidx.compose.foundation.layout.BoxScope.(u: androidx.compose.ui.unit.Dp, fs: (Float) -> androidx.compose.ui.unit.TextUnit) -> Unit = { _, _ -> }
 ) {
     val canAfford = gold >= price
+    // Bumped by a tap on "Satın Al" without the gold: the missing-gold strip answers for a moment.
+    var shortTick by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    var shortFlash by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(shortTick) {
+        if (shortTick > 0) { shortFlash = true; kotlinx.coroutines.delay(2000); shortFlash = false }
+    }
     androidx.compose.ui.window.Dialog(
         onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
@@ -1189,9 +1195,9 @@ private fun PaintedPurchaseDialog(
                     modifier = Modifier.offset(u * spec.price[0], u * spec.price[1]).size(u * spec.price[2], u * spec.price[3])
                 )
                 if (!canAfford) {
-                    // How much is missing, just above the plank.
+                    // How much is missing, just above the plank; for a moment after a tap on "Satın Al" it says so outright.
                     com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                        text = "⚠ " + stringResource(R.string.store_missing_gold, price - gold),
+                        text = if (shortFlash) "⚠ " + stringResource(R.string.store_not_enough) else "⚠ " + stringResource(R.string.store_missing_gold, price - gold),
                         style = androidx.compose.ui.text.TextStyle(
                             fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(34f),
                             color = Color(0xFFB3401A), textAlign = TextAlign.Center
@@ -1201,7 +1207,7 @@ private fun PaintedPurchaseDialog(
                             .offset(u * spec.warn[0], u * spec.warn[1])
                             .size(u * spec.warn[2], u * spec.warn[3])
                             .clip(RoundedCornerShape(u * 25f))
-                            .background(Color(0xFFFFE3D6))
+                            .background(if (shortFlash) Color(0xFFFFB8A3) else Color(0xFFFFE3D6))
                     )
                 }
                 PaintedButton(spec.close, 78f, true, onDismiss)
@@ -1242,7 +1248,10 @@ private fun PaintedPurchaseDialog(
                     }
                 }
                 // Always the normal colour and always pressable: when the gold is short, onConfirm answers with the "not enough gold" warning
-                PaintedButton(spec.confirm, 76f, true, onConfirm)
+                PaintedButton(spec.confirm, 76f, true) {
+                    // Too little gold: the window stays (a toast would hide behind it, and the ad trial is still on offer).
+                    if (canAfford) onConfirm() else shortTick++
+                }
             }
         }
     }
