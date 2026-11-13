@@ -71,13 +71,6 @@ class RunePromoPreviewActivity : ComponentActivity() {
                         pen = PenSkin.CLASSIC,
                         gold = if (screen == "home_ready") 820 else 180,
                         xpEvent = null,
-                        // home_ready: the double-XP offer under the XP bar; home_boost: the same chip counting down.
-                        xpBoost = when (screen) {
-                            "home_ready" -> com.sualtikasifi.cizimhafiza.presentation.mainmenu.XpBoostUi(offerable = true)
-                            "home_boost" -> com.sualtikasifi.cizimhafiza.presentation.mainmenu.XpBoostUi(activeUntil = System.currentTimeMillis() + 27 * 60_000L + 41_000L)
-                            else -> com.sualtikasifi.cizimhafiza.presentation.mainmenu.XpBoostUi.None
-                        },
-                        onXpBoost = {},
                         dailyState = DailyChallengeState(todayEpochDay = 20_000, lastCompletedEpochDay = 0, currentStreak = 3, bestStreak = 5, lastResult = null),
                         adGoldNextAt = 0L,
                         adChestNextAt = 0L,

@@ -1286,9 +1286,6 @@
     <string name="home_ad_watch">Ver anúncio</string>
     <string name="home_ad_gold_earned">Você ganhou 500 de ouro!</string>
     <string name="home_ad_unavailable">O anúncio não carregou agora, tente de novo em instantes.</string>
-    <string name="home_xp_boost_offer">×2 XP</string>
-    <string name="home_xp_boost_active_format">×2 · %1$s</string>
-    <string name="home_xp_boost_on">30 minutos de XP em dobro começaram!</string>
     <string name="chest_home_start">Abrir baú</string>
     <string name="daily_challenge_ready_short">%1$d palavras · iguais para todos</string>
     <string name="daily_challenge_words_short">%1$d palavras</string>
@@ -1794,6 +1791,10 @@
     <string name="guess_inbox_title">Tentaram os seus desenhos!</string>
     <string name="guess_inbox_solved">%1$s acertou (tentativa %2$d)</string>
     <string name="guess_inbox_failed">%1$s não acertou</string>
+    <string name="guess_inbox_failed_sub">Não acertou</string>
+    <string name="guess_inbox_first">De primeira</string>
+    <string name="guess_inbox_tries">Acertou na tentativa %1$d</string>
+    <string name="guess_inbox_total">Total ganho</string>
     <string name="guess_inbox_reward">+%1$d de ouro</string>
     <string name="guess_inbox_ok">Ótimo!</string>
 
@@ -1834,4 +1835,12 @@
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_page_title">Adivinha</string>
     <string name="duel_create_streak_hint">Completem um duelo por dia e a sequência de amigos cresce.</string>
+    <string name="xp_offer_title">Chance de XP em dobro!</string>
+    <string name="xp_offer_badge">XP ×2</string>
+    <string name="xp_offer_body">Assista a um anúncio curto e o XP que você ganhar dobra pelos próximos 30 minutos.</string>
+    <string name="xp_offer_watch">Ver anúncio</string>
+    <string name="xp_offer_skip">Agora não</string>
+    <string name="xp_offer_started_title">XP em dobro ativado!</string>
+    <string name="xp_offer_started_body">O XP que você ganhar dobra pelos próximos 30 minutos.</string>
+    <string name="xp_offer_play">Jogar</string>
 </resources>

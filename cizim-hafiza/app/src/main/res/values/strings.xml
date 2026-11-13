@@ -1285,9 +1285,6 @@
     <string name="home_ad_watch">Watch ad</string>
     <string name="home_ad_gold_earned">You earned 500 gold!</string>
     <string name="home_ad_unavailable">The ad could not load right now, try again in a moment.</string>
-    <string name="home_xp_boost_offer">×2 XP</string>
-    <string name="home_xp_boost_active_format">×2 · %1$s</string>
-    <string name="home_xp_boost_on">30 minutes of double XP started!</string>
     <string name="chest_home_start">Open chest</string>
     <string name="daily_challenge_ready_short">%1$d words · same for all</string>
     <string name="daily_challenge_words_short">%1$d words</string>
@@ -1793,6 +1790,10 @@
     <string name="guess_inbox_title">They tried your drawings!</string>
     <string name="guess_inbox_solved">%1$s guessed it (try %2$d)</string>
     <string name="guess_inbox_failed">%1$s could not guess it</string>
+    <string name="guess_inbox_failed_sub">Not this time</string>
+    <string name="guess_inbox_first">In 1 try</string>
+    <string name="guess_inbox_tries">Guessed on try %1$d</string>
+    <string name="guess_inbox_total">Total earned</string>
     <string name="guess_inbox_reward">+%1$d gold</string>
     <string name="guess_inbox_ok">Great!</string>
 
@@ -1833,4 +1834,12 @@
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_page_title">Guess It</string>
     <string name="duel_create_streak_hint">Finish a duel together every day and your friend streak grows.</string>
+    <string name="xp_offer_title">Double XP chance!</string>
+    <string name="xp_offer_badge">×2 XP</string>
+    <string name="xp_offer_body">Watch a short ad and the XP you earn is doubled for the next 30 minutes.</string>
+    <string name="xp_offer_watch">Watch ad</string>
+    <string name="xp_offer_skip">Not now</string>
+    <string name="xp_offer_started_title">Double XP started!</string>
+    <string name="xp_offer_started_body">The XP you earn is doubled for the next 30 minutes.</string>
+    <string name="xp_offer_play">Play</string>
 </resources>

@@ -1298,9 +1298,6 @@
     <string name="home_ad_watch">Reklam izle</string>
     <string name="home_ad_gold_earned">+500 altın kazandın!</string>
     <string name="home_ad_unavailable">Reklam şu an yüklenemedi, biraz sonra tekrar dene.</string>
-    <string name="home_xp_boost_offer">×2 XP</string>
-    <string name="home_xp_boost_active_format">×2 · %1$s</string>
-    <string name="home_xp_boost_on">30 dakika çift XP başladı!</string>
     <string name="chest_home_start">Kasayı Aç</string>
     <string name="daily_challenge_ready_short">%1$d kelime · aynı kelimeler</string>
     <string name="daily_challenge_words_short">%1$d kelime</string>
@@ -1806,6 +1803,10 @@
     <string name="guess_inbox_title">Çizimlerini denediler!</string>
     <string name="guess_inbox_solved">%1$s bildi (%2$d. denemede)</string>
     <string name="guess_inbox_failed">%1$s bilemedi</string>
+    <string name="guess_inbox_failed_sub">Bilemedi</string>
+    <string name="guess_inbox_first">İlk denemede</string>
+    <string name="guess_inbox_tries">%1$d. denemede</string>
+    <string name="guess_inbox_total">Toplam kazanç</string>
     <string name="guess_inbox_reward">+%1$d altın</string>
     <string name="guess_inbox_ok">Harika!</string>
 
@@ -1846,4 +1847,12 @@
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_page_title">Bil Bakalım</string>
     <string name="duel_create_streak_hint">Her gün bir düello tamamlanırsa arkadaş seriniz büyür.</string>
+    <string name="xp_offer_title">Çift XP fırsatı!</string>
+    <string name="xp_offer_badge">×2 XP</string>
+    <string name="xp_offer_body">Kısa bir reklam izle, sonraki 30 dakika boyunca kazandığın XP ikiye katlansın.</string>
+    <string name="xp_offer_watch">Reklam izle</string>
+    <string name="xp_offer_skip">Şimdi değil</string>
+    <string name="xp_offer_started_title">Çift XP başladı!</string>
+    <string name="xp_offer_started_body">Sonraki 30 dakika boyunca kazandığın XP ikiye katlanıyor.</string>
+    <string name="xp_offer_play">Oyna</string>
 </resources>
