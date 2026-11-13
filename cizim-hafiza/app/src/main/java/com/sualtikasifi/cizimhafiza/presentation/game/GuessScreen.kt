@@ -904,10 +904,6 @@ private fun GuessFeedbackOverlay(
 ) {
     val accent = if (feedback?.isCorrect == true) Color(0xFF22A552) else Color(0xFFD9483B)
     Box(modifier = modifier.fillMaxSize()) {
-        // the frame: there at once, gone with the strip. Only a wrong guess has one: a right guess is told by the strip alone.
-        AnimatedVisibility(visible = visible && feedback?.isCorrect != true, enter = fadeIn(tween(120)), exit = androidx.compose.animation.fadeOut(tween(160)), modifier = Modifier.matchParentSize()) {
-            Box(Modifier.fillMaxSize().border(3.dp, accent.copy(alpha = 0.85f), RoundedCornerShape(14.dp)))
-        }
         AnimatedVisibility(
             visible = visible,
             enter = androidx.compose.animation.slideInVertically(spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMediumLow)) { it } + fadeIn(tween(120)),
