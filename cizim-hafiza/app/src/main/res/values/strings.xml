@@ -1834,12 +1834,12 @@
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_page_title">Guess It</string>
     <string name="duel_create_streak_hint">Finish a duel together every day and your friend streak grows.</string>
-    <string name="xp_offer_title">Double XP chance!</string>
-    <string name="xp_offer_badge">×2 XP</string>
-    <string name="xp_offer_body">Watch a short ad and the XP you earn is doubled for the next 30 minutes.</string>
+    <string name="xp_offer_title">Double XP Chance!</string>
+    <string name="xp_offer_body">Watch a short ad and the XP you earn is doubled for the next %1$s.</string>
+    <string name="xp_offer_minutes">30 minutes</string>
     <string name="xp_offer_watch">Watch ad</string>
-    <string name="xp_offer_skip">Not now</string>
+    <string name="xp_offer_skip">Not Now</string>
     <string name="xp_offer_started_title">Double XP started!</string>
-    <string name="xp_offer_started_body">The XP you earn is doubled for the next 30 minutes.</string>
+    <string name="xp_offer_started_body">The XP you earn is doubled for the next %1$s.</string>
     <string name="xp_offer_play">Play</string>
 </resources>
