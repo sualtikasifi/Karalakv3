@@ -62,6 +62,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -137,9 +141,11 @@ fun AccountScreen(
     val linked = uiState.authState as? AuthState.Linked
     val progress = uiState.levelProgress
     val number = remember { java.text.NumberFormat.getIntegerInstance() }
+    var showRename by remember { mutableStateOf(false) }
 
-    // The page is the workshop picture (bg_account) with the cards painted into it; everything that changes — the
-    // name, the figures, the bar, the buttons — is laid over it by the picture's own coordinates.
+    // The page is one painted scene (bg_account: the sign, the profile card with its bar, the three figure cards, the
+    // account ribbon and strip, the two buttons - all left empty). Everything that changes is laid over it by the
+    // picture's own coordinates, so every box below is a rectangle of that picture.
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val unit = minOf(maxWidth / ArtW, maxHeight / ArtH)
         val offX = (maxWidth - unit * ArtW) / 2
@@ -158,20 +164,20 @@ fun AccountScreen(
         }
         Image(scene, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(0f, 0f, ArtW, ArtH))
 
-        // ---- The sign ------------------------------------------------------------------------------------------
-        // The painted sign in the picture was cut off at its left side, so a whole one is laid over it.
-        Image(
-            painterResource(R.drawable.ac_sign),
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-            modifier = box(130f, 132f, 710f, 132f + 580f * 733f / 1100f)
+        // The painted back arrow in the corner.
+        Box(
+            box(14f, 66f, 138f, 172f)
+                .pressable(pressedScale = 0.92f, onClick = onBack)
+                .a11yButton(stringResource(R.string.cd_back))
         )
+
+        // ---- The sign ------------------------------------------------------------------------------------------
         LetteredText(
             text = stringResource(R.string.account_title),
             size = fs(104f),
             fill = Color.White,
             outline = Color(0xFF5A2815),
-            modifier = box(219f, 342f, 639f, 455f),
+            modifier = box(215f, 304f, 625f, 404f),
             minScale = 0.5f,
             title = true
         )
@@ -180,139 +186,194 @@ fun AccountScreen(
         val name = uiState.nickname.ifBlank {
             linked?.displayName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.account_guest_badge)
         }
-        Box(box(92f, 545f, 242f, 695f), contentAlignment = Alignment.Center) {
+        Box(box(70f, 490f, 306f, 734f), contentAlignment = Alignment.Center) {
             LevelAvatar(
                 level = uiState.level,
                 frame = uiState.frame,
-                size = (150f * us).dp,
+                size = (214f * us).dp,
                 photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(linked?.photoUrl)
             )
         }
-        // The texts sit centred in the column to the right of the avatar.
         FitText(
             text = name,
-            style = PaintedStyle(color = PageInk, fontSize = fs(48f), textAlign = TextAlign.Center),
+            style = PaintedStyle(color = PageInk, fontSize = fs(58f), textAlign = TextAlign.Start),
             maxLines = 1,
-            minScale = 0.55f,
-            modifier = box(256f, 534f, 786f, 594f)
+            minScale = 0.5f,
+            contentAlignment = Alignment.CenterStart,
+            modifier = box(335f, 504f, 682f, 566f)
         )
-        Box(box(256f, 596f, 786f, 640f), contentAlignment = Alignment.Center) {
-            RankLevelLabel(level = uiState.level, bullet = false)
-        }
-        // Who the profile belongs to: a green pill with a tick for a linked Google account, a plain one for a guest. A linked
-        // pill has two lines, so a long address has the whole width of its own line: it shrinks, and when that is not
-        // enough the middle of the part before the @ is cut, never the domain.
-        Column(
-            box(268f, 648f, 774f, 718f)
-                .clip(RoundedCornerShape(50))
-                .background(if (linked != null) Color(0xFFDDEEDD) else Color(0xFFEFE3CF))
-                .padding(horizontal = (20f * us).dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((8f * us).dp)) {
-                Icon(
-                    imageVector = if (linked != null) Icons.Filled.Check else Icons.Filled.Person,
-                    contentDescription = null,
-                    tint = if (linked != null) AppTheme.tokens.success else Color(0xFF8A6A50),
-                    modifier = Modifier.size((28f * us).dp)
-                )
-                Text(
-                    text = if (linked != null) stringResource(R.string.account_google_linked) else stringResource(R.string.account_guest_badge),
-                    style = PaintedStyle(color = PageInk, fontSize = fs(26f), textAlign = TextAlign.Center),
-                    maxLines = 1
-                )
-            }
-            val email = linked?.email
-            if (!email.isNullOrBlank()) {
-                FitText(
-                    text = shortenEmail(email, 30),
-                    style = PaintedStyle(color = Color(0xFF5A4030), fontSize = fs(24f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
-                    maxLines = 1,
-                    minScale = 0.7f,
-                    modifier = Modifier.fillMaxWidth().height(unit * 30f)
-                )
-            }
-        }
-        // The XP bar.
+        // The painted pencil button: rename (once, before Google is linked), or the reason it cannot be.
         Box(
-            box(92f, 726f, 736f, 762f)
-                .clip(CircleShape)
-                .background(Color(0xFF4A2A18))
+            box(692f, 505f, 765f, 578f)
+                .pressable(pressedScale = 0.9f, onClick = { showRename = true })
+                .a11yButton(stringResource(R.string.account_nickname_label)),
+            contentAlignment = Alignment.Center
         ) {
-            val fraction by androidx.compose.animation.core.animateFloatAsState(
-                progress.progressFraction.coerceIn(0f, 1f),
-                androidx.compose.animation.core.tween(700),
-                label = "xpBar"
+            Icon(Icons.Filled.Edit, contentDescription = null, tint = Color(0xFFD9701F), modifier = Modifier.size(unit * 38f))
+        }
+        // The rank on its painted pill.
+        val tier = com.sualtikasifi.cizimhafiza.domain.model.LevelTier.forLevel(uiState.level)
+        Row(
+            box(330f, 563f, 537f, 605f).padding(horizontal = unit * 14f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(tier.rank.emoji, fontSize = fs(28f))
+            Spacer(Modifier.size(unit * 8f))
+            FitText(
+                text = stringResource(tier.rank.nameRes),
+                style = PaintedStyle(color = Color(0xFF5A3418), fontSize = fs(33f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+                maxLines = 1,
+                minScale = 0.55f,
+                modifier = Modifier.weight(1f, fill = false)
             )
-            Box(
-                Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(fraction.coerceAtLeast(0.05f))
-                    .clip(CircleShape)
-                    .background(Brush.verticalGradient(listOf(Color(0xFFFFC04A), Color(0xFFF58A1F))))
+        }
+        // Who the profile belongs to. The painted pill is green (a linked Google account); a guest's is covered by a plain one.
+        // A linked pill has two lines, so a long address has the whole width of its own line: it shrinks, and when that is not
+        // enough the middle of the part before the @ is cut, never the domain.
+        if (linked == null) {
+            Box(box(330f, 622f, 712f, 712f).clip(RoundedCornerShape(unit * 45f)).background(Color(0xFFF1E2C6)))
+        }
+        Row(
+            box(330f, 622f, 712f, 712f).padding(horizontal = unit * 26f),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (linked != null) Icons.Filled.Check else Icons.Filled.Person,
+                contentDescription = null,
+                tint = if (linked != null) Color(0xFF2E9B3E) else Color(0xFF8A6A50),
+                modifier = Modifier.size(unit * 46f)
             )
-            // The figure sits inside the bar, at its start, in white with a dark edge so it reads on the orange and on the dark part.
+            Spacer(Modifier.size(unit * 14f))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+                FitText(
+                    text = if (linked != null) stringResource(R.string.account_google_linked) else stringResource(R.string.account_guest_badge),
+                    style = PaintedStyle(color = PageInk, fontSize = fs(33f), textAlign = TextAlign.Start),
+                    maxLines = 1,
+                    minScale = 0.6f,
+                    contentAlignment = Alignment.CenterStart,
+                    modifier = Modifier.fillMaxWidth().height(unit * 38f)
+                )
+                val email = linked?.email
+                if (!email.isNullOrBlank()) {
+                    FitText(
+                        text = shortenEmail(email, 30),
+                        style = PaintedStyle(color = Color(0xFF4F3A28), fontSize = fs(27f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Start),
+                        maxLines = 1,
+                        minScale = 0.65f,
+                        contentAlignment = Alignment.CenterStart,
+                        modifier = Modifier.fillMaxWidth().height(unit * 32f)
+                    )
+                }
+            }
+        }
+
+        // The XP bar: the painted one is only a frame; its track and fill are drawn here so the fill follows the real progress.
+        val fraction by androidx.compose.animation.core.animateFloatAsState(
+            progress.progressFraction.coerceIn(0f, 1f),
+            androidx.compose.animation.core.tween(700),
+            label = "xpBar"
+        )
+        Box(box(196f, 777f, 747f, 820f).clip(RoundedCornerShape(unit * 21f)).background(Color(0xFF5F2C10))) {
+            val f = fraction.coerceIn(0.06f, 1f)
+            Row(Modifier.fillMaxSize()) {
+                Box(
+                    Modifier
+                        .fillMaxHeight()
+                        .weight(f)
+                        .background(
+                            Brush.verticalGradient(
+                                0f to Color(0xFFFCEC9C), 0.2f to Color(0xFFFCCD15), 0.5f to Color(0xFFFEBA17),
+                                0.66f to Color(0xFFFE9701), 1f to Color(0xFFF36501)
+                            )
+                        )
+                )
+                if (f < 0.995f) {
+                    Box(Modifier.fillMaxHeight().size(width = unit * 4f, height = unit * 43f).background(Color(0xFF8A3206)))
+                    Spacer(Modifier.weight(1f - f))
+                }
+            }
+            // The figure is centred on the whole bar, in white with a dark edge so it reads on the orange and on the dark part.
             Text(
                 text = if (progress.isMaxLevel) stringResource(R.string.account_xp_max)
                 else stringResource(R.string.account_xp_progress, progress.xpIntoLevel, progress.xpForThisLevel),
                 style = PaintedStyle(
-                    color = Color.White, fontSize = fs(26f), fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center
-                ).copy(shadow = androidx.compose.ui.graphics.Shadow(Color(0xCC3A1A08), androidx.compose.ui.geometry.Offset(0f, 2f), 4f)),
+                    color = Color.White, fontSize = fs(30f), fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center
+                ).copy(shadow = androidx.compose.ui.graphics.Shadow(Color(0xDD3A1A08), androidx.compose.ui.geometry.Offset(0f, 2f), 5f)),
                 maxLines = 1,
-                modifier = Modifier.align(Alignment.Center).offset(y = -(2.5f * us).dp)
+                modifier = Modifier.align(Alignment.Center)
             )
         }
+        // The level, on the painted star.
+        LetteredText(
+            text = "${uiState.level}",
+            size = fs(54f),
+            outline = Color(0xFF5A2815),
+            modifier = box(98f, 758f, 182f, 834f),
+            minScale = 0.5f
+        )
 
         // ---- The three figures ---------------------------------------------------------------------------------
         val stats = listOf(
-            Triple(number.format(uiState.levelProgress.totalXp), stringResource(R.string.account_stat_xp), 24f),
-            Triple(number.format(uiState.gamesPlayed), stringResource(R.string.account_stat_games), 294f),
-            Triple(number.format(uiState.bestStreak), stringResource(R.string.account_stat_streak), 566f)
+            Triple(number.format(uiState.levelProgress.totalXp), stringResource(R.string.account_stat_xp), R.drawable.ac_icon_star),
+            Triple(number.format(uiState.gamesPlayed), stringResource(R.string.account_stat_games), R.drawable.ac_icon_games),
+            Triple(number.format(uiState.bestStreak), stringResource(R.string.account_stat_streak), R.drawable.ac_icon_cal)
         )
-        stats.forEach { (value, label, x) ->
+        val centres = listOf(166f, 416.5f, 669f)
+        stats.forEachIndexed { i, (value, label, icon) ->
+            val cx = centres[i]
+            Image(
+                painterResource(icon),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = box(cx - 58f, 926f, cx + 58f, 998f)
+            )
             FitText(
                 text = value,
-                style = PaintedStyle(color = PageInk, fontSize = fs(46f), textAlign = TextAlign.Center),
+                style = PaintedStyle(color = PageInk, fontSize = fs(56f), textAlign = TextAlign.Center),
                 maxLines = 1,
                 minScale = 0.5f,
-                modifier = box(x + 24f, 914f, x + 228f, 966f)
+                modifier = box(cx - 100f, 998f, cx + 100f, 1048f)
             )
             FitText(
                 text = label,
-                style = PaintedStyle(color = PageInk, fontSize = fs(25f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
-                maxLines = 1,
-                minScale = 0.55f,
-                modifier = box(x + 16f, 954f, x + 236f, 986f)
+                style = PaintedStyle(color = PageInk, fontSize = fs(26f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = fs(28f)),
+                maxLines = 2,
+                minScale = 0.6f,
+                modifier = box(cx - 70f, 1046f, cx + 70f, 1104f)
             )
         }
 
         // ---- Account and backup --------------------------------------------------------------------------------
-        // (The picture's own sync disc at the strip's left has been painted out of bg_account, so nothing sits behind the heading.)
-        FitText(
-            text = stringResource(R.string.account_section_account),
-            style = PaintedStyle(color = PageInk, fontSize = fs(44f), textAlign = TextAlign.Center),
-            maxLines = 1,
-            minScale = 0.55f,
-            modifier = box(100f, 1066f, 740f, 1134f)
-        )
+        Row(
+            box(168f, 1166f, 668f, 1234f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(Icons.Filled.Cloud, contentDescription = null, tint = Color.White, modifier = Modifier.size(unit * 54f))
+            Spacer(Modifier.size(unit * 12f))
+            LetteredText(
+                text = stringResource(R.string.account_section_account),
+                size = fs(52f),
+                outline = Color(0xFF3A0F5E),
+                modifier = Modifier.weight(1f, fill = false).height(unit * 68f),
+                minScale = 0.5f
+            )
+        }
         val backedUp = uiState.lastBackupAtMillis != null
-        // The strip's painted tick says "saved": only true for a signed-in account that has been backed up, so for
-        // anyone else a disc in the strip's own colour covers it and shows what is really the case.
-        if (!(uiState.isSignedIn && backedUp)) {
-            Box(
-                box(88f, 1160f, 148f, 1220f)
-                    .clip(CircleShape)
-                    .background(Color(0xFFD9E5D0)),
-                contentAlignment = Alignment.Center
-            ) {
+        val saved = uiState.isSignedIn && backedUp
+        // The strip's painted tick and cloud say "saved": only true for a signed-in account that has been backed up, so for
+        // anyone else they are covered in the strip's own colour and what is really the case is shown instead.
+        if (!saved) {
+            Box(box(70f, 1286f, 146f, 1364f).clip(CircleShape).background(Color(0xFFFCEACB)), contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = if (uiState.isSignedIn) Icons.Filled.CloudSync else Icons.Filled.CloudOff,
                     contentDescription = null,
                     tint = Color(0xFF8A6A50),
-                    modifier = Modifier.size((38f * us).dp)
+                    modifier = Modifier.size(unit * 48f)
                 )
             }
+            Box(box(630f, 1266f, 778f, 1388f).clip(RoundedCornerShape(unit * 22f)).background(Brush.verticalGradient(listOf(Color(0xFFFCEDCF), Color(0xFFFCE8C9)))))
         }
         val strip1: String
         val strip2: String?
@@ -326,52 +387,59 @@ fun AccountScreen(
             uiState.isGoogleSignInConfigured -> { strip1 = stringResource(R.string.account_guest_hint); strip2 = null }
             else -> { strip1 = stringResource(R.string.account_not_configured_message); strip2 = null }
         }
-        // The strip's texts are one block, centred in it (the painted tick's disc is 1160..1220, so the strip is centred on 1190).
+        // The two lines are one block, centred on the strip (1275..1385) between the tick and the cloud.
         Column(
-            box(166f, 1148f, 742f, 1232f),
+            box(156f, 1277f, 628f, 1383f),
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.Start
         ) {
             FitText(
                 text = strip1,
-                style = PaintedStyle(color = PageInk, fontSize = fs(31f), textAlign = TextAlign.Center),
+                style = PaintedStyle(color = PageInk, fontSize = fs(37f), textAlign = TextAlign.Start),
                 maxLines = if (strip2 == null) 2 else 1,
                 minScale = 0.55f,
-                modifier = Modifier.fillMaxWidth().height(unit * (if (strip2 == null) 70f else 40f))
+                contentAlignment = Alignment.CenterStart,
+                modifier = Modifier.fillMaxWidth().height(unit * (if (strip2 == null) 90f else 52f))
             )
             if (strip2 != null) {
                 FitText(
                     text = strip2,
-                    style = PaintedStyle(color = Color(0xFF7A5A40), fontSize = fs(25f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
+                    style = PaintedStyle(color = Color(0xFF6B4A30), fontSize = fs(30f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Start),
                     maxLines = 1,
                     minScale = 0.55f,
-                    modifier = Modifier.fillMaxWidth().height(unit * 32f)
+                    contentAlignment = Alignment.CenterStart,
+                    modifier = Modifier.fillMaxWidth().height(unit * 40f)
                 )
             }
         }
 
         // ---- Sign out / sign in --------------------------------------------------------------------------------
         when {
-            uiState.isBusy -> Box(box(120f, 1320f, 720f, 1490f), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(modifier = Modifier.size(40.dp))
+            uiState.isBusy -> Box(box(150f, 1462f, 685f, 1590f), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(modifier = Modifier.size(40.dp), color = Color.White)
             }
             uiState.isSignedIn -> Box(
-                box(120f, 1316f, 720f, 1316f + 172f)
+                box(150f, 1462f, 685f, 1590f)
                     .pressable(pressedScale = 0.95f, onClick = viewModel::promptSignOut)
                     .a11yButton(stringResource(R.string.account_sign_out)),
                 contentAlignment = Alignment.Center
             ) {
-                Image(painterResource(R.drawable.account_btn), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-                // The lettering is centred on the button itself.
-                LetteredText(
-                    stringResource(R.string.account_sign_out), fs(56f), outline = Color(0xFF8A3A00),
-                    modifier = Modifier.offset(y = (-10f * us).dp).fillMaxWidth(0.7f).height((86f * us).dp), minScale = 0.5f
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.White, modifier = Modifier.size(unit * 64f))
+                    Spacer(Modifier.size(unit * 16f))
+                    LetteredText(
+                        stringResource(R.string.account_sign_out), fs(66f), outline = Color(0xFF8A3A00),
+                        modifier = Modifier.height(unit * 90f).weight(1f, fill = false), minScale = 0.5f
+                    )
+                }
             }
-            uiState.isGoogleSignInConfigured -> Box(box(120f, 1330f, 720f, 1476f), contentAlignment = Alignment.Center) {
+            // A guest: Google's own white button sits over the painted orange one (it covers it to the rim).
+            else -> Box(box(141f, 1453f, 694f, 1599f), contentAlignment = Alignment.Center) {
                 GoogleSignInButton(
                     onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::signIn),
-                    modifier = Modifier.fillMaxWidth().graphicsLayer { alpha = if (online) 1f else 0.55f }
+                    modifier = Modifier.fillMaxWidth().graphicsLayer { alpha = if (online) 1f else 0.55f },
+                    height = unit * 146f,
+                    corner = unit * 73f
                 )
             }
         }
@@ -379,34 +447,25 @@ fun AccountScreen(
         // ---- Delete --------------------------------------------------------------------------------------------
         // Offered whether or not a Google account is signed in: an anonymous player still has a uid with a profile, a
         // friends list and a league entry under it, and Play's requirement is about the data, not about how the
-        // account was created.
-        Box(box(120f, 1580f, 720f, 1664f), contentAlignment = Alignment.Center) {
-            if (uiState.isDeleting) {
+        // account was created. The painted pill carries the bin; the words are laid beside it.
+        Box(
+            box(157f, 1610f, 673f, 1705f)
+                .graphicsLayer { alpha = if (online) 1f else 0.55f }
+                .pressable(pressedScale = 0.96f, onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::promptDeleteAccount))
+                .a11yButton(stringResource(R.string.account_delete_action))
+        )
+        if (uiState.isDeleting) {
+            Box(box(157f, 1610f, 673f, 1705f), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(modifier = Modifier.size(32.dp))
-            } else {
-                Row(
-                    Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { alpha = if (online) 1f else 0.55f }
-                        .clip(RoundedCornerShape(50))
-                        .background(Color(0xFFFFF6EE))
-                        .border((4f * us).dp, Color(0xFFD63A2E), RoundedCornerShape(50))
-                        .pressable(pressedScale = 0.96f, onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::promptDeleteAccount))
-                        .a11yButton(stringResource(R.string.account_delete_action)),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(Icons.Filled.Delete, contentDescription = null, tint = Color(0xFFD63A2E), modifier = Modifier.size((40f * us).dp))
-                    Spacer(Modifier.size((12f * us).dp))
-                    FitText(
-                        text = stringResource(R.string.account_delete_action),
-                        style = PaintedStyle(color = Color(0xFFD63A2E), fontSize = fs(31f)),
-                        maxLines = 1,
-                        minScale = 0.55f,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                }
             }
+        } else {
+            FitText(
+                text = stringResource(R.string.account_delete_action),
+                style = PaintedStyle(color = Color(0xFFC62828), fontSize = fs(37f), textAlign = TextAlign.Center),
+                maxLines = 1,
+                minScale = 0.55f,
+                modifier = box(282f, 1624f, 656f, 1692f)
+            )
         }
 
         // ---- Saved / failed ------------------------------------------------------------------------------------
@@ -417,14 +476,64 @@ fun AccountScreen(
                 style = PaintedStyle(color = if (note.first != null) AppTheme.tokens.success else MaterialTheme.colorScheme.error, fontSize = fs(30f), textAlign = TextAlign.Center),
                 maxLines = 2,
                 minScale = 0.6f,
-                modifier = box(60f, 1680f, 780f, 1760f)
+                modifier = box(60f, 1728f, 776f, 1810f)
                     .clip(RoundedCornerShape(20.dp))
                     .background(Color(0xF2FFF6E4))
                     .padding(horizontal = 10.dp)
             )
         }
+    }
 
-        PaintedBackButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart))
+    if (showRename) {
+        val editable = viewModel.nicknameEditable
+        LaunchedEffect(uiState.nicknameSaveState) {
+            if (uiState.nicknameSaveState == NicknameSaveState.Saved) showRename = false
+        }
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog(
+            title = stringResource(R.string.nickname_edit_title),
+            onDismiss = { showRename = false },
+            buttons = {
+                if (editable) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
+                            text = stringResource(R.string.nickname_edit_cancel),
+                            onClick = { showRename = false },
+                            primary = false,
+                            modifier = Modifier.weight(1f)
+                        )
+                        com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
+                            text = stringResource(R.string.nickname_edit_save),
+                            onClick = viewModel::saveNickname,
+                            enabled = uiState.canSaveNickname,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                } else {
+                    com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
+                        text = stringResource(R.string.close),
+                        onClick = { showRename = false }
+                    )
+                }
+            }
+        ) {
+            if (editable) {
+                com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialogText(stringResource(R.string.nickname_edit_warning))
+                Spacer(Modifier.height(10.dp))
+                AppTextField(
+                    value = uiState.nicknameDraft,
+                    onValueChange = viewModel::setNicknameDraft,
+                    placeholder = stringResource(R.string.nickname_edit_hint),
+                    centered = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                uiState.nicknameError?.let {
+                    Spacer(Modifier.height(8.dp))
+                    Text(stringResource(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                }
+            } else {
+                com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialogText(stringResource(R.string.account_nickname_locked))
+            }
+        }
     }
 
     if (uiState.showSignOutPrompt) {
@@ -489,8 +598,8 @@ fun AccountScreen(
 }
 
 
-private const val ArtW = 841f
-private const val ArtH = 1870f
+private const val ArtW = 836f
+private const val ArtH = 1882f
 private val PageInk = Color(0xFF3B2314)
 
 /**

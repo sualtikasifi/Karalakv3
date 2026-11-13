@@ -1064,6 +1064,7 @@
     <string name="quick_match_you_named">%1$s (You)</string>
     <string name="quick_match_versus">VS</string>
     <string name="quick_match_gallery_yours">Yours</string>
+    <string name="account_nickname_locked">Your username can\'t be changed. It can be changed once, and it is fixed when your account is linked to Google.</string>
     <string name="account_nickname_save">Save</string>
     <string name="account_nickname_saved">Saved</string>
     <string name="account_nickname_label">Nickname</string>

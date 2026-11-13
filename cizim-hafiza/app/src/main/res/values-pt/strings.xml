@@ -1065,6 +1065,7 @@
     <string name="quick_match_you_named">%1$s (Você)</string>
     <string name="quick_match_versus">VS</string>
     <string name="quick_match_gallery_yours">Seus</string>
+    <string name="account_nickname_locked">Seu nome de usuário não pode ser alterado. Ele pode ser alterado uma vez e fica fixo quando sua conta é vinculada ao Google.</string>
     <string name="account_nickname_save">Salvar</string>
     <string name="account_nickname_saved">Salvo</string>
     <string name="account_nickname_label">Apelido</string>

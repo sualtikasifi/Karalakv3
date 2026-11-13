@@ -6,6 +6,7 @@ import { rankLevelHtml } from "./ranks.js";
 import { syncNow, lastBackupAt, forgetRemote, markAccount } from "./sync.js";
 import { frameRing, frameById } from "./store.js";
 import { childMode } from "./agegate.js";
+import { openNickEdit } from "./picker.js";
 
 const T = {
   tr: { title: "Hesap", guest: "Misafir hesap", linked: "Hesapla giriş yapıldı", xp: "Toplam XP", games: "Oynanan oyun", streak: "En iyi seri (gün)", sec: "Hesap ve yedek", max: "En üst seviyedesin",
@@ -29,17 +30,21 @@ const T = {
 useAppTexts(T, { linked: "account_signed_in_title", max: "level_max_reached", user: "account_section_username", welcome: "account_signed_in_restored" });
 let who = null, msg = "", busy = false, linkedNow = false;
 
+// The painted scene (bg_account) is 836 x 1882; the web's art units are 841 x 1870, so every box below is converted.
+const FX = 841 / 836, FY = 1870 / 1882;
 export function layoutAccount(c) {
-  const { place, $ } = c;
-  place($("ak-back"), 20, 40, 110, 106); place($("ak-sign"), 130, 132, 580, 387); place($("ak-title"), 219, 343, 420, 113);
-  place($("ak-avatar"), 92, 545, 150, 150);
-  place($("ak-name"), 256, 534, 530, 60); place($("ak-lvl"), 256, 596, 530, 44); place($("ak-badge"), 268, 648, 506, 72);
-  place($("ak-bar"), 92, 726, 644, 36);
-  [24, 294, 566].forEach((x, i) => place($("ak-s" + i), x + 8, 905, 220, 120));
-  place($("ak-sec"), 100, 1066, 640, 68); place($("ak-strip"), 166, 1148, 576, 84);
-  place($("ak-form"), 110, 1262, 620, 330);
-  place($("ak-out"), 120, 1304, 600, 132);
-  place($("ak-del"), 120, 1460, 600, 76); place($("ak-msg"), 60, linkedNow ? 1560 : 1620, 720, 80);
+  const { place, $ } = c, pl = (el, x, y, w, h) => place(el, x * FX, y * FY, w * FX, h * FY);
+  pl($("ak-back"), 14, 66, 124, 106); pl($("ak-title"), 215, 304, 410, 100);
+  pl($("ak-avatar"), 78, 497, 220, 228);
+  pl($("ak-name"), 335, 504, 347, 62); pl($("ak-edit"), 692, 505, 73, 73);
+  pl($("ak-lvl"), 330, 563, 207, 42); pl($("ak-badge"), 330, 622, 382, 90);
+  pl($("ak-bar"), 196, 777, 551, 43); pl($("ak-lv"), 98, 758, 84, 76);
+  [166, 416.5, 669].forEach((cx, i) => pl($("ak-s" + i), cx - 100, 924, 200, 182));
+  pl($("ak-sec"), 168, 1166, 500, 68);
+  pl($("ak-cov1"), 70, 1286, 76, 78); pl($("ak-cov2"), 630, 1266, 148, 122);
+  pl($("ak-strip"), 156, 1277, 472, 106); pl($("ak-form"), 62, 1285, 708, 90);
+  pl($("ak-out"), 150, 1462, 535, 128); pl($("ak-login"), 150, 1462, 535, 128); pl($("ak-reg"), 250, 1722, 336, 66);
+  pl($("ak-del"), 157, 1610, 516, 95); pl($("ak-msg"), 60, 1802, 716, 66);
 }
 
 function backupLine() {
@@ -63,7 +68,7 @@ const shorten = (t, max) => { if (t.length <= max) return t; const at = t.lastIn
 function paint(c) {
   const { $, P, lang } = c, x = T[lang()];
   const linked = who && !who.anon;
-  if (!!linked !== linkedNow) { linkedNow = !!linked; layoutAccount(c); }
+  linkedNow = !!linked;
   $("ak-title").textContent = x.title;
   const av = frameRing(frameById(P.frame)); av.style.cssText += ";width:100%;height:100%"; $("ak-avatar").replaceChildren(av);
   $("ak-name").textContent = P.nick;
@@ -73,14 +78,20 @@ function paint(c) {
   // a linked account's pill has two lines, so a long user name has a whole line of its own: it is cut in the middle, never at its start
   { const b = document.createElement("span"); const top = document.createElement("b"); top.textContent = linked ? "✓ " + x.linked : x.guest; b.append(top);
     if (linked && who.userName) { const n = document.createElement("em"); n.textContent = shorten(who.userName, 24); b.append(n); } $("ak-badge").replaceChildren(b); }
-  $("ak-fill").style.width = lv.frac * 100 + "%"; $("ak-barl").textContent = lv.max ? x.max : x.progress(lv.into, lv.span);
+  $("ak-lv").textContent = lv.level; $("ak-fill").style.width = lv.frac * 100 + "%"; $("ak-barl").textContent = lv.max ? x.max : x.progress(lv.into, lv.span);
   const stats = [[fmtNum(P.xp), x.xp], [fmtNum(P.stats.games), x.games], [fmtNum(P.stats.best), x.streak]];
-  stats.forEach(([v, l], i) => { const s = $("ak-s" + i); s.children[0].textContent = v; s.children[1].textContent = l; });
-  $("ak-sec").textContent = x.sec; $("ak-strip").innerHTML = linked ? `<b class="fitw">${S("account_sync_on")}</b><small class="fitw">${backupLine()}</small>` : x.hint;
+  stats.forEach(([v, l], i) => { const s = $("ak-s" + i); s.children[1].textContent = v; s.children[2].textContent = l; });
+  $("ak-sec").innerHTML = '<svg viewBox="0 0 24 24"><path fill="#fff" d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>' + `<span>${x.sec}</span>`;
+  const saved = linked && !!lastBackupAt();
+  $("ak-strip").innerHTML = linked ? `<b class="fitw">${S("account_sync_on")}</b><small class="fitw">${backupLine()}</small>` : x.hint;
+  $("ak-strip").style.display = linked ? "" : "none"; // a guest's strip holds the sign-in fields instead
+  $("ak-cov1").style.display = $("ak-cov2").style.display = saved ? "none" : "block"; // the strip's painted tick and cloud say "saved"
   const form = $("ak-form"); form.style.display = linked ? "none" : "";
   $("ak-user").placeholder = x.user; $("ak-pass").placeholder = x.pass; $("ak-login-t").textContent = x.login; $("ak-reg-t").textContent = x.create;
+  $("ak-login").style.display = linked ? "none" : ""; $("ak-reg").style.display = linked ? "none" : "";
   $("ak-out").style.display = linked ? "" : "none"; $("ak-out-t").textContent = S("account_sign_out");
-  $("ak-del").textContent = "🗑 " + S("account_delete_action"); $("ak-del").style.display = ""; // a guest has data on the server too (profile, rounds, league score), so it can be deleted as well
+  $("ak-edit").onclick = () => openNickEdit(c);
+  $("ak-del").textContent = S("account_delete_action"); $("ak-del").style.display = ""; // a guest has data on the server too (profile, rounds, league score), so it can be deleted as well
   const m = $("ak-msg"); m.textContent = msg; m.style.display = msg ? "" : "none";
   const done = (text) => { msg = text; busy = false; c.refreshHome(); renderAccount(c); };
   const read = () => {

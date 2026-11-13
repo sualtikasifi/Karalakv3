@@ -791,6 +791,7 @@
     <string name="account_sign_out_local_only">Çıkış yapıldı. İlerlemen bu cihaza kaydedildi ama internet olmadığı için buluta yüklenemedi — bağlantı gelince yüklenecek.</string>
     <string name="account_sign_out_failed">Çıkış yapılamadı. Tekrar dene.</string>
     <string name="account_sign_out_wipe_failed">Çıkış yapıldı ama bu cihazdaki veriler tam temizlenemedi. Uygulamayı kapatıp tekrar açtıktan sonra yeniden dene.</string>
+    <string name="account_nickname_locked">Kullanıcı adın değiştirilemez. Bir kez değiştirilebilir ve hesabın Google\'a bağlanınca sabitlenir.</string>
     <string name="account_nickname_save">Kaydet</string>
     <string name="account_nickname_saved">Kaydedildi</string>
     <string name="account_nickname_label">Kullanıcı Adı</string>
