@@ -37,7 +37,12 @@ import com.sualtikasifi.cizimhafiza.R
  * constrain the logo and the wording, not the shape around them.
  */
 @Composable
-fun GoogleSignInButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun GoogleSignInButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    height: androidx.compose.ui.unit.Dp = 58.dp,
+    corner: androidx.compose.ui.unit.Dp = 29.dp
+) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     Box(
@@ -46,11 +51,11 @@ fun GoogleSignInButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             .raisedSurface(
                 face = GoogleButtonFace,
                 edge = GoogleButtonEdge,
-                corner = 29.dp,
+                corner = corner,
                 pressed = pressed,
                 border = GoogleButtonBorder
             )
-            .height(58.dp),
+            .height(height),
         contentAlignment = Alignment.Center
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
