@@ -1286,9 +1286,6 @@
     <string name="home_ad_watch">Ver anuncio</string>
     <string name="home_ad_gold_earned">¡Ganaste 500 de oro!</string>
     <string name="home_ad_unavailable">El anuncio no cargó ahora, inténtalo en un momento.</string>
-    <string name="home_xp_boost_offer">×2 XP</string>
-    <string name="home_xp_boost_active_format">×2 · %1$s</string>
-    <string name="home_xp_boost_on">¡Empezaron 30 minutos de XP doble!</string>
     <string name="chest_home_start">Abrir cofre</string>
     <string name="daily_challenge_ready_short">%1$d palabras · iguales para todos</string>
     <string name="daily_challenge_words_short">%1$d palabras</string>
@@ -1838,4 +1835,12 @@
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_page_title">Adivina</string>
     <string name="duel_create_streak_hint">Si completan un duelo cada día, su racha de amigos crece.</string>
+    <string name="xp_offer_title">¡Oportunidad de XP doble!</string>
+    <string name="xp_offer_badge">XP ×2</string>
+    <string name="xp_offer_body">Mira un anuncio corto y el XP que ganes se duplica durante los próximos 30 minutos.</string>
+    <string name="xp_offer_watch">Ver anuncio</string>
+    <string name="xp_offer_skip">Ahora no</string>
+    <string name="xp_offer_started_title">¡XP doble activado!</string>
+    <string name="xp_offer_started_body">El XP que ganes se duplica durante los próximos 30 minutos.</string>
+    <string name="xp_offer_play">Jugar</string>
 </resources>

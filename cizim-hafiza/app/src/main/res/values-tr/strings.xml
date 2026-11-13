@@ -1298,9 +1298,6 @@
     <string name="home_ad_watch">Reklam izle</string>
     <string name="home_ad_gold_earned">+500 altın kazandın!</string>
     <string name="home_ad_unavailable">Reklam şu an yüklenemedi, biraz sonra tekrar dene.</string>
-    <string name="home_xp_boost_offer">×2 XP</string>
-    <string name="home_xp_boost_active_format">×2 · %1$s</string>
-    <string name="home_xp_boost_on">30 dakika çift XP başladı!</string>
     <string name="chest_home_start">Kasayı Aç</string>
     <string name="daily_challenge_ready_short">%1$d kelime · aynı kelimeler</string>
     <string name="daily_challenge_words_short">%1$d kelime</string>
@@ -1850,4 +1847,12 @@
     <!-- Bil Bakalım / Arkadaş serisi -->
     <string name="guess_page_title">Bil Bakalım</string>
     <string name="duel_create_streak_hint">Her gün bir düello tamamlanırsa arkadaş seriniz büyür.</string>
+    <string name="xp_offer_title">Çift XP fırsatı!</string>
+    <string name="xp_offer_badge">×2 XP</string>
+    <string name="xp_offer_body">Kısa bir reklam izle, sonraki 30 dakika boyunca kazandığın XP ikiye katlansın.</string>
+    <string name="xp_offer_watch">Reklam izle</string>
+    <string name="xp_offer_skip">Şimdi değil</string>
+    <string name="xp_offer_started_title">Çift XP başladı!</string>
+    <string name="xp_offer_started_body">Sonraki 30 dakika boyunca kazandığın XP ikiye katlanıyor.</string>
+    <string name="xp_offer_play">Oyna</string>
 </resources>

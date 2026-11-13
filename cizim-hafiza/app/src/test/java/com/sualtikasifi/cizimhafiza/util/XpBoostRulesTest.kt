@@ -31,4 +31,22 @@ class XpBoostRulesTest {
         // the phone's clock now says it is a day earlier: the deadline is far further than one boost can last
         assertFalse(XpBoostRules.isActive(until, now - 86_400_000L))
     }
+
+    @Test fun the_offer_is_asked_once_per_eight_hours() {
+        val gap = XpBoostRules.OFFER_GAP_MILLIS
+        assertTrue(XpBoostRules.offerDue(lastOfferAt = 0L, now = now))
+        assertFalse(XpBoostRules.offerDue(now - 1, now))
+        assertFalse(XpBoostRules.offerDue(now - gap + 1, now))
+        assertTrue(XpBoostRules.offerDue(now - gap, now))
+        assertTrue(XpBoostRules.offerDue(now - 3 * gap, now))
+    }
+
+    @Test fun three_gaps_fit_exactly_in_a_day() = assertEquals(24 * 60 * 60_000L, 3 * XpBoostRules.OFFER_GAP_MILLIS)
+
+    @Test fun a_clock_set_back_does_not_lock_the_offer_away() {
+        // asked "in the future" by more than one gap: the clock was moved back, so ask again
+        assertTrue(XpBoostRules.offerDue(now + XpBoostRules.OFFER_GAP_MILLIS + 1, now))
+        // asked a moment ahead (the clock jittered): still waiting
+        assertFalse(XpBoostRules.offerDue(now + 1000, now))
+    }
 }

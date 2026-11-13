@@ -54,12 +54,9 @@ private fun AvatarFrame.isUnlockedBy(level: Int, earnedRewardIds: Set<String>, o
     if (isLeagueReward) LeagueReward.Frame(this).id in earnedRewardIds else level >= unlockLevel
 
 /** What a finished rewarded streak action should confirm on screen. */
-enum class StreakToast { Rescued, AdGoldEarned, AdUnavailable, XpBoostOn }
+enum class StreakToast { Rescued, AdGoldEarned, AdUnavailable }
 
 /** The home chip for the 30-minute double XP: [activeUntil] while it runs, or [offerable] when the ad can be offered now. */
-data class XpBoostUi(val activeUntil: Long = 0L, val offerable: Boolean = false) {
-    companion object { val None = XpBoostUi() }
-}
 
 @HiltViewModel
 class MainMenuViewModel @Inject constructor(
@@ -308,25 +305,27 @@ class MainMenuViewModel @Inject constructor(
     }
 
     /**
-     * What the home chip shows right now. While a boost runs: when it ends. Otherwise the offer, only if today still has one left, no
-     * event already gives 2x, the placement is on in config/ads and an ad is loaded (an offer that makes the player wait is worse
-     * than none). Called about once a second by the screen.
+     * Whether a tap on "Hızlı Eşleş" should first ask about 30 minutes of double XP. Only when eight hours have passed since the last
+     * question (whatever was answered), today still has one left, no event already gives 2x, nothing is running, the placement is on
+     * in config/ads and an ad is loaded (an offer that makes the player wait is worse than none). Asking marks it as asked.
      */
-    fun xpBoostUi(): XpBoostUi {
+    fun shouldOfferXpBoost(): Boolean {
         val now = System.currentTimeMillis()
-        if (xpBoost.multiplierNow(now) > 1.0) return XpBoostUi(activeUntil = xpBoost.until.value)
-        val eventDoubles = (xpEvent.value?.multiplier ?: 1.0) >= 2.0
-        val offerable = !eventDoubles && xpBoost.offersLeft() > 0 && adManager.placementEnabled("xp_boost") && adManager.rewardedReady()
-        return XpBoostUi(offerable = offerable)
+        if (xpBoost.multiplierNow(now) > 1.0 || xpBoost.offersLeft() <= 0 || !xpBoost.offerDue(now)) return false
+        if ((xpEvent.value?.multiplier ?: 1.0) >= 2.0) return false
+        if (!adManager.placementEnabled("xp_boost") || !adManager.rewardedReady()) return false
+        xpBoost.markOffered(now)
+        return true
     }
 
-    fun watchAdForXpBoost(activity: Activity) {
-        if (xpBoost.multiplierNow() > 1.0 || xpBoost.offersLeft() <= 0) return
+    /** The ad for the offer. [onEarned] when the 30 minutes have started, [onUnavailable] when it could not be shown (asked again later). */
+    fun watchAdForXpBoost(activity: Activity, onEarned: () -> Unit, onUnavailable: () -> Unit) {
+        if (xpBoost.multiplierNow() > 1.0 || xpBoost.offersLeft() <= 0) { onUnavailable(); return }
         adManager.maybeShowRewarded(activity, "xp_boost") { outcome ->
             when (outcome) {
-                RewardedOutcome.EARNED -> { xpBoost.grant(); _streakToast.value = StreakToast.XpBoostOn }
-                RewardedOutcome.SKIPPED -> Unit
-                else -> _streakToast.value = StreakToast.AdUnavailable
+                RewardedOutcome.EARNED -> { xpBoost.grant(); onEarned() }
+                RewardedOutcome.SKIPPED -> onUnavailable()
+                else -> { xpBoost.forgetOffer(); onUnavailable() }
             }
         }
     }

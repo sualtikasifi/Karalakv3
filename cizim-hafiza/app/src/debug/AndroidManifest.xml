@@ -33,6 +33,10 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.GuessInboxPreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the double-XP question on its own (see XpOfferPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.XpOfferPreviewActivity"
+            android:exported="true" />
         <!-- Debug builds only: the chest window on its own (see ChestPreviewActivity). -->
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.ChestPreviewActivity"

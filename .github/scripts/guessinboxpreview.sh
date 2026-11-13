@@ -23,5 +23,13 @@ for n in 1 3 10; do
   sleep 1
   adb exec-out screencap -p > "$OUT/guessinbox_$n.png"
 done
+for step in Ask Started; do
+  adb shell am force-stop "$PKG"
+  adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.XpOfferPreviewActivity" --es step "$step"
+  sleep 6
+  adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
+  sleep 1
+  adb exec-out screencap -p > "$OUT/xpoffer_$step.png"
+done
 adb logcat -d | grep -E "FATAL|AndroidRuntime" | head -40 > "$OUT/crash.txt" || true
 ls -la "$OUT"
