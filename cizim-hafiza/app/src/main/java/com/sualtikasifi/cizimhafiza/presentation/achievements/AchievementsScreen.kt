@@ -285,7 +285,7 @@ private fun AchievementProgressHeader(unlockedCount: Int, total: Int, waiting: I
                     Image(androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.ach_hero_palette), null, Modifier.height(56.dp), filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
                 }
                 Image(androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.ach_laurel_l), null, Modifier.height(64.dp), filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 6.dp)) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 6.dp, start = 12.dp, end = 12.dp)) {
                     Text(
                         text = stringResource(R.string.achievements_progress_count_format, unlockedCount, total),
                         style = PaintedStyle(color = InkBrown, fontSize = 31.sp, textAlign = TextAlign.Center),
@@ -293,8 +293,8 @@ private fun AchievementProgressHeader(unlockedCount: Int, total: Int, waiting: I
                     )
                     Text(
                         text = stringResource(R.string.achievements_progress_caption),
-                        style = PaintedStyle(color = DescriptionInk, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
-                        maxLines = 1
+                        style = PaintedStyle(color = DescriptionInk, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, lineHeight = 16.sp),
+                        maxLines = 2
                     )
                     if (waiting > 0) Text(
                         text = stringResource(R.string.achievements_waiting_format, waiting),

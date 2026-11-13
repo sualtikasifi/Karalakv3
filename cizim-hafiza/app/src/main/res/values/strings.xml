@@ -927,7 +927,7 @@
     <string name="achievement_words_100000_title">100,000 Words</string>
     <string name="achievement_words_100000_desc">Drew 100,000 words in total</string>
     <string name="achievements_progress_count_format">%1$d / %2$d</string>
-    <string name="achievements_progress_caption">achievements unlocked</string>
+    <string name="achievements_progress_caption">achievements\nunlocked</string>
     <string name="achievements_progress_percent">%1$d%%</string>
     <string name="achievements_section_claim">Ready to collect</string>
     <string name="achievements_section_progress">In progress</string>

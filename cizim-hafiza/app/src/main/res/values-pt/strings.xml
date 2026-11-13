@@ -928,7 +928,7 @@
     <string name="achievement_words_100000_title">100.000 Palavras</string>
     <string name="achievement_words_100000_desc">Desenhou 100.000 palavras no total</string>
     <string name="achievements_progress_count_format">%1$d / %2$d</string>
-    <string name="achievements_progress_caption">conquistas desbloqueadas</string>
+    <string name="achievements_progress_caption">conquistas\ndesbloqueadas</string>
     <string name="achievements_progress_percent">%1$d%%</string>
     <string name="achievements_section_claim">Prontas para resgatar</string>
     <string name="achievements_section_progress">Em andamento</string>

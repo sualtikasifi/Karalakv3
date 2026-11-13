@@ -941,7 +941,7 @@
     <string name="achievement_words_100000_title">100.000 Kelime</string>
     <string name="achievement_words_100000_desc">Toplam 100.000 kelime çizdin</string>
     <string name="achievements_progress_count_format">%1$d / %2$d</string>
-    <string name="achievements_progress_caption">başarım açıldı</string>
+    <string name="achievements_progress_caption">başarım\naçıldı</string>
     <string name="achievements_progress_percent">%%%1$d</string>
     <string name="achievements_section_claim">Ödülünü topla</string>
     <string name="achievements_section_progress">Devam edenler</string>
