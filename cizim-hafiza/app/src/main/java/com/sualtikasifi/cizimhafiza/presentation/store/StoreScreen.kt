@@ -707,10 +707,10 @@ private fun PaintedPill(
 private val PillTextShadow = TextStyle(shadow = Shadow(color = Color(0xFF4A2200), offset = Offset(0f, 2f), blurRadius = 2f))
 
 @Composable
-private fun CoinPrice(price: Int, size: androidx.compose.ui.unit.TextUnit = 14.sp, coin: androidx.compose.ui.unit.Dp = 18.dp) {
+private fun CoinPrice(price: Int, size: androidx.compose.ui.unit.TextUnit = 14.sp, coin: androidx.compose.ui.unit.Dp = 18.dp, longScale: Float = 0.82f) {
     val long = price >= 10_000
-    val size = if (long) size * 0.82f else size
-    val coin = if (long) coin * 0.85f else coin
+    val size = if (long) size * longScale else size
+    val coin = if (long) coin * (0.85f + (longScale - 0.82f)) else coin
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(coin))
         Text(
@@ -870,11 +870,11 @@ private fun FrameCard(
             textAlign = TextAlign.Center,
             modifier = Modifier.offset(w * 0.08f, h * 0.60f).size(w * 0.84f, h * 0.14f)
         )
-        val m = Modifier.offset(w * 0.17f, h * 0.75f).size(w * 0.66f, h * 0.17f)
+        val m = Modifier.offset(w * 0.14f, h * 0.745f).size(w * 0.72f, h * 0.18f)
         when {
             owned -> OwnedPill(equipped, onEquip, m)
             else -> PaintedPill(R.drawable.st_pill_orange, m, onClick = { if (canAfford) onBuy() else onCannotAfford() }) {
-                CoinPrice(frame.storePrice, size = 13.sp, coin = 17.dp)
+                CoinPrice(frame.storePrice, size = 18.sp, coin = 22.dp, longScale = 0.9f)
             }
         }
     }
