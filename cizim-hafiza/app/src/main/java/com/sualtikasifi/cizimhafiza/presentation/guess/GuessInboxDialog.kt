@@ -55,10 +55,10 @@ fun GuessInboxDialog(entries: List<GuessInboxEntry>, rewardGold: Int, onClose: (
             PaintedPillButton(
                 text = stringResource(R.string.guess_inbox_ok),
                 onClick = onClose,
-                height = 60.dp,
-                textSize = 24.sp,
+                height = 50.dp,
+                textSize = 21.sp,
                 attention = true,
-                modifier = Modifier.fillMaxWidth().padding(top = 14.dp, start = 6.dp, end = 6.dp)
+                modifier = Modifier.fillMaxWidth(0.62f).padding(top = 14.dp, bottom = 8.dp).align(Alignment.CenterHorizontally)
             )
         }
     ) {
