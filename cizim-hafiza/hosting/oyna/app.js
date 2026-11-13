@@ -172,7 +172,7 @@ const WIDE = {
 };
 /** Every back button sits in the same spot of the window, with the same size, whatever the painted scene behind it does. */
 function pinBack() {
-  const b = document.querySelector("#" + current + " [id$='-back']"); if (!b || ["g-back", "d-back", "r-back"].includes(b.id)) return; // the in-game headers are painted around their own button
+  const b = document.querySelector("#" + current + " [id$='-back']"); if (!b || ["g-back", "d-back", "r-back", "ak-back"].includes(b.id)) return; // the in-game headers are painted around their own button
   const { w: vw, oy, ox } = viewport(), k = Math.round(Math.max(46, Math.min(72, 0.13 * Math.min(vw, 560))));
   const left = (vw - Math.min(vw, 560)) / 2 + Math.max(8, vw * 0.02);
   b.style.cssText += `;position:fixed;left:${ox + left}px;top:calc(${oy}px + max(10px, env(safe-area-inset-top)));width:${k}px;height:${k}px`;

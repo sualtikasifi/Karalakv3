@@ -337,10 +337,10 @@ fun AccountScreen(
             )
             FitText(
                 text = label,
-                style = PaintedStyle(color = PageInk, fontSize = fs(27f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = fs(29f)),
+                style = PaintedStyle(color = PageInk, fontSize = fs(26f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = fs(28f)),
                 maxLines = 2,
                 minScale = 0.6f,
-                modifier = box(cx - 88f, 1046f, cx + 88f, 1104f)
+                modifier = box(cx - 70f, 1046f, cx + 70f, 1104f)
             )
         }
 
@@ -373,7 +373,7 @@ fun AccountScreen(
                     modifier = Modifier.size(unit * 48f)
                 )
             }
-            Box(box(634f, 1280f, 772f, 1388f).clip(RoundedCornerShape(unit * 26f)).background(Color(0xFFFCEACB)))
+            Box(box(630f, 1266f, 778f, 1388f).clip(RoundedCornerShape(unit * 22f)).background(Brush.verticalGradient(listOf(Color(0xFFFCEDCF), Color(0xFFFCE8C9)))))
         }
         val strip1: String
         val strip2: String?
