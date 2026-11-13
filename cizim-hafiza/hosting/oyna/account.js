@@ -34,7 +34,7 @@ let who = null, msg = "", busy = false, linkedNow = false;
 const FX = 841 / 836, FY = 1870 / 1882;
 export function layoutAccount(c) {
   const { place, $ } = c, pl = (el, x, y, w, h) => place(el, x * FX, y * FY, w * FX, h * FY);
-  pl($("ak-back"), 14, 66, 124, 106); pl($("ak-title"), 215, 304, 410, 100);
+  pl($("ak-back"), 14, 66, 124, 106); pl($("ak-title"), 215, 301, 410, 100);
   pl($("ak-avatar"), 78, 497, 220, 228);
   pl($("ak-name"), 335, 504, 347, 62); pl($("ak-edit"), 692, 505, 73, 73);
   pl($("ak-lvl"), 330, 563, 207, 42); pl($("ak-badge"), 330, 622, 382, 90);
