@@ -1806,6 +1806,10 @@
     <string name="guess_inbox_title">Çizimlerini denediler!</string>
     <string name="guess_inbox_solved">%1$s bildi (%2$d. denemede)</string>
     <string name="guess_inbox_failed">%1$s bilemedi</string>
+    <string name="guess_inbox_failed_sub">Bilemedi</string>
+    <string name="guess_inbox_first">İlk denemede</string>
+    <string name="guess_inbox_tries">%1$d. denemede</string>
+    <string name="guess_inbox_total">Toplam kazanç</string>
     <string name="guess_inbox_reward">+%1$d altın</string>
     <string name="guess_inbox_ok">Harika!</string>
 

@@ -26,5 +26,11 @@ for case in "0 -" "1 Kedi" "2 Kedi"; do
   sleep 3
   adb exec-out screencap -p > "$OUT/guessanswer_$1.png"
 done
+for n in 1 3 10; do
+  adb shell am force-stop "$PKG"
+  adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.GuessInboxPreviewActivity" --ei n "$n"
+  sleep 3
+  adb exec-out screencap -p > "$OUT/guessinbox_$n.png"
+done
 adb logcat -d | grep -E "FATAL|AndroidRuntime" | head -40 > "$OUT/crash.txt" || true
 ls -la "$OUT"

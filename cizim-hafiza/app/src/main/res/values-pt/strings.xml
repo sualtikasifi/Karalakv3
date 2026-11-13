@@ -1794,6 +1794,10 @@
     <string name="guess_inbox_title">Tentaram os seus desenhos!</string>
     <string name="guess_inbox_solved">%1$s acertou (tentativa %2$d)</string>
     <string name="guess_inbox_failed">%1$s não acertou</string>
+    <string name="guess_inbox_failed_sub">Não acertou</string>
+    <string name="guess_inbox_first">De primeira</string>
+    <string name="guess_inbox_tries">Acertou na tentativa %1$d</string>
+    <string name="guess_inbox_total">Total ganho</string>
     <string name="guess_inbox_reward">+%1$d de ouro</string>
     <string name="guess_inbox_ok">Ótimo!</string>
 

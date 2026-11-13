@@ -1793,6 +1793,10 @@
     <string name="guess_inbox_title">They tried your drawings!</string>
     <string name="guess_inbox_solved">%1$s guessed it (try %2$d)</string>
     <string name="guess_inbox_failed">%1$s could not guess it</string>
+    <string name="guess_inbox_failed_sub">Not this time</string>
+    <string name="guess_inbox_first">In 1 try</string>
+    <string name="guess_inbox_tries">Guessed on try %1$d</string>
+    <string name="guess_inbox_total">Total earned</string>
     <string name="guess_inbox_reward">+%1$d gold</string>
     <string name="guess_inbox_ok">Great!</string>
 

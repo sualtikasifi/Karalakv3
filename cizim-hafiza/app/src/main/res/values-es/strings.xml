@@ -1794,6 +1794,10 @@
     <string name="guess_inbox_title">¡Probaron tus dibujos!</string>
     <string name="guess_inbox_solved">%1$s lo adivinó (intento %2$d)</string>
     <string name="guess_inbox_failed">%1$s no lo adivinó</string>
+    <string name="guess_inbox_failed_sub">No lo adivinó</string>
+    <string name="guess_inbox_first">A la primera</string>
+    <string name="guess_inbox_tries">Lo adivinó en el intento %1$d</string>
+    <string name="guess_inbox_total">Total ganado</string>
     <string name="guess_inbox_reward">+%1$d de oro</string>
     <string name="guess_inbox_ok">¡Genial!</string>
 
