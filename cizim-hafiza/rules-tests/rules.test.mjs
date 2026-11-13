@@ -72,6 +72,9 @@ await seed(["rooms", "222222", "results", "host"], { itemsJson: "[]" });
 await check("a player reads the room's drawings", assertSucceeds(getDoc(doc(db("p1"), "rooms", "222222", "results", "host"))));
 await check("a stranger cannot read a room's drawings", assertFails(getDoc(doc(db("stranger"), "rooms", "222222", "results", "host"))));
 await check("a player writes their own drawings", assertSucceeds(setDoc(doc(db("p1"), "rooms", "222222", "results", "p1"), { itemsJson: "[]" })));
+await check("a stranger cannot leave drawings in a room", assertFails(setDoc(doc(db("stranger"), "rooms", "222222", "results", "stranger"), { itemsJson: "[]" })));
+await check("a player cannot write another player's drawings", assertFails(setDoc(doc(db("p1"), "rooms", "222222", "results", "host"), { itemsJson: "[]" })));
+await check("a result holds only the drawings", assertFails(setDoc(doc(db("p1"), "rooms", "222222", "results", "p1"), { itemsJson: "[]", junk: "x" })));
 await check("a player posts a reaction", assertSucceeds(addDoc(collection(db("p1"), "rooms", "222222", "reactions"), { uid: "p1", emoji: "😂", messageKey: "funny", sentAt: 1 })));
 await check("a stranger cannot post a reaction", assertFails(addDoc(collection(db("stranger"), "rooms", "222222", "reactions"), { uid: "stranger", emoji: "😂", messageKey: "funny", sentAt: 1 })));
 await check("a reaction cannot carry extra data", assertFails(addDoc(collection(db("p1"), "rooms", "222222", "reactions"), { uid: "p1", emoji: "x", messageKey: "k", sentAt: 1, junk: "x".repeat(1000) })));
@@ -198,7 +201,9 @@ await check("a friend entry cannot carry a 5000-character name", assertFails(set
 // ---- duels, invites, usernames, friend codes
 await seed(["users", "v", "blockedUsers", "w"], { at: 1 });
 const duel = (from, to) => ({ challengerUid: from, challengerName: "W", opponentUid: to, opponentName: "V", itemsJson: "[]", wordIds: [1, 2], challengerScore: 1, challengerCorrectCount: 1, opponentScore: null, opponentCorrectCount: null, status: "AWAITING_OPPONENT", createdAt: 1, completedAt: null, seenByChallenger: true });
+await seed(["users", "z", "friends", "w"], { nickname: "W", addedAt: 1 });
 await check("a duel is created", assertSucceeds(setDoc(doc(db("w"), "duels", "dd1"), duel("w", "z"))));
+await check("a stranger cannot challenge someone who is not their friend", assertFails(setDoc(doc(db("w"), "duels", "dd9"), duel("w", "nofriend"))));
 await check("a blocked player cannot challenge the blocker", assertFails(setDoc(doc(db("w"), "duels", "dd2"), duel("w", "v"))));
 await seed(["users", "v", "friends", "fr"], { nickname: "Fr", addedAt: 1 });
 const invite = (from) => ({ fromUid: from, fromNickname: "Fr", roomCode: "123456", sentAt: 1 });
