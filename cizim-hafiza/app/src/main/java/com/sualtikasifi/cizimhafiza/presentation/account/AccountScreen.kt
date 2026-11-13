@@ -42,6 +42,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache
+import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
+import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenFace
 import com.sualtikasifi.cizimhafiza.presentation.common.FitText
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedBackButton
@@ -158,6 +160,13 @@ fun AccountScreen(
 
         val online = com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current
         val scene = cachedPainterResource(R.drawable.bg_account)
+        // The painted buttons (sign out, delete) cave in under the finger: their own pixels are drawn again, shrunk, inside their frame
+        // (see sunkenFace), and the words dip together with them.
+        val sceneBitmap = remember { runCatching { BackdropCache.get(context.resources, R.drawable.bg_account) }.getOrNull() }
+        val pxX = (sceneBitmap?.width ?: 1) / ArtW
+        val pxY = (sceneBitmap?.height ?: 1) / ArtH
+        val outSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.94f)
+        val delSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.95f)
         if (offX > 1.dp || offY > 1.dp) {
             Image(scene, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(20.dp))
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)))
@@ -420,11 +429,16 @@ fun AccountScreen(
             }
             uiState.isSignedIn -> Box(
                 box(150f, 1462f, 685f, 1590f)
-                    .pressable(pressedScale = 0.95f, onClick = viewModel::promptSignOut)
+                    .sunkenFace(outSink, sceneBitmap, 150f * pxX, 1462f * pxY, 535f * pxX, 128f * pxY, (15f * us).dp, (50f * us).dp)
+                    .clickable(interactionSource = outSink.source, indication = null, onClick = viewModel::promptSignOut)
                     .a11yButton(stringResource(R.string.account_sign_out)),
                 contentAlignment = Alignment.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                Row(
+                    Modifier.sinkWith(outSink, 0.5f, 0.5f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
                     Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.White, modifier = Modifier.size(unit * 64f))
                     Spacer(Modifier.size(unit * 16f))
                     LetteredText(
@@ -451,21 +465,25 @@ fun AccountScreen(
         Box(
             box(157f, 1610f, 673f, 1705f)
                 .graphicsLayer { alpha = if (online) 1f else 0.55f }
-                .pressable(pressedScale = 0.96f, onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::promptDeleteAccount))
-                .a11yButton(stringResource(R.string.account_delete_action))
-        )
-        if (uiState.isDeleting) {
-            Box(box(157f, 1610f, 673f, 1705f), contentAlignment = Alignment.Center) {
+                .sunkenFace(delSink, sceneBitmap, 157f * pxX, 1610f * pxY, 516f * pxX, 95f * pxY, (9f * us).dp, (38f * us).dp)
+                .clickable(
+                    interactionSource = delSink.source, indication = null,
+                    onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::promptDeleteAccount)
+                )
+                .a11yButton(stringResource(R.string.account_delete_action)),
+            contentAlignment = Alignment.Center
+        ) {
+            if (uiState.isDeleting) {
                 CircularProgressIndicator(modifier = Modifier.size(32.dp))
+            } else {
+                FitText(
+                    text = stringResource(R.string.account_delete_action),
+                    style = PaintedStyle(color = Color(0xFFC62828), fontSize = fs(37f), textAlign = TextAlign.Center),
+                    maxLines = 1,
+                    minScale = 0.55f,
+                    modifier = Modifier.sinkWith(delSink, 0.5f, 0.5f).padding(start = unit * 125f, end = unit * 17f).fillMaxWidth().height(unit * 68f)
+                )
             }
-        } else {
-            FitText(
-                text = stringResource(R.string.account_delete_action),
-                style = PaintedStyle(color = Color(0xFFC62828), fontSize = fs(37f), textAlign = TextAlign.Center),
-                maxLines = 1,
-                minScale = 0.55f,
-                modifier = box(282f, 1624f, 656f, 1692f)
-            )
         }
 
         // ---- Saved / failed ------------------------------------------------------------------------------------

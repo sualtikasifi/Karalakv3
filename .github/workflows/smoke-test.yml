@@ -35,6 +35,7 @@ on:
           - duelcreatepreview.sh
           - guessnoticepreview.sh
           - guessinboxpreview.sh
+          - accountpress.sh
           - settingspress.sh
           - tourpreview.sh
           - accountpreview.sh
