@@ -261,7 +261,7 @@ internal fun PaintedHome(
         fun follow(sink: SinkState, cx: Float, cy: Float, x0: Float, y0: Float, x1: Float, y1: Float): Modifier =
             Modifier.sinkWith(sink, (cx - x0) / (x1 - x0), (cy - y0) / (y1 - y0))
         if (offX > 1.dp || offY > 1.dp) {
-            Image(scene, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(20.dp))
+            com.sualtikasifi.cizimhafiza.presentation.common.BlurredSceneFill(R.drawable.bg_home_scene, scene, 20.dp)
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)))
         }
         Image(scene, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(0f, 0f, ArtW, ArtH))

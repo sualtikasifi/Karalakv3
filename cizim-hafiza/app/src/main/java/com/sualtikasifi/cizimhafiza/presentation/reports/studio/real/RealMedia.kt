@@ -109,8 +109,8 @@ class ClipFrames(file: File, private val exact: Boolean) : Closeable {
 
 /** A clip's own sound track, decoded to mono PCM so it can be mixed with Karalak's voice. */
 object ClipAudio {
-    /** Null when the clip has no sound; at most [maxMs] of it. */
-    fun decode(file: File, maxMs: Long): Pcm? {
+    /** Null when the clip has no sound; at most [maxMs] of it, starting [startMs] into the clip. */
+    fun decode(file: File, maxMs: Long, startMs: Long = 0L): Pcm? {
         val extractor = MediaExtractor()
         var codec: MediaCodec? = null
         try {
@@ -119,7 +119,9 @@ object ClipAudio {
                 extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("audio/") == true
             } ?: return null
             extractor.selectTrack(track)
+            if (startMs > 0L) extractor.seekTo(startMs * 1000, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
             val format = extractor.getTrackFormat(track)
+            var firstPtsUs = -1L
             var rate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
             var channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT).coerceAtLeast(1)
             var float = false
@@ -137,7 +139,7 @@ object ClipAudio {
                     if (inIndex >= 0) {
                         val buffer = dec.getInputBuffer(inIndex) ?: error("Klip sesi okunamadı")
                         val n = extractor.readSampleData(buffer, 0)
-                        if (n < 0 || extractor.sampleTime > maxMs * 1000) {
+                        if (n < 0 || extractor.sampleTime > (startMs + maxMs) * 1000) {
                             dec.queueInputBuffer(inIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
                             inputDone = true
                         } else {
@@ -160,6 +162,7 @@ object ClipAudio {
                         idle = 0
                         val buffer = dec.getOutputBuffer(outIndex)
                         if (buffer != null && info.size > 0) {
+                            if (firstPtsUs < 0L) firstPtsUs = info.presentationTimeUs
                             buffer.position(info.offset)
                             buffer.limit(info.offset + info.size)
                             buffer.order(ByteOrder.nativeOrder())
@@ -176,8 +179,10 @@ object ClipAudio {
                     }
                 }
             }
-            val keep = min(size.toLong(), maxMs * rate / 1000).toInt()
-            return if (keep <= 0) null else Pcm(rate, out.copyOf(keep))
+            // the decoder starts at the sync sample just before startMs: drop what comes before it
+            val skip = if (startMs > 0L && firstPtsUs >= 0L) ((startMs * 1000 - firstPtsUs).coerceAtLeast(0L) * rate / 1_000_000L).toInt().coerceAtMost(size) else 0
+            val keep = min((size - skip).toLong(), maxMs * rate / 1000).toInt()
+            return if (keep <= 0) null else Pcm(rate, out.copyOfRange(skip, skip + keep))
         } finally {
             codec?.let { runCatching { it.stop() }; runCatching { it.release() } }
             extractor.release()

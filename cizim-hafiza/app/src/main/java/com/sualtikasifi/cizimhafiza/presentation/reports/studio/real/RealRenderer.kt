@@ -105,7 +105,7 @@ class RealRenderer(
                     if (narrationVoiceFile != null && f.narration.voice != null) {
                         add(ClipSound(narrationVoiceFile, at + RealTimeline.NARRATION_AT, f.narration.voiceMs, 1f, voice = true))
                     }
-                    if (clipGain > 0f) clipFiles[f.sampleId]?.let { add(ClipSound(it, at, e.clipMs, clipGain, shape = { ms -> RealMix.clipGainAt(at + ms, at, voices) })) }
+                    if (clipGain > 0f) clipFiles[f.sampleId]?.let { add(ClipSound(it, at, e.clipMs, clipGain, fromMs = f.clipStartMs, shape = { ms -> RealMix.clipGainAt(at + ms, at, voices) })) }
                 }
                 RealPhase.Outro -> if (outroVoiceFile != null && f.outro.voice != null) {
                     add(ClipSound(outroVoiceFile, e.startMs + RealTimeline.VOICE_AT, f.outro.voiceMs, 1f, voice = true))
@@ -206,7 +206,7 @@ class RealRenderer(
 
     private fun drawClip(canvas: Canvas, e: RealEvent, reveal: RealReveal, t: Long) {
         canvas.drawColor(C.INK)
-        val frame = clips[reveal.sampleId]?.frameAt((t - e.clipAtMs).coerceIn(0L, e.clipMs))
+        val frame = clips[reveal.sampleId]?.frameAt(reveal.clipStartMs + (t - e.clipAtMs).coerceIn(0L, e.clipMs))
         if (frame != null) clipFrame(canvas, frame)
         val drawing = project.drawing(reveal.sampleId) ?: return
         val local = t - e.startMs
@@ -350,9 +350,17 @@ class RealRenderer(
         // the word on the notepad, sized as the game sizes it (short words large, long ones smaller), with its orange underline
         val word = d.word.trim().replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale("tr")) else it.toString() }
         val wordSize = (art(425f) * 0.97f / (word.length.coerceAtLeast(1) * 0.5f)).coerceIn(WORD_MIN, WORD_MAX)
-        text.draw(canvas, word, art(125f + 222.5f), art(232f + 56f), art(445f - 20f).toInt(), wordSize, 2, assets.display, SCENE_INK)
+        // the letters, the gap and the underline are one block, centred on the notepad together; the underline is as wide as the word
+        val wordW = art(445f - 20f).toInt()
+        val (inkW, inkH) = text.measureInk(word, wordW, wordSize, 2, assets.display, SCENE_INK, spacing = 0.76f, balanced = true)
+        val gap = art(16f)
+        val bar = art(8f)
+        val top = art(288f) - (inkH + gap + bar) / 2f
+        text.draw(canvas, word, art(125f + 222.5f), top + inkH / 2f, wordW, wordSize, 2, assets.display, SCENE_INK, spacing = 0.76f, balanced = true, ink = true)
         plain.color = UNDERLINE
-        canvas.drawRoundRect(RectF(art(235f), art(343f), art(485f), art(351f)), art(4f), art(4f), plain)
+        val half = (inkW * 0.5f).coerceIn(art(90f), art(170f))
+        val ux = art(125f + 222.5f)
+        canvas.drawRoundRect(RectF(ux - half, top + inkH + gap, ux + half, top + inkH + gap + bar), art(4f), art(4f), plain)
 
         // the canvas: white dotted paper over the picture's painted one, the drawing on it, the "+10 Saniye" joker on top
         drawCanvasPaper(canvas)
@@ -374,7 +382,7 @@ class RealRenderer(
 
         // the first clip comes in over the zooming screen, settling from a slight push-in, so the drawing turns into it where it stands
         if (morph > 0f) {
-            val frame = clips[reveal.sampleId]?.frameAt(0L) ?: return
+            val frame = clips[reveal.sampleId]?.frameAt(reveal.clipStartMs) ?: return
             val a = Ease.inOut(((morph - MORPH_IN) / (MORPH_FULL - MORPH_IN)).coerceIn(0f, 1f))
             val zoom = 1f + MORPH_SETTLE * (1f - m)
             canvas.save()
@@ -391,7 +399,7 @@ class RealRenderer(
      */
     private fun drawTease(canvas: Canvas, reveal: RealReveal, local: Long, box: RectF) {
         val clip = clips[reveal.sampleId] ?: return
-        val frame = clip.frameAt((reveal.clipMs * TEASE_AT).toLong() + local) ?: return
+        val frame = clip.frameAt(reveal.clipStartMs + (reveal.clipMs * TEASE_AT).toLong() + local) ?: return
         val shrink = ((local - RealTimeline.TEASE_HOLD).toFloat() / (RealTimeline.TEASE_MS - RealTimeline.TEASE_HOLD)).coerceIn(0f, 1f)
         val cx = box.centerX()
         val cy = box.centerY()
@@ -480,7 +488,7 @@ class RealRenderer(
         canvas.drawColor(C.INK)
         val held = (e.clipMs - LAST_FRAME_BACK).coerceAtLeast(0L)
         val at = (t - e.clipAtMs).coerceIn(0L, held)
-        val frame = clips[reveal.sampleId]?.frameAt(at)
+        val frame = clips[reveal.sampleId]?.frameAt(reveal.clipStartMs + at)
         if (frame != null) {
             // past the clip's end: how far into the hold, 0 to 1
             val clipEnd = e.clipAtMs + held

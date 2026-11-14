@@ -12,7 +12,9 @@ import java.io.File
 class ClipSound(
     val file: File, val startMs: Long, val durationMs: Long, val gain: Float,
     val shape: ((Long) -> Float)? = null,
-    val voice: Boolean = false
+    val voice: Boolean = false,
+    /** Where in the file the sound begins (a clip cut at its start). */
+    val fromMs: Long = 0L
 )
 
 /**

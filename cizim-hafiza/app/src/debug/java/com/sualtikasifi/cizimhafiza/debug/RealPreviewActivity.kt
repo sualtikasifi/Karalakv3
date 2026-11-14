@@ -73,6 +73,9 @@ class RealPreviewActivity : Activity() {
             when (e.phase) {
                 RealPhase.Hook -> {
                     shoot("classic_first", classic, 0L)
+                    // a long word breaks over two lines: how close the lines sit
+                    val two = project(drawings[0].copy(word = "ekmek kızartma makinesi"), voiced, RealOpening.Classic)
+                    shoot("twoline_word", renderer(two), 0L)
                     shoot("classic_caption_word2", classic, e.startMs + 700)
                     shoot("classic_caption_word4", classic, e.startMs + 1_350)
                     shoot("classic_done", classic, e.durationMs - 500)

@@ -35,6 +35,7 @@ on:
           - duelcreatepreview.sh
           - guessnoticepreview.sh
           - guessinboxpreview.sh
+          - accountpress.sh
           - settingspress.sh
           - tourpreview.sh
           - accountpreview.sh
@@ -80,6 +81,14 @@ on:
           - titles.sh
           - draw.sh
           - review.sh
+      api_level:
+        description: "Android API level of the emulator (34 = Android 14; 30 = Android 11, no Modifier.blur)"
+        type: string
+        default: "34"
+      profile:
+        description: "Emulator device profile (pixel_6 = 20:9; Nexus 5 = 16:9)"
+        type: string
+        default: pixel_6
   pull_request:
     paths:
       - ".github/workflows/smoke-test.yml"
@@ -115,10 +124,10 @@ jobs:
       - name: Run the smoke test in an emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ inputs.api_level || 34 }}
           target: google_apis
           arch: x86_64
-          profile: pixel_6
+          profile: ${{ inputs.profile || 'pixel_6' }}
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: bash .github/scripts/${{ inputs.script || 'smoke.sh' }}

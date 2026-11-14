@@ -42,8 +42,8 @@ class PenThumbsPreviewActivity : ComponentActivity() {
             CizimHafizaTheme {
                 Column(Modifier.fillMaxSize().padding(top = 28.dp).background(Color(0xFF6B3F1E))) {
                     ResultWordsBoard(
-                        title = "Pens", items = items, placeholders = 10, wordLanguage = "tr",
-                        onPreview = {}, onShareAll = null, modifier = Modifier.fillMaxWidth()
+                        title = "Çizdiğin Kelimeler", items = items, placeholders = 10, wordLanguage = "tr",
+                        onPreview = {}, onShareAll = {}, modifier = Modifier.fillMaxWidth()
                     )
                     Row(Modifier.fillMaxWidth().padding(8.dp)) {
                         items.take(5).forEach { item ->

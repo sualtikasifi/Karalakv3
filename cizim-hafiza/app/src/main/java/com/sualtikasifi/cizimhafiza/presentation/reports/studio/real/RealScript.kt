@@ -98,6 +98,10 @@ data class RealReveal(
     val image: String? = null,
     val clip: String? = null,
     val clipMs: Long = 0L,
+    /** Where the used part of the clip begins, in ms into the file: the start can be cut too, not only the end. */
+    val clipStartMs: Long = 0L,
+    /** The whole file's length, for the cut bar; 0 until known (older projects). */
+    val clipFullMs: Long = 0L,
     val hook: VoicedLine = VoicedLine(),
     /** What Karalak says over the clip, as a deadpan documentary narrator: the comedy of the video is written here, not left to the video model. */
     val narration: VoicedLine = VoicedLine(),
