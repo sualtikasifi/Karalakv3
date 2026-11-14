@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.padding
 import com.sualtikasifi.cizimhafiza.R
 
 /**
@@ -58,18 +59,21 @@ fun GoogleSignInButton(
             .height(height),
         contentAlignment = Alignment.Center
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // The label shrinks to fit rather than being cut off: on a small screen, or with the phone's font size turned
+        // up, "Sign in with Google" lost its last word (the button is as wide as the picture it sits on allows).
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp)) {
             Image(
                 painter = painterResource(R.drawable.ic_google_g),
                 contentDescription = null,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.size(12.dp))
-            Text(
+            FitText(
                 text = stringResource(R.string.account_sign_in_google),
-                style = MaterialTheme.typography.titleMedium,
-                color = GoogleButtonText,
-                maxLines = 1
+                style = MaterialTheme.typography.titleMedium.copy(color = GoogleButtonText),
+                maxLines = 1,
+                minScale = 0.6f,
+                modifier = Modifier.weight(1f, fill = false)
             )
         }
     }
