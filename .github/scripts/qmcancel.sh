@@ -119,7 +119,33 @@ for i in $(seq 1 20); do
 done
 shot 02_main_menu_after_consent
 # Quick Match: while the opponent is searched, Back does not leave at once: the scene says the search is cancelled.
-adb shell input tap 880 1140
+dumpui() { adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "$OUT/_ui.xml" >/dev/null 2>&1; }
+find_xy2() {
+  dumpui
+  python3 - "$1" "$OUT/_ui.xml" <<'PY'
+import sys, re, xml.etree.ElementTree as ET
+label, path = sys.argv[1].lower(), sys.argv[2]
+try:
+    tree = ET.parse(path)
+except Exception:
+    sys.exit(0)
+for n in tree.iter('node'):
+    t = (n.get('text') or '') + ' ' + (n.get('content-desc') or '')
+    if label in t.lower():
+        m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', n.get('bounds') or '')
+        if m:
+            x1, y1, x2, y2 = map(int, m.groups())
+            print((x1 + x2) // 2, (y1 + y2) // 2)
+            break
+PY
+}
+# the "What's new" tour window (a new version's news) sits over the home screen: its close button is at the top right
+for try in 1 2 3; do
+  [ -n "$(find_xy2 "What's new")" ] && { adb shell input tap 974 505; sleep 3; } || break
+done
+xy=$(find_xy2 "Quick Match")
+echo "quick match at: $xy"
+[ -n "$xy" ] && adb shell input tap $xy
 sleep 5
 shot q01_searching
 adb shell input keyevent 4
@@ -127,3 +153,4 @@ sleep 0.7
 shot q02_cancelling
 sleep 2.5
 shot q03_after
+rm -f "$OUT/_ui.xml" "$OUT/_raw.bin"
