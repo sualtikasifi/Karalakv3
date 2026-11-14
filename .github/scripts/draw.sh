@@ -123,7 +123,8 @@ P=d
 adb shell input tap 880 1140
 sleep 5
 adb shell input tap 540 2200
-sleep 9
+# matchmaking shows its searching scene first (several seconds); the strokes must land on the drawing screen
+sleep 24
 shot ${P}01_game
 adb shell input swipe 300 900 700 1200 400
 sleep 1
