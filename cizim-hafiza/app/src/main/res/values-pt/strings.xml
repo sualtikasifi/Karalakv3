@@ -1477,6 +1477,9 @@
     <string name="quick_match_searching_title">Procurando</string>
     <string name="quick_match_searching_title2">um rival…</string>
     <string name="quick_match_searching_sub">Procurando um rival do seu nível…</string>
+    <string name="quick_match_cancelling_title">Cancelando</string>
+    <string name="quick_match_cancelling_title2">a busca…</string>
+    <string name="quick_match_cancelling_sub">Saindo da busca por rival…</string>
     <string name="quick_match_dont_worry">Calma!</string>
     <string name="quick_match_opponent_note">Seu rival pode ser um jogador ao vivo, a rodada gravada de um jogador real ou uma IA.</string>
     <string name="quick_match_opponent_note_child">Seu rival é a rodada gravada de um jogador aprovado ou uma IA que joga com os nossos desenhos.</string>

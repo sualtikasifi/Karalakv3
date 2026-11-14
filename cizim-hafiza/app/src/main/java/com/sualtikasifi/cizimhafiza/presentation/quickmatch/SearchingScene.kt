@@ -78,14 +78,19 @@ private val Ink = Color(0xFF3B2314)
  * which was tiring to watch for the seconds (sometimes a minute) a search can take.
  */
 @Composable
-internal fun SearchingScene(onBack: () -> Unit, modifier: Modifier = Modifier) {
+internal fun SearchingScene(onBack: () -> Unit, modifier: Modifier = Modifier, cancelling: Boolean = false) {
     // One clock for everything that moves here, driven by frames rather than by animators: it keeps running even
     // when the phone's animation scale is turned off (an endless spinner stand-in must never sit frozen).
     // Read only inside draw / graphicsLayer lambdas, so it never recomposes the scene.
     val clock = remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    // Once the search is being cancelled the doodle and the dots stand still: the scene is calming down, not carrying on.
+    val stopped = androidx.compose.runtime.rememberUpdatedState(cancelling)
     androidx.compose.runtime.LaunchedEffect(Unit) {
-        val start = androidx.compose.runtime.withFrameMillis { it }
-        while (true) androidx.compose.runtime.withFrameMillis { clock.longValue = it - start }
+        var last = androidx.compose.runtime.withFrameMillis { it }
+        while (true) androidx.compose.runtime.withFrameMillis { now ->
+            if (!stopped.value) clock.longValue += now - last
+            last = now
+        }
     }
     val cycle = androidx.compose.runtime.remember { androidx.compose.runtime.derivedStateOf { (clock.longValue % (DOODLE_MS.toLong() * Doodles.size)) / DOODLE_MS.toFloat() } }
     val pulse = androidx.compose.runtime.remember { androidx.compose.runtime.derivedStateOf { (clock.longValue % PULSE_MS.toLong()) / PULSE_MS.toFloat() } }
@@ -114,12 +119,13 @@ internal fun SearchingScene(onBack: () -> Unit, modifier: Modifier = Modifier) {
         Box(
             box(22f, 106f, 146f, 230f)
                 .clip(RoundedCornerShape(24))
-                .clickable(onClick = onBack)
+                .clickable(enabled = !cancelling, onClick = onBack)
                 .a11yButton(stringResource(R.string.cd_back))
         )
 
         // ---- The sign: one line, centred on the plank's face (its face runs from about y 425 to 590) -------------
-        val title = stringResource(R.string.quick_match_searching_title) + " " + stringResource(R.string.quick_match_searching_title2)
+        val title = if (cancelling) stringResource(R.string.quick_match_cancelling_title) + " " + stringResource(R.string.quick_match_cancelling_title2)
+        else stringResource(R.string.quick_match_searching_title) + " " + stringResource(R.string.quick_match_searching_title2)
         LetteredText(
             text = title,
             size = fs(74f),
@@ -144,7 +150,7 @@ internal fun SearchingScene(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
         // ---- The note plate (its cream face is x 130..712, y 1384..1556) ------------------------------------------
         FitText(
-            text = stringResource(R.string.quick_match_searching_sub),
+            text = stringResource(if (cancelling) R.string.quick_match_cancelling_sub else R.string.quick_match_searching_sub),
             style = PaintedStyle(color = Ink, fontSize = fs(35f), fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
             maxLines = 1,
             minScale = 0.55f,

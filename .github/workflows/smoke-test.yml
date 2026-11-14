@@ -47,6 +47,7 @@ on:
           - lobbypreview.sh
           - waitingpreview.sh
           - penthumbs.sh
+          - qmcancel.sh
           - runes.sh
           - frames.sh
           - pens.sh
