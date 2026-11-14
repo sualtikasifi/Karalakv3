@@ -139,6 +139,12 @@ for n in tree.iter('node'):
             break
 PY
 }
+# the emulator's own "Pixel Launcher isn't responding" window can cover the app: wait it out, close it, bring the app back
+sleep 25
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
+adb shell am start -n $ACT >/dev/null 2>&1 || true
+sleep 10
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
 # the "What's new" tour window (a new version's news) sits over the home screen: its close button is at the top right
 for try in 1 2 3; do
   [ -n "$(find_xy2 "What's new")" ] && { adb shell input tap 974 505; sleep 3; } || break
