@@ -168,7 +168,7 @@ fun AccountScreen(
         val outSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.94f)
         val delSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.95f)
         if (offX > 1.dp || offY > 1.dp) {
-            Image(scene, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(20.dp))
+            com.sualtikasifi.cizimhafiza.presentation.common.BlurredSceneFill(R.drawable.bg_account, scene, 20.dp)
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)))
         }
         Image(scene, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(0f, 0f, ArtW, ArtH))

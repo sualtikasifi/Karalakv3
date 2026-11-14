@@ -105,7 +105,7 @@ fun BreakScreen(state: GamePhase.Break) {
 
         val scene = cachedPainterResource(R.drawable.bg_break)
         if (offX.value > 1f || offY.value > 1f) {
-            Image(scene, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(unit * 24f))
+            com.sualtikasifi.cizimhafiza.presentation.common.BlurredSceneFill(R.drawable.bg_break, scene, unit * 24f)
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)))
         }
         Image(scene, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(0f, 0f, ArtW, ArtH))

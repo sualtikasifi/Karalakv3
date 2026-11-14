@@ -521,7 +521,7 @@ class OnlineGameViewModel @Inject constructor(
 
     private fun finishDrawingTurn(word: Word) {
         val finalStrokes = currentStrokes.toList() +
-            listOfNotNull(pendingStroke.takeIf { it.size >= 2 })
+            listOfNotNull(pendingStroke.toList().takeIf { it.size >= 2 })
         pendingStroke = emptyList()
 
         results.add(

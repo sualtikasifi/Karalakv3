@@ -797,7 +797,7 @@ class GameViewModel @Inject constructor(
         // moment the turn ended, so a timeout mid-drag doesn't lose that
         // partial line or leave it to bleed into the next word's canvas.
         val finalStrokes = currentStrokes.toList() +
-            listOfNotNull(pendingStroke.takeIf { it.size >= 2 })
+            listOfNotNull(pendingStroke.toList().takeIf { it.size >= 2 })
         pendingStroke = emptyList()
 
         results.add(

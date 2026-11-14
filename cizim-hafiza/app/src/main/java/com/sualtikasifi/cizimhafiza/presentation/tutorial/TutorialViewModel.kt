@@ -206,7 +206,7 @@ class TutorialViewModel @Inject constructor(
         timerJob?.cancel()
         val word = words[drawingIndex]
         strokesPerWord[word.id] = currentStrokes.toList() +
-            listOfNotNull(pendingStroke.takeIf { it.size >= 2 })
+            listOfNotNull(pendingStroke.toList().takeIf { it.size >= 2 })
         pendingStroke = emptyList()
         drawingIndex++
         _coach.value = when (drawingIndex) {

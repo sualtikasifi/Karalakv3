@@ -58,6 +58,12 @@ class CizimHafizaApp : Application(), Configuration.Provider {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    @Suppress("DEPRECATION")
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.trim(level)
+    }
+
     override fun onCreate() {
         com.sualtikasifi.cizimhafiza.util.StartupTrace.mark("app.onCreate begin")
         super.onCreate()

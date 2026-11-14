@@ -160,6 +160,15 @@ android {
     androidResources {
         localeFilters += listOf("tr", "en", "pt", "es")
     }
+
+    // The Play Store bundle must not split the languages off: the game has its own language picker (Settings), and a
+    // phone that got only its own language's split from Play (Android 12 and older never fetch the others) would show
+    // a language picked in the game in English, with the English pictures. The four languages cost a few MB together.
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
 }
 
 // Exported schemas double as the fixtures for the migration test (androidTest).

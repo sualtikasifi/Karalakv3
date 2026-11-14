@@ -280,21 +280,27 @@ fun DrawableCanvas(
                         }
                     )
                 } else {
+                    // The stroke under the finger is handed over ONCE, as a list that keeps growing in place: copying every
+                    // point so far on each move made a long stroke quadratic (a 500-point line built ~125 000 points of
+                    // garbage), which a slow phone feels as the pen stuttering. The ViewModels copy it when they keep it.
+                    var live = ArrayList<DrawingPoint>()
                     detectDragGestures(
                         onDragStart = { offset ->
+                            val p = offset.clampToCanvas()
                             inProgress.clear()
-                            inProgress.add(offset.clampToCanvas())
-                            onStrokeProgress(inProgress.map { DrawingPoint(it.x, it.y) })
+                            inProgress.add(p)
+                            live = ArrayList<DrawingPoint>(256).apply { add(DrawingPoint(p.x, p.y)) }
+                            onStrokeProgress(live)
                         },
                         onDrag = { change, _ ->
-                            inProgress.add(change.position.clampToCanvas())
-                            onStrokeProgress(inProgress.map { DrawingPoint(it.x, it.y) })
+                            val p = change.position.clampToCanvas()
+                            inProgress.add(p)
+                            live.add(DrawingPoint(p.x, p.y))
                         },
                         onDragEnd = {
-                            if (inProgress.size >= 2) {
-                                onStrokeFinished(inProgress.map { DrawingPoint(it.x, it.y) })
-                            }
+                            if (live.size >= 2) onStrokeFinished(live.toList())
                             inProgress.clear()
+                            live = ArrayList()
                             onStrokeProgress(emptyList())
                         }
                     )

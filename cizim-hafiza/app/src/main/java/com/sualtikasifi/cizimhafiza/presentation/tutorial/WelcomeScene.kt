@@ -78,7 +78,7 @@ internal fun WelcomeScene(onStart: () -> Unit, onSkip: () -> Unit) {
             Modifier.sunkenArt(sink, sceneBitmap, x0 * pxX, y0 * pxY, (x1 - x0) * pxX, (y1 - y0) * pxY, (cornerArt * us).dp)
 
         if (offX > 1.dp || offY > 1.dp) {
-            Image(scene, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(20.dp))
+            com.sualtikasifi.cizimhafiza.presentation.common.BlurredSceneFill(R.drawable.bg_tutorial_welcome, scene, 20.dp)
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)))
         }
         Image(scene, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(0f, 0f, ArtW, ArtH))
