@@ -433,13 +433,21 @@ class AdManager @Inject constructor(
     private fun recentInterstitials(): List<Long> =
         prefs.getString(KEY_RECENT_INTERSTITIALS, "").orEmpty().split(',').mapNotNull { it.toLongOrNull() }
 
+    /** The account's level, read from the settings file (restored with the account after a reinstall). */
+    private fun playerLevel(): Int = runCatching {
+        val xp = context.getSharedPreferences(com.sualtikasifi.cizimhafiza.util.SettingsRepository.PREFS_NAME, Context.MODE_PRIVATE)
+            .getInt(com.sualtikasifi.cizimhafiza.util.SettingsRepository.KEY_LIFETIME_XP, 0)
+        com.sualtikasifi.cizimhafiza.domain.model.PlayerLevel.levelForXp(xp)
+    }.getOrDefault(1)
+
     private fun gateAllows(placement: String, resultsSeen: Int): Boolean {
         if (remote.isOff(placement)) return false
         val state = AdGate.State(
             resultsSeen = resultsSeen,
             lastFullscreenAt = prefs.getLong(KEY_LAST_FULLSCREEN_AT, 0L),
             lastRewardedAt = prefs.getLong(KEY_LAST_REWARDED_AT, 0L),
-            recentInterstitials = recentInterstitials()
+            recentInterstitials = recentInterstitials(),
+            level = playerLevel()
         )
         return AdGate.allows(state, remote.gateLimits(), System.currentTimeMillis())
     }

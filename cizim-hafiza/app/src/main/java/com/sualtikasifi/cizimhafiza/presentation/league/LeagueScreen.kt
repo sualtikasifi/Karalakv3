@@ -379,6 +379,17 @@ fun LeagueScreen(
                 .pressable(pressedScale = 0.88f, onClick = onBack)
         )
         if (uiState.tab == LeagueTab.Global) {
+            // The arrow turns while the table loads and then finishes its turn smoothly, so even an instant refresh shows one.
+            val spin = remember { androidx.compose.animation.core.Animatable(0f) }
+            androidx.compose.runtime.LaunchedEffect(uiState.globalLoading) {
+                if (uiState.globalLoading) {
+                    while (true) spin.animateTo(spin.value + 360f, tween(850, easing = androidx.compose.animation.core.LinearEasing))
+                } else {
+                    val end = kotlin.math.ceil(spin.value / 360f) * 360f
+                    if (end > spin.value + 1f) spin.animateTo(end, tween(350, easing = FastOutSlowInEasing))
+                    spin.snapTo(0f)
+                }
+            }
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -394,7 +405,7 @@ fun LeagueScreen(
                     Icons.Filled.Refresh,
                     contentDescription = stringResource(R.string.reports_refresh),
                     tint = Color.White,
-                    modifier = Modifier.size(30.dp)
+                    modifier = Modifier.size(30.dp).graphicsLayer { rotationZ = spin.value }
                 )
             }
         }
