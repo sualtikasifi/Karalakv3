@@ -35,10 +35,17 @@ export function renderStore(ctx) {
   $("st-t1").textContent = "Karalak"; $("st-t2").textContent = tt(ctx, "store_title");
   $("st-goldn").textContent = fmt(P.gold);
   const tabs = $("st-tabs"); tabs.replaceChildren();
-  [[0, "st_ic_crown", "store_tab_jokers"], [1, "st_ic_pencil", "store_tab_pens"], [2, "st_ic_image", "store_tab_frames"]].forEach(([i, ic, k]) => {
-    const b = el("button", "tab " + (tab === i ? "on" : "off"), `<img src="img/${ic}.webp" alt=""><span>${tt(ctx, k)}</span>`);
+  [[0, "jokers", "store_tab_jokers"], [1, "pens", "store_tab_pens"], [2, "frames", "store_tab_frames"]].forEach(([i, art, k]) => {
+    const b = el("button", "tab " + (tab === i ? "on" : "off"), `<span>${tt(ctx, k)}</span>`);
+    b.style.backgroundImage = `url(img/st_tab_${art}.webp)`;
     b.onclick = () => { tab = i; renderStore(ctx); $("st-shelf").scrollTop = 0; }; tabs.append(b);
   });
+  // the label shrinks to the empty middle of its pill (a long word in another language must not be cut)
+  requestAnimationFrame(() => tabs.querySelectorAll(".tab").forEach((b) => {
+    const sp = b.firstElementChild; let size = parseFloat(getComputedStyle(b).fontSize);
+    const room = b.clientWidth * (1 - 0.37 - 0.12);
+    for (let n = 0; n < 12 && sp.scrollWidth > room + 1 && size > 8; n++) { size *= 0.92; b.style.fontSize = size + "px"; }
+  }));
   const shelf = $("st-shelf"); shelf.replaceChildren();
   if (tab === 1) {
     pens.filter((p) => p.price > 0 && !p.rune && !p.retired && p.card).sort((a, b) => a.price - b.price).forEach((p) => {
