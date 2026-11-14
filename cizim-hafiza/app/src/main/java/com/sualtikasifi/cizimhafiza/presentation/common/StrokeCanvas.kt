@@ -24,23 +24,11 @@ import com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingStroke
 import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
 import com.sualtikasifi.cizimhafiza.presentation.theme.PenColor
-import kotlin.math.sqrt
 
 /** Which tool [DrawableCanvas] is currently interpreting drag gestures as. */
 enum class DrawTool { PEN, ERASER }
 
 private const val ERASE_TOUCH_RADIUS_PX = 28f
-
-private fun distanceToSegment(p: Offset, a: Offset, b: Offset): Float {
-    val abx = b.x - a.x
-    val aby = b.y - a.y
-    val lengthSq = abx * abx + aby * aby
-    if (lengthSq <= 0f) return kotlin.math.hypot(p.x - a.x, p.y - a.y)
-    val t = (((p.x - a.x) * abx + (p.y - a.y) * aby) / lengthSq).coerceIn(0f, 1f)
-    val projX = a.x + t * abx
-    val projY = a.y + t * aby
-    return sqrt((p.x - projX) * (p.x - projX) + (p.y - projY) * (p.y - projY))
-}
 
 /** True if [point] comes within [ERASE_TOUCH_RADIUS_PX] of any segment in [stroke]. */
 private fun strokeHitBy(stroke: DrawingStroke, point: Offset): Boolean {
@@ -50,9 +38,12 @@ private fun strokeHitBy(stroke: DrawingStroke, point: Offset): Boolean {
         return kotlin.math.hypot(point.x - only.x, point.y - only.y) <= ERASE_TOUCH_RADIUS_PX
     }
     for (i in 0 until stroke.size - 1) {
-        val a = Offset(stroke[i].x, stroke[i].y)
-        val b = Offset(stroke[i + 1].x, stroke[i + 1].y)
-        if (distanceToSegment(point, a, b) <= ERASE_TOUCH_RADIUS_PX) return true
+        val ax = stroke[i].x; val ay = stroke[i].y
+        val abx = stroke[i + 1].x - ax; val aby = stroke[i + 1].y - ay
+        val lengthSq = abx * abx + aby * aby
+        val t = if (lengthSq <= 0f) 0f else (((point.x - ax) * abx + (point.y - ay) * aby) / lengthSq).coerceIn(0f, 1f)
+        val dx = point.x - (ax + t * abx); val dy = point.y - (ay + t * aby)
+        if (dx * dx + dy * dy <= ERASE_TOUCH_RADIUS_PX * ERASE_TOUCH_RADIUS_PX) return true
     }
     return false
 }
@@ -236,6 +227,11 @@ fun DrawableCanvas(
         liveStrokes.mapNotNull { stroke -> stroke.toRenderable() }
     }
     val isGradientPen = penSkin?.isGradient == true
+    // A gradient pen walks its committed strokes point by point on every frame of a drag: their points are turned into
+    // Offsets once per change of the stroke list, not again on every pointer move.
+    val committedOffsets = remember(liveStrokes, isGradientPen) {
+        if (!isGradientPen) emptyList() else liveStrokes.map { stroke -> stroke.map { Offset(it.x, it.y) } }
+    }
     // A premium pen (see PenEffect) is built once per finished stroke and only re-coloured each frame — the clock
     // is read in the draw scope below, so nothing recomposes.
     val isPremiumPen = penSkin?.effect?.isPremium == true
@@ -338,8 +334,8 @@ fun DrawableCanvas(
                 // tracking total ink used across every committed stroke, then
                 // continues into the one still being drawn.
                 var distance = 0f
-                liveStrokes.forEach { stroke ->
-                    distance = drawPenStroke(stroke.map { Offset(it.x, it.y) }, penSkin, strokeColor, strokeWidthPx, distance)
+                committedOffsets.forEach { stroke ->
+                    distance = drawPenStroke(stroke, penSkin, strokeColor, strokeWidthPx, distance)
                 }
                 drawPenStroke(inProgress.toList(), penSkin, strokeColor, strokeWidthPx, distance)
             } else {
@@ -385,7 +381,7 @@ private fun DrawingStroke.toRenderable(): RenderableStroke? = when {
     else -> RenderableStroke.Line(
         Path().apply {
             moveTo(first().x, first().y)
-            drop(1).forEach { lineTo(it.x, it.y) }
+            for (i in 1 until size) lineTo(this@toRenderable[i].x, this@toRenderable[i].y)
         }
     )
 }
