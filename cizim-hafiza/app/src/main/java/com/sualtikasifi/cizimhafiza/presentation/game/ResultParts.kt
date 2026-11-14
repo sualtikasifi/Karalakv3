@@ -466,31 +466,32 @@ internal fun ResultWordsBoard(
                 drawImage(board, androidx.compose.ui.unit.IntOffset(0, 171), androidx.compose.ui.unit.IntSize(board.width, botSrc),
                     dstOffset = androidx.compose.ui.unit.IntOffset(0, h - botH), dstSize = androidx.compose.ui.unit.IntSize(w, botH))
             }
-            // The title on the plank, with the share button at its right end.
+            // The title on the plank (x 285..575): inside its ends with the same margin on both sides, the share button at its right.
             Box(
-                modifier = Modifier.offset(k * 272f, k * 56f).size(k * 316f, k * 58f),
+                modifier = Modifier.offset(k * 305f, k * 56f).size(k * 250f, k * 58f),
                 contentAlignment = Alignment.Center
             ) {
                 if (header != null) {
                     Box(Modifier.fillMaxWidth().padding(horizontal = 2.dp)) { header() }
                 } else {
-                    LetteredText(
-                        title, fs(36f), maxLines = 1,
-                        modifier = Modifier.fillMaxWidth().padding(start = k * 8f, end = if (onShareAll != null) k * 50f else k * 8f),
-                        title = true
-                    )
-                }
-                if (onShareAll != null && header == null) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .padding(end = k * 6f)
-                            .size(k * 42f)
-                            .background(Color(0x33FFFFFF), CircleShape)
-                            .pressable(pressedScale = 0.88f, onClick = onShareAll)
-                            .a11yButton(stringResource(R.string.share_all_drawings)),
-                        contentAlignment = Alignment.Center
-                    ) { Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(k * 28f)) }
+                    Row(Modifier.fillMaxSize().padding(horizontal = k * 12f), verticalAlignment = Alignment.CenterVertically) {
+                        LetteredText(
+                            title, fs(28f), maxLines = 1,
+                            modifier = Modifier.weight(1f),
+                            title = true
+                        )
+                        if (onShareAll != null) {
+                            Spacer(Modifier.width(k * 6f))
+                            Box(
+                                modifier = Modifier
+                                    .size(k * 36f)
+                                    .background(Color(0x33FFFFFF), CircleShape)
+                                    .pressable(pressedScale = 0.88f, onClick = onShareAll)
+                                    .a11yButton(stringResource(R.string.share_all_drawings)),
+                                contentAlignment = Alignment.Center
+                            ) { Icon(Icons.Filled.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(k * 24f)) }
+                        }
+                    }
                 }
             }
             Column(
