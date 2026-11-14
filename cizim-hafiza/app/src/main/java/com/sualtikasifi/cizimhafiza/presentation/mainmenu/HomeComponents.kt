@@ -874,7 +874,9 @@ internal fun PenPickerSheet(items: List<PenSkinUiItem>, onSelect: (PenSkin) -> U
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            modifier = Modifier.fillMaxWidth()
                         )
                         // Every card has this second line, so they are all the same height: the reason a pen is locked, or
                         // "Kullanılabilir" in a warm yellow for one the player can wear.
@@ -884,8 +886,10 @@ internal fun PenPickerSheet(items: List<PenSkinUiItem>, onSelect: (PenSkin) -> U
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = if (item.unlocked) FontWeight.Bold else null,
                             color = if (item.unlocked) Color(0xFFD99A00) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
                             maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
