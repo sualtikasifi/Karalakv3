@@ -1489,6 +1489,9 @@
     <string name="quick_match_searching_title">Rakip</string>
     <string name="quick_match_searching_title2">aranıyor…</string>
     <string name="quick_match_searching_sub">Seviyene uygun bir rakip aranıyor…</string>
+    <string name="quick_match_cancelling_title">Eşleşme</string>
+    <string name="quick_match_cancelling_title2">iptal ediliyor…</string>
+    <string name="quick_match_cancelling_sub">Rakip aramasından çıkılıyor…</string>
     <string name="quick_match_dont_worry">Merak etme!</string>
     <string name="quick_match_opponent_note">Rakibin anlık eşleşen bir oyuncu, gerçek bir oyuncunun kayıtlı turu ya da yapay zekâ olabilir.</string>
     <string name="quick_match_opponent_note_child">Rakibin, onaylanmış bir oyuncunun kayıtlı turu ya da bizim çizimlerimizle oynayan yapay zekâ olur.</string>

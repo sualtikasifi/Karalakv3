@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Box
 import com.sualtikasifi.cizimhafiza.presentation.common.dotGridBackground
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenArt
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -172,9 +173,9 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                     .padding(top = (540f * artScale).dp)
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                    TabChip(stringResource(R.string.store_tab_jokers), R.drawable.st_ic_crown, selected = tab == 0, modifier = Modifier.weight(1f)) { selectTab(0) }
-                    TabChip(stringResource(R.string.store_tab_pens), R.drawable.st_ic_pencil, selected = tab == 1, modifier = Modifier.weight(1f)) { selectTab(1) }
-                    TabChip(stringResource(R.string.store_tab_frames), R.drawable.st_ic_image, selected = tab == 2, modifier = Modifier.weight(1f)) { selectTab(2) }
+                    TabChip(stringResource(R.string.store_tab_jokers), R.drawable.st_tab_jokers, selected = tab == 0, modifier = Modifier.weight(1f)) { selectTab(0) }
+                    TabChip(stringResource(R.string.store_tab_pens), R.drawable.st_tab_pens, selected = tab == 1, modifier = Modifier.weight(1f)) { selectTab(1) }
+                    TabChip(stringResource(R.string.store_tab_frames), R.drawable.st_tab_frames, selected = tab == 2, modifier = Modifier.weight(1f)) { selectTab(2) }
                 }
             LazyVerticalGrid(
                 state = gridState,
@@ -645,44 +646,47 @@ private fun GoldPill(gold: Int) {
 
 /** One tab of the store: the painted wooden plaque (orange when chosen, brown otherwise) with its little picture and word. */
 @Composable
-private fun TabChip(label: String, icon: Int, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    // The plaque lifts a touch when chosen, instead of snapping.
+private fun TabChip(label: String, art: Int, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    // The painted pill (icon at its left end, an empty glossy middle for the label) lifts a touch when chosen and the
+    // other two go quiet: paler and less saturated, so the chosen tab is the one that is plainly lit.
     val glow by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (selected) 1f else 0f,
         animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = 380f),
         label = "tabGlow"
     )
-    Box(
-        contentAlignment = Alignment.Center,
+    val quiet = remember {
+        androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0.45f) })
+    }
+    BoxWithConstraints(
         modifier = modifier
-            .height(52.dp)
+            .aspectRatio(TAB_ART_W / TAB_ART_H)
             .graphicsLayer {
-                val lift = 1f + 0.05f * glow
+                val lift = 1f + 0.045f * glow
                 scaleX = lift
                 scaleY = lift
             }
-            .pressable(pressedScale = 0.92f, onClick = onClick)
+            .pressable(pressedScale = 0.93f, onClick = onClick)
     ) {
-        NinePatch(
-            res = if (selected) R.drawable.st_tab_on else R.drawable.st_tab_off,
-            slicePx = 70,
-            edge = 16.dp,
-            modifier = Modifier.matchParentSize()
+        val w = maxWidth
+        val h = maxHeight
+        Image(
+            painterResource(art), contentDescription = null, contentScale = ContentScale.FillBounds,
+            colorFilter = if (selected) null else quiet,
+            alpha = 0.72f + 0.28f * glow,
+            modifier = Modifier.fillMaxSize()
         )
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            Image(painterResource(icon), contentDescription = null, modifier = Modifier.height(21.dp).width(23.dp), contentScale = ContentScale.Fit)
-            Text(
-                text = label,
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 13.sp,
-                color = if (selected) Color.White else Color(0xFFFFE9C2),
-                style = TextStyle(shadow = Shadow(color = Color(0xFF3A1A04), offset = Offset(0f, 2f), blurRadius = 3f)),
-                maxLines = 1
-            )
+        // the label sits in the empty middle: right of the icon, left of the small splash, on the bar (below the leaves)
+        Box(
+            modifier = Modifier.offset(x = w * 0.37f, y = h * 0.27f).size(w * 0.50f, h * 0.58f),
+            contentAlignment = Alignment.Center
+        ) {
+            LetteredText(label, (h.value * 0.34f).sp, outline = Color(0xFF2A1250), maxLines = 1, minScale = 0.5f)
         }
     }
 }
+
+private const val TAB_ART_W = 600f
+private const val TAB_ART_H = 236f
 
 /** A painted glossy button (orange / blue / green) that stretches to any size without squashing its round ends. */
 @Composable

@@ -69,6 +69,10 @@ for i in 1 2 3 4; do
     xy=$(find_xy "$label"); [ -n "$xy" ] && adb shell input tap $xy
   done
 done
+# The "What's new" tour window (a new version's news) sits over the home screen: its close button is at the top right.
+for try in 1 2 3; do
+  [ -n "$(find_xy "What's new")" ] && { adb shell input tap 974 510; sleep 3; } || break
+done
 for try in 1 2 3 4 5 6; do
   [ -n "$(find_xy Pens)" ] && break
   adb shell input tap 543 1674

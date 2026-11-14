@@ -96,6 +96,11 @@ class QuickMatchViewModel @Inject constructor(
         if (seen.size > SEEN_CAP) seen.remove(seen.first())
     }
 
+    private var searchJob: kotlinx.coroutines.Job? = null
+
+    /** The player backed out while searching: the search stops now, so it cannot find an opponent behind their back. */
+    fun cancelSearch() { searchJob?.cancel() }
+
     init { search() }
 
     /** Remembers this opponent's words so the next search can prefer fresh ones. Called when the match actually starts. */
@@ -111,7 +116,8 @@ class QuickMatchViewModel @Inject constructor(
             return
         }
         _state.value = QuickMatchState.Searching
-        viewModelScope.launch {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
             // Before anything else touches WordDao: a search that ran ahead
             // of a still-finishing language reseed used to read whichever
             // rows Room happened to hold at that instant — an English player

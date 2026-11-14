@@ -1476,6 +1476,9 @@
     <string name="quick_match_searching_title">Finding</string>
     <string name="quick_match_searching_title2">an opponent…</string>
     <string name="quick_match_searching_sub">Finding an opponent at your level…</string>
+    <string name="quick_match_cancelling_title">Cancelling</string>
+    <string name="quick_match_cancelling_title2">the search…</string>
+    <string name="quick_match_cancelling_sub">Leaving the matchmaking…</string>
     <string name="quick_match_dont_worry">Don\'t worry!</string>
     <string name="quick_match_opponent_note">Your opponent may be a player matched live, a real player\'s recorded round or an AI.</string>
     <string name="quick_match_opponent_note_child">Your opponent is an approved player\'s recorded round or an AI that plays with our own drawings.</string>

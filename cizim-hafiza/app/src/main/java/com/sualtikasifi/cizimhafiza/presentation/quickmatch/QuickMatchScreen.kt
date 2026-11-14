@@ -134,6 +134,23 @@ fun QuickMatchScreen(
     var abandonConfirmOpen by remember { mutableStateOf(false) }
     val matched = state is QuickMatchState.Found
     androidx.activity.compose.BackHandler(enabled = matched) { abandonConfirmOpen = true }
+    // Backing out while the search runs is not instant: the search stops at once, the scene says it is being cancelled,
+    // and the screen closes after a moment, so the exit reads as a decision that was taken, not a glitch.
+    var cancelling by remember { mutableStateOf(false) }
+    val searching = state is QuickMatchState.Searching
+    val leave = {
+        if (!cancelling) {
+            cancelling = true
+            viewModel.cancelSearch()
+        }
+    }
+    androidx.activity.compose.BackHandler(enabled = searching) { leave() }
+    androidx.compose.runtime.LaunchedEffect(cancelling) {
+        if (cancelling) {
+            kotlinx.coroutines.delay(CANCEL_NOTICE_MS)
+            onBack()
+        }
+    }
     if (abandonConfirmOpen) {
         com.sualtikasifi.cizimhafiza.presentation.common.PaintedExitDialog(
             style = com.sualtikasifi.cizimhafiza.presentation.common.ExitDialogStyle.InGame,
@@ -162,8 +179,10 @@ fun QuickMatchScreen(
                 modifier = Modifier.fillMaxSize()
             )
             val searchingAlpha by animateFloatAsState(if (state is QuickMatchState.Searching) 1f else 0f, tween(450), label = "quick_match_search_scene")
+            // the last moments of the notice fade the scene away, so the screen does not end with a cut
+            val leaving by animateFloatAsState(if (cancelling) 0.35f else 1f, tween((CANCEL_NOTICE_MS - 250).toInt(), delayMillis = 250), label = "quick_match_leaving")
             if (searchingAlpha > 0f) {
-                SearchingScene(onBack = onBack, modifier = Modifier.alpha(searchingAlpha))
+                SearchingScene(onBack = leave, cancelling = cancelling, modifier = Modifier.alpha(searchingAlpha * leaving))
             }
             Column(
                 modifier = Modifier
@@ -650,3 +669,6 @@ private fun LockedScene(untilMillis: Long, onUnlocked: () -> Unit) {
         )
     }
 }
+
+/** How long "the search is being cancelled" stays on screen before the screen closes. */
+private const val CANCEL_NOTICE_MS = 1500L
