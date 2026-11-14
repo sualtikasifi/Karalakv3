@@ -146,11 +146,14 @@ done
 xy=$(find_xy2 "Quick Match")
 echo "quick match at: $xy"
 [ -n "$xy" ] && adb shell input tap $xy
-sleep 5
+# the search is short (a second or two): look at it, then back out while it still runs
+sleep 1
 shot q01_searching
 adb shell input keyevent 4
-sleep 0.7
+sleep 0.5
 shot q02_cancelling
-sleep 2.5
-shot q03_after
+sleep 1.2
+shot q03_cancelling_late
+sleep 2
+shot q04_after
 rm -f "$OUT/_ui.xml" "$OUT/_raw.bin"
