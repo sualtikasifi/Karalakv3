@@ -16,7 +16,9 @@ object AdGate {
         val minGapMillis: Long = DEFAULT_MIN_GAP_MILLIS,
         val afterRewardedMillis: Long = DEFAULT_AFTER_REWARDED_MILLIS,
         val perHour: Int = DEFAULT_PER_HOUR,
-        val newPlayerResults: Int = DEFAULT_NEW_PLAYER_RESULTS
+        val newPlayerResults: Int = DEFAULT_NEW_PLAYER_RESULTS,
+        /** From this player level on the new-player grace does not apply (see [State.level]). */
+        val establishedLevel: Int = DEFAULT_ESTABLISHED_LEVEL
     )
 
     data class State(
@@ -25,11 +27,17 @@ object AdGate {
         val lastFullscreenAt: Long,
         val lastRewardedAt: Long,
         /** When each interstitial of the last hour or so was shown. */
-        val recentInterstitials: List<Long>
+        val recentInterstitials: List<Long>,
+        /**
+         * The account's level. The count of finished games lives only in this install, so a player who deleted and
+         * reinstalled the game would be a "new player" again; the level comes back with the account, and a player who
+         * has got this far is not one.
+         */
+        val level: Int = 1
     )
 
     fun allows(state: State, limits: Limits, now: Long): Boolean {
-        if (state.resultsSeen <= limits.newPlayerResults) return false
+        if (state.resultsSeen <= limits.newPlayerResults && state.level < limits.establishedLevel) return false
         if (since(state.lastFullscreenAt, now) < limits.minGapMillis) return false
         if (since(state.lastRewardedAt, now) < limits.afterRewardedMillis) return false
         if (state.recentInterstitials.count { since(it, now) < HOUR_MILLIS } >= limits.perHour) return false
@@ -46,7 +54,10 @@ object AdGate {
     const val DEFAULT_MIN_GAP_MILLIS = 90_000L
     const val DEFAULT_AFTER_REWARDED_MILLIS = 3 * 60_000L
     const val DEFAULT_PER_HOUR = 6
-    const val DEFAULT_NEW_PLAYER_RESULTS = 5
+    /** The first finished games of a new install show no interstitial: with the every-2nd-game cadence, 3 spares one ad. */
+    const val DEFAULT_NEW_PLAYER_RESULTS = 3
+    /** Level 5 is 700 XP, more than the first few games of a new account earn. */
+    const val DEFAULT_ESTABLISHED_LEVEL = 5
     private const val HOUR_MILLIS = 60 * 60_000L
     private const val MAX_KEPT = 12
 }

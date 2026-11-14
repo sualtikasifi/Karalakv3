@@ -12,15 +12,23 @@ class AdGateTest {
         seen: Int = 10,
         lastFull: Long = 0L,
         lastRewarded: Long = 0L,
-        recent: List<Long> = emptyList()
-    ) = AdGate.State(seen, lastFull, lastRewarded, recent)
+        recent: List<Long> = emptyList(),
+        level: Int = 1
+    ) = AdGate.State(seen, lastFull, lastRewarded, recent, level)
 
     @Test fun an_ordinary_moment_is_allowed() = assertTrue(AdGate.allows(state(), limits, now))
 
     @Test fun a_new_player_has_the_first_games_ad_free() {
         assertFalse(AdGate.allows(state(seen = 1), limits, now))
-        assertFalse(AdGate.allows(state(seen = 5), limits, now))
-        assertTrue(AdGate.allows(state(seen = 6), limits, now))
+        assertFalse(AdGate.allows(state(seen = 3), limits, now))
+        assertTrue(AdGate.allows(state(seen = 4), limits, now))
+    }
+
+    @Test fun a_reinstalled_game_does_not_make_a_levelled_player_new_again() {
+        // the count of finished games is per install, the level comes back with the account
+        assertTrue(AdGate.allows(state(seen = 1, level = 5), limits, now))
+        assertTrue(AdGate.allows(state(seen = 1, level = 79), limits, now))
+        assertFalse(AdGate.allows(state(seen = 1, level = 4), limits, now))
     }
 
     @Test fun two_fullscreen_ads_are_never_closer_than_the_gap() {
