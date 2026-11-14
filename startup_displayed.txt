@@ -1,0 +1,3 @@
+11-14 14:14:20.590   520   539 I ActivityTaskManager: Displayed com.sualtikasifi.cizimhafiza/.presentation.MainActivity for user 0: +4s502ms
+11-14 14:14:26.650   520   539 I ActivityTaskManager: Displayed com.sualtikasifi.cizimhafiza/.presentation.MainActivity for user 0: +3s597ms
+11-14 14:14:32.605   520   539 I ActivityTaskManager: Displayed com.sualtikasifi.cizimhafiza/.presentation.MainActivity for user 0: +3s120ms
