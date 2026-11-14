@@ -350,9 +350,17 @@ class RealRenderer(
         // the word on the notepad, sized as the game sizes it (short words large, long ones smaller), with its orange underline
         val word = d.word.trim().replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale("tr")) else it.toString() }
         val wordSize = (art(425f) * 0.97f / (word.length.coerceAtLeast(1) * 0.5f)).coerceIn(WORD_MIN, WORD_MAX)
-        text.draw(canvas, word, art(125f + 222.5f), art(232f + 56f), art(445f - 20f).toInt(), wordSize, 2, assets.display, SCENE_INK, spacing = 0.76f, balanced = true)
+        // the letters, the gap and the underline are one block, centred on the notepad together; the underline is as wide as the word
+        val wordW = art(445f - 20f).toInt()
+        val (inkW, inkH) = text.measureInk(word, wordW, wordSize, 2, assets.display, SCENE_INK, spacing = 0.76f, balanced = true)
+        val gap = art(16f)
+        val bar = art(8f)
+        val top = art(288f) - (inkH + gap + bar) / 2f
+        text.draw(canvas, word, art(125f + 222.5f), top + inkH / 2f, wordW, wordSize, 2, assets.display, SCENE_INK, spacing = 0.76f, balanced = true, ink = true)
         plain.color = UNDERLINE
-        canvas.drawRoundRect(RectF(art(235f), art(343f), art(485f), art(351f)), art(4f), art(4f), plain)
+        val half = (inkW * 0.5f).coerceIn(art(90f), art(170f))
+        val ux = art(125f + 222.5f)
+        canvas.drawRoundRect(RectF(ux - half, top + inkH + gap, ux + half, top + inkH + gap + bar), art(4f), art(4f), plain)
 
         // the canvas: white dotted paper over the picture's painted one, the drawing on it, the "+10 Saniye" joker on top
         drawCanvasPaper(canvas)
