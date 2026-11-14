@@ -30,6 +30,9 @@ printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><boo
 # The first-run year-of-birth and terms prompt (LegalConsentHost) would cover every screen: answered up front.
 printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><int name=\"birth_year\" value=\"1990\" /><int name=\"terms_version\" value=\"1\" /></map>" \
   | adb shell "run-as $PKG sh -c 'cat > shared_prefs/legal_consent.xml'"
+# The x2 XP offer opens on the first Quick Match tap (once per 8 hours): marked as just offered so the tap starts a game.
+printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><long name=\"lastOffer\" value=\"$(( $(date +%s) * 1000 ))\" /></map>" \
+  | adb shell "run-as $PKG sh -c 'cat > shared_prefs/xp_boost.xml'"
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 
