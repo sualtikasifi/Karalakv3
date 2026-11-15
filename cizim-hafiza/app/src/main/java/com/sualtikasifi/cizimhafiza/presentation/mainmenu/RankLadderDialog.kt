@@ -100,9 +100,9 @@ internal fun RankLadderDialog(progress: LevelProgressState, onDismiss: () -> Uni
                     // ---- the ribbon: the title -------------------------------------------------------------------
                     LetteredText(
                         text = stringResource(R.string.rank_ladder_title),
-                        size = fs(68f),
+                        size = fs(86f),
                         outline = RankRibbonOutline,
-                        modifier = box(225f, 288f, 615f, 376f),
+                        modifier = box(205f, 268f, 635f, 358f),
                         minScale = 0.5f,
                         title = true
                     )
