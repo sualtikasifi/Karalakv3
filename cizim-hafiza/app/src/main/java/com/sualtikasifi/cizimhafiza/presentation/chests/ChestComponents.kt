@@ -592,15 +592,15 @@ private fun DoubleGoldPill(state: Int, gold: Int, u: Dp, fs: (Float) -> androidx
                     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                         RewardLettering(
                             text = stringResource(R.string.chest_double_watch),
-                            size = fs(50f),
+                            size = fs(56f),
                             top = Color.White, bottom = Color(0xFFE8FFD8), outline = Color(0xFF14602A),
-                            modifier = Modifier.fillMaxWidth().height(this@BoxWithConstraints.maxHeight * 0.31f)
+                            modifier = Modifier.fillMaxWidth().height(this@BoxWithConstraints.maxHeight * 0.37f)
                         )
                         RewardLettering(
                             text = stringResource(R.string.chest_double_gain, gold),
-                            size = fs(40f),
+                            size = fs(46f),
                             top = Color(0xFFFFF3B0), bottom = Color(0xFFFFD34D), outline = Color(0xFF14602A),
-                            modifier = Modifier.fillMaxWidth().height(this@BoxWithConstraints.maxHeight * 0.27f)
+                            modifier = Modifier.fillMaxWidth().height(this@BoxWithConstraints.maxHeight * 0.31f)
                         )
                     }
                 }
