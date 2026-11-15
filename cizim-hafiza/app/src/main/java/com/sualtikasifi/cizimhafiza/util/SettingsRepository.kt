@@ -623,6 +623,14 @@ class SettingsRepository @Inject constructor(
         penaltiesApplied = penaltiesApplied + 1
     }
 
+    /**
+     * This account was banned for good from the developer panel: it no longer publishes a league score, so a ban is not undone by playing
+     * offline. Account-scoped (cleared with the rest when another account takes over the device).
+     */
+    var leagueBanned: Boolean
+        get() = prefs.getBoolean(KEY_LEAGUE_BANNED, false)
+        set(value) { prefs.edit(commit = true) { putBoolean(KEY_LEAGUE_BANNED, value) } }
+
     @Synchronized
     fun addXp(amount: Int) {
         if (amount <= 0) return
@@ -860,6 +868,7 @@ class SettingsRepository @Inject constructor(
         putInt(KEY_LIFETIME_SCORE, 0)
         putInt(KEY_LIFETIME_XP, 0)
         putInt(KEY_PENALTIES_APPLIED, 0)
+        remove(KEY_LEAGUE_BANNED)
         putInt(KEY_LIFETIME_WORDS_DRAWN, 0)
         putInt(KEY_LIFETIME_GAMES_PLAYED, 0)
         putInt(KEY_LIFETIME_PERFECT_ROUNDS, 0)
@@ -1213,6 +1222,7 @@ class SettingsRepository @Inject constructor(
         const val KEY_EARNED_LEAGUE_REWARDS = "earned_league_rewards"
         const val KEY_LIFETIME_SCORE = "lifetime_score"
         const val KEY_LIFETIME_XP = "lifetime_xp"
+        const val KEY_LEAGUE_BANNED = "league_banned"
         const val KEY_PENALTIES_APPLIED = "penalties_applied"
         const val KEY_LIFETIME_WORDS_DRAWN = "lifetime_words_drawn"
         const val KEY_LIFETIME_GAMES_PLAYED = "lifetime_games_played"

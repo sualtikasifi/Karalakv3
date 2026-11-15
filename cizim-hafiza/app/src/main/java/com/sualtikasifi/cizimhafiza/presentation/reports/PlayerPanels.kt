@@ -196,7 +196,12 @@ data class PlayersState(
     val couponUses: Map<String, List<CouponUse>> = emptyMap(),
     val loadingCoupons: Boolean = false,
     /** The list is the month's leaders (with their pace), not a search result. */
-    val showingLeaders: Boolean = false
+    val showingLeaders: Boolean = false,
+    /** The "Ceza ve geri alma" form: what to take back, why, and the account whose permanent ban awaits its second tap. */
+    val penaltyXp: String = "",
+    val penaltyGold: String = "",
+    val penaltyReason: String = "",
+    val confirmBan: String? = null
 )
 
 @HiltViewModel
@@ -270,7 +275,7 @@ class PlayersViewModel @Inject constructor(private val admin: PlayerAdmin) : Vie
             _state.update { it.copy(busy = false, message = if (r.isSuccess) done else "Olmadı: ${r.exceptionOrNull()?.message}") }
             if (r.isSuccess) {
                 // the record and the name may have changed: read both again
-                admin.find(_state.value.query).onSuccess { list -> _state.update { it.copy(results = list) } }
+                if (!_state.value.showingLeaders) admin.find(_state.value.query).onSuccess { list -> _state.update { it.copy(results = list) } }
                 loadDetails(uid)
             }
         }
@@ -279,6 +284,24 @@ class PlayersViewModel @Inject constructor(private val admin: PlayerAdmin) : Vie
     fun resetName(p: PlayerInfo) = act(p.uid, "Ad sıfırlandı.") { admin.resetName(p.uid, p.nickname) }
     fun lock(p: PlayerInfo) = act(p.uid, "Oyuncu kilitlendi.") { admin.lock(p.uid) }
     fun unlock(p: PlayerInfo) = act(p.uid, "Kilitler kaldırıldı.") { admin.unlock(p.uid) }
+    /** Takes XP / gold back and/or punishes: the player's app applies it on its next opening. A ban asks for a second tap first. */
+    fun penalize(p: PlayerInfo, action: PlayerAdmin.Action) {
+        val s = _state.value
+        if (action == PlayerAdmin.Action.BAN && s.confirmBan != p.uid) {
+            _state.update { it.copy(confirmBan = p.uid, message = "Kalıcı ban için bir kez daha dokun. Geri alınabilir ama oyuncu bunu görür.") }
+            return
+        }
+        val done = when (action) {
+            PlayerAdmin.Action.REVOKE -> "Geri alma sıraya alındı: oyuncunun uygulaması bir sonraki açılışında uygular."
+            PlayerAdmin.Action.STRIKE -> "Ceza yazıldı: oyuncunun uygulaması bir sonraki açılışında uygular."
+            PlayerAdmin.Action.BAN -> "Kalıcı ban yazıldı: oyuncunun uygulaması bir sonraki açılışında uygular."
+        }
+        act(p.uid, done) {
+            admin.penalize(p.uid, action, s.penaltyXp.toIntOrNull() ?: 0, s.penaltyGold.toIntOrNull() ?: 0, s.penaltyReason.ifBlank { "panel" })
+        }
+        _state.update { it.copy(confirmBan = null, penaltyXp = "", penaltyGold = "", penaltyReason = "") }
+    }
+
     fun grant(p: PlayerInfo) {
         val s = _state.value
         act(p.uid, "Telafi sıraya alındı: oyuncunun uygulaması bir sonraki açılışında (en geç birkaç saat içinde) alır.") {
@@ -349,7 +372,7 @@ private fun PlayerCard(p: PlayerInfo, state: PlayersState, viewModel: PlayersVie
                 }
                 Spacer(Modifier.width(8.dp))
             }
-            if (locked) Tag("Kilitli", fg = Console.Critical, bg = Console.CriticalSoft)
+            if (locked) Tag(if (com.sualtikasifi.cizimhafiza.domain.model.Moderation.isPermanent(d?.lockedUntilMillis ?: 0L)) "Banlı" else "Kilitli", fg = Console.Critical, bg = Console.CriticalSoft)
         }
         if (!open) return@ConsoleCard
         Spacer(Modifier.height(10.dp))
@@ -374,7 +397,7 @@ private fun PlayerCard(p: PlayerInfo, state: PlayersState, viewModel: PlayersVie
         d.lastSavedMillis?.let { Text("Son bulut kaydı: ${clock(it)} (oyuncunun son görülme zamanına en yakın iz)", style = Console.Small, modifier = Modifier.padding(top = 6.dp)) }
         if (locked) {
             Spacer(Modifier.height(8.dp))
-            ConsoleNotice("${clock(d.lockedUntilMillis)} tarihine kadar kilitli", kind = NoticeKind.Error)
+            ConsoleNotice(if (com.sualtikasifi.cizimhafiza.domain.model.Moderation.isPermanent(d.lockedUntilMillis)) "Kalıcı olarak banlı (Kilidi aç ile geri alınır)" else "${clock(d.lockedUntilMillis)} tarihine kadar kilitli", kind = NoticeKind.Error)
         }
         if (d.penalties.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
@@ -411,6 +434,40 @@ private fun PlayerCard(p: PlayerInfo, state: PlayersState, viewModel: PlayersVie
             if (uses.isEmpty()) Text("Hiçbirini kullanmamış.", style = Console.Small, modifier = Modifier.padding(top = 3.dp))
             uses.forEach { u -> Text("${u.code} · ${clock(u.redeemedAtMillis)}", style = Console.Small.copy(color = Console.Ink, fontFamily = FontFamily.Monospace), modifier = Modifier.padding(top = 3.dp)) }
         }
+        Spacer(Modifier.height(12.dp))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Console.Grid))
+        Spacer(Modifier.height(10.dp))
+        Overline("Ceza ve geri alma")
+        Spacer(Modifier.height(4.dp))
+        Text("Yazdığın miktar oyuncunun uygulamasında bir sonraki açılışta düşülür (eldekinden fazlası düşmez). Boş bırakırsan yalnızca ceza yazılır.", style = Console.Small)
+        Spacer(Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            ConsoleTextField(
+                value = state.penaltyGold, onValueChange = { v -> viewModel.edit { copy(penaltyGold = v.filter(Char::isDigit).take(9)) } },
+                placeholder = "Geri alınacak altın", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
+            )
+            ConsoleTextField(
+                value = state.penaltyXp, onValueChange = { v -> viewModel.edit { copy(penaltyXp = v.filter(Char::isDigit).take(9)) } },
+                placeholder = "Geri alınacak XP", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        ConsoleTextField(
+            value = state.penaltyReason, onValueChange = { v -> viewModel.edit { copy(penaltyReason = v.take(80)) } },
+            placeholder = "Neden (denetim kaydına yazılır)", modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(8.dp))
+        val anyRevoke = ((state.penaltyGold.toIntOrNull() ?: 0) + (state.penaltyXp.toIntOrNull() ?: 0)) > 0
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            ConsoleSecondaryButton("Yalnız geri al", { viewModel.penalize(p, PlayerAdmin.Action.REVOKE) }, Modifier.weight(1f), enabled = !state.busy && anyRevoke, height = 38.dp)
+            ConsoleButton("Ceza ver", { viewModel.penalize(p, PlayerAdmin.Action.STRIKE) }, Modifier.weight(1f), enabled = !state.busy, height = 38.dp, style = ConsoleButtonStyle.DangerSoft)
+        }
+        Spacer(Modifier.height(8.dp))
+        ConsoleButton(
+            if (state.confirmBan == p.uid) "Evet, kalıcı olarak banla" else "Kalıcı ban",
+            { viewModel.penalize(p, PlayerAdmin.Action.BAN) }, Modifier.fillMaxWidth(), enabled = !state.busy, height = 40.dp,
+            style = if (state.confirmBan == p.uid) ConsoleButtonStyle.Danger else ConsoleButtonStyle.DangerSoft
+        )
         Spacer(Modifier.height(12.dp))
         Box(Modifier.fillMaxWidth().height(1.dp).background(Console.Grid))
         Spacer(Modifier.height(10.dp))

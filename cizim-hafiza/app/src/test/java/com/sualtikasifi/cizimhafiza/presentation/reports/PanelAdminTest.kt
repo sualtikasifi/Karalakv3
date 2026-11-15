@@ -319,6 +319,14 @@ class PanelAdminTest {
         assertFalse(com.sualtikasifi.cizimhafiza.util.PlayerSearch.isSuspiciousPace(500))
         assertTrue(com.sualtikasifi.cizimhafiza.util.PlayerSearch.isSuspiciousPace(501))
     }
+
+    @Test
+    fun `only a lock beyond ten years is a permanent ban`() {
+        val now = System.currentTimeMillis()
+        assertTrue(com.sualtikasifi.cizimhafiza.domain.model.Moderation.isPermanent(com.sualtikasifi.cizimhafiza.domain.model.Moderation.PERMANENT_LOCK_MILLIS))
+        assertFalse(com.sualtikasifi.cizimhafiza.domain.model.Moderation.isPermanent(now + 7L * 24 * 3_600_000))
+        assertFalse(com.sualtikasifi.cizimhafiza.domain.model.Moderation.isPermanent(0L))
+    }
 }
 
 /** SharedPreferences in memory, enough for the gate's own two numbers. */

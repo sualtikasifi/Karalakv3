@@ -504,7 +504,9 @@ private fun PenaltyDialog(penalty: Penalty, onDismiss: () -> Unit) {
     }
     // What happens NEXT is the part that changes behaviour. A penalty that only reports what was taken reads as a
     // fine; saying how close the lockout is turns it into a warning, which is the point.
-    val warning = if (penalty.lockedUntilMillis > 0L) {
+    val warning = if (com.sualtikasifi.cizimhafiza.domain.model.Moderation.isPermanent(penalty.lockedUntilMillis)) {
+        stringResource(R.string.penalty_banned_warning)
+    } else if (penalty.lockedUntilMillis > 0L) {
         val lockMillis = (penalty.lockedUntilMillis - penalty.createdAtMillis).coerceAtLeast(0L)
         val minutes = ((lockMillis + 59_999L) / 60_000L).toInt().coerceAtLeast(1)
         val duration = when {

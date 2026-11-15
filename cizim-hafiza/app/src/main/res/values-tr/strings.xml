@@ -1201,6 +1201,9 @@
     <string name="penalty_understood">Anladım</string>
     <string name="quick_match_locked_title">Bu mod geçici olarak kapalı</string>
     <string name="quick_match_locked_body">İhlal nedeniyle bu mod geçici olarak kapalı. Hızlı Eşleş ve Arkadaşınla Yarış yaklaşık %1$s sonra tekrar açılacak.</string>
+    <string name="quick_match_banned_title">Hesap kapatıldı</string>
+    <string name="quick_match_banned_body">Bu hesap kurallara aykırı davranış nedeniyle çevrimiçi modlardan ve ligden kalıcı olarak çıkarıldı. Çevrimdışı oynamaya devam edebilirsin.</string>
+    <string name="penalty_banned_warning">Hesabın kalıcı olarak kapatıldı. Hızlı Eşleş, Arkadaşınla Yarış ve lig bu hesap için bir daha açılmayacak. Çevrimdışı oynamaya devam edebilirsin.</string>
 
     <!-- Kasalar — yalnızca KAZANILAN Arkadaşınla Yarış maçından kazanılır. -->
     <string name="chest_tier_silver">Çırak Kasası</string>

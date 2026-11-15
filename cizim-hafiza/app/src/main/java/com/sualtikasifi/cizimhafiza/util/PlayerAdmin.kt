@@ -176,6 +176,51 @@ class PlayerAdmin @Inject constructor(
         until
     }
 
+    /** What the developer panel does to a player's record in one go (see [penalize]). */
+    enum class Action {
+        /** Takes XP / gold back and nothing else: no strike, no lock. */
+        REVOKE,
+        /** One strike up the lockout ladder, with the XP / gold given (may be none). */
+        STRIKE,
+        /** Closes the account for good: the online modes and the league never open again, the XP / gold given is taken back. */
+        BAN
+    }
+
+    /**
+     * Writes one penalty for [uid] that the player's own app applies the next time it opens (the same record the review of a
+     * rejected round writes, see PenaltyRepositoryImpl): [xp] and [gold] taken back, and by [action] no lock, the next lockout or a
+     * permanent one. Audited in the same write. Nothing is taken beyond what the account holds: the app floors at zero.
+     */
+    suspend fun penalize(uid: String, action: Action, xp: Int, gold: Int, reason: String): Result<Unit> = runCatching {
+        require(xp in 0..MAX_REVOKE && gold in 0..MAX_REVOKE) { "Miktar geçersiz" }
+        require(action != Action.REVOKE || xp + gold > 0) { "Geri alınacak bir miktar yaz" }
+        val strikes = firestore.collection("moderationStrikes").document(uid)
+        val previous = (strikes.get().await().getLong("count") ?: 0L).toInt()
+        val strike = if (action == Action.REVOKE) previous else previous + 1
+        val now = System.currentTimeMillis()
+        val until = when (action) {
+            Action.REVOKE -> 0L
+            Action.STRIKE -> now + Moderation.lockoutMillisFor(strike)
+            Action.BAN -> Moderation.PERMANENT_LOCK_MILLIS
+        }
+        val batch = firestore.batch()
+        batch.set(
+            firestore.collection("penalties").document(),
+            mapOf(
+                "uid" to uid, "xpRevoked" to xp.toLong(), "goldRevoked" to gold.toLong(), "strike" to strike.toLong(),
+                "lockedUntil" to until, "appliedAt" to 0L, "createdAt" to now, "by" to "panel", "reason" to reason.take(80)
+            )
+        )
+        if (action != Action.REVOKE) batch.set(strikes, mapOf("count" to strike.toLong(), "updatedAt" to now))
+        val what = when (action) {
+            Action.REVOKE -> "geri alma"
+            Action.STRIKE -> "ceza $strike, ${(until - now) / 3_600_000} saat"
+            Action.BAN -> "kalıcı ban"
+        }
+        AdminAudit.add(firestore, batch, auth.currentUser?.email, "penalty-$what".take(40), uid, "$what: XP $xp, altın $gold — ${reason.take(60)}")
+        batch.commit().await()
+    }
+
     /** Lifts every lock still running on the account and takes one strike back for each. */
     suspend fun unlock(uid: String): Result<Int> = runCatching {
         val now = System.currentTimeMillis()
@@ -350,5 +395,6 @@ class PlayerAdmin @Inject constructor(
         const val MAX_PENALTIES = 8
         const val COUPONS_CHECKED = 25L
         const val MAX_GRANT = 100_000
+        const val MAX_REVOKE = 100_000_000
     }
 }

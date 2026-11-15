@@ -84,6 +84,7 @@ class PenaltyRepositoryImpl @Inject constructor(
             settingsRepository.revokeXp(penalty.xpRevoked)
             settingsRepository.revokeGold(penalty.goldRevoked)
             settingsRepository.penaltiesApplied = settingsRepository.penaltiesApplied + 1
+            if (com.sualtikasifi.cizimhafiza.domain.model.Moderation.isPermanent(penalty.lockedUntilMillis)) settingsRepository.leagueBanned = true
             if (penalty.breaksDailyStreak) dailyChallengeRepository.breakStreak()
             applied++
         }

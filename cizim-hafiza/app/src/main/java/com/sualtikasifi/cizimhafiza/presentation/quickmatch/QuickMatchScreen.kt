@@ -253,7 +253,12 @@ fun QuickMatchScreen(
                             actionLabel = stringResource(R.string.quick_match_search_again),
                             onAction = viewModel::search
                         )
-                        is QuickMatchState.Locked -> MessageBody(
+                        is QuickMatchState.Locked -> if (com.sualtikasifi.cizimhafiza.domain.model.Moderation.isPermanent(current.untilMillis)) MessageBody(
+                            title = stringResource(R.string.quick_match_banned_title),
+                            body = stringResource(R.string.quick_match_banned_body),
+                            actionLabel = null,
+                            onAction = {}
+                        ) else MessageBody(
                             title = stringResource(R.string.quick_match_locked_title),
                             // Hours remaining rather than a timestamp: "14
                             // saat" is something a player can act on, a date
