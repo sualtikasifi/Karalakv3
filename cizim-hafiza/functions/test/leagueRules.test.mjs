@@ -12,9 +12,9 @@ test("month start is midnight Istanbul on the 1st", () => {
   assert.equal(new Date(monthStartMsFor(2026 * 12 + 12, OFFSET)).toISOString(), "2026-12-31T21:00:00.000Z");
 });
 
-test("the allowance is a burst plus 1500 an hour", () => {
+test("the allowance is a burst plus 3000 an hour", () => {
   assert.equal(maxPlausiblePeriodXp(start, start), 30000);
-  assert.equal(maxPlausiblePeriodXp(start, start + 10 * HOUR), 45000);
+  assert.equal(maxPlausiblePeriodXp(start, start + 10 * HOUR), 60000);
   // a clock before the month start never goes below the burst
   assert.equal(maxPlausiblePeriodXp(start, start - HOUR), 30000);
 });

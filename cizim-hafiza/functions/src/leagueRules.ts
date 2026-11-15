@@ -7,14 +7,14 @@
  * two things an honest account can never break, and leaves a row that breaks either one out of the table and out of the
  * prize — so a faked score does not decide a month.
  *
- * - A month's XP cannot exceed what the growth rule allows from the first of the month: the 30000 burst plus 1500 an hour.
+ * - A month's XP cannot exceed what the growth rule allows from the first of the month: the 30000 burst plus 3000 an hour.
  * - A month's XP cannot exceed the account's lifetime XP (they are published together; a small margin covers the two
  *   being rounded or penalised at slightly different moments).
  *
  * Kept free of Firebase imports so it can be unit-tested with plain Node (see test/leagueRules.test.mjs).
  */
 export const BURST_XP = 30000;
-export const XP_PER_HOUR = 1500;
+export const XP_PER_HOUR = 3000;
 const LIFETIME_MARGIN = 50;
 
 /** The most `periodXp` an honest account can show at [nowMs], for a month that began at [monthStartMs]. */
