@@ -127,8 +127,9 @@ const store = (page) => page.evaluate(() => window.__store);
   const ua = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   const { browser, page } = await open(chromium, { userAgent: ua, viewport: { width: 400, height: 800 } }, "/indir/?webtest=1");
   try {
-    await page.waitForSelector("#web", { timeout: 6000 });
-    const shown = await page.$eval("#web", (a) => getComputedStyle(a).display !== "none" && a.getAttribute("href") === "/?webtest=1");
+    // the page is the painted one: the browser game button is the link laid over the picture's own button
+    await page.waitForSelector(".pg a.web", { state: "attached", timeout: 6000 });
+    const shown = await page.$eval(".pg a.web", (a) => a.getAttribute("href") === "/?webtest=1" && getComputedStyle(a).pointerEvents !== "none");
     if (!shown) fail("webtest: the download page does not offer the browser game button");
     // the game's own gate, run on this phone (the flag was remembered by the page above): it must not send the phone away
     await page.evaluate(async () => { (0, eval)(await (await fetch("/oyna/gate.js")).text()); });
@@ -139,9 +140,9 @@ const store = (page) => page.evaluate(() => window.__store);
   // without the door the button stays hidden for an Android phone
   const plain = await open(chromium, { userAgent: ua, viewport: { width: 400, height: 800 } }, "/indir/");
   try {
-    await plain.page.waitForSelector("#web", { state: "attached", timeout: 6000 });
-    const hidden = await plain.page.$eval("#web", (a) => getComputedStyle(a).display === "none");
-    if (!hidden) fail("Android without the test door: the browser game button is shown");
+    await plain.page.waitForSelector(".pg a.web", { state: "attached", timeout: 6000 });
+    const dead = await plain.page.$eval(".pg a.web", (a) => !a.hasAttribute("href") && getComputedStyle(a).pointerEvents === "none");
+    if (!dead) fail("Android without the test door: the browser game button is live");
   } catch (e) { fail(`download page without the door: ${e.message.split("\n")[0]}`); }
   await plain.browser.close();
 }
