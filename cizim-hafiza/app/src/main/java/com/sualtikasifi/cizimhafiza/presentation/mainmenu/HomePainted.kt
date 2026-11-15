@@ -748,7 +748,12 @@ internal fun Modifier.sunkenFace(
     scene: ImageBitmap?,
     srcLeft: Float, srcTop: Float, srcW: Float, srcH: Float,
     inset: Dp,
-    corner: Dp
+    corner: Dp,
+    /** The well the face sinks into: its colour at the top and at the bottom (the default is the warm wood of the room buttons). */
+    wellTop: Color = Color(0xFFB98650),
+    wellBottom: Color = Color(0xFFD9AE7B),
+    /** How much darker the face gets at full depth (0 = not at all): a pressed key is a little in shade. */
+    dim: Float = 0f
 ): Modifier = drawWithContent {
     val k = sink.scale.value
     if (scene != null && k < 0.9995f) {
@@ -764,7 +769,7 @@ internal fun Modifier.sunkenFace(
         // the well the face sank into: flat, warm, a little darker at its top edge
         clipPath(face) {
             drawRect(
-                Brush.verticalGradient(listOf(Color(0xFFB98650).copy(alpha = depth), Color(0xFFD9AE7B).copy(alpha = depth))),
+                Brush.verticalGradient(listOf(wellTop.copy(alpha = depth), wellBottom.copy(alpha = depth))),
                 topLeft = Offset(ins, ins), size = Size(w, h)
             )
         }
@@ -776,7 +781,11 @@ internal fun Modifier.sunkenFace(
                     srcSize = srcSize,
                     dstOffset = IntOffset(ins.roundToInt(), ins.roundToInt()),
                     dstSize = IntSize(w.roundToInt(), h.roundToInt()),
-                    filterQuality = FilterQuality.Low
+                    filterQuality = FilterQuality.Low,
+                    colorFilter = if (dim > 0f) {
+                        val b = 1f - dim * depth
+                        ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(b, 0f, 0f, 0f, 0f, 0f, b, 0f, 0f, 0f, 0f, 0f, b, 0f, 0f, 0f, 0f, 0f, 1f, 0f)))
+                    } else null
                 )
             }
         }
