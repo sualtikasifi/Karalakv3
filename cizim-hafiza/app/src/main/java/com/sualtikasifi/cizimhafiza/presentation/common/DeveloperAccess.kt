@@ -1,5 +1,8 @@
 package com.sualtikasifi.cizimhafiza.presentation.common
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+
 /**
  * The passcode in front of Bot Eğitim (see BotTrainingGate).
  *
@@ -42,3 +45,41 @@ const val MAX_CODE_INPUT_LENGTH = 16
  * taps than the famous shortcut means that reflex fails silently instead.
  */
 const val DEVELOPER_REVEAL_TAPS = 15
+
+/**
+ * Who may open the developer door at all: only the maintainer's own verified Google account
+ * ([com.sualtikasifi.cizimhafiza.domain.model.Moderation.REVIEWER_EMAIL]), in a store build. Nobody else gets as far as the passcode
+ * screen: the version-line taps do nothing for any other account (or for a phone signed in to none), and the passcode screen and the
+ * tools behind it close themselves if they are ever reached any other way, or if the account is signed out while they are open.
+ * Debug builds (never published) stay open so the previews work.
+ *
+ * Client-side only, as the passcodes are: the real lock on the data is the Firestore rules' own reviewer() check on the same account.
+ */
+object DeveloperGate {
+    fun allows(email: String?, emailVerified: Boolean, debugBuild: Boolean): Boolean =
+        debugBuild || (email == com.sualtikasifi.cizimhafiza.domain.model.Moderation.REVIEWER_EMAIL && emailVerified)
+}
+
+/** [DeveloperGate] for the account signed in on this phone right now. */
+fun developerAllowed(): Boolean {
+    if (com.sualtikasifi.cizimhafiza.BuildConfig.DEBUG) return true
+    return runCatching {
+        val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        DeveloperGate.allows(user?.email, user?.isEmailVerified == true, debugBuild = false)
+    }.getOrDefault(false)
+}
+
+/** [developerAllowed], kept up to date: it turns false the moment the account is signed out or switched while a developer screen is open. */
+@androidx.compose.runtime.Composable
+fun rememberDeveloperAllowed(): Boolean {
+    var allowed by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(developerAllowed()) }
+    if (!com.sualtikasifi.cizimhafiza.BuildConfig.DEBUG) {
+        androidx.compose.runtime.DisposableEffect(Unit) {
+            val auth = runCatching { com.google.firebase.auth.FirebaseAuth.getInstance() }.getOrNull()
+            val listener = com.google.firebase.auth.FirebaseAuth.AuthStateListener { allowed = developerAllowed() }
+            auth?.addAuthStateListener(listener)
+            onDispose { auth?.removeAuthStateListener(listener) }
+        }
+    }
+    return allowed
+}

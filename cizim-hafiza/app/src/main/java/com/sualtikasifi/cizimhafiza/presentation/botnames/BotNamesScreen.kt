@@ -57,6 +57,11 @@ import com.sualtikasifi.cizimhafiza.util.asString
  */
 @Composable
 fun BotNamesScreen(onBack: () -> Unit, viewModel: BotNamesViewModel = hiltViewModel()) {
+    // the same rule as the passcode screen in front of it (see DeveloperGate)
+    if (!com.sualtikasifi.cizimhafiza.presentation.common.rememberDeveloperAllowed()) {
+        androidx.compose.runtime.LaunchedEffect(Unit) { onBack() }
+        return
+    }
     val uiState by viewModel.uiState.collectAsState()
     var identityShown by remember { mutableStateOf(false) }
 

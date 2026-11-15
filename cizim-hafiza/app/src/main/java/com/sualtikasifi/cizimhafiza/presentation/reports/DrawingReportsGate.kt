@@ -88,6 +88,13 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun DrawingReportsGate(onBack: () -> Unit, onBotNames: () -> Unit = {}) {
+    // Not even the passcode screen for anyone but the maintainer's account (see DeveloperGate): reached any other way, or with the
+    // account signed out while it is open, it closes at once and shows nothing.
+    val allowed = com.sualtikasifi.cizimhafiza.presentation.common.rememberDeveloperAllowed()
+    if (!allowed) {
+        LaunchedEffect(Unit) { onBack() }
+        return
+    }
     // rememberSaveable, not remember: this composable's own NavBackStackEntry stays alive (just off-screen) while the
     // "Bot İsimleri" tool pushes BotNamesScreen on top of it, so a plain `remember` was torn down and recreated on the
     // way back — the passcode reappeared every time. Saved state survives exactly that round trip, and still resets
